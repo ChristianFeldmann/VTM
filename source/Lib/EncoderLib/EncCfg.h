@@ -299,6 +299,9 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
+#if JVET_O0376_SPS_JCCR_FLAG
+  bool      m_JccrMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -873,6 +876,10 @@ public:
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
+#if JVET_O0376_SPS_JCCR_FLAG
+  void      setJCCR                       (bool b)        { m_JccrMode = b; }
+  bool      getJCCR                      ()         const { return m_JccrMode; }
+#endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
   void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }

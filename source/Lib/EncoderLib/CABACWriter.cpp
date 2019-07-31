@@ -2501,6 +2501,13 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 #if JVET_O0105_ICT
 void CABACWriter::joint_cb_cr( const TransformUnit& tu, const int cbfMask )
 {
+#if JVET_O0376_SPS_JCCR_FLAG
+  if (!tu.cu->slice->getSPS()->getJCCREnabledFlag())
+  {
+    return;
+  }
+#endif
+
   CHECK( tu.jointCbCr && tu.jointCbCr != cbfMask, "wrong value of jointCbCr (" << (int)tu.jointCbCr << " vs " << (int)cbfMask << ")" );
 #if JVET_O0543_ICT_ICU_ONLY
   if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )

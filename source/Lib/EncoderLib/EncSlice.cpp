@@ -1554,7 +1554,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 
 #if JVET_O0105_ICT
-  setJointCbCrModes( cs, Position(0, 0), cs.area.lumaSize() );
+#if JVET_O0376_SPS_JCCR_FLAG
+  if (pcSlice->getSPS()->getJCCREnabledFlag())
+  {
+    setJointCbCrModes(cs, Position(0, 0), cs.area.lumaSize());
+  }
+#else
+  setJointCbCrModes(cs, Position(0, 0), cs.area.lumaSize());
+#endif
 #endif
 
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0376_SPS_JCCR_FLAG                          1 // JVET-O0376: add the JCCR control flag in SPS
+
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
 #define JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE        1

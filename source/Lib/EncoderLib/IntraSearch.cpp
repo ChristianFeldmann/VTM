@@ -2966,11 +2966,20 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #if JVET_O0105_ICT
       bool       lastIsBest     = false;
       std::vector<int>  jointCbfMasksToTest;
-      if( TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr) )
+#if JVET_O0376_SPS_JCCR_FLAG
+      if (cs.sps->getJCCREnabledFlag())
       {
-        jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates( currTU, orgResiCb, orgResiCr );
+        if (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr))
+        {
+          jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates(currTU, orgResiCb, orgResiCr);
+        }
       }
-
+#else
+      if (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr))
+      {
+        jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates(currTU, orgResiCb, orgResiCr);
+      }
+#endif
       for( int cbfMask : jointCbfMasksToTest )
 #else
       bool       checkJointCbCr = TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr);

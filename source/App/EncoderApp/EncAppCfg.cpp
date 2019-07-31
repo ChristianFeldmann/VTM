@@ -901,6 +901,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
   ( "RDPCM",                                         m_RdpcmMode,                                       false, "RDPCM")
+#if JVET_O0376_SPS_JCCR_FLAG
+    ("JCCR",                                          m_JccrMode,                                       false, "JCCR")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -2206,6 +2209,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
     xConfirmPara(m_RdpcmMode, "RDPCM only allowed with NEXT profile");
+#if JVET_O0376_SPS_JCCR_FLAG
+    xConfirmPara(m_JccrMode, "JCCR only allowed with NEXT profile");
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -2495,11 +2501,20 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_cbQpOffsetDualTree >  12,   "Max. Chroma Cb QP Offset for dual tree is  12" );
   xConfirmPara( m_crQpOffsetDualTree < -12,   "Min. Chroma Cr QP Offset for dual tree is -12" );
   xConfirmPara( m_crQpOffsetDualTree >  12,   "Max. Chroma Cr QP Offset for dual tree is  12" );
-  xConfirmPara( m_cbCrQpOffset < -12,         "Min. Joint Cb-Cr QP Offset is -12" );
-  xConfirmPara( m_cbCrQpOffset >  12,         "Max. Joint Cb-Cr QP Offset is  12" );
-  xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12" );
-  xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12" );
-
+#if JVET_O0376_SPS_JCCR_FLAG
+  if (m_JccrMode)
+  {
+    xConfirmPara(m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
+    xConfirmPara(m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
+    xConfirmPara(m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
+    xConfirmPara(m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
+  }
+#else
+  xConfirmPara(m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
+  xConfirmPara(m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
+  xConfirmPara(m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
+  xConfirmPara(m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
+#endif
   xConfirmPara( m_iQPAdaptationRange <= 0,                                                  "QP Adaptation Range must be more than 0" );
   if (m_iDecodingRefreshType == 2)
   {
@@ -3377,6 +3392,9 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "RDPCM:%d ", m_RdpcmMode );
+#if JVET_O0376_SPS_JCCR_FLAG
+    msg(VERBOSE, "JCCR:%d ", m_JccrMode);
+#endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );

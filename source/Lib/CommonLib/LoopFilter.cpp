@@ -990,9 +990,9 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
 #if JVET_O0119_BASE_PALETTE_444
           if (spsPaletteEnabledFlag)
           {
-            // check if each of PUs is palette coded
-            bPartPNoFilter = bPartPNoFilter || CU::isPLT(cuP);
-            bPartQNoFilter = bPartQNoFilter || CU::isPLT(cuQ);
+           // check if each of PUs is palette coded
+           bPartPNoFilter = bPartPNoFilter || CU::isPLT(cuP);
+           bPartQNoFilter = bPartQNoFilter || CU::isPLT(cuQ);
           }
 #endif
 

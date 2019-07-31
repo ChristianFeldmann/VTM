@@ -128,7 +128,6 @@ public:
           m_line--;
         }
         break;
-
 #if JVET_O0119_BASE_PALETTE_444
       case SCAN_TRAV_HOR:
       {
@@ -809,8 +808,8 @@ bool g_isReusedUniMVsFilled[32][32][8][8];
 #endif
 
 #if JVET_O0119_BASE_PALETTE_444
-const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
-uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
-uint8_t g_paletteRunLeftLut[5] = { 0, 3, 3, 4, 4 };
+const uint8_t g_uhPLTQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
+uint8_t g_ucRunTopLut[5] = { 0, 1, 1, 2, 2 };
+uint8_t g_ucRunLeftLut[5] = { 0, 3, 3, 4, 4 };
 #endif
 //! \}

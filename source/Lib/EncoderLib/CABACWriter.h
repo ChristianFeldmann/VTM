@@ -204,7 +204,7 @@ private:
   Ctx               m_TestCtx;
   EncCu*            m_EncCu;
 #if JVET_O0119_BASE_PALETTE_444
-  ScanElement*      m_scanOrder;
+  ScanElement*      m_puiScanOrder;
 #endif
 };
 

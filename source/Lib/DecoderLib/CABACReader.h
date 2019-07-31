@@ -73,6 +73,9 @@ public:
   // coding (quad)tree (clause 7.3.8.4)
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
   PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ModeType    mode_constraint           ( CodingStructure&              cs,     Partitioner&    pm,       const PartSplit splitMode );
+#endif
 
   // coding unit (clause 7.3.8.5)
   bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );

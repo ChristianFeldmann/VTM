@@ -76,6 +76,9 @@ namespace CU
   void addPUs                         (      CodingUnit& cu);
 
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ModeType  getModeTypeAtDepth        (const CodingUnit& cu, const unsigned depth);
+#endif
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
 #if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS

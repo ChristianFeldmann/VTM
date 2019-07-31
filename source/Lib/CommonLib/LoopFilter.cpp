@@ -661,7 +661,11 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   }
 
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
+#else
   const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType);
+#endif
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
   if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))

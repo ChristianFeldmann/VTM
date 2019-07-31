@@ -298,6 +298,11 @@ struct CodingUnit : public UnitArea
   int8_t          chromaQpAdj;
   int8_t          qp;
   SplitSeries    splitSeries;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  TreeType       treeType;
+  ModeType       modeType;
+  ModeTypeSeries modeTypeSeries;
+#endif
   bool           skip;
   bool           mmvdSkip;
   bool           affine;
@@ -352,6 +357,11 @@ struct CodingUnit : public UnitArea
   const uint8_t     checkAllowedSbt() const;
 #if JVET_O1124_ALLOW_CCLM_COND
   const bool        checkCCLMAllowed() const;
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const bool        isSepTree() const;
+  const bool        isConsInter() const { return modeType == MODE_TYPE_INTER; }
+  const bool        isConsIntra() const { return modeType == MODE_TYPE_INTRA; }
 #endif
 };
 

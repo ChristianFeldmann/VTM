@@ -134,7 +134,24 @@ void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
 }
 
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+unsigned DeriveCtx::CtxModeConsFlag( const CodingStructure& cs, Partitioner& partitioner )
+{
+  assert( partitioner.chType == CHANNEL_TYPE_LUMA );
+  const Position pos = partitioner.currArea().blocks[partitioner.chType];
+  const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
+  const unsigned curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
 
+  // get left depth
+  const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
+
+  // get above depth
+  const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
+
+  unsigned ctxId = ((cuAbove && cuAbove->predMode == MODE_INTRA) || (cuLeft && cuLeft->predMode == MODE_INTRA)) ? 1 : 0;
+  return ctxId;
+}
+#endif
 
 
 void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* _canSplit /*= nullptr */ )

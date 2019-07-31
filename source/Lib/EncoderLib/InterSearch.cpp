@@ -7612,7 +7612,7 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
 #if JVET_O0249_MERGE_SYNTAX
     if (cu.firstPU->mhIntraFlag)
     {
-      fracBits += 99999; // CIIP shouldn't be skip, just add some large number, the upper level function will deal with it
+      // CIIP shouldn't be skip, the upper level function will deal with it, i.e. setting the overall cost to MAX_DOUBLE
     }
     else
     {
@@ -7861,6 +7861,9 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
   m_CABACEstimator->merge_flag(pu);
   if (pu.mergeFlag)
   {
+#if JVET_O0249_MERGE_SYNTAX
+    m_CABACEstimator->merge_data(pu);
+#else
     if (CU::isIBC(*pu.cu))
     {
       m_CABACEstimator->merge_idx(pu);
@@ -7888,6 +7891,7 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
       else
         m_CABACEstimator->merge_idx(pu);
     }
+#endif
   }
   return m_CABACEstimator->getEstFracBits();
 }

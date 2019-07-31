@@ -3764,7 +3764,7 @@ void PU::spanMotionInfo( PredictionUnit &pu, const MergeCtx &mrgCtx )
     {
       mi.interDir = pu.interDir;
 #if JVET_O0057_ALTHPELIF
-      mi.useAltHpelIf = pu.cu->useAltHpelIf;
+      mi.useAltHpelIf = pu.cu->imv == IMV_HPEL;
 #endif
 
       for( int i = 0; i < NUM_REF_PIC_LIST_01; i++ )

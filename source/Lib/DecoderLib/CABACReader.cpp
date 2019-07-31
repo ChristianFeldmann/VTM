@@ -939,7 +939,6 @@ void CABACReader::imv_mode( CodingUnit& cu, MergeCtx& mrgCtx )
       value = m_BinDecoder.decodeBin(Ctx::ImvFlag(4));
       DTRACE(g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", value, 4);
       cu.imv = value ? 1 : IMV_HPEL;
-      cu.useAltHpelIf = cu.imv == IMV_HPEL;
     }
     if (value)
     {

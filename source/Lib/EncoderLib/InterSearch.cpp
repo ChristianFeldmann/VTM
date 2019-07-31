@@ -1286,7 +1286,7 @@ void InterSearch::xIBCEstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
   cStruct.iRefStride = refBuf.stride;
   cStruct.piRefY = refBuf.buf;
 #if JVET_O0057_ALTHPELIF
-  CHECK(pu.cu->imv == IMV_HPEL || pu.cu->useAltHpelIf, "IF_IBC");
+  CHECK(pu.cu->imv == IMV_HPEL, "IF_IBC");
 #endif
   cStruct.imvShift = pu.cu->imv << 1;
   cStruct.subShiftMode = 0; // used by intra pattern search function
@@ -3346,7 +3346,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
   cStruct.piRefY        = buf.buf;
 #if JVET_O0057_ALTHPELIF
   cStruct.imvShift = pu.cu->imv == IMV_HPEL ? 1 : (pu.cu->imv << 1);
-  cStruct.useAltHpelIf = pu.cu->useAltHpelIf;
+  cStruct.useAltHpelIf = pu.cu->imv == IMV_HPEL;
 #else
   cStruct.imvShift      = pu.cu->imv << 1;
 #endif

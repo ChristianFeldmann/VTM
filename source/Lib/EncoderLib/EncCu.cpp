@@ -3288,9 +3288,6 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
     cu.qp = encTestMode.qp;
     cu.imv = 0;
     cu.sbtInfo = 0;
-#if JVET_O0057_ALTHPELIF
-    cu.useAltHpelIf = false;
-#endif
 
     CU::addPUs(cu);
 
@@ -3646,7 +3643,6 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   if (testAltHpelFilter)
   {
     cu.imv = IMV_HPEL;
-    cu.useAltHpelIf = true;
   }
   else
   {

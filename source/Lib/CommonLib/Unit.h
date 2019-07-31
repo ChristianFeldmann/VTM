@@ -307,9 +307,6 @@ struct CodingUnit : public UnitArea
   int            bdpcmMode;
   bool           ipcm;
   uint8_t          imv;
-#if JVET_O0057_ALTHPELIF
-  bool           useAltHpelIf;
-#endif
   bool           rootCbf;
   uint8_t        sbtInfo;
   uint32_t           tileIdx;

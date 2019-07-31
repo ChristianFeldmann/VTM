@@ -2862,7 +2862,11 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #endif
 {
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || cu.mipFlag == true ||
-    ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) )
+    ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
+#if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+    || ( cu.blocks[ 0 ].width > MAX_TB_SIZEY || cu.blocks[ 0 ].height > MAX_TB_SIZEY )
+#endif
+    )
   {
     return;
   }

@@ -501,7 +501,11 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mmvdMergeFlag = true;
   pu.mmvdMergeIdx = candIdx;
   pu.mergeFlag = true;
+#if JVET_O0249_MERGE_SYNTAX
+  pu.regularMergeFlag = true;
+#else
   pu.regularMergeFlag = false;
+#endif
   pu.mergeIdx = candIdx;
   pu.mergeType = MRG_TYPE_DEFAULT_N;
   pu.mvd[REF_PIC_LIST_0] = Mv();

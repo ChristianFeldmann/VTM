@@ -7382,6 +7382,9 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     PredictionUnit &pu = *cs.getPU( partitioner.chType );
 
     m_CABACEstimator->cu_skip_flag  ( cu );
+#if JVET_O0249_MERGE_SYNTAX
+    m_CABACEstimator->merge_data(pu);
+#else
     if (CU::isIBC(cu))
     {
       m_CABACEstimator->merge_idx(pu);
@@ -7403,6 +7406,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
           m_CABACEstimator->merge_idx     ( pu );
       }
     }
+#endif
 
     cs.dist     = distortion;
     cs.fracBits = m_CABACEstimator->getEstFracBits();
@@ -7605,6 +7609,16 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
     }
 
     m_CABACEstimator->cu_skip_flag  ( cu );
+#if JVET_O0249_MERGE_SYNTAX
+    if (cu.firstPU->mhIntraFlag)
+    {
+      // CIIP shouldn't be skip, the upper level function will deal with it, i.e. setting the overall cost to MAX_DOUBLE
+    }
+    else
+    {
+      m_CABACEstimator->merge_data(*cu.firstPU);
+    }
+#else
     if (cu.firstPU->regularMergeFlag)
     {
       m_CABACEstimator->merge_idx(*cu.firstPU);
@@ -7619,6 +7633,7 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
       else
         m_CABACEstimator->merge_idx     ( *cu.firstPU );
     }
+#endif
     fracBits   += m_CABACEstimator->getEstFracBits();
   }
   else
@@ -7846,6 +7861,9 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
   m_CABACEstimator->merge_flag(pu);
   if (pu.mergeFlag)
   {
+#if JVET_O0249_MERGE_SYNTAX
+    m_CABACEstimator->merge_data(pu);
+#else
     if (CU::isIBC(*pu.cu))
     {
       m_CABACEstimator->merge_idx(pu);
@@ -7873,6 +7891,7 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
       else
         m_CABACEstimator->merge_idx(pu);
     }
+#endif
   }
   return m_CABACEstimator->getEstFracBits();
 }

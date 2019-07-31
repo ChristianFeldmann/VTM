@@ -1739,8 +1739,20 @@ void CABACWriter::imv_mode( const CodingUnit& cu )
 
   if( sps->getAMVREnabledFlag() && cu.imv > 0 )
   {
+#if JVET_O0057_ALTHPELIF
+    if (!CU::isIBC(cu))
+    {
+      m_BinEncoder.encodeBin(cu.imv < IMV_HPEL, Ctx::ImvFlag(4));
+      DTRACE(g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", cu.imv < 3, 4);
+    }
+    if (cu.imv < IMV_HPEL)
+    {
+#endif
     m_BinEncoder.encodeBin( (cu.imv > 1), Ctx::ImvFlag( 1 ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() value=%d ctx=%d\n", (cu.imv > 1), 1 );
+#if JVET_O0057_ALTHPELIF
+    }
+#endif
   }
 
   DTRACE( g_trace_ctx, D_SYNTAX, "imv_mode() IMVFlag=%d\n", cu.imv );
@@ -2295,6 +2307,23 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
   int       verMvd = rMvd.getVer();
   if ( imv > 0 )
   {
+#if JVET_O0057_ALTHPELIF
+    CHECK((horMvd % 2) != 0 && (verMvd % 2) != 0, "IMV: MVD is not a multiple of 2");
+    horMvd >>= 1;
+    verMvd >>= 1;
+    if (imv < IMV_HPEL)
+    {
+      CHECK((horMvd % 2) != 0 && (verMvd % 2) != 0, "IMV: MVD is not a multiple of 4");
+      horMvd >>= 1;
+      verMvd >>= 1;
+      if (imv == IMV_4PEL)//IMV_4PEL
+      {
+        CHECK((horMvd % 4) != 0 && (verMvd % 4) != 0, "IMV: MVD is not a multiple of 16");
+        horMvd >>= 2;
+        verMvd >>= 2;
+      }
+    }
+#else
     CHECK( (horMvd % 4) != 0 && (verMvd % 4) != 0, "IMV: MVD is not a multiple of 4" );
     horMvd >>= 2;
     verMvd >>= 2;
@@ -2304,6 +2333,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
       horMvd >>= 2;
       verMvd >>= 2;
     }
+#endif
   }
   unsigned  horAbs  = unsigned( horMvd < 0 ? -horMvd : horMvd );
   unsigned  verAbs  = unsigned( verMvd < 0 ? -verMvd : verMvd );

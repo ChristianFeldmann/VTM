@@ -788,6 +788,15 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#if JVET_O0057_ALTHPELIF
+const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
+({
+  { 212, 180, 183, 242, 242, },
+  { 213, 166, 198, 244, 244, },
+  { CNU, 182, CNU, CNU, CNU, },
+  {   1,   5,   1,   0,   0, },
+});
+#else
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
   { 212, 180, 183, 242, },
@@ -795,6 +804,7 @@ const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
   { CNU, 182, CNU, CNU, },
   {   1,   5,   1,   0, },
 });
+#endif
 
 const CtxSet ContextSetCfg::ctbAlfFlag = ContextSetCfg::addCtxSet
 ({

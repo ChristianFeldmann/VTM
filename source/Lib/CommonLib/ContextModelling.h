@@ -507,6 +507,10 @@ public:
   MotionBuf     subPuMvpExtMiBuf;
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
+#if JVET_O0057_ALTHPELIF
+  bool          mmvdUseAltHpelIf  [ MMVD_BASE_MV_NUM ];
+  bool          useAltHpelIf      [ MRG_MAX_NUM_CANDS ];
+#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 

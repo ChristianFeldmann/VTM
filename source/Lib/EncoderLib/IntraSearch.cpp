@@ -2967,7 +2967,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       bool       lastIsBest     = false;
       std::vector<int>  jointCbfMasksToTest;
 #if JVET_O0376_SPS_JCCR_FLAG
-      if (cs.sps->getJCCREnabledFlag())
+      if ( cs.sps->getJCCREnabledFlag() )
       {
         if (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr))
         {

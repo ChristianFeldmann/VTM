@@ -6930,7 +6930,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       const CompArea& cbArea = tu.blocks[COMPONENT_Cb];
       const CompArea& crArea = tu.blocks[COMPONENT_Cr];
 #if JVET_O0376_SPS_JCCR_FLAG
-      bool checkJointCbCr = (tu.cu->slice->getSPS()->getJCCREnabledFlag()) &&(!tu.noResidual) && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
+      bool checkJointCbCr = (tu.cu->slice->getSPS()->getJCCREnabledFlag()) && (!tu.noResidual) && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
 #else
       bool checkJointCbCr = !tu.noResidual && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
 #endif

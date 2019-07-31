@@ -2502,7 +2502,7 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 void CABACWriter::joint_cb_cr( const TransformUnit& tu, const int cbfMask )
 {
 #if JVET_O0376_SPS_JCCR_FLAG
-  if (!tu.cu->slice->getSPS()->getJCCREnabledFlag())
+  if ( !tu.cu->slice->getSPS()->getJCCREnabledFlag() )
   {
     return;
   }

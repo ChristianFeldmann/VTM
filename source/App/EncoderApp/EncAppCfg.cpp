@@ -2504,16 +2504,16 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_O0376_SPS_JCCR_FLAG
   if (m_JccrMode)
   {
-    xConfirmPara(m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
-    xConfirmPara(m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
-    xConfirmPara(m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
-    xConfirmPara(m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
+    xConfirmPara( m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
+    xConfirmPara( m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
+    xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
+    xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
   }
 #else
-  xConfirmPara(m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
-  xConfirmPara(m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
-  xConfirmPara(m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
-  xConfirmPara(m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
+  xConfirmPara( m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
+  xConfirmPara( m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
+  xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
+  xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
 #endif
   xConfirmPara( m_iQPAdaptationRange <= 0,                                                  "QP Adaptation Range must be more than 0" );
   if (m_iDecodingRefreshType == 2)

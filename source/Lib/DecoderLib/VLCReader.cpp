@@ -1221,7 +1221,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 #if JVET_O0376_SPS_JCCR_FLAG
-  READ_FLAG(uiCode, "sps_jccr_enabled_flag");                      pcSPS->setJCCREnabledFlag(uiCode ? true : false);
+  READ_FLAG( uiCode, "sps_jccr_enabled_flag");                      pcSPS->setJCCREnabledFlag (uiCode ? true : false);
 #endif
   READ_FLAG( uiCode, "sps_pcm_enabled_flag" );                          pcSPS->setPCMEnabledFlag( uiCode ? true : false );
   if( pcSPS->getPCMEnabledFlag() )
@@ -2070,7 +2070,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_O0376_SPS_JCCR_FLAG
     if (bChroma && sps->getJCCREnabledFlag())
     {
-      READ_FLAG(uiCode, "joint_cb_cr_sign_flag"); pcSlice->setJointCbCrSignFlag(uiCode != 0);
+      READ_FLAG( uiCode, "joint_cb_cr_sign_flag" ); pcSlice->setJointCbCrSignFlag(uiCode != 0);
     }
     else
     {
@@ -2079,7 +2079,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #else
     if (bChroma)
     {
-      READ_FLAG(uiCode, "joint_cb_cr_sign_flag"); pcSlice->setJointCbCrSignFlag(uiCode != 0);
+      READ_FLAG( uiCode, "joint_cb_cr_sign_flag" ); pcSlice->setJointCbCrSignFlag(uiCode != 0);
     }
 #endif 
 #endif
@@ -2114,20 +2114,20 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_O0376_SPS_JCCR_FLAG
         if (sps->getJCCREnabledFlag())
         {
-          READ_SVLC(iCode, "slice_cb_cr_qp_offset");
+          READ_SVLC(iCode, "slice_cb_cr_qp_offset" );
           pcSlice->setSliceChromaQpDelta(JOINT_CbCr, iCode);
-          CHECK(pcSlice->getSliceChromaQpDelta(JOINT_CbCr) < -12, "Invalid chroma QP offset");
-          CHECK(pcSlice->getSliceChromaQpDelta(JOINT_CbCr) >  12, "Invalid chroma QP offset");
-          CHECK((pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) < -12, "Invalid chroma QP offset");
-          CHECK((pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) >  12, "Invalid chroma QP offset");
+          CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) < -12, "Invalid chroma QP offset");
+          CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) >  12, "Invalid chroma QP offset");
+          CHECK( (pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) < -12, "Invalid chroma QP offset");
+          CHECK( (pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) >  12, "Invalid chroma QP offset");
         }
 #else
         READ_SVLC(iCode, "slice_cb_cr_qp_offset");
         pcSlice->setSliceChromaQpDelta(JOINT_CbCr, iCode);
-        CHECK(pcSlice->getSliceChromaQpDelta(JOINT_CbCr) < -12, "Invalid chroma QP offset");
-        CHECK(pcSlice->getSliceChromaQpDelta(JOINT_CbCr) >  12, "Invalid chroma QP offset");
-        CHECK((pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) < -12, "Invalid chroma QP offset");
-        CHECK((pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) >  12, "Invalid chroma QP offset");
+        CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) < -12, "Invalid chroma QP offset");
+        CHECK( pcSlice->getSliceChromaQpDelta(JOINT_CbCr) >  12, "Invalid chroma QP offset");
+        CHECK( (pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) < -12, "Invalid chroma QP offset");
+        CHECK( (pps->getQpOffset(JOINT_CbCr) + pcSlice->getSliceChromaQpDelta(JOINT_CbCr)) >  12, "Invalid chroma QP offset");
 #endif
       }
     }
@@ -2314,7 +2314,7 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol,  "no_sao_constraint_flag");                    cinfo->setNoSaoConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_alf_constraint_flag");                    cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);
 #if JVET_O0376_SPS_JCCR_FLAG
-  READ_FLAG(symbol, "no_jccr_constraint_flag");                    cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);
+  READ_FLAG(symbol,  "no_jccr_constraint_flag");                   cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);
 #endif
 
   READ_FLAG(symbol,  "no_pcm_constraint_flag");                    cinfo->setNoPcmConstraintFlag(symbol > 0 ? true : false);

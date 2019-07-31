@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_O0376_SPS_JCCR_FLAG                          1 // JVET-O0376: add the JCCR control flag in SPS
+
 
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
@@ -165,6 +165,8 @@
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
+
+#define JVET_O0376_SPS_JCCR_FLAG                          1 // JVET-O0376: add the JCCR control flag in SPS
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 

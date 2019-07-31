@@ -2629,7 +2629,7 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 void CABACReader::joint_cb_cr( TransformUnit& tu, const int cbfMask )
 {
 #if JVET_O0376_SPS_JCCR_FLAG
-  if (!tu.cu->slice->getSPS()->getJCCREnabledFlag())
+  if ( !tu.cu->slice->getSPS()->getJCCREnabledFlag() )
   {
     return;
   }

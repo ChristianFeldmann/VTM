@@ -1211,13 +1211,21 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
 
   if( iRefIdx0 >= 0 && iRefIdx1 >= 0 )
   {
+#if JVET_O0681_DIS_BPWA_CIIP
+    if( pu.cu->GBiIdx != GBI_DEFAULT && (yuvDstTmp || !pu.mhIntraFlag) )
+#else
     if( pu.cu->GBiIdx != GBI_DEFAULT )
+#endif
     {
       CHECK(bioApplied, "GBi is disallowed with BIO");
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
 #if JVET_O0108_DIS_DMVR_BDOF_CIIP
       if (yuvDstTmp)
+#if JVET_O0681_DIS_BPWA_CIIP
+        yuvDstTmp->addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, false);
+#else
         yuvDstTmp->copyFrom(pcYuvDst);
+#endif
 #endif
       return;
     }

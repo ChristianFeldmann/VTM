@@ -2405,19 +2405,18 @@ void InterPrediction::xFillIBCBuffer(CodingUnit &cu)
   {
     for (const CompArea &area : currPU.blocks)
     {
-      if (!area.valid()) continue;;
+      if (!area.valid())
+        continue;
 
       const unsigned int lcuWidth = cu.cs->slice->getSPS()->getMaxCUWidth();
-      int shiftSample = ::getComponentScaleX(area.compID, cu.chromaFormat);
+      const int shiftSample = ::getComponentScaleX(area.compID, cu.chromaFormat);
       const int ctuSizeLog2 = g_aucLog2[lcuWidth] - shiftSample;
       const int pux = area.x & ((m_IBCBufferWidth >> shiftSample) - 1);
       const int puy = area.y & (( 1 << ctuSizeLog2 ) - 1);
-      assert(area.width <= (1 << ctuSizeLog2));
-      assert(puy + area.height <= (1 << ctuSizeLog2));
-      assert(pux + area.width <= (m_IBCBufferWidth >> shiftSample));
       const CompArea dstArea = CompArea(area.compID, cu.chromaFormat, Position(pux, puy), Size(area.width, area.height));
       CPelBuf srcBuf = cu.cs->getRecoBuf(area);
       PelBuf dstBuf = m_IBCBuffer.getBuf(dstArea);
+
       dstBuf.copyFrom(srcBuf);
     }
   }
@@ -2444,86 +2443,25 @@ void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, c
   refx &= ((m_IBCBufferWidth >> shiftSample) - 1);
   refy &= ((1 << ctuSizeLog2) - 1);
 
-  if (compID == COMPONENT_Y)
+  if (refx + predBuf.bufs[compID].width <= (m_IBCBufferWidth >> shiftSample))
   {
-    if (refx + predBuf.Y().width <= (m_IBCBufferWidth >> shiftSample))
-    {
-      const CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(predBuf.Y().width, predBuf.Y().height));
-      const CPelBuf refBuf = m_IBCBuffer.getBuf(srcArea);
-      predBuf.Y().copyFrom(refBuf);
-    }
-    else
-    {//wrap around
-      {
-        int width = (m_IBCBufferWidth >> shiftSample) - refx;
-        const CompArea srcArea = CompArea(compID, pu.cu->chromaFormat, Position(refx, refy), Size(width, predBuf.Y().height));
-        CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
-        PelBuf dstBuf = PelBuf(predBuf.Y().bufAt(Position(0, 0)), predBuf.Y().stride, Size(width, predBuf.Y().height));
-        dstBuf.copyFrom(srcBuf);
-      }
-      {
-        int width = refx + predBuf.Y().width - (m_IBCBufferWidth >> shiftSample);
-        const CompArea srcArea = CompArea(compID, pu.cu->chromaFormat, Position(0, refy), Size(width, predBuf.Y().height));
-        CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
-        PelBuf dstBuf = PelBuf(predBuf.Y().bufAt(Position((m_IBCBufferWidth >> shiftSample) - refx, 0)), predBuf.Y().stride, Size(width, predBuf.Y().height));
-        dstBuf.copyFrom(srcBuf);
-      }
-    }
+    const CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(predBuf.bufs[compID].width, predBuf.bufs[compID].height));
+    const CPelBuf refBuf = m_IBCBuffer.getBuf(srcArea);
+    predBuf.bufs[compID].copyFrom(refBuf);
   }
   else
-  {
-    if (compID == COMPONENT_Cb)
-    {//Cb
-      if (refx + predBuf.Cb().width <= (m_IBCBufferWidth >> shiftSample))
-      {
-        const CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(predBuf.Cb().width, predBuf.Cb().height));
-        const CPelBuf refBuf = m_IBCBuffer.getBuf(srcArea);
-        predBuf.Cb().copyFrom(refBuf);
-      }
-      else
-      {//wrap around
-        {
-          int width = (m_IBCBufferWidth >> shiftSample) - refx;
-          const CompArea srcArea = CompArea(compID, pu.cu->chromaFormat, Position(refx, refy), Size(width, predBuf.Cb().height));
-          CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
-          PelBuf dstBuf = PelBuf(predBuf.Cb().bufAt(Position(0, 0)), predBuf.Cb().stride, Size(width, predBuf.Cb().height));
-          dstBuf.copyFrom(srcBuf);
-        }
-        {
-          int width = refx + predBuf.Cb().width - (m_IBCBufferWidth >> shiftSample);
-          const CompArea srcArea = CompArea(compID, pu.cu->chromaFormat, Position(0, refy), Size(width, predBuf.Cb().height));
-          CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
-          PelBuf dstBuf = PelBuf(predBuf.Cb().bufAt(Position((m_IBCBufferWidth >> shiftSample) - refx, 0)), predBuf.Cb().stride, Size(width, predBuf.Cb().height));
-          dstBuf.copyFrom(srcBuf);
-        }
-      }
-    }
-    else
-    {//Cr
-      if (refx + predBuf.Cb().width <= (m_IBCBufferWidth >> shiftSample))
-      {
-        const CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(predBuf.Cr().width, predBuf.Cr().height));
-        const CPelBuf refBuf = m_IBCBuffer.getBuf(srcArea);
-        predBuf.Cr().copyFrom(refBuf);
-      }
-      else
-      {//wrap around
-        {
-          int width = (m_IBCBufferWidth >> shiftSample) - refx;
-          const CompArea srcArea = CompArea(compID, pu.cu->chromaFormat, Position(refx, refy), Size(width, predBuf.Cr().height));
-          CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
-          PelBuf dstBuf = PelBuf(predBuf.Cr().bufAt(Position(0, 0)), predBuf.Cr().stride, Size(width, predBuf.Cr().height));
-          dstBuf.copyFrom(srcBuf);
-        }
-        {
-          int width = refx + predBuf.Cr().width - (m_IBCBufferWidth >> shiftSample);
-          const CompArea srcArea = CompArea(compID, pu.cu->chromaFormat, Position(0, refy), Size(width, predBuf.Cr().height));
-          CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
-          PelBuf dstBuf = PelBuf(predBuf.Cr().bufAt(Position((m_IBCBufferWidth >> shiftSample) - refx, 0)), predBuf.Cr().stride, Size(width, predBuf.Cr().height));
-          dstBuf.copyFrom(srcBuf);
-        }
-      }
-    }
+  {//wrap around
+    int width = (m_IBCBufferWidth >> shiftSample) - refx;
+    CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(width, predBuf.bufs[compID].height));
+    CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
+    PelBuf dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position(0, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
+    dstBuf.copyFrom(srcBuf);
+
+    width = refx + predBuf.bufs[compID].width - (m_IBCBufferWidth >> shiftSample);
+    srcArea = CompArea(compID, pu.chromaFormat, Position(0, refy), Size(width, predBuf.bufs[compID].height));
+    srcBuf = m_IBCBuffer.getBuf(srcArea);
+    dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position((m_IBCBufferWidth >> shiftSample) - refx, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
+    dstBuf.copyFrom(srcBuf);
   }
 }
 

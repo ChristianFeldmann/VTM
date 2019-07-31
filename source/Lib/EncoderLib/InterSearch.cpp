@@ -7992,6 +7992,7 @@ bool InterSearch::searchBv(PredictionUnit& pu, int xPos, int yPos, int width, in
   if (!pu.cs->isDecomp(refPosLT, chType))
     return false;
   return true;
-
 }
 #endif
+
+//! \}

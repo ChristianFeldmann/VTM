@@ -6725,10 +6725,18 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
           }
 #if JVET_O0105_ICT
-          if( isChroma( compID ) && tu.cu->cs->slice->getSliceQp() > 18 )
+#if JVET_O0376_SPS_JCCR_FLAG
+          if ( tu.cu->slice->getSPS()->getJCCREnabledFlag() && isChroma( compID ) && ( tu.cu->cs->slice->getSliceQp() > 18 ) )
           {
             m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
           }
+
+#else
+          if ( isChroma( compID ) && tu.cu->cs->slice->getSliceQp() > 18 )
+          {
+            m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
+          }
+#endif
 #endif
           TCoeff     currAbsSum = 0;
           uint64_t   currCompFracBits = 0;

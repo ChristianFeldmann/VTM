@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_O0070_PROF                                   1 // Prediction refinement with optical flow for affine mode
+#define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
 
 #define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
 

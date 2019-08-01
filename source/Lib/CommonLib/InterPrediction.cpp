@@ -971,7 +971,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     {
       for (int idx = 0; idx < blockWidth * blockHeight; idx++)
       {
-        roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], shift);  // 1/64-pel
+        roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], shift);
         dMvScaleHor[idx] = Clip3(-dmvLimit, dmvLimit - 1, dMvScaleHor[idx]);
         dMvScaleVer[idx] = Clip3(-dmvLimit, dmvLimit - 1, dMvScaleVer[idx]);
       }
@@ -1383,6 +1383,9 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
     {
       xApplyBiPROF(pu, pcYuvSrc0.bufs[COMPONENT_Y], pcYuvSrc1.bufs[COMPONENT_Y], pcYuvDst.bufs[COMPONENT_Y], clpRngs.comp[COMPONENT_Y]);
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx, true);
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+      CHECK(yuvDstTmp, "yuvDstTmp is disallowed with PROF");
+#endif
       return;
     }
 #endif

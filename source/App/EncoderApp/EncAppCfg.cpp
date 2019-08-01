@@ -715,15 +715,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   uint32_t lumaLevelToDeltaQPMode;
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  const int qpInVals[] = { 25, 33, 43 }; 
-  const int qpOutVals[] = { 25, 32, 37 };
-  SMultiValueInput<int> cfg_qpInValCb(-48, 63, 0, 112, qpInVals, sizeof(qpInVals)/sizeof(int));
-  SMultiValueInput<int> cfg_qpOutValCb(-48, 63, 0, 112, qpOutVals, sizeof(qpOutVals) / sizeof(int)); 
+  const int qpInVals[] = { 25, 33, 43 };                // qpInVal values used to derive the chroma QP mapping table used in VTM-5.0
+  const int qpOutVals[] = { 25, 32, 37 };               // qpOutVal values used to derive the chroma QP mapping table used in VTM-5.0
+  SMultiValueInput<int> cfg_qpInValCb                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpInVals, sizeof(qpInVals)/sizeof(int));
+  SMultiValueInput<int> cfg_qpOutValCb                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpOutVals, sizeof(qpOutVals) / sizeof(int));
   const int zeroVector[] = { 0 };
-  SMultiValueInput<int> cfg_qpInValCr(-48, 63, 0, 112, zeroVector, 1);
-  SMultiValueInput<int> cfg_qpOutValCr(-48, 63, 0, 112, zeroVector, 1);
-  SMultiValueInput<int> cfg_qpInValCbCr(-48, 63, 0, 112, zeroVector, 1);
-  SMultiValueInput<int> cfg_qpOutValCbCr(-48, 63, 0, 112, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCr                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCr                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCbCr                 (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCbCr                (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
 #endif
   const uint32_t defaultInputKneeCodes[3]  = { 600, 800, 900 };
   const uint32_t defaultOutputKneeCodes[3] = { 100, 250, 450 };

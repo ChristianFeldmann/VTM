@@ -2532,3 +2532,4 @@ bool InterPrediction::isLumaBvValid(const int ctuSize, const int xCb, const int 
 
 //! \}
 
+

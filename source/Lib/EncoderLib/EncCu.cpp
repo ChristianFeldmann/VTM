@@ -698,6 +698,9 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   int startShareThisLevel = 0;
   m_pcInterSearch->resetSavedAffineMotion();
 
+#if JVET_O0057_ALTHPELIF
+  double bestIntPelCost = MAX_DOUBLE;
+#endif
   do
   {
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
@@ -745,9 +748,21 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     {
       if( ( currTestMode.opts & ETO_IMV ) != 0 )
       {
-        tempCS->bestCS = bestCS;
-        xCheckRDCostInterIMV( tempCS, bestCS, partitioner, currTestMode );
-        tempCS->bestCS = nullptr;
+#if JVET_O0057_ALTHPELIF
+        const bool skipAltHpelIF = ( int( ( currTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT ) == 4 ) && ( bestIntPelCost > 1.25 * bestCS->cost );
+        if (!skipAltHpelIF)
+        {
+#endif
+          tempCS->bestCS = bestCS;
+#if JVET_O0057_ALTHPELIF
+          xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode, bestIntPelCost);
+#else
+          xCheckRDCostInterIMV(tempCS, bestCS, partitioner, currTestMode);
+#endif
+          tempCS->bestCS = nullptr;
+#if JVET_O0057_ALTHPELIF
+        }
+#endif
       }
       else
       {
@@ -1639,10 +1654,19 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   int    bestMtsFlag             =   0;
   int    bestLfnstIdx            =   0;
 
+#if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const int  maxLfnstIdx         = ( partitioner.isSepTree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) )
+#else
+  const int  maxLfnstIdx         = ( CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) )
+#endif
+                                   || ( partitioner.currArea().lwidth() > MAX_TB_SIZEY || partitioner.currArea().lheight() > MAX_TB_SIZEY ) ? 0 : 2;
+#else
 #if JVET_O0050_LOCAL_DUAL_TREE
   const int  maxLfnstIdx         = partitioner.isSepTree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) ? 0 : 2;
 #else
   const int  maxLfnstIdx         = CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) ? 0 : 2;
+#endif
 #endif
   bool       skipOtherLfnst      = false;
   int        startLfnstIdx       = 0;
@@ -2442,6 +2466,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
           m_CABACEstimator->getCtx() = ctxStart;
+#if JVET_O0249_MERGE_SYNTAX
+          pu.regularMergeFlag = false;
+#endif
           uint64_t fracBits = m_pcInterSearch->xCalcPuMeBits(pu);
           double cost = (double)sadValue + (double)fracBits * sqrtLambdaForFirstPassIntra;
           insertPos = -1;
@@ -2460,6 +2487,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       if ( pu.cs->sps->getUseMMVD() )
       {
         cu.mmvdSkip = true;
+#if JVET_O0249_MERGE_SYNTAX
+        pu.regularMergeFlag = true;
+#endif
         const int tempNum = (mergeCtx.numValidMergeCand > 1) ? MMVD_ADD_NUM : MMVD_ADD_NUM >> 1;
         for (int mmvdMergeCand = 0; mmvdMergeCand < tempNum; mmvdMergeCand++)
         {
@@ -2605,11 +2635,17 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       else if (RdModeList[uiMrgHADIdx].isMMVD)
       {
         cu.mmvdSkip = true;
+#if JVET_O0249_MERGE_SYNTAX
+        pu.regularMergeFlag = true;
+#endif
         mergeCtx.setMmvdMergeCandiInfo(pu, uiMergeCand);
       }
       else
       {
         cu.mmvdSkip = false;
+#if JVET_O0249_MERGE_SYNTAX
+        pu.regularMergeFlag = true;
+#endif
         mergeCtx.setMergeInfo(pu, uiMergeCand);
       }
       PU::spanMotionInfo( pu, mergeCtx );
@@ -3847,13 +3883,22 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
 
-
-bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
+#if JVET_O0057_ALTHPELIF
+bool EncCu::xCheckRDCostInterIMV(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, double &bestIntPelCost)
+#else
+bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
+#endif
 {
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
   m_pcInterSearch->setAffineModeSelected(false);
+#if JVET_O0057_ALTHPELIF
+  // Only int-Pel, 4-Pel and fast 4-Pel allowed
+  CHECK(iIMV < 1 || iIMV > 4, "Unsupported IMV Mode");
+  const bool testAltHpelFilter = iIMV == 4;
+#else
   // Only int-Pel, 4-Pel and fast 4-Pel allowed
   CHECK( iIMV != 1 && iIMV != 2 && iIMV != 3, "Unsupported IMV Mode" );
+#endif
   // Fast 4-Pel Mode
 
   m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
@@ -3924,11 +3969,26 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
 
   CU::addPUs( cu );
 
+#if JVET_O0057_ALTHPELIF
+  if (testAltHpelFilter)
+  {
+    cu.imv = IMV_HPEL;
+  }
+  else
+  {
+    cu.imv = iIMV == 1 ? IMV_FPEL : IMV_4PEL;
+  }
+#else
   cu.imv      = iIMV > 1 ? 2 : 1;
+#endif
 
   bool testGbi;
   uint8_t gbiIdx;
+#if JVET_O0057_ALTHPELIF
+  bool affineAmvrEanbledFlag = !testAltHpelFilter && cu.slice->getSPS()->getAffineAmvrEnabledFlag();
+#else
   bool affineAmvrEanbledFlag = cu.slice->getSPS()->getAffineAmvrEnabledFlag();
+#endif
 
   cu.GBiIdx = g_GbiSearchOrder[gbiLoopIdx];
   gbiIdx = cu.GBiIdx;
@@ -3993,6 +4053,12 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
                         , &equGBiCost
   );
 
+#if JVET_O0057_ALTHPELIF
+  if( cu.imv == IMV_FPEL && tempCS->cost < bestIntPelCost )
+  {
+    bestIntPelCost = tempCS->cost;
+  }
+#endif
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
 
   double skipTH = MAX_DOUBLE;

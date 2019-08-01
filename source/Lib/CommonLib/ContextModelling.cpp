@@ -346,6 +346,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mergeFlag               = true;
   pu.mmvdMergeFlag = false;
   pu.interDir                = interDirNeighbours[candIdx];
+#if JVET_O0057_ALTHPELIF
+  pu.cu->imv = (!pu.cu->triangle && useAltHpelIf[candIdx]) ? IMV_HPEL : 0;
+#endif
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
   pu.mv     [REF_PIC_LIST_0] = mvFieldNeighbours[(candIdx << 1) + 0].mv;
@@ -362,6 +365,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   {
     pu.bv = pu.mv[REF_PIC_LIST_0];
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
+#if JVET_O0057_ALTHPELIF
+    pu.cu->imv = pu.cu->imv == IMV_HPEL ? 0 : pu.cu->imv;
+#endif
   }
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
 
@@ -518,7 +524,11 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mmvdMergeFlag = true;
   pu.mmvdMergeIdx = candIdx;
   pu.mergeFlag = true;
+#if JVET_O0249_MERGE_SYNTAX
+  pu.regularMergeFlag = true;
+#else
   pu.regularMergeFlag = false;
+#endif
   pu.mergeIdx = candIdx;
   pu.mergeType = MRG_TYPE_DEFAULT_N;
   pu.mvd[REF_PIC_LIST_0] = Mv();
@@ -527,6 +537,9 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpIdx[REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
+#if JVET_O0057_ALTHPELIF
+  pu.cu->imv = mmvdUseAltHpelIf[fPosBaseIdx] ? IMV_HPEL : 0;
+#endif
 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
 

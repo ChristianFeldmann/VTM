@@ -6930,7 +6930,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       const CompArea& cbArea = tu.blocks[COMPONENT_Cb];
       const CompArea& crArea = tu.blocks[COMPONENT_Cr];
 #if JVET_O0376_SPS_JCCR_FLAG
-      bool checkJointCbCr = (tu.cu->slice->getSPS()->getJCCREnabledFlag()) && (!tu.noResidual) && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
+      bool checkJointCbCr = (sps.getJCCREnabledFlag()) && (!tu.noResidual) && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
 #else
       bool checkJointCbCr = !tu.noResidual && (TU::getCbf(tu, COMPONENT_Cb) || TU::getCbf(tu, COMPONENT_Cr));
 #endif
@@ -6991,10 +6991,17 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         const int    absIct = abs( TU::getICTMode(tu) );
         const double lfact  = ( absIct == 1 || absIct == 3 ? 0.8 : 0.5 );
         m_pcTrQuant->setLambda( lfact * m_pcTrQuant->getLambda() );
-        if( tu.cu->cs->slice->getSliceQp() > 18 )
+#if JVET_O0376_SPS_JCCR_FLAG
+        if (sps.getJCCREnabledFlag() && (tu.cu->cs->slice->getSliceQp() > 18))
+        {
+            m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
+        }
+#else
+        if ( tu.cu->cs->slice->getSliceQp() > 18 )
         {
           m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
         }
+#endif
 #else
         m_pcTrQuant->setLambda( 0.60 * m_pcTrQuant->getLambda() );
 #endif

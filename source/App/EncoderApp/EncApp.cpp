@@ -341,6 +341,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  m_cEncLib.setUseFastIntraPass                                  ( m_useFastIntraPass );
+#endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_LUMA  , m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA]   );

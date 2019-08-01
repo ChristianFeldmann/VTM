@@ -946,6 +946,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ("FastIntraPass",                                   m_useFastIntraPass,                               false,  "Fast intra pass coding for local dual-tree in intra coding region (SCIPU)")
+#endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
   ("MaxCUHeight",                                     m_uiMaxCUHeight,                                    64u)
@@ -3432,6 +3435,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "MaxNumAlfAlternativesChroma:%d ", m_maxNumAlfAlternativesChroma );
 #endif
   if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  msg( VERBOSE, "FastIntraPass:%d ", m_useFastIntraPass );
+#endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )

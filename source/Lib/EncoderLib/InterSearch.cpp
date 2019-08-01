@@ -6726,7 +6726,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           }
 #if JVET_O0105_ICT
 #if JVET_O0376_SPS_JCCR_FLAG
-          if ( tu.cu->slice->getSPS()->getJCCREnabledFlag() && isChroma( compID ) && ( tu.cu->cs->slice->getSliceQp() > 18 ) )
+          if ( sps.getJCCREnabledFlag() && isChroma( compID ) && ( tu.cu->cs->slice->getSliceQp() > 18 ) )
           {
             m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
           }

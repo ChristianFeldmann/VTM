@@ -1275,7 +1275,7 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
         int iQP = sps.getMappedChromaQpValue(ComponentID(chromaIdx + 1), ((cuP.qp + cuQ.qp + 1) >> 1));
-        int iQP = Clip3(0, MAX_QP, iQP + chromaQPOffset);
+        iQP = Clip3(0, MAX_QP, iQP + chromaQPOffset);
 #else
         int iQP = ( ( cuP.qp + cuQ.qp + 1 ) >> 1 ) + chromaQPOffset;
         if (iQP >= chromaQPMappingTableSize)

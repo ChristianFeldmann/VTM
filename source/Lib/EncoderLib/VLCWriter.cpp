@@ -157,7 +157,11 @@ void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
   xWriteRbspTrailingBits();
 }
 
+#if JVET_O0244_DELTA_POC
+void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc )
+#else
 void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount)
+#endif
 {
   WRITE_UVLC(rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures(), "num_ref_entries[ listIdx ][ rplsIdx ]");
   uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures();
@@ -181,6 +185,14 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
         prevDelta = rpl->getRefPicIdentifier(ii);
       }
       unsigned int absDeltaValue = (deltaValue < 0) ? 0 - deltaValue : deltaValue;
+#if JVET_O0244_DELTA_POC
+      if( isForbiddenZeroDeltaPoc )
+      {
+        CHECK( !absDeltaValue, "Zero delta POC is not used without WP" );
+        WRITE_UVLC( absDeltaValue - 1, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]" );
+      }
+      else
+#endif
       WRITE_UVLC(absDeltaValue, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]");
       if (absDeltaValue > 0)
         WRITE_FLAG((deltaValue < 0) ? 0 : 1, "strp_entry_sign_flag[ listIdx ][ rplsIdx ][ i ]");  //0  means negative delta POC : 1 means positive
@@ -764,7 +776,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   for (int ii = 0; ii < numberOfRPL; ii++)
   {
     const ReferencePictureList* rpl = rplList0->getReferencePictureList(ii);
+#if JVET_O0244_DELTA_POC
+    xCodeRefPicList( rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC(), !pcSPS->getUseWP() && !pcSPS->getUseWPBiPred() );
+#else
     xCodeRefPicList(rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC());
+#endif
   }
 
   //Write candidate for List1
@@ -775,7 +791,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     for (int ii = 0; ii < numberOfRPL; ii++)
     {
       const ReferencePictureList* rpl = rplList1->getReferencePictureList(ii);
+#if JVET_O0244_DELTA_POC
+      xCodeRefPicList( rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC(), !pcSPS->getUseWP() && !pcSPS->getUseWPBiPred() );
+#else
       xCodeRefPicList(rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC());
+#endif
     }
   }
   WRITE_FLAG(pcSPS->getUseDualITree(), "qtbtt_dual_tree_intra_flag");
@@ -808,8 +828,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
 #if MAX_TB_SIZE_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING
+  WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
+#else
   // KJS: Not in syntax
   WRITE_UVLC( pcSPS->getLog2MaxTbSize() - 2,                                 "log2_max_luma_transform_block_size_minus2" );
+#endif
+#endif
+#if JVET_O0244_DELTA_POC
+  WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
+  WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 #endif
   WRITE_FLAG( pcSPS->getSAOEnabledFlag(),                                            "sps_sao_enabled_flag");
   WRITE_FLAG( pcSPS->getALFEnabledFlag(),                                            "sps_alf_enabled_flag" );
@@ -1147,7 +1175,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
       else
       {  //write local RPL0
+#if JVET_O0244_DELTA_POC
+        xCodeRefPicList( pcSlice->getRPL0(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC(), !pcSlice->getSPS()->getUseWP() && !pcSlice->getSPS()->getUseWPBiPred() );
+#else
         xCodeRefPicList(pcSlice->getRPL0(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC());
+#endif
       }
       //Deal POC Msb cycle signalling for LTRP
       if (pcSlice->getRPL0()->getNumberOfLongtermPictures())
@@ -1171,7 +1203,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         CHECK(pcSlice->getRPL1idx() != pcSlice->getRPL0idx(), "RPL1Idx is not signalled but it is not the same as RPL0Idx");
         if (pcSlice->getRPL1idx() == -1)
         {  //write local RPL1
+#if JVET_O0244_DELTA_POC
+          xCodeRefPicList( pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC(), !pcSlice->getSPS()->getUseWP() && !pcSlice->getSPS()->getUseWPBiPred() );
+#else
           xCodeRefPicList(pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC());
+#endif
         }
       }
       else
@@ -1194,7 +1230,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
         else
         {  //write local RPL1
+#if JVET_O0244_DELTA_POC
+          xCodeRefPicList( pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC(), !pcSlice->getSPS()->getUseWP() && !pcSlice->getSPS()->getUseWPBiPred() );
+#else
           xCodeRefPicList(pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC());
+#endif
         }
       }
       //Deal POC Msb cycle signalling for LTRP
@@ -1403,13 +1443,20 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     }
     if( !pcSlice->isIntra() )
     {
-
+#if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+      if (pcSlice->getSPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !pcSlice->getSPS()->getUseAffine())// ATMVP only
+#else
       if ( pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // ATMVP only
+#endif
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 1, "Sub-block merge can number should be 1" );
       }
       else
+#if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+      if (!(pcSlice->getSPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !pcSlice->getSPS()->getUseAffine()) // both off
+#else
       if ( !pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // both off
+#endif
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 0, "Sub-block merge can number should be 0" );
       }

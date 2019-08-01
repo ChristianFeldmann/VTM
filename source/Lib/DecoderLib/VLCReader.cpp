@@ -309,6 +309,12 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
     if (!isLongTerm)
     {
       READ_UVLC(code, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]");
+#if JVET_O0244_DELTA_POC
+      if( !sps->getUseWP() && !sps->getUseWPBiPred() )
+      {
+        code++;
+      }
+#endif
       int readValue = code;
       if (readValue > 0)
         READ_FLAG(code, "strp_entry_sign_flag[ listIdx ][ rplsIdx ][ i ]");
@@ -1215,8 +1221,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
 
 #if MAX_TB_SIZE_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING
+  READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
+#else
   // KJS: Not in syntax
   READ_UVLC( uiCode, "log2_max_luma_transform_block_size_minus2" ); pcSPS->setLog2MaxTbSize( uiCode + 2 );
+#endif
+#endif
+#if JVET_O0244_DELTA_POC
+  READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
+  READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 #endif
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
@@ -1322,7 +1336,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
   if( pcSPS->getUseSBT() )
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(std::min((int)(1 << pcSPS->getLog2MaxTbSize()), uiCode != 0 ? 64 : 32));
+#else
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(uiCode != 0 ? 64 : 32);
+#endif
   }
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
@@ -2040,12 +2058,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if (!pcSlice->isIntra())
     {
-
+#if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+      if (sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !sps->getUseAffine()) // ATMVP only
+#else
       if ( sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // ATMVP only
+#endif
       {
         pcSlice->setMaxNumAffineMergeCand( 1 );
       }
+#if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+      else if (!(sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !sps->getUseAffine())// both off
+#else
       else if ( !sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // both off
+#endif
       {
         pcSlice->setMaxNumAffineMergeCand( 0 );
       }

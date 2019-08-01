@@ -751,6 +751,10 @@ private:
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t          m_log2MaxTbSize;
 #endif
+#if JVET_O0244_DELTA_POC
+  bool             m_useWeightPred;                     //!< Use of Weighting Prediction (P_SLICE)
+  bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
+#endif
 
   bool              m_saoEnabledFlag;
 
@@ -1057,6 +1061,13 @@ public:
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
   void      setUseMIP             ( bool b )                                        { m_MIP = b; }
   bool      getUseMIP             ()                                      const     { return m_MIP; }
+
+#if JVET_O0244_DELTA_POC
+  bool      getUseWP              ()                                      const     { return m_useWeightPred; }
+  bool      getUseWPBiPred        ()                                      const     { return m_useWeightedBiPred; }
+  void      setUseWP              ( bool b )                                        { m_useWeightPred = b; }
+  void      setUseWPBiPred        ( bool b )                                        { m_useWeightedBiPred = b; }
+#endif
 };
 
 

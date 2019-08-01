@@ -58,6 +58,10 @@
 
 #define JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING            1 // JVET-O0220 method-1: Parse merge_subblock_flag conditioned on MaxNumSubblockMergeCand
 
+#define JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP          1 // JVET-O0263/ JVET-O0220: Syntax cleanup on subblock merge
+
+#define JVET_O0060_4x4_deblocking                         1 // deblock on 4x4 grid
+
 #define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only
 
 #define JVET_O0616_400_CHROMA_SUPPORT                     1 // JVET-O0616: Various chroma format support in VVC
@@ -65,6 +69,8 @@
 #define JVET_O0265_TPM_SIMPLIFICATION                     1 // JVET-O0265/JVET-O0629/JVET-O0418/JVET-O0329/JVET-O0378/JVET-O0411/JVET-O0279:Simplified motion field storage for TPM
 
 #define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
+
+#define JVET_O0057_ALTHPELIF                              1  //AMVR_HPEL
 
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
@@ -128,6 +134,8 @@
 
 #define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
 
+#define JVET_O0545_MAX_TB_SIGNALLING                      1 // JVET-O0545: Configurable maximum transform size
+
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
 #define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
@@ -181,7 +189,7 @@
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 #define JVET_O0681_DIS_BPWA_CIIP                          1 // JVET-O0681 disable BCW for CIIP, method 2 inherit BCW index
-
+#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change 
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
@@ -195,7 +203,11 @@
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 
+#if JVET_O0545_MAX_TB_SIGNALLING
+#define MAX_TB_SIZE_SIGNALLING                            1
+#else
 #define MAX_TB_SIZE_SIGNALLING                            0
+#endif
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
@@ -208,7 +220,9 @@ typedef std::pair<int, int>  TrCost;
 #define REUSE_CU_RESULTS                                  1
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#if !JVET_O0545_MAX_TB_SIGNALLING
 #define MAX_NUM_TUS                                       4
+#endif
 #endif
 // clang-format on
 
@@ -972,8 +986,14 @@ enum EncModeFeature
 enum ImvMode
 {
   IMV_OFF = 0,
+#if JVET_O0057_ALTHPELIF
+  IMV_FPEL,
+  IMV_4PEL,
+  IMV_HPEL,
+#else
   IMV_DEFAULT,
   IMV_4PEL,
+#endif
   NUM_IMV_MODES
 };
 

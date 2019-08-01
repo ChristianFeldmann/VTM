@@ -866,7 +866,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
   ("IMV",                                             m_ImvMode,                                            1, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled\n"
-                                                                                                               "\t1: enabled (Full-Pel and 4-PEL)\n")
+                                                                                                               "\t1: enabled (1/2-Pel, Full-Pel and 4-PEL)\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
@@ -2531,6 +2531,9 @@ bool EncAppCfg::xCheckParameter()
 
 #if MAX_TB_SIZE_SIGNALLING
   xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
+#endif
+#if JVET_O0545_MAX_TB_SIGNALLING
+  xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
 #endif
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );

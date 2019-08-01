@@ -112,6 +112,9 @@ public:
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
   void        merge_flag                ( const PredictionUnit&         pu );
+#if JVET_O0249_MERGE_SYNTAX
+  void        merge_data                ( const PredictionUnit&         pu );
+#endif
   void        affine_flag               ( const CodingUnit&             cu );
   void        subblock_merge_flag       ( const CodingUnit&             cu );
   void        merge_idx                 ( const PredictionUnit&         pu );

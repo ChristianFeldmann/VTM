@@ -314,7 +314,12 @@ static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
+#if JVET_O0545_MAX_TB_SIGNALLING
+static const int MAX_NUM_TUS =                                     16; ///< Maximum number of TUs within one CU. When max TB size is 32x32, up to 16 TUs within one CU (128x128) is supported
+static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         3;
+#else
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
+#endif
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
@@ -324,7 +329,9 @@ static const int SCALING_LIST_REM_NUM =                             6;
 
 static const int QUANT_SHIFT =                                     14; ///< Q(4) = 2^14
 static const int IQUANT_SHIFT =                                     6;
-static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
+
+static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
+static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
 
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
 

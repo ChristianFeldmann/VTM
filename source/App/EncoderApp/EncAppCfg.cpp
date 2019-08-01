@@ -902,7 +902,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
   ( "RDPCM",                                         m_RdpcmMode,                                       false, "RDPCM")
 #if JVET_O0376_SPS_JCCR_FLAG
-    ("JCCR",                                          m_JccrMode,                                       false, "JCCR")
+  ("JCCR",                                            m_JccrMode,                                       false, "Enable joint coding of chroma residuals (JCCR, 0:off, 1:on)")
 #endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")

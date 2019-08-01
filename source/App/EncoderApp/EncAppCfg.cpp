@@ -715,10 +715,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   uint32_t lumaLevelToDeltaQPMode;
 #endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  //const int qpInVals[] = { 25, 33, 43 };  // Without incorporating CQP offset of 1
-  //const int qpOutVals[] = { 25, 32, 37 }; // Without incorporating CQP offset of 1
-  const int qpInVals[] = { 8, 25, 33, 43 };
-  const int qpOutVals[] = { 8, 26, 33, 38 };
+  const int qpInVals[] = { 25, 33, 43 }; 
+  const int qpOutVals[] = { 25, 32, 37 };
   SMultiValueInput<int> cfg_qpInValCb(-48, 63, 0, 112, qpInVals, sizeof(qpInVals)/sizeof(int));
   SMultiValueInput<int> cfg_qpOutValCb(-48, 63, 0, 112, qpOutVals, sizeof(qpOutVals) / sizeof(int)); 
   const int zeroVector[] = { 0 };

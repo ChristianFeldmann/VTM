@@ -174,7 +174,7 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 #if JVET_O0105_ICT
   const bool useJQP = isChroma(compID) && (abs(TU::getICTMode(tu)) == 2);
 #else
-  const bool useJQP = tu.jointCbCr;
+  const bool useJQP = isChroma(compID) && tu.jointCbCr;
 #endif
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
 #else

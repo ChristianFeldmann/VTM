@@ -912,7 +912,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseSBT                             ( m_SBT );
   if( sps.getUseSBT() )
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    sps.setMaxSbtSize                       ( std::min((int)(1 << m_log2MaxTbSize), m_iSourceWidth >= 1920 ? 64 : 32) );
+#else
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
+#endif
   }
   sps.setUseSMVD                ( m_SMVD );
   sps.setUseGBi                ( m_GBi );

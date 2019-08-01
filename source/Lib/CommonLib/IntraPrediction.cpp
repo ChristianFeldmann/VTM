@@ -1997,7 +1997,11 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
 void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 {
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#endif
 
   // derive above and left availability
   AvailableInfo availInfo = PU::getAvailableInfoLuma(pu);
@@ -2009,7 +2013,11 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#endif
   CHECK( pu.lwidth() != (1 << g_aucLog2[pu.lwidth()]) || pu.lheight() != (1 << g_aucLog2[pu.lheight()]), "Error: expecting blocks of size 2^M x 2^N" );
 
   // generate mode-specific prediction

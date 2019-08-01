@@ -4183,10 +4183,12 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
     sbtOffRootCbf = cu->rootCbf;
     currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > MTS_SKIP ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
     currBestTrs = cu->firstTU->mtsIdx;
+#if !JVET_O0545_MAX_TB_SIGNALLING
     if( cu->lwidth() <= MAX_TB_SIZEY && cu->lheight() <= MAX_TB_SIZEY )
     {
       CHECK( tempCS->tus.size() != 1, "tu must be only one" );
     }
+#endif
 
 #if WCG_EXT
     DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );

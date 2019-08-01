@@ -2963,7 +2963,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #if JVET_O0368_LFNST_WITH_DCT2_ONLY
   if ( CS::isDualITree(*cu.cs) ) cctx++;
 #else
+#if JVET_O0545_MAX_TB_SIGNALLING
+  if( ( cu.firstTU->mtsIdx < MTS_DST7_DST7 || !TU::getCbf(*cu.firstTU, COMPONENT_Y) ) && CS::isDualITree( *cu.cs ) ) cctx++;
+#else
   if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && CS::isDualITree( *cu.cs ) ) cctx++;
+#endif
 #endif
 
   const uint32_t idxLFNST = cu.lfnstIdx;
@@ -3623,7 +3627,11 @@ void CABACWriter::mip_flag( const CodingUnit& cu )
   {
     return;
   }
+#if JVET_O0545_MAX_TB_SIGNALLING
+  if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
+#else
   if( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT )
+#endif
   {
     return;
   }

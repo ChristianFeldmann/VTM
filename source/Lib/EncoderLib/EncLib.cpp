@@ -66,6 +66,9 @@ EncLib::EncLib()
   , m_cacheModel()
 #endif
   , m_lmcsAPS(nullptr)
+#if JVET_O0119_BASE_PALETTE_444
+  , m_doPlt( true )
+#endif
 {
   m_iPOCLast          = -1;
   m_iNumPicRcvd       =  0;
@@ -1694,6 +1697,39 @@ bool EncLib::SPSNeedsWriting(int spsId)
   return bChanged;
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+void EncLib::checkPltStats( Picture* pic )
+{
+  int totalArea = 0;
+  int pltArea = 0;
+  for (auto apu : pic->cs->pus)
+  {
+    for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
+    {
+      int puArea = apu->blocks[i].width * apu->blocks[i].height;
+      if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
+      {
+        totalArea += puArea;
+        if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
+        {
+          pltArea += puArea;
+        }
+        break;
+      }
+
+    }
+  }
+  if (pltArea * PLT_FAST_RATIO < totalArea)
+  {
+    m_doPlt = false;
+  }
+  else
+  {
+    m_doPlt = true;
+  }
+}
+#endif
+
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
 int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 {
@@ -1764,5 +1800,6 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
   return qp;
 }
 #endif
+
 
 //! \}

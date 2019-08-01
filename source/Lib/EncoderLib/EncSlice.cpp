@@ -1287,9 +1287,6 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
 
 /** \param pcPic   picture class
  */
-#if JVET_O0119_BASE_PALETTE_444
-extern bool doPlt;
-#endif
 void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP )
 {
   // if bCompressEntireSlice is true, then the entire slice (not slice segment) is compressed,
@@ -1395,7 +1392,12 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   bool checkPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
   if (checkPLTRatio)
   {
-    doPlt = true;
+    m_pcCuEncoder->getModeCtrl()->setPltEnc(true);
+  }
+  else
+  {
+    bool doPlt = m_pcLib->getPltEnc();
+    m_pcCuEncoder->getModeCtrl()->setPltEnc(doPlt);
   }
 #endif
 
@@ -1434,30 +1436,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif 
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 #if JVET_O0119_BASE_PALETTE_444
-  if (checkPLTRatio)
-  {
-    int totalArea = 0;
-    int pltArea = 0;
-    for (auto apu : pcPic->cs->pus)
-    {
-      for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
-      {
-        int puArea = apu->blocks[i].width * apu->blocks[i].height;
-        if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
-        {
-          totalArea += puArea;
-          if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
-          {
-            pltArea += puArea;
-          }
-          break;
-        }
-
-      }
-    }
-    if (pltArea * PLT_FAST_RATIO < totalArea)
-      doPlt = false;
-  }
+  if (checkPLTRatio) m_pcLib->checkPltStats( pcPic );
 #endif
 }
 

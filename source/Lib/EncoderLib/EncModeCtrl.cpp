@@ -1115,9 +1115,6 @@ void EncModeCtrlMTnoRQT::initCTUEncoding( const Slice &slice )
   }
 }
 
-#if JVET_O0119_BASE_PALETTE_444
-extern bool doPlt;
-#endif
 void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStructure& cs )
 {
   // Min/max depth
@@ -1346,14 +1343,14 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
 #if JVET_O0119_BASE_PALETTE_444
-  if (cs.slice->getSPS()->getPLTMode() && cs.slice->isIRAP() && doPlt)
+  if (cs.slice->getSPS()->getPLTMode() && cs.slice->isIRAP() && getPltEnc() )
   {
     m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp, lossless });
   }
 #endif
   m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
 #if JVET_O0119_BASE_PALETTE_444
-  if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && doPlt)
+  if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && getPltEnc() )
   {
     m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp, lossless });
   }

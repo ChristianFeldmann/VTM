@@ -268,6 +268,10 @@ protected:
   InterSearch*          m_pcInterSearch;
 #endif
 
+#if JVET_O0119_BASE_PALETTE_444
+  bool                  m_doPlt;
+#endif
+
 public:
 
   virtual ~EncModeCtrl              () {}
@@ -326,6 +330,10 @@ public:
   void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
 #if JVET_O0592_ENC_ME_IMP
   void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
+#endif
+#if JVET_O0119_BASE_PALETTE_444
+  void   setPltEnc                    ( bool b )                { m_doPlt = b; }
+  bool   getPltEnc()                                      const { return m_doPlt; }
 #endif
 
 protected:

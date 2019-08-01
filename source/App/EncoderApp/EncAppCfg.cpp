@@ -2502,6 +2502,13 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_crQpOffsetDualTree < -12,   "Min. Chroma Cr QP Offset for dual tree is -12" );
   xConfirmPara( m_crQpOffsetDualTree >  12,   "Max. Chroma Cr QP Offset for dual tree is  12" );
 #if JVET_O0376_SPS_JCCR_FLAG
+  if (m_JccrMode && (m_chromaFormatIDC == CHROMA_400)) 
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: --JCCR has been disabled due to the chromaFormat is 400       **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_JccrMode = false;
+  }
   if (m_JccrMode)
   {
     xConfirmPara( m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");

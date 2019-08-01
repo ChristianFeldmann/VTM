@@ -329,7 +329,9 @@ static const int SCALING_LIST_REM_NUM =                             6;
 
 static const int QUANT_SHIFT =                                     14; ///< Q(4) = 2^14
 static const int IQUANT_SHIFT =                                     6;
-static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
+
+static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
+static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
 
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
 

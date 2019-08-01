@@ -931,8 +931,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   }
 
   bool isLast = enablePROF ? false : !bi;
-  const int PROF_BORDER_EXT_W = BIO_EXTEND_SIZE;
-  const int PROF_BORDER_EXT_H = BIO_EXTEND_SIZE;
 
   const int cuExtW = pu.blocks[compID].width + PROF_BORDER_EXT_W * 2;
   const int cuExtH = pu.blocks[compID].height + PROF_BORDER_EXT_H * 2;
@@ -950,8 +948,8 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
   PelBuf &dstBuf = dstPic.bufs[compID];
 
-  int *dMvScaleHor = dMvBuf[m_iRefListIdx];
-  int *dMvScaleVer = dMvBuf[m_iRefListIdx] + 16;
+  int *dMvScaleHor = m_dMvBuf[m_iRefListIdx];
+  int *dMvScaleVer = m_dMvBuf[m_iRefListIdx] + 16;
 
   if (enablePROF && !bi)
   {
@@ -1525,8 +1523,8 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   const int width = pu.Y().width;
   const int height = pu.Y().height;
 
-  const int iBit = MAX_CU_DEPTH;
-  const int shift = iBit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
+  const int bit = MAX_CU_DEPTH;
+  const int shift = bit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
   const int bdlimit = std::max<int>(6, clpRng.bd - 6);
   const int dmvLimit = 1 << bdlimit;
 
@@ -1538,32 +1536,32 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
       Mv mvRT = pu.mvAffi[list][1];
       Mv mvLB = pu.mvAffi[list][2];
 
-      int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
-      iDMvHorX = (mvRT - mvLT).getHor() << (iBit - g_aucLog2[width]);
-      iDMvHorY = (mvRT - mvLT).getVer() << (iBit - g_aucLog2[width]);
+      int dMvHorX, dMvHorY, dMvVerX, dMvVerY;
+      dMvHorX = (mvRT - mvLT).getHor() << (bit - g_aucLog2[width]);
+      dMvHorY = (mvRT - mvLT).getVer() << (bit - g_aucLog2[width]);
       if (pu.cu->affineType == AFFINEMODEL_6PARAM)
       {
-        iDMvVerX = (mvLB - mvLT).getHor() << (iBit - g_aucLog2[height]);
-        iDMvVerY = (mvLB - mvLT).getVer() << (iBit - g_aucLog2[height]);
+        dMvVerX = (mvLB - mvLT).getHor() << (bit - g_aucLog2[height]);
+        dMvVerY = (mvLB - mvLT).getVer() << (bit - g_aucLog2[height]);
       }
       else
       {
-        iDMvVerX = -iDMvHorY;
-        iDMvVerY = iDMvHorX;
+        dMvVerX = -dMvHorY;
+        dMvVerY = dMvHorX;
       }
 
-      int *dMvScaleHor = dMvBuf[list];
-      int *dMvScaleVer = dMvBuf[list] + 16;
+      int *dMvScaleHor = m_dMvBuf[list];
+      int *dMvScaleVer = m_dMvBuf[list] + 16;
 
       int* dMvH = dMvScaleHor;
       int* dMvV = dMvScaleVer;
-      int  quadHorX = iDMvHorX << 2;
-      int  quadHorY = iDMvHorY << 2;
-      int  quadVerX = iDMvVerX << 2;
-      int  quadVerY = iDMvVerY << 2;
+      int  quadHorX = dMvHorX << 2;
+      int  quadHorY = dMvHorY << 2;
+      int  quadVerX = dMvVerX << 2;
+      int  quadVerY = dMvVerY << 2;
 
-      dMvH[0] = ((iDMvHorX + iDMvVerX) << 1) - ((quadHorX + quadVerX) << 1);
-      dMvV[0] = ((iDMvHorY + iDMvVerY) << 1) - ((quadHorY + quadVerY) << 1);
+      dMvH[0] = ((dMvHorX + dMvVerX) << 1) - ((quadHorX + quadVerX) << 1);
+      dMvV[0] = ((dMvHorY + dMvVerY) << 1) - ((quadHorY + quadVerY) << 1);
 
       for (int w = 1; w < blockWidth; w++)
       {
@@ -1602,8 +1600,6 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
     }
   }
 
-  const int PROF_BORDER_EXT_W = BIO_EXTEND_SIZE;
-  const int PROF_BORDER_EXT_H = BIO_EXTEND_SIZE;
   const int cuExtW = width + PROF_BORDER_EXT_W * 2;
   const int cuExtH = height + PROF_BORDER_EXT_H * 2;
 
@@ -1617,10 +1613,10 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   Pel* gX1 = gradXExt1.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
   Pel* gY1 = gradYExt1.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
   
-  int *dMvX0 = dMvBuf[REF_PIC_LIST_0];
-  int *dMvY0 = dMvBuf[REF_PIC_LIST_0] + 16;
-  int *dMvX1 = dMvBuf[REF_PIC_LIST_1];
-  int *dMvY1 = dMvBuf[REF_PIC_LIST_1] + 16;
+  int *dMvX0 = m_dMvBuf[REF_PIC_LIST_0];
+  int *dMvY0 = m_dMvBuf[REF_PIC_LIST_0] + 16;
+  int *dMvX1 = m_dMvBuf[REF_PIC_LIST_1];
+  int *dMvY1 = m_dMvBuf[REF_PIC_LIST_1] + 16;
 
   const Pel* srcY0 = pcYuvSrc0.bufAt(0, 0);
   const Pel* srcY1 = pcYuvSrc1.bufAt(0, 0);

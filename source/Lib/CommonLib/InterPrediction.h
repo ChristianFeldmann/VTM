@@ -110,7 +110,7 @@ protected:
 
 #if JVET_O0070_PROF
   Pel                  m_gradBuf[2][2][(MAX_CU_SIZE + 2) * (MAX_CU_SIZE + 2)];
-  int                  dMvBuf[2][16 * 2];
+  int                  m_dMvBuf[2][16 * 2];
   bool                 m_applyPROF[2];
   bool                 m_skipPROF;
   bool                 m_encOnly;

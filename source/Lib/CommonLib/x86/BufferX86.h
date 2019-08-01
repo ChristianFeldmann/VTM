@@ -440,7 +440,7 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
     for (int i = 0; i < size; i += 16, v += 16)
     {
       __m512i src = _mm512_loadu_si512(v);
-      __mmask8 mask = _mm512_cmpge_epi32_mask(src, vzero);
+      __mmask16 mask = _mm512_cmpge_epi32_mask(src, vzero);
       src = __mm512_add_epi32(src, nOffset);
       __mm512i dst = _mm512_srai_epi32(_mm512_mask_sub_epi32(src, mask, src, vones), nShift);
       dst = _mm512_min_epi32(dMvMax, _mm512_max_epi32(dMvMin, dst));
@@ -459,7 +459,7 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
     for (int i = 0; i < size; i += 8, v += 8)
     {
       __m256i src = _mm256_lddqu_si256((__m256i*)v);
-      __m256i of = _mm256_or_si256(_mm256_cmpgt_epi32(src, vzero), _mm256_cmpeq_epi32(src, vzero));
+      __m256i of  = _mm256_cmpgt_epi32(src, vzero);
       __m256i dst = _mm256_srai_epi32(_mm256_add_epi32(_mm256_add_epi32(src, nOffset), of), nShift);
       dst = _mm256_min_epi32(dMvMax, _mm256_max_epi32(dMvMin, dst));
       _mm256_storeu_si256((__m256i*)v, dst);
@@ -475,7 +475,7 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
     for (int i = 0; i < size; i += 4, v += 4)
     {
       __m128i src = _mm_loadu_si128((__m128i*)v);
-      __m128i of = _mm_or_si128(_mm_cmpgt_epi32(src, vzero), _mm_cmpeq_epi32(src, vzero));
+      __m128i of  = _mm_cmpgt_epi32(src, vzero);
       __m128i dst = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(src, nOffset), of), nShift);
       dst = _mm_min_epi32(dMvMax, _mm_max_epi32(dMvMin, dst));
       _mm_storeu_si128((__m128i*)v, dst);

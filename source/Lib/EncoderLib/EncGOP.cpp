@@ -2494,7 +2494,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
       {
+#if JVET_O_MAX_NUM_ALF_APS_8
+        for (int apsId = 0; apsId < ALF_CTB_MAX_NUM_APS; apsId++)
+#else
         for (int apsId = 0; apsId < MAX_NUM_APS; apsId++)   //HD: shouldn't this be looping over slice_alf_aps_id_luma[ i ]? By looping over MAX_NUM_APS, it is possible unused ALF APS is written. Please check!
+#endif
         {
           ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
 

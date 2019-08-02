@@ -254,6 +254,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
+#if JVET_O0070_PROF
+  m_cEncLib.setPROF                                              ( m_PROF );
+#endif
   m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
@@ -339,6 +342,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseContentBasedFastQtbt                           ( m_contentBasedFastQtbt );
   m_cEncLib.setUseNonLinearAlfLuma                               ( m_useNonLinearAlfLuma );
   m_cEncLib.setUseNonLinearAlfChroma                             ( m_useNonLinearAlfChroma );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  m_cEncLib.setMaxNumAlfAlternativesChroma                       ( m_maxNumAlfAlternativesChroma );
+#endif
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );

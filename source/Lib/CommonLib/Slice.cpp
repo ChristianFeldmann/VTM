@@ -205,6 +205,9 @@ void Slice::initSlice()
   m_jointCbCrSignFlag    = false;
 #endif
   m_enableTMVPFlag       = true;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  resetTileGroupAlfEnabledFlag();
+#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -1420,6 +1423,10 @@ SPS::SPS()
 #if MAX_TB_SIZE_SIGNALLING
 , m_log2MaxTbSize             (  6)
 #endif
+#if JVET_O0244_DELTA_POC
+, m_useWeightPred             (false)
+, m_useWeightedBiPred         (false)
+#endif
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
@@ -1440,6 +1447,9 @@ SPS::SPS()
 , m_LFNST                     ( false )
 , m_Affine                    ( false )
 , m_AffineType                ( false )
+#if JVET_O0070_PROF
+, m_PROF                      ( false )
+#endif
 , m_MHIntra                   ( false )
 , m_Triangle                  ( false )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

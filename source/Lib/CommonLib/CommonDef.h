@@ -176,6 +176,16 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
+#endif
+static const int MAX_NUM_ALF_CLASSES         =                     25;
+static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
+static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
+static const int MAX_ALF_FILTER_LENGTH       =                      7;
+static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
+static const int MAX_ALF_PADDING_SIZE        =                      4;
+
 static const int ALF_FIXED_FILTER_NUM        =                     64;
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
 static const int NUM_FIXED_FILTER_SETS       =                     16;
@@ -253,8 +263,13 @@ static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); /
 
 static const int MAX_LFNST_COEF_NUM =                              16;
 
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+static const int LFNST_LAST_SIG_LUMA =                              1;
+static const int LFNST_LAST_SIG_CHROMA =                            1;
+#else
 static const int LFNST_SIG_NZ_LUMA =                                1;
 static const int LFNST_SIG_NZ_CHROMA =                              1;
+#endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
 
@@ -299,7 +314,12 @@ static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
+#if JVET_O0545_MAX_TB_SIGNALLING
+static const int MAX_NUM_TUS =                                     16; ///< Maximum number of TUs within one CU. When max TB size is 32x32, up to 16 TUs within one CU (128x128) is supported
+static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         3;
+#else
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
+#endif
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
@@ -309,7 +329,9 @@ static const int SCALING_LIST_REM_NUM =                             6;
 
 static const int QUANT_SHIFT =                                     14; ///< Q(4) = 2^14
 static const int IQUANT_SHIFT =                                     6;
-static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
+
+static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
+static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
 
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
 
@@ -346,6 +368,10 @@ static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max 
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
 
+#if JVET_O0070_PROF
+static const int PROF_BORDER_EXT_W            =                     1;
+static const int PROF_BORDER_EXT_H            =                     1;
+#endif
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256

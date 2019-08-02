@@ -206,7 +206,14 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     std::copy( pic->getAlfCtuEnableFlag()[compIdx].begin(), pic->getAlfCtuEnableFlag()[compIdx].end(), pcEncPic->getAlfCtuEnableFlag()[compIdx].begin() );
                   }
+                  pcEncPic->resizeAlfCtbFilterIndex(pic->cs->pcv->sizeInCtus);
+                  memcpy( pcEncPic->getAlfCtbFilterIndex(), pic->getAlfCtbFilterIndex(), sizeof(short)*pic->cs->pcv->sizeInCtus );
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+                  std::copy( pic->getAlfCtuAlternative(COMPONENT_Cb).begin(), pic->getAlfCtuAlternative(COMPONENT_Cb).end(), pcEncPic->getAlfCtuAlternative(COMPONENT_Cb).begin() );
+                  std::copy( pic->getAlfCtuAlternative(COMPONENT_Cr).begin(), pic->getAlfCtuAlternative(COMPONENT_Cr).end(), pcEncPic->getAlfCtuAlternative(COMPONENT_Cr).begin() );
+
+#endif
                   for( int i = 0; i < pic->slices.size(); i++ )
                   {
                     pcEncPic->slices[i]->setTileGroupNumAps(pic->slices[i]->getTileGroupNumAps());
@@ -841,7 +848,11 @@ void DecLib::xActivateParameterSets()
     m_cSAO.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) );
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+    m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
+#else
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
+#endif
     if (sps->getUseReshaper())
     {
       m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
@@ -950,6 +961,22 @@ void DecLib::xActivateParameterSets()
        deleteSEIs(m_SEIs);
      }
   }
+
+#if JVET_O0244_DELTA_POC
+  Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
+  const SPS *sps = pSlice->getSPS();
+  const PPS *pps = pSlice->getPPS();
+
+  if( !sps->getUseWP() )
+  {
+    CHECK( pps->getUseWP(), "When sps_weighted_pred_flag is equal to 0, the value of pps_weighted_pred_flag shall be equal to 0." );
+  }
+
+  if( !sps->getUseWPBiPred() )
+  {
+    CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
+  }
+#endif
 }
 
 
@@ -1166,7 +1193,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (endCtuIdx == numberOfCtusInFrame)
     EXIT("Cannot find the last CTU index of the current slice");
 
-  while (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx) && endCtuIdx < numberOfCtusInFrame)
+  while ( (endCtuIdx < numberOfCtusInFrame) && (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx)) )
   {
     endCtuIdx++;
   }
@@ -1408,6 +1435,7 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
   VPS* vps = new VPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseVPS( vps );
+  delete vps;
 }
 
 void DecLib::xDecodeDPS( InputNALUnit& nalu )

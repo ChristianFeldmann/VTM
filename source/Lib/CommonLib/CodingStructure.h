@@ -238,7 +238,13 @@ private:
   MotionInfo *m_motionBuf;
 
 public:
-
+#if JVET_O0070_PROF
+  CodingStructure *bestParent;
+#endif
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  bool resetIBCBuffer;
+#endif
+  
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }
   MotionBuf getMotionBuf()                        { return getMotionBuf(  area.Y() ); }

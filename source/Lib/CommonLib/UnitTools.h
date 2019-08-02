@@ -81,7 +81,9 @@ namespace CU
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
+#endif
   uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
 #if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
   bool  isPredRegDiffFromTB(const CodingUnit& cu, const ComponentID compID);
@@ -101,8 +103,8 @@ namespace CU
   PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
   bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
-  ISPType   canUseISPSplit            ( const CodingUnit &cu,                         const ComponentID compID );
-  ISPType   canUseISPSplit            ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
+  bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
+  bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
 
   PUTraverser traversePUs             (      CodingUnit& cu);
@@ -130,7 +132,7 @@ namespace CU
 // PU tools
 namespace PU
 {
-  int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
+  int  getLMSymbolList(const PredictionUnit &pu, int *modeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
@@ -205,14 +207,18 @@ namespace PU
   bool isAddNeighborMv  (const Mv& currMv, Mv* neighborMvs, int numNeighborMv);
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
+#if !JVET_O1170_IBC_VIRTUAL_BUFFER
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
+#endif  
   bool checkDMVRCondition(const PredictionUnit& pu);
 }
 
 // TU tools
 namespace TU
 {
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
+#endif
   uint32_t getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true );
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);

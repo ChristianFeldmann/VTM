@@ -860,10 +860,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
+#if JVET_O0070_PROF
+  ("PROF",                                           m_PROF,                                           false, "Enable Prediction refinement with optical flow for affine mode (0:off, 1:on)  [default: off]")
+#endif
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
   ("IMV",                                             m_ImvMode,                                            1, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled\n"
-                                                                                                               "\t1: enabled (Full-Pel and 4-PEL)\n")
+                                                                                                               "\t1: enabled (1/2-Pel, Full-Pel and 4-PEL)\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
@@ -943,6 +946,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ContentBasedFastQtbt",                            m_contentBasedFastQtbt,                           false, "Signal based QTBT speed-up")
   ("UseNonLinearAlfLuma",                             m_useNonLinearAlfLuma,                             true, "Non-linear adaptive loop filters for Luma Channel")
   ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  ("MaxNumAlfAlternativesChroma",                     m_maxNumAlfAlternativesChroma,
+                                                                    (unsigned)MAX_NUM_ALF_ALTERNATIVES_CHROMA, std::string("Maximum number of alternative Chroma filters (1-") + std::to_string(MAX_NUM_ALF_ALTERNATIVES_CHROMA) + std::string (", inclusive)") )
+#endif
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
   // Unit definition parameters
@@ -1954,6 +1961,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  if ( m_alf )
+  {
+    CHECK( m_maxNumAlfAlternativesChroma < 1 || m_maxNumAlfAlternativesChroma > MAX_NUM_ALF_ALTERNATIVES_CHROMA, std::string("The maximum number of ALF Chroma filter alternatives must be in the range (1-") + std::to_string(MAX_NUM_ALF_ALTERNATIVES_CHROMA) + std::string (", inclusive)") );
+  }
+
+#endif
   // reading external dQP description from file
   if ( !m_dQPFileName.empty() )
   {
@@ -2524,6 +2538,9 @@ bool EncAppCfg::xCheckParameter()
 #if MAX_TB_SIZE_SIGNALLING
   xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
 #endif
+#if JVET_O0545_MAX_TB_SIGNALLING
+  xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
+#endif
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
   xConfirmPara( m_maxNumTriangleCand > TRIANGLE_MAX_NUM_UNI_CANDS, "MaxNumTriangleCand must be no more than TRIANGLE_MAX_NUM_UNI_CANDS." );
@@ -2535,6 +2552,10 @@ bool EncAppCfg::xCheckParameter()
   if ( m_Affine == 0 )
   {
     m_maxNumAffineMergeCand = m_SubPuMvpMode;
+#if JVET_O0070_PROF
+    if (m_PROF) msg(WARNING, "PROF is forcefully disabled when Affine is off \n");
+    m_PROF = false;
+#endif
   }
 
   xConfirmPara( m_MTS < 0 || m_MTS > 3, "MTS must be greater than 0 smaller than 4" );
@@ -3342,6 +3363,9 @@ void EncAppCfg::xPrintParameter()
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
+#if JVET_O0070_PROF
+    msg(VERBOSE, "PROF:%d ", m_PROF);
+#endif
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
@@ -3425,8 +3449,11 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "AMaxBT:%d ", m_useAMaxBT );
   msg( VERBOSE, "E0023FastEnc:%d ", m_e0023FastEnc );
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
-  msg( VERBOSE, "UseNonLinearALFLuma:%d ", m_useNonLinearAlfLuma );
-  msg( VERBOSE, "UseNonLinearALFChroma:%d ", m_useNonLinearAlfChroma );
+  msg( VERBOSE, "UseNonLinearAlfLuma:%d ", m_useNonLinearAlfLuma );
+  msg( VERBOSE, "UseNonLinearAlfChroma:%d ", m_useNonLinearAlfChroma );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  msg( VERBOSE, "MaxNumAlfAlternativesChroma:%d ", m_maxNumAlfAlternativesChroma );
+#endif
   if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );

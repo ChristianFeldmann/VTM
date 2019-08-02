@@ -774,6 +774,11 @@ void TrQuant::getTrTypes(const TransformUnit tu, const ComponentID compID, int &
   trTypeHor = DCT2;
   trTypeVer = DCT2;
 
+#if JVET_O0538_SPS_CONTROL_ISP_SBT
+  if (!tu.cs->sps->getUseMTS())
+    return;
+#endif
+
   if (isImplicitMTS || isISP)
   {
     int  width = tu.blocks[compID].width;
@@ -1231,7 +1236,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 void TrQuant::xGetCoeffEnergy( TransformUnit &tu, const ComponentID &compID, const CoeffBuf& coeffs, double* diagRatio, double* horVerRatio )
 {
   if( nullptr == diagRatio || nullptr == horVerRatio ) return;
-  if( tu.cu->predMode == MODE_INTRA && !tu.cu->ispMode && isLuma( compID ) && tu.cs->sps->getUseISP() && CU::canUseISPSplit( *tu.cu, compID ) != NOT_INTRA_SUBPARTITIONS )
+  if( tu.cu->predMode == MODE_INTRA && !tu.cu->ispMode && isLuma( compID ) && tu.cs->sps->getUseISP() && CU::canUseISP( *tu.cu, compID ) )
   {
     const int width   = tu.cu->blocks[compID].width;
     const int height  = tu.cu->blocks[compID].height;

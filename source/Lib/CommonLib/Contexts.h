@@ -209,6 +209,9 @@ public:
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;
   static const CtxSet   IntraLumaPlanarFlag;
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+  static const CtxSet   CclmModeFlag;
+#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
   static const CtxSet   MipMode;
@@ -267,9 +270,14 @@ public:
   static const CtxSet   ImvFlag;
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  static const CtxSet   ctbAlfAlternative;
+#endif
   static const CtxSet   AlfUseLatestFilt;
   static const CtxSet   AlfUseTemporalFilt;
+#if !JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   static const CtxSet   Alf;
+#endif
   static const CtxSet   MHIntraFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
@@ -281,6 +289,9 @@ public:
   // NOTE: The contained CtxSet's should directly follow each other in the initalization list;
   //       otherwise, you will copy more elements than you want !!!
   static const CtxSet   Sao;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  static const CtxSet   Alf;
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   static const CtxSet   Palette;
 #endif

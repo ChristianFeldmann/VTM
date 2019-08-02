@@ -236,18 +236,18 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 }
 
 #if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbCbf, const int ispIdx )
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbf, const int ispIdx )
 #else
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf, const int ispIdx )
+unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbf, const int ispIdx )
 #endif
 {
   if( ispIdx && isLuma( compID ) )
   {
-    return 2 + (int)prevCbCbf;
+    return 2 + (int)prevCbf;
   }
   if( compID == COMPONENT_Cr )
   {
-    return ( prevCbCbf ? 1 : 0 );
+    return ( prevCbf ? 1 : 0 );
   }
 #if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
   return 0;
@@ -329,6 +329,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mergeFlag               = true;
   pu.mmvdMergeFlag = false;
   pu.interDir                = interDirNeighbours[candIdx];
+#if JVET_O0057_ALTHPELIF
+  pu.cu->imv = (!pu.cu->triangle && useAltHpelIf[candIdx]) ? IMV_HPEL : 0;
+#endif
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
   pu.mv     [REF_PIC_LIST_0] = mvFieldNeighbours[(candIdx << 1) + 0].mv;
@@ -345,6 +348,9 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   {
     pu.bv = pu.mv[REF_PIC_LIST_0];
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
+#if JVET_O0057_ALTHPELIF
+    pu.cu->imv = pu.cu->imv == IMV_HPEL ? 0 : pu.cu->imv;
+#endif
   }
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
 
@@ -501,7 +507,11 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mmvdMergeFlag = true;
   pu.mmvdMergeIdx = candIdx;
   pu.mergeFlag = true;
+#if JVET_O0249_MERGE_SYNTAX
+  pu.regularMergeFlag = true;
+#else
   pu.regularMergeFlag = false;
+#endif
   pu.mergeIdx = candIdx;
   pu.mergeType = MRG_TYPE_DEFAULT_N;
   pu.mvd[REF_PIC_LIST_0] = Mv();
@@ -510,6 +520,9 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpIdx[REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
+#if JVET_O0057_ALTHPELIF
+  pu.cu->imv = mmvdUseAltHpelIf[fPosBaseIdx] ? IMV_HPEL : 0;
+#endif
 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
 

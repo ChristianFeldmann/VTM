@@ -50,6 +50,8 @@
 #if JVET_O0119_BASE_PALETTE_444
 #include <unordered_map>
 #endif
+#include "AlfParameters.h"
+
 //! \ingroup CommonLib
 //! \{
 #include "CommonLib/MotionInfo.h"
@@ -736,6 +738,9 @@ private:
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
+#if JVET_O0919_TS_MIN_QP
+  int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
+#endif
   int               m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
   bool              m_bPCMFilterDisableFlag;
 
@@ -751,6 +756,10 @@ private:
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t          m_log2MaxTbSize;
+#endif
+#if JVET_O0244_DELTA_POC
+  bool             m_useWeightPred;                     //!< Use of Weighting Prediction (P_SLICE)
+  bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
 #endif
 
   bool              m_saoEnabledFlag;
@@ -797,6 +806,9 @@ private:
   bool              m_SMVD;
   bool              m_Affine;
   bool              m_AffineType;
+#if JVET_O0070_PROF
+  bool              m_PROF;
+#endif
   bool              m_GBi;                        //
   bool              m_MHIntra;
   bool              m_Triangle;
@@ -933,6 +945,10 @@ public:
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
+#if JVET_O0919_TS_MIN_QP
+  int                     getMinQpPrimeTsMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
+  void                    setMinQpPrimeTsMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
+#endif
 
   void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }
   bool                    getSAOEnabledFlag() const                                                       { return m_saoEnabledFlag;                                                    }
@@ -1020,6 +1036,10 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
+#if JVET_O0070_PROF
+  void      setUsePROF            ( bool b )                                        { m_PROF = b; }
+  bool      getUsePROF            ()                                      const     { return m_PROF; }
+#endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
   void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
@@ -1058,6 +1078,13 @@ public:
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
   void      setUseMIP             ( bool b )                                        { m_MIP = b; }
   bool      getUseMIP             ()                                      const     { return m_MIP; }
+
+#if JVET_O0244_DELTA_POC
+  bool      getUseWP              ()                                      const     { return m_useWeightPred; }
+  bool      getUseWPBiPred        ()                                      const     { return m_useWeightedBiPred; }
+  void      setUseWP              ( bool b )                                        { m_useWeightPred = b; }
+  void      setUseWPBiPred        ( bool b )                                        { m_useWeightedBiPred = b; }
+#endif
 };
 
 
@@ -1388,7 +1415,7 @@ class APS
 private:
   int                    m_APSId;                    // adaptation_parameter_set_id
   int                    m_APSType;                  // aps_params_type
-  AlfSliceParam          m_alfAPSParam;
+  AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
 
 public:
@@ -1401,10 +1428,10 @@ public:
   int                    getAPSType() const                                               { return m_APSType;                             }
   void                   setAPSType(int type)                                             { m_APSType = type;                             }
 
-  void                   setAlfAPSParam(AlfSliceParam& alfAPSParam)                       { m_alfAPSParam = alfAPSParam;                  }
+  void                   setAlfAPSParam(AlfParam& alfAPSParam)                            { m_alfAPSParam = alfAPSParam;                  }
   void                   setTemporalId(int i) { m_alfAPSParam.tLayer = i; }
   int                    getTemporalId() { return m_alfAPSParam.tLayer; }
-  AlfSliceParam&         getAlfAPSParam()  { return m_alfAPSParam; }
+  AlfParam&              getAlfAPSParam()  { return m_alfAPSParam; }
 
   void                   setReshaperAPSInfo(SliceReshapeInfo& reshapeAPSInfo)             { m_reshapeAPSInfo = reshapeAPSInfo;            }
   SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }

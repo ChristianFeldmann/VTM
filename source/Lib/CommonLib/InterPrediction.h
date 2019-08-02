@@ -108,12 +108,26 @@ protected:
                              Mv(-2, 2), Mv(-1, 2), Mv(0, 2), Mv(1, 2), Mv(2, 2) };
   uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 
+#if JVET_O0070_PROF
+  Pel                  m_gradBuf[2][2][(MAX_CU_SIZE + 2) * (MAX_CU_SIZE + 2)];
+  int                  m_dMvBuf[2][16 * 2];
+  bool                 m_applyPROF[2];
+  bool                 m_skipPROF;
+  bool                 m_encOnly;
+  bool                 m_isBi;
+#endif
+
   Pel*                 m_gradX0;
   Pel*                 m_gradY0;
   Pel*                 m_gradX1;
   Pel*                 m_gradY1;
   bool                 m_subPuMC;
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  int                  m_IBCBufferWidth;
+  PelStorage           m_IBCBuffer;
+  void xIntraBlockCopy          (PredictionUnit &pu, PelUnitBuf &predBuf, const ComponentID compID);
+#endif
   int             rightShiftMSB(int numer, int    denom);
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
@@ -145,6 +159,9 @@ protected:
 #else
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied );
 #endif
+#if JVET_O0070_PROF
+  void xApplyBiPROF             (const PredictionUnit& pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng);
+#endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
@@ -171,7 +188,11 @@ public:
   InterPrediction();
   virtual ~InterPrediction();
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  void    init                (RdCost* pcRdCost, ChromaFormat chromaFormatIDC, const int ctuSize);
+#else
   void    init                (RdCost* pcRdCost, ChromaFormat chromaFormatIDC);
+#endif
 
   // inter
   void    motionCompensation  (PredictionUnit &pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X
@@ -214,6 +235,14 @@ public:
   int     getShareState() const { return m_shareState; }
 #endif
   static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  void xFillIBCBuffer(CodingUnit &cu);
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  void resetIBCBuffer(const ChromaFormat chromaFormatIDC, const int ctuSize);
+  void resetVPDUforIBC(const ChromaFormat chromaFormatIDC, const int ctuSize, const int vSize, const int xPos, const int yPos);
+  bool isLumaBvValid(const int ctuSize, const int xCb, const int yCb, const int width, const int height, const int xBv, const int yBv);
+#endif
+#endif
 };
 
 //! \}

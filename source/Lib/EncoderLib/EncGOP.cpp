@@ -2071,6 +2071,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if( pcSlice->getSPS()->getALFEnabledFlag() )
     {
       pcPic->resizeAlfCtuEnableFlag( numberOfCtusInFrame );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+      pcPic->resizeAlfCtuAlternative( numberOfCtusInFrame );
+#endif
       pcPic->resizeAlfCtbFilterIndex(numberOfCtusInFrame);
     }
 
@@ -2494,6 +2497,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         for (int apsId = 0; apsId < MAX_NUM_APS; apsId++)   //HD: shouldn't this be looping over slice_alf_aps_id_luma[ i ]? By looping over MAX_NUM_APS, it is possible unused ALF APS is written. Please check!
         {
           ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+
           APS* aps = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
           bool writeAPS = aps && apsMap->getChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
           if (!aps && pcSlice->getAlfAPSs() && pcSlice->getAlfAPSs()[apsId])
@@ -2501,7 +2505,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             writeAPS = true;
             aps = pcSlice->getAlfAPSs()[apsId]; // use asp from slice header
             *apsMap->allocatePS(apsId) = *aps; //allocate and cpy
-        }
+            m_pcALF->setApsIdStart( apsId );
+          }
           
           if (writeAPS )
           {

@@ -621,7 +621,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
     m_CABACEstimator->resetBits();
     m_CABACEstimator->sao_offset_pars( modeParam[compIdx], compIdx, sliceEnabled[compIdx], bitDepths.recon[CHANNEL_TYPE_LUMA] );
     modeDist[compIdx] = 0;
-    minCost= m_lambda[compIdx]*(FracBitsScale*(double)m_CABACEstimator->getEstFracBits());
+    minCost           = m_lambda[compIdx] * (FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits());
     ctxBestLuma = SAOCtx( m_CABACEstimator->getCtx() );
     if(sliceEnabled[compIdx])
     {
@@ -643,7 +643,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
         m_CABACEstimator->getCtx() = SAOCtx( ctxStartLuma );
         m_CABACEstimator->resetBits();
         m_CABACEstimator->sao_offset_pars( testOffset[compIdx], compIdx, sliceEnabled[compIdx], bitDepths.recon[CHANNEL_TYPE_LUMA] );
-        double rate = FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+        double rate = FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
         cost = (double)dist[compIdx] + m_lambda[compIdx]*rate;
         if(cost < minCost)
         {
@@ -670,7 +670,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
     modeDist [component]         = 0;
     m_CABACEstimator->sao_offset_pars( modeParam[component], component, sliceEnabled[component], bitDepths.recon[CHANNEL_TYPE_CHROMA] );
     const uint64_t currentFracBits = m_CABACEstimator->getEstFracBits();
-    cost += m_lambda[component] * FracBitsScale * double( currentFracBits - previousFracBits );
+    cost += m_lambda[component] * FRAC_BITS_SCALE * (currentFracBits - previousFracBits);
     previousFracBits = currentFracBits;
   }
 
@@ -703,7 +703,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
       dist[component] = getDistortion(bitDepths.recon[CHANNEL_TYPE_CHROMA], typeIdc, testOffset[component].typeAuxInfo, invQuantOffset, blkStats[ctuRsAddr][component][typeIdc]);
       m_CABACEstimator->sao_offset_pars( testOffset[component], component, sliceEnabled[component], bitDepths.recon[CHANNEL_TYPE_CHROMA] );
       const uint64_t currentFracBits = m_CABACEstimator->getEstFracBits();
-      cost += dist[component] + (m_lambda[component] * FracBitsScale * double(currentFracBits - previousFracBits));
+      cost += dist[component] + (m_lambda[component] * FRAC_BITS_SCALE * (currentFracBits - previousFracBits));
       previousFracBits = currentFracBits;
     }
 
@@ -729,7 +729,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
   m_CABACEstimator->getCtx() = SAOCtx( ctxStartBlk );
   m_CABACEstimator->resetBits();
   m_CABACEstimator->sao_block_pars( modeParam, bitDepths, sliceEnabled, (mergeList[SAO_MERGE_LEFT]!= NULL), (mergeList[SAO_MERGE_ABOVE]!= NULL), false );
-  modeNormCost += FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+  modeNormCost += FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
 }
 
 void EncSampleAdaptiveOffset::deriveModeMergeRDO(const BitDepths &bitDepths, int ctuRsAddr, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES], bool* sliceEnabled, std::vector<SAOStatData**>& blkStats, SAOBlkParam& modeParam, double& modeNormCost )
@@ -772,7 +772,7 @@ void EncSampleAdaptiveOffset::deriveModeMergeRDO(const BitDepths &bitDepths, int
     m_CABACEstimator->getCtx() = SAOCtx( ctxStart );
     m_CABACEstimator->resetBits();
     m_CABACEstimator->sao_block_pars( testBlkParam, bitDepths, sliceEnabled, (mergeList[SAO_MERGE_LEFT]!= NULL), (mergeList[SAO_MERGE_ABOVE]!= NULL), false );
-    double rate = FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+    double rate = FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
     cost = normDist+rate;
 
     if(cost < modeNormCost)
@@ -981,7 +981,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
           testBlkParam[COMPONENT_Y].typeIdc = SAO_MERGE_LEFT;
           m_CABACEstimator->resetBits();
           m_CABACEstimator->sao_block_pars(testBlkParam, cs.sps->getBitDepths(), sliceEnabled, true, false, true);
-          double rate = FracBitsScale * (double)m_CABACEstimator->getEstFracBits();
+          double rate = FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
           modeCost += rate * groupSize;
           if (modeCost < minCost2)
           {

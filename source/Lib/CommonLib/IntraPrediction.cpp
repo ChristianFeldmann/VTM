@@ -198,7 +198,11 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
 
   if (m_piYuvExt[COMPONENT_Y][PRED_BUF_UNFILTERED] == nullptr) // check if first is null (in which case, nothing initialised yet)
   {
+#if JVET_O0364_PADDING
+    m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX) * (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX);
+#else
     m_iYuvExtSize = (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 33) * (MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX * 33);
+#endif
 
     for (uint32_t ch = 0; ch < MAX_NUM_COMPONENT; ch++)
     {
@@ -322,11 +326,16 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
 
   const int multiRefIdx = m_ipaParam.multiRefIndex;
+#if JVET_O0364_PADDING
+  const int srcStride  = m_topRefLength + 1 + multiRefIdx;
+  const int srcHStride = m_leftRefLength + 1 + multiRefIdx;
+#else
   const int whRatio     = m_ipaParam.whRatio;
   const int hwRatio     = m_ipaParam.hwRatio;
 
   const int  srcStride  = m_topRefLength  + 1 + (whRatio + 1) * multiRefIdx;
   const int  srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
+#endif
 
   const CPelBuf & srcBuf = CPelBuf(getPredictorPtr(compID), srcStride, srcHStride);
   const ClpRng& clpRng(pu.cu->cs->slice->clpRng(compID));
@@ -527,7 +536,14 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   if (dirMode > DC_IDX && dirMode < NUM_LUMA_MODE) // intraPredAngle for directional modes
   {
     static const int angTable[32]    = { 0,    1,    2,    3,    4,    6,     8,   10,   12,   14,   16,   18,   20,   23,   26,   29,   32,   35,   39,  45,  51,  57,  64,  73,  86, 102, 128, 171, 256, 341, 512, 1024 };
+#if JVET_O0364_PADDING
+    static const int invAngTable[32] = {
+      0,   16384, 8192, 5461, 4096, 2731, 2048, 1638, 1365, 1170, 1024, 910, 819, 712, 630, 565,
+      512, 468,   420,  364,  321,  287,  256,  224,  191,  161,  128,  96,  64,  48,  32,  16
+    };   // (512 * 32) / Angle
+#else
     static const int invAngTable[32] = { 0, 8192, 4096, 2731, 2048, 1365,  1024,  819,  683,  585,  512,  455,  410,  356,  315,  282,  256,  234,  210, 182, 161, 144, 128, 112,  95,  80,  64,  48,  32,  24,  16,    8 }; // (256 * 32) / Angle
+#endif
 
     const int     absAngMode         = abs(intraPredAngleMode);
     const int     signAng            = intraPredAngleMode < 0 ? -1 : 1;
@@ -545,7 +561,11 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
       const int sideSize = m_ipaParam.isModeVer ? puSize.height : puSize.width;
       const int maxScale = 2;
 
+#if JVET_O0364_PADDING
+      m_ipaParam.angularScale = std::min(maxScale, g_aucLog2[sideSize] - (floorLog2(3 * m_ipaParam.invAngle - 2) - 8));
+#else
       m_ipaParam.angularScale = std::min(maxScale, g_aucLog2[sideSize] - (floorLog2(3 * m_ipaParam.invAngle - 2) - 7));
+#endif
       m_ipaParam.applyPDPC &= m_ipaParam.angularScale >= 0;
     }
 #else
@@ -644,6 +664,25 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   // Initialize the Main and Left reference array.
   if (intraPredAngle < 0)
   {
+#if JVET_O0364_PADDING
+    for (int x = 0; x <= width + 1 + multiRefIdx; x++)
+    {
+      refAbove[x + height] = pSrc.at(x, 0);
+    }
+    for (int y = 0; y <= height + 1 + multiRefIdx; y++)
+    {
+      refLeft[y + width] = pSrc.at(0, y);
+    }
+    refMain = bIsModeVer ? refAbove + height : refLeft + width;
+    refSide = bIsModeVer ? refLeft + width : refAbove + height;
+
+    // Extend the Main reference to the left.
+    int sizeSide = bIsModeVer ? height : width;
+    for (int k = -sizeSide; k <= -1; k++)
+    {
+      refMain[k] = refSide[std::min((-k * invAngle + 256) >> 9, sizeSide)];
+    }
+#else
     const int width    = pDst.width + 1;
     const int height   = pDst.height + 1;
     const int lastIdx  = (bIsModeVer ? width : height) + multiRefIdx;
@@ -669,9 +708,31 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     }
     refMain[lastIdx] = refMain[lastIdx-1];
     refMain[firstIdx] = refMain[firstIdx+1];
+#endif
   }
   else
   {
+#if JVET_O0364_PADDING
+    for (int x = 0; x <= m_topRefLength + multiRefIdx; x++)
+    {
+      refAbove[x] = pSrc.at(x, 0);
+    }
+    for (int y = 0; y <= m_leftRefLength + multiRefIdx; y++)
+    {
+      refLeft[y] = pSrc.at(0, y);
+    }
+
+    refMain = bIsModeVer ? refAbove : refLeft;
+    refSide = bIsModeVer ? refLeft : refAbove;
+
+    // Extend main reference to right using replication
+    int maxIndex = multiRefIdx * (bIsModeVer ? whRatio : hwRatio) + 2;
+    Pel val = bIsModeVer ? pSrc.at(m_topRefLength + multiRefIdx, 0) : pSrc.at(0, m_leftRefLength + multiRefIdx);
+    for (int z = 1; z <= maxIndex; z++)
+    {
+      refMain[(bIsModeVer ? m_topRefLength : m_leftRefLength) + multiRefIdx + z] = val;
+    }
+#else
     for (int x = 0; x < m_topRefLength + 1 + (whRatio + 1) * multiRefIdx; x++)
     {
       refAbove[x+1] = pSrc.at(x, 0);
@@ -688,6 +749,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     refMain[-1] = refMain[0];
     auto lastIdx = 1 + ((bIsModeVer) ? m_topRefLength + (whRatio + 1) * multiRefIdx : m_leftRefLength +  (hwRatio + 1) * multiRefIdx);
     refMain[lastIdx] = refMain[lastIdx-1];
+#endif
   }
 
   // swap width/height if we are doing a horizontal mode:
@@ -771,14 +833,22 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
       if (m_ipaParam.applyPDPC)
       {
         const int scale       = m_ipaParam.angularScale;
+#if JVET_O0364_PADDING
+        int       invAngleSum = 256;
+#else
         int       invAngleSum = 128;
+#endif
 
         for (int x = 0; x < std::min(3 << scale, width); x++)
         {
           invAngleSum += invAngle;
 
           int wL   = 32 >> (2 * x >> scale);
+#if JVET_O0364_PADDING
+          Pel left = refSide[y + (invAngleSum >> 9) + 1];
+#else
           Pel left = refSide[y + (invAngleSum >> 8) + 1];
+#endif
           pDsty[x] = pDsty[x] + ((wL * (left - pDsty[x]) + 32) >> 6);
         }
       }
@@ -807,11 +877,19 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         }
         else
         {
+#if JVET_O0364_PADDING
+          int invAngleSum0 = 4;
+#else
           int invAngleSum0 = 2;
+#endif
           for (int x = 0; x < width; x++)
           {
             invAngleSum0 += invAngle;
+#if JVET_O0364_PADDING
+            int deltaPos0 = invAngleSum0 >> 3;
+#else
             int deltaPos0 = invAngleSum0 >> 2;
+#endif
             int deltaFrac0 = deltaPos0 & 63;
             int deltaInt0 = deltaPos0 >> 6;
 
@@ -1008,11 +1086,15 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
   const int  tuHeight           = area.height;
   const int  predSize           = m_topRefLength;
   const int  predHSize          = m_leftRefLength;
+#if JVET_O0364_PADDING
+  const int predStride = predSize + 1 + multiRefIdx;
+#else
   const int  cuWidth            = cu.blocks[area.compID].width;
   const int  cuHeight           = cu.blocks[area.compID].height;
   const int  whRatio            = cu.ispMode && isLuma(area.compID) ? std::max(1, cuWidth / cuHeight) : std::max(1, tuWidth / tuHeight);
   const int  hwRatio            = cu.ispMode && isLuma(area.compID) ? std::max(1, cuHeight / cuWidth) : std::max(1, tuHeight / tuWidth);
   const int  predStride         = predSize + 1 + (whRatio + 1) * multiRefIdx;
+#endif
 
   const bool noShift            = pcv.noChroma2x2 && area.width == 4; // don't shift on the lowest level (chroma not-split)
   const int  unitWidth          = tuWidth  <= 2 && cu.ispMode && isLuma(area.compID) ? tuWidth  : pcv.minCUWidth  >> (noShift ? 0 : getComponentScaleX(area.compID, sps.getChromaFormatIdc()));
@@ -1236,12 +1318,14 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
       currUnit++;
     }
   }
+#if !JVET_O0364_PADDING
   // padding of extended samples above right with the last sample
   int lastSample = multiRefIdx + predSize;
   for (int j = 1; j <= whRatio * multiRefIdx; j++) { ptrDst[lastSample + j] = ptrDst[lastSample]; }
   // padding of extended samples below left with the last sample
   lastSample = multiRefIdx + predHSize;
   for (int i = 1; i <= hwRatio * multiRefIdx; i++) { ptrDst[(lastSample + i)*predStride] = ptrDst[lastSample*predStride]; }
+#endif
 }
 
 void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
@@ -1252,10 +1336,15 @@ void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel*
   {
     multiRefIdx = 0;
   }
+#if JVET_O0364_PADDING
+  const int predSize = m_topRefLength + multiRefIdx;
+  const int predHSize = m_leftRefLength + multiRefIdx;
+#else
   int whRatio          = std::max(1, int(area.width  / area.height));
   int hwRatio          = std::max(1, int(area.height / area.width));
   const int  predSize  = m_topRefLength  + (whRatio + 1) * multiRefIdx;
   const int  predHSize = m_leftRefLength + (hwRatio + 1) * multiRefIdx;
+#endif
   const int  predStride = predSize + 1;
 
 
@@ -1916,7 +2005,11 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
 void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 {
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#endif
 
   // derive above and left availability
   AvailableInfo availInfo = PU::getAvailableInfoLuma(pu);
@@ -1928,7 +2021,11 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#endif
   CHECK( pu.lwidth() != (1 << g_aucLog2[pu.lwidth()]) || pu.lheight() != (1 << g_aucLog2[pu.lheight()]), "Error: expecting blocks of size 2^M x 2^N" );
 
   // generate mode-specific prediction

@@ -628,13 +628,25 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
 
   const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
+#if JVET_O0919_TS_MIN_QP
+  const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+  const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
+  const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
+#else
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem);
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem, uiLog2BlockWidth, uiLog2BlockHeight);
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
+#if JVET_O0919_TS_MIN_QP
+  const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem(isTransformSkip)];
+  const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem(isTransformSkip));
+  const int iQBits = QUANT_SHIFT + cQP.per(isTransformSkip) + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#else
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem];
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, (uiLog2BlockWidth-1), (uiLog2BlockHeight-1), cQP.rem);
   const int iQBits = QUANT_SHIFT + cQP.per + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#endif
 
 
   const TCoeff entropyCodingMinimum = -(1 << maxLog2TrDynamicRange);
@@ -1078,10 +1090,17 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   if( cctx.signHiding() && uiAbsSum>=2)
   {
+#if JVET_O0919_TS_MIN_QP
+    const double inverseQuantScale = double(g_invQuantScales[0][cQP.rem(isTransformSkip)]);
+    int64_t rdFactor = (int64_t)(inverseQuantScale * inverseQuantScale * (1 << (2 * cQP.per(isTransformSkip))) / m_dLambda / 16
+                                  / (1 << (2 * DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)))
+                             + 0.5);
+#else
     const double inverseQuantScale = double(g_invQuantScales[0][cQP.rem]);
     int64_t rdFactor = (int64_t)(inverseQuantScale * inverseQuantScale * (1 << (2 * cQP.per)) / m_dLambda / 16
                                / (1 << (2 * DISTORTION_PRECISION_ADJUSTMENT(channelBitDepth)))
                              + 0.5);
+#endif
 
     int lastCG = -1;
     int absSum = 0 ;
@@ -1252,9 +1271,16 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
 #endif
 
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale( tu, compID );  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+#if JVET_O0919_TS_MIN_QP
+  const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+  const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + transformShift + ( needsSqrt2Scale ? -1 : 0 );  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+  const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale?1:0][qp.rem(isTransformSkip)];
+  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth );
+#else
   const int    qBits = QUANT_SHIFT + qp.per + transformShift + (needsSqrt2Scale?-1:0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale?1:0][qp.rem];
   const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth );
+#endif
 
   const TCoeff entropyCodingMaximum = ( 1 << maxLog2TrDynamicRange ) - 1;
 
@@ -1500,13 +1526,25 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
 #endif
 
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale(tu, compID);  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+#if JVET_O0919_TS_MIN_QP
+  const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+  const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + transformShift + ( needsSqrt2Scale ? -1 : 0 );  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+  const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale ? 1 : 0][qp.rem(isTransformSkip)];
+  const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth);
+#else
   const int    qBits = QUANT_SHIFT + qp.per + transformShift + (needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale ? 1 : 0][qp.rem];
   const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem, maxLog2TrDynamicRange, channelBitDepth);
+#endif
 
   TrQuantParams trQuantParams;
+#if JVET_O0919_TS_MIN_QP
+  trQuantParams.rightShift = (IQUANT_SHIFT - (transformShift + qp.per(isTransformSkip)));
+  trQuantParams.qScale = g_invQuantScales[needsSqrt2Scale ? 1 : 0][qp.rem(isTransformSkip)];
+#else
   trQuantParams.rightShift = (IQUANT_SHIFT - (transformShift + qp.per));
   trQuantParams.qScale = g_invQuantScales[needsSqrt2Scale ? 1 : 0][qp.rem];
+#endif
 
   const TCoeff entropyCodingMaximum = (1 << maxLog2TrDynamicRange) - 1;
 

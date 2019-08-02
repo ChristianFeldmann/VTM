@@ -102,6 +102,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   {
     cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
     cs.picture->resizeAlfCtbFilterIndex(cs.pcv->sizeInCtus);
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    cs.picture->resizeAlfCtuAlternative( cs.pcv->sizeInCtus );
+#endif
   }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
@@ -198,6 +201,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
+#if JVET_O1170_CHECK_BV_AT_DECODER
+      cs.resetIBCBuffer = true;
+#endif
 #if !JVET_O0078_SINGLE_HMVPLUT
       cs.motionLut.lutShareIbc.resize(0);
 #endif

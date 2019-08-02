@@ -61,7 +61,11 @@ enum MvPrecision
 class Mv
 {
 private:
+#if JVET_O0057_ALTHPELIF
+  static const MvPrecision m_amvrPrecision[4];
+#else
   static const MvPrecision m_amvrPrecision[3];
+#endif
   static const MvPrecision m_amvrPrecAffine[3];
   static const MvPrecision m_amvrPrecIbc[3];
 

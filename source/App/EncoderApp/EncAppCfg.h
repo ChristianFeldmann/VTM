@@ -512,6 +512,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
+#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

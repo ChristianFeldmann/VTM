@@ -380,6 +380,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
   m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_cEncLib.setMaxNumIBCMergeCand                                ( m_maxNumIBCMergeCand );
+#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );

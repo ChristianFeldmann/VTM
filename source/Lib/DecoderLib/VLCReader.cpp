@@ -2047,7 +2047,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if (!pcSlice->isIntra())
+#else
     if (!pcSlice->isIntra() || sps->getIBCFlag())
+#endif
     {
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
       pcSlice->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
@@ -2100,6 +2104,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setMaxNumTriangleCand(0);
       }
     }
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if (sps->getIBCFlag())
+    {
+      READ_UVLC(uiCode, "six_minus_max_num_ibc_merge_cand");
+      pcSlice->setMaxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS - uiCode);
+    }
+#endif
+
 #if JVET_O0105_ICT
     if (bChroma)
     {

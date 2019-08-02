@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0455_IBC_MAX_MERGE_NUM                      1 // JVET-O0455: Control the max number of IBC merge candidates independently from regular merge candidates
+
 #define JVET_O1170_IBC_VIRTUAL_BUFFER                     1 // JVET-O1170/O1171: IBC virtual buffer
 #if JVET_O1170_IBC_VIRTUAL_BUFFER
 #define JVET_O1170_CHECK_BV_AT_DECODER                    1 // For decoder to check if a BV is valid or not

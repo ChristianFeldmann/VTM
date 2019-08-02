@@ -3531,7 +3531,12 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
 void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #endif
 {
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || cu.mipFlag == true ||
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+      (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
+#else
+      cu.mipFlag == true ||
+#endif
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
 #if JVET_O0545_MAX_TB_SIGNALLING
@@ -4273,6 +4278,11 @@ void CABACReader::mip_pred_mode( PredictionUnit &pu )
 
   const int numModes   = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+  uint32_t mipMode;
+  xReadTruncBinCode( mipMode, numModes );
+  pu.intraDir[CHANNEL_TYPE_LUMA] = mipMode;
+#else
   int      unaryMax    = NUM_MPM_MIP - 1;
   int      fixedLength = getNumEpBinsMip( pu.Y() );
   unsigned modeIdx     = code_unary_fixed( Ctx::MipMode( 0 ), unaryMax, fixedLength );
@@ -4297,6 +4307,7 @@ void CABACReader::mip_pred_mode( PredictionUnit &pu )
     }
     pu.intraDir[CHANNEL_TYPE_LUMA] = modeIdx;
   }
+#endif
   CHECKD(pu.intraDir[CHANNEL_TYPE_LUMA] < 0 || pu.intraDir[CHANNEL_TYPE_LUMA] >= numModes, "Invalid MIP mode");
 
   DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );

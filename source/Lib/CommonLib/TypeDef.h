@@ -65,6 +65,8 @@
 
 #define JVET_O_MAX_NUM_ALF_APS_8                          1 // JVET-O: number of ALF APSs is reduced to 8
 
+#define JVET_O0925_MIP_SIMPLIFICATIONS                    1 // JVET-O0925: Simplifications of MIP
+
 #define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
 
 #define JVET_O0570_GRAD_SIMP                              1 // JVET-O0570/JVET-O0211, SMID friendly spatial gradient calculation

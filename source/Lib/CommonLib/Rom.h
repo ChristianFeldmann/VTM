@@ -79,10 +79,12 @@ extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIS
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 extern const uint8_t g_intraMode65to33AngMapping[NUM_INTRA_MODE];
 extern const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE];
 extern const uint8_t g_mapAngular33ToMip[3][35];
 extern const int     g_sortedMipMpms    [3][NUM_MPM_MIP];
+#endif
 #if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 // ====================================================================================================================
 // Luma QP to Chroma QP mapping

@@ -773,43 +773,46 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     for (int y = 0, deltaPos = intraPredAngle * (1 + multiRefIdx); y<height; y++, deltaPos += intraPredAngle, pDsty += dstStride)
     {
       const int deltaInt   = deltaPos >> 5;
-      const int deltaFract = deltaPos & (32 - 1);
+      const int deltaFract = deltaPos & 31;
 
       if ( !isIntegerSlope( abs(intraPredAngle) ) )
       {
         if( isLuma(channelType) )
         {
-          Pel                        p[4];
-          const bool                 useCubicFilter = !m_ipaParam.interpolationFlag;
-          TFilterCoeff const * const f              = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
+          const bool useCubicFilter = !m_ipaParam.interpolationFlag;
 
-          int         refMainIndex   = deltaInt + 1;
+          const TFilterCoeff *const f =
+            (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
 
-          for( int x = 0; x < width; x++, refMainIndex++ )
+          for (int x = 0; x < width; x++)
           {
-            p[0] = refMain[refMainIndex - 1];
-            p[1] = refMain[refMainIndex];
-            p[2] = refMain[refMainIndex + 1];
-            p[3] = f[3] != 0 ? refMain[refMainIndex + 2] : 0;
+            Pel p[4];
 
-            pDstBuf[y*dstStride + x] = static_cast<Pel>((static_cast<int>(f[0] * p[0]) + static_cast<int>(f[1] * p[1]) + static_cast<int>(f[2] * p[2]) + static_cast<int>(f[3] * p[3]) + 32) >> 6);
+            p[0] = refMain[deltaInt + x];
+            p[1] = refMain[deltaInt + x + 1];
+            p[2] = refMain[deltaInt + x + 2];
+#if JVET_O0364_PADDING
+            p[3] = refMain[deltaInt + x + 3];
+#else
+            p[3] = f[3] != 0 ? refMain[deltaInt + x + 3] : 0;
+#endif
 
-            if( useCubicFilter ) // only cubic filter has negative coefficients and requires clipping
-            {
-              pDstBuf[y*dstStride + x] = ClipPel( pDstBuf[y*dstStride + x], clpRng );
-            }
+            Pel val = (f[0] * p[0] + f[1] * p[1] + f[2] * p[2] + f[3] * p[3] + 32) >> 6;
+
+            pDsty[x] = ClipPel(val, clpRng);   // always clip even though not always needed
           }
         }
         else
         {
           // Do linear filtering
-          const Pel *pRM = refMain + deltaInt + 1;
-          int lastRefMainPel = *pRM++;
-          for( int x = 0; x < width; pRM++, x++ )
+          for (int x = 0; x < width; x++)
           {
-            int thisRefMainPel = *pRM;
-            pDsty[x + 0] = ( Pel ) ( ( ( 32 - deltaFract )*lastRefMainPel + deltaFract*thisRefMainPel + 16 ) >> 5 );
-            lastRefMainPel = thisRefMainPel;
+            Pel p[2];
+
+            p[0] = refMain[deltaInt + x + 1];
+            p[1] = refMain[deltaInt + x + 2];
+
+            pDsty[x] = p[0] + ((deltaFract * (p[1] - p[0]) + 16) >> 5);
           }
         }
       }

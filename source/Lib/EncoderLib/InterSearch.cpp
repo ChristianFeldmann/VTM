@@ -7000,7 +7000,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         const double lfact  = ( absIct == 1 || absIct == 3 ? 0.8 : 0.5 );
         m_pcTrQuant->setLambda( lfact * m_pcTrQuant->getLambda() );
 #if JVET_O0376_SPS_JCCR_FLAG
-        if (sps.getJCCREnabledFlag() && (tu.cu->cs->slice->getSliceQp() > 18))
+        if ( checkJointCbCr && (tu.cu->cs->slice->getSliceQp() > 18))
         {
             m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
         }

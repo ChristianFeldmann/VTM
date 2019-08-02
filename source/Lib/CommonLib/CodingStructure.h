@@ -195,6 +195,10 @@ public:
 
   LutMotionCand motionLut;
 
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  bool resetIBCBuffer;
+#endif
+
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
 private:

@@ -3154,7 +3154,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
         int xPred = pu.bv.getHor();
         int yPred = pu.bv.getVer();
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+        if (!m_pcInterSearch->searchBv(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, xPred, yPred, lcuWidth)) // not valid bv derived
+#else
         if (!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth)) // not valid bv derived
+#endif
         {
           numValidBv--;
           continue;

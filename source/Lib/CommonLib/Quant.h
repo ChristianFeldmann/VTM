@@ -65,17 +65,30 @@ struct TrQuantParams
 };
 
 /// QP struct
+#if JVET_O0919_TS_MIN_QP
+class QpParam
+#else
 struct QpParam
+#endif
 {
+#if JVET_O0919_TS_MIN_QP
+  int Qps[2];
+  int pers[2];
+  int rems[2];
+#else
   int Qp;
   int per;
   int rem;
+#endif
 
 private:
 
   QpParam(const int           qpy,
           const ChannelType   chType,
           const int           qpBdOffset,
+#if JVET_O0919_TS_MIN_QP
+          const int           minQpPrimeTsMinus4,
+#endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
           const int           dqp );
@@ -83,6 +96,12 @@ private:
 public:
 
   QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT);
+
+#if JVET_O0919_TS_MIN_QP
+  int Qp ( const bool ts ) const { return Qps [ts?1:0]; }
+  int per( const bool ts ) const { return pers[ts?1:0]; }
+  int rem( const bool ts ) const { return rems[ts?1:0]; }
+#endif
 
 }; // END STRUCT DEFINITION QpParam
 

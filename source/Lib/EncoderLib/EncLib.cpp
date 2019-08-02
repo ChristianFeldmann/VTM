@@ -983,6 +983,9 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_O0919_TS_MIN_QP
+    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 

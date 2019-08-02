@@ -100,6 +100,8 @@
 
 #define JVET_O0366_AFFINE_BCW                             1 // JVET-O0366: Simplifications on BCW index derivation process
 
+#define JVET_O0919_TS_MIN_QP                              1 // JVET-O0919: Minimum QP for Transform Skip Mode
+
 #define JVET_O1168_CU_CHROMA_QP_OFFSET                    1 // JVET-O1168: cu chroma QP offset
 
 #define JVET_O0368_LFNST_WITH_DCT2_ONLY                   1 // JVET-O0368/O0292/O0521/O0466: disable LFNST for non-DCT2 MTS candidates normatively

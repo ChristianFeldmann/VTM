@@ -735,6 +735,9 @@ private:
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
+#if JVET_O0919_TS_MIN_QP
+  int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
+#endif
   int               m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
   bool              m_bPCMFilterDisableFlag;
 
@@ -936,6 +939,10 @@ public:
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
+#if JVET_O0919_TS_MIN_QP
+  int                     getMinQpPrimeTsMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
+  void                    setMinQpPrimeTsMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
+#endif
 
   void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }
   bool                    getSAOEnabledFlag() const                                                       { return m_saoEnabledFlag;                                                    }

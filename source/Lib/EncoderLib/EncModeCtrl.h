@@ -112,6 +112,9 @@ struct EncTestMode
   EncTestModeOpts opts;
   int             qp;
   bool            lossless;
+#if JVET_O0502_ISP_CLEANUP
+  double          maxCostAllowed;
+#endif
 };
 
 

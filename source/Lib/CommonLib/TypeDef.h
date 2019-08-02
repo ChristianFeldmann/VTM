@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0502_ISP_CLEANUP                            1 // JVET-O0502: Enable PDPC and all 67 intra modes and apply the cubic filter always (also included in JVET-O0341) for ISP
 
 #define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
 
@@ -484,7 +485,12 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
+#if JVET_O0502_ISP_CLEANUP
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  INTRA_SUBPARTITIONS_RESERVED  = 4
+#else
   NUM_INTRA_SUBPARTITIONS_MODES = 3
+#endif
 };
 
 enum SbtIdx

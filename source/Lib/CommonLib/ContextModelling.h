@@ -129,11 +129,23 @@ public:
       }
     }
 #undef UPDATE
+
+
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+    int ctxOfs = std::min((sumAbs+1)>>1, 3) + ( diag < 2 ? 4 : 0 );
+#else
     int ctxOfs = std::min( sumAbs, 5 ) + ( diag < 2 ? 6 : 0 );
+#endif
+
     if( m_chType == CHANNEL_TYPE_LUMA )
     {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+      ctxOfs += diag < 5 ? 4 : 0;
+#else
       ctxOfs += diag < 5 ? 6 : 0;
+#endif
     }
+
     m_tmplCpDiag = diag;
     m_tmplCpSum1 = sumAbs - numPos;
     return m_sigFlagCtxSet[std::max( 0, state-1 )]( ctxOfs );

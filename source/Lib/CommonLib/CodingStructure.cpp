@@ -67,6 +67,12 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   , m_cuCache ( cuCache )
   , m_puCache ( puCache )
   , m_tuCache ( tuCache )
+#if JVET_O0070_PROF
+  , bestParent ( nullptr )
+#endif
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  , resetIBCBuffer (false)
+#endif
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
   {

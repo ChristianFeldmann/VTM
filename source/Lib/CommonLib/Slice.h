@@ -735,6 +735,9 @@ private:
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
+#if JVET_O0919_TS_MIN_QP
+  int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
+#endif
   int               m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
   bool              m_bPCMFilterDisableFlag;
 
@@ -797,6 +800,9 @@ private:
   bool              m_SMVD;
   bool              m_Affine;
   bool              m_AffineType;
+#if JVET_O0070_PROF
+  bool              m_PROF;
+#endif
   bool              m_GBi;                        //
   bool              m_MHIntra;
   bool              m_Triangle;
@@ -933,6 +939,10 @@ public:
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
+#if JVET_O0919_TS_MIN_QP
+  int                     getMinQpPrimeTsMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
+  void                    setMinQpPrimeTsMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
+#endif
 
   void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }
   bool                    getSAOEnabledFlag() const                                                       { return m_saoEnabledFlag;                                                    }
@@ -1016,6 +1026,10 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
+#if JVET_O0070_PROF
+  void      setUsePROF            ( bool b )                                        { m_PROF = b; }
+  bool      getUsePROF            ()                                      const     { return m_PROF; }
+#endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
   void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
@@ -1559,7 +1573,11 @@ private:
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                   m_uiMaxBTSize;
 
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*                       m_alfApss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*                       m_alfApss[MAX_NUM_APS];
+#endif
   bool                       m_tileGroupAlfEnabledFlag[MAX_NUM_COMPONENT];
   int                        m_tileGroupNumAps;
   std::vector<int>           m_tileGroupLumaApsId;
@@ -2067,7 +2085,11 @@ protected:
   ParameterSetMap<APS> m_apsMap;
   ParameterSetMap<DPS> m_dpsMap;
 
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS* m_apss[ALF_CTB_MAX_NUM_APS];
+#else
   APS* m_apss[MAX_NUM_APS];
+#endif
 
   int m_activeDPSId; // -1 for nothing active
   int m_activeSPSId; // -1 for nothing active

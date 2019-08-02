@@ -253,6 +253,9 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
+#if JVET_O0070_PROF
+  bool      m_PROF;
+#endif
   bool      m_BIO;
   int       m_LMChroma;
   bool      m_cclmCollocatedChromaFlag;

@@ -748,6 +748,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   const bool         chromaEnabled         = isChromaEnabled(format);
   WRITE_UVLC( chromaEnabled ? (pcSPS->getBitDepth(CHANNEL_TYPE_CHROMA) - 8):0,  "bit_depth_chroma_minus8" );
 
+#if JVET_O0919_TS_MIN_QP
+  WRITE_UVLC( pcSPS->getMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA),                      "min_qp_prime_ts_minus4" );
+#endif
+
   WRITE_UVLC( pcSPS->getBitsForPOC()-4,                 "log2_max_pic_order_cnt_lsb_minus4" );
   WRITE_FLAG( pcSPS->getIDRRefParamListPresent(),                 "sps_idr_rpl_present_flag" );
   // KJS: Marakech decision: sub-layers added back
@@ -904,6 +908,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if ( pcSPS->getUseAffine() )
   {
     WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
+#if JVET_O0070_PROF
+    WRITE_FLAG( pcSPS->getUsePROF() ? 1 : 0,                                                   "sps_prof_enabled_flag" );
+#endif
 #if JVET_O0438_SPS_AFFINE_AMVR_FLAG
     WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
 #endif
@@ -1271,7 +1278,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if (alfEnabled)
       {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+        WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
+#else
         xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#endif
 #else
         if (pcSlice->isIntra())
         {
@@ -1279,13 +1290,21 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
         else
         {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
+#else
           xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#endif
         }
 #endif
         const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
         for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
         {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(apsId[i], 3, "tile_group_aps_id");
+#else
           WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
+#endif
         }
 
         const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
@@ -1300,7 +1319,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
+#else
           WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#endif
 #else
           if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
           {
@@ -1308,7 +1331,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           }
           else
           {
+#if JVET_O_MAX_NUM_ALF_APS_8
+            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
+#else
             WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#endif
           }
 #endif
         }

@@ -904,6 +904,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
+#if JVET_O0070_PROF
+  sps.setUsePROF               ( m_PROF );
+#endif
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
@@ -980,6 +983,9 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_O0919_TS_MIN_QP
+    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 

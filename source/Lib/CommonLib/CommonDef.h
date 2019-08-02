@@ -190,7 +190,11 @@ static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTE
 static const int MAX_ALF_PADDING_SIZE        =                      4;
 
 static const int ALF_FIXED_FILTER_NUM        =                     64;
+#if JVET_O_MAX_NUM_ALF_APS_8
+static const int ALF_CTB_MAX_NUM_APS         =                      8;
+#else
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
+#endif
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
 
@@ -371,6 +375,10 @@ static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max 
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
 
+#if JVET_O0070_PROF
+static const int PROF_BORDER_EXT_W            =                     1;
+static const int PROF_BORDER_EXT_H            =                     1;
+#endif
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256

@@ -2915,7 +2915,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || cu.mipFlag == true ||
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+#if JVET_O0545_MAX_TB_SIGNALLING
+    || ( cu.blocks[ 0 ].width > cu.cs->sps->getMaxTbSize() || cu.blocks[ 0 ].height > cu.cs->sps->getMaxTbSize() )
+#else
     || ( cu.blocks[ 0 ].width > MAX_TB_SIZEY || cu.blocks[ 0 ].height > MAX_TB_SIZEY )
+#endif
 #endif
     )
   {

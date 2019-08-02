@@ -435,7 +435,7 @@ uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit 
 }
 
 #if JVET_O0502_ISP_CLEANUP
-bool CU::allLumaCBfsAreZero(const CodingUnit& cu)
+bool CU::allLumaCBFsAreZero(const CodingUnit& cu)
 {
   if (!cu.ispMode)
   {
@@ -444,7 +444,6 @@ bool CU::allLumaCBfsAreZero(const CodingUnit& cu)
   else
   {
     int numTotalTUs = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[cu.firstTU->lheight()] : cu.lwidth() >> g_aucLog2[cu.firstTU->lwidth()];
-    //bool allZeroCbfs = false;
     TransformUnit* tuPtr = cu.firstTU;
     for (int tuIdx = 0; tuIdx < numTotalTUs; tuIdx++)
     {

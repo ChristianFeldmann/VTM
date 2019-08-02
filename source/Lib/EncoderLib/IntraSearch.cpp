@@ -2160,7 +2160,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), compID, uiAbsSum );
 
 #if JVET_O0502_ISP_CLEANUP
-  if (tu.cu->ispMode && isLuma(compID) && CU::isISPLast(*tu.cu, area, area.compID) && CU::allLumaCBfsAreZero(*tu.cu))
+  if (tu.cu->ispMode && isLuma(compID) && CU::isISPLast(*tu.cu, area, area.compID) && CU::allLumaCBFsAreZero(*tu.cu))
   {
     // ISP has to have at least one non-zero CBF
     ruiDist = MAX_INT;
@@ -2344,7 +2344,7 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
   int               subTuCounter = 0;
   const CodingUnit& cu = *cs.getCU(partitioner.currArea().lumaPos(), partitioner.chType);
   bool              earlySkipISP = false;
-  bool              uiSplitCbfLuma = false;
+  bool              splitCbfLuma = false;
   const PartSplit   ispType = CU::getISPType(cu, COMPONENT_Y);
 
   cs.cost = 0;
@@ -2391,7 +2391,7 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
 
     subTuCounter++;
 
-    uiSplitCbfLuma |= TU::getCbfAtDepth(*cs.getTU(partitioner.currArea().lumaPos(), partitioner.chType, subTuCounter - 1), COMPONENT_Y, partitioner.currTrDepth);
+    splitCbfLuma |= TU::getCbfAtDepth(*cs.getTU(partitioner.currArea().lumaPos(), partitioner.chType, subTuCounter - 1), COMPONENT_Y, partitioner.currTrDepth);
     int nSubPartitions = m_ispTestedModes.numTotalParts[cu.ispMode - 1];
     if (subTuCounter < nSubPartitions)
     {
@@ -2435,7 +2435,7 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
       {
         if (currArea.Y().contains(ptu->Y()))
         {
-          TU::setCbfAtDepth(*ptu, COMPONENT_Y, currDepth, uiSplitCbfLuma ? 1 : 0);
+          TU::setCbfAtDepth(*ptu, COMPONENT_Y, currDepth, splitCbfLuma ? 1 : 0);
         }
       }
     }

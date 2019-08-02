@@ -106,7 +106,7 @@ namespace CU
   bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
 #if JVET_O0502_ISP_CLEANUP
-  bool      allLumaCBfsAreZero        ( const CodingUnit& cu );
+  bool      allLumaCBFsAreZero        ( const CodingUnit& cu );
 #endif
 
   PUTraverser traversePUs             (      CodingUnit& cu);

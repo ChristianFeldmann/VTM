@@ -114,6 +114,11 @@ protected:
   Pel*                 m_gradY1;
   bool                 m_subPuMC;
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  int                  m_IBCBufferWidth;
+  PelStorage           m_IBCBuffer;
+  void xIntraBlockCopy          (PredictionUnit &pu, PelUnitBuf &predBuf, const ComponentID compID);
+#endif
   int             rightShiftMSB(int numer, int    denom);
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
@@ -121,7 +126,11 @@ protected:
                                   , const bool& bioApplied
                                   , const bool luma, const bool chroma
   );
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred, PelUnitBuf* yuvPredTmp = NULL );
+#else
   void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
+#endif
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                  , const bool& bioApplied
                                  , bool isIBC
@@ -136,7 +145,11 @@ protected:
   void xBioGradFilter           (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, int bitDepth);
   void xCalcBIOPar              (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, int bitDepth);
   void xCalcBlkGradient         (int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied, PelUnitBuf* yuvDstTmp = NULL );
+#else
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied );
+#endif
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
 
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
@@ -144,11 +157,18 @@ protected:
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
   void xSubPuMC(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X);
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  void xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X, PelUnitBuf* yuvDstTmp = NULL);
+#else
+  void xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X);
+#endif
   void destroy();
 
 
   MotionInfo      m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
   void xChromaMC(PredictionUnit &pu, PelUnitBuf& pcYuvPred);
+#endif
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel      *m_cacheModel;
 #endif
@@ -156,11 +176,18 @@ public:
   InterPrediction();
   virtual ~InterPrediction();
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  void    init                (RdCost* pcRdCost, ChromaFormat chromaFormatIDC, const int ctuSize);
+#else
   void    init                (RdCost* pcRdCost, ChromaFormat chromaFormatIDC);
+#endif
 
   // inter
   void    motionCompensation  (PredictionUnit &pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X
     , const bool luma = true, const bool chroma = true
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+    , PelUnitBuf* predBufWOBIO = NULL
+#endif 
   );
   void    motionCompensation  (PredictionUnit &pu, const RefPicList &eRefPicList = REF_PIC_LIST_X
     , const bool luma = true, const bool chroma = true
@@ -171,9 +198,17 @@ public:
 
   void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );
   void    weightedTriangleBlk        ( PredictionUnit &pu, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
+#if JVET_O0297_DMVR_PADDING // For Dec speedup
+  void xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId, bool forLuma);
+  void xPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
+#else
   void xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
+#endif
   void xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvSrc0, PelUnitBuf &pcYuvSrc1, PelUnitBuf &pcPad0, PelUnitBuf &pcPad1, const bool bioApplied
     , const Mv startMV[NUM_REF_PIC_LIST_01]
+#if JVET_O0297_DMVR_PADDING // For Dec speedup
+    , bool blockMoved
+#endif
   );
   void xBIPMVRefine(int bd, Pel *pRefL0, Pel *pRefL1, uint64_t& minCost, int16_t *deltaMV, uint64_t *pSADsArray, int width, int height);
   uint64_t xDMVRCost(int bitDepth, Pel* pRef, uint32_t refStride, const Pel* pOrg, uint32_t orgStride, int width, int height);
@@ -186,6 +221,15 @@ public:
   void    setShareState(int shareStateIn) {m_shareState = shareStateIn;}
 #if ENABLE_SPLIT_PARALLELISM
   int     getShareState() const { return m_shareState; }
+#endif
+  static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  void xFillIBCBuffer(CodingUnit &cu);
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  void resetIBCBuffer(const ChromaFormat chromaFormatIDC, const int ctuSize);
+  void resetVPDUforIBC(const ChromaFormat chromaFormatIDC, const int ctuSize, const int vSize, const int xPos, const int yPos);
+  bool isLumaBvValid(const int ctuSize, const int xCb, const int yCb, const int width, const int height, const int xBv, const int yBv);
+#endif
 #endif
 };
 

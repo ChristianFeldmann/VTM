@@ -288,8 +288,7 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
-  int shift1 = std::max<int>(2, (14 - bitDepth));
-
+  int shift1 = std::max<int>(6, bitDepth - 6);
 
   assert((widthInside & 3) == 0);
 
@@ -341,8 +340,8 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 template< X86_VEXT vext >
 void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
-  int shift4 = std::min<int>(8, (bitDepth - 4));
-  int shift5 = std::min<int>(5, (bitDepth - 7));
+  int shift4 = std::max<int>(4, (bitDepth - 8));
+  int shift5 = std::max<int>(1, (bitDepth - 11));
   for (int y = 0; y < heightG; y++)
   {
     int x = 0;

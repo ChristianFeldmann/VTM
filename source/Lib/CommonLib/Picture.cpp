@@ -436,273 +436,282 @@ bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
 // picture methods
 // ---------------------------------------------------------------------------
 
-#if HEVC_TILES_WPP
 
-Tile::Tile()
-: m_tileWidthInCtus     (0)
-, m_tileHeightInCtus    (0)
-, m_rightEdgePosInCtus  (0)
-, m_bottomEdgePosInCtus (0)
-, m_firstCtuRsAddr      (0)
+Brick::Brick()
+: m_widthInCtus     (0)
+, m_heightInCtus    (0)
+, m_colBd           (0)
+, m_rowBd           (0)
+, m_firstCtuRsAddr  (0)
 {
 }
 
-Tile::~Tile()
+Brick::~Brick()
 {
 }
 
 
-TileMap::TileMap()
+BrickMap::BrickMap()
   : pcv(nullptr)
-  , tiles(0)
   , numTiles(0)
   , numTileColumns(0)
   , numTileRows(0)
-  , tileIdxMap(nullptr)
-  , ctuTsToRsAddrMap(nullptr)
-  , ctuRsToTsAddrMap(nullptr)
+  , brickIdxRsMap(nullptr)
+  , brickIdxBsMap(nullptr)
+  , ctuBsToRsAddrMap(nullptr)
+  , ctuRsToBsAddrMap(nullptr)
 {
 }
 
-void TileMap::create( const SPS& sps, const PPS& pps )
+void BrickMap::create( const SPS& sps, const PPS& pps )
 {
   pcv = pps.pcv;
 
   numTileColumns = pps.getNumTileColumnsMinus1() + 1;
   numTileRows    = pps.getNumTileRowsMinus1() + 1;
   numTiles       = numTileColumns * numTileRows;
-  tiles.resize( numTiles );
 
   const uint32_t numCtusInFrame = pcv->sizeInCtus;
-  tileIdxMap       = new uint32_t[numCtusInFrame];
-  ctuTsToRsAddrMap = new uint32_t[numCtusInFrame+1];
-  ctuRsToTsAddrMap = new uint32_t[numCtusInFrame+1];
+  brickIdxRsMap    = new uint32_t[numCtusInFrame];
+  brickIdxBsMap    = new uint32_t[numCtusInFrame];
+  ctuBsToRsAddrMap = new uint32_t[numCtusInFrame+1];
+  ctuRsToBsAddrMap = new uint32_t[numCtusInFrame+1];
 
-  initTileMap( sps, pps );
-  initCtuTsRsAddrMap();
+  initBrickMap( sps, pps );
+
+  numTiles = (uint32_t) bricks.size();
 }
 
-void TileMap::destroy()
+void BrickMap::destroy()
 {
-  tiles.clear();
+  bricks.clear();
 
-  if ( tileIdxMap )
+  if ( brickIdxRsMap )
   {
-    delete[] tileIdxMap;
-    tileIdxMap = nullptr;
+    delete[] brickIdxRsMap;
+    brickIdxRsMap = nullptr;
   }
 
-  if ( ctuTsToRsAddrMap )
+  if ( brickIdxBsMap )
   {
-    delete[] ctuTsToRsAddrMap;
-    ctuTsToRsAddrMap = nullptr;
+    delete[] brickIdxBsMap;
+    brickIdxBsMap = nullptr;
   }
 
-  if ( ctuRsToTsAddrMap )
+  if ( ctuBsToRsAddrMap )
   {
-    delete[] ctuRsToTsAddrMap;
-    ctuRsToTsAddrMap = nullptr;
+    delete[] ctuBsToRsAddrMap;
+    ctuBsToRsAddrMap = nullptr;
+  }
+
+  if ( ctuRsToBsAddrMap )
+  {
+    delete[] ctuRsToBsAddrMap;
+    ctuRsToBsAddrMap = nullptr;
   }
 }
 
-void TileMap::initTileMap( const SPS& sps, const PPS& pps )
+void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
 {
   const uint32_t frameWidthInCtus  = pcv->widthInCtus;
   const uint32_t frameHeightInCtus = pcv->heightInCtus;
 
-  if( pps.getTileUniformSpacingFlag() )
+  std::vector<uint32_t> tileRowHeight (numTileRows);
+  std::vector<uint32_t> tileColWidth (numTileColumns);
+
+  if( pps.getUniformTileSpacingFlag() )
   {
     //set width and height for each (uniform) tile
     for(int row=0; row < numTileRows; row++)
     {
-      for(int col=0; col < numTileColumns; col++)
-      {
-        const int tileIdx = row * numTileColumns + col;
-        tiles[tileIdx].setTileWidthInCtus(  (col+1)*frameWidthInCtus/numTileColumns - (col*frameWidthInCtus)/numTileColumns );
-        tiles[tileIdx].setTileHeightInCtus( (row+1)*frameHeightInCtus/numTileRows   - (row*frameHeightInCtus)/numTileRows );
-      }
+      tileRowHeight[row] = (row+1)*frameHeightInCtus/numTileRows   - (row*frameHeightInCtus)/numTileRows;
+    }
+    for(int col=0; col < numTileColumns; col++)
+    {
+      tileColWidth[col] = (col+1)*frameWidthInCtus/numTileColumns - (col*frameWidthInCtus)/numTileColumns;
     }
   }
   else
   {
-    //set the width for each tile
-    for(int row=0; row < numTileRows; row++)
+    tileColWidth[ numTileColumns - 1 ] = frameWidthInCtus;
+    for( int i = 0; i < numTileColumns - 1; i++ ) 
     {
-      int cumulativeTileWidth = 0;
-      for(int col=0; col < numTileColumns - 1; col++)
-      {
-        tiles[row * numTileColumns + col].setTileWidthInCtus( pps.getTileColumnWidth(col) );
-        cumulativeTileWidth += pps.getTileColumnWidth(col);
-      }
-      tiles[row * numTileColumns + numTileColumns - 1].setTileWidthInCtus( frameWidthInCtus-cumulativeTileWidth );
+      tileColWidth[ i ] = pps.getTileColumnWidth(i);
+      tileColWidth[ numTileColumns - 1 ]  =  tileColWidth[ numTileColumns - 1 ] - pps.getTileColumnWidth(i);
     }
 
-    //set the height for each tile
-    for(int col=0; col < numTileColumns; col++)
+
+    tileRowHeight[ numTileRows-1 ] = frameHeightInCtus;
+    for( int j = 0; j < numTileRows-1; j++ ) 
     {
-      int cumulativeTileHeight = 0;
-      for(int row=0; row < numTileRows - 1; row++)
-      {
-        tiles[row * numTileColumns + col].setTileHeightInCtus( pps.getTileRowHeight(row) );
-        cumulativeTileHeight += pps.getTileRowHeight(row);
-      }
-      tiles[(numTileRows - 1) * numTileColumns + col].setTileHeightInCtus( frameHeightInCtus-cumulativeTileHeight );
+      tileRowHeight[ j ] = pps.getTileRowHeight( j );
+      tileRowHeight[ numTileRows-1 ]  =  tileRowHeight[ numTileRows-1 ] - pps.getTileRowHeight( j );
     }
   }
 
-  // Tile size check
-  int minWidth  = 1;
-  int minHeight = 1;
-#if !JVET_M0101_HLS
-  const int profileIdc = sps.getPTL()->getGeneralPTL()->getProfileIdc();
-#else
-  const int profileIdc = sps.getProfileTierLevel()->getProfileIdc();
-#endif
-  if (  profileIdc == Profile::MAIN || profileIdc == Profile::MAIN10)
-  {
-    if (pps.getTilesEnabledFlag())
-    {
-      minHeight = 64  / sps.getMaxCUHeight();
-      minWidth  = 256 / sps.getMaxCUWidth();
-    }
-  }
-  for(int row=0; row < numTileRows; row++)
-  {
-    for(int col=0; col < numTileColumns; col++)
-    {
-      const int tileIdx = row * numTileColumns + col;
-      if(tiles[tileIdx].getTileWidthInCtus() < minWidth)   { THROW("Invalid tile size"); }
-      if(tiles[tileIdx].getTileHeightInCtus() < minHeight) { THROW("Invalid tile size"); }
-    }
-  }
 
   //initialize each tile of the current picture
-  for( int row=0; row < numTileRows; row++ )
+  std::vector<uint32_t> tileRowBd (numTileRows);
+  std::vector<uint32_t> tileColBd (numTileColumns);
+
+  tileColBd[ 0 ] = 0;
+  for( int i = 0; i  <  numTileColumns - 1; i++ )
   {
-    for( int col=0; col < numTileColumns; col++ )
-    {
-      const int tileIdx = row * numTileColumns + col;
-
-      //initialize the RightEdgePosInCU for each tile
-      int rightEdgePosInCTU = 0;
-      for( int i=0; i <= col; i++ )
-      {
-        rightEdgePosInCTU += tiles[row * numTileColumns + i].getTileWidthInCtus();
-      }
-      tiles[tileIdx].setRightEdgePosInCtus(rightEdgePosInCTU-1);
-
-      //initialize the BottomEdgePosInCU for each tile
-      int bottomEdgePosInCTU = 0;
-      for( int i=0; i <= row; i++ )
-      {
-        bottomEdgePosInCTU += tiles[i * numTileColumns + col].getTileHeightInCtus();
-      }
-      tiles[tileIdx].setBottomEdgePosInCtus(bottomEdgePosInCTU-1);
-
-      //initialize the FirstCUAddr for each tile
-      tiles[tileIdx].setFirstCtuRsAddr( (tiles[tileIdx].getBottomEdgePosInCtus() - tiles[tileIdx].getTileHeightInCtus() + 1) * frameWidthInCtus +
-                                         tiles[tileIdx].getRightEdgePosInCtus()  - tiles[tileIdx].getTileWidthInCtus()  + 1);
-    }
+    tileColBd[ i + 1 ] = tileColBd[ i ] + tileColWidth[ i ];
   }
 
-  int  columnIdx = 0;
-  int  rowIdx = 0;
-
-  //initialize the TileIdxMap
-  const uint32_t numCtusInFrame = pcv->sizeInCtus;
-  for( int i=0; i<numCtusInFrame; i++)
+  tileRowBd[ 0 ] = 0;
+  for( int j = 0; j  <  numTileRows - 1; j++ )
   {
-    for( int col=0; col < numTileColumns; col++)
-    {
-      if(i % frameWidthInCtus <= tiles[col].getRightEdgePosInCtus())
-      {
-        columnIdx = col;
-        break;
-      }
-    }
-    for(int row=0; row < numTileRows; row++)
-    {
-      if(i / frameWidthInCtus <= tiles[row*numTileColumns].getBottomEdgePosInCtus())
-      {
-        rowIdx = row;
-        break;
-      }
-    }
-    tileIdxMap[i] = rowIdx * numTileColumns + columnIdx;
+    tileRowBd[ j + 1 ] = tileRowBd[ j ] + tileRowHeight[ j ];
   }
-}
 
-void TileMap::initCtuTsRsAddrMap()
-{
-  //generate the Coding Order Map and Inverse Coding Order Map
-  const uint32_t numCtusInFrame = pcv->sizeInCtus;
-  for(int ctuTsAddr=0, ctuRsAddr=0; ctuTsAddr<numCtusInFrame; ctuTsAddr++, ctuRsAddr = calculateNextCtuRSAddr(ctuRsAddr))
+  int brickIdx = 0;
+  for(int tileIdx=0; tileIdx< numTiles; tileIdx++)
   {
-    ctuTsToRsAddrMap[ctuTsAddr] = ctuRsAddr;
-    ctuRsToTsAddrMap[ctuRsAddr] = ctuTsAddr;
-  }
-  ctuTsToRsAddrMap[numCtusInFrame] = numCtusInFrame;
-  ctuRsToTsAddrMap[numCtusInFrame] = numCtusInFrame;
-}
+    int tileX = tileIdx % ( pps.getNumTileColumnsMinus1() + 1 );
+    int tileY = tileIdx / ( pps.getNumTileColumnsMinus1() + 1 );
 
-uint32_t TileMap::calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const
-{
-  const uint32_t frameWidthInCtus = pcv->widthInCtus;
-  uint32_t  nextCtuRsAddr;
-
-  //get the tile index for the current CTU
-  const uint32_t uiTileIdx = getTileIdxMap(currCtuRsAddr);
-
-  //get the raster scan address for the next CTU
-  if( currCtuRsAddr % frameWidthInCtus == tiles[uiTileIdx].getRightEdgePosInCtus() && currCtuRsAddr / frameWidthInCtus == tiles[uiTileIdx].getBottomEdgePosInCtus() )
-  //the current CTU is the last CTU of the tile
-  {
-    if(uiTileIdx+1 == numTiles)
+    if ( !pps.getBrickSplittingPresentFlag() || !pps.getBrickSplitFlag(tileIdx))
     {
-      nextCtuRsAddr = pcv->sizeInCtus;
+      bricks.resize(bricks.size()+1);
+      bricks[ brickIdx ].setColBd (tileColBd[ tileX ]);
+      bricks[ brickIdx ].setRowBd (tileRowBd[ tileY ]);
+      bricks[ brickIdx ].setWidthInCtus (tileColWidth[ tileX ]);
+      bricks[ brickIdx ].setHeightInCtus(tileRowHeight[ tileY ]);
+      bricks[ brickIdx ].setFirstCtuRsAddr(bricks[ brickIdx ].getColBd() + bricks[ brickIdx ].getRowBd() * frameWidthInCtus);
+      brickIdx++;
     }
     else
     {
-      nextCtuRsAddr = tiles[uiTileIdx+1].getFirstCtuRsAddr();
-    }
-  }
-  else //the current CTU is not the last CTU of the tile
-  {
-    if( currCtuRsAddr % frameWidthInCtus == tiles[uiTileIdx].getRightEdgePosInCtus() )  //the current CTU is on the rightmost edge of the tile
-    {
-      nextCtuRsAddr = currCtuRsAddr + frameWidthInCtus - tiles[uiTileIdx].getTileWidthInCtus() + 1;
-    }
-    else
-    {
-      nextCtuRsAddr = currCtuRsAddr + 1;
+      std::vector<uint32_t> rowHeight2;
+      std::vector<uint32_t> rowBd2;
+      int numBrickRowsMinus1 = 0;
+      if (pps.getUniformBrickSpacingFlag(tileIdx))
+      {
+        int brickHeight= pps.getBrickHeightMinus1(tileIdx) + 1;
+        int remainingHeightInCtbsY  = tileRowHeight[ tileY ];
+        int brickInTile = 0;
+        while( remainingHeightInCtbsY > brickHeight ) 
+        {
+          rowHeight2.resize(brickInTile+1);
+          rowHeight2[ brickInTile++ ] = brickHeight;
+          remainingHeightInCtbsY -= brickHeight;
+        }
+        rowHeight2.resize(brickInTile+1);
+        rowHeight2[ brickInTile ] = remainingHeightInCtbsY;
+        numBrickRowsMinus1 = brickInTile;
+      }
+      else
+      {
+        numBrickRowsMinus1 = pps.getNumBrickRowsMinus1(tileIdx);
+        rowHeight2.resize(numBrickRowsMinus1 + 1);
+        rowHeight2[ numBrickRowsMinus1 ] = tileRowHeight[ tileY ];
+        for(int j = 0; j < numBrickRowsMinus1; j++ ) 
+        {
+          rowHeight2[ j ] = pps.getBrickRowHeightMinus1 ( tileIdx, j )+ 1;
+          rowHeight2[ numBrickRowsMinus1 ]  -=  rowHeight2[ j ];
+        }
+      }
+      rowBd2.resize(numBrickRowsMinus1 + 1);
+      rowBd2[ 0 ] = 0;
+      for( int j = 0; j  <  numBrickRowsMinus1; j++ )
+      {
+        rowBd2[ j + 1 ] = rowBd2[ j ] + rowHeight2[ j ];
+      }
+      for( int j = 0; j < numBrickRowsMinus1 + 1; j++ ) 
+      {
+        bricks.resize(bricks.size()+1);
+        bricks[ brickIdx ].setColBd (tileColBd[ tileX ]);
+        bricks[ brickIdx ].setRowBd (tileRowBd[ tileY ] + rowBd2[ j ]);
+        bricks[ brickIdx ].setWidthInCtus (tileColWidth[ tileX ]);
+        bricks[ brickIdx ].setHeightInCtus(rowHeight2[ j ]);
+        bricks[ brickIdx ].setFirstCtuRsAddr(bricks[ brickIdx ].getColBd() + bricks[ brickIdx ].getRowBd() * frameWidthInCtus);
+        brickIdx++;
+      }
     }
   }
 
-  return nextCtuRsAddr;
+  initCtuBsRsAddrMap();
+
+  for( int i = 0; i < (int)bricks.size(); i++ )
+  {
+    for( int y = bricks[i].getRowBd(); y < bricks[i].getRowBd() + bricks[i].getHeightInCtus(); y++ ) 
+    {
+      for( int x = bricks[i].getColBd(); x < bricks[i].getColBd() + bricks[i].getWidthInCtus(); x++ )
+      {
+        // brickIdxBsMap in BS scan is brickIdxMap as defined in the draft text
+        brickIdxBsMap[ ctuRsToBsAddrMap[ y * frameWidthInCtus+ x ] ] = i;
+        // brickIdxRsMap in RS scan is usually required in the software
+        brickIdxRsMap[ y * frameWidthInCtus+ x ] = i;
+      }
+    }
+  }
 }
 
-uint32_t TileMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAddressInRaster, Slice *pcSlice) const
+
+void BrickMap::initCtuBsRsAddrMap()
 {
-  const bool bWPPEnabled = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  const uint32_t picWidthInCtbsY  = pcv->widthInCtus;
+  const uint32_t picHeightInCtbsY = pcv->heightInCtus;
+  const uint32_t picSizeInCtbsY    = picWidthInCtbsY * picHeightInCtbsY;
+  const int numBricksInPic         = (int) bricks.size();
+
+  for( uint32_t ctbAddrRs = 0; ctbAddrRs < picSizeInCtbsY; ctbAddrRs++ ) 
+  {
+    const uint32_t tbX = ctbAddrRs % picWidthInCtbsY;
+    const uint32_t tbY = ctbAddrRs / picWidthInCtbsY;
+    bool brickFound = false;
+    int bkIdx = (numBricksInPic - 1);
+    for( int i = 0; i < (numBricksInPic - 1)  &&  !brickFound; i++ ) 
+    {
+      brickFound = tbX  <  ( bricks[i].getColBd() + bricks[i].getWidthInCtus() )  &&
+                   tbY  <  ( bricks[i].getRowBd() + bricks[i].getHeightInCtus() );
+      if( brickFound )
+      {
+        bkIdx = i;
+      }
+    }
+    ctuRsToBsAddrMap[ ctbAddrRs ] = 0;
+
+    for( uint32_t i = 0; i < bkIdx; i++ )
+    {
+      ctuRsToBsAddrMap[ ctbAddrRs ]  +=  bricks[i].getHeightInCtus() * bricks[i].getWidthInCtus();
+    }
+    ctuRsToBsAddrMap[ ctbAddrRs ]  += ( tbY - bricks[ bkIdx ].getRowBd() ) * bricks[ bkIdx ].getWidthInCtus() + tbX - bricks[ bkIdx ].getColBd();
+  }
+  
+  
+  for( uint32_t ctbAddrRs = 0; ctbAddrRs < picSizeInCtbsY; ctbAddrRs++ )
+  {
+    ctuBsToRsAddrMap[ ctuRsToBsAddrMap[ ctbAddrRs ] ] = ctbAddrRs;
+  }
+}
+
+uint32_t BrickMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool addressInRaster, Slice *slice) const
+{
+  const bool wppEnabled = slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   uint32_t subStrm;
 
-  if( (bWPPEnabled && pcv->heightInCtus > 1) || (numTiles > 1) ) // wavefronts, and possibly tiles being used.
+  if( (wppEnabled && pcv->heightInCtus > 1) || (numTiles > 1) ) // wavefronts, and possibly tiles being used.
   {
-    const uint32_t ctuRsAddr = bAddressInRaster ? ctuAddr : getCtuTsToRsAddrMap(ctuAddr);
-    const uint32_t tileIndex = getTileIdxMap(ctuRsAddr);
+    // needs to be checked
+    CHECK (false, "bricks and WPP needs to be checked");
 
-    if (bWPPEnabled)
+    const uint32_t ctuRsAddr = addressInRaster ? ctuAddr : getCtuBsToRsAddrMap(ctuAddr);
+    const uint32_t brickIndex = getBrickIdxRsMap(ctuRsAddr);
+
+    if (wppEnabled)
     {
-      const uint32_t firstCtuRsAddrOfTile     = tiles[tileIndex].getFirstCtuRsAddr();
+      const uint32_t firstCtuRsAddrOfTile     = bricks[brickIndex].getFirstCtuRsAddr();
       const uint32_t tileYInCtus              = firstCtuRsAddrOfTile / pcv->widthInCtus;
       const uint32_t ctuLine                  = ctuRsAddr / pcv->widthInCtus;
-      const uint32_t startingSubstreamForTile = (tileYInCtus * numTileColumns) + (tiles[tileIndex].getTileHeightInCtus() * (tileIndex % numTileColumns));
-
+      const uint32_t startingSubstreamForTile = (tileYInCtus * numTileColumns) + (bricks[brickIndex].getHeightInCtus() * (brickIndex % numTileColumns));
       subStrm = startingSubstreamForTile + (ctuLine - tileYInCtus);
     }
     else
     {
-      subStrm = tileIndex;
+      subStrm = brickIndex;
     }
   }
   else
@@ -711,13 +720,11 @@ uint32_t TileMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAdd
   }
   return subStrm;
 }
-#endif
+
 
 Picture::Picture()
 {
-#if HEVC_TILES_WPP
-  tileMap              = nullptr;
-#endif
+  brickMap             = nullptr;
   cs                   = nullptr;
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
@@ -742,6 +749,7 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   margin            =  _margin;
   const Area a      = Area( Position(), size );
   M_BUFS( 0, PIC_RECONSTRUCTION ).create( _chromaFormat, a, _maxCUSize, _margin, MEMORY_ALIGN_DEF_SIZE );
+  M_BUFS( 0, PIC_RECON_WRAP ).create( _chromaFormat, a, _maxCUSize, _margin, MEMORY_ALIGN_DEF_SIZE );
 
   if( !_decoder )
   {
@@ -788,14 +796,12 @@ void Picture::destroy()
   }
   SEIs.clear();
 
-#if HEVC_TILES_WPP
-  if ( tileMap )
+  if ( brickMap )
   {
-    tileMap->destroy();
-    delete tileMap;
-    tileMap = nullptr;
+    brickMap->destroy();
+    delete brickMap;
+    brickMap = nullptr;
   }
-#endif
   if (m_spliceIdx)
   {
     delete[] m_spliceIdx;
@@ -868,16 +874,16 @@ const CPelBuf     Picture::getResiBuf(const CompArea &blk)  const { return getBu
        PelUnitBuf Picture::getResiBuf(const UnitArea &unit)       { return getBuf(unit, PIC_RESIDUAL); }
 const CPelUnitBuf Picture::getResiBuf(const UnitArea &unit) const { return getBuf(unit, PIC_RESIDUAL); }
 
-       PelBuf     Picture::getRecoBuf(const ComponentID compID)       { return getBuf(compID,                    PIC_RECONSTRUCTION); }
-const CPelBuf     Picture::getRecoBuf(const ComponentID compID) const { return getBuf(compID,                    PIC_RECONSTRUCTION); }
-       PelBuf     Picture::getRecoBuf(const CompArea &blk)            { return getBuf(blk,                       PIC_RECONSTRUCTION); }
-const CPelBuf     Picture::getRecoBuf(const CompArea &blk)      const { return getBuf(blk,                       PIC_RECONSTRUCTION); }
-       PelUnitBuf Picture::getRecoBuf(const UnitArea &unit)           { return getBuf(unit,                      PIC_RECONSTRUCTION); }
-const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit)     const { return getBuf(unit,                      PIC_RECONSTRUCTION); }
-       PelUnitBuf Picture::getRecoBuf()                               { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
-const CPelUnitBuf Picture::getRecoBuf()                         const { return M_BUFS(scheduler.getSplitPicId(), PIC_RECONSTRUCTION); }
+       PelBuf     Picture::getRecoBuf(const ComponentID compID, bool wrap)       { return getBuf(compID,                    wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelBuf     Picture::getRecoBuf(const ComponentID compID, bool wrap) const { return getBuf(compID,                    wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+       PelBuf     Picture::getRecoBuf(const CompArea &blk, bool wrap)            { return getBuf(blk,                       wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelBuf     Picture::getRecoBuf(const CompArea &blk, bool wrap)      const { return getBuf(blk,                       wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+       PelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)           { return getBuf(unit,                      wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const { return getBuf(unit,                      wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+       PelUnitBuf Picture::getRecoBuf(bool wrap)                                 { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
+const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
-void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps)
 {
   for( auto &sei : SEIs )
   {
@@ -886,14 +892,12 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
   SEIs.clear();
   clearSliceBuffer();
 
-#if HEVC_TILES_WPP
-  if( tileMap )
+  if( brickMap )
   {
-    tileMap->destroy();
-    delete tileMap;
-    tileMap = nullptr;
+    brickMap->destroy();
+    delete brickMap;
+    brickMap = nullptr;
   }
-#endif
 
   const ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
   const int          iWidth = sps.getPicWidthInLumaSamples();
@@ -913,16 +917,13 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS& aps)
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
-  cs->aps = &aps;
-#if HEVC_VPS
-  cs->vps     = nullptr;
-#endif
+  memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));   
+  cs->lmcsAps = &lmcsAps;
+
   cs->pcv     = pps.pcv;
 
-#if HEVC_TILES_WPP
-  tileMap = new TileMap;
-  tileMap->create( sps, pps );
-#endif
+  brickMap = new BrickMap;
+  brickMap->create( sps, pps );
   if (m_spliceIdx == NULL)
   {
     m_ctuNums = cs->pcv->sizeInCtus;
@@ -935,8 +936,10 @@ void Picture::allocateNewSlice()
 {
   slices.push_back(new Slice);
   Slice& slice = *slices.back();
+  memcpy(slice.getAlfAPSs(), cs->alfApss, sizeof(cs->alfApss));
 
-  slice.setAPS(cs->aps);
+  slice.setLmcsAPS(cs->lmcsAps);
+
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
   if(slices.size()>=2)
@@ -950,13 +953,17 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
-  p->setAPS(cs->aps);
+  p->setAlfAPSs(cs->alfApss);
+
+  p->setLmcsAPS(cs->lmcsAps);
 
   Slice * pTmp = slices[i];
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
-  pTmp->setAPS(0);
+  memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*MAX_NUM_APS);
+
+  pTmp->setLmcsAPS(0);
   return pTmp;
 }
 
@@ -1020,21 +1027,6 @@ void Picture::extendPicBorder()
 
     Pel*  pi = piTxt;
     // do left and right margins
-    if (cs->sps->getWrapAroundEnabledFlag())
-    {
-      int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
-      for (int y = 0; y < p.height; y++)
-      {
-        for (int x = 0; x < xmargin; x++ )
-        {
-          pi[ -x - 1       ] = pi[ -x - 1       + xoffset ];
-          pi[  p.width + x ] = pi[  p.width + x - xoffset ];
-        }
-        pi += p.stride;
-      }
-    }
-    else
-    {
       for (int y = 0; y < p.height; y++)
       {
         for (int x = 0; x < xmargin; x++ )
@@ -1044,7 +1036,6 @@ void Picture::extendPicBorder()
         }
         pi += p.stride;
       }
-    }
 
     // pi is now the (0,height) (bottom left of image within bigger picture
     pi -= (p.stride + xmargin);
@@ -1060,6 +1051,43 @@ void Picture::extendPicBorder()
     for (int y = 0; y < ymargin; y++ )
     {
       ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
+    }
+    
+    // reference picture with horizontal wrapped boundary
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      p = M_BUFS( 0, PIC_RECON_WRAP ).get( compID );
+      p.copyFrom(M_BUFS( 0, PIC_RECONSTRUCTION ).get( compID ));
+      piTxt = p.bufAt(0,0);
+      pi = piTxt;
+      int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
+      for (int y = 0; y < p.height; y++)
+      {
+        for (int x = 0; x < xmargin; x++ )
+        {
+          if( x < xoffset ) 
+          {
+            pi[ -x - 1 ] = pi[ -x - 1 + xoffset ];
+            pi[  p.width + x ] = pi[ p.width + x - xoffset ];
+          }
+          else 
+          {
+            pi[ -x - 1 ] = pi[ 0 ];
+            pi[  p.width + x ] = pi[ p.width - 1 ];
+          }
+        }
+        pi += p.stride;
+      }
+      pi -= (p.stride + xmargin);
+      for (int y = 0; y < ymargin; y++ )
+      {
+        ::memcpy( pi + (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin << 1)));
+      }
+      pi -= ((p.height-1) * p.stride);
+      for (int y = 0; y < ymargin; y++ )
+      {
+        ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
+      }
     }
   }
 
@@ -1198,17 +1226,10 @@ void Picture::addPictureToHashMapForInter()
       bIsBlockSame[i][j] = new bool[picWidth*picHeight];
     }
   }
-
-  m_hashMap.create();
+  m_hashMap.create(picWidth, picHeight);
   m_hashMap.generateBlock2x2HashValue(getOrigBuf(), picWidth, picHeight, slices[0]->getSPS()->getBitDepths(), blockHashValues[0], bIsBlockSame[0]);//2x2
   m_hashMap.generateBlockHashValue(picWidth, picHeight, 4, 4, blockHashValues[0], blockHashValues[1], bIsBlockSame[0], bIsBlockSame[1]);//4x4
   m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[1], bIsBlockSame[1][2], picWidth, picHeight, 4, 4);
-
-  m_hashMap.generateRectangleHashValue(picWidth, picHeight, 8, 4, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x4
-  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 4);
-
-  m_hashMap.generateRectangleHashValue(picWidth, picHeight, 4, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//4x8
-  m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 4, 8);
 
   m_hashMap.generateBlockHashValue(picWidth, picHeight, 8, 8, blockHashValues[1], blockHashValues[0], bIsBlockSame[1], bIsBlockSame[0]);//8x8
   m_hashMap.addToHashMapByRowWithPrecalData(blockHashValues[0], bIsBlockSame[0][2], picWidth, picHeight, 8, 8);

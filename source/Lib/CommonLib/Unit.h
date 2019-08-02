@@ -267,9 +267,8 @@ struct UnitAreaRelative : public UnitArea
 };
 
 class SPS;
-#if HEVC_VPS
 class VPS;
-#endif
+class DPS;
 class PPS;
 class Slice;
 
@@ -305,15 +304,18 @@ struct CodingUnit : public UnitArea
   int            affineType;
   bool           triangle;
   bool           transQuantBypass;
+  int            bdpcmMode;
   bool           ipcm;
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;
-#if HEVC_TILES_WPP
   uint32_t           tileIdx;
-#endif
+  uint8_t         mtsFlag;
+  uint32_t        lfnstIdx;
   uint8_t         GBiIdx;
   int             refIdxBi[2];
+  bool           mipFlag;
+
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
   Position       shareParentPos;
@@ -348,6 +350,9 @@ struct CodingUnit : public UnitArea
   void              setSbtPos( uint8_t pos ) { CHECK( pos >= 4, "sbt_pos wrong" ); sbtInfo = ( pos << 4 ) + ( sbtInfo & 0xcf ); }
   uint8_t           getSbtTuSplit() const;
   const uint8_t     checkAllowedSbt() const;
+#if JVET_O1124_ALLOW_CCLM_COND
+  const bool        checkCCLMAllowed() const;
+#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -363,6 +368,7 @@ struct IntraPredictionData
 struct InterPredictionData
 {
   bool      mergeFlag;
+  bool      regularMergeFlag;
   uint8_t     mergeIdx;
   uint8_t     triangleSplitDir;
   uint8_t     triangleMergeIdx0;
@@ -440,6 +446,7 @@ struct TransformUnit : public UnitArea
   uint8_t        depth;
   uint8_t        mtsIdx;
   bool           noResidual;
+  uint8_t        jointCbCr;
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
   int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
@@ -459,6 +466,9 @@ struct TransformUnit : public UnitArea
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
   void checkTuNoResidual( unsigned idx );
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int  getTbAreaAfterCoefZeroOut(ComponentID compID) const;
+#endif
 
          CoeffBuf getCoeffs(const ComponentID id);
   const CCoeffBuf getCoeffs(const ComponentID id) const;

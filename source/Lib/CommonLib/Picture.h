@@ -115,60 +115,66 @@ class AQpLayer;
 
 typedef std::list<SEI*> SEIMessages;
 
-#if HEVC_TILES_WPP
-class Tile
+
+class Brick
 {
 private:
-  uint32_t      m_tileWidthInCtus;
-  uint32_t      m_tileHeightInCtus;
-  uint32_t      m_rightEdgePosInCtus;
-  uint32_t      m_bottomEdgePosInCtus;
+  uint32_t      m_widthInCtus;
+  uint32_t      m_heightInCtus;
+  uint32_t      m_colBd;
+  uint32_t      m_rowBd;
   uint32_t      m_firstCtuRsAddr;
 
 public:
-  Tile();
-  virtual ~Tile();
+  Brick();
+  virtual ~Brick();
 
-  void      setTileWidthInCtus     ( uint32_t i )            { m_tileWidthInCtus = i; }
-  uint32_t      getTileWidthInCtus     () const              { return m_tileWidthInCtus; }
-  void      setTileHeightInCtus    ( uint32_t i )            { m_tileHeightInCtus = i; }
-  uint32_t      getTileHeightInCtus    () const              { return m_tileHeightInCtus; }
-  void      setRightEdgePosInCtus  ( uint32_t i )            { m_rightEdgePosInCtus = i; }
-  uint32_t      getRightEdgePosInCtus  () const              { return m_rightEdgePosInCtus; }
-  void      setBottomEdgePosInCtus ( uint32_t i )            { m_bottomEdgePosInCtus = i; }
-  uint32_t      getBottomEdgePosInCtus () const              { return m_bottomEdgePosInCtus; }
+  void      setWidthInCtus         ( uint32_t i )            { m_widthInCtus = i; }
+  uint32_t  getWidthInCtus         () const                  { return m_widthInCtus; }
+  void      setHeightInCtus        ( uint32_t i )            { m_heightInCtus = i; }
+  uint32_t  getHeightInCtus        () const                  { return m_heightInCtus; }
+  void      setColBd  ( uint32_t i )                         { m_colBd = i; }
+  uint32_t  getColBd  () const                               { return m_colBd; }
+  void      setRowBd ( uint32_t i )                          { m_rowBd = i; }
+  uint32_t  getRowBd () const                                { return m_rowBd; }
+
   void      setFirstCtuRsAddr      ( uint32_t i )            { m_firstCtuRsAddr = i; }
-  uint32_t      getFirstCtuRsAddr      () const              { return m_firstCtuRsAddr; }
+  uint32_t  getFirstCtuRsAddr      () const                  { return m_firstCtuRsAddr; }
 };
 
 
-struct TileMap
+struct BrickMap
 {
-  TileMap();
+  BrickMap();
 
   void create( const SPS& sps, const PPS& pps );
   void destroy();
 
-  uint32_t getTileIdxMap( uint32_t ctuRsAddr )       const { return *(tileIdxMap + ctuRsAddr); }
-  uint32_t getTileIdxMap( const Position& pos )  const { return getTileIdxMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
-  uint32_t getCtuTsToRsAddrMap( uint32_t ctuTsAddr ) const { return *(ctuTsToRsAddrMap + (ctuTsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuTsAddr)); }
-  uint32_t getCtuRsToTsAddrMap( uint32_t ctuRsAddr ) const { return *(ctuRsToTsAddrMap + (ctuRsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuRsAddr)); }
-  uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAddressInRaster, Slice *pcSlice) const;
+  uint32_t getBrickIdxRsMap( uint32_t ctuRsAddr )       const { return *(brickIdxRsMap + ctuRsAddr); }
+  uint32_t getBrickIdxRsMap( const Position& pos )      const { return getBrickIdxRsMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
+
+  uint32_t getBrickIdxBsMap( uint32_t ctuRsAddr )       const { return *(brickIdxBsMap + ctuRsAddr); }
+  uint32_t getBrickIdxBsMap( const Position& pos )      const { return getBrickIdxBsMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
+
+  uint32_t getCtuBsToRsAddrMap( uint32_t ctuTsAddr ) const { return *(ctuBsToRsAddrMap + (ctuTsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuTsAddr)); }
+  uint32_t getCtuRsToBsAddrMap( uint32_t ctuRsAddr ) const { return *(ctuRsToBsAddrMap + (ctuRsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuRsAddr)); }
+
+  uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool addressInRaster, Slice *slice) const;
 
   const PreCalcValues* pcv;
-  std::vector<Tile> tiles;
+  std::vector<Brick> bricks;
+
   uint32_t  numTiles;
   uint32_t  numTileColumns;
   uint32_t  numTileRows;
-  uint32_t* tileIdxMap;
-  uint32_t* ctuTsToRsAddrMap;
-  uint32_t* ctuRsToTsAddrMap;
+  uint32_t* brickIdxRsMap;
+  uint32_t* brickIdxBsMap;
+  uint32_t* ctuBsToRsAddrMap;
+  uint32_t* ctuRsToBsAddrMap;
 
-  void initTileMap( const SPS& sps, const PPS& pps );
-  void initCtuTsRsAddrMap();
-  uint32_t calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const;
+  void initBrickMap( const SPS& sps, const PPS& pps );
+  void initCtuBsRsAddrMap();
 };
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -210,14 +216,14 @@ struct Picture : public UnitArea
          PelUnitBuf getResiBuf(const UnitArea &unit);
   const CPelUnitBuf getResiBuf(const UnitArea &unit) const;
 
-         PelBuf     getRecoBuf(const ComponentID compID);
-  const CPelBuf     getRecoBuf(const ComponentID compID) const;
-         PelBuf     getRecoBuf(const CompArea &blk);
-  const CPelBuf     getRecoBuf(const CompArea &blk) const;
-         PelUnitBuf getRecoBuf(const UnitArea &unit);
-  const CPelUnitBuf getRecoBuf(const UnitArea &unit) const;
-         PelUnitBuf getRecoBuf();
-  const CPelUnitBuf getRecoBuf() const;
+         PelBuf     getRecoBuf(const ComponentID compID, bool wrap=false);
+  const CPelBuf     getRecoBuf(const ComponentID compID, bool wrap=false) const;
+         PelBuf     getRecoBuf(const CompArea &blk, bool wrap=false);
+  const CPelBuf     getRecoBuf(const CompArea &blk, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false);
+  const CPelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(bool wrap=false);
+  const CPelUnitBuf getRecoBuf(bool wrap=false) const;
 
          PelBuf     getBuf(const ComponentID compID, const PictureType &type);
   const CPelBuf     getBuf(const ComponentID compID, const PictureType &type) const;
@@ -227,7 +233,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-  void finalInit(const SPS& sps, const PPS& pps, APS& aps);
+  void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps);
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -279,9 +285,7 @@ public:
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
-#if HEVC_TILES_WPP
-  TileMap*     tileMap;
-#endif
+  BrickMap*     brickMap;
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
@@ -328,6 +332,30 @@ public:
       std::fill( m_alfCtuEnableFlag[compIdx].begin(), m_alfCtuEnableFlag[compIdx].end(), 0 );
     }
   }
+  std::vector<short> m_alfCtbFilterIndex;
+  short* getAlfCtbFilterIndex() { return m_alfCtbFilterIndex.data(); }
+  std::vector<short>& getAlfCtbFilterIndexVec() { return m_alfCtbFilterIndex; }
+  void resizeAlfCtbFilterIndex(int numEntries)
+  {
+    m_alfCtbFilterIndex.resize(numEntries);
+    for (int i = 0; i < numEntries; i++)
+    {
+      m_alfCtbFilterIndex[i] = 0;
+    }
+  }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  std::vector<uint8_t> m_alfCtuAlternative[MAX_NUM_COMPONENT];
+  std::vector<uint8_t>& getAlfCtuAlternative( int compIdx ) { return m_alfCtuAlternative[compIdx]; }
+  uint8_t* getAlfCtuAlternativeData( int compIdx ) { return m_alfCtuAlternative[compIdx].data(); }
+  void resizeAlfCtuAlternative( int numEntries )
+  {
+    for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+    {
+      m_alfCtuAlternative[compIdx].resize( numEntries );
+      std::fill( m_alfCtuAlternative[compIdx].begin(), m_alfCtuAlternative[compIdx].end(), 0 );
+    }
+  }
+#endif
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);

@@ -267,14 +267,15 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   affineType        = other.affineType;
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
+  bdpcmMode         = other.bdpcmMode;
   ipcm              = other.ipcm;
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
   sbtInfo           = other.sbtInfo;
-#if HEVC_TILES_WPP
+  mtsFlag           = other.mtsFlag;
+  lfnstIdx          = other.lfnstIdx;
   tileIdx           = other.tileIdx;
-#endif
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
   GBiIdx            = other.GBiIdx;
@@ -285,6 +286,8 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   shareParentSize   = other.shareParentSize;
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
+  mipFlag           = other.mipFlag;
+
   return *this;
 }
 
@@ -302,14 +305,15 @@ void CodingUnit::initData()
   affineType        = 0;
   triangle          = false;
   transQuantBypass  = false;
+  bdpcmMode         = 0;
   ipcm              = false;
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
   sbtInfo           = 0;
-#if HEVC_TILES_WPP
+  mtsFlag           = 0;
+  lfnstIdx          = 0;
   tileIdx           = 0;
-#endif
   imv               = 0;
   imvNumCand        = 0;
   GBiIdx            = GBI_DEFAULT;
@@ -320,7 +324,82 @@ void CodingUnit::initData()
   shareParentSize.height = -1;
   smvdMode        = 0;
   ispMode           = 0;
+  mipFlag           = false;
 }
+
+#if JVET_O1124_ALLOW_CCLM_COND
+const bool CodingUnit::checkCCLMAllowed() const
+{
+  bool allowCCLM = false;
+
+  if( chType != CHANNEL_TYPE_CHROMA ) //single tree
+  {
+    allowCCLM = true;
+  }
+  else if( slice->getSPS()->getCTUSize() <= 32 ) //dual tree, CTUsize < 64
+  {
+    allowCCLM = true;
+  }
+  else //dual tree, CTU size 64 or 128
+  {
+    int depthFor64x64Node = slice->getSPS()->getCTUSize() == 128 ? 1 : 0;
+    const PartSplit cuSplitTypeDepth1 = CU::getSplitAtDepth( *this, depthFor64x64Node );
+    const PartSplit cuSplitTypeDepth2 = CU::getSplitAtDepth( *this, depthFor64x64Node + 1 );
+
+    //allow CCLM if 64x64 chroma tree node uses QT split or HBT+VBT split combination
+    if( cuSplitTypeDepth1 == CU_QUAD_SPLIT || (cuSplitTypeDepth1 == CU_HORZ_SPLIT && cuSplitTypeDepth2 == CU_VERT_SPLIT) )
+    {
+      if( chromaFormat == CHROMA_420 )
+      {
+        CHECK( !(blocks[COMPONENT_Cb].width <= 16 && blocks[COMPONENT_Cb].height <= 16), "chroma cu size shall be <= 16x16 for YUV420 format" );
+      }
+      allowCCLM = true;
+    }
+    //allow CCLM if 64x64 chroma tree node uses NS (No Split) and becomes a chroma CU containing 32x32 chroma blocks
+    else if( cuSplitTypeDepth1 == CU_DONT_SPLIT )
+    {
+      if( chromaFormat == CHROMA_420 )
+      {
+        CHECK( !(blocks[COMPONENT_Cb].width == 32 && blocks[COMPONENT_Cb].height == 32), "chroma cu size shall be 32x32 for YUV420 format" );
+      }
+      allowCCLM = true;
+    }
+    //allow CCLM if 64x32 chroma tree node uses NS and becomes a chroma CU containing 32x16 chroma blocks
+    else if( cuSplitTypeDepth1 == CU_HORZ_SPLIT && cuSplitTypeDepth2 == CU_DONT_SPLIT )
+    {
+      if( chromaFormat == CHROMA_420 )
+      {
+        CHECK( !(blocks[COMPONENT_Cb].width == 32 && blocks[COMPONENT_Cb].height == 16), "chroma cu size shall be 32x16 for YUV420 format" );
+      }
+      allowCCLM = true;
+    }
+
+    //further check luma conditions
+    if( allowCCLM )
+    {
+      //disallow CCLM if luma 64x64 block uses BT or TT or NS with ISP
+      const Position lumaRefPos( chromaPos().x << getComponentScaleX( COMPONENT_Cb, chromaFormat ), chromaPos().y << getComponentScaleY( COMPONENT_Cb, chromaFormat ) );
+      const CodingUnit* colLumaCu = cs->picture->cs->getCU( lumaRefPos, CHANNEL_TYPE_LUMA );
+
+      if( colLumaCu->lwidth() < 64 || colLumaCu->lheight() < 64 ) //further split at 64x64 luma node
+      {
+        const PartSplit cuSplitTypeDepth1Luma = CU::getSplitAtDepth( *colLumaCu, depthFor64x64Node );
+        CHECK( !(cuSplitTypeDepth1Luma >= CU_QUAD_SPLIT && cuSplitTypeDepth1Luma <= CU_TRIV_SPLIT), "split mode shall be BT, TT or QT" );
+        if( cuSplitTypeDepth1Luma != CU_QUAD_SPLIT )
+        {
+          allowCCLM = false;
+        }
+      }
+      else if( colLumaCu->lwidth() == 64 && colLumaCu->lheight() == 64 && colLumaCu->ispMode ) //not split at 64x64 luma node and use ISP mode
+      {
+        allowCCLM = false;
+      }
+    }
+  }
+
+  return allowCCLM;
+}
+#endif
 
 const uint8_t CodingUnit::checkAllowedSbt() const
 {
@@ -335,6 +414,10 @@ const uint8_t CodingUnit::checkAllowedSbt() const
     return 0;
   }
   if( firstPU->mhIntraFlag )
+  {
+    return 0;
+  }
+  if( triangle )
   {
     return 0;
   }
@@ -401,6 +484,7 @@ void PredictionUnit::initData()
 
   // inter data
   mergeFlag   = false;
+  regularMergeFlag = false;
   mergeIdx    = MAX_UCHAR;
   triangleSplitDir  = MAX_UCHAR;
   triangleMergeIdx0 = MAX_UCHAR;
@@ -453,6 +537,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
 PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
 {
   mergeFlag   = predData.mergeFlag;
+  regularMergeFlag = predData.regularMergeFlag;
   mergeIdx    = predData.mergeIdx;
   triangleSplitDir  = predData.triangleSplitDir  ;
   triangleMergeIdx0 = predData.triangleMergeIdx0 ;
@@ -499,6 +584,7 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
+  regularMergeFlag = other.regularMergeFlag;
   mergeIdx    = other.mergeIdx;
   triangleSplitDir  = other.triangleSplitDir  ;
   triangleMergeIdx0 = other.triangleMergeIdx0 ;
@@ -606,8 +692,9 @@ void TransformUnit::initData()
     compAlpha[i]     = 0;
   }
   depth              = 0;
-  mtsIdx             = 0;
+  mtsIdx             = MTS_DCT2_DCT2;
   noResidual         = false;
+  jointCbCr          = 0;
   m_chromaResScaleInv = 0;
 }
 
@@ -643,6 +730,7 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
   depth              = other.depth;
   mtsIdx             = other.mtsIdx;
   noResidual         = other.noResidual;
+  jointCbCr          = other.jointCbCr;
   return *this;
 }
 
@@ -664,6 +752,7 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   depth            = other.depth;
   mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
   noResidual       = other.noResidual;
+  jointCbCr        = isChroma( i ) ? other.jointCbCr : jointCbCr;
 }
 
        CoeffBuf TransformUnit::getCoeffs(const ComponentID id)       { return  CoeffBuf(m_coeffs[id], blocks[id]); }
@@ -684,5 +773,24 @@ void TransformUnit::checkTuNoResidual( unsigned idx )
     noResidual = true;
   }
 }
+
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
+{
+  int tbArea = blocks[compID].width * blocks[compID].height;
+  int tbZeroOutWidth = blocks[compID].width;
+  int tbZeroOutHeight = blocks[compID].height;
+  if ((mtsIdx > MTS_SKIP || (cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+  {
+    tbZeroOutWidth = (blocks[compID].width == 32) ? 16 : tbZeroOutWidth;
+    tbZeroOutHeight = (blocks[compID].height == 32) ? 16 : tbZeroOutHeight;
+  }
+  tbZeroOutWidth = std::min<int>(JVET_C0024_ZERO_OUT_TH, tbZeroOutWidth);
+  tbZeroOutHeight = std::min<int>(JVET_C0024_ZERO_OUT_TH, tbZeroOutHeight);
+  tbArea = tbZeroOutWidth * tbZeroOutHeight;
+  return tbArea;
+}
+#endif
+
 int          TransformUnit::getChromaAdj()                     const { return m_chromaResScaleInv; }
 void         TransformUnit::setChromaAdj(int i)                      { m_chromaResScaleInv = i;    }

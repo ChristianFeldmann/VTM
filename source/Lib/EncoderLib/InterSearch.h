@@ -78,9 +78,17 @@ struct AffineMVInfo
   int x, y, w, h;
 };
 
+#if JVET_O0592_ENC_ME_IMP
+struct BlkUniMvInfo
+{
+  Mv uniMvs[2][33];
+  int x, y, w, h;
+};
+#endif
+
 typedef struct
 {
-  Mv acMvAffine4Para[2][2];
+  Mv acMvAffine4Para[2][3];
   Mv acMvAffine6Para[2][3];
   int16_t affine4ParaRefIdx[2];
   int16_t affine6ParaRefIdx[2];
@@ -116,8 +124,15 @@ private:
   int             m_affMVListIdx;
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
+#if JVET_O0592_ENC_ME_IMP
+  BlkUniMvInfo*   m_uniMvList;
+  int             m_uniMvListIdx;
+  int             m_uniMvListSize;
+  int             m_uniMvListMaxSize;
+#endif
   Distortion      m_hevcCost;
   EncAffineMotion m_affineMotion;
+  PatentBvCand    m_defaultCachedBvs;
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -140,6 +155,8 @@ protected:
   RefPicList      m_currRefPicList;
   int             m_currRefPicIndex;
   bool            m_skipFracME;
+  int             m_numHashMVStoreds[NUM_REF_PIC_LIST_01][MAX_NUM_REF];
+  Mv              m_hashMVStoreds[NUM_REF_PIC_LIST_01][MAX_NUM_REF][5];
 
   // Misc.
   Pel            *m_pTempPel;
@@ -150,8 +167,9 @@ protected:
   Mv              m_integerMv2Nx2N              [NUM_REF_PIC_LIST_01][MAX_NUM_REF];
 
   bool            m_isInitialized;
-  unsigned int    m_numBVs, m_numBV16s;
-  Mv              m_acBVs[IBC_NUM_CANDIDATES];
+
+  Mv              m_acBVs[2 * IBC_NUM_CANDIDATES];
+  unsigned int    m_numBVs;
   bool            m_useCompositeRef;
   Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
   uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
@@ -228,8 +246,85 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
+#if JVET_O0592_ENC_ME_IMP
+  void resetUniMvList() { m_uniMvListIdx = 0; m_uniMvListSize = 0; }
+  void insertUniMvCands(CompArea blkArea, Mv cMvTemp[2][33])
+  {
+    BlkUniMvInfo* curMvInfo = m_uniMvList + m_uniMvListIdx;
+    int j = 0;
+    for (; j < m_uniMvListSize; j++)
+    {
+      BlkUniMvInfo* prevMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((blkArea.x == prevMvInfo->x) && (blkArea.y == prevMvInfo->y) && (blkArea.width == prevMvInfo->w) && (blkArea.height == prevMvInfo->h))
+      {
+        break;
+      }
+    }
+
+    if (j < m_uniMvListSize)
+    {
+      curMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+    }
+
+    ::memcpy(curMvInfo->uniMvs, cMvTemp, 2 * 33 * sizeof(Mv));
+    if (j == m_uniMvListSize)  // new element
+    {
+      curMvInfo->x = blkArea.x;
+      curMvInfo->y = blkArea.y;
+      curMvInfo->w = blkArea.width;
+      curMvInfo->h = blkArea.height;
+      m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
+      m_uniMvListIdx = (m_uniMvListIdx + 1) % (m_uniMvListMaxSize);
+    }
+  }
+  void savePrevUniMvInfo(CompArea blkArea, BlkUniMvInfo &tmpUniMvInfo, bool& isUniMvInfoSaved)
+  {
+    int j = 0;
+    BlkUniMvInfo* curUniMvInfo = nullptr;
+    for (; j < m_uniMvListSize; j++)
+    {
+      curUniMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((blkArea.x == curUniMvInfo->x) && (blkArea.y == curUniMvInfo->y) && (blkArea.width == curUniMvInfo->w) && (blkArea.height == curUniMvInfo->h))
+      {
+        break;
+      }
+    }
+
+    if (j < m_uniMvListSize)
+    {
+      isUniMvInfoSaved = true;
+      tmpUniMvInfo = *curUniMvInfo;
+    }
+  }
+  void addUniMvInfo(BlkUniMvInfo &tmpUniMVInfo)
+  {
+    int j = 0;
+    BlkUniMvInfo* prevUniMvInfo = nullptr;
+    for (; j < m_uniMvListSize; j++)
+    {
+      prevUniMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((tmpUniMVInfo.x == prevUniMvInfo->x) && (tmpUniMVInfo.y == prevUniMvInfo->y) && (tmpUniMVInfo.w == prevUniMvInfo->w) && (tmpUniMVInfo.h == prevUniMvInfo->h))
+      {
+        break;
+      }
+    }
+    if (j < m_uniMvListSize)
+    {
+      *prevUniMvInfo = tmpUniMVInfo;
+    }
+    else
+    {
+      m_uniMvList[m_uniMvListIdx] = tmpUniMVInfo;
+      m_uniMvListIdx = (m_uniMvListIdx + 1) % m_uniMvListMaxSize;
+      m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
+    }
+  }
+#endif
   void resetSavedAffineMotion();
   void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  bool searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize);
+#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -257,6 +352,9 @@ protected:
     uint8_t       ucPointNr;
     int         subShiftMode;
     unsigned    imvShift;
+#if JVET_O0057_ALTHPELIF
+    bool        useAltHpelIf;
+#endif
     bool        inCtuSearch;
     bool        zeroMV;
   } IntTZSearchStruct;
@@ -281,14 +379,22 @@ public:
   bool  predIBCSearch           ( CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap);
   void  xIntraPatternSearch         ( PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv* cMvSrchRngLT, Mv* cMvSrchRngRB, Mv* pcMvPred);
   void  xSetIntraSearchRange        ( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB);
-  void  resetIbcSearch() { m_numBVs = m_numBV16s = 0; }
+  void  resetIbcSearch()
+  {
+    for (int i = 0; i < IBC_NUM_CANDIDATES; i++)
+    {
+      m_defaultCachedBvs.m_bvCands[i].setZero();
+    }
+    m_defaultCachedBvs.currCnt = 0;
+  }
   void  xIBCEstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xIBCSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
   void addToSortList(std::list<BlockHash>& listBlockHash, std::list<int>& listCost, int cost, const BlockHash& blockHash);
   bool predInterHashSearch(CodingUnit& cu, Partitioner& partitioner, bool& isPerfectMatch);
   bool xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
-  int  xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5]);
+  bool xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
+  void selectRectangleMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& listBlockHash, const BlockHash& currBlockHash, int width, int height, int idxNonSimple, unsigned int* &hashValues, int baseNum, int picWidth, int picHeight, bool isHorizontal, uint16_t* curHashPic);
   void selectMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& vecBlockHash, const BlockHash& currBlockHash);
 protected:
 
@@ -326,7 +432,7 @@ protected:
                                     RefPicList            eRefPicList,
                                     int                   iRefIdx
                                   );
-  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3], bool mvHighPrec = false );
+  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3] );
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );
@@ -352,6 +458,10 @@ protected:
                                   );
 
   void xTZSearch                  ( const PredictionUnit& pu,
+#if JVET_O0592_ENC_ME_IMP
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
+#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -361,6 +471,10 @@ protected:
                                   );
 
   void xTZSearchSelective         ( const PredictionUnit& pu,
+#if JVET_O0592_ENC_ME_IMP
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
+#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -375,6 +489,10 @@ protected:
                                   );
 
   void xPatternSearchFast         ( const PredictionUnit& pu,
+#if JVET_O0592_ENC_ME_IMP
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
+#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -480,7 +598,11 @@ public:
     );
 protected:
 
-  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
+#if JVET_O0057_ALTHPELIF
+  void xExtDIFUpSamplingH(CPelBuf* pcPattern, bool useAltHpelIf);
+#else
+  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern);
+#endif
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
   uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
   // -------------------------------------------------------------------------------------------------------------------
@@ -500,6 +622,7 @@ public:
     , const bool luma = true, const bool chroma = true
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
+  uint64_t xCalcPuMeBits            (PredictionUnit& pu);
 
 };// END CLASS DEFINITION EncSearch
 

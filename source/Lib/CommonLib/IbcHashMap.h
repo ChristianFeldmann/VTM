@@ -82,6 +82,8 @@ public:
   bool    ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk);
   int     getHashHitRatio(const Area& lumaArea);
 
+  int     calHashBlkMatchPerc(const Area& lumaArea);
+
 #ifdef TARGET_SIMD_X86
   void    initIbcHashMapX86();
   template <X86_VEXT vext>

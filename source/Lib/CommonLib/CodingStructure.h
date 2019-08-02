@@ -57,8 +57,10 @@ enum PictureType
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
+  PIC_RECON_WRAP,
   NUM_PIC_TYPES
 };
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
 enum IbcLumaCoverage
 {
   IBC_LUMA_COVERAGE_FULL = 0,
@@ -66,6 +68,7 @@ enum IbcLumaCoverage
   IBC_LUMA_COVERAGE_NONE,
   NUM_IBC_LUMA_COVERAGE,
 };
+#endif
 extern XUCache g_globalUnitCache;
 
 // ---------------------------------------------------------------------------
@@ -84,7 +87,6 @@ public:
   Slice           *slice;
 
   UnitScale        unitScale[MAX_NUM_COMPONENT];
-  ChannelType chType;
 
   int         baseQP;
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
@@ -95,10 +97,9 @@ public:
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
-  APS *      aps;
-#if HEVC_VPS
+  APS*       alfApss[MAX_NUM_APS];
+  APS *      lmcsAps;
   const VPS *vps;
-#endif
   const PreCalcValues* pcv;
 
   CodingStructure(CUCache&, PUCache&, TUCache&);
@@ -138,11 +139,7 @@ public:
   PredictionUnit *getPU(const ChannelType &_chType ) { return getPU(area.blocks[_chType].pos(), _chType); }
   TransformUnit  *getTU(const ChannelType &_chType ) { return getTU(area.blocks[_chType].pos(), _chType); }
 
-#if HEVC_TILES_WPP
-  const CodingUnit     *getCURestricted(const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
-#else
-  const CodingUnit     *getCURestricted(const Position &pos, const unsigned curSliceIdx,                            const ChannelType _chType) const;
-#endif
+  const CodingUnit     *getCURestricted(const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
   const CodingUnit     *getCURestricted(const Position &pos, const CodingUnit& curCu,                               const ChannelType _chType) const;
   const PredictionUnit *getPURestricted(const Position &pos, const PredictionUnit& curPu,                           const ChannelType _chType) const;
   const TransformUnit  *getTURestricted(const Position &pos, const TransformUnit& curTu,                            const ChannelType _chType) const;
@@ -158,7 +155,9 @@ public:
   cCUTraverser    traverseCUs(const UnitArea& _unit, const ChannelType _chType) const;
   cPUTraverser    traversePUs(const UnitArea& _unit, const ChannelType _chType) const;
   cTUTraverser    traverseTUs(const UnitArea& _unit, const ChannelType _chType) const;
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
   IbcLumaCoverage getIbcLumaCoverage(const CompArea& chromaArea) const;
+#endif
   // ---------------------------------------------------------------------------
   // encoding search utilities
   // ---------------------------------------------------------------------------
@@ -195,6 +194,10 @@ public:
   std::vector< TransformUnit*> tus;
 
   LutMotionCand motionLut;
+
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  bool resetIBCBuffer;
+#endif
 
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
@@ -262,6 +265,7 @@ public:
   const CPelBuf       getRecoBuf(const CompArea &blk) const;
          PelUnitBuf   getRecoBuf(const UnitArea &unit);
   const CPelUnitBuf   getRecoBuf(const UnitArea &unit) const;
+         PelUnitBuf&  getRecoBufRef() { return m_reco; }
 
          PelBuf       getOrgResiBuf(const CompArea &blk);
   const CPelBuf       getOrgResiBuf(const CompArea &blk) const;
@@ -313,9 +317,6 @@ private:
 
 
 static inline uint32_t getNumberValidTBlocks(const PreCalcValues& pcv) { return (pcv.chrFormat==CHROMA_400) ? 1 : ( pcv.multiBlock422 ? MAX_NUM_TBLOCKS : MAX_NUM_COMPONENT ); }
-
-inline unsigned toWSizeIdx( const CodingStructure* cs ) { return gp_sizeIdxInfo->idxFrom( cs->area.lwidth() ); }
-inline unsigned toHSizeIdx( const CodingStructure* cs ) { return gp_sizeIdxInfo->idxFrom( cs->area.lheight() ); }
 
 #endif
 

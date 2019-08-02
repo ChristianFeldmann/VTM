@@ -144,19 +144,12 @@ void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& max
   unsigned          stdMaxDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )]);
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if HEVC_TILES_WPP
-  const unsigned    curTileIdx  = cs.picture->tileMap->getTileIdxMap( currArea().lumaPos() );
+  const unsigned    curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( currArea().lumaPos() );
 
-  const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), curSliceIdx, curTileIdx, chType );
-  const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), curSliceIdx, curTileIdx, chType );
-  const CodingUnit* cuAbove       = cs.getCURestricted( pos.offset(  0,                              -1 ), curSliceIdx, curTileIdx, chType );
-  const CodingUnit* cuAboveRight  = cs.getCURestricted( pos.offset( currArea().blocks[chType].width, -1 ), curSliceIdx, curTileIdx, chType );
-#else
-  const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), curSliceIdx, chType );
-  const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), curSliceIdx, chType );
-  const CodingUnit* cuAbove       = cs.getCURestricted( pos.offset(  0,                              -1 ), curSliceIdx, chType );
-  const CodingUnit* cuAboveRight  = cs.getCURestricted( pos.offset( currArea().blocks[chType].width, -1 ), curSliceIdx, chType );
-#endif
+  const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), pos, curSliceIdx, curTileIdx, chType );
+  const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), pos, curSliceIdx, curTileIdx, chType );
+  const CodingUnit* cuAbove       = cs.getCURestricted( pos.offset(  0,                              -1 ), pos, curSliceIdx, curTileIdx, chType );
+  const CodingUnit* cuAboveRight  = cs.getCURestricted( pos.offset( currArea().blocks[chType].width, -1 ), pos, curSliceIdx, curTileIdx, chType );
 
   minDepth = stdMaxDepth;
   maxDepth = stdMinDepth;
@@ -351,9 +344,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // the minimal and maximal sizes are given in luma samples
   const CompArea&  area  = currArea().Y();
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
   const CompArea&  areaC = currArea().Cb();
-#endif
         PartLevel& level = m_partStack.back();
 
   const PartSplit lastSplit = level.split;
@@ -362,9 +353,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
   if( area.width <= minQtSize )                              canQt = false;
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
-#endif
   if( implicitSplit != CU_DONT_SPLIT )
   {
     canNo = canTh = canTv = false;
@@ -399,29 +388,26 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
     return;
   }
 
+  if( area.width > maxBtSize || area.height > maxBtSize )
+  {
+    canBh = canBv = false;
+  }
+
   // specific check for BT splits
-  if( area.height <= minBtSize || area.height > maxBtSize )                            canBh = false;
+  if( area.height <= minBtSize )                            canBh = false;
   if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
-#endif
-  if( area.width <= minBtSize || area.width > maxBtSize )                              canBv = false;
+  if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBv = false;
-#endif
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTh = false;
-#endif
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
-#if JVET_N0137_DUALTREE_CHROMA_SIZE
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTv = false;
-#endif
 }
 
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )
@@ -1019,9 +1005,15 @@ static const int g_zScanToY[1 << ( g_maxRtGridSize << 1 )] =
    0,  0,  1,  1,  0,  0,  1,  1,
    2,  2,  3,  3,  2,  2,  3,  3,
    4,  4,  5,  5,  4,  4,  5,  5,
+#if JVET_O0545_MAX_TB_SIGNALLING
+   6,  6,  7,  7,  6,  6,  7,  7,
+   4,  4,  5,  5,  4,  4,  5,  5,
+   6,  6,  7,  7,  6,  6,  7,  7,
+#else
    6,  6,  7,  7,  6,  5,  7,  7,
    4,  4,  5,  5,  4,  4,  5,  5,
    6,  6,  7,  7,  6,  5,  7,  7,
+#endif
 };
 static const int g_rsScanToZ[1 << ( g_maxRtGridSize << 1 )] =
 {
@@ -1039,11 +1031,16 @@ Partitioning PartitionerImpl::getMaxTuTiling( const UnitArea &cuArea, const Codi
 {
   static_assert( MAX_LOG2_DIFF_CU_TR_SIZE <= g_maxRtGridSize, "Z-scan tables are only provided for MAX_LOG2_DIFF_CU_TR_SIZE for up to 3 (8x8 tiling)!" );
 
+#if JVET_O0545_MAX_TB_SIGNALLING
+  const Size area     = cuArea.lumaSize();
+  const int maxTrSize = (area.width>64 || area.height>64) ? 64 : cs.sps->getMaxTbSize();
+#else
   const CompArea area = cuArea.Y().valid() ? cuArea.Y() : cuArea.Cb();
 #if MAX_TB_SIZE_SIGNALLING
   const int maxTrSize = cs.sps->getMaxTbSize() >> ( isLuma( area.compID ) ? 0 : 1 );
 #else
   const int maxTrSize = MAX_TB_SIZEY >> ( isLuma( area.compID ) ? 0 : 1 );
+#endif
 #endif
   const int numTilesH = std::max<int>( 1, area.width  / maxTrSize );
   const int numTilesV = std::max<int>( 1, area.height / maxTrSize );

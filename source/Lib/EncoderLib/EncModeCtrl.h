@@ -43,6 +43,9 @@
 
 #include "CommonLib/CommonDef.h"
 #include "CommonLib/CodingStructure.h"
+#if JVET_O0592_ENC_ME_IMP
+#include "InterSearch.h"
+#endif
 
 #include <typeinfo>
 #include <vector>
@@ -188,12 +191,17 @@ struct ComprCUCtx
     , extraFeatures (            )
     , extraFeaturesd(            )
     , bestInterCost ( MAX_DOUBLE )
+    , bestMtsSize2Nx2N1stPass
+                    ( MAX_DOUBLE )
+    , skipSecondMTSPass
+                    ( false )
     , interHad      (std::numeric_limits<Distortion>::max())
 #if ENABLE_SPLIT_PARALLELISM
     , isLevelSplitParallel
                     ( false )
 #endif
     , bestCostWithoutSplitFlags( MAX_DOUBLE )
+    , bestCostMtsFirstPassNoIsp( MAX_DOUBLE )
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
     partIdx = ( ( cuX << 8 ) | cuY );
@@ -218,11 +226,14 @@ struct ComprCUCtx
   static_vector<int64_t,  30>         extraFeatures;
   static_vector<double, 30>         extraFeaturesd;
   double                            bestInterCost;
+  double                            bestMtsSize2Nx2N1stPass;
+  bool                              skipSecondMTSPass;
   Distortion                        interHad;
 #if ENABLE_SPLIT_PARALLELISM
   bool                              isLevelSplitParallel;
 #endif
   double                            bestCostWithoutSplitFlags;
+  double                            bestCostMtsFirstPassNoIsp;
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
   template<typename T> void set( int ft, T val )      { extraFeatures [ft] = int64_t( val ); }
@@ -250,6 +261,9 @@ protected:
 #if ENABLE_SPLIT_PARALLELISM
   int                   m_runNextInParallel;
 #endif
+#if JVET_O0592_ENC_ME_IMP
+  InterSearch*          m_pcInterSearch;
+#endif
 
 public:
 
@@ -268,6 +282,7 @@ protected:
 public:
 
   virtual bool useModeResult        ( const EncTestMode& encTestmode, CodingStructure*& tempCS,  Partitioner& partitioner ) = 0;
+  virtual bool checkSkipOtherLfnst  ( const EncTestMode& encTestmode, CodingStructure*& tempCS,  Partitioner& partitioner ) = 0;
 #if ENABLE_SPLIT_PARALLELISM
   virtual void copyState            ( const EncModeCtrl& other, const UnitArea& area );
   virtual int  getNumParallelJobs   ( const CodingStructure &cs, Partitioner& partitioner )                                 const { return 1;     }
@@ -299,8 +314,16 @@ public:
   double getBestInterCost             ()                  const { return m_ComprCUCtxList.back().bestInterCost;           }
   Distortion getInterHad              ()                  const { return m_ComprCUCtxList.back().interHad;                }
   void enforceInterHad                ( Distortion had )        {        m_ComprCUCtxList.back().interHad = had;          }
+  double getMtsSize2Nx2NFirstPassCost ()                  const { return m_ComprCUCtxList.back().bestMtsSize2Nx2N1stPass; }
+  bool   getSkipSecondMTSPass         ()                  const { return m_ComprCUCtxList.back().skipSecondMTSPass;       }
+  void   setSkipSecondMTSPass         ( bool b )                { m_ComprCUCtxList.back().skipSecondMTSPass = b;          }
   double getBestCostWithoutSplitFlags ()                  const { return m_ComprCUCtxList.back().bestCostWithoutSplitFlags;         }
   void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
+  double getMtsFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp;         }
+  void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
+#if JVET_O0592_ENC_ME_IMP
+  void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
+#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -527,6 +550,7 @@ public:
   virtual bool isParallelSplit    ( const CodingStructure &cs, Partitioner& partitioner ) const;
   virtual bool parallelJobSelector( const EncTestMode& encTestmode, const CodingStructure &cs, Partitioner& partitioner ) const;
 #endif
+  virtual bool checkSkipOtherLfnst( const EncTestMode& encTestmode, CodingStructure*& tempCS, Partitioner& partitioner );
 };
 
 

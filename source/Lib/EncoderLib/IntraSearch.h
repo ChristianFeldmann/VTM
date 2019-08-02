@@ -76,14 +76,38 @@ private:
 
   CodingStructure **m_pSaveCS;
 
+  struct ModeInfo
+  {
+    bool     mipFlg; // CU::mipFlag
+    int      mRefId; // PU::multiRefIdx
+    uint8_t  ispMod; // CU::ispMode
+    uint32_t modeId; // PU::intraDir[CHANNEL_TYPE_LUMA]
+
+    ModeInfo() : mipFlg(false), mRefId(0), ispMod(NOT_INTRA_SUBPARTITIONS), modeId(0) {}
+    ModeInfo(const bool mipf, const int mrid, const uint8_t ispm, const uint32_t mode) : mipFlg(mipf), mRefId(mrid), ispMod(ispm), modeId(mode) {}
+    bool operator==(const ModeInfo cmp) const { return (mipFlg == cmp.mipFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId); }
+  };
+
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrl;
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlHor;
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlVer;
+
   //cost variables for the EMT algorithm and new modes list
-  static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrl;
-  static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlHor;
-  static_vector<uint32_t, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlVer;
+  double     m_bestModeCostStore[ NUM_LFNST_NUM_PER_SET ];                                    // RD cost of the best mode for each PU using DCT2
+  double     m_modeCostStore[ NUM_LFNST_NUM_PER_SET ][ NUM_LUMA_MODE ];                   // RD cost of each mode for each PU using DCT2
+  ModeInfo   m_savedRdModeList[ NUM_LFNST_NUM_PER_SET ][ NUM_LUMA_MODE ];
+  int32_t    m_savedNumRdModes[ NUM_LFNST_NUM_PER_SET ];
 
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeDiagRatio;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeHorVerRatio;
   static_vector<int,    FAST_UDI_MAX_RDMODE_NUM> m_intraModeTestedNormalIntra;
+
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_uiSavedRdModeListLFNST;
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_uiSavedHadModeListLFNST;
+  uint32_t                                         m_uiSavedNumRdModesLFNST;
+  static_vector<double,   FAST_UDI_MAX_RDMODE_NUM> m_dSavedModeCostLFNST;
+  static_vector<double,   FAST_UDI_MAX_RDMODE_NUM> m_dSavedHadListLFNST;
+
   PelStorage      m_tmpStorageLCU;
 protected:
   // interface to option
@@ -126,7 +150,7 @@ public:
 
 public:
 
-  void estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE );
+  bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
@@ -155,11 +179,16 @@ protected:
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
 
   ChromaCbfs xRecurIntraChromaCodingQT( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE,                          const PartSplit ispType = TU_NO_ISP );
-  void       xRecurIntraCodingLumaQT  ( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, const bool ispIsCurrentWinnder = false );
+  bool       xRecurIntraCodingLumaQT  ( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, const bool ispIsCurrentWinner = false, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
 
 
   void encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode );
   static bool useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode );
+
+  template<typename T, size_t N>
+  void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv);
+
+  double m_bestCostNonMip;
 };// END CLASS DEFINITION EncSearch
 
 //! \}

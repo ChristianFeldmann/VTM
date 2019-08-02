@@ -61,6 +61,7 @@ protected:
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
   InputColourSpaceConversion m_outputColourSpaceConvert;
+  int           m_iTargetLayer;                       ///< target stream layer to be decoded
 
   int           m_iMaxTemporalLayer;                  ///< maximum temporal layer to be decoded
   int           m_decodedPictureHashSEIEnabled;       ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message

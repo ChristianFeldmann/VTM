@@ -90,17 +90,17 @@ void MCTSHelper::clipMvToArea( Mv& rcMv, const Area& block, const Area& clipArea
 
 Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
 {
-  const TileMap* tileMap = cs->picture->tileMap;
-  const int      tileIdx = tileMap->getTileIdxMap( ctuAddr );
-  const Tile&    currentTile = tileMap->tiles[tileIdx];
+  const BrickMap* tileMap = cs->picture->brickMap;
+  const int       tileIdx = tileMap->getBrickIdxRsMap( ctuAddr );
+  const Brick&  currentTile = tileMap->bricks[tileIdx];
 
   const int      frameWidthInCtus = cs->pcv->widthInCtus;
   const int  firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
 
   const int tileXPosInCtus = firstCtuRsAddrOfTile % frameWidthInCtus;
   const int tileYPosInCtus = firstCtuRsAddrOfTile / frameWidthInCtus;
-  const int tileWidthtInCtus = currentTile.getTileWidthInCtus();
-  const int tileHeightInCtus = currentTile.getTileHeightInCtus();
+  const int tileWidthtInCtus = currentTile.getWidthInCtus();
+  const int tileHeightInCtus = currentTile.getHeightInCtus();
 
   const int  maxCUWidth  = cs->pcv->maxCUWidth;
   const int  maxCUHeight = cs->pcv->maxCUHeight;

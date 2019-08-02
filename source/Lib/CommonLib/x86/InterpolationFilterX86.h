@@ -195,21 +195,6 @@ static void fullPelCopyAVX2( const ClpRng& clpRng, const void*_src, int srcStrid
 template<X86_VEXT vext, bool isFirst, bool isLast>
 static void simdFilterCopy( const ClpRng& clpRng, const Pel* src, int srcStride, int16_t* dst, int dstStride, int width, int height, bool biMCForDMVR)
 {
-#if !HM_JEM_CLIP_PEL
-  if( vext >= AVX2 && ( width % 16 ) == 0 )
-  {
-    fullPelCopyAVX2<Pel, 16, isFirst, isLast >( clpRng, src, srcStride, dst, dstStride, width, height );
-  }
-  else if( ( width % 16 ) == 0 )
-  {
-    fullPelCopySSE<Pel, 16, isFirst, isLast >( clpRng, src, srcStride, dst, dstStride, width, height );
-  }
-  else if( ( width % 8 ) == 0 )
-  {
-    fullPelCopySSE<Pel, 8, isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height );
-  }
-  else
-#endif
   { //Scalar
     InterpolationFilter::filterCopy<isFirst, isLast>( clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
   }
@@ -1232,6 +1217,110 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
   }
 }
 
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+template< X86_VEXT vext >
+void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1)
+{
+  Pel* dst = predDst.get(compIdx).buf;
+  Pel* src0 = predSrc0.get(compIdx).buf;
+  Pel* src1 = predSrc1.get(compIdx).buf;
+  int32_t strideDst = predDst.get(compIdx).stride;
+  int32_t strideSrc0 = predSrc0.get(compIdx).stride;
+  int32_t strideSrc1 = predSrc1.get(compIdx).stride;
+
+  int8_t log2Width = g_aucLog2[width] - 1;
+  int8_t log2Height = g_aucLog2[height] - 1;
+  const char    log2WeightBase = 3;
+  const ClpRng  clpRng = pu.cu->slice->clpRngs().comp[compIdx];
+  const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;
+  const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+  const bool    longWeight = (compIdx == COMPONENT_Y);
+  const bool    shortWeight = !longWeight;
+
+  int16_t *weight = g_triangleWeights[shortWeight][splitDir][log2Height][log2Width];
+
+  const __m128i mmEight = _mm_set1_epi16(8);
+  const __m128i mmOffset = _mm_set1_epi32(offsetWeighted);
+  const __m128i mmShift = _mm_cvtsi32_si128(shiftWeighted);
+  const __m128i mmMin = _mm_set1_epi16(clpRng.min);
+  const __m128i mmMax = _mm_set1_epi16(clpRng.max);
+
+  if (width == 2)
+  {
+    for (int y = 0; y < height; y++)
+    {
+      __m128i s0 = _mm_loadl_epi64((__m128i *) (src0));
+      __m128i s1 = _mm_loadl_epi64((__m128i *) (src1));
+      __m128i w0 = _mm_loadl_epi64((__m128i *) (weight));
+      __m128i w1 = _mm_sub_epi16(mmEight, w0);
+      s0 = _mm_unpacklo_epi16(s0, s1);
+      w0 = _mm_unpacklo_epi16(w0, w1);
+      s0 = _mm_add_epi32(_mm_madd_epi16(s0, w0), mmOffset);
+      s0 = _mm_sra_epi32(s0, mmShift);
+      s0 = _mm_packs_epi32(s0, s0);
+      s0 = _mm_min_epi16(mmMax, _mm_max_epi16(s0, mmMin));
+      *(int*)(dst) = _mm_cvtsi128_si32(s0);
+      dst += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
+      weight += 2;
+    }
+  }
+  else if(width == 4)
+  {
+    for (int y = 0; y < height; y++)
+    {
+      __m128i s0 = _mm_loadl_epi64((__m128i *) (src0));
+      __m128i s1 = _mm_loadl_epi64((__m128i *) (src1));
+      __m128i w0 = _mm_loadl_epi64((__m128i *) (weight));
+      __m128i w1 = _mm_sub_epi16(mmEight, w0);
+      s0 = _mm_unpacklo_epi16(s0, s1);
+      w0 = _mm_unpacklo_epi16(w0, w1);
+      s0 = _mm_add_epi32(_mm_madd_epi16(s0, w0), mmOffset);
+      s0 = _mm_sra_epi32(s0, mmShift);
+      s0 = _mm_packs_epi32(s0, s0);
+      s0 = _mm_min_epi16(mmMax, _mm_max_epi16(s0, mmMin));
+      _mm_storel_epi64((__m128i *) (dst), s0);
+      dst += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
+      weight += 4;
+    }
+  }
+  else
+  {
+    for (int y = 0; y < height; y++)
+    {
+      for (int x = 0; x < width; x += 8)
+      {
+        __m128i s0 = _mm_loadu_si128((__m128i *) (src0 + x));
+        __m128i s1 = _mm_loadu_si128((__m128i *) (src1 + x));
+        __m128i w0 = _mm_loadu_si128((__m128i *) (weight + x));
+        __m128i w1 = _mm_sub_epi16(mmEight, w0);
+
+        __m128i s0tmp = _mm_unpacklo_epi16(s0, s1);
+        __m128i w0tmp = _mm_unpacklo_epi16(w0, w1);
+        s0tmp = _mm_add_epi32(_mm_madd_epi16(s0tmp, w0tmp), mmOffset);
+        s0tmp = _mm_sra_epi32(s0tmp, mmShift);
+
+        s0 = _mm_unpackhi_epi16(s0, s1);
+        w0 = _mm_unpackhi_epi16(w0, w1);
+        s0 = _mm_add_epi32(_mm_madd_epi16(s0, w0), mmOffset);
+        s0 = _mm_sra_epi32(s0, mmShift);
+
+        s0 = _mm_packs_epi32(s0tmp, s0);
+        s0 = _mm_min_epi16(mmMax, _mm_max_epi16(s0, mmMin));
+        _mm_storeu_si128((__m128i *) (dst + x), s0);
+      }
+      dst += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
+      weight += width;
+    }
+  }
+}
+#endif
+
 template <X86_VEXT vext>
 void InterpolationFilter::_initInterpolationFilterX86()
 {
@@ -1270,6 +1359,10 @@ void InterpolationFilter::_initInterpolationFilterX86()
   m_filterCopy[0][1]   = simdFilterCopy<vext, false, true>;
   m_filterCopy[1][0]   = simdFilterCopy<vext, true, false>;
   m_filterCopy[1][1]   = simdFilterCopy<vext, true, true>;
+
+#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+  m_weightedTriangleBlk = xWeightedTriangleBlk_SSE<vext>;
+#endif
 }
 
 template void InterpolationFilter::_initInterpolationFilterX86<SIMDX86>();

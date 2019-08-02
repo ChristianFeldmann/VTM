@@ -103,14 +103,25 @@ struct MotionInfo
   bool     isInter;
   bool     isIBCmot;
   char     interDir;
+#if JVET_O0057_ALTHPELIF
+  bool     useAltHpelIf;
+#endif
   uint16_t   sliceIdx;
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
   uint8_t         GBiIdx;
   Mv      bv;
+#if JVET_O0057_ALTHPELIF
+  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), useAltHpelIf(false), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
+#else
   MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
+#endif
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
+#if JVET_O0057_ALTHPELIF
+  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), useAltHpelIf(false), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
+#else
   MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
+#endif
 
   bool operator==( const MotionInfo& mi ) const
   {
@@ -221,7 +232,13 @@ struct LutMotionCand
 {
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lut;
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutIbc;
-  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShare;
+#if !JVET_O0078_SINGLE_HMVPLUT
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShareIbc;
+#endif
+};
+struct PatentBvCand
+{
+  Mv m_bvCands[IBC_NUM_CANDIDATES];
+  int currCnt;
 };
 #endif // __MOTIONINFO__

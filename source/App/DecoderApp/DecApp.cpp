@@ -153,7 +153,7 @@ uint32_t DecApp::decode()
     {
       read(nalu);
 
-      if( (m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu)  )
+      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
       {
         bNewPicture = false;
       }
@@ -187,6 +187,9 @@ uint32_t DecApp::decode()
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+        CodingStatistics::UpdateMaxStat(backupStats);
+#endif
       }
       loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
@@ -233,16 +236,8 @@ uint32_t DecApp::decode()
         m_cDecLib.setNoOutputPriorPicsFlag (false);
       }
       if ( bNewPicture &&
-#if !JVET_M0101_HLS
-           (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-            || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP ) )
-#else
           (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
             || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) )
-#endif
       {
         xFlushOutput( pcListPic );
       }
@@ -252,11 +247,8 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInPicture (false);
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
-#if !JVET_M0101_HLS
-      if(!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL_N && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL31)
-#else
-      if (!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL15)
-#endif
+      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL_15)
+        || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GRA)))
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
@@ -303,6 +295,9 @@ void DecApp::xCreateDecLib()
 #endif
   );
   m_cDecLib.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
+
+  m_cDecLib.setTargetDecLayer(m_iTargetLayer);
+
   if (!m_outputDecodedSEIMessagesFilename.empty())
   {
     std::ostream &os=m_seiMessageFileStream.is_open() ? m_seiMessageFileStream : std::cout;
@@ -395,7 +390,6 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
         if ( !m_reconFileName.empty() )
         {
           const Window &conf = pcPicTop->cs->sps->getConformanceWindow();
-          const Window  defDisp = (m_respectDefDispWindow && pcPicTop->cs->sps->getVuiParametersPresentFlag()) ? pcPicTop->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
           const bool isTff = pcPicTop->topField;
 
           bool display = true;
@@ -414,10 +408,10 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
             m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
                                           m_outputColourSpaceConvert,
                                           false, // TODO: m_packedYUVMode,
-                                          conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
-                                          conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
-                                          conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
-                                          conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+                                          conf.getWindowLeftOffset(),
+                                          conf.getWindowRightOffset(),
+                                          conf.getWindowTopOffset(),
+                                          conf.getWindowBottomOffset(),
                                           NUM_CHROMA_FORMAT, isTff );
           }
         }
@@ -461,15 +455,14 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
         if (!m_reconFileName.empty())
         {
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
-          const Window  defDisp = (m_respectDefDispWindow && pcPic->cs->sps->getVuiParametersPresentFlag()) ? pcPic->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
 
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
-                                        conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
-                                        conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
-                                        conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
-                                        conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+                                        conf.getWindowLeftOffset(),
+                                        conf.getWindowRightOffset(),
+                                        conf.getWindowTopOffset(),
+                                        conf.getWindowBottomOffset(),
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
         }
 
@@ -524,16 +517,15 @@ void DecApp::xFlushOutput( PicList* pcListPic )
         if ( !m_reconFileName.empty() )
         {
           const Window &conf    = pcPicTop->cs->sps->getConformanceWindow();
-          const Window  defDisp = (m_respectDefDispWindow && pcPicTop->cs->sps->getVuiParametersPresentFlag()) ? pcPicTop->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
           const bool    isTff   = pcPicTop->topField;
 
           m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
                                         m_outputColourSpaceConvert,
                                         false, // TODO: m_packedYUVMode,
-                                        conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
-                                        conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
-                                        conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
-                                        conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+                                        conf.getWindowLeftOffset(),
+                                        conf.getWindowRightOffset(),
+                                        conf.getWindowTopOffset(),
+                                        conf.getWindowBottomOffset(),
                                         NUM_CHROMA_FORMAT, isTff );
         }
 
@@ -580,15 +572,14 @@ void DecApp::xFlushOutput( PicList* pcListPic )
         if (!m_reconFileName.empty())
         {
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
-          const Window  defDisp = (m_respectDefDispWindow && pcPic->cs->sps->getVuiParametersPresentFlag()) ? pcPic->cs->sps->getVuiParameters()->getDefaultDisplayWindow() : Window();
 
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
-                                        conf.getWindowLeftOffset()   + defDisp.getWindowLeftOffset(),
-                                        conf.getWindowRightOffset()  + defDisp.getWindowRightOffset(),
-                                        conf.getWindowTopOffset()    + defDisp.getWindowTopOffset(),
-                                        conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(),
+                                        conf.getWindowLeftOffset(),
+                                        conf.getWindowRightOffset(),
+                                        conf.getWindowTopOffset(),
+                                        conf.getWindowBottomOffset(),
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
         }
 
@@ -635,6 +626,16 @@ bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
       return true;
     }
   }
+  return false;
+}
+
+/** \param nalu Input nalu to check whether its LayerId is the specified target layer
+*/
+bool DecApp::isNaluTheTargetLayer(InputNALUnit* nalu)
+{
+  if (nalu->m_nuhLayerId == m_iTargetLayer || m_iTargetLayer < 0)
+    return true;
+
   return false;
 }
 

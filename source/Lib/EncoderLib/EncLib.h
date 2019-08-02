@@ -48,6 +48,7 @@
 #include "EncCfg.h"
 #include "EncGOP.h"
 #include "EncSlice.h"
+#include "EncHRD.h"
 #include "VLCWriter.h"
 #include "CABACWriter.h"
 #include "InterSearch.h"
@@ -56,7 +57,6 @@
 #include "EncReshape.h"
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
-
 
 //! \ingroup EncoderLib
 //! \{
@@ -138,6 +138,12 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
+  APS*                      m_apss[MAX_NUM_APS];
+
+  APS*                      m_lmcsAPS;
+
+  EncHRD                    m_encHRD;
+
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
@@ -146,22 +152,17 @@ public:
 
 protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
-#if HEVC_VPS
-  void  xInitVPS          (VPS &vps, const SPS &sps); ///< initialize VPS from encoder options
-#endif
+  void  xInitVPS          (VPS &vps); ///< initialize VPS from encoder options
+  void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
-#if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
-#endif
   void  xInitPPSforLT(PPS& pps);
-  void  xInitHrdParameters(SPS &sps);                 ///< initialize HRD parameters
+  void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
-#if HEVC_TILES_WPP
   void  xInitPPSforTiles  (PPS &pps);
-#endif
-  void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
+  void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:
   EncLib();
@@ -214,14 +215,10 @@ public:
   RateCtrl*               getRateCtrl           ()              { return  &m_cRateCtrl;            }
 
 
-  void selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
-    , int ltPoc
-  );
-  int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
+  void                    getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1);
+  void                    selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc);
 
-#if JCTVC_Y0038_PARAMS
   void                   setParamSetChanged(int spsId, int ppsId);
-#endif
   bool                   APSNeedsWriting(int apsId);
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
@@ -238,6 +235,8 @@ public:
 #else
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }
 #endif
+
+  ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function
   // -------------------------------------------------------------------------------------------------------------------

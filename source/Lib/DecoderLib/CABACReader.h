@@ -68,6 +68,8 @@ public:
   // sao (clause 7.3.8.3)
   void        sao                       ( CodingStructure&              cs,     unsigned        ctuRsAddr );
 
+  void        readAlfCtuFilterIndex(CodingStructure&              cs, unsigned        ctuRsAddr);
+
   // coding (quad)tree (clause 7.3.8.4)
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
   PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );
@@ -77,6 +79,7 @@ public:
   void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
+  void        bdpcm_mode                ( CodingUnit&                   cu,     const ComponentID compID );
   void        pcm_flag                  ( CodingUnit&                   cu,     Partitioner&    pm );
   void        cu_pred_data              ( CodingUnit&                   cu );
   void        cu_gbi_flag               ( CodingUnit&                   cu );
@@ -89,6 +92,9 @@ public:
   void        rqt_root_cbf              ( CodingUnit&                   cu );
   void        sbt_mode                  ( CodingUnit&                   cu );
   bool        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
+  void        mip_flag                  ( CodingUnit&                   cu );
+  void        mip_pred_modes            ( CodingUnit&                   cu );
+  void        mip_pred_mode             ( PredictionUnit&               pu );
 
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( PredictionUnit&               pu,     MergeCtx&       mrgCtx );
@@ -105,31 +111,54 @@ public:
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        MHIntra_flag              ( PredictionUnit&               pu );
   void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
-  void        triangle_mode             ( CodingUnit&                   cu );
   void        smvd_mode              ( PredictionUnit&               pu );
 
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( TransformUnit&                tu );
 
   // transform tree (clause 7.3.8.8)
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+  void        transform_tree            ( CodingStructure&              cs, Partitioner&    pm, CUCtx& cuCtx, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
+#else
   void        transform_tree            ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx,  ChromaCbfs& chromaCbfs, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbCbf = false, const bool useISP = false );
+#endif
+  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbf = false, const bool useISP = false );
 
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( Mv &rMvd );
 
   // transform unit (clause 7.3.8.10)
+#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
+  void        transform_unit            ( TransformUnit&                tu,     CUCtx&          cuCtx, Partitioner& pm,        const int subTuCounter = -1 );
+#else
   void        transform_unit            ( TransformUnit&                tu,     CUCtx&          cuCtx,  ChromaCbfs& chromaCbfs );
+#endif
   void        cu_qp_delta               ( CodingUnit&                   cu,     int             predQP, int8_t& qp );
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
 
   // residual coding (clause 7.3.8.11)
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS || JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+  void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID, CUCtx& cuCtx );
+#else
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
+#endif
   void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS || JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+  void        residual_lfnst_mode       ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
+#else
+  void        residual_lfnst_mode       ( CodingUnit&                   cu );
+#endif
   void        isp_mode                  ( CodingUnit&                   cu );
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
   int         last_sig_coeff            ( CoeffCodingContext&           cctx,   TransformUnit& tu, ComponentID   compID );
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,   TCoeff*         coeff, const int stateTransTable, int& state );
+  void        residual_codingTS         ( TransformUnit&                tu,     ComponentID     compID );
+  void        residual_coding_subblockTS( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
+#if JVET_O0105_ICT
+  void        joint_cb_cr               ( TransformUnit&                tu,     const int cbfMask );
+#else
+  void        joint_cb_cr               ( TransformUnit&                tu );
+#endif
 
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );
@@ -139,6 +168,7 @@ private:
   unsigned    unary_max_eqprob          (                                   unsigned maxSymbol );
   unsigned    exp_golomb_eqprob         ( unsigned count );
   unsigned    get_num_bits_read         () { return m_BinDecoder.getNumBitsRead(); }
+  unsigned    code_unary_fixed          ( unsigned ctxId, unsigned unary_max, unsigned fixed );
 
   void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
 public:

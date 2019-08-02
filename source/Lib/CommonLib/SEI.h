@@ -82,9 +82,7 @@ public:
     TIME_CODE                            = 136,
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     SEGM_RECT_FRAME_PACKING              = 138,
-#if HEVC_TILES_WPP
     TEMP_MOTION_CONSTRAINED_TILE_SETS    = 139,
-#endif
     CHROMA_RESAMPLING_FILTER_HINT        = 140,
     KNEE_FUNCTION_INFO                   = 141,
     COLOUR_REMAPPING_INFO                = 142,
@@ -141,20 +139,12 @@ public:
   PayloadType payloadType() const { return ACTIVE_PARAMETER_SETS; }
 
   SEIActiveParameterSets()
-#if HEVC_VPS
-    : activeVPSId            (0)
-    , m_selfContainedCvsFlag (false)
-#else
     : m_selfContainedCvsFlag(false)
-#endif
     , m_noParameterSetUpdateFlag (false)
     , numSpsIdsMinus1        (0)
   {}
   virtual ~SEIActiveParameterSets() {}
 
-#if HEVC_VPS
-  int activeVPSId;
-#endif
   bool m_selfContainedCvsFlag;
   bool m_noParameterSetUpdateFlag;
   int numSpsIdsMinus1;
@@ -543,7 +533,6 @@ public:
   SEITimeSet timeSetArray[MAX_TIMECODE_SEI_SETS];
 };
 
-#if HEVC_TILES_WPP
 //definition according to P1005_v1;
 class SEITempMotionConstrainedTileSets: public SEI
 {
@@ -600,7 +589,6 @@ public:
   const TileSetData &tileSetData (const int index) const { return m_tile_set_data[index]; }
 
 };
-#endif
 
 #if ENABLE_TRACING
 void xTraceSEIHeader();

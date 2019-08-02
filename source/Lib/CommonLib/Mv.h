@@ -53,14 +53,24 @@ enum MvPrecision
   MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
   MV_PRECISION_HALF     = 3,      // 1/2-pel
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
-  MV_PRECISION_INTERNAL = 6,      // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+  MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,
 };
 
 /// basic motion vector class
 class Mv
 {
 private:
+#if JVET_O0057_ALTHPELIF
+  static const MvPrecision m_amvrPrecision[4];
+#else
   static const MvPrecision m_amvrPrecision[3];
+#endif
+  static const MvPrecision m_amvrPrecAffine[3];
+  static const MvPrecision m_amvrPrecIbc[3];
+
+  static const int mvClipPeriod = (1 << MV_BITS);
+  static const int halMvClipPeriod = (1 << (MV_BITS - 1));
 
 public:
   int   hor;     ///< horizontal component of motion vector
@@ -121,22 +131,12 @@ public:
   //! shift right with rounding
   void divideByPowerOf2 (const int i)
   {
-#if JVET_N0335_N0085_MV_ROUNDING
     if (i != 0)
     {
       const int offset = (1 << (i - 1));
       hor = (hor + offset - (hor >= 0)) >> i;
       ver = (ver + offset - (ver >= 0)) >> i;
     }
-#else
-#if ME_ENABLE_ROUNDING_OF_MVS
-    const int offset = (i == 0) ? 0 : 1 << (i - 1);
-    hor += offset;
-    ver += offset;
-#endif
-    hor >>= i;
-    ver >>= i;
-#endif
   }
 
   const Mv& operator<<= (const int i)
@@ -148,17 +148,12 @@ public:
 
   const Mv& operator>>= ( const int i )
   {
-#if JVET_N0335_N0085_MV_ROUNDING
     if (i != 0)
     {
       const int offset = (1 << (i - 1));
       hor = (hor + offset - (hor >= 0)) >> i;
       ver = (ver + offset - (ver >= 0)) >> i;
-  }
-#else
-    hor >>= i;
-    ver >>= i;
-#endif
+    }
     return  *this;
   }
 
@@ -184,13 +179,8 @@ public:
 
   const Mv scaleMv( int iScale ) const
   {
-#if JVET_N0335_N0085_MV_ROUNDING
-    const int mvx = Clip3(-131072, 131071, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
-    const int mvy = Clip3(-131072, 131071, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
-#else
-    const int mvx = Clip3( -131072, 131071, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8 );
-    const int mvy = Clip3( -131072, 131071, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8 );
-#endif
+    const int mvx = Clip3(MV_MIN, MV_MAX, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
+    const int mvy = Clip3(MV_MIN, MV_MAX, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
     return Mv( mvx, mvy );
   }
 
@@ -205,19 +195,9 @@ public:
     {
       const int rightShift = -shift;
       const int nOffset = 1 << (rightShift - 1);
-#if JVET_N0335_N0085_MV_ROUNDING
       hor = hor >= 0 ? (hor + nOffset - 1) >> rightShift : (hor + nOffset) >> rightShift;
       ver = ver >= 0 ? (ver + nOffset - 1) >> rightShift : (ver + nOffset) >> rightShift;
-#else
-      hor = hor >= 0 ? (hor + nOffset) >> rightShift : -((-hor + nOffset) >> rightShift);
-      ver = ver >= 0 ? (ver + nOffset) >> rightShift : -((-ver + nOffset) >> rightShift);
-#endif
     }
-  }
-
-  void changePrecisionAmvr(const int amvr, const MvPrecision& dst)
-  {
-    changePrecision(m_amvrPrecision[amvr], dst);
   }
 
   void roundToPrecision(const MvPrecision& src, const MvPrecision& dst)
@@ -226,10 +206,54 @@ public:
     changePrecision(dst, src);
   }
 
-  void roundToAmvrSignalPrecision(const MvPrecision& src, const int amvr)
+  // translational MV
+  void changeTransPrecInternal2Amvr(const int amvr)
   {
-    roundToPrecision(src, m_amvrPrecision[amvr]);
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecision[amvr]);
   }
+
+  void changeTransPrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecision[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundTransPrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecision[amvr]);
+  }
+
+  // affine MV
+  void changeAffinePrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecAffine[amvr]);
+  }
+
+  void changeAffinePrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecAffine[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundAffinePrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecAffine[amvr]);
+  }
+
+  // IBC block vector
+  void changeIbcPrecInternal2Amvr(const int amvr)
+  {
+    changePrecision(MV_PRECISION_INTERNAL, m_amvrPrecIbc[amvr]);
+  }
+
+  void changeIbcPrecAmvr2Internal(const int amvr)
+  {
+    changePrecision(m_amvrPrecIbc[amvr], MV_PRECISION_INTERNAL);
+  }
+
+  void roundIbcPrecInternal2Amvr(const int amvr)
+  {
+    roundToPrecision(MV_PRECISION_INTERNAL, m_amvrPrecIbc[amvr]);
+  }
+
 
   Mv getSymmvdMv(const Mv& curMvPred, const Mv& tarMvPred)
   {
@@ -240,6 +264,13 @@ public:
   {
     hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
     ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
+  }
+  void mvCliptoStorageBitDepth()  // periodic clipping
+  {
+    hor = (hor + mvClipPeriod) & (mvClipPeriod - 1);
+    hor = (hor >= halMvClipPeriod) ? (hor - mvClipPeriod) : hor;
+    ver = (ver + mvClipPeriod) & (mvClipPeriod - 1);
+    ver = (ver >= halMvClipPeriod) ? (ver - mvClipPeriod) : ver;
   }
 };// END CLASS DEFINITION MV
 
@@ -257,6 +288,10 @@ namespace std
 void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
+
+bool wrapClipMv( Mv& rcMv, const Position& pos, 
+                 const struct Size& size, 
+                 const SPS *sps );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 

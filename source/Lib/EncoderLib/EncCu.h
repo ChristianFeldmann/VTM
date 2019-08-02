@@ -74,6 +74,7 @@ struct TriangleMotionInfo
   uint8_t   m_candIdx1;
 
   TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
+  TriangleMotionInfo() { m_splitDir = m_candIdx0 = m_candIdx1 = 0; }
 };
 class EncCu
   : DecCu
@@ -122,6 +123,9 @@ private:
 
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  PelStorage            m_acMergeTmpBuffer[MRG_MAX_NUM_CANDS];
+#endif
   PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
   double                m_mergeBestSATDCost;
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
@@ -133,7 +137,7 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
-  static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
+  TriangleMotionInfo    m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
   uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
@@ -163,6 +167,7 @@ public:
   IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
   EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
 
+  EncCu();
   ~EncCu();
 
 protected:
@@ -191,7 +196,11 @@ protected:
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-  bool xCheckRDCostInterIMV   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#if JVET_O0057_ALTHPELIF
+  bool xCheckRDCostInterIMV(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode, double &bestIntPelCost);
+#else
+  bool xCheckRDCostInterIMV   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode);
+#endif
   void xEncodeDontSplit       ( CodingStructure &cs, Partitioner &partitioner);
 
   void xCheckRDCostMerge2Nx2N ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );

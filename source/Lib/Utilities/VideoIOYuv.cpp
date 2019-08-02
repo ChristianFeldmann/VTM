@@ -903,6 +903,9 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
 #else
   ColourSpaceConvert( picOrg, pic, ipcsc, true);
 #endif
+
+  picOrg.copyFrom(pic);
+
   return true;
 }
 

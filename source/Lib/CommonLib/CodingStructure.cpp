@@ -286,7 +286,7 @@ TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType ef
           }
           else
           {
-            while( pos != tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].pos() )
+            while( !tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].contains( pos ) )
             {
               extraIdx++;
             }
@@ -327,7 +327,7 @@ const TransformUnit * CodingStructure::getTU( const Position &pos, const Channel
           }
           else
           {
-            while( pos != tus[idx - 1 + extraIdx]->blocks[effChType].pos() )
+            while ( !tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].contains(pos) )
             {
               extraIdx++;
             }
@@ -768,11 +768,12 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.picture   = picture;
 
   subStruct.sps       = sps;
-#if HEVC_VPS
-  subStruct.vps       = vps;
-#endif
+  subStruct.vps       = vps; 
   subStruct.pps       = pps;
-  subStruct.aps       = aps;
+  memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
+
+  subStruct.lmcsAps = lmcsAps;
+
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
   subStruct.prevQP[_chType]
@@ -1338,15 +1339,14 @@ const CPelUnitBuf CodingStructure::getBuf( const UnitArea &unit, const PictureTy
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const CodingUnit& curCu, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) )
-#else
-  // exists       same slice                          cu precedes curCu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(cu && CU::isSameSlice(*cu, curCu) && (cu->cs != curCu.cs || cu->idx <= curCu.idx))
-#endif
+  const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  int ctuSizeBit = g_aucLog2[curCu.cs->sps->getMaxCUWidth()];
+  int xNbY  = pos.x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
+  int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) && addCheck)
   {
     return cu;
   }
@@ -1356,32 +1356,28 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   }
 }
 
-#if HEVC_TILES_WPP
-const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
+const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
-  return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx ) ? cu : nullptr;
+  const bool wavefrontsEnabled = this->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  int ctuSizeBit = g_aucLog2[this->sps->getMaxCUWidth()];
+  int xNbY  = pos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
+  int xCurr = curPos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx && addCheck ) ? cu : nullptr;
 }
-#else
-const CodingUnit* CodingStructure::getCURestricted(const Position &pos, const unsigned curSliceIdx, const ChannelType _chType) const
-{
-  const CodingUnit* cu = getCU(pos, _chType);
-  return (cu && cu->slice->getIndependentSliceIdx() == curSliceIdx ) ? cu : nullptr;
-}
-#endif
 
 const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, const PredictionUnit& curPu, const ChannelType _chType ) const
 {
   const PredictionUnit* pu = getPU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) )
-#else
-  // exists       same slice                           pu precedes curPu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(pu && CU::isSameSlice(*pu->cu, *curPu.cu) && (pu->cs != curPu.cs || pu->idx <= curPu.idx))
-#endif
+  const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  int ctuSizeBit = g_aucLog2[curPu.cs->sps->getMaxCUWidth()];
+  int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
+  int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) && addCheck )
   {
     return pu;
   }
@@ -1394,15 +1390,14 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
 const TransformUnit* CodingStructure::getTURestricted( const Position &pos, const TransformUnit& curTu, const ChannelType _chType ) const
 {
   const TransformUnit* tu = getTU( pos, _chType );
-#if HEVC_TILES_WPP
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) )
-#else
-  // exists       same slice                           tu precedes curTu in encoding order
-  //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  if(tu && CU::isSameSlice(*tu->cu, *curTu.cu) && (tu->cs != curTu.cs || tu->idx <= curTu.idx))
-#endif
+  const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  int ctuSizeBit = g_aucLog2[curTu.cs->sps->getMaxCUWidth()];
+  int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
+  int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
+  bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
+  if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) && addCheck )
   {
     return tu;
   }
@@ -1412,10 +1407,9 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   }
 }
 
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
 IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) const
 {
-  CHECK(chType != CHANNEL_TYPE_CHROMA, "Error");
-
   const unsigned int unitAreaSubBlock = MIN_PU_SIZE * MIN_PU_SIZE;
   CompArea lumaArea = CompArea(COMPONENT_Y, chromaArea.chromaFormat, chromaArea.lumaPos(), recalcSize(chromaArea.chromaFormat, CHANNEL_TYPE_CHROMA, CHANNEL_TYPE_LUMA, chromaArea.size()));
   lumaArea = clipArea(lumaArea, picture->block(COMPONENT_Y));
@@ -1445,3 +1439,4 @@ IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) 
 
   return coverage;
 }
+#endif

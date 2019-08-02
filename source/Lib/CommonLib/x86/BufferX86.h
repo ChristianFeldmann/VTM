@@ -499,32 +499,79 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
   int shift1 = std::max<int>(6, bitDepth - 6);
-
+#if JVET_O0570_GRAD_SIMP
+  __m128i mmShift1 = _mm_cvtsi32_si128( shift1 );
+#endif
   assert((widthInside & 3) == 0);
 
-  for (int y = 0; y < heightInside; y++)
+#if JVET_O0570_GRAD_SIMP
+  if ( ( widthInside & 7 ) == 0 )
   {
-    int x = 0;
-    for (; x < widthInside; x += 4)
+#endif
+    for (int y = 0; y < heightInside; y++)
     {
-      __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - srcStride)));
-      __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + srcStride)));
-      __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
-      __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
+      int x = 0;
+#if JVET_O0570_GRAD_SIMP
+      for ( ; x < ( ( widthInside >> 3 ) << 3 ); x += 8 )
+      {
+        __m128i mmPixTop    = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x - srcStride ) ), mmShift1 );
+        __m128i mmPixBottom = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x + srcStride ) ), mmShift1 );
+        __m128i mmPixLeft   = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x - 1 ) ), mmShift1 );
+        __m128i mmPixRight  = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x + 1 ) ), mmShift1 );
 
-      __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
-      __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
-      mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
-      mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
+        __m128i mmGradVer = _mm_sub_epi16( mmPixBottom, mmPixTop );
+        __m128i mmGradHor = _mm_sub_epi16( mmPixRight, mmPixLeft );
 
-      _mm_storel_epi64((__m128i *)(gradYTmp + x), mmGradVer);
-      _mm_storel_epi64((__m128i *)(gradXTmp + x), mmGradHor);
+        _mm_storeu_si128( ( __m128i * ) ( gradYTmp + x ), mmGradVer );
+        _mm_storeu_si128( ( __m128i * ) ( gradXTmp + x ), mmGradHor );
+      }
+#else
+      for (; x < widthInside; x += 4)
+      {
+        __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - srcStride)));
+        __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + srcStride)));
+        __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
+        __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
+
+        __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
+        __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
+        mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
+        mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
+
+        _mm_storel_epi64((__m128i *)(gradYTmp + x), mmGradVer);
+        _mm_storel_epi64((__m128i *)(gradXTmp + x), mmGradHor);
+      }
+#endif
+      gradXTmp += gradStride;
+      gradYTmp += gradStride;
+      srcTmp += srcStride;
     }
-
-    gradXTmp += gradStride;
-    gradYTmp += gradStride;
-    srcTmp += srcStride;
+#if JVET_O0570_GRAD_SIMP
   }
+  else
+  {
+    __m128i mmPixTop = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp - srcStride ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp ) ) ), mmShift1 );
+    for ( int y = 0; y < heightInside; y += 2 )
+    {
+      __m128i mmPixBottom = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp + srcStride ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp + ( srcStride << 1 ) ) ) ), mmShift1 );
+      __m128i mmPixLeft   = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp - 1 ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp - 1 + srcStride ) ) ), mmShift1 );
+      __m128i mmPixRight  = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp + 1 ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp + 1 + srcStride ) ) ), mmShift1 );
+
+      __m128i mmGradVer = _mm_sub_epi16( mmPixBottom, mmPixTop );
+      __m128i mmGradHor = _mm_sub_epi16( mmPixRight, mmPixLeft );
+
+      _mm_storel_epi64( (__m128i *) gradYTmp, _mm_unpacklo_epi64( mmGradVer, vzero ) );
+      _mm_storel_epi64( (__m128i *) ( gradYTmp + gradStride ), _mm_unpackhi_epi64( mmGradVer, vzero ) );
+      _mm_storel_epi64( (__m128i *) gradXTmp, _mm_unpacklo_epi64( mmGradHor, vzero ) );
+      _mm_storel_epi64( (__m128i *) ( gradXTmp + gradStride ), _mm_unpackhi_epi64( mmGradHor, vzero ) );
+
+      mmPixTop = mmPixBottom;
+      gradXTmp += gradStride << 1;
+      gradYTmp += gradStride << 1;
+      srcTmp   += srcStride << 1;
+    }
+  }
+#endif
 
 #if JVET_O0070_PROF
   if (PAD)

@@ -195,10 +195,6 @@ public:
 
   LutMotionCand motionLut;
 
-#if JVET_O1170_CHECK_BV_AT_DECODER
-  bool resetIBCBuffer;
-#endif
-
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
 private:
@@ -237,7 +233,10 @@ public:
 #if JVET_O0070_PROF
   CodingStructure *bestParent;
 #endif
-
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  bool resetIBCBuffer;
+#endif
+  
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }
   MotionBuf getMotionBuf()                        { return getMotionBuf(  area.Y() ); }

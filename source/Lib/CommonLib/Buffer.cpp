@@ -177,8 +177,13 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   {
     for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
     {
+#if JVET_O0570_GRAD_SIMP
+      gradYTmp[x] = ( srcTmp[x + srcStride] >> shift1 ) - ( srcTmp[x - srcStride] >> shift1 );
+      gradXTmp[x] = ( srcTmp[x + 1] >> shift1 ) - ( srcTmp[x - 1] >> shift1 );
+#else
       gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> shift1;
       gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> shift1;
+#endif
     }
     gradXTmp += gradStride;
     gradYTmp += gradStride;

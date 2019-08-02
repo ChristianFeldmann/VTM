@@ -114,6 +114,11 @@ protected:
   Pel*                 m_gradY1;
   bool                 m_subPuMC;
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  int                  m_IBCBufferWidth;
+  PelStorage           m_IBCBuffer;
+  void xIntraBlockCopy          (PredictionUnit &pu, PelUnitBuf &predBuf, const ComponentID compID);
+#endif
   int             rightShiftMSB(int numer, int    denom);
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
@@ -171,7 +176,11 @@ public:
   InterPrediction();
   virtual ~InterPrediction();
 
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  void    init                (RdCost* pcRdCost, ChromaFormat chromaFormatIDC, const int ctuSize);
+#else
   void    init                (RdCost* pcRdCost, ChromaFormat chromaFormatIDC);
+#endif
 
   // inter
   void    motionCompensation  (PredictionUnit &pu, PelUnitBuf& predBuf, const RefPicList &eRefPicList = REF_PIC_LIST_X
@@ -214,6 +223,14 @@ public:
   int     getShareState() const { return m_shareState; }
 #endif
   static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+  void xFillIBCBuffer(CodingUnit &cu);
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  void resetIBCBuffer(const ChromaFormat chromaFormatIDC, const int ctuSize);
+  void resetVPDUforIBC(const ChromaFormat chromaFormatIDC, const int ctuSize, const int vSize, const int xPos, const int yPos);
+  bool isLumaBvValid(const int ctuSize, const int xCb, const int yCb, const int width, const int height, const int xBv, const int yBv);
+#endif
+#endif
 };
 
 //! \}

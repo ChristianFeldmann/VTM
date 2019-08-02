@@ -448,7 +448,11 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
           Pel value;
           QpParam cQP(tu, (ComponentID)compID);
 
+#if JVET_O0919_TS_MIN_QP
+          int qp = cQP.Qp(false);
+#else
           int qp = cQP.Qp;
+#endif
           int qpRem = qp % 6;
           int qpPer = qp / 6;
           if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)

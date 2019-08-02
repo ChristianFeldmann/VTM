@@ -491,7 +491,9 @@ template< X86_VEXT vext >
 #endif
 void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
 {
+#if !JVET_O0570_GRAD_SIMP
   __m128i vzero = _mm_setzero_si128();
+#endif
   Pel* srcTmp = src + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
@@ -512,7 +514,7 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
     {
       int x = 0;
 #if JVET_O0570_GRAD_SIMP
-      for ( ; x < ( ( widthInside >> 3 ) << 3 ); x += 8 )
+      for ( ; x < widthInside; x += 8 )
       {
         __m128i mmPixTop    = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x - srcStride ) ), mmShift1 );
         __m128i mmPixBottom = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x + srcStride ) ), mmShift1 );
@@ -560,10 +562,10 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
       __m128i mmGradVer = _mm_sub_epi16( mmPixBottom, mmPixTop );
       __m128i mmGradHor = _mm_sub_epi16( mmPixRight, mmPixLeft );
 
-      _mm_storel_epi64( (__m128i *) gradYTmp, _mm_unpacklo_epi64( mmGradVer, vzero ) );
-      _mm_storel_epi64( (__m128i *) ( gradYTmp + gradStride ), _mm_unpackhi_epi64( mmGradVer, vzero ) );
-      _mm_storel_epi64( (__m128i *) gradXTmp, _mm_unpacklo_epi64( mmGradHor, vzero ) );
-      _mm_storel_epi64( (__m128i *) ( gradXTmp + gradStride ), _mm_unpackhi_epi64( mmGradHor, vzero ) );
+      _mm_storel_epi64( (__m128i *) gradYTmp, mmGradVer );
+      _mm_storel_epi64( (__m128i *) ( gradYTmp + gradStride ), _mm_unpackhi_epi64( mmGradVer, mmGradHor ) );
+      _mm_storel_epi64( (__m128i *) gradXTmp, mmGradHor );
+      _mm_storel_epi64( (__m128i *) ( gradXTmp + gradStride ), _mm_unpackhi_epi64( mmGradHor, mmGradVer ) );
 
       mmPixTop = mmPixBottom;
       gradXTmp += gradStride << 1;

@@ -527,7 +527,13 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
       if (biocheck0
         && biocheck1
         && PU::isBiPredFromDifferentDir(pu)
+#if JVET_O0634_BDOF_SIZE_CONSTRAINT
+        && (pu.Y().height >= 8)
+        && (pu.Y().width >= 8)
+        && ((pu.Y().height * pu.Y().width) >= 128)
+#else
         && pu.Y().height != 4
+#endif
        )
       {
         bioApplied = true;
@@ -1440,7 +1446,13 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         if (biocheck0
           && biocheck1
           && PU::isBiPredFromDifferentDir(pu)
+#if JVET_O0634_BDOF_SIZE_CONSTRAINT
+          && (pu.Y().height >= 8)
+          && (pu.Y().width >= 8)
+          && ((pu.Y().height * pu.Y().width) >= 128)
+#else
           && pu.Y().height != 4
+#endif
           )
         {
           bioApplied = true;

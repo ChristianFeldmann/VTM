@@ -1064,12 +1064,12 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     static_vector<int, FAST_UDI_MAX_RDMODE_NUM> rdModeIdxList;
     if (testMip)
     {
-    static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListTemp;
+    static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> rdModeListTemp;
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
       if( !uiRdModeList[i].mipFlg && uiRdModeList[i].ispMod==NOT_INTRA_SUBPARTITIONS )
       {
-        uiRdModeListTemp.push_back( uiRdModeList[i] );
+        rdModeListTemp.push_back( uiRdModeList[i] );
         rdModeIdxList.push_back( i );
       }
     }
@@ -1077,33 +1077,33 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     {
       if( uiRdModeList[i].mipFlg || uiRdModeList[i].ispMod!=NOT_INTRA_SUBPARTITIONS )
       {
-        uiRdModeListTemp.push_back( uiRdModeList[i] );
+        rdModeListTemp.push_back( uiRdModeList[i] );
         rdModeIdxList.push_back( i );
       }
     }
 #if JVET_O0925_MIP_SIMPLIFICATIONS
-      uiRdModeList.resize(uiRdModeListTemp.size());
+      uiRdModeList.resize(rdModeListTemp.size());
 #endif
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
-      uiRdModeList[i] = uiRdModeListTemp[i];
+      uiRdModeList[i] = rdModeListTemp[i];
     }
     }
 #if JVET_O0925_MIP_SIMPLIFICATIONS
     else
     {
-      static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListTemp;
+      static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> rdModeListTemp;
       for( int i = 0; i < uiRdModeList.size(); i++ )
       {
         if( !uiRdModeList[i].mipFlg  )
         {
-          uiRdModeListTemp.push_back( uiRdModeList[i] );
+          rdModeListTemp.push_back( uiRdModeList[i] );
         }
       }
-      uiRdModeList.resize(uiRdModeListTemp.size());
-      for( int i = 0; i < uiRdModeListTemp.size(); i++ )
+      uiRdModeList.resize(rdModeListTemp.size());
+      for( int i = 0; i < rdModeListTemp.size(); i++ )
       {
-        uiRdModeList[i] = uiRdModeListTemp[i];
+        uiRdModeList[i] = rdModeListTemp[i];
       }
     }
 #endif
@@ -4238,9 +4238,9 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
   for (int idx = 0; idx < candModeList.size() - (keepOneMip?0:1); idx++)
   {
     bool addMode = false;
-    const ModeInfo& uiOrgMode = candModeList[idx];
+    const ModeInfo& orgMode = candModeList[idx];
 
-    if (!uiOrgMode.mipFlg) 
+    if (!orgMode.mipFlg)
     { 
       addMode = (numConv < 3);
       numConv += addMode ? 1:0;
@@ -4253,7 +4253,7 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
     }
     if( addMode )
     {
-      tempRdModeList.push_back(uiOrgMode);
+      tempRdModeList.push_back(orgMode);
       tempCandCostList.push_back(candCostList[idx]);
     }
   }
@@ -4262,8 +4262,8 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
   {
     // Sort MIP candidates by Hadamard cost
     const int transpOff = getNumModesMip(pu.Y()) / 2;
-    static_vector<uint8_t, 3> sortedMipModes(0);
-    static_vector<double, 3> sortedMipCost(0);
+    static_vector<uint8_t, FAST_UDI_MAX_RDMODE_NUM> sortedMipModes(0);
+    static_vector<double, FAST_UDI_MAX_RDMODE_NUM> sortedMipCost(0);
     for (uint8_t mode : { 3, 4, 5 })
     {
       uint8_t candMode = mode + uint8_t((mipHadCost[mode + transpOff] < mipHadCost[mode]) ? transpOff : 0);
@@ -4275,7 +4275,7 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
     {
       const ModeInfo mipMode(true, 0, NOT_INTRA_SUBPARTITIONS, sortedMipModes[idx]);
       bool alreadyIncluded = false;
-      for (int modeListIdx = 0; modeListIdx < numModesForFullRD; modeListIdx++)
+      for (int modeListIdx = 0; modeListIdx < tempRdModeList.size(); modeListIdx++)
       {
         if (tempRdModeList[modeListIdx] == mipMode)
         {

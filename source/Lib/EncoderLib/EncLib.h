@@ -138,7 +138,11 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*                      m_apss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*                      m_apss[MAX_NUM_APS];
+#endif
 
   APS*                      m_lmcsAPS;
 

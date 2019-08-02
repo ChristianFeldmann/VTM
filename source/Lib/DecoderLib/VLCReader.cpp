@@ -1076,10 +1076,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG(     uiCode, "separate_colour_plane_flag");        CHECK(uiCode != 0, "Invalid code");
   }
-
+#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
+  READ_UVLC (    uiCode, "pic_width_in_luma_samples" );
+  CHECK((uiCode % (1 << std::max(3, MIN_CU_LOG2))) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)");
+  pcSPS->setPicWidthInLumaSamples ( uiCode    );
+  
+  READ_UVLC(uiCode, "pic_height_in_luma_samples");
+  CHECK((uiCode % (1 << std::max(3, MIN_CU_LOG2))) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)");
+  pcSPS->setPicHeightInLumaSamples( uiCode   );
+#else
   READ_UVLC (    uiCode, "pic_width_in_luma_samples" );          pcSPS->setPicWidthInLumaSamples ( uiCode    );
   READ_UVLC (    uiCode, "pic_height_in_luma_samples" );         pcSPS->setPicHeightInLumaSamples( uiCode    );
-
+#endif
   // KJS: not removing yet
   READ_FLAG(     uiCode, "conformance_window_flag");
   if (uiCode != 0)

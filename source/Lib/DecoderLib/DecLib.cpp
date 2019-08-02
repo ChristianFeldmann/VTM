@@ -1437,6 +1437,7 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
   VPS* vps = new VPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseVPS( vps );
+  delete vps;
 }
 
 void DecLib::xDecodeDPS( InputNALUnit& nalu )

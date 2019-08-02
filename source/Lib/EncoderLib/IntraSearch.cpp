@@ -3764,7 +3764,7 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
     modeIsInList[DC_IDX] = true;
   }
 
-  // 5) We add extra candidates to the list that will only be tested is likely to win
+  // 5) We add extra candidates to the list that will only be tested if ISP is likely to win
   m_ispTestedModes.numOrigModesToTest = (int)destListPtr->size();
   const int addedModesFromHadList = 3;
   int       newModesAdded = 0;

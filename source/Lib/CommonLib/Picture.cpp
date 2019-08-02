@@ -961,7 +961,11 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
+#if JVET_O_MAX_NUM_ALF_APS_8
+  memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
+#else
   memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*MAX_NUM_APS);
+#endif
 
   pTmp->setLmcsAPS(0);
   return pTmp;

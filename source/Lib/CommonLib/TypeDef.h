@@ -57,7 +57,11 @@
 #if JVET_O1170_IBC_VIRTUAL_BUFFER
 #define JVET_O1170_CHECK_BV_AT_DECODER                    1 // For decoder to check if a BV is valid or not
 #endif
+
+#define JVET_O0538_SPS_CONTROL_ISP_SBT                    1 // JVET-O0538: SPS control for ISP and SBT transform
+
 #define JVET_O0634_BDOF_SIZE_CONSTRAINT                   1 // JVET-O0634: BDOF applied CU size align with DMVR
+
 #define JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE          1 // JVET-O0213: Block size restriction of LFNST to maximum transform size
 
 #define JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION             1 // JVET-O0617: Significant flag context reduction

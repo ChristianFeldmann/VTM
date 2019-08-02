@@ -797,6 +797,9 @@ private:
   bool              m_SMVD;
   bool              m_Affine;
   bool              m_AffineType;
+#if JVET_O0070_PROF
+  bool              m_PROF;
+#endif
   bool              m_GBi;                        //
   bool              m_MHIntra;
   bool              m_Triangle;
@@ -1016,6 +1019,10 @@ public:
   bool      getUseAffine          ()                                      const     { return m_Affine; }
   void      setUseAffineType      ( bool b )                                        { m_AffineType = b; }
   bool      getUseAffineType      ()                                      const     { return m_AffineType; }
+#if JVET_O0070_PROF
+  void      setUsePROF            ( bool b )                                        { m_PROF = b; }
+  bool      getUsePROF            ()                                      const     { return m_PROF; }
+#endif
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
   void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }

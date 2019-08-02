@@ -1444,6 +1444,9 @@ SPS::SPS()
 , m_LFNST                     ( false )
 , m_Affine                    ( false )
 , m_AffineType                ( false )
+#if JVET_O0070_PROF
+, m_PROF                      ( false )
+#endif
 , m_MHIntra                   ( false )
 , m_Triangle                  ( false )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

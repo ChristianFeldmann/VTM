@@ -904,6 +904,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
+#if JVET_O0070_PROF
+  sps.setUsePROF               ( m_PROF );
+#endif
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );

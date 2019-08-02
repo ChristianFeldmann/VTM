@@ -234,6 +234,9 @@ private:
   MotionInfo *m_motionBuf;
 
 public:
+#if JVET_O0070_PROF
+  CodingStructure *bestParent;
+#endif
 
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }

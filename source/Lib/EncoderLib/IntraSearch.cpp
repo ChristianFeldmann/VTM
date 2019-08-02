@@ -690,7 +690,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           if ( testISP )
           {
 #if JVET_O0502_ISP_CLEANUP
-            // we add the MPMs to list that contains only regular intra modes
+            // we add the MPMs to the list that contains only regular intra modes
             for (int j = 0; j < numCand; j++)
             {
               bool     mostProbableModeIncluded = false;

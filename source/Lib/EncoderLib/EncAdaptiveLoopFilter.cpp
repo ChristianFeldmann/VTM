@@ -662,7 +662,10 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
       APS* alfAPS = m_apsMap->getPS((i << NUM_APS_TYPE_LEN) + ALF_APS);
       m_apsMap->clearChangedFlag((i << NUM_APS_TYPE_LEN) + ALF_APS);
       if (alfAPS)
+      {
+        alfAPS->getAlfAPSParam().reset();
         alfAPS = nullptr;
+      }
     }
   }
   AlfParam alfParam;
@@ -3291,6 +3294,7 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
         newAPS->setAPSType(ALF_APS);
       }
       newAPS->setAlfAPSParam(alfParamNewFiltersBest);
+      newAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] = false;
       m_apsMap->setChangedFlag((newApsId << NUM_APS_TYPE_LEN) + ALF_APS);
       m_apsIdStart = newApsId;
     }
@@ -3501,6 +3505,10 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
         newAPS->getAlfAPSParam().reset();
       }
       newAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] = true;
+      if (!alfParamNewFiltersBest.newFilterFlag[CHANNEL_TYPE_LUMA])
+      {
+        newAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] = false;
+      }
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
       newAPS->getAlfAPSParam().numAlternativesChroma = alfParamNewFilters.numAlternativesChroma;
       for( int altIdx = 0; altIdx < MAX_NUM_ALF_ALTERNATIVES_CHROMA; ++altIdx )

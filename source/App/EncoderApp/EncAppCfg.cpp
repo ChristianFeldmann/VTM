@@ -2515,10 +2515,7 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMinQT[1] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
   xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition height size should be larger than or equal to 16");
-#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
-  xConfirmPara( (m_iSourceWidth  % (1<<std::max(3, MIN_CU_LOG2)))!=0,                       "Resulting coded frame width must be a multiple of Max(8, the minimum unit size)");
-  xConfirmPara( (m_iSourceHeight % (1<<std::max(3, MIN_CU_LOG2)))!=0,                       "Resulting coded frame height must be a multiple of Max(8, the minimum unit size)");
-#else
+#if !JVET_O0640_PICTURE_SIZE_CONSTRAINT
   xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
@@ -2531,7 +2528,10 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_uiMaxCUHeight >> m_uiMaxCUDepth) < 4,                                    "Minimum partition height size should be larger than or equal to 8");
   xConfirmPara( m_uiMaxCUWidth < 16,                                                        "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiMaxCUHeight < 16,                                                       "Maximum partition height size should be larger than or equal to 16");
-#if !JVET_O0640_PICTURE_SIZE_CONSTRAINT
+#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
+  xConfirmPara( (m_iSourceWidth  % (std::max(8, int(m_uiMaxCUWidth  >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
+  xConfirmPara( (m_iSourceHeight % (std::max(8, int(m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
+#else
   xConfirmPara( (m_iSourceWidth  % (m_uiMaxCUWidth  >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame width must be a multiple of the minimum CU size");
   xConfirmPara( (m_iSourceHeight % (m_uiMaxCUHeight >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame height must be a multiple of the minimum CU size");
 #endif

@@ -1191,8 +1191,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
 
 #if JVET_O0640_PICTURE_SIZE_CONSTRAINT
-  CHECK((pcSPS->getPicWidthInLumaSamples() % (1 << std::max(3, log2MinCUSize))) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)");
-  CHECK((pcSPS->getPicHeightInLumaSamples() % (1 << std::max(3, log2MinCUSize))) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)");
+  CHECK((pcSPS->getPicWidthInLumaSamples()  % (std::max(8, int(pcSPS->getMaxCUWidth()  >> (pcSPS->getMaxCodingDepth() - 1))))) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)");
+  CHECK((pcSPS->getPicHeightInLumaSamples() % (std::max(8, int(pcSPS->getMaxCUHeight() >> (pcSPS->getMaxCodingDepth() - 1))))) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)");
 #endif
 
   READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);

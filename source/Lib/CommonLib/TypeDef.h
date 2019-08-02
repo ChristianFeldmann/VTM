@@ -52,6 +52,10 @@
 
 #define JVET_O0502_ISP_CLEANUP                            1 // JVET-O0502: Enable PDPC and all 67 intra modes and apply the cubic filter always (also included in JVET-O0341) for ISP
 
+#define JVET_O0640_PICTURE_SIZE_CONSTRAINT                1 // JVET-O0640: Picture width and height shall be a multiple of Max(8, minCU size)
+
+#define JVET_O_MAX_NUM_ALF_APS_8                          1 // JVET-O: number of ALF APSs is reduced to 8
+
 #define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
 
 #define JVET_O0570_GRAD_SIMP                              1 // JVET-O0570/JVET-O0211, SMID friendly spatial gradient calculation

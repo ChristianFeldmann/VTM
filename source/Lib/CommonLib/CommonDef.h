@@ -187,7 +187,11 @@ static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTE
 static const int MAX_ALF_PADDING_SIZE        =                      4;
 
 static const int ALF_FIXED_FILTER_NUM        =                     64;
+#if JVET_O_MAX_NUM_ALF_APS_8
+static const int ALF_CTB_MAX_NUM_APS         =                      8;
+#else
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
+#endif
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
 

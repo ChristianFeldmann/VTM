@@ -1570,7 +1570,11 @@ private:
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                   m_uiMaxBTSize;
 
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*                       m_alfApss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*                       m_alfApss[MAX_NUM_APS];
+#endif
   bool                       m_tileGroupAlfEnabledFlag[MAX_NUM_COMPONENT];
   int                        m_tileGroupNumAps;
   std::vector<int>           m_tileGroupLumaApsId;
@@ -2074,7 +2078,11 @@ protected:
   ParameterSetMap<APS> m_apsMap;
   ParameterSetMap<DPS> m_dpsMap;
 
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS* m_apss[ALF_CTB_MAX_NUM_APS];
+#else
   APS* m_apss[MAX_NUM_APS];
+#endif
 
   int m_activeDPSId; // -1 for nothing active
   int m_activeSPSId; // -1 for nothing active

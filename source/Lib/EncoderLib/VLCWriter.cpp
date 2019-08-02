@@ -1278,7 +1278,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if (alfEnabled)
       {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+        WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
+#else
         xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#endif
 #else
         if (pcSlice->isIntra())
         {
@@ -1286,13 +1290,21 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
         else
         {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
+#else
           xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#endif
         }
 #endif
         const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
         for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
         {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(apsId[i], 3, "tile_group_aps_id");
+#else
           WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
+#endif
         }
 
         const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
@@ -1307,7 +1319,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
+#else
           WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#endif
 #else
           if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
           {
@@ -1315,7 +1331,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           }
           else
           {
+#if JVET_O_MAX_NUM_ALF_APS_8
+            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
+#else
             WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#endif
           }
 #endif
         }

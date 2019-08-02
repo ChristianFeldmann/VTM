@@ -1189,6 +1189,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(uiCode, "log2_min_luma_coding_block_size_minus2");
   int log2MinCUSize = uiCode + 2;
   pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
+
+#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
+  CHECK((pcSPS->getPicWidthInLumaSamples()  % (std::max(8, int(pcSPS->getMaxCUWidth()  >> (pcSPS->getMaxCodingDepth() - 1))))) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)");
+  CHECK((pcSPS->getPicHeightInLumaSamples() % (std::max(8, int(pcSPS->getMaxCUHeight() >> (pcSPS->getMaxCodingDepth() - 1))))) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)");
+#endif
+
   READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_tile_group");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
@@ -1812,7 +1818,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       if (uiCode)
       {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+        READ_CODE(3, uiCode, "tile_group_num_APS");
+#else
         xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
+#endif
 #else
         if (pcSlice->isIntra())
         {
@@ -1820,7 +1830,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         }
         else
         {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          READ_CODE(3, uiCode, "tile_group_num_APS");
+#else
           xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
+#endif
         }
 #endif
         int numAps = uiCode;
@@ -1828,7 +1842,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         std::vector<int> apsId(numAps, -1);
         for (int i = 0; i < numAps; i++)
         {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          READ_CODE(3, uiCode, "tile_group_aps_id");
+#else
           READ_CODE(5, uiCode, "tile_group_aps_id");
+#endif
           apsId[i] = uiCode;
         }
 		
@@ -1849,7 +1867,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         if (alfChromaIdc)
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+          READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
+#else
           READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+#endif
 #else
           if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
           {
@@ -1857,7 +1879,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           }
           else
           {
+#if JVET_O_MAX_NUM_ALF_APS_8
+            READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
+#else
             READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+#endif
           }
 #endif
           pcSlice->setTileGroupApsIdChroma(uiCode);

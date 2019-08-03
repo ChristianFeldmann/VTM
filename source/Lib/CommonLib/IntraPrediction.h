@@ -81,8 +81,10 @@ private:
     bool applyPDPC;
     bool isModeVer;
     int  multiRefIndex;
+#if !JVET_O0364_PADDING
     int  whRatio;
     int  hwRatio;
+#endif
     int  intraPredAngle;
     int  invAngle;
     bool interpolationFlag;
@@ -90,16 +92,25 @@ private:
     int  angularScale;
 #endif
 
-    IntraPredParam() :
-      refFilterFlag     ( false                           ),
-      applyPDPC         ( false                           ),
-      isModeVer         ( false                           ),
-      multiRefIndex     ( -1                              ),
-      whRatio           ( 0                               ),
-      hwRatio           ( 0                               ),
-      intraPredAngle    ( std::numeric_limits<int>::max() ),
-      invAngle          ( std::numeric_limits<int>::max() ),
-      interpolationFlag ( false                           ) {}
+    // clang-format off
+    IntraPredParam()
+      : refFilterFlag(false)
+      , applyPDPC(false)
+      , isModeVer(false)
+      , multiRefIndex(-1)
+#if !JVET_O0364_PADDING
+      , whRatio(0)
+      , hwRatio(0)
+#endif
+      , intraPredAngle(std::numeric_limits<int>::max())
+      , invAngle(std::numeric_limits<int>::max())
+      , interpolationFlag(false)
+#if JVET_O0364_PDPC_ANGULAR
+      , angularScale(-1)
+#endif
+    // clang-format on
+    {
+    }
   };
 
   IntraPredParam m_ipaParam;

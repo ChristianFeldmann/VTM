@@ -354,13 +354,14 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     {
       for (int y = 0; y < iHeight; y++)
       {
-        int wT = 32 >> std::min(31, ((y << 1) >> scale));
+        const int wT   = 32 >> std::min(31, ((y << 1) >> scale));
         const Pel left = srcBuf.at(0, y + 1);
         for (int x = 0; x < iWidth; x++)
         {
-          const Pel top = srcBuf.at(x + 1, 0);
-          int wL = 32 >> std::min(31, ((x << 1) >> scale));
-          dstBuf.at(x, y) = ClipPel((wL * left + wT * top + (64 - wL - wT) * dstBuf.at(x, y) + 32) >> 6, clpRng);
+          const int wL    = 32 >> std::min(31, ((x << 1) >> scale));
+          const Pel top   = srcBuf.at(x + 1, 0);
+          const Pel val   = dstBuf.at(x, y);
+          dstBuf.at(x, y) = val + ((wL * (left - val) + wT * (top - val) + 32) >> 6);
         }
       }
     }

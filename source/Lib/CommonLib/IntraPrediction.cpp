@@ -382,34 +382,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
       }
     }
 #endif
-    else if (uiDirMode == HOR_IDX)
-    {
-      const Pel topLeft = srcBuf.at(0, 0);
-      for (int y = 0; y < iHeight; y++)
-      {
-        int wT = 32 >> std::min(31, ((y << 1) >> scale));
-        for (int x = 0; x < iWidth; x++)
-        {
-          const Pel top = srcBuf.at(x + 1, 0);
-          int wTL = wT;
-          dstBuf.at(x, y) = ClipPel((wT * top - wTL * topLeft + (64 - wT + wTL) * dstBuf.at(x, y) + 32) >> 6, clpRng);
-        }
-      }
-    }
-    else if (uiDirMode == VER_IDX)
-    {
-      const Pel topLeft = srcBuf.at(0, 0);
-      for (int y = 0; y < iHeight; y++)
-      {
-        const Pel left = srcBuf.at(0, y + 1);
-        for (int x = 0; x < iWidth; x++)
-        {
-          int wL = 32 >> std::min(31, ((x << 1) >> scale));
-          int wTL = wL;
-          dstBuf.at(x, y) = ClipPel((wL * left - wTL * topLeft + (64 - wL + wTL) * dstBuf.at(x, y) + 32) >> 6, clpRng);
-        }
-      }
-    }
   }
 }
 
@@ -757,19 +729,35 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   refMain += multiRefIdx;
   refSide += multiRefIdx;
 
+  Pel *pDsty = pDstBuf;
+
   if( intraPredAngle == 0 )  // pure vertical or pure horizontal
   {
     for( int y = 0; y < height; y++ )
     {
       for( int x = 0; x < width; x++ )
       {
-        pDstBuf[y*dstStride + x] = refMain[x + 1];
+        pDsty[x] = refMain[x + 1];
       }
+
+      if (m_ipaParam.applyPDPC)
+      {
+        const int scale   = (g_aucLog2[width] + g_aucLog2[height] - 2) >> 2;
+        const Pel topLeft = refMain[0];
+        const Pel left    = refSide[1 + y];
+        for (int x = 0; x < std::min(3 << scale, width); x++)
+        {
+          const int wL  = 32 >> (2 * x >> scale);
+          const Pel val = pDsty[x];
+          pDsty[x]      = ClipPel(val + ((wL * (left - topLeft) + 32) >> 6), clpRng);
+        }
+      }
+
+      pDsty += dstStride;
     }
   }
   else
   {
-    Pel *pDsty=pDstBuf;
     for (int y = 0, deltaPos = intraPredAngle * (1 + multiRefIdx); y<height; y++, deltaPos += intraPredAngle, pDsty += dstStride)
     {
       const int deltaInt   = deltaPos >> 5;

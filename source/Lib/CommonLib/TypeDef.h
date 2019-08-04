@@ -100,7 +100,6 @@
 #define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
 
 #define JVET_O0057_ALTHPELIF                              1  //AMVR_HPEL
->>>>>>> source/Lib/CommonLib/TypeDef.h
 
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 

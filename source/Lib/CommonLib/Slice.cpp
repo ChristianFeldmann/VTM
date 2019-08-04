@@ -1499,6 +1499,62 @@ void  SPS::createRPLList1(int numRPL)
 const int SPS::m_winUnitX[]={1,2,2,1};
 const int SPS::m_winUnitY[]={1,2,1,1};
 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, const int qpBdOffset)
+{
+  m_qpBdOffset = qpBdOffset;
+  m_sameCQPTableForAllChromaFlag = params.m_sameCQPTableForAllChromaFlag;
+  for (int i = 0; i < MAX_NUM_CQP_MAPPING_TABLES; i++)
+  {
+    m_numPtsInCQPTableMinus1[i] = params.m_numPtsInCQPTableMinus1[i];
+    m_deltaQpInValMinus1[i] = params.m_deltaQpInValMinus1[i];
+    m_deltaQpOutVal[i] = params.m_deltaQpOutVal[i];
+  }
+}
+void ChromaQpMappingTable::derivedChromaQPMappingTables()
+{
+  for (int i = 0; i < (getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+  {
+    const int qpBdOffsetC = m_qpBdOffset;
+    const int numPtsInCQPTableMinus1 = getNumPtsInCQPTableMinus1(i);
+    std::vector<int> qpInVal(numPtsInCQPTableMinus1 + 1), qpOutVal(numPtsInCQPTableMinus1 + 1);
+
+    qpInVal[0] = -qpBdOffsetC + getDeltaQpInValMinus1(i, 0);
+    qpOutVal[0] = -qpBdOffsetC + getDeltaQpOutVal(i, 0);
+    for (int j = 1; j <= getNumPtsInCQPTableMinus1(i); j++)
+    {
+      qpInVal[j] = qpInVal[j - 1] + getDeltaQpInValMinus1(i, j) + 1;
+      qpOutVal[j] = qpOutVal[j - 1] + getDeltaQpOutVal(i, j);
+    }
+
+    for (int j = 0; j <= getNumPtsInCQPTableMinus1(i); j++)
+    {
+      CHECK(qpInVal[j]  < -qpBdOffsetC || qpInVal[j]  > MAX_QP, "qpInVal out of range");
+      CHECK(qpOutVal[j] < -qpBdOffsetC || qpOutVal[j] > MAX_QP, "qpOutVal out of range");
+    }
+
+    m_chromaQpMappingTables[i][qpInVal[0]] = qpOutVal[0];
+    for (int k = qpInVal[0] - 1; k >= -qpBdOffsetC; k--)
+    {
+      m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k + 1] - 1);
+    }
+    for (int j = 0; j < numPtsInCQPTableMinus1; j++)
+    {
+      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1 + 1) >> 1;
+      for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
+      {
+        m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
+          + (getDeltaQpOutVal(i, j + 1) * m + sh) / (getDeltaQpInValMinus1(i, j + 1) + 1);
+      }
+    }
+    for (int k = qpInVal[numPtsInCQPTableMinus1]+1; k <= MAX_QP; k++)
+    {
+      m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k - 1] + 1);
+    }
+  }
+}
+#endif
+
 PPSRExt::PPSRExt()
 : m_log2MaxTransformSkipBlockSize      (2)
 , m_crossComponentPredictionEnabledFlag(false)

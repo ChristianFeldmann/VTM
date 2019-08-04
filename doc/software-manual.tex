@@ -1334,6 +1334,57 @@ $\lambda = \lambda_{base} \times max(2, min(4, (sliceQP-12)/6))$
 In addition, independent on the IntraQPFactor, if HadamardME=false, then for an inter slice the final $\lambda$ is scaled by a factor of $0.95$.
 \\
 
+\Option{UseIdentityTableForNon420Chroma}
+\Default{1}
+Specifies whether identity chroma QP mapping tables are used for 4:2:2 and 4:4:4 content. When set to 1, the identity chroma QP mapping table is used for all the three chroma components for 4:2:2 or 4:4:4 content. When set to 0, chroma QP 
+mapping table may be specified by other parameters in the configuration.
+\\
+
+\Option{SameCQPTablesForAllChroma}
+\Default{1)
+Specifies that the Cb, Cr and joint Cb-Cr components all use the same
+chroma mapping table. When set to 1, the values of QpInValCr, 
+QpOutValCr, QpInValCbCr and QpOutValCbCr are ignored. When set to 0, all
+Cb, Cr and joint Cb-Cr components may have different chroma QP mapping tables specified in the configuration file. \\ Note that 
+SameCQPTablesForAllChroma is ignored when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
+\Option{QpInValCb}%
+\Option{QpOutValCb}&
+\Default{\NotSet}
+Specifies the input and coordinates of the pivot points used to specify the chroma QP mapping tables for the Cb component. Default values are as follows: 
+\begin{tabular}{cp{0.45\textwidth}}
+ QpInValCb: 25, 33, 43 \\
+ QpOutValCb: 25, 32, 37 \\
+\end{tabular}
+The values specify the pivot points for the chroma QP mapping table, the unspecified QP values are interpolated from the remaining values. E.g., the default values above specify that  the pivot points for the chroma QP mapping table for the Cb component are (25, 25), (33, 32), (43, 37).
+\\ Note that that QpInValCr and QpOutValCr are ignored when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
+\Option{QpInValCr}%
+\Option{QpOutValCr}&
+\Default{\NotSet}
+Specifies the input and coordinates of the pivot points used to specify the chroma QP mapping tables for the Cr component. Default values are as follows: 
+\begin{tabular}{cp{0.45\textwidth}}
+ QpInValCr: 0 \\
+ QpOutValCr: 0 \\
+\end{tabular}
+The default values specify a pivot point of (0,0) which corresponds to an identity chroma QP mapping table. \\ Note that that QpInValCr and QpOutValCr are ignored 
+when SameCQPTablesForAllChroma is set to 1 or when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
+\Option{QpInValCbCr}%
+\Option{QpOutValCbCr}&
+\Default{\NotSet}
+Specifies the input and coordinates of the pivot points used to specify the chroma QP mapping tables for the joint Cb-Cr component. Default values are as follows: 
+\begin{tabular}{cp{0.45\textwidth}}
+ QpInValrCr: 0 \\
+ QpOutValCbCr: 0 \\
+\end{tabular}
+The default values specify a pivot point of (0,0) which corresponds to a identity chroma QP mapping table. Note that that QpInValCbCr and QpOutVaCblCr are ignored 
+when SameCQPTablesForAllChroma is set to 1  or when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
 \Option{CbQpOffset (-cbqpofs)}%
 \Option{CrQpOffset (-crqpofs)} &
 %\ShortOption{-cbqpofs}%

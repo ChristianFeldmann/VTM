@@ -1064,7 +1064,11 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
   Pel *refBufUnfiltered   = m_piYuvExt[area.compID][PRED_BUF_UNFILTERED];
   Pel *refBufFiltered     = m_piYuvExt[area.compID][PRED_BUF_FILTERED];
 
+#if JVET_O0502_ISP_CLEANUP
+  setReferenceArrayLengths( area );
+#else
   setReferenceArrayLengths( cu.ispMode && isLuma( area.compID ) ? cu.blocks[area.compID] : area );
+#endif
 
   // ----- Step 1: unfiltered reference samples -----
   xFillReferenceSamples( cs.picture->getRecoBuf( area ), refBufUnfiltered, area, cu );
@@ -1108,11 +1112,9 @@ void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const Comp
       m_topRefLength = cu.Y().width << 1;
     }
 
-    const int multiRefIdx = m_ipaParam.multiRefIndex;
-    const int whRatio = m_ipaParam.whRatio;
-    const int hwRatio = m_ipaParam.hwRatio;
-    const int srcStride = m_topRefLength + 1 + (whRatio + 1) * multiRefIdx;
-    const int srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
+    const int srcStride = m_topRefLength + 1;
+    const int srcHStride = m_leftRefLength + 1;
+
     m_pelBufISP[0] = m_pelBufISPBase[0] = PelBuf(m_piYuvExt[area.compID][PRED_BUF_UNFILTERED], srcStride, srcHStride);
     m_pelBufISP[1] = m_pelBufISPBase[1] = PelBuf(m_piYuvExt[area.compID][PRED_BUF_FILTERED], srcStride, srcHStride);
 

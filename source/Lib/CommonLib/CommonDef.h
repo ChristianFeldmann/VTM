@@ -151,7 +151,10 @@ static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                6; ///< MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
-
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+static const int IBC_MRG_MAX_NUM_CANDS =                            6; ///< IBC MERGE
+#endif
+  
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
 static const int ADAPT_SR_SCALE =                                   1; ///< division factor for adaptive search range

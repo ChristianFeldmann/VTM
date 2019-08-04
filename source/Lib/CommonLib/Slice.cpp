@@ -82,6 +82,9 @@ Slice::Slice()
 , m_maxNumMergeCand               ( 0 )
 , m_maxNumAffineMergeCand         ( 0 )
 , m_maxNumTriangleCand            ( 0 )
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+, m_maxNumIBCMergeCand            ( 0 )
+#endif
 , m_disFracMMVD                   ( false )
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
 , m_disBdofDmvrFlag               ( false )
@@ -192,6 +195,9 @@ void Slice::initSlice()
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_maxNumIBCMergeCand = IBC_MRG_MAX_NUM_CANDS;
+#endif
 
   m_bFinalized=false;
 
@@ -703,6 +709,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
   m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_maxNumIBCMergeCand            = pSrc->m_maxNumIBCMergeCand;
+#endif
   m_disFracMMVD                   = pSrc->m_disFracMMVD;
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   m_disBdofDmvrFlag               = pSrc->m_disBdofDmvrFlag;

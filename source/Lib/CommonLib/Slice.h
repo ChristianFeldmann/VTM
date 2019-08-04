@@ -1556,6 +1556,9 @@ private:
   uint32_t                       m_maxNumMergeCand;
   uint32_t                   m_maxNumAffineMergeCand;
   uint32_t                   m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t                   m_maxNumIBCMergeCand;
+#endif
   bool                       m_disFracMMVD;
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   bool                       m_disBdofDmvrFlag;
@@ -1809,6 +1812,10 @@ public:
   uint32_t                    getMaxNumAffineMergeCand() const                       { return m_maxNumAffineMergeCand; }
   void                        setMaxNumTriangleCand(uint32_t val)                    { m_maxNumTriangleCand = val;}
   uint32_t                    getMaxNumTriangleCand() const                          { return m_maxNumTriangleCand;}
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  void                        setMaxNumIBCMergeCand( uint32_t val )                  { m_maxNumIBCMergeCand = val; }
+  uint32_t                    getMaxNumIBCMergeCand() const                          { return m_maxNumIBCMergeCand; }
+#endif
   void                        setDisFracMMVD( bool val )                             { m_disFracMMVD = val;                                          }
   bool                        getDisFracMMVD() const                                 { return m_disFracMMVD;                                         }
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG

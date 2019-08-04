@@ -1928,7 +1928,15 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       encodeOneIdx(candIdx1, maxNumTriangleCand - 2);
       return;
     }
-  int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    int numCandminus1;
+    if (pu.cu->predMode == MODE_IBC)
+      numCandminus1 = int(pu.cs->slice->getMaxNumIBCMergeCand()) - 1;
+    else
+      numCandminus1 = int(pu.cs->slice->getMaxNumMergeCand()) - 1;
+#else
+    int numCandminus1 = int(pu.cs->slice->getMaxNumMergeCand()) - 1;
+#endif
   if( numCandminus1 > 0 )
   {
     if( pu.mergeIdx == 0 )

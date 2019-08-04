@@ -1480,7 +1480,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
     }
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if (!cs.slice->isIntra())
+#else
     if (!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag())
+#endif
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
       WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
@@ -1530,6 +1534,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         pcSlice->setMaxNumTriangleCand(0);
       }
     }
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pcSlice->getSPS()->getIBCFlag() )
+    {
+      CHECK( pcSlice->getMaxNumIBCMergeCand() > IBC_MRG_MAX_NUM_CANDS, "More IBC merge candidates signalled than supported" );
+      WRITE_UVLC( IBC_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumIBCMergeCand(), "six_minus_max_num_ibc_merge_cand" );
+    }
+#endif
 #if JVET_O0105_ICT
     if (chromaEnabled)
     {

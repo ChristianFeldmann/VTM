@@ -485,7 +485,6 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
     dst += dstStride;
   }
 }
->>>>>>> source/Lib/CommonLib/x86/BufferX86.h
 
 template< X86_VEXT vext >
 void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLimit)

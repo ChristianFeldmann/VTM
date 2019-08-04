@@ -2042,6 +2042,12 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     return;
   }
 
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  if (pu.cu->predMode == MODE_IBC)
+  {
+    numCandminus1 = int(pu.cs->slice->getMaxNumIBCMergeCand()) - 1;
+  }
+#endif
   if( numCandminus1 > 0 )
   {
     if( m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )

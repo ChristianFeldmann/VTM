@@ -1033,7 +1033,11 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 {
   const CodingStructure &cs = *pu.cs;
   const Slice &slice = *pu.cs->slice;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  const uint32_t maxNumMergeCand = slice.getMaxNumIBCMergeCand();
+#else
   const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
+#endif
   const bool canFastExit = pu.cs->pps->getLog2ParallelMergeLevelMinus2() == 0;
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)

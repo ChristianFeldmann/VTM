@@ -111,7 +111,11 @@ public:
   virtual ~HLSWriter() {}
 
 private:
+#if JVET_O0244_DELTA_POC
+  void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
+#else
   void xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount);
+#endif
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
   void xCodeScalingList         ( const ScalingList* scalingList, uint32_t sizeId, uint32_t listId);
@@ -137,7 +141,11 @@ public:
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 
-  void alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
+#else
+  void alfFilter( const AlfParam& alfParam, const bool isChroma );
+#endif
 
 private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );

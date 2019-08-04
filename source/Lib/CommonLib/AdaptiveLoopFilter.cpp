@@ -55,6 +55,9 @@ AdaptiveLoopFilter::AdaptiveLoopFilter()
   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
   {
     m_ctuEnableFlag[compIdx] = nullptr;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    m_ctuAlternative[compIdx] = nullptr;
+#endif
   }
 
   m_deriveClassificationBlk = deriveClassificationBlk;
@@ -210,6 +213,9 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
   {
     m_ctuEnableFlag[compIdx] = cs.picture->getAlfCtuEnableFlag( compIdx );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    m_ctuAlternative[compIdx] = cs.picture->getAlfCtuAlternativeData( compIdx );
+#endif
   }
   reconstructCoeffAPSs(cs, true, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) || cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), false);
   short* alfCtuFilterIndex = cs.slice->getPic()->getAlfCtbFilterIndex();
@@ -298,7 +304,12 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
               {
                 const Area blkSrc( 0, 0, w >> chromaScaleX, h >> chromaScaleY );
                 const Area blkDst( xStart >> chromaScaleX, yStart >> chromaScaleY, w >> chromaScaleX, h >> chromaScaleY );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+                uint8_t alt_num = m_ctuAlternative[compIdx][ctuIdx];
+                m_filter5x5Blk(m_classifier, recYuv, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
+#else
                 m_filter5x5Blk(m_classifier, recYuv, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs
+#endif
                   , m_alfVBChmaCTUHeight
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
               }
@@ -347,7 +358,12 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
         if( m_ctuEnableFlag[compIdx][ctuIdx] )
         {
           Area blk( xPos >> chromaScaleX, yPos >> chromaScaleY, width >> chromaScaleX, height >> chromaScaleY );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+          uint8_t alt_num = m_ctuAlternative[compIdx][ctuIdx];
+          m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, blk, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
+#else
           m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, blk, compID, m_chromaCoeffFinal, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs
+#endif
             , m_alfVBChmaCTUHeight
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
         }
@@ -362,7 +378,7 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
 {
   //luma
   APS** aps = cs.slice->getAlfAPSs();
-  AlfSliceParam alfSliceParamTmp;
+  AlfParam alfParamTmp;
   APS* curAPS;
   if (luma)
   {
@@ -371,8 +387,8 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
       int apsIdx = cs.slice->getTileGroupApsIdLuma()[i];
       curAPS = aps[apsIdx];
       CHECK(curAPS == NULL, "invalid APS");
-      alfSliceParamTmp = curAPS->getAlfAPSParam();
-      reconstructCoeff(alfSliceParamTmp, CHANNEL_TYPE_LUMA, isRdo, true);
+      alfParamTmp = curAPS->getAlfAPSParam();
+      reconstructCoeff(alfParamTmp, CHANNEL_TYPE_LUMA, isRdo, true);
       memcpy(m_coeffApsLuma[i], m_coeffFinal, sizeof(m_coeffFinal));
       memcpy(m_clippApsLuma[i], m_clippFinal, sizeof(m_clippFinal));
     }
@@ -383,24 +399,127 @@ void AdaptiveLoopFilter::reconstructCoeffAPSs(CodingStructure& cs, bool luma, bo
   {
     int apsIdxChroma = cs.slice->getTileGroupApsIdChroma();
     curAPS = aps[apsIdxChroma];
-    alfSliceParamTmp = curAPS->getAlfAPSParam();
-    reconstructCoeff(alfSliceParamTmp, CHANNEL_TYPE_CHROMA, isRdo, true);
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+    m_alfParamChroma = &curAPS->getAlfAPSParam();
+    alfParamTmp = *m_alfParamChroma;
+#else
+    alfParamTmp = curAPS->getAlfAPSParam();
+#endif
+    reconstructCoeff(alfParamTmp, CHANNEL_TYPE_CHROMA, isRdo, true);
   }
 }
 
-void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, ChannelType channel, const bool isRdo, const bool isRedo )
+void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType channel, const bool isRdo, const bool isRedo )
 {
   int factor = isRdo ? 0 : (1 << (m_NUM_BITS - 1));
   AlfFilterType filterType = isLuma( channel ) ? ALF_FILTER_7 : ALF_FILTER_5;
   int numClasses = isLuma( channel ) ? MAX_NUM_ALF_CLASSES : 1;
   int numCoeff = filterType == ALF_FILTER_5 ? 7 : 13;
   int numCoeffMinus1 = numCoeff - 1;
-  int numFilters = isLuma( channel ) ? alfSliceParam.numLumaFilters : 1;
-  short* coeff = isLuma( channel ) ? alfSliceParam.lumaCoeff : alfSliceParam.chromaCoeff;
-  short* clipp = isLuma( channel ) ? alfSliceParam.lumaClipp : alfSliceParam.chromaClipp;
+#if !JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  int numFilters = isLuma( channel ) ? alfParam.numLumaFilters : 1;
+  short* coeff = isLuma( channel ) ? alfParam.lumaCoeff : alfParam.chromaCoeff;
+  short* clipp = isLuma( channel ) ? alfParam.lumaClipp : alfParam.chromaClipp;
+#endif
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  const int numAlts = isLuma( channel ) ? 1 : alfParam.numAlternativesChroma;
+
+  for( int altIdx = 0; altIdx < numAlts; ++ altIdx )
+  {
+    int numFilters = isLuma( channel ) ? alfParam.numLumaFilters : 1;
+    short* coeff = isLuma( channel ) ? alfParam.lumaCoeff : alfParam.chromaCoeff[altIdx];
+    short* clipp = isLuma( channel ) ? alfParam.lumaClipp : alfParam.chromaClipp[altIdx];
 
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  if( alfSliceParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
+    if( alfParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
+    {
+      for( int i = 1; i < numFilters; i++ )
+      {
+        for( int j = 0; j < numCoeffMinus1; j++ )
+        {
+          coeff[i * MAX_NUM_ALF_LUMA_COEFF + j] += coeff[( i - 1 ) * MAX_NUM_ALF_LUMA_COEFF + j];
+        }
+      }
+    }
+
+#endif
+    for( int filterIdx = 0; filterIdx < numFilters; filterIdx++ )
+    {
+      coeff[filterIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = factor;
+    }
+
+    if( isChroma( channel ) )
+    {
+      for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
+      {
+        m_chromaCoeffFinal[altIdx][coeffIdx] = coeff[coeffIdx];
+        int clipIdx = alfParam.nonLinearFlag[channel][altIdx] ? clipp[coeffIdx] : 0;
+        m_chromaClippFinal[altIdx][coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
+      }
+      m_chromaCoeffFinal[altIdx][numCoeffMinus1] = factor;
+      m_chromaClippFinal[altIdx][numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
+      continue;
+    }
+    for( int classIdx = 0; classIdx < numClasses; classIdx++ )
+    {
+      int filterIdx = alfParam.filterCoeffDeltaIdx[classIdx];
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
+      int fixedFilterIdx = alfParam.fixedFilterSetIndex;
+      if (fixedFilterIdx > 0 && alfParam.fixedFilterIdx[classIdx] > 0)
+      {
+        fixedFilterIdx = m_classToFilterMapping[fixedFilterIdx - 1][classIdx];
+      }
+      else
+      {
+        fixedFilterIdx = -1;
+      }
+#endif
+      for (int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx)
+      {
+        m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
+        //fixed filter
+        if (fixedFilterIdx >= 0)
+        {
+          m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] += m_fixedFilterSetCoeff[fixedFilterIdx][coeffIdx];
+        }
+#endif
+      }
+      m_coeffFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = factor;
+      m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
+      for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
+      {
+        int clipIdx = alfParam.nonLinearFlag[channel][altIdx] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
+        (m_clippFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
+      }
+      m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] =
+        isRdo ? 0 :
+        m_alfClippingValues[channel][0];
+    }
+  }
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
+
+  if( isChroma( channel ) )
+    return;
+
+  if( isRedo && alfParam.alfLumaCoeffDeltaPredictionFlag )
+  {
+    int numFilters = alfParam.numLumaFilters;
+    short* coeff = alfParam.lumaCoeff;
+
+    for( int i = numFilters - 1; i > 0; i-- )
+    {
+      for( int j = 0; j < numCoeffMinus1; j++ )
+      {
+        coeff[i * MAX_NUM_ALF_LUMA_COEFF + j] = coeff[i * MAX_NUM_ALF_LUMA_COEFF + j] - coeff[( i - 1 ) * MAX_NUM_ALF_LUMA_COEFF + j];
+      }
+    }
+  }
+#endif
+#else
+
+#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
+  if( alfParam.alfLumaCoeffDeltaPredictionFlag && isLuma( channel ) )
   {
     for( int i = 1; i < numFilters; i++ )
     {
@@ -421,8 +540,8 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
   {
     for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
     {
-      m_chromaCoeffFinal[coeffIdx] = alfSliceParam.chromaCoeff[coeffIdx];
-      int clipIdx = alfSliceParam.nonLinearFlag[channel] ? clipp[coeffIdx] : 0;
+      m_chromaCoeffFinal[coeffIdx] = alfParam.chromaCoeff[coeffIdx];
+      int clipIdx = alfParam.nonLinearFlag[channel] ? clipp[coeffIdx] : 0;
       m_chromaClippFinal[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
     }
     m_chromaCoeffFinal[numCoeffMinus1] = factor;
@@ -433,10 +552,10 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
 
   for( int classIdx = 0; classIdx < numClasses; classIdx++ )
   {
-    int filterIdx = alfSliceParam.filterCoeffDeltaIdx[classIdx];
+    int filterIdx = alfParam.filterCoeffDeltaIdx[classIdx];
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    int fixedFilterIdx = alfSliceParam.fixedFilterSetIndex;
-    if (fixedFilterIdx > 0 && alfSliceParam.fixedFilterIdx[classIdx] > 0)
+    int fixedFilterIdx = alfParam.fixedFilterSetIndex;
+    if (fixedFilterIdx > 0 && alfParam.fixedFilterIdx[classIdx] > 0)
     {
       fixedFilterIdx = m_classToFilterMapping[fixedFilterIdx - 1][classIdx];
     }
@@ -460,13 +579,13 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
     m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
     for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
     {
-      int clipIdx = alfSliceParam.nonLinearFlag[channel] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
+      int clipIdx = alfParam.nonLinearFlag[channel] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
       (m_clippFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
     }
   }
 
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  if(isRedo && alfSliceParam.alfLumaCoeffDeltaPredictionFlag )
+  if(isRedo && alfParam.alfLumaCoeffDeltaPredictionFlag )
   {
     for( int i = numFilters - 1; i > 0; i-- )
     {
@@ -476,6 +595,7 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfSliceParam& alfSliceParam, Channel
       }
     }
   }
+#endif
 #endif
 }
 
@@ -889,7 +1009,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
 }
 
 template<AlfFilterType filtType>
-void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, short* filterSet, short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
 {
   const bool bChroma = isChroma( compId );
   if( bChroma )
@@ -918,8 +1038,8 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
   const Pel *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const Pel *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
-  short *coef = filterSet;
-  short *clip = fClipSet;
+  const short *coef = filterSet;
+  const short *clip = fClipSet;
 
   const int shift = m_NUM_BITS - 1;
 
@@ -987,7 +1107,11 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
           for( blkX=0; blkX<4; blkX+=2 )
           {
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+            const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+#else
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+#endif
             *flags++ = cu->ipcm ? 1 : 0;
           }
         }

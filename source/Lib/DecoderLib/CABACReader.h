@@ -122,7 +122,7 @@ public:
 #else
   void        transform_tree            ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx,  ChromaCbfs& chromaCbfs, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
 #endif
-  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbCbf = false, const bool useISP = false );
+  bool        cbf_comp                  ( CodingStructure&              cs,     const CompArea& area,     unsigned depth, const bool prevCbf = false, const bool useISP = false );
 
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( Mv &rMvd );
@@ -137,13 +137,13 @@ public:
   void        cu_chroma_qp_offset       ( CodingUnit&                   cu );
 
   // residual coding (clause 7.3.8.11)
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS || JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID, CUCtx& cuCtx );
 #else
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID );
 #endif
   void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS || JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   void        residual_lfnst_mode       ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
 #else
   void        residual_lfnst_mode       ( CodingUnit&                   cu );

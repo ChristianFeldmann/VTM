@@ -115,12 +115,12 @@ static inline int getTransformShift(const int channelBitDepth, const Size size, 
 
 
 //------------------------------------------------
-
+#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chFmt)
 {
   return g_aucChromaScale[chFmt][Clip3(0, (chromaQPMappingTableSize - 1), unscaledChromaQP)];
 }
-
+#endif
 
 //======================================================================================================================
 //Scaling lists  =======================================================================================================

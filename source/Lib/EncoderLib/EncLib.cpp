@@ -904,6 +904,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
+#if JVET_O0070_PROF
+  sps.setUsePROF               ( m_PROF );
+#endif
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
@@ -912,7 +915,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseSBT                             ( m_SBT );
   if( sps.getUseSBT() )
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    sps.setMaxSbtSize                       ( std::min((int)(1 << m_log2MaxTbSize), m_iSourceWidth >= 1920 ? 64 : 32) );
+#else
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
+#endif
   }
   sps.setUseSMVD                ( m_SMVD );
   sps.setUseGBi                ( m_GBi );
@@ -976,8 +983,16 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_O0919_TS_MIN_QP
+    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
+
+#if JVET_O0244_DELTA_POC
+  sps.setUseWP( m_useWeightedPred );
+  sps.setUseWPBiPred( m_useWeightedBiPred );
+#endif
 
   sps.setSAOEnabledFlag( m_bUseSAO );
 
@@ -1024,6 +1039,10 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setLtRefPicPocLsbSps(k, 0);
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  sps.setChromaQpMappingTableFromParams(m_chromaQpMappingTableParams, sps.getQpBDOffset(CHANNEL_TYPE_CHROMA));
+  sps.derivedChromaQPMappingTables();
+#endif
 
 #if U0132_TARGET_BITS_SATURATION
   if( getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() || getCpbSaturationEnabled() )

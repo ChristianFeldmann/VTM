@@ -117,7 +117,11 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
   {
     const ComponentID compID = ComponentID( compIdx );
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+    int qpc = slice->getSPS()->getMappedChromaQpValue(compID, iQP) + chromaQPOffset;
+#else
     int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
+#endif
     double tmpWeight         = pow( 2.0, ( iQP - qpc ) / 3.0 );  // takes into account of the chroma qp mapping and chroma qp Offset
     if( m_pcCfg->getDepQuantEnabledFlag() && !( m_pcCfg->getLFNST() ) )
     {
@@ -296,7 +300,11 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
         savedLumaQP = averageAdaptedLumaQP;
       } // savedLumaQP < 0
 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+      const int lumaChromaMappingDQP = savedLumaQP - pcSlice->getSPS()->getMappedChromaQpValue(compID, savedLumaQP);
+#else
       const int lumaChromaMappingDQP = savedLumaQP - getScaledChromaQP (savedLumaQP, pcEncCfg->getChromaFormatIdc());
+#endif
 
       optSliceChromaQpOffset[comp-1] = std::min (3 + lumaChromaMappingDQP, adaptChromaQPOffset + lumaChromaMappingDQP);
     }
@@ -712,6 +720,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
   rpcSlice->setMaxNumTriangleCand   ( m_pcCfg->getMaxNumTriangleCand() );
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  rpcSlice->setMaxNumIBCMergeCand   ( m_pcCfg->getMaxNumIBCMergeCand() );
+#endif
   rpcSlice->setSplitConsOverrideFlag(false);
   rpcSlice->setMinQTSize( rpcSlice->getSPS()->getMinQTSize(eSliceType));
   rpcSlice->setMaxBTDepth( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxBTDepthI() : rpcSlice->getSPS()->getMaxBTDepth() );

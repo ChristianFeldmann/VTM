@@ -168,6 +168,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setIntraQPOffset                                     ( m_intraQPOffset );
   m_cEncLib.setLambdaFromQPEnable                                ( m_lambdaFromQPEnable );
 #endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  m_cEncLib.setChromaQpMappingTableParams                         (m_chromaQpMappingTableParams);
+
+#endif
   m_cEncLib.setPad                                               ( m_aiPad );
 
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );

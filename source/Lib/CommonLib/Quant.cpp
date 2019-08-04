@@ -117,8 +117,11 @@ QpParam::QpParam(const int           qpy,
   rems[0]=baseQp%6;
 
   int baseQpTS = baseQp;
-
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  if (isLuma(compID))
+#else
   if( isLuma( chType ) )
+#endif
   {
     baseQpTS = std::max(baseQpTS , 4 + minQpPrimeTsMinus4);
   }

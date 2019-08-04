@@ -3414,6 +3414,18 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if (useLumaWPSNR)
     {
       msg(NOTICE, " [WY %6.4lf dB    WU %6.4lf dB    WV %6.4lf dB]", dPSNRWeighted[COMPONENT_Y], dPSNRWeighted[COMPONENT_Cb], dPSNRWeighted[COMPONENT_Cr]);
+
+      if (m_pcEncLib->getPrintHexPsnr())
+      {
+        uint64_t xPsnrWeighted[MAX_NUM_COMPONENT];
+        for (int i = 0; i < MAX_NUM_COMPONENT; i++)
+        {
+          copy(reinterpret_cast<uint8_t *>(&dPSNRWeighted[i]),
+               reinterpret_cast<uint8_t *>(&dPSNRWeighted[i]) + sizeof(dPSNRWeighted[i]),
+               reinterpret_cast<uint8_t *>(&xPsnrWeighted[i]));
+        }
+        msg(NOTICE, " [xWY %16" PRIx64 " xWU %16" PRIx64 " xWV %16" PRIx64 "]", xPsnrWeighted[COMPONENT_Y], xPsnrWeighted[COMPONENT_Cb], xPsnrWeighted[COMPONENT_Cr]);
+      }
     }
 #endif
     msg( NOTICE, " [ET %5.0f ]", dEncTime );

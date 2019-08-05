@@ -980,8 +980,8 @@ void EncLib::xInitSPS(SPS &sps)
   }
 
   sps.setSAOEnabledFlag( m_bUseSAO );
-#if JVET_O0376_SPS_JCCR_FLAG
-  sps.setJCCREnabledFlag( m_JccrMode );
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  sps.setJointCbCrEnabledFlag( m_JointCbCrMode );
 #endif
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );

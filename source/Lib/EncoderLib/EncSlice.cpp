@@ -1554,8 +1554,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 
 #if JVET_O0105_ICT
-#if JVET_O0376_SPS_JCCR_FLAG
-  if (pcSlice->getSPS()->getJCCREnabledFlag())
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
   {
     setJointCbCrModes(cs, Position(0, 0), cs.area.lumaSize());
   }

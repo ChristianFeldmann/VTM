@@ -1985,8 +1985,8 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
   }
 #if JVET_O0105_ICT
-#if JVET_O0376_SPS_JCCR_FLAG
-  if ( sps.getJCCREnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  if ( sps.getJointCbCrEnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
   {
     m_pcTrQuant->setLambda( 1.3 * m_pcTrQuant->getLambda() );
   }
@@ -1997,8 +1997,8 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
   #endif
 #else
-#if JVET_O0376_SPS_JCCR_FLAG
-  else if ( sps.getJCCREnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  else if ( sps.getJointCbCrEnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
 #else
   else if ( isChroma(compID) && tu.cu->cs->slice->getSliceQp() > 18 )
 #endif
@@ -2977,8 +2977,8 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #if JVET_O0105_ICT
       bool       lastIsBest     = false;
       std::vector<int>  jointCbfMasksToTest;
-#if JVET_O0376_SPS_JCCR_FLAG
-      if ( cs.sps->getJCCREnabledFlag() && (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr)))
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+      if ( cs.sps->getJointCbCrEnabledFlag() && (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr)))
       {
         jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates(currTU, orgResiCb, orgResiCr);
       }

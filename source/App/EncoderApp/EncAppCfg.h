@@ -283,8 +283,8 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
-#if JVET_O0376_SPS_JCCR_FLAG
-  bool      m_JccrMode;
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_JointCbCrMode;
 #endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;

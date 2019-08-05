@@ -290,8 +290,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMMVD                                              ( m_MMVD );
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
   m_cEncLib.setRDPCM                                              ( m_RdpcmMode );
-#if JVET_O0376_SPS_JCCR_FLAG
-  m_cEncLib.setJCCR                                              ( m_JccrMode );
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  m_cEncLib.setJointCbCr                                         ( m_JointCbCrMode );
 #endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );

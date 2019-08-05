@@ -185,9 +185,6 @@ class ConstraintInfo
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
   bool              m_noAlfConstraintFlag;
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
-  bool              m_noJointCbCrConstraintFlag;
-#endif
   bool              m_noPcmConstraintFlag;
   bool              m_noRefWraparoundConstraintFlag;
   bool              m_noTemporalMvpConstraintFlag;
@@ -208,6 +205,9 @@ class ConstraintInfo
   bool              m_noTransformSkipConstraintFlag;
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool              m_noBDPCMConstraintFlag;
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool              m_noJointCbCrConstraintFlag;
 #endif
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
@@ -246,6 +246,9 @@ public:
     , m_noTransformSkipConstraintFlag(false)
 #if JVET_O1136_TS_BDPCM_SIGNALLING
     , m_noBDPCMConstraintFlag    (false)
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+    , m_noJointCbCrConstraintFlag (false)
 #endif
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)

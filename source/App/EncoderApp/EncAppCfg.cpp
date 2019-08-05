@@ -137,6 +137,9 @@ EncAppCfg::EncAppCfg()
 #if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_noBDPCMConstraintFlag(false)
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+, m_noJointCbCrConstraintFlag(false)
+#endif
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
@@ -915,7 +918,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
   ( "RDPCM",                                         m_RdpcmMode,                                       false, "RDPCM")
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
-  ("JointCbCr",                                            m_JointCbCrMode,                             false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
+  ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
 #endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")

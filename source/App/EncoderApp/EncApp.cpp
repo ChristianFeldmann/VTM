@@ -136,6 +136,9 @@ void EncApp::xInitLibCfg()
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
+#endif 
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );

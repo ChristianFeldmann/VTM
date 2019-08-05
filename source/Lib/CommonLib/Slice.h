@@ -776,7 +776,9 @@ private:
   bool              m_transformSkipEnabledFlag;
   bool              m_BDPCMEnabledFlag;
 #endif
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool              m_JointCbCrEnabledFlag;
+#endif
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
@@ -805,9 +807,7 @@ private:
 #endif
 
   bool              m_saoEnabledFlag;
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
-  bool              m_JointCbCrEnabledFlag;
-#endif
+
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;

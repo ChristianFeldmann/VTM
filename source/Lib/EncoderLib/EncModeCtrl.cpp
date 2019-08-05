@@ -1343,14 +1343,14 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
 #if JVET_O0119_BASE_PALETTE_444
-  if (cs.slice->getSPS()->getPLTMode() && cs.slice->isIRAP() && getPltEnc() )
+  if (cs.slice->getSPS()->getPLTMode() && ( cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4) ) && getPltEnc() )
   {
     m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp, lossless });
   }
 #endif
   m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
 #if JVET_O0119_BASE_PALETTE_444
-  if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && getPltEnc() )
+  if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc() )
   {
     m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp, lossless });
   }
@@ -1576,7 +1576,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       }
     }
 #if JVET_O0119_BASE_PALETTE_444
-  if (bestMode.type == ETM_PALETTE && !slice.isIRAP()) // inter slice
+  if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && !( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4) ) // inter slice
   {
     return false;
   }

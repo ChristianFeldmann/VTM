@@ -1554,12 +1554,10 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-          const bool skipLfnst = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
-                              ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
-                              ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
-          if( lfnstIdx && skipLfnst )
+          if( lfnstIdx && !cuCtx.lfnstLastScanPos )
           {
-            if( cuCtx.lastScanPos[ COMPONENT_Y ] > -1 || cuCtx.lastScanPos[ COMPONENT_Cb ] > -1 || cuCtx.lastScanPos[ COMPONENT_Cr ] > -1 )
+            bool cbfAtZeroDepth = CS::isDualITree( *tempCS ) ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+            if( cbfAtZeroDepth )
             {
               tempCS->cost = MAX_DOUBLE;
             }

@@ -354,13 +354,14 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
     {
       for (int y = 0; y < iHeight; y++)
       {
-        int wT = 32 >> std::min(31, ((y << 1) >> scale));
+        const int wT   = 32 >> std::min(31, ((y << 1) >> scale));
         const Pel left = srcBuf.at(0, y + 1);
         for (int x = 0; x < iWidth; x++)
         {
-          const Pel top = srcBuf.at(x + 1, 0);
-          int wL = 32 >> std::min(31, ((x << 1) >> scale));
-          dstBuf.at(x, y) = ClipPel((wL * left + wT * top + (64 - wL - wT) * dstBuf.at(x, y) + 32) >> 6, clpRng);
+          const int wL    = 32 >> std::min(31, ((x << 1) >> scale));
+          const Pel top   = srcBuf.at(x + 1, 0);
+          const Pel val   = dstBuf.at(x, y);
+          dstBuf.at(x, y) = val + ((wL * (left - val) + wT * (top - val) + 32) >> 6);
         }
       }
     }
@@ -382,34 +383,6 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
       }
     }
 #endif
-    else if (uiDirMode == HOR_IDX)
-    {
-      const Pel topLeft = srcBuf.at(0, 0);
-      for (int y = 0; y < iHeight; y++)
-      {
-        int wT = 32 >> std::min(31, ((y << 1) >> scale));
-        for (int x = 0; x < iWidth; x++)
-        {
-          const Pel top = srcBuf.at(x + 1, 0);
-          int wTL = wT;
-          dstBuf.at(x, y) = ClipPel((wT * top - wTL * topLeft + (64 - wT + wTL) * dstBuf.at(x, y) + 32) >> 6, clpRng);
-        }
-      }
-    }
-    else if (uiDirMode == VER_IDX)
-    {
-      const Pel topLeft = srcBuf.at(0, 0);
-      for (int y = 0; y < iHeight; y++)
-      {
-        const Pel left = srcBuf.at(0, y + 1);
-        for (int x = 0; x < iWidth; x++)
-        {
-          int wL = 32 >> std::min(31, ((x << 1) >> scale));
-          int wTL = wL;
-          dstBuf.at(x, y) = ClipPel((wL * left - wTL * topLeft + (64 - wL + wTL) * dstBuf.at(x, y) + 32) >> 6, clpRng);
-        }
-      }
-    }
   }
 }
 
@@ -513,8 +486,10 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   const int      dirMode = PU::getFinalIntraMode(pu, chType);
   const int     predMode = getWideAngle( blockSize.width, blockSize.height, dirMode );
 
+#if !JVET_O0364_PADDING
   m_ipaParam.whRatio              = std::max( unsigned( 1 ), blockSize.width  / blockSize.height ) ;
   m_ipaParam.hwRatio              = std::max( unsigned( 1 ), blockSize.height / blockSize.width  ) ;
+#endif
   m_ipaParam.isModeVer            = predMode >= DIA_IDX;
   m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;
   m_ipaParam.refFilterFlag        = false;
@@ -641,8 +616,10 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   int height=int(pDst.height);
 
   const bool bIsModeVer     = m_ipaParam.isModeVer;
+#if !JVET_O0364_PADDING
   const int  whRatio        = m_ipaParam.whRatio;
   const int  hwRatio        = m_ipaParam.hwRatio;
+#endif
   const int  multiRefIdx    = m_ipaParam.multiRefIndex;
   const int  intraPredAngle = m_ipaParam.intraPredAngle;
   const int  invAngle       = m_ipaParam.invAngle;
@@ -718,11 +695,14 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     refSide = bIsModeVer ? refLeft : refAbove;
 
     // Extend main reference to right using replication
-    int maxIndex = multiRefIdx * (bIsModeVer ? whRatio : hwRatio) + 2;
-    Pel val = bIsModeVer ? pSrc.at(m_topRefLength + multiRefIdx, 0) : pSrc.at(0, m_leftRefLength + multiRefIdx);
+    const int log2Ratio = g_aucLog2[width] - g_aucLog2[height];
+    const int s         = std::max<int>(0, bIsModeVer ? log2Ratio : -log2Ratio);
+    const int maxIndex  = (multiRefIdx << s) + 2;
+    const int refLength = bIsModeVer ? m_topRefLength : m_leftRefLength;
+    const Pel val       = refMain[refLength + multiRefIdx];
     for (int z = 1; z <= maxIndex; z++)
     {
-      refMain[(bIsModeVer ? m_topRefLength : m_leftRefLength) + multiRefIdx + z] = val;
+      refMain[refLength + multiRefIdx + z] = val;
     }
 #else
     for (int x = 0; x < m_topRefLength + 1 + (whRatio + 1) * multiRefIdx; x++)
@@ -757,59 +737,78 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
   refMain += multiRefIdx;
   refSide += multiRefIdx;
 
+  Pel *pDsty = pDstBuf;
+
   if( intraPredAngle == 0 )  // pure vertical or pure horizontal
   {
     for( int y = 0; y < height; y++ )
     {
       for( int x = 0; x < width; x++ )
       {
-        pDstBuf[y*dstStride + x] = refMain[x + 1];
+        pDsty[x] = refMain[x + 1];
       }
+
+      if (m_ipaParam.applyPDPC)
+      {
+        const int scale   = (g_aucLog2[width] + g_aucLog2[height] - 2) >> 2;
+        const Pel topLeft = refMain[0];
+        const Pel left    = refSide[1 + y];
+        for (int x = 0; x < std::min(3 << scale, width); x++)
+        {
+          const int wL  = 32 >> (2 * x >> scale);
+          const Pel val = pDsty[x];
+          pDsty[x]      = ClipPel(val + ((wL * (left - topLeft) + 32) >> 6), clpRng);
+        }
+      }
+
+      pDsty += dstStride;
     }
   }
   else
   {
-    Pel *pDsty=pDstBuf;
     for (int y = 0, deltaPos = intraPredAngle * (1 + multiRefIdx); y<height; y++, deltaPos += intraPredAngle, pDsty += dstStride)
     {
       const int deltaInt   = deltaPos >> 5;
-      const int deltaFract = deltaPos & (32 - 1);
+      const int deltaFract = deltaPos & 31;
 
       if ( !isIntegerSlope( abs(intraPredAngle) ) )
       {
         if( isLuma(channelType) )
         {
-          Pel                        p[4];
-          const bool                 useCubicFilter = !m_ipaParam.interpolationFlag;
-          TFilterCoeff const * const f              = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
+          const bool useCubicFilter = !m_ipaParam.interpolationFlag;
 
-          int         refMainIndex   = deltaInt + 1;
+          const TFilterCoeff *const f =
+            (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
 
-          for( int x = 0; x < width; x++, refMainIndex++ )
+          for (int x = 0; x < width; x++)
           {
-            p[0] = refMain[refMainIndex - 1];
-            p[1] = refMain[refMainIndex];
-            p[2] = refMain[refMainIndex + 1];
-            p[3] = f[3] != 0 ? refMain[refMainIndex + 2] : 0;
+            Pel p[4];
 
-            pDstBuf[y*dstStride + x] = static_cast<Pel>((static_cast<int>(f[0] * p[0]) + static_cast<int>(f[1] * p[1]) + static_cast<int>(f[2] * p[2]) + static_cast<int>(f[3] * p[3]) + 32) >> 6);
+            p[0] = refMain[deltaInt + x];
+            p[1] = refMain[deltaInt + x + 1];
+            p[2] = refMain[deltaInt + x + 2];
+#if JVET_O0364_PADDING
+            p[3] = refMain[deltaInt + x + 3];
+#else
+            p[3] = f[3] != 0 ? refMain[deltaInt + x + 3] : 0;
+#endif
 
-            if( useCubicFilter ) // only cubic filter has negative coefficients and requires clipping
-            {
-              pDstBuf[y*dstStride + x] = ClipPel( pDstBuf[y*dstStride + x], clpRng );
-            }
+            Pel val = (f[0] * p[0] + f[1] * p[1] + f[2] * p[2] + f[3] * p[3] + 32) >> 6;
+
+            pDsty[x] = ClipPel(val, clpRng);   // always clip even though not always needed
           }
         }
         else
         {
           // Do linear filtering
-          const Pel *pRM = refMain + deltaInt + 1;
-          int lastRefMainPel = *pRM++;
-          for( int x = 0; x < width; pRM++, x++ )
+          for (int x = 0; x < width; x++)
           {
-            int thisRefMainPel = *pRM;
-            pDsty[x + 0] = ( Pel ) ( ( ( 32 - deltaFract )*lastRefMainPel + deltaFract*thisRefMainPel + 16 ) >> 5 );
-            lastRefMainPel = thisRefMainPel;
+            Pel p[2];
+
+            p[0] = refMain[deltaInt + x + 1];
+            p[1] = refMain[deltaInt + x + 2];
+
+            pDsty[x] = p[0] + ((deltaFract * (p[1] - p[0]) + 16) >> 5);
           }
         }
       }
@@ -1997,7 +1996,11 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
 void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 {
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#endif
 
   // derive above and left availability
   AvailableInfo availInfo = PU::getAvailableInfoLuma(pu);
@@ -2009,7 +2012,11 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#if JVET_O0545_MAX_TB_SIGNALLING
+  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
+#else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#endif
   CHECK( pu.lwidth() != (1 << g_aucLog2[pu.lwidth()]) || pu.lheight() != (1 << g_aucLog2[pu.lheight()]), "Error: expecting blocks of size 2^M x 2^N" );
 
   // generate mode-specific prediction

@@ -774,6 +774,11 @@ void TrQuant::getTrTypes(const TransformUnit tu, const ComponentID compID, int &
   trTypeHor = DCT2;
   trTypeVer = DCT2;
 
+#if JVET_O0538_SPS_CONTROL_ISP_SBT
+  if (!tu.cs->sps->getUseMTS())
+    return;
+#endif
+
   if (isImplicitMTS || isISP)
   {
     int  width = tu.blocks[compID].width;

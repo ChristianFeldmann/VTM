@@ -202,6 +202,10 @@ protected:
   double    m_fQP;                                            ///< QP value of key-picture (floating point)
 #endif
   int       m_iQP;                                            ///< QP value of key-picture (integer)
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  bool      m_useIdentityTableForNon420Chroma;
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)
   bool      m_lambdaFromQPEnable;                             ///< enable flag for QP:lambda fix
@@ -253,6 +257,9 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
+#if JVET_O0070_PROF
+  bool      m_PROF;
+#endif
   bool      m_BIO;
   int       m_LMChroma;
   bool      m_cclmCollocatedChromaFlag;
@@ -515,6 +522,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
+#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

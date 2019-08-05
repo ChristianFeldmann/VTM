@@ -50,11 +50,46 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
+
+#define JVET_O0455_IBC_MAX_MERGE_NUM                      1 // JVET-O0455: Control the max number of IBC merge candidates independently from regular merge candidates
+
+#define JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE          1 // JVET-O0650: Signal chroma QP mapping tables and move chroma PPS/slice offsets after mapping table
+
+#define JVET_O0640_PICTURE_SIZE_CONSTRAINT                1 // JVET-O0640: Picture width and height shall be a multiple of Max(8, minCU size)
+
+#define JVET_O_MAX_NUM_ALF_APS_8                          1 // JVET-O: number of ALF APSs is reduced to 8
+
+#define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
+
+#define JVET_O0570_GRAD_SIMP                              1 // JVET-O0570/JVET-O0211, SMID friendly spatial gradient calculation
+
+#define JVET_O1170_IBC_VIRTUAL_BUFFER                     1 // JVET-O1170/O1171: IBC virtual buffer
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+#define JVET_O1170_CHECK_BV_AT_DECODER                    1 // For decoder to check if a BV is valid or not
+#endif
+
+#define JVET_O0538_SPS_CONTROL_ISP_SBT                    1 // JVET-O0538: SPS control for ISP and SBT transform
+
+#define JVET_O0634_BDOF_SIZE_CONSTRAINT                   1 // JVET-O0634: BDOF applied CU size align with DMVR
+
+#define JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE          1 // JVET-O0213: Block size restriction of LFNST to maximum transform size
+
+#define JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION             1 // JVET-O0617: Significant flag context reduction
+
+#define JVET_O0244_DELTA_POC                              1 // JVET-O0244: weighted prediction in SPS and delta POC
+
+#define JVET_O1153_INTRA_CHROMAMODE_CODING                1  //JVET-O1153: simplified intra chromamode coding
+
 #define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
 
 #define JVET_O0061_MV_THR_DEBLOCKING                      1 // a deblocking mv threshold of half pel
 
 #define JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING            1 // JVET-O0220 method-1: Parse merge_subblock_flag conditioned on MaxNumSubblockMergeCand
+
+#define JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP          1 // JVET-O0263/ JVET-O0220: Syntax cleanup on subblock merge
+
+#define JVET_O0060_4x4_deblocking                         1 // deblock on 4x4 grid
 
 #define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only
 
@@ -64,6 +99,8 @@
 
 #define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
 
+#define JVET_O0057_ALTHPELIF                              1  //AMVR_HPEL
+
 #define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
 
 #define JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE        1
@@ -71,6 +108,8 @@
 #define JVET_O0426_MRL_REF_SAMPLES_DC_MODE                1 // JVET-O0426: align MRL reference samples used for DC intra mode prediction
 
 #define JVET_O0366_AFFINE_BCW                             1 // JVET-O0366: Simplifications on BCW index derivation process
+
+#define JVET_O0919_TS_MIN_QP                              1 // JVET-O0919: Minimum QP for Transform Skip Mode
 
 #define JVET_O1168_CU_CHROMA_QP_OFFSET                    1 // JVET-O1168: cu chroma QP offset
 
@@ -126,6 +165,8 @@
 
 #define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
 
+#define JVET_O0545_MAX_TB_SIGNALLING                      1 // JVET-O0545: Configurable maximum transform size
+
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
 #define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
@@ -179,7 +220,7 @@
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 #define JVET_O0681_DIS_BPWA_CIIP                          1 // JVET-O0681 disable BCW for CIIP, method 2 inherit BCW index
-
+#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change 
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
 
@@ -195,7 +236,11 @@
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 
+#if JVET_O0545_MAX_TB_SIGNALLING
+#define MAX_TB_SIZE_SIGNALLING                            1
+#else
 #define MAX_TB_SIZE_SIGNALLING                            0
+#endif
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
@@ -208,7 +253,9 @@ typedef std::pair<int, int>  TrCost;
 #define REUSE_CU_RESULTS                                  1
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#if !JVET_O0545_MAX_TB_SIGNALLING
 #define MAX_NUM_TUS                                       4
+#endif
 #endif
 // clang-format on
 
@@ -972,8 +1019,14 @@ enum EncModeFeature
 enum ImvMode
 {
   IMV_OFF = 0,
+#if JVET_O0057_ALTHPELIF
+  IMV_FPEL,
+  IMV_4PEL,
+  IMV_HPEL,
+#else
   IMV_DEFAULT,
   IMV_4PEL,
+#endif
   NUM_IMV_MODES
 };
 

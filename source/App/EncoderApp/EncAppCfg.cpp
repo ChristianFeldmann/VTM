@@ -714,7 +714,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<int>  cfg_lumaLeveltoDQPMappingLuma       (0, std::numeric_limits<int>::max(), 0, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE, defaultLumaLevelTodQp_LumaChangePoints, sizeof(defaultLumaLevelTodQp_LumaChangePoints)/sizeof(int));
   uint32_t lumaLevelToDeltaQPMode;
 #endif
-
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  const int qpInVals[] = { 25, 33, 43 };                // qpInVal values used to derive the chroma QP mapping table used in VTM-5.0
+  const int qpOutVals[] = { 25, 32, 37 };               // qpOutVal values used to derive the chroma QP mapping table used in VTM-5.0
+  SMultiValueInput<int> cfg_qpInValCb                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpInVals, sizeof(qpInVals)/sizeof(int));
+  SMultiValueInput<int> cfg_qpOutValCb                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpOutVals, sizeof(qpOutVals) / sizeof(int));
+  const int zeroVector[] = { 0 };
+  SMultiValueInput<int> cfg_qpInValCr                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCr                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCbCr                 (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCbCr                (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+#endif
   const uint32_t defaultInputKneeCodes[3]  = { 600, 800, 900 };
   const uint32_t defaultOutputKneeCodes[3] = { 100, 250, 450 };
   SMultiValueInput<uint32_t> cfg_kneeSEIInputKneePointValue      (1,  999, 0, 999, defaultInputKneeCodes,  sizeof(defaultInputKneeCodes )/sizeof(uint32_t));
@@ -860,10 +870,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
+#if JVET_O0070_PROF
+  ("PROF",                                           m_PROF,                                           false, "Enable Prediction refinement with optical flow for affine mode (0:off, 1:on)  [default: off]")
+#endif
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
   ("IMV",                                             m_ImvMode,                                            1, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled\n"
-                                                                                                               "\t1: enabled (Full-Pel and 4-PEL)\n")
+                                                                                                               "\t1: enabled (1/2-Pel, Full-Pel and 4-PEL)\n")
   ("IMV4PelFast",                                     m_Imv4PelFast,                                        1, "Fast 4-Pel Adaptive MV precision Mode 0:disabled, 1:enabled)  [default: 1]")
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
@@ -1018,7 +1031,16 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LumaLevelToDeltaQPMappingLuma",                   cfg_lumaLeveltoDQPMappingLuma,  cfg_lumaLeveltoDQPMappingLuma, "Luma to Delta QP Mapping - luma thresholds")
   ("LumaLevelToDeltaQPMappingDQP",                    cfg_lumaLeveltoDQPMappingQP,  cfg_lumaLeveltoDQPMappingQP, "Luma to Delta QP Mapping - DQP values")
 #endif
-
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  ("UseIdentityTableForNon420Chroma",                 m_useIdentityTableForNon420Chroma,                 true, "True: Indicates that 422/444 chroma uses identity chroma QP mapping tables; False: explicit Qp table may be specified in config")
+  ("SameCQPTablesForAllChroma",                       m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag,                        true, "0: Different tables for Cb, Cr and joint Cb-Cr components, 1 (default): Same tables for all three chroma components")
+  ("QpInValCb",                                       cfg_qpInValCb,                            cfg_qpInValCb, "Input coordinates for the QP table for Cb component")
+  ("QpOutValCb",                                      cfg_qpOutValCb,                          cfg_qpOutValCb, "Output coordinates for the QP table for Cb component")
+  ("QpInValCr",                                       cfg_qpInValCr,                            cfg_qpInValCr, "Input coordinates for the QP table for Cr component")
+  ("QpOutValCr",                                      cfg_qpOutValCr,                          cfg_qpOutValCr, "Output coordinates for the QP table for Cr component")
+  ("QpInValCbCr",                                     cfg_qpInValCbCr,                        cfg_qpInValCbCr, "Input coordinates for the QP table for joint Cb-Cr component")
+  ("QpOutValCbCr",                                    cfg_qpOutValCbCr,                      cfg_qpOutValCbCr, "Output coordinates for the QP table for joint Cb-Cr component")
+#endif
   ("CbQpOffset,-cbqpofs",                             m_cbQpOffset,                                         0, "Chroma Cb QP Offset")
   ("CrQpOffset,-crqpofs",                             m_crQpOffset,                                         0, "Chroma Cr QP Offset")
   ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 0, "Chroma Cb QP Offset for dual tree")
@@ -1136,7 +1158,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
   ("MaxNumAffineMergeCand",                           m_maxNumAffineMergeCand,                             5u, "Maximum number of affine merge candidates")
   ("MaxNumTriangleCand",                              m_maxNumTriangleCand,                                5u, "Maximum number of triangle candidates")
-  /* Misc. */
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  ("MaxNumIBCMergeCand",                              m_maxNumIBCMergeCand,                                6u, "Maximum number of IBC merge candidates")
+#endif
+    /* Misc. */
   ("SEIDecodedPictureHash,-dph",                      tmpDecodedPictureHashSEIMappedType,                   0, "Control generation of decode picture hash SEI messages\n"
                                                                                                                "\t3: checksum\n"
                                                                                                                "\t2: CRC\n"
@@ -1907,6 +1932,53 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+
+  CHECK(cfg_qpInValCb.values.size() != cfg_qpOutValCb.values.size(), "Chroma QP table for Cb is incomplete.");
+  CHECK(cfg_qpInValCr.values.size() != cfg_qpOutValCr.values.size(), "Chroma QP table for Cr is incomplete.");
+  CHECK(cfg_qpInValCbCr.values.size() != cfg_qpOutValCbCr.values.size(), "Chroma QP table for CbCr is incomplete.");
+  if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420) 
+  {
+    m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag = true;
+    cfg_qpInValCb.values = { 0 };
+    cfg_qpInValCr.values = { 0 };
+    cfg_qpInValCbCr.values = { 0 };
+  }
+  m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
+  m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
+  int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
+  for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+  {
+    CHECK(cfg_qpInValCb.values[i] < -qpBdOffsetC || cfg_qpInValCb.values[i] > MAX_QP, "Some entries cfg_qpInValCb are out of valid range of -qpBdOffsetC to 63, inclusive.");
+    CHECK(cfg_qpOutValCb.values[i] < -qpBdOffsetC || cfg_qpOutValCb.values[i] > MAX_QP, "Some entries cfg_qpOutValCb are out of valid range of -qpBdOffsetC to 63, inclusive.");
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + qpBdOffsetC : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + qpBdOffsetC : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
+  }
+  if (!m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag)
+  {
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
+    for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+    {
+      CHECK(cfg_qpInValCr.values[i] < -qpBdOffsetC || cfg_qpInValCr.values[i] > MAX_QP, "Some entries cfg_qpInValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      CHECK(cfg_qpOutValCr.values[i] < -qpBdOffsetC || cfg_qpOutValCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] + qpBdOffsetC : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] + qpBdOffsetC : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
+    }
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size()-1;
+    for (int i = 0; i < cfg_qpInValCbCr.values.size(); i++)
+    {
+      CHECK(cfg_qpInValCbCr.values[i] < -qpBdOffsetC || cfg_qpInValCbCr.values[i] > MAX_QP, "Some entries cfg_qpInValCbCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      CHECK(cfg_qpOutValCbCr.values[i] < -qpBdOffsetC || cfg_qpOutValCbCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCbCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] + qpBdOffsetC : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] + qpBdOffsetC : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
+    }
+  }
+#endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   if ( m_LadfEnabed )
@@ -2534,34 +2606,50 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMinQT[1] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
   xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition height size should be larger than or equal to 16");
+#if !JVET_O0640_PICTURE_SIZE_CONSTRAINT
   xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
+#endif
   xConfirmPara( m_uiMaxCUDepth < 1,                                                         "MaxPartitionDepth must be greater than zero");
   xConfirmPara( (m_uiMaxCUWidth  >> m_uiMaxCUDepth) < 4,                                    "Minimum partition width size should be larger than or equal to 8");
   xConfirmPara( (m_uiMaxCUHeight >> m_uiMaxCUDepth) < 4,                                    "Minimum partition height size should be larger than or equal to 8");
   xConfirmPara( m_uiMaxCUWidth < 16,                                                        "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiMaxCUHeight < 16,                                                       "Maximum partition height size should be larger than or equal to 16");
+#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
+  xConfirmPara( (m_iSourceWidth  % (std::max(8, int(m_uiMaxCUWidth  >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
+  xConfirmPara( (m_iSourceHeight % (std::max(8, int(m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
+#else
   xConfirmPara( (m_iSourceWidth  % (m_uiMaxCUWidth  >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame width must be a multiple of the minimum CU size");
   xConfirmPara( (m_iSourceHeight % (m_uiMaxCUHeight >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame height must be a multiple of the minimum CU size");
-
+#endif
 #if MAX_TB_SIZE_SIGNALLING
   xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
+#endif
+#if JVET_O0545_MAX_TB_SIGNALLING
+  xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
 #endif
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
   xConfirmPara( m_maxNumTriangleCand > TRIANGLE_MAX_NUM_UNI_CANDS, "MaxNumTriangleCand must be no more than TRIANGLE_MAX_NUM_UNI_CANDS." );
   xConfirmPara( m_maxNumTriangleCand > m_maxNumMergeCand, "MaxNumTriangleCand must be no more than MaxNumMergeCand." );
   xConfirmPara( 0 < m_maxNumTriangleCand && m_maxNumTriangleCand < 2, "MaxNumTriangleCand must be no less than 2 unless MaxNumTriangleCand is 0." );
-
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  xConfirmPara( m_maxNumIBCMergeCand < 1, "MaxNumIBCMergeCand must be 1 or greater." );
+  xConfirmPara( m_maxNumIBCMergeCand > IBC_MRG_MAX_NUM_CANDS, "MaxNumIBCMergeCand must be no more than IBC_MRG_MAX_NUM_CANDS." );
+#endif 
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumAffineMergeCand > AFFINE_MRG_MAX_NUM_CANDS, "MaxNumAffineMergeCand must be no more than AFFINE_MRG_MAX_NUM_CANDS." );
   if ( m_Affine == 0 )
   {
     m_maxNumAffineMergeCand = m_SubPuMvpMode;
+#if JVET_O0070_PROF
+    if (m_PROF) msg(WARNING, "PROF is forcefully disabled when Affine is off \n");
+    m_PROF = false;
+#endif
   }
 
   xConfirmPara( m_MTS < 0 || m_MTS > 3, "MTS must be greater than 0 smaller than 4" );
@@ -3300,6 +3388,9 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Max Num Merge Candidates               : %d\n", m_maxNumMergeCand );
   msg( DETAILS, "Max Num Affine Merge Candidates        : %d\n", m_maxNumAffineMergeCand );
   msg( DETAILS, "Max Num Triangle Merge Candidates      : %d\n", m_maxNumTriangleCand );
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  msg( DETAILS, "Max Num IBC Merge Candidates           : %d\n", m_maxNumIBCMergeCand );
+#endif
   msg( DETAILS, "\n");
 
   msg( VERBOSE, "TOOL CFG: ");
@@ -3369,6 +3460,9 @@ void EncAppCfg::xPrintParameter()
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
+#if JVET_O0070_PROF
+    msg(VERBOSE, "PROF:%d ", m_PROF);
+#endif
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );

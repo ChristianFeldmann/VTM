@@ -129,7 +129,7 @@ namespace CU
 // PU tools
 namespace PU
 {
-  int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
+  int  getLMSymbolList(const PredictionUnit &pu, int *modeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
@@ -204,7 +204,9 @@ namespace PU
   bool isAddNeighborMv  (const Mv& currMv, Mv* neighborMvs, int numNeighborMv);
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
+#if !JVET_O1170_IBC_VIRTUAL_BUFFER
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
+#endif  
   bool checkDMVRCondition(const PredictionUnit& pu);
 }
 

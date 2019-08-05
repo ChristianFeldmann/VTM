@@ -168,6 +168,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setIntraQPOffset                                     ( m_intraQPOffset );
   m_cEncLib.setLambdaFromQPEnable                                ( m_lambdaFromQPEnable );
 #endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  m_cEncLib.setChromaQpMappingTableParams                         (m_chromaQpMappingTableParams);
+
+#endif
   m_cEncLib.setPad                                               ( m_aiPad );
 
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
@@ -254,6 +258,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
+#if JVET_O0070_PROF
+  m_cEncLib.setPROF                                              ( m_PROF );
+#endif
   m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
@@ -383,6 +390,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
   m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_cEncLib.setMaxNumIBCMergeCand                                ( m_maxNumIBCMergeCand );
+#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );

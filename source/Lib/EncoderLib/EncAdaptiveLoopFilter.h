@@ -249,7 +249,6 @@ private:
   CABACWriter*           m_CABACEstimator;
   CtxCache*              m_CtxCache;
   double                 m_lambda[MAX_NUM_COMPONENT];
-  const double           FracBitsScale = 1.0 / double( 1 << SCALE_BITS );
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   int**                  m_filterCoeffSet; // [lumaClassIdx/chromaAltIdx][coeffIdx]

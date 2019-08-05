@@ -206,10 +206,8 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   {
                     std::copy( pic->getAlfCtuEnableFlag()[compIdx].begin(), pic->getAlfCtuEnableFlag()[compIdx].end(), pcEncPic->getAlfCtuEnableFlag()[compIdx].begin() );
                   }
-#if JVET_N0415_CTB_ALF
                   pcEncPic->resizeAlfCtbFilterIndex(pic->cs->pcv->sizeInCtus);
                   memcpy( pcEncPic->getAlfCtbFilterIndex(), pic->getAlfCtbFilterIndex(), sizeof(short)*pic->cs->pcv->sizeInCtus );
-#endif
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
                   std::copy( pic->getAlfCtuAlternative(COMPONENT_Cb).begin(), pic->getAlfCtuAlternative(COMPONENT_Cb).end(), pcEncPic->getAlfCtuAlternative(COMPONENT_Cb).begin() );
@@ -742,7 +740,11 @@ void DecLib::xActivateParameterSets()
   if (m_bFirstSliceInPicture)
   {
     APS** apss = m_parameterSetManager.getAPSs();
+#if JVET_O_MAX_NUM_ALF_APS_8
+    memset(apss, 0, sizeof(*apss) * ALF_CTB_MAX_NUM_APS);
+#else
     memset(apss, 0, sizeof(*apss) * MAX_NUM_APS);
+#endif
     const PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId()); // this is a temporary PPS object. Do not store this value
     CHECK(pps == 0, "No PPS present");
 
@@ -850,7 +852,11 @@ void DecLib::xActivateParameterSets()
     m_cSAO.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) );
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+    m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
+#else
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
+#endif
     if (sps->getUseReshaper())
     {
       m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
@@ -933,7 +939,11 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
+#if JVET_O_MAX_NUM_ALF_APS_8
+    for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
+#else
     for (int i = 0; i < MAX_NUM_APS; i++)
+#endif
     {
       APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
       if (aps && m_parameterSetManager.getAPSChangedFlag(i, ALF_APS))
@@ -959,6 +969,22 @@ void DecLib::xActivateParameterSets()
        deleteSEIs(m_SEIs);
      }
   }
+
+#if JVET_O0244_DELTA_POC
+  Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
+  const SPS *sps = pSlice->getSPS();
+  const PPS *pps = pSlice->getPPS();
+
+  if( !sps->getUseWP() )
+  {
+    CHECK( pps->getUseWP(), "When sps_weighted_pred_flag is equal to 0, the value of pps_weighted_pred_flag shall be equal to 0." );
+  }
+
+  if( !sps->getUseWPBiPred() )
+  {
+    CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
+  }
+#endif
 }
 
 
@@ -1175,7 +1201,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (endCtuIdx == numberOfCtusInFrame)
     EXIT("Cannot find the last CTU index of the current slice");
 
-  while (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx) && endCtuIdx < numberOfCtusInFrame)
+  while ( (endCtuIdx < numberOfCtusInFrame) && (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx)) )
   {
     endCtuIdx++;
   }
@@ -1417,6 +1443,7 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
   VPS* vps = new VPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseVPS( vps );
+  delete vps;
 }
 
 void DecLib::xDecodeDPS( InputNALUnit& nalu )

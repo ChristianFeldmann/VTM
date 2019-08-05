@@ -274,8 +274,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   const uint32_t             uiHeightBit   =                   g_aucLog2[partitioner.currArea().lheight()];
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
-  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
-
+  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) * FRAC_BITS_SCALE;
 
   //===== loop over partitions =====
 
@@ -365,7 +364,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     //===== determine set of modes to be tested (using prediction signal only) =====
     int numModesAvailable = NUM_LUMA_MODE; // total number of Intra modes
     const bool fastMip    = sps.getUseMIP() && m_pcEncCfg->getUseFastMIP();
+#if JVET_O0545_MAX_TB_SIGNALLING
+    const bool mipAllowed = sps.getUseMIP() && ( cu.lfnstIdx == 0 ) && isLuma( partitioner.chType ) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize();
+#else
     const bool mipAllowed = sps.getUseMIP() && ( cu.lfnstIdx == 0 ) && isLuma( partitioner.chType ) && pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT;
+#endif
     const bool testMip    = mipAllowed && mipModesAvailable( pu.Y() ) && !(fastMip && (cu.lwidth() > 2 * cu.lheight() || cu.lheight() > 2 * cu.lwidth()));
 
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeList;

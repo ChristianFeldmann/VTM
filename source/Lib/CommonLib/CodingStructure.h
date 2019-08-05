@@ -97,7 +97,11 @@ public:
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*       alfApss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*       alfApss[MAX_NUM_APS];
+#endif
   APS *      lmcsAps;
   const VPS *vps;
   const PreCalcValues* pcv;
@@ -230,7 +234,13 @@ private:
   MotionInfo *m_motionBuf;
 
 public:
-
+#if JVET_O0070_PROF
+  CodingStructure *bestParent;
+#endif
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  bool resetIBCBuffer;
+#endif
+  
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }
   MotionBuf getMotionBuf()                        { return getMotionBuf(  area.Y() ); }

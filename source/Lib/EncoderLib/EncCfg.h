@@ -239,6 +239,9 @@ protected:
   int       m_numReorderPics[MAX_TLAYER];
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                    ///< QP offset for intra slice (integer)
   int       m_lambdaFromQPEnable;               ///< enable lambda derivation from QP
@@ -276,6 +279,9 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
+#if JVET_O0070_PROF
+  bool      m_PROF;
+#endif
   bool      m_BIO;
 
   bool      m_SMVD;
@@ -559,6 +565,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
+#endif
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
   int       m_TMVPModeId;
@@ -781,6 +790,10 @@ public:
   void      setIntraQPOffset                ( int   i )         { m_intraQPOffset = i; }
   void      setLambdaFromQPEnable           ( bool  b )         { m_lambdaFromQPEnable = b; }
 #endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  void      setChromaQpMappingTableParams   (const ChromaQpMappingTableParams &params) { m_chromaQpMappingTableParams = params; }
+#endif
+
   void      setPad                          ( int*  iPad                   )      { for ( int i = 0; i < 2; i++ ) m_aiPad[i] = iPad[i]; }
 
   int       getMaxRefPicNum                 ()                              { return m_iMaxRefPicNum;           }
@@ -819,6 +832,10 @@ public:
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
+#if JVET_O0070_PROF
+  void      setPROF                         (bool b)         { m_PROF = b; }
+  bool      getPROF                         ()         const { return m_PROF; }
+#endif
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
 
@@ -1409,6 +1426,10 @@ public:
   uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
   void         setMaxNumTriangleCand             ( uint32_t u )      { m_maxNumTriangleCand = u;    }
   uint32_t     getMaxNumTriangleCand             ()                  { return m_maxNumTriangleCand; }
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  void         setMaxNumIBCMergeCand             ( uint32_t u )      { m_maxNumIBCMergeCand = u; }
+  uint32_t     getMaxNumIBCMergeCand             ()                  { return m_maxNumIBCMergeCand; }
+#endif
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }

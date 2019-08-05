@@ -109,6 +109,13 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
   }
   bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra()) || cs.slice->getSPS()->getIBCFlag()));
 
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  if (cs.resetIBCBuffer)
+  {
+    m_pcInterPred->resetIBCBuffer(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight());
+    cs.resetIBCBuffer = false;
+  }
+#endif
   for( int ch = 0; ch < maxNumChannelType; ch++ )
   {
     const ChannelType chType = ChannelType( ch );
@@ -117,6 +124,16 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
+#if JVET_O1170_CHECK_BV_AT_DECODER
+      if(currCU.Y().valid())
+      {
+        const int vSize = cs.slice->getSPS()->getMaxCUHeight() > 64 ? 64 : cs.slice->getSPS()->getMaxCUHeight();
+        if((currCU.Y().x % vSize) == 0 && (currCU.Y().y % vSize) == 0)
+        {
+          m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x, currCU.Y().y);
+        }
+      }
+#endif
       if(sharePrepareCondition)
       {
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
@@ -155,6 +172,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       {
         xFillPCMBuffer( currCU );
       }
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+      m_pcInterPred->xFillIBCBuffer(currCU);
+#endif
 
       DTRACE_BLOCK_REC( cs.picture->getRecoBuf( currCU ), currCU, currCU.predMode );
     }
@@ -900,12 +920,20 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       const int cuPelY = pu.Y().y;
       int roiWidth = pu.lwidth();
       int roiHeight = pu.lheight();
+#if !JVET_O1170_CHECK_BV_AT_DECODER
       const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
       const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+#endif
       const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
       int xPred = pu.mv[0].getHor() >> MV_FRACTIONAL_BITS_INTERNAL;
       int yPred = pu.mv[0].getVer() >> MV_FRACTIONAL_BITS_INTERNAL;
+#if JVET_O1170_CHECK_BV_AT_DECODER
+      CHECK(!m_pcInterPred->isLumaBvValid(lcuWidth, cuPelX, cuPelY, roiWidth, roiHeight, xPred, yPred), "invalid block vector for IBC detected.");
+#else
+#if !JVET_O1170_IBC_VIRTUAL_BUFFER
       CHECK(!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth), "invalid block vector for IBC detected.");
+#endif
+#endif
     }
   }
 }

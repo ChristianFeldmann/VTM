@@ -281,6 +281,26 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   xSetLoopfilterParam( cu );
   static_vector<int, 2*MAX_CU_SIZE> edgeIdx;
   edgeIdx.clear();
+
+  if (m_enc)
+  {
+    m_shiftHor = ::getComponentScaleX(COMPONENT_Cb, cu.chromaFormat);
+    m_shiftVer = ::getComponentScaleY(COMPONENT_Cb, cu.chromaFormat);
+    int x, y;
+    if (cu.Y().valid())
+    {
+      x = cu.block(COMPONENT_Y).x;
+      y = cu.block(COMPONENT_Y).y;
+    }
+    else
+    {
+      x = cu.block(COMPONENT_Cb).x << m_shiftHor;
+      y = cu.block(COMPONENT_Cb).y << m_shiftVer;
+    }
+    m_ctuXLumaSamples = cu.slice->getSPS()->getMaxCUWidth()*(x / cu.slice->getSPS()->getMaxCUWidth());
+    m_ctuYLumaSamples = cu.slice->getSPS()->getMaxCUWidth()*(y / cu.slice->getSPS()->getMaxCUWidth());
+  }
+
   for( auto &currTU : CU::traverseTUs( cu ) )
   {
     const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;

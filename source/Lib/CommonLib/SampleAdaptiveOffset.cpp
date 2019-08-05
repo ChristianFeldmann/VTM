@@ -728,12 +728,6 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
 
 void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)
 {
-#if JVET_O0119_BASE_PALETTE_444
-  if (CU::isPLT(cu))
-  {
-    return;
-  }
-#endif
   const CompArea& ca = cu.block(compID);
   if( CU::isLosslessCoded( cu ) && !cu.ipcm )
   {

@@ -870,6 +870,9 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   cinfo->setNoBDPCMConstraintFlag(m_noBDPCMConstraintFlag);
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  cinfo->setNoJointCbCrConstraintFlag(m_noJointCbCrConstraintFlag);
+#endif
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -995,7 +998,9 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
 
   sps.setSAOEnabledFlag( m_bUseSAO );
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  sps.setJointCbCrEnabledFlag( m_JointCbCrMode );
+#endif
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );
 

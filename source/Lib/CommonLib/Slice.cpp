@@ -1420,6 +1420,9 @@ SPS::SPS()
 , m_transformSkipEnabledFlag  (false)
 , m_BDPCMEnabledFlag          (false)
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+, m_JointCbCrEnabledFlag      (false)
+#endif
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)

@@ -883,7 +883,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");
   }
 #endif
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
+#endif
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
   {    
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
@@ -1542,10 +1544,17 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     }
 #endif
 #if JVET_O0105_ICT
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+    if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
+    {
+      WRITE_FLAG( pcSlice->getJointCbCrSignFlag() ? 1 : 0, "slice_joint_cbcr_sign_flag");
+    }
+#else
     if (chromaEnabled)
     {
-      WRITE_FLAG( pcSlice->getJointCbCrSignFlag() ? 1 : 0, "joint_cb_cr_sign_flag" );
+      WRITE_FLAG( pcSlice->getJointCbCrSignFlag() ? 1 : 0, "slice_joint_cbcr_sign_flag");
     }
+#endif 
 #endif
 
     int iCode = pcSlice->getSliceQp() - ( pcSlice->getPPS()->getPicInitQPMinus26() + 26 );
@@ -1559,7 +1568,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if (numberValidComponents > COMPONENT_Cr)
       {
         WRITE_SVLC( pcSlice->getSliceChromaQpDelta(COMPONENT_Cr), "slice_cr_qp_offset" );
-        WRITE_SVLC( pcSlice->getSliceChromaQpDelta(JOINT_CbCr),   "slice_cb_cr_qp_offset" );
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+        if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
+        {
+          WRITE_SVLC( pcSlice->getSliceChromaQpDelta(JOINT_CbCr), "slice_joint_cbcr_qp_offset");
+        }
+#else
+        WRITE_SVLC( pcSlice->getSliceChromaQpDelta(JOINT_CbCr), "slice_joint_cbcr_qp_offset");
+#endif
       }
       CHECK(numberValidComponents < COMPONENT_Cr+1, "Too many valid components");
     }
@@ -1640,6 +1656,9 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoPartitionConstraintsOverrideConstraintFlag() ? 1 : 0, "no_partition_constraints_override_constraint_flag");
   WRITE_FLAG(cinfo->getNoSaoConstraintFlag() ? 1 : 0, "no_sao_constraint_flag");
   WRITE_FLAG(cinfo->getNoAlfConstraintFlag() ? 1 : 0, "no_alf_constraint_flag");
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  WRITE_FLAG(cinfo->getNoJointCbCrConstraintFlag() ? 1 : 0, "no_joint_cbcr_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoPcmConstraintFlag() ? 1 : 0, "no_pcm_constraint_flag");
   WRITE_FLAG(cinfo->getNoRefWraparoundConstraintFlag() ? 1 : 0, "no_ref_wraparound_constraint_flag");
   WRITE_FLAG(cinfo->getNoTemporalMvpConstraintFlag() ? 1 : 0, "no_temporal_mvp_constraint_flag");

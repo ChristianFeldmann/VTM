@@ -146,6 +146,9 @@ protected:
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_noBDPCMConstraintFlag;
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_noJointCbCrConstraintFlag;
+#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -290,6 +293,9 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_JointCbCrMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;

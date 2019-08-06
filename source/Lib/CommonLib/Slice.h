@@ -206,6 +206,9 @@ class ConstraintInfo
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool              m_noBDPCMConstraintFlag;
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool              m_noJointCbCrConstraintFlag;
+#endif
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
   bool              m_noSignDataHidingConstraintFlag;
@@ -243,6 +246,9 @@ public:
     , m_noTransformSkipConstraintFlag(false)
 #if JVET_O1136_TS_BDPCM_SIGNALLING
     , m_noBDPCMConstraintFlag    (false)
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+    , m_noJointCbCrConstraintFlag (false)
 #endif
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)
@@ -284,6 +290,10 @@ public:
   void          setNoSaoConstraintFlag(bool bVal) { m_noSaoConstraintFlag = bVal; }
   bool          getNoAlfConstraintFlag() const { return m_noAlfConstraintFlag; }
   void          setNoAlfConstraintFlag(bool bVal) { m_noAlfConstraintFlag = bVal; }
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool          getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
+  void          setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
+#endif
   bool          getNoPcmConstraintFlag() const { return m_noPcmConstraintFlag; }
   void          setNoPcmConstraintFlag(bool bVal) { m_noPcmConstraintFlag = bVal; }
   bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
@@ -766,7 +776,9 @@ private:
   bool              m_transformSkipEnabledFlag;
   bool              m_BDPCMEnabledFlag;
 #endif
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool              m_JointCbCrEnabledFlag;
+#endif
   // Parameter
   BitDepths         m_bitDepths;
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
@@ -987,7 +999,10 @@ public:
 
   bool                    getALFEnabledFlag() const                                                       { return m_alfEnabledFlag; }
   void                    setALFEnabledFlag( bool b )                                                     { m_alfEnabledFlag = b; }
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  void                    setJointCbCrEnabledFlag(bool bVal)                                              { m_JointCbCrEnabledFlag = bVal; }
+  bool                    getJointCbCrEnabledFlag() const                                                 { return m_JointCbCrEnabledFlag; }
+#endif
   bool                    getSBTMVPEnabledFlag() const                                                    { return m_sbtmvpEnabledFlag; }
   void                    setSBTMVPEnabledFlag(bool b)                                                    { m_sbtmvpEnabledFlag = b; }
 

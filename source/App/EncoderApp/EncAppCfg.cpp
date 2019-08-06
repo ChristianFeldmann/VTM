@@ -137,6 +137,9 @@ EncAppCfg::EncAppCfg()
 #if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_noBDPCMConstraintFlag(false)
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+, m_noJointCbCrConstraintFlag(false)
+#endif
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
@@ -914,6 +917,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
   ( "RDPCM",                                         m_RdpcmMode,                                       false, "RDPCM")
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
+#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -2278,6 +2284,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
     xConfirmPara(m_RdpcmMode, "RDPCM only allowed with NEXT profile");
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+    xConfirmPara(m_JointCbCrMode, "JointCbCr only allowed with NEXT profile");
+#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -2567,11 +2576,27 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_cbQpOffsetDualTree >  12,   "Max. Chroma Cb QP Offset for dual tree is  12" );
   xConfirmPara( m_crQpOffsetDualTree < -12,   "Min. Chroma Cr QP Offset for dual tree is -12" );
   xConfirmPara( m_crQpOffsetDualTree >  12,   "Max. Chroma Cr QP Offset for dual tree is  12" );
-  xConfirmPara( m_cbCrQpOffset < -12,         "Min. Joint Cb-Cr QP Offset is -12" );
-  xConfirmPara( m_cbCrQpOffset >  12,         "Max. Joint Cb-Cr QP Offset is  12" );
-  xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12" );
-  xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12" );
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  if (m_JointCbCrMode && (m_chromaFormatIDC == CHROMA_400))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: --JointCbCr has been disabled due to the chromaFormat is 400       **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_JointCbCrMode = false;
+  }
+  if (m_JointCbCrMode)
+  {
+    xConfirmPara( m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
+    xConfirmPara( m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
+    xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
+    xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
+  }
+#else
+  xConfirmPara( m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
+  xConfirmPara( m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
+  xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
+  xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
+#endif
   xConfirmPara( m_iQPAdaptationRange <= 0,                                                  "QP Adaptation Range must be more than 0" );
   if (m_iDecodingRefreshType == 2)
   {
@@ -3471,6 +3496,9 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "RDPCM:%d ", m_RdpcmMode );
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+    msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
+#endif
   }
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );

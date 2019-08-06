@@ -56,9 +56,113 @@
 // ====================================================================================================================
 // Class definition
 // ====================================================================================================================
-
 class EncModeCtrl;
 
+#if JVET_O0119_BASE_PALETTE_444
+enum PLTScanMode
+{
+  PLT_SCAN_HORTRAV = 0,
+  PLT_SCAN_VERTRAV = 1,
+  NUM_PLT_SCAN = 2
+};
+class SortingElement
+{
+public:
+  inline bool operator<(const SortingElement &other) const
+  {
+    return cnt > other.cnt;
+  }
+  SortingElement() {
+    cnt = shift = lastCnt = 0;
+    data[0] = data[1] = data[2] = 0;
+    sumData[0] = sumData[1] = sumData[2] = 0;
+  }
+  uint32_t  getCnt() const        { return cnt; }
+  void      setCnt(uint32_t val)  { cnt = val; }
+  int       getSumData (int id) const   { return sumData[id]; }
+
+  void resetAll(ComponentID compBegin, uint32_t numComp) 
+  {
+    shift = lastCnt = 0;
+    for (int ch = compBegin; ch < (compBegin + numComp); ch++)
+    {
+      data[ch] = 0;
+      sumData[ch] = 0;
+    }
+  }
+  void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp) 
+  {
+    for (int ch = compBegin; ch < (compBegin + numComp); ch++)
+    {
+      data[ch] = ui[ch];
+    }
+  }
+  bool almostEqualData(SortingElement element, int errorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+  {
+    bool almostEqual = true;
+    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+    {
+      ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
+      if ((std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH)) > errorLimit)
+      {
+        almostEqual = false;
+        break;
+      }
+    }
+    return almostEqual;
+  }
+  uint32_t getSAD(SortingElement element, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+  {
+    uint32_t sumAd = 0;
+    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+    {
+      ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
+      sumAd += (std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
+    }
+    return sumAd;
+  }
+  void copyDataFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) 
+  {
+    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+    {
+      data[comp] = element.data[comp];
+      sumData[comp] = data[comp];
+    }
+    shift = 0; lastCnt = 1;
+  }
+  void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) 
+  {
+    copyDataFrom(element, compBegin, numComp);
+    cnt = element.cnt;
+    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+    {
+      sumData[comp] = element.sumData[comp];
+    }
+    lastCnt = element.lastCnt; shift = element.shift;
+  }
+  void addElement(const SortingElement& element, ComponentID compBegin, uint32_t numComp)
+  {
+    cnt++;
+    for (int i = compBegin; i<(compBegin + numComp); i++)
+    {
+      sumData[i] += element.data[i];
+    }
+    if (cnt>1 && cnt == 2 * lastCnt)
+    {
+      uint32_t rnd = 1 << shift;
+      shift++;
+      for (int i = compBegin; i<(compBegin + numComp); i++)
+      {
+        data[i] = (sumData[i] + rnd) >> shift;
+      }
+      lastCnt = cnt;
+    }
+  }
+private: 
+  uint32_t cnt;
+  int shift, lastCnt, data[3], sumData[3];
+};
+#endif
 /// encoder search class
 class IntraSearch : public IntraPrediction, CrossComponentPrediction
 {
@@ -277,6 +381,10 @@ public:
   bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
+#if JVET_O0119_BASE_PALETTE_444
+  void PLTSearch                  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void deriveRunAndCalcBits       ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& bits);
+#endif
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
   void invalidateBestModeCost     () { for( int i = 0; i < NUM_LFNST_NUM_PER_SET; i++ ) m_bestModeCostValid[ i ] = false; };
 
@@ -316,7 +424,13 @@ protected:
   void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv);
 
   double m_bestCostNonMip;
-
+#if JVET_O0119_BASE_PALETTE_444
+  void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
+  double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);
+  void   derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void   calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t yPos, uint32_t xPos, ComponentID compBegin, uint32_t numComp);
+  void   preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+#endif
 #if JVET_O0502_ISP_CLEANUP
   void xGetNextISPMode                    ( ModeInfo& modeInfo, const ModeInfo* lastMode, const Size cuSize );
   void xFindAlreadyTestedNearbyIntraModes ( int currentIntraMode, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize );

@@ -59,6 +59,9 @@ namespace CU
   bool isIntra                        (const CodingUnit &cu);
   bool isInter                        (const CodingUnit &cu);
   bool isIBC                          (const CodingUnit &cu);
+#if JVET_O0119_BASE_PALETTE_444
+  bool isPLT                          (const CodingUnit &cu);
+#endif
   bool isRDPCMEnabled                 (const CodingUnit &cu);
   bool isLosslessCoded                (const CodingUnit &cu);
   uint32_t getIntraSizeIdx                (const CodingUnit &cu);

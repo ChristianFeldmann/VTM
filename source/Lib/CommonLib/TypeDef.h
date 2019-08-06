@@ -50,6 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
+
+#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.    
+
 #define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
 
 #define JVET_O0455_IBC_MAX_MERGE_NUM                      1 // JVET-O0455: Control the max number of IBC merge candidates independently from regular merge candidates
@@ -629,7 +632,12 @@ enum PredMode
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
+#if JVET_O0119_BASE_PALETTE_444
+  MODE_PLT = 3,     ///< plt-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 4,
+#else
   NUMBER_OF_PREDICTION_MODES = 3,
+#endif
 };
 
 /// reference list index
@@ -755,6 +763,10 @@ enum MESearchMethod
 enum CoeffScanType
 {
   SCAN_DIAG = 0,        ///< up-right diagonal scan
+#if JVET_O0119_BASE_PALETTE_444
+  SCAN_TRAV_HOR = 1,
+  SCAN_TRAV_VER = 2,
+#endif
   SCAN_NUMBER_OF_TYPES
 };
 
@@ -1082,6 +1094,14 @@ struct BitDepths
   int recon[MAX_NUM_CHANNEL_TYPE]; ///< the bit depth as indicated in the SPS
 };
 
+#if JVET_O0119_BASE_PALETTE_444
+enum PLTRunMode
+{
+  PLT_RUN_INDEX = 0,
+  PLT_RUN_COPY = 1,
+  NUM_PLT_RUN = 2
+};
+#endif
 /// parameters for deblocking filter
 struct LFCUParam
 {

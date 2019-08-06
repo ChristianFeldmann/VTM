@@ -47,6 +47,9 @@
 #include "ChromaFormat.h"
 #include "Common.h"
 #include "HRD.h"
+#if JVET_O0119_BASE_PALETTE_444
+#include <unordered_map>
+#endif
 #include "AlfParameters.h"
 
 //! \ingroup CommonLib
@@ -835,6 +838,9 @@ private:
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
   unsigned          m_IBCFlag;
+#if JVET_O0119_BASE_PALETTE_444
+  unsigned          m_PLTMode;
+#endif
 
   bool              m_lumaReshapeEnable;
   bool              m_AMVREnabledFlag;
@@ -1066,6 +1072,10 @@ public:
   bool                    getUseReshaper() const                                                          { return m_lumaReshapeEnable;                                                }
   void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
+#if JVET_O0119_BASE_PALETTE_444
+  void                    setPLTMode(unsigned PLTMode)                                                    { m_PLTMode = PLTMode; }
+  unsigned                getPLTMode() const                                                              { return m_PLTMode; }
+#endif
   void                    setUseSBT( bool b )                                                             { m_SBT = b; }
   bool                    getUseSBT() const                                                               { return m_SBT; }
   void                    setUseISP( bool b )                                                             { m_ISP = b; }
@@ -1945,6 +1955,11 @@ public:
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
+#if JVET_O0119_BASE_PALETTE_444
+public:
+  std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
+private:
+#endif
 };// END CLASS DEFINITION Slice
 
 void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData);

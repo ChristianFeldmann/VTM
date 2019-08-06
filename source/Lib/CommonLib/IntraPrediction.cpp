@@ -175,6 +175,10 @@ void IntraPrediction::destroy()
   m_piTemp = nullptr;
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+  if (m_runTypeRD)   { xFree(m_runTypeRD);   m_runTypeRD = NULL; }
+  if (m_runLengthRD) { xFree(m_runLengthRD); m_runLengthRD = NULL; }
+#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -230,6 +234,10 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
+#if JVET_O0119_BASE_PALETTE_444
+  m_runTypeRD = (bool*)xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
+  m_runLengthRD = (Pel*)xMalloc(Pel, MAX_CU_SIZE*MAX_CU_SIZE);
+#endif
 }
 
 // ====================================================================================================================
@@ -2168,5 +2176,151 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
   m_matrixIntraPred.predBlock( pu.Y(), pu.intraDir[CHANNEL_TYPE_LUMA], piPred, bitDepth );
 }
+
+#if JVET_O0119_BASE_PALETTE_444
+bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
+{
+  CodingUnit    &cu = *cs.getCU(partitioner.chType);
+  TransformUnit &tu = *cs.getTU(partitioner.chType);
+  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
+  PLTtypeBuf runType   = tu.getrunType(compBegin);
+
+  uint32_t idx = startPos;
+  uint32_t xPos;
+  uint32_t yPos;
+  bool valid = false;
+  run = 0;
+  while (idx < total)
+  {
+    xPos = m_scanOrder[idx].x;
+    yPos = m_scanOrder[idx].y;
+    runType.at(xPos, yPos) = PLT_RUN_COPY;
+
+    if (yPos == 0 && !cu.useRotation[compBegin])
+    {
+      return false;
+    }
+    if (xPos == 0 && cu.useRotation[compBegin])
+    {
+      return false;
+    }
+    if (!cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos, yPos - 1))
+    {
+      run++;
+      valid = true;
+    }
+    else if (cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos - 1, yPos))
+    {
+      run++;
+      valid = true;
+    }
+    else
+    {
+      break;
+    }
+    idx++;
+  }
+  return valid;
+}
+bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
+{
+  TransformUnit &tu = *cs.getTU(partitioner.chType);
+  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
+  PLTtypeBuf runType   = tu.getrunType(compBegin);
+
+  run = 1;
+  uint32_t idx = startPos;
+  while (idx < total)
+  {
+    uint32_t xPos = m_scanOrder[idx].x;
+    uint32_t yPos = m_scanOrder[idx].y;
+    runType.at(xPos, yPos) = PLT_RUN_INDEX;
+
+    uint32_t xPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].x;
+    uint32_t yPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].y;
+    if (idx > startPos && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPrev, yPrev))
+    {
+      run++;
+    }
+    else if (idx > startPos)
+    {
+      break;
+    }
+    idx++;
+  }
+  return true;
+}
+void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
+{
+  CodingUnit &cu = *cs.getCU(partitioner.chType);
+
+  uint32_t       reusePLTSizetmp = 0;
+  uint32_t       pltSizetmp = 0;
+  Pel            curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
+  bool           curPLTpred[MAXPLTPREDSIZE];
+
+  for (int idx = 0; idx < MAXPLTPREDSIZE; idx++)
+  {
+    curPLTpred[idx] = false;
+    cu.reuseflag[compBegin][idx] = false;
+  }
+  for (int idx = 0; idx < MAXPLTSIZE; idx++)
+  {
+    curPLTpred[idx] = false;
+  }
+
+  for (int predidx = 0; predidx < cs.prevPLT.curPLTSize[compBegin]; predidx++)
+  {
+    bool match = false;
+    int curidx = 0;
+
+    for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
+    {
+      bool matchTmp = true;
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        matchTmp = matchTmp && (cu.curPLT[comp][curidx] == cs.prevPLT.curPLT[comp][predidx]);
+      }
+      if (matchTmp)
+      {
+        match = true;
+        break;
+      }
+    }
+
+    if (match)
+    {
+      cu.reuseflag[compBegin][predidx] = true;
+      curPLTpred[curidx] = true;
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
+      }
+      reusePLTSizetmp++;
+      pltSizetmp++;
+    }
+  }
+  cu.reusePLTSize[compBegin] = reusePLTSizetmp;
+  for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
+  {
+    if (!curPLTpred[curidx])
+    {
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
+      }
+      pltSizetmp++;
+    }
+  }
+  assert(pltSizetmp == cu.curPLTSize[compBegin]);
+  for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
+  {
+    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+    {
+      cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
+    }
+  }
+}
+#endif
 
 //! \}

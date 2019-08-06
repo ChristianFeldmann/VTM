@@ -251,6 +251,13 @@ public:
   static const CtxSet   MTSIndex;
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   LFNSTIdx;
+#if JVET_O0119_BASE_PALETTE_444
+  static const CtxSet   PLTFlag;
+  static const CtxSet   RotationFlag;
+  static const CtxSet   RunTypeFlag;
+  static const CtxSet   IdxRunModel;    
+  static const CtxSet   CopyRunModel;    
+#endif
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
   static const CtxSet   SbtFlag;
@@ -284,6 +291,9 @@ public:
   static const CtxSet   Sao;
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   static const CtxSet   Alf;
+#endif
+#if JVET_O0119_BASE_PALETTE_444
+  static const CtxSet   Palette;
 #endif
 
 public:

@@ -337,6 +337,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 {
   double dQP;
   double dLambda;
+#if JVET_O0119_BASE_PALETTE_444
+  pcPic->cs->resetPrevPLT(pcPic->cs->prevPLT);
+#endif
 
   rpcSlice = pcPic->slices[0];
   rpcSlice->setSliceBits(0);
@@ -1396,6 +1399,19 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   }
 #endif // ENABLE_QPA
 
+#if JVET_O0119_BASE_PALETTE_444
+  bool checkPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
+  if (checkPLTRatio)
+  {
+    m_pcCuEncoder->getModeCtrl()->setPltEnc(true);
+  }
+  else
+  {
+    bool doPlt = m_pcLib->getPltEnc();
+    m_pcCuEncoder->getModeCtrl()->setPltEnc(doPlt);
+  }
+#endif
+
 #if ENABLE_WPP_PARALLELISM
   bool bUseThreads = m_pcCfg->getNumWppThreads() > 1;
   if( bUseThreads )
@@ -1430,8 +1446,9 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   m_pcInterSearch->resetUniMvList();
 #endif 
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
-
-
+#if JVET_O0119_BASE_PALETTE_444
+  if (checkPLTRatio) m_pcLib->checkPltStats( pcPic );
+#endif
 }
 
 void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr )
@@ -1615,12 +1632,18 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     if (ctuRsAddr == firstCtuRsAddrOfTile)
     {
       pCABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+      cs.resetPrevPLT(cs.prevPLT);
+#endif
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
     else if (ctuXPosInCtus == tileXPosInCtus && pEncLib->getEntropyCodingSyncEnabledFlag())
     {
       // reset and then update contexts to the state at the end of the top-right CTU (if within current slice and tile).
       pCABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+      cs.resetPrevPLT(cs.prevPLT);
+#endif
       if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {
         // Top-right is available, we use it.
@@ -1905,6 +1928,9 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+        cs.resetPrevPLT(cs.prevPLT);
+#endif
       }
     }
     else if (ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled)
@@ -1913,6 +1939,9 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
+#if JVET_O0119_BASE_PALETTE_444
+        cs.resetPrevPLT(cs.prevPLT);
+#endif
       }
       if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {

@@ -1447,6 +1447,9 @@ SPS::SPS()
 , m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
 , m_IBCFlag                   (  0)
+#if JVET_O0119_BASE_PALETTE_444
+, m_PLTMode                   (  0)
+#endif
 , m_lumaReshapeEnable         (false)
 , m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )

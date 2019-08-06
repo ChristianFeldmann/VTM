@@ -123,12 +123,23 @@ private:
   Pel* m_pMdlmTemp; // for MDLM mode
   MatrixIntraPrediction m_matrixIntraPred;
 
-protected:
 
+
+protected:
   ChromaFormat  m_currChromaFormat;
 
   int m_topRefLength;
   int m_leftRefLength;
+#if JVET_O0119_BASE_PALETTE_444
+  ScanElement* m_scanOrder;
+  bool         m_bestScanRotationMode;
+  Ctx          m_storeCtxRun;
+  Ctx          m_storeCtxRunIndex;
+  Ctx          m_storeCtxRunCopy; 
+  Ctx          m_orgCtxRD;
+  bool         *m_runTypeRD;
+  Pel          *m_runLengthRD;
+#endif
   // prediction
   void xPredIntraPlanar           ( const CPelBuf &pSrc, PelBuf &pDst );
   void xPredIntraDc               ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter = true );
@@ -185,6 +196,11 @@ public:
   Pel* getPredictorPtr2           (const ComponentID compID, uint32_t idx) { return m_yuvExt2[compID][idx]; }
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);
   void geneIntrainterPred         (const CodingUnit &cu);
+#if JVET_O0119_BASE_PALETTE_444
+  void reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  bool calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
+  bool calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
+#endif
 };
 
 //! \}

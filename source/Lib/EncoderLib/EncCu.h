@@ -143,10 +143,10 @@ private:
   void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
 #endif
   double                m_sbtCostSave[2];
-
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
+
   void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
@@ -235,6 +235,10 @@ protected:
   }
   void xCheckRDCostIBCMode    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckRDCostIBCModeMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
+
+#if JVET_O0119_BASE_PALETTE_444
+  void xCheckPLT              ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode);
+#endif
 };
 
 //! \}

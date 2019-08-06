@@ -115,6 +115,13 @@ bool CU::isIBC(const CodingUnit &cu)
   return cu.predMode == MODE_IBC;
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+bool CU::isPLT(const CodingUnit &cu)
+{
+  return cu.predMode == MODE_PLT;
+}
+#endif
+
 bool CU::isRDPCMEnabled(const CodingUnit& cu)
 {
   return cu.cs->sps->getSpsRangeExtension().getRdpcmEnabledFlag(cu.predMode == MODE_INTRA ? RDPCM_SIGNAL_IMPLICIT : RDPCM_SIGNAL_EXPLICIT);

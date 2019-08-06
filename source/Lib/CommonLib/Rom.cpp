@@ -53,7 +53,6 @@ CDTrace *g_trace_ctx = NULL;
 #endif
 bool g_mctsDecCheckEnabled = false;
 
-
 //! \ingroup CommonLib
 //! \{
 
@@ -130,6 +129,53 @@ public:
         }
         break;
 
+#if JVET_O0119_BASE_PALETTE_444
+      case SCAN_TRAV_HOR:
+      {
+        if (m_line % 2 == 0)
+        {
+          if (m_column == (m_blockWidth - 1))
+          {
+            m_line++;
+            m_column = m_blockWidth - 1;
+        }
+        else m_column++;
+        }
+        else
+        {
+          if (m_column == 0)
+          {
+            m_line++;
+            m_column = 0;
+          }
+          else m_column--;
+        }
+      }
+      break;
+
+      case SCAN_TRAV_VER:
+      {
+        if (m_column % 2 == 0)
+        {
+          if (m_line == (m_blockHeight - 1))
+          {
+            m_column++;
+            m_line = m_blockHeight - 1;
+          }
+          else m_line++;
+        }
+        else
+        {
+          if (m_line == 0)
+          {
+            m_column++;
+            m_line = 0;
+          }
+          else m_line--;
+        }
+      }
+      break;
+#endif
       //------------------------------------------------
 
       default:
@@ -762,4 +808,9 @@ Mv   g_reusedUniMVs[32][32][8][8][2][33];
 bool g_isReusedUniMVsFilled[32][32][8][8];
 #endif
 
+#if JVET_O0119_BASE_PALETTE_444
+const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
+uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
+uint8_t g_paletteRunLeftLut[5] = { 0, 3, 3, 4, 4 };
+#endif
 //! \}

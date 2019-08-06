@@ -1946,6 +1946,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     cfg_qpInValCb.values = { 0 };
     cfg_qpInValCr.values = { 0 };
     cfg_qpInValCbCr.values = { 0 };
+    cfg_qpOutValCb.values = { 0 };
+    cfg_qpOutValCr.values = { 0 };
+    cfg_qpOutValCbCr.values = { 0 };
   }
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());

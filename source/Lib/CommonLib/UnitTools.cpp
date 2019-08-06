@@ -536,8 +536,13 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
           mpm[1] = leftIntraDir;
           mpm[2] = ((leftIntraDir + offset) % mod) + 2;
           mpm[3] = ((leftIntraDir - 1) % mod) + 2;
+#if JVET_O0925_MIP_SIMPLIFICATIONS 
+          mpm[4] = ((leftIntraDir + offset - 1) % mod) + 2;
+          mpm[5] = ( leftIntraDir               % mod) + 2;
+#else
           mpm[4] = DC_IDX;
           mpm[5] = ((leftIntraDir + offset - 1) % mod) + 2;
+#endif
         }
       }
       else //L!=A
@@ -552,6 +557,32 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
           mpm[2] = aboveIntraDir;
           maxCandModeIdx = mpm[1] > mpm[2] ? 1 : 2;
           int minCandModeIdx = mpm[1] > mpm[2] ? 2 : 1;
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+          if (mpm[maxCandModeIdx] - mpm[minCandModeIdx] == 1)
+          {
+            mpm[3] = ((mpm[minCandModeIdx] + offset)     % mod) + 2;
+            mpm[4] = ((mpm[maxCandModeIdx] - 1)          % mod) + 2;
+            mpm[5] = ((mpm[minCandModeIdx] + offset - 1) % mod) + 2;
+          }
+          else if (mpm[maxCandModeIdx] - mpm[minCandModeIdx] >= 62)
+          {
+            mpm[3] = ((mpm[minCandModeIdx] - 1)      % mod) + 2;
+            mpm[4] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
+            mpm[5] = ( mpm[minCandModeIdx]           % mod) + 2;
+          }
+          else if (mpm[maxCandModeIdx] - mpm[minCandModeIdx] == 2)
+          {
+            mpm[3] = ((mpm[minCandModeIdx] - 1)      % mod) + 2;
+            mpm[4] = ((mpm[minCandModeIdx] + offset) % mod) + 2;
+            mpm[5] = ((mpm[maxCandModeIdx] - 1)      % mod) + 2;
+          }
+          else
+          {
+            mpm[3] = ((mpm[minCandModeIdx] + offset) % mod) + 2;
+            mpm[4] = ((mpm[minCandModeIdx] - 1)      % mod) + 2;
+            mpm[5] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
+          }
+#else
           mpm[3] = DC_IDX;
           if ((mpm[maxCandModeIdx] - mpm[minCandModeIdx] < 63) && (mpm[maxCandModeIdx] - mpm[minCandModeIdx] > 1))
           {
@@ -563,16 +594,24 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
             mpm[4] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
             mpm[5] = ((mpm[maxCandModeIdx]) % mod) + 2;
           }
+#endif
         }
         else if (leftIntraDir + aboveIntraDir >= 2)
         {
           mpm[0] = PLANAR_IDX;
           mpm[1] = (leftIntraDir < aboveIntraDir) ? aboveIntraDir : leftIntraDir;
           maxCandModeIdx = 1;
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+          mpm[2] = ((mpm[maxCandModeIdx] + offset)     % mod) + 2;
+          mpm[3] = ((mpm[maxCandModeIdx] - 1)          % mod) + 2;
+          mpm[4] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
+          mpm[5] = ( mpm[maxCandModeIdx]               % mod) + 2;
+#else
           mpm[2] = DC_IDX;
           mpm[3] = ((mpm[maxCandModeIdx] + offset) % mod) + 2;
           mpm[4] = ((mpm[maxCandModeIdx] - 1) % mod) + 2;
           mpm[5] = ((mpm[maxCandModeIdx] + offset - 1) % mod) + 2;
+#endif
         }
       }
     }
@@ -606,6 +645,7 @@ int PU::getMipSizeId(const PredictionUnit &pu)
   }
 }
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int PU::getMipMPMs(const PredictionUnit &pu, unsigned *mpm)
 {
   const CompArea &area = pu.block( getFirstComponentOfChannel( CHANNEL_TYPE_LUMA ) );
@@ -724,12 +764,17 @@ int PU::getMipMPMs(const PredictionUnit &pu, unsigned *mpm)
 
   return (realMode ? numCand : 0);
 }
+#endif
 
 uint32_t PU::getIntraDirLuma( const PredictionUnit &pu )
 {
   if (isMIP(pu))
   {
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+    return PLANAR_IDX;
+#else
     return g_mapMipToAngular65[getMipSizeId(pu)][pu.intraDir[CHANNEL_TYPE_LUMA]];
+#endif
   }
   else
   {
@@ -737,6 +782,7 @@ uint32_t PU::getIntraDirLuma( const PredictionUnit &pu )
   }
 }
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 AvailableInfo PU::getAvailableInfoLuma(const PredictionUnit &pu)
 {
   const Area puArea = pu.Y();
@@ -772,6 +818,7 @@ AvailableInfo PU::getAvailableInfoLuma(const PredictionUnit &pu)
   CHECKD(availInfo.maxPosTop > puArea.width || availInfo.maxPosLeft > puArea.height, "Error");
   return availInfo;
 }
+#endif
 
 void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE] )
 {
@@ -4863,16 +4910,28 @@ int getNumModesMip(const Size& block)
   }
 }
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int getNumEpBinsMip(const Size& block)
 {
   int numModes = getNumModesMip(block);
   return int(std::ceil((std::log2(numModes - NUM_MPM_MIP - 1))));
 }
+#endif
 
 bool mipModesAvailable(const Size& block)
 {
   return (getNumModesMip(block));
 }
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+bool allowLfnstWithMip(const Size& block)
+{
+  if (block.width >= 16 && block.height >= 16)
+  {
+    return true;
+  }
+  return false;
+}
+#endif
 
 

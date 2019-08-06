@@ -360,6 +360,12 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
       intraMode = PLANAR_IDX;
 #endif
     }
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+    if (PU::isMIP(*tu.cs->getPU(area.pos(), toChannelType(compID)), toChannelType(compID)))
+    {
+      intraMode = PLANAR_IDX;
+    }
+#endif
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 
     if( lfnstIdx < 3 )
@@ -472,6 +478,12 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
       intraMode = PLANAR_IDX;
 #endif
     }
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+    if (PU::isMIP(*tu.cs->getPU(area.pos(), toChannelType(compID)), toChannelType(compID)))
+    {
+      intraMode = PLANAR_IDX;
+    }
+#endif
     CHECK( intraMode >= NUM_INTRA_MODE - 1, "Invalid intra mode" );
 
     if( lfnstIdx < 3 )

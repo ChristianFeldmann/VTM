@@ -378,12 +378,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     //===== determine set of modes to be tested (using prediction signal only) =====
     int numModesAvailable = NUM_LUMA_MODE; // total number of Intra modes
     const bool fastMip    = sps.getUseMIP() && m_pcEncCfg->getUseFastMIP();
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+#if JVET_O0545_MAX_TB_SIGNALLING
+    const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize() && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
+#else
+    const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
+#endif
+    const bool testMip    = mipAllowed && mipModesAvailable(pu.Y());
+#else
 #if JVET_O0545_MAX_TB_SIGNALLING
     const bool mipAllowed = sps.getUseMIP() && ( cu.lfnstIdx == 0 ) && isLuma( partitioner.chType ) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize();
 #else
     const bool mipAllowed = sps.getUseMIP() && ( cu.lfnstIdx == 0 ) && isLuma( partitioner.chType ) && pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT;
 #endif
     const bool testMip    = mipAllowed && mipModesAvailable( pu.Y() ) && !(fastMip && (cu.lwidth() > 2 * cu.lheight() || cu.lheight() > 2 * cu.lwidth()));
+#endif
 
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeList;
 
@@ -435,7 +444,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
         if( testMip)
         {
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+          numModesForFullRD += fastMip? std::max(numModesForFullRD, g_aucLog2[std::min(pu.lwidth(), pu.lheight())] - 1) : numModesForFullRD;
+#else
           numModesForFullRD += fastMip? std::max(2, g_aucLog2[std::min(pu.lwidth(), pu.lheight())] - 1) : numModesForFullRD;
+#endif
         }
         const int numHadCand = (testMip ? 2 : 1) * 3;
 
@@ -493,7 +506,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             updateCandList( ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, uiMode), cost,          uiRdModeList,  CandCostList, numModesForFullRD );
             updateCandList( ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, uiMode), (double)minSadHad, uiHadModeList, CandHadList,  numHadCand );
           }
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+          if( !sps.getUseMIP() && LFNSTSaveFlag )
+#else
           if( LFNSTSaveFlag )
+#endif
           {
             // save found best modes
             m_uiSavedNumRdModesLFNST   = numModesForFullRD;
@@ -505,7 +522,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             LFNSTSaveFlag              = false;
           }
         } // NSSTFlag
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+        if( !sps.getUseMIP() && LFNSTLoadFlag )
+#else
         else
+#endif
         {
           // restore saved modes
           numModesForFullRD = m_uiSavedNumRdModesLFNST;
@@ -514,11 +535,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           // PBINTRA fast
           uiHadModeList     = m_uiSavedHadModeListLFNST;
           CandHadList       = m_dSavedHadListLFNST;
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 
           LFNSTLoadFlag     = false;
+#endif
         } // !LFNSTFlag
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+        if (!(sps.getUseMIP() && LFNSTLoadFlag))
+        {
+#else
         CHECK( uiRdModeList.size() != numModesForFullRD, "Error: RD mode list size" );
+#endif
         static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> parentCandList = uiRdModeList;
 
         // Second round of SATD for extended Angular modes
@@ -630,12 +658,35 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #endif
         CHECKD( uiRdModeList.size() != numModesForFullRD, "Error: RD mode list size" );
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+        if (LFNSTSaveFlag && testMip && !allowLfnstWithMip(cu.firstPU->lumaSize())) // save a different set for the next run
+        {
+          // save found best modes
+          m_uiSavedRdModeListLFNST = uiRdModeList;
+          m_dSavedModeCostLFNST = CandCostList;
+          // PBINTRA fast
+          m_uiSavedHadModeListLFNST = uiHadModeList;
+          m_dSavedHadListLFNST = CandHadList;
+          m_uiSavedNumRdModesLFNST = g_aucIntraModeNumFast_UseMPM_2D[uiWidthBit - MIN_CU_LOG2][uiHeightBit - MIN_CU_LOG2];
+          m_uiSavedRdModeListLFNST.resize(m_uiSavedNumRdModesLFNST);
+          m_dSavedModeCostLFNST.resize(m_uiSavedNumRdModesLFNST);
+          // PBINTRA fast
+          m_uiSavedHadModeListLFNST.resize(3);
+          m_dSavedHadListLFNST.resize(3);
+          LFNSTSaveFlag = false;
+        }
+#endif
           //*** Derive MIP candidates using Hadamard
           if (testMip)
           {
             cu.mipFlag = true;
             pu.multiRefIdx = 0;
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+            double mipHadCost[MAX_NUM_MIP_MODE] = { MAX_DOUBLE };
+
+            initIntraPatternChType(cu, pu.Y());
+#endif
             initIntraMip( pu );
 
             for (uint32_t uiMode = 0; uiMode < getNumModesMip(pu.Y()); uiMode++)
@@ -653,14 +704,49 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               uint64_t fracModeBits = xFracModeBitsIntra(pu, uiMode, CHANNEL_TYPE_LUMA);
 
               double cost = double(minSadHad) + double(fracModeBits) * sqrtLambdaForFirstPass;
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+              mipHadCost[uiMode] = cost;
+              DTRACE(g_trace_ctx, D_INTRA_COST, "IntraMIP: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost, uiMode);
 
+              updateCandList(ModeInfo(true, 0, NOT_INTRA_SUBPARTITIONS, uiMode), cost, uiRdModeList, CandCostList, numModesForFullRD + 1);
+              updateCandList(ModeInfo(true, 0, NOT_INTRA_SUBPARTITIONS, uiMode), 0.8*double(minSadHad), uiHadModeList, CandHadList, numHadCand);
+#else
               updateCandList(ModeInfo(true, 0, NOT_INTRA_SUBPARTITIONS, uiMode),        cost,  uiRdModeList,  CandCostList, numModesForFullRD);
               updateCandList(ModeInfo(true, 0, NOT_INTRA_SUBPARTITIONS, uiMode), double(minSadHad), uiHadModeList, CandHadList, numHadCand);
+#endif
             }
 
             const double thresholdHadCost = 1.0 + 1.4 / sqrt((double)(pu.lwidth()*pu.lheight()));
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+            reduceHadCandList(uiRdModeList, CandCostList, numModesForFullRD, thresholdHadCost, mipHadCost, pu, fastMip);
+#else
             reduceHadCandList(uiRdModeList, CandCostList, numModesForFullRD, thresholdHadCost, 0.0);
+#endif
           }
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+          if ( sps.getUseMIP() && LFNSTSaveFlag)
+          {
+            // save found best modes
+            m_uiSavedNumRdModesLFNST = numModesForFullRD;
+            m_uiSavedRdModeListLFNST = uiRdModeList;
+            m_dSavedModeCostLFNST = CandCostList;
+            // PBINTRA fast
+            m_uiSavedHadModeListLFNST = uiHadModeList;
+            m_dSavedHadListLFNST = CandHadList;
+            LFNSTSaveFlag = false;
+          }
+        }
+        else //if( sps.getUseMIP() && LFNSTLoadFlag)
+        {
+          // restore saved modes
+          numModesForFullRD = m_uiSavedNumRdModesLFNST;
+          uiRdModeList = m_uiSavedRdModeListLFNST;
+          CandCostList = m_dSavedModeCostLFNST;
+          // PBINTRA fast
+          uiHadModeList = m_uiSavedHadModeListLFNST;
+          CandHadList = m_dSavedHadListLFNST;
+        }
+#endif
 
         if( m_pcEncCfg->getFastUDIUseMPMEnabled() )
         {
@@ -740,6 +826,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #endif
           }
         }
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
         //*** Add MPMs for MIP to candidate list
         if (!fastMip && testMip && pu.lwidth() < 8 && pu.lheight() < 8)
         {
@@ -762,6 +849,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             }
           }
         }
+#endif
       }
       else
       {
@@ -850,7 +938,22 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     {
       double pbintraRatio = (lfnstIdx > 0) ? 1.25 : PBINTRA_RATIO;
       int maxSize = -1;
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+      ModeInfo bestMipMode;
+      int bestMipIdx = -1;
+      for( int idx = 0; idx < uiRdModeList.size(); idx++ )
+      {
+        if( uiRdModeList[idx].mipFlg )
+        {
+          bestMipMode = uiRdModeList[idx];
+          bestMipIdx = idx;
+          break;
+        }
+      }
+      const int numHadCand = 3;
+#else
       const int numHadCand = (testMip ? 2 : 1) * 3;
+#endif
       for (int k = numHadCand - 1; k >= 0; k--)
       {
         if (CandHadList.size() < (k + 1) || CandHadList[k] > cs.interHad * pbintraRatio) { maxSize = k; }
@@ -858,6 +961,15 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if (maxSize > 0)
       {
         uiRdModeList.resize(std::min<size_t>(uiRdModeList.size(), maxSize));
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+        if( bestMipIdx >= 0 )
+        {
+          if( uiRdModeList.size() <= bestMipIdx )
+          {
+            uiRdModeList.push_back(bestMipMode);
+          }
+        }
+#endif
         if ( testISP )
         {
 #if JVET_O0502_ISP_CLEANUP
@@ -946,16 +1058,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     csTemp->initStructData();
     csBest->initStructData();
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
     m_bestCostNonMip = MAX_DOUBLE;
+#endif
     static_vector<int, FAST_UDI_MAX_RDMODE_NUM> rdModeIdxList;
     if (testMip)
     {
-    static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListTemp;
+    static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> rdModeListTemp;
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
       if( !uiRdModeList[i].mipFlg && uiRdModeList[i].ispMod==NOT_INTRA_SUBPARTITIONS )
       {
-        uiRdModeListTemp.push_back( uiRdModeList[i] );
+        rdModeListTemp.push_back( uiRdModeList[i] );
         rdModeIdxList.push_back( i );
       }
     }
@@ -963,15 +1077,37 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     {
       if( uiRdModeList[i].mipFlg || uiRdModeList[i].ispMod!=NOT_INTRA_SUBPARTITIONS )
       {
-        uiRdModeListTemp.push_back( uiRdModeList[i] );
+        rdModeListTemp.push_back( uiRdModeList[i] );
         rdModeIdxList.push_back( i );
       }
     }
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+      uiRdModeList.resize(rdModeListTemp.size());
+#endif
     for( int i = 0; i < uiRdModeList.size(); i++)
     {
-      uiRdModeList[i] = uiRdModeListTemp[i];
+      uiRdModeList[i] = rdModeListTemp[i];
     }
     }
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+    else
+    {
+      static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> rdModeListTemp;
+      for( int i = 0; i < uiRdModeList.size(); i++ )
+      {
+        if( !uiRdModeList[i].mipFlg  )
+        {
+          rdModeListTemp.push_back( uiRdModeList[i] );
+        }
+      }
+      uiRdModeList.resize(rdModeListTemp.size());
+      for( int i = 0; i < rdModeListTemp.size(); i++ )
+      {
+        uiRdModeList[i] = rdModeListTemp[i];
+      }
+    }
+#endif
+
     // just to be sure
     numModesForFullRD = ( int ) uiRdModeList.size();
 #if !JVET_O0502_ISP_CLEANUP
@@ -1082,10 +1218,12 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
       else
       {
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
         if( ! fastMip )
         {
           m_bestCostNonMip = MAX_DOUBLE;
         }
+#endif
         tmpValidReturn = xRecurIntraCodingLumaQT( *csTemp, partitioner, uiBestPUMode.ispMod ? bestCurrentCost : MAX_DOUBLE, -1, TU_NO_ISP, uiBestPUMode.ispMod,
                                                   mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst );
       }
@@ -3200,12 +3338,14 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         tu.mtsIdx = trModes[ modeId ].first;
       }
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
       //we compare the best cost for non lwip
       const double thresholdSkipMode = 1.0 + (1.4 / sqrt((double)(cu.lwidth() * cu.lheight())));
       if ( cu.mipFlag && tu.mtsIdx && m_bestCostNonMip != MAX_DOUBLE && m_bestCostNonMip * thresholdSkipMode < bestDCT2cost  )
       {
         continue;
       }
+#endif
 
       if ((modeId != firstCheckId) && isNotOnlyOneMode)
       {
@@ -3332,10 +3472,12 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       {
         bestDCT2cost = singleCostTmp;
       }
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
       if (!cu.ispMode && !cu.mipFlag && tu.mtsIdx == MTS_DCT2_DCT2 )
       {
         m_bestCostNonMip = std::min(m_bestCostNonMip, singleCostTmp);
       }
+#endif
 
       if (singleCostTmp < dSingleCost)
       {
@@ -4081,6 +4223,81 @@ bool IntraSearch::useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, 
   return CU::isRDPCMEnabled( *pu.cu ) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
 }
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+template<typename T, size_t N>
+void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip)
+{
+  const int maxCandPerType = numModesForFullRD >> 1;
+  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> tempRdModeList;
+  static_vector<double, FAST_UDI_MAX_RDMODE_NUM> tempCandCostList;
+  const double minCost = candCostList[0];
+  bool keepOneMip = candModeList.size() > numModesForFullRD;
+  
+  int numConv = 0;
+  int numMip = 0;
+  for (int idx = 0; idx < candModeList.size() - (keepOneMip?0:1); idx++)
+  {
+    bool addMode = false;
+    const ModeInfo& orgMode = candModeList[idx];
+
+    if (!orgMode.mipFlg)
+    { 
+      addMode = (numConv < 3);
+      numConv += addMode ? 1:0;
+    } 
+    else 
+    { 
+      addMode = ( numMip < maxCandPerType || (candCostList[idx] < thresholdHadCost * minCost) || keepOneMip );
+      keepOneMip = false;
+      numMip += addMode ? 1:0;
+    }
+    if( addMode )
+    {
+      tempRdModeList.push_back(orgMode);
+      tempCandCostList.push_back(candCostList[idx]);
+    }
+  }
+
+  if ((pu.lwidth() > 8 && pu.lheight() > 8))
+  {
+    // Sort MIP candidates by Hadamard cost
+    const int transpOff = getNumModesMip(pu.Y()) / 2;
+    static_vector<uint8_t, FAST_UDI_MAX_RDMODE_NUM> sortedMipModes(0);
+    static_vector<double, FAST_UDI_MAX_RDMODE_NUM> sortedMipCost(0);
+    for (uint8_t mode : { 3, 4, 5 })
+    {
+      uint8_t candMode = mode + uint8_t((mipHadCost[mode + transpOff] < mipHadCost[mode]) ? transpOff : 0);
+      updateCandList(candMode, mipHadCost[candMode], sortedMipModes, sortedMipCost, 3);
+    }
+
+    // Append MIP mode to RD mode list
+    for (int idx = 0; idx < 3; idx++)
+    {
+      const ModeInfo mipMode(true, 0, NOT_INTRA_SUBPARTITIONS, sortedMipModes[idx]);
+      bool alreadyIncluded = false;
+      for (int modeListIdx = 0; modeListIdx < tempRdModeList.size(); modeListIdx++)
+      {
+        if (tempRdModeList[modeListIdx] == mipMode)
+        {
+          alreadyIncluded = true;
+          break;
+        }
+      }
+
+      if (!alreadyIncluded)
+      {
+        tempRdModeList.push_back(mipMode);
+        tempCandCostList.push_back(0);
+        if( fastMip ) break;
+      }
+    }
+  }
+
+  candModeList = tempRdModeList;
+  candCostList = tempCandCostList;
+  numModesForFullRD = int(candModeList.size());
+}
+#else
 template<typename T, size_t N>
 void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv)
 {
@@ -4137,6 +4354,7 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
   candCostList = tempCandCostList;
   numModesForFullRD = int(candModeList.size());
 }
+#endif
 
 #if JVET_O0502_ISP_CLEANUP
 // It decides which modes from the ISP lists can be full RD tested

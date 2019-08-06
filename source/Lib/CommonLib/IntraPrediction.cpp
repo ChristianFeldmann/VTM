@@ -560,6 +560,9 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   if(   sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag()
     || !isLuma( chType )
     || useISP
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+    || PU::isMIP( pu, chType )
+#endif
     || m_ipaParam.multiRefIndex
     || DC_IDX == dirMode
     )
@@ -2155,11 +2158,21 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
 #endif
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+  // prepare input (boundary) data for prediction
+  CHECK(m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP");
+  Pel *ptrSrc = getPredictorPtr(COMPONENT_Y);
+  const int srcStride  = m_topRefLength  + 1;
+  const int srcHStride = m_leftRefLength + 1;
+
+  m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA));
+#else
   // derive above and left availability
   AvailableInfo availInfo = PU::getAvailableInfoLuma(pu);
 
   // prepare input (boundary) data for prediction
   m_matrixIntraPred.prepareInputForPred(pu.cs->picture->getRecoBuf(COMPONENT_Y), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA), availInfo);
+#endif
 }
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )

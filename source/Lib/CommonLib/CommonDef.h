@@ -176,8 +176,13 @@ static const int MAX_VPS_LAYERS =                                 256;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+static const int MIP_MAX_WIDTH =                                   MAX_TB_SIZEY;
+static const int MIP_MAX_HEIGHT =                                  MAX_TB_SIZEY;
+#else
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
+#endif
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
 static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;

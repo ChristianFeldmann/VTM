@@ -421,9 +421,13 @@ protected:
   static bool useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode );
 
   template<typename T, size_t N>
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+  void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip);
+#else
   void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv);
 
   double m_bestCostNonMip;
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
   double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);

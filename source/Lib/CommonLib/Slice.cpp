@@ -1413,9 +1413,11 @@ SPS::SPS()
 , m_allRplEntriesHasSameSignFlag ( true )
 , m_bLongTermRefsPresent      (false)
 // Tool list
+#if !JVET_O0525_REMOVE_PCM
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
+#endif
 #if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_transformSkipEnabledFlag  (false)
 , m_BDPCMEnabledFlag          (false)
@@ -1423,7 +1425,9 @@ SPS::SPS()
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
 , m_JointCbCrEnabledFlag      (false)
 #endif
+#if !JVET_O0525_REMOVE_PCM
 , m_bPCMFilterDisableFlag     (false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -1475,7 +1479,9 @@ SPS::SPS()
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_bitDepths.recon[ch] = 8;
+#if !JVET_O0525_REMOVE_PCM
     m_pcmBitDepths[ch] = 8;
+#endif
     m_qpBDOffset   [ch] = 0;
   }
 

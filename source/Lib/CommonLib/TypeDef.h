@@ -177,6 +177,8 @@
 
 #define JVET_O0545_MAX_TB_SIGNALLING                      1 // JVET-O0545: Configurable maximum transform size
 
+#define JVET_O0525_REMOVE_PCM                             1 // JVET-O0525: Removal of PCM mode
+
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
 #define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
@@ -245,7 +247,9 @@
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#if !JVET_O0525_REMOVE_PCM
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
+#endif
 
 #if JVET_O0545_MAX_TB_SIGNALLING
 #define MAX_TB_SIZE_SIGNALLING                            1

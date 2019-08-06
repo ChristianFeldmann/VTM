@@ -94,8 +94,10 @@ public:
   void        pred_mode                 ( const CodingUnit&             cu );
   void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );
 
+#if !JVET_O0525_REMOVE_PCM
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
+#endif
   void        cu_pred_data              ( const CodingUnit&             cu );
   void        cu_gbi_flag               ( const CodingUnit&             cu );
   void        extend_ref_line           (const PredictionUnit&          pu );
@@ -138,8 +140,10 @@ public:
   void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
   void        smvd_mode              ( const PredictionUnit&         pu );
 
+#if !JVET_O0525_REMOVE_PCM
   // pcm samples (clause 7.3.8.7)
   void        pcm_samples               ( const TransformUnit&          tu );
+#endif
 
   // transform tree (clause 7.3.8.8)
 #if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC

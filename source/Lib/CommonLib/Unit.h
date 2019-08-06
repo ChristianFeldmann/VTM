@@ -315,7 +315,9 @@ struct CodingUnit : public UnitArea
   bool           triangle;
   bool           transQuantBypass;
   int            bdpcmMode;
+#if !JVET_O0525_REMOVE_PCM
   bool           ipcm;
+#endif
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;

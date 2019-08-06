@@ -130,7 +130,9 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
+#if !JVET_O0525_REMOVE_PCM
   bool      m_bNoPcmConstraintFlag;
+#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -377,8 +379,10 @@ protected:
   //coding tools (chroma format)
   ChromaFormat m_chromaFormatIDC;
 
+#if !JVET_O0525_REMOVE_PCM
   // coding tools (PCM bit-depth)
   bool      m_bPCMInputBitDepthFlag;                          ///< 0: PCM bit-depth is internal bit-depth. 1: PCM bit-depth is input bit-depth.
+#endif
 
   // coding tool (SAO)
   bool      m_bUseSAO;
@@ -398,11 +402,13 @@ protected:
 #else
   bool      m_DeblockingFilterMetric;                         ///< blockiness metric in encoder
 #endif
+#if !JVET_O0525_REMOVE_PCM
   // coding tools (PCM)
   bool      m_usePCM;                                         ///< flag for using IPCM
   uint32_t      m_pcmLog2MaxSize;                                 ///< log2 of maximum PCM block size
   uint32_t      m_uiPCMLog2MinSize;                               ///< log2 of minimum PCM block size
   bool      m_bPCMFilterDisableFlag;                          ///< PCM filter disable flag
+#endif
   bool      m_enableIntraReferenceSmoothing;                  ///< flag for enabling(default)/disabling intra reference smoothing/filtering
 
   // coding tools (encoder-only parameters)

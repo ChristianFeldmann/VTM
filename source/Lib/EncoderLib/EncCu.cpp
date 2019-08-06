@@ -4044,8 +4044,13 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
   const ChromaFormat format = cs.area.chromaFormat;
   CodingUnit*                cu = cs.getCU(partitioner.chType);
   const Position lumaPos = cu->Y().valid() ? cu->Y().pos() : recalcPosition( format, cu->chType, CHANNEL_TYPE_LUMA, cu->blocks[cu->chType].pos() );
+#if JVET_O0060_4x4_deblocking
+  bool topEdgeAvai = lumaPos.y > 0 && ((lumaPos.y % 4) == 0);
+  bool leftEdgeAvai = lumaPos.x > 0 && ((lumaPos.x % 4) == 0);
+#else
   bool topEdgeAvai  = lumaPos.y > 0 && ( ( lumaPos.y % 8 ) == 0 );
   bool leftEdgeAvai = lumaPos.x > 0 && ( ( lumaPos.x % 8 ) == 0 );
+#endif
   bool anyEdgeAvai = topEdgeAvai || leftEdgeAvai;
   cs.costDbOffset = 0;
 

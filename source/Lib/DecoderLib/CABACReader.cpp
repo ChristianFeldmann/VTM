@@ -1269,7 +1269,11 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
   for( int k = 0; k < numBlocks; k++ )
   {
     CHECK(numBlocks != 1, "not supported yet");
+#if JVET_O0502_ISP_CLEANUP
+    if ( cu.firstPU->multiRefIdx )
+#else
     if( cu.firstPU->multiRefIdx || ( cu.ispMode && isLuma( cu.chType ) ) )
+#endif
     {
       mpmFlag[0] = true;
     }

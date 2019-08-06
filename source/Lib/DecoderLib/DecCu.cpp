@@ -204,8 +204,39 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const PredictionUnit &pu  = *tu.cs->getPU( area.pos(), chType );
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
+#if JVET_O0502_ISP_CLEANUP
+  PelBuf pReco              = cs.getRecoBuf(area);
+#endif
 
   //===== init availability pattern =====
+#if JVET_O0502_ISP_CLEANUP
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+  bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
+  bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
+  CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
+#endif
+  if (tu.cu->ispMode && isLuma(compID))
+  {
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+    if (predRegDiffFromTB)
+    {
+      if (firstTBInPredReg)
+      {
+        CU::adjustPredArea(areaPredReg);
+        m_pcIntraPred->initIntraPatternChTypeISP(*tu.cu, areaPredReg, pReco);
+      }
+    }
+    else
+#endif
+    {
+      m_pcIntraPred->initIntraPatternChTypeISP(*tu.cu, area, pReco);
+    }
+  }
+  else
+  {
+    m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
+  }
+#else
 #if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
   bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
   bool firstTBInPredReg  = CU::isFirstTBInPredReg (*tu.cu, compID, area);
@@ -221,6 +252,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   else
 #endif
     m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
+#endif
 
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -323,7 +355,9 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     CrossComponentPrediction::crossComponentPrediction( tu, compID, cs.getResiBuf( tu.Y() ), piResi, piResi, true );
   }
 
+#if !JVET_O0502_ISP_CLEANUP
   PelBuf pReco = cs.getRecoBuf( area );
+#endif
 
   if( !tu.cu->ispMode || !isLuma( compID ) )
   {

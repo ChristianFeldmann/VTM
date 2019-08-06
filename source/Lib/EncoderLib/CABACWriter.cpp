@@ -1054,7 +1054,11 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
         break;
       }
     }
+#if JVET_O0502_ISP_CLEANUP
+    if ( pu->multiRefIdx )
+#else
     if( pu->multiRefIdx || ( cu.ispMode && isLuma( cu.chType ) ) )
+#endif
     {
       CHECK(mpm_idx >= numMPMs, "use of non-MPM");
     }
@@ -1154,7 +1158,11 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
       break;
     }
   }
+#if JVET_O0502_ISP_CLEANUP
+  if ( pu.multiRefIdx )
+#else
   if( pu.multiRefIdx || ( pu.cu->ispMode && isLuma( pu.cu->chType ) ) )
+#endif
   {
     CHECK(mpm_idx >= numMPMs, "use of non-MPM");
   }

@@ -56,6 +56,8 @@
 
 #define JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE          1 // JVET-O0650: Signal chroma QP mapping tables and move chroma PPS/slice offsets after mapping table
 
+#define JVET_O0502_ISP_CLEANUP                            1 // JVET-O0502: Enable PDPC and all 67 intra modes and apply the cubic filter always (also included in JVET-O0341) for ISP
+
 #define JVET_O0640_PICTURE_SIZE_CONSTRAINT                1 // JVET-O0640: Picture width and height shall be a multiple of Max(8, minCU size)
 
 #define JVET_O_MAX_NUM_ALF_APS_8                          1 // JVET-O: number of ALF APSs is reduced to 8
@@ -495,7 +497,12 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
+#if JVET_O0502_ISP_CLEANUP
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  INTRA_SUBPARTITIONS_RESERVED  = 4
+#else
   NUM_INTRA_SUBPARTITIONS_MODES = 3
+#endif
 };
 
 enum SbtIdx

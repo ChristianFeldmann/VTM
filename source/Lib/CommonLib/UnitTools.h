@@ -96,13 +96,18 @@ namespace CU
 
 
   bool      divideTuInRows            ( const CodingUnit &cu );
+#if !JVET_O0502_ISP_CLEANUP
   bool      firstTestISPHorSplit      ( const int width, const int height,            const ComponentID compID, const CodingUnit *cuLeft = nullptr, const CodingUnit *cuAbove = nullptr );
+#endif
   PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
   bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
   bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
+#if JVET_O0502_ISP_CLEANUP
+  bool      allLumaCBFsAreZero        ( const CodingUnit& cu );
+#endif
 
   PUTraverser traversePUs             (      CodingUnit& cu);
   TUTraverser traverseTUs             (      CodingUnit& cu);

@@ -3809,6 +3809,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     {
       int        blkPos         = cctx.blockPos( scanPos );
       sigBlkPos[ numNonZero++ ] = blkPos;
+      firstNZPos = nextSigPos;
       lastNZPos  = std::max<int>( lastNZPos, scanPos );
       coeff[blkPos] = tcoeff;
     }

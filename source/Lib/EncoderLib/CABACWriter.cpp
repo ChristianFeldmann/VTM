@@ -3627,6 +3627,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
     if( absLevel )
     {
       numNonZero++;
+      firstNZPos = nextSigPos;
       lastNZPos   = std::max<int>( lastNZPos, scanPos );
       signPattern <<= 1;
       if( Coeff < 0 ) signPattern++;

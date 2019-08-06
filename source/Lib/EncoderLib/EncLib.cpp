@@ -899,6 +899,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setMaxBTSize                           ( std::min((int)m_CTUSize, MAX_BT_SIZE_INTER),
+                                               std::min((int)m_CTUSize, MAX_BT_SIZE),
+                                               std::min((int)m_CTUSize, MAX_BT_SIZE_C) );
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );

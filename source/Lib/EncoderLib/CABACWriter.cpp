@@ -1380,9 +1380,7 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-  cuCtx.lastScanPos[COMPONENT_Y ] = -1;
-  cuCtx.lastScanPos[COMPONENT_Cb] = -1;
-  cuCtx.lastScanPos[COMPONENT_Cr] = -1;
+  cuCtx.lfnstLastScanPos = false;
 #endif
 
 #if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
@@ -2784,7 +2782,8 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID)
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
   {
-    cuCtx->lastScanPos[compID] = cctx.scanPosLast();
+    const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
+    cuCtx->lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
   }
 #endif
   // code last coeff position
@@ -2945,11 +2944,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #else
           bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
 #endif
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    const bool skipLfnst                  = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
-                                          ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
-                                          ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
-#else
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
     const int  nonZeroCoeffThr            = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
     cuCtx.numNonZeroCoeffNonTs            = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag );
     nonZeroCoeffNonTs                     = cuCtx.numNonZeroCoeffNonTs > nonZeroCoeffThr;
@@ -2957,13 +2952,13 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #if JVET_O0368_LFNST_WITH_DCT2_ONLY
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    if( skipLfnst || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
 #else
     if (!nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
 #endif
 #else
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    if( skipLfnst || nonZeroCoeffNonTsCorner8x8 )
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 )
 #else
     if( !nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 )
 #endif

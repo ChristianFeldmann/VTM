@@ -258,10 +258,17 @@ const CtxSet ContextSetCfg::MergeFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::RegularMergeFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 159, 126 },
+  { 143, 111 },
+  { 154, 154 },
+  {   6,   5 }
+#else
   { 142, 125, },
   { 141, 110, },
   { CNU, CNU, },
   {   4,   4, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
@@ -274,10 +281,17 @@ const CtxSet ContextSetCfg::MergeIdx = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MmvdFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 108, },
+  { 108, },
+  { 154, },
+  {   5, },
+#else
   { 109, },
   { 124, },
   { CNU, },
   {   5, },
+#endif
 });
 
 const CtxSet ContextSetCfg::MmvdMergeIdx = ContextSetCfg::addCtxSet
@@ -327,7 +341,22 @@ const CtxSet ContextSetCfg::IntraLumaPlanarFlag = ContextSetCfg::addCtxSet
   { 110, 154, },
   {   4,   5, },
 });
-
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
+({
+  { 153,},
+  { 168,},
+  { 169,},
+  {   4,},
+  });
+const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
+({
+  { 149,},
+  { 166,},
+  { 138,},
+  {   5,},
+  });
+#else
 const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
 ({
   { 137, 139, 140, },
@@ -335,6 +364,7 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   { 154, 154, 154, },
   {   5,   8,   8, },
 });
+#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({
@@ -376,12 +406,29 @@ const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
   {   4,   5, },
 });
 
-const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+const CtxSet ContextSetCfg::SubblockMergeFlag = ContextSetCfg::addCtxSet
 ({
   { 183, 185, 187, },
   { 168, 169, 171, },
   { CNU, CNU, CNU, },
   {   4,   4,   4, },
+  });
+#endif
+
+const CtxSet ContextSetCfg::AffineFlag = ContextSetCfg::addCtxSet
+({
+#if JVET_O0249_MERGE_SYNTAX
+  { 180, 169, 186 },
+  { 195, 168, 155 },
+  { 154, 154, 154 },
+  {   5,   4,   4 }
+#else
+  { 183, 185, 187, },
+  { 168, 169, 171, },
+  { CNU, CNU, CNU, },
+  {   4,   4,   4, },
+#endif
 });
 
 const CtxSet ContextSetCfg::AffineType = ContextSetCfg::addCtxSet
@@ -436,17 +483,31 @@ const CtxSet ContextSetCfg::QtCbf[] =
 {
   ContextSetCfg::addCtxSet
   ({
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    { 127, 111, 124, 140 },
+    { 127,  79, 139, 126 },
+    { 126, 138, 124, 111 },
+    {   5,   1,   8,   8 },
+#else
     { 142, 127, 124, 140, 111, },
     { 143, 127, 139, 126,  79, },
     { CNU, 126, 124, 111, 138, },
     {   1,   5,   8,   8,   1, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+    { 163, },
+    { 150, },
+    { 124, },
+    {   5, },
+#else
     { 163, 135, },
     { 150, 121, },
     { 124, CNU, },
     {   5,   0, },
+#endif
   }),
   ContextSetCfg::addCtxSet
   ({
@@ -477,6 +538,50 @@ const CtxSet ContextSetCfg::SigCoeffGroup[] =
 
 const CtxSet ContextSetCfg::SigFlag[] =
 {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+  ContextSetCfg::addCtxSet
+  ({
+    {  88, 166, 182, 169, 101, 167, 168, 155, 194, 213, 183, 156, },
+    { 132, 152, 168, 140, 177, 182, 154, 155, 151, 213, 169, 156, },
+    {  89, 138, 139, 140, 150, 139, 140, 141, 138, 185, 141, 157, },
+    {  12,   9,   9,  10,   9,   9,   9,   9,   8,   8,   8,  10, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    {  27, 167, 168, 140, 180, 199, 214, 186, },
+    { 133, 138, 139, 140, 181, 214, 200, 157, },
+    { 134, 153, 154, 155, 167, 186, 186, 143, },
+    {   9,   9,   9,  13,   5,   5,   8,   9, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 152, 156, 186, 202, 182, 249, 247, 207, 182, 223, 223, 223, },
+    { 123, 142, 172, 218, 138, 250, 248, 223, 125, 223, 223, 223, },
+    {  93, 142, 143, 175, 153, 223, 223, 238, 154, 223, 223, 223, },
+    {   9,  12,   8,   8,   8,   8,   8,   5,   8,   0,   0,   0, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 182, 171, 143, 190, 183, 223, 223, 223, },
+    { 168, 156, 216, 249, 169, 223, 223, 223, },
+    { 138, 173, 157, 223, 170, 223, 223, 223, },
+    {   8,  12,   8,   8,   4,   0,   0,   0, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 123, 175, 223, 223, 212, 223, 223, 223,   0, 223, 223, 223, },
+    { 123, 223, 205, 223, 138, 223, 223, 223, 196, 223, 223, 223, },
+    { 107, 206, 223, 223,  93, 223, 223, 238,  55, 223, 223, 223, },
+    {   8,   8,   8,   8,   8,   0,   4,   4,   0,   0,   0,   0, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 167, 187, 249, 207, 181, 223, 223, 223, },
+    { 167, 157, 191, 223, 152, 223, 223, 223, },
+    { 152, 236, 223, 223, 123, 223, 223, 223, },
+    {   8,   8,   8,   8,   4,   0,   0,   0, },
+  }),
+#else
   ContextSetCfg::addCtxSet
   ({
     {  88, 166, 152, 182, 168, 154, 116, 167, 182, 168, 183, 155, 208, 213, 183, 183, 169, 185, },
@@ -519,6 +624,7 @@ const CtxSet ContextSetCfg::SigFlag[] =
     { 137, 250, 223, 237, 234, 223, 123, 223, 223, 223, 223, 223, },
     {   8,   8,   1,   8,   8,   8,   4,   0,   0,   0,   0,   0, },
   })
+#endif
 };
 
 const CtxSet ContextSetCfg::ParFlag[] =
@@ -743,6 +849,15 @@ const CtxSet ContextSetCfg::ChromaQpAdjIdc = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#if JVET_O0057_ALTHPELIF
+const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
+({
+  { 212, 180, 183, 242, 242, },
+  { 213, 166, 198, 244, 244, },
+  { CNU, 182, CNU, CNU, CNU, },
+  {   1,   5,   1,   0,   0, },
+});
+#else
 const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
 ({
   { 212, 180, 183, 242, },
@@ -750,6 +865,7 @@ const CtxSet ContextSetCfg::ImvFlag = ContextSetCfg::addCtxSet
   { CNU, 182, CNU, CNU, },
   {   1,   5,   1,   0, },
 });
+#endif
 
 const CtxSet ContextSetCfg::ctbAlfFlag = ContextSetCfg::addCtxSet
 ({
@@ -759,6 +875,16 @@ const CtxSet ContextSetCfg::ctbAlfFlag = ContextSetCfg::addCtxSet
   {   0,   0,   0,   0,   0,   0,   0,   0,   0, },
 });
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
+({ // Cb,  Cr
+  { 100, 100, }, // B / P (cabac_init_flag)
+  { 153, 153, }, // P / B (cabac_init_flag)
+  { 200, 200, }, // I
+  {   0,   0, }, // shiftIdx
+});
+
+#endif
 const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
 ({
   { 169, },
@@ -777,10 +903,17 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
 ({
+#if JVET_O0249_MERGE_SYNTAX
+  { 184, },
+  { 184, },
+  { 154, },
+  {   1, },
+#else
   { 184, },
   { 185, },
   { CNU, },
   {   0, },
+#endif
 });
 
 
@@ -840,6 +973,30 @@ const CtxSet ContextSetCfg::TsGtxFlag = ContextSetCfg::addCtxSet
   {   4,   1,   1,   1,   1, },
 });
 
+#if JVET_O0122_TS_SIGN_LEVEL
+const CtxSet ContextSetCfg::TsLrg1Flag = ContextSetCfg::addCtxSet
+({
+  { 139, 108, 124, 111 },
+  { 122, 138, 139, 110 },
+  { 123, 139, 110, 125 },
+  {   4,   2,   1,   5 }
+  });
+#endif
+
+#if JVET_O0122_TS_SIGN_LEVEL
+
+const CtxSet ContextSetCfg::TsResidualSign =
+{
+  ContextSetCfg::addCtxSet
+  ({
+  { 139,  92, 201, 139, 122, 171 },
+  { 124,  77, 171, 169, 121, 187 },
+  { 124,  61, 187, 154, 121, 187 },
+  {   1,   4,   1,   5,   5,   5 }
+    }),
+};
+
+#else
 const CtxSet ContextSetCfg::TsResidualSign =
 {
   ContextSetCfg::addCtxSet
@@ -850,6 +1007,7 @@ const CtxSet ContextSetCfg::TsResidualSign =
     {   1,   2, },
    }),
 };
+#endif
 // clang-format on
 
 const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_InitTables[0].size();
@@ -858,7 +1016,11 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 // combined sets
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#else
 const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

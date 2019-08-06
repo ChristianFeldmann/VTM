@@ -82,6 +82,9 @@ Slice::Slice()
 , m_maxNumMergeCand               ( 0 )
 , m_maxNumAffineMergeCand         ( 0 )
 , m_maxNumTriangleCand            ( 0 )
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+, m_maxNumIBCMergeCand            ( 0 )
+#endif
 , m_disFracMMVD                   ( false )
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
 , m_disBdofDmvrFlag               ( false )
@@ -192,6 +195,9 @@ void Slice::initSlice()
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_maxNumIBCMergeCand = IBC_MRG_MAX_NUM_CANDS;
+#endif
 
   m_bFinalized=false;
 
@@ -205,6 +211,9 @@ void Slice::initSlice()
   m_jointCbCrSignFlag    = false;
 #endif
   m_enableTMVPFlag       = true;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  resetTileGroupAlfEnabledFlag();
+#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -700,6 +709,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
   m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_maxNumIBCMergeCand            = pSrc->m_maxNumIBCMergeCand;
+#endif
   m_disFracMMVD                   = pSrc->m_disFracMMVD;
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   m_disBdofDmvrFlag               = pSrc->m_disBdofDmvrFlag;
@@ -1378,9 +1390,7 @@ SPS::SPS()
 , m_MMVD                      ( false )
 , m_SBT                       ( false )
 , m_MaxSbtSize                ( 32 )
-#if INCLUDE_ISP_CFG_FLAG
 , m_ISP                       ( false )
-#endif
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
 // Structure
@@ -1406,6 +1416,13 @@ SPS::SPS()
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+, m_transformSkipEnabledFlag  (false)
+, m_BDPCMEnabledFlag          (false)
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+, m_JointCbCrEnabledFlag      (false)
+#endif
 , m_bPCMFilterDisableFlag     (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
@@ -1417,6 +1434,10 @@ SPS::SPS()
 , m_numLongTermRefPicSPS      (  0)
 #if MAX_TB_SIZE_SIGNALLING
 , m_log2MaxTbSize             (  6)
+#endif
+#if JVET_O0244_DELTA_POC
+, m_useWeightPred             (false)
+, m_useWeightedBiPred         (false)
 #endif
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
@@ -1435,6 +1456,9 @@ SPS::SPS()
 , m_LFNST                     ( false )
 , m_Affine                    ( false )
 , m_AffineType                ( false )
+#if JVET_O0070_PROF
+, m_PROF                      ( false )
+#endif
 , m_MHIntra                   ( false )
 , m_Triangle                  ( false )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -1487,6 +1511,62 @@ void  SPS::createRPLList1(int numRPL)
 const int SPS::m_winUnitX[]={1,2,2,1};
 const int SPS::m_winUnitY[]={1,2,1,1};
 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, const int qpBdOffset)
+{
+  m_qpBdOffset = qpBdOffset;
+  m_sameCQPTableForAllChromaFlag = params.m_sameCQPTableForAllChromaFlag;
+  for (int i = 0; i < MAX_NUM_CQP_MAPPING_TABLES; i++)
+  {
+    m_numPtsInCQPTableMinus1[i] = params.m_numPtsInCQPTableMinus1[i];
+    m_deltaQpInValMinus1[i] = params.m_deltaQpInValMinus1[i];
+    m_deltaQpOutVal[i] = params.m_deltaQpOutVal[i];
+  }
+}
+void ChromaQpMappingTable::derivedChromaQPMappingTables()
+{
+  for (int i = 0; i < (getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+  {
+    const int qpBdOffsetC = m_qpBdOffset;
+    const int numPtsInCQPTableMinus1 = getNumPtsInCQPTableMinus1(i);
+    std::vector<int> qpInVal(numPtsInCQPTableMinus1 + 1), qpOutVal(numPtsInCQPTableMinus1 + 1);
+
+    qpInVal[0] = -qpBdOffsetC + getDeltaQpInValMinus1(i, 0);
+    qpOutVal[0] = -qpBdOffsetC + getDeltaQpOutVal(i, 0);
+    for (int j = 1; j <= getNumPtsInCQPTableMinus1(i); j++)
+    {
+      qpInVal[j] = qpInVal[j - 1] + getDeltaQpInValMinus1(i, j) + 1;
+      qpOutVal[j] = qpOutVal[j - 1] + getDeltaQpOutVal(i, j);
+    }
+
+    for (int j = 0; j <= getNumPtsInCQPTableMinus1(i); j++)
+    {
+      CHECK(qpInVal[j]  < -qpBdOffsetC || qpInVal[j]  > MAX_QP, "qpInVal out of range");
+      CHECK(qpOutVal[j] < -qpBdOffsetC || qpOutVal[j] > MAX_QP, "qpOutVal out of range");
+    }
+
+    m_chromaQpMappingTables[i][qpInVal[0]] = qpOutVal[0];
+    for (int k = qpInVal[0] - 1; k >= -qpBdOffsetC; k--)
+    {
+      m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k + 1] - 1);
+    }
+    for (int j = 0; j < numPtsInCQPTableMinus1; j++)
+    {
+      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1 + 1) >> 1;
+      for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
+      {
+        m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
+          + (getDeltaQpOutVal(i, j + 1) * m + sh) / (getDeltaQpInValMinus1(i, j + 1) + 1);
+      }
+    }
+    for (int k = qpInVal[numPtsInCQPTableMinus1]+1; k <= MAX_QP; k++)
+    {
+      m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k - 1] + 1);
+    }
+  }
+}
+#endif
+
 PPSRExt::PPSRExt()
 : m_log2MaxTransformSkipBlockSize      (2)
 , m_crossComponentPredictionEnabledFlag(false)
@@ -1497,6 +1577,9 @@ PPSRExt::PPSRExt()
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CrOffset = 0;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.JointCbCrOffset = 0;
+#endif
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_log2SaoOffsetScale[ch] = 0;
@@ -1518,7 +1601,9 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_TransquantBypassEnabledFlag      (false)
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
 , m_useTransformSkip                 (false)
+#endif
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_loopFilterAcrossBricksEnabledFlag (true)
 , m_uniformTileSpacingFlag           (false)

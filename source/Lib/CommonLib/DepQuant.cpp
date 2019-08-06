@@ -401,12 +401,20 @@ namespace DQIntern
       const int diag        = m_scanId2BlkPos[nextScanIdx].x + m_scanId2BlkPos[nextScanIdx].y;
       if( m_chType == CHANNEL_TYPE_LUMA )
       {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+        scanInfo.sigCtxOffsetNext = ( diag < 2 ? 8 : diag < 5 ?  4 : 0 );
+#else
         scanInfo.sigCtxOffsetNext = ( diag < 2 ? 12 : diag < 5 ?  6 : 0 );
+#endif
         scanInfo.gtxCtxOffsetNext = ( diag < 1 ? 16 : diag < 3 ? 11 : diag < 10 ? 6 : 1 );
       }
       else
       {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+        scanInfo.sigCtxOffsetNext = ( diag < 2 ? 4 : 0 );
+#else
         scanInfo.sigCtxOffsetNext = ( diag < 2 ? 6 : 0 );
+#endif
         scanInfo.gtxCtxOffsetNext = ( diag < 1 ? 6 : 1 );
       }
       scanInfo.nextInsidePos      = nextScanIdx & m_sbbMask;
@@ -452,7 +460,11 @@ namespace DQIntern
     static const unsigned sm_numCtxSetsSig    = 3;
     static const unsigned sm_numCtxSetsGtx    = 2;
     static const unsigned sm_maxNumSigSbbCtx  = 2;
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+    static const unsigned sm_maxNumSigCtx     = 12;
+#else
     static const unsigned sm_maxNumSigCtx     = 18;
+#endif
     static const unsigned sm_maxNumGtxCtx     = 21;
 
   private:
@@ -510,11 +522,19 @@ namespace DQIntern
         {
           prevLumaCbf = TU::getPrevTuCbfAtDepth(tu, compID, tu.depth);
         }
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+        bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, prevLumaCbf, true)));
+#else
         bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.depth, prevLumaCbf, true)));
+#endif
       }
       else
       {
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+        bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.cbf[COMPONENT_Cb])));
+#else
         bits = fracBitsAccess.getFracBitsArray(Ctx::QtCbf[compID](DeriveCtx::CtxQtCbf(compID, tu.depth, tu.cbf[COMPONENT_Cb])));
+#endif
       }
       cbfDeltaBits = lastCbfIsInferred ? 0 : int32_t(bits.intBits[1]) - int32_t(bits.intBits[0]);
     }
@@ -562,7 +582,11 @@ namespace DQIntern
     {
       BinFracBits*    bits    = m_sigFracBits [ ctxSetId ];
       const CtxSet&   ctxSet  = Ctx::SigFlag  [ chType + 2*ctxSetId ];
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+      const unsigned  numCtx  = ( chType == CHANNEL_TYPE_LUMA ? 12 : 8 );
+#else
       const unsigned  numCtx  = ( chType == CHANNEL_TYPE_LUMA ? 18 : 12 );
+#endif
       for( unsigned ctxId = 0; ctxId < numCtx; ctxId++ )
       {
         bits[ ctxId ] = fracBitsAccess.getFracBitsArray( ctxSet( ctxId ) );
@@ -671,7 +695,11 @@ namespace DQIntern
   {
     CHECKD( lambda <= 0.0, "Lambda must be greater than 0" );
 
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ                  = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ                  = cQP.Qp + 1;
+#endif
     const int         qpPer                 = qpDQ / 6;
     const int         qpRem                 = qpDQ - 6 * qpPer;
     const SPS&        sps                   = *tu.cs->sps;
@@ -740,7 +768,11 @@ namespace DQIntern
     }
 
     //----- set dequant parameters -----
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ                  = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ                  = cQP.Qp + 1;
+#endif
     const int         qpPer                 = qpDQ / 6;
     const int         qpRem                 = qpDQ - 6 * qpPer;
     const SPS&        sps                   = *tu.cs->sps;
@@ -1155,7 +1187,11 @@ namespace DQIntern
         }
 #undef UPDATE
         TCoeff sumGt1 = sumAbs1 - sumNum;
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+        m_sigFracBits = m_sigFracBitsArray[scanInfo.sigCtxOffsetNext + std::min( (sumAbs1+1)>>1, 3 )];
+#else
         m_sigFracBits = m_sigFracBitsArray[scanInfo.sigCtxOffsetNext + (sumAbs1 < 5 ? sumAbs1 : 5)];
+#endif
         m_coeffFracBits = m_gtxFracBitsArray[scanInfo.gtxCtxOffsetNext + (sumGt1 < 4 ? sumGt1 : 4)];
 
         TCoeff  sumAbs = m_absLevelsAndCtxInit[8 + scanInfo.nextInsidePos] >> 8;
@@ -1269,7 +1305,11 @@ namespace DQIntern
       TCoeff  sumNum  =   tinit        & 7;
       TCoeff  sumAbs1 = ( tinit >> 3 ) & 31;
       TCoeff  sumGt1  = sumAbs1        - sumNum;
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+      m_sigFracBits   = m_sigFracBitsArray[ scanInfo.sigCtxOffsetNext + std::min( (sumAbs1+1)>>1, 3 ) ];
+#else
       m_sigFracBits   = m_sigFracBitsArray[ scanInfo.sigCtxOffsetNext + ( sumAbs1 < 5 ? sumAbs1 : 5 ) ];
+#endif
       m_coeffFracBits = m_gtxFracBitsArray[ scanInfo.gtxCtxOffsetNext + ( sumGt1  < 4 ? sumGt1  : 4 ) ];
     }
   }
@@ -1713,7 +1753,11 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
   {
     //===== scaling matrix ====
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ            = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ            = cQP.Qp + 1;
+#endif
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
     const CompArea    &rect           = tu.blocks[compID];
@@ -1736,7 +1780,11 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
 {
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
   {
+#if JVET_O0919_TS_MIN_QP
+    const int         qpDQ            = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#else
     const int         qpDQ            = cQP.Qp + 1;
+#endif
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
     const CompArea    &rect           = tu.blocks[compID];

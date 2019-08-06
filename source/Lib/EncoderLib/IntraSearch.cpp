@@ -274,8 +274,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   const uint32_t             uiHeightBit   =                   g_aucLog2[partitioner.currArea().lheight()];
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
-  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) / double(1 << SCALE_BITS);
-
+  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) * FRAC_BITS_SCALE;
 
   //===== loop over partitions =====
 
@@ -317,53 +316,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   {
     mtsUsageFlag = 0;
   }
-#if INCLUDE_ISP_CFG_FLAG
-  int nOptionsForISP = ( sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 ) ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
-#else
-  int nOptionsForISP = ( cu.mtsFlag == 0 && cu.lfnstIdx == 0 ) ? NUM_INTRA_SUBPARTITIONS_MODES : 1;
-#endif
-  double bestCurrentCost = bestCostSoFar;
 
-  int ispOptions[NUM_INTRA_SUBPARTITIONS_MODES] = { 0 };
-  if( nOptionsForISP > 1 )
-  {
+  double bestCurrentCost = bestCostSoFar;
 #if MAX_TB_SIZE_SIGNALLING
-    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, cu.cs->sps->getMaxTbSize() );
+  bool testISP = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP( width, height, cu.cs->sps->getMaxTbSize() );
 #else
-    auto splitsThatCanBeUsedForISP = CU::canUseISPSplit( width, height, MAX_TB_SIZEY );
+  bool testISP = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP( width, height, MAX_TB_SIZEY );
 #endif
-    if( splitsThatCanBeUsedForISP == CAN_USE_VER_AND_HORL_SPLITS )
-    {
-      const CodingUnit* cuLeft  = cu.ispMode != NOT_INTRA_SUBPARTITIONS ? cs.getCU( cs.area.blocks[partitioner.chType].pos().offset( -1, 0 ), partitioner.chType ) : nullptr;
-      const CodingUnit* cuAbove = cu.ispMode != NOT_INTRA_SUBPARTITIONS ? cs.getCU( cs.area.blocks[partitioner.chType].pos().offset( 0, -1 ), partitioner.chType ) : nullptr;
-      bool ispHorIsFirstTest = CU::firstTestISPHorSplit( width, height, COMPONENT_Y, cuLeft, cuAbove );
-      if( ispHorIsFirstTest )
-      {
-        ispOptions[1] = HOR_INTRA_SUBPARTITIONS;
-        ispOptions[2] = VER_INTRA_SUBPARTITIONS;
-      }
-      else
-      {
-        ispOptions[1] = VER_INTRA_SUBPARTITIONS;
-        ispOptions[2] = HOR_INTRA_SUBPARTITIONS;
-      }
-    }
-    else if( splitsThatCanBeUsedForISP == HOR_INTRA_SUBPARTITIONS )
-    {
-      nOptionsForISP = 2;
-      ispOptions[1] = HOR_INTRA_SUBPARTITIONS;
-    }
-    else if( splitsThatCanBeUsedForISP == VER_INTRA_SUBPARTITIONS )
-    {
-      nOptionsForISP = 2;
-      ispOptions[1] = VER_INTRA_SUBPARTITIONS;
-    }
-    else
-    {
-      nOptionsForISP = 1;
-    }
+  bool ispHorIsFirstTest = testISP ? CU::firstTestISPHorSplit( width, height, COMPONENT_Y, nullptr, nullptr ) : true;
+  int ispOptions[] = { NOT_INTRA_SUBPARTITIONS, HOR_INTRA_SUBPARTITIONS, VER_INTRA_SUBPARTITIONS };
+  if ( !ispHorIsFirstTest )
+  {
+    ispOptions[1] = VER_INTRA_SUBPARTITIONS;
+    ispOptions[2] = HOR_INTRA_SUBPARTITIONS;
   }
-  if( nOptionsForISP > 1 )
+  if( testISP )
   {
     //variables for the full RD list without MRL modes
     m_rdModeListWithoutMrl      .clear();
@@ -375,7 +342,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_intraModeTestedNormalIntra.clear();
   }
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  const bool testBDPCM = sps.getBDPCMEnabledFlag() && CU::bdpcmAllowed( cu, ComponentID( partitioner.chType ) ) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+#else
   const bool testBDPCM = m_pcEncCfg->getRDPCM() && CU::bdpcmAllowed( cu, ComponentID( partitioner.chType ) ) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+#endif
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
@@ -393,7 +364,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     //===== determine set of modes to be tested (using prediction signal only) =====
     int numModesAvailable = NUM_LUMA_MODE; // total number of Intra modes
     const bool fastMip    = sps.getUseMIP() && m_pcEncCfg->getUseFastMIP();
+#if JVET_O0545_MAX_TB_SIGNALLING
+    const bool mipAllowed = sps.getUseMIP() && ( cu.lfnstIdx == 0 ) && isLuma( partitioner.chType ) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize();
+#else
     const bool mipAllowed = sps.getUseMIP() && ( cu.lfnstIdx == 0 ) && isLuma( partitioner.chType ) && pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT;
+#endif
     const bool testMip    = mipAllowed && mipModesAvailable( pu.Y() ) && !(fastMip && (cu.lwidth() > 2 * cu.lheight() || cu.lheight() > 2 * cu.lwidth()));
 
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeList;
@@ -580,7 +555,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             }
           }
         }
-        if( nOptionsForISP > 1 )
+        if ( testISP )
         {
           //we save the list with no mrl modes to keep only the Hadamard selected modes (no mpms)
           m_rdModeListWithoutMrl = uiRdModeList;
@@ -694,7 +669,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               CandCostList.push_back(0);
             }
           }
-          if( nOptionsForISP > 1 )
+          if ( testISP )
           {
             //we add the ISP MPMs to the list without mrl modes
             m_rdModeListWithoutMrlHor = m_rdModeListWithoutMrl;
@@ -705,7 +680,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               m_rdModeListWithoutMrlVer[k].ispMod = VER_INTRA_SUBPARTITIONS;
             }
             static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM>* listPointer;
-            for( int k = 1; k < nOptionsForISP; k++ )
+            for( int k = 1; k < NUM_INTRA_SUBPARTITIONS_MODES; k++ )
             {
               cu.ispMode = ispOptions[k];
               listPointer = &( cu.ispMode == HOR_INTRA_SUBPARTITIONS ? m_rdModeListWithoutMrlHor : m_rdModeListWithoutMrlVer );
@@ -790,14 +765,14 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
     }
 
-    if( nOptionsForISP > 1 ) // we remove the non-MPMs from the ISP lists
+    if( testISP ) // we remove the non-MPMs from the ISP lists
     {
       static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListCopyHor = m_rdModeListWithoutMrlHor;
       m_rdModeListWithoutMrlHor.clear();
       static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeListCopyVer = m_rdModeListWithoutMrlVer;
       m_rdModeListWithoutMrlVer.clear();
       static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> *listPointerCopy, *listPointer;
-      for( int ispOptionIdx = 1; ispOptionIdx < nOptionsForISP; ispOptionIdx++ )
+      for( int ispOptionIdx = 1; ispOptionIdx < NUM_INTRA_SUBPARTITIONS_MODES; ispOptionIdx++ )
       {
         cu.ispMode = ispOptions[ispOptionIdx];
         //we get the mpm cand list
@@ -844,7 +819,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if (maxSize > 0)
       {
         uiRdModeList.resize(std::min<size_t>(uiRdModeList.size(), maxSize));
-        if (nOptionsForISP > 1)
+        if ( testISP )
         {
           m_rdModeListWithoutMrlHor.resize(std::min<size_t>(m_rdModeListWithoutMrlHor.size(), maxSize));
           m_rdModeListWithoutMrlVer.resize(std::min<size_t>(m_rdModeListWithoutMrlVer.size(), maxSize));
@@ -867,7 +842,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
     }
 
-    if ( nOptionsForISP > 1 )
+    if ( testISP )
     {
       //we create a single full RD list that includes all intra modes using regular intra, MRL and ISP
       auto* firstIspList  = ispOptions[1] == HOR_INTRA_SUBPARTITIONS ? &m_rdModeListWithoutMrlHor : &m_rdModeListWithoutMrlVer;
@@ -1326,7 +1301,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           continue;
         }
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+        if (cs.sps->getTransformSkipEnabledFlag())
+#else
         if (cs.pps->getUseTransformSkip())
+#endif
         {
           m_CABACEstimator->getCtx() = ctxStart;
         }
@@ -1823,11 +1802,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
-#if INCLUDE_ISP_CFG_FLAG
-  const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISPSplit( *tu.cu, compID );
-#else
-  const bool           ispSplitIsAllowed    = CU::canUseISPSplit( *tu.cu, compID );
-#endif
+  const bool           ispSplitIsAllowed    = sps.getUseISP() && CU::canUseISP( *tu.cu, compID );
 
 
   //===== init availability pattern =====
@@ -1841,7 +1816,21 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
   if( default0Save1Load2 != 2 )
   {
-    initIntraPatternChType( *tu.cu, area );
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+    bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
+    bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
+    CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
+    if (predRegDiffFromTB)
+    {
+      if (firstTBInPredReg)
+      {
+        CU::adjustPredArea(areaPredReg);
+        initIntraPatternChType(*tu.cu, areaPredReg);
+      }
+    }
+    else
+#endif
+      initIntraPatternChType(*tu.cu, area);
 
     //===== get prediction signal =====
     if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -1859,7 +1848,18 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       }
       else
       {
-      predIntraAng( compID, piPred, pu );
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+        if (predRegDiffFromTB)
+        {
+          if (firstTBInPredReg)
+          {
+            PelBuf piPredReg = cs.getPredBuf(areaPredReg);
+            predIntraAng(compID, piPredReg, pu);
+          }
+        }
+        else
+#endif
+          predIntraAng(compID, piPred, pu);
       }
     }
 
@@ -1988,12 +1988,23 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
   }
 #if JVET_O0105_ICT
-  if( isChroma(compID) && tu.cu->cs->slice->getSliceQp() > 18 )
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  if ( sps.getJointCbCrEnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
   {
     m_pcTrQuant->setLambda( 1.3 * m_pcTrQuant->getLambda() );
   }
 #else
+  if( isChroma(compID) && tu.cu->cs->slice->getSliceQp() > 18 )
+  {
+    m_pcTrQuant->setLambda( 1.3 * m_pcTrQuant->getLambda() );
+  }
+  #endif
+#else
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  else if ( sps.getJointCbCrEnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
+#else
   else if ( isChroma(compID) && tu.cu->cs->slice->getSliceQp() > 18 )
+#endif
     m_pcTrQuant->setLambda( 1.10 * m_pcTrQuant->getLambda() );
 #endif
 
@@ -2009,11 +2020,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     tu.mtsIdx = trModes->at(0).first;
   }
   m_pcTrQuant->transformNxN( tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr, &diagRatio, &horVerRatio );
-#if INCLUDE_ISP_CFG_FLAG
     if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == MTS_DCT2_DCT2 && ispSplitIsAllowed )
-#else
-  if ( !tu.cu->ispMode && isLuma(compID) && ispSplitIsAllowed && tu.mtsIdx == MTS_DCT2_DCT2 )
-#endif
   {
     m_intraModeDiagRatio        .push_back(diagRatio);
     m_intraModeHorVerRatio      .push_back(horVerRatio);
@@ -2220,7 +2227,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   double     dSingleCost                        = MAX_DOUBLE;
   Distortion uiSingleDistLuma                   = 0;
   uint64_t   singleFracBits                     = 0;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool       checkTransformSkip                 = sps.getTransformSkipEnabledFlag();
+#else
   bool       checkTransformSkip                 = pps.getUseTransformSkip();
+#endif
   int        bestModeId[ MAX_NUM_COMPONENT ]    = { 0, 0, 0 };
   uint8_t    nNumTransformCands                 = cu.mtsFlag ? 4 : 1;
   uint8_t    numTransformIndexCands             = nNumTransformCands;
@@ -2971,11 +2982,17 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #if JVET_O0105_ICT
       bool       lastIsBest     = false;
       std::vector<int>  jointCbfMasksToTest;
-      if( TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr) )
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+      if ( cs.sps->getJointCbCrEnabledFlag() && (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr)))
       {
-        jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates( currTU, orgResiCb, orgResiCr );
+        jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates(currTU, orgResiCb, orgResiCr);
       }
-
+#else
+      if (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr))
+      {
+        jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates(currTU, orgResiCb, orgResiCr);
+      }
+#endif
       for( int cbfMask : jointCbfMasksToTest )
 #else
       bool       checkJointCbCr = TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr);

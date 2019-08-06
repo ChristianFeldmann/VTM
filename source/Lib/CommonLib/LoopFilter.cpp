@@ -63,12 +63,18 @@
 // Tables
 // ====================================================================================================================
 
+#if JVET_O0159_10BITTCTABLE_DEBLOCKING
+const uint16_t LoopFilter::sm_tcTable[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
+{
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,4,4,4,4,5,5,5,5,7,7,8,9,10,10,11,13,14,15,17,19,21,24,25,29,33,36,41,45,51,57,64,71,80,89,100,112,125,141,157,177,198,222,250,280,314,352,395
+};
+#else
 const uint8_t LoopFilter::sm_tcTable[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,5,5,6,6,7,8,9,10,11,13,14,16,18,20,22,25
   , 28, 31, 35, 39, 44, 50, 56, 63, 70, 79, 88, 99
 };
-
+#endif
 const uint8_t LoopFilter::sm_betaTable[MAX_QP + 1] =
 {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64
@@ -364,6 +370,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     }
   }
 
+#if !JVET_O0060_4x4_deblocking
   if (edgeDir == EDGE_HOR)
   {
     if (!((cu.block(COMPONENT_Y).y % 8) == 0))
@@ -374,7 +381,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     if (!((cu.block(COMPONENT_Y).x % 8) == 0))
       return;
   }
-
+#endif
 
   std::sort( edgeIdx.begin(), edgeIdx.end() );
   int prevEdgeIdx = -1;
@@ -472,8 +479,22 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
 
           if ( comp == COMPONENT_Y )
           {
+#if JVET_O0060_4x4_deblocking
+            bool smallBlock = (sizePSide <= 4) || (sizeQSide <= 4);
+            if (smallBlock)
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff] = 1;
+              m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff] = 1;
+            }
+            else
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff] = (sizeQSide >= 32) ? 7 : 3;
+              m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff] = (sizePSide >= 32) ? 7 : 3;
+            }
+#else
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff] = ( sizeQSide >= 32 ) ? 7 : 3;
             m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff] = ( sizePSide >= 32 ) ? 7 : 3;
+#endif
           }
           else
           {
@@ -508,8 +529,22 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
 
           if ( comp == COMPONENT_Y )
           {
+#if JVET_O0060_4x4_deblocking
+            bool smallBlock = (sizePSide <= 4) || (sizeQSide <= 4);
+            if (smallBlock)
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff + y] = 1;
+              m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff + y] = 1;
+            }
+            else
+            {
+              m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff + y] = (sizeQSide >= 32) ? 7 : 3;
+              m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff + y] = (sizePSide >= 32) ? 7 : 3;
+            }
+#else
             m_maxFilterLengthQ[cIdx][ctuXOff][ctuYOff+y] = ( sizeQSide >= 32 ) ? 7 : 3;
             m_maxFilterLengthP[cIdx][ctuXOff][ctuYOff+y] = ( sizePSide >= 32 ) ? 7 : 3;
+#endif
           }
           else
           {
@@ -546,6 +581,13 @@ void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir e
               m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y], 5);
             }
           }
+#if JVET_O0060_4x4_deblocking
+          else if (y > 0 && (m_transformEdge[cIdx][ctuXOff + x][ctuYOff + y - 4] || ((y + 4) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff + x][ctuYOff + y + 4])) // adjacent to transform edge  +/- 4
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+            m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+          }
+#endif
           else if (y > 0 && ( m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y-8] || (( y + 8 ) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y+8] )) // adjacent to transform edge on 8x8 grid
           {
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
@@ -573,6 +615,13 @@ void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir e
               m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = std::min<int>(m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y], 5);
             }
           }
+#if JVET_O0060_4x4_deblocking
+          else if (x > 0 && (m_transformEdge[cIdx][ctuXOff + x - 4][ctuYOff + y] || ((x + 4) >= areaPu.width) || m_transformEdge[cIdx][ctuXOff + x + 4][ctuYOff + y])) // adjacent to transform edge +/- 4
+          {
+            m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+            m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff + y] = 1;
+          }
+#endif
           else if ( x > 0 && ( m_transformEdge[cIdx][ctuXOff+x-8][ctuYOff+y] || ( (x + 8) >= areaPu.width ) || m_transformEdge[cIdx][ctuXOff+x+8][ctuYOff+y] ) ) // adjacent to transform edge on 8x8 grid
           {
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
@@ -722,7 +771,11 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
     if( 0 <= miQ.refIdx[0] ) { mvQ0 = miQ.mv[0]; }
     if( 0 <= miQ.refIdx[1] ) { mvQ1 = miQ.mv[1]; }
 
+#if JVET_O0061_MV_THR_DEBLOCKING
+    int nThreshold = (1 << MV_FRACTIONAL_BITS_INTERNAL) >> 1;
+#else
     int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+#endif
     unsigned uiBs = 0;
 
     //th can be optimized
@@ -774,7 +827,11 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   Mv mvP0 = miP.mv[0];
   Mv mvQ0 = miQ.mv[0];
 
+#if JVET_O0061_MV_THR_DEBLOCKING
+  int nThreshold = (1 << MV_FRACTIONAL_BITS_INTERNAL) >> 1;
+#else
   int nThreshold = 1 << MV_FRACTIONAL_BITS_INTERNAL;
+#endif
   return ( ( abs( mvQ0.getHor() - mvP0.getHor() ) >= nThreshold ) || ( abs( mvQ0.getVer() - mvP0.getVer() ) >= nThreshold ) ) ? (tmpBs + 1) : tmpBs;
 }
 
@@ -866,6 +923,17 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
     pos.x += xoffset;
     pos.y += yoffset;
 
+#if JVET_O0060_4x4_deblocking
+    // Deblock luma boundaries on 4x4 grid only
+    if (edgeDir == EDGE_HOR && (pos.y % 4) != 0)
+    {
+      continue;
+    }
+    if (edgeDir == EDGE_VER && (pos.x % 4) != 0)
+    {
+      continue;
+    }
+#else
     // Deblock luma boundaries on 8x8 grid only
     if ( edgeDir == EDGE_HOR && ( pos.y % 8 ) != 0 )
     {
@@ -875,7 +943,7 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
     {
       continue;
     }
-
+#endif
     uiBsAbsIdx = getRasterIdx( pos, pcv );
     uiBs = BsGet(m_aapucBS[edgeDir][uiBsAbsIdx], COMPONENT_Y);
 
@@ -932,7 +1000,11 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       const int iIndexTC  = Clip3(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs - 1) + (tcOffsetDiv2 << 1)));
       const int iIndexB   = Clip3(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
 
+#if JVET_O0159_10BITTCTABLE_DEBLOCKING
+      const int iTc = bitDepthLuma < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - bitDepthLuma)) : ((sm_tcTable[iIndexTC]) << (bitDepthLuma - 10));
+#else
       const int iTc       = sm_tcTable  [iIndexTC] * iBitdepthScale;
+#endif
       const int iBeta     = sm_betaTable[iIndexB ] * iBitdepthScale;
       const int iSideThreshold = ( iBeta + ( iBeta >> 1 ) ) >> 3;
       const int iThrCut   = iTc * 10;
@@ -1032,8 +1104,18 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
 
         if( d < iBeta )
         {
+#if JVET_O0060_4x4_deblocking
+          bool bFilterP = false;
+          bool bFilterQ = false;
+          if (maxFilterLengthP > 1 && maxFilterLengthQ > 1)
+          {
+            bFilterP = (dp < iSideThreshold);
+            bFilterQ = (dq < iSideThreshold);
+          }
+#else
           const bool bFilterP = (dp < iSideThreshold);
           const bool bFilterQ = (dq < iSideThreshold);
+#endif
           bool sw = false;
           if (maxFilterLengthP > 2 && maxFilterLengthQ > 2)
           {
@@ -1191,6 +1273,10 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const int chromaQPOffset = pps.getQpOffset( ComponentID( chromaIdx + 1 ) );
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+        int iQP = sps.getMappedChromaQpValue(ComponentID(chromaIdx + 1), ((cuP.qp + cuQ.qp + 1) >> 1));
+        iQP = Clip3(0, MAX_QP, iQP + chromaQPOffset);
+#else
         int iQP = ( ( cuP.qp + cuQ.qp + 1 ) >> 1 ) + chromaQPOffset;
         if (iQP >= chromaQPMappingTableSize)
         {
@@ -1207,10 +1293,14 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         {
           iQP = getScaledChromaQP(iQP, sps.getChromaFormatIdc());
         }
+#endif
 
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
+#if JVET_O0159_10BITTCTABLE_DEBLOCKING
+        const int iTc = sps.getBitDepth(CHANNEL_TYPE_CHROMA) < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - sps.getBitDepth(CHANNEL_TYPE_CHROMA))) : ((sm_tcTable[iIndexTC]) << (sps.getBitDepth(CHANNEL_TYPE_CHROMA) - 10));
+#else
         const int iTc      = sm_tcTable[iIndexTC] * iBitdepthScale;
-
+#endif
         bool useLongFilter = false;
         if (largeBoundary)
         {

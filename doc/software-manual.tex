@@ -1165,6 +1165,12 @@ Specifies the maximum number of merge candidates to use.
 Specifies the maximum number of triangle merge candidates to use.
 \\
 
+\Option{MaxNumIBCMergeCand} &
+%\ShortOption{\None} &
+\Default{6} &
+Specifies the maximum number of IBC merge candidates to use.
+\\
+
 \Option{DisableIntraInInter} &
 %\ShortOption{\None} &
 \Default{0} &
@@ -1332,6 +1338,57 @@ If LambdaFromQpEnable=false, then the $\lambda$ is also subsequently scaled for 
 $\lambda = \lambda_{base} \times max(2, min(4, (sliceQP-12)/6))$
 
 In addition, independent on the IntraQPFactor, if HadamardME=false, then for an inter slice the final $\lambda$ is scaled by a factor of $0.95$.
+\\
+
+\Option{UseIdentityTableForNon420Chroma}
+\Default{1}
+Specifies whether identity chroma QP mapping tables are used for 4:2:2 and 4:4:4 content. When set to 1, the identity chroma QP mapping table is used for all the three chroma components for 4:2:2 or 4:4:4 content. When set to 0, chroma QP 
+mapping table may be specified by other parameters in the configuration.
+\\
+
+\Option{SameCQPTablesForAllChroma}
+\Default{1)
+Specifies that the Cb, Cr and joint Cb-Cr components all use the same
+chroma mapping table. When set to 1, the values of QpInValCr, 
+QpOutValCr, QpInValCbCr and QpOutValCbCr are ignored. When set to 0, all
+Cb, Cr and joint Cb-Cr components may have different chroma QP mapping tables specified in the configuration file. \\ Note that 
+SameCQPTablesForAllChroma is ignored when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
+\Option{QpInValCb}%
+\Option{QpOutValCb}&
+\Default{\NotSet}
+Specifies the input and coordinates of the pivot points used to specify the chroma QP mapping tables for the Cb component. Default values are as follows: 
+\begin{tabular}{cp{0.45\textwidth}}
+ QpInValCb: 25, 33, 43 \\
+ QpOutValCb: 25, 32, 37 \\
+\end{tabular}
+The values specify the pivot points for the chroma QP mapping table, the unspecified QP values are interpolated from the remaining values. E.g., the default values above specify that  the pivot points for the chroma QP mapping table for the Cb component are (25, 25), (33, 32), (43, 37).
+\\ Note that that QpInValCr and QpOutValCr are ignored when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
+\Option{QpInValCr}%
+\Option{QpOutValCr}&
+\Default{\NotSet}
+Specifies the input and coordinates of the pivot points used to specify the chroma QP mapping tables for the Cr component. Default values are as follows: 
+\begin{tabular}{cp{0.45\textwidth}}
+ QpInValCr: 0 \\
+ QpOutValCr: 0 \\
+\end{tabular}
+The default values specify a pivot point of (0,0) which corresponds to an identity chroma QP mapping table. \\ Note that that QpInValCr and QpOutValCr are ignored 
+when SameCQPTablesForAllChroma is set to 1 or when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
+\\
+
+\Option{QpInValCbCr}%
+\Option{QpOutValCbCr}&
+\Default{\NotSet}
+Specifies the input and coordinates of the pivot points used to specify the chroma QP mapping tables for the joint Cb-Cr component. Default values are as follows: 
+\begin{tabular}{cp{0.45\textwidth}}
+ QpInValrCr: 0 \\
+ QpOutValCbCr: 0 \\
+\end{tabular}
+The default values specify a pivot point of (0,0) which corresponds to a identity chroma QP mapping table. Note that that QpInValCbCr and QpOutVaCblCr are ignored 
+when SameCQPTablesForAllChroma is set to 1  or when UseIdentityTableForNon420Chroma is set to 1 for 4:2:2 and 4:4:4 content.
 \\
 
 \Option{CbQpOffset (-cbqpofs)}%
@@ -1822,6 +1879,12 @@ Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to
 This option has no effect if either ISP or MTS are disabled.
 \\
 
+\Option{JointCbCr} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the joint coding of chroma residuals.
+\\
+
 \Option{SAO} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2047,6 +2110,14 @@ Enables optimization of non-linear filters for ALF on Luma channel.
 Enables optimization of non-linear filters for ALF on Chroma channels.
 \\
 
+\Option{MaxNumAlfAlternativesChroma} &
+%\ShortOption{\None} &
+\Default{8} &
+Specified the maximum number of alternative chroma filters that can be
+switched at CTB level. Set to 1 to disable alternative chroma filters.
+Value shall be in the range 1..8.
+\\
+
 \Option{SMVD} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -2069,6 +2140,50 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
+\Option{LMCSEnable} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the use of LMCS (luma mapping with chroma scaling).
+\\
+
+\Option{LMCSSignalType} &
+%\ShortOption{\None} &
+\Default{0} &
+LMCS signal type: 0:SDR, 1:HDR-PQ, 2:HDR-HLG.
+\\
+
+\Option{LMCSUpdateCtrl} &
+%\ShortOption{\None} &
+\Default{0} &
+LMCS model update control: 0:RA, 1:AI, 2:LDB/LDP.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & Random access: derive a new LMCS model at each IRAP.\\
+	1 & All intra: derive a new LMCS model at each intra slice.\\
+	2 & Low delay: derive a new LMCS model every second. \\
+\end{tabular}
+\\
+
+\Option{LMCSAdpOption} &
+%\ShortOption{\None} &
+\Default{0} &
+Adaptive LMCS mapping derivation options: Options 1 to 4 are for experimental testing purposes and need to set parameter LMCSInitialCW.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & Automatic adaptive algorithm (default).\\
+	1 & Derives LMCS mapping with input LMCSInitialCW and enables LMCS for all slices. Uses a static LMCS mapping for low QP ($QP<=22$). \\
+	2 & Derives LMCS mapping with input LMCSInitialCW and enables LMCS only for slices in lowest temporal layer. \\
+	3 & In addition to 1, disables LMCS for intra slices. \\
+	4 & Derives LMCS mapping with input LMCSInitialCW and enables LMCS only for inter slices. \\
+\end{tabular}
+\\
+
+\Option{LMCSInitialCW} &
+%\ShortOption{\None} &
+\Default{0} &
+LMCS initial total codeword (valid values [$0 - 1023$]) to be used in LMCS mapping derivation when LMCSAdpOption is not equal to 0.
 \\
 
 \end{OptionTableNoShorthand}
@@ -2400,6 +2515,11 @@ Specifies the shift to apply to the SAO parameters. If negative, an estimate wil
 \Option{TransformSkipLog2MaxSize} &
 \Default{2} &
 Specifies the maximum TU size for which transform-skip can be used; the minimum value is 2. Version 1 and some Version 2 (RExt) profiles require this to be 2.
+\\
+
+\Option{BDPCM} &
+\Default{false} &
+When true, specifies the use of the BDPCM tool (for intra). Version 1 and some Version 2 (RExt) profiles require this to be false.
 \\
 
 \Option{ImplicitResidualDPCM} &

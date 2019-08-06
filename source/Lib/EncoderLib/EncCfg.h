@@ -202,6 +202,12 @@ protected:
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      m_noBDPCMConstraintFlag;
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_noJointCbCrConstraintFlag;
+#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -236,6 +242,9 @@ protected:
   int       m_numReorderPics[MAX_TLAYER];
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                    ///< QP offset for intra slice (integer)
   int       m_lambdaFromQPEnable;               ///< enable lambda derivation from QP
@@ -273,6 +282,9 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
+#if JVET_O0070_PROF
+  bool      m_PROF;
+#endif
   bool      m_BIO;
 
   bool      m_SMVD;
@@ -296,6 +308,9 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_JointCbCrMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -326,6 +341,9 @@ protected:
   bool      m_contentBasedFastQtbt;
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  unsigned  m_maxNumAlfAlternativesChroma;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
 
@@ -414,6 +432,9 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      m_useBDPCM;
+#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;
   bool      m_transformSkipRotationEnabledFlag;
   bool      m_transformSkipContextEnabledFlag;
@@ -426,9 +447,7 @@ protected:
   int*      m_aidQP;
   uint32_t      m_uiDeltaQpRD;
   bool      m_bFastDeltaQP;
-#if INCLUDE_ISP_CFG_FLAG
   bool      m_ISP;
-#endif
   bool      m_useFastISP;
 
   bool      m_bUseConstrainedIntraPred;
@@ -549,6 +568,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
+#endif
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
   int       m_TMVPModeId;
@@ -696,6 +718,14 @@ public:
   void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }
   bool      getNoTransformSkipConstraintFlag() const { return m_noTransformSkipConstraintFlag; }
   void      setNoTransformSkipConstraintFlag(bool bVal) { m_noTransformSkipConstraintFlag = bVal; }
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      getNoBDPCMConstraintFlag() const { return m_noBDPCMConstraintFlag; }
+  void      setNoBDPCMConstraintFlag(bool bVal) { m_noBDPCMConstraintFlag = bVal; }
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
+  void      setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
+#endif
   bool      getNoQpDeltaConstraintFlag() const { return m_bNoQpDeltaConstraintFlag; }
   void      setNoQpDeltaConstraintFlag(bool bVal) { m_bNoQpDeltaConstraintFlag = bVal; }
   bool      getNoDepQuantConstraintFlag() const { return m_bNoDepQuantConstraintFlag; }
@@ -767,6 +797,10 @@ public:
   void      setIntraQPOffset                ( int   i )         { m_intraQPOffset = i; }
   void      setLambdaFromQPEnable           ( bool  b )         { m_lambdaFromQPEnable = b; }
 #endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  void      setChromaQpMappingTableParams   (const ChromaQpMappingTableParams &params) { m_chromaQpMappingTableParams = params; }
+#endif
+
   void      setPad                          ( int*  iPad                   )      { for ( int i = 0; i < 2; i++ ) m_aiPad[i] = iPad[i]; }
 
   int       getMaxRefPicNum                 ()                              { return m_iMaxRefPicNum;           }
@@ -805,6 +839,10 @@ public:
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
+#if JVET_O0070_PROF
+  void      setPROF                         (bool b)         { m_PROF = b; }
+  bool      getPROF                         ()         const { return m_PROF; }
+#endif
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
 
@@ -862,6 +900,10 @@ public:
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  void      setJointCbCr                    ( bool b )       { m_JointCbCrMode = b; }
+  bool      getJointCbCr                    ()         const { return m_JointCbCrMode; }
+#endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
   void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }
@@ -893,10 +935,8 @@ public:
   unsigned  getVirtualBoundariesPosX        ( unsigned idx ) const { return m_virtualBoundariesPosX[idx]; }
   void      setVirtualBoundariesPosY        ( unsigned u, unsigned idx ) { m_virtualBoundariesPosY[idx] = u; }
   unsigned  getVirtualBoundariesPosY        ( unsigned idx ) const { return m_virtualBoundariesPosY[idx]; }
-#if INCLUDE_ISP_CFG_FLAG
   void      setUseISP                       ( bool b )       { m_ISP = b; }
   bool      getUseISP                       ()         const { return m_ISP; }
-#endif
   void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
   bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
   void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }
@@ -932,6 +972,10 @@ public:
   bool      getUseNonLinearAlfLuma          () const         { return m_useNonLinearAlfLuma; }
   void      setUseNonLinearAlfChroma        ( bool b )       { m_useNonLinearAlfChroma = b; }
   bool      getUseNonLinearAlfChroma        () const         { return m_useNonLinearAlfChroma; }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  void      setMaxNumAlfAlternativesChroma  ( uint32_t u )   { m_maxNumAlfAlternativesChroma = u; }
+  uint32_t  getMaxNumAlfAlternativesChroma  () const         { return m_maxNumAlfAlternativesChroma; }
+#endif
   void      setUseMIP                       ( bool b )       { m_MIP = b; }
   bool      getUseMIP                       () const         { return m_MIP; }
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }
@@ -1144,6 +1188,14 @@ public:
   void setTransformSkipRotationEnabledFlag             (const bool value)  { m_transformSkipRotationEnabledFlag = value; }
   bool getTransformSkipContextEnabledFlag              ()            const { return m_transformSkipContextEnabledFlag;  }
   void setTransformSkipContextEnabledFlag              (const bool value)  { m_transformSkipContextEnabledFlag = value; }
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool getUseBDPCM                                     ()         { return m_useBDPCM; }
+  void setUseBDPCM                                     ( bool b ) { m_useBDPCM  = b;   }
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool getUseJointCbCr                                 ()         { return m_JointCbCrMode; }
+  void setUseJointCbCr                                 (bool b)   { m_JointCbCrMode = b; }
+#endif
   bool getPersistentRiceAdaptationEnabledFlag          ()                 const { return m_persistentRiceAdaptationEnabledFlag;  }
   void setPersistentRiceAdaptationEnabledFlag          (const bool value)       { m_persistentRiceAdaptationEnabledFlag = value; }
   bool getCabacBypassAlignmentEnabledFlag              ()       const      { return m_cabacBypassAlignmentEnabledFlag;  }
@@ -1385,6 +1437,10 @@ public:
   uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
   void         setMaxNumTriangleCand             ( uint32_t u )      { m_maxNumTriangleCand = u;    }
   uint32_t     getMaxNumTriangleCand             ()                  { return m_maxNumTriangleCand; }
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  void         setMaxNumIBCMergeCand             ( uint32_t u )      { m_maxNumIBCMergeCand = u; }
+  uint32_t     getMaxNumIBCMergeCand             ()                  { return m_maxNumIBCMergeCand; }
+#endif
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }

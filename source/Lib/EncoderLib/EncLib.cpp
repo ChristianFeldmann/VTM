@@ -867,6 +867,12 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  cinfo->setNoBDPCMConstraintFlag(m_noBDPCMConstraintFlag);
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  cinfo->setNoJointCbCrConstraintFlag(m_noJointCbCrConstraintFlag);
+#endif
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -901,6 +907,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
+#if JVET_O0070_PROF
+  sps.setUsePROF               ( m_PROF );
+#endif
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
@@ -909,7 +918,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseSBT                             ( m_SBT );
   if( sps.getUseSBT() )
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    sps.setMaxSbtSize                       ( std::min((int)(1 << m_log2MaxTbSize), m_iSourceWidth >= 1920 ? 64 : 32) );
+#else
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
+#endif
   }
   sps.setUseSMVD                ( m_SMVD );
   sps.setUseGBi                ( m_GBi );
@@ -941,9 +954,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
-#if INCLUDE_ISP_CFG_FLAG
   sps.setUseISP                             ( m_ISP );
-#endif
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
   sps.setUseMIP                ( m_MIP );
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
@@ -960,6 +971,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
 
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+  sps.setBDPCMEnabledFlag(m_useBDPCM);
+#endif
+
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
 #if MAX_TB_SIZE_SIGNALLING
@@ -970,11 +986,21 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_O0919_TS_MIN_QP
+    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 
-  sps.setSAOEnabledFlag( m_bUseSAO );
+#if JVET_O0244_DELTA_POC
+  sps.setUseWP( m_useWeightedPred );
+  sps.setUseWPBiPred( m_useWeightedBiPred );
+#endif
 
+  sps.setSAOEnabledFlag( m_bUseSAO );
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  sps.setJointCbCrEnabledFlag( m_JointCbCrMode );
+#endif
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );
 
@@ -1018,6 +1044,10 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setLtRefPicPocLsbSps(k, 0);
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  sps.setChromaQpMappingTableFromParams(m_chromaQpMappingTableParams, sps.getQpBDOffset(CHANNEL_TYPE_CHROMA));
+  sps.derivedChromaQPMappingTables();
+#endif
 
 #if U0132_TARGET_BITS_SATURATION
   if( getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() || getCpbSaturationEnabled() )
@@ -1113,7 +1143,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
     pps.getPpsRangeExtension().clearChromaQpOffsetList();
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6, 6);
+#else
     pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
+#endif
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
@@ -1262,7 +1296,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   pps.setUseTransformSkip( m_useTransformSkip );
+#endif
   pps.getPpsRangeExtension().setLog2MaxTransformSkipBlockSize( m_log2MaxTransformSkipBlockSize  );
 
 

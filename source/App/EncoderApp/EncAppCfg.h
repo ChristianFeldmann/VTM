@@ -143,6 +143,12 @@ protected:
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      m_noBDPCMConstraintFlag;
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_noJointCbCrConstraintFlag;
+#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -180,15 +186,16 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  bool      m_useBDPCM;
+#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
-#if INCLUDE_ISP_CFG_FLAG
   bool      m_ISP;
-#endif
   bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
 
   // coding quality
@@ -198,6 +205,10 @@ protected:
   double    m_fQP;                                            ///< QP value of key-picture (floating point)
 #endif
   int       m_iQP;                                            ///< QP value of key-picture (integer)
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  bool      m_useIdentityTableForNon420Chroma;
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)
   bool      m_lambdaFromQPEnable;                             ///< enable flag for QP:lambda fix
@@ -249,6 +260,9 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
+#if JVET_O0070_PROF
+  bool      m_PROF;
+#endif
   bool      m_BIO;
   int       m_LMChroma;
   bool      m_cclmCollocatedChromaFlag;
@@ -279,6 +293,9 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_JointCbCrMode;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -300,6 +317,11 @@ protected:
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
+#if JVET_O0432_LMCS_ENCODER
+  int       m_updateCtrl;
+  int       m_adpOption;
+  uint32_t  m_initialCW;
+#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
@@ -315,6 +337,9 @@ protected:
   bool      m_contentBasedFastQtbt;
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  unsigned  m_maxNumAlfAlternativesChroma;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
 
@@ -500,6 +525,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
+#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

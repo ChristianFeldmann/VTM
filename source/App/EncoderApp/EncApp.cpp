@@ -133,6 +133,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
+#endif 
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
@@ -164,6 +170,10 @@ void EncApp::xInitLibCfg()
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   m_cEncLib.setIntraQPOffset                                     ( m_intraQPOffset );
   m_cEncLib.setLambdaFromQPEnable                                ( m_lambdaFromQPEnable );
+#endif
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  m_cEncLib.setChromaQpMappingTableParams                         (m_chromaQpMappingTableParams);
+
 #endif
   m_cEncLib.setPad                                               ( m_aiPad );
 
@@ -251,6 +261,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSubPuMvpMode                                      ( m_SubPuMvpMode );
   m_cEncLib.setAffine                                            ( m_Affine );
   m_cEncLib.setAffineType                                        ( m_AffineType );
+#if JVET_O0070_PROF
+  m_cEncLib.setPROF                                              ( m_PROF );
+#endif
   m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
@@ -287,6 +300,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMMVD                                              ( m_MMVD );
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
   m_cEncLib.setRDPCM                                              ( m_RdpcmMode );
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  m_cEncLib.setJointCbCr                                         ( m_JointCbCrMode );
+#endif
   m_cEncLib.setIBCMode                                           ( m_IBCMode );
   m_cEncLib.setIBCLocalSearchRangeX                              ( m_IBCLocalSearchRangeX );
   m_cEncLib.setIBCLocalSearchRangeY                              ( m_IBCLocalSearchRangeY );
@@ -333,6 +349,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseContentBasedFastQtbt                           ( m_contentBasedFastQtbt );
   m_cEncLib.setUseNonLinearAlfLuma                               ( m_useNonLinearAlfLuma );
   m_cEncLib.setUseNonLinearAlfChroma                             ( m_useNonLinearAlfChroma );
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  m_cEncLib.setMaxNumAlfAlternativesChroma                       ( m_maxNumAlfAlternativesChroma );
+#endif
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
@@ -341,6 +360,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] );
   m_cEncLib.setUseTransformSkip                                  ( m_useTransformSkip      );
   m_cEncLib.setUseTransformSkipFast                              ( m_useTransformSkipFast  );
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  m_cEncLib.setUseBDPCM                                          ( m_useBDPCM );
+#endif
   m_cEncLib.setTransformSkipRotationEnabledFlag                  ( m_transformSkipRotationEnabledFlag );
   m_cEncLib.setTransformSkipContextEnabledFlag                   ( m_transformSkipContextEnabledFlag   );
   m_cEncLib.setPersistentRiceAdaptationEnabledFlag               ( m_persistentRiceAdaptationEnabledFlag );
@@ -356,9 +378,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
   m_cEncLib.setPCMLog2MinSize                                    ( m_uiPCMLog2MinSize);
   m_cEncLib.setUsePCM                                            ( m_usePCM );
-#if INCLUDE_ISP_CFG_FLAG
   m_cEncLib.setUseISP                                            ( m_ISP );
-#endif
   m_cEncLib.setUseFastISP                                        ( m_useFastISP );
 
   // set internal bit-depth and constants
@@ -373,6 +393,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
   m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  m_cEncLib.setMaxNumIBCMergeCand                                ( m_maxNumIBCMergeCand );
+#endif
 
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );

@@ -209,6 +209,9 @@ public:
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;
   static const CtxSet   IntraLumaPlanarFlag;
+#if JVET_O1153_INTRA_CHROMAMODE_CODING
+  static const CtxSet   CclmModeFlag;
+#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
   static const CtxSet   MipMode;
@@ -218,6 +221,9 @@ public:
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
+#if JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG
+  static const CtxSet   SubblockMergeFlag;
+#endif
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;
@@ -235,6 +241,9 @@ public:
   static const CtxSet   TsSigFlag;
   static const CtxSet   TsParFlag;
   static const CtxSet   TsGtxFlag;
+#if JVET_O0122_TS_SIGN_LEVEL
+  static const CtxSet   TsLrg1Flag;
+#endif
   static const CtxSet   TsResidualSign;
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
@@ -254,9 +263,14 @@ public:
   static const CtxSet   ImvFlag;
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  static const CtxSet   ctbAlfAlternative;
+#endif
   static const CtxSet   AlfUseLatestFilt;
   static const CtxSet   AlfUseTemporalFilt;
+#if !JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   static const CtxSet   Alf;
+#endif
   static const CtxSet   MHIntraFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
@@ -268,6 +282,9 @@ public:
   // NOTE: The contained CtxSet's should directly follow each other in the initalization list;
   //       otherwise, you will copy more elements than you want !!!
   static const CtxSet   Sao;
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  static const CtxSet   Alf;
+#endif
 
 public:
   static const std::vector<uint8_t>&  getInitTable( unsigned initId );

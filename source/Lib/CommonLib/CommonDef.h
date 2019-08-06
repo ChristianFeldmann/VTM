@@ -151,7 +151,10 @@ static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                6; ///< MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
-
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+static const int IBC_MRG_MAX_NUM_CANDS =                            6; ///< IBC MERGE
+#endif
+  
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
 static const int ADAPT_SR_SCALE =                                   1; ///< division factor for adaptive search range
@@ -176,8 +179,22 @@ static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
 
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
+#endif
+static const int MAX_NUM_ALF_CLASSES         =                     25;
+static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
+static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
+static const int MAX_ALF_FILTER_LENGTH       =                      7;
+static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
+static const int MAX_ALF_PADDING_SIZE        =                      4;
+
 static const int ALF_FIXED_FILTER_NUM        =                     64;
+#if JVET_O_MAX_NUM_ALF_APS_8
+static const int ALF_CTB_MAX_NUM_APS         =                      8;
+#else
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
+#endif
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
 
@@ -212,6 +229,10 @@ static const int RVM_VCEGAM10_M =                                   4;
 static const int MAX_REF_LINE_IDX =                                 3; //highest refLine offset in the list
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
+
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
+#endif
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
@@ -249,8 +270,13 @@ static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); /
 
 static const int MAX_LFNST_COEF_NUM =                              16;
 
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+static const int LFNST_LAST_SIG_LUMA =                              1;
+static const int LFNST_LAST_SIG_CHROMA =                            1;
+#else
 static const int LFNST_SIG_NZ_LUMA =                                1;
 static const int LFNST_SIG_NZ_CHROMA =                              1;
+#endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
 
@@ -277,6 +303,11 @@ static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
 
 static const int MAX_QP_OFFSET_LIST_SIZE =                          6; ///< Maximum size of QP offset list is 6 entries
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+static const int MAX_NUM_CQP_MAPPING_TABLES =                       3; ///< Maximum number of chroma QP mapping tables (Cb, Cr and joint Cb-Cr)
+static const int MIN_QP_VALUE_FOR_16_BIT   =                      -48; ////< Minimum value for QP (-6*(bitdepth - 8) ) for bit depth 16 ; actual minimum QP value is bit depth dependent
+static const int MAX_NUM_QP_VALUES =    MAX_QP + 1 - MIN_QP_VALUE_FOR_16_BIT; ////< Maximum number of QP values possible - bit depth dependent
+#endif
 
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.
@@ -295,7 +326,12 @@ static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
+#if JVET_O0545_MAX_TB_SIGNALLING
+static const int MAX_NUM_TUS =                                     16; ///< Maximum number of TUs within one CU. When max TB size is 32x32, up to 16 TUs within one CU (128x128) is supported
+static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         3;
+#else
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
+#endif
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
@@ -305,7 +341,9 @@ static const int SCALING_LIST_REM_NUM =                             6;
 
 static const int QUANT_SHIFT =                                     14; ///< Q(4) = 2^14
 static const int IQUANT_SHIFT =                                     6;
-static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
+
+static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
+static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
 
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
 
@@ -321,7 +359,6 @@ static const int LAST_SIGNIFICANT_GROUPS =                         14;
 static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
-
 
 static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
 static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
@@ -343,6 +380,10 @@ static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max 
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
 
+#if JVET_O0070_PROF
+static const int PROF_BORDER_EXT_W            =                     1;
+static const int PROF_BORDER_EXT_H            =                     1;
+#endif
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
@@ -366,7 +407,9 @@ static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
 static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mode
+#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -447,6 +490,11 @@ static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1)
 static constexpr int MV_BITS =                                   18;
 static constexpr int MV_MAX =              (1 << (MV_BITS - 1)) - 1;
 static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
+
+#if JVET_O0567_MVDRange_Constraint
+static const int MVD_MAX =                            (1 << 17) - 1;
+static const int MVD_MIN =                               -(1 << 17);
+#endif
 
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;

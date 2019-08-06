@@ -1330,6 +1330,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     {
       const int  qp       = std::max( qpLoop, lowestQP );
       const bool lossless = useLossless && qpLoop == minQP;
+#if JVET_O0057_ALTHPELIF
+      if (m_pcEncCfg->getIMV())
+      {
+        m_ComprCUCtxList.back().testModes.push_back({ ETM_INTER_ME,  EncTestModeOpts( 4 << ETO_IMV_SHIFT ), qp, lossless });
+      }
+#endif
       if( m_pcEncCfg->getIMV() || m_pcEncCfg->getUseAffineAmvr() )
       {
         int imv = m_pcEncCfg->getIMV4PelFast() ? 3 : 2;

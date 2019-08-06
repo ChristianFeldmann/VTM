@@ -78,9 +78,16 @@ namespace CU
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
+#endif
   uint32_t getNumNonZeroCoeffNonTsCorner8x8( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
-
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+  bool  isPredRegDiffFromTB(const CodingUnit& cu, const ComponentID compID);
+  bool  isFirstTBInPredReg(const CodingUnit& cu, const ComponentID compID, const CompArea &area);
+  bool  isMinWidthPredEnabledForBlkSize(const int w, const int h);
+  void  adjustPredArea(CompArea &area);
+#endif
   bool  isGBiIdxCoded                 (const CodingUnit& cu);
   uint8_t getValidGbiIdx              (const CodingUnit& cu);
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
@@ -93,8 +100,8 @@ namespace CU
   PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
   bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
-  ISPType   canUseISPSplit            ( const CodingUnit &cu,                         const ComponentID compID );
-  ISPType   canUseISPSplit            ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
+  bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
+  bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
 
   PUTraverser traversePUs             (      CodingUnit& cu);
@@ -122,7 +129,7 @@ namespace CU
 // PU tools
 namespace PU
 {
-  int  getLMSymbolList(const PredictionUnit &pu, int *pModeList);
+  int  getLMSymbolList(const PredictionUnit &pu, int *modeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
@@ -131,6 +138,9 @@ namespace PU
   AvailableInfo getAvailableInfoLuma  (const PredictionUnit &pu);
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
+#if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
+  uint32_t getCoLocatedIntraLumaMode      (const PredictionUnit &pu);
+#endif
   int getWideAngIntraMode             ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,
@@ -164,7 +174,11 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
+#if JVET_O0366_AFFINE_BCW
+  void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int8_t gbiIdx, int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
+#else
   void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], int8_t neighGbi[4], bool isAvailable[4], int verIdx[4], int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
+#endif
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList
@@ -190,14 +204,18 @@ namespace PU
   bool isAddNeighborMv  (const Mv& currMv, Mv* neighborMvs, int numNeighborMv);
   void getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred);
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
+#if !JVET_O1170_IBC_VIRTUAL_BUFFER
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
+#endif  
   bool checkDMVRCondition(const PredictionUnit& pu);
 }
 
 // TU tools
 namespace TU
 {
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffsNonTS       (const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true);
+#endif
   uint32_t getNumNonZeroCoeffsNonTSCorner8x8( const TransformUnit &tu, const bool bLuma = true, const bool bChroma = true );
   bool isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID);
   bool getCbf                         (const TransformUnit &tu, const ComponentID &compID);

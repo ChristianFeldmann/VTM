@@ -1430,6 +1430,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   int        endLfnstIdx         = sps.getUseLFNST() ? maxLfnstIdx : 0;
 
   int grpNumMax = sps.getUseLFNST() ? 4 : 1;
+  m_pcIntraSearch->invalidateBestModeCost();
   for( int trGrpIdx = 0; trGrpIdx < grpNumMax; trGrpIdx++ )
   {
     const uint8_t startMtsFlag = trGrpIdx > 0;

@@ -286,7 +286,6 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   int shift4 = std::max<int>(4, (bitDepth - 8));
   int shift5 = std::max<int>(1, (bitDepth - 11));
 
-  __m128i zero = _mm_setzero_si128();
   __m128i sumAbsGXTmp = _mm_setzero_si128();
   __m128i sumDIXTmp = _mm_setzero_si128();
   __m128i sumAbsGYTmp = _mm_setzero_si128();
@@ -306,13 +305,9 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
     __m128i packTempY = _mm_srai_epi16(_mm_add_epi16(loadGradY0, loadGradY1), shift5);
     __m128i gX = _mm_abs_epi16(packTempX);
     __m128i gY = _mm_abs_epi16(packTempY);
-    __m128i maskXlt = _mm_cmplt_epi16(packTempX, zero);
-    __m128i maskXgt = _mm_cmpgt_epi16(packTempX, zero);
-    __m128i maskYlt = _mm_cmplt_epi16(packTempY, zero);
-    __m128i maskYgt = _mm_cmpgt_epi16(packTempY, zero);
-    __m128i dIX = _mm_or_si128(_mm_and_si128(maskXgt, subTemp1), _mm_and_si128(maskXlt, _mm_sub_epi16(zero, subTemp1)));
-    __m128i dIY = _mm_or_si128(_mm_and_si128(maskYgt, subTemp1), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, subTemp1)));
-    __m128i signGY_GX = _mm_or_si128(_mm_and_si128(maskYgt, packTempX), _mm_and_si128(maskYlt, _mm_sub_epi16(zero, packTempX)));
+    __m128i dIX       = _mm_sign_epi16(subTemp1,  packTempX );
+    __m128i dIY       = _mm_sign_epi16(subTemp1,  packTempY );
+    __m128i signGY_GX = _mm_sign_epi16(packTempX, packTempY );
 
     sumAbsGXTmp = _mm_add_epi16(sumAbsGXTmp, gX);
     sumDIXTmp = _mm_add_epi16(sumDIXTmp, dIX);

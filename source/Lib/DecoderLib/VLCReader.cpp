@@ -2897,6 +2897,9 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
 #else
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( kMinTab[alfShape.golombIdx[i]] );
 #endif
+      CHECK( isChroma &&
+             ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -127 )
+             , "AlfCoeffC shall be in the range of −127 to 127, inclusive" );
     }
   }
 
@@ -2940,6 +2943,8 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
         }
       }
 #endif
+      CHECK( std::any_of( recCoeff,  recCoeff + numFilters * MAX_NUM_ALF_LUMA_COEFF, [](short c) {return (c <-128 || c > 127);} )
+             , "AlfCoeffL shall be in the range of −128 to 127, inclusive" );
     }
 #endif
 

@@ -297,8 +297,8 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       x = cu.block(COMPONENT_Cb).x << m_shiftHor;
       y = cu.block(COMPONENT_Cb).y << m_shiftVer;
     }
-    m_ctuXLumaSamples = cu.slice->getSPS()->getMaxCUWidth()*(x / cu.slice->getSPS()->getMaxCUWidth());
-    m_ctuYLumaSamples = cu.slice->getSPS()->getMaxCUWidth()*(y / cu.slice->getSPS()->getMaxCUWidth());
+    m_ctuXLumaSamples = x & ~(cu.slice->getSPS()->getMaxCUWidth()  - 1);
+    m_ctuYLumaSamples = y & ~(cu.slice->getSPS()->getMaxCUHeight() - 1);
   }
 
   for( auto &currTU : CU::traverseTUs( cu ) )

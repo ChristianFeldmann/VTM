@@ -2369,7 +2369,7 @@ uint64_t InterPrediction::xDMVRCost(int bitDepth, Pel* pOrg, uint32_t refStride,
   cDistParam.useMR = false;
   m_pcRdCost->setDistParam(cDistParam, pOrg, pRef, orgStride, refStride, bitDepth, COMPONENT_Y, width, height, 1);
   uint64_t uiCost = cDistParam.distFunc(cDistParam);
-  return uiCost;
+  return uiCost>>1;
 }
 
 void xDMVRSubPixelErrorSurface(bool notZeroCost, int16_t *totalDeltaMV, int16_t *deltaMV, uint64_t *pSADsArray)
@@ -2489,7 +2489,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
   int bd = pu.cs->slice->getClpRngs().comp[COMPONENT_Y].bd;
 
 #if JVET_O0055_INT_DMVR_DIS_BDOF
-  int            bioEnabledThres = 8 * (dy >> 1) * dx;
+  int            bioEnabledThres = 2 * dy * dx;
   bool           bioAppliedType[MAX_NUM_SUBCU_DMVR];
 #endif
   {
@@ -2600,7 +2600,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 #if JVET_O0590_REDUCE_DMVR_ORIG_MV_COST
             minCost -= (minCost >>2);            
 #endif
-            if (minCost < ((4 * dx * (dy >> 1/*for alternate line*/))))
+            if (minCost < (dx * dy))
             {
               notZeroCost = false;
               break;

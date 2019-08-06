@@ -775,7 +775,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     }
     else //mtsUsage = 2 (here we potentially reduce the number of modes that will be full-RD checked)
     {
-      if( m_pcEncCfg->getUseFastLFNST() || !cu.slice->isIntra() )
+      if( ( m_pcEncCfg->getUseFastLFNST() || !cu.slice->isIntra() ) && m_bestModeCostValid[ lfnstIdx ] )
       {
         numModesForFullRD = 0;
 
@@ -1143,6 +1143,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           if( sps.getUseLFNST() && mtsUsageFlag == 1 && !cu.ispMode )
           {
             m_bestModeCostStore[ lfnstIdx ] = csBest->cost; //cs.cost;
+            m_bestModeCostValid[ lfnstIdx ] = true;
           }
           if( csBest->cost < bestCurrentCost )
           {

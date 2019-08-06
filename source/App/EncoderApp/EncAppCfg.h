@@ -146,6 +146,9 @@ protected:
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_noBDPCMConstraintFlag;
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_noJointCbCrConstraintFlag;
+#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -202,6 +205,10 @@ protected:
   double    m_fQP;                                            ///< QP value of key-picture (floating point)
 #endif
   int       m_iQP;                                            ///< QP value of key-picture (integer)
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  bool      m_useIdentityTableForNon420Chroma;
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)
   bool      m_lambdaFromQPEnable;                             ///< enable flag for QP:lambda fix
@@ -288,6 +295,9 @@ protected:
   bool      m_RdpcmMode;
 #if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
+#endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  bool      m_JointCbCrMode;
 #endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
@@ -518,6 +528,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
+#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

@@ -218,6 +218,36 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
 #endif
 }
 
+#if JVET_O0304_SIMPLIFIED_BDOF
+void calcBIOSumsCore(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
+{
+  int shift4 = std::max<int>(4, (bitDepth - 8));
+  int shift5 = std::max<int>(1, (bitDepth - 11));
+
+  for (int y = 0; y < 6; y++)
+  {
+    for (int x = 0; x < 6; x++)
+    {
+      int tmpGX = (gradX0[x] + gradX1[x]) >> shift5;
+      int tmpGY = (gradY0[x] + gradY1[x]) >> shift5;
+      int tmpDI = (int)((srcY1Tmp[x] >> shift4) - (srcY0Tmp[x] >> shift4));
+      *sumAbsGX += (tmpGX < 0 ? -tmpGX : tmpGX);
+      *sumAbsGY += (tmpGY < 0 ? -tmpGY : tmpGY);
+      *sumDIX += (tmpGX < 0 ? -tmpDI : (tmpGX == 0 ? 0 : tmpDI));
+      *sumDIY += (tmpGY < 0 ? -tmpDI : (tmpGY == 0 ? 0 : tmpDI));
+      *sumSignGY_GX += (tmpGY < 0 ? -tmpGX : (tmpGY == 0 ? 0 : tmpGX));
+
+    }
+    srcY1Tmp += src1Stride;
+    srcY0Tmp += src0Stride;
+    gradX0 += widthG;
+    gradX1 += widthG;
+    gradY0 += widthG;
+    gradY1 += widthG;
+  }
+}
+#endif
+
 void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
   int shift4 = std::max<int>(4, (bitDepth - 8));
@@ -360,8 +390,12 @@ PelBufferOps::PelBufferOps()
 
   addBIOAvg4      = addBIOAvgCore;
   bioGradFilter   = gradFilterCore;
-  calcBIOPar      = calcBIOParCore;
+#if !JVET_O0304_SIMPLIFIED_BDOF
+  calcBIOPar = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
+#else
+  calcBIOSums = calcBIOSumsCore;
+#endif
 
   copyBuffer = copyBufferCore;
   padding = paddingCore;

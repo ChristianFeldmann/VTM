@@ -574,8 +574,15 @@ bool EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
 
 }
 
+#if JVET_O0502_ISP_CLEANUP
+void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Partitioner& partitioner, double maxCostAllowed )
+#else
 void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner )
+#endif
 {
+#if JVET_O0502_ISP_CLEANUP
+  CHECK(maxCostAllowed < 0, "Wrong value of maxCostAllowed!");
+#endif
   if (m_shareState == NO_SHARE)
   {
     tempCS->sharedBndPos = tempCS->area.Y().lumaPos();
@@ -706,6 +713,9 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   }
 #endif
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
+#if JVET_O0502_ISP_CLEANUP
+    currTestMode.maxCostAllowed = maxCostAllowed;
+#endif
 
     if (pps.getUseDQP() && CS::isDualITree(*tempCS) && isChroma(partitioner.chType))
     {
@@ -1355,7 +1365,13 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #if JVET_O0070_PROF
       tempSubCS->bestParent = bestSubCS->bestParent = bestCS;
 #endif
+#if JVET_O0502_ISP_CLEANUP
+      double newMaxCostAllowed = isLuma(partitioner.chType) ? std::min(encTestMode.maxCostAllowed, bestCS->cost - m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist)) : MAX_DOUBLE;
+      newMaxCostAllowed = std::max(0.0, newMaxCostAllowed);
+      xCompressCU(tempSubCS, bestSubCS, partitioner, newMaxCostAllowed);
+#else
       xCompressCU( tempSubCS, bestSubCS, partitioner );
+#endif
 #if JVET_O0070_PROF
       tempSubCS->bestParent = bestSubCS->bestParent = nullptr;
 #endif
@@ -1577,8 +1593,17 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           bool validCandRet = false;
           if( isLuma( partitioner.chType ) )
           {
+#if JVET_O0502_ISP_CLEANUP
+            //ISP uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary subpartitions
+            double bestCostSoFar = CS::isDualITree(*tempCS) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+            if (CS::isDualITree(*tempCS) && encTestMode.maxCostAllowed < bestCostSoFar)
+            {
+              bestCostSoFar = encTestMode.maxCostAllowed;
+            }
+#else
             //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines
             const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+#endif
             validCandRet = m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[ trGrpIdx ], endMTSIdx[ trGrpIdx ], ( trGrpIdx > 0 ) );
             if( sps.getUseLFNST() && ( !validCandRet || ( cu.ispMode && cu.firstTU->cbf[ COMPONENT_Y ] == 0 ) ) )
             {
@@ -1667,12 +1692,10 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-          const bool skipLfnst = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
-                              ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
-                              ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
-          if( lfnstIdx && skipLfnst )
+          if( lfnstIdx && !cuCtx.lfnstLastScanPos )
           {
-            if( cuCtx.lastScanPos[ COMPONENT_Y ] > -1 || cuCtx.lastScanPos[ COMPONENT_Cb ] > -1 || cuCtx.lastScanPos[ COMPONENT_Cr ] > -1 )
+            bool cbfAtZeroDepth = CS::isDualITree( *tempCS ) ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+            if( cbfAtZeroDepth )
             {
               tempCS->cost = MAX_DOUBLE;
             }
@@ -1739,13 +1762,22 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               }
             }
 
+#if JVET_O0502_ISP_CLEANUP
+            //we decide to skip the non-DCT-II transforms and LFNST according to the ISP results
+            if ((endMtsFlag > 0 || endLfnstIdx > 0) && cu.ispMode && !mtsFlag && !lfnstIdx && tempCS->slice->isIntra() && m_pcEncCfg->getUseFastISP())
+#else
             //we decide to skip the second emt pass or not according to the ISP results
             if( considerMtsSecondPass && cu.ispMode && !mtsFlag && tempCS->slice->isIntra() )
+#endif
             {
               double bestCostDct2NoIsp = m_modeCtrl->getMtsFirstPassNoIspCost();
               CHECKD( bestCostDct2NoIsp <= bestIspCost, "wrong cost!" );
+#if JVET_O0502_ISP_CLEANUP
+              double threshold = 1.4;
+#else
               double nSamples  = ( double ) ( cu.lwidth() << g_aucLog2[ cu.lheight() ] );
               double threshold = 1 + 1.4 / sqrt( nSamples );
+#endif
 
               double lfnstThreshold = 1.01 * threshold;
               if( bestCostDct2NoIsp > bestIspCost*lfnstThreshold )

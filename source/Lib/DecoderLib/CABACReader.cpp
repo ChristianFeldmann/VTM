@@ -1362,7 +1362,11 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
   for( int k = 0; k < numBlocks; k++ )
   {
     CHECK(numBlocks != 1, "not supported yet");
+#if JVET_O0502_ISP_CLEANUP
+    if ( cu.firstPU->multiRefIdx )
+#else
     if( cu.firstPU->multiRefIdx || ( cu.ispMode && isLuma( cu.chType ) ) )
+#endif
     {
       mpmFlag[0] = true;
     }
@@ -1584,9 +1588,7 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-  cuCtx.lastScanPos[COMPONENT_Y ] = -1;
-  cuCtx.lastScanPos[COMPONENT_Cb] = -1;
-  cuCtx.lastScanPos[COMPONENT_Cr] = -1;
+  cuCtx.lfnstLastScanPos = false;
 #endif
 
   ChromaCbfs chromaCbfs;
@@ -2399,7 +2401,7 @@ void CABACReader::merge_data( PredictionUnit& pu )
       return;
     }
 
-    const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB();
+    const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
     const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
     if (pu.cu->lwidth() * pu.cu->lheight() >= 64
       && (triangleAvailable || ciipAvailable))
@@ -2533,6 +2535,12 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     return;
   }
 
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  if (pu.cu->predMode == MODE_IBC)
+  {
+    numCandminus1 = int(pu.cs->slice->getMaxNumIBCMergeCand()) - 1;
+  }
+#endif
   if( numCandminus1 > 0 )
   {
     if( m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )
@@ -3298,6 +3306,13 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
 #if JVET_O0105_ICT
 void CABACReader::joint_cb_cr( TransformUnit& tu, const int cbfMask )
 {
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  if ( !tu.cu->slice->getSPS()->getJointCbCrEnabledFlag() )
+  {
+    return;
+  }
+#endif
+
 #if JVET_O0543_ICT_ICU_ONLY
   if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )
 #else
@@ -3378,7 +3393,8 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID )
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   if( tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
   {
-    cuCtx.lastScanPos[compID] = cctx.scanPosLast();
+    const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
+    cuCtx.lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
   }
 #endif
   // parse subblocks
@@ -3546,24 +3562,20 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #else
     bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
 #endif
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    const bool skipLfnst            = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
-                                    ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
-                                    ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
-#else
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
     const int  nonZeroCoeffThr       = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
     nonZeroCoeffNonTs = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag ) > nonZeroCoeffThr;
 #endif
 #if JVET_O0368_LFNST_WITH_DCT2_ONLY
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    if( skipLfnst || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
 #else
     if (!nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 || isNonDCT2)
 #endif
 #else
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    if( skipLfnst || nonZeroCoeffNonTsCorner8x8 )
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 )
 #else
     if( !nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 )
 #endif

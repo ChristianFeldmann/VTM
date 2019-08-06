@@ -83,14 +83,14 @@ extern const uint8_t g_intraMode65to33AngMapping[NUM_INTRA_MODE];
 extern const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE];
 extern const uint8_t g_mapAngular33ToMip[3][35];
 extern const int     g_sortedMipMpms    [3][NUM_MPM_MIP];
-
+#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 // ====================================================================================================================
 // Luma QP to Chroma QP mapping
 // ====================================================================================================================
 static const int chromaQPMappingTableSize = (MAX_QP + 7);
 
 extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize];
-
+#endif
 
 // ====================================================================================================================
 // Scanning order & context mapping table

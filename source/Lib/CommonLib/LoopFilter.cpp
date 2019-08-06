@@ -1300,6 +1300,10 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const int chromaQPOffset = pps.getQpOffset( ComponentID( chromaIdx + 1 ) );
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+        int iQP = sps.getMappedChromaQpValue(ComponentID(chromaIdx + 1), ((cuP.qp + cuQ.qp + 1) >> 1));
+        iQP = Clip3(0, MAX_QP, iQP + chromaQPOffset);
+#else
         int iQP = ( ( cuP.qp + cuQ.qp + 1 ) >> 1 ) + chromaQPOffset;
         if (iQP >= chromaQPMappingTableSize)
         {
@@ -1316,6 +1320,7 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         {
           iQP = getScaledChromaQP(iQP, sps.getChromaFormatIdc());
         }
+#endif
 
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
 #if JVET_O0159_10BITTCTABLE_DEBLOCKING

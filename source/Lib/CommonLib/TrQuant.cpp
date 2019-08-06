@@ -1056,7 +1056,11 @@ void TrQuant::xQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffB
   m_quant->quant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
 }
 
+#if JVET_O0502_ISP_CLEANUP
+void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const QpParam& cQP, std::vector<TrMode>* trModes, const int maxCand )
+#else
 void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand, double* diagRatio, double* horVerRatio )
+#endif
 {
         CodingStructure &cs = *tu.cs;
   const CompArea &rect      = tu.blocks[compID];
@@ -1111,9 +1115,11 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
     it++;
   }
 
+#if !JVET_O0502_ISP_CLEANUP
   // it gets the distribution of the DCT-II coefficients energy, which will be useful to discard ISP tests
   CoeffBuf coeffsDCT( m_mtsCoeffs[0], rect );
   xGetCoeffEnergy( tu, compID, coeffsDCT, diagRatio, horVerRatio );
+#endif
   int numTests = 0;
   std::vector<TrCost>::iterator itC = trCosts.begin();
   const double fac   = facBB[g_aucLog2[std::max(width, height)]-2];
@@ -1128,7 +1134,11 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
   }
 }
 
+#if JVET_O0502_ISP_CLEANUP
+void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const QpParam& cQP, TCoeff& uiAbsSum, const Ctx& ctx, const bool loadTr )
+#else
 void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr, double* diagRatio, double* horVerRatio )
+#endif
 {
         CodingStructure &cs = *tu.cs;
   const SPS &sps            = *cs.sps;
@@ -1207,6 +1217,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
       }
       }
 
+#if !JVET_O0502_ISP_CLEANUP
       //we do this only with the DCT-II coefficients
       if( isLuma(compID) &&
         !loadTr && tu.mtsIdx == MTS_DCT2_DCT2
@@ -1215,6 +1226,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
         //it gets the distribution of the coefficients energy, which will be useful to discard ISP tests
         xGetCoeffEnergy( tu, compID, tempCoeff, diagRatio, horVerRatio );
       }
+#endif
 
       if( sps.getUseLFNST() )
       {
@@ -1233,6 +1245,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
   TU::setCbfAtDepth (tu, compID, tu.depth, uiAbsSum > 0);
 }
 
+#if !JVET_O0502_ISP_CLEANUP
 void TrQuant::xGetCoeffEnergy( TransformUnit &tu, const ComponentID &compID, const CoeffBuf& coeffs, double* diagRatio, double* horVerRatio )
 {
   if( nullptr == diagRatio || nullptr == horVerRatio ) return;
@@ -1266,6 +1279,7 @@ void TrQuant::xGetCoeffEnergy( TransformUnit &tu, const ComponentID &compID, con
     *diagRatio   = 0 == wdtE && 0 == hgtE && 0 == diaE ? 1 : double( diaE ) / double( wdtE + hgtE );
   }
 }
+#endif
 
 void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &mode)
 {

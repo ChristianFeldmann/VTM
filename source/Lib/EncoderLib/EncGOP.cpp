@@ -2092,7 +2092,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       // overwrite chroma qp offset for dual tree
       pcSlice->setSliceChromaQpDelta(COMPONENT_Cb, m_pcCfg->getChromaCbQpOffsetDualTree());
       pcSlice->setSliceChromaQpDelta(COMPONENT_Cr, m_pcCfg->getChromaCrQpOffsetDualTree());
-      pcSlice->setSliceChromaQpDelta(JOINT_CbCr,   m_pcCfg->getChromaCbCrQpOffsetDualTree());
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+      if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
+      {
+        pcSlice->setSliceChromaQpDelta(JOINT_CbCr, m_pcCfg->getChromaCbCrQpOffsetDualTree());
+      }
+#else
+      pcSlice->setSliceChromaQpDelta(JOINT_CbCr, m_pcCfg->getChromaCbCrQpOffsetDualTree());
+#endif
       m_pcSliceEncoder->setUpLambda(pcSlice, pcSlice->getLambdas()[0], pcSlice->getSliceQp());
     }
     if (pcSlice->getSPS()->getUseReshaper())
@@ -2494,7 +2501,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
       {
+#if JVET_O_MAX_NUM_ALF_APS_8
+        for (int apsId = 0; apsId < ALF_CTB_MAX_NUM_APS; apsId++)
+#else
         for (int apsId = 0; apsId < MAX_NUM_APS; apsId++)   //HD: shouldn't this be looping over slice_alf_aps_id_luma[ i ]? By looping over MAX_NUM_APS, it is possible unused ALF APS is written. Please check!
+#endif
         {
           ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
 
@@ -3410,6 +3421,18 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if (useLumaWPSNR)
     {
       msg(NOTICE, " [WY %6.4lf dB    WU %6.4lf dB    WV %6.4lf dB]", dPSNRWeighted[COMPONENT_Y], dPSNRWeighted[COMPONENT_Cb], dPSNRWeighted[COMPONENT_Cr]);
+
+      if (m_pcEncLib->getPrintHexPsnr())
+      {
+        uint64_t xPsnrWeighted[MAX_NUM_COMPONENT];
+        for (int i = 0; i < MAX_NUM_COMPONENT; i++)
+        {
+          copy(reinterpret_cast<uint8_t *>(&dPSNRWeighted[i]),
+               reinterpret_cast<uint8_t *>(&dPSNRWeighted[i]) + sizeof(dPSNRWeighted[i]),
+               reinterpret_cast<uint8_t *>(&xPsnrWeighted[i]));
+        }
+        msg(NOTICE, " [xWY %16" PRIx64 " xWU %16" PRIx64 " xWV %16" PRIx64 "]", xPsnrWeighted[COMPONENT_Y], xPsnrWeighted[COMPONENT_Cb], xPsnrWeighted[COMPONENT_Cr]);
+      }
     }
 #endif
     msg( NOTICE, " [ET %5.0f ]", dEncTime );

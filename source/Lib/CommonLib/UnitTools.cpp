@@ -289,6 +289,7 @@ bool CU::divideTuInRows( const CodingUnit &cu )
   return cu.ispMode == HOR_INTRA_SUBPARTITIONS ? true : false;
 }
 
+#if !JVET_O0502_ISP_CLEANUP
 bool CU::firstTestISPHorSplit( const int width, const int height, const ComponentID compID, const CodingUnit *cuLeft, const CodingUnit *cuAbove )
 {
   //this function decides which split mode (horizontal or vertical) is tested first (encoder only)
@@ -358,6 +359,7 @@ bool CU::firstTestISPHorSplit( const int width, const int height, const Componen
     return true;
   }
 }
+#endif
 
 PartSplit CU::getISPType( const CodingUnit &cu, const ComponentID compID )
 {
@@ -438,6 +440,30 @@ uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit 
   CHECK( g_aucLog2[partitionSize] + g_aucLog2[nonSplitDimensionSize] < g_aucLog2[minNumberOfSamplesPerCu], "A partition has less than the minimum amount of samples!" );
   return partitionSize;
 }
+
+#if JVET_O0502_ISP_CLEANUP
+bool CU::allLumaCBFsAreZero(const CodingUnit& cu)
+{
+  if (!cu.ispMode)
+  {
+    return TU::getCbf(*cu.firstTU, COMPONENT_Y) == false;
+  }
+  else
+  {
+    int numTotalTUs = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[cu.firstTU->lheight()] : cu.lwidth() >> g_aucLog2[cu.firstTU->lwidth()];
+    TransformUnit* tuPtr = cu.firstTU;
+    for (int tuIdx = 0; tuIdx < numTotalTUs; tuIdx++)
+    {
+      if (TU::getCbf(*tuPtr, COMPONENT_Y) == true)
+      {
+        return false;
+      }
+      tuPtr = tuPtr->next;
+    }
+    return true;
+  }
+}
+#endif
 
 
 PUTraverser CU::traversePUs( CodingUnit& cu )
@@ -1014,7 +1040,11 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 {
   const CodingStructure &cs = *pu.cs;
   const Slice &slice = *pu.cs->slice;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+  const uint32_t maxNumMergeCand = slice.getMaxNumIBCMergeCand();
+#else
   const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
+#endif
   const bool canFastExit = pu.cs->pps->getLog2ParallelMergeLevelMinus2() == 0;
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)

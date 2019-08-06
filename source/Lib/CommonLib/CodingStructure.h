@@ -97,7 +97,11 @@ public:
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*       alfApss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*       alfApss[MAX_NUM_APS];
+#endif
   APS *      lmcsAps;
   const VPS *vps;
   const PreCalcValues* pcv;

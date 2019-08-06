@@ -740,7 +740,11 @@ void DecLib::xActivateParameterSets()
   if (m_bFirstSliceInPicture)
   {
     APS** apss = m_parameterSetManager.getAPSs();
+#if JVET_O_MAX_NUM_ALF_APS_8
+    memset(apss, 0, sizeof(*apss) * ALF_CTB_MAX_NUM_APS);
+#else
     memset(apss, 0, sizeof(*apss) * MAX_NUM_APS);
+#endif
     const PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId()); // this is a temporary PPS object. Do not store this value
     CHECK(pps == 0, "No PPS present");
 
@@ -935,7 +939,11 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
+#if JVET_O_MAX_NUM_ALF_APS_8
+    for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
+#else
     for (int i = 0; i < MAX_NUM_APS; i++)
+#endif
     {
       APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
       if (aps && m_parameterSetManager.getAPSChangedFlag(i, ALF_APS))

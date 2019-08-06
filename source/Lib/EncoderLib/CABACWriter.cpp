@@ -1103,7 +1103,11 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
         break;
       }
     }
+#if JVET_O0502_ISP_CLEANUP
+    if ( pu->multiRefIdx )
+#else
     if( pu->multiRefIdx || ( cu.ispMode && isLuma( cu.chType ) ) )
+#endif
     {
       CHECK(mpm_idx >= numMPMs, "use of non-MPM");
     }
@@ -1203,7 +1207,11 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
       break;
     }
   }
+#if JVET_O0502_ISP_CLEANUP
+  if ( pu.multiRefIdx )
+#else
   if( pu.multiRefIdx || ( pu.cu->ispMode && isLuma( pu.cu->chType ) ) )
+#endif
   {
     CHECK(mpm_idx >= numMPMs, "use of non-MPM");
   }
@@ -1429,9 +1437,7 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-  cuCtx.lastScanPos[COMPONENT_Y ] = -1;
-  cuCtx.lastScanPos[COMPONENT_Cb] = -1;
-  cuCtx.lastScanPos[COMPONENT_Cr] = -1;
+  cuCtx.lfnstLastScanPos = false;
 #endif
 
 #if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
@@ -2191,7 +2197,7 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
     merge_idx(pu);
     return;
   }
-  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB();
+  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
   const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
@@ -2368,7 +2374,15 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       encodeOneIdx(candIdx1, maxNumTriangleCand - 2);
       return;
     }
-  int numCandminus1 = int( pu.cs->slice->getMaxNumMergeCand() ) - 1;
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    int numCandminus1;
+    if (pu.cu->predMode == MODE_IBC)
+      numCandminus1 = int(pu.cs->slice->getMaxNumIBCMergeCand()) - 1;
+    else
+      numCandminus1 = int(pu.cs->slice->getMaxNumMergeCand()) - 1;
+#else
+    int numCandminus1 = int(pu.cs->slice->getMaxNumMergeCand()) - 1;
+#endif
   if( numCandminus1 > 0 )
   {
     if( pu.mergeIdx == 0 )
@@ -3117,6 +3131,13 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
 #if JVET_O0105_ICT
 void CABACWriter::joint_cb_cr( const TransformUnit& tu, const int cbfMask )
 {
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  if ( !tu.cu->slice->getSPS()->getJointCbCrEnabledFlag() )
+  {
+    return;
+  }
+#endif
+
   CHECK( tu.jointCbCr && tu.jointCbCr != cbfMask, "wrong value of jointCbCr (" << (int)tu.jointCbCr << " vs " << (int)cbfMask << ")" );
 #if JVET_O0543_ICT_ICU_ONLY
   if( ( CU::isIntra( *tu.cu ) && cbfMask ) || ( cbfMask == 3 ) )
@@ -3209,7 +3230,8 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID)
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
   {
-    cuCtx->lastScanPos[compID] = cctx.scanPosLast();
+    const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
+    cuCtx->lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
   }
 #endif
   // code last coeff position
@@ -3370,11 +3392,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #else
           bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
 #endif
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    const bool skipLfnst                  = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA ) :
-                                          ( cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA ) ) :
-                                          ( cuCtx.lastScanPos[ COMPONENT_Y ] < LFNST_LAST_SIG_LUMA && cuCtx.lastScanPos[ COMPONENT_Cb ] < LFNST_LAST_SIG_CHROMA && cuCtx.lastScanPos[ COMPONENT_Cr ] < LFNST_LAST_SIG_CHROMA );
-#else
+#if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
     const int  nonZeroCoeffThr            = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
     cuCtx.numNonZeroCoeffNonTs            = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag );
     nonZeroCoeffNonTs                     = cuCtx.numNonZeroCoeffNonTs > nonZeroCoeffThr;
@@ -3382,13 +3400,13 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #if JVET_O0368_LFNST_WITH_DCT2_ONLY
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    if( skipLfnst || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
 #else
     if (!nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
 #endif
 #else
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-    if( skipLfnst || nonZeroCoeffNonTsCorner8x8 )
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 )
 #else
     if( !nonZeroCoeffNonTs || nonZeroCoeffNonTsCorner8x8 )
 #endif

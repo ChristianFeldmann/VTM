@@ -68,6 +68,10 @@ class IntraPrediction
 private:
 
   Pel* m_piYuvExt[MAX_NUM_COMPONENT][NUM_PRED_BUF];
+#if JVET_O0502_ISP_CLEANUP
+  PelBuf m_pelBufISPBase[2];
+  PelBuf m_pelBufISP[2];
+#endif
   int  m_iYuvExtSize;
 
   Pel* m_yuvExt2[MAX_NUM_COMPONENT][4];
@@ -81,8 +85,10 @@ private:
     bool applyPDPC;
     bool isModeVer;
     int  multiRefIndex;
+#if !JVET_O0364_PADDING
     int  whRatio;
     int  hwRatio;
+#endif
     int  intraPredAngle;
     int  invAngle;
     bool interpolationFlag;
@@ -90,16 +96,25 @@ private:
     int  angularScale;
 #endif
 
-    IntraPredParam() :
-      refFilterFlag     ( false                           ),
-      applyPDPC         ( false                           ),
-      isModeVer         ( false                           ),
-      multiRefIndex     ( -1                              ),
-      whRatio           ( 0                               ),
-      hwRatio           ( 0                               ),
-      intraPredAngle    ( std::numeric_limits<int>::max() ),
-      invAngle          ( std::numeric_limits<int>::max() ),
-      interpolationFlag ( false                           ) {}
+    // clang-format off
+    IntraPredParam()
+      : refFilterFlag(false)
+      , applyPDPC(false)
+      , isModeVer(false)
+      , multiRefIndex(-1)
+#if !JVET_O0364_PADDING
+      , whRatio(0)
+      , hwRatio(0)
+#endif
+      , intraPredAngle(std::numeric_limits<int>::max())
+      , invAngle(std::numeric_limits<int>::max())
+      , interpolationFlag(false)
+#if JVET_O0364_PDPC_ANGULAR
+      , angularScale(-1)
+#endif
+    // clang-format on
+    {
+    }
   };
 
   IntraPredParam m_ipaParam;
@@ -140,6 +155,9 @@ protected:
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
   void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
     , int multiRefIdx
+#if JVET_O0502_ISP_CLEANUP
+    , int predStride = 0
+#endif
   );
 
   static int getWideAngle         ( int width, int height, int predMode );
@@ -163,6 +181,10 @@ public:
   void xGetLumaRecPixels(const PredictionUnit &pu, CompArea chromaArea);
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
+#if JVET_O0502_ISP_CLEANUP
+  void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers 
+  const PelBuf& getISPBuffer      () { return m_pelBufISP[m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED]; }
+#endif
 
   // Matrix-based intra prediction
   void initIntraMip               (const PredictionUnit &pu);

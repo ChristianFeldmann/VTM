@@ -49,13 +49,15 @@
  // ====================================================================================================================
 
 Reshape::Reshape()
-{
-  m_CTUFlag = false;
-  m_recReshaped = false;
-  m_reshape = true;
+: m_CTUFlag (false)
+, m_recReshaped (false)
+, m_reshape (true)
 #if  JVET_O1109_UNFIY_CRS
-  m_chromaScale = (1 << CSCALE_FP_PREC);
+, m_chromaScale (1 << CSCALE_FP_PREC)
 #endif
+, m_vpduX (-1)
+, m_vpduY (-1)
+{
 }
 
 Reshape::~Reshape()

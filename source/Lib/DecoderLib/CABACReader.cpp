@@ -2591,17 +2591,14 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
   DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);
   int numCandminus1_step = MMVD_REFINE_STEP - 1;
   var1 = 0;
-  if (numCandminus1_step > 0)
+  if (m_BinDecoder.decodeBin(Ctx::MmvdStepMvpIdx()))
   {
-    if (m_BinDecoder.decodeBin(Ctx::MmvdStepMvpIdx()))
+    var1++;
+    for (; var1 < numCandminus1_step; var1++)
     {
-      var1++;
-      for (; var1 < numCandminus1_step; var1++)
+      if (!m_BinDecoder.decodeBinEP())
       {
-        if (!m_BinDecoder.decodeBinEP())
-        {
-          break;
-        }
+        break;
       }
     }
   }

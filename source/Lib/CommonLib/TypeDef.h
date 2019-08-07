@@ -277,6 +277,14 @@ typedef std::pair<int, int>  TrCost;
 #define EXTENSION_360_VIDEO                               0   ///< extension for 360/spherical video coding support; this macro should be controlled by makefile, as it would be used to control whether the library is built and linked
 #endif
 
+#ifndef EXTENSION_HDRTOOLS
+#define EXTENSION_HDRTOOLS                                0 //< extension for HDRTools/Metrics support; this macro should be controlled by makefile, as it would be used to control whether the library is built and linked
+#endif
+
+#if EXTENSION_HDRTOOLS
+#define JVET_O0756_CALCULATE_HDRMETRICS                   1
+#endif
+
 #ifndef ENABLE_WPP_PARALLELISM
 #define ENABLE_WPP_PARALLELISM                            0
 #endif

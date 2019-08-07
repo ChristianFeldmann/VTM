@@ -44,6 +44,7 @@
 #include <memory.h>
 #include <algorithm>
 
+
 //! \ingroup CommonLib
 //! \{
 
@@ -696,7 +697,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     xFrac = yFrac = 0;
     JVET_J0090_SET_CACHE_ENABLE( false );
   }
-
+  
   PelBuf &dstBuf  = dstPic.bufs[compID];
   unsigned width  = dstBuf.width;
   unsigned height = dstBuf.height;

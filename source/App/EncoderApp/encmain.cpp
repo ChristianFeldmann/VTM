@@ -168,7 +168,14 @@ int main(int argc, char* argv[])
   clock_t endClock = clock();
   auto endTime = std::chrono::steady_clock::now();
   std::time_t endTime2 = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime- startTime ).count();
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  auto metricTime = pcEncApp->m_metricTime;
+  auto totalTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime- startTime ).count();
+  auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime- startTime - metricTime ).count();
+  auto metricTimeuser = std::chrono::duration_cast<std::chrono::milliseconds>( metricTime ).count();
+#else
+  auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime- startTime).count();
+#endif
   // destroy application encoder class
   pcEncApp->destroy();
 
@@ -176,9 +183,17 @@ int main(int argc, char* argv[])
 
   printf( "\n finished @ %s", std::ctime(&endTime2) );
 
+  #if JVET_O0756_CALCULATE_HDRMETRICS
+  printf(" Encoding Time(Total Time): %12.3f(%12.3f) sec. [user] %12.3f(%12.3f) sec. [elapsed]\n",
+         ((endClock - startClock) * 1.0 / CLOCKS_PER_SEC) - (metricTimeuser/1000.0),
+         (endClock - startClock) * 1.0 / CLOCKS_PER_SEC,
+         totalTime / 1000.0,
+         encTime / 1000.0);
+  #else
   printf(" Total Time: %12.3f sec. [user] %12.3f sec. [elapsed]\n",
          (endClock - startClock) * 1.0 / CLOCKS_PER_SEC,
          encTime / 1000.0);
+  #endif
 
   return 0;
 }

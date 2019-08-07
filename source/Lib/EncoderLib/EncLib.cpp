@@ -79,6 +79,10 @@ EncLib::EncLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
+  
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  m_metricTime = std::chrono::milliseconds(0);
+#endif
 
   memset(m_apss, 0, sizeof(m_apss));
 }
@@ -569,6 +573,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     }
     m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
       false, false, snrCSC, m_printFrameMSE, true);
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    m_metricTime = m_cGOPEncoder.m_metricTime;
+#endif
     m_cGOPEncoder.setEncodedLTRef(true);
     if (m_RCEnableRateControl)
     {
@@ -634,6 +641,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
                             false, false, snrCSC, m_printFrameMSE
     , false
   );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  m_metricTime = m_cGOPEncoder.m_metricTime;
+#endif
 
   if ( m_RCEnableRateControl )
   {
@@ -723,7 +733,10 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
       m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE
                               , false
       );
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      m_metricTime = m_cGOPEncoder.m_metricTime;
+#endif
+      
       iNumEncoded += m_iNumPicRcvd;
       m_uiNumAllPicCoded += m_iNumPicRcvd;
       m_iNumPicRcvd = 0;

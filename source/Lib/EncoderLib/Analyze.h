@@ -72,7 +72,11 @@ private:
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze m_ext360;
 #endif
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double    m_dLogDeltaESum[hdrtoolslib::NB_REF_WHITE];
+  double    m_dPSNRLSum[hdrtoolslib::NB_REF_WHITE];
+#endif
+  
 public:
   virtual ~Analyze()  {}
   Analyze() { clear(); }
@@ -96,13 +100,25 @@ public:
   double  getWPSNR      (const ComponentID compID) const { return m_dPSNRSum[compID] / (double)m_uiNumPic; }
 #endif
   double  getPsnr(ComponentID compID) const { return  m_dPSNRSum[compID];  }
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double getDeltaE()                  const { return m_dLogDeltaESum[0];  }
+  double getPSNRL()                  const { return m_dPSNRLSum[0];  }
+#endif
   double  getBits()                   const { return  m_dAddBits;   }
   void    setBits(double numBits)     { m_dAddBits = numBits; }
   uint32_t    getNumPic()                 const { return  m_uiNumPic;   }
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze& getExt360Info() { return m_ext360; }
 #endif
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  void addHDRMetricsResult(double dDeltaE[hdrtoolslib::NB_REF_WHITE], double dPSNRL[hdrtoolslib::NB_REF_WHITE]){
+    for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++) {
+      m_dLogDeltaESum[i] += dDeltaE[i];
+      m_dPSNRLSum[i] += dPSNRL[i];
+    }
+  }
+#endif
+  
   void    setFrmRate  (double dFrameRate) { m_dFrmRate = dFrameRate; } //--CFG_KDY
   void    clear()
   {
@@ -115,6 +131,12 @@ public:
     m_uiNumPic = 0;
 #if EXTENSION_360_VIDEO
     m_ext360.clear();
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++) {
+      m_dLogDeltaESum[i] = 0.0;
+      m_dPSNRLSum[i] = 0.0;
+    }
 #endif
   }
 
@@ -408,7 +430,12 @@ public:
               msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR" );
             } else
 #endif
-            msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR " );
+            msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR   " );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+          if(!useWPSNR){
+          msg(e_msg_level, "DeltaE   "  "PSNRL   ");
+          }
+#endif
 #if EXTENSION_360_VIDEO
             m_ext360.printHeader(e_msg_level);
 #endif
@@ -442,9 +469,14 @@ public:
 #if ENABLE_QPA
                    useWPSNR ? getWPSNR(COMPONENT_Cr) :
 #endif
-                   getPsnr(COMPONENT_Cr) / (double)getNumPic(),
-                   PSNRyuv );
-
+              getPsnr(COMPONENT_Cr) / (double)getNumPic(),
+              PSNRyuv );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+          if(!useWPSNR){
+          msg( e_msg_level, "  %8.4lf  " "%8.4lf  ", getDeltaE()/(double)getNumPic(), getPSNRL()/(double)getNumPic());
+          }
+#endif
+          
 #if EXTENSION_360_VIDEO
             m_ext360.printPSNRs(getNumPic(), e_msg_level);
 #endif

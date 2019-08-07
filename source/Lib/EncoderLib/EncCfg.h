@@ -47,6 +47,10 @@
 
 #include "CommonLib/Unit.h"
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/DistortionMetric.H"
+#endif
+
 struct GOPEntry
 {
   int m_POC;
@@ -652,6 +656,20 @@ protected:
 #endif
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double                       m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
+  double                       m_maxSampleValue;
+  hdrtoolslib::SampleRange     m_sampleRange;
+  hdrtoolslib::ColorPrimaries  m_colorPrimaries;
+  bool                         m_enableTFunctionLUT;
+  hdrtoolslib::ChromaLocation  m_chromaLocation[2];
+  int                          m_chromaUPFilter;
+  int                          m_cropOffsetLeft;
+  int                          m_cropOffsetTop;
+  int                          m_cropOffsetRight;
+  int                          m_cropOffsetBottom;
+  bool                         m_calculateHdrMetrics;
+#endif
 
 public:
   EncCfg()
@@ -1619,8 +1637,36 @@ public:
   void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
   bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
-  void        setUseALF( bool b ) { m_alf = b; }
-  bool        getUseALF()                                      const { return m_alf; }
+  void         setUseALF( bool b ) { m_alf = b; }
+  bool         getUseALF()                                      const { return m_alf; }
+  
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  void        setWhitePointDeltaE( uint32_t uiIndex, double dValue ) { m_whitePointDeltaE[ uiIndex ] = dValue; }
+  double      getWhitePointDeltaE( uint32_t uiIndex )          const { return m_whitePointDeltaE[ uiIndex ]; }
+  void        setMaxSampleValue(double dValue)                       { m_maxSampleValue = dValue;}
+  double      getMaxSampleValue()                              const { return m_maxSampleValue;}
+  void        setSampleRange(int iValue)                             { m_sampleRange = static_cast<hdrtoolslib::SampleRange>(iValue);}
+  hdrtoolslib::SampleRange getSampleRange()                    const { return m_sampleRange;}
+  void        setColorPrimaries(int iValue)                          { m_colorPrimaries = static_cast<hdrtoolslib::ColorPrimaries>(iValue);}
+  hdrtoolslib::ColorPrimaries getColorPrimaries()              const { return m_colorPrimaries;}
+  void        setEnableTFunctionLUT(bool bValue)                     { m_enableTFunctionLUT = bValue;}
+  bool        getEnableTFunctionLUT()                          const { return m_enableTFunctionLUT;}
+  void        setChromaLocation(uint32_t uiIndex, int iValue)        { m_chromaLocation[ uiIndex ] = static_cast<hdrtoolslib::ChromaLocation>(iValue);}
+  hdrtoolslib::ChromaLocation getChromaLocation(uint32_t uiIndex) const { return m_chromaLocation[uiIndex];}
+  void        setChromaUPFilter(int iValue)                          { m_chromaUPFilter = iValue;}
+  int         getChromaUPFilter()                              const { return m_chromaUPFilter;}
+  void        setCropOffsetLeft(int iValue)                          { m_cropOffsetLeft = iValue;}
+  int         getCropOffsetLeft()                              const { return m_cropOffsetLeft;}
+  void        setCropOffsetTop(int iValue)                           { m_cropOffsetTop = iValue;}
+  int         getCropOffsetTop()                               const { return m_cropOffsetTop;}
+  void        setCropOffsetRight(int iValue)                         { m_cropOffsetRight = iValue;}
+  int         getCropOffsetRight()                             const { return m_cropOffsetRight;}
+  void        setCropOffsetBottom(int iValue)                        { m_cropOffsetBottom = iValue;}
+  int         getCropOffsetBottom()                            const { return m_cropOffsetBottom;}
+  void        setCalculateHdrMetrics(bool bValue)                    { m_calculateHdrMetrics = bValue;}
+  bool        getCalcluateHdrMetrics()                         const { return m_calculateHdrMetrics;}
+#endif
+
 };
 
 //! \}

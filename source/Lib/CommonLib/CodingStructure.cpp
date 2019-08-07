@@ -427,7 +427,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
   {
     prevPU->next = pu;
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
-
+    
     CHECK( prevPU->cacheId != pu->cacheId, "Inconsintent cacheId between previous and current PU" );
 #endif
   }

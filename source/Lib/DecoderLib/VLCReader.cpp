@@ -408,7 +408,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) < -12, "Invalid Cr QP offset" );
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) >  12, "Invalid Cr QP offset" );
 
-  READ_SVLC( iCode, "pps_cb_cr_qp_offset");
+  READ_SVLC( iCode, "pps_joint_cbcr_qp_offset");
   pcPPS->setQpOffset(JOINT_CbCr, iCode);
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) >  12, "Invalid CbCr QP offset" );

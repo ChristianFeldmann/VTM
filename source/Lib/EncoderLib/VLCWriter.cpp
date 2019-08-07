@@ -236,7 +236,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cb), "pps_cb_qp_offset" );
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cr), "pps_cr_qp_offset" );
-  WRITE_SVLC( pcPPS->getQpOffset(JOINT_CbCr),   "pps_cb_cr_qp_offset" );
+  WRITE_SVLC( pcPPS->getQpOffset(JOINT_CbCr),   "pps_joint_cbcr_qp_offset" );
 
   WRITE_FLAG( pcPPS->getSliceChromaQpFlag() ? 1 : 0,          "pps_slice_chroma_qp_offsets_present_flag" );
 

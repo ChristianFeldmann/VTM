@@ -2187,7 +2187,20 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
 
   // generate mode-specific prediction
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
-  m_matrixIntraPred.predBlock( pu.Y(), pu.intraDir[CHANNEL_TYPE_LUMA], piPred, bitDepth );
+  static_vector<int, MIP_MAX_WIDTH * MIP_MAX_HEIGHT> predMip(pu.Y().area());
+  m_matrixIntraPred.predBlock(predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], bitDepth);
+
+  for (int y = 0; y < pu.lheight(); y++)
+  {
+    for (int x = 0; x < pu.lwidth(); x++)
+    {
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+      piPred.at(x, y) = Pel(predMip[y * pu.lwidth() + x]);
+#else
+      piPred.at(x, y) = Pel(ClipBD<int>(predMip[y * pu.lwidth() + x], bitDepth));
+#endif
+    }
+  }
 }
 
 #if JVET_O0119_BASE_PALETTE_444

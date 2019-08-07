@@ -175,6 +175,10 @@ void IntraPrediction::destroy()
   m_piTemp = nullptr;
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+  if (m_runTypeRD)   { xFree(m_runTypeRD);   m_runTypeRD = NULL; }
+  if (m_runLengthRD) { xFree(m_runLengthRD); m_runLengthRD = NULL; }
+#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -230,6 +234,10 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
+#if JVET_O0119_BASE_PALETTE_444
+  m_runTypeRD = (bool*)xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
+  m_runLengthRD = (Pel*)xMalloc(Pel, MAX_CU_SIZE*MAX_CU_SIZE);
+#endif
 }
 
 // ====================================================================================================================
@@ -328,8 +336,12 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int  srcStride  = m_topRefLength  + 1 + (whRatio + 1) * multiRefIdx;
   const int  srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
 #endif
-
+  
+#if JVET_O0502_ISP_CLEANUP
+  const CPelBuf& srcBuf = pu.cu->ispMode && isLuma(compID) ? getISPBuffer() : CPelBuf(getPredictorPtr(compID), srcStride, srcHStride);
+#else
   const CPelBuf & srcBuf = CPelBuf(getPredictorPtr(compID), srcStride, srcHStride);
+#endif
   const ClpRng& clpRng(pu.cu->cs->slice->clpRng(compID));
 
   switch (uiDirMode)
@@ -494,7 +506,11 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;
   m_ipaParam.refFilterFlag        = false;
   m_ipaParam.interpolationFlag    = false;
+#if JVET_O0502_ISP_CLEANUP
+  m_ipaParam.applyPDPC            = ((puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) || !isLuma(compId)) && m_ipaParam.multiRefIndex == 0;
+#else
   m_ipaParam.applyPDPC            = !useISP && m_ipaParam.multiRefIndex == 0;
+#endif
 
   const int    intraPredAngleMode = (m_ipaParam.isModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
 
@@ -544,14 +560,19 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   if(   sps.getSpsRangeExtension().getIntraSmoothingDisabledFlag()
     || !isLuma( chType )
     || useISP
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+    || PU::isMIP( pu, chType )
+#endif
     || m_ipaParam.multiRefIndex
     || DC_IDX == dirMode
     )
   {
+#if !JVET_O0502_ISP_CLEANUP
     if (useISP)
     {
       m_ipaParam.interpolationFlag = (m_ipaParam.isModeVer ? puSize.width : puSize.height) > 8 ? true : false ;
     }
+#endif
   }
   else if (isLuma( chType ) && pu.cu->bdpcmMode) // BDPCM
   {
@@ -1053,7 +1074,11 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
   Pel *refBufUnfiltered   = m_piYuvExt[area.compID][PRED_BUF_UNFILTERED];
   Pel *refBufFiltered     = m_piYuvExt[area.compID][PRED_BUF_FILTERED];
 
+#if JVET_O0502_ISP_CLEANUP
+  setReferenceArrayLengths( area );
+#else
   setReferenceArrayLengths( cu.ispMode && isLuma( area.compID ) ? cu.blocks[area.compID] : area );
+#endif
 
   // ----- Step 1: unfiltered reference samples -----
   xFillReferenceSamples( cs.picture->getRecoBuf( area ), refBufUnfiltered, area, cu );
@@ -1063,6 +1088,130 @@ void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompAre
     xFilterReferenceSamples( refBufUnfiltered, refBufFiltered, area, *cs.sps, cu.firstPU->multiRefIdx );
   }
 }
+
+#if JVET_O0502_ISP_CLEANUP
+void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const CompArea& area, PelBuf& recBuf, const bool forceRefFilterFlag)
+{
+  const CodingStructure& cs = *cu.cs;
+
+  if (!forceRefFilterFlag)
+  {
+    initPredIntraParams(*cu.firstPU, area, *cs.sps);
+  }
+
+  const Position posLT = area;
+  bool           isLeftAvail = cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
+  bool           isAboveAvail = cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
+  // ----- Step 1: unfiltered reference samples -----
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+  if (cu.blocks[area.compID].x == area.x && cu.blocks[area.compID].y == area.y)
+#else
+  if (CU::isISPFirst(cu, area, area.compID))
+#endif
+  {
+    Pel* refBufUnfiltered = m_piYuvExt[area.compID][PRED_BUF_UNFILTERED];
+    // With the first subpartition all the CU reference samples are fetched at once in a single call to xFillReferenceSamples 
+    if (cu.ispMode == HOR_INTRA_SUBPARTITIONS)
+    {
+      m_leftRefLength = cu.Y().height << 1;
+      m_topRefLength = cu.Y().width + area.width;
+    }
+    else //if (cu.ispMode == VER_INTRA_SUBPARTITIONS)
+    {
+      m_leftRefLength = cu.Y().height + area.height;
+      m_topRefLength = cu.Y().width << 1;
+    }
+
+    const int srcStride = m_topRefLength + 1;
+    const int srcHStride = m_leftRefLength + 1;
+
+    m_pelBufISP[0] = m_pelBufISPBase[0] = PelBuf(m_piYuvExt[area.compID][PRED_BUF_UNFILTERED], srcStride, srcHStride);
+    m_pelBufISP[1] = m_pelBufISPBase[1] = PelBuf(m_piYuvExt[area.compID][PRED_BUF_FILTERED], srcStride, srcHStride);
+
+    xFillReferenceSamples(cs.picture->getRecoBuf(cu.Y()), refBufUnfiltered, cu.Y(), cu);
+
+    // After having retrieved all the CU reference samples, the number of reference samples is now adjusted for the current subpartition 
+    m_topRefLength = cu.blocks[area.compID].width + area.width;
+    m_leftRefLength = cu.blocks[area.compID].height + area.height;
+  }
+  else
+  {
+    //Now we only need to fetch the newly available reconstructed samples from the previously coded TU 
+    Position tuPos = area;
+    tuPos.relativeTo(cu.Y());
+    m_pelBufISP[0] = m_pelBufISPBase[0].subBuf(tuPos, area.size());
+    m_pelBufISP[1] = m_pelBufISPBase[1].subBuf(tuPos, area.size());
+
+    PelBuf& dstBuf = m_pelBufISP[0];
+
+    m_topRefLength = cu.blocks[area.compID].width + area.width;
+    m_leftRefLength = cu.blocks[area.compID].height + area.height;
+
+    const int predSizeHor = m_topRefLength;
+    const int predSizeVer = m_leftRefLength;
+    if (cu.ispMode == HOR_INTRA_SUBPARTITIONS)
+    {
+      Pel* src = recBuf.bufAt(0, -1);
+      Pel* dst = dstBuf.bufAt(1, 0);
+      for (int i = 0; i < area.width; i++)
+      {
+        dst[i] = src[i];
+      }
+      Pel sample = src[area.width - 1];
+      dst += area.width;
+      for (int i = 0; i < predSizeHor - area.width; i++)
+      {
+        dst[i] = sample;
+      }
+      if (!isLeftAvail) //if left is not avaible, then it is necessary to fetch these samples for each subpartition
+      {
+        Pel* dst = dstBuf.bufAt(0, 0);
+        Pel  sample = src[0];
+        for (int i = 0; i < predSizeVer + 1; i++)
+        {
+          *dst = sample;
+          dst += dstBuf.stride;
+        }
+      }
+    }
+    else
+    {
+      Pel* src = recBuf.bufAt(-1, 0);
+      Pel* dst = dstBuf.bufAt(0, 1);
+      for (int i = 0; i < area.height; i++)
+      {
+        *dst = *src;
+        src += recBuf.stride;
+        dst += dstBuf.stride;
+      }
+      Pel sample = src[-recBuf.stride];
+      for (int i = 0; i < predSizeVer - area.height; i++)
+      {
+        *dst = sample;
+        dst += dstBuf.stride;
+      }
+
+      if (!isAboveAvail) //if above is not avaible, then it is necessary to fetch these samples for each subpartition
+      {
+        Pel* dst = dstBuf.bufAt(0, 0);
+        Pel  sample = recBuf.at(-1, 0);
+        for (int i = 0; i < predSizeHor + 1; i++)
+        {
+          dst[i] = sample;
+        }
+      }
+    }
+  }
+  // ----- Step 2: filtered reference samples -----
+  if (m_ipaParam.refFilterFlag || forceRefFilterFlag)
+  {
+    Pel* refBufUnfiltered = m_pelBufISP[0].buf;
+    Pel* refBufFiltered = m_pelBufISP[1].buf;
+    xFilterReferenceSamples(refBufUnfiltered, refBufFiltered, area, *cs.sps, cu.firstPU->multiRefIdx, m_pelBufISP[0].stride);
+  }
+}
+#endif
+
 
 void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu )
 {
@@ -1321,6 +1470,9 @@ void IntraPrediction::xFillReferenceSamples( const CPelBuf &recoBuf, Pel* refBuf
 
 void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
   , int multiRefIdx
+#if JVET_O0502_ISP_CLEANUP
+  , int stride
+#endif
 )
 {
   if (area.compID != COMPONENT_Y)
@@ -1336,7 +1488,11 @@ void IntraPrediction::xFilterReferenceSamples( const Pel* refBufUnfiltered, Pel*
   const int  predSize  = m_topRefLength  + (whRatio + 1) * multiRefIdx;
   const int  predHSize = m_leftRefLength + (hwRatio + 1) * multiRefIdx;
 #endif
+#if JVET_O0502_ISP_CLEANUP
+  const int predStride = stride == 0 ? predSize + 1 : stride;
+#else
   const int  predStride = predSize + 1;
+#endif
 
 
 
@@ -2002,11 +2158,21 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
 #endif
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+  // prepare input (boundary) data for prediction
+  CHECK(m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP");
+  Pel *ptrSrc = getPredictorPtr(COMPONENT_Y);
+  const int srcStride  = m_topRefLength  + 1;
+  const int srcHStride = m_leftRefLength + 1;
+
+  m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA));
+#else
   // derive above and left availability
   AvailableInfo availInfo = PU::getAvailableInfoLuma(pu);
 
   // prepare input (boundary) data for prediction
   m_matrixIntraPred.prepareInputForPred(pu.cs->picture->getRecoBuf(COMPONENT_Y), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA), availInfo);
+#endif
 }
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
@@ -2023,5 +2189,151 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
   m_matrixIntraPred.predBlock( pu.Y(), pu.intraDir[CHANNEL_TYPE_LUMA], piPred, bitDepth );
 }
+
+#if JVET_O0119_BASE_PALETTE_444
+bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
+{
+  CodingUnit    &cu = *cs.getCU(partitioner.chType);
+  TransformUnit &tu = *cs.getTU(partitioner.chType);
+  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
+  PLTtypeBuf runType   = tu.getrunType(compBegin);
+
+  uint32_t idx = startPos;
+  uint32_t xPos;
+  uint32_t yPos;
+  bool valid = false;
+  run = 0;
+  while (idx < total)
+  {
+    xPos = m_scanOrder[idx].x;
+    yPos = m_scanOrder[idx].y;
+    runType.at(xPos, yPos) = PLT_RUN_COPY;
+
+    if (yPos == 0 && !cu.useRotation[compBegin])
+    {
+      return false;
+    }
+    if (xPos == 0 && cu.useRotation[compBegin])
+    {
+      return false;
+    }
+    if (!cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos, yPos - 1))
+    {
+      run++;
+      valid = true;
+    }
+    else if (cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos - 1, yPos))
+    {
+      run++;
+      valid = true;
+    }
+    else
+    {
+      break;
+    }
+    idx++;
+  }
+  return valid;
+}
+bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
+{
+  TransformUnit &tu = *cs.getTU(partitioner.chType);
+  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
+  PLTtypeBuf runType   = tu.getrunType(compBegin);
+
+  run = 1;
+  uint32_t idx = startPos;
+  while (idx < total)
+  {
+    uint32_t xPos = m_scanOrder[idx].x;
+    uint32_t yPos = m_scanOrder[idx].y;
+    runType.at(xPos, yPos) = PLT_RUN_INDEX;
+
+    uint32_t xPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].x;
+    uint32_t yPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].y;
+    if (idx > startPos && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPrev, yPrev))
+    {
+      run++;
+    }
+    else if (idx > startPos)
+    {
+      break;
+    }
+    idx++;
+  }
+  return true;
+}
+void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
+{
+  CodingUnit &cu = *cs.getCU(partitioner.chType);
+
+  uint32_t       reusePLTSizetmp = 0;
+  uint32_t       pltSizetmp = 0;
+  Pel            curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
+  bool           curPLTpred[MAXPLTPREDSIZE];
+
+  for (int idx = 0; idx < MAXPLTPREDSIZE; idx++)
+  {
+    curPLTpred[idx] = false;
+    cu.reuseflag[compBegin][idx] = false;
+  }
+  for (int idx = 0; idx < MAXPLTSIZE; idx++)
+  {
+    curPLTpred[idx] = false;
+  }
+
+  for (int predidx = 0; predidx < cs.prevPLT.curPLTSize[compBegin]; predidx++)
+  {
+    bool match = false;
+    int curidx = 0;
+
+    for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
+    {
+      bool matchTmp = true;
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        matchTmp = matchTmp && (cu.curPLT[comp][curidx] == cs.prevPLT.curPLT[comp][predidx]);
+      }
+      if (matchTmp)
+      {
+        match = true;
+        break;
+      }
+    }
+
+    if (match)
+    {
+      cu.reuseflag[compBegin][predidx] = true;
+      curPLTpred[curidx] = true;
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
+      }
+      reusePLTSizetmp++;
+      pltSizetmp++;
+    }
+  }
+  cu.reusePLTSize[compBegin] = reusePLTSizetmp;
+  for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
+  {
+    if (!curPLTpred[curidx])
+    {
+      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+      {
+        curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
+      }
+      pltSizetmp++;
+    }
+  }
+  assert(pltSizetmp == cu.curPLTSize[compBegin]);
+  for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
+  {
+    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+    {
+      cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
+    }
+  }
+}
+#endif
 
 //! \}

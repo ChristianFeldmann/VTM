@@ -916,7 +916,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
-  ( "RDPCM",                                         m_RdpcmMode,                                       false, "RDPCM")
+  ( "RDPCM",                                          m_RdpcmMode,                                       false, "RDPCM")
+#if JVET_O0119_BASE_PALETTE_444
+  ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
+#endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
 #endif
@@ -1946,6 +1949,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     cfg_qpInValCb.values = { 0 };
     cfg_qpInValCr.values = { 0 };
     cfg_qpInValCbCr.values = { 0 };
+    cfg_qpOutValCb.values = { 0 };
+    cfg_qpOutValCr.values = { 0 };
+    cfg_qpOutValCbCr.values = { 0 };
   }
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
@@ -2270,6 +2276,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
+#if JVET_O0119_BASE_PALETTE_444
+    xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
+#endif
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
@@ -2607,8 +2616,14 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara( m_uiMinQT[0] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
   xConfirmPara( m_uiMinQT[1] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
+#if JVET_O0526_MIN_CTU_SIZE
+  xConfirmPara( m_uiCTUSize < 32,                                                           "CTUSize must be greater than or equal to 32");
+  xConfirmPara( m_uiCTUSize > 128,                                                          "CTUSize must be less than or equal to 128");
+  xConfirmPara( m_uiCTUSize != 32 && m_uiCTUSize != 64 && m_uiCTUSize != 128,               "CTUSize must be a power of 2 (32, 64, or 128)");
+#else
   xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition height size should be larger than or equal to 16");
+#endif
 #if !JVET_O0640_PICTURE_SIZE_CONSTRAINT
   xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
   xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
@@ -3500,6 +3515,10 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
 #endif
   }
+#if JVET_O0119_BASE_PALETTE_444
+    m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
+    msg(VERBOSE, "PLT:%d ", m_PLTMode);
+#endif
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);

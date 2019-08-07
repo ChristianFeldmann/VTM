@@ -59,6 +59,9 @@ namespace CU
   bool isIntra                        (const CodingUnit &cu);
   bool isInter                        (const CodingUnit &cu);
   bool isIBC                          (const CodingUnit &cu);
+#if JVET_O0119_BASE_PALETTE_444
+  bool isPLT                          (const CodingUnit &cu);
+#endif
   bool isRDPCMEnabled                 (const CodingUnit &cu);
   bool isLosslessCoded                (const CodingUnit &cu);
   uint32_t getIntraSizeIdx                (const CodingUnit &cu);
@@ -96,13 +99,18 @@ namespace CU
 
 
   bool      divideTuInRows            ( const CodingUnit &cu );
+#if !JVET_O0502_ISP_CLEANUP
   bool      firstTestISPHorSplit      ( const int width, const int height,            const ComponentID compID, const CodingUnit *cuLeft = nullptr, const CodingUnit *cuAbove = nullptr );
+#endif
   PartSplit getISPType                ( const CodingUnit &cu,                         const ComponentID compID );
   bool      isISPLast                 ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
   bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
+#if JVET_O0502_ISP_CLEANUP
+  bool      allLumaCBFsAreZero        ( const CodingUnit& cu );
+#endif
 
   PUTraverser traversePUs             (      CodingUnit& cu);
   TUTraverser traverseTUs             (      CodingUnit& cu);
@@ -132,10 +140,14 @@ namespace PU
   int  getLMSymbolList(const PredictionUnit &pu, int *modeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
+#endif
   int           getMipSizeId          (const PredictionUnit &pu);
   uint32_t      getIntraDirLuma       (const PredictionUnit &pu);
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
   AvailableInfo getAvailableInfoLuma  (const PredictionUnit &pu);
+#endif
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
 #if JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE
@@ -238,8 +250,13 @@ namespace TU
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 int  getNumModesMip   (const Size& block);
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int  getNumEpBinsMip  (const Size& block);
+#endif
 bool mipModesAvailable(const Size& block);
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+bool allowLfnstWithMip(const Size& block);
+#endif
 
 template<typename T, size_t N>
 uint32_t updateCandList(T uiMode, double uiCost, static_vector<T, N>& candModeList, static_vector<double, N>& candCostList

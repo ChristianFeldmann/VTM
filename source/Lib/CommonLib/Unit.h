@@ -48,7 +48,12 @@
 // ---------------------------------------------------------------------------
 // tools
 // ---------------------------------------------------------------------------
-
+#if JVET_O0119_BASE_PALETTE_444
+struct PLTBuf {
+  uint32_t       curPLTSize[MAX_NUM_COMPONENT];
+  Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
+};
+#endif
 inline Position recalcPosition(const ChromaFormat _cf, const ComponentID srcCId, const ComponentID dstCId, const Position &pos)
 {
   if( toChannelType( srcCId ) == toChannelType( dstCId ) )
@@ -322,6 +327,15 @@ struct CodingUnit : public UnitArea
   Size           shareParentSize;
   uint8_t          smvdMode;
   uint8_t        ispMode;
+#if JVET_O0119_BASE_PALETTE_444
+  bool           useEscape[MAX_NUM_COMPONENT];
+  bool           useRotation[MAX_NUM_COMPONENT];
+  bool           reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
+  uint32_t       lastPLTSize[MAX_NUM_COMPONENT];
+  uint32_t       reusePLTSize[MAX_NUM_COMPONENT];
+  uint32_t       curPLTSize[MAX_NUM_COMPONENT];
+  Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE];
+#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -461,7 +475,11 @@ struct TransformUnit : public UnitArea
   TransformUnit *next;
   TransformUnit *prev;
 
+#if JVET_O0119_BASE_PALETTE_444
+  void init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType);
+#else
   void init(TCoeff **coeffs, Pel **pcmbuf);
+#endif
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
@@ -476,6 +494,19 @@ struct TransformUnit : public UnitArea
   const CPelBuf   getPcmbuf(const ComponentID id) const;
         int       getChromaAdj( )                 const;
         void      setChromaAdj(int i);
+#if JVET_O0119_BASE_PALETTE_444
+         PelBuf   getcurPLTIdx(const ComponentID id);
+  const CPelBuf   getcurPLTIdx(const ComponentID id) const;
+         PelBuf   getrunLength(const ComponentID id);
+  const CPelBuf   getrunLength(const ComponentID id) const;
+         PLTtypeBuf   getrunType(const ComponentID id);
+  const CPLTtypeBuf   getrunType(const ComponentID id) const;
+         PLTescapeBuf getescapeValue(const ComponentID id);
+  const CPLTescapeBuf getescapeValue(const ComponentID id) const;
+        Pel*      getPLTIndex(const ComponentID id);
+        Pel*      getRunLens(const ComponentID id);
+        bool*     getRunTypes(const ComponentID id);
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   int64_t cacheId;
@@ -485,6 +516,10 @@ struct TransformUnit : public UnitArea
 private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
+#if JVET_O0119_BASE_PALETTE_444
+  bool   *m_runType[MAX_NUM_TBLOCKS];
+  Pel    *m_runLength[MAX_NUM_TBLOCKS];
+#endif
 };
 
 // ---------------------------------------------------------------------------

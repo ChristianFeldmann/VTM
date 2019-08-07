@@ -729,7 +729,6 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
 void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)
 {
   const CompArea& ca = cu.block(compID);
-
   if( CU::isLosslessCoded( cu ) && !cu.ipcm )
   {
     for( auto &currTU : CU::traverseTUs( cu ) )

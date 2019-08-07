@@ -1180,9 +1180,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   unsigned  maxBTSize[3] = { 0, 0, 0 };
   unsigned  maxTTSize[3] = { 0, 0, 0 };
   READ_FLAG(uiCode, "qtbtt_dual_tree_intra_flag");             pcSPS->setUseDualITree(uiCode);
+
+#if JVET_O0526_MIN_CTU_SIZE
+  READ_CODE(2, uiCode, "log2_ctu_size_minus5");                pcSPS->setCTUSize(1 << (uiCode + 5));
+  CHECK(uiCode > 2, "log2_ctu_size_minus5 must be less than or equal to 2");
+  pcSPS->setMaxCodingDepth(uiCode+3);
+  pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode+3);
+#else
   READ_UVLC(uiCode, "log2_ctu_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
   pcSPS->setMaxCodingDepth(uiCode);
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
+#endif
   pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
   pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
 
@@ -1353,6 +1361,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
   }
   READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
+#if JVET_O0119_BASE_PALETTE_444
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+  {
+    READ_FLAG( uiCode,  "plt_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
+  }
+  else
+  {
+    pcSPS->setPLTMode(false);
+  }
+#endif
   READ_FLAG(uiCode, "ibc_flag");                                    pcSPS->setIBCFlag(uiCode);
   // KJS: sps_ciip_enabled_flag
   READ_FLAG( uiCode,     "mhintra_flag" );                           pcSPS->setUseMHIntra             ( uiCode != 0 );
@@ -2897,6 +2915,9 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
 #else
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( kMinTab[alfShape.golombIdx[i]] );
 #endif
+      CHECK( isChroma &&
+             ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -127 )
+             , "AlfCoeffC shall be in the range of -127 to 127, inclusive" );
     }
   }
 
@@ -2940,6 +2961,8 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
         }
       }
 #endif
+      CHECK( std::any_of( recCoeff,  recCoeff + numFilters * MAX_NUM_ALF_LUMA_COEFF, [](short c) {return (c <-128 || c > 127);} )
+             , "AlfCoeffL shall be in the range of -128 to 127, inclusive" );
     }
 #endif
 

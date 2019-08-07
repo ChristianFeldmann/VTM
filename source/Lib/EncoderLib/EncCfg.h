@@ -308,6 +308,9 @@ protected:
   bool      m_MMVD;
   int       m_MmvdDisNum;
   bool      m_RdpcmMode;
+#if JVET_O0119_BASE_PALETTE_444
+  unsigned  m_PLTMode;
+#endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool      m_JointCbCrMode;
 #endif
@@ -900,6 +903,10 @@ public:
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
+#if JVET_O0119_BASE_PALETTE_444
+  void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
+  unsigned  getPLTMode                   ()         const { return m_PLTMode; }
+#endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   void      setJointCbCr                    ( bool b )       { m_JointCbCrMode = b; }
   bool      getJointCbCr                    ()         const { return m_JointCbCrMode; }

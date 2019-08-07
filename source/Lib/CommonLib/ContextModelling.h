@@ -446,9 +446,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
-                           lastScanPos[COMPONENT_Y ] = -1;
-                           lastScanPos[COMPONENT_Cb] = -1;
-                           lastScanPos[COMPONENT_Cr] = -1;
+                           lfnstLastScanPos = false;
                          }
 #else
                          qgStart(false),
@@ -471,9 +469,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
-                           lastScanPos[COMPONENT_Y ] = -1;
-                           lastScanPos[COMPONENT_Cb] = -1;
-                           lastScanPos[COMPONENT_Cr] = -1;
+                           lfnstLastScanPos = false;
                          }
 #else
 #if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
@@ -492,7 +488,7 @@ public:
   bool      isChromaQpAdjCoded;
   bool      qgStart;
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-  int       lastScanPos[MAX_NUM_COMPONENT];
+  bool      lfnstLastScanPos;
 #else
   uint32_t  numNonZeroCoeffNonTs;
 #endif

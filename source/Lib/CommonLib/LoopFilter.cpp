@@ -281,6 +281,26 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   xSetLoopfilterParam( cu );
   static_vector<int, 2*MAX_CU_SIZE> edgeIdx;
   edgeIdx.clear();
+
+  if (m_enc)
+  {
+    m_shiftHor = ::getComponentScaleX(COMPONENT_Cb, cu.chromaFormat);
+    m_shiftVer = ::getComponentScaleY(COMPONENT_Cb, cu.chromaFormat);
+    int x, y;
+    if (cu.Y().valid())
+    {
+      x = cu.block(COMPONENT_Y).x;
+      y = cu.block(COMPONENT_Y).y;
+    }
+    else
+    {
+      x = cu.block(COMPONENT_Cb).x << m_shiftHor;
+      y = cu.block(COMPONENT_Cb).y << m_shiftVer;
+    }
+    m_ctuXLumaSamples = x & ~(cu.slice->getSPS()->getMaxCUWidth()  - 1);
+    m_ctuYLumaSamples = y & ~(cu.slice->getSPS()->getMaxCUHeight() - 1);
+  }
+
   for( auto &currTU : CU::traverseTUs( cu ) )
   {
     const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;
@@ -878,6 +898,9 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
   const SPS     &sps      = *(cu.cs->sps);
   const Slice   &slice    = *(cu.slice);
   const bool    ppsTransquantBypassEnabledFlag = pps.getTransquantBypassEnabledFlag();
+#if JVET_O0119_BASE_PALETTE_444
+  const bool    spsPaletteEnabledFlag = sps.getPLTMode();
+#endif
   const int     bitDepthLuma                   = sps.getBitDepth(CHANNEL_TYPE_LUMA);
   const ClpRng& clpRng( cu.cs->slice->clpRng(COMPONENT_Y) );
 
@@ -1056,6 +1079,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
             bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
             bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
           }
+#if JVET_O0119_BASE_PALETTE_444
+          if (spsPaletteEnabledFlag)
+          {
+            // check if each of PUs is palette coded
+            bPartPNoFilter = bPartPNoFilter || CU::isPLT(cuP);
+            bPartQNoFilter = bPartQNoFilter || CU::isPLT(cuQ);
+          }
+#endif
 
           if (dL < iBeta)
           {
@@ -1101,6 +1132,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
           bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
           bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
         }
+#if JVET_O0119_BASE_PALETTE_444
+        if( spsPaletteEnabledFlag)
+        {
+          // check if each of PUs is palette coded
+          bPartPNoFilter = bPartPNoFilter || CU::isPLT(cuP);
+          bPartQNoFilter = bPartQNoFilter || CU::isPLT(cuQ);
+        }
+#endif
 
         if( d < iBeta )
         {
@@ -1251,6 +1290,14 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
         bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
       }
+#if JVET_O0119_BASE_PALETTE_444
+      if ( sps.getPLTMode())
+      {
+        // check if each of PUs is palette coded
+        bPartPNoFilter = bPartPNoFilter || CU::isPLT(cuP);
+        bPartQNoFilter = bPartQNoFilter || CU::isPLT(cuQ);
+      }
+#endif
 
       const int maxFilterLengthP = m_maxFilterLengthP[COMPONENT_Cb][(pos.x-m_ctuXLumaSamples)>>m_shiftHor][(pos.y-m_ctuYLumaSamples)>>m_shiftVer];
       const int maxFilterLengthQ = m_maxFilterLengthQ[COMPONENT_Cb][(pos.x-m_ctuXLumaSamples)>>m_shiftHor][(pos.y-m_ctuYLumaSamples)>>m_shiftVer];

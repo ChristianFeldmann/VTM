@@ -2738,7 +2738,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if JVET_O0105_ICT
   if (isLuma(compID))
   {
-#endif
+#else
   if (flag && slice.getLmcsChromaResidualScaleFlag() && isChroma(compID))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
@@ -2753,6 +2753,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
     tu.setChromaAdj(adj);
   }
+#endif
   //===== get residual signal =====
   piResi.copyFrom( piOrg  );
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
@@ -2850,7 +2851,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     m_pcTrQuant->setLambda( 1.3 * m_pcTrQuant->getLambda() );
   }
-  #endif
+#endif
 #else
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   else if ( sps.getJointCbCrEnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
@@ -4234,7 +4235,7 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> tempCandCostList;
   const double minCost = candCostList[0];
   bool keepOneMip = candModeList.size() > numModesForFullRD;
-  
+
   int numConv = 0;
   int numMip = 0;
   for (int idx = 0; idx < candModeList.size() - (keepOneMip?0:1); idx++)

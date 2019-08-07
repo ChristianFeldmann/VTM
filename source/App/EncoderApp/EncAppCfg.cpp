@@ -2755,8 +2755,7 @@ bool EncAppCfg::xCheckParameter()
   bool errorGOP=false;
   int checkGOP=1;
   int numRefs = m_isField ? 2 : 1;
-  int refList[MAX_NUM_REF_PICS+1];
-  refList[0]=0;
+  int refList[MAX_NUM_REF_PICS+1] = {0};
   if(m_isField)
   {
     refList[1] = 1;

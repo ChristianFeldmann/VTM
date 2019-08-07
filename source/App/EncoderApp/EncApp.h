@@ -65,6 +65,10 @@ private:
   uint32_t              m_essentialBytes;
   uint32_t              m_totalBytes;
   fstream           m_bitstream;
+public:
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
 
 private:
   // initialization

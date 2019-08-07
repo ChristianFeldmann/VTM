@@ -4273,11 +4273,12 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
     }
 
     // Append MIP mode to RD mode list
+    const int modeListSize = int(tempRdModeList.size());
     for (int idx = 0; idx < 3; idx++)
     {
       const ModeInfo mipMode(true, 0, NOT_INTRA_SUBPARTITIONS, sortedMipModes[idx]);
       bool alreadyIncluded = false;
-      for (int modeListIdx = 0; modeListIdx < tempRdModeList.size(); modeListIdx++)
+      for (int modeListIdx = 0; modeListIdx < modeListSize; modeListIdx++)
       {
         if (tempRdModeList[modeListIdx] == mipMode)
         {

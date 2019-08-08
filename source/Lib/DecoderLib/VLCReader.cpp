@@ -1204,32 +1204,32 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
   READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_tile_group");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_tile_group");     maxBTD[1] = uiCode;
-  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_luma");     maxBTD[0] = uiCode;
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slice");     maxBTD[1] = uiCode;
+  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_luma");     maxBTD[0] = uiCode;
 
   maxTTSize[0] = maxBTSize[0] = minQT[0];
   if (maxBTD[0] != 0)
   {
-    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_luma");     maxBTSize[0] <<= uiCode;
-    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_luma");     maxTTSize[0] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_slice_luma");     maxBTSize[0] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_luma");     maxTTSize[0] <<= uiCode;
   }
   maxTTSize[1] = maxBTSize[1] = minQT[1];
   if (maxBTD[1] != 0)
   {
-    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_tile_group");     maxBTSize[1] <<= uiCode;
-    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_tile_group");     maxTTSize[1] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_slice");     maxBTSize[1] <<= uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_slice");     maxTTSize[1] <<= uiCode;
   }
   if (pcSPS->getUseDualITree())
   {
-    READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_tile_group_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-    READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_tile_group_chroma"); maxBTD[2] = uiCode;
+    READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+    READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_chroma"); maxBTD[2] = uiCode;
     maxTTSize[2] = maxBTSize[2] = minQT[2];
     if (maxBTD[2] != 0)
     {
-      READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_tile_group_chroma");       maxBTSize[2] <<= uiCode;
-      READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_tile_group_chroma");       maxTTSize[2] <<= uiCode;
+      READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");       maxBTSize[2] <<= uiCode;
+      READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");       maxTTSize[2] <<= uiCode;
     }
 }
 

@@ -55,6 +55,9 @@ PartLevel::PartLevel()
 , canQtSplit          ( true          )
 , qgEnable            ( true          )
 , qgChromaEnable      ( true          )
+#if JVET_O0050_LOCAL_DUAL_TREE
+, modeType            ( MODE_TYPE_ALL )
+#endif
 {
 }
 
@@ -69,6 +72,9 @@ PartLevel::PartLevel( const PartSplit _split, const Partitioning& _parts )
 , canQtSplit          ( true          )
 , qgEnable            ( true          )
 , qgChromaEnable      ( true          )
+#if JVET_O0050_LOCAL_DUAL_TREE
+, modeType            ( MODE_TYPE_ALL )
+#endif
 {
 }
 
@@ -83,6 +89,9 @@ PartLevel::PartLevel( const PartSplit _split, Partitioning&& _parts )
 , canQtSplit          ( true                                 )
 , qgEnable            ( true                                 )
 , qgChromaEnable      ( true                                 )
+#if JVET_O0050_LOCAL_DUAL_TREE
+, modeType            ( MODE_TYPE_ALL )
+#endif
 {
 }
 
@@ -106,6 +115,29 @@ SplitSeries Partitioner::getSplitSeries() const
   return splitSeries;
 }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+ModeTypeSeries Partitioner::getModeTypeSeries() const
+{
+  ModeTypeSeries modeTypeSeries = 0;
+  int depth = 0;
+
+  for( const auto &level : m_partStack )
+  {
+    if( level.split == CTU_LEVEL ) continue;
+    else modeTypeSeries += static_cast<int>(level.modeType) << (depth * 3);
+
+    depth++;
+  }
+
+  return modeTypeSeries;
+}
+
+bool Partitioner::isSepTree( const CodingStructure &cs )
+{
+  return treeType != TREE_D || CS::isDualITree( cs );
+}
+#endif
+
 void Partitioner::setCUData( CodingUnit& cu )
 {
   cu.depth       = currDepth;
@@ -113,6 +145,9 @@ void Partitioner::setCUData( CodingUnit& cu )
   cu.mtDepth     = currMtDepth;
   cu.qtDepth     = currQtDepth;
   cu.splitSeries = getSplitSeries();
+#if JVET_O0050_LOCAL_DUAL_TREE
+  cu.modeTypeSeries = getModeTypeSeries();
+#endif
 }
 
 void Partitioner::copyState( const Partitioner& other )
@@ -234,6 +269,10 @@ void QTBTPartitioner::initCtu( const UnitArea& ctuArea, const ChannelType _chTyp
 
   m_partStack.clear();
   m_partStack.push_back( PartLevel( CTU_LEVEL, Partitioning{ ctuArea } ) );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  treeType = TREE_D;
+  modeType = MODE_TYPE_ALL;
+#endif
 }
 
 void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructure& cs )
@@ -249,14 +288,23 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
   {
   case CU_QUAD_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs ) ) );
+#if JVET_O0050_LOCAL_DUAL_TREE
+    m_partStack.back().modeType = modeType;
+#endif
     break;
   case CU_HORZ_SPLIT:
   case CU_VERT_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs, split ) ) );
+#if JVET_O0050_LOCAL_DUAL_TREE
+    m_partStack.back().modeType = modeType;
+#endif
     break;
   case CU_TRIH_SPLIT:
   case CU_TRIV_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getCUSubPartitions( currArea(), cs, split ) ) );
+#if JVET_O0050_LOCAL_DUAL_TREE
+    m_partStack.back().modeType = modeType;
+#endif
     break;
   case TU_MAX_TR_SPLIT:
     m_partStack.push_back( PartLevel( split, PartitionerImpl::getMaxTuTiling( currArea(), cs ) ) );
@@ -354,6 +402,13 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
   if( area.width <= minQtSize )                              canQt = false;
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( treeType == TREE_C )
+  {
+    canQt = canBh = canTh = canBv = canTv = false;
+    return;
+  }
+#endif
   if( implicitSplit != CU_DONT_SPLIT )
   {
     canNo = canTh = canTv = false;
@@ -935,7 +990,11 @@ void PartitionerImpl::getTUIntraSubPartitions( Partitioning &sub, const UnitArea
   uint32_t nPartitions;
   uint32_t splitDimensionSize = CU::getISPSplitDim( tuArea.lumaSize().width, tuArea.lumaSize().height, splitType );
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool isDualTree = CS::isDualITree( cs ) || cs.treeType != TREE_D;
+#else
   bool isDualTree = CS::isDualITree( cs );
+#endif
 
   if( splitType == TU_1D_HORZ_SPLIT )
   {

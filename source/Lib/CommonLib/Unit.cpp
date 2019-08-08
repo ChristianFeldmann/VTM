@@ -299,6 +299,11 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
     memcpy(reuseflag[idx], other.reuseflag[idx], MAXPLTPREDSIZE * sizeof(bool));
   }
 #endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+  treeType          = other.treeType;
+  modeType          = other.modeType;
+  modeTypeSeries    = other.modeTypeSeries;
+#endif
   return *this;
 }
 
@@ -348,14 +353,30 @@ void CodingUnit::initData()
     memset(reuseflag[idx], false, MAXPLTPREDSIZE * sizeof(bool));
   }
 #endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+  treeType          = TREE_D;
+  modeType          = MODE_TYPE_ALL;
+  modeTypeSeries    = 0;
+#endif
 }
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+const bool CodingUnit::isSepTree() const
+{
+  return treeType != TREE_D || CS::isDualITree( *cs );
+}
+#endif
 
 #if JVET_O1124_ALLOW_CCLM_COND
 const bool CodingUnit::checkCCLMAllowed() const
 {
   bool allowCCLM = false;
 
-  if( chType != CHANNEL_TYPE_CHROMA ) //single tree
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( !CS::isDualITree( *cs ) ) //single tree I slice or non-I slice (Note: judging chType is no longer equivalent to checking dual-tree I slice since the local dual-tree is introduced)
+#else
+  if( chType != CHANNEL_TYPE_CHROMA ) //single tree I slice or non-I slice
+#endif
   {
     allowCCLM = true;
   }

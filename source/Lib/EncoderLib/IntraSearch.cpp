@@ -266,6 +266,25 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
 //////////////////////////////////////////////////////////////////////////
 // INTRA PREDICTION
 //////////////////////////////////////////////////////////////////////////
+#if JVET_O0050_LOCAL_DUAL_TREE
+static constexpr double COST_UNKNOWN = -65536.0;
+
+double IntraSearch::findInterCUCost( CodingUnit &cu )
+{
+  if( cu.isConsIntra() && !cu.slice->isIntra() )
+  {
+    //search corresponding inter CU cost
+    for( int i = 0; i < m_numCuInSCIPU; i++ )
+    {
+      if( cu.lumaPos() == m_cuAreaInSCIPU[i].pos() && cu.lumaSize() == m_cuAreaInSCIPU[i].size() )
+      {
+        return m_cuCostInSCIPU[i];
+      }
+    }
+  }
+  return COST_UNKNOWN;
+}
+#endif
 
 bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, const double bestCostSoFar, bool mtsCheckRangeFlag, int mtsFirstCheckId, int mtsLastCheckId, bool moreProbMTSIdxFirst )
 {
@@ -297,6 +316,9 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   LFNSTSaveFlag &= sps.getUseIntraMTS() ? cu.mtsFlag == 0 : true;
 
   const uint32_t lfnstIdx = cu.lfnstIdx;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  double costInterCU = findInterCUCost( cu );
+#endif
 
 
   const int width  = partitioner.currArea().lwidth();
@@ -1057,6 +1079,10 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     csBest->slice = cs.slice;
     csTemp->initStructData();
     csBest->initStructData();
+#if JVET_O0050_LOCAL_DUAL_TREE
+    csTemp->picture = cs.picture;
+    csBest->picture = cs.picture;
+#endif
 
 #if !JVET_O0925_MIP_SIMPLIFICATIONS
     m_bestCostNonMip = MAX_DOUBLE;
@@ -1303,6 +1329,23 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
 
       csTemp->releaseIntermediateData();
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
+      {
+        if( m_pcEncCfg->getUseFastLocalDualTree() )
+        {
+          //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
+          break;
+        }
+        else
+        {
+          if( csBest->cost > costInterCU * 1.5 )
+          {
+            break;
+          }
+        }
+      }
+#endif
     } // Mode loop
     cu.ispMode = uiBestPUMode.ispMod;
 
@@ -1337,7 +1380,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
   cs.setDecomp( cs.area.Cb(), false );
 
   double    bestCostSoFar = maxCostAllowed;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool      lumaUsesISP   = !cu.isSepTree() && cu.ispMode;
+#else
   bool      lumaUsesISP   = !CS::isDualITree( *cu.cs ) && cu.ispMode;
+#endif
   PartSplit ispType       = lumaUsesISP ? CU::getISPType( cu, COMPONENT_Y ) : TU_NO_ISP;
   CHECK( cu.ispMode && bestCostSoFar < 0, "bestCostSoFar must be positive!" );
 
@@ -1364,13 +1411,21 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
       saveCS.area.repositionTo( cs.area );
       saveCS.clearTUs();
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( !cu.isSepTree() && cu.ispMode )
+#else
       if( !CS::isDualITree( cs ) && cu.ispMode )
+#endif
       {
         saveCS.clearCUs();
         saveCS.clearPUs();
       }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( cu.isSepTree() )
+#else
       if( CS::isDualITree( cs ) )
+#endif
       {
         if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
         {
@@ -1623,8 +1678,13 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
 
 void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ComponentID compStr = (partitioner.isSepTree(cs) && !isLuma( partitioner.chType)) ? COMPONENT_Cb : COMPONENT_Y;
+  ComponentID compEnd = (partitioner.isSepTree(cs) && isLuma( partitioner.chType)) ? COMPONENT_Y : COMPONENT_Cr;
+#else
   ComponentID compStr = (CS::isDualITree(cs) && !isLuma(partitioner.chType)) ? COMPONENT_Cb: COMPONENT_Y;
   ComponentID compEnd = (CS::isDualITree(cs) && isLuma(partitioner.chType)) ? COMPONENT_Y : COMPONENT_Cr;
+#endif
   for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
   {
 
@@ -1677,6 +1737,27 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
   }
 }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+void IntraSearch::saveCuAreaCostInSCIPU( Area area, double cost )
+{
+  if( m_numCuInSCIPU < NUM_INTER_CU_INFO_SAVE )
+  {
+    m_cuAreaInSCIPU[m_numCuInSCIPU] = area;
+    m_cuCostInSCIPU[m_numCuInSCIPU] = cost;
+    m_numCuInSCIPU++;
+  }
+}
+
+void IntraSearch::initCuAreaCostInSCIPU()
+{
+  for( int i = 0; i < NUM_INTER_CU_INFO_SAVE; i++ )
+  {
+    m_cuAreaInSCIPU[i] = Area();
+    m_cuCostInSCIPU[i] = 0;
+  }
+  m_numCuInSCIPU = 0;
+}
+#endif
 #if JVET_O0119_BASE_PALETTE_444
 void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
@@ -2738,7 +2819,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if JVET_O0105_ICT
   if (isLuma(compID))
   {
-#endif
+#else
   if (flag && slice.getLmcsChromaResidualScaleFlag() && isChroma(compID))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
@@ -2753,6 +2834,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
     tu.setChromaAdj(adj);
   }
+#endif
   //===== get residual signal =====
   piResi.copyFrom( piOrg  );
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
@@ -2850,7 +2932,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     m_pcTrQuant->setLambda( 1.3 * m_pcTrQuant->getLambda() );
   }
-  #endif
+#endif
 #else
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   else if ( sps.getJointCbCrEnabledFlag() && isChroma(compID) && (tu.cu->cs->slice->getSliceQp() > 18) )
@@ -2915,7 +2997,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   else // chroma
   {
     int         codedCbfMask  = 0;
-    ComponentID codeCompId    = ( tu.jointCbCr ? ( tu.jointCbCr>>1 ? COMPONENT_Cb : COMPONENT_Cr ) : compID );
+    ComponentID codeCompId    = (tu.jointCbCr ? (tu.jointCbCr >> 1 ? COMPONENT_Cb : COMPONENT_Cr) : compID);
+    const QpParam qpCbCr(tu, codeCompId);
+
     if( tu.jointCbCr )
     {
       ComponentID otherCompId = ( codeCompId==COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr );
@@ -2924,11 +3008,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
     PelBuf& codeResi = ( codeCompId == COMPONENT_Cr ? crResi : piResi );
     uiAbsSum = 0;
-    m_pcTrQuant->transformNxN( tu, codeCompId, cQP, uiAbsSum, m_CABACEstimator->getCtx() );
+    m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx());
     DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
     if( uiAbsSum > 0 )
     {
-      m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, cQP);
+      m_pcTrQuant->invTransformNxN(tu, codeCompId, codeResi, qpCbCr);
       codedCbfMask += ( codeCompId == COMPONENT_Cb ? 2 : 1 );
     }
     else
@@ -3692,7 +3776,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #if JVET_O0105_ICT
   bool lumaUsesISP                    = false;
 #else
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool lumaUsesISP                    = !currTU.cu->isSepTree() && currTU.cu->ispMode;
+#else
   bool lumaUsesISP                    = !CS::isDualITree( cs ) && currTU.cu->ispMode;
+#endif
 #endif
   uint32_t     currDepth                  = partitioner.currTrDepth;
   const PPS &pps                      = *cs.pps;
@@ -3712,7 +3800,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     saveCS.area.repositionTo( cs.area );
     saveCS.initStructData( MAX_INT, false, true );
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( !currTU.cu->isSepTree() && currTU.cu->ispMode )
+#else
     if( !CS::isDualITree( cs ) && currTU.cu->ispMode )
+#endif
     {
       saveCS.clearCUs();
       CodingUnit& auxCU = saveCS.addCU( *currTU.cu, partitioner.chType );
@@ -4232,7 +4324,7 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> tempCandCostList;
   const double minCost = candCostList[0];
   bool keepOneMip = candModeList.size() > numModesForFullRD;
-  
+
   int numConv = 0;
   int numMip = 0;
   for (int idx = 0; idx < candModeList.size() - (keepOneMip?0:1); idx++)
@@ -4271,11 +4363,12 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
     }
 
     // Append MIP mode to RD mode list
+    const int modeListSize = int(tempRdModeList.size());
     for (int idx = 0; idx < 3; idx++)
     {
       const ModeInfo mipMode(true, 0, NOT_INTRA_SUBPARTITIONS, sortedMipModes[idx]);
       bool alreadyIncluded = false;
-      for (int modeListIdx = 0; modeListIdx < tempRdModeList.size(); modeListIdx++)
+      for (int modeListIdx = 0; modeListIdx < modeListSize; modeListIdx++)
       {
         if (tempRdModeList[modeListIdx] == mipMode)
         {

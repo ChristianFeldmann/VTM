@@ -180,6 +180,13 @@ private:
 
   CodingStructure **m_pSaveCS;
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool            m_saveCuCostInSCIPU;
+  uint8_t         m_numCuInSCIPU;
+  Area            m_cuAreaInSCIPU[NUM_INTER_CU_INFO_SAVE];
+  double          m_cuCostInSCIPU[NUM_INTER_CU_INFO_SAVE];
+#endif
+
   struct ModeInfo
   {
     bool     mipFlg; // CU::mipFlag
@@ -375,6 +382,15 @@ public:
   CodingStructure  **getSaveCSBuf () { return m_pSaveCS; }
 
   void setModeCtrl                ( EncModeCtrl *modeCtrl ) { m_modeCtrl = modeCtrl; }
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool getSaveCuCostInSCIPU       ()               { return m_saveCuCostInSCIPU; }
+  void setSaveCuCostInSCIPU       ( bool b )       { m_saveCuCostInSCIPU = b;  }
+  void setNumCuInSCIPU            ( uint8_t i )    { m_numCuInSCIPU = i; }
+  void saveCuAreaCostInSCIPU      ( Area area, double cost );
+  void initCuAreaCostInSCIPU      ();
+  double findInterCUCost          ( CodingUnit &cu );
+#endif
 
 public:
 

@@ -240,6 +240,16 @@ const CtxSet ContextSetCfg::Split12Flag = ContextSetCfg::addCtxSet
   {  12,  12,  12,  12, },
 });
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+const CtxSet ContextSetCfg::ModeConsFlag = ContextSetCfg::addCtxSet
+({
+  { 192, 168, },
+  { 179, 139, },
+  { CNU, CNU, },
+  {   5,   2, },
+});
+#endif
+
 const CtxSet ContextSetCfg::SkipFlag = ContextSetCfg::addCtxSet
 ({
   { 197, 214, 216, },

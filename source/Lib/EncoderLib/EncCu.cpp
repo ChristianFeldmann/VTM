@@ -57,11 +57,11 @@
 extern std::recursive_mutex g_cache_mutex;
 #endif
 
+
+
 //! \ingroup EncoderLib
 //! \{
 
-// ====================================================================================================================
-// Constructor / destructor / create / destroy
 // ====================================================================================================================
 EncCu::EncCu() : m_triangleModeTest
 {
@@ -86,11 +86,19 @@ void EncCu::create( EncCfg* encCfg )
   unsigned      numHeights    = gp_sizeIdxInfo->numHeights();
   m_pTempCS = new CodingStructure**  [numWidths];
   m_pBestCS = new CodingStructure**  [numWidths];
+#if JVET_O0050_LOCAL_DUAL_TREE
+  m_pTempCS2 = new CodingStructure** [numWidths];
+  m_pBestCS2 = new CodingStructure** [numWidths];
+#endif
 
   for( unsigned w = 0; w < numWidths; w++ )
   {
     m_pTempCS[w] = new CodingStructure*  [numHeights];
     m_pBestCS[w] = new CodingStructure*  [numHeights];
+#if JVET_O0050_LOCAL_DUAL_TREE
+    m_pTempCS2[w] = new CodingStructure* [numHeights];
+    m_pBestCS2[w] = new CodingStructure* [numHeights];
+#endif
 
     for( unsigned h = 0; h < numHeights; h++ )
     {
@@ -104,11 +112,23 @@ void EncCu::create( EncCfg* encCfg )
 
         m_pTempCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
         m_pBestCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+        m_pTempCS2[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
+        m_pBestCS2[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
+
+        m_pTempCS2[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
+        m_pBestCS2[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
+#endif
       }
       else
       {
         m_pTempCS[w][h] = nullptr;
         m_pBestCS[w][h] = nullptr;
+#if JVET_O0050_LOCAL_DUAL_TREE
+        m_pTempCS2[w][h] = nullptr;
+        m_pBestCS2[w][h] = nullptr;
+#endif
       }
     }
   }
@@ -188,14 +208,30 @@ void EncCu::destroy()
 
       delete m_pBestCS[w][h];
       delete m_pTempCS[w][h];
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( m_pBestCS2[w][h] ) m_pBestCS2[w][h]->destroy();
+      if( m_pTempCS2[w][h] ) m_pTempCS2[w][h]->destroy();
+
+      delete m_pBestCS2[w][h];
+      delete m_pTempCS2[w][h];
+#endif
     }
 
     delete[] m_pTempCS[w];
     delete[] m_pBestCS[w];
+#if JVET_O0050_LOCAL_DUAL_TREE
+    delete[] m_pTempCS2[w];
+    delete[] m_pBestCS2[w];
+#endif
   }
 
   delete[] m_pBestCS; m_pBestCS = nullptr;
   delete[] m_pTempCS; m_pTempCS = nullptr;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  delete[] m_pBestCS2; m_pBestCS2 = nullptr;
+  delete[] m_pTempCS2; m_pTempCS2 = nullptr;
+#endif
 
 #if REUSE_CU_RESULTS
   if (m_tmpStorageLCU)
@@ -288,6 +324,10 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
 void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsigned ctuRsAddr, const int prevQP[], const int currQP[] )
 {
   m_modeCtrl->initCTUEncoding( *cs.slice );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  cs.treeType = TREE_D;
+#endif
+
 #if JVET_O0119_BASE_PALETTE_444
   cs.slice->m_mapPltCost.clear();
 #endif
@@ -610,7 +650,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   uint32_t compBegin;
   uint32_t numComp;
   bool jointPLT = false;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (partitioner.isSepTree( *tempCS ))
+#else
   if (CS::isDualITree(*bestCS))
+#endif
   {
     if (isLuma(partitioner.chType))
     {
@@ -649,6 +693,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   const uint32_t uiLPelX  = tempCS->area.Y().lumaPos().x;
   const uint32_t uiTPelY  = tempCS->area.Y().lumaPos().y;
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const ModeType modeTypeParent  = partitioner.modeType;
+  const TreeType treeTypeParent  = partitioner.treeType;
+  const ChannelType chTypeParent = partitioner.chType;
+#endif
   const UnitArea currCsArea = clipArea( CS::getArea( *bestCS, bestCS->area, partitioner.chType ), *tempCS->picture );
 
   m_modeCtrl->initCULevel( partitioner, *tempCS );
@@ -717,7 +766,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     currTestMode.maxCostAllowed = maxCostAllowed;
 #endif
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (pps.getUseDQP() && partitioner.isSepTree(*tempCS) && isChroma( partitioner.chType ))
+#else
     if (pps.getUseDQP() && CS::isDualITree(*tempCS) && isChroma(partitioner.chType))
+#endif
     {
       const Position chromaCentral(tempCS->area.Cb().chromaPos().offset(tempCS->area.Cb().chromaSize().width >> 1, tempCS->area.Cb().chromaSize().height >> 1));
       const Position lumaRefPos(chromaCentral.x << getComponentScaleX(COMPONENT_Cb, tempCS->area.chromaFormat), chromaCentral.y << getComponentScaleY(COMPONENT_Cb, tempCS->area.chromaFormat));
@@ -835,7 +888,68 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       splitmode = bestCS->cus[0]->splitSeries;
     }
 #endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+      assert( partitioner.modeType == tempCS->modeType );
+      int signalModeConsVal = tempCS->signalModeCons( getPartSplit( currTestMode ), partitioner, modeTypeParent );
+      int numRoundRdo = signalModeConsVal == LDT_MODE_TYPE_SIGNAL ? 2 : 1;
+      bool skipInterPass = false;
+      for( int i = 0; i < numRoundRdo; i++ )
+      {
+        //change cons modes
+        if( signalModeConsVal == LDT_MODE_TYPE_SIGNAL )
+        {
+          CHECK( numRoundRdo != 2, "numRoundRdo shall be 2 - [LDT_MODE_TYPE_SIGNAL]" );
+          tempCS->modeType = partitioner.modeType = (i == 0) ? MODE_TYPE_INTER : MODE_TYPE_INTRA;
+        }
+        else if( signalModeConsVal == LDT_MODE_TYPE_INFER )
+        {
+          CHECK( numRoundRdo != 1, "numRoundRdo shall be 1 - [LDT_MODE_TYPE_INFER]" );
+          tempCS->modeType = partitioner.modeType = MODE_TYPE_INTRA;
+        }
+        else if( signalModeConsVal == LDT_MODE_TYPE_INHERIT )
+        {
+          CHECK( numRoundRdo != 1, "numRoundRdo shall be 1 - [LDT_MODE_TYPE_INHERIT]" );
+          tempCS->modeType = partitioner.modeType = modeTypeParent;
+        }
+
+        //for lite intra encoding fast algorithm, set the status to save inter coding info
+        if( modeTypeParent == MODE_TYPE_ALL && tempCS->modeType == MODE_TYPE_INTER )
+        {
+          m_pcIntraSearch->setSaveCuCostInSCIPU( true );
+          m_pcIntraSearch->setNumCuInSCIPU( 0 );
+        }
+        else if( modeTypeParent == MODE_TYPE_ALL && tempCS->modeType != MODE_TYPE_INTER )
+        {
+          m_pcIntraSearch->setSaveCuCostInSCIPU( false );
+          if( tempCS->modeType == MODE_TYPE_ALL )
+          {
+            m_pcIntraSearch->setNumCuInSCIPU( 0 );
+          }
+        }
+
+        xCheckModeSplit( tempCS, bestCS, partitioner, currTestMode, modeTypeParent, skipInterPass );
+#else
       xCheckModeSplit( tempCS, bestCS, partitioner, currTestMode );
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+        //recover cons modes
+        tempCS->modeType = partitioner.modeType = modeTypeParent;
+        tempCS->treeType = partitioner.treeType = treeTypeParent;
+        partitioner.chType = chTypeParent;
+        if( modeTypeParent == MODE_TYPE_ALL )
+        {
+          m_pcIntraSearch->setSaveCuCostInSCIPU( false );
+          if( numRoundRdo == 2 && tempCS->modeType == MODE_TYPE_INTRA )
+          {
+            m_pcIntraSearch->initCuAreaCostInSCIPU();
+          }
+        }
+        if( skipInterPass )
+        {
+          break;
+        }
+      }
+#endif
 #if JVET_O0119_BASE_PALETTE_444
     if (splitmode != bestCS->cus[0]->splitSeries)
     {
@@ -906,6 +1020,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   bestCS->picture->getPredBuf(currCsArea).copyFrom(bestCS->getPredBuf(currCsArea));
   bestCS->picture->getRecoBuf( currCsArea ).copyFrom( bestCS->getRecoBuf( currCsArea ) );
   m_modeCtrl->finishCULevel( partitioner );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( m_pcIntraSearch->getSaveCuCostInSCIPU() && bestCS->cus.size() == 1 )
+  {
+    m_pcIntraSearch->saveCuAreaCostInSCIPU( Area( partitioner.currArea().lumaPos(), partitioner.currArea().lumaSize() ), bestCS->cost );
+  }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   if( tempCS->picture->scheduler.getSplitJobId() == 0 && m_pcEncCfg->getNumSplitThreads() != 1 )
@@ -1226,7 +1346,11 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
 }
 #endif
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode, const ModeType modeTypeParent, bool &skipInterPass )
+#else
 void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
+#endif
 {
   const int qp                = encTestMode.qp;
   const Slice &slice          = *tempCS->slice;
@@ -1242,6 +1366,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #endif
 
   const PartSplit split = getPartSplit( encTestMode );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const ModeType modeTypeChild = partitioner.modeType;
+#endif
 
   CHECK( split == CU_DONT_SPLIT, "No proper split provided!" );
 
@@ -1253,10 +1380,15 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   const TempCtx ctxStartQt( m_CtxCache, SubCtx( Ctx::SplitQtFlag, m_CABACEstimator->getCtx() ) );
   const TempCtx ctxStartHv( m_CtxCache, SubCtx( Ctx::SplitHvFlag, m_CABACEstimator->getCtx() ) );
   const TempCtx ctxStart12( m_CtxCache, SubCtx( Ctx::Split12Flag, m_CABACEstimator->getCtx() ) );
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const TempCtx ctxStartMC( m_CtxCache, SubCtx( Ctx::ModeConsFlag, m_CABACEstimator->getCtx() ) );
+#endif
   m_CABACEstimator->resetBits();
 
   m_CABACEstimator->split_cu_mode( split, *tempCS, partitioner );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  m_CABACEstimator->mode_constraint( split, *tempCS, partitioner, modeTypeChild );
+#endif
 
   const double factor = ( tempCS->currQP[partitioner.chType] > 30 ? 1.1 : 1.075 );
   tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
@@ -1268,7 +1400,9 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitQtFlag, ctxStartQt );
   m_CABACEstimator->getCtx() = SubCtx( Ctx::SplitHvFlag, ctxStartHv );
   m_CABACEstimator->getCtx() = SubCtx( Ctx::Split12Flag, ctxStart12 );
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+  m_CABACEstimator->getCtx() = SubCtx( Ctx::ModeConsFlag, ctxStartMC );
+#endif
   if (cost > bestCS->cost + bestCS->costDbOffset
 #if ENABLE_QPA_SUB_CTU
     || (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP() && (pps.getCuQpDeltaSubdiv() > 0) && (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) &&
@@ -1279,6 +1413,26 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
     return;
   }
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const bool chromaNotSplit = modeTypeParent == MODE_TYPE_ALL && modeTypeChild == MODE_TYPE_INTRA ? true : false;
+  if( partitioner.treeType != TREE_D )
+  {
+    tempCS->treeType = TREE_L;
+  }
+  else
+  {
+    if( chromaNotSplit )
+    {
+      CHECK( partitioner.chType != CHANNEL_TYPE_LUMA, "chType must be luma" );
+      tempCS->treeType = partitioner.treeType = TREE_L;
+    }
+    else
+    {
+      tempCS->treeType = partitioner.treeType = TREE_D;
+    }
+  }
+#endif
 
   int startShareThisLevel = 0;
   const uint32_t uiLPelX = tempCS->area.Y().lumaPos().x;
@@ -1385,6 +1539,18 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
         m_CurrCtx--;
         partitioner.exitCurrSplit();
         xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
+#if JVET_O0050_LOCAL_DUAL_TREE //early terminate
+        if( partitioner.chType == CHANNEL_TYPE_LUMA )
+        {
+          tempCS->motionLut = oldMotionLut;
+        }
+        if( startShareThisLevel == 1 )
+        {
+          m_shareState = NO_SHARE;
+          m_pcInterSearch->setShareState( m_shareState );
+          setShareStateDec( m_shareState );
+        }
+#endif
         return;
       }
 
@@ -1395,9 +1561,50 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       {
         tempCS->prevQP[partitioner.chType] = bestSubCS->prevQP[partitioner.chType];
       }
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( partitioner.isConsInter() )
+      {
+        for( int i = 0; i < bestSubCS->cus.size(); i++ )
+        {
+          CHECK( bestSubCS->cus[i]->predMode != MODE_INTER, "all CUs must be inter mode in an Intra coding region (SCIPU)" );
+        }
+      }
+      else if( partitioner.isConsIntra() )
+      {
+        for( int i = 0; i < bestSubCS->cus.size(); i++ )
+        {
+          CHECK( bestSubCS->cus[i]->predMode != MODE_INTRA && bestSubCS->cus[i]->predMode != MODE_IBC, "all CUs must be intra/ibc mode in an Intra coding region (SCIPU)" );
+        }
+      }
+#endif
 
       tempSubCS->releaseIntermediateData();
       bestSubCS->releaseIntermediateData();
+#if JVET_O0050_LOCAL_DUAL_TREE //early terminate
+      if( !tempCS->slice->isIntra() && partitioner.isConsIntra() )
+      {
+        tempCS->cost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
+        if( tempCS->cost > bestCS->cost )
+        {
+          tempCS->cost = MAX_DOUBLE;
+          tempCS->costDbOffset = 0;
+          tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
+          m_CurrCtx--;
+          partitioner.exitCurrSplit();
+          if( partitioner.chType == CHANNEL_TYPE_LUMA )
+          {
+            tempCS->motionLut = oldMotionLut;
+          }
+          if( startShareThisLevel == 1 )
+          {
+            m_shareState = NO_SHARE;
+            m_pcInterSearch->setShareState( m_shareState );
+            setShareStateDec( m_shareState );
+          }
+          return;
+        }
+      }
+#endif
     }
   } while( partitioner.nextPart( *tempCS ) );
 
@@ -1411,6 +1618,49 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   }
 
   m_CurrCtx--;
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( chromaNotSplit )
+  {
+    assert( tempCS->treeType == TREE_L );
+    uint32_t numCuPuTu[6];
+    tempCS->picture->cs->getNumCuPuTuOffset( numCuPuTu );
+    tempCS->picture->cs->useSubStructure( *tempCS, partitioner.chType, CS::getArea( *tempCS, partitioner.currArea(), partitioner.chType ), false, true, false, false );
+
+    partitioner.chType = CHANNEL_TYPE_CHROMA;
+    tempCS->treeType = partitioner.treeType = TREE_C;
+
+    m_CurrCtx++;
+
+    const unsigned wIdx = gp_sizeIdxInfo->idxFrom( partitioner.currArea().lwidth() );
+    const unsigned hIdx = gp_sizeIdxInfo->idxFrom( partitioner.currArea().lheight() );
+    CodingStructure *tempCSChroma = m_pTempCS2[wIdx][hIdx];
+    CodingStructure *bestCSChroma = m_pBestCS2[wIdx][hIdx];
+    tempCS->initSubStructure( *tempCSChroma, partitioner.chType, partitioner.currArea(), false );
+    tempCS->initSubStructure( *bestCSChroma, partitioner.chType, partitioner.currArea(), false );
+    tempCS->treeType = TREE_D;
+    xCompressCU( tempCSChroma, bestCSChroma, partitioner );
+
+    //attach chromaCS to luma CS and update cost
+    bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
+    //bestCSChroma->treeType = tempCSChroma->treeType = TREE_C;
+    CHECK( bestCSChroma->treeType != TREE_C || tempCSChroma->treeType != TREE_C, "wrong treeType for chroma CS" );
+    tempCS->useSubStructure( *bestCSChroma, partitioner.chType, CS::getArea( *bestCSChroma, partitioner.currArea(), partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, true );
+
+    //release tmp resource
+    tempCSChroma->releaseIntermediateData();
+    bestCSChroma->releaseIntermediateData();
+    //tempCS->picture->cs->releaseIntermediateData();
+    tempCS->picture->cs->clearCuPuTuIdxMap( partitioner.currArea(), numCuPuTu[0], numCuPuTu[1], numCuPuTu[2], numCuPuTu + 3 );
+
+    m_CurrCtx--;
+
+    //recover luma tree status
+    partitioner.chType = CHANNEL_TYPE_LUMA;
+    partitioner.treeType = TREE_D;
+    partitioner.modeType = MODE_TYPE_ALL;
+  }
+#endif
 
   // Finally, generate split-signaling bits for RD-cost check
   const PartSplit implicitSplit = partitioner.getImplicitSplit( *tempCS );
@@ -1441,7 +1691,10 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       m_CABACEstimator->resetBits();
 
       m_CABACEstimator->split_cu_mode( split, *tempCS, partitioner );
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+      partitioner.modeType = modeTypeParent;
+      m_CABACEstimator->mode_constraint( split, *tempCS, partitioner, modeTypeChild );
+#endif
       tempCS->fracBits += m_CABACEstimator->getEstFracBits(); // split bits
     }
   }
@@ -1476,6 +1729,20 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     bestCS->costDbOffset = 0;
   }
   tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( tempCS->cus.size() > 0 && modeTypeParent == MODE_TYPE_ALL && modeTypeChild == MODE_TYPE_INTER )
+  {
+    int areaSizeNoResiCu = 0;
+    for( int k = 0; k < tempCS->cus.size(); k++ )
+    {
+      areaSizeNoResiCu += (tempCS->cus[k]->rootCbf == false) ? tempCS->cus[k]->lumaSize().area() : 0;
+    }
+    if( areaSizeNoResiCu >= (tempCS->area.lumaSize().area() >> 1) )
+    {
+      skipInterPass = true;
+    }
+  }
+#endif
 
   // RD check for sub partitioned coding structure.
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
@@ -1529,14 +1796,22 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   int    bestLfnstIdx            =   0;
 
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const int  maxLfnstIdx         = ( partitioner.isSepTree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) )
+#else
   const int  maxLfnstIdx         = ( CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) )
+#endif
 #if JVET_O0545_MAX_TB_SIGNALLING
                                    || ( partitioner.currArea().lwidth() > sps.getMaxTbSize() || partitioner.currArea().lheight() > sps.getMaxTbSize() ) ? 0 : 2;
 #else
                                    || ( partitioner.currArea().lwidth() > MAX_TB_SIZEY || partitioner.currArea().lheight() > MAX_TB_SIZEY ) ? 0 : 2;
 #endif
 #else
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const int  maxLfnstIdx         = partitioner.isSepTree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) ? 0 : 2;
+#else
   const int  maxLfnstIdx         = CS::isDualITree( *tempCS ) && partitioner.chType == CHANNEL_TYPE_CHROMA && ( partitioner.currArea().lwidth() < 8 || partitioner.currArea().lheight() < 8 ) ? 0 : 2;
+#endif
 #endif
   bool       skipOtherLfnst      = false;
   int        startLfnstIdx       = 0;
@@ -1596,14 +1871,23 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           {
 #if JVET_O0502_ISP_CLEANUP
             //ISP uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary subpartitions
+#if JVET_O0050_LOCAL_DUAL_TREE
+            double bestCostSoFar = partitioner.isSepTree(*tempCS) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+            if (partitioner.isSepTree(*tempCS) && encTestMode.maxCostAllowed < bestCostSoFar)
+#else
             double bestCostSoFar = CS::isDualITree(*tempCS) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
             if (CS::isDualITree(*tempCS) && encTestMode.maxCostAllowed < bestCostSoFar)
+#endif
             {
               bestCostSoFar = encTestMode.maxCostAllowed;
             }
 #else
             //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines
+#if JVET_O0050_LOCAL_DUAL_TREE
+            const double bestCostSoFar = partitioner.isSepTree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+#else
             const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+#endif
 #endif
             validCandRet = m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[ trGrpIdx ], endMTSIdx[ trGrpIdx ], ( trGrpIdx > 0 ) );
             if( sps.getUseLFNST() && ( !validCandRet || ( cu.ispMode && cu.firstTU->cbf[ COMPONENT_Y ] == 0 ) ) )
@@ -1612,7 +1896,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             }
 
             useIntraSubPartitions = cu.ispMode != NOT_INTRA_SUBPARTITIONS;
+#if JVET_O0050_LOCAL_DUAL_TREE
+            if( !partitioner.isSepTree( *tempCS ) )
+#else
             if( !CS::isDualITree( *tempCS ) )
+#endif
             {
               tempCS->lumaCost = m_pcRdCost->calcRdCost( tempCS->fracBits, tempCS->dist );
               if( useIntraSubPartitions )
@@ -1631,17 +1919,29 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               continue;
             }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+            if( !partitioner.isSepTree( *tempCS ) )
+#else
             if( !CS::isDualITree( *tempCS ) )
+#endif
             {
               cu.cs->picture->getRecoBuf( cu.Y() ).copyFrom( cu.cs->getRecoBuf( COMPONENT_Y ) );
               cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
             }
           }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+          if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !cu.isSepTree() ) )
+#else
           if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !CS::isDualITree( *tempCS ) ) )
+#endif
           {
             TUIntraSubPartitioner subTuPartitioner( partitioner );
+#if JVET_O0050_LOCAL_DUAL_TREE
+            m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( cu.isSepTree() && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
+#else
             m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( CS::isDualITree( *cu.cs ) && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
+#endif
             if( useIntraSubPartitions && !cu.ispMode )
             {
               //At this point the temp cost is larger than the best cost. Therefore, we can already skip the remaining calculations
@@ -1684,7 +1984,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           tempCS->fracBits = m_CABACEstimator->getEstFracBits();
           tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+          double bestIspCost = cu.ispMode ? cu.isSepTree() ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
+#else
           double bestIspCost = cu.ispMode ? CS::isDualITree( *tempCS ) ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
+#endif
 
           const double tmpCostWithoutSplitFlags = tempCS->cost;
           xEncodeDontSplit( *tempCS, partitioner );
@@ -1695,14 +1999,22 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
           if( lfnstIdx && !cuCtx.lfnstLastScanPos )
           {
+#if JVET_O0050_LOCAL_DUAL_TREE
+            bool cbfAtZeroDepth = cu.isSepTree() ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+#else
             bool cbfAtZeroDepth = CS::isDualITree( *tempCS ) ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+#endif
             if( cbfAtZeroDepth )
             {
               tempCS->cost = MAX_DOUBLE;
             }
           }
 #else
+#if JVET_O0050_LOCAL_DUAL_TREE
+          const int nonZeroCoeffThr = cu.isSepTree() ? ( isLuma( partitioner.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
+#else
           const int nonZeroCoeffThr = CS::isDualITree( *tempCS ) ? ( isLuma( partitioner.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
+#endif
           if( lfnstIdx && cuCtx.numNonZeroCoeffNonTs <= nonZeroCoeffThr )
           {
             if (cuCtx.numNonZeroCoeffNonTs > 0)
@@ -1912,7 +2224,11 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   tempCS->addTU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
   // Search
   tempCS->dist = 0;  
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (cu.isSepTree())
+#else
   if (CS::isDualITree(*tempCS))
+#endif
   {
     if (isLuma(partitioner.chType))
     {
@@ -1947,7 +2263,11 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   CUCtx cuCtx;
   cuCtx.isDQPCoded = true;
   cuCtx.isChromaQpAdjCoded = true;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (cu.isSepTree())
+#else
   if (CS::isDualITree(*tempCS))
+#endif
   {
     if (isLuma(partitioner.chType))
     {
@@ -1991,7 +2311,11 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
     return;
   }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (partitioner.isSepTree(cs) && isChroma(partitioner.chType))
+#else
   if (CS::isDualITree(cs) && isChroma(partitioner.chType))
+#endif
   {
     return;
   }
@@ -3486,7 +3810,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
             PU::spanMotionInfo(pu, mergeCtx);
 
             assert(mergeCtx.mrgTypeNeighbours[mergeCand] == MRG_TYPE_IBC); //  should be IBC candidate at this round
+#if JVET_O0050_LOCAL_DUAL_TREE
+            const bool chroma = !pu.cu->isSepTree();
+#else
             const bool chroma = !(CS::isDualITree(*tempCS));
+#endif
 
             //  MC
             m_pcInterSearch->motionCompensation(pu,REF_PIC_LIST_0, true, chroma);
@@ -3582,7 +3910,11 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
       if (bValid)
       {
         PU::spanMotionInfo(pu);
+#if JVET_O0050_LOCAL_DUAL_TREE
+        const bool chroma = !pu.cu->isSepTree();
+#else
         const bool chroma = !(CS::isDualITree(*tempCS));
+#endif
         //  MC
         m_pcInterSearch->motionCompensation(pu, REF_PIC_LIST_0, true, chroma);
 
@@ -4057,8 +4389,13 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
   if ( calDist )
   {
     const UnitArea currCsArea = clipArea( CS::getArea( cs, cs.area, partitioner.chType ), *cs.picture );
+#if JVET_O0050_LOCAL_DUAL_TREE
+    ComponentID compStr = ( cu->isSepTree() && !isLuma( partitioner.chType ) ) ? COMPONENT_Cb : COMPONENT_Y;
+    ComponentID compEnd = ( cu->isSepTree() && isLuma( partitioner.chType ) ) ? COMPONENT_Y : COMPONENT_Cr;
+#else
     ComponentID compStr = ( CS::isDualITree( cs ) && !isLuma( partitioner.chType ) ) ? COMPONENT_Cb : COMPONENT_Y;
     ComponentID compEnd = ( CS::isDualITree( cs ) && isLuma( partitioner.chType ) ) ? COMPONENT_Y : COMPONENT_Cr;
+#endif
     Distortion finalDistortion = 0;
     for ( int comp = compStr; comp <= compEnd; comp++ )
     {
@@ -4073,8 +4410,13 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
 
   if ( anyEdgeAvai && m_pcEncCfg->getUseEncDbOpt() )
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    ComponentID compStr = ( cu->isSepTree() && !isLuma( partitioner.chType ) ) ? COMPONENT_Cb : COMPONENT_Y;
+    ComponentID compEnd = ( cu->isSepTree() &&  isLuma( partitioner.chType ) ) ? COMPONENT_Y : COMPONENT_Cr;
+#else
     ComponentID compStr = ( CS::isDualITree( cs ) && !isLuma( partitioner.chType ) ) ? COMPONENT_Cb : COMPONENT_Y;
     ComponentID compEnd = ( CS::isDualITree( cs ) &&  isLuma( partitioner.chType ) ) ? COMPONENT_Y : COMPONENT_Cr;
+#endif
 
     const UnitArea currCsArea = clipArea( CS::getArea( cs, cs.area, partitioner.chType ), *cs.picture );
 
@@ -4637,6 +4979,10 @@ void EncCu::xEncodeDontSplit( CodingStructure &cs, Partitioner &partitioner )
   m_CABACEstimator->resetBits();
 
   m_CABACEstimator->split_cu_mode( CU_DONT_SPLIT, cs, partitioner );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( partitioner.treeType == TREE_C )
+    CHECK( m_CABACEstimator->getEstFracBits() != 0, "must be 0 bit" );
+#endif
 
   cs.fracBits += m_CABACEstimator->getEstFracBits(); // split bits
   cs.cost      = m_pcRdCost->calcRdCost( cs.fracBits, cs.dist );
@@ -4688,7 +5034,11 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
     {
       const ComponentID compID = ComponentID( comp );
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( partitioner.isSepTree( *tempCS ) && toChannelType( compID ) != partitioner.chType )
+#else
       if( CS::isDualITree( *tempCS ) && toChannelType( compID ) != partitioner.chType )
+#endif
       {
         continue;
       }

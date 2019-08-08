@@ -968,6 +968,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ("FastLocalDualTree",                               m_useFastLocalDualTree,                           false,  "Fast intra pass coding for local dual-tree in intra coding region (SCIPU)")
+#endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
   ("MaxCUHeight",                                     m_uiMaxCUHeight,                                    64u)
@@ -1943,7 +1946,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   CHECK(cfg_qpInValCb.values.size() != cfg_qpOutValCb.values.size(), "Chroma QP table for Cb is incomplete.");
   CHECK(cfg_qpInValCr.values.size() != cfg_qpOutValCr.values.size(), "Chroma QP table for Cr is incomplete.");
   CHECK(cfg_qpInValCbCr.values.size() != cfg_qpOutValCbCr.values.size(), "Chroma QP table for CbCr is incomplete.");
-  if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420) 
+  if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420)
   {
     m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag = true;
     cfg_qpInValCb.values = { 0 };
@@ -1969,7 +1972,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
-    for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+    for (int i = 0; i < cfg_qpInValCr.values.size(); i++)
     {
       CHECK(cfg_qpInValCr.values[i] < -qpBdOffsetC || cfg_qpInValCr.values[i] > MAX_QP, "Some entries cfg_qpInValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
       CHECK(cfg_qpOutValCr.values[i] < -qpBdOffsetC || cfg_qpOutValCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
@@ -2589,7 +2592,7 @@ bool EncAppCfg::xCheckParameter()
   if (m_JointCbCrMode && (m_chromaFormatIDC == CHROMA_400))
   {
     msg( WARNING, "****************************************************************************\n");
-    msg( WARNING, "** WARNING: --JointCbCr has been disabled due to the chromaFormat is 400       **\n");
+    msg( WARNING, "** WARNING: --JointCbCr has been disabled because the chromaFormat is 400 **\n");
     msg( WARNING, "****************************************************************************\n");
     m_JointCbCrMode = false;
   }
@@ -2658,7 +2661,7 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_O0455_IBC_MAX_MERGE_NUM
   xConfirmPara( m_maxNumIBCMergeCand < 1, "MaxNumIBCMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumIBCMergeCand > IBC_MRG_MAX_NUM_CANDS, "MaxNumIBCMergeCand must be no more than IBC_MRG_MAX_NUM_CANDS." );
-#endif 
+#endif
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumAffineMergeCand > AFFINE_MRG_MAX_NUM_CANDS, "MaxNumAffineMergeCand must be no more than AFFINE_MRG_MAX_NUM_CANDS." );
   if ( m_Affine == 0 )
@@ -2755,8 +2758,7 @@ bool EncAppCfg::xCheckParameter()
   bool errorGOP=false;
   int checkGOP=1;
   int numRefs = m_isField ? 2 : 1;
-  int refList[MAX_NUM_REF_PICS+1];
-  refList[0]=0;
+  int refList[MAX_NUM_REF_PICS+1] = {0};
   if(m_isField)
   {
     refList[1] = 1;
@@ -3573,6 +3575,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "MaxNumAlfAlternativesChroma:%d ", m_maxNumAlfAlternativesChroma );
 #endif
   if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  msg( VERBOSE, "FastLocalDualTree:%d ", m_useFastLocalDualTree );
+#endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )

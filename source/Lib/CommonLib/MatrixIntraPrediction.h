@@ -45,18 +45,17 @@ static const int MIP_MAX_INPUT_SIZE             =  8;
 static const int MIP_MAX_REDUCED_OUTPUT_SAMPLES = 64;
 
 
-namespace Mip
+class MatrixIntraPrediction
 {
-  class PredictorMIP
-  {
-  public:
-    PredictorMIP();
+public:
+  MatrixIntraPrediction();
+
 #if JVET_O0925_MIP_SIMPLIFICATIONS
-    void             deriveBoundaryData(const CPelBuf &pSrc, const Area& block, const int bitDepth);
+  void prepareInputForPred(const CPelBuf &pSrc, const Area& block, const int bitDepth);
 #else
-    void             deriveBoundaryData(const CPelBuf& src, const Area& block, const int bitDepth, const AvailableInfo &availInfo);
+  void prepareInputForPred(const CPelBuf &src, const Area& block, const int bitDepth, const AvailableInfo &availInfo);
 #endif
-    void             getPrediction     (int* const result, const int modeIdx, const int bitDepth);
+  void predBlock(int* const result, const int modeIdx, const int bitDepth);
 
   private:
     static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundary;           // downsampled             boundary of a block
@@ -123,22 +122,5 @@ namespace Mip
                                               const bool transpose, const bool needUpsampling );
 #endif
   };
-}
-
-class MatrixIntraPrediction
-{
-public:
-  MatrixIntraPrediction();
-
-  Mip::PredictorMIP m_predictorMip;
-
-#if JVET_O0925_MIP_SIMPLIFICATIONS
-  void prepareInputForPred(const CPelBuf &pSrc, const Area& puArea, const int bitDepth);
-#else
-  void prepareInputForPred(const CPelBuf &src, const Area& puArea, const int bitDepth, const AvailableInfo &availInfo);
-#endif
-  void predBlock( const Size &puSize, const int modeIdx, PelBuf &dst, const int bitDepth );
-};
-
 
 #endif //__MATRIXINTRAPPREDICTION__

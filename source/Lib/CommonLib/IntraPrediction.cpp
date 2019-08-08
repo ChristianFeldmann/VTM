@@ -55,34 +55,22 @@
 // Tables
 // ====================================================================================================================
 
-const uint8_t IntraPrediction::m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS] =
+const uint8_t IntraPrediction::m_aucIntraFilter[MAX_INTRA_FILTER_DEPTHS] =
 {
-  { // Luma
 #if JVET_O0277_INTRA_SMALL_BLOCK_DCTIF
-    24, //   1xn
-    24, //   2xn
-    24, //   4xn
+  24, //   1xn
+  24, //   2xn
+  24, //   4xn
 #else
-    20, //   1xn
-    20, //   2xn
-    20, //   4xn
+  20, //   1xn
+  20, //   2xn
+  20, //   4xn
 #endif
-    14, //   8xn
-    2,  //  16xn
-    0,  //  32xn
-    0,  //  64xn
-    0,  // 128xn
-  },
-  { // Chroma
-    40, //   1xn
-    40, //   2xn
-    40, //   4xn
-    28, //   8xn
-    4,  //  16xn
-    0,  //  32xn
-    0,  //  64xn
-    0,  // 128xn
-  }
+  14, //   8xn
+  2,  //  16xn
+  0,  //  32xn
+  0,  //  64xn
+  0   // 128xn
 };
 
 const TFilterCoeff g_intraGaussFilter[32][4] = {
@@ -600,7 +588,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
 #endif
       const int log2Size = ((g_aucLog2[puSize.width] + g_aucLog2[puSize.height]) >> 1);
       CHECK( log2Size >= MAX_INTRA_FILTER_DEPTHS, "Size not supported" );
-      filterFlag = (diff > m_aucIntraFilter[chType][log2Size]);
+      filterFlag = (diff > m_aucIntraFilter[log2Size]);
     }
 
     // Selelection of either ([1 2 1] / 4 ) refrence filter OR Gaussian 4-tap interpolation filter
@@ -2187,7 +2175,20 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
 
   // generate mode-specific prediction
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
-  m_matrixIntraPred.predBlock( pu.Y(), pu.intraDir[CHANNEL_TYPE_LUMA], piPred, bitDepth );
+  static_vector<int, MIP_MAX_WIDTH * MIP_MAX_HEIGHT> predMip(pu.Y().area());
+  m_matrixIntraPred.predBlock(predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], bitDepth);
+
+  for (int y = 0; y < pu.lheight(); y++)
+  {
+    for (int x = 0; x < pu.lwidth(); x++)
+    {
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+      piPred.at(x, y) = Pel(predMip[y * pu.lwidth() + x]);
+#else
+      piPred.at(x, y) = Pel(ClipBD<int>(predMip[y * pu.lwidth() + x], bitDepth));
+#endif
+    }
+  }
 }
 
 #if JVET_O0119_BASE_PALETTE_444

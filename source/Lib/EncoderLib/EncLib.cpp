@@ -584,19 +584,16 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     // get original YUV
     Picture* pcPicCurr = NULL;
 
-#if ER_CHROMA_QP_WCG_PPS
     int ppsID=-1; // Use default PPS ID
+#if ER_CHROMA_QP_WCG_PPS
     if (getWCGChromaQPControl().isEnabled())
     {
       ppsID = getdQPs()[m_iPOCLast / (m_compositeRefEnabled ? 2 : 1) + 1];
       ppsID+=(getSwitchPOC() != -1 && (m_iPOCLast+1 >= getSwitchPOC())?1:0);
     }
+#endif
     xGetNewPicBuffer( rcListPicYuvRecOut,
                       pcPicCurr, ppsID );
-#else
-    xGetNewPicBuffer( rcListPicYuvRecOut,
-                      pcPicCurr, -1 ); // Uses default PPS ID. However, could be modified, for example, to use a PPS ID as a function of POC (m_iPOCLast+1)
-#endif
 
     {
       const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);

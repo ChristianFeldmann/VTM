@@ -330,7 +330,7 @@ protected:
   bool      m_MIP;
   bool      m_useFastMIP;
 #if JVET_O0050_LOCAL_DUAL_TREE
-  bool      m_useFastIntraPass;
+  bool      m_useFastLocalDualTree;
 #endif
 
 

@@ -1087,7 +1087,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_O0050_LOCAL_DUAL_TREE
       if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
       {
-        if( m_pcEncCfg->getUseFastIntraPass() )
+        if( m_pcEncCfg->getUseFastLocalDualTree() )
         {
           //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
           break;

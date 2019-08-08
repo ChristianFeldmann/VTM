@@ -680,7 +680,11 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (cu.isSepTree())
+#else
     if (CS::isDualITree(*cu.cs))
+#endif
     {
       if (isLuma(partitioner.chType))
       {
@@ -769,13 +773,13 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   {
 #if JVET_O1161_IBC_MAX_SIZE
 #if JVET_O0050_LOCAL_DUAL_TREE
-    if (cu.lwidth() < 128 && cu.lheight() < 128 && !cu.isConsInter()) // // disable IBC mode larger than 64x64 and disable IBC when only allowing inter mode
+    if (cu.lwidth() < 128 && cu.lheight() < 128 && !cu.isConsInter()) // disable IBC mode larger than 64x64 and disable IBC when only allowing inter mode
 #else
     if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
 #endif
 #else
 #if JVET_O0050_LOCAL_DUAL_TREE
-    if ((cu.lwidth() < 128 || cu.lheight() < 128) && !cu.isConsInter()) // // disable 128x128 IBC mode and disable IBC when only allowing inter mode
+    if ((cu.lwidth() < 128 || cu.lheight() < 128) && !cu.isConsInter()) // disable 128x128 IBC mode and disable IBC when only allowing inter mode
 #else
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
 #endif
@@ -922,13 +926,18 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   else
   {
 #if JVET_O0050_LOCAL_DUAL_TREE
-    if( cu.isConsIntra() || cu.isConsInter() )
+    if( cu.isConsInter() )
     {
-      assert( (cu.isConsIntra() && cu.predMode == MODE_INTRA) || (cu.isConsInter() && cu.predMode == MODE_INTER) );
+      assert( CU::isInter( cu ) );
       return;
     }
 #endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || cu.isConsIntra() )
+#else
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
+#endif
     {
 #if JVET_O0119_BASE_PALETTE_444
     if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
@@ -3603,6 +3612,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
   if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && cu.isSepTree() ) cctx++;
 #else
   if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && CS::isDualITree( *cu.cs ) ) cctx++;
+#endif
 #endif
 #endif
 

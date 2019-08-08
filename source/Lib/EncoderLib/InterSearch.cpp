@@ -6350,7 +6350,11 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     if( cu.chromaFormat != CHROMA_400 
 #if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0050_LOCAL_DUAL_TREE
+      && (!cu.isSepTree() || isChroma(partitioner.chType))
+#else
       && (!CS::isDualITree(cs) || isChroma(partitioner.chType))
+#endif
 #endif
       )
     {

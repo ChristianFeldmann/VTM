@@ -670,7 +670,11 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   uint32_t compBegin;
   uint32_t numComp;
   bool jointPLT = false;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (cu.isSepTree())
+#else
   if (CS::isDualITree(*cu.cs))
+#endif
   {
     if (isLuma(partitioner.chType))
     {
@@ -846,7 +850,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   if (CU::isPLT(cu))
   {
     cs.addTU(cu, partitioner.chType);
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (cu.isSepTree())
+#else
     if (CS::isDualITree(*cu.cs))
+#endif
     {
       if (isLuma(partitioner.chType))
       {
@@ -1213,7 +1221,19 @@ void CABACReader::pred_mode( CodingUnit& cu )
   else
   {
 #if JVET_O0119_BASE_PALETTE_444
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( cu.isConsInter() )
+    {
+      cu.predMode = MODE_INTER;
+      return;
+    }
+#endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) || cu.isConsIntra() )
+#else
     if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) )
+#endif
     {
     cu.predMode = MODE_INTRA;
     if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
@@ -1904,7 +1924,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
 //    void  inter_pred_idc  ( pu );
   if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (!cu.isSepTree() || isLuma(tu.chType))
+#else
     if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
+#endif
     {
       cu_qp_delta(cu, cuCtx.qp, cu.qp);
       cuCtx.qp = cu.qp;
@@ -1917,7 +1941,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   if (cu.cs->slice->getUseChromaQpAdj() && !cu.transQuantBypass && !cuCtx.isChromaQpAdjCoded)
 #endif
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (!cu.isSepTree() || isChroma(tu.chType))
+#else
     if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
+#endif
     {
       cu_chroma_qp_offset(cu);
       cuCtx.isChromaQpAdjCoded = true;

@@ -650,7 +650,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   uint32_t compBegin;
   uint32_t numComp;
   bool jointPLT = false;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (partitioner.isSepTree( *tempCS ))
+#else
   if (CS::isDualITree(*bestCS))
+#endif
   {
     if (isLuma(partitioner.chType))
     {
@@ -1867,8 +1871,13 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           {
 #if JVET_O0502_ISP_CLEANUP
             //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines
+#if JVET_O0050_LOCAL_DUAL_TREE
+            double bestCostSoFar = partitioner.isSepTree(*tempCS) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+            if (partitioner.isSepTree(*tempCS) && encTestMode.maxCostAllowed < bestCostSoFar)
+#else
             double bestCostSoFar = CS::isDualITree(*tempCS) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
             if (CS::isDualITree(*tempCS) && encTestMode.maxCostAllowed < bestCostSoFar)
+#endif
             {
               bestCostSoFar = encTestMode.maxCostAllowed;
             }
@@ -1878,6 +1887,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             const double bestCostSoFar = partitioner.isSepTree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
 #else
             const double bestCostSoFar = CS::isDualITree( *tempCS ) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
+#endif
 #endif
             validCandRet = m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[ trGrpIdx ], endMTSIdx[ trGrpIdx ], ( trGrpIdx > 0 ) );
             if( sps.getUseLFNST() && ( !validCandRet || ( cu.ispMode && cu.firstTU->cbf[ COMPONENT_Y ] == 0 ) ) )
@@ -1989,7 +1999,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
           if( lfnstIdx && !cuCtx.lfnstLastScanPos )
           {
+#if JVET_O0050_LOCAL_DUAL_TREE
+            bool cbfAtZeroDepth = cu.isSepTree() ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+#else
             bool cbfAtZeroDepth = CS::isDualITree( *tempCS ) ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+#endif
             if( cbfAtZeroDepth )
             {
               tempCS->cost = MAX_DOUBLE;
@@ -2210,7 +2224,11 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   tempCS->addTU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
   // Search
   tempCS->dist = 0;  
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (cu.isSepTree())
+#else
   if (CS::isDualITree(*tempCS))
+#endif
   {
     if (isLuma(partitioner.chType))
     {
@@ -2245,7 +2263,11 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   CUCtx cuCtx;
   cuCtx.isDQPCoded = true;
   cuCtx.isChromaQpAdjCoded = true;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (cu.isSepTree())
+#else
   if (CS::isDualITree(*tempCS))
+#endif
   {
     if (isLuma(partitioner.chType))
     {

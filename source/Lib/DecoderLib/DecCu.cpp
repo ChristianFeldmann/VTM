@@ -425,7 +425,11 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (cu.isSepTree())
+#else
     if (CS::isDualITree(*cu.cs))
+#endif
     {
       if (cu.chType == CHANNEL_TYPE_LUMA)
       {

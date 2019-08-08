@@ -534,7 +534,7 @@ void CABACWriter::mode_constraint( const PartSplit split, const CodingStructure&
 {
   CHECK( split == CU_DONT_SPLIT, "splitMode shall not be no split" );
   int val = cs.signalModeCons( split, partitioner, partitioner.modeType );
-  if( val == 2 )
+  if( val == LDT_MODE_TYPE_SIGNAL )
   {
     CHECK( modeType == MODE_TYPE_ALL, "shall not be no constraint case" );
     bool flag = modeType == MODE_TYPE_INTRA;
@@ -542,7 +542,7 @@ void CABACWriter::mode_constraint( const PartSplit split, const CodingStructure&
     m_BinEncoder.encodeBin( flag, Ctx::ModeConsFlag( ctxIdx ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "mode_cons_flag() flag=%d\n", flag );
   }
-  else if( val == 1 )
+  else if( val == LDT_MODE_TYPE_INFER )
   {
     assert( modeType == MODE_TYPE_INTRA );
   }

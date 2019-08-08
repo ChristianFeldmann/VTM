@@ -190,31 +190,28 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
 const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
 {
   if( CS::isDualITree( *this ) || modeTypeParent != MODE_TYPE_ALL )
-    return 0;
+    return LDT_MODE_TYPE_INHERIT;
 
   int width = partitioner.currArea().lwidth();
   int height = partitioner.currArea().lheight();
 
-  //0: not constrain
-  //1: constrain with intra, no need signaling the flag
-  //2: constrain with intra or inter, need signaling the flag
   if( width * height == 64 )
   {
     if( split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // qt or tt
-      return slice->isIntra() ? 1 : 1; //only intra mode allowed for child nodes (have 4x4)
+      return LDT_MODE_TYPE_INFER; //only intra mode allowed for child nodes (have 4x4)
     else // bt
-      return slice->isIntra() ? 1 : 2;
+      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
   }
   else if( width * height == 128 )
   {
-    if( split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT )
-      return slice->isIntra() ? 1 : 2;
-    else
-      return 0;
+    if( split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // tt
+      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+    else // bt
+      return LDT_MODE_TYPE_INHERIT;
   }
   else
   {
-    return 0;
+    return LDT_MODE_TYPE_INHERIT;
   }
 }
 

@@ -818,22 +818,22 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if JVET_O0050_LOCAL_DUAL_TREE
       assert( partitioner.modeType == tempCS->modeType );
       int signalModeConsVal = tempCS->signalModeCons( getPartSplit( currTestMode ), partitioner, modeTypeParent );
-      int num_round_rdo = signalModeConsVal == 2 ? 2 : 1;
+      int num_round_rdo = signalModeConsVal == LDT_MODE_TYPE_SIGNAL ? 2 : 1;
       bool skipInterPass = false;
       for( int i = 0; i < num_round_rdo; i++ )
       {
         //change cons modes
-        if( signalModeConsVal == 2 )
+        if( signalModeConsVal == LDT_MODE_TYPE_SIGNAL )
         {
           CHECK( num_round_rdo != 2, "num_round_rdo shall be 2 - [2]" );
           tempCS->modeType = partitioner.modeType = (i == 0) ? MODE_TYPE_INTER : MODE_TYPE_INTRA;
         }
-        else if( signalModeConsVal == 1 )
+        else if( signalModeConsVal == LDT_MODE_TYPE_INFER )
         {
           CHECK( num_round_rdo != 1, "num_round_rdo shall be 1 - [1]" );
           tempCS->modeType = partitioner.modeType = MODE_TYPE_INTRA;
         }
-        else if( signalModeConsVal == 0 )
+        else if( signalModeConsVal == LDT_MODE_TYPE_INHERIT )
         {
           CHECK( num_round_rdo != 1, "num_round_rdo shall be 1 - [0]" );
           tempCS->modeType = partitioner.modeType = modeTypeParent;

@@ -676,14 +676,14 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 ModeType CABACReader::mode_constraint( CodingStructure& cs, Partitioner &partitioner, PartSplit splitMode )
 {
   int val = cs.signalModeCons( splitMode, partitioner, partitioner.modeType );
-  if( val == 2 )
+  if( val == LDT_MODE_TYPE_SIGNAL )
   {
     int ctxIdx = DeriveCtx::CtxModeConsFlag( cs, partitioner );
     bool flag = m_BinDecoder.decodeBin( Ctx::ModeConsFlag( ctxIdx ) );
     DTRACE( g_trace_ctx, D_SYNTAX, "mode_cons_flag() flag=%d\n", flag );
     return flag ? MODE_TYPE_INTRA : MODE_TYPE_INTER;
   }
-  else if( val == 1 )
+  else if( val == LDT_MODE_TYPE_INFER )
   {
     return MODE_TYPE_INTRA;
   }

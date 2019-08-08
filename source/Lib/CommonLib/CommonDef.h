@@ -454,6 +454,9 @@ static const int SBT_NUM_RDO =                                      2; ///< maxi
 
 #if JVET_O0050_LOCAL_DUAL_TREE
 static const int NUM_INTER_CU_INFO_SAVE =                           8; ///< maximum number of inter cu information saved for fast algorithm
+static const int LDT_MODE_TYPE_INHERIT =                            0; ///< No need to signal mode_constraint_flag, and the modeType of the region is inherited from its parent node
+static const int LDT_MODE_TYPE_INFER =                              1; ///< No need to signal mode_constraint_flag, and the modeType of the region is inferred as MODE_TYPE_INTRA
+static const int LDT_MODE_TYPE_SIGNAL =                             2; ///< Need to signal mode_constraint_flag, and the modeType of the region is determined by the flag
 #endif
 
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search

@@ -3359,7 +3359,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
   if( ( cbfLuma || cbfChroma ) &&
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
-    (!tu.cu->isSepTree() || isLuma(tu.chType))
+    (!tu.cu->isSepTree() || isLuma(tu.chType)) )
 #else
     (!CS::isDualITree(*tu.cs) || isLuma(tu.chType)) )
 #endif

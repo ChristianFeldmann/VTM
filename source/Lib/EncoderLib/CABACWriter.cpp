@@ -3168,7 +3168,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
   if( ( cbfLuma || cbfChroma ) &&
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
-    (!tu.cu->isSepTree() || isLuma(tu.chType))
+    (!tu.cu->isSepTree() || isLuma(tu.chType)) )
 #else
     (!CS::isDualITree(*tu.cs) || isLuma(tu.chType)) )
 #endif

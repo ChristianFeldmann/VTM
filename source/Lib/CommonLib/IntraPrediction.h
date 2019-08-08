@@ -77,7 +77,7 @@ private:
   Pel* m_yuvExt2[MAX_NUM_COMPONENT][4];
   int  m_yuvExtSize2;
 
-  static const uint8_t m_aucIntraFilter[MAX_NUM_CHANNEL_TYPE][MAX_INTRA_FILTER_DEPTHS];
+  static const uint8_t m_aucIntraFilter[MAX_INTRA_FILTER_DEPTHS];
 
   struct IntraPredParam //parameters of Intra Prediction
   {

@@ -55,6 +55,9 @@ PartLevel::PartLevel()
 , canQtSplit          ( true          )
 , qgEnable            ( true          )
 , qgChromaEnable      ( true          )
+#if JVET_O0050_LOCAL_DUAL_TREE
+, modeType            ( MODE_TYPE_ALL )
+#endif
 {
 }
 
@@ -69,6 +72,9 @@ PartLevel::PartLevel( const PartSplit _split, const Partitioning& _parts )
 , canQtSplit          ( true          )
 , qgEnable            ( true          )
 , qgChromaEnable      ( true          )
+#if JVET_O0050_LOCAL_DUAL_TREE
+, modeType            ( MODE_TYPE_ALL )
+#endif
 {
 }
 
@@ -83,6 +89,9 @@ PartLevel::PartLevel( const PartSplit _split, Partitioning&& _parts )
 , canQtSplit          ( true                                 )
 , qgEnable            ( true                                 )
 , qgChromaEnable      ( true                                 )
+#if JVET_O0050_LOCAL_DUAL_TREE
+, modeType            ( MODE_TYPE_ALL )
+#endif
 {
 }
 

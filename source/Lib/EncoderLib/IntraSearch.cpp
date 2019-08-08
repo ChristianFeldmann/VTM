@@ -358,7 +358,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   if( testISP )
   {
 #if JVET_O0502_ISP_CLEANUP
-    //variables for the full RD list without MRL modes
+    //reset the variables used for the tests
     m_ispCandListHor.clear();
     m_ispCandListVer.clear();
     m_regIntraRDListWithCosts.clear();
@@ -622,7 +622,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         if ( testISP )
         {
 #if JVET_O0502_ISP_CLEANUP
-          //we save the list with no mrl modes to keep only the Hadamard selected modes (no mpms)
+          // we save the regular intra modes list
           m_ispCandListHor = uiRdModeList;
 #else
           //we save the list with no mrl modes to keep only the Hadamard selected modes (no mpms)
@@ -683,7 +683,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_O0925_MIP_SIMPLIFICATIONS
         if (LFNSTSaveFlag && testMip && !allowLfnstWithMip(cu.firstPU->lumaSize())) // save a different set for the next run
         {
-          //*** Derive MIP candidates using Hadamard
+          // save found best modes
           m_uiSavedRdModeListLFNST = uiRdModeList;
           m_dSavedModeCostLFNST = CandCostList;
           // PBINTRA fast
@@ -799,7 +799,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           if ( testISP )
           {
 #if JVET_O0502_ISP_CLEANUP
-            //we add the ISP MPMs to the list without mrl modes
+            // we add the MPMs to the list that contains only regular intra modes
             for (int j = 0; j < numCand; j++)
             {
               bool     mostProbableModeIncluded = false;
@@ -1026,7 +1026,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     if ( testISP )
     {
 #if JVET_O0502_ISP_CLEANUP
-      //we create a single full RD list that includes all intra modes using regular intra, MRL and ISP
+      // we reserve positions for ISP in the common full RD list 
       const int maxNumRDModesISP = 16;
       for (int i = 0; i < maxNumRDModesISP; i++)
         uiRdModeList.push_back(ModeInfo(false, 0, INTRA_SUBPARTITIONS_RESERVED, 0));
@@ -1779,7 +1779,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   //derive palette
   derivePLTLossy(cs, partitioner, compBegin, numComp);
   reorderPLT(cs, partitioner, compBegin, numComp);
-// -------------------------------------------------------------------------------------------------------------------
+
   //calculate palette index
   preCalcPLTIndex(cs, partitioner, compBegin, numComp);
   //derive run
@@ -1800,7 +1800,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     {
       if (curPLTIdx.at(x, y) == cu.curPLTSize[compBegin])
       {
-// Intra search
+
       }
       else
       {

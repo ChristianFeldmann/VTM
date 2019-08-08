@@ -8169,3 +8169,4 @@ bool InterSearch::searchBv(PredictionUnit& pu, int xPos, int yPos, int width, in
 }
 #endif
 
+//! \}

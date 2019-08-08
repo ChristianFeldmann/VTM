@@ -1718,7 +1718,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
   uint32_t   height = cu.block(compBegin).height;
   uint32_t   width = cu.block(compBegin).width;
-//================================================================================
+
   m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
   uint32_t total = height * width;
   int lastRunPos = -1;
@@ -1762,7 +1762,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   {
     assert(!cu.useRotation[compBegin]);
   }
-//  clause 7.3.8.6
+
   if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
   {
     if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
@@ -1784,7 +1784,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       cuCtx.isChromaQpAdjCoded = true;
     }
   }
-//--------------------------------------------------------------------------------
+
   uint32_t strPos = 0;
   uint32_t endPos = height * width;
   auto parsedIdxEnd = parsedIdx.end();
@@ -1795,11 +1795,11 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
     uint32_t posx = m_scanOrder[strPos].x;
     uint32_t posyprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].y;
     uint32_t posxprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].x;
-//    void  prediction_unit ( pu );
+
     if (indexMaxSize > 1)
     {
       if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
-//    void  merge_flag      ( pu );
+
       {
         assert(runType.at(posx, posy) == PLT_RUN_INDEX);
       }
@@ -1815,7 +1815,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
         }
       }
     }
-//    void  merge_idx       ( pu );
+
     Pel curLevel = 0;
     if (runType.at(posx, posy) == PLT_RUN_INDEX)
     {
@@ -1828,7 +1828,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
         curLevel = 0;
       }
     }
-//    void  inter_pred_idc  ( pu );
+
     if (indexMaxSize > 1)
     {
       if (lastRunPos != strPos)
@@ -1836,13 +1836,13 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
         numIndices -= (runType.at(posx, posy) == PLT_RUN_INDEX);
         cu_run_val(runLength.at(posx, posy) - 1, (PLTRunMode)runType.at(posx, posy), curLevel, endPos - strPos - numIndices - 1 - lastRunType);
       }
-//    void  ref_idx         ( pu, refList );
+
     }
-//    void  mvp_flag        ( pu, refList );
+
     strPos += (runLength.at(posx, posy));
   }
   assert(strPos == endPos);
-//================================================================================
+
   uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
   uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)

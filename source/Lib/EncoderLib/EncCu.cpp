@@ -1870,7 +1870,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           if( isLuma( partitioner.chType ) )
           {
 #if JVET_O0502_ISP_CLEANUP
-            //the Intra SubPartitions mode uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary lines
+            //ISP uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary subpartitions
 #if JVET_O0050_LOCAL_DUAL_TREE
             double bestCostSoFar = partitioner.isSepTree(*tempCS) ? m_modeCtrl->getBestCostWithoutSplitFlags() : bestCU && bestCU->predMode == MODE_INTRA ? bestCS->lumaCost : bestCS->cost;
             if (partitioner.isSepTree(*tempCS) && encTestMode.maxCostAllowed < bestCostSoFar)
@@ -2076,7 +2076,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             }
 
 #if JVET_O0502_ISP_CLEANUP
-            //we decide to skip the second emt pass or not according to the ISP results
+            //we decide to skip the non-DCT-II transforms and LFNST according to the ISP results
             if ((endMtsFlag > 0 || endLfnstIdx > 0) && cu.ispMode && !mtsFlag && !lfnstIdx && tempCS->slice->isIntra() && m_pcEncCfg->getUseFastISP())
 #else
             //we decide to skip the second emt pass or not according to the ISP results
@@ -4162,7 +4162,7 @@ bool EncCu::xCheckRDCostInterIMV( CodingStructure *&tempCS, CodingStructure *&be
   int iIMV = int( ( encTestMode.opts & ETO_IMV ) >> ETO_IMV_SHIFT );
   m_pcInterSearch->setAffineModeSelected(false);
 #if JVET_O0057_ALTHPELIF
-  // Only int-Pel, 4-Pel and fast 4-Pel allowed
+  // Only Half-Pel, int-Pel, 4-Pel and fast 4-Pel allowed
   CHECK(iIMV < 1 || iIMV > 4, "Unsupported IMV Mode");
   const bool testAltHpelFilter = iIMV == 4;
 #else

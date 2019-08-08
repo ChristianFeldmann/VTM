@@ -1843,14 +1843,14 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   const SPS&      sps = *(cu.cs->sps);
   TransformUnit&   tu = *cu.firstTU;
   int curPLTidx = 0;
-//================================================================================
+
   cu.lastPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[compBegin];
-//  clause 7.3.8.6
+
   if (cu.lastPLTSize[compBegin])
   {
     xDecodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
   }
-//--------------------------------------------------------------------------------
+
   for (int idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
   {
     if (cu.reuseflag[compBegin][idx])
@@ -1862,14 +1862,14 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       curPLTidx++;
     }
   }
-//    void  prediction_unit ( pu, mrgCtx );
+
   uint32_t recievedPLTnum = 0;
-//    void  merge_flag      ( pu );
+
   if (curPLTidx < MAXPLTSIZE)
   {
     recievedPLTnum = exp_golomb_eqprob(0);
   }
-//    void  merge_data      ( pu, mrgCtx );
+
   cu.curPLTSize[compBegin] = curPLTidx + recievedPLTnum;
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
@@ -1894,7 +1894,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   PelBuf      curPLTIdx = tu.getcurPLTIdx(compBegin);
   uint32_t    height = cu.block(compBegin).height;
   uint32_t    width = cu.block(compBegin).width;
-//    void  merge_idx       ( pu );
+
   int       numCopyIndexRuns = -1;
   bool      lastRunType = 0;
   uint32_t  numIndices = 0;
@@ -1921,7 +1921,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   {
     cu.useRotation[compBegin] = false;
   }
-//    void  inter_pred_idc  ( pu );
+
   if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
   {
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -1951,8 +1951,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       cuCtx.isChromaQpAdjCoded = true;
     }
   }
-//    void  ref_idx         ( pu, refList );
-//    void  mvp_flag        ( pu, refList );
+
+
   m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
   uint32_t strPos = 0;
   uint32_t endPos = height * width;
@@ -1962,7 +1962,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
     uint32_t posx = m_scanOrder[strPos].x;
     uint32_t posyprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].y;
     uint32_t posxprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].x;
-//================================================================================
+
     if (indexMaxSize > 1)
     {
       if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))

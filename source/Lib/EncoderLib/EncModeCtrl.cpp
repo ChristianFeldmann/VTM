@@ -1313,18 +1313,18 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   //////////////////////////////////////////////////////////////////////////
   // Add unit coding modes: Intra, InterME, InterMerge ...
 #if JVET_O0050_LOCAL_DUAL_TREE
-  bool try_intra_rdo = true;
-  bool try_inter_rdo = true;
-  bool try_ibc_rdo = true;
+  bool tryIntraRdo = true;
+  bool tryInterRdo = true;
+  bool tryIBCRdo   = true;
   if( partitioner.isConsIntra() )
   {
-    try_inter_rdo = false;
+    tryInterRdo = false;
   }
   else if( partitioner.isConsInter() )
   {
-    try_intra_rdo = try_ibc_rdo = false;
+    tryIntraRdo = tryIBCRdo = false;
   }
-  checkIbc &= try_ibc_rdo;
+  checkIbc &= tryIBCRdo;
 #endif
 
   for( int qpLoop = maxQP; qpLoop >= minQP; qpLoop-- )
@@ -1341,7 +1341,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 #endif
     // add intra modes
 #if JVET_O0050_LOCAL_DUAL_TREE
-    if( try_intra_rdo )
+    if( tryIntraRdo )
     {
 #endif
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
@@ -1362,7 +1362,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   // add first pass modes
 #if JVET_O0050_LOCAL_DUAL_TREE
-  if ( !m_slice->isIRAP() && !( cs.area.lwidth() == 4 && cs.area.lheight() == 4 ) && try_inter_rdo )
+  if ( !m_slice->isIRAP() && !( cs.area.lwidth() == 4 && cs.area.lheight() == 4 ) && tryInterRdo )
 #else
   if ( !m_slice->isIRAP() && !( cs.area.lwidth() == 4 && cs.area.lheight() == 4 ) )
 #endif

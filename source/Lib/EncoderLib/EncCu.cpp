@@ -818,24 +818,24 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #if JVET_O0050_LOCAL_DUAL_TREE
       assert( partitioner.modeType == tempCS->modeType );
       int signalModeConsVal = tempCS->signalModeCons( getPartSplit( currTestMode ), partitioner, modeTypeParent );
-      int num_round_rdo = signalModeConsVal == LDT_MODE_TYPE_SIGNAL ? 2 : 1;
+      int numRoundRdo = signalModeConsVal == LDT_MODE_TYPE_SIGNAL ? 2 : 1;
       bool skipInterPass = false;
-      for( int i = 0; i < num_round_rdo; i++ )
+      for( int i = 0; i < numRoundRdo; i++ )
       {
         //change cons modes
         if( signalModeConsVal == LDT_MODE_TYPE_SIGNAL )
         {
-          CHECK( num_round_rdo != 2, "num_round_rdo shall be 2 - [2]" );
+          CHECK( numRoundRdo != 2, "numRoundRdo shall be 2 - [LDT_MODE_TYPE_SIGNAL]" );
           tempCS->modeType = partitioner.modeType = (i == 0) ? MODE_TYPE_INTER : MODE_TYPE_INTRA;
         }
         else if( signalModeConsVal == LDT_MODE_TYPE_INFER )
         {
-          CHECK( num_round_rdo != 1, "num_round_rdo shall be 1 - [1]" );
+          CHECK( numRoundRdo != 1, "numRoundRdo shall be 1 - [LDT_MODE_TYPE_INFER]" );
           tempCS->modeType = partitioner.modeType = MODE_TYPE_INTRA;
         }
         else if( signalModeConsVal == LDT_MODE_TYPE_INHERIT )
         {
-          CHECK( num_round_rdo != 1, "num_round_rdo shall be 1 - [0]" );
+          CHECK( numRoundRdo != 1, "numRoundRdo shall be 1 - [LDT_MODE_TYPE_INHERIT]" );
           tempCS->modeType = partitioner.modeType = modeTypeParent;
         }
 
@@ -866,7 +866,7 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
         if( modeTypeParent == MODE_TYPE_ALL )
         {
           m_pcIntraSearch->setSaveCuCostInSCIPU( false );
-          if( num_round_rdo == 2 && tempCS->modeType == MODE_TYPE_INTRA )
+          if( numRoundRdo == 2 && tempCS->modeType == MODE_TYPE_INTRA )
           {
             m_pcIntraSearch->initCuAreaCostInSCIPU();
           }

@@ -266,7 +266,7 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
 // INTRA PREDICTION
 //////////////////////////////////////////////////////////////////////////
 #if JVET_O0050_LOCAL_DUAL_TREE
-#define COST_UNKNOWN     (-65536)
+static constexpr double COST_UNKNOWN = -65536.0;
 
 double IntraSearch::findInterCUCost( CodingUnit &cu )
 {

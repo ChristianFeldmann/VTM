@@ -4589,8 +4589,26 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
 
 #if JVET_O0567_MVDRange_Constraint
   const PredictionUnit& pu = *cu->firstPU;
-  const int affineShiftTab[3] = { MV_PRECISION_INTERNAL - MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL - MV_PRECISION_SIXTEENTH, MV_PRECISION_INTERNAL - MV_PRECISION_INT };
-  const int normalShiftTab[3] = { MV_PRECISION_INTERNAL - MV_PRECISION_QUARTER, MV_PRECISION_INTERNAL - MV_PRECISION_INT, MV_PRECISION_INTERNAL - MV_PRECISION_4PEL };
+
+  // clang-format off
+  const int affineShiftTab[3] =
+  {
+    MV_PRECISION_INTERNAL - MV_PRECISION_QUARTER,
+    MV_PRECISION_INTERNAL - MV_PRECISION_SIXTEENTH,
+    MV_PRECISION_INTERNAL - MV_PRECISION_INT
+  };
+
+  const int normalShiftTab[NUM_IMV_MODES] =
+  {
+    MV_PRECISION_INTERNAL - MV_PRECISION_QUARTER,
+#if JVET_O0057_ALTHPELIF
+    MV_PRECISION_INTERNAL - MV_PRECISION_HALF,
+#endif
+    MV_PRECISION_INTERNAL - MV_PRECISION_INT,
+    MV_PRECISION_INTERNAL - MV_PRECISION_4PEL
+  };
+  // clang-format on
+
   int mvShift;
 
   for (int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++)

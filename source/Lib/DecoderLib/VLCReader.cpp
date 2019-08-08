@@ -2682,7 +2682,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   {
     for(listId = 0; listId <  SCALING_LIST_NUM; listId++)
     {
-      if (!(((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)) || ((sizeId > SCALING_LIST_32x32) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))))//2x2 luma
+      if (!(((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)) || ((sizeId > SCALING_LIST_32x32) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))))//2x2 luma
       {
         READ_FLAG( code, "scaling_list_pred_mode_flag");
         scalingListPredModeFlag = (code) ? true : false;
@@ -2693,7 +2693,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 
           if (sizeId == SCALING_LIST_64x64)
           {
-            code *= (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)); // Adjust the decoded code for this size, to cope with the missing 32x32 chroma entries.
+            code *= (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES); // Adjust the decoded code for this size, to cope with the missing 32x32 chroma entries.
 	  }
 
           scalingList->setRefMatrixId (sizeId,listId,(uint32_t)((int)(listId)-(code)));

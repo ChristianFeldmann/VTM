@@ -1863,11 +1863,11 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
   //for each size
   for(uint32_t sizeId = SCALING_LIST_FIRST_CODED; sizeId <= SCALING_LIST_LAST_CODED; sizeId++)
   {
-    const int predListStep = (sizeId > SCALING_LIST_32x32 ? (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) : 1); // if 64x64, skip over chroma entries.
+    const int predListStep = (sizeId > SCALING_LIST_32x32 ? (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) : 1); // if 64x64, skip over chroma entries.
 
     for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId+=predListStep)
     {
-      if ((sizeId == SCALING_LIST_2x2) && ((listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      if ((sizeId == SCALING_LIST_2x2) && ((listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
       {
         continue;
       }
@@ -1878,7 +1878,7 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
         if (sizeId > SCALING_LIST_32x32) //64x64 luma
         {
           // adjust the code, to cope with the missing chroma entries
-          WRITE_UVLC( ((int)listId - (int)scalingList.getRefMatrixId(sizeId, listId)) / (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)), "scaling_list_pred_matrix_id_delta");
+          WRITE_UVLC( ((int)listId - (int)scalingList.getRefMatrixId(sizeId, listId)) / (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES), "scaling_list_pred_matrix_id_delta");
         }
         else
         {

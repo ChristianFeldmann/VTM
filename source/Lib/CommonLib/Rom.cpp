@@ -131,15 +131,14 @@ public:
 
 #if JVET_O0119_BASE_PALETTE_444
       case SCAN_TRAV_HOR:
-      {
         if (m_line % 2 == 0)
         {
           if (m_column == (m_blockWidth - 1))
           {
             m_line++;
             m_column = m_blockWidth - 1;
-        }
-        else m_column++;
+          }
+          else m_column++;
         }
         else
         {
@@ -150,11 +149,9 @@ public:
           }
           else m_column--;
         }
-      }
-      break;
+        break;
 
       case SCAN_TRAV_VER:
-      {
         if (m_column % 2 == 0)
         {
           if (m_line == (m_blockHeight - 1))
@@ -173,8 +170,7 @@ public:
           }
           else m_line--;
         }
-      }
-      break;
+        break;
 #endif
       //------------------------------------------------
 

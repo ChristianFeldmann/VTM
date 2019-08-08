@@ -99,7 +99,7 @@ public:
   void        mip_pred_modes            ( CodingUnit&                   cu );
   void        mip_pred_mode             ( PredictionUnit&               pu );
 #if JVET_O0119_BASE_PALETTE_444  
-  void        cu_palette_info           ( CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx);
+  void        cu_palette_info           ( CodingUnit&                   cu,     ComponentID     compBegin, uint32_t numComp, CUCtx& cuCtx );
 #endif
 
   // prediction unit (clause 7.3.8.6)
@@ -178,12 +178,12 @@ private:
 
   void        xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol);
 #if JVET_O0119_BASE_PALETTE_444
-  void        parseScanRotationModeFlag ( CodingUnit& cu, ComponentID compBegin);
-  void        xDecodePLTPredIndicator   ( CodingUnit& cu, uint32_t maxPLTSize, ComponentID compBegin);
-  void        xAdjustPLTIndex           ( CodingUnit& cu, Pel curLevel, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin);
-  uint32_t    cu_run_val                ( PLTRunMode runtype, const uint32_t pltIdx, const uint32_t maxRun);
-  uint32_t    xReadTruncUnarySymbol     ( PLTRunMode runtype, uint32_t maxVal, uint32_t ctxT);
-  uint32_t    xReadTruncMsbP1RefinementBits( PLTRunMode runtype, uint32_t maxVal, uint32_t ctxT);
+  void        parseScanRotationModeFlag ( CodingUnit& cu,           ComponentID compBegin );
+  void        xDecodePLTPredIndicator   ( CodingUnit& cu,           uint32_t maxPLTSize,   ComponentID compBegin );
+  void        xAdjustPLTIndex           ( CodingUnit& cu,           Pel curLevel,          uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin );
+  uint32_t    cu_run_val                ( PLTRunMode runtype, const uint32_t pltIdx, const uint32_t maxRun );
+  uint32_t    xReadTruncUnarySymbol     ( PLTRunMode runtype,       uint32_t maxVal,       uint32_t ctxT );
+  uint32_t    xReadTruncMsbP1RefinementBits( PLTRunMode runtype,    uint32_t maxVal,       uint32_t ctxT );
 #endif
 public:
   int         shareStateDec;

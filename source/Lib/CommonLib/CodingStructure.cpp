@@ -79,7 +79,7 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
     m_coeffs[ i ] = nullptr;
     m_pcmbuf[ i ] = nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-    m_runType[i] = nullptr;
+    m_runType[i]   = nullptr;
     m_runLength[i] = nullptr;
 #endif
 
@@ -958,8 +958,8 @@ void CodingStructure::createCoeffs()
     m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
     m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-    m_runType[i]   = _area > 0 ? (bool*)xMalloc( bool, _area) : nullptr;
-    m_runLength[i] = _area > 0 ? (Pel*) xMalloc( Pel,  _area) : nullptr;
+    m_runType[i]   = _area > 0 ? ( bool*  ) xMalloc( bool, _area ) : nullptr;
+    m_runLength[i] = _area > 0 ? ( Pel*   ) xMalloc( Pel,  _area ) : nullptr;
 #endif
   }
 }

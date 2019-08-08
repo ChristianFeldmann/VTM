@@ -6350,7 +6350,11 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     if( cu.chromaFormat != CHROMA_400 
 #if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0050_LOCAL_DUAL_TREE
+      && (!cu.isSepTree() || isChroma(partitioner.chType))
+#else
       && (!CS::isDualITree(cs) || isChroma(partitioner.chType))
+#endif
 #endif
       )
     {
@@ -6730,7 +6734,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   if (bCheckFull)
   {
-#if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING || JVET_O0050_LOCAL_DUAL_TREE
     TransformUnit &tu = csFull->addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
 #else
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
@@ -6774,7 +6778,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     saveCS.picture = cs.picture;
     saveCS.area.repositionTo(currArea);
     saveCS.clearTUs();
-#if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING || JVET_O0050_LOCAL_DUAL_TREE
     TransformUnit & bestTU = saveCS.addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
 #else
     TransformUnit & bestTU = saveCS.addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
@@ -7499,6 +7503,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
 
   CodingUnit &cu = *cs.getCU( partitioner.chType );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.predMode == MODE_INTER )
+    CHECK( cu.isSepTree(), "CU with Inter mode must be in single tree" );
+#endif
 
   const ChromaFormat format     = cs.area.chromaFormat;;
   const int  numValidComponents = getNumberValidComponents(format);
@@ -7521,7 +7529,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
 
     // add an empty TU
+#if JVET_O0050_LOCAL_DUAL_TREE
+    cs.addTU(CS::getArea(cs, cs.area, partitioner.chType), partitioner.chType);
+#else
     cs.addTU(CS::isDualITree(cs) ? cu : cs.area, partitioner.chType);
+#endif
     Distortion distortion = 0;
 
     for (int comp = 0; comp < numValidComponents; comp++)

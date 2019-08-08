@@ -543,6 +543,9 @@ public:
 namespace DeriveCtx
 {
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
+#if JVET_O0050_LOCAL_DUAL_TREE
+unsigned CtxModeConsFlag( const CodingStructure& cs, Partitioner& partitioner );
+#endif
 #if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
 unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbf = false, const int ispIdx = 0 );
 #else

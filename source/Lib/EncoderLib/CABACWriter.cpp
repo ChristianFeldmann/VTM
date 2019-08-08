@@ -396,7 +396,11 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     cuCtx.isChromaQpAdjCoded  = false;
   }
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (partitioner.isSepTree(cs) && pPartitionerChroma != nullptr)
+#else
   if (CS::isDualITree(cs) && pPartitionerChroma != nullptr)
+#endif
   {
     if (pps.getUseDQP() && pPartitionerChroma->currQgEnable())
     {
@@ -461,6 +465,19 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       }
       else
       {
+#if JVET_O0050_LOCAL_DUAL_TREE
+        const ModeType modeTypeParent = partitioner.modeType;
+        const ModeType modeTypeChild = CU::getModeTypeAtDepth( cu, partitioner.currDepth );
+        mode_constraint( splitMode, cs, partitioner, modeTypeChild );
+        partitioner.modeType = modeTypeChild;
+
+        bool chromaNotSplit = modeTypeParent == MODE_TYPE_ALL && modeTypeChild == MODE_TYPE_INTRA ? true : false;
+        CHECK( chromaNotSplit && partitioner.chType != CHANNEL_TYPE_LUMA, "chType must be luma" );
+        if( partitioner.treeType == TREE_D )
+        {
+          partitioner.treeType = chromaNotSplit ? TREE_L : TREE_D;
+        }
+#endif
       partitioner.splitCurrArea( splitMode, cs );
 
       do
@@ -472,6 +489,24 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       } while( partitioner.nextPart( cs ) );
 
       partitioner.exitCurrSplit();
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( chromaNotSplit )
+      {
+        CHECK( partitioner.chType != CHANNEL_TYPE_LUMA, "must be luma status" );
+        partitioner.chType = CHANNEL_TYPE_CHROMA;
+        partitioner.treeType = TREE_C;
+
+        if( cs.picture->blocks[partitioner.chType].contains( partitioner.currArea().blocks[partitioner.chType].pos() ) )
+        {
+          coding_tree( cs, partitioner, cuCtx );
+        }
+
+        //recover
+        partitioner.chType = CHANNEL_TYPE_LUMA;
+        partitioner.treeType = TREE_D;
+      }
+      partitioner.modeType = modeTypeParent;
+#endif
       }
       return;
   }
@@ -482,6 +517,9 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     cuCtx.qgStart = false;
     cuCtx.qp = CU::predictQP( cu, cuCtx.qp );
   }
+#if JVET_O0050_LOCAL_DUAL_TREE
+  CHECK( cu.treeType != partitioner.treeType, "treeType mismatch" );
+#endif
 
 
   // coding unit
@@ -490,6 +528,30 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
   DTRACE_COND( ( isEncoding() ), g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
   DTRACE_BLOCK_REC_COND( ( !isEncoding() ), cs.picture->getRecoBuf( cu ), cu, cu.predMode );
 }
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+void CABACWriter::mode_constraint( const PartSplit split, const CodingStructure& cs, Partitioner& partitioner, const ModeType modeType )
+{
+  CHECK( split == CU_DONT_SPLIT, "splitMode shall not be no split" );
+  int val = cs.signalModeCons( split, partitioner, partitioner.modeType );
+  if( val == LDT_MODE_TYPE_SIGNAL )
+  {
+    CHECK( modeType == MODE_TYPE_ALL, "shall not be no constraint case" );
+    bool flag = modeType == MODE_TYPE_INTRA;
+    int ctxIdx = DeriveCtx::CtxModeConsFlag( cs, partitioner );
+    m_BinEncoder.encodeBin( flag, Ctx::ModeConsFlag( ctxIdx ) );
+    DTRACE( g_trace_ctx, D_SYNTAX, "mode_cons_flag() flag=%d\n", flag );
+  }
+  else if( val == LDT_MODE_TYPE_INFER )
+  {
+    assert( modeType == MODE_TYPE_INTRA );
+  }
+  else
+  {
+    assert( modeType == partitioner.modeType );
+  }
+}
+#endif
 
 void CABACWriter::split_cu_mode( const PartSplit split, const CodingStructure& cs, Partitioner& partitioner )
 {
@@ -573,6 +635,9 @@ void CABACWriter::split_cu_mode( const PartSplit split, const CodingStructure& c
 
 void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, CUCtx& cuCtx )
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  DTRACE( g_trace_ctx, D_SYNTAX, "coding_unit() treeType=%d modeType=%d\n", cu.treeType, cu.modeType );
+#endif
   CodingStructure& cs = *cu.cs;
   // transquant bypass flag
   if( cs.pps->getTransquantBypassEnabledFlag() )
@@ -615,7 +680,11 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (cu.isSepTree())
+#else
     if (CS::isDualITree(*cu.cs))
+#endif
     {
       if (isLuma(partitioner.chType))
       {
@@ -670,7 +739,11 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 {
   unsigned ctxId = DeriveCtx::CtxSkipFlag( cu );
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if ((cu.slice->isIntra() || cu.isConsIntra()) && cu.cs->slice->getSPS()->getIBCFlag())
+#else
   if (cu.slice->isIntra() && cu.cs->slice->getSPS()->getIBCFlag())
+#endif
   {
 #if JVET_O1161_IBC_MAX_SIZE
     if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
@@ -687,15 +760,29 @@ void CABACWriter::cu_skip_flag( const CodingUnit& cu )
   {
     return;
   }
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( !cu.cs->slice->getSPS()->getIBCFlag() && cu.isConsIntra() )
+  {
+    return;
+  }
+#endif
   m_BinEncoder.encodeBin( ( cu.skip ), Ctx::SkipFlag( ctxId ) );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cu_skip_flag() ctx=%d skip=%d\n", ctxId, cu.skip ? 1 : 0 );
   if (cu.skip && cu.cs->slice->getSPS()->getIBCFlag())
   {
 #if JVET_O1161_IBC_MAX_SIZE
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (cu.lwidth() < 128 && cu.lheight() < 128 && !cu.isConsInter()) // disable IBC mode larger than 64x64 and disable IBC when only allowing inter mode
+#else
     if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
+#endif
+#else
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if ((cu.lwidth() < 128 || cu.lheight() < 128) && !cu.isConsInter()) // disable 128x128 IBC mode and disable IBC when only allowing inter mode
 #else
     if (cu.lwidth() < 128 || cu.lheight() < 128) // disable 128x128 IBC mode
+#endif
 #endif
     {
       if ( cu.lwidth() == 4 && cu.lheight() == 4 )
@@ -772,7 +859,19 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   if (cu.cs->slice->getSPS()->getIBCFlag())
 #endif
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( cu.isConsInter() )
+    {
+      assert( CU::isInter( cu ) );
+      return;
+    }
+#endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || cu.isConsIntra() )
+#else
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
+#endif
     {
 #if JVET_O1161_IBC_MAX_SIZE
       if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
@@ -792,6 +891,12 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
     }
     else
     {
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( cu.isConsInter() )
+      {
+        return;
+      }
+#endif
 #if JVET_O0119_BASE_PALETTE_444
     m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
     if (CU::isIntra(cu) || CU::isPLT(cu))
@@ -820,7 +925,19 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
   }
   else
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( cu.isConsInter() )
+    {
+      assert( CU::isInter( cu ) );
+      return;
+    }
+#endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || cu.isConsIntra() )
+#else
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) )
+#endif
     {
 #if JVET_O0119_BASE_PALETTE_444
     if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
@@ -1264,7 +1381,11 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
 
 void CABACWriter::intra_chroma_pred_modes( const CodingUnit& cu )
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.chromaFormat == CHROMA_400 || ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_LUMA ) )
+#else
   if( cu.chromaFormat == CHROMA_400 || ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_LUMA ) )
+#endif
   {
     return;
   }
@@ -1535,7 +1656,11 @@ void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
   const bool    isLastSubCUOfCtu  = CU::isLastSubCUOfCtu( cu );
 
   if ( isLastSubCUOfCtu
+#if JVET_O0050_LOCAL_DUAL_TREE
+    && ( !cu.isSepTree() || cu.chromaFormat == CHROMA_400 || isChroma( cu.chType ) )
+#else
     && ( !CS::isDualITree( *cu.cs ) || cu.chromaFormat == CHROMA_400 || isChroma( cu.chType ) )
+#endif
       )
   {
     cuCtx.isDQPCoded = ( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded );
@@ -1957,6 +2082,9 @@ void CABACWriter::xWriteTruncMsbP1RefinementBits(uint32_t symbol, PLTRunMode run
 
 void CABACWriter::prediction_unit( const PredictionUnit& pu )
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  CHECK( pu.cu->treeType == TREE_C, "cannot be chroma CU" );
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   CHECK( pu.cacheUsed, "Processing a PU that should be in cache!" );
   CHECK( pu.cu->cacheUsed, "Processing a CU that should be in cache!" );
@@ -2591,12 +2719,18 @@ void CABACWriter::pcm_samples( const TransformUnit& tu )
   CHECK( !tu.cu->ipcm, "pcm mode expected" );
 
   const SPS&        sps       = *tu.cu->cs->sps;
-
+#if !JVET_O0050_LOCAL_DUAL_TREE
   const CodingStructure *cs = tu.cs;
+#endif
   const ChannelType chType = tu.chType;
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ComponentID compStr = (tu.cu->isSepTree() && !isLuma( chType )) ? COMPONENT_Cb : COMPONENT_Y;
+  ComponentID compEnd = (tu.cu->isSepTree() && isLuma( chType )) ? COMPONENT_Y : COMPONENT_Cr;
+#else
   ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
   ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
+#endif
   for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
   {
     const CPelBuf   samples     = tu.getPcmbuf( compID );
@@ -2665,7 +2799,11 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
 
 #if !JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
   // cbf_cb & cbf_cr
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !cu.isSepTree() || partitioner.chType == CHANNEL_TYPE_CHROMA ) && ( !cu.ispMode || chromaCbfISP ) )
+#else
   if( area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && ( !CS::isDualITree( cs ) || partitioner.chType == CHANNEL_TYPE_CHROMA ) && ( !cu.ispMode || chromaCbfISP ) )
+#endif
   {
     {
       unsigned cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
@@ -2684,7 +2822,11 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
       }
     }
   }
+#if JVET_O0050_LOCAL_DUAL_TREE
+  else if( cu.isSepTree() )
+#else
   else if( CS::isDualITree( cs ) )
+#endif
   {
     chromaCbfs = ChromaCbfs( false );
   }
@@ -2923,7 +3065,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
   CHECK(tu.depth != trDepth, " transform unit should be not be futher partitioned");
 
   // cbf_cb & cbf_cr
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && (!cu.isSepTree() || partitioner.chType == CHANNEL_TYPE_CHROMA) && (!cu.ispMode || chromaCbfISP))
+#else
   if (area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && (!CS::isDualITree(cs) || partitioner.chType == CHANNEL_TYPE_CHROMA) && (!cu.ispMode || chromaCbfISP))
+#endif
   {
     {
       unsigned cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
@@ -2942,7 +3088,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
       }
     }
   }
+#if JVET_O0050_LOCAL_DUAL_TREE
+  else if (cu.isSepTree())
+#else
   else if (CS::isDualITree(cs))
+#endif
   {
     chromaCbfs = ChromaCbfs(false);
   }
@@ -3017,7 +3167,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
 #else   
   if( ( cbfLuma || cbfChroma ) &&
 #endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+    (!tu.cu->isSepTree() || isLuma(tu.chType)) )
+#else
     (!CS::isDualITree(*tu.cs) || isLuma(tu.chType)) )
+#endif
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
@@ -3371,7 +3525,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #else
       cu.mipFlag == true ||
 #endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+    ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) 
+#else
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
+#endif
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
 #if JVET_O0545_MAX_TB_SIGNALLING
     || ( cu.blocks[ 0 ].width > cu.cs->sps->getMaxTbSize() || cu.blocks[ 0 ].height > cu.cs->sps->getMaxTbSize() )
@@ -3386,8 +3544,13 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 
   if( cu.cs->sps->getUseLFNST() && CU::isIntra( cu ) && !CU::isLosslessCoded( cu ) )
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    const bool lumaFlag                   = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
+    const bool chromaFlag                 = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
+#else
     const bool lumaFlag                   = CS::isDualITree( *cu.cs ) ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag                 = CS::isDualITree( *cu.cs ) ? ( isChroma( cu.chType ) ? true : false ) : true;
+#endif
 #if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
           bool nonZeroCoeffNonTs;
 #endif
@@ -3397,7 +3560,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
           bool nonZeroCoeffNonTsCorner8x8 = CU::getNumNonZeroCoeffNonTsCorner8x8( cu, lumaFlag, chromaFlag ) > 0;
 #endif
 #if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+#if JVET_O0050_LOCAL_DUAL_TREE
+    const int  nonZeroCoeffThr            = cu.isSepTree() ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
+#else
     const int  nonZeroCoeffThr            = CS::isDualITree( *cu.cs ) ? ( isLuma( cu.chType ) ? LFNST_SIG_NZ_LUMA : LFNST_SIG_NZ_CHROMA ) : LFNST_SIG_NZ_LUMA + LFNST_SIG_NZ_CHROMA;
+#endif
     cuCtx.numNonZeroCoeffNonTs            = CU::getNumNonZeroCoeffNonTs( cu, lumaFlag, chromaFlag );
     nonZeroCoeffNonTs                     = cuCtx.numNonZeroCoeffNonTs > nonZeroCoeffThr;
 #endif
@@ -3427,12 +3594,24 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 
   unsigned cctx = 0;
 #if JVET_O0368_LFNST_WITH_DCT2_ONLY
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if ( cu.isSepTree() ) cctx++;
+#else
   if ( CS::isDualITree(*cu.cs) ) cctx++;
+#endif
 #else
 #if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( ( cu.firstTU->mtsIdx < MTS_DST7_DST7 || !TU::getCbf(*cu.firstTU, COMPONENT_Y) ) && cu.isSepTree() ) cctx++;
+#else
   if( ( cu.firstTU->mtsIdx < MTS_DST7_DST7 || !TU::getCbf(*cu.firstTU, COMPONENT_Y) ) && CS::isDualITree( *cu.cs ) ) cctx++;
+#endif
+#else
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && cu.isSepTree() ) cctx++;
 #else
   if( cu.firstTU->mtsIdx < MTS_DST7_DST7 && CS::isDualITree( *cu.cs ) ) cctx++;
+#endif
 #endif
 #endif
 

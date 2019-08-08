@@ -496,10 +496,13 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           for( blkX=0; blkX<8; blkX+=2 )
           {
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB && !JVET_O0050_LOCAL_DUAL_TREE
             const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #else
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+            cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
             if(cu != NULL) 
             {
@@ -899,10 +902,13 @@ static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
           for( blkX=0; blkX<8; blkX+=2 )
           {
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB && !JVET_O0050_LOCAL_DUAL_TREE
             const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #else
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+            cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
             if( cu != NULL) 
             {

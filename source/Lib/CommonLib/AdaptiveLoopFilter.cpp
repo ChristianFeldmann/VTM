@@ -1107,10 +1107,13 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
           for( blkX=0; blkX<4; blkX+=2 )
           {
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB && !JVET_O0050_LOCAL_DUAL_TREE
             const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #else
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+            cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
             *flags++ = cu->ipcm ? 1 : 0;
           }

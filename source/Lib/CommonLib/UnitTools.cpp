@@ -63,7 +63,11 @@ bool CS::isDualITree( const CodingStructure &cs )
 
 UnitArea CS::getArea( const CodingStructure &cs, const UnitArea &area, const ChannelType chType )
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  return isDualITree( cs ) || cs.treeType != TREE_D ? area.singleChan( chType ) : area;
+#else
   return isDualITree( cs ) ? area.singleChan( chType ) : area;
+#endif
 }
 void CS::setRefinedMotionField(CodingStructure &cs)
 {
@@ -177,7 +181,11 @@ uint32_t CU::getIntraSizeIdx(const CodingUnit &cu)
 bool CU::isLastSubCUOfCtu( const CodingUnit &cu )
 {
   const SPS &sps      = *cu.cs->sps;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const Area cuAreaY = cu.isSepTree() ? Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].size() ) ) : (const Area&)cu.Y();
+#else
   const Area cuAreaY = CS::isDualITree( *cu.cs ) ? Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].size() ) ) : ( const Area& ) cu.Y();
+#endif
 
   return ( ( ( ( cuAreaY.x + cuAreaY.width  ) & cu.cs->pcv->maxCUWidthMask  ) == 0 || cuAreaY.x + cuAreaY.width  == sps.getPicWidthInLumaSamples()  ) &&
            ( ( ( cuAreaY.y + cuAreaY.height ) & cu.cs->pcv->maxCUHeightMask ) == 0 || cuAreaY.y + cuAreaY.height == sps.getPicHeightInLumaSamples() ) );
@@ -241,6 +249,15 @@ PartSplit CU::getSplitAtDepth( const CodingUnit& cu, const unsigned depth )
   else if( cuSplitType == CU_TRIV_SPLIT    ) return CU_TRIV_SPLIT;
   else   { THROW( "Unknown split mode"    ); return CU_QUAD_SPLIT; }
 }
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+ModeType CU::getModeTypeAtDepth( const CodingUnit& cu, const unsigned depth )
+{
+  ModeType modeType = ModeType( (cu.modeTypeSeries >> (depth * 3)) & 0x07 );
+  CHECK( depth > cu.depth, " depth is wrong" );
+  return modeType;
+}
+#endif
 
 bool CU::hasNonTsCodedBlock( const CodingUnit& cu )
 {
@@ -837,7 +854,11 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
 #else
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
+#if JVET_O0050_LOCAL_DUAL_TREE
+    const PredictionUnit *lumaPU = pu.cu->isSepTree() ? pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : &pu;
+#else
     const PredictionUnit *lumaPU = CS::isDualITree( *pu.cs ) ? pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : &pu;
+#endif
     const uint32_t lumaMode = PU::getIntraDirLuma( *lumaPU );
 #endif
     for( int i = 0; i < 4; i++ )
@@ -927,7 +948,11 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
 #else
     Position topLeftPos = pu.blocks[pu.chType].lumaPos();
     Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
+#if JVET_O0050_LOCAL_DUAL_TREE
+    const PredictionUnit &lumaPU = pu.cu->isSepTree() ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+#else
     const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+#endif
 
     uiIntraMode = PU::getIntraDirLuma( lumaPU );
 #endif
@@ -944,7 +969,11 @@ uint32_t PU::getCoLocatedIntraLumaMode( const PredictionUnit &pu )
 {
   Position topLeftPos = pu.blocks[pu.chType].lumaPos();
   Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  const PredictionUnit &lumaPU = pu.cu->isSepTree() ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+#else
   const PredictionUnit &lumaPU = CS::isDualITree( *pu.cs ) ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
+#endif
 
   return PU::getIntraDirLuma( lumaPU );
 }
@@ -4694,6 +4723,10 @@ bool TU::getCbf( const TransformUnit &tu, const ComponentID &compID )
 
 bool TU::getCbfAtDepth(const TransformUnit &tu, const ComponentID &compID, const unsigned &depth)
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( !tu.blocks[compID].valid() )
+    CHECK( tu.cbf[compID] != 0, "cbf must be 0 if the component is not available" );
+#endif
   return ((tu.cbf[compID] >> depth) & 1) == 1;
 }
 

@@ -201,6 +201,9 @@ public:
   static const CtxSet   SplitQtFlag;
   static const CtxSet   SplitHvFlag;
   static const CtxSet   Split12Flag;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  static const CtxSet   ModeConsFlag;
+#endif
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
   static const CtxSet   RegularMergeFlag;

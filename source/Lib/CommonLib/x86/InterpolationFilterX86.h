@@ -1249,17 +1249,19 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
   {
     for (int y = 0; y < height; y++)
     {
-      __m128i s0 = _mm_loadl_epi64((__m128i *) (src0));
-      __m128i s1 = _mm_loadl_epi64((__m128i *) (src1));
-      __m128i w0 = _mm_loadl_epi64((__m128i *) (weight));
+      __m128i s0 = _mm_cvtsi32_si128(*(uint32_t *) src0);
+      __m128i s1 = _mm_cvtsi32_si128(*(uint32_t *) src1);
+      __m128i w0 = _mm_cvtsi32_si128(*(uint32_t *) weight);
       __m128i w1 = _mm_sub_epi16(mmEight, w0);
+
       s0 = _mm_unpacklo_epi16(s0, s1);
       w0 = _mm_unpacklo_epi16(w0, w1);
       s0 = _mm_add_epi32(_mm_madd_epi16(s0, w0), mmOffset);
       s0 = _mm_sra_epi32(s0, mmShift);
       s0 = _mm_packs_epi32(s0, s0);
       s0 = _mm_min_epi16(mmMax, _mm_max_epi16(s0, mmMin));
-      *(int*)(dst) = _mm_cvtsi128_si32(s0);
+
+      *(uint32_t *) dst = _mm_cvtsi128_si32(s0);
       dst += strideDst;
       src0 += strideSrc0;
       src1 += strideSrc1;

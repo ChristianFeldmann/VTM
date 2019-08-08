@@ -1946,7 +1946,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   CHECK(cfg_qpInValCb.values.size() != cfg_qpOutValCb.values.size(), "Chroma QP table for Cb is incomplete.");
   CHECK(cfg_qpInValCr.values.size() != cfg_qpOutValCr.values.size(), "Chroma QP table for Cr is incomplete.");
   CHECK(cfg_qpInValCbCr.values.size() != cfg_qpOutValCbCr.values.size(), "Chroma QP table for CbCr is incomplete.");
-  if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420) 
+  if (m_useIdentityTableForNon420Chroma && m_chromaFormatIDC != CHROMA_420)
   {
     m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag = true;
     cfg_qpInValCb.values = { 0 };
@@ -2592,7 +2592,7 @@ bool EncAppCfg::xCheckParameter()
   if (m_JointCbCrMode && (m_chromaFormatIDC == CHROMA_400))
   {
     msg( WARNING, "****************************************************************************\n");
-    msg( WARNING, "** WARNING: --JointCbCr has been disabled due to the chromaFormat is 400       **\n");
+    msg( WARNING, "** WARNING: --JointCbCr has been disabled because the chromaFormat is 400 **\n");
     msg( WARNING, "****************************************************************************\n");
     m_JointCbCrMode = false;
   }
@@ -2661,7 +2661,7 @@ bool EncAppCfg::xCheckParameter()
 #if JVET_O0455_IBC_MAX_MERGE_NUM
   xConfirmPara( m_maxNumIBCMergeCand < 1, "MaxNumIBCMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumIBCMergeCand > IBC_MRG_MAX_NUM_CANDS, "MaxNumIBCMergeCand must be no more than IBC_MRG_MAX_NUM_CANDS." );
-#endif 
+#endif
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumAffineMergeCand > AFFINE_MRG_MAX_NUM_CANDS, "MaxNumAffineMergeCand must be no more than AFFINE_MRG_MAX_NUM_CANDS." );
   if ( m_Affine == 0 )

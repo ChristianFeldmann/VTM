@@ -2882,7 +2882,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 		CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
 		CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
 		cu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);	
+		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
 		if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
 			|| wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
 		{
@@ -3302,7 +3302,7 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
 
   const Picture* picRef = pu.cu->slice->getRefPic( eRefPicList, iRefIdx );
   clipMv( cMvCand, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
-  
+
   // prediction pattern
   const bool bi = pu.cu->slice->testWeightPred() && pu.cu->slice->getSliceType()==P_SLICE;
 
@@ -7170,7 +7170,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
         if ( checkJointCbCr && (tu.cu->cs->slice->getSliceQp() > 18))
         {
-            m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
+          m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
         }
 #else
         if ( tu.cu->cs->slice->getSliceQp() > 18 )

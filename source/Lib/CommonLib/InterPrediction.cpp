@@ -2065,12 +2065,20 @@ void InterPrediction::xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicLis
     height += (filtersize - 1);
     cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp),
       -(((filtersize >> 1) - 1) << mvshiftTemp));
-    clipMv(cMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps);
+    bool wrapRef = false;
+    if( pu.cs->sps->getWrapAroundEnabledFlag() ) 
+    {
+      wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps);   
+    }
+    else
+    {
+      clipMv(cMv, pu.lumaPos(), pu.lumaSize(),*pu.cs->sps);
+    }
     /* Pre-fetch similar to HEVC*/
     {
       CPelBuf refBuf;
       Position Rec_offset = pu.blocks[compID].pos().offset(cMv.getHor() >> mvshiftTemp, cMv.getVer() >> mvshiftTemp);
-      refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, Rec_offset, pu.blocks[compID].size()));
+      refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, Rec_offset, pu.blocks[compID].size()), wrapRef);
       PelBuf &dstBuf = pcPad.bufs[compID];
       g_pelBufOP.copyBuffer((Pel *)refBuf.buf, refBuf.stride, ((Pel *)dstBuf.buf) + offset, dstBuf.stride, width, height);
     }
@@ -2123,7 +2131,8 @@ void InterPrediction::xPrefetchPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPic
     {
       wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps);   
     }
-    else {
+    else
+    {
       clipMv(cMv, pu.lumaPos(), pu.lumaSize(),*pu.cs->sps);
     }
     /* Pre-fetch similar to HEVC*/

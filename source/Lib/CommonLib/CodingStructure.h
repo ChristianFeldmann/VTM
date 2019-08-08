@@ -97,7 +97,11 @@ public:
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*       alfApss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*       alfApss[MAX_NUM_APS];
+#endif
   APS *      lmcsAps;
   const VPS *vps;
   const PreCalcValues* pcv;
@@ -210,6 +214,11 @@ public:
 
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
+#if JVET_O0119_BASE_PALETTE_444
+  PLTBuf prevPLT;
+  void resetPrevPLT(PLTBuf& prevPLT);
+  void reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
+#endif
 private:
 
   // needed for TU encoding
@@ -237,13 +246,22 @@ private:
 
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
-
+#if JVET_O0119_BASE_PALETTE_444
+  bool   *m_runType  [MAX_NUM_COMPONENT];
+  Pel    *m_runLength[MAX_NUM_COMPONENT];
+#endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;
 
 public:
-
+#if JVET_O0070_PROF
+  CodingStructure *bestParent;
+#endif
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  bool resetIBCBuffer;
+#endif
+  
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }
   MotionBuf getMotionBuf()                        { return getMotionBuf(  area.Y() ); }

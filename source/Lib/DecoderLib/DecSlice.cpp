@@ -94,6 +94,10 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   cs.picture->resizeSAO(cs.pcv->sizeInCtus, 0);
 
+#if JVET_O0119_BASE_PALETTE_444
+  cs.resetPrevPLT(cs.prevPLT);
+#endif
+
   if (slice->getSliceCurStartCtuTsAddr() == 0)
   {
     cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
@@ -163,6 +167,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       if( ctuTsAddr != startCtuTsAddr ) // if it is the first CTU, then the entropy coder has already been reset
       {
         cabacReader.initCtxModels( *slice );
+#if JVET_O0119_BASE_PALETTE_444
+        cs.resetPrevPLT(cs.prevPLT);
+#endif
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
     }
@@ -172,6 +179,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       if( ctuTsAddr != startCtuTsAddr ) // if it is the first CTU, then the entropy coder has already been reset
       {
         cabacReader.initCtxModels( *slice );
+#if JVET_O0119_BASE_PALETTE_444
+        cs.resetPrevPLT(cs.prevPLT);
+#endif
       }
       if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {
@@ -191,6 +201,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
+#if JVET_O1170_CHECK_BV_AT_DECODER
+      cs.resetIBCBuffer = true;
+#endif
 #if !JVET_O0078_SINGLE_HMVPLUT
       cs.motionLut.lutShareIbc.resize(0);
 #endif

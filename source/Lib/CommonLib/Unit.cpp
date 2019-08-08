@@ -287,6 +287,18 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
   mipFlag           = other.mipFlag;
+#if JVET_O0119_BASE_PALETTE_444
+  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+  {
+    curPLTSize[idx] = other.curPLTSize[idx];
+    useEscape[idx] = other.useEscape[idx];
+    useRotation[idx] = other.useRotation[idx];
+    reusePLTSize[idx] = other.reusePLTSize[idx];
+    lastPLTSize[idx] = other.lastPLTSize[idx];
+    memcpy(curPLT[idx], other.curPLT[idx], MAXPLTSIZE * sizeof(Pel));
+    memcpy(reuseflag[idx], other.reuseflag[idx], MAXPLTPREDSIZE * sizeof(bool));
+  }
+#endif
 #if JVET_O0050_LOCAL_DUAL_TREE
   treeType          = other.treeType;
   modeType          = other.modeType;
@@ -329,6 +341,18 @@ void CodingUnit::initData()
   smvdMode        = 0;
   ispMode           = 0;
   mipFlag           = false;
+#if JVET_O0119_BASE_PALETTE_444
+  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+  {
+    curPLTSize[idx] = 0;
+    reusePLTSize[idx] = 0;
+    lastPLTSize[idx] = 0;
+    useEscape[idx] = false;
+    useRotation[idx] = false;
+    memset(curPLT[idx], 0, MAXPLTSIZE * sizeof(Pel));
+    memset(reuseflag[idx], false, MAXPLTPREDSIZE * sizeof(bool));
+  }
+#endif
 #if JVET_O0050_LOCAL_DUAL_TREE
   treeType          = TREE_D;
   modeType          = MODE_TYPE_ALL;
@@ -429,7 +453,11 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   }
 
   //check on prediction mode
+#if JVET_O0119_BASE_PALETTE_444
+  if (predMode == MODE_INTRA || predMode == MODE_IBC || predMode == MODE_PLT) //intra, palette or IBC
+#else
   if( predMode == MODE_INTRA || predMode == MODE_IBC ) //intra or IBC
+#endif
   {
     return 0;
   }
@@ -687,6 +715,10 @@ TransformUnit::TransformUnit(const UnitArea& unit) : UnitArea(unit), cu(nullptr)
   {
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i] = nullptr;
+    m_runLength[i] = nullptr;
+#endif
   }
 
   initData();
@@ -698,6 +730,10 @@ TransformUnit::TransformUnit(const ChromaFormat _chromaFormat, const Area &_area
   {
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i] = nullptr;
+    m_runLength[i] = nullptr;
+#endif
   }
 
   initData();
@@ -718,7 +754,11 @@ void TransformUnit::initData()
   m_chromaResScaleInv = 0;
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType)
+#else
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
+#endif
 {
   uint32_t numBlocks = getNumberValidTBlocks(*cs->pcv);
 
@@ -726,6 +766,10 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
   {
     m_coeffs[i] = coeffs[i];
     m_pcmbuf[i] = pcmbuf[i];
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i] = runType[i];
+    m_runLength[i] = runLength[i];
+#endif
   }
 }
 
@@ -742,6 +786,10 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
     if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
+#if JVET_O0119_BASE_PALETTE_444
+    if (m_runType[i] && other.m_runType[i] && m_runType[i] != other.m_runType[i]) memcpy(m_runType[i], other.m_runType[i], sizeof(bool) * area);
+    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area);
+#endif
 
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
@@ -764,6 +812,10 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
   if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
+#if JVET_O0119_BASE_PALETTE_444
+  if (m_runType[i] && other.m_runType[i] && m_runType[i] != other.m_runType[i]) memcpy(m_runType[i], other.m_runType[i], sizeof(bool) * area);
+  if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area);
+#endif
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
@@ -780,6 +832,24 @@ const CCoeffBuf TransformUnit::getCoeffs(const ComponentID id) const { return CC
 
        PelBuf   TransformUnit::getPcmbuf(const ComponentID id)       { return  PelBuf  (m_pcmbuf[id], blocks[id]); }
 const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CPelBuf  (m_pcmbuf[id], blocks[id]); }
+
+#if JVET_O0119_BASE_PALETTE_444
+       PelBuf TransformUnit::getcurPLTIdx(const ComponentID id) { return  PelBuf(m_pcmbuf[id], blocks[id]); }
+const CPelBuf TransformUnit::getcurPLTIdx(const ComponentID id) const { return CPelBuf(m_pcmbuf[id], blocks[id]); }
+
+       PelBuf TransformUnit::getrunLength(const ComponentID id) { return  PelBuf(m_runLength[id], blocks[id]); }
+const CPelBuf TransformUnit::getrunLength(const ComponentID id) const { return CPelBuf(m_runLength[id], blocks[id]); }
+
+       PLTtypeBuf TransformUnit::getrunType(const ComponentID id) { return  PLTtypeBuf(m_runType[id], blocks[id]); }
+const CPLTtypeBuf TransformUnit::getrunType(const ComponentID id)   const { return CPLTtypeBuf(m_runType[id], blocks[id]); }
+
+       PLTescapeBuf TransformUnit::getescapeValue(const ComponentID id) { return  PLTescapeBuf(m_coeffs[id], blocks[id]); }
+const CPLTescapeBuf TransformUnit::getescapeValue(const ComponentID id)  const { return CPLTescapeBuf(m_coeffs[id], blocks[id]); }
+
+Pel*  TransformUnit::getPLTIndex(const ComponentID id) { return  m_pcmbuf[id]; }
+Pel*  TransformUnit::getRunLens (const ComponentID id) { return  m_runLength[id]; }
+bool* TransformUnit::getRunTypes(const ComponentID id) { return  m_runType[id]; }
+#endif
 
 void TransformUnit::checkTuNoResidual( unsigned idx )
 {

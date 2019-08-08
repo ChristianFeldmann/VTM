@@ -548,6 +548,50 @@ const CtxSet ContextSetCfg::SigCoeffGroup[] =
 
 const CtxSet ContextSetCfg::SigFlag[] =
 {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+  ContextSetCfg::addCtxSet
+  ({
+    {  88, 166, 182, 169, 101, 167, 168, 155, 194, 213, 183, 156, },
+    { 132, 152, 168, 140, 177, 182, 154, 155, 151, 213, 169, 156, },
+    {  89, 138, 139, 140, 150, 139, 140, 141, 138, 185, 141, 157, },
+    {  12,   9,   9,  10,   9,   9,   9,   9,   8,   8,   8,  10, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    {  27, 167, 168, 140, 180, 199, 214, 186, },
+    { 133, 138, 139, 140, 181, 214, 200, 157, },
+    { 134, 153, 154, 155, 167, 186, 186, 143, },
+    {   9,   9,   9,  13,   5,   5,   8,   9, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 152, 156, 186, 202, 182, 249, 247, 207, 182, 223, 223, 223, },
+    { 123, 142, 172, 218, 138, 250, 248, 223, 125, 223, 223, 223, },
+    {  93, 142, 143, 175, 153, 223, 223, 238, 154, 223, 223, 223, },
+    {   9,  12,   8,   8,   8,   8,   8,   5,   8,   0,   0,   0, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 182, 171, 143, 190, 183, 223, 223, 223, },
+    { 168, 156, 216, 249, 169, 223, 223, 223, },
+    { 138, 173, 157, 223, 170, 223, 223, 223, },
+    {   8,  12,   8,   8,   4,   0,   0,   0, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 123, 175, 223, 223, 212, 223, 223, 223,   0, 223, 223, 223, },
+    { 123, 223, 205, 223, 138, 223, 223, 223, 196, 223, 223, 223, },
+    { 107, 206, 223, 223,  93, 223, 223, 238,  55, 223, 223, 223, },
+    {   8,   8,   8,   8,   8,   0,   4,   4,   0,   0,   0,   0, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    { 167, 187, 249, 207, 181, 223, 223, 223, },
+    { 167, 157, 191, 223, 152, 223, 223, 223, },
+    { 152, 236, 223, 223, 123, 223, 223, 223, },
+    {   8,   8,   8,   8,   4,   0,   0,   0, },
+  }),
+#else
   ContextSetCfg::addCtxSet
   ({
     {  88, 166, 152, 182, 168, 154, 116, 167, 182, 168, 183, 155, 208, 213, 183, 183, 169, 185, },
@@ -590,6 +634,7 @@ const CtxSet ContextSetCfg::SigFlag[] =
     { 137, 250, 223, 237, 234, 223, 123, 223, 223, 223, 223, 223, },
     {   8,   8,   1,   8,   8,   8,   4,   0,   0,   0,   0,   0, },
   })
+#endif
 };
 
 const CtxSet ContextSetCfg::ParFlag[] =
@@ -725,6 +770,48 @@ const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
   { 169, 155, },
   {   8,   8, },
 } );
+
+#if JVET_O0119_BASE_PALETTE_444
+const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet
+({
+  { 146 },
+  { 146 },
+  { 147 },
+  { 1 }
+});
+
+const CtxSet ContextSetCfg::RotationFlag = ContextSetCfg::addCtxSet
+({
+  { 153 },
+  { 138 },
+  { 168 },
+  { 5 }
+});
+
+const CtxSet ContextSetCfg::RunTypeFlag = ContextSetCfg::addCtxSet
+({
+  { 167 },
+  { 167 },
+  { 167 },
+  { 8 }
+});
+
+const CtxSet ContextSetCfg::IdxRunModel = ContextSetCfg::addCtxSet
+({
+  { 157, 169, 138, 170, 155 },
+  { 186, 169, 166, 186, 185 },
+  { 155, 168, 167, 155, 154 },
+  { 5,   6,   5,   9,  10 }
+});
+
+const CtxSet ContextSetCfg::CopyRunModel = ContextSetCfg::addCtxSet
+({
+  { 187, 172, 156 },
+  { 187, 187, 185 },
+  { 201, 171, 155 },
+  { 0,   5,   5 }
+});
+#endif
 
 const CtxSet ContextSetCfg::RdpcmFlag = ContextSetCfg::addCtxSet
 ({
@@ -979,6 +1066,9 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 
 
 // combined sets
+#if JVET_O0119_BASE_PALETTE_444 
+const CtxSet ContextSetCfg::Palette = { ContextSetCfg::RotationFlag, ContextSetCfg::RunTypeFlag, ContextSetCfg::IdxRunModel, ContextSetCfg::CopyRunModel };
+#endif
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB

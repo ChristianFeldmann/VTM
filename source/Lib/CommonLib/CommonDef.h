@@ -151,7 +151,10 @@ static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                6; ///< MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
-
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+static const int IBC_MRG_MAX_NUM_CANDS =                            6; ///< IBC MERGE
+#endif
+  
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
 static const int ADAPT_SR_SCALE =                                   1; ///< division factor for adaptive search range
@@ -173,8 +176,13 @@ static const int MAX_VPS_LAYERS =                                 256;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
+static const int MIP_MAX_WIDTH =                                   MAX_TB_SIZEY;
+static const int MIP_MAX_HEIGHT =                                  MAX_TB_SIZEY;
+#else
 static const int MIP_MAX_WIDTH =                                   64;
 static const int MIP_MAX_HEIGHT =                                  64;
+#endif
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
 static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
@@ -187,7 +195,11 @@ static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTE
 static const int MAX_ALF_PADDING_SIZE        =                      4;
 
 static const int ALF_FIXED_FILTER_NUM        =                     64;
+#if JVET_O_MAX_NUM_ALF_APS_8
+static const int ALF_CTB_MAX_NUM_APS         =                      8;
+#else
 static const int ALF_CTB_MAX_NUM_APS         =                      6;
+#endif
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
 
@@ -296,6 +308,11 @@ static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
 
 static const int MAX_QP_OFFSET_LIST_SIZE =                          6; ///< Maximum size of QP offset list is 6 entries
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+static const int MAX_NUM_CQP_MAPPING_TABLES =                       3; ///< Maximum number of chroma QP mapping tables (Cb, Cr and joint Cb-Cr)
+static const int MIN_QP_VALUE_FOR_16_BIT   =                      -48; ////< Minimum value for QP (-6*(bitdepth - 8) ) for bit depth 16 ; actual minimum QP value is bit depth dependent
+static const int MAX_NUM_QP_VALUES =    MAX_QP + 1 - MIN_QP_VALUE_FOR_16_BIT; ////< Maximum number of QP values possible - bit depth dependent
+#endif
 
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.
@@ -314,7 +331,12 @@ static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
+#if JVET_O0545_MAX_TB_SIGNALLING
+static const int MAX_NUM_TUS =                                     16; ///< Maximum number of TUs within one CU. When max TB size is 32x32, up to 16 TUs within one CU (128x128) is supported
+static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         3;
+#else
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
+#endif
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
@@ -324,7 +346,9 @@ static const int SCALING_LIST_REM_NUM =                             6;
 
 static const int QUANT_SHIFT =                                     14; ///< Q(4) = 2^14
 static const int IQUANT_SHIFT =                                     6;
-static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
+
+static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
+static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
 
 static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
 
@@ -361,6 +385,10 @@ static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max 
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
 
+#if JVET_O0070_PROF
+static const int PROF_BORDER_EXT_W            =                     1;
+static const int PROF_BORDER_EXT_H            =                     1;
+#endif
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
@@ -490,6 +518,15 @@ static const int CSCALE_FP_PREC =                                11;
 #if JVET_O1109_UNFIY_CRS
 static const int  NEIG_NUM_LOG  =                                 6;
 static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
+#endif
+#if JVET_O0119_BASE_PALETTE_444
+static const int MAXPLTPREDSIZE = 63;
+static const int MAXPLTSIZE = 31;
+static const int PLT_ENCBITDEPTH = 8;
+static const int PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE = 4;
+static const int PLT_RUN_MSB_IDX_CTX_T1 = 1;
+static const int PLT_RUN_MSB_IDX_CTX_T2 = 3;
+static const int PLT_FAST_RATIO = 100;
 #endif
 #if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 static const int  EPBIN_WEIGHT_FACTOR =                           4;

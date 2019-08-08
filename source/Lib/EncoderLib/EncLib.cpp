@@ -66,6 +66,9 @@ EncLib::EncLib()
   , m_cacheModel()
 #endif
   , m_lmcsAPS(nullptr)
+#if JVET_O0119_BASE_PALETTE_444
+  , m_doPlt( true )
+#endif
 {
   m_iPOCLast          = -1;
   m_iNumPicRcvd       =  0;
@@ -870,6 +873,9 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   cinfo->setNoBDPCMConstraintFlag(m_noBDPCMConstraintFlag);
 #endif
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  cinfo->setNoJointCbCrConstraintFlag(m_noJointCbCrConstraintFlag);
+#endif
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
@@ -904,6 +910,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
+#if JVET_O0070_PROF
+  sps.setUsePROF               ( m_PROF );
+#endif
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
   sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
@@ -912,7 +921,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseSBT                             ( m_SBT );
   if( sps.getUseSBT() )
   {
+#if JVET_O0545_MAX_TB_SIGNALLING
+    sps.setMaxSbtSize                       ( std::min((int)(1 << m_log2MaxTbSize), m_iSourceWidth >= 1920 ? 64 : 32) );
+#else
     sps.setMaxSbtSize                       ( m_iSourceWidth >= 1920 ? 64 : 32 );
+#endif
   }
   sps.setUseSMVD                ( m_SMVD );
   sps.setUseGBi                ( m_GBi );
@@ -939,7 +952,9 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
-
+#if JVET_O0119_BASE_PALETTE_444
+  sps.setPLTMode                            ( m_PLTMode);
+#endif
   sps.setIBCFlag                            ( m_IBCMode);
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
@@ -976,6 +991,9 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_O0919_TS_MIN_QP
+    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
   }
 
@@ -985,7 +1003,9 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
 
   sps.setSAOEnabledFlag( m_bUseSAO );
-
+#if JVET_O0376_SPS_JOINTCBCR_FLAG
+  sps.setJointCbCrEnabledFlag( m_JointCbCrMode );
+#endif
   sps.setMaxTLayers( m_maxTempLayer );
   sps.setTemporalIdNestingFlag( ( m_maxTempLayer == 1 ) ? true : false );
 
@@ -1029,6 +1049,10 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setLtRefPicPocLsbSps(k, 0);
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
+#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  sps.setChromaQpMappingTableFromParams(m_chromaQpMappingTableParams, sps.getQpBDOffset(CHANNEL_TYPE_CHROMA));
+  sps.derivedChromaQPMappingTables();
+#endif
 
 #if U0132_TARGET_BITS_SATURATION
   if( getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() || getCpbSaturationEnabled() )
@@ -1697,6 +1721,39 @@ bool EncLib::SPSNeedsWriting(int spsId)
   return bChanged;
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+void EncLib::checkPltStats( Picture* pic )
+{
+  int totalArea = 0;
+  int pltArea = 0;
+  for (auto apu : pic->cs->pus)
+  {
+    for (int i = 0; i < MAX_NUM_TBLOCKS; ++i)
+    {
+      int puArea = apu->blocks[i].width * apu->blocks[i].height;
+      if (apu->blocks[i].width > 0 && apu->blocks[i].height > 0)
+      {
+        totalArea += puArea;
+        if (CU::isPLT(*apu->cu) || CU::isIBC(*apu->cu))
+        {
+          pltArea += puArea;
+        }
+        break;
+      }
+
+    }
+  }
+  if (pltArea * PLT_FAST_RATIO < totalArea)
+  {
+    m_doPlt = false;
+  }
+  else
+  {
+    m_doPlt = true;
+  }
+}
+#endif
+
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
 int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 {
@@ -1767,5 +1824,6 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
   return qp;
 }
 #endif
+
 
 //! \}

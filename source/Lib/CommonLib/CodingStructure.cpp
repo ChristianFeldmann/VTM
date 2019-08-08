@@ -67,11 +67,21 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   , m_cuCache ( cuCache )
   , m_puCache ( puCache )
   , m_tuCache ( tuCache )
+#if JVET_O0070_PROF
+  , bestParent ( nullptr )
+#endif
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  , resetIBCBuffer (false)
+#endif
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
     m_coeffs[ i ] = nullptr;
     m_pcmbuf[ i ] = nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i] = nullptr;
+    m_runLength[i] = nullptr;
+#endif
 
     m_offsets[ i ] = 0;
   }
@@ -609,6 +619,10 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
 
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+#if JVET_O0119_BASE_PALETTE_444 
+  bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
+  Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+#endif
 
   uint32_t numCh = ::getNumberValidComponents( area.chromaFormat );
 
@@ -645,12 +659,20 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
 
     coeffs[i] = m_coeffs[i] + m_offsets[i];
     pcmbuf[i] = m_pcmbuf[i] + m_offsets[i];
+#if JVET_O0119_BASE_PALETTE_444
+    runType[i]   = m_runType[i]   + m_offsets[i];
+    runLength[i] = m_runLength[i] + m_offsets[i];
+#endif
 
     unsigned areaSize = tu->blocks[i].area();
     m_offsets[i] += areaSize;
   }
 
+#if JVET_O0119_BASE_PALETTE_444
+  tu->init( coeffs, pcmbuf, runLength, runType);
+#else
   tu->init( coeffs, pcmbuf );
+#endif
 
   return *tu;
 }
@@ -850,6 +872,64 @@ void CodingStructure::addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> &
   lut.push_back(mi);
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+void CodingStructure::resetPrevPLT(PLTBuf& prevPLT)
+{
+  for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
+  {
+    prevPLT.curPLTSize[comp] = 0;
+    memset(prevPLT.curPLT[comp], 0, MAXPLTPREDSIZE * sizeof(Pel));
+  }
+}
+
+void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT)
+{
+  Pel stuffedPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
+  uint32_t tempCurPLTsize[MAX_NUM_COMPONENT];
+  uint32_t stuffPLTsize[MAX_NUM_COMPONENT];
+
+  for (int i = compBegin; i < (compBegin + numComp); i++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    tempCurPLTsize[comID] = curPLTSize[comID];
+    stuffPLTsize[i] = 0;
+    memcpy(stuffedPLT[i], curPLT[i], curPLTSize[comID] * sizeof(Pel));
+  }
+
+  for (int ch = compBegin; ch < (compBegin + numComp); ch++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((ch > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    if (ch > 1) break;
+    for (int i = 0; i < prevPLT.curPLTSize[comID]; i++)
+    {
+      if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= MAXPLTPREDSIZE)
+        break;
+
+      if (!reuseflag[comID][i])
+      {
+        if (ch == COMPONENT_Y)
+        {
+          stuffedPLT[0][tempCurPLTsize[comID] + stuffPLTsize[ch]] = prevPLT.curPLT[0][i];
+        }
+        else
+        {
+          stuffedPLT[1][tempCurPLTsize[comID] + stuffPLTsize[ch]] = prevPLT.curPLT[1][i];
+          stuffedPLT[2][tempCurPLTsize[comID] + stuffPLTsize[ch]] = prevPLT.curPLT[2][i];
+        }
+        stuffPLTsize[ch]++;
+      }
+    }
+  }
+
+  for (int i = compBegin; i < (compBegin + numComp); i++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    prevPLT.curPLTSize[comID] = curPLTSize[comID] + stuffPLTsize[comID];
+    memcpy(prevPLT.curPLT[i], stuffedPLT[i], prevPLT.curPLTSize[comID] * sizeof(Pel));
+  }
+}
+#endif
+
 void CodingStructure::rebindPicBufs()
 {
   CHECK( parent, "rebindPicBufs can only be used for the top level CodingStructure" );
@@ -877,6 +957,10 @@ void CodingStructure::createCoeffs()
 
     m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
     m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i]   = _area > 0 ? (bool*)xMalloc( bool, _area) : nullptr;
+    m_runLength[i] = _area > 0 ? (Pel*) xMalloc( Pel,  _area) : nullptr;
+#endif
   }
 }
 
@@ -886,6 +970,10 @@ void CodingStructure::destroyCoeffs()
   {
     if( m_coeffs[i] ) { xFree( m_coeffs[i] ); m_coeffs[i] = nullptr; }
     if( m_pcmbuf[i] ) { xFree( m_pcmbuf[i] ); m_pcmbuf[i] = nullptr; }
+#if JVET_O0119_BASE_PALETTE_444
+    if (m_runType[i])   { xFree(m_runType[i]);   m_runType[i]   = nullptr; }
+    if (m_runLength[i]) { xFree(m_runLength[i]); m_runLength[i] = nullptr; }
+#endif
   }
 }
 
@@ -928,6 +1016,10 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.m_isTuEnc = isTuEnc;
 
   subStruct.motionLut = motionLut;
+
+#if JVET_O0119_BASE_PALETTE_444
+  subStruct.prevPLT = prevPLT;
+#endif
 
 #if JVET_O0050_LOCAL_DUAL_TREE
   subStruct.treeType  = treeType;
@@ -995,6 +1087,10 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
 
     motionLut = subStruct.motionLut;
   }
+#if JVET_O0119_BASE_PALETTE_444
+  prevPLT = subStruct.prevPLT;
+#endif
+
 #if ENABLE_WPP_PARALLELISM
 
   if( nullptr == parent )
@@ -1195,6 +1291,9 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
 
     motionLut = other.motionLut;
   }
+#if JVET_O0119_BASE_PALETTE_444
+  prevPLT = other.prevPLT;
+#endif
 
   if( copyTUs )
   {

@@ -129,11 +129,23 @@ public:
       }
     }
 #undef UPDATE
+
+
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+    int ctxOfs = std::min((sumAbs+1)>>1, 3) + ( diag < 2 ? 4 : 0 );
+#else
     int ctxOfs = std::min( sumAbs, 5 ) + ( diag < 2 ? 6 : 0 );
+#endif
+
     if( m_chType == CHANNEL_TYPE_LUMA )
     {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+      ctxOfs += diag < 5 ? 4 : 0;
+#else
       ctxOfs += diag < 5 ? 6 : 0;
+#endif
     }
+
     m_tmplCpDiag = diag;
     m_tmplCpSum1 = sumAbs - numPos;
     return m_sigFlagCtxSet[std::max( 0, state-1 )]( ctxOfs );
@@ -434,9 +446,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
-                           lastScanPos[COMPONENT_Y ] = -1;
-                           lastScanPos[COMPONENT_Cb] = -1;
-                           lastScanPos[COMPONENT_Cr] = -1;
+                           lfnstLastScanPos = false;
                          }
 #else
                          qgStart(false),
@@ -459,9 +469,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
 #endif
-                           lastScanPos[COMPONENT_Y ] = -1;
-                           lastScanPos[COMPONENT_Cb] = -1;
-                           lastScanPos[COMPONENT_Cr] = -1;
+                           lfnstLastScanPos = false;
                          }
 #else
 #if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
@@ -480,7 +488,7 @@ public:
   bool      isChromaQpAdjCoded;
   bool      qgStart;
 #if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
-  int       lastScanPos[MAX_NUM_COMPONENT];
+  bool      lfnstLastScanPos;
 #else
   uint32_t  numNonZeroCoeffNonTs;
 #endif

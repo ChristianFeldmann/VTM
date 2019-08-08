@@ -109,6 +109,13 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
   }
   bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra()) || cs.slice->getSPS()->getIBCFlag()));
 
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  if (cs.resetIBCBuffer)
+  {
+    m_pcInterPred->resetIBCBuffer(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight());
+    cs.resetIBCBuffer = false;
+  }
+#endif
   for( int ch = 0; ch < maxNumChannelType; ch++ )
   {
     const ChannelType chType = ChannelType( ch );
@@ -117,6 +124,16 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
+#if JVET_O1170_CHECK_BV_AT_DECODER
+      if(currCU.Y().valid())
+      {
+        const int vSize = cs.slice->getSPS()->getMaxCUHeight() > 64 ? 64 : cs.slice->getSPS()->getMaxCUHeight();
+        if((currCU.Y().x % vSize) == 0 && (currCU.Y().y % vSize) == 0)
+        {
+          m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x, currCU.Y().y);
+        }
+      }
+#endif
       if(sharePrepareCondition)
       {
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
@@ -133,7 +150,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         }
         prevTmpPos = currCU.shareParentPos;
       }
+#if JVET_O0119_BASE_PALETTE_444
+      if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
+#else
       if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
+#endif
       {
         xDeriveCUMV(currCU);
       }
@@ -143,6 +164,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       case MODE_IBC:
         xReconInter( currCU );
         break;
+#if JVET_O0119_BASE_PALETTE_444
+      case MODE_PLT:
+#endif
       case MODE_INTRA:
         xReconIntraQT( currCU );
         break;
@@ -155,6 +179,9 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       {
         xFillPCMBuffer( currCU );
       }
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+      m_pcInterPred->xFillIBCBuffer(currCU);
+#endif
 
       DTRACE_BLOCK_REC( cs.picture->getRecoBuf( currCU ), currCU, currCU.predMode );
     }
@@ -184,8 +211,39 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const PredictionUnit &pu  = *tu.cs->getPU( area.pos(), chType );
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
+#if JVET_O0502_ISP_CLEANUP
+  PelBuf pReco              = cs.getRecoBuf(area);
+#endif
 
   //===== init availability pattern =====
+#if JVET_O0502_ISP_CLEANUP
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+  bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
+  bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
+  CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
+#endif
+  if (tu.cu->ispMode && isLuma(compID))
+  {
+#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
+    if (predRegDiffFromTB)
+    {
+      if (firstTBInPredReg)
+      {
+        CU::adjustPredArea(areaPredReg);
+        m_pcIntraPred->initIntraPatternChTypeISP(*tu.cu, areaPredReg, pReco);
+      }
+    }
+    else
+#endif
+    {
+      m_pcIntraPred->initIntraPatternChTypeISP(*tu.cu, area, pReco);
+    }
+  }
+  else
+  {
+    m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
+  }
+#else
 #if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
   bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
   bool firstTBInPredReg  = CU::isFirstTBInPredReg (*tu.cu, compID, area);
@@ -201,6 +259,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   else
 #endif
     m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
+#endif
 
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -265,7 +324,8 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
       }
       else
       {
-        m_pcTrQuant->invTransformNxN( tu, COMPONENT_Cr, resiCr, cQP );
+        const QpParam qpCr( tu, COMPONENT_Cr );
+        m_pcTrQuant->invTransformNxN( tu, COMPONENT_Cr, resiCr, qpCr );
       }
       m_pcTrQuant->invTransformICT( tu, piResi, resiCr );
     }
@@ -303,7 +363,9 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     CrossComponentPrediction::crossComponentPrediction( tu, compID, cs.getResiBuf( tu.Y() ), piResi, piResi, true );
   }
 
+#if !JVET_O0502_ISP_CLEANUP
   PelBuf pReco = cs.getRecoBuf( area );
+#endif
 
   if( !tu.cu->ispMode || !isLuma( compID ) )
   {
@@ -360,6 +422,27 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
     return;
   }
 
+#if JVET_O0119_BASE_PALETTE_444
+  if (CU::isPLT(cu))
+  {
+    if (CS::isDualITree(*cu.cs))
+    {
+      if (cu.chType == CHANNEL_TYPE_LUMA)
+      {
+        xReconPLT(cu, COMPONENT_Y, 1);
+      }
+      if (cu.chromaFormat != CHROMA_400 && (cu.chType == CHANNEL_TYPE_CHROMA))
+      {
+        xReconPLT(cu, COMPONENT_Cb, 2);
+      }
+    }
+    else
+    {
+      xReconPLT(cu, COMPONENT_Y, 3);
+    }
+    return;
+  }
+#endif
   const uint32_t numChType = ::getNumberValidChannels( cu.chromaFormat );
 
   for( uint32_t chType = CHANNEL_TYPE_LUMA; chType < numChType; chType++ )
@@ -371,6 +454,88 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
   }
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
+{
+  const SPS&       sps = *(cu.cs->sps);
+  TransformUnit&   tu = *cu.firstTU;
+  PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
+
+  uint32_t height = cu.block(compBegin).height;
+  uint32_t width = cu.block(compBegin).width;
+
+  //recon. pixels
+  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
+  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
+  for (uint32_t y = 0; y < height; y++)
+  {
+    for (uint32_t x = 0; x < width; x++)
+    {
+      for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
+      {
+        const int  channelBitDepth = cu.cs->sps->getBitDepth(toChannelType((ComponentID)compID));
+        const CompArea &area = cu.blocks[compID];
+
+        PelBuf       picReco   = cu.cs->getRecoBuf(area);
+        PLTescapeBuf escapeValue = tu.getescapeValue((ComponentID)compID);
+        if (curPLTIdx.at(x, y) == cu.curPLTSize[compBegin])
+        {
+          Pel value;
+          QpParam cQP(tu, (ComponentID)compID);
+
+#if JVET_O0919_TS_MIN_QP
+          int qp = cQP.Qp(false);
+#else
+          int qp = cQP.Qp;
+#endif
+          int qpRem = qp % 6;
+          int qpPer = qp / 6;
+          if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
+          {
+            int invquantiserRightShift = IQUANT_SHIFT;
+            int add = 1 << (invquantiserRightShift - 1);
+            value = ((((escapeValue.at(x, y)*g_invQuantScales[0][qpRem]) << qpPer) + add) >> invquantiserRightShift);
+            value = Pel(ClipBD<int>(value, channelBitDepth));
+            picReco.at(x, y) = value;
+          }
+          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && y % (1 << scaleY) == 0 && x % (1 << scaleX) == 0)
+          {
+            uint32_t posYC = y >> scaleY;
+            uint32_t posXC = x >> scaleX;
+            int invquantiserRightShift = IQUANT_SHIFT;
+            int add = 1 << (invquantiserRightShift - 1);
+            value = ((((escapeValue.at(posXC, posYC)*g_invQuantScales[0][qpRem]) << qpPer) + add) >> invquantiserRightShift);
+            value = Pel(ClipBD<int>(value, channelBitDepth));
+            picReco.at(posXC, posYC) = value;
+
+          }
+        }
+        else
+        {
+          uint32_t curIdx = curPLTIdx.at(x, y);
+          if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
+          {
+            picReco.at(x, y) = cu.curPLT[compID][curIdx];
+          }
+          else if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && y % (1 << scaleY) == 0 && x % (1 << scaleX) == 0)
+          {
+            uint32_t posYC = y >> scaleY;
+            uint32_t posXC = x >> scaleX;
+            picReco.at(posXC, posYC) = cu.curPLT[compID][curIdx];
+          }
+        }
+      }
+    }
+  }
+  for (uint32_t compID = compBegin; compID < (compBegin + numComp); compID++)
+  {
+    const CompArea &area = cu.blocks[compID];
+    PelBuf picReco = cu.cs->getRecoBuf(area);
+    cu.cs->picture->getRecoBuf(area).copyFrom(picReco);
+    cu.cs->setDecomp(area);
+  }
+}
+#endif
 /** Function for deriving reconstructed luma/chroma samples of a PCM mode CU.
 * \param pcCU pointer to current CU
 * \param uiPartIdx part index
@@ -622,7 +787,8 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
       }
       else
       {
-        m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, cQP );
+        const QpParam qpCr( currTU, COMPONENT_Cr );
+        m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, qpCr );
       }
       m_pcTrQuant->invTransformICT( currTU, resiBuf, resiCr );
     }
@@ -907,12 +1073,20 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       const int cuPelY = pu.Y().y;
       int roiWidth = pu.lwidth();
       int roiHeight = pu.lheight();
+#if !JVET_O1170_CHECK_BV_AT_DECODER
       const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
       const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+#endif
       const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
       int xPred = pu.mv[0].getHor() >> MV_FRACTIONAL_BITS_INTERNAL;
       int yPred = pu.mv[0].getVer() >> MV_FRACTIONAL_BITS_INTERNAL;
+#if JVET_O1170_CHECK_BV_AT_DECODER
+      CHECK(!m_pcInterPred->isLumaBvValid(lcuWidth, cuPelX, cuPelY, roiWidth, roiHeight, xPred, yPred), "invalid block vector for IBC detected.");
+#else
+#if !JVET_O1170_IBC_VIRTUAL_BUFFER
       CHECK(!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth), "invalid block vector for IBC detected.");
+#endif
+#endif
     }
   }
 }

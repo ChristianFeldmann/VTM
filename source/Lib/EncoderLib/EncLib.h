@@ -138,11 +138,19 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*                      m_apss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*                      m_apss[MAX_NUM_APS];
+#endif
 
   APS*                      m_lmcsAPS;
 
   EncHRD                    m_encHRD;
+
+#if JVET_O0119_BASE_PALETTE_444 
+  bool                      m_doPlt;
+#endif
 
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
@@ -237,6 +245,11 @@ public:
 #endif
 
   ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
+
+#if JVET_O0119_BASE_PALETTE_444
+  bool                   getPltEnc()   const { return m_doPlt; }
+  void                   checkPltStats( Picture* pic );
+#endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function
   // -------------------------------------------------------------------------------------------------------------------

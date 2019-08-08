@@ -130,7 +130,6 @@ private: //members
   CABACWriter*           m_CABACEstimator;
   CtxCache*              m_CtxCache;
   double                 m_lambda[MAX_NUM_COMPONENT];
-  const double           FracBitsScale = 1.0 / double( 1 << SCALE_BITS );
 
   //statistics
   std::vector<SAOStatData**>         m_statData; //[ctu][comp][classes]

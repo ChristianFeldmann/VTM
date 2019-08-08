@@ -93,6 +93,7 @@ public:
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
   void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );
+  
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        cu_pred_data              ( const CodingUnit&             cu );
@@ -111,7 +112,12 @@ public:
   void        mip_flag                  ( const CodingUnit&             cu );
   void        mip_pred_modes            ( const CodingUnit&             cu );
   void        mip_pred_mode             ( const PredictionUnit&         pu );
-
+#if JVET_O0119_BASE_PALETTE_444
+  void        cu_palette_info           ( const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx);
+  void        cu_run_val                ( uint32_t run, PLTRunMode runtype, const uint32_t paletteIdx, const uint32_t maxRun);
+  void        encodeRunType             ( const CodingUnit&  cu, PLTtypeBuf& runType, uint32_t idx, ScanElement *refScanOrder, ComponentID compBegin);
+  Pel         writePLTIndex             ( const CodingUnit& cu, uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin);
+#endif
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
   void        merge_flag                ( const PredictionUnit&         pu );
@@ -198,12 +204,20 @@ private:
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }
 
   void  xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol);
-
+#if JVET_O0119_BASE_PALETTE_444
+  void        codeScanRotationModeFlag  ( const CodingUnit& cu, ComponentID compBegin);
+  void        xEncodePLTPredIndicator   ( const CodingUnit& cu, uint32_t maxPltSize, ComponentID compBegin);
+  uint32_t    xWriteTruncMsbP1          ( uint32_t symbol, PLTRunMode runtype, uint32_t maxVal, uint32_t ctxT);
+  void        xWriteTruncMsbP1RefinementBits  ( uint32_t symbol, PLTRunMode runtype, uint32_t maxVal, uint32_t ctxT);
+#endif
 private:
   BinEncIf&         m_BinEncoder;
   OutputBitstream*  m_Bitstream;
   Ctx               m_TestCtx;
   EncCu*            m_EncCu;
+#if JVET_O0119_BASE_PALETTE_444
+  ScanElement*      m_scanOrder;
+#endif
 };
 
 

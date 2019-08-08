@@ -50,7 +50,39 @@
 #include <assert.h>
 #include <cassert>
 
+
+#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.    
+
+#define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
+
+#define JVET_O0455_IBC_MAX_MERGE_NUM                      1 // JVET-O0455: Control the max number of IBC merge candidates independently from regular merge candidates
+
+#define JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE          1 // JVET-O0650: Signal chroma QP mapping tables and move chroma PPS/slice offsets after mapping table
+
+#define JVET_O0502_ISP_CLEANUP                            1 // JVET-O0502: Enable PDPC and all 67 intra modes and apply the cubic filter always (also included in JVET-O0341) for ISP
+
+#define JVET_O0640_PICTURE_SIZE_CONSTRAINT                1 // JVET-O0640: Picture width and height shall be a multiple of Max(8, minCU size)
+
+#define JVET_O_MAX_NUM_ALF_APS_8                          1 // JVET-O: number of ALF APSs is reduced to 8
+
+#define JVET_O0925_MIP_SIMPLIFICATIONS                    1 // JVET-O0925: Simplifications of MIP
+
+#define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
+
+#define JVET_O0570_GRAD_SIMP                              1 // JVET-O0570/JVET-O0211, SMID friendly spatial gradient calculation
+
+#define JVET_O1170_IBC_VIRTUAL_BUFFER                     1 // JVET-O1170/O1171: IBC virtual buffer
+#if JVET_O1170_IBC_VIRTUAL_BUFFER
+#define JVET_O1170_CHECK_BV_AT_DECODER                    1 // For decoder to check if a BV is valid or not
+#endif
+
+#define JVET_O0538_SPS_CONTROL_ISP_SBT                    1 // JVET-O0538: SPS control for ISP and SBT transform
+
+#define JVET_O0634_BDOF_SIZE_CONSTRAINT                   1 // JVET-O0634: BDOF applied CU size align with DMVR
+
 #define JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE          1 // JVET-O0213: Block size restriction of LFNST to maximum transform size
+
+#define JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION             1 // JVET-O0617: Significant flag context reduction
 
 #define JVET_O0244_DELTA_POC                              1 // JVET-O0244: weighted prediction in SPS and delta POC
 
@@ -83,6 +115,8 @@
 #define JVET_O0426_MRL_REF_SAMPLES_DC_MODE                1 // JVET-O0426: align MRL reference samples used for DC intra mode prediction
 
 #define JVET_O0366_AFFINE_BCW                             1 // JVET-O0366: Simplifications on BCW index derivation process
+
+#define JVET_O0919_TS_MIN_QP                              1 // JVET-O0919: Minimum QP for Transform Skip Mode
 
 #define JVET_O1168_CU_CHROMA_QP_OFFSET                    1 // JVET-O1168: cu chroma QP offset
 
@@ -138,6 +172,10 @@
 #define JVET_O0529_IMPLICIT_MTS_HARMONIZE                 1 // JVET-O0529/O0540: Harmonization of LFNST, MIP and implicit MTS
 
 #define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
+
+#define  JVET_O0526_MIN_CTU_SIZE                          1 // JVET-O0526: Minimum CTU size 32x32
+
+#define JVET_O0545_MAX_TB_SIGNALLING                      1 // JVET-O0545: Configurable maximum transform size
 
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
 #define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
@@ -195,6 +233,8 @@
 #define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change 
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
+
+#define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
@@ -206,7 +246,11 @@
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
 
+#if JVET_O0545_MAX_TB_SIGNALLING
+#define MAX_TB_SIZE_SIGNALLING                            1
+#else
 #define MAX_TB_SIZE_SIGNALLING                            0
+#endif
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
@@ -219,7 +263,9 @@ typedef std::pair<int, int>  TrCost;
 #define REUSE_CU_RESULTS                                  1
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
+#if !JVET_O0545_MAX_TB_SIGNALLING
 #define MAX_NUM_TUS                                       4
+#endif
 #endif
 // clang-format on
 
@@ -462,7 +508,12 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
+#if JVET_O0502_ISP_CLEANUP
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
+  INTRA_SUBPARTITIONS_RESERVED  = 4
+#else
   NUM_INTRA_SUBPARTITIONS_MODES = 3
+#endif
 };
 
 enum SbtIdx
@@ -605,7 +656,12 @@ enum PredMode
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
+#if JVET_O0119_BASE_PALETTE_444
+  MODE_PLT = 3,     ///< plt-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 4,
+#else
   NUMBER_OF_PREDICTION_MODES = 3,
+#endif
 };
 
 /// reference list index
@@ -731,6 +787,10 @@ enum MESearchMethod
 enum CoeffScanType
 {
   SCAN_DIAG = 0,        ///< up-right diagonal scan
+#if JVET_O0119_BASE_PALETTE_444
+  SCAN_TRAV_HOR = 1,
+  SCAN_TRAV_VER = 2,
+#endif
   SCAN_NUMBER_OF_TYPES
 };
 
@@ -1058,6 +1118,14 @@ struct BitDepths
   int recon[MAX_NUM_CHANNEL_TYPE]; ///< the bit depth as indicated in the SPS
 };
 
+#if JVET_O0119_BASE_PALETTE_444
+enum PLTRunMode
+{
+  PLT_RUN_INDEX = 0,
+  PLT_RUN_COPY = 1,
+  NUM_PLT_RUN = 2
+};
+#endif
 /// parameters for deblocking filter
 struct LFCUParam
 {

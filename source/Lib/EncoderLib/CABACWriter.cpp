@@ -3012,28 +3012,20 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
     cbfChroma = ( cbf[ COMPONENT_Cb ] || cbf[ COMPONENT_Cr ] );
   }
 
-#if JVET_O0105_ICT
-  if( !lumaOnly )
-  {
-    joint_cb_cr( tu, ( cbf[COMPONENT_Cb] ? 2 : 0 ) + ( cbf[COMPONENT_Cr] ? 1 : 0 ) );
-  }
-#endif
-
 #if JVET_O0046_DQ_SIGNALLING
-  if( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma )
+  if( ( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma ) &&
 #else   
-  if( cbfLuma || cbfChroma )
+  if( ( cbfLuma || cbfChroma ) &&
 #endif
+    (!CS::isDualITree(*tu.cs) || isLuma(tu.chType)) )
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
-      if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
-      {
-        cu_qp_delta(cu, cuCtx.qp, cu.qp);
-        cuCtx.qp = cu.qp;
-        cuCtx.isDQPCoded = true;
-      }
+      cu_qp_delta(cu, cuCtx.qp, cu.qp);
+      cuCtx.qp = cu.qp;
+      cuCtx.isDQPCoded = true;
     }
+  }
 #if JVET_O1168_CU_CHROMA_QP_OFFSET
     if (cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cuCtx.isChromaQpAdjCoded)
 #else
@@ -3043,6 +3035,14 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
       cu_chroma_qp_offset( cu );
       cuCtx.isChromaQpAdjCoded = true;
     }
+
+#if JVET_O0105_ICT
+  if( !lumaOnly )
+  {
+    joint_cb_cr( tu, ( cbf[COMPONENT_Cb] ? 2 : 0 ) + ( cbf[COMPONENT_Cr] ? 1 : 0 ) );
+  }
+#endif
+
     if( cbfLuma )
     {
 #if JVET_O0094_LFNST_ZERO_PRIM_COEFFS || JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
@@ -3066,7 +3066,6 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
 #else
           residual_coding( tu, compID );
 #endif
-        }
       }
     }
   }

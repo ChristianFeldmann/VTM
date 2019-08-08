@@ -3417,6 +3417,11 @@ Specifies the colour space conversion to apply to 444 video. Permitted values ar
 If no value is specified, no colour space conversion is applied. The list may eventually also include RGB to YCbCr or YCgCo conversions.\\
 \\
 
+\Option{PYUV} &
+\Default{false} &
+When true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data. See doc/pyuv_format.pdf for details. Ignored for interlaced output.
+\\
+
 \Option{SEINoDisplay} &
 \Default{false} &
 When true, do not output frames for which there is an SEI NoDisplay message.

@@ -1894,8 +1894,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #endif
           apsId[i] = uiCode;
         }
-		
-		
+
+
         pcSlice->setAlfAPSs(apsId);
 #if JVET_O0616_400_CHROMA_SUPPORT
         if (bChroma)
@@ -2694,13 +2694,13 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
           if (sizeId == SCALING_LIST_64x64)
           {
             code *= (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES); // Adjust the decoded code for this size, to cope with the missing 32x32 chroma entries.
-	  }
+          }
 
           scalingList->setRefMatrixId (sizeId,listId,(uint32_t)((int)(listId)-(code)));
           if( sizeId > SCALING_LIST_8x8 )
           {
             scalingList->setScalingListDC(sizeId,listId,((listId == scalingList->getRefMatrixId (sizeId,listId))? 16 :scalingList->getScalingListDC(sizeId, scalingList->getRefMatrixId (sizeId,listId))));
-	  }
+          }
           scalingList->processRefMatrix( sizeId, listId, scalingList->getRefMatrixId (sizeId,listId));
 
         }

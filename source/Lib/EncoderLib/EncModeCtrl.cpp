@@ -728,6 +728,20 @@ void BestEncInfoCache::destroy()
 
   delete[] m_pCoeff;
   delete[] m_pPcmBuf;
+
+#if JVET_O0119_BASE_PALETTE_444
+  if (m_runType != nullptr)
+  {
+    delete[] m_runType;
+    m_runType = nullptr;
+  }
+  if (m_runLength != nullptr)
+  {
+    delete[] m_runLength;
+    m_runLength = nullptr;
+  }
+#endif
+
 }
 
 void BestEncInfoCache::init( const Slice &slice )

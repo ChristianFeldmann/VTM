@@ -471,11 +471,14 @@ void BrickMap::create( const SPS& sps, const PPS& pps )
   numTileRows    = pps.getNumTileRowsMinus1() + 1;
   numTiles       = numTileColumns * numTileRows;
 
-  const uint32_t numCtusInFrame = pcv->sizeInCtus;
+  const size_t numCtusInFrame = pcv->sizeInCtus;
+
   brickIdxRsMap    = new uint32_t[numCtusInFrame];
-  brickIdxBsMap    = new uint32_t[numCtusInFrame];
-  ctuBsToRsAddrMap = new uint32_t[numCtusInFrame+1];
-  ctuRsToBsAddrMap = new uint32_t[numCtusInFrame+1];
+  brickIdxBsMap    = new uint32_t[numCtusInFrame + 1];
+  ctuBsToRsAddrMap = new uint32_t[numCtusInFrame + 1];
+  ctuRsToBsAddrMap = new uint32_t[numCtusInFrame + 1];
+
+  brickIdxBsMap[numCtusInFrame] = ~0u;   // Initialize last element to some large value
 
   initBrickMap( sps, pps );
 

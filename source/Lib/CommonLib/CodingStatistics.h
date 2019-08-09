@@ -95,9 +95,9 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__ESCAPE_BITS_TS,
 #endif
   STATS__CABAC_BITS__SAO,
+  STATS__CABAC_BITS__LFNST,
   STATS__CABAC_BITS__ALF,
   STATS__CABAC_TRM_BITS,
-  STATS__CABAC_BITS__LFNST,
   STATS__CABAC_FIXED_BITS,
   STATS__CABAC_PCM_ALIGN_BITS,
   STATS__CABAC_PCM_CODE_BITS,
@@ -554,6 +554,9 @@ private:
           if( i == STATS__CABAC_INITIALISATION && sCABACorig.bits != 0 )
           {
             thisCABACbits += cr;
+#if EPBINCOUNT_FIX
+            sCABACorig.count = 0;
+#endif
             cr = 0;
           }
           sCABAC.bits       = thisCABACbits;
@@ -561,6 +564,12 @@ private:
           sCABAC.sum        = sCABACorig.sum;
           sCABAC.classCount = classCounts[i];
         }
+#if EPBINCOUNT_FIX
+        if (i == STATS__BYTE_ALIGNMENT_BITS || i == STATS__TRAILING_BITS || i == STATS__NAL_UNIT_HEADER_BITS || i == STATS__EMULATION_PREVENTION_3_BYTES)
+        {
+          sEP.count = 0;
+        }
+#endif
         uint32_t wIdx = CodingStatisticsClassType::GetSubClassWidth( c );
         uint32_t hIdx = CodingStatisticsClassType::GetSubClassHeight( c );
         OutputLine( pName, ':', wIdx, hIdx, CodingStatisticsClassType::GetSubClassString( c ), sCABAC, sEP );
@@ -934,6 +943,9 @@ public:
           if (i == STATS__CABAC_INITIALISATION && sCABACorig.bits != 0)
           {
             thisCABACbits += cr;
+#if EPBINCOUNT_FIX
+            sCABACorig.count = 0;
+#endif
             cr = 0;
           }
           sCABAC.bits = thisCABACbits;
@@ -941,6 +953,12 @@ public:
           sCABAC.sum = sCABACorig.sum;
           sCABAC.classCount = classCounts[i];
         }
+#if EPBINCOUNT_FIX
+        if ( i == STATS__BYTE_ALIGNMENT_BITS || i == STATS__TRAILING_BITS || i == STATS__NAL_UNIT_HEADER_BITS || i == STATS__EMULATION_PREVENTION_3_BYTES )
+        {
+          sEP.count = 0;
+        }
+#endif
 
         if( i != STATS__NAL_UNIT_TOTAL_BODY )
         {

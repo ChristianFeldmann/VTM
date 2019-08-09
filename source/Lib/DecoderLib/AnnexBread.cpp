@@ -80,7 +80,7 @@ _byteStreamNALUnit(
     uint8_t leading_zero_8bits = bs.readByte();
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 #if EPBINCOUNT_FIX
-    statBits.bits+=8; statBits.count+=8;
+    statBits.bits+=8;
 #else
     statBits.bits+=8; statBits.count++;
 #endif
@@ -102,7 +102,7 @@ _byteStreamNALUnit(
     uint8_t zero_byte = bs.readByte();
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 #if EPBINCOUNT_FIX
-    statBits.bits+=8; statBits.count+=8;
+    statBits.bits+=8;
 #else
     statBits.bits+=8; statBits.count++;
 #endif
@@ -120,7 +120,7 @@ _byteStreamNALUnit(
   uint32_t start_code_prefix_one_3bytes = bs.readBytes(24/8);
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 #if EPBINCOUNT_FIX
-  statBits.bits+=24; statBits.count+=24;
+  statBits.bits+=24;
 #else
   statBits.bits+=24; statBits.count+=3;
 #endif
@@ -176,7 +176,7 @@ _byteStreamNALUnit(
     uint8_t trailing_zero_8bits = bs.readByte();
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 #if EPBINCOUNT_FIX
-    statBits.bits+=8; statBits.count+=8;
+    statBits.bits+=8;
 #else
     statBits.bits+=8; statBits.count++;
 #endif

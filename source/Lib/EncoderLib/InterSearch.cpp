@@ -2749,7 +2749,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           {
             if (mvPrecAdj && pu.cu->imv)
             {
-              mvCand.roundIbcPrecInternal2Amvr(pu.cu->imv);
+              mvCand.roundTransPrecInternal2Amvr(pu.cu->imv);
             }
 
             bool toAddMvCand = true;

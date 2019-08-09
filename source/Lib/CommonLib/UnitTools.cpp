@@ -1107,7 +1107,10 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool isCa
     }
   }
 #if JVET_O0057_ALTHPELIF
-  mrgCtx.useAltHpelIf[cnt] = false;
+  if (cnt < maxNumMergeCandMin1)
+  {
+    mrgCtx.useAltHpelIf[cnt] = false;
+  }
 #endif
   return false;
 }
@@ -1130,6 +1133,9 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     mrgCtx.mrgTypeNeighbours[ui] = MRG_TYPE_IBC;
     mrgCtx.mvFieldNeighbours[ui * 2].refIdx = NOT_VALID;
     mrgCtx.mvFieldNeighbours[ui * 2 + 1].refIdx = NOT_VALID;
+#if JVET_O0057_ALTHPELIF
+    mrgCtx.useAltHpelIf[ui] = false;
+#endif
   }
 
   mrgCtx.numValidMergeCand = maxNumMergeCand;

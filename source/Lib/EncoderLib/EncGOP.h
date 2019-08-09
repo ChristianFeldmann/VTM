@@ -183,16 +183,15 @@ private:
   hdrtoolslib::Frame **m_ppcFrameOrg;
   hdrtoolslib::Frame **m_ppcFrameRec;
   
-  hdrtoolslib::ConvertColorFormat* m_pcConvertFormat;
-  hdrtoolslib::Convert* m_pcConvertIQuantize;
-  hdrtoolslib::ColorTransform* m_pcColorTransform;
-  hdrtoolslib::DistortionMetricDeltaE* m_pcDistortionDeltaE;
-  hdrtoolslib::TransferFunction* m_pcTransferFct;
+  hdrtoolslib::ConvertColorFormat     *m_pcConvertFormat;
+  hdrtoolslib::Convert                *m_pcConvertIQuantize;
+  hdrtoolslib::ColorTransform         *m_pcColorTransform;
+  hdrtoolslib::DistortionMetricDeltaE *m_pcDistortionDeltaE;
+  hdrtoolslib::TransferFunction       *m_pcTransferFct;
   
-  hdrtoolslib::ColorTransformParams* m_pcColorTransformParams;
-  hdrtoolslib::FrameFormat* m_pcFrameFormat;
+  hdrtoolslib::ColorTransformParams   *m_pcColorTransformParams;
+  hdrtoolslib::FrameFormat            *m_pcFrameFormat;
   
-public:
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
   
@@ -244,6 +243,9 @@ public:
   Analyze& getAnalyzePData() { return m_gcAnalyzeP; }
   Analyze& getAnalyzeBData() { return m_gcAnalyzeB; }
 #endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
+#endif
 
 protected:
   RateCtrl* getRateCtrl()       { return m_pcRateCtrl;  }
@@ -257,7 +259,7 @@ protected:
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
     
 #if JVET_O0756_CALCULATE_HDRMETRICS
-  void xCalculateHDRMetrics ( Picture* pcPic, double dDeltaE[hdrtoolslib::NB_REF_WHITE], double dPSNRL[hdrtoolslib::NB_REF_WHITE]);
+  void xCalculateHDRMetrics ( Picture* pcPic, double deltaE[hdrtoolslib::NB_REF_WHITE], double psnrL[hdrtoolslib::NB_REF_WHITE]);
   void copyBuftoFrame       ( Picture* pcPic );
 #endif
 

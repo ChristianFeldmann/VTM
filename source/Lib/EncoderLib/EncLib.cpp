@@ -574,7 +574,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
       false, false, snrCSC, m_printFrameMSE, true);
 #if JVET_O0756_CALCULATE_HDRMETRICS
-    m_metricTime = m_cGOPEncoder.m_metricTime;
+    m_metricTime = m_cGOPEncoder.getMetricTime();
 #endif
     m_cGOPEncoder.setEncodedLTRef(true);
     if (m_RCEnableRateControl)
@@ -642,7 +642,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     , false
   );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-  m_metricTime = m_cGOPEncoder.m_metricTime;
+  m_metricTime = m_cGOPEncoder.getMetricTime();
 #endif
 
   if ( m_RCEnableRateControl )
@@ -734,7 +734,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
                               , false
       );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-      m_metricTime = m_cGOPEncoder.m_metricTime;
+      m_metricTime = m_cGOPEncoder.getMetricTime();
 #endif
       
       iNumEncoded += m_iNumPicRcvd;

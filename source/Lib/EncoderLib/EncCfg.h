@@ -1641,30 +1641,30 @@ public:
   bool         getUseALF()                                      const { return m_alf; }
   
 #if JVET_O0756_CALCULATE_HDRMETRICS
-  void        setWhitePointDeltaE( uint32_t uiIndex, double dValue ) { m_whitePointDeltaE[ uiIndex ] = dValue; }
-  double      getWhitePointDeltaE( uint32_t uiIndex )          const { return m_whitePointDeltaE[ uiIndex ]; }
-  void        setMaxSampleValue(double dValue)                       { m_maxSampleValue = dValue;}
-  double      getMaxSampleValue()                              const { return m_maxSampleValue;}
-  void        setSampleRange(int iValue)                             { m_sampleRange = static_cast<hdrtoolslib::SampleRange>(iValue);}
-  hdrtoolslib::SampleRange getSampleRange()                    const { return m_sampleRange;}
-  void        setColorPrimaries(int iValue)                          { m_colorPrimaries = static_cast<hdrtoolslib::ColorPrimaries>(iValue);}
-  hdrtoolslib::ColorPrimaries getColorPrimaries()              const { return m_colorPrimaries;}
-  void        setEnableTFunctionLUT(bool bValue)                     { m_enableTFunctionLUT = bValue;}
-  bool        getEnableTFunctionLUT()                          const { return m_enableTFunctionLUT;}
-  void        setChromaLocation(uint32_t uiIndex, int iValue)        { m_chromaLocation[ uiIndex ] = static_cast<hdrtoolslib::ChromaLocation>(iValue);}
-  hdrtoolslib::ChromaLocation getChromaLocation(uint32_t uiIndex) const { return m_chromaLocation[uiIndex];}
-  void        setChromaUPFilter(int iValue)                          { m_chromaUPFilter = iValue;}
-  int         getChromaUPFilter()                              const { return m_chromaUPFilter;}
-  void        setCropOffsetLeft(int iValue)                          { m_cropOffsetLeft = iValue;}
-  int         getCropOffsetLeft()                              const { return m_cropOffsetLeft;}
-  void        setCropOffsetTop(int iValue)                           { m_cropOffsetTop = iValue;}
-  int         getCropOffsetTop()                               const { return m_cropOffsetTop;}
-  void        setCropOffsetRight(int iValue)                         { m_cropOffsetRight = iValue;}
-  int         getCropOffsetRight()                             const { return m_cropOffsetRight;}
-  void        setCropOffsetBottom(int iValue)                        { m_cropOffsetBottom = iValue;}
-  int         getCropOffsetBottom()                            const { return m_cropOffsetBottom;}
-  void        setCalculateHdrMetrics(bool bValue)                    { m_calculateHdrMetrics = bValue;}
-  bool        getCalcluateHdrMetrics()                         const { return m_calculateHdrMetrics;}
+  void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
+  double      getWhitePointDeltaE( uint32_t index )             const { return m_whitePointDeltaE[ index ]; }
+  void        setMaxSampleValue(double value)                         { m_maxSampleValue = value;}
+  double      getMaxSampleValue()                               const { return m_maxSampleValue;}
+  void        setSampleRange(int value)                               { m_sampleRange = static_cast<hdrtoolslib::SampleRange>(value);}
+  hdrtoolslib::SampleRange getSampleRange()                     const { return m_sampleRange;}
+  void        setColorPrimaries(int value)                            { m_colorPrimaries = static_cast<hdrtoolslib::ColorPrimaries>(value);}
+  hdrtoolslib::ColorPrimaries getColorPrimaries()               const { return m_colorPrimaries;}
+  void        setEnableTFunctionLUT(bool value)                       { m_enableTFunctionLUT = value;}
+  bool        getEnableTFunctionLUT()                           const { return m_enableTFunctionLUT;}
+  void        setChromaLocation(uint32_t index, int value)            { m_chromaLocation[ index ] = static_cast<hdrtoolslib::ChromaLocation>(value);}
+  hdrtoolslib::ChromaLocation getChromaLocation(uint32_t index) const { return m_chromaLocation[index];}
+  void        setChromaUPFilter(int value)                            { m_chromaUPFilter = value;}
+  int         getChromaUPFilter()                               const { return m_chromaUPFilter;}
+  void        setCropOffsetLeft(int value)                            { m_cropOffsetLeft = value;}
+  int         getCropOffsetLeft()                               const { return m_cropOffsetLeft;}
+  void        setCropOffsetTop(int value)                             { m_cropOffsetTop = value;}
+  int         getCropOffsetTop()                                const { return m_cropOffsetTop;}
+  void        setCropOffsetRight(int value)                           { m_cropOffsetRight = value;}
+  int         getCropOffsetRight()                              const { return m_cropOffsetRight;}
+  void        setCropOffsetBottom(int value)                          { m_cropOffsetBottom = value;}
+  int         getCropOffsetBottom()                             const { return m_cropOffsetBottom;}
+  void        setCalculateHdrMetrics(bool value)                      { m_calculateHdrMetrics = value;}
+  bool        getCalcluateHdrMetrics()                          const { return m_calculateHdrMetrics;}
 #endif
 
 };

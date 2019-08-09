@@ -300,7 +300,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_pcConvertIQuantize = hdrtoolslib::Convert::create(&m_ppcFrameOrg[1]->m_format, &m_ppcFrameOrg[2]->m_format);
   m_pcColorTransform = hdrtoolslib::ColorTransform::create(m_ppcFrameOrg[2]->m_colorSpace, m_ppcFrameOrg[2]->m_colorPrimaries, m_ppcFrameOrg[3]->m_colorSpace, m_ppcFrameOrg[3]->m_colorPrimaries, true, 1);
   m_pcDistortionDeltaE = new hdrtoolslib::DistortionMetricDeltaE(m_pcFrameFormat, false, dMaxSampleValue, whitePointDeltaE, 1);
-  m_pcTransferFct = hdrtoolslib::TransferFunction::create(hdrtoolslib::TF_PQ, true, dMaxSampleValue, 0, 0.0, 1.0, bEnableTFunctionLUT);
+  m_pcTransferFct = hdrtoolslib::TransferFunction::create(hdrtoolslib::TF_PQ, true, (float) dMaxSampleValue, 0, 0.0, 1.0, bEnableTFunctionLUT);
   }
 #endif
 }
@@ -3580,7 +3580,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       }
     }
 #endif
-    #if JVET_O0756_CALCULATE_HDRMETRICS
+#if JVET_O0756_CALCULATE_HDRMETRICS
     if(calculateHdrMetrics){
     for (int i=0; i<1; i++) {
           msg(NOTICE, " [DeltaE%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), dDeltaE[i]);
@@ -3589,7 +3589,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
           msg(NOTICE, " [PSNRL%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), dPSNRL[i]);
     }
     }
-    #endif
+#endif
     msg( NOTICE, " [ET %5.0f ]", dEncTime );
 
     // msg( SOME, " [WP %d]", pcSlice->getUseWeightedPrediction());

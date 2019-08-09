@@ -46,6 +46,10 @@
 #include "CommonLib/NAL.h"
 #include "EncAppCfg.h"
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include <chrono>
+#endif
+
 //! \ingroup EncoderApp
 //! \{
 

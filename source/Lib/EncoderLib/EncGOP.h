@@ -67,6 +67,7 @@
 #include "HDRLib/inc/ColorTransform.H"
 #include "HDRLib/inc/TransferFunction.H"
 #include "HDRLib/inc/DistortionMetricDeltaE.H"
+#include <chrono>
 #endif
 
 //! \ingroup EncoderLib

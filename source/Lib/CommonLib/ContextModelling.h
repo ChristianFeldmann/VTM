@@ -501,7 +501,7 @@ public:
 class MergeCtx
 {
 public:
-  MergeCtx() : numValidMergeCand(0), hasMergedCandList(false) { for (unsigned i = 0; i < MRG_MAX_NUM_CANDS; i++) mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N; memset(mmvdBaseMv, 0, sizeof(mmvdBaseMv)); memset(useAltHpelIf, 0, sizeof(useAltHpelIf)); }
+  MergeCtx() : numValidMergeCand( 0 ), hasMergedCandList( false ) { for( unsigned i = 0; i < MRG_MAX_NUM_CANDS; i++ ) mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N; }
   ~MergeCtx() {}
 public:
   MvField       mvFieldNeighbours [ MRG_MAX_NUM_CANDS << 1 ]; // double length for mv of both lists

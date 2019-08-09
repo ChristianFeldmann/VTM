@@ -3145,7 +3145,11 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
   }
   affMrgType.interDirNeighbours[affMrgType.numValidMergeCand] = dir;
   affMrgType.affineType[affMrgType.numValidMergeCand] = curType;
+#if JVET_O0366_AFFINE_BCW
+  affMrgType.GBiIdx[affMrgType.numValidMergeCand] = (dir == 3) ? gbiIdx : GBI_DEFAULT;
+#else
   affMrgType.GBiIdx[affMrgType.numValidMergeCand] = gbiIdx;
+#endif
   affMrgType.numValidMergeCand++;
 
 

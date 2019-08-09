@@ -151,14 +151,14 @@ private:
 #if JVET_O0119_BASE_PALETTE_444 
   bool                      m_doPlt;
 #endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
 
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
   std::vector<Ctx>          m_entropyCodingSyncContextStateVec;   ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#endif
-#if JVET_O0756_CALCULATE_HDRMETRICS
-  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 
 protected:
@@ -252,6 +252,9 @@ public:
 #if JVET_O0119_BASE_PALETTE_444
   bool                   getPltEnc()   const { return m_doPlt; }
   void                   checkPltStats( Picture* pic );
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function

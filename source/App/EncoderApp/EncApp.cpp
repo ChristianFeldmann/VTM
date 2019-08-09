@@ -612,16 +612,18 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
   
 #if JVET_O0756_CALCULATE_HDRMETRICS
-  for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++) {
+  for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
+  {
     m_cEncLib.setWhitePointDeltaE                                (i, m_whitePointDeltaE[i] );
   }
   m_cEncLib.setMaxSampleValue                                    (m_maxSampleValue);
   m_cEncLib.setSampleRange                                       (m_sampleRange);
   m_cEncLib.setColorPrimaries                                    (m_colorPrimaries);
   m_cEncLib.setEnableTFunctionLUT                                (m_enableTFunctionLUT);
-  for (int i=0; i<2; i++) {
-  m_cEncLib.setChromaLocation                                    (i, m_chromaLocation);
-  m_cEncLib.setChromaUPFilter                                    (m_chromaUPFilter);
+  for (int i=0; i<2; i++)
+  {
+    m_cEncLib.setChromaLocation                                    (i, m_chromaLocation);
+    m_cEncLib.setChromaUPFilter                                    (m_chromaUPFilter);
   }
   m_cEncLib.setCropOffsetLeft                                    (m_cropOffsetLeft);
   m_cEncLib.setCropOffsetTop                                     (m_cropOffsetTop);
@@ -766,7 +768,7 @@ void EncApp::encode()
       m_cEncLib.encode( bEos, flush ? 0 : &orgPic, flush ? 0 : &trueOrgPic, snrCSC, recBufList,
                         iNumEncoded, m_isTopFieldFirst );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-      m_metricTime = m_cEncLib.m_metricTime;
+      m_metricTime = m_cEncLib.getMetricTime();
 #endif
     }
     else
@@ -774,7 +776,7 @@ void EncApp::encode()
       m_cEncLib.encode( bEos, flush ? 0 : &orgPic, flush ? 0 : &trueOrgPic, snrCSC, recBufList,
                         iNumEncoded );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-      m_metricTime = m_cEncLib.m_metricTime;
+      m_metricTime = m_cEncLib.getMetricTime();
 #endif
     }
 

@@ -235,8 +235,8 @@ protected:
   int       m_iGOPSize;
   RPLEntry  m_RPLList0[MAX_GOP];
   RPLEntry  m_RPLList1[MAX_GOP];
-  int		    m_numRPLList0;
-  int		    m_numRPLList1;
+  int       m_numRPLList0;
+  int       m_numRPLList1;
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];

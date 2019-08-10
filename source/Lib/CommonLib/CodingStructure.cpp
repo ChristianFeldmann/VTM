@@ -285,12 +285,20 @@ CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType effCh
   if( !_blk.contains( pos ) )
 #endif
   {
+    if (parent)
+    {
 #if JVET_O0050_LOCAL_DUAL_TREE
-    if( treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA )
-      CHECK( parent->treeType != TREE_D, "wrong parent treeType " );
+      if (treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA)
+      {
+        CHECK(parent->treeType != TREE_D, "wrong parent treeType ");
+      }
 #endif
-    if( parent ) return parent->getCU( pos, effChType );
-    else         return nullptr;
+      return parent->getCU(pos, effChType);
+    }
+    else
+    {
+      return nullptr;
+    }
   }
   else
   {

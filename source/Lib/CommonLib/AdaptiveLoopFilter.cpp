@@ -1009,8 +1009,13 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
 }
 
 template<AlfFilterType filtType>
-void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+                                   const Area &blkDst, const Area &blk, const ComponentID compId,
+                                   const short *filterSet, const short *fClipSet, const ClpRng &clpRng,
+                                   CodingStructure &cs, const int vbCTUHeight, int vbPos)
 {
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
+
   const bool bChroma = isChroma( compId );
   if( bChroma )
   {
@@ -1186,25 +1191,26 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
 
         pRec1 = pRec0 + j + ii * dstStride;
 
-        if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        const int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
+        if (yVb < vbPos && (yVb >= vbPos - (bChroma ? 2 : 4)))   // above
         {
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
+          pImg1 = (yVb == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = (yVb >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = (yVb >= vbPos - 3) ? pImg3 : pImg5;
 
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
+          pImg2 = (yVb == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
+          pImg6 = (yVb >= vbPos - 3) ? pImg4 : pImg6;
         }
-        else if ((blkDst.y + i + ii) % vbCTUHeight >= vbPos && ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        else if (yVb >= vbPos && (yVb <= vbPos + (bChroma ? 1 : 3)))   // bottom
         {
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
+          pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
+          pImg4 = (yVb <= vbPos + 1) ? pImg2 : pImg4;
+          pImg6 = (yVb <= vbPos + 2) ? pImg4 : pImg6;
 
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+          pImg1 = (yVb == vbPos) ? pImg0 : pImg1;
+          pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
         }
 
         for( int jj = 0; jj < clsSizeX; jj++ )

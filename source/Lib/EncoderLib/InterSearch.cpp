@@ -2508,7 +2508,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         )
       {
         bool doBiPred = true;
-		tryBipred = 1;
+        tryBipred = 1;
         cMvBi[0] = cMv[0];
         cMvBi[1] = cMv[1];
         iRefIdxBi[0] = iRefIdx[0];
@@ -2749,7 +2749,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           {
             if (mvPrecAdj && pu.cu->imv)
             {
-              mvCand.roundIbcPrecInternal2Amvr(pu.cu->imv);
+              mvCand.roundTransPrecInternal2Amvr(pu.cu->imv);
             }
 
             bool toAddMvCand = true;
@@ -2877,19 +2877,19 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
     iRefIdx[1] = refIdxValidList1;
     uiBits [1] = bitsValidList1;
     uiCost [1] = costValidList1;
-	if (cu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
-	{
-		CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
-		CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
-		if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
-			|| wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
-		{
-			uiCostBi = MAX_UINT;
-			enforceGBiPred = false;
-		}
-	}
+    if (cu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
+    {
+      CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
+      CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
+      cu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
+      cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
+      if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
+        || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
+      {
+        uiCostBi = MAX_UINT;
+        enforceGBiPred = false;
+      }
+    }
     if( enforceGBiPred )
     {
       uiCost[0] = uiCost[1] = MAX_UINT;
@@ -5001,7 +5001,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   // Bi-directional prediction
   if ( slice.isInterB() && !PU::isBipredRestriction(pu) )
   {
-	  tryBipred = 1;
+    tryBipred = 1;
     pu.interDir = 3;
 #if JVET_O0070_PROF
     m_isBi = true;
@@ -5235,16 +5235,16 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   uiCost[1]  = costValidList1;
   if (pu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
   {
-	  CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
-	  CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
-	  pu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
-	  pu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
-	  if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
-		  || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
-	  {
-		  uiCostBi = MAX_UINT;
-		  enforceGBiPred = false;
-	  }
+    CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
+    CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
+    if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
+      || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
+    {
+      uiCostBi = MAX_UINT;
+      enforceGBiPred = false;
+    }
   }
   if( enforceGBiPred )
   {

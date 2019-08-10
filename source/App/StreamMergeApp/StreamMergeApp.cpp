@@ -241,7 +241,7 @@ void StreamMergeApp::writeNewVPS(ostream& out, int nLayerId, int nTemporalId)
   OutputBitstream bsNALUHeader;
   static const uint8_t start_code_prefix[] = { 0,0,0,1 };
 
-  bsNALUHeader.write(1, 1);    		       // zero_tid_required_flag
+  bsNALUHeader.write(1, 1);                // zero_tid_required_flag
   bsNALUHeader.write(nTemporalId + 1, 3);                // nuh_temporal_id_plus1
   uint32_t nalUnitTypeLsb = NAL_UNIT_VPS - (1 << 4);
   bsNALUHeader.write(nalUnitTypeLsb, 4);   // nal_unit_type_lsb

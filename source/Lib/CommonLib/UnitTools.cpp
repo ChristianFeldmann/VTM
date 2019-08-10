@@ -3145,7 +3145,11 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
   }
   affMrgType.interDirNeighbours[affMrgType.numValidMergeCand] = dir;
   affMrgType.affineType[affMrgType.numValidMergeCand] = curType;
+#if JVET_O0366_AFFINE_BCW
+  affMrgType.GBiIdx[affMrgType.numValidMergeCand] = (dir == 3) ? gbiIdx : GBI_DEFAULT;
+#else
   affMrgType.GBiIdx[affMrgType.numValidMergeCand] = gbiIdx;
+#endif
   affMrgType.numValidMergeCand++;
 
 
@@ -4604,19 +4608,18 @@ bool CU::isGBiIdxCoded( const CodingUnit &cu )
   {
     if( cu.firstPU->interDir == 3 )
     {
-		WPScalingParam *wp0;
-		WPScalingParam *wp1;
-		int refIdx0 = cu.firstPU->refIdx[REF_PIC_LIST_0];
-		int refIdx1 = cu.firstPU->refIdx[REF_PIC_LIST_1];
+      WPScalingParam *wp0;
+      WPScalingParam *wp1;
+      int refIdx0 = cu.firstPU->refIdx[REF_PIC_LIST_0];
+      int refIdx1 = cu.firstPU->refIdx[REF_PIC_LIST_1];
 
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
-		if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
-			|| wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag)
-			)
-		{
-			return false;
-		}
+      cu.cs->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
+      cu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
+      if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
+        || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
+      {
+        return false;
+      }
       return true;
     }
   }

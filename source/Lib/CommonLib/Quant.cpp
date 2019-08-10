@@ -602,8 +602,8 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
     {
       if (sizew == sizeh || (sizew == SCALING_LIST_1x1 && sizeh<SCALING_LIST_4x4) || (sizeh == SCALING_LIST_1x1 && sizew<SCALING_LIST_4x4)) continue;
       for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
-		  {
-			  for (int qp = minimumQp; qp < maximumQp; qp++)
+      {
+        for (int qp = minimumQp; qp < maximumQp; qp++)
         {
           xSetRecScalingListEnc(scalingList, list, sizew, sizeh, qp);
           xSetRecScalingListDec(*scalingList, list, sizew, sizeh, qp);

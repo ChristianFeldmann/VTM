@@ -899,9 +899,26 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
-  sps.setMaxBTSize                           ( std::min((int)m_CTUSize, MAX_BT_SIZE_INTER),
-                                               std::min((int)m_CTUSize, MAX_BT_SIZE),
-                                               std::min((int)m_CTUSize, MAX_BT_SIZE_C) );
+  unsigned maxBtSize[3], maxTtSize[3];
+  memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
+  memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
+  if (m_uiMaxBTDepth)
+  {
+    maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
+    maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
+  }
+  if (m_uiMaxBTDepthI)
+  {
+    maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
+    maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
+  }
+  if (m_uiMaxBTDepthIChroma)
+  {
+    maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
+    maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);
+  }
+  sps.setMaxBTSize                           ( maxBtSize[1], maxBtSize[0], maxBtSize[2] );
+  sps.setMaxTTSize                           ( maxTtSize[1], maxTtSize[0], maxTtSize[2] );
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );

@@ -2314,7 +2314,11 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF;
     mvd_coding(pu.mvd[REF_PIC_LIST_0]);
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
     {
       pu.mvpIdx[REF_PIC_LIST_0] = 0;
     }

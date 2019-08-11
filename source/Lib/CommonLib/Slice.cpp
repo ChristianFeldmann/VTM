@@ -1433,7 +1433,9 @@ SPS::SPS()
 #if !JVET_O0525_REMOVE_PCM
 , m_bPCMFilterDisableFlag     (false)
 #endif
+#if !JVET_O0238_PPS_OR_SLICE
 , m_sbtmvpEnabledFlag         (false)
+#endif
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
@@ -1634,6 +1636,19 @@ PPS::PPS()
 , m_numBricksInPic                   (1)
 , m_signalledSliceIdFlag             (false)
 ,m_signalledSliceIdLengthMinus1      (0)
+#if JVET_O0238_PPS_OR_SLICE
+, m_constantSliceHeaderParamsEnabledFlag (false)
+, m_PPSDepQuantEnabledIdc            (0)
+, m_PPSRefPicListSPSIdc0             (0)
+, m_PPSRefPicListSPSIdc1             (0)
+, m_PPSTemporalMVPEnabledIdc         (0)
+, m_PPSMvdL1ZeroIdc                  (0)
+, m_PPSCollocatedFromL0Idc           (0)
+, m_PPSSixMinusMaxNumMergeCandPlus1  (0)
+, m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 (0)
+, m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
+, m_sbtmvpEnabledFlag                (false)
+#endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)

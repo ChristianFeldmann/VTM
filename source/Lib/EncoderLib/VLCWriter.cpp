@@ -239,6 +239,25 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
   WRITE_FLAG(pcPPS->getRpl1IdxPresentFlag() ? 1 : 0, "rpl1IdxPresentFlag");
 
+  #if JVET_O0238_PPS_OR_SLICE
+  WRITE_FLAG( pcPPS->getConstantSliceHeaderParamsEnabledFlag(),              "constant_slice_header_params_enabled_flag");
+  if ( pcPPS->getConstantSliceHeaderParamsEnabledFlag() ) {
+    WRITE_CODE( pcPPS->getPPSDepQuantEnabledIdc(), 2,                        "pps_dep_quant_enabled_idc");
+    WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc0(), 2,                         "pps_ref_pic_list_sps_idc[0]");
+    WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc1(), 2,                         "pps_ref_pic_list_sps_idc[1]");
+    WRITE_CODE( pcPPS->getPPSTemporalMVPEnabledIdc(), 2,                     "pps_temporal_mvp_enabled_idc");
+    WRITE_CODE( pcPPS->getPPSMvdL1ZeroIdc(), 2,                              "pps_mvd_l1_zero_idc");
+    WRITE_CODE( pcPPS->getPPSCollocatedFromL0Idc(), 2,                       "pps_collocated_from_l0_idc");
+    WRITE_UVLC( pcPPS->getPPSSixMinusMaxNumMergeCandPlus1(),                 "pps_six_minus_max_num_merge_cand_plus1");
+    WRITE_UVLC( pcPPS->getPPSFiveMinusMaxNumSubblockMergeCandPlus1(),        "pps_five_minus_max_num_subblock_merge_cand_plus1");
+    WRITE_UVLC( pcPPS->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(),  "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");
+  }
+  if ( pcPPS->getPPSTemporalMVPEnabledIdc() != 1 )
+  {
+    WRITE_FLAG( pcPPS->getSBTMVPEnabledFlag() ? 1 : 0,                       "pps_sbtmvp_enabled_flag");
+  }
+#endif
+
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
   WRITE_FLAG( pcPPS->getConstrainedIntraPred() ? 1 : 0,      "constrained_intra_pred_flag" );
 #if !JVET_O1136_TS_BDPCM_SIGNALLING
@@ -942,12 +961,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 #endif
 
+#if !JVET_O0238_PPS_OR_SLICE
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
 
   if ( pcSPS->getSPSTemporalMVPEnabledFlag() )
   {
     WRITE_FLAG( pcSPS->getSBTMVPEnabledFlag() ? 1 : 0,                               "sps_sbtmvp_enabled_flag");
   }
+#endif
 
   WRITE_FLAG( pcSPS->getAMVREnabledFlag() ? 1 : 0,                                   "sps_amvr_enabled_flag" );
 
@@ -1238,7 +1259,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       //Write L0 related syntax elements
       if (pcSlice->getSPS()->getNumRPL0() > 0)
       {
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc0())
+        {
+          WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
+        } 
+#else
         WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
+#endif
       }
       if (pcSlice->getRPL0idx() != -1)
       {
@@ -1293,7 +1321,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       {
         if (pcSlice->getSPS()->getNumRPL1() > 0)
         {
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
+        {
           WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
+        } 
+#else
+          WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
+#endif
         }
         if (pcSlice->getRPL1idx() != -1)
         {
@@ -1331,10 +1366,18 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           }
         }
       }
+#if JVET_O0238_PPS_OR_SLICE
+      if( !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
+      {
+        WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
+      }
+#else
       if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() )
       {
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
       }
+#endif
+
     }
     if( pcSlice->getSPS()->getSAOEnabledFlag() )
     {
@@ -1465,7 +1508,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if( pcSlice->isInterB() )
     {
+#if JVET_O0238_PPS_OR_SLICE
+      if (!pcSlice->getPPS()->getPPSMvdL1ZeroIdc())
+      {
+		    WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
+      }
+#else
       WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
+#endif
     }
 
     if( !pcSlice->isIntra() )
@@ -1484,7 +1534,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       if( pcSlice->getSliceType() == B_SLICE )
       {
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pcSlice->getPPS()->getPPSCollocatedFromL0Idc())
+        {
+			     WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
+        }
+#else
         WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
+#endif
       }
 
       if( pcSlice->getSliceType() != I_SLICE &&
@@ -1498,7 +1555,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       xCodePredWeightTable( pcSlice );
     }
+#if JVET_O0238_PPS_OR_SLICE
+    if (!pcSlice->getPPS()->getPPSDepQuantEnabledIdc())
+    {
+		   WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
+    }
+#else
     WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
+#endif
     if( !pcSlice->getDepQuantEnabledFlag() )
     {
       WRITE_FLAG( pcSlice->getSignDataHidingEnabledFlag() ? 1 : 0, "sign_data_hiding_enabled_flag" );
@@ -1546,23 +1610,46 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
+#if JVET_O0238_PPS_OR_SLICE      
+      if (!pcSlice->getPPS()->getPPSSixMinusMaxNumMergeCandPlus1())
+      {
+		    WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
+      }
+#else
       WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
+#endif
     }
     if( !pcSlice->isIntra() )
     {
 #if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+#if JVET_O0238_PPS_OR_SLICE
+      if (pcSlice->getPPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !pcSlice->getSPS()->getUseAffine())// ATMVP only
+#else
       if (pcSlice->getSPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !pcSlice->getSPS()->getUseAffine())// ATMVP only
+#endif
+#else
+#if JVET_O0238_PPS_OR_SLICE
+      if ( pcSlice->getPPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // ATMVP only
 #else
       if ( pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // ATMVP only
+#endif
 #endif
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 1, "Sub-block merge can number should be 1" );
       }
       else
 #if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
+#if JVET_O0238_PPS_OR_SLICE
+      if (!(pcSlice->getPPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !pcSlice->getSPS()->getUseAffine()) // both off
+#else
       if (!(pcSlice->getSPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !pcSlice->getSPS()->getUseAffine()) // both off
+#endif
+#else
+#if JVET_O0238_PPS_OR_SLICE
+      if ( !pcSlice->getPPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // both off
 #else
       if ( !pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // both off
+#endif
 #endif
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 0, "Sub-block merge can number should be 0" );
@@ -1571,7 +1658,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if ( pcSlice->getSPS()->getUseAffine() )
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pcSlice->getPPS()->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
+        {
+			WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );        
+        }
+#else
         WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );
+#endif
       }
       if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
       {
@@ -1586,7 +1680,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if (pcSlice->getSPS()->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
         CHECK(pcSlice->getMaxNumMergeCand() < pcSlice->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pcSlice->getPPS()->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1()) 
+        {
+			     WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");
+        }
+#else
         WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");
+#endif
       }
       else
       {

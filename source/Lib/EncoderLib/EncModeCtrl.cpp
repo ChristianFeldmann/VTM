@@ -1450,7 +1450,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
+#if JVET_O0238_PPS_OR_SLICE
+        if ( cs.sps->getUseAffine() || cs.pps->getSBTMVPEnabledFlag() )
+#else
         if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
+#endif
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }
@@ -1464,7 +1468,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
         }
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
+#if JVET_O0238_PPS_OR_SLICE
+        if ( cs.sps->getUseAffine() || cs.pps->getSBTMVPEnabledFlag() )
+#else
         if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
+#endif
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
         }

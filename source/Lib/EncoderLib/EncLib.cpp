@@ -1065,7 +1065,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );
+#if !JVET_O0238_PPS_OR_SLICE
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
+#endif
   sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
@@ -1143,7 +1145,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDPCMEnabledFlag(m_useBDPCM);
 #endif
 
+#if !JVET_O0238_PPS_OR_SLICE
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
+#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   sps.setLog2MaxTbSize   ( m_log2MaxTbSize );
@@ -1265,6 +1269,21 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 {
   // pps ID already initialised.
   pps.setSPSId(sps.getSPSId());
+
+  #if JVET_O0238_PPS_OR_SLICE
+  pps.setConstantSliceHeaderParamsEnabledFlag(getConstantSliceHeaderParamsEnabledFlag());
+  pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
+  pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
+  pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
+  pps.setPPSTemporalMVPEnabledIdc(getPPSTemporalMVPEnabledIdc());
+  pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
+  pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
+  pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
+  pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());  
+  pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
+ 
+  pps.setSBTMVPEnabledFlag ( m_SubPuMvpMode );
+#endif
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;

@@ -2479,7 +2479,11 @@ void CABACReader::subblock_merge_flag( CodingUnit& cu )
 #if JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING
   if ( !cu.cs->slice->isIntra() && (cu.slice->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
 #else
+#if JVET_O0238_PPS_OR_SLICE
+  if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->pps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#else
   if ( !cu.cs->slice->isIntra() && (cu.cs->sps->getUseAffine() || cu.cs->sps->getSBTMVPEnabledFlag()) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#endif
 #endif
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__AFFINE_FLAG );

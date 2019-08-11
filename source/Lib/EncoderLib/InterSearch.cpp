@@ -1494,7 +1494,11 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     Distortion cost = 0;
 
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
     {
       iBvpNum = 1;
       cMvPred[1] = cMvPred[0];

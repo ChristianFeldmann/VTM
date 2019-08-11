@@ -177,6 +177,7 @@ public:
   void  destroy     ();
 
   void  init        ( EncLib* pcEncLib );
+  
   void  compressGOP ( int iPOCLast, int iNumPicRcvd, PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRec,
                       bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                     , bool isEncodeLtRef
@@ -226,6 +227,10 @@ protected:
   void  xInitGOP          ( int iPOCLast, int iNumPicRcvd, bool isField
     , bool isEncodeLtRef
   );
+  void  xPicInitHashME     (Picture *pic, const SPS *sps, PicList &rcListPic);
+  void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
+  void  xPicInitLMCS       (Picture *pic, Slice *slice);
+  
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
 

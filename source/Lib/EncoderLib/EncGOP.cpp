@@ -1291,6 +1291,354 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
   }
 }
 
+void EncGOP::xPicInitHashME(Picture *pic, const SPS *sps, PicList &rcListPic)
+{
+  if (! m_pcCfg->getUseHashME())
+  {
+    return;
+  }
+
+  PicList::iterator iterPic = rcListPic.begin();
+  while (iterPic != rcListPic.end())
+  {
+    Picture* refPic = *(iterPic++);
+    
+    if (refPic->poc != pic->poc && refPic->referenced)
+    {
+      if (!refPic->getHashMap()->isInitial())
+      {
+        if (refPic->getPOC() == 0)
+        {
+          Pel* picSrc = refPic->getOrigBuf().get(COMPONENT_Y).buf;
+          int stridePic = refPic->getOrigBuf().get(COMPONENT_Y).stride;
+          int picWidth = sps->getPicWidthInLumaSamples();
+          int picHeight = sps->getPicHeightInLumaSamples();
+          int blockSize = 4;
+          int allNum = 0;
+          int simpleNum = 0;
+          for (int j = 0; j <= picHeight - blockSize; j += blockSize)
+          {
+            for (int i = 0; i <= picWidth - blockSize; i += blockSize)
+            {
+              Pel* curBlock = picSrc + j * stridePic + i;
+              bool isHorSame = true;
+              for (int m = 0; m < blockSize&&isHorSame; m++)
+              {
+                for (int n = 1; n < blockSize&&isHorSame; n++)
+                {
+                  if (curBlock[m*stridePic] != curBlock[m*stridePic + n])
+                  {
+                    isHorSame = false;
+                  }
+                }
+              }
+              bool isVerSame = true;
+              for (int m = 1; m < blockSize&&isVerSame; m++)
+              {
+                for (int n = 0; n < blockSize&&isVerSame; n++)
+                {
+                  if (curBlock[n] != curBlock[m*stridePic + n])
+                  {
+                    isVerSame = false;
+                  }
+                }
+              }
+              allNum++;
+              if (isHorSame || isVerSame)
+              {
+                simpleNum++;
+              }
+            }
+          }
+          
+          if (simpleNum < 0.3*allNum)
+          {
+            m_pcCfg->setUseHashME(false);
+            break;
+          }
+        }
+        refPic->addPictureToHashMapForInter();
+      }
+    }
+  }
+}
+
+void EncGOP::xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice)
+{
+  if ( !m_pcCfg->getUseRateCtrl() ) // TODO: does this work with multiple slices and slice-segments?
+  {
+    return;
+  }
+  int frameLevel = m_pcRateCtrl->getRCSeq()->getGOPID2Level( gopId );
+  if ( pic->slices[0]->isIRAP() )
+  {
+    frameLevel = 0;
+  }
+  m_pcRateCtrl->initRCPic( frameLevel );
+  estimatedBits = m_pcRateCtrl->getRCPic()->getTargetBits();
+  
+#if U0132_TARGET_BITS_SATURATION
+  if (m_pcRateCtrl->getCpbSaturationEnabled() && frameLevel != 0)
+  {
+    int estimatedCpbFullness = m_pcRateCtrl->getCpbState() + m_pcRateCtrl->getBufferingRate();
+    
+    // prevent overflow
+    if (estimatedCpbFullness - estimatedBits > (int)(m_pcRateCtrl->getCpbSize()*0.9f))
+    {
+      estimatedBits = estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.9f);
+    }
+    
+    estimatedCpbFullness -= m_pcRateCtrl->getBufferingRate();
+    // prevent underflow
+#if V0078_ADAPTIVE_LOWER_BOUND
+    if (estimatedCpbFullness - estimatedBits < m_pcRateCtrl->getRCPic()->getLowerBound())
+    {
+      estimatedBits = std::max(200, estimatedCpbFullness - m_pcRateCtrl->getRCPic()->getLowerBound());
+    }
+#else
+    if (estimatedCpbFullness - estimatedBits < (int)(m_pcRateCtrl->getCpbSize()*0.1f))
+    {
+      estimatedBits = std::max(200, estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.1f));
+    }
+#endif
+    
+    m_pcRateCtrl->getRCPic()->setTargetBits(estimatedBits);
+  }
+#endif
+  
+  int sliceQP = m_pcCfg->getInitialQP();
+  if ( ( slice->getPOC() == 0 && m_pcCfg->getInitialQP() > 0 ) || ( frameLevel == 0 && m_pcCfg->getForceIntraQP() ) ) // QP is specified
+  {
+    int    NumberBFrames = ( m_pcCfg->getGOPSize() - 1 );
+    double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)NumberBFrames );
+    double dQPFactor     = 0.57*dLambda_scale;
+    int    SHIFT_QP      = 12;
+    int bitdepth_luma_qp_scale = 6 * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
+                                - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
+    double qp_temp = (double) sliceQP + bitdepth_luma_qp_scale - SHIFT_QP;
+    lambda = dQPFactor*pow( 2.0, qp_temp/3.0 );
+  }
+  else if ( frameLevel == 0 )   // intra case, but use the model
+  {
+    m_pcSliceEncoder->calCostSliceI(pic); // TODO: This only analyses the first slice segment - what about the others?
+    
+    if ( m_pcCfg->getIntraPeriod() != 1 )   // do not refine allocated bits for all intra case
+    {
+      int bits = m_pcRateCtrl->getRCSeq()->getLeftAverageBits();
+      bits = m_pcRateCtrl->getRCPic()->getRefineBitsForIntra( bits );
+      
+#if U0132_TARGET_BITS_SATURATION
+      if (m_pcRateCtrl->getCpbSaturationEnabled() )
+      {
+        int estimatedCpbFullness = m_pcRateCtrl->getCpbState() + m_pcRateCtrl->getBufferingRate();
+        
+        // prevent overflow
+        if (estimatedCpbFullness - bits > (int)(m_pcRateCtrl->getCpbSize()*0.9f))
+        {
+          bits = estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.9f);
+        }
+        
+        estimatedCpbFullness -= m_pcRateCtrl->getBufferingRate();
+        // prevent underflow
+#if V0078_ADAPTIVE_LOWER_BOUND
+        if (estimatedCpbFullness - bits < m_pcRateCtrl->getRCPic()->getLowerBound())
+        {
+          bits = estimatedCpbFullness - m_pcRateCtrl->getRCPic()->getLowerBound();
+        }
+#else
+        if (estimatedCpbFullness - bits < (int)(m_pcRateCtrl->getCpbSize()*0.1f))
+        {
+          bits = estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.1f);
+        }
+#endif
+      }
+#endif
+      
+      if ( bits < 200 )
+      {
+        bits = 200;
+      }
+      m_pcRateCtrl->getRCPic()->setTargetBits( bits );
+    }
+    
+    list<EncRCPic*> listPreviousPicture = m_pcRateCtrl->getPicList();
+    m_pcRateCtrl->getRCPic()->getLCUInitTargetBits();
+    lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, slice->isIRAP());
+    sliceQP = m_pcRateCtrl->getRCPic()->estimatePicQP( lambda, listPreviousPicture );
+  }
+  else    // normal case
+  {
+    list<EncRCPic*> listPreviousPicture = m_pcRateCtrl->getPicList();
+    lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, slice->isIRAP());
+    sliceQP = m_pcRateCtrl->getRCPic()->estimatePicQP( lambda, listPreviousPicture );
+  }
+  
+  sliceQP = Clip3( -slice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, sliceQP );
+  m_pcRateCtrl->getRCPic()->setPicEstQP( sliceQP );
+  
+  m_pcSliceEncoder->resetQP( pic, sliceQP, lambda );
+}
+
+void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
+{
+  if (slice->getSPS()->getUseReshaper())
+  {
+    const SliceType sliceType = slice->getSliceType();
+    
+    m_pcReshaper->getReshapeCW()->rspTid = slice->getTLayer() + (slice->isIntra() ? 0 : 1);
+    m_pcReshaper->getReshapeCW()->rspSliceQP = slice->getSliceQp();
+    
+    m_pcReshaper->setSrcReshaped(false);
+    m_pcReshaper->setRecReshaped(true);
+    
+    if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+    {
+      m_pcReshaper->preAnalyzerHDR(pic, sliceType, m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+    }
+#if JVET_O0432_LMCS_ENCODER
+    else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
+    {
+      m_pcReshaper->preAnalyzerLMCS(pic, m_pcCfg->getReshapeSignalType(), sliceType, m_pcCfg->getReshapeCW());
+    }
+#else
+    else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+    {
+      m_pcReshaper->preAnalyzerSDR(pic, sliceType, m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+    }
+#endif
+    else
+    {
+      THROW("Reshaper for other signal currently not defined!");
+    }
+    
+    if (sliceType == I_SLICE )
+    {
+      if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+      {
+        m_pcReshaper->initLUTfromdQPModel();
+        m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTableChromaMD(m_pcReshaper->getInvLUT());
+      }
+#if JVET_O0432_LMCS_ENCODER
+      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
+      {
+        if (m_pcReshaper->getReshapeFlag())
+        {
+          m_pcReshaper->constructReshaperLMCS();
+          m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+        }
+      }
+#else
+      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+      {
+        if (m_pcReshaper->getReshapeFlag())
+        {
+          m_pcReshaper->constructReshaperSDR();
+          m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+        }
+      }
+#endif
+      else
+      {
+        THROW("Reshaper for other signal currently not defined!");
+      }
+      
+      m_pcReshaper->setCTUFlag(false);
+      
+      //reshape original signal
+      if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
+      {
+        pic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
+        m_pcReshaper->setSrcReshaped(true);
+        m_pcReshaper->setRecReshaped(true);
+      }
+    }
+    else
+    {
+      if (!m_pcReshaper->getReshapeFlag())
+      {
+        m_pcReshaper->setCTUFlag(false);
+      }
+      else
+        m_pcReshaper->setCTUFlag(true);
+      
+      m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(false);
+      
+      if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
+      {
+        m_pcEncLib->getRdCost()->restoreReshapeLumaLevelToWeightTable();
+      }
+#if JVET_O0432_LMCS_ENCODER
+      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
+      {
+        int modIP = pic->getPOC() - pic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
+        if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().updateCtrl == 2 && modIP == 0)
+        {
+          m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
+          m_pcReshaper->constructReshaperLMCS();
+          m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+        }
+      }
+#else
+      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
+      {
+        int modIP = pic->getPOC() - pic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
+        if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().rspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
+        {
+          m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
+          m_pcReshaper->constructReshaperSDR();
+          m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
+        }
+      }
+#endif
+      else
+      {
+        THROW("Reshaper for other signal currently not defined!");
+      }
+    }
+    
+    //set all necessary information in LMCS APS and slice
+    slice->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
+    slice->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
+    if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
+    {
+      int apsId = 0;
+      slice->setLmcsAPSId(apsId);
+      APS* lmcsAPS = slice->getLmcsAPS();
+      if (lmcsAPS == nullptr)
+      {
+        ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+        lmcsAPS = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+        if (lmcsAPS == NULL)
+        {
+          lmcsAPS = apsMap->allocatePS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+          lmcsAPS->setAPSId(apsId);
+          lmcsAPS->setAPSType(LMCS_APS);
+        }
+        slice->setLmcsAPS(lmcsAPS);
+      }
+      //m_pcReshaper->copySliceReshaperInfo(lmcsAPS->getReshaperAPSInfo(), m_pcReshaper->getSliceReshaperInfo());
+      SliceReshapeInfo& tInfo = lmcsAPS->getReshaperAPSInfo();
+      SliceReshapeInfo& sInfo = m_pcReshaper->getSliceReshaperInfo();
+      tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
+      tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
+      memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
+      tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+      m_pcEncLib->getApsMap()->setChangedFlag((lmcsAPS->getAPSId() << NUM_APS_TYPE_LEN) + LMCS_APS);
+    }
+    
+    
+    if (slice->getLmcsEnabledFlag())
+    {
+      int apsId = 0;
+      slice->setLmcsAPSId(apsId);
+    }
+  }
+  else
+  {
+    m_pcReshaper->setCTUFlag(false);
+  }
+}
+
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
@@ -1583,72 +1931,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
 
-    if (m_pcCfg->getUseHashME())
-    {
-      PicList::iterator iterPic = rcListPic.begin();
-      while (iterPic != rcListPic.end())
-      {
-        Picture* refPic = *(iterPic++);
-
-        if (refPic->poc != pcPic->poc && refPic->referenced)
-        {
-          if (!refPic->getHashMap()->isInitial())
-          {
-            if (refPic->getPOC() == 0)
-            {
-              Pel* picSrc = refPic->getOrigBuf().get(COMPONENT_Y).buf;
-              int stridePic = refPic->getOrigBuf().get(COMPONENT_Y).stride;
-              int picWidth = pcSlice->getSPS()->getPicWidthInLumaSamples();
-              int picHeight = pcSlice->getSPS()->getPicHeightInLumaSamples();
-              int blockSize = 4;
-              int allNum = 0;
-              int simpleNum = 0;
-              for (int j = 0; j <= picHeight - blockSize; j += blockSize)
-              {
-                for (int i = 0; i <= picWidth - blockSize; i += blockSize)
-                {
-                  Pel* curBlock = picSrc + j * stridePic + i;
-                  bool isHorSame = true;
-                  for (int m = 0; m < blockSize&&isHorSame; m++)
-                  {
-                    for (int n = 1; n < blockSize&&isHorSame; n++)
-                    {
-                      if (curBlock[m*stridePic] != curBlock[m*stridePic + n])
-                      {
-                        isHorSame = false;
-                      }
-                    }
-                  }
-                  bool isVerSame = true;
-                  for (int m = 1; m < blockSize&&isVerSame; m++)
-                  {
-                    for (int n = 0; n < blockSize&&isVerSame; n++)
-                    {
-                      if (curBlock[n] != curBlock[m*stridePic + n])
-                      {
-                        isVerSame = false;
-                      }
-                    }
-                  }
-                  allNum++;
-                  if (isHorSame || isVerSame)
-                  {
-                    simpleNum++;
-                  }
-                }
-              }
-
-              if (simpleNum < 0.3*allNum)
-              {
-                m_pcCfg->setUseHashME(false);
-                break;
-              }
-            }
-            refPic->addPictureToHashMapForInter();
-          }
-        }
-      }
-    }
+    xPicInitHashME(pcPic, pcSlice->getSPS(), rcListPic);
+    
     if( m_pcCfg->getUseAMaxBT() )
     {
       if( !pcSlice->isIRAP() )
@@ -1920,119 +2204,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     int actualTotalBits      = 0;
     int estimatedBits        = 0;
     int tmpBitsBeforeWriting = 0;
-    if ( m_pcCfg->getUseRateCtrl() ) // TODO: does this work with multiple slices and slice-segments?
-    {
-      int frameLevel = m_pcRateCtrl->getRCSeq()->getGOPID2Level( iGOPid );
-      if ( pcPic->slices[0]->isIRAP() )
-      {
-        frameLevel = 0;
-      }
-      m_pcRateCtrl->initRCPic( frameLevel );
-      estimatedBits = m_pcRateCtrl->getRCPic()->getTargetBits();
-
-#if U0132_TARGET_BITS_SATURATION
-      if (m_pcRateCtrl->getCpbSaturationEnabled() && frameLevel != 0)
-      {
-        int estimatedCpbFullness = m_pcRateCtrl->getCpbState() + m_pcRateCtrl->getBufferingRate();
-
-        // prevent overflow
-        if (estimatedCpbFullness - estimatedBits > (int)(m_pcRateCtrl->getCpbSize()*0.9f))
-        {
-          estimatedBits = estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.9f);
-        }
-
-        estimatedCpbFullness -= m_pcRateCtrl->getBufferingRate();
-        // prevent underflow
-#if V0078_ADAPTIVE_LOWER_BOUND
-        if (estimatedCpbFullness - estimatedBits < m_pcRateCtrl->getRCPic()->getLowerBound())
-        {
-          estimatedBits = std::max(200, estimatedCpbFullness - m_pcRateCtrl->getRCPic()->getLowerBound());
-        }
-#else
-        if (estimatedCpbFullness - estimatedBits < (int)(m_pcRateCtrl->getCpbSize()*0.1f))
-        {
-          estimatedBits = std::max(200, estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.1f));
-        }
-#endif
-
-        m_pcRateCtrl->getRCPic()->setTargetBits(estimatedBits);
-      }
-#endif
-
-      int sliceQP = m_pcCfg->getInitialQP();
-      if ( ( pcSlice->getPOC() == 0 && m_pcCfg->getInitialQP() > 0 ) || ( frameLevel == 0 && m_pcCfg->getForceIntraQP() ) ) // QP is specified
-      {
-        int    NumberBFrames = ( m_pcCfg->getGOPSize() - 1 );
-        double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)NumberBFrames );
-        double dQPFactor     = 0.57*dLambda_scale;
-        int    SHIFT_QP      = 12;
-        int bitdepth_luma_qp_scale =
-          6
-          * (pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
-             - DISTORTION_PRECISION_ADJUSTMENT(pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-        double qp_temp = (double) sliceQP + bitdepth_luma_qp_scale - SHIFT_QP;
-        lambda = dQPFactor*pow( 2.0, qp_temp/3.0 );
-      }
-      else if ( frameLevel == 0 )   // intra case, but use the model
-      {
-        m_pcSliceEncoder->calCostSliceI(pcPic); // TODO: This only analyses the first slice segment - what about the others?
-
-        if ( m_pcCfg->getIntraPeriod() != 1 )   // do not refine allocated bits for all intra case
-        {
-          int bits = m_pcRateCtrl->getRCSeq()->getLeftAverageBits();
-          bits = m_pcRateCtrl->getRCPic()->getRefineBitsForIntra( bits );
-
-#if U0132_TARGET_BITS_SATURATION
-          if (m_pcRateCtrl->getCpbSaturationEnabled() )
-          {
-            int estimatedCpbFullness = m_pcRateCtrl->getCpbState() + m_pcRateCtrl->getBufferingRate();
-
-            // prevent overflow
-            if (estimatedCpbFullness - bits > (int)(m_pcRateCtrl->getCpbSize()*0.9f))
-            {
-              bits = estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.9f);
-            }
-
-            estimatedCpbFullness -= m_pcRateCtrl->getBufferingRate();
-            // prevent underflow
-#if V0078_ADAPTIVE_LOWER_BOUND
-            if (estimatedCpbFullness - bits < m_pcRateCtrl->getRCPic()->getLowerBound())
-            {
-              bits = estimatedCpbFullness - m_pcRateCtrl->getRCPic()->getLowerBound();
-            }
-#else
-            if (estimatedCpbFullness - bits < (int)(m_pcRateCtrl->getCpbSize()*0.1f))
-            {
-              bits = estimatedCpbFullness - (int)(m_pcRateCtrl->getCpbSize()*0.1f);
-            }
-#endif
-          }
-#endif
-
-          if ( bits < 200 )
-          {
-            bits = 200;
-          }
-          m_pcRateCtrl->getRCPic()->setTargetBits( bits );
-        }
-
-        list<EncRCPic*> listPreviousPicture = m_pcRateCtrl->getPicList();
-        m_pcRateCtrl->getRCPic()->getLCUInitTargetBits();
-        lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, pcSlice->isIRAP());
-        sliceQP = m_pcRateCtrl->getRCPic()->estimatePicQP( lambda, listPreviousPicture );
-      }
-      else    // normal case
-      {
-        list<EncRCPic*> listPreviousPicture = m_pcRateCtrl->getPicList();
-        lambda  = m_pcRateCtrl->getRCPic()->estimatePicLambda( listPreviousPicture, pcSlice->isIRAP());
-        sliceQP = m_pcRateCtrl->getRCPic()->estimatePicQP( lambda, listPreviousPicture );
-      }
-
-      sliceQP = Clip3( -pcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, sliceQP );
-      m_pcRateCtrl->getRCPic()->setPicEstQP( sliceQP );
-
-      m_pcSliceEncoder->resetQP( pcPic, sliceQP, lambda );
-    }
+    
+    xPicInitRateControl(estimatedBits, iGOPid, lambda, pcPic, pcSlice);
 
     uint32_t uiNumSliceSegments = 1;
 
@@ -2104,160 +2277,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
       m_pcSliceEncoder->setUpLambda(pcSlice, pcSlice->getLambdas()[0], pcSlice->getSliceQp());
     }
-    if (pcSlice->getSPS()->getUseReshaper())
-    {
-      m_pcReshaper->getReshapeCW()->rspTid = pcSlice->getTLayer() + (pcSlice->isIntra() ? 0 : 1);
-      m_pcReshaper->getReshapeCW()->rspSliceQP = pcSlice->getSliceQp();
-
-      m_pcReshaper->setSrcReshaped(false);
-      m_pcReshaper->setRecReshaped(true);
-
-      if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
-      {
-        m_pcReshaper->preAnalyzerHDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
-      }
-#if JVET_O0432_LMCS_ENCODER
-      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
-      {
-        m_pcReshaper->preAnalyzerLMCS(pcPic, m_pcCfg->getReshapeSignalType(), pcSlice->getSliceType(), m_pcCfg->getReshapeCW());
-      }
-#else
-      else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
-      {
-        m_pcReshaper->preAnalyzerSDR(pcPic, pcSlice->getSliceType(), m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
-      }
-#endif
-      else
-      {
-        THROW("Reshaper for other signal currently not defined!");
-      }
-
-      if (pcSlice->getSliceType() == I_SLICE )
-      {
-        if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
-        {
-          m_pcReshaper->initLUTfromdQPModel();
-          m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTableChromaMD(m_pcReshaper->getInvLUT());
-        }
-#if JVET_O0432_LMCS_ENCODER
-        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
-        {
-          if (m_pcReshaper->getReshapeFlag())
-          {
-            m_pcReshaper->constructReshaperLMCS();
-            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
-          }
-        }
-#else
-        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
-        {
-          if (m_pcReshaper->getReshapeFlag())
-          {
-            m_pcReshaper->constructReshaperSDR();
-            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
-          }
-        }
-#endif
-        else
-        {
-          THROW("Reshaper for other signal currently not defined!");
-        }
-
-        m_pcReshaper->setCTUFlag(false);
-
-        //reshape original signal
-        if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
-        {
-          pcPic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
-          m_pcReshaper->setSrcReshaped(true);
-          m_pcReshaper->setRecReshaped(true);
-        }
-      }
-      else
-      {
-        if (!m_pcReshaper->getReshapeFlag())
-        {
-          m_pcReshaper->setCTUFlag(false);
-        }
-        else
-          m_pcReshaper->setCTUFlag(true);
-
-        m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(false);
-
-        if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
-        {
-          m_pcEncLib->getRdCost()->restoreReshapeLumaLevelToWeightTable();
-        }
-#if JVET_O0432_LMCS_ENCODER
-        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
-        {
-          int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
-          if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().updateCtrl == 2 && modIP == 0)
-          {
-            m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
-            m_pcReshaper->constructReshaperLMCS();
-            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
-          }
-        }
-#else
-        else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR)
-        {
-          int modIP = pcPic->getPOC() - pcPic->getPOC() / m_pcCfg->getReshapeCW().rspFpsToIp * m_pcCfg->getReshapeCW().rspFpsToIp;
-          if (m_pcReshaper->getReshapeFlag() && m_pcCfg->getReshapeCW().rspIntraPeriod == -1 && modIP == 0)           // for LDB, update reshaping curve every second
-          {
-            m_pcReshaper->getSliceReshaperInfo().setSliceReshapeModelPresentFlag(true);
-            m_pcReshaper->constructReshaperSDR();
-            m_pcEncLib->getRdCost()->updateReshapeLumaLevelToWeightTable(m_pcReshaper->getSliceReshaperInfo(), m_pcReshaper->getWeightTable(), m_pcReshaper->getCWeight());
-          }
-        }
-#endif
-        else
-        {
-          THROW("Reshaper for other signal currently not defined!");
-        }
-      }
-
-      //set all necessary information in LMCS APS and slice
-      pcSlice->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
-      pcSlice->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
-      if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
-      {
-        int apsId = 0;
-        pcSlice->setLmcsAPSId(apsId);
-        APS* lmcsAPS = pcSlice->getLmcsAPS();
-        if (lmcsAPS == nullptr)
-        {
-          ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
-          lmcsAPS = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
-          if (lmcsAPS == NULL)
-          {
-            lmcsAPS = apsMap->allocatePS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
-            lmcsAPS->setAPSId(apsId);
-            lmcsAPS->setAPSType(LMCS_APS);
-          }
-          pcSlice->setLmcsAPS(lmcsAPS);
-        }
-        //m_pcReshaper->copySliceReshaperInfo(lmcsAPS->getReshaperAPSInfo(), m_pcReshaper->getSliceReshaperInfo());
-        SliceReshapeInfo& tInfo = lmcsAPS->getReshaperAPSInfo();
-        SliceReshapeInfo& sInfo = m_pcReshaper->getSliceReshaperInfo();
-        tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
-        tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
-        memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
-        tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
-        m_pcEncLib->getApsMap()->setChangedFlag((lmcsAPS->getAPSId() << NUM_APS_TYPE_LEN) + LMCS_APS);
-      }
-
-
-      if (pcSlice->getLmcsEnabledFlag())
-      {
-        int apsId = 0;
-        pcSlice->setLmcsAPSId(apsId);
-      }
-    }
-    else
-    {
-      m_pcReshaper->setCTUFlag(false);
-    }
+    
+    xPicInitLMCS(pcPic, pcSlice);
 
     if( encPic )
     // now compress (trial encode) the various slice segments (slices, and dependent slices)

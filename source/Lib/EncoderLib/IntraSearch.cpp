@@ -2343,9 +2343,9 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
     if( isFirst )
     {
 #if JVET_O0119_BASE_PALETTE_444
-    if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag() || cs.slice->getSPS()->getPLTMode())
-    && cu.Y().valid()
-    )
+      if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag() || cs.slice->getSPS()->getPLTMode())
+      && cu.Y().valid()
+      )
 #else
       if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag())
         && cu.Y().valid()
@@ -2360,10 +2360,10 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
         m_CABACEstimator->pred_mode   ( cu );
       }
 #if JVET_O0119_BASE_PALETTE_444
-    if (CU::isPLT(cu))
-    {
-      return;
-    }
+      if (CU::isPLT(cu))
+      {
+        return;
+      }
 #endif
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
       if( CU::isIntra(cu) )

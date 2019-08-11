@@ -1176,13 +1176,13 @@ void CABACReader::pred_mode( CodingUnit& cu )
       }
       }
 #if JVET_O0119_BASE_PALETTE_444
-    if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
       {
-        cu.predMode = MODE_PLT;
+        if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+        {
+          cu.predMode = MODE_PLT;
+        }
       }
-    }
 #endif
     }
     else
@@ -1191,13 +1191,13 @@ void CABACReader::pred_mode( CodingUnit& cu )
       {
         cu.predMode = MODE_INTRA;
 #if JVET_O0119_BASE_PALETTE_444
-    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
-      {
-        cu.predMode = MODE_PLT;
-      }
-    }
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+        {
+          if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+          {
+            cu.predMode = MODE_PLT;
+          }
+        }
 #endif
       }
       else
@@ -1235,25 +1235,25 @@ void CABACReader::pred_mode( CodingUnit& cu )
     if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) )
 #endif
     {
-    cu.predMode = MODE_INTRA;
-    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      cu.predMode = MODE_INTRA;
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
       {
+        if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+        {
           cu.predMode = MODE_PLT;
+        }
       }
-    }
     }
     else
     {
-    cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
-    if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
+      if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
       {
+        if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+        {
           cu.predMode = MODE_PLT;
+        }
       }
-    }
     }
 #else
 #if JVET_O0050_LOCAL_DUAL_TREE

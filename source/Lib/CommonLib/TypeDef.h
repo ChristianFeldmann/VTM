@@ -657,7 +657,7 @@ enum PredMode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
 #if JVET_O0119_BASE_PALETTE_444
-  MODE_PLT = 3,     ///< plt-prediction mode
+  MODE_PLT                   = 3,     ///< plt-prediction mode
   NUMBER_OF_PREDICTION_MODES = 4,
 #else
   NUMBER_OF_PREDICTION_MODES = 3,
@@ -1122,8 +1122,8 @@ struct BitDepths
 enum PLTRunMode
 {
   PLT_RUN_INDEX = 0,
-  PLT_RUN_COPY = 1,
-  NUM_PLT_RUN = 2
+  PLT_RUN_COPY  = 1,
+  NUM_PLT_RUN   = 2
 };
 #endif
 /// parameters for deblocking filter

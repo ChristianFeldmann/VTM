@@ -247,7 +247,7 @@ public:
   ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
 
 #if JVET_O0119_BASE_PALETTE_444
-  bool                   getPltEnc()   const { return m_doPlt; }
+  bool                   getPltEnc()                      const { return   m_doPlt; }
   void                   checkPltStats( Picture* pic );
 #endif
   // -------------------------------------------------------------------------------------------------------------------

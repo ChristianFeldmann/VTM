@@ -883,10 +883,10 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
       }
 #if JVET_O0119_BASE_PALETTE_444
-    if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
-    }
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+      {
+        m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
+      }
 #endif
     }
     else
@@ -898,18 +898,18 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       }
 #endif
 #if JVET_O0119_BASE_PALETTE_444
-    m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
-    if (CU::isIntra(cu) || CU::isPLT(cu))
-    {
-      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-      m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
-    }
-    else
-    {
-#else
-      m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
-      if (!CU::isIntra(cu))
+      m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+      if (CU::isIntra(cu) || CU::isPLT(cu))
       {
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+          m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
+      }
+      else
+      {
+#else
+        m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+        if (!CU::isIntra(cu))
+        {
 #endif
 #if JVET_O1161_IBC_MAX_SIZE
         if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
@@ -940,17 +940,17 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 #endif
     {
 #if JVET_O0119_BASE_PALETTE_444
-    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-      m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+        m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
 #endif
       return;
     }
     m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
 #if JVET_O0119_BASE_PALETTE_444
-  if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-  {
-    m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
-  }
+    if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
+    }
 #endif
   }
 }

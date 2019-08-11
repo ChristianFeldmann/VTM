@@ -754,12 +754,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   do
   {
 #if JVET_O0119_BASE_PALETTE_444
-  for (int i = compBegin; i < (compBegin + numComp); i++)
-  {
-    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-    tempCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
-    memcpy(tempCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
-  }
+    for (int i = compBegin; i < (compBegin + numComp); i++)
+    {
+      ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+      tempCS->prevPLT.curPLTSize[comID] = curLastPLTSize[comID];
+      memcpy(tempCS->prevPLT.curPLT[i], curLastPLT[i], curLastPLTSize[comID] * sizeof(Pel));
+    }
 #endif
     EncTestMode currTestMode = m_modeCtrl->currTestMode();
 #if JVET_O0502_ISP_CLEANUP
@@ -867,10 +867,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       xCheckIntraPCM( tempCS, bestCS, partitioner, currTestMode );
     }
 #if JVET_O0119_BASE_PALETTE_444
-  else if (currTestMode.type == ETM_PALETTE)
-  {
-    xCheckPLT( tempCS, bestCS, partitioner, currTestMode );
-  }
+    else if (currTestMode.type == ETM_PALETTE)
+    {
+      xCheckPLT( tempCS, bestCS, partitioner, currTestMode );
+    }
 #endif
     else if (currTestMode.type == ETM_IBC)
     {
@@ -883,10 +883,10 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     else if( isModeSplit( currTestMode ) )
     {
 #if JVET_O0119_BASE_PALETTE_444
-    if (bestCS->cus.size() != 0)
-    {
-      splitmode = bestCS->cus[0]->splitSeries;
-    }
+      if (bestCS->cus.size() != 0)
+      {
+        splitmode = bestCS->cus[0]->splitSeries;
+      }
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
       assert( partitioner.modeType == tempCS->modeType );
@@ -951,20 +951,20 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
       }
 #endif
 #if JVET_O0119_BASE_PALETTE_444
-    if (splitmode != bestCS->cus[0]->splitSeries)
-    {
-      splitmode = bestCS->cus[0]->splitSeries;
-      const CodingUnit&     cu = *bestCS->cus.front();
-      cu.cs->prevPLT = bestCS->prevPLT;
-      for (int i = compBegin; i < (compBegin + numComp); i++)
+      if (splitmode != bestCS->cus[0]->splitSeries)
       {
-        ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
-        bestLastPLTSize[comID] = bestCS->cus[0]->cs->prevPLT.curPLTSize[comID];
-        memcpy(bestLastPLT[i], bestCS->cus[0]->cs->prevPLT.curPLT[i], bestCS->cus[0]->cs->prevPLT.curPLTSize[comID] * sizeof(Pel));
+        splitmode = bestCS->cus[0]->splitSeries;
+        const CodingUnit&     cu = *bestCS->cus.front();
+        cu.cs->prevPLT = bestCS->prevPLT;
+        for (int i = compBegin; i < (compBegin + numComp); i++)
+        {
+          ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+          bestLastPLTSize[comID] = bestCS->cus[0]->cs->prevPLT.curPLTSize[comID];
+          memcpy(bestLastPLT[i], bestCS->cus[0]->cs->prevPLT.curPLT[i], bestCS->cus[0]->cs->prevPLT.curPLTSize[comID] * sizeof(Pel));
+        }
       }
-    }
 #endif
-  }
+    }
     else
     {
       THROW( "Don't know how to handle mode: type = " << currTestMode.type << ", options = " << currTestMode.opts );
@@ -1362,7 +1362,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   const uint32_t currDepth    = partitioner.currDepth;
 #endif
 #if JVET_O0119_BASE_PALETTE_444
-  const auto oldPLT = tempCS->prevPLT;
+  const auto oldPLT           = tempCS->prevPLT;
 #endif
 
   const PartSplit split = getPartSplit( encTestMode );
@@ -1759,7 +1759,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   tempCS->motionLut = oldMotionLut;
 
 #if JVET_O0119_BASE_PALETTE_444
-  tempCS->prevPLT = oldPLT;
+  tempCS->prevPLT   = oldPLT;
 #endif
 
   tempCS->releaseIntermediateData();

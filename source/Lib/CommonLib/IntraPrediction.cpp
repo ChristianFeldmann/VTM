@@ -164,8 +164,8 @@ void IntraPrediction::destroy()
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-  if (m_runTypeRD)   { xFree(m_runTypeRD);   m_runTypeRD = NULL; }
-  if (m_runLengthRD) { xFree(m_runLengthRD); m_runLengthRD = NULL; }
+  if (m_runTypeRD)   { xFree( m_runTypeRD  );   m_runTypeRD = NULL; }
+  if (m_runLengthRD) { xFree( m_runLengthRD); m_runLengthRD = NULL; }
 #endif
 }
 
@@ -223,8 +223,8 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
 #if JVET_O0119_BASE_PALETTE_444
-  m_runTypeRD = (bool*)xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
-  m_runLengthRD = (Pel*)xMalloc(Pel, MAX_CU_SIZE*MAX_CU_SIZE);
+  m_runTypeRD   = (bool*) xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
+  m_runLengthRD = (Pel* ) xMalloc(Pel,  MAX_CU_SIZE*MAX_CU_SIZE);
 #endif
 }
 

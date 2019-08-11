@@ -44,6 +44,11 @@
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncCfg.h"
 #endif
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/DistortionMetric.H"
+#endif
+
 #include <sstream>
 #include <vector>
 //! \ingroup EncoderApp
@@ -605,6 +610,20 @@ protected:
   friend class TExt360AppEncTop;
 #endif
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double      m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
+  double      m_maxSampleValue;
+  int         m_sampleRange;
+  int         m_colorPrimaries;
+  bool        m_enableTFunctionLUT;
+  int         m_chromaLocation;
+  int         m_chromaUPFilter;
+  int         m_cropOffsetLeft;
+  int         m_cropOffsetTop;
+  int         m_cropOffsetRight;
+  int         m_cropOffsetBottom;
+  bool        m_calculateHdrMetrics;
+#endif
 
   // internal member functions
   bool  xCheckParameter ();                                   ///< check validity of configuration values

@@ -61,6 +61,15 @@
 #include "RateCtrl.h"
 #include <vector>
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/ConvertColorFormat.H"
+#include "HDRLib/inc/Convert.H"
+#include "HDRLib/inc/ColorTransform.H"
+#include "HDRLib/inc/TransferFunction.H"
+#include "HDRLib/inc/DistortionMetricDeltaE.H"
+#include <chrono>
+#endif
+
 //! \ingroup EncoderLib
 //! \{
 
@@ -168,7 +177,24 @@ private:
   bool                    m_bInitAMaxBT;
 
   AUWriterIf*             m_AUWriterIf;
-
+  
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  
+  hdrtoolslib::Frame **m_ppcFrameOrg;
+  hdrtoolslib::Frame **m_ppcFrameRec;
+  
+  hdrtoolslib::ConvertColorFormat     *m_pcConvertFormat;
+  hdrtoolslib::Convert                *m_pcConvertIQuantize;
+  hdrtoolslib::ColorTransform         *m_pcColorTransform;
+  hdrtoolslib::DistortionMetricDeltaE *m_pcDistortionDeltaE;
+  hdrtoolslib::TransferFunction       *m_pcTransferFct;
+  
+  hdrtoolslib::ColorTransformParams   *m_pcColorTransformParams;
+  hdrtoolslib::FrameFormat            *m_pcFrameFormat;
+  
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
+  
 public:
   EncGOP();
   virtual ~EncGOP();
@@ -218,6 +244,9 @@ public:
   Analyze& getAnalyzePData() { return m_gcAnalyzeP; }
   Analyze& getAnalyzeBData() { return m_gcAnalyzeB; }
 #endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
+#endif
 
 protected:
   RateCtrl* getRateCtrl()       { return m_pcRateCtrl;  }
@@ -233,6 +262,11 @@ protected:
   
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
+    
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  void xCalculateHDRMetrics ( Picture* pcPic, double deltaE[hdrtoolslib::NB_REF_WHITE], double psnrL[hdrtoolslib::NB_REF_WHITE]);
+  void copyBuftoFrame       ( Picture* pcPic );
+#endif
 
   void  xCalculateAddPSNRs(const bool isField, const bool isFieldTopFieldFirst, const int iGOPid, Picture* pcPic, const AccessUnit&accessUnit, PicList &rcListPic, int64_t dEncTime, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE, double* PSNR_Y
     , bool isEncodeLtRef

@@ -109,6 +109,22 @@ EncGOP::EncGOP()
   m_pcDeblockingTempPicYuv = NULL;
 #endif
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  m_ppcFrameOrg             = nullptr;
+  m_ppcFrameRec             = nullptr;
+  
+  m_pcConvertFormat         = nullptr;
+  m_pcConvertIQuantize      = nullptr;
+  m_pcColorTransform        = nullptr;
+  m_pcDistortionDeltaE      = nullptr;
+  m_pcTransferFct           = nullptr;
+  
+  m_pcColorTransformParams  = nullptr;
+  m_pcFrameFormat           = nullptr;
+  
+  m_metricTime = std::chrono::milliseconds(0);
+#endif
+  
   m_bInitAMaxBT         = true;
   m_bgPOC = -1;
   m_picBg = NULL;
@@ -126,6 +142,28 @@ EncGOP::~EncGOP()
     // reset potential decoder resources
     tryDecodePicture( NULL, 0, std::string("") );
   }
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  delete [] m_ppcFrameOrg;
+  delete [] m_ppcFrameRec;
+  
+  m_ppcFrameOrg = m_ppcFrameRec = nullptr;
+  
+  delete m_pcConvertFormat;
+  delete m_pcConvertIQuantize;
+  delete m_pcColorTransform;
+  delete m_pcDistortionDeltaE;
+  delete m_pcTransferFct;
+  delete m_pcColorTransformParams;
+  delete m_pcFrameFormat;
+  
+  m_pcConvertFormat         = nullptr;
+  m_pcConvertIQuantize      = nullptr;
+  m_pcColorTransform        = nullptr;
+  m_pcDistortionDeltaE      = nullptr;
+  m_pcTransferFct           = nullptr;
+  m_pcColorTransformParams  = nullptr;
+  m_pcFrameFormat           = nullptr;
+#endif
 }
 
 /** Create list to contain pointers to CTU start addresses of slice.
@@ -197,6 +235,72 @@ void EncGOP::init ( EncLib* pcEncLib )
   pcEncLib->getALF()->setAlfWSSD(alfWSSD);
 #endif
   m_pcReshaper = pcEncLib->getReshaper();
+  
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  const bool calculateHdrMetrics = m_pcEncLib->getCalcluateHdrMetrics();
+  if(calculateHdrMetrics)
+  {
+    //allocate frame buffers and initialize class members
+    int chainNumber = 5;
+    
+    m_ppcFrameOrg = new hdrtoolslib::Frame* [chainNumber];
+    m_ppcFrameRec = new hdrtoolslib::Frame* [chainNumber];
+    
+    double* whitePointDeltaE = new double[hdrtoolslib::NB_REF_WHITE];
+    for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
+    {
+      whitePointDeltaE[i] = m_pcCfg->getWhitePointDeltaE(i);
+    }
+    
+    double maxSampleValue                       = m_pcCfg->getMaxSampleValue();
+    hdrtoolslib::SampleRange sampleRange        = m_pcCfg->getSampleRange();
+    hdrtoolslib::ChromaFormat chFmt             = hdrtoolslib::ChromaFormat(m_pcCfg->getChromaFormatIdc());
+    int bitDepth = m_pcCfg->getBitDepth(CHANNEL_TYPE_LUMA);
+    hdrtoolslib::ColorPrimaries colorPrimaries  = m_pcCfg->getColorPrimaries();
+    bool enableTFunctionLUT                     = m_pcCfg->getEnableTFunctionLUT();
+    hdrtoolslib::ChromaLocation* chromaLocation = new hdrtoolslib::ChromaLocation[2];
+    for (int i=0; i<2; i++)
+    {
+      chromaLocation[i] = m_pcCfg->getChromaLocation(i);
+    }
+    int chromaUpFilter  = m_pcCfg->getChromaUPFilter();
+    int cropOffsetLeft   = m_pcCfg->getCropOffsetLeft();
+    int cropOffsetTop    = m_pcCfg->getCropOffsetTop();
+    int cropOffsetRight  = m_pcCfg->getCropOffsetRight();
+    int cropOffsetBottom = m_pcCfg->getCropOffsetBottom();
+    
+    int width  = m_pcCfg->getSourceWidth() - cropOffsetLeft + cropOffsetRight;
+    int height = m_pcCfg->getSourceHeight() - cropOffsetTop  + cropOffsetBottom;
+    
+    m_ppcFrameOrg[0] = new hdrtoolslib::Frame(width, height, false, hdrtoolslib::CM_YCbCr, colorPrimaries, chFmt, sampleRange, bitDepth, false, hdrtoolslib::TF_PQ, 0);
+    m_ppcFrameRec[0] = new hdrtoolslib::Frame(width, height, false, hdrtoolslib::CM_YCbCr, colorPrimaries, chFmt, sampleRange, bitDepth, false, hdrtoolslib::TF_PQ, 0);
+    
+    m_ppcFrameOrg[1] = new hdrtoolslib::Frame(m_ppcFrameOrg[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameOrg[0]->m_height[hdrtoolslib::Y_COMP], false, hdrtoolslib::CM_YCbCr, colorPrimaries, hdrtoolslib::CF_444, sampleRange, bitDepth, false, hdrtoolslib::TF_PQ, 0);
+    m_ppcFrameRec[1] = new hdrtoolslib::Frame(m_ppcFrameRec[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameRec[0]->m_height[hdrtoolslib::Y_COMP], false, hdrtoolslib::CM_YCbCr, colorPrimaries, hdrtoolslib::CF_444, sampleRange, bitDepth, false, hdrtoolslib::TF_PQ, 0);                                // 420 to 444 conversion
+    
+    m_ppcFrameOrg[2] =  new hdrtoolslib::Frame(m_ppcFrameOrg[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameOrg[0]->m_height[hdrtoolslib::Y_COMP], true, hdrtoolslib::CM_YCbCr, colorPrimaries, hdrtoolslib::CF_444, hdrtoolslib::SR_UNKNOWN, 32, false, hdrtoolslib::TF_PQ, 0);
+    m_ppcFrameRec[2] =  new hdrtoolslib::Frame(m_ppcFrameRec[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameRec[0]->m_height[hdrtoolslib::Y_COMP], true, hdrtoolslib::CM_YCbCr, colorPrimaries, hdrtoolslib::CF_444, hdrtoolslib::SR_UNKNOWN, 32, false, hdrtoolslib::TF_PQ, 0);                                // 444 to Float conversion
+    
+    m_ppcFrameOrg[3] = new hdrtoolslib::Frame(m_ppcFrameOrg[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameOrg[0]->m_height[hdrtoolslib::Y_COMP], true, hdrtoolslib::CM_RGB, hdrtoolslib::CP_2020, hdrtoolslib::CF_444, hdrtoolslib::SR_UNKNOWN, 32, false, hdrtoolslib::TF_PQ, 0);
+    m_ppcFrameRec[3] = new hdrtoolslib::Frame(m_ppcFrameRec[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameRec[0]->m_height[hdrtoolslib::Y_COMP], true, hdrtoolslib::CM_RGB, hdrtoolslib::CP_2020, hdrtoolslib::CF_444, hdrtoolslib::SR_UNKNOWN, 32, false, hdrtoolslib::TF_PQ, 0);                                // YCbCr to RGB conversion
+    
+    m_ppcFrameOrg[4] = new hdrtoolslib::Frame(m_ppcFrameOrg[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameOrg[0]->m_height[hdrtoolslib::Y_COMP], true, hdrtoolslib::CM_RGB, hdrtoolslib::CP_2020, hdrtoolslib::CF_444, hdrtoolslib::SR_UNKNOWN, 32, false, hdrtoolslib::TF_NULL, 0);
+    m_ppcFrameRec[4] = new hdrtoolslib::Frame(m_ppcFrameRec[0]->m_width[hdrtoolslib::Y_COMP], m_ppcFrameRec[0]->m_height[hdrtoolslib::Y_COMP], true, hdrtoolslib::CM_RGB, hdrtoolslib::CP_2020, hdrtoolslib::CF_444, hdrtoolslib::SR_UNKNOWN, 32, false, hdrtoolslib::TF_NULL, 0);                                // Inverse Transfer Function
+    
+    m_pcFrameFormat                   = new hdrtoolslib::FrameFormat();
+    m_pcFrameFormat->m_isFloat        = true;
+    m_pcFrameFormat->m_chromaFormat   = hdrtoolslib::CF_UNKNOWN;
+    m_pcFrameFormat->m_colorSpace     = hdrtoolslib::CM_RGB;
+    m_pcFrameFormat->m_colorPrimaries = hdrtoolslib::CP_2020;
+    m_pcFrameFormat->m_sampleRange    = hdrtoolslib::SR_UNKNOWN;
+    
+    m_pcConvertFormat     = hdrtoolslib::ConvertColorFormat::create(width, height, chFmt, hdrtoolslib::CF_444, chromaUpFilter, chromaLocation, chromaLocation);
+    m_pcConvertIQuantize  = hdrtoolslib::Convert::create(&m_ppcFrameOrg[1]->m_format, &m_ppcFrameOrg[2]->m_format);
+    m_pcColorTransform    = hdrtoolslib::ColorTransform::create(m_ppcFrameOrg[2]->m_colorSpace, m_ppcFrameOrg[2]->m_colorPrimaries, m_ppcFrameOrg[3]->m_colorSpace, m_ppcFrameOrg[3]->m_colorPrimaries, true, 1);
+    m_pcDistortionDeltaE  = new hdrtoolslib::DistortionMetricDeltaE(m_pcFrameFormat, false, maxSampleValue, whitePointDeltaE, 1);
+    m_pcTransferFct       = hdrtoolslib::TransferFunction::create(hdrtoolslib::TF_PQ, true, (float) maxSampleValue, 0, 0.0, 1.0, enableTFunctionLUT);
+  }
+#endif
 }
 
 int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
@@ -3267,7 +3371,16 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     MSEyuvframeWeighted[i] = 0.0;
 #endif
   }
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double deltaE[hdrtoolslib::NB_REF_WHITE];
+  double psnrL[hdrtoolslib::NB_REF_WHITE];
+  for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
+  {
+    deltaE[i] = 0.0;
+    psnrL[i] = 0.0;
+  }
+#endif
+  
   PelStorage interm;
 
   if (conversion != IPCOLOURSPACE_UNCHANGED)
@@ -3325,7 +3438,18 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if EXTENSION_360_VIDEO
   m_ext360.calculatePSNRs(pcPic);
 #endif
-
+  
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  const bool calculateHdrMetrics = m_pcEncLib->getCalcluateHdrMetrics();
+  if (calculateHdrMetrics)
+  {
+    auto beforeTime = std::chrono::steady_clock::now();
+    xCalculateHDRMetrics(pcPic, deltaE, psnrL);
+    auto elapsed = std::chrono::steady_clock::now() - beforeTime;
+    m_metricTime += elapsed;
+  }
+#endif
+  
   /* calculate the size of the access unit, excluding:
    *  - any AnnexB contributions (start_code_prefix, zero_byte, etc.,)
    *  - SEI NAL units
@@ -3362,6 +3486,12 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if EXTENSION_360_VIDEO
   m_ext360.addResult(m_gcAnalyzeAll);
 #endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  if (calculateHdrMetrics)
+  {
+    m_gcAnalyzeAll.addHDRMetricsResult(deltaE, psnrL);
+  }
+#endif
   if (pcSlice->isIntra())
   {
     m_gcAnalyzeI.addResult(dPSNR, (double)uibits, MSEyuvframe
@@ -3370,6 +3500,12 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     *PSNR_Y = dPSNR[COMPONENT_Y];
 #if EXTENSION_360_VIDEO
     m_ext360.addResult(m_gcAnalyzeI);
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    if (calculateHdrMetrics)
+    {
+      m_gcAnalyzeI.addHDRMetricsResult(deltaE, psnrL);
+    }
 #endif
   }
   if (pcSlice->isInterP())
@@ -3381,6 +3517,12 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if EXTENSION_360_VIDEO
     m_ext360.addResult(m_gcAnalyzeP);
 #endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    if (calculateHdrMetrics)
+    {
+      m_gcAnalyzeP.addHDRMetricsResult(deltaE, psnrL);
+    }
+#endif
   }
   if (pcSlice->isInterB())
   {
@@ -3390,6 +3532,12 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     *PSNR_Y = dPSNR[COMPONENT_Y];
 #if EXTENSION_360_VIDEO
     m_ext360.addResult(m_gcAnalyzeB);
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    if (calculateHdrMetrics)
+    {
+      m_gcAnalyzeB.addHDRMetricsResult(deltaE, psnrL);
+    }
 #endif
   }
 #if WCG_WPSNR
@@ -3458,6 +3606,19 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       }
     }
 #endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    if(calculateHdrMetrics)
+    {
+      for (int i=0; i<1; i++)
+      {
+        msg(NOTICE, " [DeltaE%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), deltaE[i]);
+      }
+      for (int i=0; i<1; i++)
+      {
+        msg(NOTICE, " [PSNRL%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), psnrL[i]);
+      }
+    }
+#endif
     msg( NOTICE, " [ET %5.0f ]", dEncTime );
 
     // msg( SOME, " [WP %d]", pcSlice->getUseWeightedPrediction());
@@ -3478,6 +3639,103 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     std::cout.flush();
   }
 }
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+void EncGOP::xCalculateHDRMetrics( Picture* pcPic, double deltaE[hdrtoolslib::NB_REF_WHITE], double psnrL[hdrtoolslib::NB_REF_WHITE])
+{
+  copyBuftoFrame(pcPic);
+  
+  ChromaFormat chFmt =  pcPic->chromaFormat;
+  
+  if (chFmt != CHROMA_444)
+  {
+    m_pcConvertFormat->process(m_ppcFrameOrg[1], m_ppcFrameOrg[0]);
+    m_pcConvertFormat->process(m_ppcFrameRec[1], m_ppcFrameRec[0]);
+  }
+  
+  m_pcConvertIQuantize->process(m_ppcFrameOrg[2], m_ppcFrameOrg[1]);
+  m_pcConvertIQuantize->process(m_ppcFrameRec[2], m_ppcFrameRec[1]);
+  
+  m_pcColorTransform->process(m_ppcFrameOrg[3], m_ppcFrameOrg[2]);
+  m_pcColorTransform->process(m_ppcFrameRec[3], m_ppcFrameRec[2]);
+  
+  m_pcTransferFct->forward(m_ppcFrameOrg[4], m_ppcFrameOrg[3]);
+  m_pcTransferFct->forward(m_ppcFrameRec[4], m_ppcFrameRec[3]);
+  
+  // Calculate the Metrics
+  m_pcDistortionDeltaE->computeMetric(m_ppcFrameOrg[4], m_ppcFrameRec[4]);
+  
+  *deltaE = m_pcDistortionDeltaE->getDeltaE();
+  *psnrL  = m_pcDistortionDeltaE->getPsnrL();
+  
+}
+
+void EncGOP::copyBuftoFrame( Picture* pcPic )
+{
+  int cropOffsetLeft   = m_pcCfg->getCropOffsetLeft();
+  int cropOffsetTop    = m_pcCfg->getCropOffsetTop();
+  int cropOffsetRight  = m_pcCfg->getCropOffsetRight();
+  int cropOffsetBottom = m_pcCfg->getCropOffsetBottom();
+  
+  int height = pcPic->getOrigBuf(COMPONENT_Y).height - cropOffsetLeft + cropOffsetRight;
+  int width = pcPic->getOrigBuf(COMPONENT_Y).width - cropOffsetTop + cropOffsetBottom;
+  
+  ChromaFormat chFmt =  pcPic->chromaFormat;
+  
+  Pel* pOrg = pcPic->getOrigBuf(COMPONENT_Y).buf;
+  Pel* pRec = pcPic->getRecoBuf(COMPONENT_Y).buf;
+  
+  uint16_t* yOrg = m_ppcFrameOrg[0]->m_ui16Comp[hdrtoolslib::Y_COMP];
+  uint16_t* yRec = m_ppcFrameRec[0]->m_ui16Comp[hdrtoolslib::Y_COMP];
+  uint16_t* uOrg = m_ppcFrameOrg[0]->m_ui16Comp[hdrtoolslib::Cb_COMP];
+  uint16_t* uRec = m_ppcFrameRec[0]->m_ui16Comp[hdrtoolslib::Cb_COMP];
+  uint16_t* vOrg = m_ppcFrameOrg[0]->m_ui16Comp[hdrtoolslib::Cr_COMP];
+  uint16_t* vRec = m_ppcFrameRec[0]->m_ui16Comp[hdrtoolslib::Cr_COMP];
+  
+  if(chFmt == CHROMA_444){
+    yOrg = m_ppcFrameOrg[1]->m_ui16Comp[hdrtoolslib::Y_COMP];
+    yRec = m_ppcFrameRec[1]->m_ui16Comp[hdrtoolslib::Y_COMP];
+    uOrg = m_ppcFrameOrg[1]->m_ui16Comp[hdrtoolslib::Cb_COMP];
+    uRec = m_ppcFrameRec[1]->m_ui16Comp[hdrtoolslib::Cb_COMP];
+    vOrg = m_ppcFrameOrg[1]->m_ui16Comp[hdrtoolslib::Cr_COMP];
+    vRec = m_ppcFrameRec[1]->m_ui16Comp[hdrtoolslib::Cr_COMP];
+  }
+  
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      yOrg[i*width + j] = static_cast<uint16_t>(pOrg[(i + cropOffsetTop) * pcPic->getOrigBuf(COMPONENT_Y).stride + j + cropOffsetLeft]);
+      yRec[i*width + j] = static_cast<uint16_t>(pRec[(i + cropOffsetTop) * pcPic->getRecoBuf(COMPONENT_Y).stride + j + cropOffsetLeft]);
+    }
+  }
+  
+  if (chFmt != CHROMA_444) {
+    height >>= 1;
+    width  >>= 1;
+    cropOffsetLeft >>= 1;
+    cropOffsetTop >>= 1;
+  }
+  
+  pOrg = pcPic->getOrigBuf(COMPONENT_Cb).buf;
+  pRec = pcPic->getRecoBuf(COMPONENT_Cb).buf;
+  
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      uOrg[i*width + j] = static_cast<uint16_t>(pOrg[(i + cropOffsetTop) * pcPic->getOrigBuf(COMPONENT_Cb).stride + j + cropOffsetLeft]);
+      uRec[i*width + j] = static_cast<uint16_t>(pRec[(i + cropOffsetTop) * pcPic->getRecoBuf(COMPONENT_Cb).stride + j + cropOffsetLeft]);
+    }
+  }
+  
+  pOrg = pcPic->getOrigBuf(COMPONENT_Cr).buf;
+  pRec = pcPic->getRecoBuf(COMPONENT_Cr).buf;
+  
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      vOrg[i*width + j] = static_cast<uint16_t>(pOrg[(i + cropOffsetTop) * pcPic->getOrigBuf(COMPONENT_Cr).stride + j + cropOffsetLeft]);
+      vRec[i*width + j] = static_cast<uint16_t>(pRec[(i + cropOffsetTop) * pcPic->getRecoBuf(COMPONENT_Cr).stride + j + cropOffsetLeft]);
+    }
+  }
+}
+#endif
 
 void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* pcPicOrgSecondField,
                                           PelUnitBuf cPicRecFirstField, PelUnitBuf cPicRecSecondField,

@@ -2790,44 +2790,34 @@ bool HLSyntaxReader::xMoreRbspData()
 
 int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 {
-  uint32_t uiSymbol;
-  int q = -1;
-  int nr = 0;
-  int m = (int)pow( 2.0, k );
-  int a;
-
-  uiSymbol = 1;
-  while( uiSymbol )
+  unsigned int symbol = 0;
+  unsigned int bit = 0;
+  unsigned int count = k;
+  while (!bit)
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( uiSymbol, "" );
+    xReadFlag(bit, "");
 #else
-    xReadFlag( uiSymbol );
+    xReadFlag(bit);
 #endif
-    q++;
+    symbol += (1 - bit) << count++;
   }
 
-  for( a = 0; a < k; ++a )          // read out the sequential log2(M) bits
+  if (--count)
   {
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( uiSymbol, "" );
-#else
-    xReadFlag( uiSymbol );
-#endif
-    if( uiSymbol )
-    {
-      nr += 1 << a;
-    }
+    unsigned int bins;
+    READ_CODE(count, bins, "alf_coeff_abs");
+    symbol += bins;
   }
-  nr += q * m;                    // add the bits and the multiple of M
-  if( signed_val && nr != 0 )
+  int nr = symbol;
+  if (signed_val && nr != 0)
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( uiSymbol, "" );
+    xReadFlag(bit, "");
 #else
-    xReadFlag( uiSymbol );
+    xReadFlag(bit);
 #endif
-    nr = ( uiSymbol ) ? -nr : nr;
+    nr = (bit) ? -nr : nr;
   }
   return nr;
 }

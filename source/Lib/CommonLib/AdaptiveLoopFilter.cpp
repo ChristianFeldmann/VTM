@@ -804,8 +804,12 @@ void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifi
   }
 }
 
-void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift,  int vbCTUHeight, int vbPos)
+void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+                                                 const CPelBuf &srcLuma, const Area &blkDst, const Area &blk,
+                                                 const int shift, const int vbCTUHeight, int vbPos)
 {
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
+
   static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
   const int stride = srcLuma.stride;
   const Pel* src = srcLuma.buf;
@@ -831,11 +835,13 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
     const Pel *src1 = &src[yoffset];
     const Pel *src2 = &src[yoffset + stride];
     const Pel *src3 = &src[yoffset + stride * 2];
-    if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == (vbPos - 2))
+
+    const int y = blkDst.pos().y - 2 + i;
+    if (y > 0 && (y & (vbCTUHeight - 1)) == vbPos - 2)
     {
       src3 = &src[yoffset + stride];
     }
-    else if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == vbPos)
+    else if (y > 0 && (y & (vbCTUHeight - 1)) == vbPos)
     {
       src0 = &src[yoffset];
     }
@@ -927,7 +933,9 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
 
       int tempAct = sumV + sumH;
       int activity = 0;
-      if ((((i + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4)) || (((i + blkDst.pos().y) % vbCTUHeight) == vbPos))
+
+      const int y = (i + blkDst.pos().y) & (vbCTUHeight - 1);
+      if (y == vbPos - 4 || y == vbPos)
       {
         activity = (Pel)Clip3<int>(0, maxActivity, (tempAct * 96) >> shift);
       }

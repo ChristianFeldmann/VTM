@@ -1184,10 +1184,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_O0526_MIN_CTU_SIZE
   READ_CODE(2, uiCode, "log2_ctu_size_minus5");                pcSPS->setCTUSize(1 << (uiCode + 5));
   CHECK(uiCode > 2, "log2_ctu_size_minus5 must be less than or equal to 2");
+  unsigned ctbLog2SizeY = uiCode + 5;
   pcSPS->setMaxCodingDepth(uiCode+3);
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode+3);
 #else
   READ_UVLC(uiCode, "log2_ctu_size_minus2");                   pcSPS->setCTUSize(1 << (uiCode + 2));
+  unsigned ctbLog2SizeY = uiCode + 2;
   pcSPS->setMaxCodingDepth(uiCode);
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode);
 #endif
@@ -1204,8 +1206,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
   READ_FLAG(uiCode, "partition_constraints_override_enabled_flag"); pcSPS->setSplitConsOverrideEnabledFlag(uiCode);
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_luma");      minQT[0] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");      minQT[1] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_luma");
+  unsigned minQtLog2SizeIntraY = uiCode + pcSPS->getLog2MinCodingBlockSize();
+  minQT[0] = 1 << minQtLog2SizeIntraY;
+  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");
+  unsigned minQtLog2SizeInterY = uiCode + pcSPS->getLog2MinCodingBlockSize();
+  minQT[1] = 1 << minQtLog2SizeInterY;
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slice");     maxBTD[1] = uiCode;
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_luma");     maxBTD[0] = uiCode;
 
@@ -1213,13 +1219,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (maxBTD[0] != 0)
   {
     READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_slice_luma");     maxBTSize[0] <<= uiCode;
+    CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "Invalid code");
     READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_luma");     maxTTSize[0] <<= uiCode;
+    CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "Invalid code");
   }
   maxTTSize[1] = maxBTSize[1] = minQT[1];
   if (maxBTD[1] != 0)
   {
     READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_inter_slice");     maxBTSize[1] <<= uiCode;
+    CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "Invalid code");
     READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_slice");     maxTTSize[1] <<= uiCode;
+    CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "Invalid code");
   }
   if (pcSPS->getUseDualITree())
   {

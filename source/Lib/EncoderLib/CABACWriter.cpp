@@ -3523,6 +3523,9 @@ void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID comp
 
 void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 {
+#if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+  int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+#endif
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || 
 #if JVET_O0925_MIP_SIMPLIFICATIONS
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
@@ -3536,9 +3539,9 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #endif
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
 #if JVET_O0545_MAX_TB_SIGNALLING
-    || ( cu.blocks[ 0 ].width > cu.cs->sps->getMaxTbSize() || cu.blocks[ 0 ].height > cu.cs->sps->getMaxTbSize() )
+    || ( cu.blocks[ chIdx ].lumaSize().width > cu.cs->sps->getMaxTbSize() || cu.blocks[ chIdx ].lumaSize().height > cu.cs->sps->getMaxTbSize() )
 #else
-    || ( cu.blocks[ 0 ].width > MAX_TB_SIZEY || cu.blocks[ 0 ].height > MAX_TB_SIZEY )
+    || ( cu.blocks[ chIdx ].lumaSize().width > MAX_TB_SIZEY || cu.blocks[ chIdx ].lumaSize().height > MAX_TB_SIZEY )
 #endif
 #endif
     )

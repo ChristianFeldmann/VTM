@@ -47,6 +47,10 @@
 
 #include "CommonLib/Unit.h"
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/DistortionMetric.H"
+#endif
+
 struct GOPEntry
 {
   int m_POC;
@@ -482,7 +486,7 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
- 
+
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -654,6 +658,20 @@ protected:
 #endif
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double                       m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
+  double                       m_maxSampleValue;
+  hdrtoolslib::SampleRange     m_sampleRange;
+  hdrtoolslib::ColorPrimaries  m_colorPrimaries;
+  bool                         m_enableTFunctionLUT;
+  hdrtoolslib::ChromaLocation  m_chromaLocation[2];
+  int                          m_chromaUPFilter;
+  int                          m_cropOffsetLeft;
+  int                          m_cropOffsetTop;
+  int                          m_cropOffsetRight;
+  int                          m_cropOffsetBottom;
+  bool                         m_calculateHdrMetrics;
+#endif
 
 public:
   EncCfg()
@@ -1625,8 +1643,36 @@ public:
   void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
   bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
-  void        setUseALF( bool b ) { m_alf = b; }
-  bool        getUseALF()                                      const { return m_alf; }
+  void         setUseALF( bool b ) { m_alf = b; }
+  bool         getUseALF()                                      const { return m_alf; }
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
+  double      getWhitePointDeltaE( uint32_t index )             const { return m_whitePointDeltaE[ index ]; }
+  void        setMaxSampleValue(double value)                         { m_maxSampleValue = value;}
+  double      getMaxSampleValue()                               const { return m_maxSampleValue;}
+  void        setSampleRange(int value)                               { m_sampleRange = static_cast<hdrtoolslib::SampleRange>(value);}
+  hdrtoolslib::SampleRange getSampleRange()                     const { return m_sampleRange;}
+  void        setColorPrimaries(int value)                            { m_colorPrimaries = static_cast<hdrtoolslib::ColorPrimaries>(value);}
+  hdrtoolslib::ColorPrimaries getColorPrimaries()               const { return m_colorPrimaries;}
+  void        setEnableTFunctionLUT(bool value)                       { m_enableTFunctionLUT = value;}
+  bool        getEnableTFunctionLUT()                           const { return m_enableTFunctionLUT;}
+  void        setChromaLocation(uint32_t index, int value)            { m_chromaLocation[ index ] = static_cast<hdrtoolslib::ChromaLocation>(value);}
+  hdrtoolslib::ChromaLocation getChromaLocation(uint32_t index) const { return m_chromaLocation[index];}
+  void        setChromaUPFilter(int value)                            { m_chromaUPFilter = value;}
+  int         getChromaUPFilter()                               const { return m_chromaUPFilter;}
+  void        setCropOffsetLeft(int value)                            { m_cropOffsetLeft = value;}
+  int         getCropOffsetLeft()                               const { return m_cropOffsetLeft;}
+  void        setCropOffsetTop(int value)                             { m_cropOffsetTop = value;}
+  int         getCropOffsetTop()                                const { return m_cropOffsetTop;}
+  void        setCropOffsetRight(int value)                           { m_cropOffsetRight = value;}
+  int         getCropOffsetRight()                              const { return m_cropOffsetRight;}
+  void        setCropOffsetBottom(int value)                          { m_cropOffsetBottom = value;}
+  int         getCropOffsetBottom()                             const { return m_cropOffsetBottom;}
+  void        setCalculateHdrMetrics(bool value)                      { m_calculateHdrMetrics = value;}
+  bool        getCalcluateHdrMetrics()                          const { return m_calculateHdrMetrics;}
+#endif
+
 };
 
 //! \}

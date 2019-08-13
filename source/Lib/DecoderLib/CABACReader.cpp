@@ -1176,13 +1176,13 @@ void CABACReader::pred_mode( CodingUnit& cu )
       }
       }
 #if JVET_O0119_BASE_PALETTE_444
-    if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
       {
-        cu.predMode = MODE_PLT;
+        if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+        {
+          cu.predMode = MODE_PLT;
+        }
       }
-    }
 #endif
     }
     else
@@ -1191,13 +1191,13 @@ void CABACReader::pred_mode( CodingUnit& cu )
       {
         cu.predMode = MODE_INTRA;
 #if JVET_O0119_BASE_PALETTE_444
-    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
-      {
-        cu.predMode = MODE_PLT;
-      }
-    }
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+        {
+          if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+          {
+            cu.predMode = MODE_PLT;
+          }
+        }
 #endif
       }
       else
@@ -1235,25 +1235,25 @@ void CABACReader::pred_mode( CodingUnit& cu )
     if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) )
 #endif
     {
-    cu.predMode = MODE_INTRA;
-    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      cu.predMode = MODE_INTRA;
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
       {
+        if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+        {
           cu.predMode = MODE_PLT;
+        }
       }
-    }
     }
     else
     {
-    cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
-    if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+      cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
+      if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
       {
+        if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
+        {
           cu.predMode = MODE_PLT;
+        }
       }
-    }
     }
 #else
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -1880,7 +1880,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
     }
   }
-  cu.useEscape[compBegin] = true; // JC 
+  cu.useEscape[compBegin] = true; // JC
   if (cu.curPLTSize[compBegin] > 0)
   {
     uint32_t escCode = 0;
@@ -2172,7 +2172,7 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel curLevel, uint32_t idx, Pe
     maxSymbol--;
   }
   symbol = curLevel;
-  if (curLevel >= refLevel) // include escape mode 
+  if (curLevel >= refLevel) // include escape mode
   {
     symbol++;
   }
@@ -2314,7 +2314,11 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF;
     mvd_coding(pu.mvd[REF_PIC_LIST_0]);
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
     {
       pu.mvpIdx[REF_PIC_LIST_0] = 0;
     }
@@ -3355,7 +3359,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
 
 #if JVET_O0046_DQ_SIGNALLING
   if( ( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma ) &&
-#else   
+#else
   if( ( cbfLuma || cbfChroma ) &&
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -3701,7 +3705,10 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
 void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #endif
 {
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || 
+#if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+  int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+#endif
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
 #if JVET_O0925_MIP_SIMPLIFICATIONS
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
 #else
@@ -3714,9 +3721,9 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #endif
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
 #if JVET_O0545_MAX_TB_SIGNALLING
-    || ( cu.blocks[ 0 ].width > cu.cs->sps->getMaxTbSize() || cu.blocks[ 0 ].height > cu.cs->sps->getMaxTbSize() )
+    || ( cu.blocks[ chIdx ].lumaSize().width > cu.cs->sps->getMaxTbSize() || cu.blocks[ chIdx ].lumaSize().height > cu.cs->sps->getMaxTbSize() )
 #else
-    || ( cu.blocks[ 0 ].width > MAX_TB_SIZEY || cu.blocks[ 0 ].height > MAX_TB_SIZEY )
+    || ( cu.blocks[ chIdx ].lumaSize().width > MAX_TB_SIZEY || cu.blocks[ chIdx ].lumaSize().height > MAX_TB_SIZEY )
 #endif
 #endif
     )
@@ -4210,7 +4217,7 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   }
 
   int cutoffVal = 2;
-  int numGtBins = 4;
+  const int numGtBins = 4;
 
   //===== 2nd PASS: gt2 =====
 #if JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING

@@ -553,7 +553,7 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
           mpm[1] = leftIntraDir;
           mpm[2] = ((leftIntraDir + offset) % mod) + 2;
           mpm[3] = ((leftIntraDir - 1) % mod) + 2;
-#if JVET_O0925_MIP_SIMPLIFICATIONS 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
           mpm[4] = ((leftIntraDir + offset - 1) % mod) + 2;
           mpm[5] = ( leftIntraDir               % mod) + 2;
 #else
@@ -2703,7 +2703,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       Position posC1 = pu.Y().center();
       Mv cColMv;
       if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
-      {  
+      {
         int posYInCtu = posRB.y & pcv.maxCUHeightMask;
         if (posYInCtu + 4 < pcv.maxCUHeight)
         {
@@ -4219,7 +4219,7 @@ void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, c
   }
   else if( triangleMrgCtx.interDirNeighbours[candIdx0] == 2 && triangleMrgCtx.interDirNeighbours[candIdx1] == 2 )
   {
-#if JVET_O0265_TPM_SIMPLIFICATION  
+#if JVET_O0265_TPM_SIMPLIFICATION
     biMv.interDir = 2;
     biMv.mv[0] = Mv(0, 0);
     biMv.mv[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;

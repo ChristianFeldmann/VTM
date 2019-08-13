@@ -148,8 +148,11 @@ private:
 
   EncHRD                    m_encHRD;
 
-#if JVET_O0119_BASE_PALETTE_444 
+#if JVET_O0119_BASE_PALETTE_444
   bool                      m_doPlt;
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 
 public:
@@ -247,8 +250,11 @@ public:
   ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
 
 #if JVET_O0119_BASE_PALETTE_444
-  bool                   getPltEnc()   const { return m_doPlt; }
+  bool                   getPltEnc()                      const { return   m_doPlt; }
   void                   checkPltStats( Picture* pic );
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function

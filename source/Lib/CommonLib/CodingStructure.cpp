@@ -79,7 +79,7 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
     m_coeffs[ i ] = nullptr;
     m_pcmbuf[ i ] = nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-    m_runType[i] = nullptr;
+    m_runType[i]   = nullptr;
     m_runLength[i] = nullptr;
 #endif
 
@@ -285,12 +285,20 @@ CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType effCh
   if( !_blk.contains( pos ) )
 #endif
   {
+    if (parent)
+    {
 #if JVET_O0050_LOCAL_DUAL_TREE
-    if( treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA )
-      CHECK( parent->treeType != TREE_D, "wrong parent treeType " );
+      if (treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA)
+      {
+        CHECK(parent->treeType != TREE_D, "wrong parent treeType ");
+      }
 #endif
-    if( parent ) return parent->getCU( pos, effChType );
-    else         return nullptr;
+      return parent->getCU(pos, effChType);
+    }
+    else
+    {
+      return nullptr;
+    }
   }
   else
   {
@@ -619,7 +627,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
 
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
-#if JVET_O0119_BASE_PALETTE_444 
+#if JVET_O0119_BASE_PALETTE_444
   bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 #endif
@@ -958,8 +966,8 @@ void CodingStructure::createCoeffs()
     m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
     m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-    m_runType[i]   = _area > 0 ? (bool*)xMalloc( bool, _area) : nullptr;
-    m_runLength[i] = _area > 0 ? (Pel*) xMalloc( Pel,  _area) : nullptr;
+    m_runType[i]   = _area > 0 ? ( bool*  ) xMalloc( bool, _area ) : nullptr;
+    m_runLength[i] = _area > 0 ? ( Pel*   ) xMalloc( Pel,  _area ) : nullptr;
 #endif
   }
 }
@@ -1001,7 +1009,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.picture   = picture;
 
   subStruct.sps       = sps;
-  subStruct.vps       = vps; 
+  subStruct.vps       = vps;
   subStruct.pps       = pps;
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 
@@ -1142,7 +1150,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
           const UnitArea &puPatch = *ppu;
 #if JVET_O0050_LOCAL_DUAL_TREE
           PredictionUnit &pu = addPU( puPatch, ppu->chType );
-#else   
+#else
           PredictionUnit &pu = addPU( puPatch, chType );
 #endif
 
@@ -1215,7 +1223,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
       const UnitArea &puPatch = *ppu;
 #if JVET_O0050_LOCAL_DUAL_TREE
       PredictionUnit &pu = addPU( puPatch, ppu->chType );
-#else   
+#else
       PredictionUnit &pu = addPU( puPatch, chType );
 #endif
 

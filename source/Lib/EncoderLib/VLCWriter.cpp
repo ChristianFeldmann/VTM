@@ -482,7 +482,7 @@ void HLSWriter::codeAPS( APS* pcAPS )
 
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
   WRITE_CODE(pcAPS->getAPSType(), 3, "aps_params_type");
-  
+
 
   if (pcAPS->getAPSType() == ALF_APS)
   {
@@ -851,7 +851,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
     for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
-      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1"); 
+      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1");
 
       for (int j = 0; j <= chromaQpMappingTable.getNumPtsInCQPTableMinus1(i); j++)
       {
@@ -891,7 +891,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
 #endif
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
-  {    
+  {
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
@@ -945,7 +945,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_O0119_BASE_PALETTE_444
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
-    WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0, "plt_flag");
+    WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0,                                                    "plt_flag" );
   }
 #endif
   WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "ibc_flag");
@@ -957,7 +957,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG  
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
@@ -1174,7 +1174,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
   }
-  
+
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );
@@ -1564,7 +1564,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       WRITE_FLAG( pcSlice->getJointCbCrSignFlag() ? 1 : 0, "slice_joint_cbcr_sign_flag");
     }
-#endif 
+#endif
 #endif
 
     int iCode = pcSlice->getSliceQp() - ( pcSlice->getPPS()->getPicInitQPMinus26() + 26 );
@@ -2006,7 +2006,7 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma )
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
 
   // vlc for all
-#if !JVET_O0216_ALF_COEFF_EG3 
+#if !JVET_O0216_ALF_COEFF_EG3
   for( int ind = 0; ind < numFilters; ++ind )
   {
     if( isChroma || !alfParam.alfLumaCoeffDeltaFlag || alfParam.alfLumaCoeffFlag[ind] )

@@ -821,7 +821,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ConfWinRight",                                    m_confWinRight,                                       0, "Right offset for window conformance mode 3")
   ("ConfWinTop",                                      m_confWinTop,                                         0, "Top offset for window conformance mode 3")
   ("ConfWinBottom",                                   m_confWinBottom,                                      0, "Bottom offset for window conformance mode 3")
+#if JVET_O0610_CFG
+  ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                             true, "Enable Access Unit Delimiter NALUs")
+#else
   ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                            false, "Enable Access Unit Delimiter NALUs")
+#endif
   ("FrameRate,-fr",                                   m_iFrameRate,                                         0, "Frame rate")
   ("FrameSkip,-fs",                                   m_FrameSkip,                                         0u, "Number of frames to skip at start of input YUV")
   ("TemporalSubsampleRatio,-ts",                      m_temporalSubsampleRatio,                            1u, "Temporal sub-sample ratio when reading input YUV")
@@ -833,6 +837,23 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SummaryPicFilenameBase",                          m_summaryPicFilenameBase,                      string(), "Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended. If empty, do not produce a file.")
   ("SummaryVerboseness",                              m_summaryVerboseness,                                0u, "Specifies the level of the verboseness of the text output")
   ("Verbosity,v",                                     m_verbosity,                               (int)VERBOSE, "Specifies the level of the verboseness")
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  ( "WhitePointDeltaE1",                              m_whitePointDeltaE[0],                            100.0, "1st reference white point value")
+  ( "WhitePointDeltaE2",                              m_whitePointDeltaE[1],                           1000.0, "2nd reference white point value")
+  ( "WhitePointDeltaE3",                              m_whitePointDeltaE[2],                           5000.0, "3rd reference white point value")
+  ( "MaxSampleValue",                                 m_maxSampleValue,                               10000.0, "Maximum sample value for floats")
+  ( "InputSampleRange",                               m_sampleRange,                                        0, "Sample Range")
+  ( "InputColorPrimaries",                            m_colorPrimaries,                                     1, "Input Color Primaries")
+  ( "EnableTFunctionLUT",                             m_enableTFunctionLUT,                             false, "Input Color Primaries")
+  ( "ChromaLocation",                                 m_chromaLocation,                                     2, "Location of Chroma Samples")
+  ( "ChromaUpsampleFilter",                           m_chromaUPFilter,                                     1, "420 to 444 conversion filters")
+  ( "CropOffsetLeft",                                 m_cropOffsetLeft,                                     0, "Crop Offset Left position")
+  ( "CropOffsetTop",                                  m_cropOffsetTop,                                      0, "Crop Offset Top position")
+  ( "CropOffsetRight",                                m_cropOffsetRight,                                    0, "Crop Offset Right position")
+  ( "CropOffsetBottom",                               m_cropOffsetBottom,                                   0, "Crop Offset Bottom position")
+  ( "CalculateHdrMetrics",                            m_calculateHdrMetrics,                             true, "Crop Offset Bottom position")
+#endif
 
   //Field coding parameters
   ("FieldCoding",                                     m_isField,                                        false, "Signals if it's a field based coding")
@@ -2003,6 +2024,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     {
       m_LadfIntervalLowerBound[k] = cfg_LadfIntervalLowerBound.values[k - 1];
     }
+  }
+#endif
+
+#if JVET_O0610_CFG
+  if (m_AccessUnitDelimiter == false)
+  {
+    printf ("Warning: Access unit delimiters are disabled. VVC requires the presence of access unit delimiters\n");
   }
 #endif
 

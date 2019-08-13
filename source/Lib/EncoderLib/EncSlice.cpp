@@ -1444,7 +1444,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   m_pcInterSearch->resetAffineMVList();
 #if JVET_O0592_ENC_ME_IMP
   m_pcInterSearch->resetUniMvList();
-#endif 
+#endif
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 #if JVET_O0119_BASE_PALETTE_444
   if (checkPLTRatio) m_pcLib->checkPltStats( pcPic );

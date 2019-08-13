@@ -1034,7 +1034,11 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
             mvd.changeIbcPrecAmvr2Internal(pu.cu->imv);
           }
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+          if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
           if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
           {
             CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
           }

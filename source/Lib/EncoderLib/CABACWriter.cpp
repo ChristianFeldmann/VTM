@@ -883,10 +883,10 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
       }
 #if JVET_O0119_BASE_PALETTE_444
-    if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-    {
-      m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
-    }
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+      {
+        m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
+      }
 #endif
     }
     else
@@ -898,18 +898,18 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       }
 #endif
 #if JVET_O0119_BASE_PALETTE_444
-    m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
-    if (CU::isIntra(cu) || CU::isPLT(cu))
-    {
-      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-      m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
-    }
-    else
-    {
-#else
-      m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
-      if (!CU::isIntra(cu))
+      m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+      if (CU::isIntra(cu) || CU::isPLT(cu))
       {
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+          m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
+      }
+      else
+      {
+#else
+        m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+        if (!CU::isIntra(cu))
+        {
 #endif
 #if JVET_O1161_IBC_MAX_SIZE
         if (cu.lwidth() < 128 && cu.lheight() < 128) // disable IBC mode larger than 64x64
@@ -940,17 +940,17 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 #endif
     {
 #if JVET_O0119_BASE_PALETTE_444
-    if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-      m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+        m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
 #endif
       return;
     }
     m_BinEncoder.encodeBin((CU::isIntra(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
 #if JVET_O0119_BASE_PALETTE_444
-  if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-  {
-    m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
-  }
+    if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+    {
+      m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
+    }
 #endif
   }
 }
@@ -2139,7 +2139,11 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     mvd.changeIbcPrecInternal2Amvr(pu.cu->imv);
     mvd_coding(mvd, 0); // already changed to signaling precision
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
     {
       CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
     }
@@ -3164,7 +3168,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
 
 #if JVET_O0046_DQ_SIGNALLING
   if( ( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma ) &&
-#else   
+#else
   if( ( cbfLuma || cbfChroma ) &&
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -3519,22 +3523,25 @@ void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID comp
 
 void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 {
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || 
+#if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
+  int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+#endif
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
 #if JVET_O0925_MIP_SIMPLIFICATIONS
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
 #else
       cu.mipFlag == true ||
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
-    ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) 
+    ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
 #else
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
 #endif
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
 #if JVET_O0545_MAX_TB_SIGNALLING
-    || ( cu.blocks[ 0 ].width > cu.cs->sps->getMaxTbSize() || cu.blocks[ 0 ].height > cu.cs->sps->getMaxTbSize() )
+    || ( cu.blocks[ chIdx ].lumaSize().width > cu.cs->sps->getMaxTbSize() || cu.blocks[ chIdx ].lumaSize().height > cu.cs->sps->getMaxTbSize() )
 #else
-    || ( cu.blocks[ 0 ].width > MAX_TB_SIZEY || cu.blocks[ 0 ].height > MAX_TB_SIZEY )
+    || ( cu.blocks[ chIdx ].lumaSize().width > MAX_TB_SIZEY || cu.blocks[ chIdx ].lumaSize().height > MAX_TB_SIZEY )
 #endif
 #endif
     )
@@ -4009,7 +4016,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 #if JVET_O0122_TS_SIGN_LEVEL
     unsigned absLevel;
     cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
-    absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm()); 
+    absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm());
 #else
     unsigned absLevel = abs(coeff[cctx.blockPos(scanPos)]);
 #endif
@@ -4041,7 +4048,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 #if JVET_O0122_TS_SIGN_LEVEL
       unsigned absLevel;
       cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
-      absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm()); 
+      absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm());
 #else
       unsigned absLevel = abs( coeff[cctx.blockPos( scanPos )] );
 #endif

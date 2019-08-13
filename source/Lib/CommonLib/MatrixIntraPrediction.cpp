@@ -237,7 +237,7 @@ void MatrixIntraPrediction::predBlock(int* const result, const int modeIdx, cons
   int* const       reducedPred     = needUpsampling ? bufReducedPred.data() : result;
   const int* const reducedBoundary = transpose ? m_reducedBoundaryTransposed.data() : m_reducedBoundary.data();
 #if JVET_O0925_MIP_SIMPLIFICATIONS
-  computeReducedPred( reducedPred, reducedBoundary, matrix, leaveHorOut, leaveVerOut, shiftMatrix, offsetMatrix, 
+  computeReducedPred( reducedPred, reducedBoundary, matrix, leaveHorOut, leaveVerOut, shiftMatrix, offsetMatrix,
                       transpose, needUpsampling, bitDepth );
 #else
   xComputeMatrixTimesRedBndryPlusBias( reducedPred, reducedBoundary, matrix, bias,
@@ -478,10 +478,10 @@ void MatrixIntraPrediction::predictionUpsampling(int* const dst, const int* cons
     {
       const SizeType horSrcStep   = transpose ? m_reducedPredictionSize.height : 1;
       const SizeType horSrcStride = transpose ? 1 : m_reducedPredictionSize.width;
-    
+
       int* const     horDst       = dst + ( m_upsmpFactorVer - 1 ) * m_blockSize.width;
       const SizeType horDstStride = m_upsmpFactorVer * m_blockSize.width;
-    
+
 #if JVET_O0925_MIP_SIMPLIFICATIONS
      predictionUpsampling1D( horDst, src, m_refSamplesLeft.data(),
                              m_reducedPredictionSize.width, m_reducedPredictionSize.height,
@@ -635,7 +635,7 @@ void MatrixIntraPrediction::getShifts(int &shiftMatrix, int &shiftBias, const in
 
 #if JVET_O0925_MIP_SIMPLIFICATIONS
 void MatrixIntraPrediction::computeReducedPred(int*const result, const int* const input, const uint8_t*matrix,
-                                               const bool leaveHorOut, const bool leaveVerOut, 
+                                               const bool leaveHorOut, const bool leaveVerOut,
                                                const int shiftMatrix, const int offsetMatrix,
                                                const bool transpose, const bool needUpsampling, const int bitDepth )
 #else
@@ -675,7 +675,7 @@ void MatrixIntraPrediction::xComputeMatrixTimesRedBndryPlusBias(int*const result
 
 #if JVET_O0925_MIP_SIMPLIFICATIONS
   const int redSize = (m_blockSize.width <= 8 && m_blockSize.height <= 8) ? 0 : 1;
-  if ( redSize ) weight += xStep-1; 
+  if ( redSize ) weight += xStep-1;
 #endif
   int posRes  = 0;
 #if !JVET_O0925_MIP_SIMPLIFICATIONS
@@ -686,7 +686,7 @@ void MatrixIntraPrediction::xComputeMatrixTimesRedBndryPlusBias(int*const result
     for (int x = 0; x < intermediateWidth; x++)
     {
 #if JVET_O0925_MIP_SIMPLIFICATIONS
-      if(redSize) weight -= xStep; 
+      if(redSize) weight -= xStep;
       int tmp0 = redSize ? 0 : (input[0] * weight[0]);
       int tmp1 = input[1] * weight[1];
       int tmp2 = input[2] * weight[2];

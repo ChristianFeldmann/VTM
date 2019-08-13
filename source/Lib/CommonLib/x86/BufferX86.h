@@ -404,11 +404,11 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
 
   for (int h = 0; h < height; h++)
   {
-    if (!(h & 3)) 
+    if (!(h & 3))
     {
       mmMvX0 = dMvX0;
       mmMvY0 = dMvY0;
-      if (l1PROFEnabled) 
+      if (l1PROFEnabled)
       {
         mmMvX1 = dMvX1;
         mmMvY1 = dMvY1;
@@ -420,7 +420,7 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
     gX0 = gradX0;
     gY0 = gradY0;
 
-    if (l1PROFEnabled) 
+    if (l1PROFEnabled)
     {
       mm_dmvx1 = _mm_loadu_si128((const __m128i *)mmMvX1);
       mm_dmvy1 = _mm_loadu_si128((const __m128i *)mmMvY1);
@@ -443,7 +443,7 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
       mm_dI0 = _mm_mullo_epi32(_mm_add_epi32(mm_src0, mm_dI0), mm_w0);
       gX0 += 4; gY0 += 4;
 
-      if (l1PROFEnabled) 
+      if (l1PROFEnabled)
       {
         mm_gradx1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX1));
         mm_grady1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY1));
@@ -451,7 +451,7 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
         mm_dI1 = _mm_srai_epi32(_mm_add_epi32(mm_dI1, mm_dIoffset), 1);
         mm_dI1 = _mm_mullo_epi32(_mm_add_epi32(mm_src1, mm_dI1), mm_w1);
         gX1 += 4; gY1 += 4;
-      } 
+      }
       else
         mm_dI1 = _mm_mullo_epi32(mm_src1, mm_w1);
 
@@ -467,7 +467,7 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
     gradX0 += gradStride;
     gradY0 += gradStride;
 
-    if (l1PROFEnabled) 
+    if (l1PROFEnabled)
     {
       mmMvX1 += dMvStride;
       mmMvY1 += dMvStride;

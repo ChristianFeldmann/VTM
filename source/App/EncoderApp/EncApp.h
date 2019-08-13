@@ -46,6 +46,10 @@
 #include "CommonLib/NAL.h"
 #include "EncAppCfg.h"
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include <chrono>
+#endif
+
 //! \ingroup EncoderApp
 //! \{
 
@@ -65,6 +69,9 @@ private:
   uint32_t              m_essentialBytes;
   uint32_t              m_totalBytes;
   fstream           m_bitstream;
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
 
 private:
   // initialization
@@ -88,6 +95,11 @@ public:
   void  encode();                               ///< main encoding function
 
   void  outputAU( const AccessUnit& au );
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
+#endif
+
 
 };// END CLASS DEFINITION EncApp
 

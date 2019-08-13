@@ -48,313 +48,243 @@
 #endif
 
 template<X86_VEXT vext>
-static void simdDeriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift, int vbCTUHeight, int vbPos)
+static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+                                        const CPelBuf &srcLuma, const Area &blkDst, const Area &blk, const int shift,
+                                        const int vbCTUHeight, int vbPos)
 {
-  const int img_stride = srcLuma.stride;
-  const Pel* srcExt = srcLuma.buf;
+  CHECK((blk.height & 7) != 0, "Block height must be a multiple of 8");
+  CHECK((blk.width & 7) != 0, "Block width must be a multiple of 8");
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
 
-  const int fl = 2;
-  const int flplusOne = fl + 1;
-  const int fl2plusTwo = 2 * fl + 2;
-  const int var_max = 15;
+  const size_t imgStride = srcLuma.stride;
+  const Pel *  srcExt    = srcLuma.buf;
 
-  const int imgHExtended = blk.height + fl2plusTwo;
-  const int imgWExtended = blk.width + fl2plusTwo;
+  const int imgHExtended = blk.height + 4;
+  const int imgWExtended = blk.width + 4;
 
   const int posX = blk.pos().x;
   const int posY = blk.pos().y;
-  const int start_height1 = posY - flplusOne;
 
-  static uint16_t _temp[( AdaptiveLoopFilter::m_CLASSIFICATION_BLK_SIZE + 4 ) >> 1][AdaptiveLoopFilter::m_CLASSIFICATION_BLK_SIZE + 4];
+  // 18x40 array
+  uint16_t colSums[(AdaptiveLoopFilter::m_CLASSIFICATION_BLK_SIZE + 4) >> 1]
+                  [AdaptiveLoopFilter::m_CLASSIFICATION_BLK_SIZE + 8];
 
-  for( int i = 0; i < imgHExtended - 2; i += 2 )
+  for (int i = 0; i < imgHExtended; i += 2)
   {
-    int yoffset = ( i + 1 + start_height1 ) * img_stride - flplusOne;
+    const size_t offset = (i + posY - 3) * imgStride + posX - 3;
 
-    const Pel *p_imgY_pad_down = &srcExt[yoffset - img_stride];
-    const Pel *p_imgY_pad = &srcExt[yoffset];
-    const Pel *p_imgY_pad_up = &srcExt[yoffset + img_stride];
-    const Pel *p_imgY_pad_up2 = &srcExt[yoffset + img_stride * 2];
+    const Pel *imgY0 = &srcExt[offset];
+    const Pel *imgY1 = &srcExt[offset + imgStride];
+    const Pel *imgY2 = &srcExt[offset + imgStride * 2];
+    const Pel *imgY3 = &srcExt[offset + imgStride * 3];
 
     // pixel padding for gradient calculation
-    if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == (vbPos - 2))
+    int pos      = blkDst.pos().y - 2 + i;
+    int posInCTU = pos & (vbCTUHeight - 1);
+    if (pos > 0 && posInCTU == vbPos - 2)
     {
-      p_imgY_pad_up2 = &srcExt[yoffset + img_stride];
+      imgY3 = imgY2;
     }
-    else if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == vbPos)
+    else if (pos > 0 && posInCTU == vbPos)
     {
-      p_imgY_pad_down = &srcExt[yoffset];
+      imgY0 = imgY1;
     }
 
-    __m128i mmStore = _mm_setzero_si128();
+    __m128i prev = _mm_setzero_si128();
 
-    for( int j = 2; j < imgWExtended; j += 8 )
+    for (int j = 0; j < imgWExtended; j += 8)
     {
-      const int pixY = j - 1 + posX;
+      const __m128i x0 = _mm_loadu_si128((const __m128i *) (imgY0 + j));
+      const __m128i x1 = _mm_loadu_si128((const __m128i *) (imgY1 + j));
+      const __m128i x2 = _mm_loadu_si128((const __m128i *) (imgY2 + j));
+      const __m128i x3 = _mm_loadu_si128((const __m128i *) (imgY3 + j));
 
-      const __m128i* pY = ( __m128i* )( p_imgY_pad + pixY - 1 );
-      const __m128i* pYdown = ( __m128i* )( p_imgY_pad_down + pixY - 1 );
-      const __m128i* pYup = ( __m128i* )( p_imgY_pad_up + pixY - 1 );
-      const __m128i* pYup2 = ( __m128i* )( p_imgY_pad_up2 + pixY - 1 );
+      const __m128i x4 = _mm_loadu_si128((const __m128i *) (imgY0 + j + 2));
+      const __m128i x5 = _mm_loadu_si128((const __m128i *) (imgY1 + j + 2));
+      const __m128i x6 = _mm_loadu_si128((const __m128i *) (imgY2 + j + 2));
+      const __m128i x7 = _mm_loadu_si128((const __m128i *) (imgY3 + j + 2));
 
-      const __m128i* pY_next = ( __m128i* )( p_imgY_pad + pixY + 7 );
-      const __m128i* pYdown_next = ( __m128i* )( p_imgY_pad_down + pixY + 7 );
-      const __m128i* pYup_next = ( __m128i* )( p_imgY_pad_up + pixY + 7 );
-      const __m128i* pYup2_next = ( __m128i* )( p_imgY_pad_up2 + pixY + 7 );
+      const __m128i nw = _mm_blend_epi16(x0, x1, 0xaa);
+      const __m128i n  = _mm_blend_epi16(x0, x5, 0x55);
+      const __m128i ne = _mm_blend_epi16(x4, x5, 0xaa);
+      const __m128i w  = _mm_blend_epi16(x1, x2, 0xaa);
+      const __m128i e  = _mm_blend_epi16(x5, x6, 0xaa);
+      const __m128i sw = _mm_blend_epi16(x2, x3, 0xaa);
+      const __m128i s  = _mm_blend_epi16(x2, x7, 0x55);
+      const __m128i se = _mm_blend_epi16(x6, x7, 0xaa);
 
-      __m128i xmm0 = _mm_loadu_si128( pYdown );
-      __m128i xmm1 = _mm_loadu_si128( pY );
-      __m128i xmm2 = _mm_loadu_si128( pYup );
-      __m128i xmm3 = _mm_loadu_si128( pYup2 );
+      __m128i c = _mm_blend_epi16(x1, x6, 0x55);
+      c         = _mm_add_epi16(c, c);
+      __m128i d = _mm_shuffle_epi8(c, _mm_setr_epi8(2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13));
 
-      const __m128i xmm0_next = _mm_loadu_si128( pYdown_next );
-      const __m128i xmm1_next = _mm_loadu_si128( pY_next );
-      const __m128i xmm2_next = _mm_loadu_si128( pYup_next );
-      const __m128i xmm3_next = _mm_loadu_si128( pYup2_next );
+      const __m128i ver = _mm_abs_epi16(_mm_sub_epi16(c, _mm_add_epi16(n, s)));
+      const __m128i hor = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(w, e)));
+      const __m128i di0 = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(nw, se)));
+      const __m128i di1 = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(ne, sw)));
 
-      __m128i xmm4 = _mm_slli_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 2 ), 1 );
-      __m128i xmm5 = _mm_slli_epi16( _mm_alignr_epi8( xmm2_next, xmm2, 2 ), 1 );
+      const __m128i hv  = _mm_hadd_epi16(ver, hor);
+      const __m128i di  = _mm_hadd_epi16(di0, di1);
+      const __m128i all = _mm_hadd_epi16(hv, di);
 
-      __m128i xmm15 = _mm_setzero_si128();
-
-      //dig0
-      __m128i xmm6 = _mm_add_epi16( _mm_alignr_epi8( xmm2_next, xmm2, 4 ), xmm0 );
-      xmm6 = _mm_sub_epi16( _mm_blend_epi16 ( xmm4, xmm15, 0xAA ), _mm_blend_epi16 ( xmm6, xmm15, 0xAA ) );
-      __m128i xmm8 = _mm_add_epi16( _mm_alignr_epi8( xmm3_next, xmm3, 4 ), xmm1 );
-      xmm8 = _mm_sub_epi16( _mm_blend_epi16 ( xmm5, xmm15, 0x55 ), _mm_blend_epi16 ( xmm8, xmm15, 0x55 ) );
-
-      //dig1
-      __m128i xmm9 = _mm_add_epi16( _mm_alignr_epi8( xmm0_next, xmm0, 4 ), xmm2 );
-      xmm9 = _mm_sub_epi16( _mm_blend_epi16 ( xmm4, xmm15, 0xAA ), _mm_blend_epi16 ( xmm9, xmm15, 0xAA ) );
-      __m128i xmm10 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 4 ), xmm3 );
-      xmm10 = _mm_sub_epi16( _mm_blend_epi16 ( xmm5, xmm15, 0x55 ), _mm_blend_epi16 ( xmm10, xmm15, 0x55 ) );
-
-      //hor
-      __m128i xmm13 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 4 ), xmm1 );
-      xmm13 = _mm_sub_epi16( _mm_blend_epi16 ( xmm4, xmm15, 0xAA ), _mm_blend_epi16 ( xmm13, xmm15, 0xAA ) );
-      __m128i xmm14 = _mm_add_epi16( _mm_alignr_epi8( xmm2_next, xmm2, 4 ), xmm2 );
-      xmm14 = _mm_sub_epi16( _mm_blend_epi16 ( xmm5, xmm15, 0x55 ), _mm_blend_epi16 ( xmm14, xmm15, 0x55 ) );
-
-      //ver
-      __m128i xmm11 = _mm_add_epi16( _mm_alignr_epi8( xmm0_next, xmm0, 2 ), _mm_alignr_epi8( xmm2_next, xmm2, 2 ) );
-      xmm11 = _mm_sub_epi16( _mm_blend_epi16 ( xmm4, xmm15, 0xAA ), _mm_blend_epi16 ( xmm11, xmm15, 0xAA ) );
-      __m128i xmm12 = _mm_add_epi16( _mm_alignr_epi8( xmm1_next, xmm1, 2 ), _mm_alignr_epi8( xmm3_next, xmm3, 2 ) );
-      xmm12 = _mm_sub_epi16( _mm_blend_epi16 ( xmm5, xmm15, 0x55 ), _mm_blend_epi16 ( xmm12, xmm15, 0x55 ) );
-
-      xmm6 = _mm_abs_epi16( xmm6 );
-      xmm8 = _mm_abs_epi16( xmm8 );
-      xmm9 = _mm_abs_epi16( xmm9 );
-      xmm10 = _mm_abs_epi16( xmm10 );
-      xmm11 = _mm_abs_epi16( xmm11 );
-      xmm12 = _mm_abs_epi16( xmm12 );
-      xmm13 = _mm_abs_epi16( xmm13 );
-      xmm14 = _mm_abs_epi16( xmm14 );
-
-      xmm6 = _mm_add_epi16( xmm6, xmm8 );
-      xmm9 = _mm_add_epi16( xmm9, xmm10 );
-      xmm11 = _mm_add_epi16( xmm11, xmm12 );
-      xmm13 = _mm_add_epi16( xmm13, xmm14 );
-
-      xmm6 = _mm_add_epi16( xmm6, _mm_srli_si128( xmm6, 2 ) );
-      xmm9 = _mm_add_epi16( xmm9, _mm_slli_si128( xmm9, 2 ) );
-      xmm11 = _mm_add_epi16( xmm11, _mm_srli_si128( xmm11, 2 ) );
-      xmm13 = _mm_add_epi16( xmm13, _mm_slli_si128( xmm13, 2 ) );
-
-      xmm6 = _mm_blend_epi16( xmm6, xmm9, 0xAA );
-      xmm11 = _mm_blend_epi16( xmm11, xmm13, 0xAA );
-
-      xmm6 = _mm_add_epi16( xmm6, _mm_slli_si128( xmm6, 4 ) );
-      xmm11 = _mm_add_epi16( xmm11, _mm_srli_si128( xmm11, 4 ) );
-
-      xmm6 = _mm_blend_epi16( xmm11, xmm6, 0xCC );
-
-      xmm9 = _mm_srli_si128( xmm6, 8 );
-
-      if( j > 2 )
-      {
-        _mm_storel_epi64( ( __m128i* )( &( _temp[i >> 1][j - 2 - 4] ) ), _mm_add_epi16( xmm6, mmStore ) );
-      }
-
-      xmm6 = _mm_add_epi16( xmm6, xmm9 );  //V H D0 D1
-      _mm_storel_epi64( ( __m128i* )( &( _temp[i >> 1][j - 2] ) ), xmm6 );
-
-      mmStore = xmm9;
+      const __m128i t = _mm_blend_epi16(all, prev, 0xaa);
+      _mm_storeu_si128((__m128i *) &colSums[i >> 1][j], _mm_hadd_epi16(t, all));
+      prev = all;
     }
   }
 
-  //const int offset = 8 << NO_VALS_LAGR_SHIFT;
-
-  const __m128i mm_0 = _mm_setzero_si128();
-  const __m128i mm_15 = _mm_set1_epi64x( 0x000000000000000F );
-  const __m128i mm_th = _mm_set1_epi64x( 0x4333333332222210 );
-
-  const __m128i xmm14 = _mm_set1_epi32( 1 ); //offset
-  const __m128i xmm13 = _mm_set1_epi32( var_max );
-
-  for( int i = 0; i < ( blk.height >> 1 ); i += 2 )
+  for (int i = 0; i < (blk.height >> 1); i += 4)
   {
-    for( int j = 0; j < blk.width; j += 8 )
+    for (int j = 0; j < blk.width; j += 8)
     {
-      __m128i  xmm0, xmm1, xmm2, xmm3;
-      if ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4))
-      {
-        xmm0 = _mm_loadu_si128((__m128i*)(&(_temp[i + 0][j])));
-        xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
-        xmm2 = _mm_loadu_si128((__m128i*)(&(_temp[i + 2][j])));
-        xmm3 = mm_0;
-      }
-      else if ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == vbPos)
-      {
-        xmm0 = mm_0;
-        xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
-        xmm2 = _mm_loadu_si128((__m128i*)(&(_temp[i + 2][j])));
-        xmm3 = _mm_loadu_si128((__m128i*)(&(_temp[i + 3][j])));
-      }
-      else
-      {
-        xmm0 = _mm_loadu_si128((__m128i*)(&(_temp[i + 0][j])));
-        xmm1 = _mm_loadu_si128((__m128i*)(&(_temp[i + 1][j])));
-        xmm2 = _mm_loadu_si128((__m128i*)(&(_temp[i + 2][j])));
-        xmm3 = _mm_loadu_si128((__m128i*)(&(_temp[i + 3][j])));
-      }
+      __m128i x0, x1, x2, x3, x4, x5, x6, x7;
 
+      const uint32_t z  = (2 * i + blkDst.pos().y) & (vbCTUHeight - 1);
+      const uint32_t z2 = (2 * i + 4 + blkDst.pos().y) & (vbCTUHeight - 1);
 
-      __m128i xmm4 = _mm_add_epi16( xmm0, xmm1 );
-      __m128i xmm6 = _mm_add_epi16( xmm2, xmm3 );
+      x0 = (z == vbPos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 0][j + 4]);
+      x1 = _mm_loadu_si128((__m128i *) &colSums[i + 1][j + 4]);
+      x2 = _mm_loadu_si128((__m128i *) &colSums[i + 2][j + 4]);
+      x3 = (z == vbPos - 4) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 3][j + 4]);
 
-      xmm0 = _mm_unpackhi_epi16( xmm4, mm_0 );
-      xmm2 = _mm_unpackhi_epi16( xmm6, mm_0 );
-      xmm0 = _mm_add_epi32( xmm0, xmm2 );
+      x4 = (z2 == vbPos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 2][j + 4]);
+      x5 = _mm_loadu_si128((__m128i *) &colSums[i + 3][j + 4]);
+      x6 = _mm_loadu_si128((__m128i *) &colSums[i + 4][j + 4]);
+      x7 = (z2 == vbPos - 4) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 5][j + 4]);
 
-      xmm4 = _mm_unpacklo_epi16( xmm4, mm_0 );
-      xmm6 = _mm_unpacklo_epi16( xmm6, mm_0 );
-      xmm4 = _mm_add_epi32( xmm4, xmm6 );
+      x0 = _mm_add_epi16(x0, x1);
+      x2 = _mm_add_epi16(x2, x3);
+      x0 = _mm_add_epi16(x0, x2);
 
-      __m128i xmm12 = _mm_blend_epi16( xmm4, _mm_shuffle_epi32( xmm0, 0x40 ), 0xF0 );
-      __m128i xmm10 = _mm_shuffle_epi32( xmm12, 0xB1 );
-      xmm12 = _mm_add_epi32( xmm10, xmm12 );
-      if (((((i << 1) + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4)) || ((((i << 1) + blkDst.pos().y) % vbCTUHeight) == vbPos))
-      {
-        xmm12 = _mm_srai_epi32(_mm_add_epi32(_mm_slli_epi32(xmm12, 5), _mm_slli_epi32(xmm12, 6)), shift);
-      }
-      else
-      {
-        xmm12 = _mm_srai_epi32(xmm12, shift - 6);
-      }
-      xmm12 = _mm_min_epi32( xmm12, xmm13 );
+      x4 = _mm_add_epi16(x4, x5);
+      x6 = _mm_add_epi16(x6, x7);
+      x4 = _mm_add_epi16(x4, x6);
 
-      xmm12 = _mm_and_si128( xmm12, mm_15 );
-      xmm12 = _mm_slli_epi32( xmm12, 2 );
-      __m128i xmm11 = _mm_shuffle_epi32( xmm12, 0x0E ); //extracted from second half coz no different shifts are available
-      xmm12 = _mm_srl_epi64( mm_th, xmm12 );
-      xmm11 = _mm_srl_epi64( mm_th, xmm11 );
-      xmm12 = _mm_blend_epi16( xmm12, xmm11, 0xF0 );
-      xmm12 = _mm_and_si128( xmm12, mm_15 ); // avg_var in lower 4 bits of both halves
+      x1 = _mm_unpacklo_epi16(x0, x4);
+      x5 = _mm_unpackhi_epi16(x0, x4);
+      x0 = _mm_unpacklo_epi16(x1, x5);
+      x4 = _mm_unpackhi_epi16(x1, x5);
 
-      xmm6 = _mm_shuffle_epi32( xmm4, 0xB1 );
-      xmm2 = _mm_shuffle_epi32( xmm0, 0xB1 );
+      __m128i sumV  = _mm_cvtepu16_epi32(x0);
+      __m128i sumH  = _mm_unpackhi_epi16(x0, _mm_setzero_si128());
+      __m128i sumD0 = _mm_cvtepu16_epi32(x4);
+      __m128i sumD1 = _mm_unpackhi_epi16(x4, _mm_setzero_si128());
 
-      __m128i xmm7 = _mm_set_epi32( 0, 2, 1, 3 );
-      __m128i xmm9 = _mm_shuffle_epi32( xmm7, 0xB1 );
+      //      uint32_t tempAct = sumV + sumH;
+      __m128i tempAct = _mm_add_epi32(sumV, sumH);
 
-      __m128i xmm5 = _mm_cmplt_epi32( xmm6, xmm4 );
-      __m128i xmm8 = _mm_cmplt_epi32( xmm2, xmm0 ); //2 masks coz 4 integers for every parts are compared
+      //      const uint32_t activity = std::min<uint32_t>(15, tempAct * scale >> shift);
+      //      static const uint8_t th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
+      //      uint8_t classIdx = th[activity];
+      const uint32_t scale  = (z == vbPos - 4 || z == vbPos) ? 96 : 64;
+      const uint32_t scale2 = (z2 == vbPos - 4 || z2 == vbPos) ? 96 : 64;
+      __m128i activity = _mm_mullo_epi32(tempAct, _mm_unpacklo_epi64(_mm_set1_epi32(scale), _mm_set1_epi32(scale2)));
+      activity         = _mm_srl_epi32(activity, _mm_cvtsi32_si128(shift));
+      activity         = _mm_min_epi32(activity, _mm_set1_epi32(15));
+      __m128i classIdx = _mm_shuffle_epi8(_mm_setr_epi8(0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4), activity);
 
-      xmm5 = _mm_shuffle_epi32( xmm5, 0xA0 );
-      xmm8 = _mm_shuffle_epi32( xmm8, 0xA0 );
+      //      if (sumV > sumH)
+      //      {
+      //        hv1       = sumV;
+      //        hv0       = sumH;
+      //        dirTempHV = 0;
+      //      }
+      //      else
+      //      {
+      //        hv1       = sumH;
+      //        hv0       = sumV;
+      //        dirTempHV = 1;
+      //      }
+      __m128i dirTempHVMinus1 = _mm_cmpgt_epi32(sumV, sumH);
+      __m128i hv1             = _mm_max_epi32(sumV, sumH);
+      __m128i hv0             = _mm_min_epi32(sumV, sumH);
 
-      xmm4 = _mm_or_si128( _mm_andnot_si128( xmm5, xmm4 ), _mm_and_si128( xmm5, xmm6 ) ); //HV + D
-      xmm0 = _mm_or_si128( _mm_andnot_si128( xmm8, xmm0 ), _mm_and_si128( xmm8, xmm2 ) ); //HV + D <--second part
+      //      if (sumD0 > sumD1)
+      //      {
+      //        d1       = sumD0;
+      //        d0       = sumD1;
+      //        dirTempD = 0;
+      //      }
+      //      else
+      //      {
+      //        d1       = sumD1;
+      //        d0       = sumD0;
+      //        dirTempD = 1;
+      //      }
+      __m128i dirTempDMinus1 = _mm_cmpgt_epi32(sumD0, sumD1);
+      __m128i d1             = _mm_max_epi32(sumD0, sumD1);
+      __m128i d0             = _mm_min_epi32(sumD0, sumD1);
 
-      xmm10 = _mm_or_si128( _mm_andnot_si128( xmm8, xmm7 ), _mm_and_si128( xmm8, xmm9 ) ); //dirTemp <-- second part
-      xmm7 = _mm_or_si128( _mm_andnot_si128( xmm5, xmm7 ), _mm_and_si128( xmm5, xmm9 ) ); //dirTemp
+      //      int dirIdx;
+      //      if (d1 * hv0 > hv1 * d0)
+      //      {
+      //        hvd1   = d1;
+      //        hvd0   = d0;
+      //        dirIdx = 0;
+      //      }
+      //      else
+      //      {
+      //        hvd1   = hv1;
+      //        hvd0   = hv0;
+      //        dirIdx = 2;
+      //      }
+      __m128i a      = _mm_xor_si128(_mm_mullo_epi32(d1, hv0), _mm_set1_epi32(0x80000000));
+      __m128i b      = _mm_xor_si128(_mm_mullo_epi32(hv1, d0), _mm_set1_epi32(0x80000000));
+      __m128i dirIdx = _mm_cmpgt_epi32(a, b);
+      __m128i hvd1   = _mm_blendv_epi8(hv1, d1, dirIdx);
+      __m128i hvd0   = _mm_blendv_epi8(hv0, d0, dirIdx);
 
-      xmm3 = _mm_shuffle_epi32( xmm0, 0x1B );  // need higher part from this
-      xmm6 = _mm_shuffle_epi32( xmm4, 0x1B );
-      xmm8 = _mm_blend_epi16( xmm4, xmm3, 0xF0 ); // 0 or 3
-      xmm6 = _mm_blend_epi16( xmm6, xmm0, 0xF0 );
+      //      if (hvd1 * 2 > 9 * hvd0)
+      //      {
+      //        classIdx += (dirIdx + 2) * 5;
+      //      }
+      //      else if (hvd1 > 2 * hvd0)
+      //      {
+      //        classIdx += (dirIdx + 1) * 5;
+      //      }
+      __m128i strength1 = _mm_cmpgt_epi32(hvd1, _mm_add_epi32(hvd0, hvd0));
+      __m128i strength2 = _mm_cmpgt_epi32(_mm_add_epi32(hvd1, hvd1), _mm_add_epi32(hvd0, _mm_slli_epi32(hvd0, 3)));
+      __m128i offset    = _mm_and_si128(strength1, _mm_set1_epi32(5));
+      classIdx          = _mm_add_epi32(classIdx, offset);
+      classIdx          = _mm_add_epi32(classIdx, _mm_and_si128(strength2, _mm_set1_epi32(5)));
+      offset            = _mm_andnot_si128(dirIdx, offset);
+      offset            = _mm_add_epi32(offset, offset);
+      classIdx          = _mm_add_epi32(classIdx, offset);
 
-      xmm6 = _mm_mullo_epi32( xmm8, xmm6 );
-      xmm9 = _mm_shuffle_epi32( xmm6, 0xB1 );
-      xmm5 = _mm_cmpgt_epi32(_mm_add_epi32(xmm6, _mm_set1_epi32(0x80000000)), _mm_add_epi32(xmm9, _mm_set1_epi32(0x80000000)));
-      xmm5 = _mm_shuffle_epi32( xmm5, 0xF0 ); //second mask is for all upper part
+      //      uint8_t transposeIdx = 2 * dirTempD + dirTempHV;
+      __m128i transposeIdx = _mm_set1_epi32(3);
+      transposeIdx         = _mm_add_epi32(transposeIdx, dirTempHVMinus1);
+      transposeIdx         = _mm_add_epi32(transposeIdx, dirTempDMinus1);
+      transposeIdx         = _mm_add_epi32(transposeIdx, dirTempDMinus1);
 
-      xmm8 = _mm_shuffle_epi32( xmm4, 0x0E );
-      xmm8 = _mm_blend_epi16( xmm8, xmm0, 0xF0 ); // (DL, DH in upepr part)
-      xmm4 = _mm_blend_epi16( xmm4, _mm_shuffle_epi32( xmm0, 0x40 ), 0xF0 ); //(HVL, HVH) in upper part
+      int yOffset = 2 * i + blkDst.pos().y;
+      int xOffset = j + blkDst.pos().x;
 
-      xmm7 = _mm_shuffle_epi32( xmm7, 0x08 ); // 2 -> 1
-      xmm7 = _mm_blend_epi16( xmm7, _mm_shuffle_epi32( xmm10, 0x80 ), 0xF0 );
-      xmm1 = _mm_shuffle_epi32( xmm7, 0xB1 ); // 1 -> 0, 0 -> 1
-
-      xmm4 = _mm_or_si128( _mm_andnot_si128( xmm5, xmm4 ), _mm_and_si128( xmm5, xmm8 ) ); //HV_D
-      xmm7 = _mm_or_si128( _mm_andnot_si128( xmm5, xmm7 ), _mm_and_si128( xmm5, xmm1 ) ); //main - secondary (upper halves are for second value)
-
-                                                                                          //xmm7 not to mix
-
-      xmm0 = _mm_shuffle_epi32( xmm4, 0xFA );
-      xmm4 = _mm_shuffle_epi32( xmm4, 0x50 ); //low, low, high, high
-      xmm6 = _mm_set_epi32( 2, 1, 9, 2 );
-
-      xmm2 = _mm_mullo_epi32( xmm0, xmm6 );
-      xmm6 = _mm_mullo_epi32( xmm4, xmm6 );
-      xmm4 = _mm_shuffle_epi32( xmm6, 0x4E );
-      xmm0 = _mm_shuffle_epi32( xmm2, 0x4E ); //p to xmm6
-      xmm6 = _mm_blend_epi16( xmm6, xmm0, 0xF0 );
-      xmm4 = _mm_blend_epi16( xmm4, xmm2, 0xF0 );
-
-      xmm5 = _mm_cmpgt_epi32( xmm4, xmm6 );
-      xmm4 = _mm_and_si128( xmm5, xmm14 ); // 1 + 1
-
-      xmm8 = _mm_and_si128( xmm7, xmm14 );
-      xmm8 = _mm_slli_epi32( xmm8, 1 );
-
-      xmm5 = _mm_add_epi32( xmm4, _mm_shuffle_epi32( xmm4, 0xB1 ) ); //directionStrength
-      xmm4 = _mm_cmpgt_epi32( xmm5, mm_0 ); //is a mask now
-      xmm4 = _mm_and_si128( _mm_add_epi32( xmm8, xmm5 ), xmm4 );
-
-      xmm4 = _mm_add_epi32( xmm4, _mm_slli_epi32( xmm4, 2 ) ); //x5
-      xmm4 = _mm_add_epi32( xmm4, xmm12 ); //+=
-
-      xmm9 = _mm_shuffle_epi32( xmm7, 0xB1 );// <--
-      xmm7 = _mm_slli_epi32( xmm7, 1 );
-      xmm9 = _mm_srai_epi32( xmm9, 1 );
-      xmm7 = _mm_add_epi32( xmm7, xmm9 );
-
-      //to write to struct
-      const int t0 = _mm_extract_epi32( xmm7, 0 );
-      const int t1 = _mm_extract_epi32( xmm7, 2 );
-      const int c0 = _mm_extract_epi32( xmm4, 0 );
-      const int c1 = _mm_extract_epi32( xmm4, 2 );
-
-      const int transposeTable[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
-      int transposeIdx0 = transposeTable[t0];
-      int transposeIdx1 = transposeTable[t1];
-      int classIdx0 = c0;
-      int classIdx1 = c1;
-
-      const int yOffset = (i << 1) + blkDst.pos().y;
-      const int xOffset = j + blkDst.pos().x;
-
-      AlfClassifier *cl0 = classifier[yOffset] + xOffset;
-      AlfClassifier *cl1 = classifier[yOffset + 1] + xOffset;
-      AlfClassifier *cl2 = classifier[yOffset + 2] + xOffset;
-      AlfClassifier *cl3 = classifier[yOffset + 3] + xOffset;
-
-      AlfClassifier *_cl0 = cl0 + 4;
-      AlfClassifier *_cl1 = cl1 + 4;
-      AlfClassifier *_cl2 = cl2 + 4;
-      AlfClassifier *_cl3 = cl3 + 4;
-
-      cl0[0] = cl0[1] = cl0[2] = cl0[3] = cl1[0] = cl1[1] = cl1[2] = cl1[3] = cl2[0] = cl2[1] = cl2[2] = cl2[3] = cl3[0] = cl3[1] = cl3[2] = cl3[3] = AlfClassifier( classIdx0, transposeIdx0 );
-      _cl0[0] = _cl0[1] = _cl0[2] = _cl0[3] = _cl1[0] = _cl1[1] = _cl1[2] = _cl1[3] = _cl2[0] = _cl2[1] = _cl2[2] = _cl2[3] = _cl3[0] = _cl3[1] = _cl3[2] = _cl3[3] = AlfClassifier( classIdx1, transposeIdx1 );
+      static_assert(sizeof(AlfClassifier) == 2, "ALFClassifier type must be 16 bits wide");
+      __m128i v;
+      v = _mm_unpacklo_epi8(classIdx, transposeIdx);
+      v = _mm_shuffle_epi8(v, _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 8, 9, 8, 9, 8, 9, 8, 9));
+      _mm_storeu_si128((__m128i *) (classifier[yOffset] + xOffset), v);
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 1] + xOffset), v);
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 2] + xOffset), v);
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 3] + xOffset), v);
+      v = _mm_unpackhi_epi8(classIdx, transposeIdx);
+      v = _mm_shuffle_epi8(v, _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 8, 9, 8, 9, 8, 9, 8, 9));
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 4] + xOffset), v);
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 5] + xOffset), v);
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 6] + xOffset), v);
+      _mm_storeu_si128((__m128i *) (classifier[yOffset + 7] + xOffset), v);
     }
   }
 }
 
 template<X86_VEXT vext>
-static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+                             const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+                             const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+                             int vbPos)
 {
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
+
   const bool bChroma = isChroma( compId );
 
   const SPS*     sps = cs.slice->getSPS();
@@ -504,11 +434,11 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 #if JVET_O0050_LOCAL_DUAL_TREE
             cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
-            if(cu != NULL) 
+            if(cu != NULL)
             {
               *flags++ = cu->ipcm ? 1 : 0;
             }
-            else 
+            else
             {
               *flags++ = 0;
             }
@@ -534,21 +464,23 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         pImg2 = pImgYPad2 + j + ii * srcStride;
         pImg3 = pImgYPad3 + j + ii * srcStride;
         pImg4 = pImgYPad4 + j + ii * srcStride;
-        if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
 
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
+        const int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
+        if (yVb < vbPos && (yVb >= vbPos - (bChroma ? 2 : 4)))   // above
+        {
+          pImg1 = (yVb == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = (yVb >= vbPos - 2) ? pImg1 : pImg3;
+
+          pImg2 = (yVb == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
         }
-        else if ((blkDst.y + i + ii) % vbCTUHeight >= vbPos && ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        else if (yVb >= vbPos && (yVb <= vbPos + (bChroma ? 1 : 3)))   // bottom
         {
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
+          pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
+          pImg4 = (yVb <= vbPos + 1) ? pImg2 : pImg4;
 
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
+          pImg1 = (yVb == vbPos) ? pImg0 : pImg1;
+          pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
         }
         __m128i clipp, clipm;
         __m128i coeffa, coeffb;
@@ -759,8 +691,13 @@ static void simdFilter5x5Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 }
 
 template<X86_VEXT vext>
-static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs,  int vbCTUHeight, int vbPos)
+static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+                             const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+                             const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+                             int vbPos)
 {
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
+
   const bool bChroma = isChroma( compId );
 
   const SPS*     sps = cs.slice->getSPS();
@@ -910,7 +847,7 @@ static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
 #if JVET_O0050_LOCAL_DUAL_TREE
             cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
-            if( cu != NULL) 
+            if( cu != NULL)
             {
               *flags++ = cu->ipcm ? 1 : 0;
             }
@@ -942,25 +879,27 @@ static void simdFilter7x7Blk(AlfClassifier** classifier, const PelUnitBuf &recDs
         pImg4 = pImgYPad4 + j + ii * srcStride;
         pImg5 = pImgYPad5 + j + ii * srcStride;
         pImg6 = pImgYPad6 + j + ii * srcStride;
-        if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
-        {
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
 
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
+        const int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
+        if (yVb < vbPos && (yVb >= vbPos - (bChroma ? 2 : 4)))   // above
+        {
+          pImg1 = (yVb == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = (yVb >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = (yVb >= vbPos - 3) ? pImg3 : pImg5;
+
+          pImg2 = (yVb == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
+          pImg6 = (yVb >= vbPos - 3) ? pImg4 : pImg6;
         }
-        else if ((blkDst.y + i + ii) % vbCTUHeight >= vbPos && ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        else if (yVb >= vbPos && (yVb <= vbPos + (bChroma ? 1 : 3)))   // bottom
         {
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
+          pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
+          pImg4 = (yVb <= vbPos + 1) ? pImg2 : pImg4;
+          pImg6 = (yVb <= vbPos + 2) ? pImg4 : pImg6;
 
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+          pImg1 = (yVb == vbPos) ? pImg0 : pImg1;
+          pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
         }
         __m128i clipp, clipm;
         __m128i coeffa, coeffb;

@@ -44,6 +44,11 @@
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncCfg.h"
 #endif
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/DistortionMetric.H"
+#endif
+
 #include <sstream>
 #include <vector>
 //! \ingroup EncoderApp
@@ -175,7 +180,7 @@ protected:
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
   RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
-  bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures 
+  bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   BrickSplit    m_brickSplits[MAX_TILES];
   BrickSplitMap m_brickSplitMap;
@@ -605,6 +610,20 @@ protected:
   friend class TExt360AppEncTop;
 #endif
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double      m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
+  double      m_maxSampleValue;
+  int         m_sampleRange;
+  int         m_colorPrimaries;
+  bool        m_enableTFunctionLUT;
+  int         m_chromaLocation;
+  int         m_chromaUPFilter;
+  int         m_cropOffsetLeft;
+  int         m_cropOffsetTop;
+  int         m_cropOffsetRight;
+  int         m_cropOffsetBottom;
+  bool        m_calculateHdrMetrics;
+#endif
 
   // internal member functions
   bool  xCheckParameter ();                                   ///< check validity of configuration values

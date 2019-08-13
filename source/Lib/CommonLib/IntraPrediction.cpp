@@ -164,8 +164,8 @@ void IntraPrediction::destroy()
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-  if (m_runTypeRD)   { xFree(m_runTypeRD);   m_runTypeRD = NULL; }
-  if (m_runLengthRD) { xFree(m_runLengthRD); m_runLengthRD = NULL; }
+  if (m_runTypeRD)   { xFree( m_runTypeRD  );   m_runTypeRD = NULL; }
+  if (m_runLengthRD) { xFree( m_runLengthRD); m_runLengthRD = NULL; }
 #endif
 }
 
@@ -223,8 +223,8 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
 #if JVET_O0119_BASE_PALETTE_444
-  m_runTypeRD = (bool*)xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
-  m_runLengthRD = (Pel*)xMalloc(Pel, MAX_CU_SIZE*MAX_CU_SIZE);
+  m_runTypeRD   = (bool*) xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
+  m_runLengthRD = (Pel* ) xMalloc(Pel,  MAX_CU_SIZE*MAX_CU_SIZE);
 #endif
 }
 
@@ -324,7 +324,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int  srcStride  = m_topRefLength  + 1 + (whRatio + 1) * multiRefIdx;
   const int  srcHStride = m_leftRefLength + 1 + (hwRatio + 1) * multiRefIdx;
 #endif
-  
+
 #if JVET_O0502_ISP_CLEANUP
   const CPelBuf& srcBuf = pu.cu->ispMode && isLuma(compID) ? getISPBuffer() : CPelBuf(getPredictorPtr(compID), srcStride, srcHStride);
 #else
@@ -1098,7 +1098,7 @@ void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const Comp
 #endif
   {
     Pel* refBufUnfiltered = m_piYuvExt[area.compID][PRED_BUF_UNFILTERED];
-    // With the first subpartition all the CU reference samples are fetched at once in a single call to xFillReferenceSamples 
+    // With the first subpartition all the CU reference samples are fetched at once in a single call to xFillReferenceSamples
     if (cu.ispMode == HOR_INTRA_SUBPARTITIONS)
     {
       m_leftRefLength = cu.Y().height << 1;
@@ -1118,13 +1118,13 @@ void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const Comp
 
     xFillReferenceSamples(cs.picture->getRecoBuf(cu.Y()), refBufUnfiltered, cu.Y(), cu);
 
-    // After having retrieved all the CU reference samples, the number of reference samples is now adjusted for the current subpartition 
+    // After having retrieved all the CU reference samples, the number of reference samples is now adjusted for the current subpartition
     m_topRefLength = cu.blocks[area.compID].width + area.width;
     m_leftRefLength = cu.blocks[area.compID].height + area.height;
   }
   else
   {
-    //Now we only need to fetch the newly available reconstructed samples from the previously coded TU 
+    //Now we only need to fetch the newly available reconstructed samples from the previously coded TU
     Position tuPos = area;
     tuPos.relativeTo(cu.Y());
     m_pelBufISP[0] = m_pelBufISPBase[0].subBuf(tuPos, area.size());

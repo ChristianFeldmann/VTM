@@ -1664,7 +1664,7 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
   const int maxGolombIdx = getMaxGolombIdx( alfShape.filterType );
   memset( m_bitsCoeffScan, 0, sizeof( m_bitsCoeffScan ) );
 #endif
-#if JVET_O0216_ALF_COEFF_EG3 
+#if JVET_O0216_ALF_COEFF_EG3
   int len = numFilters; //filter_coefficient_flag[i]
 #else
   for( int ind = 0; ind < numFilters; ++ind )
@@ -1697,7 +1697,7 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
-#if JVET_O0216_ALF_COEFF_EG3 
+#if JVET_O0216_ALF_COEFF_EG3
         len += lengthGolomb( abs( pDiffQFilterCoeffIntPP[ind][i] ), 3 ); // alf_coeff_luma_delta[i][j]
 #else
         len += lengthGolomb( abs( pDiffQFilterCoeffIntPP[ind][i] ), m_kMinTab[alfShape.golombIdx[i]] ); // alf_coeff_luma_delta[i][j]
@@ -1744,7 +1744,7 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
         }
       }
     }
-#if JVET_O0216_ALF_COEFF_EG3 
+#if JVET_O0216_ALF_COEFF_EG3
     int kMin = getGolombKMin(alfShape, numFilters, m_kMinTab, m_bitsCoeffScan);
 #else
     kMin = getGolombKMin( alfShape, numFilters, m_kMinTab, m_bitsCoeffScan );
@@ -2675,7 +2675,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
         {
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea, compArea, chType
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))        
+            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
           );
 
 
@@ -3706,7 +3706,7 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
                 );
               }
             }
-            
+
             xStart = xEnd;
           }
 

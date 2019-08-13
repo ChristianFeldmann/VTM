@@ -169,7 +169,7 @@ void InterSearch::destroy()
   }
   m_uniMvListIdx = 0;
   m_uniMvListSize = 0;
-#endif 
+#endif
   m_isInitialized = false;
 }
 
@@ -281,7 +281,7 @@ void InterSearch::init( EncCfg*        pcEncCfg,
   }
   m_uniMvListIdx = 0;
   m_uniMvListSize = 0;
-#endif 
+#endif
   m_isInitialized = true;
 }
 
@@ -1494,7 +1494,11 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     Distortion cost = 0;
 
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
     {
       iBvpNum = 1;
       cMvPred[1] = cMvPred[0];
@@ -6348,7 +6352,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     CHECK(CU::isIntra(cu), "Inter search provided with intra CU");
 
-    if( cu.chromaFormat != CHROMA_400 
+    if( cu.chromaFormat != CHROMA_400
 #if JVET_O0545_MAX_TB_SIGNALLING
 #if JVET_O0050_LOCAL_DUAL_TREE
       && (!cu.isSepTree() || isChroma(partitioner.chType))
@@ -6389,7 +6393,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       }
     }
 
-    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual ) 
+    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual )
 #if JVET_O0545_MAX_TB_SIGNALLING
       && !isChroma(partitioner.chType)
 #endif

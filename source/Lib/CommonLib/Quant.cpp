@@ -74,7 +74,7 @@ QpParam::QpParam(const int           qpy,
 #endif
                  const int           chromaQPOffset,
                  const ChromaFormat  chFmt,
-                 const int           dqp 
+                 const int           dqp
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
               ,  const SPS           *sps
 #endif
@@ -168,7 +168,12 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 
 #if JVET_O0919_TS_MIN_QP
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
+#if JVET_O0105_ICT
+  const bool useJQP = isChroma(compID) && (abs(TU::getICTMode(tu)) == 2);
+#else
+  const bool useJQP = isChroma(compID) && tu.jointCbCr;
+#endif
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
 #else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, toChannelType(compID), tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp);
 #endif
@@ -722,7 +727,7 @@ void Quant::xSetRecScalingListEnc(ScalingList *scalingList, uint32_t listId, uin
   uint32_t height = g_scalingListSizeX[sizeIdh];
   uint32_t largeSideId = (sizeIdw > sizeIdh) ? sizeIdw : sizeIdh;  //16
   int *quantcoeff;
-  int *coeff = scalingList->getScalingListAddress(largeSideId, listId);//4x4, 8x8 
+  int *coeff = scalingList->getScalingListAddress(largeSideId, listId);//4x4, 8x8
   quantcoeff = getQuantCoeff(listId, qp, sizeIdw, sizeIdh);//final quantCoeff (downsample)
   const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
   int quantScales = g_quantScales[blockIsNotPowerOf4?1:0][qp];

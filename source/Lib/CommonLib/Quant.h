@@ -95,7 +95,7 @@ private:
 #endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
-          const int           dqp 
+          const int           dqp
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
         , const SPS           *sps
 #endif

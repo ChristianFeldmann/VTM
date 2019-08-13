@@ -80,6 +80,10 @@ EncLib::EncLib()
   g_pelBufOP.initPelBufOpsX86();
 #endif
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  m_metricTime = std::chrono::milliseconds(0);
+#endif
+
   memset(m_apss, 0, sizeof(m_apss));
 }
 
@@ -238,7 +242,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
   sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-    
+
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -569,6 +573,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     }
     m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
       false, false, snrCSC, m_printFrameMSE, true);
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    m_metricTime = m_cGOPEncoder.getMetricTime();
+#endif
     m_cGOPEncoder.setEncodedLTRef(true);
     if (m_RCEnableRateControl)
     {
@@ -631,6 +638,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
                             false, false, snrCSC, m_printFrameMSE
     , false
   );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  m_metricTime = m_cGOPEncoder.getMetricTime();
+#endif
 
   if ( m_RCEnableRateControl )
   {
@@ -720,6 +730,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
       m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE
                               , false
       );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      m_metricTime = m_cGOPEncoder.getMetricTime();
+#endif
 
       iNumEncoded += m_iNumPicRcvd;
       m_uiNumAllPicCoded += m_iNumPicRcvd;
@@ -899,9 +912,26 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
-  sps.setMaxBTSize                           ( std::min((int)m_CTUSize, MAX_BT_SIZE_INTER),
-                                               std::min((int)m_CTUSize, MAX_BT_SIZE),
-                                               std::min((int)m_CTUSize, MAX_BT_SIZE_C) );
+  unsigned maxBtSize[3], maxTtSize[3];
+  memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
+  memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
+  if (m_uiMaxBTDepth)
+  {
+    maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
+    maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
+  }
+  if (m_uiMaxBTDepthI)
+  {
+    maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
+    maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
+  }
+  if (m_uiMaxBTDepthIChroma)
+  {
+    maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
+    maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);
+  }
+  sps.setMaxBTSize                           ( maxBtSize[1], maxBtSize[0], maxBtSize[2] );
+  sps.setMaxTTSize                           ( maxTtSize[1], maxTtSize[0], maxTtSize[2] );
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );
@@ -1087,7 +1117,7 @@ void EncLib::xInitSPS(SPS &sps)
 void EncLib::xInitHrdParameters(SPS &sps)
 {
   m_encHRD.initHRDParameters((EncCfg*) this);
-  
+
   HRDParameters *hrdParams = sps.getHrdParameters();
   *hrdParams = m_encHRD.getHRDParameters();
 
@@ -1357,7 +1387,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
     }
   }
 
-  //Check if all delta POC of STRP in each RPL has the same sign 
+  //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first
   const RPLList* rplList0 = sps.getRPLList0();
   const RPLList* rplList1 = sps.getRPLList1();
@@ -1604,7 +1634,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     else
     {
       tileRowHeight[ m_iNumRowsMinus1 ] = picHeightInCtus;
-      for( int j = 0; j < m_iNumRowsMinus1; j++ ) 
+      for( int j = 0; j < m_iNumRowsMinus1; j++ )
       {
         tileRowHeight[ j ] = pps.getTileRowHeight( j );
         tileRowHeight[ m_iNumRowsMinus1 ]  =  tileRowHeight[ m_iNumRowsMinus1 ] - pps.getTileRowHeight( j );

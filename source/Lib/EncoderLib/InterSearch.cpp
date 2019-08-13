@@ -169,7 +169,7 @@ void InterSearch::destroy()
   }
   m_uniMvListIdx = 0;
   m_uniMvListSize = 0;
-#endif 
+#endif
   m_isInitialized = false;
 }
 
@@ -281,7 +281,7 @@ void InterSearch::init( EncCfg*        pcEncCfg,
   }
   m_uniMvListIdx = 0;
   m_uniMvListSize = 0;
-#endif 
+#endif
   m_isInitialized = true;
 }
 
@@ -6352,7 +6352,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     CHECK(CU::isIntra(cu), "Inter search provided with intra CU");
 
-    if( cu.chromaFormat != CHROMA_400 
+    if( cu.chromaFormat != CHROMA_400
 #if JVET_O0545_MAX_TB_SIGNALLING
 #if JVET_O0050_LOCAL_DUAL_TREE
       && (!cu.isSepTree() || isChroma(partitioner.chType))
@@ -6393,7 +6393,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       }
     }
 
-    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual ) 
+    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual )
 #if JVET_O0545_MAX_TB_SIGNALLING
       && !isChroma(partitioner.chType)
 #endif

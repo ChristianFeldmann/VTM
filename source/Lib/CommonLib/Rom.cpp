@@ -78,7 +78,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_VPS:                    return "VPS";
   case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
   case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
-  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA"; 
+  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
   case NAL_UNIT_CODED_SLICE_GRA:        return "GRA";
   default:                              return "UNK";
   }

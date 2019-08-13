@@ -1026,7 +1026,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     if ( testISP )
     {
 #if JVET_O0502_ISP_CLEANUP
-      // we reserve positions for ISP in the common full RD list 
+      // we reserve positions for ISP in the common full RD list
       const int maxNumRDModesISP = 16;
       for (int i = 0; i < maxNumRDModesISP; i++)
         uiRdModeList.push_back(ModeInfo(false, 0, INTRA_SUBPARTITIONS_RESERVED, 0));
@@ -1874,7 +1874,7 @@ void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partiti
   Pel  *runLength = tu.getRunLens (compBegin);
   bool *runType   = tu.getRunTypes(compBegin);
 
-  cu.useRotation[compBegin] = (pltScanMode == PLT_SCAN_VERTRAV); 
+  cu.useRotation[compBegin] = (pltScanMode == PLT_SCAN_VERTRAV);
   m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
   deriveRun(cs, partitioner, compBegin);
 
@@ -2161,7 +2161,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   SortingElement *pelList = new SortingElement[totalSize];
   SortingElement  element;
   SortingElement *pelListSort = new SortingElement[MAXPLTSIZE + 1];
-  uint32_t dictMaxSize = MAXPLTSIZE; 
+  uint32_t dictMaxSize = MAXPLTSIZE;
   uint32_t idx = 0;
   int last = -1;
 
@@ -4333,12 +4333,12 @@ void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_ve
     const ModeInfo& orgMode = candModeList[idx];
 
     if (!orgMode.mipFlg)
-    { 
+    {
       addMode = (numConv < 3);
       numConv += addMode ? 1:0;
-    } 
-    else 
-    { 
+    }
+    else
+    {
       addMode = ( numMip < maxCandPerType || (candCostList[idx] < thresholdHadCost * minCost) || keepOneMip );
       keepOneMip = false;
       numMip += addMode ? 1:0;
@@ -4707,4 +4707,4 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
   }
 }
 
-#endif 
+#endif

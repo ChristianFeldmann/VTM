@@ -148,7 +148,7 @@ private:
 
   EncHRD                    m_encHRD;
 
-#if JVET_O0119_BASE_PALETTE_444 
+#if JVET_O0119_BASE_PALETTE_444
   bool                      m_doPlt;
 #endif
 #if JVET_O0756_CALCULATE_HDRMETRICS

@@ -738,7 +738,7 @@ static uint32_t xCalcHAD16x8_SSE( const Torg *piOrg, const Tcur *piCur, const in
     m2[1][0][0] = _mm_unpacklo_epi32( m1[2 + off][0][0], m1[3 + off][0][0] );
     m2[2][0][0] = _mm_unpackhi_epi32( m1[0 + off][0][0], m1[1 + off][0][0] );
     m2[3][0][0] = _mm_unpackhi_epi32( m1[2 + off][0][0], m1[3 + off][0][0] );
-      
+
     m2[0][0][1] = _mm_unpacklo_epi32( m1[0 + off][0][1], m1[1 + off][0][1] );
     m2[1][0][1] = _mm_unpacklo_epi32( m1[2 + off][0][1], m1[3 + off][0][1] );
     m2[2][0][1] = _mm_unpackhi_epi32( m1[0 + off][0][1], m1[1 + off][0][1] );
@@ -1034,7 +1034,7 @@ static uint32_t xCalcHAD8x16_SSE( const Torg *piOrg, const Tcur *piCur, const in
     {
       n2[0][i] = _mm_add_epi32( n1[0][i], n1[1][i] );
     }
-                                          
+
     n2[0][0] = _mm_add_epi32( n2[0][0], n2[0][1] );
     n2[0][2] = _mm_add_epi32( n2[0][2], n2[0][3] );
     n2[0][4] = _mm_add_epi32( n2[0][4], n2[0][5] );
@@ -1383,7 +1383,7 @@ static uint32_t xCalcHAD16x16_AVX2( const Torg *piOrg, const Tcur *piCur, const 
       m1[i][5] = _mm256_sub_epi32( m2[i][4], m2[i][5] );
       m1[i][6] = _mm256_add_epi32( m2[i][6], m2[i][7] );
       m1[i][7] = _mm256_sub_epi32( m2[i][6], m2[i][7] );
-      
+
       // transpose
       // 8x8
       m2[i][0] = _mm256_unpacklo_epi32( m1[i][0], m1[i][1] );
@@ -1413,7 +1413,7 @@ static uint32_t xCalcHAD16x16_AVX2( const Torg *piOrg, const Tcur *piCur, const 
       m2[i][6] = _mm256_permute2x128_si256( m1[i][5], m1[i][7], perm_unpacklo_epi128 );
       m2[i][7] = _mm256_permute2x128_si256( m1[i][5], m1[i][7], perm_unpackhi_epi128 );
     }
-    
+
     m1[0][0] = _mm256_permute2x128_si256( m2[0][0], m2[1][0], perm_unpacklo_epi128 );
     m1[0][1] = _mm256_permute2x128_si256( m2[0][1], m2[1][1], perm_unpacklo_epi128 );
     m1[0][2] = _mm256_permute2x128_si256( m2[0][2], m2[1][2], perm_unpacklo_epi128 );
@@ -1542,7 +1542,7 @@ static uint32_t xCalcHAD16x8_AVX2( const Torg *piOrg, const Tcur *piCur, const i
     m2[5] = _mm256_sub_epi32( m1[4], m1[5] );
     m2[6] = _mm256_add_epi32( m1[6], m1[7] );
     m2[7] = _mm256_sub_epi32( m1[6], m1[7] );
-    
+
     // vertical, second 8x8
     m2[8+0] = _mm256_add_epi32( m1[8+0], m1[8+4] );
     m2[8+1] = _mm256_add_epi32( m1[8+1], m1[8+5] );
@@ -1570,7 +1570,7 @@ static uint32_t xCalcHAD16x8_AVX2( const Torg *piOrg, const Tcur *piCur, const i
     m2[8+5] = _mm256_sub_epi32( m1[8+4], m1[8+5] );
     m2[8+6] = _mm256_add_epi32( m1[8+6], m1[8+7] );
     m2[8+7] = _mm256_sub_epi32( m1[8+6], m1[8+7] );
-    
+
     // transpose
     constexpr int perm_unpacklo_epi128 = ( 0 << 0 ) + ( 2 << 4 );
     constexpr int perm_unpackhi_epi128 = ( 1 << 0 ) + ( 3 << 4 );
@@ -1592,7 +1592,7 @@ static uint32_t xCalcHAD16x8_AVX2( const Torg *piOrg, const Tcur *piCur, const i
     m2[5] = _mm256_unpackhi_epi64( m1[4], m1[5] );
     m2[6] = _mm256_unpacklo_epi64( m1[6], m1[7] );
     m2[7] = _mm256_unpackhi_epi64( m1[6], m1[7] );
-    
+
     m1[0] = _mm256_permute2x128_si256( m2[0], m2[2], perm_unpacklo_epi128 );
     m1[1] = _mm256_permute2x128_si256( m2[0], m2[2], perm_unpackhi_epi128 );
     m1[2] = _mm256_permute2x128_si256( m2[1], m2[3], perm_unpacklo_epi128 );
@@ -1601,7 +1601,7 @@ static uint32_t xCalcHAD16x8_AVX2( const Torg *piOrg, const Tcur *piCur, const i
     m1[5] = _mm256_permute2x128_si256( m2[4], m2[6], perm_unpackhi_epi128 );
     m1[6] = _mm256_permute2x128_si256( m2[5], m2[7], perm_unpacklo_epi128 );
     m1[7] = _mm256_permute2x128_si256( m2[5], m2[7], perm_unpackhi_epi128 );
-    
+
     m1[8+0] = _mm256_unpacklo_epi32( m2[8+0], m2[8+1] );
     m1[8+1] = _mm256_unpacklo_epi32( m2[8+2], m2[8+3] );
     m1[8+2] = _mm256_unpacklo_epi32( m2[8+4], m2[8+5] );

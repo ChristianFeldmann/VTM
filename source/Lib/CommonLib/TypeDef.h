@@ -51,7 +51,7 @@
 #include <cassert>
 
 
-#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.    
+#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
 #define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
 
@@ -143,7 +143,7 @@
 #define JVET_O0065_CABAC_INIT                             0 // JVET-O0065: CABAC initialization
 
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
-   
+
 #define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
 #define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
 #define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
@@ -155,7 +155,7 @@
 
 #define JVET_O0256_ADJUST_THD_DEPQUANT                    1 // JVET-O0256: Fast encoder with adjusted threshold in dependent quantization
 
-#define JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING     1 // JVET-O0619/O0623 : Single pass coding of abs_level_gtx_flag[x] for TS residual coding 
+#define JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING     1 // JVET-O0619/O0623 : Single pass coding of abs_level_gtx_flag[x] for TS residual coding
 
 #define JVET_O0272_LMCS_SIMP_INVERSE_MAPPING              1 // JVET-O0272: LMCS simplified inverse mapping
 
@@ -230,7 +230,7 @@
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 #define JVET_O0681_DIS_BPWA_CIIP                          1 // JVET-O0681 disable BCW for CIIP, method 2 inherit BCW index
-#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change 
+#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
 
@@ -987,7 +987,7 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
-  NAL_UNIT_PPS = 0,                     // 0 
+  NAL_UNIT_PPS = 0,                     // 0
   NAL_UNIT_ACCESS_UNIT_DELIMITER,       // 1
   NAL_UNIT_PREFIX_SEI,                  // 2
   NAL_UNIT_SUFFIX_SEI,                  // 3
@@ -1015,7 +1015,7 @@ enum NalUnitType
   NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
   NAL_UNIT_CODED_SLICE_CRA,             // 26
   NAL_UNIT_CODED_SLICE_GRA,             // 27
-  NAL_UNIT_UNSPECIFIED_28,              // 29              
+  NAL_UNIT_UNSPECIFIED_28,              // 29
   NAL_UNIT_UNSPECIFIED_29,              // 30
   NAL_UNIT_UNSPECIFIED_30,              // 31
   NAL_UNIT_UNSPECIFIED_31,              // 32

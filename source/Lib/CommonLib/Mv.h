@@ -289,8 +289,8 @@ void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps );
 
-bool wrapClipMv( Mv& rcMv, const Position& pos, 
-                 const struct Size& size, 
+bool wrapClipMv( Mv& rcMv, const Position& pos,
+                 const struct Size& size,
                  const SPS *sps );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );

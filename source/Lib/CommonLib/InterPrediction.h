@@ -199,7 +199,7 @@ public:
     , const bool luma = true, const bool chroma = true
 #if JVET_O0108_DIS_DMVR_BDOF_CIIP
     , PelUnitBuf* predBufWOBIO = NULL
-#endif 
+#endif
   );
   void    motionCompensation  (PredictionUnit &pu, const RefPicList &eRefPicList = REF_PIC_LIST_X
     , const bool luma = true, const bool chroma = true

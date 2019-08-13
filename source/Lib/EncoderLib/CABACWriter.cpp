@@ -3168,7 +3168,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
 
 #if JVET_O0046_DQ_SIGNALLING
   if( ( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma ) &&
-#else   
+#else
   if( ( cbfLuma || cbfChroma ) &&
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -3526,14 +3526,14 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
   int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
 #endif
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || 
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
 #if JVET_O0925_MIP_SIMPLIFICATIONS
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
 #else
       cu.mipFlag == true ||
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
-    ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 ) 
+    ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
 #else
     ( CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
 #endif
@@ -4016,7 +4016,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 #if JVET_O0122_TS_SIGN_LEVEL
     unsigned absLevel;
     cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
-    absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm()); 
+    absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm());
 #else
     unsigned absLevel = abs(coeff[cctx.blockPos(scanPos)]);
 #endif
@@ -4048,7 +4048,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 #if JVET_O0122_TS_SIGN_LEVEL
       unsigned absLevel;
       cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
-      absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm()); 
+      absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm());
 #else
       unsigned absLevel = abs( coeff[cctx.blockPos( scanPos )] );
 #endif

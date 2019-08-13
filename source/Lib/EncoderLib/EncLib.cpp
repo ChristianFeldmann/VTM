@@ -79,7 +79,7 @@ EncLib::EncLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   m_metricTime = std::chrono::milliseconds(0);
 #endif
@@ -242,7 +242,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
   sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-    
+
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -733,7 +733,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
 #if JVET_O0756_CALCULATE_HDRMETRICS
       m_metricTime = m_cGOPEncoder.getMetricTime();
 #endif
-      
+
       iNumEncoded += m_iNumPicRcvd;
       m_uiNumAllPicCoded += m_iNumPicRcvd;
       m_iNumPicRcvd = 0;
@@ -1117,7 +1117,7 @@ void EncLib::xInitSPS(SPS &sps)
 void EncLib::xInitHrdParameters(SPS &sps)
 {
   m_encHRD.initHRDParameters((EncCfg*) this);
-  
+
   HRDParameters *hrdParams = sps.getHrdParameters();
   *hrdParams = m_encHRD.getHRDParameters();
 
@@ -1387,7 +1387,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
     }
   }
 
-  //Check if all delta POC of STRP in each RPL has the same sign 
+  //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first
   const RPLList* rplList0 = sps.getRPLList0();
   const RPLList* rplList1 = sps.getRPLList1();
@@ -1634,7 +1634,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     else
     {
       tileRowHeight[ m_iNumRowsMinus1 ] = picHeightInCtus;
-      for( int j = 0; j < m_iNumRowsMinus1; j++ ) 
+      for( int j = 0; j < m_iNumRowsMinus1; j++ )
       {
         tileRowHeight[ j ] = pps.getTileRowHeight( j );
         tileRowHeight[ m_iNumRowsMinus1 ]  =  tileRowHeight[ m_iNumRowsMinus1 ] - pps.getTileRowHeight( j );

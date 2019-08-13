@@ -709,7 +709,7 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
   {
     for (auto &cu : cs.traverseCUs(ctuArea, CH_C))
     {
-      if (cu.slice->isIntra() == false) 
+      if (cu.slice->isIntra() == false)
       {
         continue;
       }

@@ -95,11 +95,11 @@ public:
   void  encode();                               ///< main encoding function
 
   void  outputAU( const AccessUnit& au );
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
-  
+
 
 };// END CLASS DEFINITION EncApp
 

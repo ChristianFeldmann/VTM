@@ -82,7 +82,7 @@ public:
 
     void initPredBlockParams(const Size& block);
 
-#if JVET_O0925_MIP_SIMPLIFICATIONS 
+#if JVET_O0925_MIP_SIMPLIFICATIONS
     static void boundaryDownsampling1D(int* reducedDst, const int* const fullSrc, const SizeType srcLen, const SizeType dstLen);
 #else
     static void boundaryDownsampling1D( int* reducedDst, int* fullSrcAndIntermediateDst, const SizeType srcLen, const SizeType dstLen, const bool saveIntermediate, const SizeType intermediateLen );
@@ -111,8 +111,8 @@ public:
 
 #if JVET_O0925_MIP_SIMPLIFICATIONS
     void computeReducedPred( int*const result, const int* const input, const uint8_t*matrix,
-                             const bool leaveHorOut, const bool leaveVerOut, 
-                             const int shiftMatrix, const int offsetMatrix, 
+                             const bool leaveHorOut, const bool leaveVerOut,
+                             const int shiftMatrix, const int offsetMatrix,
                              const bool transpose, const bool needUpsampling, const int bitDepth );
 #else
     void xComputeMatrixTimesRedBndryPlusBias( int*const result, const int* const input,

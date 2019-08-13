@@ -258,8 +258,8 @@ public:
   static const CtxSet   PLTFlag;
   static const CtxSet   RotationFlag;
   static const CtxSet   RunTypeFlag;
-  static const CtxSet   IdxRunModel;    
-  static const CtxSet   CopyRunModel;    
+  static const CtxSet   IdxRunModel;
+  static const CtxSet   CopyRunModel;
 #endif
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;

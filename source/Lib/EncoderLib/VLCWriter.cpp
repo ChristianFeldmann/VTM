@@ -1946,27 +1946,22 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
 
 void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
 {
-  unsigned int bins = 0;
-  int numBins = 0;
-  unsigned int symbol = abs(coeff);
-  while (symbol >= (unsigned int)(1 << k))
+  unsigned int symbol = abs( coeff );
+  while ( symbol >= (unsigned int)( 1 << k ) )
   {
-    bins = 2 * bins + 0;
-    numBins++;
     symbol -= 1 << k;
     k++;
+    WRITE_FLAG( 0, "alf_coeff_abs_prefix" );
   }
-  bins = 2 * bins + 1;
-  numBins++;
+  WRITE_FLAG( 1, "alf_coeff_abs_prefix" );
 
-  bins = (bins << k) | symbol;
-  numBins += k;
-
-  WRITE_CODE(bins, numBins, "alf_coeff_abs");
-  if (signed_coeff && coeff != 0)
+  if ( k > 0 )
   {
-    int sign = (coeff < 0) ? 1 : 0;
-    xWriteFlag(sign);
+    WRITE_CODE( symbol, k, "alf_coeff_abs_suffix" );
+  }
+  if ( signed_coeff && coeff != 0 )
+  {
+    WRITE_FLAG( (coeff < 0) ? 1 : 0, "alf_coeff_sign" );
   }
 }
 

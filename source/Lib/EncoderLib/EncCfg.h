@@ -239,8 +239,8 @@ protected:
   int       m_iGOPSize;
   RPLEntry  m_RPLList0[MAX_GOP];
   RPLEntry  m_RPLList1[MAX_GOP];
-  int       m_numRPLList0;
-  int       m_numRPLList1;
+  int		    m_numRPLList0;
+  int		    m_numRPLList1;
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
@@ -486,7 +486,7 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
-
+ 
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -671,6 +671,11 @@ protected:
   int                          m_cropOffsetRight;
   int                          m_cropOffsetBottom;
   bool                         m_calculateHdrMetrics;
+#endif  
+#if JVET_O1164_RPR
+  double      m_scalingRatio;
+  bool        m_rprEnabled;
+  int         m_switchPocPeriod;
 #endif
 
 public:
@@ -1156,6 +1161,9 @@ public:
   //==== Tool list ========
   void      setBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_bitDepth[chType] = internalBitDepthForChannel; }
   void      setInputBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_inputBitDepth[chType] = internalBitDepthForChannel; }
+#if JVET_O1164_PS
+  int*      getInputBitDepth()                              { return m_inputBitDepth; }
+#endif
   void      setUseASR                       ( bool  b )     { m_bUseASR     = b; }
   void      setUseHADME                     ( bool  b )     { m_bUseHADME   = b; }
   void      setUseRDOQ                      ( bool  b )     { m_useRDOQ    = b; }
@@ -1184,6 +1192,9 @@ public:
   void      setDeltaQpRD                    ( uint32_t  u )     {m_uiDeltaQpRD  = u; }
   void      setFastDeltaQp                  ( bool  b )     {m_bFastDeltaQP = b; }
   int       getBitDepth                     (const ChannelType chType) const { return m_bitDepth[chType]; }
+#if JVET_O1164_PS
+  int*      getBitDepth                     ()      { return m_bitDepth; }
+#endif
   bool      getUseASR                       ()      { return m_bUseASR;     }
   bool      getUseHADME                     ()      { return m_bUseHADME;   }
   bool      getUseRDOQ                      ()      { return m_useRDOQ;    }
@@ -1643,8 +1654,8 @@ public:
   void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
   bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
-  void         setUseALF( bool b ) { m_alf = b; }
-  bool         getUseALF()                                      const { return m_alf; }
+  void        setUseALF( bool b ) { m_alf = b; }
+  bool        getUseALF()                                      const { return m_alf; }
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
@@ -1673,6 +1684,12 @@ public:
   bool        getCalcluateHdrMetrics()                          const { return m_calculateHdrMetrics;}
 #endif
 
+#if JVET_O1164_RPR
+  void        setScalingRatio( double b )                            { m_scalingRatio = b;  }
+  void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
+  bool        isRPREnabled()                                   const { return m_rprEnabled; }
+  void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
+#endif
 };
 
 //! \}

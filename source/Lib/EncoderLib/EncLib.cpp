@@ -99,7 +99,9 @@ void EncLib::create ()
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
+#if !JVET_O1164_PS
   m_cSliceEncoder.      create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth );
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
 #if ENABLE_SPLIT_PARALLELISM
   m_numCuEncStacks  = m_numSplitThreads == 1 ? 1 : NUM_RESERVERD_SPLIT_JOBS;
@@ -128,6 +130,10 @@ void EncLib::create ()
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   m_cInterSearch.cacheAssign( &m_cacheModel );
 #endif
+
+#if JVET_O1164_PS
+  m_cLoopFilter.create( m_maxTotalCUDepth );
+#else
   const uint32_t widthInCtus   = (getSourceWidth()  + m_maxCUWidth  - 1)  / m_maxCUWidth;
   const uint32_t heightInCtus  = (getSourceHeight() + m_maxCUHeight - 1) / m_maxCUHeight;
   const uint32_t numCtuInFrame = widthInCtus * heightInCtus;
@@ -147,6 +153,7 @@ void EncLib::create ()
   {
     m_cEncALF.create( this, getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_bitDepth, m_inputBitDepth );
   }
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
@@ -272,9 +279,39 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
 
   // initialize PPS
+#if JVET_O1164_PS
+  pps0.setPicWidthInLumaSamples( m_iSourceWidth );
+  pps0.setPicHeightInLumaSamples( m_iSourceHeight );
+  pps0.setConformanceWindow( m_conformanceWindow );
+#endif
   xInitPPS(pps0, sps0);
   // initialize APS
   xInitRPL(sps0, isFieldCoding);
+
+#if JVET_O1164_RPR
+  if( m_rprEnabled )
+  {
+    PPS &pps = *( m_ppsMap.allocatePS( 3 ) );
+    int scaledWidth = int( pps0.getPicWidthInLumaSamples() / m_scalingRatio );
+    int temp = scaledWidth >> 3;
+    int width = ( scaledWidth - ( temp << 3 ) > 0 ? temp + 1 : temp ) << 3;
+
+    int scaledHeight = int( pps0.getPicHeightInLumaSamples() / m_scalingRatio );
+    temp = scaledHeight >> 3;
+    int height = ( scaledHeight - ( temp << 3 ) > 0 ? temp + 1 : temp ) << 3;
+
+    pps.setPicWidthInLumaSamples( width );
+    pps.setPicHeightInLumaSamples( height );
+
+    Window conformanceWindow;
+
+    conformanceWindow.setWindow( 0, ( width - scaledWidth ) / SPS::getWinUnitX( sps0.getChromaFormatIdc() ), 0, ( height - scaledHeight ) / SPS::getWinUnitY( sps0.getChromaFormatIdc() ) );
+
+    pps.setConformanceWindow( conformanceWindow );
+
+    xInitPPS( pps, sps0 ); // will allocate memory for and initialize pps.pcv inside
+  }
+#endif
 
 #if ER_CHROMA_QP_WCG_PPS
   if (m_wcgChromaQpControl.isEnabled())
@@ -399,13 +436,23 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   {
     xInitScalingLists( sps0, pps0 );
   }
+#if JVET_O1164_RPR
+  if( m_rprEnabled )
+  {
+    xInitScalingLists( sps0, *m_ppsMap.getPS( 3 ) );
+  }
+#endif
 #if ENABLE_WPP_PARALLELISM
   m_entropyCodingSyncContextStateVec.resize( pps0.pcv->heightInCtus );
 #endif
   if (getUseCompositeRef())
   {
     Picture *picBg = new Picture;
+#if JVET_O1164_PS
+    picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
+#else
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
+#endif
     picBg->getRecoBuf().fill(0);
     picBg->finalInit(sps0, pps0, m_apss, *m_lmcsAPS);
     pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
@@ -413,7 +460,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
     Picture *picOrig = new Picture;
+#if JVET_O1164_PS
+    picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
+#else
     picOrig->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
+#endif
     picOrig->getOrigBuf().fill(0);
     m_cGOPEncoder.setPicOrig(picOrig);
   }
@@ -599,6 +650,22 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       ppsID+=(getSwitchPOC() != -1 && (m_iPOCLast+1 >= getSwitchPOC())?1:0);
     }
 #endif
+
+#if JVET_O1164_RPR
+    if( m_rprEnabled && m_uiIntraPeriod == -1 )
+    {
+      const int poc = m_iPOCLast + ( m_compositeRefEnabled ? 2 : 1 );
+
+      if( poc / m_switchPocPeriod % 2 )
+      {
+        ppsID = 3;
+      }
+      else
+      {
+        ppsID = 0;
+      }
+    }
+#endif
     xGetNewPicBuffer( rcListPicYuvRecOut,
                       pcPicCurr, ppsID );
 
@@ -606,8 +673,34 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 
+#if JVET_O1164_RPR
+      if( m_rprEnabled )
+      {
+#if RPR_CTC_PRINT
+        pcPicCurr->m_bufs[PIC_ORIGINAL_INPUT].getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
+        pcPicCurr->m_bufs[PIC_ORIGINAL_INPUT].getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
+        pcPicCurr->m_bufs[PIC_ORIGINAL_INPUT].getBuf( COMPONENT_Cr ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cr ) );
+
+        pcPicCurr->m_bufs[PIC_TRUE_ORIGINAL_INPUT].getBuf( COMPONENT_Y ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Y ) );
+        pcPicCurr->m_bufs[PIC_TRUE_ORIGINAL_INPUT].getBuf( COMPONENT_Cb ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cb ) );
+        pcPicCurr->m_bufs[PIC_TRUE_ORIGINAL_INPUT].getBuf( COMPONENT_Cr ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cr ) );
+#endif
+
+        const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
+
+        Picture::rescalePicture( *pcPicYuvOrg, pcPicCurr->getOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true );
+        Picture::rescalePicture( *cPicYuvTrueOrg, pcPicCurr->getTrueOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true );
+      }
+      else
+      {
+        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
+        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
+      }
+#else
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
+#endif
+
       pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
       PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
@@ -801,15 +894,29 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   if (rpcPic==0)
   {
     rpcPic = new Picture;
-
+#if JVET_O1164_PS
+    rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false );
+#if RPR_CTC_PRINT
+    if( m_rprEnabled )
+    {
+      rpcPic->m_bufs[PIC_ORIGINAL_INPUT].create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+      rpcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+    }
+#endif
+#else
     rpcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples()), sps.getMaxCUWidth(), sps.getMaxCUWidth()+16, false );
+#endif
     if ( getUseAdaptiveQP() )
     {
       const uint32_t iMaxDQPLayer = pps.getCuQpDeltaSubdiv()/2+1;
       rpcPic->aqlayer.resize( iMaxDQPLayer );
       for (uint32_t d = 0; d < iMaxDQPLayer; d++)
       {
+#if JVET_O1164_PS
+        rpcPic->aqlayer[d] = new AQpLayer( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples(), sps.getMaxCUWidth() >> d, sps.getMaxCUHeight() >> d );
+#else
         rpcPic->aqlayer[d] = new AQpLayer( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples(), sps.getMaxCUWidth()>>d, sps.getMaxCUHeight()>>d );
+#endif
       }
     }
 
@@ -899,9 +1006,14 @@ void EncLib::xInitSPS(SPS &sps)
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */
 
+#if JVET_O1164_PS
+  sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
+  sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
+#else
   sps.setPicWidthInLumaSamples  ( m_iSourceWidth      );
   sps.setPicHeightInLumaSamples ( m_iSourceHeight     );
   sps.setConformanceWindow      ( m_conformanceWindow );
+#endif
   sps.setMaxCUWidth             ( m_maxCUWidth        );
   sps.setMaxCUHeight            ( m_maxCUHeight       );
   sps.setMaxCodingDepth         ( m_maxTotalCUDepth   );

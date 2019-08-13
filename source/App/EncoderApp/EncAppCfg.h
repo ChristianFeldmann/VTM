@@ -602,7 +602,14 @@ protected:
   bool        m_bs2ModPOCAndType;
   bool        m_forceDecodeBitstream1;
 
-  bool        m_alf;                                          ///> Adaptive Loop Filter
+  bool        m_alf;                                          ///< Adaptive Loop Filter
+
+#if JVET_O1164_RPR
+  double      m_scalingRatio;
+  bool        m_rprEnabled;
+  bool        m_halfFrames;                                   ///< encode only half of the frames as specified in CTC
+  int         m_switchPocPeriod;
+#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

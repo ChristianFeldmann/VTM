@@ -740,8 +740,13 @@ private:
   uint32_t              m_uiMaxTLayers;           // maximum number of temporal layers
 
   // Structure
+#if JVET_O1164_PS
+  uint32_t              m_maxWidthInLumaSamples;
+  uint32_t              m_maxHeightInLumaSamples;
+#else
   uint32_t              m_picWidthInLumaSamples;
   uint32_t              m_picHeightInLumaSamples;
+#endif
 
   int               m_log2MinCodingBlockSize;
   int               m_log2DiffMaxMinCodingBlockSize;
@@ -757,7 +762,9 @@ private:
   uint32_t              m_uiMaxCUHeight;
   uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
 
+#if !JVET_O1164_PS
   Window            m_conformanceWindow;
+#endif
 
   RPLList           m_RPLList0;
   RPLList           m_RPLList1;
@@ -886,6 +893,12 @@ public:
   static int              getWinUnitY (int chromaFormatIdc)                                               { CHECK(chromaFormatIdc < 0 || chromaFormatIdc >= NUM_CHROMA_FORMAT, "Invalid chroma format parameter"); return m_winUnitY[chromaFormatIdc]; }
 
   // structure
+#if JVET_O1164_PS
+  void                    setMaxPicWidthInLumaSamples( uint32_t u )                                       { m_maxWidthInLumaSamples = u; }
+  uint32_t                getMaxPicWidthInLumaSamples() const                                             { return  m_maxWidthInLumaSamples; }
+  void                    setMaxPicHeightInLumaSamples( uint32_t u )                                      { m_maxHeightInLumaSamples = u; }
+  uint32_t                getMaxPicHeightInLumaSamples() const                                            { return  m_maxHeightInLumaSamples; }
+#else
   void                    setPicWidthInLumaSamples( uint32_t u )                                              { m_picWidthInLumaSamples = u;                                         }
   uint32_t                    getPicWidthInLumaSamples() const                                                { return  m_picWidthInLumaSamples;                                     }
   void                    setPicHeightInLumaSamples( uint32_t u )                                             { m_picHeightInLumaSamples = u;                                        }
@@ -894,6 +907,7 @@ public:
   Window&                 getConformanceWindow()                                                          { return  m_conformanceWindow;                                         }
   const Window&           getConformanceWindow() const                                                    { return  m_conformanceWindow;                                         }
   void                    setConformanceWindow(Window& conformanceWindow )                                { m_conformanceWindow = conformanceWindow;                             }
+#endif
 
   uint32_t                    getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                               { m_numLongTermRefPicSPS = val;                                        }
@@ -1299,6 +1313,12 @@ private:
   unsigned         m_virtualBoundariesPosX[3];
   unsigned         m_virtualBoundariesPosY[3];
 
+#if JVET_O1164_PS
+  uint32_t         m_picWidthInLumaSamples;
+  uint32_t         m_picHeightInLumaSamples;
+  Window           m_conformanceWindow;
+#endif
+
   PPSRExt          m_ppsRangeExtension;
 
 public:
@@ -1467,6 +1487,17 @@ public:
 
   const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
+
+#if JVET_O1164_PS
+  void                    setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
+  uint32_t                getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
+  void                    setPicHeightInLumaSamples( uint32_t u )                         { m_picHeightInLumaSamples = u; }
+  uint32_t                getPicHeightInLumaSamples() const                               { return  m_picHeightInLumaSamples; }
+
+  Window&                 getConformanceWindow()                                          { return  m_conformanceWindow; }
+  const Window&           getConformanceWindow() const                                    { return  m_conformanceWindow; }
+  void                    setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
+#endif
 };
 
 class APS
@@ -1564,6 +1595,10 @@ private:
   int                        m_aiRefPOCList  [NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];
   bool                       m_bIsUsedAsLongTerm[NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];
   int                        m_iDepth;
+#if JVET_O1164_RPR
+  Picture*                   m_scaledRefPicList[NUM_REF_PIC_LIST_01][MAX_NUM_REF + 1];
+  Picture*                   m_savedRefPicList[NUM_REF_PIC_LIST_01][MAX_NUM_REF + 1];
+#endif
 
 
   // access channel
@@ -1952,6 +1987,11 @@ public:
   }
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
+#if JVET_O1164_RPR
+  void                        scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder );
+  void                        freeScaledRefPicList( Picture *scaledRefPic[] );
+  bool                        checkRPR();
+#endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
@@ -2188,11 +2228,21 @@ public:
     , partsInCtuWidth     ( 1 << sps.getMaxCodingDepth() )
     , partsInCtuHeight    ( 1 << sps.getMaxCodingDepth() )
     , partsInCtu          ( 1 << (sps.getMaxCodingDepth() << 1) )
+#if JVET_O1164_PS
+    , widthInCtus         ( (pps.getPicWidthInLumaSamples () + sps.getMaxCUWidth () - 1) / sps.getMaxCUWidth () )
+    , heightInCtus        ( (pps.getPicHeightInLumaSamples() + sps.getMaxCUHeight() - 1) / sps.getMaxCUHeight() )
+#else
     , widthInCtus         ( (sps.getPicWidthInLumaSamples () + sps.getMaxCUWidth () - 1) / sps.getMaxCUWidth () )
     , heightInCtus        ( (sps.getPicHeightInLumaSamples() + sps.getMaxCUHeight() - 1) / sps.getMaxCUHeight() )
+#endif
     , sizeInCtus          ( widthInCtus * heightInCtus )
+#if JVET_O1164_PS
+    , lumaWidth           ( pps.getPicWidthInLumaSamples() )
+    , lumaHeight          ( pps.getPicHeightInLumaSamples() )
+#else
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
+#endif
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )

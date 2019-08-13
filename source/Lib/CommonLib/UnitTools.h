@@ -136,6 +136,9 @@ namespace CU
   bool    isMtsMode                   (const uint8_t sbtInfo);
   bool    isSbtMode                   (const uint8_t sbtInfo);
   bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
+#if JVET_O1164_RPR
+  bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale );
+#endif
 }
 // PU tools
 namespace PU
@@ -223,6 +226,10 @@ namespace PU
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
 #endif
   bool checkDMVRCondition(const PredictionUnit& pu);
+
+#if JVET_O1164_RPR
+  bool isRefPicSameSize( const PredictionUnit& pu );
+#endif
 }
 
 // TU tools

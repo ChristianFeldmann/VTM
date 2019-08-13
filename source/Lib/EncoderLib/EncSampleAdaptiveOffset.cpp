@@ -79,6 +79,10 @@ inline double xRoundIbdi(int bitDepth, double x)
 EncSampleAdaptiveOffset::EncSampleAdaptiveOffset()
 {
   m_CABACEstimator = NULL;
+
+#if JVET_O1164_PS
+  ::memset( m_saoDisabledRate, 0, sizeof( m_saoDisabledRate ) );
+#endif
 }
 
 EncSampleAdaptiveOffset::~EncSampleAdaptiveOffset()
@@ -113,7 +117,9 @@ void EncSampleAdaptiveOffset::createEncData(bool isPreDBFSamplesUsed, uint32_t n
 
   }
 
+#if !JVET_O1164_PS
   ::memset(m_saoDisabledRate, 0, sizeof(m_saoDisabledRate));
+#endif
 
   for(int typeIdc=0; typeIdc < NUM_SAO_NEW_TYPES; typeIdc++)
   {

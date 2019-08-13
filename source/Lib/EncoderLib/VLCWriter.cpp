@@ -216,6 +216,22 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_UVLC( pcPPS->getPPSId(),                             "pps_pic_parameter_set_id" );
   WRITE_UVLC( pcPPS->getSPSId(),                             "pps_seq_parameter_set_id" );
+
+#if JVET_O1164_PS
+  WRITE_UVLC( pcPPS->getPicWidthInLumaSamples(), "pic_width_in_luma_samples" );
+  WRITE_UVLC( pcPPS->getPicHeightInLumaSamples(), "pic_height_in_luma_samples" );
+  Window conf = pcPPS->getConformanceWindow();
+
+  WRITE_FLAG( conf.getWindowEnabledFlag(), "conformance_window_flag" );
+  if( conf.getWindowEnabledFlag() )
+  {
+    WRITE_UVLC( conf.getWindowLeftOffset(),   "conf_win_left_offset" );
+    WRITE_UVLC( conf.getWindowRightOffset(),  "conf_win_right_offset" );
+    WRITE_UVLC( conf.getWindowTopOffset(),    "conf_win_top_offset" );
+    WRITE_UVLC( conf.getWindowBottomOffset(), "conf_win_bottom_offset" );
+  }
+#endif
+
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
   WRITE_CODE( pcPPS->getNumExtraSliceHeaderBits(), 3,        "num_extra_slice_header_bits");
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
@@ -327,8 +343,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   }
   else
   {
-    // make sure single brick per slice is set by encoder such that the behaviour is same as for setting it to true
-    CHECK(pcPPS->getSingleBrickPerSliceFlag() != true, "SingleBrickPerSliceFlag must be set to 1 when not present");
+	// make sure single brick per slice is set by encoder such that the behaviour is same as for setting it to true
+	CHECK(pcPPS->getSingleBrickPerSliceFlag() != true, "SingleBrickPerSliceFlag must be set to 1 when not present");
     // make sure rect_slice_flag is set
     CHECK (pcPPS->getRectSliceFlag()!=true, "RectSliceFlag must be equalt to 1 for single_tile_in_pic_flag equal to 1");
   }
@@ -482,7 +498,7 @@ void HLSWriter::codeAPS( APS* pcAPS )
 
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
   WRITE_CODE(pcAPS->getAPSType(), 3, "aps_params_type");
-
+  
 
   if (pcAPS->getAPSType() == ALF_APS)
   {
@@ -508,7 +524,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
     WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA][0], "alf_luma_clip" );
 #else
-    WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip" );
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip");
 #endif
 
     xWriteTruncBinCode(param.numLumaFilters - 1, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
@@ -729,6 +745,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( 0,                                  "separate_colour_plane_flag");
   }
 
+#if JVET_O1164_PS
+  WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
+  WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );  
+#else
   WRITE_UVLC( pcSPS->getPicWidthInLumaSamples (),   "pic_width_in_luma_samples" );
   WRITE_UVLC( pcSPS->getPicHeightInLumaSamples(),   "pic_height_in_luma_samples" );
   Window conf = pcSPS->getConformanceWindow();
@@ -742,6 +762,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC( conf.getWindowTopOffset()    / SPS::getWinUnitY(pcSPS->getChromaFormatIdc() ), "conf_win_top_offset" );
     WRITE_UVLC( conf.getWindowBottomOffset() / SPS::getWinUnitY(pcSPS->getChromaFormatIdc() ), "conf_win_bottom_offset" );
   }
+#endif
 
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_luma_minus8" );
 
@@ -851,7 +872,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
     for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
-      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1");
+      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1"); 
 
       for (int j = 0; j <= chromaQpMappingTable.getNumPtsInCQPTableMinus1(i); j++)
       {
@@ -890,14 +911,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
 #endif
+
+#if !JVET_O1164_PS
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
-  {
+  {    
+#endif
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
     WRITE_UVLC( (pcSPS->getWrapAroundOffset()/(1 <<  pcSPS->getLog2MinCodingBlockSize()))-1,  "sps_ref_wraparound_offset_minus1" );
   }
+#if !JVET_O1164_PS
   }
+#endif
 
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
 
@@ -957,7 +983,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG  
   if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
@@ -1174,7 +1200,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
   }
-
+  
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );
@@ -1344,7 +1370,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (chromaEnabled)
         {
 #endif
-          truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+        truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
 #if JVET_O0616_400_CHROMA_SUPPORT
         }
 #endif
@@ -1637,7 +1663,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           if (chromaEnabled)
           {
 #endif
-            WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+          WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
 #if JVET_O0616_400_CHROMA_SUPPORT
           }
 #endif
@@ -2006,7 +2032,7 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma )
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
 
   // vlc for all
-#if !JVET_O0216_ALF_COEFF_EG3
+#if !JVET_O0216_ALF_COEFF_EG3 
   for( int ind = 0; ind < numFilters; ++ind )
   {
     if( isChroma || !alfParam.alfLumaCoeffDeltaFlag || alfParam.alfLumaCoeffFlag[ind] )

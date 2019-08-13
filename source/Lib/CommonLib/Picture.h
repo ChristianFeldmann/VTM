@@ -243,6 +243,11 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
+#if JVET_O1164_RPR
+  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType scaledStride, int bitDepth, const bool downsampling = false );
+
+  static void rescalePicture( const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool downsampling = false );
+#endif
 
 public:
   bool m_bIsBorderExtended;
@@ -270,6 +275,9 @@ public:
 #endif
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
+#endif
+#if JVET_O1164_RPR
+  const Picture*           unscaledPic;
 #endif
 
   TComHash           m_hashMap;

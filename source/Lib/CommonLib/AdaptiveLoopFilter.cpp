@@ -601,6 +601,9 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType chann
 
 void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const ChromaFormat format, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE] )
 {
+#if JVET_O1164_PS
+  destroy();
+#endif
   std::memcpy( m_inputBitDepth, inputBitDepth, sizeof( m_inputBitDepth ) );
   m_picWidth = picWidth;
   m_picHeight = picHeight;
@@ -731,7 +734,10 @@ void AdaptiveLoopFilter::destroy()
 
   m_tempBuf.destroy();
   m_tempBuf2.destroy();
-
+#if JVET_O1164_PS
+  m_filterShapes[CHANNEL_TYPE_LUMA].clear();
+  m_filterShapes[CHANNEL_TYPE_CHROMA].clear();
+#endif
   m_created = false;
 }
 

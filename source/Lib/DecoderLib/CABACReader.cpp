@@ -1817,11 +1817,18 @@ void CABACReader::sbt_mode( CodingUnit& cu )
 
 bool CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
 {
+#if !JVET_O1164_PS
   const SPS     &sps   = *cu.cs->sps;
+#endif
   const Position rbPos = recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].bottomRight().offset( 1, 1 ) );
 
+#if JVET_O1164_PS
+  if( ( ( rbPos.x & cu.cs->pcv->maxCUWidthMask ) == 0 || rbPos.x == cu.cs->pps->getPicWidthInLumaSamples() )
+  && ( ( rbPos.y & cu.cs->pcv->maxCUHeightMask ) == 0 || rbPos.y == cu.cs->pps->getPicHeightInLumaSamples() )
+#else
   if ( ( ( rbPos.x & cu.cs->pcv->maxCUWidthMask  ) == 0 || rbPos.x == sps.getPicWidthInLumaSamples () )
     && ( ( rbPos.y & cu.cs->pcv->maxCUHeightMask ) == 0 || rbPos.y == sps.getPicHeightInLumaSamples() )
+#endif
 #if JVET_O0050_LOCAL_DUAL_TREE
     && ( !cu.isSepTree() || cu.chromaFormat == CHROMA_400 || isChroma( cu.chType ) )
 #else
@@ -2740,17 +2747,17 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
   DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);
   int numCandminus1_step = MMVD_REFINE_STEP - 1;
   var1 = 0;
-  if (m_BinDecoder.decodeBin(Ctx::MmvdStepMvpIdx()))
-  {
-    var1++;
-    for (; var1 < numCandminus1_step; var1++)
+    if (m_BinDecoder.decodeBin(Ctx::MmvdStepMvpIdx()))
     {
-      if (!m_BinDecoder.decodeBinEP())
+      var1++;
+      for (; var1 < numCandminus1_step; var1++)
       {
-        break;
+        if (!m_BinDecoder.decodeBinEP())
+        {
+          break;
+        }
       }
     }
-  }
   DTRACE(g_trace_ctx, D_SYNTAX, "MmvdStepMvpIdx() MmvdStepMvpIdx=%d\n", var1);
   var2 = 0;
   if (m_BinDecoder.decodeBinEP())
@@ -3364,17 +3371,17 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
     (!tu.cu->isSepTree() || isLuma(tu.chType)) )
-#else
+#else   
     (!CS::isDualITree(*tu.cs) || isLuma(tu.chType)) )
 #endif
   {
     if( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded )
     {
-      cu_qp_delta(cu, cuCtx.qp, cu.qp);
-      cuCtx.qp = cu.qp;
-      cuCtx.isDQPCoded = true;
+        cu_qp_delta(cu, cuCtx.qp, cu.qp);
+        cuCtx.qp = cu.qp;
+        cuCtx.isDQPCoded = true;
+      }
     }
-  }
 #if JVET_O1168_CU_CHROMA_QP_OFFSET
     if (cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cuCtx.isChromaQpAdjCoded)
 #else
@@ -3415,10 +3422,10 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
 #else
           residual_coding( tu, compID );
 #endif
+        }
       }
     }
   }
-}
 
 void CABACReader::cu_qp_delta( CodingUnit& cu, int predQP, int8_t& qp )
 {

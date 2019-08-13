@@ -903,8 +903,13 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   }
 
   const ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
+#if JVET_O1164_PS
+  const int          iWidth = pps.getPicWidthInLumaSamples();
+  const int          iHeight = pps.getPicHeightInLumaSamples();
+#else
   const int          iWidth = sps.getPicWidthInLumaSamples();
   const int          iHeight = sps.getPicHeightInLumaSamples();
+#endif
 
   if( cs )
   {
@@ -1015,6 +1020,137 @@ void Picture::finishCtuPart( const UnitArea& ctuArea )
 }
 #endif
 
+#endif
+
+#if JVET_O1164_RPR
+const TFilterCoeff InterpolationFilterSRC[16][8] =
+{
+  {  0, 0,   0, 64,  0,   0,  0,  0 },
+  {  0, 1,  -3, 63,  4,  -2,  1,  0 },
+  { -1, 2,  -5, 62,  8,  -3,  1,  0 },
+  { -1, 3,  -8, 60, 13,  -4,  1,  0 },
+  { -1, 4, -10, 58, 17,  -5,  1,  0 },
+  { -1, 4, -11, 52, 26,  -8,  3, -1 },
+  { -1, 3,  -9, 47, 31, -10,  4, -1 },
+  { -1, 4, -11, 45, 34, -10,  4, -1 },
+  { -1, 4, -11, 40, 40, -11,  4, -1 },
+  { -1, 4, -10, 34, 45, -11,  4, -1 },
+  { -1, 4, -10, 31, 47,  -9,  3, -1 },
+  { -1, 3,  -8, 26, 52, -11,  4, -1 },
+  {  0, 1,  -5, 17, 58, -10,  4, -1 },
+  {  0, 1,  -4, 13, 60,  -8,  3, -1 },
+  {  0, 1,  -3,  8, 62,  -5,  2, -1 },
+  {  0, 1,  -2,  4, 63,  -3,  1,  0 }
+};
+
+const TFilterCoeff DownsamplingFilterSRC[16][12] =
+{
+      //{   0,   0,    0,   0,   0,  128,   0,   0,      0,    0,  0,   0}, //0
+      {   0,   5,   -6,  -10,  37,  76,   37,  -10,  -6,    5,  0,   0}, //0
+      {   0,   5,   -4,  -11,  33,  76,   40,  -9,    -7,    5,  0,   0}, //1
+      //{   0,   5,   -3,  -12,  28,  75,   44,  -7,    -8,    5,  1,   0}, //2
+      {  -1,   5,   -3,  -12,  29,  75,   45,  -7,    -8,   5,  0,   0}, //2 new coefficients in m24499
+      {  -1,   4,   -2,  -13,  25,  75,   48,  -5,    -9,    5,  1,   0}, //3
+      {  -1,   4,   -1,  -13,  22,  73,   52,  -3,    -10,  4,  1,   0}, //4
+      {  -1,   4,   0,    -13,  18,  72,   55,  -1,    -11,  4,  2,  -1}, //5
+      {  -1,   4,   1,    -13,  14,  70,   59,  2,    -12,  3,  2,  -1}, //6
+      {  -1,   3,   1,    -13,  11,  68,   62,  5,    -12,  3,  2,  -1}, //7
+      {  -1,   3,   2,    -13,  8,  65,   65,  8,    -13,  2,  3,  -1}, //8
+      {  -1,   2,   3,    -12,  5,  62,   68,  11,    -13,  1,  3,  -1}, //9
+      {  -1,   2,   3,    -12,  2,  59,   70,  14,    -13,  1,  4,  -1}, //10
+      {  -1,   2,   4,    -11,  -1,  55,   72,  18,    -13,  0,  4,  -1}, //11
+      {   0,   1,   4,    -10,  -3,  52,   73,  22,    -13,  -1,  4,  -1}, //12
+      {   0,   1,   5,    -9,    -5,  48,   75,  25,    -13,  -2,  4,  -1}, //13
+      //{   0,   1,   5,    -8,    -7,  44,   75,  28,    -12,  -3,  5,   0}, //14
+      {    0,   0,   5,    -8,   -7,  45,   75,  29,    -12,  -3,  5,  -1}  , //14 new coefficients in m24499  
+      {   0,   0,   5,    -7,    -9,  40,   76,  33,    -11,  -4,  5,   0}, //15
+};
+
+void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType scaledStride, int bitDepth, const bool downsampling )
+{
+  if( orgWidth == scaledWidth && orgHeight == scaledHeight )
+  {
+    for( int j = 0; j < orgHeight; j++ )
+    {
+      memcpy( scaledSrc + j * scaledStride, orgSrc + j * orgStride, sizeof( Pel ) * orgWidth );
+    }
+
+    return;
+  }
+
+  const TFilterCoeff* filter = downsampling ? &DownsamplingFilterSRC[0][0] : &InterpolationFilterSRC[0][0];
+  const int filerLength = downsampling ? 12 : 8;
+  const int log2Norm = downsampling ? 14 : 12;
+
+  int *buf = new int[orgHeight * scaledWidth];
+  int maxVal = ( 1 << bitDepth ) - 1;
+
+  CHECK( bitDepth > 17, "Overflow may happen!" );
+
+  for( int i = 0; i < scaledWidth; i++ )
+  {
+    const Pel* org = orgSrc;
+    int integer = ( i * orgWidth ) / scaledWidth;
+    int frac = ( ( i * orgWidth << 4 ) / scaledWidth ) & 15;
+
+    int* tmp = buf + i;
+
+    for( int j = 0; j < orgHeight; j++ )
+    {
+      int sum = 0;
+      const TFilterCoeff* f = filter + frac * filerLength;
+
+      for( int k = 0; k < filerLength; k++ )
+      {
+        int xInt = std::min<int>( std::max( 0, integer + k - filerLength / 2 + 1 ), orgWidth - 1 );
+        sum += f[k] * org[xInt]; // postpone horizontal filtering gain removal after vertical filtering
+      }
+
+      *tmp = sum;
+
+      tmp += scaledWidth;
+      org += orgStride;
+    }
+  }
+
+  Pel* dst = scaledSrc;
+
+  for( int j = 0; j < scaledHeight; j++ )
+  {
+    int integer = ( j * orgHeight ) / scaledHeight;
+    int frac = ( ( j * orgHeight << 4 ) / scaledHeight ) & 15;
+
+    for( int i = 0; i < scaledWidth; i++ )
+    {
+      int sum = 0;
+      int* tmp = buf + i;
+      const TFilterCoeff* f = filter + frac * filerLength;
+
+      for( int k = 0; k < filerLength; k++ )
+      {
+        int yInt = std::min<int>( std::max( 0, integer + k - filerLength / 2 + 1 ), orgHeight - 1 );
+        sum += f[k] * tmp[yInt*scaledWidth];
+      }
+
+      dst[i] = std::min<int>( std::max( 0, ( sum + ( 1 << ( log2Norm - 1 ) ) ) >> log2Norm ), maxVal );
+    }
+
+    dst += scaledStride;
+  }
+
+  delete[] buf;
+}
+
+void Picture::rescalePicture( const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool downsampling )
+{
+  for( int comp = 0; comp < ::getNumberValidComponents( chromaFormatIDC ); comp++ )
+  {
+    const CPelBuf& beforeScale = beforeScaling.get( ComponentID( comp ) );
+    const PelBuf& afterScale = afterScaling.get( ComponentID( comp ) );
+
+    Picture::sampleRateConv( beforeScale.buf, beforeScale.width, beforeScale.height, beforeScale.stride, afterScale.buf, afterScale.width, afterScale.height, afterScale.stride, bitDepths.recon[comp], downsampling );
+  }
+}
 #endif
 
 void Picture::extendPicBorder()
@@ -1216,8 +1352,13 @@ bool Picture::getSpliceFull()
 
 void Picture::addPictureToHashMapForInter()
 {
+#if JVET_O1164_PS
+  int picWidth = slices[0]->getPPS()->getPicWidthInLumaSamples();
+  int picHeight = slices[0]->getPPS()->getPicHeightInLumaSamples();
+#else
   int picWidth = slices[0]->getSPS()->getPicWidthInLumaSamples();
   int picHeight = slices[0]->getSPS()->getPicHeightInLumaSamples();
+#endif
   uint32_t* blockHashValues[2][2];
   bool* bIsBlockSame[2][3];
 

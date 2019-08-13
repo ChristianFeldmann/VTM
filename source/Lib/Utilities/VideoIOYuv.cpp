@@ -453,7 +453,11 @@ static bool verifyPlane(Pel* dst,
  * @param fileBitDepth component bit depth in file
  * @return true for success, false in case of error
  */
+#if JVET_O1164_RPR
+static bool writePlane( uint32_t orgWidth, uint32_t orgHeight, ostream& fd, const Pel* src,
+#else
 static bool writePlane(ostream& fd, const Pel* src,
+#endif
                        const bool is16bit,
                        const uint32_t stride_src,
                        uint32_t width444, uint32_t height444,
@@ -471,7 +475,14 @@ static bool writePlane(ostream& fd, const Pel* src,
   const uint32_t width_file  = width444  >> csx_file;
   const uint32_t height_file = height444 >> csy_file;
   const bool     writePYUV   = (packedYUVOutputMode > 0) && (fileBitDepth == 10 || fileBitDepth == 12) && ((width_file & (1 + (fileBitDepth & 3))) == 0);
+
+#if JVET_O1164_RPR
+  assert( writePYUV == 0 ); // only support this so far
+  assert( csx_file == csx_src ); // only support this so far
+  const uint32_t stride_file = writePYUV ? ( orgWidth * fileBitDepth ) >> ( csx_file + 3 ) : ( orgWidth * ( is16bit ? 2 : 1 ) ) >> csx_file;
+#else
   const uint32_t stride_file = writePYUV ? (width444 * fileBitDepth) >> (csx_file + 3) : (width444 * (is16bit ? 2 : 1)) >> csx_file;
+#endif
 
   std::vector<uint8_t> bufVec(stride_file);
   uint8_t *buf=&(bufVec[0]);
@@ -669,6 +680,43 @@ static bool writePlane(ostream& fd, const Pel* src,
         pSrcBuf += srcbuf_stride;
       }
     }
+
+#if JVET_O1164_RPR
+    // here height444 and orgHeight are luma heights 
+    for( uint32_t y444 = height444; y444 < orgHeight; y444++ )
+    {
+      if( ( y444 & mask_y_file ) == 0 ) // if this is chroma, determine whether to skip every other row
+      {
+
+        if( !is16bit )
+        {
+          for( uint32_t x = 0; x < ( orgWidth >> csx_file ); x++ )
+          {
+            buf[x] = 0;
+          }
+        }
+        else
+        {
+          for( uint32_t x = 0; x < ( orgWidth >> csx_file ); x++ )
+          {
+            buf[2 * x] = 0;
+            buf[2 * x + 1] = 0;
+          }
+        }
+        fd.write( reinterpret_cast<const char*>( buf ), stride_file );
+        if( fd.eof() || fd.fail() )
+        {
+          return false;
+        }
+      }
+
+      if( ( y444 & mask_y_src ) == 0 )
+      {
+        pSrcBuf += srcbuf_stride;
+      }
+    }
+#endif
+
   }
   return true;
 }
@@ -922,7 +970,12 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
  * @param format           chroma format
  * @return true for success, false in case of error
  */
+#if JVET_O1164_RPR
+ // here orgWidth and orgHeight are for luma
+bool VideoIOYuv::write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf& pic,
+#else
 bool VideoIOYuv::write( const CPelUnitBuf& pic,
+#endif
                         const InputColourSpaceConversion ipCSC,
                         const bool bPackedYUVOutputMode,
                         int confLeft, int confRight, int confTop, int confBottom, ChromaFormat format, const bool bClipToRec709 )
@@ -996,7 +1049,11 @@ bool VideoIOYuv::write( const CPelUnitBuf& pic,
     const uint32_t    csy         = ::getComponentScaleY(compID, format);
     const CPelBuf     area        = picO.get(compID);
     const int         planeOffset = (confLeft >> csx) + (confTop >> csy) * area.stride;
+#if JVET_O1164_RPR
+    if( !writePlane( orgWidth, orgHeight, m_cHandle, area.bufAt( 0, 0 ) + planeOffset, is16bit, area.stride,
+#else
     if (!writePlane (m_cHandle, area.bufAt (0, 0) + planeOffset, is16bit, area.stride,
+#endif
                      width444, height444, compID, picO.chromaFormat, format, m_fileBitdepth[ch],
                      bPackedYUVOutputMode ? 1 : 0))
     {

@@ -106,7 +106,14 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setTemporalSubsampleRatio                            ( m_temporalSubsampleRatio );
   m_cEncLib.setSourceWidth                                       ( m_iSourceWidth );
   m_cEncLib.setSourceHeight                                      ( m_iSourceHeight );
+#if JVET_O1164_RPR
+  m_cEncLib.setConformanceWindow                                 ( m_confWinLeft / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinRight / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinTop / SPS::getWinUnitY( m_InputChromaFormatIDC ), m_confWinBottom / SPS::getWinUnitY( m_InputChromaFormatIDC ) );
+  m_cEncLib.setScalingRatio                                      ( m_scalingRatio );
+  m_cEncLib.setRPREnabled                                        ( m_rprEnabled );
+  m_cEncLib.setSwitchPocPeriod                                   ( m_switchPocPeriod );
+#else
   m_cEncLib.setConformanceWindow                                 ( m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom );
+#endif
   m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
 
   //====== SPS constraint flags =======
@@ -867,10 +874,16 @@ void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList
       const PelUnitBuf* pcPicYuvRec = *(iterPicYuvRec++);
       if (!m_reconFileName.empty())
       {
+#if JVET_O1164_RPR
+        SPS* sps0 = m_cEncLib.getSPS( 0 );
+          m_cVideoIOYuvReconFile.write( sps0->getMaxPicWidthInLumaSamples(), sps0->getMaxPicHeightInLumaSamples(), *pcPicYuvRec, ipCSC, m_packedYUVMode,
+            m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#else
         m_cVideoIOYuvReconFile.write( *pcPicYuvRec,
                                       ipCSC,
                                       m_packedYUVMode,
                                       m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#endif
       }
     }
   }

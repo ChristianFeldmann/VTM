@@ -287,11 +287,19 @@ namespace std
 };
 void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
-              const class SPS& sps );
+              const class SPS& sps
+#if JVET_O1164_PS
+            , const class PPS& pps
+#endif
+);
 
-bool wrapClipMv( Mv& rcMv, const Position& pos,
-                 const struct Size& size,
-                 const SPS *sps );
+bool wrapClipMv( Mv& rcMv, const Position& pos, 
+                 const struct Size& size, 
+                 const SPS *sps
+#if JVET_O1164_PS
+               , const PPS* pps
+#endif
+);
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 

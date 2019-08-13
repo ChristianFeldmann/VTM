@@ -4217,7 +4217,7 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   }
 
   int cutoffVal = 2;
-  int numGtBins = 4;
+  const int numGtBins = 4;
 
   //===== 2nd PASS: gt2 =====
 #if JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING

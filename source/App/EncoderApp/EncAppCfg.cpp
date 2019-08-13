@@ -1749,7 +1749,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   if (!singleTileInPicFlag)
   {
     //if (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
+#if SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES
+    if ( (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag) ||
+         (m_numSlicesInPicMinus1 != 0 && m_rectSliceFlag) )
+#else
     if (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag)
+#endif
     {
       int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
 

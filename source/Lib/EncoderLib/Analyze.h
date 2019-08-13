@@ -184,9 +184,17 @@ public:
   }
 
 #if ENABLE_QPA || WCG_WPSNR
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false )
+  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
 #else
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths )
+  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
 #endif
   {
 #if !WCG_WPSNR
@@ -430,12 +438,12 @@ public:
           {
 #if ENABLE_QPA || WCG_WPSNR
             if (useWPSNR) {
-              msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR" );
+              msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR   " );
             } else
 #endif
             msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR   " );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-            if(!useWPSNR)
+            if (printHdrMetrics)
             {
               msg(e_msg_level, "DeltaE   "  "PSNRL   ");
             }
@@ -476,7 +484,7 @@ public:
               getPsnr(COMPONENT_Cr) / (double)getNumPic(),
               PSNRyuv );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-            if(!useWPSNR)
+            if (printHdrMetrics)
             {
               msg( e_msg_level, "  %8.4lf  " "%8.4lf  ", getDeltaE()/(double)getNumPic(), getPsnrL()/(double)getNumPic());
             }

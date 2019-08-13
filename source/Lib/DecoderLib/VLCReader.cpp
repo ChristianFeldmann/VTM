@@ -2797,7 +2797,7 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
     xReadFlag( b, "" );
 #else
-    xReadFlag( b );
+    READ_FLAG( b, "alf_coeff_abs_prefix");
 #endif
   }
 

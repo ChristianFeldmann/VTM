@@ -1163,7 +1163,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     if (pcSlice->getPPS()->getRectSliceFlag())
     {
-      WRITE_CODE(pcSlice->getPPS()->getSliceId(pcSlice->setSliceIndex()), bitsSliceAddress, "slice_address");
+      WRITE_CODE(pcSlice->getPPS()->getSliceId(pcSlice->getSliceIndex()), bitsSliceAddress, "slice_address");
     }
     else
     {

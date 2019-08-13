@@ -1878,7 +1878,7 @@ public:
   void                        setSliceNumBricks(uint32_t numBricks)                  { m_sliceNumBricks = numBricks;                                 }
   uint32_t                    getSliceNumBricks() const                              { return m_sliceNumBricks;                                      }
   void                        setSliceIndex(uint32_t idx)                            { m_sliceIdx = idx;                                             }
-  uint32_t                    setSliceIndex() const                                  { return m_sliceIdx;                                            }
+  uint32_t                    getSliceIndex() const                                  { return m_sliceIdx;                                            }
   bool                        testWeightPred( ) const                                { return m_bTestWeightPred;                                     }
   void                        setTestWeightPred( bool bValue )                       { m_bTestWeightPred = bValue;                                   }
   bool                        testWeightBiPred( ) const                              { return m_bTestWeightBiPred;                                   }

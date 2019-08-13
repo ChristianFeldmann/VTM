@@ -81,7 +81,7 @@ public:
   void      setCnt(uint32_t val)  { cnt = val; }
   int       getSumData (int id) const   { return sumData[id]; }
 
-  void resetAll(ComponentID compBegin, uint32_t numComp) 
+  void resetAll(ComponentID compBegin, uint32_t numComp)
   {
     shift = lastCnt = 0;
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
@@ -90,7 +90,7 @@ public:
       sumData[ch] = 0;
     }
   }
-  void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp) 
+  void setAll(uint32_t* ui, ComponentID compBegin, uint32_t numComp)
   {
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
@@ -121,7 +121,7 @@ public:
     }
     return sumAd;
   }
-  void copyDataFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) 
+  void copyDataFrom(SortingElement element, ComponentID compBegin, uint32_t numComp)
   {
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
@@ -130,7 +130,7 @@ public:
     }
     shift = 0; lastCnt = 1;
   }
-  void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp) 
+  void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp)
   {
     copyDataFrom(element, compBegin, numComp);
     cnt = element.cnt;
@@ -158,7 +158,7 @@ public:
       lastCnt = cnt;
     }
   }
-private: 
+private:
   uint32_t cnt;
   int shift, lastCnt, data[3], sumData[3];
 };
@@ -179,6 +179,13 @@ private:
   CodingStructure ***m_pBestCS;
 
   CodingStructure **m_pSaveCS;
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool            m_saveCuCostInSCIPU;
+  uint8_t         m_numCuInSCIPU;
+  Area            m_cuAreaInSCIPU[NUM_INTER_CU_INFO_SAVE];
+  double          m_cuCostInSCIPU[NUM_INTER_CU_INFO_SAVE];
+#endif
 
   struct ModeInfo
   {
@@ -376,6 +383,15 @@ public:
 
   void setModeCtrl                ( EncModeCtrl *modeCtrl ) { m_modeCtrl = modeCtrl; }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool getSaveCuCostInSCIPU       ()               { return m_saveCuCostInSCIPU; }
+  void setSaveCuCostInSCIPU       ( bool b )       { m_saveCuCostInSCIPU = b;  }
+  void setNumCuInSCIPU            ( uint8_t i )    { m_numCuInSCIPU = i; }
+  void saveCuAreaCostInSCIPU      ( Area area, double cost );
+  void initCuAreaCostInSCIPU      ();
+  double findInterCUCost          ( CodingUnit &cu );
+#endif
+
 public:
 
   bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
@@ -429,11 +445,11 @@ protected:
   double m_bestCostNonMip;
 #endif
 #if JVET_O0119_BASE_PALETTE_444
-  void   deriveRun(CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
-  double getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin);
-  void   derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
-  void   calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t yPos, uint32_t xPos, ComponentID compBegin, uint32_t numComp);
-  void   preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void   deriveRun       (      CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
+  double getRunBits      (const CodingUnit&      cu, uint32_t     run,         uint32_t    strPos,    PLTRunMode paletteRunMode, uint64_t*   indexBits, uint64_t* runBits, ComponentID compBegin);
+  void   derivePLTLossy  (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void   calcPixelPred   (      CodingStructure& cs, Partitioner& partitioner, uint32_t    yPos,      uint32_t xPos,             ComponentID compBegin, uint32_t  numComp);
+  void   preCalcPLTIndex (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
 #endif
 #if JVET_O0502_ISP_CLEANUP
   void xGetNextISPMode                    ( ModeInfo& modeInfo, const ModeInfo* lastMode, const Size cuSize );

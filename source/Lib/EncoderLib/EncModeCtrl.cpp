@@ -728,6 +728,20 @@ void BestEncInfoCache::destroy()
 
   delete[] m_pCoeff;
   delete[] m_pPcmBuf;
+
+#if JVET_O0119_BASE_PALETTE_444
+  if (m_runType != nullptr)
+  {
+    delete[] m_runType;
+    m_runType = nullptr;
+  }
+  if (m_runLength != nullptr)
+  {
+    delete[] m_runLength;
+    m_runLength = nullptr;
+  }
+#endif
+
 }
 
 void BestEncInfoCache::init( const Slice &slice )
@@ -818,7 +832,7 @@ void BestEncInfoCache::init( const Slice &slice )
                 coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
                 pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
 #if JVET_O0119_BASE_PALETTE_444
-                runType[i]   = runTypePtr;   runTypePtr += area.blocks[i].area();
+                runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
                 runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
 #endif
               }
@@ -913,11 +927,23 @@ bool BestEncInfoCache::setFromCs( const CodingStructure& cs, const Partitioner& 
 
 bool BestEncInfoCache::isValid( const CodingStructure& cs, const Partitioner& partitioner, int qp )
 {
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( partitioner.treeType == TREE_C )
+  {
+    return false; //if save & load is allowed for chroma CUs, we should check whether luma info (pred, recon, etc) is the same, which is quite complex
+  }
+#endif
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx( cs.area.Y(), *m_slice_bencinf->getPPS()->pcv, idx1, idx2, idx3, idx4 );
 
   BestEncodingInfo& encInfo = *m_bestEncInfo[idx1][idx2][idx3][idx4];
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( encInfo.cu.treeType != partitioner.treeType || encInfo.cu.modeType != partitioner.modeType )
+  {
+    return false;
+  }
+#endif
   if( encInfo.cu.qp != qp )
     return false;
   if( cs.picture->poc != encInfo.poc || CS::getArea( cs, cs.area, partitioner.chType ) != CS::getArea( cs, encInfo.cu, partitioner.chType ) || !isTheSameNbHood( encInfo.cu, cs, partitioner
@@ -1171,7 +1197,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   // QP
   int baseQP = cs.baseQP;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if (!partitioner.isSepTree(cs) || isLuma(partitioner.chType))
+#else
   if (!CS::isDualITree (cs) || isLuma (partitioner.chType))
+#endif
   {
     if (m_pcEncCfg->getUseAdaptiveQP())
     {
@@ -1327,6 +1357,20 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   //////////////////////////////////////////////////////////////////////////
   // Add unit coding modes: Intra, InterME, InterMerge ...
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool tryIntraRdo = true;
+  bool tryInterRdo = true;
+  bool tryIBCRdo   = true;
+  if( partitioner.isConsIntra() )
+  {
+    tryInterRdo = false;
+  }
+  else if( partitioner.isConsInter() )
+  {
+    tryIntraRdo = tryIBCRdo = false;
+  }
+  checkIbc &= tryIBCRdo;
+#endif
 
   for( int qpLoop = maxQP; qpLoop >= minQP; qpLoop-- )
   {
@@ -1341,21 +1385,28 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     }
 #endif
     // add intra modes
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( tryIntraRdo )
+    {
+#endif
     m_ComprCUCtxList.back().testModes.push_back( { ETM_IPCM,  ETO_STANDARD, qp, lossless } );
 #if JVET_O0119_BASE_PALETTE_444
-  if (cs.slice->getSPS()->getPLTMode() && ( cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4) ) && getPltEnc() )
-  {
-    m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp, lossless });
-  }
+    if (cs.slice->getSPS()->getPLTMode() && ( cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4) ) && getPltEnc() )
+    {
+      m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp, lossless });
+    }
 #endif
-  m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
+    m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
 #if JVET_O0119_BASE_PALETTE_444
-  if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc() )
-  {
-    m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp, lossless });
-  }
+    if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc() )
+    {
+      m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp, lossless });
+    }
 #endif
-  // add ibc mode to intra path
+#if JVET_O0050_LOCAL_DUAL_TREE
+    }
+#endif
+    // add ibc mode to intra path
     if (cs.sps->getIBCFlag() && checkIbc)
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC,         ETO_STANDARD,  qp, lossless });
@@ -1367,7 +1418,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   }
 
   // add first pass modes
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if ( !m_slice->isIRAP() && !( cs.area.lwidth() == 4 && cs.area.lheight() == 4 ) && tryInterRdo )
+#else
   if ( !m_slice->isIRAP() && !( cs.area.lwidth() == 4 && cs.area.lheight() == 4 ) )
+#endif
   {
     for( int qpLoop = maxQP; qpLoop >= minQP; qpLoop-- )
     {
@@ -1539,6 +1594,12 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     // INTRA MODES
     if (cs.sps->getIBCFlag() && !cuECtx.bestTU)
       return true;
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( partitioner.isConsIntra() && !cuECtx.bestTU )
+    {
+      return true;
+    }
+#endif
     if ( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4 && !slice.isIntra() && !cuECtx.bestTU )
     {
       return true;
@@ -1576,10 +1637,10 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       }
     }
 #if JVET_O0119_BASE_PALETTE_444
-  if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && !( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4) ) // inter slice
-  {
-    return false;
-  }
+    if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && !( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4) ) // inter slice
+    {
+      return false;
+    }
 #endif
     return true;
   }
@@ -1901,6 +1962,12 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #if REUSE_CU_RESULTS
       setFromCs( *bestCS, partitioner );
 
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if( partitioner.modeType == MODE_TYPE_INTRA && partitioner.chType == CHANNEL_TYPE_LUMA )
+      {
+        return false; //not set best coding mode for intra coding pass
+      }
 #endif
       // assume the non-split modes are done and set the marks for the best found mode
       if( bestCS && bestCU )

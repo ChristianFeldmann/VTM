@@ -149,9 +149,9 @@ inline uint32_t QuantRDOQ::xGetCodedLevel( double&            rd64CodedCost,
     double dErr         = double( lLevelDouble  - ( Intermediate_Int(uiAbsLevel) << iQBits ) );
 
 #if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
-	double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
+    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
 #else
-	double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
+    double dCurrCost    = dErr * dErr * errorScale + xGetICost( xGetICRate( uiAbsLevel, fracBitsPar, fracBitsGt1, fracBitsGt2, remGt2Bins, remRegBins, goRiceZero, ui16AbsGoRice, true, maxLog2TrDynamicRange ) );
 #endif
     dCurrCost          += dCurrCostSig;
 

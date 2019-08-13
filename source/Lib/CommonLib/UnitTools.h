@@ -79,6 +79,9 @@ namespace CU
   void addPUs                         (      CodingUnit& cu);
 
   PartSplit getSplitAtDepth           (const CodingUnit& cu, const unsigned depth);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  ModeType  getModeTypeAtDepth        (const CodingUnit& cu, const unsigned depth);
+#endif
 
   bool hasNonTsCodedBlock             (const CodingUnit& cu);
 #if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
@@ -218,7 +221,7 @@ namespace PU
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
 #if !JVET_O1170_IBC_VIRTUAL_BUFFER
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
-#endif  
+#endif
   bool checkDMVRCondition(const PredictionUnit& pu);
 }
 

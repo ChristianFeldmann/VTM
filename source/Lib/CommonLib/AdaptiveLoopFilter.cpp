@@ -804,8 +804,12 @@ void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifi
   }
 }
 
-void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int** laplacian[NUM_DIRECTIONS], const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int shift,  int vbCTUHeight, int vbPos)
+void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+                                                 const CPelBuf &srcLuma, const Area &blkDst, const Area &blk,
+                                                 const int shift, const int vbCTUHeight, int vbPos)
 {
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
+
   static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
   const int stride = srcLuma.stride;
   const Pel* src = srcLuma.buf;
@@ -831,11 +835,13 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
     const Pel *src1 = &src[yoffset];
     const Pel *src2 = &src[yoffset + stride];
     const Pel *src3 = &src[yoffset + stride * 2];
-    if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == (vbPos - 2))
+
+    const int y = blkDst.pos().y - 2 + i;
+    if (y > 0 && (y & (vbCTUHeight - 1)) == vbPos - 2)
     {
       src3 = &src[yoffset + stride];
     }
-    else if (((blkDst.pos().y - 2 + i) > 0) && ((blkDst.pos().y - 2 + i) % vbCTUHeight) == vbPos)
+    else if (y > 0 && (y & (vbCTUHeight - 1)) == vbPos)
     {
       src0 = &src[yoffset];
     }
@@ -927,7 +933,9 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
 
       int tempAct = sumV + sumH;
       int activity = 0;
-      if ((((i + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4)) || (((i + blkDst.pos().y) % vbCTUHeight) == vbPos))
+
+      const int y = (i + blkDst.pos().y) & (vbCTUHeight - 1);
+      if (y == vbPos - 4 || y == vbPos)
       {
         activity = (Pel)Clip3<int>(0, maxActivity, (tempAct * 96) >> shift);
       }
@@ -1009,8 +1017,13 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier** classifier, int
 }
 
 template<AlfFilterType filtType>
-void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf &recDst, const CPelUnitBuf& recSrc, const Area& blkDst, const Area& blk, const ComponentID compId, const short* filterSet, const short* fClipSet, const ClpRng& clpRng, CodingStructure& cs, int vbCTUHeight, int vbPos)
+void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+                                   const Area &blkDst, const Area &blk, const ComponentID compId,
+                                   const short *filterSet, const short *fClipSet, const ClpRng &clpRng,
+                                   CodingStructure &cs, const int vbCTUHeight, int vbPos)
 {
+  CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
+
   const bool bChroma = isChroma( compId );
   if( bChroma )
   {
@@ -1107,10 +1120,13 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
           for( blkX=0; blkX<4; blkX+=2 )
           {
             Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB && !JVET_O0050_LOCAL_DUAL_TREE
             const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #else
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
+#endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+            cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
             *flags++ = cu->ipcm ? 1 : 0;
           }
@@ -1183,25 +1199,26 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier** classifier, const PelUnitBuf 
 
         pRec1 = pRec0 + j + ii * dstStride;
 
-        if ((blkDst.y + i + ii) % vbCTUHeight < vbPos && ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - (bChroma ? 2 : 4))) //above
+        const int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
+        if (yVb < vbPos && (yVb >= vbPos - (bChroma ? 2 : 4)))   // above
         {
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg3 : pImg5;
+          pImg1 = (yVb == vbPos - 1) ? pImg0 : pImg1;
+          pImg3 = (yVb >= vbPos - 2) ? pImg1 : pImg3;
+          pImg5 = (yVb >= vbPos - 3) ? pImg3 : pImg5;
 
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight >= vbPos - 3) ? pImg4 : pImg6;
+          pImg2 = (yVb == vbPos - 1) ? pImg0 : pImg2;
+          pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
+          pImg6 = (yVb >= vbPos - 3) ? pImg4 : pImg6;
         }
-        else if ((blkDst.y + i + ii) % vbCTUHeight >= vbPos && ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + (bChroma ? 1 : 3))) //bottom
+        else if (yVb >= vbPos && (yVb <= vbPos + (bChroma ? 1 : 3)))   // bottom
         {
-          pImg2 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg2;
-          pImg4 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg4 : pImg6;
+          pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
+          pImg4 = (yVb <= vbPos + 1) ? pImg2 : pImg4;
+          pImg6 = (yVb <= vbPos + 2) ? pImg4 : pImg6;
 
-          pImg1 = ((blkDst.y + i + ii) % vbCTUHeight == vbPos) ? pImg0 : pImg1;
-          pImg3 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = ((blkDst.y + i + ii) % vbCTUHeight <= vbPos + 2) ? pImg3 : pImg5;
+          pImg1 = (yVb == vbPos) ? pImg0 : pImg1;
+          pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
+          pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
         }
 
         for( int jj = 0; jj < clsSizeX; jj++ )

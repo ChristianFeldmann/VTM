@@ -79,7 +79,7 @@ EncLib::EncLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   m_metricTime = std::chrono::milliseconds(0);
 #endif
@@ -242,7 +242,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
   sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-    
+
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -591,19 +591,16 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     // get original YUV
     Picture* pcPicCurr = NULL;
 
-#if ER_CHROMA_QP_WCG_PPS
     int ppsID=-1; // Use default PPS ID
+#if ER_CHROMA_QP_WCG_PPS
     if (getWCGChromaQPControl().isEnabled())
     {
       ppsID = getdQPs()[m_iPOCLast / (m_compositeRefEnabled ? 2 : 1) + 1];
       ppsID+=(getSwitchPOC() != -1 && (m_iPOCLast+1 >= getSwitchPOC())?1:0);
     }
+#endif
     xGetNewPicBuffer( rcListPicYuvRecOut,
                       pcPicCurr, ppsID );
-#else
-    xGetNewPicBuffer( rcListPicYuvRecOut,
-                      pcPicCurr, -1 ); // Uses default PPS ID. However, could be modified, for example, to use a PPS ID as a function of POC (m_iPOCLast+1)
-#endif
 
     {
       const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
@@ -736,7 +733,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
 #if JVET_O0756_CALCULATE_HDRMETRICS
       m_metricTime = m_cGOPEncoder.getMetricTime();
 #endif
-      
+
       iNumEncoded += m_iNumPicRcvd;
       m_uiNumAllPicCoded += m_iNumPicRcvd;
       m_iNumPicRcvd = 0;
@@ -915,6 +912,26 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  unsigned maxBtSize[3], maxTtSize[3];
+  memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
+  memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
+  if (m_uiMaxBTDepth)
+  {
+    maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
+    maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
+  }
+  if (m_uiMaxBTDepthI)
+  {
+    maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
+    maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
+  }
+  if (m_uiMaxBTDepthIChroma)
+  {
+    maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
+    maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);
+  }
+  sps.setMaxBTSize                           ( maxBtSize[1], maxBtSize[0], maxBtSize[2] );
+  sps.setMaxTTSize                           ( maxTtSize[1], maxTtSize[0], maxTtSize[2] );
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );
@@ -1100,7 +1117,7 @@ void EncLib::xInitSPS(SPS &sps)
 void EncLib::xInitHrdParameters(SPS &sps)
 {
   m_encHRD.initHRDParameters((EncCfg*) this);
-  
+
   HRDParameters *hrdParams = sps.getHrdParameters();
   *hrdParams = m_encHRD.getHRDParameters();
 
@@ -1370,7 +1387,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
     }
   }
 
-  //Check if all delta POC of STRP in each RPL has the same sign 
+  //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first
   const RPLList* rplList0 = sps.getRPLList0();
   const RPLList* rplList1 = sps.getRPLList1();
@@ -1617,7 +1634,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     else
     {
       tileRowHeight[ m_iNumRowsMinus1 ] = picHeightInCtus;
-      for( int j = 0; j < m_iNumRowsMinus1; j++ ) 
+      for( int j = 0; j < m_iNumRowsMinus1; j++ )
       {
         tileRowHeight[ j ] = pps.getTileRowHeight( j );
         tileRowHeight[ m_iNumRowsMinus1 ]  =  tileRowHeight[ m_iNumRowsMinus1 ] - pps.getTileRowHeight( j );

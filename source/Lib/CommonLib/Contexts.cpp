@@ -240,6 +240,16 @@ const CtxSet ContextSetCfg::Split12Flag = ContextSetCfg::addCtxSet
   {  12,  12,  12,  12, },
 });
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+const CtxSet ContextSetCfg::ModeConsFlag = ContextSetCfg::addCtxSet
+({
+  { 192, 168, },
+  { 179, 139, },
+  { CNU, CNU, },
+  {   5,   2, },
+});
+#endif
+
 const CtxSet ContextSetCfg::SkipFlag = ContextSetCfg::addCtxSet
 ({
   { 197, 214, 216, },
@@ -1056,7 +1066,7 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 
 
 // combined sets
-#if JVET_O0119_BASE_PALETTE_444 
+#if JVET_O0119_BASE_PALETTE_444
 const CtxSet ContextSetCfg::Palette = { ContextSetCfg::RotationFlag, ContextSetCfg::RunTypeFlag, ContextSetCfg::IdxRunModel, ContextSetCfg::CopyRunModel };
 #endif
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };

@@ -1301,7 +1301,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #if JVET_O0414_SMVD_LTRP
           const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
           if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) && !isRefLongTerm )
-#else  
+#else
           if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
 #endif
           {

@@ -154,7 +154,7 @@ static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFI
 #if JVET_O0455_IBC_MAX_MERGE_NUM
 static const int IBC_MRG_MAX_NUM_CANDS =                            6; ///< IBC MERGE
 #endif
-  
+
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
 static const int ADAPT_SR_SCALE =                                   1; ///< division factor for adaptive search range
@@ -350,7 +350,8 @@ static const int IQUANT_SHIFT =                                     6;
 static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
 static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
 
-static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * (NUMBER_OF_PREDICTION_MODES - 1); ///< list number for quantization matrix
+static const int SCALING_LIST_PRED_MODES = NUMBER_OF_PREDICTION_MODES - 2;
+static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * SCALING_LIST_PRED_MODES; ///< list number for quantization matrix
 
 static const int SCALING_LIST_START_VALUE =                         8; ///< start value for dpcm mode
 static const int MAX_MATRIX_COEF_NUM =                             64; ///< max coefficient number for quantization matrix
@@ -479,6 +480,13 @@ static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
 static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
 static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+static const int NUM_INTER_CU_INFO_SAVE =                           8; ///< maximum number of inter cu information saved for fast algorithm
+static const int LDT_MODE_TYPE_INHERIT =                            0; ///< No need to signal mode_constraint_flag, and the modeType of the region is inherited from its parent node
+static const int LDT_MODE_TYPE_INFER =                              1; ///< No need to signal mode_constraint_flag, and the modeType of the region is inferred as MODE_TYPE_INTRA
+static const int LDT_MODE_TYPE_SIGNAL =                             2; ///< Need to signal mode_constraint_flag, and the modeType of the region is determined by the flag
+#endif
 
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
 static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test

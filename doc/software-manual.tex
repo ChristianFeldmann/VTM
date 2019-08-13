@@ -854,7 +854,7 @@ Enables harmonization of Gop first field couple.
 
 \Option{AccessUnitDelimiter} &
 %\ShortOption{\None} &
-\Default{0} &
+\Default{1} &
 Add Access Unit Delimiter NAL units between all Access Units.
 \\
 
@@ -3415,6 +3415,11 @@ Specifies the colour space conversion to apply to 444 video. Permitted values ar
   GBRtoRGB     & Reorder the three components \\
 \end{tabular}
 If no value is specified, no colour space conversion is applied. The list may eventually also include RGB to YCbCr or YCgCo conversions.\\
+\\
+
+\Option{PYUV} &
+\Default{false} &
+When true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data. See doc/pyuv_format.pdf for details. Ignored for interlaced output.
 \\
 
 \Option{SEINoDisplay} &

@@ -51,7 +51,7 @@
 #include <cassert>
 
 
-#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.    
+#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
 #define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
 
@@ -143,18 +143,19 @@
 #define JVET_O0065_CABAC_INIT                             0 // JVET-O0065: CABAC initialization
 
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
-   
+
 #define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
 #define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
 #define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
 
 #define JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB     1 // JVET-O0090 test 2: CTB selection of ALF alternative chroma filters
+#define JVET_O0050_LOCAL_DUAL_TREE                        1 // JVET-O0050: avoid small intra chroma block by a "local dual-tree" technique
 
 #define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
 
 #define JVET_O0256_ADJUST_THD_DEPQUANT                    1 // JVET-O0256: Fast encoder with adjusted threshold in dependent quantization
 
-#define JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING     1 // JVET-O0619/O0623 : Single pass coding of abs_level_gtx_flag[x] for TS residual coding 
+#define JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING     1 // JVET-O0619/O0623 : Single pass coding of abs_level_gtx_flag[x] for TS residual coding
 
 #define JVET_O0272_LMCS_SIMP_INVERSE_MAPPING              1 // JVET-O0272: LMCS simplified inverse mapping
 
@@ -229,9 +230,10 @@
 #define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
 #define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
 #define JVET_O0681_DIS_BPWA_CIIP                          1 // JVET-O0681 disable BCW for CIIP, method 2 inherit BCW index
-#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change 
+#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
+#define JVET_O0610_CFG                                    1 // config default change for "Adopt to mandate the presence of AU delimiter for each AU", config parameter should be removed later
 
 #define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
@@ -467,6 +469,9 @@ typedef       uint32_t            Intermediate_UInt; ///< used as intermediate v
 #endif
 
 typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
+#if JVET_O0050_LOCAL_DUAL_TREE
+typedef       uint64_t          ModeTypeSeries;    ///< used to encoded the ModeType at different split depth
+#endif
 
 typedef       uint64_t        Distortion;        ///< distortion measurement
 
@@ -592,6 +597,22 @@ enum ChannelType
   MAX_NUM_CHANNEL_TYPE = 2
 };
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+enum TreeType
+{
+  TREE_D = 0, //default tree status (for single-tree slice, TREE_D means joint tree; for dual-tree I slice, TREE_D means TREE_L for luma and TREE_C for chroma)
+  TREE_L = 1, //separate tree only contains luma (may split)
+  TREE_C = 2, //separate tree only contains chroma (not split), to avoid small chroma block
+};
+
+enum ModeType
+{
+  MODE_TYPE_ALL = 0, //all modes can try
+  MODE_TYPE_INTER = 1, //can try inter
+  MODE_TYPE_INTRA = 2, //can try intra, ibc, palette
+};
+#endif
+
 #define CH_L CHANNEL_TYPE_LUMA
 #define CH_C CHANNEL_TYPE_CHROMA
 
@@ -645,7 +666,7 @@ enum PredMode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
 #if JVET_O0119_BASE_PALETTE_444
-  MODE_PLT = 3,     ///< plt-prediction mode
+  MODE_PLT                   = 3,     ///< plt-prediction mode
   NUMBER_OF_PREDICTION_MODES = 4,
 #else
   NUMBER_OF_PREDICTION_MODES = 3,
@@ -967,7 +988,7 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
-  NAL_UNIT_PPS = 0,                     // 0 
+  NAL_UNIT_PPS = 0,                     // 0
   NAL_UNIT_ACCESS_UNIT_DELIMITER,       // 1
   NAL_UNIT_PREFIX_SEI,                  // 2
   NAL_UNIT_SUFFIX_SEI,                  // 3
@@ -995,7 +1016,7 @@ enum NalUnitType
   NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
   NAL_UNIT_CODED_SLICE_CRA,             // 26
   NAL_UNIT_CODED_SLICE_GRA,             // 27
-  NAL_UNIT_UNSPECIFIED_28,              // 29              
+  NAL_UNIT_UNSPECIFIED_28,              // 29
   NAL_UNIT_UNSPECIFIED_29,              // 30
   NAL_UNIT_UNSPECIFIED_30,              // 31
   NAL_UNIT_UNSPECIFIED_31,              // 32
@@ -1110,8 +1131,8 @@ struct BitDepths
 enum PLTRunMode
 {
   PLT_RUN_INDEX = 0,
-  PLT_RUN_COPY = 1,
-  NUM_PLT_RUN = 2
+  PLT_RUN_COPY  = 1,
+  NUM_PLT_RUN   = 2
 };
 #endif
 /// parameters for deblocking filter

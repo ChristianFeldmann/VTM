@@ -169,7 +169,7 @@ void InterSearch::destroy()
   }
   m_uniMvListIdx = 0;
   m_uniMvListSize = 0;
-#endif 
+#endif
   m_isInitialized = false;
 }
 
@@ -281,7 +281,7 @@ void InterSearch::init( EncCfg*        pcEncCfg,
   }
   m_uniMvListIdx = 0;
   m_uniMvListSize = 0;
-#endif 
+#endif
   m_isInitialized = true;
 }
 
@@ -1494,7 +1494,11 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     Distortion cost = 0;
 
 #if JVET_O0162_IBC_MVP_FLAG
+#if JVET_O0455_IBC_MAX_MERGE_NUM
+    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
+#endif
     {
       iBvpNum = 1;
       cMvPred[1] = cMvPred[0];
@@ -2508,7 +2512,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
         )
       {
         bool doBiPred = true;
-		tryBipred = 1;
+        tryBipred = 1;
         cMvBi[0] = cMv[0];
         cMvBi[1] = cMv[1];
         iRefIdxBi[0] = iRefIdx[0];
@@ -2749,7 +2753,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
           {
             if (mvPrecAdj && pu.cu->imv)
             {
-              mvCand.roundIbcPrecInternal2Amvr(pu.cu->imv);
+              mvCand.roundTransPrecInternal2Amvr(pu.cu->imv);
             }
 
             bool toAddMvCand = true;
@@ -2877,19 +2881,19 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
     iRefIdx[1] = refIdxValidList1;
     uiBits [1] = bitsValidList1;
     uiCost [1] = costValidList1;
-	if (cu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
-	{
-		CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
-		CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
-		cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);	
-		if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
-			|| wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
-		{
-			uiCostBi = MAX_UINT;
-			enforceGBiPred = false;
-		}
-	}
+    if (cu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
+    {
+      CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
+      CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
+      cu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
+      cu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
+      if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
+        || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
+      {
+        uiCostBi = MAX_UINT;
+        enforceGBiPred = false;
+      }
+    }
     if( enforceGBiPred )
     {
       uiCost[0] = uiCost[1] = MAX_UINT;
@@ -3302,7 +3306,7 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
 
   const Picture* picRef = pu.cu->slice->getRefPic( eRefPicList, iRefIdx );
   clipMv( cMvCand, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps );
-  
+
   // prediction pattern
   const bool bi = pu.cu->slice->testWeightPred() && pu.cu->slice->getSliceType()==P_SLICE;
 
@@ -5001,7 +5005,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   // Bi-directional prediction
   if ( slice.isInterB() && !PU::isBipredRestriction(pu) )
   {
-	  tryBipred = 1;
+    tryBipred = 1;
     pu.interDir = 3;
 #if JVET_O0070_PROF
     m_isBi = true;
@@ -5235,16 +5239,16 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   uiCost[1]  = costValidList1;
   if (pu.cs->pps->getWPBiPred() == true && tryBipred && (gbiIdx != GBI_DEFAULT))
   {
-	  CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
-	  CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
-	  pu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
-	  pu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
-	  if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
-		  || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
-	  {
-		  uiCostBi = MAX_UINT;
-		  enforceGBiPred = false;
-	  }
+    CHECK(iRefIdxBi[0]<0, "Invalid picture reference index");
+    CHECK(iRefIdxBi[1]<0, "Invalid picture reference index");
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_0, iRefIdxBi[0], wp0);
+    pu.cs->slice->getWpScaling(REF_PIC_LIST_1, iRefIdxBi[1], wp1);
+    if ((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag
+      || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag))
+    {
+      uiCostBi = MAX_UINT;
+      enforceGBiPred = false;
+    }
   }
   if( enforceGBiPred )
   {
@@ -6348,9 +6352,13 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
 
     CHECK(CU::isIntra(cu), "Inter search provided with intra CU");
 
-    if( cu.chromaFormat != CHROMA_400 
+    if( cu.chromaFormat != CHROMA_400
 #if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0050_LOCAL_DUAL_TREE
+      && (!cu.isSepTree() || isChroma(partitioner.chType))
+#else
       && (!CS::isDualITree(cs) || isChroma(partitioner.chType))
+#endif
 #endif
       )
     {
@@ -6385,7 +6393,7 @@ void InterSearch::xEncodeInterResidualQT(CodingStructure &cs, Partitioner &parti
       }
     }
 
-    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual ) 
+    if( !bSubdiv && !( cu.sbtInfo && currTU.noResidual )
 #if JVET_O0545_MAX_TB_SIGNALLING
       && !isChroma(partitioner.chType)
 #endif
@@ -6730,7 +6738,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   if (bCheckFull)
   {
-#if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING || JVET_O0050_LOCAL_DUAL_TREE
     TransformUnit &tu = csFull->addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
 #else
     TransformUnit &tu = csFull->addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
@@ -6774,7 +6782,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     saveCS.picture = cs.picture;
     saveCS.area.repositionTo(currArea);
     saveCS.clearTUs();
-#if JVET_O0545_MAX_TB_SIGNALLING
+#if JVET_O0545_MAX_TB_SIGNALLING || JVET_O0050_LOCAL_DUAL_TREE
     TransformUnit & bestTU = saveCS.addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
 #else
     TransformUnit & bestTU = saveCS.addTU(CS::isDualITree(cs) ? cu : currArea, partitioner.chType);
@@ -7166,7 +7174,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
         if ( checkJointCbCr && (tu.cu->cs->slice->getSliceQp() > 18))
         {
-            m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
+          m_pcTrQuant->setLambda( 1.05 * m_pcTrQuant->getLambda() );
         }
 #else
         if ( tu.cu->cs->slice->getSliceQp() > 18 )
@@ -7499,6 +7507,10 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
 
   CodingUnit &cu = *cs.getCU( partitioner.chType );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.predMode == MODE_INTER )
+    CHECK( cu.isSepTree(), "CU with Inter mode must be in single tree" );
+#endif
 
   const ChromaFormat format     = cs.area.chromaFormat;;
   const int  numValidComponents = getNumberValidComponents(format);
@@ -7521,7 +7533,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
 
     // add an empty TU
+#if JVET_O0050_LOCAL_DUAL_TREE
+    cs.addTU(CS::getArea(cs, cs.area, partitioner.chType), partitioner.chType);
+#else
     cs.addTU(CS::isDualITree(cs) ? cu : cs.area, partitioner.chType);
+#endif
     Distortion distortion = 0;
 
     for (int comp = 0; comp < numValidComponents; comp++)

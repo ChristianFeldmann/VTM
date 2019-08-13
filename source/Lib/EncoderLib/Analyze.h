@@ -76,7 +76,7 @@ private:
   double    m_logDeltaESum[hdrtoolslib::NB_REF_WHITE];
   double    m_psnrLSum[hdrtoolslib::NB_REF_WHITE];
 #endif
-  
+
 public:
   virtual ~Analyze()  {}
   Analyze() { clear(); }
@@ -120,7 +120,7 @@ public:
     }
   }
 #endif
-  
+
   void    setFrmRate  (double dFrameRate) { m_dFrmRate = dFrameRate; } //--CFG_KDY
   void    clear()
   {
@@ -489,7 +489,7 @@ public:
               msg( e_msg_level, "  %8.4lf  " "%8.4lf  ", getDeltaE()/(double)getNumPic(), getPsnrL()/(double)getNumPic());
             }
 #endif
-          
+
 #if EXTENSION_360_VIDEO
             m_ext360.printPSNRs(getNumPic(), e_msg_level);
 #endif

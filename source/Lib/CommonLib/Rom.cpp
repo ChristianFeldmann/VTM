@@ -78,7 +78,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_VPS:                    return "VPS";
   case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
   case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
-  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA"; 
+  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
   case NAL_UNIT_CODED_SLICE_GRA:        return "GRA";
   default:                              return "UNK";
   }
@@ -131,15 +131,14 @@ public:
 
 #if JVET_O0119_BASE_PALETTE_444
       case SCAN_TRAV_HOR:
-      {
         if (m_line % 2 == 0)
         {
           if (m_column == (m_blockWidth - 1))
           {
             m_line++;
             m_column = m_blockWidth - 1;
-        }
-        else m_column++;
+          }
+          else m_column++;
         }
         else
         {
@@ -150,11 +149,9 @@ public:
           }
           else m_column--;
         }
-      }
-      break;
+        break;
 
       case SCAN_TRAV_VER:
-      {
         if (m_column % 2 == 0)
         {
           if (m_line == (m_blockHeight - 1))
@@ -173,8 +170,7 @@ public:
           }
           else m_line--;
         }
-      }
-      break;
+        break;
 #endif
       //------------------------------------------------
 
@@ -674,7 +670,7 @@ const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
     "INTER1X1_LUMA",
     "INTER1X1_CHROMAU",
     "INTER1X1_CHROMAV"
-	},
+  },
   {
     "INTRA2X2_LUMA",
     "INTRA2X2_CHROMAU",

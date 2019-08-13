@@ -239,8 +239,8 @@ protected:
   int       m_iGOPSize;
   RPLEntry  m_RPLList0[MAX_GOP];
   RPLEntry  m_RPLList1[MAX_GOP];
-  int		    m_numRPLList0;
-  int		    m_numRPLList1;
+  int       m_numRPLList0;
+  int       m_numRPLList1;
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
@@ -353,7 +353,9 @@ protected:
 #endif
   bool      m_MIP;
   bool      m_useFastMIP;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+  bool      m_useFastLocalDualTree;
+#endif
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t  m_log2MaxTbSize;
 #endif
@@ -484,7 +486,7 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
- 
+
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -1005,6 +1007,10 @@ public:
   bool      getUseMIP                       () const         { return m_MIP; }
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }
   bool      getUseFastMIP                   () const         { return m_useFastMIP; }
+#if JVET_O0050_LOCAL_DUAL_TREE
+  void      setUseFastLocalDualTree         ( bool b )       { m_useFastLocalDualTree = b; }
+  bool      getUseFastLocalDualTree         () const         { return m_useFastLocalDualTree; }
+#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   void      setLog2MaxTbSize                ( uint32_t  u )   { m_log2MaxTbSize = u; }
@@ -1639,7 +1645,7 @@ public:
 #endif
   void         setUseALF( bool b ) { m_alf = b; }
   bool         getUseALF()                                      const { return m_alf; }
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
   double      getWhitePointDeltaE( uint32_t index )             const { return m_whitePointDeltaE[ index ]; }

@@ -103,7 +103,7 @@ private:
   inline int xCalcDQ              ( Pel* piSrc, const int iOffset ) const;
 #if JVET_O0159_10BITTCTABLE_DEBLOCKING
   static const uint16_t sm_tcTable[MAX_QP + 3];
-#else  
+#else
   static const uint8_t sm_tcTable[MAX_QP + 3];
 #endif
   static const uint8_t sm_betaTable[MAX_QP + 1];

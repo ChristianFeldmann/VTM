@@ -141,7 +141,7 @@ void EncApp::xInitLibCfg()
 #endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
-#endif 
+#endif
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
@@ -304,7 +304,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
   m_cEncLib.setRDPCM                                             ( m_RdpcmMode );
 #if JVET_O0119_BASE_PALETTE_444
-  m_cEncLib.setPLTMode                                           ( m_PLTMode);
+  m_cEncLib.setPLTMode                                           ( m_PLTMode );
 #endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   m_cEncLib.setJointCbCr                                         ( m_JointCbCrMode );
@@ -360,6 +360,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  m_cEncLib.setUseFastLocalDualTree                              ( m_useFastLocalDualTree );
+#endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_LUMA  , m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA]   );
@@ -610,7 +613,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
   {

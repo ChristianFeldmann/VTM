@@ -471,11 +471,14 @@ void BrickMap::create( const SPS& sps, const PPS& pps )
   numTileRows    = pps.getNumTileRowsMinus1() + 1;
   numTiles       = numTileColumns * numTileRows;
 
-  const uint32_t numCtusInFrame = pcv->sizeInCtus;
+  const size_t numCtusInFrame = pcv->sizeInCtus;
+
   brickIdxRsMap    = new uint32_t[numCtusInFrame];
-  brickIdxBsMap    = new uint32_t[numCtusInFrame];
-  ctuBsToRsAddrMap = new uint32_t[numCtusInFrame+1];
-  ctuRsToBsAddrMap = new uint32_t[numCtusInFrame+1];
+  brickIdxBsMap    = new uint32_t[numCtusInFrame + 1];
+  ctuBsToRsAddrMap = new uint32_t[numCtusInFrame + 1];
+  ctuRsToBsAddrMap = new uint32_t[numCtusInFrame + 1];
+
+  brickIdxBsMap[numCtusInFrame] = ~0u;   // Initialize last element to some large value
 
   initBrickMap( sps, pps );
 
@@ -534,7 +537,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
   else
   {
     tileColWidth[ numTileColumns - 1 ] = frameWidthInCtus;
-    for( int i = 0; i < numTileColumns - 1; i++ ) 
+    for( int i = 0; i < numTileColumns - 1; i++ )
     {
       tileColWidth[ i ] = pps.getTileColumnWidth(i);
       tileColWidth[ numTileColumns - 1 ]  =  tileColWidth[ numTileColumns - 1 ] - pps.getTileColumnWidth(i);
@@ -542,7 +545,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
 
 
     tileRowHeight[ numTileRows-1 ] = frameHeightInCtus;
-    for( int j = 0; j < numTileRows-1; j++ ) 
+    for( int j = 0; j < numTileRows-1; j++ )
     {
       tileRowHeight[ j ] = pps.getTileRowHeight( j );
       tileRowHeight[ numTileRows-1 ]  =  tileRowHeight[ numTileRows-1 ] - pps.getTileRowHeight( j );
@@ -592,7 +595,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
         int brickHeight= pps.getBrickHeightMinus1(tileIdx) + 1;
         int remainingHeightInCtbsY  = tileRowHeight[ tileY ];
         int brickInTile = 0;
-        while( remainingHeightInCtbsY > brickHeight ) 
+        while( remainingHeightInCtbsY > brickHeight )
         {
           rowHeight2.resize(brickInTile+1);
           rowHeight2[ brickInTile++ ] = brickHeight;
@@ -607,7 +610,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
         numBrickRowsMinus1 = pps.getNumBrickRowsMinus1(tileIdx);
         rowHeight2.resize(numBrickRowsMinus1 + 1);
         rowHeight2[ numBrickRowsMinus1 ] = tileRowHeight[ tileY ];
-        for(int j = 0; j < numBrickRowsMinus1; j++ ) 
+        for(int j = 0; j < numBrickRowsMinus1; j++ )
         {
           rowHeight2[ j ] = pps.getBrickRowHeightMinus1 ( tileIdx, j )+ 1;
           rowHeight2[ numBrickRowsMinus1 ]  -=  rowHeight2[ j ];
@@ -619,7 +622,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
       {
         rowBd2[ j + 1 ] = rowBd2[ j ] + rowHeight2[ j ];
       }
-      for( int j = 0; j < numBrickRowsMinus1 + 1; j++ ) 
+      for( int j = 0; j < numBrickRowsMinus1 + 1; j++ )
       {
         bricks.resize(bricks.size()+1);
         bricks[ brickIdx ].setColBd (tileColBd[ tileX ]);
@@ -636,7 +639,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
 
   for( int i = 0; i < (int)bricks.size(); i++ )
   {
-    for( int y = bricks[i].getRowBd(); y < bricks[i].getRowBd() + bricks[i].getHeightInCtus(); y++ ) 
+    for( int y = bricks[i].getRowBd(); y < bricks[i].getRowBd() + bricks[i].getHeightInCtus(); y++ )
     {
       for( int x = bricks[i].getColBd(); x < bricks[i].getColBd() + bricks[i].getWidthInCtus(); x++ )
       {
@@ -657,13 +660,13 @@ void BrickMap::initCtuBsRsAddrMap()
   const uint32_t picSizeInCtbsY    = picWidthInCtbsY * picHeightInCtbsY;
   const int numBricksInPic         = (int) bricks.size();
 
-  for( uint32_t ctbAddrRs = 0; ctbAddrRs < picSizeInCtbsY; ctbAddrRs++ ) 
+  for( uint32_t ctbAddrRs = 0; ctbAddrRs < picSizeInCtbsY; ctbAddrRs++ )
   {
     const uint32_t tbX = ctbAddrRs % picWidthInCtbsY;
     const uint32_t tbY = ctbAddrRs / picWidthInCtbsY;
     bool brickFound = false;
     int bkIdx = (numBricksInPic - 1);
-    for( int i = 0; i < (numBricksInPic - 1)  &&  !brickFound; i++ ) 
+    for( int i = 0; i < (numBricksInPic - 1)  &&  !brickFound; i++ )
     {
       brickFound = tbX  <  ( bricks[i].getColBd() + bricks[i].getWidthInCtus() )  &&
                    tbY  <  ( bricks[i].getRowBd() + bricks[i].getHeightInCtus() );
@@ -680,8 +683,8 @@ void BrickMap::initCtuBsRsAddrMap()
     }
     ctuRsToBsAddrMap[ ctbAddrRs ]  += ( tbY - bricks[ bkIdx ].getRowBd() ) * bricks[ bkIdx ].getWidthInCtus() + tbX - bricks[ bkIdx ].getColBd();
   }
-  
-  
+
+
   for( uint32_t ctbAddrRs = 0; ctbAddrRs < picSizeInCtbsY; ctbAddrRs++ )
   {
     ctuBsToRsAddrMap[ ctuRsToBsAddrMap[ ctbAddrRs ] ] = ctbAddrRs;
@@ -917,7 +920,7 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
-  memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));   
+  memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
   cs->lmcsAps = &lmcsAps;
 
   cs->pcv     = pps.pcv;
@@ -1056,7 +1059,7 @@ void Picture::extendPicBorder()
     {
       ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
     }
-    
+
     // reference picture with horizontal wrapped boundary
     if (cs->sps->getWrapAroundEnabledFlag())
     {
@@ -1069,12 +1072,12 @@ void Picture::extendPicBorder()
       {
         for (int x = 0; x < xmargin; x++ )
         {
-          if( x < xoffset ) 
+          if( x < xoffset )
           {
             pi[ -x - 1 ] = pi[ -x - 1 + xoffset ];
             pi[  p.width + x ] = pi[ p.width + x - xoffset ];
           }
-          else 
+          else
           {
             pi[ -x - 1 ] = pi[ 0 ];
             pi[  p.width + x ] = pi[ p.width - 1 ];

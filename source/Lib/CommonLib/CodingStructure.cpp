@@ -543,7 +543,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
   {
     prevPU->next = pu;
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
-    
+
     CHECK( prevPU->cacheId != pu->cacheId, "Inconsintent cacheId between previous and current PU" );
 #endif
   }
@@ -627,7 +627,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
 
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
-#if JVET_O0119_BASE_PALETTE_444 
+#if JVET_O0119_BASE_PALETTE_444
   bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 #endif
@@ -1009,7 +1009,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.picture   = picture;
 
   subStruct.sps       = sps;
-  subStruct.vps       = vps; 
+  subStruct.vps       = vps;
   subStruct.pps       = pps;
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 
@@ -1150,7 +1150,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
           const UnitArea &puPatch = *ppu;
 #if JVET_O0050_LOCAL_DUAL_TREE
           PredictionUnit &pu = addPU( puPatch, ppu->chType );
-#else   
+#else
           PredictionUnit &pu = addPU( puPatch, chType );
 #endif
 
@@ -1223,7 +1223,7 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
       const UnitArea &puPatch = *ppu;
 #if JVET_O0050_LOCAL_DUAL_TREE
       PredictionUnit &pu = addPU( puPatch, ppu->chType );
-#else   
+#else
       PredictionUnit &pu = addPU( puPatch, chType );
 #endif
 

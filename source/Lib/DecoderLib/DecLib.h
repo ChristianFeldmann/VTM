@@ -149,7 +149,7 @@ public:
 
   void  setTargetDecLayer (int val) { m_iTargetLayer = val; }
   int   getTargetDecLayer()         { return m_iTargetLayer; }
-  
+
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }

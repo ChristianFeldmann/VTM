@@ -1880,7 +1880,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
     }
   }
-  cu.useEscape[compBegin] = true; // JC 
+  cu.useEscape[compBegin] = true; // JC
   if (cu.curPLTSize[compBegin] > 0)
   {
     uint32_t escCode = 0;
@@ -2172,7 +2172,7 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel curLevel, uint32_t idx, Pe
     maxSymbol--;
   }
   symbol = curLevel;
-  if (curLevel >= refLevel) // include escape mode 
+  if (curLevel >= refLevel) // include escape mode
   {
     symbol++;
   }
@@ -3359,7 +3359,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
 
 #if JVET_O0046_DQ_SIGNALLING
   if( ( cu.lwidth() > 64 || cu.lheight() > 64 || cbfLuma || cbfChroma ) &&
-#else   
+#else
   if( ( cbfLuma || cbfChroma ) &&
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -3708,7 +3708,7 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu )
 #if JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE
   int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
 #endif
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS || 
+  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
 #if JVET_O0925_MIP_SIMPLIFICATIONS
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
 #else

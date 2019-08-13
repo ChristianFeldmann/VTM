@@ -84,20 +84,20 @@ bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const S
   int iVerMax = ( sps->getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
   int iVerMin = ( -( int ) sps->getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
   int mvX = rcMv.getHor();
-  
-  if(mvX > iHorMax) 
+
+  if(mvX > iHorMax)
   {
     mvX -= ( sps->getWrapAroundOffset() << iMvShift );
     mvX = std::min( iHorMax, std::max( iHorMin, mvX ) );
     wrapRef = false;
   }
-  if(mvX < iHorMin) 
-  {        
+  if(mvX < iHorMin)
+  {
     mvX += ( sps->getWrapAroundOffset() << iMvShift );
     mvX = std::min( iHorMax, std::max( iHorMin, mvX ) );
     wrapRef = false;
   }
-  
+
   rcMv.setHor( mvX );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
   return wrapRef;

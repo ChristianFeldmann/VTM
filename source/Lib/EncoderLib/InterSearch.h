@@ -176,7 +176,7 @@ protected:
   bool            m_skipSbtAll;                         // to skip all SBT modes for the current PU
   uint8_t         m_histBestSbt;                        // historical best SBT mode for PU of certain SSE values
   uint8_t         m_histBestMtsIdx;                     // historical best MTS idx  for PU of certain SSE values
-  
+
 public:
   InterSearch();
   virtual ~InterSearch();

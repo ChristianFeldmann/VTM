@@ -150,7 +150,7 @@ void EncCu::create( EncCfg* encCfg )
     m_acRealMergeBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
 #if JVET_O0108_DIS_DMVR_BDOF_CIIP
     m_acMergeTmpBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
-#endif 
+#endif
   }
   const unsigned maxNumTriangleCand = encCfg->getMaxNumTriangleCand();
   for (unsigned i = 0; i < maxNumTriangleCand; i++)
@@ -257,7 +257,7 @@ void EncCu::destroy()
     m_acRealMergeBuffer[ui].destroy();
 #if JVET_O0108_DIS_DMVR_BDOF_CIIP
     m_acMergeTmpBuffer[ui].destroy();
-#endif 
+#endif
   }
   for( unsigned ui = 0; ui < TRIANGLE_MAX_NUM_CANDS; ui++ )
   {
@@ -2223,7 +2223,7 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   tempCS->addPU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
   tempCS->addTU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
   // Search
-  tempCS->dist = 0;  
+  tempCS->dist = 0;
 #if JVET_O0050_LOCAL_DUAL_TREE
   if (cu.isSepTree())
 #else
@@ -5022,7 +5022,7 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
     cu.shareParentSize = tempCS->sharedBndSize;
     partitioner.setCUData( cu );
 
-    if( CU::isIntra( cu ) 
+    if( CU::isIntra( cu )
 #if JVET_O0119_BASE_PALETTE_444
     || CU::isPLT(cu)
 #endif

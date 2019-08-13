@@ -177,24 +177,24 @@ private:
   bool                    m_bInitAMaxBT;
 
   AUWriterIf*             m_AUWriterIf;
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
-  
+
   hdrtoolslib::Frame **m_ppcFrameOrg;
   hdrtoolslib::Frame **m_ppcFrameRec;
-  
+
   hdrtoolslib::ConvertColorFormat     *m_pcConvertFormat;
   hdrtoolslib::Convert                *m_pcConvertIQuantize;
   hdrtoolslib::ColorTransform         *m_pcColorTransform;
   hdrtoolslib::DistortionMetricDeltaE *m_pcDistortionDeltaE;
   hdrtoolslib::TransferFunction       *m_pcTransferFct;
-  
+
   hdrtoolslib::ColorTransformParams   *m_pcColorTransformParams;
   hdrtoolslib::FrameFormat            *m_pcFrameFormat;
-  
+
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
-  
+
 public:
   EncGOP();
   virtual ~EncGOP();
@@ -203,7 +203,7 @@ public:
   void  destroy     ();
 
   void  init        ( EncLib* pcEncLib );
-  
+
   void  compressGOP ( int iPOCLast, int iNumPicRcvd, PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRec,
                       bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                     , bool isEncodeLtRef
@@ -259,10 +259,10 @@ protected:
   void  xPicInitHashME     (Picture *pic, const SPS *sps, PicList &rcListPic);
   void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
   void  xPicInitLMCS       (Picture *pic, Slice *slice);
-  
+
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
-    
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void xCalculateHDRMetrics ( Picture* pcPic, double deltaE[hdrtoolslib::NB_REF_WHITE], double psnrL[hdrtoolslib::NB_REF_WHITE]);
   void copyBuftoFrame       ( Picture* pcPic );

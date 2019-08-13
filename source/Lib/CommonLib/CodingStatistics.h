@@ -600,7 +600,7 @@ private:
         {
           max.acc_trf_CABAC_state += cabacSubTotal;
           max.acc_trf_EP_state += epSubTotal;
-        } 
+        }
 #endif
 
       }

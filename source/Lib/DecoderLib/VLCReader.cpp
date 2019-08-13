@@ -425,7 +425,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
   READ_FLAG( uiCode, "transquant_bypass_enabled_flag");
   pcPPS->setTransquantBypassEnabledFlag(uiCode ? true : false);
-  
+
   READ_FLAG( uiCode, "single_tile_in_pic_flag" );                 pcPPS->setSingleTileInPicFlag(uiCode == 1);
 
   if(!pcPPS->getSingleTileInPicFlag())
@@ -1109,7 +1109,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC( uiCode,    "log2_max_pic_order_cnt_lsb_minus4" );   pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");
-  READ_FLAG( uiCode, "sps_idr_rpl_present_flag" ); pcSPS->setIDRRefParamListPresent( (bool) uiCode);                 
+  READ_FLAG( uiCode, "sps_idr_rpl_present_flag" ); pcSPS->setIDRRefParamListPresent( (bool) uiCode);
   // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
   READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
@@ -1270,8 +1270,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       std::vector<int> deltaQpOutVal(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
       for (int j = 0; j <= chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i); j++)
       {
-        READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode; 
-        READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode; 
+        READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode;
+        READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode;
       }
       chromaQpMappingTableParams.setDeltaQpInValMinus1(i, deltaQpInValMinus1);
       chromaQpMappingTableParams.setDeltaQpOutVal(i, deltaQpOutVal);
@@ -1285,7 +1285,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 #endif
-  
+
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 
@@ -1310,7 +1310,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag (uiCode ? true : false);
 #endif
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
-  {    
+  {
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
 
   if (pcSPS->getWrapAroundEnabledFlag())
@@ -1318,7 +1318,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_UVLC(uiCode, "sps_ref_wraparound_offset_minus1");               pcSPS->setWrapAroundOffset( (uiCode+1)*(1 <<  pcSPS->getLog2MinCodingBlockSize()));
   }
   }
-  else 
+  else
   {
     pcSPS->setWrapAroundEnabledFlag(0);
   }
@@ -1389,7 +1389,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG 
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
@@ -1533,8 +1533,8 @@ void HLSyntaxReader::parseDPS(DPS* dps)
 #endif
   uint32_t  symbol;
 
-  READ_CODE( 4,  symbol,  "dps_decoding_parameter_set_id" ); 
-  CHECK(symbol == 0, "dps_decoding_parameter_set_id equal to zero is reserved and should not be use in a bitstream"); 
+  READ_CODE( 4,  symbol,  "dps_decoding_parameter_set_id" );
+  CHECK(symbol == 0, "dps_decoding_parameter_set_id equal to zero is reserved and should not be use in a bitstream");
   dps->setDecodingParameterSetId( symbol );
 
   READ_CODE( 3,  symbol,  "dps_max_sub_layers_minus1" );          dps->setMaxSubLayersMinus1( symbol );
@@ -1543,7 +1543,7 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   ProfileTierLevel ptl;
   parseProfileTierLevel(&ptl, dps->getMaxSubLayersMinus1());
   dps->setProfileTierLevel(ptl);
-  
+
   READ_FLAG( symbol,      "dps_extension_flag" );
   if (symbol)
   {
@@ -2078,7 +2078,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         RefPicList  eRefPicList = ( iNumRef ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
         for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
-        {  
+        {
           pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
           wp[0].bPresentFlag = false;
           wp[1].bPresentFlag = false;
@@ -2216,7 +2216,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       READ_FLAG( uiCode, "slice_joint_cbcr_sign_flag" ); pcSlice->setJointCbCrSignFlag(uiCode != 0);
     }
-#endif 
+#endif
 #endif
 
     READ_SVLC( iCode, "slice_qp_delta" );
@@ -2328,7 +2328,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if (sps->getUseReshaper())
     {
-      READ_FLAG(uiCode, "slice_lmcs_enabled_flag");          
+      READ_FLAG(uiCode, "slice_lmcs_enabled_flag");
       pcSlice->setLmcsEnabledFlag(uiCode == 1);
 
       if (pcSlice->getLmcsEnabledFlag())
@@ -2338,7 +2338,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #else
         READ_CODE(5, uiCode, "slice_lmcs_aps_id");
 #endif
-        
+
         pcSlice->setLmcsAPSId(uiCode);
 #if !JVET_O1109_UNFIY_CRS
         if (!(sps->getUseDualITree() && pcSlice->isIntra()))
@@ -2348,7 +2348,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         if (bChroma)
         {
 #endif
-          READ_FLAG(uiCode, "slice_chroma_residual_scale_flag");                
+          READ_FLAG(uiCode, "slice_chroma_residual_scale_flag");
           pcSlice->setLmcsChromaResidualScaleFlag(uiCode == 1);
 #if !JVET_O1109_UNFIY_CRS || JVET_O0616_400_CHROMA_SUPPORT
         }

@@ -98,7 +98,7 @@ public:
   void        mip_flag                  ( CodingUnit&                   cu );
   void        mip_pred_modes            ( CodingUnit&                   cu );
   void        mip_pred_mode             ( PredictionUnit&               pu );
-#if JVET_O0119_BASE_PALETTE_444  
+#if JVET_O0119_BASE_PALETTE_444
   void        cu_palette_info           ( CodingUnit&                   cu,     ComponentID     compBegin, uint32_t numComp, CUCtx& cuCtx );
 #endif
 

@@ -93,13 +93,13 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
       if (!(w & 3)) idx -= 4;
       dI0 = dMvX0[idx] * gradX0[w] + dMvY0[idx] * gradY0[w];
       dI0 = (dI0 + dIoffset) >> dIshift;
-      if (l1PROFEnabled) 
+      if (l1PROFEnabled)
       {
         dI1 = dMvX1[idx] * gradX1[w] + dMvY1[idx] * gradY1[w];
         dI1 = (dI1 + dIoffset) >> dIshift;
         dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + (src1[w] + dI1) * w1 + offset), shiftNum), clpRng);
       }
-      else 
+      else
         dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + src1[w] * w1 + offset), shiftNum), clpRng);
 
       idx++;
@@ -107,7 +107,7 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
 
     gradX0 += gradStride;
     gradY0 += gradStride;
-    if (l1PROFEnabled) 
+    if (l1PROFEnabled)
     {
       gradX1 += gradStride;
       gradY1 += gradStride;

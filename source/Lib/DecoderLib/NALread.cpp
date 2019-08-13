@@ -118,7 +118,7 @@ static void xTraceNalUnitHeader(InputNALUnit& nalu)
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_temporal_id_plus1", 3, nalu.m_temporalId + 1 );
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type_lsb", 4, (nalu.m_nalUnitType) - (zeroTidRequiredFlag << 4));
 #if EMULATION_PREVENTION_FIX
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id_plus1", 7, nalu.m_nuhLayerId+1); 
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id_plus1", 7, nalu.m_nuhLayerId+1);
 #else
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id", 7, nalu.m_nuhLayerId );
 #endif
@@ -136,10 +136,10 @@ void readNalUnitHeader(InputNALUnit& nalu)
   CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
   uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
   nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
-  nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id 
+  nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id
 #if EMULATION_PREVENTION_FIX
   CHECK (nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
-  nalu.m_nuhLayerId--; 
+  nalu.m_nuhLayerId--;
   CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
 #else
   CHECK(nalu.m_nuhLayerId > 126, "Layer ID out of range");
@@ -160,7 +160,7 @@ void readNalUnitHeader(InputNALUnit& nalu)
   {
     if ( nalu.m_temporalId )
     {
-      CHECK(  
+      CHECK(
            (uint32_t)nalu.m_nalUnitType >= 16
         && (uint32_t)nalu.m_nalUnitType <= 31
             , "Invalid NAL type" );

@@ -141,7 +141,7 @@ void EncApp::xInitLibCfg()
 #endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
-#endif 
+#endif
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
@@ -613,7 +613,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
   {

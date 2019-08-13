@@ -135,7 +135,7 @@ protected:
   bool         m_bestScanRotationMode;
   Ctx          m_storeCtxRun;
   Ctx          m_storeCtxRunIndex;
-  Ctx          m_storeCtxRunCopy; 
+  Ctx          m_storeCtxRunCopy;
   Ctx          m_orgCtxRD;
   bool         *m_runTypeRD;
   Pel          *m_runLengthRD;
@@ -182,7 +182,7 @@ public:
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
 #if JVET_O0502_ISP_CLEANUP
-  void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers 
+  void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
   const PelBuf& getISPBuffer      () { return m_pelBufISP[m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED]; }
 #endif
 

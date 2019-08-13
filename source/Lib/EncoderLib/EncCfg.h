@@ -486,7 +486,7 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
- 
+
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -1645,7 +1645,7 @@ public:
 #endif
   void         setUseALF( bool b ) { m_alf = b; }
   bool         getUseALF()                                      const { return m_alf; }
-  
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
   double      getWhitePointDeltaE( uint32_t index )             const { return m_whitePointDeltaE[ index ]; }

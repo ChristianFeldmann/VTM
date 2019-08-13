@@ -301,7 +301,7 @@ uint32_t StreamMergeApp::mergeStreams()
   //Loop all input bitstreams to interleave their NALUs
   while (nNumValidStr)
   {
-    //loop over all input streams 
+    //loop over all input streams
     for (int i = 0; i < m_numInputStreams; i++)
     {
       uint8_t layerId = i < 63 ? i : i + 1;

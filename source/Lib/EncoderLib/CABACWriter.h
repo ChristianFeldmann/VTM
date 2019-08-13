@@ -93,7 +93,7 @@ public:
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
   void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );
-  
+
   void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
   void        cu_pred_data              ( const CodingUnit&             cu );

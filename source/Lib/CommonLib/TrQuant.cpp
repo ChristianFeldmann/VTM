@@ -100,25 +100,25 @@ template<int signedMode> std::pair<int64_t,int64_t> fwdTransformCbCr( const PelB
     {
       int cbx = cb[x], crx = cr[x];
       if      ( signedMode ==  1 )
-      { 
+      {
         c1[x] = Pel( ( 4*cbx + 2*crx ) / 5 );
         d1   += square( cbx - c1[x] ) + square( crx - (c1[x]>>1) );
-      } 
+      }
       else if ( signedMode == -1 )
       {
         c1[x] = Pel( ( 4*cbx - 2*crx ) / 5 );
         d1   += square( cbx - c1[x] ) + square( crx - (-c1[x]>>1) );
-      } 
+      }
       else if ( signedMode ==  2 )
       {
         c1[x] = Pel( ( cbx + crx ) / 2 );
         d1   += square( cbx - c1[x] ) + square( crx - c1[x] );
-      } 
+      }
       else if ( signedMode == -2 )
       {
         c1[x] = Pel( ( cbx - crx ) / 2 );
         d1   += square( cbx - c1[x] ) + square( crx + c1[x] );
-      } 
+      }
       else if ( signedMode ==  3 )
       {
         c2[x] = Pel( ( 4*crx + 2*cbx ) / 5 );
@@ -128,7 +128,7 @@ template<int signedMode> std::pair<int64_t,int64_t> fwdTransformCbCr( const PelB
       {
         c2[x] = Pel( ( 4*crx - 2*cbx ) / 5 );
         d1   += square( cbx - (-c2[x]>>1) ) + square( crx - c2[x] );
-      } 
+      }
       else
       {
         d1   += square( cbx );
@@ -147,7 +147,7 @@ template<int signedMode> void invTransformCbCr( PelBuf &resCb, PelBuf &resCr )
   {
     for( SizeType x = 0; x < resCb.width; x++ )
     {
-      if      ( signedMode ==  1 )  { cr[x] =  cb[x] >> 1;  } 
+      if      ( signedMode ==  1 )  { cr[x] =  cb[x] >> 1;  }
       else if ( signedMode == -1 )  { cr[x] = -cb[x] >> 1;  }
       else if ( signedMode ==  2 )  { cr[x] =  cb[x]; }
       else if ( signedMode == -2 )  { cr[x] = -cb[x]; }
@@ -741,7 +741,7 @@ std::vector<int> TrQuant::selectICTCandidates( const TransformUnit &tu, CompStor
   int64_t minDist2  = std::numeric_limits<int64_t>::max();
   int     cbfMask1  = 0;
   int     cbfMask2  = 0;
-  for( int cbfMask : { 1, 2, 3 } ) 
+  for( int cbfMask : { 1, 2, 3 } )
   {
     if( pairDist[cbfMask].first < minDist1 )
     {

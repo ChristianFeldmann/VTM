@@ -2882,10 +2882,21 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
   //-- all
   msg( INFO, "\n" );
   msg( DETAILS,"\nSUMMARY --------------------------------------------------------\n" );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  const bool calculateHdrMetrics = m_pcEncLib->getCalcluateHdrMetrics();
+#endif
 #if ENABLE_QPA
-  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths, useWPSNR);
+  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths, useWPSNR
+#if JVET_O0756_CALCULATE_HDRMETRICS
+                          , calculateHdrMetrics
+#endif
+                          );
 #else
-  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths);
+  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths
+#if JVET_O0756_CALCULATE_HDRMETRICS
+                          , calculateHdrMetrics
+#endif
+                          );
 #endif
   msg( DETAILS,"\n\nI Slices--------------------------------------------------------\n" );
   m_gcAnalyzeI.printOut('i', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths);

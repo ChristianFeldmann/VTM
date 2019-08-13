@@ -2790,36 +2790,35 @@ bool HLSyntaxReader::xMoreRbspData()
 
 int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 {
-  unsigned int symbol = 0;
-  unsigned int bit = 0;
-  unsigned int count = k;
-  while (!bit)
+  int numLeadingBits = -1;
+  uint32_t b = 0;
+  for (; !b; numLeadingBits++)
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag(bit, "");
+    xReadFlag( b, "" );
 #else
-    xReadFlag(bit);
+    xReadFlag( b );
 #endif
-    symbol += (1 - bit) << count++;
   }
 
-  if (--count)
+  int symbol = ( ( 1 << numLeadingBits ) - 1 ) << k; 
+  if ( numLeadingBits + k > 0)
   {
-    unsigned int bins;
-    READ_CODE(count, bins, "alf_coeff_abs");
+    uint32_t bins;
+    READ_CODE( numLeadingBits + k, bins, "alf_coeff_abs_suffix" );
     symbol += bins;
   }
-  int nr = symbol;
-  if (signed_val && nr != 0)
+  
+  if ( signed_val && symbol != 0 )
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag(bit, "");
+    xReadFlag( b, "" );
 #else
-    xReadFlag(bit);
+    xReadFlag( b );
 #endif
-    nr = (bit) ? -nr : nr;
+    symbol = ( b ) ? -symbol : symbol;
   }
-  return nr;
+  return symbol;
 }
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB

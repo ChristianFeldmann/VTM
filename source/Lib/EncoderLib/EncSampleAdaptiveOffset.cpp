@@ -210,11 +210,7 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
 #if ENABLE_QPA
                                           const double lambdaChromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                                           const bool bTestSAODisableAtPictureLevel, const double saoEncodingRate, const double saoEncodingRateChroma, const bool isPreDBFSamplesUsed, bool isGreedyMergeEncoding )
-#else
-                                          const bool bTestSAODisableAtPictureLevel, const double saoEncodingRate, const double saoEncodingRateChroma, const bool isPreDBFSamplesUsed )
-#endif
 {
   PelUnitBuf org = cs.getOrgBuf();
   PelUnitBuf res = cs.getRecoBuf();
@@ -239,11 +235,7 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
 #if ENABLE_QPA
                    lambdaChromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                    saoEncodingRate, saoEncodingRateChroma, isGreedyMergeEncoding );
-#else
-                   saoEncodingRate, saoEncodingRateChroma );
-#endif
 
   DTRACE_UPDATE(g_trace_ctx, (std::make_pair("poc", cs.slice->getPOC())));
   DTRACE_PIC_COMP(D_REC_CB_LUMA_SAO, cs, cs.getRecoBuf(), COMPONENT_Y);
@@ -793,11 +785,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
 #if ENABLE_QPA
                                                const double chromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                                                const double saoEncodingRate, const double saoEncodingRateChroma, const bool isGreedymergeEncoding)
-#else
-                                               const double saoEncodingRate, const double saoEncodingRateChroma)
-#endif
 
 {
   const PreCalcValues& pcv = *cs.pcv;
@@ -816,7 +804,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   SAOBlkParam modeParam;
   double minCost, modeCost;
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   double minCost2 = 0;
   std::vector<SAOStatData**> groupBlkStat;
   if (isGreedymergeEncoding)
@@ -841,7 +828,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   double  Cost[2] = { 0, 0 };
   TempCtx ctxBeforeMerge(m_CtxCache);
   TempCtx ctxAfterMerge(m_CtxCache);
-#endif
 
   double totalCost = 0; // Used if bTestSAODisableAtPictureLevel==true
 
@@ -867,12 +853,10 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       const TempCtx  ctxStart ( m_CtxCache, SAOCtx( m_CABACEstimator->getCtx() ) );
       TempCtx        ctxBest  ( m_CtxCache );
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (ctuRsAddr == (mergeCtuAddr - 1))
       {
         ctxBeforeMerge = SAOCtx(m_CABACEstimator->getCtx());
       }
-#endif
 
       //get merge list
       SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES] = { NULL };
@@ -920,14 +904,10 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
         }
       } //mode
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (!isGreedymergeEncoding)
       {
-#endif
       totalCost += minCost;
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       }
-#endif
 
 
       m_CABACEstimator->getCtx() = SAOCtx( ctxBest );
@@ -936,7 +916,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       reconParams[ctuRsAddr] = codedParams[ctuRsAddr];
       reconstructBlkSAOParam(reconParams[ctuRsAddr], mergeList);
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (isGreedymergeEncoding)
       {
         if (ctuRsAddr == (mergeCtuAddr - 1))
@@ -1052,11 +1031,8 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       }
       else
       {
-#endif
       offsetCTU(area, srcYuv, resYuv, reconParams[ctuRsAddr], cs);
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       }
-#endif
 
       ctuRsAddr++;
     } //ctuRsAddr
@@ -1067,7 +1043,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   if (chromaWeight > 0.0) memcpy (m_lambda, cs.slice->getLambdas(), sizeof (m_lambda));
 
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   //reconstruct
   if (isGreedymergeEncoding)
   {
@@ -1096,7 +1071,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
     }
     groupBlkStat.clear();
   }
-#endif
   if (!allBlksDisabled && (totalCost >= 0) && bTestSAODisableAtPictureLevel) //SAO has not beneficial in this case - disable it
   {
     for( ctuRsAddr = 0; ctuRsAddr < pcv.sizeInCtus; ctuRsAddr++)

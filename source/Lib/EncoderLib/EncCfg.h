@@ -377,9 +377,7 @@ protected:
   int       m_maxNumOffsetsPerPic;
   bool      m_saoCtuBoundary;
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   bool      m_saoGreedyMergeEnc;
-#endif
   //====== Motion search ========
   bool      m_bDisableIntraPUsInInterSlices;
   MESearchMethod m_motionEstimationSearchMethod;
@@ -1273,10 +1271,8 @@ public:
   void  setSaoCtuBoundary              (bool val)                    { m_saoCtuBoundary = val; }
   bool  getSaoCtuBoundary              ()                            { return m_saoCtuBoundary; }
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   void  setSaoGreedyMergeEnc           (bool val)                    { m_saoGreedyMergeEnc = val; }
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
-#endif
   void  setLFCrossTileBoundaryFlag               ( bool   val  )     { m_loopFilterAcrossBricksEnabledFlag = val; }
   bool  getLFCrossTileBoundaryFlag               ()                  { return m_loopFilterAcrossBricksEnabledFlag;   }
   void  setTileUniformSpacingFlag      ( bool b )                    { m_tileUniformSpacingFlag = b; }

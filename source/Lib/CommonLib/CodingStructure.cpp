@@ -274,6 +274,19 @@ void CodingStructure::clearCuPuTuIdxMap( const UnitArea &_area, uint32_t numCu, 
 }
 #endif
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+CodingUnit* CodingStructure::getLumaCU( const Position &pos )
+{
+  const ChannelType effChType = CHANNEL_TYPE_LUMA;
+  const CompArea &_blk = area.blocks[effChType];
+  CHECK( !_blk.contains( pos ), "must contain the pos" );
+
+  const unsigned idx = m_cuIdx[effChType][rsAddr( pos, _blk.pos(), _blk.width, unitScale[effChType] )];
+
+  if( idx != 0 ) return cus[idx - 1];
+  else           return nullptr;
+}
+#endif
 
 CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType effChType )
 {
@@ -285,20 +298,16 @@ CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType effCh
   if( !_blk.contains( pos ) )
 #endif
   {
-    if (parent)
-    {
 #if JVET_O0050_LOCAL_DUAL_TREE
-      if (treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA)
-      {
-        CHECK(parent->treeType != TREE_D, "wrong parent treeType ");
-      }
-#endif
-      return parent->getCU(pos, effChType);
-    }
-    else
+    //keep this check, which is helpful to identify bugs
+    if( treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA )
     {
-      return nullptr;
+      CHECK( parent == nullptr, "parent shall be valid; consider using function getLumaCU()" );
+      CHECK( parent->treeType != TREE_D, "wrong parent treeType " );
     }
+#endif
+    if( parent ) return parent->getCU( pos, effChType );
+    else         return nullptr;
   }
   else
   {
@@ -321,7 +330,10 @@ const CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType
   {
 #if JVET_O0050_LOCAL_DUAL_TREE
     if( treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA )
+    {
+      CHECK( parent == nullptr, "parent shall be valid; consider using function getLumaCU()" );
       CHECK( parent->treeType != TREE_D, "wrong parent treeType" );
+    }
 #endif
     if( parent ) return parent->getCU( pos, effChType );
     else         return nullptr;

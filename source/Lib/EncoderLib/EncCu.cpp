@@ -995,7 +995,21 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   m_CABACEstimator->getCtx() = m_CurrCtx->best;
 
   // QP from last processed CU for further processing
+#if JVET_O0050_LOCAL_DUAL_TREE
+  //copy the qp of the last non-chroma CU
+  int numCUInThisNode = (int)bestCS->cus.size();
+  if( numCUInThisNode > 1 && bestCS->cus.back()->chType == CHANNEL_TYPE_CHROMA && !CS::isDualITree( *bestCS ) )
+  {
+    CHECK( bestCS->cus[numCUInThisNode-2]->chType != CHANNEL_TYPE_LUMA, "wrong chType" );
+    bestCS->prevQP[partitioner.chType] = bestCS->cus[numCUInThisNode-2]->qp;
+  }
+  else
+  {
+#endif
   bestCS->prevQP[partitioner.chType] = bestCS->cus.back()->qp;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  }
+#endif
   if ((!slice.isIntra() || slice.getSPS()->getIBCFlag())
     && partitioner.chType == CHANNEL_TYPE_LUMA
     && bestCS->cus.size() == 1 && (bestCS->cus.back()->predMode == MODE_INTER || bestCS->cus.back()->predMode == MODE_IBC)
@@ -1566,14 +1580,14 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       {
         for( int i = 0; i < bestSubCS->cus.size(); i++ )
         {
-          CHECK( bestSubCS->cus[i]->predMode != MODE_INTER, "all CUs must be inter mode in an Intra coding region (SCIPU)" );
+          CHECK( bestSubCS->cus[i]->predMode != MODE_INTER, "all CUs must be inter mode in an Inter coding region (SCIPU)" );
         }
       }
       else if( partitioner.isConsIntra() )
       {
         for( int i = 0; i < bestSubCS->cus.size(); i++ )
         {
-          CHECK( bestSubCS->cus[i]->predMode != MODE_INTRA && bestSubCS->cus[i]->predMode != MODE_IBC, "all CUs must be intra/ibc mode in an Intra coding region (SCIPU)" );
+          CHECK( bestSubCS->cus[i]->predMode == MODE_INTER, "all CUs must not be inter mode in an Intra coding region (SCIPU)" );
         }
       }
 #endif
@@ -1622,6 +1636,69 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
 #if JVET_O0050_LOCAL_DUAL_TREE
   if( chromaNotSplit )
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    //Note: In local dual tree region, the chroma CU refers to the central luma CU's QP. 
+    //If the luma CU QP shall be predQP (no residual in it and before it in the QG), it must be revised to predQP before encoding the chroma CU
+    //Otherwise, the chroma CU uses predQP+deltaQP in encoding but is decoded as using predQP, thus causing encoder-decoded mismatch on chroma qp.
+    if( tempCS->pps->getUseDQP() )
+    {
+      //find parent CS that including all coded CUs in the QG before this node
+      CodingStructure* qgCS = tempCS;
+      bool deltaQpCodedBeforeThisNode = false;
+      if( partitioner.currArea().lumaPos() != partitioner.currQgPos )
+      {
+        int numParentNodeToQgCS = 0;
+        while( qgCS->area.lumaPos() != partitioner.currQgPos )
+        {
+          CHECK( qgCS->parent == nullptr, "parent of qgCS shall exsit" );
+          qgCS = qgCS->parent;
+          numParentNodeToQgCS++;
+        }
+
+        //check whether deltaQP has been coded (in luma CU or luma&chroma CU) before this node
+        CodingStructure* parentCS = tempCS->parent;
+        for( int i = 0; i < numParentNodeToQgCS; i++ )
+        {
+          //checking each parent
+          CHECK( parentCS == nullptr, "parentCS shall exsit" );
+          for( const auto &cu : parentCS->cus )
+          {
+            if( cu->rootCbf && !isChroma( cu->chType ) )
+            {
+              deltaQpCodedBeforeThisNode = true;
+              break;
+            }
+          }
+          parentCS = parentCS->parent;
+        }
+      }
+      
+      //revise luma CU qp before the first luma CU with residual in the SCIPU to predQP
+      if( !deltaQpCodedBeforeThisNode )
+      {
+        //get pred QP of the QG
+        const CodingUnit* cuFirst = qgCS->getCU( CHANNEL_TYPE_LUMA );
+        CHECK( cuFirst->lumaPos() != partitioner.currQgPos, "First cu of the Qg is wrong" );
+        int predQp = CU::predictQP( *cuFirst, qgCS->prevQP[CHANNEL_TYPE_LUMA] );
+        
+        //revise to predQP
+        int firstCuHasResidual = (int)tempCS->cus.size();
+        for( int i = 0; i < tempCS->cus.size(); i++ )
+        {
+          if( tempCS->cus[i]->rootCbf )
+          {
+            firstCuHasResidual = i;
+            break;
+          }
+        }
+
+        for( int i = 0; i < firstCuHasResidual; i++ )
+        {
+          tempCS->cus[i]->qp = predQp;
+        }
+      }
+    }
+#endif
     assert( tempCS->treeType == TREE_L );
     uint32_t numCuPuTu[6];
     tempCS->picture->cs->getNumCuPuTuOffset( numCuPuTu );
@@ -2333,7 +2410,12 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
   bool hasResidual = false;
   for( const auto &cu : cs.cus )
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    //not include the chroma CU because chroma CU is decided based on corresponding luma QP and deltaQP is not signaled at chroma CU
+    if( cu->rootCbf && !isChroma( cu->chType ))
+#else
     if( cu->rootCbf )
+#endif
     {
       hasResidual = true;
       break;
@@ -2359,7 +2441,12 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
     // NOTE: reset QPs for CUs without residuals up to first coded CU
     for( const auto &cu : cs.cus )
     {
+#if JVET_O0050_LOCAL_DUAL_TREE
+      //not include the chroma CU because chroma CU is decided based on corresponding luma QP and deltaQP is not signaled at chroma CU
+      if( cu->rootCbf && !isChroma( cu->chType ))
+#else
       if( cu->rootCbf )
+#endif
       {
         break;
       }

@@ -386,7 +386,12 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
   const CodingUnit &cu        = *cs.getCU( currArea.blocks[partitioner.chType], partitioner.chType );
 
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
+#if JVET_O0050_LOCAL_DUAL_TREE
+  //Note: do not reset qg at chroma CU
+  if( pps.getUseDQP() && partitioner.currQgEnable() && !isChroma( partitioner.chType ) )
+#else
   if( pps.getUseDQP() && partitioner.currQgEnable() )
+#endif
   {
     cuCtx.qgStart    = true;
     cuCtx.isDQPCoded          = false;
@@ -396,11 +401,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     cuCtx.isChromaQpAdjCoded  = false;
   }
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
-#if JVET_O0050_LOCAL_DUAL_TREE
-  if (partitioner.isSepTree(cs) && pPartitionerChroma != nullptr)
-#else
   if (CS::isDualITree(cs) && pPartitionerChroma != nullptr)
-#endif
   {
     if (pps.getUseDQP() && pPartitionerChroma->currQgEnable())
     {
@@ -525,7 +526,18 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
   // coding unit
   coding_unit( cu, partitioner, cuCtx );
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.chType == CHANNEL_TYPE_CHROMA )
+  {
+    DTRACE_COND( (isEncoding()), g_trace_ctx, D_QP, "[chroma CU]x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Cb().x, cu.Cb().y, cu.Cb().width, cu.Cb().height, cu.qp );
+  }
+  else
+  {
+#endif
   DTRACE_COND( ( isEncoding() ), g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  }
+#endif
   DTRACE_BLOCK_REC_COND( ( !isEncoding() ), cs.picture->getRecoBuf( cu ), cu, cu.predMode );
 }
 
@@ -1765,7 +1777,11 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
 
   if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if (!cu.isSepTree() || isLuma(tu.chType))
+#else
     if (!CS::isDualITree(*tu.cs) || isLuma(tu.chType))
+#endif
     {
       cu_qp_delta(cu, cuCtx.qp, cu.qp);
       cuCtx.qp = cu.qp;

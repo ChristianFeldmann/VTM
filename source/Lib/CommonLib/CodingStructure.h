@@ -132,6 +132,9 @@ public:
   const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
+#if JVET_O0050_LOCAL_DUAL_TREE
+  CodingUnit     *getLumaCU( const Position &pos );
+#endif
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
   TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
 

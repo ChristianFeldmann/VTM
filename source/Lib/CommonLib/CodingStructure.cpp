@@ -199,7 +199,7 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
 #if JVET_O0050_LOCAL_DUAL_TREE
 const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
 {
-  if( CS::isDualITree( *this ) || modeTypeParent != MODE_TYPE_ALL )
+  if( CS::isDualITree( *this ) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
     return LDT_MODE_TYPE_INHERIT;
 
   int width = partitioner.currArea().lwidth();

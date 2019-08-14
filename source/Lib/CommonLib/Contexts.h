@@ -217,7 +217,9 @@ public:
 #endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
   static const CtxSet   MipMode;
+#endif
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;

@@ -310,9 +310,8 @@ typedef std::pair<int, int>  TrCost;
 
 
 // ====================================================================================================================
-// NEXT software switches
+// General settings
 // ====================================================================================================================
-#define K0238_SAO_GREEDY_MERGE_ENCODING                   1
 
 #ifndef ENABLE_TRACING
 #define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
@@ -327,7 +326,6 @@ typedef std::pair<int, int>  TrCost;
 
 #define WCG_EXT                                           1
 #define WCG_WPSNR                                         WCG_EXT
-
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 

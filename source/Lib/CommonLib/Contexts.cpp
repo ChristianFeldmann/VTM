@@ -384,6 +384,7 @@ const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
   {   9,  10,  10,   1, },
 });
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 const CtxSet ContextSetCfg::MipMode = ContextSetCfg::addCtxSet
 ({
   { 196, },
@@ -391,6 +392,7 @@ const CtxSet ContextSetCfg::MipMode = ContextSetCfg::addCtxSet
   { 182, },
   {   9, },
 });
+#endif
 
 const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
 ({

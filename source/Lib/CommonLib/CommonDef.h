@@ -267,7 +267,9 @@ static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< 
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const int NUM_MOST_PROBABLE_MODES = 6;
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 static const int NUM_MPM_MIP =                                      3; ///< number of most probable modes for MIP
+#endif
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
 static const int MAX_NUM_MIP_MODE =                                35; ///< maximum number of MIP modes

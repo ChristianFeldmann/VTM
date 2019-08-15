@@ -1379,7 +1379,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
 #if JVET_O1164_RPR
-  ( "ScalingRatio",                                   m_scalingRatio,                             1.0, "Scaling ratio" )
+  ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
+  ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
   ( "HalfFrames",                                     m_halfFrames,                             false, "Encode half of the specified in FramesToBeEncoded" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
 #endif
@@ -1409,7 +1410,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
    
 #if JVET_O1164_RPR
-  m_rprEnabled = m_scalingRatio != 1.0;
+  m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
   if( m_halfFrames )
   {
     m_framesToBeEncoded >>= 1;
@@ -3636,7 +3637,7 @@ void EncAppCfg::xPrintParameter()
 #if JVET_O1164_RPR
   if( m_rprEnabled )
   {
-    msg( VERBOSE, "RPR:%1.2lfx|%d", m_scalingRatio, m_switchPocPeriod );
+    msg( VERBOSE, "RPR:%1.2lfx, %1.2lfx|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
   }
   else
   {

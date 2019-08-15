@@ -605,7 +605,8 @@ protected:
   bool        m_alf;                                          ///< Adaptive Loop Filter
 
 #if JVET_O1164_RPR
-  double      m_scalingRatio;
+  double      m_scalingRatioHor;
+  double      m_scalingRatioVer;
   bool        m_rprEnabled;
   bool        m_halfFrames;                                   ///< encode only half of the frames as specified in CTC
   int         m_switchPocPeriod;

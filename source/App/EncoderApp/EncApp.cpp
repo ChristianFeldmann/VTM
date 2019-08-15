@@ -108,7 +108,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSourceHeight                                      ( m_iSourceHeight );
 #if JVET_O1164_RPR
   m_cEncLib.setConformanceWindow                                 ( m_confWinLeft / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinRight / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinTop / SPS::getWinUnitY( m_InputChromaFormatIDC ), m_confWinBottom / SPS::getWinUnitY( m_InputChromaFormatIDC ) );
-  m_cEncLib.setScalingRatio                                      ( m_scalingRatio );
+  m_cEncLib.setScalingRatio                                      ( m_scalingRatioHor, m_scalingRatioVer );
   m_cEncLib.setRPREnabled                                        ( m_rprEnabled );
   m_cEncLib.setSwitchPocPeriod                                   ( m_switchPocPeriod );
 #else

@@ -673,7 +673,8 @@ protected:
   bool                         m_calculateHdrMetrics;
 #endif  
 #if JVET_O1164_RPR
-  double      m_scalingRatio;
+  double      m_scalingRatioHor;
+  double      m_scalingRatioVer;
   bool        m_rprEnabled;
   int         m_switchPocPeriod;
 #endif
@@ -1685,7 +1686,7 @@ public:
 #endif
 
 #if JVET_O1164_RPR
-  void        setScalingRatio( double b )                            { m_scalingRatio = b;  }
+  void        setScalingRatio( double hor, double ver )              { m_scalingRatioHor = hor, m_scalingRatioVer = ver;  }
   void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
   bool        isRPREnabled()                                   const { return m_rprEnabled; }
   void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}

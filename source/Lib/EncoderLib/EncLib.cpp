@@ -291,7 +291,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if JVET_O1164_RPR
   if( m_rprEnabled )
   {
-    PPS &pps = *( m_ppsMap.allocatePS( 3 ) );
+    PPS &pps = *( m_ppsMap.allocatePS( ENC_PPS_ID_RPR ) );
 #if RPR_CONF_WINDOW
     Window& inputConfWindow = pps0.getConformanceWindow();
     int scaledWidth = int((pps0.getPicWidthInLumaSamples() - (inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(sps0.getChromaFormatIdc())) / m_scalingRatioHor);
@@ -449,7 +449,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if JVET_O1164_RPR
   if( m_rprEnabled )
   {
-    xInitScalingLists( sps0, *m_ppsMap.getPS( 3 ) );
+    xInitScalingLists( sps0, *m_ppsMap.getPS( ENC_PPS_ID_RPR ) );
   }
 #endif
 #if ENABLE_WPP_PARALLELISM
@@ -668,7 +668,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
       if( poc / m_switchPocPeriod % 2 )
       {
-        ppsID = 3;
+        ppsID = ENC_PPS_ID_RPR;
       }
       else
       {

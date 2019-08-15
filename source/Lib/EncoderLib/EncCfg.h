@@ -677,6 +677,7 @@ protected:
   double      m_scalingRatioVer;
   bool        m_rprEnabled;
   int         m_switchPocPeriod;
+  int         m_upscaledOutput;
 #endif
 
 public:
@@ -1690,6 +1691,8 @@ public:
   void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
   bool        isRPREnabled()                                   const { return m_rprEnabled; }
   void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
+  void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
+  int         getUpscaledOutput()                              const { return m_upscaledOutput; }
 #endif
 };
 

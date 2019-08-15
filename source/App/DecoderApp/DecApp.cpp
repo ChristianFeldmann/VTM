@@ -473,7 +473,12 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
 #endif
 #if JVET_O1164_RPR
-          m_cVideoIOYuvReconFile.write( pcPic->cs->sps->getMaxPicWidthInLumaSamples(), pcPic->cs->sps->getMaxPicHeightInLumaSamples(), pcPic->getRecoBuf(),
+          if( m_upscaledOutput )
+          {
+            m_cVideoIOYuvReconFile.writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+          }
+          else
+            m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
 #else
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
 #endif
@@ -617,7 +622,12 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
 #endif
 #if JVET_O1164_RPR
-          m_cVideoIOYuvReconFile.write( pcPic->cs->sps->getMaxPicWidthInLumaSamples(), pcPic->cs->sps->getMaxPicHeightInLumaSamples(), pcPic->getRecoBuf(),
+          if( m_upscaledOutput )
+          {
+            m_cVideoIOYuvReconFile.writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+          }
+          else
+            m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
 #else
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
 #endif

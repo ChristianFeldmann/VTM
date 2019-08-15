@@ -50,6 +50,11 @@ using namespace std;
 // Class definition
 // ====================================================================================================================
 
+#if JVET_O1164_RPR
+#include "CommonLib/Slice.h"
+#include "CommonLib/Picture.h"
+#endif
+
 /// YUV file I/O class
 class VideoIOYuv
 {
@@ -97,6 +102,10 @@ public:
   bool  isEof ();                                           ///< check for end-of-file
   bool  isFail();                                           ///< check for failure
 
+#if JVET_O1164_RPR
+  bool  writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPelUnitBuf& pic,
+    const InputColourSpaceConversion ipCSC, const bool bPackedYUVOutputMode, int outputChoice = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one upsaled YUV frame
+#endif
 
 };
 

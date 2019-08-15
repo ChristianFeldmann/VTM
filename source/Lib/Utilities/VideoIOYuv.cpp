@@ -1237,4 +1237,58 @@ void VideoIOYuv::ColourSpaceConvert(const CPelUnitBuf &src, PelUnitBuf &dest, co
   }
 }
 
+#if JVET_O1164_RPR
+bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPelUnitBuf& pic, const InputColourSpaceConversion ipCSC, const bool bPackedYUVOutputMode, int outputChoice, ChromaFormat format, const bool bClipToRec709 )
+{
+  ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
+  bool ret = false;
 
+  if( outputChoice && ( sps.getMaxPicWidthInLumaSamples() != pic.get( COMPONENT_Y ).width || sps.getMaxPicHeightInLumaSamples() != pic.get( COMPONENT_Y ).height ) )
+  {
+    if( outputChoice == 2 )
+    {
+      PelStorage upscaledPic;
+      upscaledPic.create( chromaFormatIDC, Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+      Picture::rescalePicture( pic, upscaledPic, chromaFormatIDC, sps.getBitDepths() );
+      const Window conf;
+
+      ret = write( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples(), upscaledPic,
+        ipCSC,
+        bPackedYUVOutputMode,
+        conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
+        conf.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
+        conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+        conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+        NUM_CHROMA_FORMAT, bClipToRec709 );
+    }
+    else
+    {
+      const Window &conf = pps.getConformanceWindow();
+
+      ret = write( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples(), pic,
+        ipCSC,
+        bPackedYUVOutputMode,
+        conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
+        conf.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
+        conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+        conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+        NUM_CHROMA_FORMAT, bClipToRec709 );
+    }
+  }
+  else
+  {
+    const Window &conf = pps.getConformanceWindow();
+
+    ret = write( pic.get( COMPONENT_Y ).width, pic.get( COMPONENT_Y ).height, pic,
+      ipCSC,
+      bPackedYUVOutputMode,
+      conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
+      conf.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
+      conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+      conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+      NUM_CHROMA_FORMAT, bClipToRec709 );
+  }
+
+  return ret;
+}
+#endif

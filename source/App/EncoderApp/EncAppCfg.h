@@ -610,6 +610,7 @@ protected:
   bool        m_rprEnabled;
   bool        m_halfFrames;                                   ///< encode only half of the frames as specified in CTC
   int         m_switchPocPeriod;
+  int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
 #endif
 
 #if EXTENSION_360_VIDEO

@@ -532,6 +532,9 @@ static const int PLT_FAST_RATIO = 100;
 #if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 static const int  EPBIN_WEIGHT_FACTOR =                           4;
 #endif
+#if JVET_O1164_RPR
+static const int ENC_PPS_ID_RPR =                                 3;
+#endif
 
 // ====================================================================================================================
 // Macro functions

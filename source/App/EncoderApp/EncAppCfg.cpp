@@ -1383,6 +1383,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
   ( "HalfFrames",                                     m_halfFrames,                             false, "Encode half of the specified in FramesToBeEncoded" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
+  ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Upscaled output for RPR" )
 #endif
     ;
 

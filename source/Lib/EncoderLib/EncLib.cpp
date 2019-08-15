@@ -292,13 +292,23 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   if( m_rprEnabled )
   {
     PPS &pps = *( m_ppsMap.allocatePS( 3 ) );
-    int scaledWidth = int( pps0.getPicWidthInLumaSamples() / m_scalingRatio );
-    int temp = scaledWidth >> 3;
-    int width = ( scaledWidth - ( temp << 3 ) > 0 ? temp + 1 : temp ) << 3;
+#if RPR_CONF_WINDOW
+    Window& inputConfWindow = pps0.getConformanceWindow();
+    int scaledWidth = int((pps0.getPicWidthInLumaSamples() - (inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(sps0.getChromaFormatIdc())) / m_scalingRatio);
+#else
+    int scaledWidth = int(pps0.getPicWidthInLumaSamples() / m_scalingRatio);
+#endif
+    int minSizeUnit = std::max(8, (int)(sps0.getMaxCUHeight() >> (sps0.getMaxCodingDepth() - 1)));
+    int temp = scaledWidth / minSizeUnit;
+    int width = ( scaledWidth - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
-    int scaledHeight = int( pps0.getPicHeightInLumaSamples() / m_scalingRatio );
-    temp = scaledHeight >> 3;
-    int height = ( scaledHeight - ( temp << 3 ) > 0 ? temp + 1 : temp ) << 3;
+#if RPR_CONF_WINDOW
+    int scaledHeight = int((pps0.getPicHeightInLumaSamples() - (inputConfWindow.getWindowTopOffset() + inputConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps0.getChromaFormatIdc())) / m_scalingRatio);
+#else
+    int scaledHeight = int(pps0.getPicHeightInLumaSamples() / m_scalingRatio);
+#endif
+    temp = scaledHeight / minSizeUnit;
+    int height = ( scaledHeight - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
     pps.setPicWidthInLumaSamples( width );
     pps.setPicHeightInLumaSamples( height );

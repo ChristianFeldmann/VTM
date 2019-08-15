@@ -472,7 +472,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 #else
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
 #endif
-#if JVET_O1164_RPR          
+#if JVET_O1164_RPR
           m_cVideoIOYuvReconFile.write( pcPic->cs->sps->getMaxPicWidthInLumaSamples(), pcPic->cs->sps->getMaxPicHeightInLumaSamples(), pcPic->getRecoBuf(),
 #else
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),
@@ -616,7 +616,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
 #else
           const Window &conf    = pcPic->cs->sps->getConformanceWindow();
 #endif
-#if JVET_O1164_RPR          
+#if JVET_O1164_RPR
           m_cVideoIOYuvReconFile.write( pcPic->cs->sps->getMaxPicWidthInLumaSamples(), pcPic->cs->sps->getMaxPicHeightInLumaSamples(), pcPic->getRecoBuf(),
 #else
           m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf(),

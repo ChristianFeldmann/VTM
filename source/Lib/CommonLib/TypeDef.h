@@ -55,6 +55,7 @@
 #define JVET_O1164_PS                                     1
 #define RPR_BUFFER                                        1  // lossless
 #define RPR_CTC_PRINT                                     1
+#define RPR_CONF_WINDOW                                   1
 #endif
 
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.

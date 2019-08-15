@@ -107,10 +107,20 @@ void CS::setRefinedMotionField(CodingStructure &cs)
 #if JVET_O1164_RPR
 bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale )
 {
+
+#if RPR_CONF_WINDOW
+  const Window& curConfWindow = curPPS->getConformanceWindow();
+  int curPicWidth = curPPS->getPicWidthInLumaSamples() - (curConfWindow.getWindowLeftOffset() + curConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  int curPicHeight = curPPS->getPicHeightInLumaSamples() - (curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  const Window& refConfWindow = refPPS->getConformanceWindow();
+  int refPicWidth = refPPS->getPicWidthInLumaSamples() - (refConfWindow.getWindowLeftOffset() + refConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  int refPicHeight = refPPS->getPicHeightInLumaSamples() - (refConfWindow.getWindowTopOffset() + refConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+#else
   int curPicWidth = curPPS->getPicWidthInLumaSamples();
   int curPicHeight = curPPS->getPicHeightInLumaSamples();
   int refPicWidth = refPPS->getPicWidthInLumaSamples();
   int refPicHeight = refPPS->getPicHeightInLumaSamples();
+#endif
 
   xScale = ( ( refPicWidth << 14 ) + ( curPicWidth >> 1 ) ) / curPicWidth;
   yScale = ( ( refPicHeight << 14 ) + ( curPicHeight >> 1 ) ) / curPicHeight;

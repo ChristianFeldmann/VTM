@@ -3623,10 +3623,34 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       for (int i=0; i<1; i++)
       {
         msg(NOTICE, " [DeltaE%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), deltaE[i]);
+        if (m_pcEncLib->getPrintHexPsnr())
+        {
+          int64_t xdeltaE[MAX_NUM_COMPONENT];
+          for (int i = 0; i < 1; i++)
+          {
+            copy(reinterpret_cast<uint8_t *>(&deltaE[i]),
+                 reinterpret_cast<uint8_t *>(&deltaE[i]) + sizeof(deltaE[i]),
+                 reinterpret_cast<uint8_t *>(&xdeltaE[i]));
+          }
+          msg(NOTICE, " [xDeltaE%d %16" PRIx64 "]", (int)m_pcCfg->getWhitePointDeltaE(i), xdeltaE[0]);
+        }
       }
       for (int i=0; i<1; i++)
       {
         msg(NOTICE, " [PSNRL%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), psnrL[i]);
+        
+        if (m_pcEncLib->getPrintHexPsnr())
+        {
+          int64_t xpsnrL[MAX_NUM_COMPONENT];
+          for (int i = 0; i < 1; i++)
+          {
+            copy(reinterpret_cast<uint8_t *>(&psnrL[i]),
+                 reinterpret_cast<uint8_t *>(&psnrL[i]) + sizeof(psnrL[i]),
+                 reinterpret_cast<uint8_t *>(&xpsnrL[i]));
+          }
+          msg(NOTICE, " [xPSNRL%d %16" PRIx64 "]", (int)m_pcCfg->getWhitePointDeltaE(i), xpsnrL[0]);
+          
+        }
       }
     }
 #endif

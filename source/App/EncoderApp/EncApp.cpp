@@ -302,7 +302,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setDMVR                                              ( m_DMVR );
   m_cEncLib.setMMVD                                              ( m_MMVD );
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
+#if !JVET_O1136_TS_BDPCM_SIGNALLING 
   m_cEncLib.setRDPCM                                             ( m_RdpcmMode );
+#endif  
 #if JVET_O0119_BASE_PALETTE_444
   m_cEncLib.setPLTMode                                           ( m_PLTMode );
 #endif

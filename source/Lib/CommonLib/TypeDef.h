@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define FIX_ZEROING_FOR_LFNST                             1
+
 
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 

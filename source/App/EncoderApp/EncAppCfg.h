@@ -297,7 +297,9 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
+#if !JVET_O1136_TS_BDPCM_SIGNALLING  
   bool      m_RdpcmMode;
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
 #endif

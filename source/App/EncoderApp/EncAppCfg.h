@@ -297,7 +297,9 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
+#if !JVET_O1136_TS_BDPCM_SIGNALLING  
   bool      m_RdpcmMode;
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
 #endif
@@ -385,9 +387,7 @@ protected:
   double    m_saoEncodingRateChroma;                          ///< The SAO early picture termination rate to use for chroma (when m_SaoEncodingRate is >0). If <=0, use results for luma.
   int       m_maxNumOffsetsPerPic;                            ///< SAO maximun number of offset per picture
   bool      m_saoCtuBoundary;                                 ///< SAO parameter estimation using non-deblocked pixels for CTU bottom and right boundary areas
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   bool      m_saoGreedyMergeEnc;                              ///< SAO greedy merge encoding algorithm
-#endif
   // coding tools (loop filter)
   bool      m_bLoopFilterDisable;                             ///< flag for using deblocking filter
   bool      m_loopFilterOffsetInPPS;                         ///< offset for deblocking filter in 0 = slice header, 1 = PPS

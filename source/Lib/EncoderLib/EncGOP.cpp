@@ -2498,11 +2498,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if ENABLE_QPA
                              (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost (PARL_PARAM0 (0))->getChromaWeight() : 0.0),
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                              m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary(), m_pcCfg->getSaoGreedyMergeEnc() );
-#else
-                             m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary() );
-#endif
         //assign SAO slice header
         for(int s=0; s< uiNumSliceSegments; s++)
         {
@@ -2905,10 +2901,21 @@ void EncGOP::printOutSummary(uint32_t uiNumAllPicCoded, bool isField, const bool
   //-- all
   msg( INFO, "\n" );
   msg( DETAILS,"\nSUMMARY --------------------------------------------------------\n" );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  const bool calculateHdrMetrics = m_pcEncLib->getCalcluateHdrMetrics();
+#endif
 #if ENABLE_QPA
-  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths, useWPSNR);
+  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths, useWPSNR
+#if JVET_O0756_CALCULATE_HDRMETRICS
+                          , calculateHdrMetrics
+#endif
+                          );
 #else
-  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths);
+  m_gcAnalyzeAll.printOut('a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths
+#if JVET_O0756_CALCULATE_HDRMETRICS
+                          , calculateHdrMetrics
+#endif
+                          );
 #endif
   msg( DETAILS,"\n\nI Slices--------------------------------------------------------\n" );
   m_gcAnalyzeI.printOut('i', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, bitDepths);
@@ -3612,10 +3619,34 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       for (int i=0; i<1; i++)
       {
         msg(NOTICE, " [DeltaE%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), deltaE[i]);
+        if (m_pcEncLib->getPrintHexPsnr())
+        {
+          int64_t xdeltaE[MAX_NUM_COMPONENT];
+          for (int i = 0; i < 1; i++)
+          {
+            copy(reinterpret_cast<uint8_t *>(&deltaE[i]),
+                 reinterpret_cast<uint8_t *>(&deltaE[i]) + sizeof(deltaE[i]),
+                 reinterpret_cast<uint8_t *>(&xdeltaE[i]));
+          }
+          msg(NOTICE, " [xDeltaE%d %16" PRIx64 "]", (int)m_pcCfg->getWhitePointDeltaE(i), xdeltaE[0]);
+        }
       }
       for (int i=0; i<1; i++)
       {
         msg(NOTICE, " [PSNRL%d %6.4lf dB]", (int)m_pcCfg->getWhitePointDeltaE(i), psnrL[i]);
+        
+        if (m_pcEncLib->getPrintHexPsnr())
+        {
+          int64_t xpsnrL[MAX_NUM_COMPONENT];
+          for (int i = 0; i < 1; i++)
+          {
+            copy(reinterpret_cast<uint8_t *>(&psnrL[i]),
+                 reinterpret_cast<uint8_t *>(&psnrL[i]) + sizeof(psnrL[i]),
+                 reinterpret_cast<uint8_t *>(&xpsnrL[i]));
+          }
+          msg(NOTICE, " [xPSNRL%d %16" PRIx64 "]", (int)m_pcCfg->getWhitePointDeltaE(i), xpsnrL[0]);
+          
+        }
       }
     }
 #endif

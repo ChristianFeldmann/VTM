@@ -140,7 +140,7 @@
 
 #define JVET_O0438_SPS_AFFINE_AMVR_FLAG                   1 // JVET-O0438: affine AMVR control flag conditioned on affine control flag in SPS
 
-#define JVET_O0065_CABAC_INIT                             0 // JVET-O0065: CABAC initialization
+#define JVET_O0065_CABAC_INIT                             1 // JVET-O0065: CABAC initialization
 
 #define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
 
@@ -310,9 +310,8 @@ typedef std::pair<int, int>  TrCost;
 
 
 // ====================================================================================================================
-// NEXT software switches
+// General settings
 // ====================================================================================================================
-#define K0238_SAO_GREEDY_MERGE_ENCODING                   1
 
 #ifndef ENABLE_TRACING
 #define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
@@ -327,7 +326,6 @@ typedef std::pair<int, int>  TrCost;
 
 #define WCG_EXT                                           1
 #define WCG_WPSNR                                         WCG_EXT
-
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
 

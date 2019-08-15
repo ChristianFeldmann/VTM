@@ -2790,46 +2790,35 @@ bool HLSyntaxReader::xMoreRbspData()
 
 int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 {
-  uint32_t uiSymbol;
-  int q = -1;
-  int nr = 0;
-  int m = (int)pow( 2.0, k );
-  int a;
-
-  uiSymbol = 1;
-  while( uiSymbol )
+  int numLeadingBits = -1;
+  uint32_t b = 0;
+  for (; !b; numLeadingBits++)
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( uiSymbol, "" );
+    xReadFlag( b, "" );
 #else
-    xReadFlag( uiSymbol );
+    READ_FLAG( b, "alf_coeff_abs_prefix");
 #endif
-    q++;
   }
 
-  for( a = 0; a < k; ++a )          // read out the sequential log2(M) bits
+  int symbol = ( ( 1 << numLeadingBits ) - 1 ) << k; 
+  if ( numLeadingBits + k > 0)
+  {
+    uint32_t bins;
+    READ_CODE( numLeadingBits + k, bins, "alf_coeff_abs_suffix" );
+    symbol += bins;
+  }
+  
+  if ( signed_val && symbol != 0 )
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( uiSymbol, "" );
+    xReadFlag( b, "" );
 #else
-    xReadFlag( uiSymbol );
+    READ_FLAG( b, "alf_coeff_sign" );
 #endif
-    if( uiSymbol )
-    {
-      nr += 1 << a;
-    }
+    symbol = ( b ) ? -symbol : symbol;
   }
-  nr += q * m;                    // add the bits and the multiple of M
-  if( signed_val && nr != 0 )
-  {
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( uiSymbol, "" );
-#else
-    xReadFlag( uiSymbol );
-#endif
-    nr = ( uiSymbol ) ? -nr : nr;
-  }
-  return nr;
+  return symbol;
 }
 
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB

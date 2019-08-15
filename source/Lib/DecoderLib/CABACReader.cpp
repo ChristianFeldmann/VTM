@@ -442,7 +442,12 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   bool           lastSegment  = false;
 
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
+#if JVET_O0050_LOCAL_DUAL_TREE
+  //Note: do not reset qg at chroma CU
+  if( pps.getUseDQP() && partitioner.currQgEnable() && !isChroma(partitioner.chType) )
+#else
   if( pps.getUseDQP() && partitioner.currQgEnable() )
+#endif
   {
     cuCtx.qgStart    = true;
     cuCtx.isDQPCoded = false;
@@ -453,11 +458,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   }
 
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
-#if JVET_O0050_LOCAL_DUAL_TREE
-  if (partitioner.isSepTree(cs) && pPartitionerChroma != nullptr)
-#else
   if (CS::isDualITree(cs) && pPartitionerChroma != nullptr)
-#endif
   {
     if (pps.getUseDQP() && pPartitionerChroma->currQgEnable())
     {
@@ -635,6 +636,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   cu.tileIdx = cs.picture->brickMap->getBrickIdxRsMap( currArea.lumaPos() );
 #if JVET_O0050_LOCAL_DUAL_TREE
   CHECK( cu.cs->treeType != partitioner.treeType, "treeType mismatch" );
+  int lumaQPinLocalDualTree = -1;
 #endif
 
   // Predict QP on start of quantization group
@@ -652,7 +654,15 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   {
     const Position chromaCentral(cu.chromaPos().offset(cu.chromaSize().width >> 1, cu.chromaSize().height >> 1));
     const Position lumaRefPos(chromaCentral.x << getComponentScaleX(COMPONENT_Cb, cu.chromaFormat), chromaCentral.y << getComponentScaleY(COMPONENT_Cb, cu.chromaFormat));
+#if JVET_O0050_LOCAL_DUAL_TREE
+    //derive chroma qp, but the chroma qp is saved in cuCtx.qp which is used for luma qp
+    //therefore, after decoding the chroma CU, the cuCtx.qp shall be recovered to luma qp in order to decode next luma cu qp
+    const CodingUnit* colLumaCu = cs.getLumaCU( lumaRefPos );
+    CHECK( colLumaCu == nullptr, "colLumaCU shall exist" );
+    lumaQPinLocalDualTree = cuCtx.qp;
+#else
     const CodingUnit* colLumaCu = cs.getCU(lumaRefPos, CHANNEL_TYPE_LUMA);
+#endif
 
     if (colLumaCu) cuCtx.qp = colLumaCu->qp;
   }
@@ -665,6 +675,13 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cu.shareParentSize = (shareStateDec == SHARING) ? shareParentSize : partitioner.currArea().lumaSize();
 
   bool isLastCtu = coding_unit( cu, partitioner, cuCtx );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  //recover cuCtx.qp to luma qp after decoding the chroma CU
+  if( pps.getUseDQP() && partitioner.isSepTree( cs ) && isChroma( cu.chType ) )
+  {
+    cuCtx.qp = lumaQPinLocalDualTree;
+  }
+#endif
 
 #if JVET_O0119_BASE_PALETTE_444
   uint32_t compBegin;
@@ -698,7 +715,18 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cs.reorderPrevPLT(cs.prevPLT, cu.curPLTSize, cu.curPLT, cu.reuseflag, compBegin, numComp, jointPLT);
   }
 #endif
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( cu.chType == CHANNEL_TYPE_CHROMA )
+  {
+    DTRACE( g_trace_ctx, D_QP, "[chroma CU]x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Cb().x, cu.Cb().y, cu.Cb().width, cu.Cb().height, cu.qp );
+  }
+  else
+  {
+#endif
   DTRACE( g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  }
+#endif
   if (startShareThisLevel == 1)
     shareStateDec = NO_SHARE;
   return isLastCtu;

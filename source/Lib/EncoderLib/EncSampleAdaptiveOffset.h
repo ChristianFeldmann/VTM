@@ -93,11 +93,7 @@ public:
 #if ENABLE_QPA
                    const double lambdaChromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                    const bool bTestSAODisableAtPictureLevel, const double saoEncodingRate, const double saoEncodingRateChroma, const bool isPreDBFSamplesUsed, bool isGreedyMergeEncoding );
-#else
-                   const bool bTestSAODisableAtPictureLevel, const double saoEncodingRate, const double saoEncodingRateChroma, const bool isPreDBFSamplesUsed );
-#endif
 
   void disabledRate( CodingStructure& cs, SAOBlkParam* reconParams, const double saoEncodingRate, const double saoEncodingRateChroma );
   void getPreDBFStatistics(CodingStructure& cs);
@@ -110,11 +106,7 @@ private: //methods
 #if ENABLE_QPA
                         const double chromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                         const double saoEncodingRate, const double saoEncodingRateChroma, const bool isGreedymergeEncoding );
-#else
-                        const double saoEncodingRate, const double saoEncodingRateChroma );
-#endif
   void getBlkStats(const ComponentID compIdx, const int channelBitDepth, SAOStatData* statsDataTypes, Pel* srcBlk, Pel* orgBlk, int srcStride, int orgStride, int width, int height, bool isLeftAvail,  bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isCalculatePreDeblockSamples
                  , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
     );

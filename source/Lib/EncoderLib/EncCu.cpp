@@ -1103,7 +1103,7 @@ void EncCu::updateLambda (Slice* slice, const int dQP,
 
   if( slice->getSliceType() == I_SLICE )
   {
-    if( m_pcEncCfg->getIntraQpFactor() >= 0.0 /*&& m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_sliceType != I_SLICE*/ )
+    if( m_pcEncCfg->getIntraQpFactor() >= 0.0 && m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_sliceType != I_SLICE )
     {
       dQPFactor = m_pcEncCfg->getIntraQpFactor();
     }
@@ -1121,7 +1121,7 @@ void EncCu::updateLambda (Slice* slice, const int dQP,
   }
   else if( m_pcEncCfg->getLambdaFromQPEnable() )
   {
-    dQPFactor = 0.57*dQPFactor;
+    dQPFactor = 0.57;
   }
 
   double dLambda = dQPFactor*pow( 2.0, qp_temp/3.0 );

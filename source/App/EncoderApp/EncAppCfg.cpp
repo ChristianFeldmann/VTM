@@ -852,7 +852,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "CropOffsetTop",                                  m_cropOffsetTop,                                      0, "Crop Offset Top position")
   ( "CropOffsetRight",                                m_cropOffsetRight,                                    0, "Crop Offset Right position")
   ( "CropOffsetBottom",                               m_cropOffsetBottom,                                   0, "Crop Offset Bottom position")
-  ( "CalculateHdrMetrics",                            m_calculateHdrMetrics,                             true, "Crop Offset Bottom position")
+  ( "CalculateHdrMetrics",                            m_calculateHdrMetrics,                            false, "Enable HDR metric calculation")
 #endif
 
   //Field coding parameters
@@ -937,7 +937,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
+#if !JVET_O1136_TS_BDPCM_SIGNALLING    
   ( "RDPCM",                                          m_RdpcmMode,                                       false, "RDPCM")
+#endif    
 #if JVET_O0119_BASE_PALETTE_444
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
 #endif
@@ -1138,9 +1140,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SaoEncodingRateChroma",                           m_saoEncodingRateChroma,                            0.5, "The SAO early picture termination rate to use for chroma (when m_SaoEncodingRate is >0). If <=0, use results for luma")
   ("MaxNumOffsetsPerPic",                             m_maxNumOffsetsPerPic,                             2048, "Max number of SAO offset per picture (Default: 2048)")
   ("SAOLcuBoundary",                                  m_saoCtuBoundary,                                 false, "0: right/bottom CTU boundary areas skipped from SAO parameter estimation, 1: non-deblocked pixels are used for those areas")
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   ("SAOGreedyEnc",                                    m_saoGreedyMergeEnc,                              false, "SAO greedy merge encoding algorithm")
-#endif
   ("SliceMode",                                       tmpSliceMode,                            int(NO_SLICES), "0: Disable all Recon slice limits, 1: (deprecated #CTU), 2: (deprecated #bytes), 3:specify tiles per slice, 4: one brick per slice")
   ("SliceArgument",                                   m_sliceArgument,                                      0, "Depending on SliceMode being:"
                                                                                                                "\t1: max number of CTUs per slice"
@@ -2343,7 +2343,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
+#if !JVET_O1136_TS_BDPCM_SIGNALLING    
     xConfirmPara(m_RdpcmMode, "RDPCM only allowed with NEXT profile");
+#endif    
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
     xConfirmPara(m_JointCbCrMode, "JointCbCr only allowed with NEXT profile");
 #endif
@@ -3560,7 +3562,9 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
+#if !JVET_O1136_TS_BDPCM_SIGNALLING    
     msg(VERBOSE, "RDPCM:%d ", m_RdpcmMode );
+#endif    
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
 #endif

@@ -197,12 +197,24 @@ public:
 
 #if ENABLE_QPA || WCG_WPSNR
 #if RPR_CTC_PRINT
-  void    printOut( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths, const bool useWPSNR = false )
+  void    printOut( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths, const bool useWPSNR = false
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
 #else
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false )
+  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )  
 #endif
 #else
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths )
+  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
 #endif
   {
 #if !WCG_WPSNR
@@ -451,7 +463,7 @@ public:
 #endif
             msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR   " );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-            if(!useWPSNR)
+            if (printHdrMetrics)
             {
               msg(e_msg_level, "DeltaE   "  "PSNRL   ");
             }
@@ -464,7 +476,12 @@ public:
             {
               msg(e_msg_level, "xY-PSNR           "  "xU-PSNR           "  "xV-PSNR           ");
             }
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+            if (printHdrMetrics && printHexPsnr)
+            {
+              msg(e_msg_level, "xDeltaE           "  "xPSNRL           ");
+            }
+#endif
             if (printSequenceMSE)
             {
               msg( e_msg_level, " Y-MSE     "  "U-MSE     "  "V-MSE    "  "YUV-MSE \n" );
@@ -492,7 +509,7 @@ public:
               getPsnr(COMPONENT_Cr) / (double)getNumPic(),
               PSNRyuv );
 #if JVET_O0756_CALCULATE_HDRMETRICS
-            if(!useWPSNR)
+            if (printHdrMetrics)
             {
               msg( e_msg_level, "  %8.4lf  " "%8.4lf  ", getDeltaE()/(double)getNumPic(), getPsnrL()/(double)getNumPic());
             }
@@ -516,7 +533,33 @@ public:
               }
               msg(e_msg_level, "   %16" PRIx64 "  %16" PRIx64 "  %16" PRIx64 , xPsnr[COMPONENT_Y], xPsnr[COMPONENT_Cb], xPsnr[COMPONENT_Cr]);
             }
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+            if (printHexPsnr && printHdrMetrics)
+            {
+              double dDeltaE[MAX_NUM_COMPONENT];
+              uint64_t xDeltaE[MAX_NUM_COMPONENT];
+              for (int i = 0; i < 1; i++)
+              {
+                dDeltaE[i] = getDeltaE() / (double)getNumPic();
+                
+                copy(reinterpret_cast<uint8_t *>(&dDeltaE[i]),
+                     reinterpret_cast<uint8_t *>(&dDeltaE[i]) + sizeof(dDeltaE[i]),
+                     reinterpret_cast<uint8_t *>(&xDeltaE[i]));
+              }
+              
+              double dPsnrL[MAX_NUM_COMPONENT];
+              uint64_t xPsnrL[MAX_NUM_COMPONENT];
+              for (int i = 0; i < 1; i++)
+              {
+                dPsnrL[i] = getPsnrL() / (double)getNumPic();
+                
+                copy(reinterpret_cast<uint8_t *>(&dPsnrL[i]),
+                     reinterpret_cast<uint8_t *>(&dPsnrL[i]) + sizeof(dPsnrL[i]),
+                     reinterpret_cast<uint8_t *>(&xPsnrL[i]));
+              }
+              msg(e_msg_level, "   %16" PRIx64 "  %16" PRIx64 , xDeltaE[0], xPsnrL[0]);
+            }
+#endif
             if (printSequenceMSE)
             {
               msg( e_msg_level, "  %8.4lf  "   "%8.4lf  "    "%8.4lf  "   "%8.4lf\n",

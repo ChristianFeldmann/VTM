@@ -2106,16 +2106,20 @@ int EncAdaptiveLoopFilter::lengthUvlc( int uiCode )
 
 int EncAdaptiveLoopFilter::lengthGolomb( int coeffVal, int k, bool signed_coeff )
 {
-  int m = 2 << ( k - 1 );
-  int q = coeffVal / m;
-  if( signed_coeff && coeffVal != 0 )
+  int numBins = 0;
+  unsigned int symbol = abs(coeffVal);
+  while (symbol >= (unsigned int)(1 << k))
   {
-    return q + 2 + k;
+    numBins++;
+    symbol -= 1 << k;
+    k++;
   }
-  else
+  numBins += ( k + 1) ;
+  if (signed_coeff && coeffVal != 0)
   {
-    return q + 1 + k;
+    numBins++;
   }
+  return numBins;
 }
 
 double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], AlfParam& alfParam )

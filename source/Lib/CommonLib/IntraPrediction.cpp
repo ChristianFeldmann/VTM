@@ -133,6 +133,11 @@ IntraPrediction::IntraPrediction()
 
   m_piTemp = nullptr;
   m_pMdlmTemp = nullptr;
+
+#if JVET_O0119_BASE_PALETTE_444
+  m_runTypeRD   = nullptr;
+  m_runLengthRD = nullptr;
+#endif
 }
 
 IntraPrediction::~IntraPrediction()
@@ -223,8 +228,14 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
 #if JVET_O0119_BASE_PALETTE_444
-  m_runTypeRD   = (bool*) xMalloc(bool, MAX_CU_SIZE*MAX_CU_SIZE);
-  m_runLengthRD = (Pel* ) xMalloc(Pel,  MAX_CU_SIZE*MAX_CU_SIZE);
+  if (m_runTypeRD == nullptr)
+  {
+    m_runTypeRD = (bool *) xMalloc(bool, MAX_CU_SIZE * MAX_CU_SIZE);
+  }
+  if (m_runLengthRD == nullptr)
+  {
+    m_runLengthRD = (Pel *) xMalloc(Pel, MAX_CU_SIZE * MAX_CU_SIZE);
+  }
 #endif
 }
 

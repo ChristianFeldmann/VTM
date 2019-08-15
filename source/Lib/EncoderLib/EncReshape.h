@@ -49,6 +49,22 @@
 // ====================================================================================================================
 // Class definition
 // ====================================================================================================================
+#if JVET_O0432_LMCS_ENCODER
+struct SeqInfo
+{
+  double binVar[PIC_ANALYZE_CW_BINS];
+  double binHist[PIC_ANALYZE_CW_BINS];
+  double normVar[PIC_ANALYZE_CW_BINS];
+  int    nonZeroCnt;
+  double weightVar;
+  double weightNorm;
+  double minBinVar;
+  double maxBinVar;
+  double meanBinVar;
+  double ratioStdU;
+  double ratioStdV;
+};
+#endif
 
 class EncReshape : public Reshape
 {
@@ -71,6 +87,11 @@ private:
   Pel                     m_cwLumaWeight[PIC_CODE_CW_BINS];
   double                  m_chromaWeight;
   int                     m_chromaAdj;
+#if JVET_O0432_LMCS_ENCODER
+  int                     m_binNum;
+  SeqInfo                 m_srcSeqStats;
+  SeqInfo                 m_rspSeqStats;
+#endif
 public:
 
   EncReshape();
@@ -81,18 +102,37 @@ public:
 
   bool getSrcReshaped() { return m_srcReshaped; }
   void setSrcReshaped(bool b) { m_srcReshaped = b; }
+#if JVET_O0432_LMCS_ENCODER
+  void initSeqStats(SeqInfo &stats);
+  void calcSeqStats(Picture *pcPic, SeqInfo &stats);
+  void preAnalyzerLMCS(Picture *pcPic, const uint32_t signalType, const SliceType sliceType, const ReshapeCW& reshapeCW);
+#else
   void preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT);
+#endif
   void preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT);
   void bubbleSortDsd(double *array, int * idx, int n);
   void swap(int *xp, int *yp) { int temp = *xp;  *xp = *yp;  *yp = temp; }
   void swap(double *xp, double *yp) { double temp = *xp;  *xp = *yp;  *yp = temp; }
+#if JVET_O0432_LMCS_ENCODER
+  void cwPerturbation(int startBinIdx, int endBinIdx, uint16_t maxCW);
+  void cwReduction(int startBinIdx, int endBinIdx);
+  void deriveReshapeParametersSDR(bool *intraAdp, bool *interAdp);
+#else
   void deriveReshapeParametersSDRfromStats(uint32_t *, double*, double* reshapeTH1, double* reshapeTH2, bool *intraAdp, bool *interAdp);
+#endif
   void deriveReshapeParameters(double *array, int start, int end, ReshapeCW respCW, double &alpha, double &beta);
   void initLUTfromdQPModel();
+#if JVET_O0432_LMCS_ENCODER
+  void constructReshaperLMCS();
+#else
   void constructReshaperSDR();
+#endif
   ReshapeCW * getReshapeCW() { return &m_reshapeCW; }
   Pel * getWeightTable() { return m_cwLumaWeight; }
   double getCWeight() { return m_chromaWeight; }
+#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
+  void adjustLmcsPivot();
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   void copyState(const EncReshape& other);

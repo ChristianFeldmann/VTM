@@ -51,26 +51,16 @@
 struct CoeffCodingContext
 {
 public:
-#if HEVC_USE_SIGN_HIDING
-#if JVET_N0413_RDPCM
   CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide, bool bdpcm = false );
-#else
-  CoeffCodingContext( const TransformUnit& tu, ComponentID component, bool signHide);
-#endif
-#else
-  CoeffCodingContext( const TransformUnit& tu, ComponentID component );
-#endif
 public:
   void  initSubblock     ( int SubsetId, bool sigGroupFlag = false );
 public:
   void  resetSigGroup   ()                      { m_sigCoeffGroupFlag.reset( m_subSetPos ); }
   void  setSigGroup     ()                      { m_sigCoeffGroupFlag.set( m_subSetPos ); }
-#if JVET_N0280_RESIDUAL_CODING_TS
   bool  noneSigGroup    ()                      { return m_sigCoeffGroupFlag.none(); }
   int   lastSubSet      ()                      { return ( maxNumCoeff() - 1 ) >> log2CGSize(); }
   bool  isLastSubSet    ()                      { return lastSubSet() == m_subSetId; }
   bool  only1stSigGroup ()                      { return m_sigCoeffGroupFlag.count()-m_sigCoeffGroupFlag[lastSubSet()]==0; }
-#endif
   void  setScanPosLast  ( int       posLast )   { m_scanPosLast = posLast; }
 public:
   ComponentID     compID          ()                        const { return m_compID; }
@@ -93,11 +83,9 @@ public:
   bool            isNotFirst      ()                        const { return ( m_subSetId != 0 ); }
   bool            isSigGroup(int scanPosCG) const { return m_sigCoeffGroupFlag[m_scanCG[scanPosCG].idx]; }
   bool            isSigGroup      ()                        const { return m_sigCoeffGroupFlag[ m_subSetPos ]; }
-#if HEVC_USE_SIGN_HIDING
   bool            signHiding      ()                        const { return m_signHiding; }
   bool            hideSign        ( int       posFirst,
                                     int       posLast   )   const { return ( m_signHiding && ( posLast - posFirst >= SBH_THRESHOLD ) ); }
-#endif
   CoeffScanType   scanType        ()                        const { return m_scanType; }
   unsigned        blockPos(int scanPos) const { return m_scan[scanPos].idx; }
   unsigned        posX(int scanPos) const { return m_scan[scanPos].x; }
@@ -106,17 +94,11 @@ public:
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
-#if JVET_N0280_RESIDUAL_CODING_TS
   bool            isContextCoded  ()                              { return --m_remainingContextBins >= 0; }
   int             numCtxBins      ()                        const { return   m_remainingContextBins;      }
   void            setNumCtxBins   ( int n )                       {          m_remainingContextBins  = n; }
   unsigned        sigGroupCtxId   ( bool ts = false     )   const { return ts ? m_sigGroupCtxIdTS : m_sigGroupCtxId; }
-#else
-  unsigned        sigGroupCtxId   ()                        const { return m_sigGroupCtxId; }
-#endif
-#if JVET_N0413_RDPCM
   bool            bdpcm           ()                        const { return m_bdpcm; }
-#endif
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t posY      = m_scan[scanPos].y;
@@ -147,11 +129,23 @@ public:
       }
     }
 #undef UPDATE
+
+
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+    int ctxOfs = std::min((sumAbs+1)>>1, 3) + ( diag < 2 ? 4 : 0 );
+#else
     int ctxOfs = std::min( sumAbs, 5 ) + ( diag < 2 ? 6 : 0 );
+#endif
+
     if( m_chType == CHANNEL_TYPE_LUMA )
     {
+#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
+      ctxOfs += diag < 5 ? 4 : 0;
+#else
       ctxOfs += diag < 5 ? 6 : 0;
+#endif
     }
+
     m_tmplCpDiag = diag;
     m_tmplCpSum1 = sumAbs - numPos;
     return m_sigFlagCtxSet[std::max( 0, state-1 )]( ctxOfs );
@@ -171,11 +165,7 @@ public:
   unsigned parityCtxIdAbs   ( uint8_t offset )  const { return m_parFlagCtxSet   ( offset ); }
   unsigned greater1CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[1]( offset ); }
   unsigned greater2CtxIdAbs ( uint8_t offset )  const { return m_gtxFlagCtxSet[0]( offset ); }
-#if JVET_N0188_UNIFY_RICEPARA
   unsigned templateAbsSum( int scanPos, const TCoeff* coeff, int baseLevel )
-#else
-  unsigned templateAbsSum( int scanPos, const TCoeff* coeff )
-#endif
   {
     const uint32_t  posY  = m_scan[scanPos].y;
     const uint32_t  posX  = m_scan[scanPos].x;
@@ -201,14 +191,9 @@ public:
         sum += abs(pData[m_width << 1]);
       }
     }
-#if JVET_N0188_UNIFY_RICEPARA
     return std::max(std::min(sum - 5 * baseLevel, 31), 0);
-#else
-    return std::min(sum, 31);
-#endif
   }
 
-#if JVET_N0280_RESIDUAL_CODING_TS
   unsigned sigCtxIdAbsTS( int scanPos, const TCoeff* coeff )
   {
     const uint32_t  posY   = m_scan[scanPos].y;
@@ -231,6 +216,137 @@ public:
 
   unsigned parityCtxIdAbsTS   ()                  const { return m_tsParFlagCtxSet(      0 ); }
   unsigned greaterXCtxIdAbsTS ( uint8_t offset )  const { return m_tsGtxFlagCtxSet( offset ); }
+
+#if JVET_O0122_TS_SIGN_LEVEL
+  unsigned lrg1CtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
+  {
+    const uint32_t  posY = m_scan[scanPos].y;
+    const uint32_t  posX = m_scan[scanPos].x;
+    const TCoeff*   posC = coeff + posX + posY * m_width;
+
+    int             numPos = 0;
+#define UPDATE(x) {int a=abs(x);numPos+=!!a;}
+
+    if (bdpcm)
+    {
+      numPos = 3;
+    }
+    else
+    {
+      if (posX > 0)
+      {
+        UPDATE(posC[-1]);
+      }
+      if (posY > 0)
+      {
+        UPDATE(posC[-(int)m_width]);
+      }
+    }
+
+#undef UPDATE
+    return m_tsLrg1FlagCtxSet(numPos);
+  }
+#endif
+
+#if JVET_O0122_TS_SIGN_LEVEL
+  unsigned signCtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
+  {
+    const uint32_t  posY = m_scan[scanPos].y;
+    const uint32_t  posX = m_scan[scanPos].x;
+    const TCoeff*   pData = coeff + posX + posY * m_width;
+
+    int rightSign = 0, belowSign = 0;
+    unsigned signCtx = 0;
+
+    if (posX > 0)
+    {
+      rightSign = pData[-1];
+    }
+    if (posY > 0)
+    {
+      belowSign = pData[-(int)m_width];
+    }
+
+    if ((rightSign == 0 && belowSign == 0) || ((rightSign*belowSign) < 0))
+    {
+      signCtx = 0;
+    }
+    else if (rightSign >= 0 && belowSign >= 0)
+    {
+      signCtx = 1;
+    }
+    else
+    {
+      signCtx = 2;
+    }
+    if (bdpcm)
+    {
+      signCtx += 3;
+    }
+    return m_tsSignFlagCtxSet(signCtx);
+  }
+#endif
+
+#if JVET_O0122_TS_SIGN_LEVEL
+  void neighTS(int &rightPixel, int &belowPixel, int scanPos, const TCoeff* coeff)
+  {
+    const uint32_t  posY = m_scan[scanPos].y;
+    const uint32_t  posX = m_scan[scanPos].x;
+    const TCoeff*   data = coeff + posX + posY * m_width;
+
+    rightPixel = belowPixel = 0;
+
+    if (posX > 0)
+    {
+      rightPixel = data[-1];
+    }
+    if (posY > 0)
+    {
+      belowPixel = data[-(int)m_width];
+    }
+  }
+
+  int deriveModCoeff(int rightPixel, int belowPixel, int absCoeff, int bdpcm = 0)
+  {
+    int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
+
+    int absCoeffMod = absCoeff;
+
+    if (bdpcm == 0)
+    {
+      pred1 = std::max(absBelow, absRight);
+
+      if (absCoeff == pred1)
+      {
+        absCoeffMod = 1;
+      }
+      else
+      {
+        absCoeffMod = absCoeff < pred1 ? absCoeff + 1 : absCoeff;
+      }
+    }
+
+    return(absCoeffMod);
+  }
+
+  int decDeriveModCoeff(int rightPixel, int belowPixel, int absCoeff)
+  {
+    int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
+    pred1 = std::max(absBelow, absRight);
+
+    int absCoeffMod;
+
+    if (absCoeff == 1 && pred1 > 0)
+    {
+      absCoeffMod = pred1;
+    }
+    else
+    {
+      absCoeffMod = absCoeff - (absCoeff <= pred1);
+    }
+    return(absCoeffMod);
+  }
+#endif
 
   unsigned templateAbsSumTS( int scanPos, const TCoeff* coeff )
   {
@@ -257,6 +373,9 @@ public:
 
     return auiGoRicePars[ std::min(sum, 31) ];
   }
+
+#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
+  int                       regBinLimit;
 #endif
 
 private:
@@ -273,9 +392,7 @@ private:
   const unsigned            m_log2BlockWidth;
   const unsigned            m_log2BlockHeight;
   const unsigned            m_maxNumCoeff;
-#if HEVC_USE_SIGN_HIDING
   const bool                m_signHiding;
-#endif
   const bool                m_extendedPrecision;
   const int                 m_maxLog2TrDynamicRange;
   CoeffScanType             m_scanType;
@@ -304,17 +421,17 @@ private:
   CtxSet                    m_sigFlagCtxSet[3];
   CtxSet                    m_parFlagCtxSet;
   CtxSet                    m_gtxFlagCtxSet[2];
-#if JVET_N0280_RESIDUAL_CODING_TS
   unsigned                  m_sigGroupCtxIdTS;
   CtxSet                    m_tsSigFlagCtxSet;
   CtxSet                    m_tsParFlagCtxSet;
   CtxSet                    m_tsGtxFlagCtxSet;
+#if JVET_O0122_TS_SIGN_LEVEL
+  CtxSet                    m_tsLrg1FlagCtxSet;
+  CtxSet                    m_tsSignFlagCtxSet;
+#endif
   int                       m_remainingContextBins;
-#endif
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
-#if JVET_N0413_RDPCM
   const bool                m_bdpcm;
-#endif
 };
 
 
@@ -322,18 +439,63 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+                         qgStart(false)
+                         {
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+#endif
+                           lfnstLastScanPos = false;
+                         }
+#else
                          qgStart(false),
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                         numNonZeroCoeffNonTs(0)
+                         {
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+                         }
+#else
                          numNonZeroCoeffNonTs(0) {}
+#endif
+#endif
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+                         qp(_qp)
+                         {
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+#endif
+                           lfnstLastScanPos = false;
+                         }
+#else
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+                         numNonZeroCoeffNonTs(0), qp(_qp)
+                         {
+                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
+                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+                         }
+#else
                          numNonZeroCoeffNonTs(0), qp(_qp) {}
+#endif
+#endif
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
   bool      qgStart;
-  uint32_t      numNonZeroCoeffNonTs;
-  int8_t     qp;                   // used as a previous(last) QP and for QP prediction
+#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
+  bool      lfnstLastScanPos;
+#else
+  uint32_t  numNonZeroCoeffNonTs;
+#endif
+  int8_t    qp;                   // used as a previous(last) QP and for QP prediction
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
+  bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
+#endif
 };
 
 class MergeCtx
@@ -353,6 +515,10 @@ public:
   MotionBuf     subPuMvpExtMiBuf;
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
+#if JVET_O0057_ALTHPELIF
+  bool          mmvdUseAltHpelIf  [ MMVD_BASE_MV_NUM ];
+  bool          useAltHpelIf      [ MRG_MAX_NUM_CANDS ];
+#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
@@ -377,21 +543,20 @@ public:
 namespace DeriveCtx
 {
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbCbf = false, const int ispIdx = 0 );
+#if JVET_O0050_LOCAL_DUAL_TREE
+unsigned CtxModeConsFlag( const CodingStructure& cs, Partitioner& partitioner );
+#endif
+#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
+unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbf = false, const int ispIdx = 0 );
+#else
+unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbf = false, const int ispIdx = 0 );
+#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
-#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
-unsigned CtxIMVFlag   ( const CodingUnit& cu );
-#endif
 unsigned CtxAffineFlag( const CodingUnit& cu );
-#if !JVET_N600_AMVR_TPM_CTX_REDUCTION
-unsigned CtxTriangleFlag( const CodingUnit& cu );
-#endif
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
-#if JVET_N0217_MATRIX_INTRAPRED
 unsigned CtxMipFlag   ( const CodingUnit& cu );
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

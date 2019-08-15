@@ -74,9 +74,7 @@ struct TriangleMotionInfo
   uint8_t   m_candIdx1;
 
   TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
   TriangleMotionInfo() { m_splitDir = m_candIdx0 = m_candIdx1 = 0; }
-#endif
 };
 class EncCu
   : DecCu
@@ -104,6 +102,10 @@ private:
 
   CodingStructure    ***m_pTempCS;
   CodingStructure    ***m_pBestCS;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  CodingStructure    ***m_pTempCS2;
+  CodingStructure    ***m_pBestCS2;
+#endif
   //  Access channel
   EncCfg*               m_pcEncCfg;
   IntraSearch*          m_pcIntraSearch;
@@ -125,6 +127,9 @@ private:
 
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
+#if JVET_O0108_DIS_DMVR_BDOF_CIIP
+  PelStorage            m_acMergeTmpBuffer[MRG_MAX_NUM_CANDS];
+#endif
   PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
   double                m_mergeBestSATDCost;
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
@@ -136,20 +141,16 @@ private:
 #endif
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
   TriangleMotionInfo    m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
-#else
-  static const TriangleMotionInfo  m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
-#endif
   uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
 #endif
   double                m_sbtCostSave[2];
-
 public:
   /// copy parameters from encoder class
   void  init                ( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int jId = 0 ) );
+
   void setDecCuReshaperInEncCU(EncReshape* pcReshape, ChromaFormat chromaFormatIDC) { initDecCuReshaper((Reshape*) pcReshape, chromaFormatIDC); }
   /// create internal buffers
   void  create              ( EncCfg* encCfg );
@@ -170,9 +171,7 @@ public:
   IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
   EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
 
-#if JVET_N0400_SIGNAL_TRIANGLE_CAND_NUM
   EncCu();
-#endif
   ~EncCu();
 
 protected:
@@ -180,7 +179,11 @@ protected:
   void xCalDebCost            ( CodingStructure &cs, Partitioner &partitioner, bool calDist = false );
   Distortion getDistortionDb  ( CodingStructure &cs, CPelBuf org, CPelBuf reco, ComponentID compID, const CompArea& compArea, bool afterDb );
 
+#if JVET_O0502_ISP_CLEANUP
+  void xCompressCU            ( CodingStructure*& tempCS, CodingStructure*& bestCS, Partitioner& pm, double maxCostAllowed = MAX_DOUBLE );
+#else
   void xCompressCU            ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   void xCompressCUParallel    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm );
   void copyState              ( EncCu* other, Partitioner& pm, const UnitArea& currArea, const bool isDist );
@@ -189,7 +192,11 @@ protected:
   bool
     xCheckBestMode         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestmode );
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode, const ModeType modeTypeParent, bool &skipInterPass );
+#else
   void xCheckModeSplit        ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#endif
 
   void xCheckRDCostIntra      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckIntraPCM         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -201,7 +208,11 @@ protected:
   void xCheckRDCostAffineMerge2Nx2N
                               ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
   void xCheckRDCostInter      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-  bool xCheckRDCostInterIMV   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#if JVET_O0057_ALTHPELIF
+  bool xCheckRDCostInterIMV(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode, double &bestIntPelCost);
+#else
+  bool xCheckRDCostInterIMV   ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode);
+#endif
   void xEncodeDontSplit       ( CodingStructure &cs, Partitioner &partitioner);
 
   void xCheckRDCostMerge2Nx2N ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -232,6 +243,10 @@ protected:
   }
   void xCheckRDCostIBCMode    ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
   void xCheckRDCostIBCModeMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
+
+#if JVET_O0119_BASE_PALETTE_444
+  void xCheckPLT              ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode );
+#endif
 };
 
 //! \}

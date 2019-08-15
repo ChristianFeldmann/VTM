@@ -292,9 +292,7 @@ void SampleAdaptiveOffset::xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkP
 void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& clpRng, int typeIdx, int* offset
                                           , const Pel* srcBlk, Pel* resBlk, int srcStride, int resStride,  int width, int height
                                           , bool isLeftAvail,  bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                                           , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
-#endif
   )
 {
   int x,y, startX, startY, endX, endY, edgeType;
@@ -317,13 +315,11 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         for (x=startX; x< endX; x++)
         {
           signRight = (int8_t)sgn(srcLine[x] - srcLine[x+1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
           if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
           {
             signLeft = -signRight;
             continue;
           }
-#endif
           edgeType =  signRight + signLeft;
           signLeft  = -signRight;
 
@@ -362,13 +358,11 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         for (x=0; x< width; x++)
         {
           signDown  = (int8_t)sgn(srcLine[x] - srcLineBelow[x]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
           if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             signUpLine[x] = -signDown;
             continue;
           }
-#endif
           edgeType = signDown + signUpLine[x];
           signUpLine[x]= -signDown;
 
@@ -404,12 +398,10 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       firstLineEndX   = isAboveAvail? endX: 1;
       for(x= firstLineStartX; x< firstLineEndX; x++)
       {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
-#endif
         edgeType  =  sgn(srcLine[x] - srcLineAbove[x- 1]) - signUpLine[x+1];
 
         resLine[x] = ClipPel<int>( srcLine[x] + offset[edgeType], clpRng);
@@ -426,13 +418,11 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         for (x=startX; x<endX; x++)
         {
           signDown =  (int8_t)sgn(srcLine[x] - srcLineBelow[x+ 1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
           if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             signDownLine[x + 1] = -signDown;
             continue;
           }
-#endif
           edgeType =  signDown + signUpLine[x];
           resLine[x] = ClipPel<int>( srcLine[x] + offset[edgeType], clpRng);
 
@@ -454,12 +444,10 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       lastLineEndX   = isBelowRightAvail ? width : (width -1);
       for(x= lastLineStartX; x< lastLineEndX; x++)
       {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, height - 1, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
-#endif
         edgeType =  sgn(srcLine[x] - srcLineBelow[x+ 1]) + signUpLine[x];
         resLine[x] = ClipPel<int>( srcLine[x] + offset[edgeType], clpRng);
 
@@ -488,12 +476,10 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       firstLineEndX   = isAboveRightAvail ? width : (width-1);
       for(x= firstLineStartX; x< firstLineEndX; x++)
       {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
-#endif
         edgeType = sgn(srcLine[x] - srcLineAbove[x+1]) -signUpLine[x-1];
         resLine[x] = ClipPel<int>(srcLine[x] + offset[edgeType], clpRng);
       }
@@ -508,13 +494,11 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
         for(x= startX; x< endX; x++)
         {
           signDown =  (int8_t)sgn(srcLine[x] - srcLineBelow[x-1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
           if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             signUpLine[x - 1] = -signDown;
             continue;
           }
-#endif
           edgeType =  signDown + signUpLine[x];
           resLine[x] = ClipPel<int>(srcLine[x] + offset[edgeType], clpRng);
           signUpLine[x-1] = -signDown;
@@ -530,12 +514,10 @@ void SampleAdaptiveOffset::offsetBlock(const int channelBitDepth, const ClpRng& 
       lastLineEndX   = isBelowAvail ? endX : 1;
       for(x= lastLineStartX; x< lastLineEndX; x++)
       {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, height - 1, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
         {
           continue;
         }
-#endif
         edgeType = sgn(srcLine[x] - srcLineBelow[x-1]) + signUpLine[x];
         resLine[x] = ClipPel<int>(srcLine[x] + offset[edgeType], clpRng);
 
@@ -591,14 +573,12 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
     m_signLineBuf2.resize(lineBufferSize);
   }
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   int numHorVirBndry = 0, numVerVirBndry = 0;
   int horVirBndryPos[] = { -1,-1,-1 };
   int verVirBndryPos[] = { -1,-1,-1 };
   int horVirBndryPosComp[] = { -1,-1,-1 };
   int verVirBndryPosComp[] = { -1,-1,-1 };
   bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
-#endif
   for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
   {
     const ComponentID compID = ComponentID(compIdx);
@@ -611,7 +591,6 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
       const Pel* srcBlk = src.get(compID).bufAt(compArea);
       int  resStride    = res.get(compID).stride;
       Pel* resBlk       = res.get(compID).bufAt(compArea);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       for (int i = 0; i < numHorVirBndry; i++)
       {
         horVirBndryPosComp[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
@@ -620,7 +599,6 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
       {
         verVirBndryPosComp[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
       }
-#endif
 
       offsetBlock( cs.sps->getBitDepth(toChannelType(compID)),
                    cs.slice->clpRng(compID),
@@ -630,9 +608,7 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
                   , isAboveAvail, isBelowAvail
                   , isAboveLeftAvail, isAboveRightAvail
                   , isBelowLeftAvail, isBelowRightAvail
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                   , isCtuCrossedByVirtualBoundaries, horVirBndryPosComp, verVirBndryPosComp, numHorVirBndry, numVerVirBndry
-#endif
                   );
     }
   } //compIdx
@@ -711,13 +687,17 @@ void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
 void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
 {
   const SPS& sps = *cs.sps;
-  uint32_t numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
+  uint32_t numComponents;
+  bool anyDualTree = false;
   for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
   {
     // restore PCM samples
     if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
     {
 
+      cs.slice = cu.slice;
+      anyDualTree |= CS::isDualITree(cs);
+      numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
       for( uint32_t comp = 0; comp < numComponents; comp++ )
       {
         xPCMSampleRestoration( cu, ComponentID( comp ) );
@@ -725,10 +705,15 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
     }
   }
   numComponents = m_numberOfComponents;
-  if (CS::isDualITree(cs) && numComponents)
+  if (anyDualTree && numComponents)
   {
     for (auto &cu : cs.traverseCUs(ctuArea, CH_C))
     {
+      if (cu.slice->isIntra() == false)
+      {
+        continue;
+      }
+
       // restore PCM samples
       if ((cu.ipcm && sps.getPCMFilterDisableFlag()) || CU::isLosslessCoded(cu))
       {
@@ -744,7 +729,6 @@ void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea
 void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)
 {
   const CompArea& ca = cu.block(compID);
-
   if( CU::isLosslessCoded( cu ) && !cu.ipcm )
   {
     for( auto &currTU : CU::traverseTUs( cu ) )
@@ -753,11 +737,7 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
              PelBuf dstBuf  = cu.cs->getRecoBuf( currTU.block(compID) );
 
       dstBuf.copyFrom( pcmBuf );
-#if JVET_N0805_APS_LMCS
       if (cu.slice->getLmcsEnabledFlag() && isLuma(compID))
-#else
-      if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
-#endif
       {
         dstBuf.rspSignal(m_pcReshape->getInvLUT());
       }
@@ -779,11 +759,7 @@ void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const Component
       dstBuf.at(x,y) = (pcmBuf.at(x,y) << uiPcmLeftShiftBit);
     }
   }
-#if JVET_N0805_APS_LMCS
   if (cu.slice->getLmcsEnabledFlag()&& isLuma(compID))
-#else
-  if (cu.slice->getReshapeInfo().getUseSliceReshaper() && isLuma(compID))
-#endif
   {
     dstBuf.rspSignal(m_pcReshape->getInvLUT());
   }
@@ -864,7 +840,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
   }
 }
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
 bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
@@ -887,5 +862,4 @@ bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const in
   }
   return numHorVirBndry > 0 || numVerVirBndry > 0 ;
 }
-#endif
 //! \}

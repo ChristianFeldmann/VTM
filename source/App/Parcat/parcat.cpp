@@ -59,9 +59,6 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   SPS* sps = NULL;
 
   uint32_t firstSliceSegmentInPic;
-#if !JVET_N0857_RECT_SLICES
-  READ_FLAG( firstSliceSegmentInPic, "first_slice_segment_in_pic_flag" );
-#endif
   if( isRapPic )
   {
     READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
@@ -74,21 +71,6 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   //!KS: need to add error handling code here, if SPS is not available
   CHECK(sps==0, "Invalid SPS");
 
-#if !JVET_N0857_RECT_SLICES
-  int numCTUs = ((sps->getPicWidthInLumaSamples()+sps->getMaxCUWidth()-1)/sps->getMaxCUWidth())*((sps->getPicHeightInLumaSamples()+sps->getMaxCUHeight()-1)/sps->getMaxCUHeight());
-  uint32_t sliceSegmentAddress = 0;
-  int bitsSliceSegmentAddress = 0;
-  while(numCTUs>(1<<bitsSliceSegmentAddress))
-  {
-    bitsSliceSegmentAddress++;
-  }
-
-  if(!firstSliceSegmentInPic)
-  {
-    READ_CODE( bitsSliceSegmentAddress, sliceSegmentAddress, "slice_segment_address" );
-  }
-#endif
-#if JVET_N0857_RECT_SLICES
   int bitsSliceAddress = 1;
   if (!pps->getRectSliceFlag())
   {
@@ -128,7 +110,6 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   {
     READ_UVLC(uiCode, "num_bricks_in_slice_minus1");
   }
-#endif
   //set uiCode to equal slice start address (or dependent slice start address)
   for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
   {
@@ -206,7 +187,6 @@ const bool verbose = false;
 
 const char * NALU_TYPE[] =
 {
-#if JVET_N0067_NAL_Unit_Header
     "NAL_UNIT_PPS",
     "NAL_UNIT_ACCESS_UNIT_DELIMITER",
     "NAL_UNIT_PREFIX_SEI",
@@ -239,104 +219,6 @@ const char * NALU_TYPE[] =
     "NAL_UNIT_UNSPECIFIED_29",
     "NAL_UNIT_UNSPECIFIED_30",
     "NAL_UNIT_UNSPECIFIED_31"
-#else
-#if !JVET_M0101_HLS
-    "TRAIL_N",
-    "TRAIL_R",
-    "TSA_N",
-    "TSA_R",
-    "STSA_N",
-    "STSA_R",
-    "RADL_N",
-    "RADL_R",
-    "RASL_N",
-    "RASL_R",
-    "RSV_VCL_N10",
-    "RSV_VCL_N12",
-    "RSV_VCL_N14",
-    "RSV_VCL_R11",
-    "RSV_VCL_R13",
-    "RSV_VCL_R15",
-    "BLA_W_LP",
-    "BLA_W_RADL",
-    "BLA_N_LP",
-    "IDR_W_RADL",
-    "IDR_N_LP",
-    "CRA_NUT",
-    "RSV_IRAP_VCL22",
-    "RSV_IRAP_VCL23",
-    "unk",
-    "unk",
-    "unk",
-    "unk",
-    "unk",
-    "unk",
-    "unk",
-    "unk",
-#if HEVC_VPS
-    "VPS_NUT",
-#elif JVET_N0278_HLS
-    "VPS_NUT",
-#else
-    "unk",
-#endif
-    "SPS_NUT",
-    "PPS_NUT",
-#if JVET_M0132
-    "APS_NUT",
-#endif
-    "AUD_NUT",
-    "EOS_NUT",
-    "EOB_NUT",
-    "FD_NUT",
-    "PREFIX_SEI_NUT",
-    "SUFFIX_SEI_NUT",
-#else
-    "NAL_UNIT_CODED_SLICE_TRAIL",
-    "NAL_UNIT_CODED_SLICE_STSA",
-    "NAL_UNIT_CODED_SLICE_RADL",
-    "NAL_UNIT_CODED_SLICE_RASL",
-    "NAL_UNIT_RESERVED_VCL_4",
-    "NAL_UNIT_RESERVED_VCL_5",
-    "NAL_UNIT_RESERVED_VCL_6",
-    "NAL_UNIT_RESERVED_VCL_7",
-
-    "NAL_UNIT_CODED_SLICE_IDR_W_RADL",
-    "NAL_UNIT_CODED_SLICE_IDR_N_LP",
-    "NAL_UNIT_CODED_SLICE_CRA",
-
-    "NAL_UNIT_RESERVED_IRAP_VCL11",
-    "NAL_UNIT_RESERVED_IRAP_VCL12",
-    "NAL_UNIT_RESERVED_IRAP_VCL13",
-
-    "NAL_UNIT_RESERVED_VCL14",
-
-#if HEVC_VPS || JVET_N0278_HLS
-    "NAL_UNIT_VPS",
-#else
-    "NAL_UNIT_RESERVED_VCL15",
-#endif
-
-    "NAL_UNIT_RESERVED_NVCL16",
-
-    "NAL_UNIT_SPS",
-    "NAL_UNIT_PPS",
-    "NAL_UNIT_APS",
-    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
-    "NAL_UNIT_EOS",
-    "NAL_UNIT_EOB",
-    "NAL_UNIT_PREFIX_SEI",
-    "NAL_UNIT_SUFFIX_SEI",
-    "NAL_UNIT_FILLER_DATA",
-
-    "NAL_UNIT_RESERVED_NVCL26",
-    "NAL_UNIT_RESERVED_NVCL27",
-    "NAL_UNIT_UNSPECIFIED_28",
-    "NAL_UNIT_UNSPECIFIED_29",
-    "NAL_UNIT_UNSPECIFIED_30",
-    "NAL_UNIT_UNSPECIFIED_31"
-#endif
-#endif
 };
 
 int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
@@ -358,15 +240,6 @@ int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
   {
     iPOCmsb = iPrevPOCmsb;
   }
-#if !JVET_M0101_HLS
-  if ( nalu_type == NAL_UNIT_CODED_SLICE_BLA_W_LP
-    || nalu_type == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-    || nalu_type == NAL_UNIT_CODED_SLICE_BLA_N_LP )
-  {
-    // For BLA picture types, POCmsb is set to 0.
-    iPOCmsb = 0;
-  }
-#endif
 
   return iPOCmsb + iPOClsb;
 }
@@ -401,14 +274,10 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     p += nal_start;
 
     std::vector<uint8_t> nalu(p, p + nal_end - nal_start);
-#if JVET_N0067_NAL_Unit_Header
     int nalu_header = nalu[0];
     bool zeroTidRequiredFlag = (nalu_header & ( 1 << 7 )) >> 7;
     int nalUnitTypeLsb = (((1 << 4) - 1) & nalu_header);
     int nalu_type = ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
-#else
-    int nalu_type = nalu[0] >> 1;
-#endif
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
@@ -433,11 +302,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     {
       PPS* pps = new PPS();
       HLSReader.setBitstream( &inp_nalu.getBitstream() );
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       HLSReader.parsePPS( pps, &parameterSetManager );
-#else
-      HLSReader.parsePPS( pps );
-#endif
       parameterSetManager.storePPS( pps, inp_nalu.getBitstream().getFifo() );
     }
 
@@ -446,25 +311,12 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       poc = 0;
       new_poc = *poc_base + poc;
     }
-#if JVET_N0067_NAL_Unit_Header
       if((nalu_type > 7 && nalu_type < 15) || nalu_type == NAL_UNIT_CODED_SLICE_CRA)
-#else
-#if !JVET_M0101_HLS
-    if(nalu_type < 32 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
-#else
-      if(nalu_type < 15 && nalu_type != NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu_type != NAL_UNIT_CODED_SLICE_IDR_N_LP)
-#endif
-#endif
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
       bool isRapPic =
         inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-#if !JVET_M0101_HLS
-        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-        || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
-#endif
         || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA;
 
       // beginning of slice header parsing, taken from VLCReader
@@ -505,27 +357,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       idr_found = true;
     }
 
-#if HEVC_VPS
-#if JVET_N0349_DPS
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP )) || ((idx>1 && !idr_found) && ( nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS))
-#else
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP )) || ((idx>1 && !idr_found) && ( nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS))
-#endif
-#else
-#if JVET_N0349_DPS
-#if JVET_N0278_HLS
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS ||nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS))
-#else
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DPS ||nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS))
-#endif
-#else
-#if JVET_N0278_HLS
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS))
-#else
-    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS))
-#endif
-#endif
-#endif
+    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS ||nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER))
       || (nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei))
     {
     }
@@ -600,6 +432,8 @@ int main(int argc, char * argv[])
   }
   int poc_base = 0;
   int last_idr_poc = 0;
+
+  initROM();
 
   for(int i = 1; i < argc - 1; ++i)
   {

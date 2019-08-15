@@ -87,15 +87,11 @@ public:
   // (vertical) subsampling shift (for reducing complexity)
   // - 0 = no subsampling, 1 = even rows, 2 = every 4th, etc.
   int                   subShift;
-#if JVET_N0671_RDCOST_FIX
   int                   cShiftX;
   int                   cShiftY;
-#endif
   DistParam() :
   org(), cur(), step( 1 ), bitDepth( 0 ), useMR( false ), applyWeight( false ), isBiPred( false ), wpCur( nullptr ), compID( MAX_NUM_COMPONENT ), maximumDistortionForEarlyExit( std::numeric_limits<Distortion>::max() ), subShift( 0 )
-#if JVET_N0671_RDCOST_FIX
   , cShiftX(-1), cShiftY(-1)
-#endif
   { }
 };
 
@@ -117,9 +113,7 @@ private:
   static uint32_t         m_signalType;
   static double           m_chromaWeight;
   static int              m_lumaBD;
-#if JVET_N0671_RDCOST_FIX
   ChromaFormat            m_cf;
-#endif // JVET_N0671_RDCOST_FIX
 #endif
   double                  m_DistScale;
   double                  m_dLambdaMotionSAD[2 /* 0=standard, 1=for transquant bypass when mixed-lossless cost evaluation enabled*/];
@@ -136,9 +130,7 @@ public:
   virtual ~RdCost();
 
 #if WCG_EXT
-#if JVET_N0671_RDCOST_FIX
   void          setChromaFormat       ( const ChromaFormat & _cf) { m_cf = _cf; }
-#endif
   double        calcRdCost            ( uint64_t fracBits, Distortion distortion, bool useUnadjustedLambda = true );
 #else
   double        calcRdCost            ( uint64_t fracBits, Distortion distortion );
@@ -190,11 +182,7 @@ public:
 
   inline Distortion getBvCostMultiplePreds(int x, int y, bool useIMV)
   {
-#if JVET_N0329_IBC_SEARCH_IMP
     return Distortion(m_dCost * getBitsMultiplePreds(x, y, useIMV));
-#else
-    return Distortion((m_dCost * getBitsMultiplePreds(x, y, useIMV)) / 65536.0);
-#endif
   }
 
   unsigned int    getBitsMultiplePreds(int x, int y, bool useIMV)
@@ -377,19 +365,19 @@ private:
   static Distortion xCalcHADs8x4      ( const Pel *piOrg, const Pel *piCur, int iStrideOrg, int iStrideCur );
 
 #ifdef TARGET_SIMD_X86
-  template< typename Torg, typename Tcur, X86_VEXT vext >
+  template<X86_VEXT vext>
   static Distortion xGetSSE_SIMD    ( const DistParam& pcDtParam );
-  template< typename Torg, typename Tcur, int iWidth, X86_VEXT vext >
+  template<int iWidth, X86_VEXT vext>
   static Distortion xGetSSE_NxN_SIMD( const DistParam& pcDtParam );
 
-  template< X86_VEXT vext >
+  template<X86_VEXT vext>
   static Distortion xGetSAD_SIMD    ( const DistParam& pcDtParam );
-  template< int iWidth, X86_VEXT vext >
+  template<int iWidth, X86_VEXT vext>
   static Distortion xGetSAD_NxN_SIMD( const DistParam& pcDtParam );
-  template< X86_VEXT vext >
-  static Distortion xGetSAD_IBD_SIMD(const DistParam& pcDtParam);
+  template<X86_VEXT vext>
+  static Distortion xGetSAD_IBD_SIMD( const DistParam& pcDtParam );
 
-  template< typename Torg, typename Tcur, X86_VEXT vext >
+  template<X86_VEXT vext>
   static Distortion xGetHADs_SIMD   ( const DistParam& pcDtParam );
 #endif
 

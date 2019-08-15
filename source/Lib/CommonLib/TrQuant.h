@@ -47,9 +47,7 @@
 #include "UnitPartitioner.h"
 #include "Quant.h"
 
-#if JVET_N0847_SCALING_LISTS
 #include "DepQuant.h"
-#endif
 //! \ingroup CommonLib
 //! \{
 
@@ -80,38 +78,40 @@ public:
                     const bool bEnc                 = false,
                     const bool useTransformSkipFast = false
   );
-#if JVET_N0866_UNIF_TRFM_SEL_IMPL_MTS_ISP
   void getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer);
-#else
-  void getTrTypes( TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer );
-#endif
 
-#if JVET_N0193_LFNST
   void fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
   void invLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize );
 
   uint32_t getLFNSTIntraMode( int wideAngPredMode );
   bool     getTransposeFlag ( uint32_t intraMode  );
-#endif
 
 protected:
 
-#if JVET_N0193_LFNST
   void xFwdLfnst( const TransformUnit &tu, const ComponentID compID, const bool loadTr = false );
   void xInvLfnst( const TransformUnit &tu, const ComponentID compID );
-#endif
 
 public:
 
   void invTransformNxN  (TransformUnit &tu, const ComponentID &compID, PelBuf &pResi, const QpParam &cQPs);
-
+#if JVET_O0502_ISP_CLEANUP
+  void transformNxN     ( TransformUnit& tu, const ComponentID& compID, const QpParam& cQP, std::vector<TrMode>* trModes, const int maxCand );
+  void transformNxN     ( TransformUnit& tu, const ComponentID& compID, const QpParam& cQP, TCoeff& uiAbsSum, const Ctx& ctx, const bool loadTr = false );
+#else
   void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, std::vector<TrMode>* trModes, const int maxCand, double* diagRatio = nullptr, double* horVerRatio = nullptr );
   void transformNxN     ( TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const Ctx &ctx, const bool loadTr = false, double* diagRatio = nullptr, double* horVerRatio = nullptr );
+#endif
   void rdpcmNxN         (TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum,       RDPCMMode &rdpcmMode);
   void applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &rdpcmMode);
 
   void transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &compID, const TCoeff &resiDiff, TCoeff &coeff,    const uint32_t &uiPos, const QpParam &cQP, const bool bUseHalfRoundingPoint);
   void invTrSkipDeQuantOneSample  (TransformUnit &tu, const ComponentID &compID, const TCoeff &pcCoeff,  Pel &reconSample, const uint32_t &uiPos, const QpParam &cQP);
+
+#if JVET_O0105_ICT
+  void                        invTransformICT     ( const TransformUnit &tu, PelBuf &resCb, PelBuf &resCr );
+  std::pair<int64_t,int64_t>  fwdTransformICT     ( const TransformUnit &tu, const PelBuf &resCb, const PelBuf &resCr, PelBuf& resC1, PelBuf& resC2, int jointCbCr = -1 );
+  std::vector<int>            selectICTCandidates ( const TransformUnit &tu, CompStorage* resCb, CompStorage* resCr );
+#endif
 
   void invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &pcResidual);
 #if RDOQ_CHROMA_LAMBDA
@@ -122,11 +122,7 @@ public:
   void   setLambda   ( const double dLambda )                      { m_quant->setLambda( dLambda ); }
   double getLambda   () const                                      { return m_quant->getLambda(); }
 
-#if JVET_N0847_SCALING_LISTS  //maybe no need
   DepQuant* getQuant() { return m_quant; }
-#else
-  Quant* getQuant() { return m_quant;  }
-#endif
 
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -142,15 +138,16 @@ protected:
   bool     m_scalingListEnabledFlag;
 
 private:
-#if JVET_N0847_SCALING_LISTS
-	DepQuant *m_quant;          //!< Quantizer
-#else
-  Quant    *m_quant;          //!< Quantizer
-#endif
+  DepQuant *m_quant;          //!< Quantizer
   TCoeff** m_mtsCoeffs;
-#if JVET_N0193_LFNST
   TCoeff   m_tempInMatrix [ 48 ];
   TCoeff   m_tempOutMatrix[ 48 ];
+#if JVET_O0105_ICT
+  static const int maxAbsIctMode = 3;
+  void                      (*m_invICTMem[1+2*maxAbsIctMode])(PelBuf&,PelBuf&);
+  std::pair<int64_t,int64_t>(*m_fwdICTMem[1+2*maxAbsIctMode])(const PelBuf&,const PelBuf&,PelBuf&,PelBuf&);
+  void                      (**m_invICT)(PelBuf&,PelBuf&);
+  std::pair<int64_t,int64_t>(**m_fwdICT)(const PelBuf&,const PelBuf&,PelBuf&,PelBuf&);
 #endif
 
 

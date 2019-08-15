@@ -56,7 +56,6 @@ namespace po = df::program_options_lite;
  */
 bool StreamMergeAppCfg::parseCfg(int argc, char* argv[])
 {
-#if 1
   int i;
 
   m_numInputStreams = argc - 2;
@@ -67,61 +66,6 @@ bool StreamMergeAppCfg::parseCfg(int argc, char* argv[])
   }
 
   m_bitstreamFileNameOut = argv[i + 1];
-#else
-  bool do_help = false;
-  int warnUnknowParameter = 0;
-  po::Options opts;
-  opts.addOptions()
-
-  ("help", do_help, false, "this help text")
-  ("BitstreamFileIn0,-a", m_bitstreamFileNameIn[0], string(""), "bitstream input file name")
-  ("BitstreamFileIn1,-b", m_bitstreamFileNameIn[1], string(""), "bitstream input file name")
-  ("BitstreamFileOut,o", m_bitstreamFileNameOut, string(""), "bitstream output file name")
-  ;
-
-  po::setDefaults(opts);
-  po::ErrorReporter err;
-  const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**)argv, err);
-
-  for (list<const char*>::const_iterator it = argv_unhandled.begin(); it != argv_unhandled.end(); it++)
-  {
-    std::cerr << "Unhandled argument ignored: " << *it << std::endl;
-  }
-
-  if (argc == 1 || do_help)
-  {
-    po::doHelp(cout, opts);
-    return false;
-  }
-
-  if (err.is_errored)
-  {
-    if (!warnUnknowParameter)
-    {
-      /* errors have already been reported to stderr */
-      return false;
-    }
-  }
-
-  m_numInputStreams = 0;
-  for (int i = 0; i < MAX_VPS_LAYERS; i++)
-  {
-    if (!m_bitstreamFileNameIn[i].empty())
-      m_numInputStreams++;
-  }
-
-  if (m_numInputStreams < 2)
-  {
-    std::cerr << "Need at least two input bitstreams, aborting" << std::endl;
-    return false;
-  }
-
-  if (m_bitstreamFileNameOut.empty())
-  {
-    std::cerr << "No output file specified, aborting" << std::endl;
-    return false;
-  }
-#endif
 
   return true;
 }

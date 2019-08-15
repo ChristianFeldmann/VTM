@@ -138,15 +138,22 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
-#if JVET_N0415_CTB_ALF
+#if JVET_O_MAX_NUM_ALF_APS_8
+  APS*                      m_apss[ALF_CTB_MAX_NUM_APS];
+#else
   APS*                      m_apss[MAX_NUM_APS];
 #endif
 
-#if JVET_N0805_APS_LMCS
   APS*                      m_lmcsAPS;
-#endif
 
   EncHRD                    m_encHRD;
+
+#if JVET_O0119_BASE_PALETTE_444
+  bool                      m_doPlt;
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
 
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
@@ -156,25 +163,17 @@ public:
 
 protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
-#if HEVC_VPS
-  void  xInitVPS          (VPS &vps, const SPS &sps); ///< initialize VPS from encoder options
-#elif JVET_N0278_HLS
   void  xInitVPS          (VPS &vps); ///< initialize VPS from encoder options
-#endif
-#if JVET_N0349_DPS
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
-#endif
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
-#if HEVC_USE_SCALING_LISTS
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
-#endif
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
   void  xInitPPSforTiles  (PPS &pps);
-  void  xInitRPS          (SPS &sps, bool isFieldCoding);           ///< initialize PPS from encoder options
+  void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:
   EncLib();
@@ -227,14 +226,10 @@ public:
   RateCtrl*               getRateCtrl           ()              { return  &m_cRateCtrl;            }
 
 
-  void selectReferencePictureSet(Slice* slice, int POCCurr, int GOPid
-    , int ltPoc
-  );
-  int getReferencePictureSetIdxForSOP(int POCCurr, int GOPid );
+  void                    getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1);
+  void                    selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, int ltPoc);
 
-#if JCTVC_Y0038_PARAMS
   void                   setParamSetChanged(int spsId, int ppsId);
-#endif
   bool                   APSNeedsWriting(int apsId);
   bool                   PPSNeedsWriting(int ppsId);
   bool                   SPSNeedsWriting(int spsId);
@@ -252,8 +247,14 @@ public:
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }
 #endif
 
-#if JVET_N0415_CTB_ALF
   ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
+
+#if JVET_O0119_BASE_PALETTE_444
+  bool                   getPltEnc()                      const { return   m_doPlt; }
+  void                   checkPltStats( Picture* pic );
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
   // -------------------------------------------------------------------------------------------------------------------
   // encoder function

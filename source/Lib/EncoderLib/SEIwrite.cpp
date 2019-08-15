@@ -229,9 +229,6 @@ void SEIWriter::xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei)
 
 void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 {
-#if HEVC_VPS
-  WRITE_CODE(sei.activeVPSId,     4,         "active_video_parameter_set_id");
-#endif
   WRITE_FLAG(sei.m_selfContainedCvsFlag,     "self_contained_cvs_flag");
   WRITE_FLAG(sei.m_noParameterSetUpdateFlag, "no_parameter_set_update_flag");
   WRITE_UVLC(sei.numSpsIdsMinus1,            "num_sps_ids_minus1");
@@ -246,7 +243,6 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 
 void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps)
 {
-#if JVET_N0063_VUI
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
   if(sps->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
   {
@@ -257,30 +253,12 @@ void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const 
   {
     WRITE_CODE(sei.m_picSptDpbOutputDuDelay, sps->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, "pic_spt_dpb_output_du_delay");
   }
-#else
-  const VUI *vui = sps->getVuiParameters();
-  WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
-  if(vui->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
-  {
-    WRITE_CODE( sei.m_duSptCpbRemovalDelay, (vui->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1), "du_spt_cpb_removal_delay_increment");
-  }
-  WRITE_FLAG( sei.m_dpbOutputDuDelayPresentFlag, "dpb_output_du_delay_present_flag");
-  if(sei.m_dpbOutputDuDelayPresentFlag)
-  {
-    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, vui->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, "pic_spt_dpb_output_du_delay");
-  }
-#endif
 }
 
 void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps)
 {
   int i, nalOrVcl;
-#if JVET_N0063_VUI
   const HRDParameters *hrd = sps->getHrdParameters();
-#else
-  const VUI *vui = sps->getVuiParameters();
-  const HRDParameters *hrd = vui->getHrdParameters();
-#endif
 
   WRITE_UVLC( sei.m_bpSeqParameterSetId, "bp_seq_parameter_set_id" );
   if( !hrd->getSubPicCpbParamsPresentFlag() )
@@ -315,16 +293,8 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SP
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps)
 {
   int i;
-#if JVET_N0063_VUI
   const HRDParameters *hrd = sps->getHrdParameters();
-#else
-  const VUI *vui = sps->getVuiParameters();
-  const HRDParameters *hrd = vui->getHrdParameters();
-#endif
 
-#if !JVET_N0063_VUI
-  if( vui->getFrameFieldInfoPresentFlag() )
-#endif
   {
     WRITE_CODE( sei.m_picStruct, 4,              "pic_struct" );
     WRITE_CODE( sei.m_sourceScanType, 2,         "source_scan_type" );

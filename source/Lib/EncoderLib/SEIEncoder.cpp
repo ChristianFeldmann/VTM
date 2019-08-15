@@ -44,22 +44,12 @@ std::string hashToString(const PictureHash &digest, int numChar);
 //! \ingroup EncoderLib
 //! \{
 
-#if HEVC_VPS
-void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const VPS *vps, const SPS *sps)
-#else
 void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const SPS *sps)
-#endif
 {
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(seiActiveParameterSets!=NULL), "Unspecified error");
-#if HEVC_VPS
-  CHECK(!(vps!=NULL), "Unspecified error");
-#endif
   CHECK(!(sps!=NULL), "Unspecified error");
 
-#if HEVC_VPS
-  seiActiveParameterSets->activeVPSId = vps->getVPSId();
-#endif
   seiActiveParameterSets->m_selfContainedCvsFlag = false;
   seiActiveParameterSets->m_noParameterSetUpdateFlag = false;
   seiActiveParameterSets->numSpsIdsMinus1 = 0;
@@ -206,32 +196,6 @@ void SEIEncoder::initSEIToneMappingInfo(SEIToneMappingInfo *seiToneMappingInfo)
 
 void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Slice *slice, int picInGOP, int lastIdr, int currGOPSize)
 {
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(sopDescriptionSEI != NULL), "Unspecified error");
-  CHECK(!(slice != NULL), "Unspecified error");
-
-  int sopCurrPOC = slice->getPOC();
-  sopDescriptionSEI->m_sopSeqParameterSetId = slice->getSPS()->getSPSId();
-
-  int i = 0;
-  int prevEntryId = picInGOP;
-  for (int j = picInGOP; j < currGOPSize; j++)
-  {
-    int deltaPOC = m_pcCfg->getGOPEntry(j).m_POC - m_pcCfg->getGOPEntry(prevEntryId).m_POC;
-    if ((sopCurrPOC + deltaPOC) < m_pcCfg->getFramesToBeEncoded())
-    {
-      sopCurrPOC += deltaPOC;
-      sopDescriptionSEI->m_sopDescVclNaluType[i] = m_pcEncGOP->getNalUnitType(sopCurrPOC, lastIdr, slice->getPic()->fieldPic);
-      sopDescriptionSEI->m_sopDescTemporalId[i] = m_pcCfg->getGOPEntry(j).m_temporalId;
-      sopDescriptionSEI->m_sopDescStRpsIdx[i] = m_pcEncLib->getReferencePictureSetIdxForSOP(sopCurrPOC, j);
-      sopDescriptionSEI->m_sopDescPocDelta[i] = deltaPOC;
-
-      prevEntryId = j;
-      i++;
-    }
-  }
-
-  sopDescriptionSEI->m_numPicsInSopMinus1 = i - 1;
 }
 
 void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, Slice *slice)
@@ -246,13 +210,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][1]     = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][1]     = uiInitialCpbRemovalDelay;
 
-#if !JVET_N0063_VUI
-  double dTmp = (double)slice->getSPS()->getVuiParameters()->getTimingInfo()->getNumUnitsInTick() / (double)slice->getSPS()->getVuiParameters()->getTimingInfo()->getTimeScale();
-
-  uint32_t uiTmp = (uint32_t)( dTmp * 90000.0 );
-  uiInitialCpbRemovalDelay -= uiTmp;
-  uiInitialCpbRemovalDelay -= uiTmp / ( slice->getSPS()->getVuiParameters()->getHrdParameters()->getTickDivisorMinus2() + 2 );
-#endif
   bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][0]  = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][0]  = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][1]  = uiInitialCpbRemovalDelay;
@@ -358,11 +315,7 @@ void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedT
   CHECK(!(sei!=NULL), "Unspecified error");
   CHECK(!(pps!=NULL), "Unspecified error");
 
-#if !JVET_N0857_TILES_BRICKS
-  if(pps->getTilesEnabledFlag())
-#else
   if(!pps->getSingleTileInPicFlag())
-#endif
   {
     if (m_pcCfg->getMCTSEncConstraint())
     {

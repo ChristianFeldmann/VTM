@@ -43,6 +43,9 @@
 #include "StreamMergeApp.h"
 #include "DecoderLib/AnnexBread.h"
 #include "DecoderLib/NALread.h"
+#if RExt__DECODER_DEBUG_BIT_STATISTICS
+#include "CommonLib/CodingStatistics.h"
+#endif
 
  //! \ingroup DecoderApp
  //! \{
@@ -73,7 +76,6 @@ void read2(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-#if JVET_N0067_NAL_Unit_Header
   bool zeroTidRequiredFlag = bs.read(1);              // zero_tid_required_flag
   nalu.m_temporalId = bs.read(3) - 1;                 // nuh_temporal_id_plus1
   CHECK(nalu.m_temporalId < 0, "Temporal ID is negative.");
@@ -90,13 +92,6 @@ void read2(InputNALUnit& nalu)
   CHECK((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126), "Layer ID out of range");
   uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
   CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
-#else
-  bool forbidden_zero_bit = bs.read(1);           // forbidden_zero_bit
-  if (forbidden_zero_bit != 0) { THROW("Forbidden zero-bit not '0'"); }
-  nalu.m_nalUnitType = (NalUnitType)bs.read(6);  // nal_unit_type
-  nalu.m_temporalId = bs.read(3) - 1;             // nuh_temporal_id_plus1
-  nalu.m_nuhLayerId = bs.read(6);                 // nuh_layer_id
-#endif
 }
 
 static void
@@ -179,7 +174,7 @@ _byteStreamNALUnit(
   while (bs.eofBeforeNBytes(24 / 8, istream) || bs.peekBytes(24 / 8, istream) > 2)
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-    uint8_t thebyte = bs.readByte(); bodyStats.bits += 8; bodyStats.count++;
+    uint8_t thebyte = bs.readByte(istream); bodyStats.bits += 8; bodyStats.count++;
     nalUnit.push_back(thebyte);
 #else
     nalUnit.push_back(bs.readByte(istream));
@@ -246,8 +241,7 @@ void StreamMergeApp::writeNewVPS(ostream& out, int nLayerId, int nTemporalId)
   OutputBitstream bsNALUHeader;
   static const uint8_t start_code_prefix[] = { 0,0,0,1 };
 
-#if JVET_N0067_NAL_Unit_Header
-  bsNALUHeader.write(1, 1);    		       // zero_tid_required_flag
+  bsNALUHeader.write(1, 1);                // zero_tid_required_flag
   bsNALUHeader.write(nTemporalId + 1, 3);                // nuh_temporal_id_plus1
   uint32_t nalUnitTypeLsb = NAL_UNIT_VPS - (1 << 4);
   bsNALUHeader.write(nalUnitTypeLsb, 4);   // nal_unit_type_lsb
@@ -257,12 +251,6 @@ void StreamMergeApp::writeNewVPS(ostream& out, int nLayerId, int nTemporalId)
   bsNALUHeader.write(nLayerId, 7);         // nuh_layer_id
 #endif
   bsNALUHeader.write(0, 1);                // nuh_reserved_zero_bit
-#else
-  bsNALUHeader.write(0, 1);                // forbidden_zero_bit
-  bsNALUHeader.write(NAL_UNIT_VPS, 6);     // nal_unit_type
-  bsNALUHeader.write(1, 3);                // nuh_temporal_id_plus1
-  bsNALUHeader.write(nLayerId, 6);         // nuh_layer_id
-#endif
 
   out.write(reinterpret_cast<const char*>(start_code_prefix), 4);
   out.write(reinterpret_cast<const char*>(bsNALUHeader.getByteStream()), bsNALUHeader.getByteStreamLength());
@@ -313,7 +301,7 @@ uint32_t StreamMergeApp::mergeStreams()
   //Loop all input bitstreams to interleave their NALUs
   while (nNumValidStr)
   {
-    //loop over all input streams 
+    //loop over all input streams
     for (int i = 0; i < m_numInputStreams; i++)
     {
       uint8_t layerId = i < 63 ? i : i + 1;
@@ -356,14 +344,10 @@ uint32_t StreamMergeApp::mergeStreams()
 
         //update the nul_layer_id
         uint8_t *p = (uint8_t*)nalu.getBitstream().getFifo().data();
-#if JVET_N0067_NAL_Unit_Header
 #if EMULATION_PREVENTION_FIX
         p[1] = ((layerId + 1) << 1) & 0xff;
 #else
         p[1] = (layerId << 1) & 0xff;
-#endif
-#else
-        p[1] = (p[1] & 0xc0) | layerId;
 #endif
 
         bitstreamFileOut.write((const char*)p, nalu.getBitstream().getFifo().size());

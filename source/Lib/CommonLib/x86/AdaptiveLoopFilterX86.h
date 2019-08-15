@@ -432,7 +432,7 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
-            cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
+            cu = cu != NULL && cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
             if(cu != NULL)
             {
@@ -845,7 +845,7 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
             CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #endif
 #if JVET_O0050_LOCAL_DUAL_TREE
-            cu = cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
+            cu = cu != NULL && cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
 #endif
             if( cu != NULL)
             {

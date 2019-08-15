@@ -2364,7 +2364,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
           scaledRefPic[j]->poc = poc;
 
           // rescale the reference picture
-          Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), scaledRefPic[j]->getRecoBuf(), sps->getChromaFormatIdc(), sps->getBitDepths() );
+          Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), scaledRefPic[j]->getRecoBuf(), sps->getChromaFormatIdc(), sps->getBitDepths(), true );
           scaledRefPic[j]->extendPicBorder();
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];

@@ -3598,7 +3598,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   {
     const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].get( COMPONENT_Y ) : pcPic->m_bufs[PIC_ORIGINAL_INPUT].get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
-    Picture::rescalePicture( picC, upscaledRec, format, sps.getBitDepths() );
+    Picture::rescalePicture( picC, upscaledRec, format, sps.getBitDepths(), false );
   }
 #endif
 

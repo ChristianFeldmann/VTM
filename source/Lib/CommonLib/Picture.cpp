@@ -1023,26 +1023,6 @@ void Picture::finishCtuPart( const UnitArea& ctuArea )
 #endif
 
 #if JVET_O1164_RPR
-const TFilterCoeff InterpolationFilterSRC[16][8] =
-{
-  {  0, 0,   0, 64,  0,   0,  0,  0 },
-  {  0, 1,  -3, 63,  4,  -2,  1,  0 },
-  { -1, 2,  -5, 62,  8,  -3,  1,  0 },
-  { -1, 3,  -8, 60, 13,  -4,  1,  0 },
-  { -1, 4, -10, 58, 17,  -5,  1,  0 },
-  { -1, 4, -11, 52, 26,  -8,  3, -1 },
-  { -1, 3,  -9, 47, 31, -10,  4, -1 },
-  { -1, 4, -11, 45, 34, -10,  4, -1 },
-  { -1, 4, -11, 40, 40, -11,  4, -1 },
-  { -1, 4, -10, 34, 45, -11,  4, -1 },
-  { -1, 4, -10, 31, 47,  -9,  3, -1 },
-  { -1, 3,  -8, 26, 52, -11,  4, -1 },
-  {  0, 1,  -5, 17, 58, -10,  4, -1 },
-  {  0, 1,  -4, 13, 60,  -8,  3, -1 },
-  {  0, 1,  -3,  8, 62,  -5,  2, -1 },
-  {  0, 1,  -2,  4, 63,  -3,  1,  0 }
-};
-
 const TFilterCoeff DownsamplingFilterSRC[8][16][12] =
 {
     { // D = 1
@@ -1195,7 +1175,7 @@ const TFilterCoeff DownsamplingFilterSRC[8][16][12] =
     }
 };
 
-void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType scaledStride, int bitDepth, const bool downsampling )
+void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling )
 {
   if( orgWidth == scaledWidth && orgHeight == scaledHeight )
   {
@@ -1207,8 +1187,9 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
     return;
   }
 
-  const TFilterCoeff* filterHor = &InterpolationFilterSRC[0][0];
-  const TFilterCoeff* filterVer = &InterpolationFilterSRC[0][0];
+  const TFilterCoeff* filterHor = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
+  const TFilterCoeff* filterVer = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
+  const int numFracPositions = useLumaFilter ? 15 : 31;
 
   if( downsampling )
   {
@@ -1234,7 +1215,7 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
     filterVer = &DownsamplingFilterSRC[verFilter][0][0];
   }
 
-  const int filerLength = downsampling ? 12 : 8;
+  const int filerLength = downsampling ? 12 : ( useLumaFilter ? NTAPS_LUMA : NTAPS_CHROMA );
   const int log2Norm = downsampling ? 14 : 12;
 
   int *buf = new int[orgHeight * scaledWidth];
@@ -1246,7 +1227,7 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   {
     const Pel* org = orgSrc;
     int integer = ( i * orgWidth ) / scaledWidth;
-    int frac = ( ( i * orgWidth << 4 ) / scaledWidth ) & 15;
+    int frac = ( ( i * orgWidth << 4 ) / scaledWidth ) & numFracPositions;
 
     int* tmp = buf + i;
 
@@ -1273,7 +1254,7 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   for( int j = 0; j < scaledHeight; j++ )
   {
     int integer = ( j * orgHeight ) / scaledHeight;
-    int frac = ( ( j * orgHeight << 4 ) / scaledHeight ) & 15;
+    int frac = ( ( j * orgHeight << 4 ) / scaledHeight ) & numFracPositions;
 
     for( int i = 0; i < scaledWidth; i++ )
     {
@@ -1296,14 +1277,15 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   delete[] buf;
 }
 
-void Picture::rescalePicture( const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool downsampling )
+void Picture::rescalePicture( const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling )
 {
   for( int comp = 0; comp < ::getNumberValidComponents( chromaFormatIDC ); comp++ )
   {
-    const CPelBuf& beforeScale = beforeScaling.get( ComponentID( comp ) );
-    const PelBuf& afterScale = afterScaling.get( ComponentID( comp ) );
+    ComponentID compID = ComponentID( comp );
+    const CPelBuf& beforeScale = beforeScaling.get( compID );
+    const PelBuf& afterScale = afterScaling.get( compID );
 
-    Picture::sampleRateConv( beforeScale.buf, beforeScale.width, beforeScale.height, beforeScale.stride, afterScale.buf, afterScale.width, afterScale.height, afterScale.stride, bitDepths.recon[comp], downsampling );
+    Picture::sampleRateConv( beforeScale.buf, beforeScale.width, beforeScale.height, beforeScale.stride, afterScale.buf, afterScale.width, afterScale.height, afterScale.stride, bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma(compID), downsampling );
   }
 }
 #endif

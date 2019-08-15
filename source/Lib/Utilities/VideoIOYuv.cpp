@@ -1249,7 +1249,7 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
     {
       PelStorage upscaledPic;
       upscaledPic.create( chromaFormatIDC, Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
-      Picture::rescalePicture( pic, upscaledPic, chromaFormatIDC, sps.getBitDepths() );
+      Picture::rescalePicture( pic, upscaledPic, chromaFormatIDC, sps.getBitDepths(), false );
       const Window conf;
 
       ret = write( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples(), upscaledPic,

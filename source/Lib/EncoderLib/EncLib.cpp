@@ -698,8 +698,8 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
         const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
 
-        Picture::rescalePicture( *pcPicYuvOrg, pcPicCurr->getOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true );
-        Picture::rescalePicture( *cPicYuvTrueOrg, pcPicCurr->getTrueOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true );
+        Picture::rescalePicture( *pcPicYuvOrg, pcPicCurr->getOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
+        Picture::rescalePicture( *cPicYuvTrueOrg, pcPicCurr->getTrueOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
       }
       else
       {

@@ -50,6 +50,10 @@
 #include "MCTS.h"
 #include <deque>
 
+#if JVET_O1164_RPR
+#include "CommonLib/InterpolationFilter.h"
+#endif
+
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
 #if ENABLE_WPP_PARALLELISM
 #include <mutex>
@@ -244,9 +248,9 @@ struct Picture : public UnitArea
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
 #if JVET_O1164_RPR
-  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType scaledStride, int bitDepth, const bool downsampling = false );
+  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
 
-  static void rescalePicture( const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool downsampling = false );
+  static void   rescalePicture( const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false );
 #endif
 
 public:

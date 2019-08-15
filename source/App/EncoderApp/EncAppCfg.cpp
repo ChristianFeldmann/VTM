@@ -852,7 +852,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "CropOffsetTop",                                  m_cropOffsetTop,                                      0, "Crop Offset Top position")
   ( "CropOffsetRight",                                m_cropOffsetRight,                                    0, "Crop Offset Right position")
   ( "CropOffsetBottom",                               m_cropOffsetBottom,                                   0, "Crop Offset Bottom position")
-  ( "CalculateHdrMetrics",                            m_calculateHdrMetrics,                             true, "Crop Offset Bottom position")
+  ( "CalculateHdrMetrics",                            m_calculateHdrMetrics,                            false, "Enable HDR metric calculation")
 #endif
 
   //Field coding parameters

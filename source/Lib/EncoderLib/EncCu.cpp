@@ -800,7 +800,11 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 #endif
       if (currTestMode.qp >= 0)
       {
-        updateLambda (&slice, currTestMode.qp, CS::isDualITree (*tempCS) || (partitioner.currDepth == 0));
+        updateLambda (&slice, currTestMode.qp,
+ #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
+                      m_pcEncCfg->getWCGChromaQPControl().isEnabled(),
+ #endif
+                      CS::isDualITree (*tempCS) || (partitioner.currDepth == 0));
       }
     }
 #endif
@@ -1077,9 +1081,15 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
 }
 
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
-void EncCu::updateLambda (Slice* slice, const int dQP, const bool updateRdCostLambda)
+void EncCu::updateLambda (Slice* slice, const int dQP,
+ #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
+                          const bool useWCGChromaControl,
+ #endif
+                          const bool updateRdCostLambda)
 {
-#if WCG_EXT && !ENABLE_QPA_SUB_CTU
+#if WCG_EXT && ER_CHROMA_QP_WCG_PPS
+ if (useWCGChromaControl)
+ {
   int    NumberBFrames = ( m_pcEncCfg->getGOPSize() - 1 );
   int    SHIFT_QP = 12;
   double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(slice->getPic()->fieldPic ? NumberBFrames/2 : NumberBFrames) );
@@ -1144,7 +1154,9 @@ void EncCu::updateLambda (Slice* slice, const int dQP, const bool updateRdCostLa
   int iQP = Clip3(-qpBDoffset, MAX_QP, (int)floor((double)dQP + 0.5));
   m_pcSliceEncoder->setUpLambda(slice, dLambda, iQP);
 
-#else
+  return;
+ }
+#endif
   int iQP = dQP;
   const double oldQP     = (double)slice->getSliceQpBase();
 #if ENABLE_QPA_SUB_CTU
@@ -1165,9 +1177,8 @@ void EncCu::updateLambda (Slice* slice, const int dQP, const bool updateRdCostLa
   {
     m_pcRdCost->setLambda (newLambda, slice->getSPS()->getBitDepths());
   }
-#endif
 }
-#endif
+#endif // SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
 
 #if ENABLE_SPLIT_PARALLELISM
 //#undef DEBUG_PARALLEL_TIMINGS

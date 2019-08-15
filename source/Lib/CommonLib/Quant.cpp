@@ -1045,7 +1045,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     const int64_t iAdd = int64_t(tu.cs->slice->isIRAP() ? 171 : 85) << int64_t(iQBits - 9);
     const int qBits8 = iQBits - 8;
 
-#if FIX_ZEROING_FOR_LFNST
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
     const uint32_t lfnstIdx = tu.cu->lfnstIdx;
     const int maxNumberOfCoeffs = lfnstIdx > 0 ? ((( uiWidth == 4 && uiHeight == 4 ) || ( uiWidth == 8 && uiHeight == 8) ) ? 8 : 16) : piQCoef.area();
     memset( piQCoef.buf, 0, sizeof(TCoeff) * piQCoef.area() );

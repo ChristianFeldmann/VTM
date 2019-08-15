@@ -671,7 +671,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   double *pdCostCoeffGroupSig = m_pdCostCoeffGroupSig;
   memset( pdCostCoeffGroupSig, 0, ( uiMaxNumCoeff >> cctx.log2CGSize() ) * sizeof( double ) );
-#if !FIX_ZEROING_FOR_LFNST
+#if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   const int iCGNum = std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth) * std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight) >> cctx.log2CGSize();
 #endif
   int iScanPos;
@@ -683,7 +683,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   const uint32_t lfnstIdx = tu.cu->lfnstIdx;
 
-#if FIX_ZEROING_FOR_LFNST
+#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   const int iCGNum = lfnstIdx > 0 ? 1 : std::min<int>(JVET_C0024_ZERO_OUT_TH, uiWidth) * std::min<int>(JVET_C0024_ZERO_OUT_TH, uiHeight) >> cctx.log2CGSize();
 #endif
 

@@ -2739,35 +2739,16 @@ void CABACReader::merge_idx( PredictionUnit& pu )
 void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MERGE_INDEX);
-  int var0, var1, var2;
-  int dir0 = 0;
-  int var = 0;
-  int mvpIdx = 0;
 
-  pu.mmvdMergeIdx = 0;
-
-  mvpIdx = (var + dir0)*(MMVD_MAX_REFINE_NUM*MMVD_BASE_MV_NUM);
-
-  int numCand = int(pu.cs->slice->getMaxNumMergeCand());
-  int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
-  var0 = 0;
-  if (numCandminus1_base > 0)
+  int var0 = 0;
+  if (pu.cs->slice->getMaxNumMergeCand() > 1)
   {
-    if (m_BinDecoder.decodeBin(Ctx::MmvdMergeIdx()))
-    {
-      var0++;
-      for (; var0 < numCandminus1_base; var0++)
-      {
-        if (!m_BinDecoder.decodeBinEP())
-        {
-          break;
-        }
-      }
-    }
+    static_assert(MMVD_BASE_MV_NUM == 2, "");
+    var0 = m_BinDecoder.decodeBin(Ctx::MmvdMergeIdx());
   }
   DTRACE(g_trace_ctx, D_SYNTAX, "base_mvp_idx() base_mvp_idx=%d\n", var0);
   int numCandminus1_step = MMVD_REFINE_STEP - 1;
-  var1 = 0;
+  int var1 = 0;
   if (m_BinDecoder.decodeBin(Ctx::MmvdStepMvpIdx()))
   {
     var1++;
@@ -2780,7 +2761,7 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
     }
   }
   DTRACE(g_trace_ctx, D_SYNTAX, "MmvdStepMvpIdx() MmvdStepMvpIdx=%d\n", var1);
-  var2 = 0;
+  int var2 = 0;
   if (m_BinDecoder.decodeBinEP())
   {
     var2 += 2;
@@ -2798,7 +2779,7 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
     }
   }
   DTRACE(g_trace_ctx, D_SYNTAX, "pos() pos=%d\n", var2);
-  mvpIdx += (var0 * MMVD_MAX_REFINE_NUM + var1 * 4 + var2);
+  int mvpIdx = (var0 * MMVD_MAX_REFINE_NUM + var1 * 4 + var2);
   pu.mmvdMergeIdx = mvpIdx;
   DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_idx() mmvd_merge_idx=%d\n", pu.mmvdMergeIdx);
 }

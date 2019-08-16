@@ -2730,6 +2730,11 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(  m_pcmLog2MaxSize < m_uiPCMLog2MinSize,                       "PCMLog2MaxSize must be equal to or greater than m_uiPCMLog2MinSize.");
   }
 
+  if (m_useBDPCM)
+  {
+    xConfirmPara(!m_useTransformSkip, "BDPCM cannot be used when transform skip is disabled.");
+  }
+
   if (m_sliceMode!=NO_SLICES)
   {
     xConfirmPara( m_sliceArgument < 1 ,         "SliceArgument should be larger than or equal to 1" );

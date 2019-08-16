@@ -2563,9 +2563,7 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   var1 = (mvpIdx - (var0 * MMVD_MAX_REFINE_NUM)) / 4;
   var2 = mvpIdx - (var0 * MMVD_MAX_REFINE_NUM) - var1 * 4;
 
-  int numCand = int(pu.cs->slice->getMaxNumMergeCand());
-  int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
-  if (numCandminus1_base > 0)
+  if (pu.cs->slice->getMaxNumMergeCand() > 1)
   {
     static_assert(MMVD_BASE_MV_NUM == 2, "");
     assert(var0 < 2);

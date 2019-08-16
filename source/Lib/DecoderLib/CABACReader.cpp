@@ -2740,10 +2740,8 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MERGE_INDEX);
 
-  int numCand = int(pu.cs->slice->getMaxNumMergeCand());
-  int numCandminus1_base = (numCand > 1) ? MMVD_BASE_MV_NUM - 1 : 0;
   int var0 = 0;
-  if (numCandminus1_base > 0)
+  if (pu.cs->slice->getMaxNumMergeCand() > 1)
   {
     static_assert(MMVD_BASE_MV_NUM == 2, "");
     var0 = m_BinDecoder.decodeBin(Ctx::MmvdMergeIdx());

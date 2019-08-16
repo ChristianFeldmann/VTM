@@ -3690,9 +3690,9 @@ void CABACReader::isp_mode( CodingUnit& cu )
     return;
   }
 
-  int symbol = m_BinDecoder.decodeBin(Ctx::ISPMode(0));
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__ISP_MODE_FLAG);
 
-  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__ISP_MODE_FLAG );
+  int symbol = m_BinDecoder.decodeBin(Ctx::ISPMode(0));
 
   if( symbol )
   {

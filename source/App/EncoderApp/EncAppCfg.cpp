@@ -2224,6 +2224,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
  #else
   if (((int)m_fQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
  #endif
+ #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
+      && (!m_wcgChromaQpControl.enabled)
+ #endif
 #if MAX_TB_SIZE_SIGNALLING
       && ((1 << (m_log2MaxTbSize + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
 #else

@@ -870,7 +870,11 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   int tbArea = blocks[compID].width * blocks[compID].height;
   int tbZeroOutWidth = blocks[compID].width;
   int tbZeroOutHeight = blocks[compID].height;
+#if JVET_O0538_SPS_CONTROL_ISP_SBT
+  if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#else
   if ((mtsIdx > MTS_SKIP || (cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#endif
   {
     tbZeroOutWidth = (blocks[compID].width == 32) ? 16 : tbZeroOutWidth;
     tbZeroOutHeight = (blocks[compID].height == 32) ? 16 : tbZeroOutHeight;

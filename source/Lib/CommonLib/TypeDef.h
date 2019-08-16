@@ -283,6 +283,7 @@ typedef std::pair<int, int>  TrCost;
 #define EXTENSION_HDRTOOLS                                0 //< extension for HDRTools/Metrics support; this macro should be controlled by makefile, as it would be used to control whether the library is built and linked
 #endif
 
+#define JVET_O0756_CONFIG_HDRMETRICS                      1
 #if EXTENSION_HDRTOOLS
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif

@@ -708,10 +708,21 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   Pel *backupDstBufPtr;
   int backupDstBufStride;
 
+#if RPR_CONF_WINDOW
+  const Window& inputConfWindow = refPic->unscaledPic->cs->pps->getConformanceWindow();
+  int refPicWidth = refPic->unscaledPic->cs->pps->getPicWidthInLumaSamples() - (inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(pu.cs->sps->getChromaFormatIdc());
+  int refPicHeight = refPic->unscaledPic->cs->pps->getPicHeightInLumaSamples() - (inputConfWindow.getWindowTopOffset() + inputConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(pu.cs->sps->getChromaFormatIdc());
+#else
   int refPicWidth = refPic->unscaledPic->cs->pps->getPicWidthInLumaSamples();
   int refPicHeight = refPic->unscaledPic->cs->pps->getPicHeightInLumaSamples();
+#endif
 #if RPR_BUFFER
+#if RPR_CONF_WINDOW
+  const Window& curConfWindow = pu.cs->pps->getConformanceWindow();
+  int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples() - (curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(pu.cs->sps->getChromaFormatIdc());
+#else
   int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples();
+#endif
 #endif
   
   int xScale, yScale;

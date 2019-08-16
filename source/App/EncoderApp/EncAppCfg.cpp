@@ -838,7 +838,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SummaryVerboseness",                              m_summaryVerboseness,                                0u, "Specifies the level of the verboseness of the text output")
   ("Verbosity,v",                                     m_verbosity,                               (int)VERBOSE, "Specifies the level of the verboseness")
 
-#if JVET_O0756_CALCULATE_HDRMETRICS
+#if JVET_O0756_CONFIG_HDRMETRICS || JVET_O0756_CALCULATE_HDRMETRICS
   ( "WhitePointDeltaE1",                              m_whitePointDeltaE[0],                            100.0, "1st reference white point value")
   ( "WhitePointDeltaE2",                              m_whitePointDeltaE[1],                           1000.0, "2nd reference white point value")
   ( "WhitePointDeltaE3",                              m_whitePointDeltaE[2],                           5000.0, "3rd reference white point value")
@@ -2031,6 +2031,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   if (m_AccessUnitDelimiter == false)
   {
     printf ("Warning: Access unit delimiters are disabled. VVC requires the presence of access unit delimiters\n");
+  }
+#endif
+
+#if JVET_O0756_CONFIG_HDRMETRICS && !JVET_O0756_CALCULATE_HDRMETRICS
+  if ( m_calculateHdrMetrics == true)
+  {
+    printf ("Warning: Configuration enables HDR metric calculations.  However, HDR metric support was not linked when compiling the VTM.\n");
+    m_calculateHdrMetrics = false;
   }
 #endif
 

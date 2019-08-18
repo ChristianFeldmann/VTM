@@ -1821,7 +1821,9 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       }
       else
       {
-        if (numIndices && strPos < endPos - 1) // if numIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
+        if (numIndices
+            && strPos < endPos - 1)   // if numIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos
+                                      // == endPos - 1, the last PLTRunMode was already coded
         {
           m_BinEncoder.encodeBin((runType.at(posx, posy)), Ctx::RunTypeFlag());
         }
@@ -1846,7 +1848,8 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       if (lastRunPos != strPos)
       {
         numIndices -= (runType.at(posx, posy) == PLT_RUN_INDEX);
-        cu_run_val(runLength.at(posx, posy) - 1, (PLTRunMode)runType.at(posx, posy), curLevel, endPos - strPos - numIndices - 1 - lastRunType);
+        cu_run_val(runLength.at(posx, posy) - 1, runType.at(posx, posy), curLevel,
+                   endPos - strPos - numIndices - 1 - lastRunType);
       }
 
     }

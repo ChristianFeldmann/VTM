@@ -1923,7 +1923,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   uint32_t    width = cu.block(compBegin).width;
 
   int       numCopyIndexRuns = -1;
-  bool      lastRunType = 0;
+  PLTRunMode     lastRunType      = PLT_RUN_INDEX;
   uint32_t  numIndices = 0;
   uint32_t  adjust = 0;
   uint32_t  symbol = 0;
@@ -1940,7 +1940,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       adjust = 1;
       parsedIdxList.push_back(symbol);
     }
-    lastRunType = m_BinDecoder.decodeBin(Ctx::RunTypeFlag());
+    lastRunType = m_BinDecoder.decodeBin(Ctx::RunTypeFlag()) ? PLT_RUN_COPY : PLT_RUN_INDEX;
     parseScanRotationModeFlag(cu, compBegin);
     adjust = 0;
   }
@@ -2002,9 +2002,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       }
       else
       {
-        if (numCopyIndexRuns && strPos < endPos - 1) // JC: if numIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
+        if (numCopyIndexRuns
+            && strPos < endPos - 1)   // JC: if numIndices (decoder will know this value) == 0 - > only CopyAbove, if
+                                      // strPos == endPos - 1, the last PLTRunMode was already coded
         {
-          runType.at(posx, posy) = (m_BinDecoder.decodeBin(Ctx::RunTypeFlag()));
+          runType.at(posx, posy) = m_BinDecoder.decodeBin(Ctx::RunTypeFlag()) ? PLT_RUN_COPY : PLT_RUN_INDEX;
         }
         else
         {
@@ -2046,7 +2048,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       lastRun = numCopyIndexRuns == 0 && runType.at(posx, posy) == lastRunType;
       if (!lastRun)
       {
-        runLength.at(posx, posy) = cu_run_val((PLTRunMode)runType.at(posx, posy), curLevel, endPos - strPos - numCopyIndexRuns - 1 - lastRunType) + 1;
+        runLength.at(posx, posy) =
+          cu_run_val(runType.at(posx, posy), curLevel, endPos - strPos - numCopyIndexRuns - 1 - lastRunType) + 1;
       }
       else
       {

@@ -480,7 +480,7 @@ private:
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
 #if JVET_O0119_BASE_PALETTE_444
-  bool               *m_runType;
+  PLTRunMode *        m_runType;
   Pel                *m_runLength;
 #endif
   CodingStructure     m_dummyCS;

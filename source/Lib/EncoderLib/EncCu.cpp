@@ -365,8 +365,8 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   if( auto* cacheCtrl = dynamic_cast<CacheBlkInfoCtrl*>( m_modeCtrl ) ) { cacheCtrl->tick(); }
 #endif
   // init the partitioning manager
-  Partitioner *partitioner = PartitionerFactory::get( *cs.slice );
-  partitioner->initCtu( area, CH_L, *cs.slice );
+  QTBTPartitioner partitioner;
+  partitioner.initCtu(area, CH_L, *cs.slice);
   if (m_pcEncCfg->getIBCMode())
   {
     if (area.lx() == 0 && area.ly() == 0)
@@ -397,36 +397,38 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   CodingStructure *tempCS = m_pTempCS[gp_sizeIdxInfo->idxFrom( area.lumaSize().width )][gp_sizeIdxInfo->idxFrom( area.lumaSize().height )];
   CodingStructure *bestCS = m_pBestCS[gp_sizeIdxInfo->idxFrom( area.lumaSize().width )][gp_sizeIdxInfo->idxFrom( area.lumaSize().height )];
 
-  cs.initSubStructure( *tempCS, partitioner->chType, partitioner->currArea(), false );
-  cs.initSubStructure( *bestCS, partitioner->chType, partitioner->currArea(), false );
+  cs.initSubStructure(*tempCS, partitioner.chType, partitioner.currArea(), false);
+  cs.initSubStructure(*bestCS, partitioner.chType, partitioner.currArea(), false);
   tempCS->currQP[CH_L] = bestCS->currQP[CH_L] =
   tempCS->baseQP       = bestCS->baseQP       = currQP[CH_L];
   tempCS->prevQP[CH_L] = bestCS->prevQP[CH_L] = prevQP[CH_L];
 
-  xCompressCU( tempCS, bestCS, *partitioner );
+  xCompressCU(tempCS, bestCS, partitioner);
 #if JVET_O0119_BASE_PALETTE_444
   cs.slice->m_mapPltCost.clear();
 #endif
   // all signals were already copied during compression if the CTU was split - at this point only the structures are copied to the top level CS
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
-  cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
+  cs.useSubStructure(*bestCS, partitioner.chType, CS::getArea(*bestCS, area, partitioner.chType), copyUnsplitCTUSignals,
+                     false, false, copyUnsplitCTUSignals);
 
   if (CS::isDualITree (cs) && isChromaEnabled (cs.pcv->chrFormat))
   {
     m_CABACEstimator->getCtx() = m_CurrCtx->start;
 
-    partitioner->initCtu( area, CH_C, *cs.slice );
+    partitioner.initCtu(area, CH_C, *cs.slice);
 
-    cs.initSubStructure( *tempCS, partitioner->chType, partitioner->currArea(), false );
-    cs.initSubStructure( *bestCS, partitioner->chType, partitioner->currArea(), false );
+    cs.initSubStructure(*tempCS, partitioner.chType, partitioner.currArea(), false);
+    cs.initSubStructure(*bestCS, partitioner.chType, partitioner.currArea(), false);
     tempCS->currQP[CH_C] = bestCS->currQP[CH_C] =
     tempCS->baseQP       = bestCS->baseQP       = currQP[CH_C];
     tempCS->prevQP[CH_C] = bestCS->prevQP[CH_C] = prevQP[CH_C];
 
-    xCompressCU( tempCS, bestCS, *partitioner );
+    xCompressCU(tempCS, bestCS, partitioner);
 
     const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
-    cs.useSubStructure( *bestCS, partitioner->chType, CS::getArea( *bestCS, area, partitioner->chType ), copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals );
+    cs.useSubStructure(*bestCS, partitioner.chType, CS::getArea(*bestCS, area, partitioner.chType),
+                       copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals);
   }
 
   if (m_pcEncCfg->getUseRateCtrl())
@@ -436,7 +438,6 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   // reset context states and uninit context pointer
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
   m_CurrCtx                  = 0;
-  delete partitioner;
 
 #if ENABLE_SPLIT_PARALLELISM && ENABLE_WPP_PARALLELISM
   if( m_pcEncCfg->getNumSplitThreads() > 1 && m_pcEncCfg->getNumWppThreads() > 1 )

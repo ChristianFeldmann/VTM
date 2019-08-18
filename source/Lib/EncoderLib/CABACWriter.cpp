@@ -158,9 +158,9 @@ void CABACWriter::end_of_slice()
 void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, int (&qps)[2], unsigned ctuRsAddr, bool skipSao /* = false */, bool skipAlf /* = false */ )
 {
   CUCtx cuCtx( qps[CH_L] );
-  Partitioner *partitioner = PartitionerFactory::get( *cs.slice );
+  QTBTPartitioner partitioner;
 
-  partitioner->initCtu( area, CH_L, *cs.slice );
+  partitioner.initCtu(area, CH_L, *cs.slice);
 
   if( !skipSao )
   {
@@ -192,28 +192,24 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
   {
     CUCtx chromaCuCtx(qps[CH_C]);
-    Partitioner *chromaPartitioner = PartitionerFactory::get(*cs.slice);
-    chromaPartitioner->initCtu(area, CH_C, *cs.slice);
-    coding_tree(cs, *partitioner, cuCtx, chromaPartitioner, &chromaCuCtx);
+    QTBTPartitioner chromaPartitioner;
+    chromaPartitioner.initCtu(area, CH_C, *cs.slice);
+    coding_tree(cs, partitioner, cuCtx, &chromaPartitioner, &chromaCuCtx);
     qps[CH_L] = cuCtx.qp;
     qps[CH_C] = chromaCuCtx.qp;
-
-    delete chromaPartitioner;
   }
   else
   {
-    coding_tree( cs, *partitioner, cuCtx );
+    coding_tree(cs, partitioner, cuCtx);
     qps[CH_L] = cuCtx.qp;
     if( CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
     {
       CUCtx cuCtxChroma( qps[CH_C] );
-      partitioner->initCtu( area, CH_C, *cs.slice );
-      coding_tree( cs, *partitioner, cuCtxChroma );
+      partitioner.initCtu(area, CH_C, *cs.slice);
+      coding_tree(cs, partitioner, cuCtxChroma);
       qps[CH_C] = cuCtxChroma.qp;
     }
   }
-
-  delete partitioner;
 }
 
 

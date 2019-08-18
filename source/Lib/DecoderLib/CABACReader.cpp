@@ -136,12 +136,12 @@ void CABACReader::remaining_bytes( bool noTrailingBytesExpected )
 bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, int (&qps)[2], unsigned ctuRsAddr )
 {
   CUCtx cuCtx( qps[CH_L] );
-  Partitioner *partitioner = PartitionerFactory::get( *cs.slice );
+  QTBTPartitioner partitioner;
 
-  partitioner->initCtu( area, CH_L, *cs.slice );
+  partitioner.initCtu(area, CH_L, *cs.slice);
 #if JVET_O0050_LOCAL_DUAL_TREE
-  cs.treeType = partitioner->treeType = TREE_D;
-  cs.modeType = partitioner->modeType = MODE_TYPE_ALL;
+  cs.treeType = partitioner.treeType = TREE_D;
+  cs.modeType = partitioner.modeType = MODE_TYPE_ALL;
 #endif
 
 
@@ -203,23 +203,22 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
   {
-    Partitioner *chromaPartitioner = PartitionerFactory::get(*cs.slice);
-    chromaPartitioner->initCtu(area, CH_C, *cs.slice);
+    QTBTPartitioner chromaPartitioner;
+    chromaPartitioner.initCtu(area, CH_C, *cs.slice);
     CUCtx cuCtxChroma(qps[CH_C]);
-    isLast = coding_tree(cs, *partitioner, cuCtx, chromaPartitioner, &cuCtxChroma);
+    isLast    = coding_tree(cs, partitioner, cuCtx, &chromaPartitioner, &cuCtxChroma);
     qps[CH_L] = cuCtx.qp;
     qps[CH_C] = cuCtxChroma.qp;
-    delete chromaPartitioner;
   }
   else
   {
-    isLast = coding_tree(cs, *partitioner, cuCtx);
+    isLast    = coding_tree(cs, partitioner, cuCtx);
     qps[CH_L] = cuCtx.qp;
     if( !isLast && CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
     {
       CUCtx cuCtxChroma( qps[CH_C] );
-      partitioner->initCtu( area, CH_C, *cs.slice );
-      isLast = coding_tree( cs, *partitioner, cuCtxChroma );
+      partitioner.initCtu(area, CH_C, *cs.slice);
+      isLast    = coding_tree(cs, partitioner, cuCtxChroma);
       qps[CH_C] = cuCtxChroma.qp;
     }
   }
@@ -227,7 +226,6 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   DTRACE_COND( ctuRsAddr == 0, g_trace_ctx, D_QP_PER_CTU, "\n%4d %2d", cs.picture->poc, cs.slice->getSliceQpBase() );
   DTRACE     (                 g_trace_ctx, D_QP_PER_CTU, " %3d",           qps[CH_L] - cs.slice->getSliceQpBase() );
 
-  delete partitioner;
   return isLast;
 }
 

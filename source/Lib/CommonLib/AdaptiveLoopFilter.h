@@ -154,6 +154,8 @@ protected:
   short                        m_chromaClippFinal[MAX_NUM_ALF_LUMA_COEFF];
 #endif
   int**                        m_laplacian[NUM_DIRECTIONS];
+  int *                        m_laplacianPtr[NUM_DIRECTIONS][m_CLASSIFICATION_BLK_SIZE + 5];
+  int m_laplacianData[NUM_DIRECTIONS][m_CLASSIFICATION_BLK_SIZE + 5][m_CLASSIFICATION_BLK_SIZE + 5];
   uint8_t*                     m_ctuEnableFlag[MAX_NUM_COMPONENT];
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   uint8_t*                     m_ctuAlternative[MAX_NUM_COMPONENT];

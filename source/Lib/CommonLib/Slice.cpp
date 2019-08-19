@@ -2332,7 +2332,8 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
     for( int rIdx = 0; rIdx < m_aiNumRefIdx[refList]; rIdx++ )
     {
       // if rescaling is needed, otherwise just reuse the original picture pointer; it is needed for motion field, otherwise motion field requires a copy as well
-      if( m_apcRefPicList[refList][rIdx]->lwidth() == pps->getPicWidthInLumaSamples() && m_apcRefPicList[refList][rIdx]->lheight() == pps->getPicHeightInLumaSamples() )
+      // reference resampling for the whole picture is not applied at decoder
+      if( ( m_apcRefPicList[refList][rIdx]->lwidth() == pps->getPicWidthInLumaSamples() && m_apcRefPicList[refList][rIdx]->lheight() == pps->getPicHeightInLumaSamples() ) || isDecoder )
       {
         m_scaledRefPicList[refList][rIdx] = m_apcRefPicList[refList][rIdx];
       }
@@ -2362,6 +2363,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
           CHECK( j >= MAX_NUM_REF, "scaledRefPic can not hold all reference pictures!" );
 
           scaledRefPic[j]->poc = poc;
+          scaledRefPic[j]->longTerm = m_apcRefPicList[refList][rIdx]->longTerm;
 
           // rescale the reference picture
           const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;

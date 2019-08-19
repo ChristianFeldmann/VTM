@@ -643,10 +643,8 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     for( int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx( RefPicList( iRefList ) ); iRefIndex++ )
     {
 #if RPR_CTC_PRINT
-      const Picture* refPic = pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex );
-
       int xScale, yScale;
-      CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), refPic->unscaledPic->cs->pps, xScale, yScale );
+      CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->unscaledPic->cs->pps, xScale, yScale );
 
       if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
       {

@@ -19,7 +19,12 @@ list( APPEND CMAKE_FIND_ROOT_PATH ${ARM_LINUX_SYSROOT} )
 # search headers and libraries in the target environment, search 
 # programs in the host environment
 set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
-set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
+
+# Ubuntu/amd64 + foreign architecture arm64
+set( CMAKE_LIBRARY_PATH /usr/lib/${GNU_MACHINE}-linux-gnu )
+set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH )
+#set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
+
 set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
 
 set( USE_OPENCV_TOOLCHAIN_FLAGS ON )

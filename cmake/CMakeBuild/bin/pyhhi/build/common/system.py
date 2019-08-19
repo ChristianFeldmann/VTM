@@ -98,18 +98,18 @@ class SystemInfo(object):
                     
                 if self._os_arch == 'x86_64':
                     if self._python_arch == 'x86':
-                        self._program_dir = os.getenv('PROGRAMW6432')
-                        self._programx86_dir = os.getenv('PROGRAMFILES')
+                        self._program_dir = os.path.normpath(os.getenv('PROGRAMW6432'))
+                        self._programx86_dir = os.path.normpath(os.getenv('PROGRAMFILES'))
                     else:
-                        self._program_dir = os.getenv('PROGRAMFILES')
-                        self._programx86_dir = os.getenv('PROGRAMFILES(X86)')
+                        self._program_dir = os.path.normpath(os.getenv('PROGRAMFILES'))
+                        self._programx86_dir = os.path.normpath(os.getenv('PROGRAMFILES(X86)'))
                     assert self._programx86_dir is not None
                 elif self._os_arch == 'x86':
-                    self._program_dir = os.getenv('PROGRAMFILES')
+                    self._program_dir = os.path.normpath(os.getenv('PROGRAMFILES'))
                 else:
                     assert False
                 assert self._program_dir is not None
-                self._program_data_dir = os.getenv('PROGRAMDATA')
+                self._program_data_dir = os.path.normpath(os.getenv('PROGRAMDATA'))
 
                 if self._windows_msys:
                     pass
@@ -315,8 +315,12 @@ class SystemInfo(object):
         def get_path(self):
             return self._search_path
 
-        def get_home_dir(self):
-            return self._home_dir
+        def get_home_dir(self, native=False):
+            if self.is_windows_msys() and native:
+                home_dir = os.path.normpath(os.path.expandvars('$USERPROFILE'))
+            else:
+                home_dir = self._home_dir
+            return home_dir
 
         def get_default_proj_home_dir(self):
             return self._default_proj_home_dir
@@ -339,7 +343,7 @@ class SystemInfo(object):
 
         def get_short_path(self, fpath):
             if self.is_windows():
-                fpath = self.get_short_path_win(fpath)
+                fpath = os.path.normpath(self.get_short_path_win(fpath))
             return fpath
 
         def get_short_path_win(self, fpath):
@@ -440,13 +444,13 @@ class SystemInfo(object):
             # make sure the user's home directory exists
             if not os.path.exists(home_dir):
                 raise Exception('home directory "' + home_dir + '" does not exist.')
-            self._home_dir = home_dir
+            self._home_dir = os.path.normpath(home_dir)
 
         def _query_default_proj_home_dir(self):
             if 'PROJ_HOME' in os.environ:
-                proj_home_dir = os.path.expandvars('$PROJ_HOME')
+                proj_home_dir = os.path.normpath(os.path.expandvars('$PROJ_HOME'))
             else:
-                proj_home_dir = os.path.join(self.get_home_dir(), 'projects')
+                proj_home_dir = os.path.join(self.get_home_dir(native=True), 'projects')
             if os.path.exists(proj_home_dir):
                 self._default_proj_home_dir = proj_home_dir
             else:
@@ -459,7 +463,8 @@ class SystemInfo(object):
                 self._search_path.append(util.normalize_path(dir))
 
         def _query_desktop_dir(self):
-            home_dir = self.get_home_dir()
+            # MSYS has its own environment but Desktop comes from the native windows home.
+            home_dir = self.get_home_dir(native=True)
             desktop_dir = os.path.join(home_dir, 'Desktop')
             if os.path.exists(desktop_dir):
                 self._desktop_dir = desktop_dir

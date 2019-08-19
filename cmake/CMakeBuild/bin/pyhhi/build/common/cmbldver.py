@@ -4,4 +4,4 @@
 # Any manual changes here will be overridden by the next build.
 #-------------
 
-CMAKE_BUILD_VERSION_STR = "3.13.0.2"
+CMAKE_BUILD_VERSION_STR = "3.14.4.4"

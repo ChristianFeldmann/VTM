@@ -216,7 +216,7 @@
 #define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
 #define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
 
-#define JVET_O0094_LFNST_ZERO_PRIM_COEFFS                 1 // JVET-O0049: CE6-2.1a, LFNST involves zeroing of primary only coefficient positions
+#define JVET_O0094_LFNST_ZERO_PRIM_COEFFS                 1 // JVET-O0094: CE6-2.1a, LFNST involves zeroing of primary only coefficient positions
 
 #define JVET_O0294_TRANSFORM_CLEANUP                      1 // JVET-O0294: Context modelling for MTS index
 
@@ -290,6 +290,7 @@ typedef std::pair<int, int>  TrCost;
 #define EXTENSION_HDRTOOLS                                0 //< extension for HDRTools/Metrics support; this macro should be controlled by makefile, as it would be used to control whether the library is built and linked
 #endif
 
+#define JVET_O0756_CONFIG_HDRMETRICS                      1
 #if EXTENSION_HDRTOOLS
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif

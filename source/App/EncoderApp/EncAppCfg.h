@@ -619,8 +619,12 @@ protected:
   friend class TExt360AppEncTop;
 #endif
 
+#if JVET_O0756_CONFIG_HDRMETRICS || JVET_O0756_CALCULATE_HDRMETRICS
 #if JVET_O0756_CALCULATE_HDRMETRICS
   double      m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
+#else
+  double      m_whitePointDeltaE[3];
+#endif
   double      m_maxSampleValue;
   int         m_sampleRange;
   int         m_colorPrimaries;

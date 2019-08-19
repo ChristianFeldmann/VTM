@@ -698,8 +698,14 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
         const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
 
-        Picture::rescalePicture( *pcPicYuvOrg, pcPicCurr->getOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-        Picture::rescalePicture( *cPicYuvTrueOrg, pcPicCurr->getTrueOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
+#if RPR_CONF_WINDOW
+        const PPS *refPPS = m_ppsMap.getPS(0);
+        Picture::rescalePicture( *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
+        Picture::rescalePicture( *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
+#else
+        Picture::rescalePicture(*pcPicYuvOrg, pcPicCurr->getOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true, true);
+        Picture::rescalePicture(*cPicYuvTrueOrg, pcPicCurr->getTrueOrigBuf(), chromaFormatIDC, pSPS->getBitDepths(), true, true);
+#endif
       }
       else
       {

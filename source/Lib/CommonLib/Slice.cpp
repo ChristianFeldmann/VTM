@@ -2365,7 +2365,13 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
 
           // rescale the reference picture
           const bool downsampling = scaledRefPic[j]->getRecoBuf().Y().width >= m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width && scaledRefPic[j]->getRecoBuf().Y().height >= m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height;
-          Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), scaledRefPic[j]->getRecoBuf(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
+#if RPR_CONF_WINDOW
+          Window conformanceWindow;
+          conformanceWindow.setWindow(0, 0, 0, 0);
+          Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), conformanceWindow, scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
+#else
+          Picture::rescalePicture(m_apcRefPicList[refList][rIdx]->getRecoBuf(), scaledRefPic[j]->getRecoBuf(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling);
+#endif
           scaledRefPic[j]->extendPicBorder();
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];

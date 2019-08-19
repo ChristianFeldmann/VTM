@@ -3598,7 +3598,13 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   {
     const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].get( COMPONENT_Y ) : pcPic->m_bufs[PIC_ORIGINAL_INPUT].get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
-    Picture::rescalePicture( picC, upscaledRec, format, sps.getBitDepths(), false );
+#if RPR_CONF_WINDOW
+    Window conformanceWindow;
+    conformanceWindow.setWindow(0, 0, 0, 0);
+    Picture::rescalePicture( picC, pcPic->cs->pps->getConformanceWindow(), upscaledRec, conformanceWindow, format, sps.getBitDepths(), false );
+#else
+    Picture::rescalePicture(picC, upscaledRec, format, sps.getBitDepths(), false);
+#endif
   }
 #endif
 

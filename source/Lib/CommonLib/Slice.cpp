@@ -2364,7 +2364,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
           scaledRefPic[j]->poc = poc;
 
           // rescale the reference picture
-          const bool downsampling = scaledRefPic[j]->getRecoBuf().Y().width >= m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width && scaledRefPic[j]->getRecoBuf().Y().height >= m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height;
+          const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
 #if RPR_CONF_WINDOW
           Window conformanceWindow;
           conformanceWindow.setWindow(0, 0, 0, 0);

@@ -23,33 +23,51 @@ class MsvcRegistry(object):
         def __init__(self):
             self._logger = logging.getLogger(__name__)
             self._sys_info = system.SystemInfo()
-            self._supported_msvc_versions = ['14.1', '14.0', '12.0', '11.0', '10.0']
+            self._supported_msvc_versions = ['14.2', '14.1', '14.0', '12.0', '11.0', '10.0']
             program_dir = self._sys_info.get_program_dir('x86')
-            self._msvc_install_dir_dict = {'14.1': [os.path.join(program_dir, "Microsoft Visual Studio", '2017', 'Enterprise', 'VC'),
-                                                    os.path.join(program_dir, "Microsoft Visual Studio", '2017', 'Professional', 'VC'),
-                                                    os.path.join(program_dir, "Microsoft Visual Studio", '2017', 'Community', 'VC')],
-                                           '14.0': [os.path.join(program_dir, "Microsoft Visual Studio 14.0", 'VC')],
+            # VS2019, VS2017 come with a locator tool vswhere to search for the installation directory.
+            # The dictionary _msvc_install_dir_dict will be augmented with keys 14.2 and 14.1 by method _do_inventory_vc14x().
+            self._msvc_install_dir_dict = {'14.0': [os.path.join(program_dir, "Microsoft Visual Studio 14.0", 'VC')],
                                            '12.0': [os.path.join(program_dir, "Microsoft Visual Studio 12.0", 'VC')],
                                            '11.0': [os.path.join(program_dir, "Microsoft Visual Studio 11.0", 'VC')],
                                            '10.0': [os.path.join(program_dir, "Microsoft Visual Studio 10.0", 'VC')]}
-
             # a list of sorted version tuples identifying the installed MSVC products
             self._installed_msvc_versions = []
             # key = msvc_version, value = full path of vcvarsall.bat
             self._compiler_command_dict = {}
-            # key = msvc_version, value = options to be passed to the setup command; e.g. -vcvars_ver=14.0
+            # key = msvc_version, value = options to be passed to the setup command; e.g. -vcvars_ver=14.0, -vcvars_ver=14.1x
             self._compiler_command_option_dict = {}
             # key = msvc_version, value = vc version
             self._compiler_version_dict = {}
             # key = msvc_version, value = True/False
             self._is_vs2017_toolset_dict = {}
+            # key = msvc_version, value = True/False; e.g. '14.1' -> True indicates 14.1 is an alternative toolset installed with vs2019.
+            self._is_vs2019_toolset_dict = {}
+            # clear information on alternative toolset upfront
+            for version in self._supported_msvc_versions:
+                self._is_vs2017_toolset_dict[version] = False
+                self._is_vs2019_toolset_dict[version] = False
 
             if self._logger.isEnabledFor(logging.DEBUG):
                 self._logger.debug("performing in-depth VS inventory for debugging.")
                 self._do_inventory_winreg()
-            # Update VS2017 installation paths via vswhere.exe
-            self._do_inventory_vc141()
+            vswhere = self._find_vswhere()
+            if vswhere:
+                # Update VS2019 installation paths via vswhere.exe
+                self._do_inventory_vc14x('14.2', vswhere)
+                # Update VS2017 installation paths via vswhere.exe
+                self._do_inventory_vc14x('14.1', vswhere)
+            else:
+                pass
             self._do_inventory()
+            self._dump_inventory()
+
+        def _dump_inventory(self):
+            if self._logger.isEnabledFor(logging.DEBUG):
+                for version in self._installed_msvc_versions:
+                    version_str = ver.version_tuple_to_str(version)
+                    cl_version_str = ver.version_tuple_to_str(self._compiler_version_dict[version_str])
+                    self._logger.debug("found MSVC version {}, CL version {}, setup={}".format(version_str, cl_version_str, self._compiler_command_dict[version_str]))
 
         def get_compiler_command(self, version=None):
             if version is None:
@@ -87,6 +105,14 @@ class MsvcRegistry(object):
                 return self._is_vs2017_toolset_dict[version_str]
             return False
 
+        def is_vs2019_toolset(self, version):
+            if not self.is_version_installed(version):
+                return False
+            version_str = ver.version_tuple_to_str(version)
+            if version_str in self._is_vs2019_toolset_dict:
+                return self._is_vs2019_toolset_dict[version_str]
+            return False
+
         def _do_inventory(self):
             for version in self._supported_msvc_versions:
                 if version not in self._msvc_install_dir_dict:
@@ -98,13 +124,18 @@ class MsvcRegistry(object):
                     cl_cmd = self._find_cl_cmd(vc_dir, version)
                     if cl_cmd:
                         self._logger.debug("found VC compiler %s", cl_cmd)
-                        if version in ['14.1']:
+                        if version in ['14.2', '14.1']:
                             setup_cmd = os.path.normpath(os.path.join(os.path.dirname(cl_cmd), '..', '..', '..', '..', '..', '..', 'Auxiliary', 'Build', 'vcvarsall.bat'))
                         elif version in ['14.0']:
                             if os.path.exists(os.path.join(vc_dir, '..', 'Common7', 'IDE', 'devenv.exe')):
                                 self._logger.debug("found VS 2015 IDE installed.")
                                 setup_cmd = os.path.join(vc_dir, 'vcvarsall.bat')
-                                self._is_vs2017_toolset_dict[version] = False
+                            elif '14.2' in self._compiler_command_dict:
+                                # We've got 14.0 as an alternative VS 2019 toolset.
+                                self._logger.debug("found msvc-14.0 installed as an alternative VS 2019 toolset.")
+                                setup_cmd = self._compiler_command_dict['14.2']
+                                self._is_vs2019_toolset_dict[version] = True
+                                self._compiler_command_option_dict[version] = '-vcvars_ver=14.0'
                             elif '14.1' in self._compiler_command_dict:
                                 # We've got 14.0 as an alternative VS 2017 toolset.
                                 self._logger.debug("found msvc-14.0 installed as an alternative VS 2017 toolset.")
@@ -119,6 +150,19 @@ class MsvcRegistry(object):
                     cl_version = self._query_msvc_compiler_version(cl_cmd)
                     self._compiler_command_dict[version] = setup_cmd
                     self._compiler_version_dict[version] = cl_version
+                    if (version == '14.2') and ('14.1' not in self._msvc_install_dir_dict):
+                        # Search for alternative toolset vc141 installed with vs2019
+                        self._logger.debug("searching for alternative VS2019 toolset vc141.")
+                        vc_dir in self._msvc_install_dir_dict[version][0]
+                        setup_cmd = self._compiler_command_dict['14.2']
+                        cl_cmd = self._find_cl_cmd(vc_dir, '14.1')
+                        if cl_cmd:
+                            self._logger.debug("found alternative VC compiler {}".format(cl_cmd))
+                            cl_version = self._query_msvc_compiler_version(cl_cmd)
+                            self._compiler_command_dict['14.1'] = setup_cmd
+                            self._compiler_version_dict['14.1'] = cl_version
+                            self._compiler_command_option_dict['14.1'] = '-vcvars_ver=14.1x'
+                            self._is_vs2019_toolset_dict['14.1'] = True
 
             msvc_version_list = []
             for version in self._compiler_version_dict:
@@ -127,32 +171,36 @@ class MsvcRegistry(object):
                 self._installed_msvc_versions = ver.version_list_sort(msvc_version_list)
                 self._installed_msvc_versions.reverse()
                 # print("sorted msvc versions: ", self._installed_msvc_versions)
-                for version in self._installed_msvc_versions:
-                    version_str = ver.version_tuple_to_str(version)
-                    if version_str in ['14.1']:
-                        self._is_vs2017_toolset_dict[version_str] = True
-                    elif version_str not in self._is_vs2017_toolset_dict:
-                        self._is_vs2017_toolset_dict[version_str] = False
 
         def _find_cl_cmd(self, vc_inst_dir, version_str):
             cl_cmd = None
-            if version_str in ['14.1']:
+            if version_str in ['14.2', '14.1']:
                 msvc_dir = os.path.join(vc_inst_dir, 'Tools', 'MSVC')
                 if os.path.exists(msvc_dir):
                     version_dir_list = [ver.version_tuple_from_str(x) for x in os.listdir(msvc_dir) if re.match(r'[0-9.]+$', x)]
                     if version_dir_list:
                         version_dir_list = ver.version_list_sort(version_dir_list)
                         version_dir_list.reverse()
+                        # VS2019 installs toolset v141 side-by-side in a folder named '14.16.27023', toolset v142 is
+                        # installed in a folder named '14.20.27508'.
                         for version in version_dir_list:
+                            if (version_str == '14.2') and (version[1] >= 30):
+                                self._logger.debug("ignoring cl installation folder: {}".format(os.path.join(msvc_dir, ver.version_tuple_to_str(version))))
+                                continue
+                            if (version_str == '14.1') and (version[1] >= 20):
+                                self._logger.debug("ignoring cl installation folder: {}".format(os.path.join(msvc_dir, ver.version_tuple_to_str(version))))
+                                continue
                             cl_cmd = os.path.join(msvc_dir, ver.version_tuple_to_str(version), 'bin', 'HostX64', 'x64', 'cl.exe')
                             if os.path.exists(cl_cmd):
-                                return cl_cmd
+                                break
                             else:
                                 cl_cmd = None
             else:
                 cl_cmd = os.path.join(vc_inst_dir, 'bin', 'amd64', 'cl.exe')
                 if not os.path.exists(cl_cmd):
                     cl_cmd = None
+            if cl_cmd:
+                self._logger.debug("found cl: {}".format(cl_cmd))
             return cl_cmd
 
         def _query_msvc_compiler_version(self, cl_cmd):
@@ -208,39 +256,46 @@ class MsvcRegistry(object):
                         continue
             return vc_install_dir_dict
 
-        def _do_inventory_vc141(self):
-            vswhere = self._find_vswhere()
-            vc_dir_fnd = False
-            if vswhere:
-                self._logger.debug("found VS2017 locator: %s", vswhere)
-                try:
-                    vswhere_argv = [vswhere, '-latest']
-                    # vswhere_argv.extend(['-products', 'Enterprise'])
-                    # vswhere_argv.extend(['-products', 'Professional'])
-                    # vswhere_argv.extend(['-products', 'Community'])
-                    vswhere_argv.extend(['-products', '*'])
-                    vswhere_argv.extend(['-requires', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64'])
-                    vswhere_argv.extend(['-property', 'installationPath'])
-                    vswhere_argv.extend(['-version', '[15.0,16.0)'])
-                    retv = subprocess.check_output(vswhere_argv, universal_newlines=True).rstrip()
-                    if retv != '':
-                        self._logger.debug("VS2017 install path: %s", retv)
-                        vc_dir = os.path.join(retv, 'VC')
-                        if os.path.exists(vc_dir):
-                            self._logger.debug("VS2017 VC install path: %s", vc_dir)
-                            self._msvc_install_dir_dict['14.1'] = [vc_dir]
-                            vc_dir_fnd = True
-                    else:
-                        self._logger.debug("VS2017 install path: <none>")
-                except subprocess.CalledProcessError:
-                    self._logger.debug("VS2017 locator call failed for some reason.")
+        def _do_inventory_vc14x(self, msvc_version_str, vswhere=None):
+            if msvc_version_str == '14.2':
+                vswhere_version_expr = '[16.0,17.0)'
+                vs_alias_str = 'VS2019'
+            elif msvc_version_str == '14.1':
+                vswhere_version_expr = '[15.0,16.0)'
+                vs_alias_str = 'VS2017'
             else:
-                self._logger.debug("VS2017 locator vswhere.exe not found, VS2017 detection disabled.")
+                assert False
+            if vswhere is None:
+                vswhere = self._find_vswhere()
+            if vswhere is None:
+                self._logger.debug("{0} locator vswhere.exe not found, {0} detection disabled.".format(vs_alias_str))
+                return
+            else:
+                self._logger.debug("found {} locator: {}".format(vs_alias_str, vswhere))
+            vc_dir_fnd = False
+            try:
+                vswhere_argv = [vswhere, '-latest']
+                # vswhere_argv.extend(['-products', 'Enterprise'])
+                # vswhere_argv.extend(['-products', 'Professional'])
+                # vswhere_argv.extend(['-products', 'Community'])
+                vswhere_argv.extend(['-products', '*'])
+                vswhere_argv.extend(['-requires', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64'])
+                vswhere_argv.extend(['-property', 'installationPath'])
+                vswhere_argv.extend(['-version', vswhere_version_expr])
+                retv = subprocess.check_output(vswhere_argv, universal_newlines=True).rstrip()
+                if retv != '':
+                    self._logger.debug("{} install path: {}".format(vs_alias_str, retv))
+                    vc_dir = os.path.join(retv, 'VC')
+                    if os.path.exists(vc_dir):
+                        self._logger.debug("{} VC install path: {}".format(vs_alias_str, vc_dir))
+                        self._msvc_install_dir_dict[msvc_version_str] = [vc_dir]
+                        vc_dir_fnd = True
+                else:
+                    self._logger.debug("{} install path: <none>".format(vs_alias_str))
+            except subprocess.CalledProcessError:
+                self._logger.debug("{} vswhere locator call failed for some reason.".format(vs_alias_str))
             if not vc_dir_fnd:
-                self._logger.debug("VS2017 VC not found, VS2017 detection disabled.")
-                # Disable VS2017 detection by path?
-                if '14.1' in self._msvc_install_dir_dict:
-                    self._msvc_install_dir_dict.pop('14.1')
+                self._logger.debug("{0} VC not found, {0} detection disabled.".format(vs_alias_str))
 
         def _find_vswhere(self):
             vswhere_prog = None
@@ -262,68 +317,6 @@ class MsvcRegistry(object):
 
     def __getattr__(self, item):
         return getattr(MsvcRegistry.instance, item)
-
-
-class BjamToolset(object):
-    def __init__(self, sys_info, bb_version=None):
-        self._logger = logging.getLogger(__name__)
-        self._bjam_toolset_build_script = None
-
-        if sys_info.is_linux():
-            self._bjam_toolset = 'gcc'
-        elif sys_info.is_macosx():
-            self._bjam_toolset = 'darwin'
-        elif sys_info.is_windows():
-            # On windows the Boost.Build version is required as vsXXXX is only supported by Boost.Build x.y.z or higher.
-            assert bb_version is not None
-            self._msvc_registry = MsvcRegistry()
-
-            # We have to constrain the search for the latest msvc because the bjam build scripts must have support for it.
-            # e.g. vc14 works only for 1.59.0 or higher.
-            if ver.version_compare(bb_version, (1, 50, 0)) < 0:
-                max_msvc_version = (10, 0)
-            elif ver.version_compare(bb_version, (1, 55, 0)) < 0:
-                max_msvc_version = (11, 0)
-            elif ver.version_compare(bb_version, (1, 59, 0)) < 0:
-                max_msvc_version = (12, 0)
-            elif ver.version_compare(bb_version, (1, 64, 0)) < 0:
-                max_msvc_version = (14, 0)
-            elif ver.version_compare(bb_version, (1, 64, 0)) == 0:
-                # This is Boost.Build 1.64.0 or higher.
-                # Since msvc-14.1 is supported by 1.64.0 but building bjam requires a suitable VC command prompt or patched
-                # bjam build scripts, a previous msvc-x.y is preferred.
-                max_msvc_version = None
-                for v in ['14.0', '12.0', '11.0', '10.0']:
-                    if self._msvc_registry.is_version_installed(ver.version_tuple_from_str(v)):
-                        max_msvc_version = ver.version_tuple_from_str(v)
-                        break
-            else:
-                # Allow vc141 for 1.65.0 and higher by default, the toolset detection vswhere is now available.
-                max_msvc_version = None
-
-            # mingw does not work the same way as msvc when launching helper scripts or programs and
-            # is not used to build bjam/b2.
-            msvc_version = self._msvc_registry.get_latest_version(max_msvc_version)
-            msvc_version_str = ver.version_tuple_to_str(msvc_version)
-            self._bjam_toolset = 'msvc-' + msvc_version_str
-
-            # map the msvc toolset spec into a string supported by the bjam build script build.bat
-            if msvc_version[1] > 0:
-                # vc141
-                self._bjam_toolset_build_script = 'vc' + str(msvc_version[0])+ str(msvc_version[1])
-            else:
-                # vc14, vc12, vc11, vc10
-                self._bjam_toolset_build_script = 'vc' + str(msvc_version[0])
-        else:
-            raise Exception('Unknown platform detected, please contact technical support.')
-        if self._bjam_toolset_build_script is None:
-            self._bjam_toolset_build_script = self._bjam_toolset
-
-    def get_bjam_toolset(self, build_script_format=False):
-        if build_script_format:
-            return self._bjam_toolset_build_script
-        else:
-            return self._bjam_toolset
 
 
 class Toolset(object):
@@ -463,6 +456,8 @@ class Toolset(object):
         if self._toolset.startswith('msvc'):
             if self._msvc_registry.is_vs2017_toolset(self._version):
                 s += "VS 2017 toolset!\n"
+            if self._msvc_registry.is_vs2019_toolset(self._version):
+                s += "VS 2019 toolset!\n"
 
         s += "platform(s):\n"
         for platform_info in self._platform_info:

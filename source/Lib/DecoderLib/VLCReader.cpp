@@ -1863,7 +1863,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           if (pcSlice->getRPL1()->isRefPicLongterm(i))
           {
-if JVET_N0100_PROPOSAL1
+#if JVET_N0100_PROPOSAL1
             if (pcSlice->getRPL1()->getLtrpInSliceHeaderFlag())
             {
               READ_CODE(sps->getBitsForPOC(), uiCode, "poc_lsb_lt[i][j]");

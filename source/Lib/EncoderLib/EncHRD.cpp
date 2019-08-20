@@ -59,7 +59,9 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 {
   bool useSubCpbParams = (encCfg->getSliceMode() > 0) || (encCfg->getSliceSegmentMode() > 0);
   int  bitRate         = encCfg->getTargetBitrate();
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   bool isRandomAccess  = encCfg->getIntraPeriod() > 0;
+#endif
 # if U0132_TARGET_BITS_SATURATION
   int cpbSize          = encCfg->getCpbSize();
   CHECK(!(cpbSize!=0), "Unspecified error");  // CPB size may not be equal to zero. ToDo: have a better default and check for level constraints
@@ -116,12 +118,20 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
   {
     m_hrdParams.setTickDivisorMinus2( 100 - 2 );                          //
     m_hrdParams.setDuCpbRemovalDelayLengthMinus1( 7 );                    // 8-bit precision ( plus 1 for last DU in AU )
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
     m_hrdParams.setSubPicCpbParamsInPicTimingSEIFlag( true );
+#else
+    m_hrdParams.setDecodingUnitHrdParamsPresentFlag( true );
+#endif
     m_hrdParams.setDpbOutputDelayDuLengthMinus1( 5 + 7 );                 // With sub-clock tick factor of 100, at least 7 bits to have the same value as AU dpb delay
   }
   else
   {
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
     m_hrdParams.setSubPicCpbParamsInPicTimingSEIFlag( false );
+#else
+    m_hrdParams.setDecodingUnitHrdParamsPresentFlag( false );
+#endif
   }
 
 #if U0132_TARGET_BITS_SATURATION
@@ -149,6 +159,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 
   m_hrdParams.setDuCpbSizeScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
 
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   m_hrdParams.setInitialCpbRemovalDelayLengthMinus1(15);                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
   if( isRandomAccess )
   {
@@ -160,6 +171,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     m_hrdParams.setCpbRemovalDelayLengthMinus1(9);                        // max. 2^10
     m_hrdParams.setDpbOutputDelayLengthMinus1 (9);                        // max. 2^10
   }
+#endif
 
   // Note: parameters for all temporal layers are initialized with the same values
   int i, j;

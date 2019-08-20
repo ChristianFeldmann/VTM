@@ -167,37 +167,63 @@ class SEIBufferingPeriod : public SEI
 {
 public:
   PayloadType payloadType() const { return BUFFERING_PERIOD; }
-  void copyTo (SEIBufferingPeriod& target);
+  void copyTo (SEIBufferingPeriod& target) const;
 
   SEIBufferingPeriod()
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   : m_bpSeqParameterSetId (0)
   , m_rapCpbParamsPresentFlag (false)
+#else
+  : m_bpNalCpbParamsPresentFlag (false)
+  , m_bpVclCpbParamsPresentFlag (false)
+  , m_initialCpbRemovalDelayLength (0)
+  , m_cpbRemovalDelayLength (0)
+  , m_dpbOutputDelayLength (0)
+  , m_bpCpbCnt (0)
+#endif
   , m_cpbDelayOffset      (0)
   , m_dpbDelayOffset      (0)
   {
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalDelayOffset, 0, sizeof(m_initialCpbRemovalDelayOffset));
     ::memset(m_initialAltCpbRemovalDelay, 0, sizeof(m_initialAltCpbRemovalDelay));
     ::memset(m_initialAltCpbRemovalDelayOffset, 0, sizeof(m_initialAltCpbRemovalDelayOffset));
+#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   uint32_t m_bpSeqParameterSetId;
   bool m_rapCpbParamsPresentFlag;
+#else
+  bool m_bpNalCpbParamsPresentFlag;
+  bool m_bpVclCpbParamsPresentFlag;
+  uint32_t m_initialCpbRemovalDelayLength;
+  uint32_t m_cpbRemovalDelayLength;
+  uint32_t m_dpbOutputDelayLength;
+  int      m_bpCpbCnt;
+#endif
   uint32_t m_cpbDelayOffset;
   uint32_t m_dpbDelayOffset;
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   uint32_t m_initialCpbRemovalDelay         [MAX_CPB_CNT][2];
   uint32_t m_initialCpbRemovalDelayOffset   [MAX_CPB_CNT][2];
   uint32_t m_initialAltCpbRemovalDelay      [MAX_CPB_CNT][2];
   uint32_t m_initialAltCpbRemovalDelayOffset[MAX_CPB_CNT][2];
+#else
+  std::vector<uint32_t> m_initialCpbRemovalDelay  [2];
+  std::vector<uint32_t> m_initialCpbRemovalOffset [2];
+#endif
   bool m_concatenationFlag;
   uint32_t m_auCpbRemovalDelayDelta;
 };
+
 class SEIPictureTiming : public SEI
 {
 public:
   PayloadType payloadType() const { return PICTURE_TIMING; }
-  void copyTo (SEIPictureTiming& target);
+  void copyTo (SEIPictureTiming& target) const;
 
   SEIPictureTiming()
   : m_picStruct               (0)

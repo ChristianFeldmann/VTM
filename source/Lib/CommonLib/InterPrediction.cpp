@@ -705,6 +705,18 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   int shiftHor = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleX(compID, chFmt);
   int shiftVer = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleY(compID, chFmt);
 
+
+  bool  wrapRef = false;
+  Mv    mv( _mv );
+  if( !isIBC && pu.cs->sps->getWrapAroundEnabledFlag() )
+  {
+#if JVET_O1164_PS
+    wrapRef = wrapClipMv( mv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps );
+#else
+    wrapRef = wrapClipMv( mv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps );
+#endif
+  }
+
 #if JVET_O1164_RPR
   PelBuf &dstBuf = dstPic.bufs[compID];
   unsigned width = dstBuf.width;
@@ -766,10 +778,10 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     int offX = 1 << ( 10 - shiftHor - 1 );
     int offY = 1 << ( 10 - shiftVer - 1 );
 
-    x0Int = ( ( pu.blocks[compID].pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + _mv.getHor() )* xScale;
+    x0Int = ( ( pu.blocks[compID].pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* xScale;
     x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
 
-    y0Int = ( ( pu.blocks[compID].pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + _mv.getVer() )* yScale;
+    y0Int = ( ( pu.blocks[compID].pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* yScale;
     y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
 
 #if RPR_BUFFER
@@ -802,7 +814,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
       CHECK( xInt0 > xInt, "Wrong horizontal starting point" );
 
       Position offset = Position( xInt, yInt0 );
-      refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ) );
+      refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ), wrapRef );
       Pel* tempBuf = buffer + col;
 
       m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng );
@@ -825,7 +837,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     }
 
     Position offset = Position( xInt, yInt );
-    refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ) );
+    refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
 
     delete[] buffer;
 #else
@@ -850,7 +862,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
         Position offset = Position( xInt, yInt );
 
-        refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ) );
+        refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
 
         Pel* tempDstBuf = dstBuf.bufAt( col, row );
 
@@ -888,17 +900,6 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   else
   {
 #endif
-
-  bool  wrapRef = false;
-  Mv    mv(_mv);
-  if( !isIBC && pu.cs->sps->getWrapAroundEnabledFlag() ) 
-  {
-#if JVET_O1164_PS
-    wrapRef = wrapClipMv( mv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps );
-#else
-    wrapRef = wrapClipMv( mv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps);
-#endif
-  }
   int xFrac = mv.hor & ((1 << shiftHor) - 1);
   int yFrac = mv.ver & ((1 << shiftVer) - 1);
   if (isIBC)

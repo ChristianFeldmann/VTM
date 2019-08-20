@@ -1379,6 +1379,9 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       rpl->setNumberOfShorttermPictures(ge.m_numRefPics);
       rpl->setNumberOfLongtermPictures(0);   //Hardcoded as 0 for now. need to update this when implementing LTRP
       rpl->setNumberOfActivePictures(ge.m_numRefPicsActive);
+#if JVET_N0100_PROPOSAL1
+      rpl->setLtrpInSliceHeaderFlag(ge.m_ltrp_in_slice_header_flag);
+#endif
 
       for (int k = 0; k < ge.m_numRefPics; k++)
       {

@@ -76,6 +76,9 @@ struct GOPEntry
   int m_numRefPics1;
   int m_deltaRefPics1[MAX_NUM_REF_PICS];
   bool m_isEncoded;
+#if JVET_N0100_PROPOSAL1
+  bool m_ltrp_in_slice_header_flag;
+#endif
   GOPEntry()
   : m_POC(-1)
   , m_QPOffset(0)
@@ -97,7 +100,10 @@ struct GOPEntry
     , m_numRefPics0(0)
     , m_numRefPicsActive1(0)
     , m_numRefPics1(0)
-  , m_isEncoded(false)
+    , m_isEncoded(false)
+#if JVET_N0100_PROPOSAL1
+    , m_ltrp_in_slice_header_flag(false)
+#endif
   {
     ::memset(m_deltaRefPics0, 0, sizeof(m_deltaRefPics0));
     ::memset(m_deltaRefPics1, 0, sizeof(m_deltaRefPics1));
@@ -114,6 +120,9 @@ struct RPLEntry
   int m_numRefPics;
   int m_deltaRefPics[MAX_NUM_REF_PICS];
   bool m_isEncoded;
+#if JVET_N0100_PROPOSAL1
+  bool m_ltrp_in_slice_header_flag;
+#endif
   RPLEntry()
     : m_POC(-1)
     , m_temporalId(0)
@@ -122,6 +131,9 @@ struct RPLEntry
     , m_sliceType('P')
     , m_numRefPics(0)
     , m_isEncoded(false)
+#if JVET_N0100_PROPOSAL1
+    , m_ltrp_in_slice_header_flag(false)
+#endif
   {
     ::memset(m_deltaRefPics, 0, sizeof(m_deltaRefPics));
   }

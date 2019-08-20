@@ -85,6 +85,9 @@ private:
   int   m_numberOfActivePictures;
   bool  m_deltaPocMSBPresentFlag[MAX_NUM_REF_PICS];
   int   m_deltaPOCMSBCycleLT[MAX_NUM_REF_PICS];
+#if JVET_N0100_PROPOSAL1
+  bool  m_ltrp_in_slice_header_flag;
+#endif
 
 public:
   ReferencePictureList();
@@ -99,6 +102,11 @@ public:
 
   void    setNumberOfLongtermPictures(int numberOfLtrp);
   int     getNumberOfLongtermPictures() const;
+
+#if JVET_N0100_PROPOSAL1
+  void    setLtrpInSliceHeaderFlag(bool flag) { m_ltrp_in_slice_header_flag = flag; }
+  bool    getLtrpInSliceHeaderFlag() const { return m_ltrp_in_slice_header_flag; }
+#endif
 
   int     getNumRefEntries() const { return m_numberOfShorttermPictures + m_numberOfLongtermPictures; }
 

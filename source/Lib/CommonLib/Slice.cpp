@@ -1197,6 +1197,9 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   pLocalRPL0->setNumberOfLongtermPictures(numOfLTRPL0);
   pLocalRPL0->setNumberOfShorttermPictures(numOfSTRPL0);
   pLocalRPL0->setNumberOfActivePictures((numOfLTRPL0 + numOfSTRPL0 < pRPL0->getNumberOfActivePictures()) ? numOfLTRPL0 + numOfSTRPL0 : pRPL0->getNumberOfActivePictures());
+#if JVET_N0100_PROPOSAL1
+  pLocalRPL0->setLtrpInSliceHeaderFlag(pRPL0->getLtrpInSliceHeaderFlag());
+#endif
   this->setRPL0idx(-1);
   this->setRPL0(pLocalRPL0);
 
@@ -1230,6 +1233,9 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   pLocalRPL1->setNumberOfLongtermPictures(numOfLTRPL1);
   pLocalRPL1->setNumberOfShorttermPictures(numOfSTRPL1);
   pLocalRPL1->setNumberOfActivePictures((isDisallowMixedRefPic) ? (numOfLTRPL1 + numOfSTRPL1) : (((numOfLTRPL1 + numOfSTRPL1) < pRPL1->getNumberOfActivePictures()) ? (numOfLTRPL1 + numOfSTRPL1) : pRPL1->getNumberOfActivePictures()));
+#if JVET_N0100_PROPOSAL1
+  pLocalRPL1->setLtrpInSliceHeaderFlag(pRPL1->getLtrpInSliceHeaderFlag());
+#endif
   this->setRPL1idx(-1);
   this->setRPL1(pLocalRPL1);
 }
@@ -1657,6 +1663,9 @@ ReferencePictureList::ReferencePictureList()
   : m_numberOfShorttermPictures(0)
   , m_numberOfLongtermPictures(0)
   , m_numberOfActivePictures(MAX_INT)
+#if JVET_N0100_PROPOSAL1
+  , m_ltrp_in_slice_header_flag(0)
+#endif
 {
   ::memset(m_isLongtermRefPic, 0, sizeof(m_isLongtermRefPic));
   ::memset(m_refPicIdentifier, 0, sizeof(m_refPicIdentifier));

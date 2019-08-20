@@ -253,6 +253,9 @@
 #define MAX_TB_SIZE_SIGNALLING                            0
 #endif
 
+#define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
+
+
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
 typedef std::pair<int, bool> TrMode;

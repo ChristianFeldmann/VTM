@@ -718,184 +718,10 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   }
 
 #if JVET_O1164_RPR
-  PelBuf &dstBuf = dstPic.bufs[compID];
-  unsigned width = dstBuf.width;
-  unsigned height = dstBuf.height;
-  CPelBuf refBuf;
-
-  int backupWidth;
-  int backupHeight;
-  Pel *backupDstBufPtr;
-  int backupDstBufStride;
-
-#if RPR_CONF_WINDOW
-  const Window& inputConfWindow = refPic->cs->pps->getConformanceWindow();
-  int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples() - (inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(pu.cs->sps->getChromaFormatIdc());
-  int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples() - (inputConfWindow.getWindowTopOffset() + inputConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(pu.cs->sps->getChromaFormatIdc());
-#else
-  int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
-  int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
-#endif
-#if RPR_BUFFER
-#if RPR_CONF_WINDOW
-  const Window& curConfWindow = pu.cs->pps->getConformanceWindow();
-  int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples() - (curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(pu.cs->sps->getChromaFormatIdc());
-#else
-  int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples();
-#endif
-#endif
-  
-  int xScale, yScale;
-  bool scaled = CU::getRprScaling( pu.cs->sps, pu.cs->pps, refPic->cs->pps, xScale, yScale );
-
-  if( scaled )
+  if( xPredInterBlkRPR( compID, pu, refPic, mv, dstPic, bi, wrapRef, clpRng ) )
   {
     CHECK( bilinearMC, "DMVR should be disabled with RPR" );
     CHECK( bioApplied, "BDOF should be disabled with RPR" );
-
-    int row, col;
-
-    backupWidth = width;
-    backupHeight = height;
-    backupDstBufPtr = dstBuf.buf;
-    backupDstBufStride = dstBuf.stride;
-
-    if( bioApplied && compID == COMPONENT_Y )
-    {
-      width = width + 2 * BIO_EXTEND_SIZE + 2;
-      height = height + 2 * BIO_EXTEND_SIZE + 2;
-
-      // change MC output
-      dstBuf.stride = width;
-      dstBuf.buf = m_filteredBlockTmp[2 + m_iRefListIdx][compID] + 2 * dstBuf.stride + 2;
-    }
-
-    const ChromaFormat chFmt = pu.chromaFormat;
-    int stepX = ( xScale + 8 ) >> 4;
-    int stepY = ( yScale + 8 ) >> 4;
-    int64_t x0Int;
-    int64_t y0Int;
-    int offX = 1 << ( 10 - shiftHor - 1 );
-    int offY = 1 << ( 10 - shiftVer - 1 );
-
-    x0Int = ( ( pu.blocks[compID].pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* xScale;
-    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
-
-    y0Int = ( ( pu.blocks[compID].pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* yScale;
-    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
-
-#if RPR_BUFFER
-    const int extSize = isLuma( compID ) ? 1 : 2;
-
-    int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
-
-    int refHeight = ( height * refPicHeight ) / curPicHeight;
-    refHeight = std::max<int>( 1, refHeight );
-
-    Pel* buffer = new Pel[( MAX_CU_SIZE + 16 )*(std::max<int>( MAX_CU_SIZE, refHeight + vFilterSize - 1 + extSize ) + 16)];
-
-    int tmpStride = width;
-
-    int yInt0 = ( (int32_t)y0Int + offY ) >> 10;
-    yInt0 = std::min( std::max( 0, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
-
-    int xInt0 = ( (int32_t)x0Int + offX ) >> 10;
-    xInt0 = std::min( std::max( 0, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
-
-    int xInt = 0, yInt = 0;
-
-    for( col = 0; col < width; col++ )
-    {
-      int posX = (int32_t)x0Int + col * stepX;
-      xInt = ( posX + offX ) >> 10;
-      xInt = std::min( std::max( 0, xInt ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
-      int xFrac = ( ( posX + offX ) >> ( 10 - shiftHor ) ) & ( ( 1 << shiftHor ) - 1 );
-
-      CHECK( xInt0 > xInt, "Wrong horizontal starting point" );
-
-      Position offset = Position( xInt, yInt0 );
-      refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ), wrapRef );
-      Pel* tempBuf = buffer + col;
-
-      m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng );
-    }
-
-    for( row = 0; row < height; row++ )
-    {
-      int posY = (int32_t)y0Int + row * stepY;
-      yInt = ( posY + offY ) >> 10;
-      yInt = std::min( std::max( 0, yInt ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
-      int yFrac = ( ( posY + offY ) >> ( 10 - shiftVer ) ) & ( ( 1 << shiftVer ) - 1 );
-
-      CHECK( yInt0 > yInt, "Wrong vertical starting point" );
-
-      Pel* tempBuf = buffer + ( yInt - yInt0 ) * tmpStride;
-
-      JVET_J0090_SET_CACHE_ENABLE( false );
-      m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dstBuf.bufAt( 0, row ), dstBuf.stride, width, 1, yFrac, false, rndRes, chFmt, clpRng );
-      JVET_J0090_SET_CACHE_ENABLE( true );
-    }
-
-    Position offset = Position( xInt, yInt );
-    refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
-
-    delete[] buffer;
-#else
-    for( row = 0; row < height; row++ )
-    {
-      for( col = 0; col < width; col++ )
-      {
-        // pixel position in the current picture
-        int posX = (int32_t)x0Int + col * stepX;
-        int posY = (int32_t)y0Int + row * stepY;
-
-        // integer reference position in the reference frame
-        int xInt = ( posX + offX ) >> 10;
-        int yInt = ( posY + offY ) >> 10;
-
-        xInt = std::min( std::max( 0, xInt ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
-        yInt = std::min( std::max( 0, yInt ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
-
-        // fractional position in the reference frame
-        int xFrac = ( ( posX + offX ) >> ( 10 - shiftHor ) ) & ( ( 1 << shiftHor ) - 1 );
-        int yFrac = ( ( posY + offY ) >> ( 10 - shiftVer ) ) & ( ( 1 << shiftVer ) - 1 );
-
-        Position offset = Position( xInt, yInt );
-
-        refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
-
-        Pel* tempDstBuf = dstBuf.bufAt( col, row );
-
-        //--------------------------------copied from the "refPicWidth == curPicWidth" branch--------------------------------------------
-        if( yFrac == 0 )
-        {
-          m_if.filterHor( compID, (Pel*)refBuf.buf, refBuf.stride, /*dstBuf.buf*/tempDstBuf, dstBuf.stride, /*backupWidth*/1, /*backupHeight*/1, xFrac, rndRes, chFmt, clpRng );
-        }
-        else if( xFrac == 0 )
-        {
-          m_if.filterVer( compID, (Pel*)refBuf.buf, refBuf.stride, /*dstBuf.buf*/tempDstBuf, dstBuf.stride, /*backupWidth*/1, /*backupHeight*/1, yFrac, true, rndRes, chFmt, clpRng );
-        }
-        else
-        {
-          PelBuf tmpBuf = PelBuf( m_filteredBlockTmp[0][compID], pu.blocks[compID] );
-          tmpBuf.stride = dstBuf.stride;
-
-          int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
-
-          //for(int y = 0; y < vFilterSize; y++) 
-          {
-            m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tmpBuf.buf, tmpBuf.stride, /*backupWidth*/1, /*backupHeight*/1 + vFilterSize - 1, xFrac, false, chFmt, clpRng );
-          }
-
-
-          JVET_J0090_SET_CACHE_ENABLE( false );
-          m_if.filterVer( compID, (Pel*)tmpBuf.buf + ( ( vFilterSize >> 1 ) - 1 ) * tmpBuf.stride, tmpBuf.stride, /*dstBuf.buf*/tempDstBuf, dstBuf.stride, /*backupWidth*/1, /*backupHeight*/1, yFrac, false, rndRes, chFmt, clpRng );
-          JVET_J0090_SET_CACHE_ENABLE( true );
-        }
-        //--------------------------------------------------------------------------------
-      }
-    }
-#endif
   }
   else
   {
@@ -908,13 +734,11 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     JVET_J0090_SET_CACHE_ENABLE( false );
   }
 
-#if !JVET_O1164_RPR
   PelBuf &dstBuf  = dstPic.bufs[compID];
   unsigned width  = dstBuf.width;
   unsigned height = dstBuf.height;
 
   CPelBuf refBuf;
-#endif
   {
     Position offset = pu.blocks[compID].pos().offset( mv.getHor() >> shiftHor, mv.getVer() >> shiftVer );
     if (dmvrWidth)
@@ -936,17 +760,10 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     height = dmvrHeight;
   }
   // backup data
-#if JVET_O1164_RPR
-  backupWidth = width;
-  backupHeight = height;
-  backupDstBufPtr = dstBuf.buf;
-  backupDstBufStride = dstBuf.stride;
-#else
   int backupWidth = width;
   int backupHeight = height;
   Pel *backupDstBufPtr = dstBuf.buf;
   int backupDstBufStride = dstBuf.stride;
-#endif
 
   if (bioApplied && compID == COMPONENT_Y)
   {
@@ -1325,6 +1142,15 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         iMvScaleTmpHor = curMv.hor;
         iMvScaleTmpVer = curMv.ver;
       }
+
+#if JVET_O1164_RPR
+      if( xPredInterBlkRPR( compID, pu, refPic, Mv( iMvScaleTmpHor, iMvScaleTmpVer ), dstPic, bi, wrapRef, clpRng ) )
+      {
+        CHECK( enablePROF, "PROF should be disabled with RPR" );
+      }
+      else
+      {
+#endif
       // get the MV in high precision
       int xFrac, yFrac, xInt, yInt;
 
@@ -1450,6 +1276,9 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
           PelBuf destBuf(dstY, dstBuf.stride, Size(blockWidth, blockHeight));
           destBuf.copyFrom(srcExtBuf);
         }
+      }
+#endif
+#if JVET_O1164_RPR
       }
 #endif
     }
@@ -3168,4 +2997,174 @@ bool InterPrediction::isLumaBvValid(const int ctuSize, const int xCb, const int 
   return true;
 }
 #endif
+#endif
+
+#if JVET_O1164_RPR
+bool InterPrediction::xPredInterBlkRPR( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng )
+{
+  const ChromaFormat  chFmt = pu.chromaFormat;
+  const bool          rndRes = !bi;
+
+  int shiftHor = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleX( compID, chFmt );
+  int shiftVer = MV_FRACTIONAL_BITS_INTERNAL + ::getComponentScaleY( compID, chFmt );
+
+  PelBuf &dstBuf = dstPic.bufs[compID];
+  unsigned width = dstBuf.width;
+  unsigned height = dstBuf.height;
+  CPelBuf refBuf;
+
+#if RPR_CONF_WINDOW
+  const Window& inputConfWindow = refPic->cs->pps->getConformanceWindow();
+  int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples() - ( inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset() ) * SPS::getWinUnitX( pu.cs->sps->getChromaFormatIdc() );
+  int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples() - ( inputConfWindow.getWindowTopOffset() + inputConfWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( pu.cs->sps->getChromaFormatIdc() );
+#else
+  int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
+  int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
+#endif
+#if RPR_BUFFER
+#if RPR_CONF_WINDOW
+  const Window& curConfWindow = pu.cs->pps->getConformanceWindow();
+  int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples() - ( curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( pu.cs->sps->getChromaFormatIdc() );
+#else
+  int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples();
+#endif
+#endif
+
+  int xScale, yScale;
+  bool scaled = CU::getRprScaling( pu.cs->sps, pu.cs->pps, refPic->cs->pps, xScale, yScale );
+
+  if( scaled )
+  {
+    int row, col;
+
+    const ChromaFormat chFmt = pu.chromaFormat;
+    int stepX = ( xScale + 8 ) >> 4;
+    int stepY = ( yScale + 8 ) >> 4;
+    int64_t x0Int;
+    int64_t y0Int;
+    int offX = 1 << ( 10 - shiftHor - 1 );
+    int offY = 1 << ( 10 - shiftVer - 1 );
+
+    x0Int = ( ( pu.blocks[compID].pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* xScale;
+    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
+
+    y0Int = ( ( pu.blocks[compID].pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* yScale;
+    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
+
+#if RPR_BUFFER
+    const int extSize = isLuma( compID ) ? 1 : 2;
+
+    int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
+
+    int refHeight = ( height * refPicHeight ) / curPicHeight;
+    refHeight = std::max<int>( 1, refHeight );
+
+    Pel* buffer = new Pel[( MAX_CU_SIZE + 16 )*( std::max<int>( MAX_CU_SIZE, refHeight + vFilterSize - 1 + extSize ) + 16 )];
+
+    int tmpStride = width;
+
+    int yInt0 = ( (int32_t)y0Int + offY ) >> 10;
+    yInt0 = std::min( std::max( 0, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
+
+    int xInt0 = ( (int32_t)x0Int + offX ) >> 10;
+    xInt0 = std::min( std::max( 0, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
+
+    int xInt = 0, yInt = 0;
+
+    for( col = 0; col < width; col++ )
+    {
+      int posX = (int32_t)x0Int + col * stepX;
+      xInt = ( posX + offX ) >> 10;
+      xInt = std::min( std::max( 0, xInt ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
+      int xFrac = ( ( posX + offX ) >> ( 10 - shiftHor ) ) & ( ( 1 << shiftHor ) - 1 );
+
+      CHECK( xInt0 > xInt, "Wrong horizontal starting point" );
+
+      Position offset = Position( xInt, yInt0 );
+      refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ), wrapRef );
+      Pel* tempBuf = buffer + col;
+
+      m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng );
+    }
+
+    for( row = 0; row < height; row++ )
+    {
+      int posY = (int32_t)y0Int + row * stepY;
+      yInt = ( posY + offY ) >> 10;
+      yInt = std::min( std::max( 0, yInt ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
+      int yFrac = ( ( posY + offY ) >> ( 10 - shiftVer ) ) & ( ( 1 << shiftVer ) - 1 );
+
+      CHECK( yInt0 > yInt, "Wrong vertical starting point" );
+
+      Pel* tempBuf = buffer + ( yInt - yInt0 ) * tmpStride;
+
+      JVET_J0090_SET_CACHE_ENABLE( false );
+      m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dstBuf.bufAt( 0, row ), dstBuf.stride, width, 1, yFrac, false, rndRes, chFmt, clpRng );
+      JVET_J0090_SET_CACHE_ENABLE( true );
+    }
+
+    Position offset = Position( xInt, yInt );
+    refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
+
+    delete[] buffer;
+#else
+    for( row = 0; row < height; row++ )
+    {
+      for( col = 0; col < width; col++ )
+      {
+        // pixel position in the current picture
+        int posX = (int32_t)x0Int + col * stepX;
+        int posY = (int32_t)y0Int + row * stepY;
+
+        // integer reference position in the reference frame
+        int xInt = ( posX + offX ) >> 10;
+        int yInt = ( posY + offY ) >> 10;
+
+        xInt = std::min( std::max( 0, xInt ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
+        yInt = std::min( std::max( 0, yInt ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
+
+        // fractional position in the reference frame
+        int xFrac = ( ( posX + offX ) >> ( 10 - shiftHor ) ) & ( ( 1 << shiftHor ) - 1 );
+        int yFrac = ( ( posY + offY ) >> ( 10 - shiftVer ) ) & ( ( 1 << shiftVer ) - 1 );
+
+        Position offset = Position( xInt, yInt );
+
+        refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
+
+        Pel* tempDstBuf = dstBuf.bufAt( col, row );
+
+        //--------------------------------copied from the "refPicWidth == curPicWidth" branch--------------------------------------------
+        if( yFrac == 0 )
+        {
+          m_if.filterHor( compID, (Pel*)refBuf.buf, refBuf.stride, /*dstBuf.buf*/tempDstBuf, dstBuf.stride, /*backupWidth*/1, /*backupHeight*/1, xFrac, rndRes, chFmt, clpRng );
+        }
+        else if( xFrac == 0 )
+        {
+          m_if.filterVer( compID, (Pel*)refBuf.buf, refBuf.stride, /*dstBuf.buf*/tempDstBuf, dstBuf.stride, /*backupWidth*/1, /*backupHeight*/1, yFrac, true, rndRes, chFmt, clpRng );
+        }
+        else
+        {
+          PelBuf tmpBuf = PelBuf( m_filteredBlockTmp[0][compID], pu.blocks[compID] );
+          tmpBuf.stride = dstBuf.stride;
+
+          int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
+
+          //for(int y = 0; y < vFilterSize; y++) 
+          {
+            m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tmpBuf.buf, tmpBuf.stride, /*backupWidth*/1, /*backupHeight*/1 + vFilterSize - 1, xFrac, false, chFmt, clpRng );
+          }
+
+
+          JVET_J0090_SET_CACHE_ENABLE( false );
+          m_if.filterVer( compID, (Pel*)tmpBuf.buf + ( ( vFilterSize >> 1 ) - 1 ) * tmpBuf.stride, tmpBuf.stride, /*dstBuf.buf*/tempDstBuf, dstBuf.stride, /*backupWidth*/1, /*backupHeight*/1, yFrac, false, rndRes, chFmt, clpRng );
+          JVET_J0090_SET_CACHE_ENABLE( true );
+        }
+        //--------------------------------------------------------------------------------
+      }
+    }
+#endif
+  }
+
+  return scaled;
+}
 #endif

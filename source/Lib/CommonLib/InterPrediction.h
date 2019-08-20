@@ -243,6 +243,10 @@ public:
   bool isLumaBvValid(const int ctuSize, const int xCb, const int yCb, const int width, const int height, const int xBv, const int yBv);
 #endif
 #endif
+
+#if JVET_O1164_RPR
+  bool xPredInterBlkRPR( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng );
+#endif
 };
 
 //! \}

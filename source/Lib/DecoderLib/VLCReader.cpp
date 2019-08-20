@@ -823,13 +823,24 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
 #else
     param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
 #endif
+#if JVET_O0491_HLS_CLEANUP
+    READ_UVLC(code, "alf_luma_num_filters_signalled_minus1");
+#else
     xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
+#endif
     param.numLumaFilters = code + 1;
     if (param.numLumaFilters > 1)
     {
+#if JVET_O0491_HLS_CLEANUP
+      const int length =  (int)ceil(log2(param.numLumaFilters));
+#endif
       for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
       {
+#if JVET_O0491_HLS_CLEANUP
+        READ_CODE(length, code, "alf_luma_coeff_delta_idx");
+#else
         xReadTruncBinCode(code, param.numLumaFilters);
+#endif
         param.filterCoeffDeltaIdx[i] = code;
       }
     }
@@ -1911,7 +1922,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         if (bChroma)
         {
 #endif
+#if JVET_O0491_HLS_CLEANUP
+          READ_CODE(2, uiCode, "slice_alf_chroma_idc");   alfChromaIdc = uiCode;
+#else
           alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#endif
 #if JVET_O0616_400_CHROMA_SUPPORT
         }
         else
@@ -2999,6 +3014,7 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
   }
 }
 
+#if !JVET_O0491_HLS_CLEANUP
 int HLSyntaxReader::truncatedUnaryEqProb( const int maxSymbol )
 {
   for( int k = 0; k < maxSymbol; k++ )
@@ -3057,6 +3073,7 @@ void HLSyntaxReader::xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymb
     ruiSymbol -= ( uiVal - b );
   }
 }
+#endif
 
 //! \}
 

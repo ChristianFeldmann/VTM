@@ -172,8 +172,10 @@ public:
 #endif
 
 private:
+#if !JVET_O0491_HLS_CLEANUP
   int truncatedUnaryEqProb( const int maxSymbol );
   void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
+#endif
   int  alfGolombDecode( const int k, const bool signed_val=true );
 
 protected:

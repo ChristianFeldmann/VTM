@@ -1511,7 +1511,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0238_PPS_OR_SLICE
       if (!pcSlice->getPPS()->getPPSMvdL1ZeroIdc())
       {
-		    WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
+        WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
       }
 #else
       WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
@@ -1537,7 +1537,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0238_PPS_OR_SLICE
         if (!pcSlice->getPPS()->getPPSCollocatedFromL0Idc())
         {
-			     WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
+          WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
         }
 #else
         WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
@@ -1558,7 +1558,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0238_PPS_OR_SLICE
     if (!pcSlice->getPPS()->getPPSDepQuantEnabledIdc())
     {
-		   WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
+      WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
     }
 #else
     WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
@@ -1613,7 +1613,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0238_PPS_OR_SLICE      
       if (!pcSlice->getPPS()->getPPSSixMinusMaxNumMergeCandPlus1())
       {
-		    WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
+        WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
       }
 #else
       WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
@@ -1661,7 +1661,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0238_PPS_OR_SLICE
         if (!pcSlice->getPPS()->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
         {
-			WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );        
+          WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );        
         }
 #else
         WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_affine_merge_cand" );
@@ -1683,7 +1683,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0238_PPS_OR_SLICE
         if (!pcSlice->getPPS()->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1()) 
         {
-			     WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");
+          WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");
         }
 #else
         WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");

@@ -594,9 +594,9 @@ protected:
   int       m_PPSRefPicListSPSIdc0;
   int       m_PPSRefPicListSPSIdc1;
   int       m_PPSTemporalMVPEnabledIdc;
-  int       m_PPSMvdL1ZeroIdc;                       
-  int       m_PPSCollocatedFromL0Idc;                            
-  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;                        
+  int       m_PPSMvdL1ZeroIdc;
+  int       m_PPSCollocatedFromL0Idc;
+  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
 #else
@@ -1518,9 +1518,9 @@ public:
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
 #if JVET_O0238_PPS_OR_SLICE
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }
-  bool         getConstantSliceHeaderParamsEnabledFlag ()            { return m_constantSliceHeaderParamsEnabledFlag;}
+  bool         getConstantSliceHeaderParamsEnabledFlag ()            { return m_constantSliceHeaderParamsEnabledFlag; }
   void         setPPSDepQuantEnabledIdc ( int u )                    { m_PPSDepQuantEnabledIdc = u; }
-  int          getPPSDepQuantEnabledIdc ()                           { return m_PPSDepQuantEnabledIdc;}
+  int          getPPSDepQuantEnabledIdc ()                           { return m_PPSDepQuantEnabledIdc; }
   void         setPPSRefPicListSPSIdc0 ( int u )                     { m_PPSRefPicListSPSIdc0 = u; }
   int          getPPSRefPicListSPSIdc0 ()                            { return m_PPSRefPicListSPSIdc0; }
   void         setPPSRefPicListSPSIdc1 ( int u )                     { m_PPSRefPicListSPSIdc1 = u; }
@@ -1528,11 +1528,11 @@ public:
   void         setPPSTemporalMVPEnabledIdc ( int u )                 { m_PPSTemporalMVPEnabledIdc = u; }
   int          getPPSTemporalMVPEnabledIdc ()                        { return m_PPSTemporalMVPEnabledIdc; }
   void         setPPSMvdL1ZeroIdc ( int u )                          { m_PPSMvdL1ZeroIdc = u; }
-  int          getPPSMvdL1ZeroIdc ()                                 { return m_PPSMvdL1ZeroIdc; }                      
+  int          getPPSMvdL1ZeroIdc ()                                 { return m_PPSMvdL1ZeroIdc; }
   void         setPPSCollocatedFromL0Idc ( int u )                   { m_PPSCollocatedFromL0Idc = u; }
   int          getPPSCollocatedFromL0Idc ()                          { return m_PPSCollocatedFromL0Idc; }
   void         setPPSSixMinusMaxNumMergeCandPlus1 ( uint32_t u )     { m_PPSSixMinusMaxNumMergeCandPlus1 = u; }
-  uint32_t	   getPPSSixMinusMaxNumMergeCandPlus1 ()                 { return m_PPSSixMinusMaxNumMergeCandPlus1; }                        
+  uint32_t	   getPPSSixMinusMaxNumMergeCandPlus1 ()                 { return m_PPSSixMinusMaxNumMergeCandPlus1; }
   void         setPPSFiveMinusMaxNumSubblockMergeCandPlus1 ( uint32_t u ) { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }
   uint32_t     getPPSFiveMinusMaxNumSubblockMergeCandPlus1 ()        { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }
   void         setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ( uint32_t u ) { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }

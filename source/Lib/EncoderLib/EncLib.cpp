@@ -1279,7 +1279,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
   pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
   pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
-  pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());  
+  pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());
   pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
  
   pps.setSBTMVPEnabledFlag ( m_SubPuMvpMode );

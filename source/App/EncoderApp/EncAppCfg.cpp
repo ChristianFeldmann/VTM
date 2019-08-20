@@ -3226,7 +3226,7 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 0;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
-	  m_PPSTemporalMVPEnabledIdc = 0;
+    m_PPSTemporalMVPEnabledIdc = 0;
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
@@ -3239,7 +3239,7 @@ bool EncAppCfg::xCheckParameter()
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
     m_PPSTemporalMVPEnabledIdc = 0;
-	  m_PPSMvdL1ZeroIdc = 0;
+    m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 1;
@@ -3262,7 +3262,7 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 2;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
-	  m_PPSTemporalMVPEnabledIdc = 2;
+    m_PPSTemporalMVPEnabledIdc = 2;
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
@@ -3618,7 +3618,7 @@ void EncAppCfg::xPrintParameter()
   const int iWaveFrontSubstreams = m_entropyCodingSyncEnabledFlag ? (m_iSourceHeight + m_uiMaxCUHeight - 1) / m_uiMaxCUHeight : 1;
   msg( VERBOSE, " WaveFrontSynchro:%d WaveFrontSubstreams:%d", m_entropyCodingSyncEnabledFlag?1:0, iWaveFrontSubstreams);
   msg( VERBOSE, " ScalingList:%d ", m_useScalingListId );
-  #if JVET_O0238_PPS_OR_SLICE
+#if JVET_O0238_PPS_OR_SLICE
   msg( VERBOSE, "TMVPMode:%d ", m_PPSTemporalMVPEnabledIdc != 1  );
 #else
   msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId     );

@@ -2205,7 +2205,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 #endif
 #if JVET_O0238_PPS_OR_SLICE
-	if (m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
+    if (m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
 #else
     else if (m_pcEncLib->getTMVPModeId() == 1)
 #endif

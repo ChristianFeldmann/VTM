@@ -553,9 +553,9 @@ protected:
   int       m_PPSRefPicListSPSIdc0;
   int       m_PPSRefPicListSPSIdc1;
   int       m_PPSTemporalMVPEnabledIdc;
-  int       m_PPSMvdL1ZeroIdc;                       
-  int       m_PPSCollocatedFromL0Idc;                            
-  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;                        
+  int       m_PPSMvdL1ZeroIdc;
+  int       m_PPSCollocatedFromL0Idc;
+  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
 #else

@@ -399,14 +399,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #if JVET_O0238_PPS_OR_SLICE
   READ_FLAG( uiCode, "constant_slice_header_params_enabled_flag"); pcPPS->setConstantSliceHeaderParamsEnabledFlag(uiCode);
   if ( pcPPS->getConstantSliceHeaderParamsEnabledFlag() ) {
-    READ_CODE( 2, uiCode, "pps_dep_quant_enabled_idc");        pcPPS->setPPSDepQuantEnabledIdc(uiCode); 
+    READ_CODE( 2, uiCode, "pps_dep_quant_enabled_idc");        pcPPS->setPPSDepQuantEnabledIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[0]");      pcPPS->setPPSRefPicListSPSIdc0(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[1]");      pcPPS->setPPSRefPicListSPSIdc1(uiCode);
-    READ_CODE( 2, uiCode, "pps_temporal_mvp_enabled_idc");     pcPPS->setPPSTemporalMVPEnabledIdc(uiCode);  
-    READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode); 
-    READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode); 
-    READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode); 
-    READ_UVLC( uiCode, "pps_five_minus_max_num_subblock_merge_cand_plus1"); pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uiCode); 
+    READ_CODE( 2, uiCode, "pps_temporal_mvp_enabled_idc");     pcPPS->setPPSTemporalMVPEnabledIdc(uiCode);
+    READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
+    READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
+    READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
+    READ_UVLC( uiCode, "pps_five_minus_max_num_subblock_merge_cand_plus1"); pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uiCode);
     READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode); 
   } 
   else
@@ -2189,7 +2189,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           uiCode = pps->getPPSCollocatedFromL0Idc() - 1;
         }
-#else    
+#else
         READ_FLAG( uiCode, "collocated_from_l0_flag" );
 #endif
         pcSlice->setColFromL0Flag(uiCode);
@@ -2240,7 +2240,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       uiCode = pps->getPPSDepQuantEnabledIdc() - 1;
     }
-#else   
+#else
     READ_FLAG( uiCode, "dep_quant_enabled_flag" );
 #endif
 
@@ -2308,7 +2308,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         uiCode = pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1;
       }
-#else      
+#else
       READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
 #endif
 
@@ -2381,8 +2381,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       if (sps->getUseTriangle() && pcSlice->getMaxNumMergeCand() >= 2)
       {
 #if JVET_O0238_PPS_OR_SLICE
-        if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1()) 
-		{
+        if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
+        {
           READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_triangle_cand");
         }
         else

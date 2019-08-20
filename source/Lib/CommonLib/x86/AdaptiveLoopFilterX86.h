@@ -341,7 +341,7 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         {
           for (blkX = 0; blkX < STEP_X; blkX += 2)
           {
-            Position pos(j + blkDst.x + blkX, i + blkDst.y + blkY);
+            Position pos((PosType)(j + blkDst.x + blkX), (PosType)(i + blkDst.y + blkY));
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB && !JVET_O0050_LOCAL_DUAL_TREE
             const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
 #else
@@ -587,9 +587,9 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         }
 
         const __m128i s0 = _mm_loadu_si128((const __m128i *) shuffleTab[transposeIdx][0]);
-        const __m128i s1 = _mm_xor_si128(s0, _mm_set1_epi8(0x80));
+        const __m128i s1 = _mm_xor_si128(s0, _mm_set1_epi8((char) 0x80));
         const __m128i s2 = _mm_loadu_si128((const __m128i *) shuffleTab[transposeIdx][1]);
-        const __m128i s3 = _mm_xor_si128(s2, _mm_set1_epi8(0x80));
+        const __m128i s3 = _mm_xor_si128(s2, _mm_set1_epi8((char) 0x80));
 
         const __m128i rawCoeffLo = _mm_or_si128(_mm_shuffle_epi8(rawCoeff0, s0), _mm_shuffle_epi8(rawCoeff1, s1));
         const __m128i rawCoeffHi = _mm_or_si128(_mm_shuffle_epi8(rawCoeff0, s2), _mm_shuffle_epi8(rawCoeff1, s3));

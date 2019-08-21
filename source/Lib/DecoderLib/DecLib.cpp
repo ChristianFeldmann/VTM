@@ -1069,7 +1069,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
                                 // it is not associated with picture, sps or pps structures.
 
 #if JVET_O1164_RPR
-  Picture* scaledRefPic[MAX_NUM_REF];
+  Picture* scaledRefPic[MAX_NUM_REF] = {};
 #endif
 
   if (m_bFirstSliceInPicture)

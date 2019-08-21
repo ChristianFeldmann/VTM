@@ -1779,7 +1779,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   pcBitstreamRedirect = new OutputBitstream;
   AccessUnit::iterator  itLocationToPushSliceHeaderNALU; // used to store location where NALU containing slice header is to be inserted
 #if JVET_O1164_RPR
-  Picture* scaledRefPic[MAX_NUM_REF];
+  Picture* scaledRefPic[MAX_NUM_REF] = {};
 #endif
 
   xInitGOP(iPOCLast, iNumPicRcvd, isField

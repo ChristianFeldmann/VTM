@@ -2306,22 +2306,8 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
     return;
   }
 
-  // the handling here mimics what happened in xGetNewPicBuffer()
-  for( i = 0; i < MAX_NUM_REF; i++ )
-  {
-    scaledRefPic[i] = new Picture;
-
-    scaledRefPic[i]->setBorderExtension( false );
-    scaledRefPic[i]->reconstructed = false;
-    scaledRefPic[i]->referenced = true;
-
-    scaledRefPic[i]->finalInit( *sps, *pps, apss, lmcsAps );
-
-    scaledRefPic[i]->poc = -1;
-
-    scaledRefPic[i]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder );
-  }
-
+  freeScaledRefPicList( scaledRefPic );
+  
   for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
   {
     if( refList == 1 && m_eSliceType != B_SLICE )
@@ -2343,7 +2329,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
         // check whether the reference picture has already been scaled 
         for( i = 0; i < MAX_NUM_REF; i++ )
         {
-          if( scaledRefPic[i]->poc == poc )
+          if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc )
           {
             break;
           }
@@ -2355,12 +2341,28 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
           // search for unused Picture structure in scaledRefPic
           for( j = 0; j < MAX_NUM_REF; j++ )
           {
-            if( scaledRefPic[j]->poc == -1 )
+            if( scaledRefPic[j] == nullptr )
             {
               break;
             }
           }
+
           CHECK( j >= MAX_NUM_REF, "scaledRefPic can not hold all reference pictures!" );
+
+          if( scaledRefPic[j] == nullptr )
+          {
+            scaledRefPic[j] = new Picture;
+
+            scaledRefPic[j]->setBorderExtension( false );
+            scaledRefPic[j]->reconstructed = false;
+            scaledRefPic[j]->referenced = true;
+
+            scaledRefPic[j]->finalInit( *sps, *pps, apss, lmcsAps );
+
+            scaledRefPic[j]->poc = -1;
+
+            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder );
+          }
 
           scaledRefPic[j]->poc = poc;
           scaledRefPic[j]->longTerm = m_apcRefPicList[refList][rIdx]->longTerm;
@@ -2411,7 +2413,11 @@ void Slice::freeScaledRefPicList( Picture *scaledRefPic[] )
   }
   for( int i = 0; i < MAX_NUM_REF; i++ )
   {
-    scaledRefPic[i]->destroy();
+    if( scaledRefPic[i] != nullptr )
+    {
+      scaledRefPic[i]->destroy();
+      scaledRefPic[i] = nullptr;
+    }
   }
 }
 

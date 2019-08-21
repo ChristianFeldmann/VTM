@@ -1336,18 +1336,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
       csTemp->releaseIntermediateData();
 #if JVET_O0050_LOCAL_DUAL_TREE
-      if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
+      if( m_pcEncCfg->getFastLocalDualTreeMode() )
       {
-        if( m_pcEncCfg->getUseFastLocalDualTree() )
+        if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
         {
-          //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
-          break;
-        }
-        else
-        {
-          if( csBest->cost > costInterCU * 1.5 )
+          if( m_pcEncCfg->getFastLocalDualTreeMode() == 2 )
           {
+            //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
             break;
+          }
+          else
+          {
+            if( csBest->cost > costInterCU * 1.5 )
+            {
+              break;
+            }
           }
         }
       }

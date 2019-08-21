@@ -992,7 +992,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
 #if JVET_O0050_LOCAL_DUAL_TREE
-  ("FastLocalDualTree",                               m_useFastLocalDualTree,                           false,  "Fast intra pass coding for local dual-tree in intra coding region (SCIPU)")
+  ("FastLocalDualTreeMode",                           m_fastLocalDualTreeMode,                              0,  "Fast intra pass coding for local dual-tree in intra coding region, 0: off, 1: use threshold, 2: one intra mode only")
 #endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
@@ -2848,6 +2848,10 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( abs(m_sliceChromaQpOffsetIntraOrPeriodic[1]  + m_crQpOffset ) > 12, "Intra/periodic Cr QP Offset, when combined with the PPS Cr offset, exceeds supported range (-12 to 12)" );
 #endif
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  xConfirmPara( m_fastLocalDualTreeMode < 0 || m_fastLocalDualTreeMode > 2, "FastLocalDualTreeMode must be in range [0..2]" );
+#endif
+
   int extraRPLs = 0;
   //start looping through frames in coding order until we can verify that the GOP structure is correct.
   while (!verifiedGOP && !errorGOP)
@@ -3624,7 +3628,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
 #if JVET_O0050_LOCAL_DUAL_TREE
-  msg( VERBOSE, "FastLocalDualTree:%d ", m_useFastLocalDualTree );
+  msg( VERBOSE, "FastLocalDualTree:%d ", m_fastLocalDualTreeMode );
 #endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );

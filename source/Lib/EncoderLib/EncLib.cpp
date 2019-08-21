@@ -1143,11 +1143,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBDPCMEnabledFlag(m_useBDPCM);
 #endif
 
-#if !JVET_O0238_PPS_OR_SLICE
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
-#else
-  sps.setSPSTemporalMVPEnabledFlag(true); // TODO - fix this correctly
-#endif
 
 #if MAX_TB_SIZE_SIGNALLING
   sps.setLog2MaxTbSize   ( m_log2MaxTbSize );

@@ -546,6 +546,7 @@ protected:
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 #endif
 
+  int       m_TMVPModeId;
 #if JVET_O0238_PPS_OR_SLICE
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;
@@ -558,8 +559,6 @@ protected:
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
-  int       m_TMVPModeId;
 #endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;

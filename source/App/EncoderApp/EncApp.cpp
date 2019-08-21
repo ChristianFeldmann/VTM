@@ -130,11 +130,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoPcmConstraintFlag                               ( !m_usePCM );
 #endif
   m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
-#if JVET_O0238_PPS_OR_SLICE
-  m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_PPSTemporalMVPEnabledIdc != 1 ? false : true );
-#else
   m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
-#endif
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
   m_cEncLib.setNoAmvrConstraintFlag                              ( m_bNoAmvrConstraintFlag );
   m_cEncLib.setNoBdofConstraintFlag                              ( !m_BIO );
@@ -564,6 +560,7 @@ void EncApp::xInitLibCfg()
   }
   m_cEncLib.setLFCrossTileBoundaryFlag                           ( m_bLFCrossTileBoundaryFlag );
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
+  m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
 #if JVET_O0238_PPS_OR_SLICE
   m_cEncLib.setConstantSliceHeaderParamsEnabledFlag              ( m_constantSliceHeaderParamsEnabledFlag );
   m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );
@@ -575,8 +572,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPPSSixMinusMaxNumMergeCandPlus1                   ( m_PPSSixMinusMaxNumMergeCandPlus1 );
   m_cEncLib.setPPSFiveMinusMaxNumSubblockMergeCandPlus1          ( m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 );
   m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
-#else
-  m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
 #endif
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );

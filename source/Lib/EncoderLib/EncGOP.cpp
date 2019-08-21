@@ -2189,10 +2189,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
 
     pcSlice->setList1IdxToList0Idx();
-
-#if !JVET_O0238_PPS_OR_SLICE
+    
     if (m_pcEncLib->getTMVPModeId() == 2)
     {
+#if JVET_O0238_PPS_OR_SLICE
+      assert (m_pcEncLib->getPPSTemporalMVPEnabledIdc() == 0);
+#endif
       if (iGOPid == 0) // first picture in SOP (i.e. forward B)
       {
         pcSlice->setEnableTMVPFlag(0);
@@ -2203,9 +2205,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setEnableTMVPFlag(1);
       }
     }
-#endif
 #if JVET_O0238_PPS_OR_SLICE
-    if (m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
+    else if (m_pcEncLib->getTMVPModeId() == 1 && m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
 #else
     else if (m_pcEncLib->getTMVPModeId() == 1)
 #endif

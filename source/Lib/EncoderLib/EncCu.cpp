@@ -2584,7 +2584,6 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   const SPS &sps = *tempCS->sps;
 
   if( sps.getSBTMVPEnabledFlag() )
-
   {
     Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
     mergeCtx.subPuMvpMiBuf    = MotionBuf( m_SubPuMiBuf,    bufSize );
@@ -3749,6 +3748,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
   MergeCtx mergeCtx;
+
 
   if (sps.getSBTMVPEnabledFlag())
   {

@@ -588,6 +588,7 @@ protected:
 #endif
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
+  int       m_TMVPModeId;
 #if JVET_O0238_PPS_OR_SLICE
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
@@ -599,8 +600,6 @@ protected:
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
-  int       m_TMVPModeId;
 #endif
   bool      m_DepQuantEnabledFlag;
   bool      m_SignDataHidingEnabledFlag;
@@ -1516,6 +1515,8 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
+  void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
+  int          getTMVPModeId ()                                      { return m_TMVPModeId; }
 #if JVET_O0238_PPS_OR_SLICE
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }
   bool         getConstantSliceHeaderParamsEnabledFlag ()            { return m_constantSliceHeaderParamsEnabledFlag; }
@@ -1537,9 +1538,6 @@ public:
   uint32_t     getPPSFiveMinusMaxNumSubblockMergeCandPlus1 ()        { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }
   void         setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ( uint32_t u ) { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
   uint32_t     getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ()  { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
-#else
-  void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
-  int          getTMVPModeId ()                                      { return m_TMVPModeId; }
 #endif
   WeightedPredictionMethod getWeightedPredictionMethod() const       { return m_weightedPredictionMethod; }
   void         setWeightedPredictionMethod( WeightedPredictionMethod m ) { m_weightedPredictionMethod = m; }

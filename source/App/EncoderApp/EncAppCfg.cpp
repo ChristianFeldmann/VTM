@@ -1201,11 +1201,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t2: CRC\n"
                                                                                                                "\t1: use MD5\n"
                                                                                                                "\t0: disable")
+  ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
 #if JVET_O0238_PPS_OR_SLICE
   ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
-                                                                                                                "\tmode 0: Always per slice, 1: RA settings, 2: LDB settings, 3: LDP settings")
-#else
-  ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
+                                                                                                                "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
 #endif
   ("FEN",                                             tmpFastInterSearchMode,   int(FASTINTERSEARCH_DISABLED), "fast encoder setting")
   ("ECU",                                             m_bUseEarlyCU,                                    false, "Early CU setting")
@@ -3215,7 +3214,29 @@ bool EncAppCfg::xCheckParameter()
     }
   }
 
-#if JVET_O0238_PPS_OR_SLICE
+  if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
+  {
+    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");
+    m_bLFCrossTileBoundaryFlag = false;
+  }
+  if ((m_MCTSEncConstraint) && (m_TMVPModeId))
+  {
+    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling TMVP!\n");
+    m_TMVPModeId = 0;
+  }
+
+  if ((m_MCTSEncConstraint) && ( m_alf ))
+  {
+    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling ALF!\n");
+    m_alf = false;
+  }
+  if( ( m_MCTSEncConstraint ) && ( m_BIO ) )
+  {
+    printf( "Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling BIO!\n" );
+    m_BIO = false;
+  }
+
+  #if JVET_O0238_PPS_OR_SLICE
   // If m_PPSorSliceFlag is equal to 1, for each PPS parameter below,
   //     0:  value is signaled in slice header
   //     >0: value is derived from PPS parameter as value - 1
@@ -3250,7 +3271,7 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 2;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSTemporalMVPEnabledIdc = 2;
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
@@ -3262,7 +3283,7 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 2;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSTemporalMVPEnabledIdc = 2;
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
@@ -3273,36 +3294,6 @@ bool EncAppCfg::xCheckParameter()
     THROW("Invalid value for PPSorSliceMode");
   }
 #endif
-
-  if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
-  {
-    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");
-    m_bLFCrossTileBoundaryFlag = false;
-  }
-#if JVET_O0238_PPS_OR_SLICE
-  if ((m_MCTSEncConstraint) && (m_PPSTemporalMVPEnabledIdc != 1))
-#else
-  if ((m_MCTSEncConstraint) && (m_TMVPModeId))
-#endif
-  {
-    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling TMVP!\n");
-#if JVET_O0238_PPS_OR_SLICE
-    m_PPSTemporalMVPEnabledIdc = 1;
-#else
-    m_TMVPModeId = 0;
-#endif
-  }
-
-  if ((m_MCTSEncConstraint) && ( m_alf ))
-  {
-    printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling ALF!\n");
-    m_alf = false;
-  }
-  if( ( m_MCTSEncConstraint ) && ( m_BIO ) )
-  {
-    printf( "Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling BIO!\n" );
-    m_BIO = false;
-  }
 
   if (m_toneMappingInfoSEIEnabled)
   {
@@ -3618,11 +3609,7 @@ void EncAppCfg::xPrintParameter()
   const int iWaveFrontSubstreams = m_entropyCodingSyncEnabledFlag ? (m_iSourceHeight + m_uiMaxCUHeight - 1) / m_uiMaxCUHeight : 1;
   msg( VERBOSE, " WaveFrontSynchro:%d WaveFrontSubstreams:%d", m_entropyCodingSyncEnabledFlag?1:0, iWaveFrontSubstreams);
   msg( VERBOSE, " ScalingList:%d ", m_useScalingListId );
-#if JVET_O0238_PPS_OR_SLICE
-  msg( VERBOSE, "TMVPMode:%d ", m_PPSTemporalMVPEnabledIdc != 1  );
-#else
-  msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId     );
-#endif
+  msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId );
   msg( VERBOSE, " DQ:%d ", m_depQuantEnabledFlag);
   msg( VERBOSE, " SignBitHidingFlag:%d ", m_signDataHidingEnabledFlag);
   msg( VERBOSE, "RecalQP:%d ", m_recalculateQPAccordingToLambda ? 1 : 0 );

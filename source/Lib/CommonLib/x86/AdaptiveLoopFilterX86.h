@@ -303,7 +303,7 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   CHECK(blk.y % STEP_Y, "Wrong startHeight in filtering");
   CHECK(blk.x % STEP_X, "Wrong startWidth in filtering");
   CHECK(height % STEP_Y, "Wrong endHeight in filtering");
-  CHECK(width % STEP_X, "Wrong endWidth in filtering");
+  CHECK(width % 4, "Wrong endWidth in filtering");
 
   const Pel *src = srcBuffer.buf + blk.y * srcStride + blk.x;
   Pel *      dst = dstBuffer.buf + blkDst.y * dstStride + blkDst.x;

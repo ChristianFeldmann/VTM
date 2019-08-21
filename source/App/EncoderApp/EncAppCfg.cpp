@@ -3256,38 +3256,38 @@ bool EncAppCfg::xCheckParameter()
     break;
   case 1: // RA setting
     m_constantSliceHeaderParamsEnabledFlag = 1;
-    m_PPSDepQuantEnabledIdc = 2;
+    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
     m_PPSTemporalMVPEnabledIdc = 0;
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
-    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 1;
-    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 2;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
     break;
   case 2: // LDB setting
     m_constantSliceHeaderParamsEnabledFlag = 1;
-    m_PPSDepQuantEnabledIdc = 2;
+    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
-    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 1;
-    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 2;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
     break;
   case 3: // LDP setting
     m_constantSliceHeaderParamsEnabledFlag = 1;
-    m_PPSDepQuantEnabledIdc = 2;
+    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 1;
-    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 1;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1; 
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1; 
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   default:

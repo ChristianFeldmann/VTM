@@ -2583,13 +2583,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
   MergeCtx mergeCtx;
   const SPS &sps = *tempCS->sps;
 
-#if JVET_O0238_PPS_OR_SLICE
-  const PPS &pps = *tempCS->pps;
-
-  if( pps.getSBTMVPEnabledFlag() )
-#else
   if( sps.getSBTMVPEnabledFlag() )
-#endif
 
   {
     Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
@@ -3474,13 +3468,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
   const SPS &sps = *tempCS->sps;
 
   MergeCtx mrgCtx;
-#if JVET_O0238_PPS_OR_SLICE
-  const PPS &pps = *tempCS->pps;
-
-  if ( pps.getSBTMVPEnabledFlag() )
-#else
   if ( sps.getSBTMVPEnabledFlag() )
-#endif
   {
     Size bufSize = g_miScaling.scale( tempCS->area.lumaSize() );
     mrgCtx.subPuMvpMiBuf = MotionBuf( m_SubPuMiBuf, bufSize );
@@ -3762,13 +3750,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
   tempCS->initStructData(encTestMode.qp, encTestMode.lossless);
   MergeCtx mergeCtx;
 
-#if JVET_O0238_PPS_OR_SLICE
-  const PPS &pps = *tempCS->pps;
-
-  if (pps.getSBTMVPEnabledFlag())
-#else
   if (sps.getSBTMVPEnabledFlag())
-#endif
   {
     Size bufSize = g_miScaling.scale(tempCS->area.lumaSize());
     mergeCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);

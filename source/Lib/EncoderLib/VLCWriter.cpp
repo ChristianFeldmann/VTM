@@ -252,10 +252,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_UVLC( pcPPS->getPPSFiveMinusMaxNumSubblockMergeCandPlus1(),        "pps_five_minus_max_num_subblock_merge_cand_plus1");
     WRITE_UVLC( pcPPS->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(),  "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");
   }
-  if ( pcPPS->getPPSTemporalMVPEnabledIdc() != 1 )
-  {
-    WRITE_FLAG( pcPPS->getSBTMVPEnabledFlag() ? 1 : 0,                       "pps_sbtmvp_enabled_flag");
-  }
 #endif
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
@@ -961,14 +957,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 #endif
 
-#if !JVET_O0238_PPS_OR_SLICE
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
 
   if ( pcSPS->getSPSTemporalMVPEnabledFlag() )
   {
     WRITE_FLAG( pcSPS->getSBTMVPEnabledFlag() ? 1 : 0,                               "sps_sbtmvp_enabled_flag");
   }
-#endif
 
   WRITE_FLAG( pcSPS->getAMVREnabledFlag() ? 1 : 0,                                   "sps_amvr_enabled_flag" );
 
@@ -1367,7 +1361,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
 #if JVET_O0238_PPS_OR_SLICE
-      if( !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
+      if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() && !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
       {
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
       }
@@ -1622,34 +1616,18 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     if( !pcSlice->isIntra() )
     {
 #if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
-#if JVET_O0238_PPS_OR_SLICE
-      if (pcSlice->getPPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !pcSlice->getSPS()->getUseAffine())// ATMVP only
-#else
       if (pcSlice->getSPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !pcSlice->getSPS()->getUseAffine())// ATMVP only
-#endif
-#else
-#if JVET_O0238_PPS_OR_SLICE
-      if ( pcSlice->getPPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // ATMVP only
 #else
       if ( pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // ATMVP only
-#endif
 #endif
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 1, "Sub-block merge can number should be 1" );
       }
       else
 #if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
-#if JVET_O0238_PPS_OR_SLICE
-      if (!(pcSlice->getPPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !pcSlice->getSPS()->getUseAffine()) // both off
-#else
       if (!(pcSlice->getSPS()->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !pcSlice->getSPS()->getUseAffine()) // both off
-#endif
-#else
-#if JVET_O0238_PPS_OR_SLICE
-      if ( !pcSlice->getPPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // both off
 #else
       if ( !pcSlice->getSPS()->getSBTMVPEnabledFlag() && !pcSlice->getSPS()->getUseAffine() ) // both off
-#endif
 #endif
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() != 0, "Sub-block merge can number should be 0" );

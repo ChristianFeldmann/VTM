@@ -421,14 +421,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(0); 
     pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0); 
   }
-  if ( pcPPS->getPPSTemporalMVPEnabledIdc() != 1 )
-  {
-    READ_FLAG( uiCode,    "pps_sbtmvp_enabled_flag" );                   pcPPS->setSBTMVPEnabledFlag      ( uiCode != 0 );
-  }
-  else
-  {
-    pcPPS->setSBTMVPEnabledFlag(false);
-  }
 #endif
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
@@ -1409,7 +1401,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 #endif
 
-#if !JVET_O0238_PPS_OR_SLICE
   READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
 
   if ( pcSPS->getSPSTemporalMVPEnabledFlag() )
@@ -1420,7 +1411,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     pcSPS->setSBTMVPEnabledFlag(false);
   }
-#endif
 
   READ_FLAG( uiCode,  "sps_amvr_enabled_flag" );                     pcSPS->setAMVREnabledFlag ( uiCode != 0 );
 
@@ -1953,7 +1943,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
 
 #if JVET_O0238_PPS_OR_SLICE
-      if (!pps->getPPSTemporalMVPEnabledIdc())
+      if (sps->getSPSTemporalMVPEnabledFlag() && !pps->getPPSTemporalMVPEnabledIdc())
 #else
       if (sps->getSPSTemporalMVPEnabledFlag())
 #endif
@@ -1964,7 +1954,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       else
       {
 #if JVET_O0238_PPS_OR_SLICE
-        pcSlice->setEnableTMVPFlag((pps->getPPSTemporalMVPEnabledIdc() - 1) == 1 ? true: false);
+        if (!sps->getSPSTemporalMVPEnabledFlag())
+        {
+          pcSlice->setEnableTMVPFlag(false);
+        }
+        else
+        {
+          pcSlice->setEnableTMVPFlag((pps->getPPSTemporalMVPEnabledIdc() - 1) == 1 ? true: false);
+        }
 #else
         pcSlice->setEnableTMVPFlag(false);
 #endif
@@ -2318,33 +2315,17 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     if (!pcSlice->isIntra())
     {
 #if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
-#if JVET_O0238_PPS_OR_SLICE
-      if (pps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !sps->getUseAffine()) // ATMVP only
-#else
       if (sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag() && !sps->getUseAffine()) // ATMVP only
-#endif
-#else
-#if JVET_O0238_PPS_OR_SLICE
-      if ( pps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // ATMVP only
 #else
       if ( sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // ATMVP only
-#endif
 #endif
       {
         pcSlice->setMaxNumAffineMergeCand( 1 );
       }
 #if JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP
-#if JVET_O0238_PPS_OR_SLICE
-	  else if (!(pps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !sps->getUseAffine())// both off
-#else
-	  else if (!(sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !sps->getUseAffine())// both off
-#endif
-#else
-#if JVET_O0238_PPS_OR_SLICE
-      else if ( !pps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // both off
+      else if (!(sps->getSBTMVPEnabledFlag() && pcSlice->getEnableTMVPFlag()) && !sps->getUseAffine())// both off
 #else
       else if ( !sps->getSBTMVPEnabledFlag() && !sps->getUseAffine() ) // both off
-#endif
 #endif
       {
         pcSlice->setMaxNumAffineMergeCand( 0 );

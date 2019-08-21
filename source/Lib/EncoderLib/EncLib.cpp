@@ -1065,9 +1065,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );
-#if !JVET_O0238_PPS_OR_SLICE
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
-#endif
   sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
   sps.setBDOFEnabledFlag                    ( m_BIO );
   sps.setUseAffine             ( m_Affine );
@@ -1147,6 +1145,8 @@ void EncLib::xInitSPS(SPS &sps)
 
 #if !JVET_O0238_PPS_OR_SLICE
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
+#else
+  sps.setSPSTemporalMVPEnabledFlag(true); // TODO - fix this correctly
 #endif
 
 #if MAX_TB_SIZE_SIGNALLING
@@ -1281,8 +1281,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
   pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());
   pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
- 
-  pps.setSBTMVPEnabledFlag ( m_SubPuMvpMode );
 #endif
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );

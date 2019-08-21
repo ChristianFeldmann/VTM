@@ -2389,11 +2389,7 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
     CHECK(pu.cu != &cu, "PU is contained in another CU");
 
-#if JVET_O0238_PPS_OR_SLICE
-    if (cu.cs->pps->getSBTMVPEnabledFlag())
-#else
     if (cu.cs->sps->getSBTMVPEnabledFlag())
-#endif
     {
       Size bufSize = g_miScaling.scale(pu.lumaSize());
       mergeCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);

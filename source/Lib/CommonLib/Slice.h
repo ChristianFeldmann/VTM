@@ -780,9 +780,7 @@ private:
   bool              m_rpl1IdxPresentFlag;
   bool              m_allRplEntriesHasSameSignFlag;
   bool              m_bLongTermRefsPresent;
-#if !JVET_O0238_PPS_OR_SLICE
   bool              m_SPSTemporalMVPEnabledFlag;
-#endif
   int               m_numReorderPics[MAX_TLAYER];
 
   // Tool list
@@ -810,9 +808,7 @@ private:
   bool              m_bPCMFilterDisableFlag;
 #endif
 
-#if !JVET_O0238_PPS_OR_SLICE
   bool              m_sbtmvpEnabledFlag;
-#endif
   bool              m_bdofEnabledFlag;
   bool              m_fpelMmvdEnabledFlag;
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
@@ -1009,10 +1005,8 @@ public:
   bool                    getAllActiveRplEntriesHasSameSignFlag() const                                       { return m_allRplEntriesHasSameSignFlag;                               }
   bool                    getLongTermRefsPresent() const                                                  { return m_bLongTermRefsPresent;                                       }
   void                    setLongTermRefsPresent(bool b)                                                  { m_bLongTermRefsPresent=b;                                            }
-#if !JVET_O0238_PPS_OR_SLICE
   bool                    getSPSTemporalMVPEnabledFlag() const                                            { return m_SPSTemporalMVPEnabledFlag;                                  }
   void                    setSPSTemporalMVPEnabledFlag(bool b)                                            { m_SPSTemporalMVPEnabledFlag=b;                                       }
-#endif
 #if MAX_TB_SIZE_SIGNALLING
   void                    setLog2MaxTbSize( uint32_t u )                                                  { m_log2MaxTbSize = u;                                                 }
   uint32_t                getLog2MaxTbSize() const                                                        { return  m_log2MaxTbSize;                                             }
@@ -1042,10 +1036,8 @@ public:
   bool                    getJointCbCrEnabledFlag() const                                                 { return m_JointCbCrEnabledFlag; }
 #endif
 
-#if !JVET_O0238_PPS_OR_SLICE
   bool                    getSBTMVPEnabledFlag() const                                                    { return m_sbtmvpEnabledFlag; }
   void                    setSBTMVPEnabledFlag(bool b)                                                    { m_sbtmvpEnabledFlag = b; }
-#endif
 
   void                    setBDOFEnabledFlag(bool b)                                                      { m_bdofEnabledFlag = b; }
   bool                    getBDOFEnabledFlag() const                                                      { return m_bdofEnabledFlag; }
@@ -1326,7 +1318,6 @@ private:
   uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t          m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t          m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-  bool              m_sbtmvpEnabledFlag;
 #endif
 
   bool             m_cabacInitPresentFlag;
@@ -1505,9 +1496,6 @@ public:
   void                    setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uint32_t u)         { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }  
   uint32_t                getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() const       { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
   void                    setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uint32_t u)   { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
-
-  bool                    getSBTMVPEnabledFlag() const                                    { return m_sbtmvpEnabledFlag;                   }
-  void                    setSBTMVPEnabledFlag(bool b)                                    { m_sbtmvpEnabledFlag = b;                      }
 #endif
 
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }

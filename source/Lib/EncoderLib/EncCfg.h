@@ -241,8 +241,8 @@ protected:
   int       m_iGOPSize;
   RPLEntry  m_RPLList0[MAX_GOP];
   RPLEntry  m_RPLList1[MAX_GOP];
-  int		    m_numRPLList0;
-  int		    m_numRPLList1;
+  int       m_numRPLList0;
+  int       m_numRPLList1;
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
@@ -492,7 +492,7 @@ protected:
   std::vector<int> m_tileRowHeight;
 
   bool      m_entropyCodingSyncEnabledFlag;
- 
+
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -1670,8 +1670,8 @@ public:
   void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
   bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
-  void        setUseALF( bool b ) { m_alf = b; }
-  bool        getUseALF()                                      const { return m_alf; }
+  void         setUseALF( bool b ) { m_alf = b; }
+  bool         getUseALF()                                      const { return m_alf; }
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }

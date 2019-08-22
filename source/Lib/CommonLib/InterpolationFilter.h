@@ -55,7 +55,7 @@
  */
 class InterpolationFilter
 {
-  static const TFilterCoeff m_lumaFilter4x4[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA];  
+  static const TFilterCoeff m_lumaFilter4x4[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA];
 #if JVET_O1164_RPR
 public:
 #endif

@@ -262,7 +262,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   }
   else
 #endif
-  m_pcIntraPred->initIntraPatternChType( *tu.cu, area);
+    m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
 #endif
 
   //===== get prediction signal =====
@@ -292,7 +292,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
       }
       else
 #endif
-    m_pcIntraPred->predIntraAng( compID, piPred, pu );
+        m_pcIntraPred->predIntraAng(compID, piPred, pu);
     }
   }
   const Slice           &slice = *cs.slice;
@@ -1089,7 +1089,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       const int cuPelY = pu.Y().y;
       int roiWidth = pu.lwidth();
       int roiHeight = pu.lheight();
-#if !JVET_O1170_CHECK_BV_AT_DECODER      
+#if !JVET_O1170_CHECK_BV_AT_DECODER
 #if JVET_O1164_PS
       const int picWidth = pu.cs->slice->getPPS()->getPicWidthInLumaSamples();
       const int picHeight = pu.cs->slice->getPPS()->getPicHeightInLumaSamples();

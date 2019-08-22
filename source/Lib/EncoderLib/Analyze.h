@@ -207,7 +207,7 @@ public:
 #if JVET_O0756_CALCULATE_HDRMETRICS
       , const bool printHdrMetrics = false
 #endif
-  )  
+  )
 #endif
 #else
   void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths
@@ -458,14 +458,14 @@ public:
           {
 #if ENABLE_QPA || WCG_WPSNR
             if (useWPSNR) {
-              msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR" );
+              msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR   " );
             } else
 #endif
             msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR   " );
 #if JVET_O0756_CALCULATE_HDRMETRICS
             if (printHdrMetrics)
             {
-              msg(e_msg_level, "DeltaE   "  "PSNRL   ");
+              msg(e_msg_level, "DeltaE   "  "PSNRL      ");
             }
 #endif
 #if EXTENSION_360_VIDEO

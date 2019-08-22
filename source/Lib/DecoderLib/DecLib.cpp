@@ -640,7 +640,7 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
   for (int iRefList = 0; iRefList < 2; iRefList++)
   {
     msg( msgl, "[L%d ", iRefList);
-    for( int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx( RefPicList( iRefList ) ); iRefIndex++ )
+    for (int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx(RefPicList(iRefList)); iRefIndex++)
     {
 #if RPR_CTC_PRINT
       int xScale, yScale;

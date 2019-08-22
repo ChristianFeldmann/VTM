@@ -343,8 +343,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   }
   else
   {
-	// make sure single brick per slice is set by encoder such that the behaviour is same as for setting it to true
-	CHECK(pcPPS->getSingleBrickPerSliceFlag() != true, "SingleBrickPerSliceFlag must be set to 1 when not present");
+    // make sure single brick per slice is set by encoder such that the behaviour is same as for setting it to true
+    CHECK(pcPPS->getSingleBrickPerSliceFlag() != true, "SingleBrickPerSliceFlag must be set to 1 when not present");
     // make sure rect_slice_flag is set
     CHECK (pcPPS->getRectSliceFlag()!=true, "RectSliceFlag must be equalt to 1 for single_tile_in_pic_flag equal to 1");
   }
@@ -498,7 +498,7 @@ void HLSWriter::codeAPS( APS* pcAPS )
 
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
   WRITE_CODE(pcAPS->getAPSType(), 3, "aps_params_type");
-  
+
 
   if (pcAPS->getAPSType() == ALF_APS)
   {
@@ -524,7 +524,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
     WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA][0], "alf_luma_clip" );
 #else
-    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip");
+    WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip" );
 #endif
 
 #if JVET_O0491_HLS_CLEANUP
@@ -883,7 +883,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
     for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
     {
-      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1"); 
+      WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1");
 
       for (int j = 0; j <= chromaQpMappingTable.getNumPtsInCQPTableMinus1(i); j++)
       {
@@ -931,7 +931,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
 #if !JVET_O1164_PS
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
-  {    
+  {
 #endif
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )
@@ -1000,7 +1000,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG  
+#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
@@ -1217,7 +1217,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
   }
-  
+
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );
@@ -1390,7 +1390,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if JVET_O0491_HLS_CLEANUP
           WRITE_CODE(alfChromaIdc, 2, "slice_alf_chroma_idc");
 #else
-        truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+          truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
 #endif
 #if JVET_O0616_400_CHROMA_SUPPORT
         }
@@ -1684,7 +1684,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           if (chromaEnabled)
           {
 #endif
-          WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
+            WRITE_FLAG(pcSlice->getLmcsChromaResidualScaleFlag(), "slice_chroma_residual_scale_flag");
 #if JVET_O0616_400_CHROMA_SUPPORT
           }
 #endif
@@ -2049,7 +2049,7 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma )
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
 
   // vlc for all
-#if !JVET_O0216_ALF_COEFF_EG3 
+#if !JVET_O0216_ALF_COEFF_EG3
   for( int ind = 0; ind < numFilters; ++ind )
   {
     if( isChroma || !alfParam.alfLumaCoeffDeltaFlag || alfParam.alfLumaCoeffFlag[ind] )

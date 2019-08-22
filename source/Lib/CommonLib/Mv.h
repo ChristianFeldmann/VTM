@@ -293,8 +293,8 @@ void clipMv ( Mv& rcMv, const struct Position& pos,
 #endif
 );
 
-bool wrapClipMv( Mv& rcMv, const Position& pos, 
-                 const struct Size& size, 
+bool wrapClipMv( Mv& rcMv, const Position& pos,
+                 const struct Size& size,
                  const SPS *sps
 #if JVET_O1164_PS
                , const PPS* pps

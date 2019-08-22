@@ -646,7 +646,6 @@ void EncAdaptiveLoopFilter::destroy()
     delete[] m_ctbDistortionUnfilter[comp];
     m_ctbDistortionUnfilter[comp] = nullptr;
   }
-
   AdaptiveLoopFilter::destroy();
 }
 void EncAdaptiveLoopFilter::initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice

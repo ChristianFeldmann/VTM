@@ -2349,6 +2349,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
 
           CHECK( j >= MAX_NUM_REF, "scaledRefPic can not hold all reference pictures!" );
 
+          if( j >= MAX_NUM_REF )
+          {
+            j = 0;
+          }
+
           if( scaledRefPic[j] == nullptr )
           {
             scaledRefPic[j] = new Picture;

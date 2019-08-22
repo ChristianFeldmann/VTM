@@ -4209,7 +4209,7 @@ void CABACWriter::exp_golomb_eqprob( unsigned symbol, unsigned count )
   numBins++;
   bins = (bins << count) | symbol;
   numBins += count;
-  CHECK(!( numBins <= 32 ), "Unspecified error");
+  //CHECK(!( numBins <= 32 ), "Unspecified error");
   m_BinEncoder.encodeBinsEP( bins, numBins );
 }
 

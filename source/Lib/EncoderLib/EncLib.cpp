@@ -553,8 +553,8 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     {
       for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
       {
-        if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
-         || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+        if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))
+         || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
         {
           continue;
         }
@@ -985,7 +985,9 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
+#if !JVET_O0525_REMOVE_PCM
   cinfo->setNoPcmConstraintFlag(m_bNoPcmConstraintFlag);
+#endif
   cinfo->setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
   cinfo->setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
   cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
@@ -1130,9 +1132,11 @@ void EncLib::xInitSPS(SPS &sps)
 
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
 
+#if !JVET_O0525_REMOVE_PCM
   sps.setPCMLog2MinSize (m_uiPCMLog2MinSize);
   sps.setPCMEnabledFlag        ( m_usePCM           );
   sps.setPCMLog2MaxSize( m_pcmLog2MaxSize  );
+#endif
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
@@ -1152,7 +1156,9 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_O0919_TS_MIN_QP
     sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
 #endif
+#if !JVET_O0525_REMOVE_PCM
     sps.setPCMBitDepth (ChannelType(channelType), m_PCMBitDepth[channelType]         );
+#endif
   }
 
 #if JVET_O0244_DELTA_POC
@@ -1173,7 +1179,9 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setNumReorderPics(m_numReorderPics[i], i);
   }
 
+#if !JVET_O0525_REMOVE_PCM
   sps.setPCMFilterDisableFlag  ( m_bPCMFilterDisableFlag );
+#endif
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
   sps.setALFEnabledFlag( m_alf );
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());

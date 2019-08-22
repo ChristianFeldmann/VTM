@@ -1418,9 +1418,11 @@ SPS::SPS()
 , m_allRplEntriesHasSameSignFlag ( true )
 , m_bLongTermRefsPresent      (false)
 // Tool list
+#if !JVET_O0525_REMOVE_PCM
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
+#endif
 #if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_transformSkipEnabledFlag  (false)
 , m_BDPCMEnabledFlag          (false)
@@ -1428,7 +1430,9 @@ SPS::SPS()
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
 , m_JointCbCrEnabledFlag      (false)
 #endif
+#if !JVET_O0525_REMOVE_PCM
 , m_bPCMFilterDisableFlag     (false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -1480,7 +1484,9 @@ SPS::SPS()
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_bitDepths.recon[ch] = 8;
+#if !JVET_O0525_REMOVE_PCM
     m_pcmBitDepths[ch] = 8;
+#endif
     m_qpBDOffset   [ch] = 0;
   }
 
@@ -1783,8 +1789,8 @@ bool ScalingList::checkDefaultScalingList()
   {
     for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
     {
-      if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
-       || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))
+          || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
       {
         continue;
       }
@@ -1850,7 +1856,7 @@ static void outputScalingListHelp(std::ostream &os)
   {
     for (uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
+      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0))))
       {
         os << "  " << MatrixType[sizeIdc][listIdc] << '\n';
       }
@@ -1865,7 +1871,7 @@ void ScalingList::outputScalingLists(std::ostream &os) const
     const uint32_t size = (sizeIdc == 1) ? 2 : ((sizeIdc == 2) ? 4 : 8);
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
+      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0))))
       {
         const int *src = getScalingListAddress(sizeIdc, listIdc);
         os << (MatrixType[sizeIdc][listIdc]) << " =\n  ";
@@ -1915,7 +1921,7 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
     {
       int * const src = getScalingListAddress(sizeIdc, listIdc);
 
-      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
       {
         continue;
       }
@@ -2025,7 +2031,7 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
     case SCALING_LIST_32x32:
     case SCALING_LIST_64x64:
     case SCALING_LIST_128x128:
-      src = (listId < (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1))) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
+      src = (listId < (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES)) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
       break;
     default:
       THROW( "Invalid scaling list" );

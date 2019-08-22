@@ -846,13 +846,24 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
 #else
     param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
 #endif
+#if JVET_O0491_HLS_CLEANUP
+    READ_UVLC(code, "alf_luma_num_filters_signalled_minus1");
+#else
     xReadTruncBinCode(code, MAX_NUM_ALF_CLASSES);  //number_of_filters_minus1
+#endif
     param.numLumaFilters = code + 1;
     if (param.numLumaFilters > 1)
     {
+#if JVET_O0491_HLS_CLEANUP
+      const int length =  (int)ceil(log2(param.numLumaFilters));
+#endif
       for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
       {
+#if JVET_O0491_HLS_CLEANUP
+        READ_CODE(length, code, "alf_luma_coeff_delta_idx");
+#else
         xReadTruncBinCode(code, param.numLumaFilters);
+#endif
         param.filterCoeffDeltaIdx[i] = code;
       }
     }
@@ -1322,6 +1333,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 
+#if !JVET_O0525_REMOVE_PCM
   READ_FLAG( uiCode, "sps_pcm_enabled_flag" );                          pcSPS->setPCMEnabledFlag( uiCode ? true : false );
   if( pcSPS->getPCMEnabledFlag() )
   {
@@ -1331,6 +1343,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_UVLC( uiCode, "log2_diff_max_min_pcm_luma_coding_block_size" ); pcSPS->setPCMLog2MaxSize ( uiCode+pcSPS->getPCMLog2MinSize() );
     READ_FLAG( uiCode, "pcm_loop_filter_disable_flag" );                 pcSPS->setPCMFilterDisableFlag ( uiCode ? true : false );
   }
+#endif
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
@@ -1948,7 +1961,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         if (bChroma)
         {
 #endif
+#if JVET_O0491_HLS_CLEANUP
+          READ_CODE(2, uiCode, "slice_alf_chroma_idc");   alfChromaIdc = uiCode;
+#else
         alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#endif
 #if JVET_O0616_400_CHROMA_SUPPORT
         }
         else
@@ -2497,7 +2514,9 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol,  "no_joint_cbcr_constraint_flag");             cinfo->setNoJointCbCrConstraintFlag(symbol > 0 ? true : false);
 #endif
 
+#if !JVET_O0525_REMOVE_PCM
   READ_FLAG(symbol,  "no_pcm_constraint_flag");                    cinfo->setNoPcmConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol,  "no_ref_wraparound_constraint_flag");         cinfo->setNoRefWraparoundConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_temporal_mvp_constraint_flag");           cinfo->setNoTemporalMvpConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_sbtmvp_constraint_flag");                 cinfo->setNoSbtmvpConstraintFlag(symbol > 0 ? true : false);
@@ -3036,6 +3055,7 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma )
   }
 }
 
+#if !JVET_O0491_HLS_CLEANUP
 int HLSyntaxReader::truncatedUnaryEqProb( const int maxSymbol )
 {
   for( int k = 0; k < maxSymbol; k++ )
@@ -3094,6 +3114,7 @@ void HLSyntaxReader::xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymb
     ruiSymbol -= ( uiVal - b );
   }
 }
+#endif
 
 //! \}
 

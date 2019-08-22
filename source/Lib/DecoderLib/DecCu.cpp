@@ -175,7 +175,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         break;
       }
 
+#if !JVET_O0525_REMOVE_PCM
       if( CU::isLosslessCoded( currCU ) && !currCU.ipcm )
+#else
+      if( CU::isLosslessCoded( currCU ) )
+#endif
       {
         xFillPCMBuffer( currCU );
       }
@@ -416,11 +420,13 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
 void DecCu::xReconIntraQT( CodingUnit &cu )
 {
+#if !JVET_O0525_REMOVE_PCM
   if( cu.ipcm )
   {
     xReconPCM( *cu.firstTU );
     return;
   }
+#endif
 
 #if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
@@ -540,6 +546,7 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
   }
 }
 #endif
+#if !JVET_O0525_REMOVE_PCM
 /** Function for deriving reconstructed luma/chroma samples of a PCM mode CU.
 * \param pcCU pointer to current CU
 * \param uiPartIdx part index
@@ -596,6 +603,7 @@ void DecCu::xReconPCM(TransformUnit &tu)
     xDecodePCMTexture(tu, compID);
   }
 }
+#endif
 
 /** Function for deriving reconstructed PU/CU chroma samples with QTree structure
 * \param pcRecoYuv pointer to reconstructed sample arrays

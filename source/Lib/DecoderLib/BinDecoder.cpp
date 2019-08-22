@@ -257,6 +257,7 @@ unsigned BinDecoderBase::decodeBinTrm()
 }
 
 
+#if !JVET_O0525_REMOVE_PCM
 unsigned BinDecoderBase::decodeBinsPCM( unsigned numBins )
 {
   unsigned bins = 0;
@@ -266,6 +267,7 @@ unsigned BinDecoderBase::decodeBinsPCM( unsigned numBins )
 #endif
   return bins;
 }
+#endif
 
 
 void BinDecoderBase::align()

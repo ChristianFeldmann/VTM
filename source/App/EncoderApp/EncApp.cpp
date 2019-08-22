@@ -126,7 +126,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoPartitionConstraintsOverrideConstraintFlag      ( !m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setNoPcmConstraintFlag                               ( !m_usePCM );
+#endif
   m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
   m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
@@ -371,7 +373,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
 #if JVET_O0050_LOCAL_DUAL_TREE
-  m_cEncLib.setUseFastLocalDualTree                              ( m_useFastLocalDualTree );
+  m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );
 #endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
@@ -395,8 +397,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFastUDIUseMPMEnabled                              ( m_bFastUDIUseMPMEnabled );
   m_cEncLib.setFastMEForGenBLowDelayEnabled                      ( m_bFastMEForGenBLowDelayEnabled );
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setPCMLog2MinSize                                    ( m_uiPCMLog2MinSize);
   m_cEncLib.setUsePCM                                            ( m_usePCM );
+#endif
   m_cEncLib.setUseISP                                            ( m_ISP );
   m_cEncLib.setUseFastISP                                        ( m_useFastISP );
 
@@ -405,10 +409,14 @@ void EncApp::xInitLibCfg()
   {
     m_cEncLib.setBitDepth((ChannelType)channelType, m_internalBitDepth[channelType]);
     m_cEncLib.setInputBitDepth((ChannelType)channelType, m_inputBitDepth[channelType]);
+#if !JVET_O0525_REMOVE_PCM
     m_cEncLib.setPCMBitDepth((ChannelType)channelType, m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[channelType] : m_internalBitDepth[channelType]);
+#endif
   }
 
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
+#endif
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
   m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
@@ -440,8 +448,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxNumOffsetsPerPic                               ( m_maxNumOffsetsPerPic);
 
   m_cEncLib.setSaoCtuBoundary                                    ( m_saoCtuBoundary);
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setPCMInputBitDepthFlag                              ( m_bPCMInputBitDepthFlag);
   m_cEncLib.setPCMFilterDisableFlag                              ( m_bPCMFilterDisableFlag);
+#endif
 
   m_cEncLib.setSaoGreedyMergeEnc                                 ( m_saoGreedyMergeEnc);
   m_cEncLib.setIntraSmoothingDisabledFlag                        (!m_enableIntraReferenceSmoothing );

@@ -1291,6 +1291,19 @@ Enabling this parameter can reduce the visibility of CU boundaries in the coded 
 \end{tabular}
 \\
 
+\Option{FastLocalDualTreeMode} &
+%\ShortOption{\None} &
+\Default{0} &
+Controls intra coding speedup introducted with local dual tree mode. 
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ 0 & Disabled\\
+ 1 & Stop testing intra modes in inter slices, if best cost is more that 1.5 times inter cost.\\
+ 2 & Test only one intra mode in inter slices\\
+\end{tabular}
+\\
+
+
 \end{OptionTableNoShorthand}
 
 %%

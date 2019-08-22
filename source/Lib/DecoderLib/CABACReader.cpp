@@ -832,8 +832,10 @@ PartSplit CABACReader::split_cu_mode( CodingStructure& cs, Partitioner &partitio
 //    void  cu_skip_flag              ( cu )
 //    void  pred_mode                 ( cu )
 //    void  part_mode                 ( cu )
+#if !JVET_O0525_REMOVE_PCM
 //    void  pcm_flag                  ( cu )
 //    void  pcm_samples               ( tu )
+#endif
 //    void  cu_pred_data              ( pus )
 //    void  cu_lic_flag               ( cu )
 //    void  intra_luma_pred_modes     ( pus )
@@ -904,6 +906,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
 
   // --> create PUs
+#if !JVET_O0525_REMOVE_PCM
   // pcm samples
   if( CU::isIntra(cu) )
   {
@@ -916,6 +919,7 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     }
   }
 
+#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -1323,6 +1327,7 @@ void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "bdpcm_mode() x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode );
 }
+#if !JVET_O0525_REMOVE_PCM
 void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
 {
   const SPS& sps = *cu.cs->sps;
@@ -1335,6 +1340,7 @@ void CABACReader::pcm_flag( CodingUnit& cu, Partitioner &partitioner )
   cu.ipcm = ( m_BinDecoder.decodeBinTrm() );
 }
 
+#endif
 
 void CABACReader::cu_pred_data( CodingUnit &cu )
 {
@@ -1449,7 +1455,11 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
 #if !ENABLE_JVET_L0283_MRL
   return;
 #endif
+#if !JVET_O0525_REMOVE_PCM
   if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm || cu.bdpcmMode )
+#else
+  if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.bdpcmMode )
+#endif
   {
     cu.firstPU->multiRefIdx = 0;
     return;
@@ -2913,6 +2923,7 @@ void CABACReader::MHIntra_flag(PredictionUnit& pu)
 
 
 
+#if !JVET_O0525_REMOVE_PCM
 //================================================================================
 //  clause 7.3.8.7
 //--------------------------------------------------------------------------------
@@ -2951,6 +2962,7 @@ void CABACReader::pcm_samples( TransformUnit& tu )
   }
   m_BinDecoder.start();
 }
+#endif
 
 //================================================================================
 //  clause 7.3.8.8
@@ -3678,7 +3690,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::isp_mode( CodingUnit& cu )
 {
+#if !JVET_O0525_REMOVE_PCM
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#else
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#endif
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
     return;

@@ -251,7 +251,11 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
+#if !JVET_O0525_REMOVE_PCM
   xPCMLFDisableProcess(cs);
+#else
+  xLosslessDisableProcess(cs);
+#endif
 }
 
 

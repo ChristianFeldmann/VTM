@@ -914,7 +914,9 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
   unsigned     uiBsAbsIdx   = 0, uiBs = 0;
   int          iOffset, iSrcStep;
 
+#if !JVET_O0525_REMOVE_PCM
   bool  bPCMFilter      = (sps.getPCMEnabledFlag() && sps.getPCMFilterDisableFlag()) ? true : false;
+#endif
   bool  bPartPNoFilter  = false;
   bool  bPartQNoFilter  = false;
   int   betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
@@ -1071,12 +1073,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
           int dL = d0L + d3L;
 
           bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_O0525_REMOVE_PCM
           if (bPCMFilter)
           {
             // Check if each of PUs is I_PCM with LF disabling
             bPartPNoFilter = cuP.ipcm;
             bPartQNoFilter = cuQ.ipcm;
           }
+#endif
           if (ppsTransquantBypassEnabledFlag)
           {
             // check if each of PUs is lossless coded
@@ -1124,12 +1128,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
         const int d  = d0  + d3;
 
         bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_O0525_REMOVE_PCM
         if( bPCMFilter )
         {
           // Check if each of PUs is I_PCM with LF disabling
           bPartPNoFilter = cuP.ipcm;
           bPartQNoFilter = cuQ.ipcm;
         }
+#endif
         if( ppsTransquantBypassEnabledFlag )
         {
           // check if each of PUs is lossless coded
@@ -1199,7 +1205,9 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
   int       iOffset, iSrcStep;
   unsigned  uiLoopLength;
 
+#if !JVET_O0525_REMOVE_PCM
   bool      bPCMFilter      = (sps.getPCMEnabledFlag() && sps.getPCMFilterDisableFlag()) ? true : false;
+#endif
   bool      bPartPNoFilter  = false;
   bool      bPartQNoFilter  = false;
   const int tcOffsetDiv2    = slice.getDeblockingFilterTcOffsetDiv2();
@@ -1282,12 +1290,14 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
       }
 
       bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_O0525_REMOVE_PCM
       if (bPCMFilter)
       {
         // Check if each of PUs is I_PCM with LF disabling
         bPartPNoFilter = cuP.ipcm;
         bPartQNoFilter = cuQ.ipcm;
       }
+#endif
       if( pps.getTransquantBypassEnabledFlag() )
       {
         // check if each of PUs is lossless coded

@@ -188,7 +188,9 @@ class ConstraintInfo
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
   bool              m_noAlfConstraintFlag;
+#if !JVET_O0525_REMOVE_PCM
   bool              m_noPcmConstraintFlag;
+#endif
   bool              m_noRefWraparoundConstraintFlag;
   bool              m_noTemporalMvpConstraintFlag;
   bool              m_noSbtmvpConstraintFlag;
@@ -229,7 +231,9 @@ public:
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
     , m_noAlfConstraintFlag      (false)
+#if !JVET_O0525_REMOVE_PCM
     , m_noPcmConstraintFlag      (false)
+#endif
     , m_noRefWraparoundConstraintFlag(false)
     , m_noTemporalMvpConstraintFlag(false)
     , m_noSbtmvpConstraintFlag   (false)
@@ -297,8 +301,10 @@ public:
   bool          getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
   void          setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
 #endif
+#if !JVET_O0525_REMOVE_PCM
   bool          getNoPcmConstraintFlag() const { return m_noPcmConstraintFlag; }
   void          setNoPcmConstraintFlag(bool bVal) { m_noPcmConstraintFlag = bVal; }
+#endif
   bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
   void          setNoRefWraparoundConstraintFlag(bool bVal) { m_noRefWraparoundConstraintFlag = bVal; }
   bool          getNoTemporalMvpConstraintFlag() const { return m_noTemporalMvpConstraintFlag; }
@@ -778,9 +784,11 @@ private:
   int               m_numReorderPics[MAX_TLAYER];
 
   // Tool list
+#if !JVET_O0525_REMOVE_PCM
   bool                  m_pcmEnabledFlag;
   uint32_t              m_pcmLog2MaxSize;
   uint32_t              m_uiPCMLog2MinSize;
+#endif
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool              m_transformSkipEnabledFlag;
@@ -795,8 +803,10 @@ private:
 #if JVET_O0919_TS_MIN_QP
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
 #endif
+#if !JVET_O0525_REMOVE_PCM
   int               m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
   bool              m_bPCMFilterDisableFlag;
+#endif
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
@@ -962,12 +972,14 @@ public:
   uint32_t                    getMaxCUHeight() const                                                          { return  m_uiMaxCUHeight;                                             }
   void                    setMaxCodingDepth( uint32_t u )                                                     { m_uiMaxCodingDepth = u;                                              }
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
+#if !JVET_O0525_REMOVE_PCM
   void                    setPCMEnabledFlag( bool b )                                                         { m_pcmEnabledFlag = b;                                                }
   bool                    getPCMEnabledFlag() const                                                           { return m_pcmEnabledFlag;                                             }
   void                    setPCMLog2MaxSize( uint32_t u )                                                     { m_pcmLog2MaxSize = u;                                                }
   uint32_t                    getPCMLog2MaxSize() const                                                       { return  m_pcmLog2MaxSize;                                            }
   void                    setPCMLog2MinSize( uint32_t u )                                                     { m_uiPCMLog2MinSize = u;                                              }
   uint32_t                    getPCMLog2MinSize() const                                                       { return  m_uiPCMLog2MinSize;                                          }
+#endif
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
@@ -1044,10 +1056,12 @@ public:
 
   bool                    getTemporalIdNestingFlag() const                                                { return m_bTemporalIdNestingFlag;                                     }
   void                    setTemporalIdNestingFlag( bool bValue )                                         { m_bTemporalIdNestingFlag = bValue;                                   }
+#if !JVET_O0525_REMOVE_PCM
   uint32_t                    getPCMBitDepth(ChannelType type) const                                          { return m_pcmBitDepths[type];                                         }
   void                    setPCMBitDepth(ChannelType type, uint32_t u)                                        { m_pcmBitDepths[type] = u;                                            }
   void                    setPCMFilterDisableFlag( bool bValue )                                          { m_bPCMFilterDisableFlag = bValue;                                    }
   bool                    getPCMFilterDisableFlag() const                                                 { return m_bPCMFilterDisableFlag;                                      }
+#endif
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }

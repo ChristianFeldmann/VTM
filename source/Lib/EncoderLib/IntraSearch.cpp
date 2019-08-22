@@ -1336,18 +1336,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
       csTemp->releaseIntermediateData();
 #if JVET_O0050_LOCAL_DUAL_TREE
-      if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
+      if( m_pcEncCfg->getFastLocalDualTreeMode() )
       {
-        if( m_pcEncCfg->getUseFastLocalDualTree() )
+        if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
         {
-          //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
-          break;
-        }
-        else
-        {
-          if( csBest->cost > costInterCU * 1.5 )
+          if( m_pcEncCfg->getFastLocalDualTreeMode() == 2 )
           {
+            //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
             break;
+          }
+          else
+          {
+            if( csBest->cost > costInterCU * 1.5 )
+            {
+              break;
+            }
           }
         }
       }
@@ -1682,6 +1685,7 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
   }
 }
 
+#if !JVET_O0525_REMOVE_PCM
 void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
 {
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -1742,6 +1746,7 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
     }
   }
 }
+#endif
 
 #if JVET_O0050_LOCAL_DUAL_TREE
 void IntraSearch::saveCuAreaCostInSCIPU( Area area, double cost )
@@ -2372,6 +2377,7 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       }
 #endif
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
+#if !JVET_O0525_REMOVE_PCM
       if( CU::isIntra(cu) )
       {
         m_CABACEstimator->pcm_data( cu, partitioner );
@@ -2380,6 +2386,7 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
           return;
         }
       }
+#endif
     }
 
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);

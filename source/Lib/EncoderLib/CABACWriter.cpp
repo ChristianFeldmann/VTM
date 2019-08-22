@@ -4207,10 +4207,9 @@ void CABACWriter::exp_golomb_eqprob( unsigned symbol, unsigned count )
   }
   bins <<= 1;
   numBins++;
-  bins = (bins << count) | symbol;
-  numBins += count;
-  //CHECK(!( numBins <= 32 ), "Unspecified error");
-  m_BinEncoder.encodeBinsEP( bins, numBins );
+  //CHECK(!( numBins + count <= 32 ), "Unspecified error");
+  m_BinEncoder.encodeBinsEP(bins, numBins);
+  m_BinEncoder.encodeBinsEP(symbol, count);
 }
 
 void CABACWriter::codeAlfCtuEnableFlags( CodingStructure& cs, ChannelType channel, AlfParam* alfParam)

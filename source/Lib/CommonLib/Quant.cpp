@@ -591,7 +591,7 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
-      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0) //skip 2x2 luma
+      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)   // skip 2x2 luma
         continue;
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
@@ -630,7 +630,7 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
-      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0) //skip 2x2 luma
+      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)   // skip 2x2 luma
         continue;
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {

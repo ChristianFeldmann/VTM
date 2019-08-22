@@ -365,7 +365,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
 #if JVET_O0050_LOCAL_DUAL_TREE
-  m_cEncLib.setUseFastLocalDualTree                              ( m_useFastLocalDualTree );
+  m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );
 #endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );

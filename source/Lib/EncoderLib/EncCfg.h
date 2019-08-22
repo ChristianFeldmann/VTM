@@ -358,7 +358,7 @@ protected:
   bool      m_MIP;
   bool      m_useFastMIP;
 #if JVET_O0050_LOCAL_DUAL_TREE
-  bool      m_useFastLocalDualTree;
+  int       m_fastLocalDualTreeMode;
 #endif
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t  m_log2MaxTbSize;
@@ -1020,8 +1020,8 @@ public:
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }
   bool      getUseFastMIP                   () const         { return m_useFastMIP; }
 #if JVET_O0050_LOCAL_DUAL_TREE
-  void      setUseFastLocalDualTree         ( bool b )       { m_useFastLocalDualTree = b; }
-  bool      getUseFastLocalDualTree         () const         { return m_useFastLocalDualTree; }
+  void     setFastLocalDualTreeMode         ( int i )        { m_fastLocalDualTreeMode = i; }
+  int      getFastLocalDualTreeMode         () const         { return m_fastLocalDualTreeMode; }
 #endif
 
 #if MAX_TB_SIZE_SIGNALLING

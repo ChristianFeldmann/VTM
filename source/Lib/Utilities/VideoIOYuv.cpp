@@ -477,8 +477,8 @@ static bool writePlane(ostream& fd, const Pel* src,
   const bool     writePYUV   = (packedYUVOutputMode > 0) && (fileBitDepth == 10 || fileBitDepth == 12) && ((width_file & (1 + (fileBitDepth & 3))) == 0);
 
 #if JVET_O1164_RPR
-  assert( writePYUV == 0 ); // only support this so far
-  assert( csx_file == csx_src ); // only support this so far
+  CHECK( writePYUV, "Not supported" );
+  CHECK( csx_file != csx_src, "Not supported" );
   const uint32_t stride_file = writePYUV ? ( orgWidth * fileBitDepth ) >> ( csx_file + 3 ) : ( orgWidth * ( is16bit ? 2 : 1 ) ) >> csx_file;
 #else
   const uint32_t stride_file = writePYUV ? (width444 * fileBitDepth) >> (csx_file + 3) : (width444 * (is16bit ? 2 : 1)) >> csx_file;

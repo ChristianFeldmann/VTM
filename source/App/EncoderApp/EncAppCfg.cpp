@@ -1385,7 +1385,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_O1164_RPR
   ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
-  ( "HalfFrames",                                     m_halfFrames,                             false, "Encode half of the specified in FramesToBeEncoded" )
+  ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Upscaled output for RPR" )
 #endif
@@ -1416,9 +1416,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
    
 #if JVET_O1164_RPR
   m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
-  if( m_halfFrames )
+  if( m_fractionOfFrames != 1.0 )
   {
-    m_framesToBeEncoded >>= 1;
+    m_framesToBeEncoded = int( m_framesToBeEncoded * m_fractionOfFrames );
   }
 
   if( m_rprEnabled && !m_switchPocPeriod )

@@ -779,7 +779,9 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
   for (int ch = 0; ch < maxNumChannelType; ch++)
   {
     const ChannelType chType = ChannelType(ch);
+#if !JVET_O0525_REMOVE_PCM
     const SPS& sps = *cs.sps;
+#endif
 
     for (const CodingUnit &cu : cs.traverseCUs(CS::getArea(cs, ctuArea, chType), chType))
     {

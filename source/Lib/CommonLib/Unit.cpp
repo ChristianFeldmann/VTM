@@ -268,7 +268,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
   bdpcmMode         = other.bdpcmMode;
+#if !JVET_O0525_REMOVE_PCM
   ipcm              = other.ipcm;
+#endif
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
@@ -322,7 +324,9 @@ void CodingUnit::initData()
   triangle          = false;
   transQuantBypass  = false;
   bdpcmMode         = 0;
+#if !JVET_O0525_REMOVE_PCM
   ipcm              = false;
+#endif
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;

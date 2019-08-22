@@ -594,7 +594,11 @@ bool EncCu::xCheckBestMode( CodingStructure *&tempCS, CodingStructure *&bestCS, 
         // if tempCS is not a split-mode
         CodingUnit &cu = *tempCS->cus.front();
 
+#if !JVET_O0525_REMOVE_PCM
         if( CU::isLosslessCoded( cu ) && !cu.ipcm )
+#else
+        if( CU::isLosslessCoded( cu ) )
+#endif
         {
           xFillPCMBuffer( cu );
         }
@@ -866,10 +870,12 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
     {
       xCheckRDCostIntra( tempCS, bestCS, partitioner, currTestMode );
     }
+#if !JVET_O0525_REMOVE_PCM
     else if( currTestMode.type == ETM_IPCM )
     {
       xCheckIntraPCM( tempCS, bestCS, partitioner, currTestMode );
     }
+#endif
 #if JVET_O0119_BASE_PALETTE_444
     else if (currTestMode.type == ETM_PALETTE)
     {
@@ -1943,7 +1949,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           cu.transQuantBypass = encTestMode.lossless;
           cu.chromaQpAdj      = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
           cu.qp               = encTestMode.qp;
+#if !JVET_O0525_REMOVE_PCM
           //cu.ipcm             = false;
+#endif
           cu.lfnstIdx         = lfnstIdx;
           cu.mtsFlag          = mtsFlag;
           cu.ispMode          = NOT_INTRA_SUBPARTITIONS;
@@ -2059,7 +2067,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             m_CABACEstimator->cu_skip_flag ( cu );
           }
           m_CABACEstimator->pred_mode      ( cu );
+#if !JVET_O0525_REMOVE_PCM
           m_CABACEstimator->pcm_data       ( cu, partitioner );
+#endif
           m_CABACEstimator->cu_pred_data   ( cu );
           m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
 
@@ -2229,6 +2239,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   } //trGrpIdx
 }
 
+#if !JVET_O0525_REMOVE_PCM
 void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode )
 {
   tempCS->initStructData( encTestMode.qp, encTestMode.lossless );
@@ -2289,6 +2300,7 @@ void EncCu::xCheckIntraPCM(CodingStructure *&tempCS, CodingStructure *&bestCS, P
 #endif
   xCheckBestMode( tempCS, bestCS, partitioner, encTestMode );
 }
+#endif
 
 #if JVET_O0119_BASE_PALETTE_444
 void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
@@ -2305,7 +2317,9 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   cu.transQuantBypass = encTestMode.lossless;
   cu.chromaQpAdj = cu.transQuantBypass ? 0 : m_cuChromaQpOffsetIdxPlus1;
   cu.qp = encTestMode.qp;
+#if !JVET_O0525_REMOVE_PCM
   cu.ipcm = false;
+#endif
   cu.bdpcmMode = 0;
 
   tempCS->addPU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);

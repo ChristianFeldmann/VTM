@@ -634,8 +634,10 @@ void CABACWriter::split_cu_mode( const PartSplit split, const CodingStructure& c
 //    void  cu_skip_flag              ( cu )
 //    void  pred_mode                 ( cu )
 //    void  part_mode                 ( cu )
+#if !JVET_O0525_REMOVE_PCM
 //    void  pcm_flag                  ( cu )
 //    void  pcm_samples               ( tu )
+#endif
 //    void  cu_pred_data              ( pus )
 //    void  cu_lic_flag               ( cu )
 //    void  intra_luma_pred_modes     ( pus )
@@ -674,6 +676,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     return;
   }
 
+#if !JVET_O0525_REMOVE_PCM
 #if !FIX_PCM
   // pcm samples
   if( CU::isIntra(cu) )
@@ -685,6 +688,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
       return;
     }
   }
+#endif
 #endif
 
   // prediction mode and partitioning data
@@ -717,6 +721,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 #endif
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
 
+#if !JVET_O0525_REMOVE_PCM
 #if FIX_PCM
   // pcm samples
   if( CU::isIntra(cu) )
@@ -728,6 +733,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
       return;
     }
   }
+#endif
 #endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
@@ -981,6 +987,7 @@ void CABACWriter::bdpcm_mode( const CodingUnit& cu, const ComponentID compID )
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "bdpcm_mode() x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode );
 }
+#if !JVET_O0525_REMOVE_PCM
 void CABACWriter::pcm_data( const CodingUnit& cu, Partitioner& partitioner  )
 {
   pcm_flag( cu, partitioner );
@@ -1001,6 +1008,7 @@ void CABACWriter::pcm_flag( const CodingUnit& cu, Partitioner& partitioner )
   }
   m_BinEncoder.encodeBinTrm( cu.ipcm );
 }
+#endif
 
 
 void CABACWriter::cu_pred_data( const CodingUnit& cu )
@@ -1146,7 +1154,11 @@ void CABACWriter::extend_ref_line(const CodingUnit& cu)
   return;
 #endif
 
+#if !JVET_O0525_REMOVE_PCM
   if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.ipcm || cu.bdpcmMode )
+#else
+  if ( !cu.Y().valid() || cu.predMode != MODE_INTRA || !isLuma(cu.chType) || cu.bdpcmMode )
+#endif
   {
     return;
   }
@@ -2713,6 +2725,7 @@ void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
 
 
 
+#if !JVET_O0525_REMOVE_PCM
 //================================================================================
 //  clause 7.3.8.7
 //--------------------------------------------------------------------------------
@@ -2751,6 +2764,7 @@ void CABACWriter::pcm_samples( const TransformUnit& tu )
   m_BinEncoder.restart();
 }
 
+#endif
 
 
 //================================================================================
@@ -3487,7 +3501,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
+#if !JVET_O0525_REMOVE_PCM
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || cu.ipcm || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#else
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "cu.ispMode != 0" );
     return;

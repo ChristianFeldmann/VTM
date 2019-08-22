@@ -87,8 +87,10 @@ protected:
   void xFillPCMBuffer     ( CodingUnit&      cu );
 
   void xIntraRecBlk       ( TransformUnit&   tu, const ComponentID compID );
+#if !JVET_O0525_REMOVE_PCM
   void xReconPCM          ( TransformUnit&   tu);
   void xDecodePCMTexture  ( TransformUnit&   tu, const ComponentID compID );
+#endif
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );

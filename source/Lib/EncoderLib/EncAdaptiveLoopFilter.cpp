@@ -755,8 +755,10 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
             const Area blkSrc( 0, 0, w, h );
             const Area blkDst( xStart, yStart, w, h );
             deriveClassification( m_classifier, buf.get(COMPONENT_Y), blkDst, blkSrc );
+#if !JVET_O0525_REMOVE_PCM
             Area blkPCM( xStart, yStart, w, h );
             resetPCMBlkClassInfo( cs, m_classifier, buf.get(COMPONENT_Y), blkPCM );
+#endif
 
             xStart = xEnd;
           }
@@ -768,8 +770,10 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
       {
         Area blk( xPos, yPos, width, height );
         deriveClassification( m_classifier, recLuma, blk, blk );
+#if !JVET_O0525_REMOVE_PCM
         Area blkPCM( xPos, yPos, width, height );
         resetPCMBlkClassInfo( cs, m_classifier, recLuma, blkPCM );
+#endif
       }
     }
   }

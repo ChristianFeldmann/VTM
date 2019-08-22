@@ -396,7 +396,9 @@ public:
 
   bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
+#if !JVET_O0525_REMOVE_PCM
   void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   void PLTSearch                  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
   void deriveRunAndCalcBits       ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& bits);
@@ -410,7 +412,9 @@ protected:
   // T & Q & Q-1 & T-1
   // -------------------------------------------------------------------------------------------------------------------
 
+#if !JVET_O0525_REMOVE_PCM
   void xEncPCM                    (CodingStructure &cs, Partitioner& partitioner, const ComponentID &compID);
+#endif
 
   // -------------------------------------------------------------------------------------------------------------------
   // Intra search

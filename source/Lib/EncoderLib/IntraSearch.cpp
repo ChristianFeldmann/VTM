@@ -1682,6 +1682,7 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
   }
 }
 
+#if !JVET_O0525_REMOVE_PCM
 void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
 {
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -1742,6 +1743,7 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
     }
   }
 }
+#endif
 
 #if JVET_O0050_LOCAL_DUAL_TREE
 void IntraSearch::saveCuAreaCostInSCIPU( Area area, double cost )
@@ -2372,6 +2374,7 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       }
 #endif
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
+#if !JVET_O0525_REMOVE_PCM
       if( CU::isIntra(cu) )
       {
         m_CABACEstimator->pcm_data( cu, partitioner );
@@ -2380,6 +2383,7 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
           return;
         }
       }
+#endif
     }
 
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);

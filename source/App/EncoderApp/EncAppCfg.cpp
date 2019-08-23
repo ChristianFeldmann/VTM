@@ -3674,7 +3674,7 @@ void EncAppCfg::xPrintParameter()
 #if JVET_O1164_RPR
   if( m_rprEnabled )
   {
-    msg( VERBOSE, "RPR:%1.2lfx, %1.2lfx|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
+    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
   }
   else
   {

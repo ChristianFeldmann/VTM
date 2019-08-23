@@ -3595,7 +3595,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( m_pcEncLib->isRPREnabled() )
   {
-    const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].get( COMPONENT_Y ) : pcPic->m_bufs[PIC_ORIGINAL_INPUT].get( COMPONENT_Y );
+    const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
 #if RPR_CONF_WINDOW
     // the input source picture has a conformance window derived at encoder
@@ -3645,7 +3645,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if RPR_CTC_PRINT
     if( m_pcEncLib->isRPREnabled() )
     {
-      const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].get( compID ) : pcPic->m_bufs[PIC_ORIGINAL_INPUT].get( compID );
+      const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
 #if ENABLE_QPA
       const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ) );

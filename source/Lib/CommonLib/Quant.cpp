@@ -591,7 +591,7 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
-      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0) //skip 2x2 luma
+      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)   // skip 2x2 luma
         continue;
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
@@ -630,7 +630,7 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
-      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0) //skip 2x2 luma
+      if (size == SCALING_LIST_2x2 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)   // skip 2x2 luma
         continue;
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
@@ -933,6 +933,29 @@ void Quant::xInitScalingList( const Quant* other )
 {
   m_isScalingListOwner = other == nullptr;
 
+  size_t numElements = 0;
+
+  for (uint32_t sizeIdX = 0; sizeIdX < SCALING_LIST_SIZE_NUM; sizeIdX++)
+  {
+    for (uint32_t sizeIdY = 0; sizeIdY < SCALING_LIST_SIZE_NUM; sizeIdY++)
+    {
+      for (uint32_t qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
+      {
+        for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
+        {
+          numElements += g_scalingListSizeX[sizeIdX] * g_scalingListSizeX[sizeIdY];
+        }
+      }
+    }
+  }
+
+  if (m_isScalingListOwner)
+  {
+    m_quantCoef[0][0][0][0] = new int[2 * numElements];
+  }
+
+  size_t offset = 0;
+
   for(uint32_t sizeIdX = 0; sizeIdX < SCALING_LIST_SIZE_NUM; sizeIdX++)
   {
     for(uint32_t sizeIdY = 0; sizeIdY < SCALING_LIST_SIZE_NUM; sizeIdY++)
@@ -943,8 +966,10 @@ void Quant::xInitScalingList( const Quant* other )
         {
           if( m_isScalingListOwner )
           {
-            m_quantCoef   [sizeIdX][sizeIdY][listId][qp] = new int    [g_scalingListSizeX[sizeIdX]*g_scalingListSizeX[sizeIdY]];
-            m_dequantCoef [sizeIdX][sizeIdY][listId][qp] = new int    [g_scalingListSizeX[sizeIdX]*g_scalingListSizeX[sizeIdY]];
+            m_quantCoef[sizeIdX][sizeIdY][listId][qp] = m_quantCoef[0][0][0][0] + offset;
+            offset += g_scalingListSizeX[sizeIdX] * g_scalingListSizeX[sizeIdY];
+            m_dequantCoef[sizeIdX][sizeIdY][listId][qp] = m_quantCoef[0][0][0][0] + offset;
+            offset += g_scalingListSizeX[sizeIdX] * g_scalingListSizeX[sizeIdY];
           }
           else
           {
@@ -963,26 +988,7 @@ void Quant::xDestroyScalingList()
 {
   if( !m_isScalingListOwner ) return;
 
-  for(uint32_t sizeIdX = 0; sizeIdX < SCALING_LIST_SIZE_NUM; sizeIdX++)
-  {
-    for(uint32_t sizeIdY = 0; sizeIdY < SCALING_LIST_SIZE_NUM; sizeIdY++)
-    {
-      for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
-      {
-        for(uint32_t qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
-        {
-          if(m_quantCoef[sizeIdX][sizeIdY][listId][qp])
-          {
-            delete [] m_quantCoef[sizeIdX][sizeIdY][listId][qp];
-          }
-          if(m_dequantCoef[sizeIdX][sizeIdY][listId][qp])
-          {
-            delete [] m_dequantCoef[sizeIdX][sizeIdY][listId][qp];
-          }
-        }
-      }
-    }
-  }
+  delete[] m_quantCoef[0][0][0][0];
 }
 
 void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx)

@@ -223,12 +223,12 @@ public:
   static constexpr int   m_MAX_SCAN_VAL = 11;
   static constexpr int   m_MAX_EXP_GOLOMB = 16;
 #endif
-  int m_alfWSSD;
   inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
   static std::vector<double>  m_lumaLevelToWeightPLUT;
   inline std::vector<double>& getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
 
 private:
+  int                    m_alfWSSD;
   const EncCfg*          m_encCfg;
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
@@ -336,10 +336,14 @@ private:
   void   roundFiltCoeff( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
 
   double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, const int numFilters );
+#if !JVET_O0491_HLS_CLEANUP
   int    lengthTruncatedUnary( int symbol, int maxSymbol );
+#endif
   int    lengthUvlc( int uiCode );
   int    getNonFilterCoeffRate( AlfParam& alfParam );
+#if !JVET_O0491_HLS_CLEANUP
   int    getTBlength( int uiSymbol, const int uiMaxSymbol );
+#endif
 
   int    getCostFilterCoeffForce0( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters, bool* codedVarBins );
   int    getCostFilterCoeff( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );

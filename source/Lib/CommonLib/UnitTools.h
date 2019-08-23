@@ -64,7 +64,6 @@ namespace CU
 #endif
   bool isRDPCMEnabled                 (const CodingUnit &cu);
   bool isLosslessCoded                (const CodingUnit &cu);
-  uint32_t getIntraSizeIdx                (const CodingUnit &cu);
 
   bool isSameCtu                      (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSlice                    (const CodingUnit &cu, const CodingUnit &cu2);
@@ -83,7 +82,6 @@ namespace CU
   ModeType  getModeTypeAtDepth        (const CodingUnit& cu, const unsigned depth);
 #endif
 
-  bool hasNonTsCodedBlock             (const CodingUnit& cu);
 #if !JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   uint32_t getNumNonZeroCoeffNonTs         ( const CodingUnit& cu, const bool lumaFlag = true, const bool chromaFlag = true );
 #endif
@@ -122,8 +120,6 @@ namespace CU
 
   bool  hasSubCUNonZeroMVd            (const CodingUnit& cu);
   bool  hasSubCUNonZeroAffineMVd      ( const CodingUnit& cu );
-  int   getMaxNeighboriMVCandNum      (const CodingStructure& cs, const Position& pos);
-  void  resetMVDandMV2Int             (      CodingUnit& cu, InterPrediction *interPred );
 
   uint8_t getSbtInfo                  (uint8_t idx, uint8_t pos);
   uint8_t getSbtIdx                   (const uint8_t sbtInfo);
@@ -133,9 +129,11 @@ namespace CU
   uint8_t getSbtPosFromSbtMode        (const uint8_t sbtMode);
   uint8_t targetSbtAllowed            (uint8_t idx, uint8_t sbtAllowed);
   uint8_t numSbtModeRdo               (uint8_t sbtAllowed);
-  bool    isMtsMode                   (const uint8_t sbtInfo);
   bool    isSbtMode                   (const uint8_t sbtInfo);
   bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
+#if JVET_O1164_RPR
+  bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale );
+#endif
 }
 // PU tools
 namespace PU
@@ -164,10 +162,9 @@ namespace PU
   void getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
   int getDistScaleFactor(const int &currPOC, const int &currRefPOC, const int &colPOC, const int &colRefPOC);
   bool isDiffMER                      (const PredictionUnit &pu, const PredictionUnit &pu2);
-  bool getColocatedMVP                (const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &pos, Mv& rcMv, const int &refIdx);
+  bool getColocatedMVP                (const PredictionUnit &pu, const RefPicList &eRefPicList, const Position &pos, Mv& rcMv, const int &refIdx, bool sbFlag);
   void fillMvpCand                    (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AMVPInfo &amvpInfo );
   void fillIBCMvpCand                 (PredictionUnit &pu, AMVPInfo &amvpInfo);
-  bool addIBCMVPCand                  (const PredictionUnit &pu, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
   void fillAffineMvpCand              (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo);
   bool addMVPCandUnscaled             (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
 #if !JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING
@@ -205,15 +202,12 @@ namespace PU
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
   bool isBiPredFromDifferentDirEqDistPoc(const PredictionUnit &pu);
-  void restrictBiPredMergeCands       (const PredictionUnit &pu, MergeCtx& mrgCtx);
   void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
 
   bool isLMCMode                      (                          unsigned mode);
   bool isLMCModeEnabled               (const PredictionUnit &pu, unsigned mode);
   bool isChromaIntraModeCrossCheckMode(const PredictionUnit &pu);
-  int  getNarrowShape                 (const int width, const int height);
   void getTriangleMergeCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
-  bool isUniqueTriangleCandidates     (const PredictionUnit &pu, MergeCtx &triangleMrgCtx);
   void spanTriangleMotionInfo         (      PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1);
   int32_t mappingRefPic               (const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList);
   bool isAddNeighborMv  (const Mv& currMv, Mv* neighborMvs, int numNeighborMv);
@@ -223,6 +217,10 @@ namespace PU
   bool isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize);
 #endif
   bool checkDMVRCondition(const PredictionUnit& pu);
+
+#if JVET_O1164_RPR
+  bool isRefPicSameSize( const PredictionUnit& pu );
+#endif
 }
 
 // TU tools
@@ -238,7 +236,6 @@ namespace TU
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
   bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
   bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
-  uint32_t getGolombRiceStatisticsIndex   (const TransformUnit &tu, const ComponentID &compID);
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
 

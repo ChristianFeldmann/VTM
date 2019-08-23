@@ -164,12 +164,6 @@ template<int signedMode> void invTransformCbCr( PelBuf &resCb, PelBuf &resCr )
 TrQuant::TrQuant() : m_quant( nullptr )
 {
   // allocate temporary buffers
-  m_plTempCoeff   = (TCoeff*) xMalloc( TCoeff, MAX_CU_SIZE * MAX_CU_SIZE );
-  m_mtsCoeffs = new TCoeff*[ NUM_TRAFO_MODES_MTS ];
-  for( int i = 0; i < NUM_TRAFO_MODES_MTS; i++ )
-  {
-    m_mtsCoeffs[i] = (TCoeff*) xMalloc( TCoeff, MAX_CU_SIZE * MAX_CU_SIZE );
-  }
 #if JVET_O0105_ICT
   {
     m_invICT      = m_invICTMem + maxAbsIctMode;
@@ -198,23 +192,6 @@ TrQuant::~TrQuant()
   {
     delete m_quant;
     m_quant = nullptr;
-  }
-
-  // delete temporary buffers
-  if ( m_plTempCoeff )
-  {
-    xFree( m_plTempCoeff );
-    m_plTempCoeff = nullptr;
-  }
-  if( m_mtsCoeffs )
-  {
-    for( int i = 0; i < NUM_TRAFO_MODES_MTS; i++ )
-    {
-      xFree( m_mtsCoeffs[i] );
-      m_mtsCoeffs[i] = nullptr;
-    }
-    delete[] m_mtsCoeffs;
-    m_mtsCoeffs = nullptr;
   }
 }
 
@@ -393,11 +370,11 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
           const int offsetY = sbSize * subGroupY * width;
           int y;
           lfnstTemp = m_tempInMatrix; // inverse spectral rearrangement
-          coeffTemp = m_plTempCoeff + offsetX + offsetY;
+          coeffTemp = m_tempCoeff + offsetX + offsetY;
 #else
           int y;
           lfnstTemp = m_tempInMatrix; // inverse spectral rearrangement
-          coeffTemp = m_plTempCoeff;
+          coeffTemp = m_tempCoeff;
 #endif
           TCoeff * dst = lfnstTemp;
           const ScanElement * scanPtr = scan;
@@ -500,7 +477,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
       bool            tu8x8Flag       = ( width == 8 && height == 8 );
       TCoeff*         lfnstTemp;
       TCoeff*         coeffTemp;
-      TCoeff*         tempCoeff       = loadTr ? m_mtsCoeffs[ tu.mtsIdx ] : m_plTempCoeff;
+      TCoeff *        tempCoeff = loadTr ? m_mtsCoeffs[tu.mtsIdx] : m_tempCoeff;
 
 #if !JVET_O0094_LFNST_ZERO_PRIM_COEFFS
       for( int subGroupX = 0; subGroupX < subGrpXMax; subGroupX++ )
@@ -608,7 +585,7 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
   }
   else
   {
-    CoeffBuf tempCoeff = CoeffBuf( m_plTempCoeff, area );
+    CoeffBuf tempCoeff = CoeffBuf(m_tempCoeff, area);
     xDeQuant( tu, tempCoeff, compID, cQP );
 
     DTRACE_COEFF_BUF( D_TCOEFF, tempCoeff, tu, tu.cu->predMode, compID );
@@ -1213,7 +1190,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
       CHECK( MAX_TB_SIZEY < uiWidth, "Unsupported transformation size" );
 #endif
 
-      CoeffBuf tempCoeff( loadTr ? m_mtsCoeffs[tu.mtsIdx] : m_plTempCoeff, rect );
+      CoeffBuf tempCoeff(loadTr ? m_mtsCoeffs[tu.mtsIdx] : m_tempCoeff, rect);
 
       DTRACE_PEL_BUF( D_RESIDUALS, resiBuf, tu, tu.cu->predMode, compID );
 

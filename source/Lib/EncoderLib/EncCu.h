@@ -142,9 +142,13 @@ private:
   int                   m_bestGbiIdx[2];
   double                m_bestGbiCost[2];
   TriangleMotionInfo    m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
-  uint8_t                          m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
+  uint8_t               m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
-  void    updateLambda      ( Slice* slice, const int dQP, const bool updateRdCostLambda );
+  void    updateLambda      ( Slice* slice, const int dQP,
+ #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
+                              const bool useWCGChromaControl,
+ #endif
+                              const bool updateRdCostLambda );
 #endif
   double                m_sbtCostSave[2];
 public:
@@ -199,7 +203,9 @@ protected:
 #endif
 
   void xCheckRDCostIntra      ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#if !JVET_O0525_REMOVE_PCM
   void xCheckIntraPCM         ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
+#endif
 
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
   void xFillPCMBuffer         ( CodingUnit &cu);

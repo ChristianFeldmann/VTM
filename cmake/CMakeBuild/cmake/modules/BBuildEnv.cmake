@@ -16,34 +16,30 @@ Unless explicitly disabled by configuration option ``BBuildEnv_EXCLUDE_MODULES``
 module ``BBuildEnv`` loads the following submodules to provide additional support 
 for Boost, Qt5, OpenCV, file downloads, MinGW and CPack:
 
-- :module:`BBuildEnvAddProject` provides macros and functions to add standard
-  subproject like console applications, libraries, samples, UTF tests and Qt
-  applications to a standard workspace. 
-- :module:`BBuildEnvBoost` adds a few utility functions and macros helping to 
-  use locally built Boost libraries. 
-- :module:`BBuildEnvOpenCV`
-- :module:`BBuildEnvQt5`
-- :module:`BBuildEnvDownload`
-- :module:`BBuildEnvVersionUtil`
-- :module:`BBuildEnvCPack` adds a few utility functions helping to create binary
-  distribution packages.   
-- :module:`BBuildEnvMingw` adds helper functions to copy MinGW runtime DLLs.
+==============================   ===========================================================
+Module                           Description
+==============================   ===========================================================
+:module:`BBuildEnvAddProject`    Macros and functions to add standard
+                                 subproject like console applications, libraries, samples, 
+                                 UTF tests and Qt applications to a standard workspace
+:module:`BBuildEnvGitSvn`        Utility functions to support Git to SVN interoperability.                                   
+:module:`BBuildEnvDownload`      Supports HTTPS downloads of single files at build time
+:module:`BBuildEnvVersionUtil`   Functions to parse version header files
+:module:`BBuildEnvCPack`         Functions helping to create binary distribution packages
+:module:`BBuildEnvBoost`         Macros and functions helping to use locally built Boost 
+                                 libraries. 
+:module:`BBuildEnvOpenCV`        Helper functions to copy OpenCV runtime DLLs
+:module:`BBuildEnvQt5`           Helper functions to copy Qt5 runtime DLLs
+:module:`BBuildEnvMingw`         Helper functions to copy MinGW runtime DLLs on Ubuntu
+==============================   ===========================================================
 
+The following modules are not loaded by default as they provide functionality not needed
+by all main projects.
 
-Reserved Identifiers
-^^^^^^^^^^^^^^^^^^^^
-
-Avoiding name clashes in CMakeLists.txt or project specific CMake files all 
-projects including module ``BBuildEnv``, or any of its submodules, are advised 
-not to use CMake variables, functions or macros starting with::
-
-  BBuildEnv, _BBuildEnv, _bb_, bb_, BB_, _BB_
-
-Users may use variables starting with ``BBuildEnv_<var>`` only to configure the 
-behavior of ``BuildEnv`` modules or submodules or evaluate properties of loaded 
-``BuildEnv`` modules or submodules exposed through documented variables 
-``BBuildEnv_<var>``. 
-
+- :module:`BBuildEnvGit` provides macros and functions to checkout Git repositories at 
+  configuration time to aggregate them into a single build tree.  Similar functionality 
+  is provided by module :module:`FetchContent` with slightly different Git clone and
+  update behavior.
 
 Configuration Options
 ^^^^^^^^^^^^^^^^^^^^^
@@ -51,11 +47,18 @@ Configuration Options
 This module evaluates the following variables at load time allowing users to 
 customize its behavior:
 
-``BBuildEnv_DEBUG``
-  Enable debugging messages.
 ``BBuildEnv_EXCLUDE_MODULES``
   List of submodules to be excluded from loading.  Use ``ALL`` to disable
   loading any submodule.
+
+``BBuildEnv_DEBUG``
+  Enable debugging messages.
+
+``BBuildEnv_USE_LIBRARY_NAME_POSTFIX``
+  A boolean variable to enable a configuration specific library name postfix which
+  allows to install all library or executable variants in the same directory. It's unset/off by
+  default to provide backward compatibility with earlier releases. If enabled executable 
+  targets will need a configuration postfix as well. 
 
 
 How to Use
@@ -99,11 +102,47 @@ as an svn:external or as a versioned Git subtree:
 Provided Variables
 ^^^^^^^^^^^^^^^^^^
 
+Module ``BBuildEnv`` provides the following output variables 
+which are supposed to be treated readonly:
+
 ``BBuildEnv_VERSION``
   Module's version in decimal dotted format with a maximum of four components.
-
+  
 ``BBuildEnv_MSYS``
   Set to true when using MSYS.
+
+``BBuildEnv_GENERATOR_ALIAS``
+  CMake generator specific build directory. It's a plain name without any path separators.
+  
+  ``umake`` 
+    Unix Makefiles
+ 
+  ``vs16``
+    Microsoft Visual Studio 2019
+    
+  ``vs15``
+    Microsoft Visual Studio 2017
+    
+  ``vs14``
+    Microsoft Visual Studio 2015
+    
+  ``xcode``
+    Xcode generator, switching between different Xcode versions is currently not supported within a single build tree.
+    
+  ``ninja``
+    Ninja generator
+
+``BBuildEnv_<CONFIG>_POSTFIX``
+  Configuration specific postfix strings to support side-by-side installation in the same 
+  directory. 
+
+``BBuildEnv_SHARED_DIR_POSTFIX``
+  A string specific to the shared library configuration to allow for single 
+  output directories or installation directories.  
+
+``BBuildEnv_OUTPUT_DIR_SUFFIX``
+  A generator specific relative path to be used in installation rules to support multiple 
+  generators or compiler versions in combination with the same installation prefix. 
 
 ``BBuildEnv_ROOT_DIR``
   Optional root directory of CMakeBuild customization files. 
@@ -151,6 +190,40 @@ Provided Functions and Macros
       Compiler specific flag to enable or disable a warning.
 
 
+.. command:: bb_add_subdirectory
+
+  The ``bb_add_subdirectory()`` macro adds an external in-tree Git subproject 
+  provided variable ``USE_GIT_SUBPROJECTS`` is ON. 
+  The macro silently assumes the subproject is checked out to
+  ``${CMAKE_SOURCE_DIR}/ext/<subproject>``.  If variable ``USE_GIT_SUBPROJECTS`` 
+  is OFF, the macro will invoke :command:`add_subdirectory` for backward compatibility 
+  with SVN repositories and subproject aggregation via SVN externals::
+  
+    bb_add_subdirectory(<subproject>)
+    
+  **Parameters:**
+  
+    ``subproject``
+      A relative path to an in-tree subproject; e.g. ``BoostAddon/src/lib/LoggerLib``
+
+
+.. command:: bb_set_target_output_name
+
+  The ``bb_set_target_output_name`` macro appends a configuration specific postfix to 
+  the output name of executable targets if variable ``BBuildEnv_USE_LIBRARY_NAME_POSTFIX`` 
+  is ON. If applied to library targets, it will change :prop_tgt:`COMPILE_PDB_NAME_<CONFIG>` 
+  for static libraries to align the PDB filename with the library filename. 
+  CMake's postfix machinery does it for linker generated PDB files but not for compiler
+  generated PDB files::
+
+    bb_set_target_output_name( <target> )
+
+  **Parameters:**
+  
+    ``target``
+      An existing target to be modified.
+
+
 .. command:: bb_set_external_dir
 
   The ``bb_set_external_dir()`` function searches for a directory given a 
@@ -158,15 +231,15 @@ Provided Functions and Macros
   a shared folder holding an external project
   without searching any system paths or cross compiler specific paths::
   
-    bb_set_external_dir(<abs_path> <relative_path> [<OPTIONAL>])
+    bb_set_external_dir(<abs_path> <dir> [<OPTIONAL>])
 
   **Parameters:**
 
     ``abs_path``
       Absolute path to ``relative_path`` found in one of the default locations.
 
-    ``relative_path``
-      Path to search for in one of the default locations.  An absolute path 
+    ``dir``
+      Directory to search for in one of the default locations.  An absolute path 
       will be returned as-is.
           
     ``OPTIONAL``
@@ -184,25 +257,26 @@ Provided Functions and Macros
     ``${CMAKE_SOURCE_DIR}/../..``
      
     ``$ENV{HOME}/projects``
-      Ignored on windows host systems.
+      Ignored on native windows host systems. It is searched when MSYS has been detected 
+      or any other non-windows platform.
      
     ``$ENV{USERPROFILE}/projects``
       Ignored on non-windows host systems.
 
 
-.. command:: bb_add_subdirectory
+Reserved Identifiers
+^^^^^^^^^^^^^^^^^^^^
 
-  The ``bb_add_subdirectory()`` macro adds an external in-tree Git subproject. 
-  The macro silently assumes the subproject is checked out to
-  ``${CMAKE_SOURCE_DIR}/ext/<subproject>``::
-  
-    bb_add_subdirectory(<subproject>)
-    
-  **Parameters:**
-  
-    ``subproject``
-      A relative path to an in-tree subproject; e.g. ``BoostAddon/src/lib/LoggerLib``
+Avoiding name clashes in CMakeLists.txt or project specific CMake files all 
+projects including module ``BBuildEnv``, or any of its submodules, are advised 
+not to use CMake variables, functions or macros starting with::
 
+  BBuildEnv, _BBuildEnv, _bb_, bb_, BB_, _BB_
+
+Users may use variables starting with ``BBuildEnv_<var>`` only to configure the 
+behavior of ``BuildEnv`` modules or submodules or evaluate properties of loaded 
+``BuildEnv`` modules or submodules exposed through documented variables 
+``BBuildEnv_<var>``. 
 
 #]===]
 
@@ -224,6 +298,7 @@ set( _BBuildEnvSubmoduleList
      BBuildEnvBoost 
      BBuildEnvQt5
      BBuildEnvOpenCV 
+     BBuildEnvGitSvn
    )
 
 foreach( _cmod IN LISTS _BBuildEnvSubmoduleList )
@@ -247,6 +322,21 @@ macro( bb_add_subdirectory subdirectory_ )
     add_subdirectory( ${CMAKE_SOURCE_DIR}/ext/${BASE_DIRECTORY}/${subdirectory_} ${CMAKE_BINARY_DIR}/${subdirectory_} )
   else()
     add_subdirectory( ${subdirectory_} )  
+  endif()
+endmacro()
+
+
+macro( bb_set_target_output_name target_ )
+  if( BBuildEnv_USE_LIBRARY_NAME_POSTFIX ) 
+    get_target_property( _bb_tmp_target_type ${target_} TYPE )
+    if( _bb_tmp_target_type STREQUAL "EXECUTABLE" )
+      set_target_properties( ${target_} PROPERTIES OUTPUT_NAME_DEBUG ${target_}${CMAKE_DEBUG_POSTFIX} 
+                                        OUTPUT_NAME_RELWITHDEBINFO   ${target_}${CMAKE_RELWITHDEBINFO_POSTFIX} 
+                                        OUTPUT_NAME_MINSIZEREL       ${target_}${CMAKE_MINSIZEREL_POSTFIX} )
+    elseif( MSVC AND (_bb_tmp_target_type STREQUAL "STATIC_LIBRARY" ) )
+      # message( STATUS "${target_} is static, setting COMPILE_PDB_NAME_DEBUG ..." )
+      set_target_properties( ${target_} PROPERTIES COMPILE_PDB_NAME_DEBUG ${target_}${CMAKE_DEBUG_POSTFIX} COMPILE_PDB_NAME_RELWITHDEBINFO ${target_}${CMAKE_RELWITHDEBINFO_POSTFIX} )
+    endif()  
   endif()
 endmacro()
 
@@ -291,14 +381,38 @@ macro( _bb_get_cxx_compiler_version_major_minor version_major_minor_ )
   string( REGEX REPLACE "([0-9]+)\\.([0-9]+)([0-9.]+)?" "\\1.\\2" ${version_major_minor_} ${CMAKE_CXX_COMPILER_VERSION} )
 endmacro()
 
-macro( bb_get_home_dir home_dir_ )
+
+function( bb_get_home_dir home_dir_ )
+  set( _native FALSE )
+  
+  if( ARGC EQUAL 2 )
+    if( ${ARGV1} STREQUAL "NATIVE" )
+      set( _native TRUE )
+    else()
+      message( FATAL_ERROR "bb_get_home_dir: argument ${ARGV1} not understood." )
+    endif()
+  elseif( ARGC GREATER 2 )
+    message( FATAL_ERROR "bb_get_home_dir: too many arguments specified, expected <home_dir> [NATIVE]." )
+  endif()
+    
   if( CMAKE_HOST_WIN32 )
     # Force forward slashes on Windows
-    file( TO_CMAKE_PATH "$ENV{USERPROFILE}" ${home_dir_} )
+    if( BBuildEnv_MSYS )
+      if( _native )
+        file( TO_CMAKE_PATH "$ENV{USERPROFILE}" _home_dir )
+      else()
+        file( TO_CMAKE_PATH "$ENV{HOME}" _home_dir )
+      endif()
+    else()
+      file( TO_CMAKE_PATH "$ENV{USERPROFILE}" _home_dir )
+    endif()
   else()
-    set( ${home_dir_} "$ENV{HOME}" )
+    set( _home_dir "$ENV{HOME}" )
   endif()
-endmacro()
+  
+  set( ${home_dir_} "${_home_dir}" PARENT_SCOPE )
+  
+endfunction()
 
 
 macro( bb_set_home_dir home_dir_ )
@@ -601,10 +715,14 @@ function( _bb_find_proj_home proj_home_ home_dir_ )
   points to a non-existing directory.
       " )
     endif()
-  elseif( IS_DIRECTORY "${home_dir_}/projects" )
+  elseif( EXISTS "${home_dir_}/projects" )
     set( _proj_home "${home_dir_}/projects" )
-  #else()
-  #  get_filename_component( _proj_home ${CMAKE_SOURCE_DIR}/.. REALPATH )
+  elseif( BBuildEnv_MSYS )
+    # Check for %USERPROFILE%/projects as a fallback when using MSYS.
+    bb_get_home_dir( _home_dir NATIVE )
+    if( EXISTS "${_home_dir}/projects" )
+      set( _proj_home "${_home_dir}/projects" )
+    endif()
   endif()
   if( DEFINED _proj_home )
     set( ${proj_home_} "${_proj_home}" PARENT_SCOPE )
@@ -647,8 +765,15 @@ function( bb_set_external_dir dir_var_ dir_ )
         list( APPEND _search_path "${_dir_norm}" )
       endif()
     endforeach()
-    if( EXISTS "${bb_home_dir}/projects" )
-      list( APPEND _search_path "${bb_home_dir}/projects" )
+    bb_get_home_dir( _home_dir )
+    if( EXISTS "${_home_dir}/projects" )
+      list( APPEND _search_path "${_home_dir}/projects" )
+    endif()
+    if( BBuildEnv_MSYS )
+      bb_get_home_dir( _home_dir NATIVE )
+      if( EXISTS "${_home_dir}/projects" )
+        list( APPEND _search_path "${_home_dir}/projects" )
+      endif()
     endif()
     list( REMOVE_DUPLICATES _search_path )
     foreach( _path IN LISTS _search_path )
@@ -1132,18 +1257,6 @@ macro( bb_build_env_setup )
   _bb_find_proj_home( bb_proj_home "${bb_home_dir}" )
 
   # Add a cmake generator alias
-  # --
-  # Visual Studio 15 2017
-  # Visual Studio 14 2015
-  # Visual Studio 12 2013
-  # Visual Studio 11 2012
-  # Visual Studio 10 2010
-  # --
-  # Xcode
-  # Unix Makefiles
-  # Ninja
-  # MinGW Makefiles
-  # --
   unset( bb_generator_alias )
   if( CMAKE_GENERATOR STREQUAL "Unix Makefiles" )
     set( bb_generator_alias "umake" )
@@ -1169,11 +1282,15 @@ macro( bb_build_env_setup )
   
   # set standard output directories: gcc-5.4/x86_64
   if( DEFINED bb_generator_alias )
+    set( BBuildEnv_GENERATOR_ALIAS "${bb_generator_alias}" )
     set( bb_default_output_dir "${bb_generator_alias}/${bb_toolset_subdir}/${bb_platform_dir}" )
   else()
     set( bb_default_output_dir "${bb_toolset_subdir}/${bb_platform_dir}" )
   endif()
   
+  # BBuildEnv_OUTPUT_DIR_SUFFIX could be a cache variable to make it customizable. 
+  set( BBuildEnv_OUTPUT_DIR_SUFFIX           "${bb_default_output_dir}" )
+    
   # the deploy folder may be used to save installer packages.
   set( bb_deploy_dir "${CMAKE_SOURCE_DIR}/deploy" )
     
@@ -1182,23 +1299,63 @@ macro( bb_build_env_setup )
   endif()
   
   if( BUILD_SHARED_LIBS )
-    set( _bb_shared_suffix "-shared" )
+    set( BBuildEnv_SHARED_DIR_POSTFIX "-shared" )
+  else()
+    unset( BBuildEnv_SHARED_DIR_POSTFIX )
   endif()
+
+  if( NOT DEFINED BBuildEnv_USE_LIBRARY_NAME_POSTFIX )
+    set( BBuildEnv_USE_LIBRARY_NAME_POSTFIX OFF CACHE BOOL "Enable library name postfix" )
+  endif()
+    
+  #set( BBuildEnv_RELEASE_POSTFIX "" )
+  set( BBuildEnv_DEBUG_POSTFIX          "-d" )
+  set( BBuildEnv_RELWITHDEBINFO_POSTFIX "-rd" )
+  set( BBuildEnv_MINSIZEREL_POSTFIX     "-mr" )
   
-  set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_SOURCE_DIR}/bin/${bb_default_output_dir}/debug${_bb_shared_suffix}" )
-  set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_SOURCE_DIR}/bin/${bb_default_output_dir}/release${_bb_shared_suffix}" )
-  set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/bin/${bb_default_output_dir}/relwithdebinfo${_bb_shared_suffix}" )
-  set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_SOURCE_DIR}/bin/${bb_default_output_dir}/minsizerel${_bb_shared_suffix}" )
   
-  set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/debug${_bb_shared_suffix}" )
-  set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/release${_bb_shared_suffix}" )
-  set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/relwithdebinfo${_bb_shared_suffix}" )
-  set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/minsizerel${_bb_shared_suffix}" )
+  if( BBuildEnv_USE_LIBRARY_NAME_POSTFIX ) 
+    set( CMAKE_DEBUG_POSTFIX                           ${BBuildEnv_DEBUG_POSTFIX} )
+    set( CMAKE_RELWITHDEBINFO_POSTFIX                  ${BBuildEnv_RELWITHDEBINFO_POSTFIX} )
+    set( CMAKE_MINSIZEREL_POSTFIX                      ${BBuildEnv_MINSIZEREL_POSTFIX} )
+
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY                "${CMAKE_SOURCE_DIR}/lib${BBuildEnv_SHARED_DIR_POSTFIX}/${BBuildEnv_OUTPUT_DIR_SUFFIX}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}" )
+    
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG}" )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE}" )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO}" )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL}" )    
+    
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY                "${CMAKE_SOURCE_DIR}/bin${BBuildEnv_SHARED_DIR_POSTFIX}/${BBuildEnv_OUTPUT_DIR_SUFFIX}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" )
+    
+  else()
+    # Using CMake's default library name convention which is the same for all configurations.
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_SOURCE_DIR}/lib/${BBuildEnv_OUTPUT_DIR_SUFFIX}/debug${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_SOURCE_DIR}/lib/${BBuildEnv_OUTPUT_DIR_SUFFIX}/release${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/lib/${BBuildEnv_OUTPUT_DIR_SUFFIX}/relwithdebinfo${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_SOURCE_DIR}/lib/${BBuildEnv_OUTPUT_DIR_SUFFIX}/minsizerel${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    
+    
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG}" )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE}" )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO}" )
+    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL}" )    
+    
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_SOURCE_DIR}/bin/${BBuildEnv_OUTPUT_DIR_SUFFIX}/debug${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_SOURCE_DIR}/bin/${BBuildEnv_OUTPUT_DIR_SUFFIX}/release${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/bin/${BBuildEnv_OUTPUT_DIR_SUFFIX}/relwithdebinfo${BBuildEnv_SHARED_DIR_POSTFIX}" )
+    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_SOURCE_DIR}/bin/${BBuildEnv_OUTPUT_DIR_SUFFIX}/minsizerel${BBuildEnv_SHARED_DIR_POSTFIX}" )    
+  endif()
+    
   
-  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/debug${_bb_shared_suffix}" )
-  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/release${_bb_shared_suffix}" )
-  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/relwithdebinfo${_bb_shared_suffix}" )
-  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${CMAKE_SOURCE_DIR}/lib/${bb_default_output_dir}/minsizerel${_bb_shared_suffix}" )
 endmacro( bb_build_env_setup )
 
 #message( STATUS "BBuildEnv.cmake: starting: ${CMAKE_GENERATOR}" )

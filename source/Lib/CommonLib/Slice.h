@@ -188,7 +188,9 @@ class ConstraintInfo
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
   bool              m_noAlfConstraintFlag;
+#if !JVET_O0525_REMOVE_PCM
   bool              m_noPcmConstraintFlag;
+#endif
   bool              m_noRefWraparoundConstraintFlag;
   bool              m_noTemporalMvpConstraintFlag;
   bool              m_noSbtmvpConstraintFlag;
@@ -229,7 +231,9 @@ public:
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
     , m_noAlfConstraintFlag      (false)
+#if !JVET_O0525_REMOVE_PCM
     , m_noPcmConstraintFlag      (false)
+#endif
     , m_noRefWraparoundConstraintFlag(false)
     , m_noTemporalMvpConstraintFlag(false)
     , m_noSbtmvpConstraintFlag   (false)
@@ -297,8 +301,10 @@ public:
   bool          getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
   void          setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
 #endif
+#if !JVET_O0525_REMOVE_PCM
   bool          getNoPcmConstraintFlag() const { return m_noPcmConstraintFlag; }
   void          setNoPcmConstraintFlag(bool bVal) { m_noPcmConstraintFlag = bVal; }
+#endif
   bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
   void          setNoRefWraparoundConstraintFlag(bool bVal) { m_noRefWraparoundConstraintFlag = bVal; }
   bool          getNoTemporalMvpConstraintFlag() const { return m_noTemporalMvpConstraintFlag; }
@@ -740,8 +746,13 @@ private:
   uint32_t              m_uiMaxTLayers;           // maximum number of temporal layers
 
   // Structure
+#if JVET_O1164_PS
+  uint32_t              m_maxWidthInLumaSamples;
+  uint32_t              m_maxHeightInLumaSamples;
+#else
   uint32_t              m_picWidthInLumaSamples;
   uint32_t              m_picHeightInLumaSamples;
+#endif
 
   int               m_log2MinCodingBlockSize;
   int               m_log2DiffMaxMinCodingBlockSize;
@@ -757,7 +768,9 @@ private:
   uint32_t              m_uiMaxCUHeight;
   uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
 
+#if !JVET_O1164_PS
   Window            m_conformanceWindow;
+#endif
 
   RPLList           m_RPLList0;
   RPLList           m_RPLList1;
@@ -771,9 +784,11 @@ private:
   int               m_numReorderPics[MAX_TLAYER];
 
   // Tool list
+#if !JVET_O0525_REMOVE_PCM
   bool                  m_pcmEnabledFlag;
   uint32_t              m_pcmLog2MaxSize;
   uint32_t              m_uiPCMLog2MinSize;
+#endif
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool              m_transformSkipEnabledFlag;
@@ -788,8 +803,10 @@ private:
 #if JVET_O0919_TS_MIN_QP
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
 #endif
+#if !JVET_O0525_REMOVE_PCM
   int               m_pcmBitDepths[MAX_NUM_CHANNEL_TYPE];
   bool              m_bPCMFilterDisableFlag;
+#endif
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
@@ -886,6 +903,12 @@ public:
   static int              getWinUnitY (int chromaFormatIdc)                                               { CHECK(chromaFormatIdc < 0 || chromaFormatIdc >= NUM_CHROMA_FORMAT, "Invalid chroma format parameter"); return m_winUnitY[chromaFormatIdc]; }
 
   // structure
+#if JVET_O1164_PS
+  void                    setMaxPicWidthInLumaSamples( uint32_t u )                                       { m_maxWidthInLumaSamples = u; }
+  uint32_t                getMaxPicWidthInLumaSamples() const                                             { return  m_maxWidthInLumaSamples; }
+  void                    setMaxPicHeightInLumaSamples( uint32_t u )                                      { m_maxHeightInLumaSamples = u; }
+  uint32_t                getMaxPicHeightInLumaSamples() const                                            { return  m_maxHeightInLumaSamples; }
+#else
   void                    setPicWidthInLumaSamples( uint32_t u )                                              { m_picWidthInLumaSamples = u;                                         }
   uint32_t                    getPicWidthInLumaSamples() const                                                { return  m_picWidthInLumaSamples;                                     }
   void                    setPicHeightInLumaSamples( uint32_t u )                                             { m_picHeightInLumaSamples = u;                                        }
@@ -894,6 +917,7 @@ public:
   Window&                 getConformanceWindow()                                                          { return  m_conformanceWindow;                                         }
   const Window&           getConformanceWindow() const                                                    { return  m_conformanceWindow;                                         }
   void                    setConformanceWindow(Window& conformanceWindow )                                { m_conformanceWindow = conformanceWindow;                             }
+#endif
 
   uint32_t                    getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                               { m_numLongTermRefPicSPS = val;                                        }
@@ -948,12 +972,14 @@ public:
   uint32_t                    getMaxCUHeight() const                                                          { return  m_uiMaxCUHeight;                                             }
   void                    setMaxCodingDepth( uint32_t u )                                                     { m_uiMaxCodingDepth = u;                                              }
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
+#if !JVET_O0525_REMOVE_PCM
   void                    setPCMEnabledFlag( bool b )                                                         { m_pcmEnabledFlag = b;                                                }
   bool                    getPCMEnabledFlag() const                                                           { return m_pcmEnabledFlag;                                             }
   void                    setPCMLog2MaxSize( uint32_t u )                                                     { m_pcmLog2MaxSize = u;                                                }
   uint32_t                    getPCMLog2MaxSize() const                                                       { return  m_pcmLog2MaxSize;                                            }
   void                    setPCMLog2MinSize( uint32_t u )                                                     { m_uiPCMLog2MinSize = u;                                              }
   uint32_t                    getPCMLog2MinSize() const                                                       { return  m_uiPCMLog2MinSize;                                          }
+#endif
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
@@ -1030,10 +1056,12 @@ public:
 
   bool                    getTemporalIdNestingFlag() const                                                { return m_bTemporalIdNestingFlag;                                     }
   void                    setTemporalIdNestingFlag( bool bValue )                                         { m_bTemporalIdNestingFlag = bValue;                                   }
+#if !JVET_O0525_REMOVE_PCM
   uint32_t                    getPCMBitDepth(ChannelType type) const                                          { return m_pcmBitDepths[type];                                         }
   void                    setPCMBitDepth(ChannelType type, uint32_t u)                                        { m_pcmBitDepths[type] = u;                                            }
   void                    setPCMFilterDisableFlag( bool bValue )                                          { m_bPCMFilterDisableFlag = bValue;                                    }
   bool                    getPCMFilterDisableFlag() const                                                 { return m_bPCMFilterDisableFlag;                                      }
+#endif
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
@@ -1299,6 +1327,12 @@ private:
   unsigned         m_virtualBoundariesPosX[3];
   unsigned         m_virtualBoundariesPosY[3];
 
+#if JVET_O1164_PS
+  uint32_t         m_picWidthInLumaSamples;
+  uint32_t         m_picHeightInLumaSamples;
+  Window           m_conformanceWindow;
+#endif
+
   PPSRExt          m_ppsRangeExtension;
 
 public:
@@ -1467,6 +1501,17 @@ public:
 
   const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
+
+#if JVET_O1164_PS
+  void                    setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
+  uint32_t                getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
+  void                    setPicHeightInLumaSamples( uint32_t u )                         { m_picHeightInLumaSamples = u; }
+  uint32_t                getPicHeightInLumaSamples() const                               { return  m_picHeightInLumaSamples; }
+
+  Window&                 getConformanceWindow()                                          { return  m_conformanceWindow; }
+  const Window&           getConformanceWindow() const                                    { return  m_conformanceWindow; }
+  void                    setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
+#endif
 };
 
 class APS
@@ -1564,6 +1609,10 @@ private:
   int                        m_aiRefPOCList  [NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];
   bool                       m_bIsUsedAsLongTerm[NUM_REF_PIC_LIST_01][MAX_NUM_REF+1];
   int                        m_iDepth;
+#if JVET_O1164_RPR
+  Picture*                   m_scaledRefPicList[NUM_REF_PIC_LIST_01][MAX_NUM_REF + 1];
+  Picture*                   m_savedRefPicList[NUM_REF_PIC_LIST_01][MAX_NUM_REF + 1];
+#endif
 
 
   // access channel
@@ -1952,6 +2001,11 @@ public:
   }
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
+#if JVET_O1164_RPR
+  void                        scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder );
+  void                        freeScaledRefPicList( Picture *scaledRefPic[] );
+  bool                        checkRPR();
+#endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
@@ -2188,11 +2242,21 @@ public:
     , partsInCtuWidth     ( 1 << sps.getMaxCodingDepth() )
     , partsInCtuHeight    ( 1 << sps.getMaxCodingDepth() )
     , partsInCtu          ( 1 << (sps.getMaxCodingDepth() << 1) )
+#if JVET_O1164_PS
+    , widthInCtus         ( (pps.getPicWidthInLumaSamples () + sps.getMaxCUWidth () - 1) / sps.getMaxCUWidth () )
+    , heightInCtus        ( (pps.getPicHeightInLumaSamples() + sps.getMaxCUHeight() - 1) / sps.getMaxCUHeight() )
+#else
     , widthInCtus         ( (sps.getPicWidthInLumaSamples () + sps.getMaxCUWidth () - 1) / sps.getMaxCUWidth () )
     , heightInCtus        ( (sps.getPicHeightInLumaSamples() + sps.getMaxCUHeight() - 1) / sps.getMaxCUHeight() )
+#endif
     , sizeInCtus          ( widthInCtus * heightInCtus )
+#if JVET_O1164_PS
+    , lumaWidth           ( pps.getPicWidthInLumaSamples() )
+    , lumaHeight          ( pps.getPicHeightInLumaSamples() )
+#else
     , lumaWidth           ( sps.getPicWidthInLumaSamples() )
     , lumaHeight          ( sps.getPicHeightInLumaSamples() )
+#endif
     , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )

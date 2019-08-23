@@ -69,6 +69,9 @@ private:
   uint32_t      m_uiNumPic;
   double    m_dFrmRate; //--CFG_KDY
   double    m_MSEyuvframe[MAX_NUM_COMPONENT]; // sum of MSEs
+#if RPR_CTC_PRINT
+  double    m_upscaledPSNR[MAX_NUM_COMPONENT];
+#endif
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze m_ext360;
 #endif
@@ -82,6 +85,9 @@ public:
   Analyze() { clear(); }
 
   void  addResult( double psnr[MAX_NUM_COMPONENT], double bits, const double MSEyuvframe[MAX_NUM_COMPONENT]
+#if RPR_CTC_PRINT
+    , const double upscaledPSNR[MAX_NUM_COMPONENT]
+#endif
     , bool isEncodeLtRef
   )
   {
@@ -92,6 +98,9 @@ public:
     {
       m_dPSNRSum[i] += psnr[i];
       m_MSEyuvframe[i] += MSEyuvframe[i];
+#if RPR_CTC_PRINT
+      m_upscaledPSNR[i] += upscaledPSNR[i];
+#endif
     }
 
     m_uiNumPic++;
@@ -129,6 +138,9 @@ public:
     {
       m_dPSNRSum[i] = 0;
       m_MSEyuvframe[i] = 0;
+#if RPR_CTC_PRINT
+      m_upscaledPSNR[i] = 0;
+#endif
     }
     m_uiNumPic = 0;
 #if EXTENSION_360_VIDEO
@@ -184,11 +196,19 @@ public:
   }
 
 #if ENABLE_QPA || WCG_WPSNR
+#if RPR_CTC_PRINT
+  void    printOut( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths, const bool useWPSNR = false
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
+#else
   void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false
 #if JVET_O0756_CALCULATE_HDRMETRICS
       , const bool printHdrMetrics = false
 #endif
   )
+#endif
 #else
   void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths
 #if JVET_O0756_CALCULATE_HDRMETRICS
@@ -552,6 +572,36 @@ public:
             {
               msg( e_msg_level, "\n");
             }
+#if RPR_CTC_PRINT
+            if( printRprPSNR )
+            {
+              double psnr[MAX_NUM_COMPONENT];
+              for( uint32_t componentIndex = 0; componentIndex < MAX_NUM_COMPONENT; componentIndex++ )
+              {
+                const ComponentID compID = ComponentID( componentIndex );
+
+                if( getNumPic() == 0 )
+                {
+                  psnr[compID] = 0.0;
+                }
+                else
+                {
+                  const uint32_t maxval = 255 << ( bitDepths.recon[toChannelType( compID )] - 8 );
+                  psnr[compID] = ( m_MSEyuvframe[compID] == 0 ) ? 999.99 : 10.0 * log10( ( maxval * maxval ) / ( m_MSEyuvframe[compID] / (double)getNumPic() ) );
+                }
+              }
+
+              msg( e_msg_level, "\nPSNR1 Y-PSNR     "  "U-PSNR     "  "V-PSNR\n" );
+              msg( e_msg_level, "     %8.4lf  "     " %8.4lf  "     " %8.4lf\n",
+                psnr[COMPONENT_Y], psnr[COMPONENT_Cb], psnr[COMPONENT_Cr] );
+
+              msg( e_msg_level, "PSNR2 Y-PSNR     "  "U-PSNR     "  "V-PSNR\n" );
+              msg( e_msg_level, "     %8.4lf  "     " %8.4lf  "     " %8.4lf\n",
+                m_upscaledPSNR[COMPONENT_Y] / (double)getNumPic(),
+                m_upscaledPSNR[COMPONENT_Cb] / (double)getNumPic(),
+                m_upscaledPSNR[COMPONENT_Cr] / (double)getNumPic());
+            }
+#endif
           }
         }
         break;

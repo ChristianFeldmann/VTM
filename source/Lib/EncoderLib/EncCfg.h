@@ -188,7 +188,9 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
+#if !JVET_O0525_REMOVE_PCM
   bool      m_bNoPcmConstraintFlag;
+#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -356,7 +358,7 @@ protected:
   bool      m_MIP;
   bool      m_useFastMIP;
 #if JVET_O0050_LOCAL_DUAL_TREE
-  bool      m_useFastLocalDualTree;
+  int       m_fastLocalDualTreeMode;
 #endif
 #if MAX_TB_SIZE_SIGNALLING
   uint32_t  m_log2MaxTbSize;
@@ -463,10 +465,12 @@ protected:
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
+#if !JVET_O0525_REMOVE_PCM
   bool      m_usePCM;
   int       m_PCMBitDepth[MAX_NUM_CHANNEL_TYPE];
   uint32_t      m_pcmLog2MaxSize;
   uint32_t      m_uiPCMLog2MinSize;
+#endif
   //====== Slice ========
   SliceConstraint m_sliceMode;
   int       m_sliceArgument;
@@ -475,8 +479,10 @@ protected:
   int       m_sliceSegmentArgument;
   bool      m_bLFCrossSliceBoundaryFlag;
 
+#if !JVET_O0525_REMOVE_PCM
   bool      m_bPCMInputBitDepthFlag;
   bool      m_bPCMFilterDisableFlag;
+#endif
   bool      m_intraSmoothingDisabledFlag;
   bool      m_loopFilterAcrossBricksEnabledFlag;
   bool      m_tileUniformSpacingFlag;
@@ -671,6 +677,13 @@ protected:
   int                          m_cropOffsetRight;
   int                          m_cropOffsetBottom;
   bool                         m_calculateHdrMetrics;
+#endif  
+#if JVET_O1164_RPR
+  double      m_scalingRatioHor;
+  double      m_scalingRatioVer;
+  bool        m_rprEnabled;
+  int         m_switchPocPeriod;
+  int         m_upscaledOutput;
 #endif
 
 public:
@@ -678,8 +691,10 @@ public:
   : m_tileColumnWidth()
   , m_tileRowHeight()
   {
+#if !JVET_O0525_REMOVE_PCM
     m_PCMBitDepth[CHANNEL_TYPE_LUMA]=8;
     m_PCMBitDepth[CHANNEL_TYPE_CHROMA]=8;
+#endif
   }
 
   virtual ~EncCfg()
@@ -705,8 +720,10 @@ public:
   void      setNoSaoConstraintFlag(bool bVal) { m_bNoSaoConstraintFlag = bVal; }
   bool      getNoAlfConstraintFlag() const { return m_bNoAlfConstraintFlag; }
   void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
+#if !JVET_O0525_REMOVE_PCM
   bool      getNoPcmConstraintFlag() const { return m_bNoPcmConstraintFlag; }
   void      setNoPcmConstraintFlag(bool bVal) { m_bNoPcmConstraintFlag = bVal; }
+#endif
   bool      getNoRefWraparoundConstraintFlag() const { return m_bNoRefWraparoundConstraintFlag; }
   void      setNoRefWraparoundConstraintFlag(bool bVal) { m_bNoRefWraparoundConstraintFlag = bVal; }
   bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
@@ -1010,8 +1027,8 @@ public:
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }
   bool      getUseFastMIP                   () const         { return m_useFastMIP; }
 #if JVET_O0050_LOCAL_DUAL_TREE
-  void      setUseFastLocalDualTree         ( bool b )       { m_useFastLocalDualTree = b; }
-  bool      getUseFastLocalDualTree         () const         { return m_useFastLocalDualTree; }
+  void     setFastLocalDualTreeMode         ( int i )        { m_fastLocalDualTreeMode = i; }
+  int      getFastLocalDualTreeMode         () const         { return m_fastLocalDualTreeMode; }
 #endif
 
 #if MAX_TB_SIZE_SIGNALLING
@@ -1158,6 +1175,9 @@ public:
   //==== Tool list ========
   void      setBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_bitDepth[chType] = internalBitDepthForChannel; }
   void      setInputBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_inputBitDepth[chType] = internalBitDepthForChannel; }
+#if JVET_O1164_PS
+  int*      getInputBitDepth()                              { return m_inputBitDepth; }
+#endif
   void      setUseASR                       ( bool  b )     { m_bUseASR     = b; }
   void      setUseHADME                     ( bool  b )     { m_bUseHADME   = b; }
   void      setUseRDOQ                      ( bool  b )     { m_useRDOQ    = b; }
@@ -1176,16 +1196,21 @@ public:
   void      setFastMEForGenBLowDelayEnabled ( bool  b )     { m_bFastMEForGenBLowDelayEnabled = b; }
   void      setUseBLambdaForNonKeyLowDelayPictures ( bool b ) { m_bUseBLambdaForNonKeyLowDelayPictures = b; }
 
+#if !JVET_O0525_REMOVE_PCM
   void      setPCMInputBitDepthFlag         ( bool  b )     { m_bPCMInputBitDepthFlag = b; }
   void      setPCMFilterDisableFlag         ( bool  b )     {  m_bPCMFilterDisableFlag = b; }
   void      setUsePCM                       ( bool  b )     {  m_usePCM = b;               }
   void      setPCMBitDepth( const ChannelType chType, int pcmBitDepthForChannel ) { m_PCMBitDepth[chType] = pcmBitDepthForChannel; }
   void      setPCMLog2MaxSize               ( uint32_t u )      { m_pcmLog2MaxSize = u;      }
   void      setPCMLog2MinSize               ( uint32_t u )     { m_uiPCMLog2MinSize = u;      }
+#endif
   void      setdQPs                         ( int*  p )     { m_aidQP       = p; }
   void      setDeltaQpRD                    ( uint32_t  u )     {m_uiDeltaQpRD  = u; }
   void      setFastDeltaQp                  ( bool  b )     {m_bFastDeltaQP = b; }
   int       getBitDepth                     (const ChannelType chType) const { return m_bitDepth[chType]; }
+#if JVET_O1164_PS
+  int*      getBitDepth                     ()      { return m_bitDepth; }
+#endif
   bool      getUseASR                       ()      { return m_bUseASR;     }
   bool      getUseHADME                     ()      { return m_bUseHADME;   }
   bool      getUseRDOQ                      ()      { return m_useRDOQ;    }
@@ -1203,11 +1228,13 @@ public:
   bool      getFastUDIUseMPMEnabled         ()      { return m_bFastUDIUseMPMEnabled; }
   bool      getFastMEForGenBLowDelayEnabled ()      { return m_bFastMEForGenBLowDelayEnabled; }
   bool      getUseBLambdaForNonKeyLowDelayPictures () { return m_bUseBLambdaForNonKeyLowDelayPictures; }
+#if !JVET_O0525_REMOVE_PCM
   bool      getPCMInputBitDepthFlag         ()      { return m_bPCMInputBitDepthFlag;   }
   bool      getPCMFilterDisableFlag         ()      { return m_bPCMFilterDisableFlag;   }
   bool      getUsePCM                       ()      { return m_usePCM;                 }
   uint32_t      getPCMLog2MaxSize               ()      { return m_pcmLog2MaxSize;  }
   uint32_t      getPCMLog2MinSize               ()      { return  m_uiPCMLog2MinSize;  }
+#endif
 
   bool      getCrossComponentPredictionEnabledFlag     ()                const { return m_crossComponentPredictionEnabledFlag;   }
   void      setCrossComponentPredictionEnabledFlag     (const bool value)      { m_crossComponentPredictionEnabledFlag = value;  }
@@ -1673,6 +1700,14 @@ public:
   bool        getCalcluateHdrMetrics()                          const { return m_calculateHdrMetrics;}
 #endif
 
+#if JVET_O1164_RPR
+  void        setScalingRatio( double hor, double ver )              { m_scalingRatioHor = hor, m_scalingRatioVer = ver;  }
+  void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
+  bool        isRPREnabled()                                   const { return m_rprEnabled; }
+  void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
+  void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
+  int         getUpscaledOutput()                              const { return m_upscaledOutput; }
+#endif
 };
 
 //! \}

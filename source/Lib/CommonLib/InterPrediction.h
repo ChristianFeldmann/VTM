@@ -69,11 +69,13 @@ private:
   Distortion  m_bioSubBlkDistThres;
   Distortion  m_bioPredSubBlkDist[MAX_NUM_PARTS_IN_CTU];
 
+#if !JVET_O0304_SIMPLIFIED_BDOF
   int m_dotProduct1[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct2[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct3[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct5[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct6[BIO_TEMP_BUFFER_SIZE];
+#endif
 
 protected:
   InterpolationFilter  m_if;
@@ -242,6 +244,10 @@ public:
   void resetVPDUforIBC(const ChromaFormat chromaFormatIDC, const int ctuSize, const int vSize, const int xPos, const int yPos);
   bool isLumaBvValid(const int ctuSize, const int xCb, const int yCb, const int width, const int height, const int xBv, const int yBv);
 #endif
+#endif
+
+#if JVET_O1164_RPR
+  bool xPredInterBlkRPR( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng );
 #endif
 };
 

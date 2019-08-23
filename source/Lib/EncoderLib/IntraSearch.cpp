@@ -1336,18 +1336,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
       csTemp->releaseIntermediateData();
 #if JVET_O0050_LOCAL_DUAL_TREE
-      if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
+      if( m_pcEncCfg->getFastLocalDualTreeMode() )
       {
-        if( m_pcEncCfg->getUseFastLocalDualTree() )
+        if( cu.isConsIntra() && !cu.slice->isIntra() && csBest->cost != MAX_DOUBLE && costInterCU != COST_UNKNOWN && mode >= 0 )
         {
-          //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
-          break;
-        }
-        else
-        {
-          if( csBest->cost > costInterCU * 1.5 )
+          if( m_pcEncCfg->getFastLocalDualTreeMode() == 2 )
           {
+            //Note: only try one intra mode, which is especially useful to reduce EncT for LDB case (around 4%)
             break;
+          }
+          else
+          {
+            if( csBest->cost > costInterCU * 1.5 )
+            {
+              break;
+            }
           }
         }
       }
@@ -1682,6 +1685,7 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
   }
 }
 
+#if !JVET_O0525_REMOVE_PCM
 void IntraSearch::IPCMSearch(CodingStructure &cs, Partitioner& partitioner)
 {
 #if JVET_O0050_LOCAL_DUAL_TREE
@@ -1742,6 +1746,7 @@ void IntraSearch::xEncPCM(CodingStructure &cs, Partitioner& partitioner, const C
     }
   }
 }
+#endif
 
 #if JVET_O0050_LOCAL_DUAL_TREE
 void IntraSearch::saveCuAreaCostInSCIPU( Area area, double cost )
@@ -1780,7 +1785,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   }
 
   Pel  *runLength = tu.getRunLens (compBegin);
-  bool *runType   = tu.getRunTypes(compBegin);
+  PLTRunMode *runType       = tu.getRunTypes(compBegin);
   cu.lastPLTSize[compBegin] = cs.prevPLT.curPLTSize[compBegin];
   //derive palette
   derivePLTLossy(cs, partitioner, compBegin, numComp);
@@ -1796,7 +1801,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, bits);
   }
   cu.useRotation[compBegin] = m_bestScanRotationMode;
-  memcpy(runType, m_runTypeRD, sizeof(bool)*width*height);
+  memcpy(runType, m_runTypeRD, sizeof(PLTRunMode) * width * height);
   memcpy(runLength, m_runLengthRD, sizeof(Pel)*width*height);
   //reconstruct pixel
   PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
@@ -1878,7 +1883,7 @@ void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partiti
   uint32_t height = cu.block(compBegin).height;
   uint32_t width = cu.block(compBegin).width;
   Pel  *runLength = tu.getRunLens (compBegin);
-  bool *runType   = tu.getRunTypes(compBegin);
+  PLTRunMode *   runType   = tu.getRunTypes(compBegin);
 
   cu.useRotation[compBegin] = (pltScanMode == PLT_SCAN_VERTRAV);
   m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
@@ -2372,6 +2377,7 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       }
 #endif
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
+#if !JVET_O0525_REMOVE_PCM
       if( CU::isIntra(cu) )
       {
         m_CABACEstimator->pcm_data( cu, partitioner );
@@ -2380,6 +2386,7 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
           return;
         }
       }
+#endif
     }
 
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);

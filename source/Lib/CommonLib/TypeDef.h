@@ -50,6 +50,13 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
+#if JVET_O1164_RPR
+#define JVET_O1164_PS                                     1
+#define RPR_BUFFER                                        1  // lossless
+#define RPR_CTC_PRINT                                     1
+#define RPR_CONF_WINDOW                                   1
+#endif
 
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
@@ -177,6 +184,8 @@
 
 #define JVET_O0545_MAX_TB_SIGNALLING                      1 // JVET-O0545: Configurable maximum transform size
 
+#define JVET_O0525_REMOVE_PCM                             1 // JVET-O0525: Removal of PCM mode
+
 #define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
 #define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
 #define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
@@ -235,6 +244,8 @@
 
 #define JVET_O0610_CFG                                    1 // config default change for "Adopt to mandate the presence of AU delimiter for each AU", config parameter should be removed later
 
+#define JVET_O0491_HLS_CLEANUP                            1
+
 #define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
 
@@ -245,7 +256,9 @@
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+#if !JVET_O0525_REMOVE_PCM
 #define FIX_PCM                                           1 // Fix PCM bugs in VTM3
+#endif
 
 #if JVET_O0545_MAX_TB_SIGNALLING
 #define MAX_TB_SIZE_SIGNALLING                            1
@@ -348,11 +361,10 @@ typedef std::pair<int, int>  TrCost;
 
 #ifndef RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 #define RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS         (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 (default) = decoder reports as normal, 1 = decoder produces max frame bit usage statistics
-#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
-#define TR_ONLY_COEFF_STATS                               1
-#define EPBINCOUNT_FIX                                    1
 #endif
-#endif
+
+#define TR_ONLY_COEFF_STATS                              (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 combine TS and non-TS decoder debug statistics. 1 = separate TS and non-TS decoder debug statistics.
+#define EPBINCOUNT_FIX                                   (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 use count to represent number of calls to decodeBins. 1 = count and bins for EP bins are the same.
 
 #ifndef RExt__DECODER_DEBUG_TOOL_STATISTICS
 #define RExt__DECODER_DEBUG_TOOL_STATISTICS               0 ///< 0 (default) = decoder reports as normal, 1 = decoder produces tool usage statistics
@@ -1132,7 +1144,11 @@ enum PLTRunMode
   PLT_RUN_INDEX = 0,
   PLT_RUN_COPY  = 1,
   NUM_PLT_RUN   = 2
-};
+}
+#if __GNUC__
+__attribute__((packed))
+#endif
+;
 #endif
 /// parameters for deblocking filter
 struct LFCUParam

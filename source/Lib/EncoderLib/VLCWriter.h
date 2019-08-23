@@ -148,10 +148,11 @@ public:
 #endif
 
 private:
-  void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
   void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
+#if !JVET_O0491_HLS_CLEANUP
+  void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
-
+#endif
   void  codeReshaper            ( const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);
 };
 

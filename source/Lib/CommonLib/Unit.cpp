@@ -268,7 +268,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
   bdpcmMode         = other.bdpcmMode;
+#if !JVET_O0525_REMOVE_PCM
   ipcm              = other.ipcm;
+#endif
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
@@ -322,7 +324,9 @@ void CodingUnit::initData()
   triangle          = false;
   transQuantBypass  = false;
   bdpcmMode         = 0;
+#if !JVET_O0525_REMOVE_PCM
   ipcm              = false;
+#endif
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
@@ -755,7 +759,7 @@ void TransformUnit::initData()
 }
 
 #if JVET_O0119_BASE_PALETTE_444
-void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType)
+void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, PLTRunMode **runType)
 #else
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf)
 #endif
@@ -848,7 +852,10 @@ const CPLTescapeBuf TransformUnit::getescapeValue(const ComponentID id) const { 
 
       Pel*          TransformUnit::getPLTIndex   (const ComponentID id)       { return  m_pcmbuf[id];    }
       Pel*          TransformUnit::getRunLens    (const ComponentID id)       { return  m_runLength[id]; }
-      bool*         TransformUnit::getRunTypes   (const ComponentID id)       { return  m_runType[id];   }
+      PLTRunMode *  TransformUnit::getRunTypes(const ComponentID id)
+      {
+        return m_runType[id];
+      }
 #endif
 
 void TransformUnit::checkTuNoResidual( unsigned idx )

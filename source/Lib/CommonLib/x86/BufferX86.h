@@ -53,44 +53,33 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
 {
   if( W == 8 )
   {
-    // TODO: AVX2 impl
+    CHECK(offset & 1, "offset must be even");
+    CHECK(offset < -32768 || offset > 32767, "offset must be a 16-bit value");
+
+    __m128i vibdimin = _mm_set1_epi16(clpRng.min);
+    __m128i vibdimax = _mm_set1_epi16(clpRng.max);
+
+    for (int row = 0; row < height; row++)
     {
-      __m128i vzero    = _mm_setzero_si128();
-      __m128i voffset  = _mm_set1_epi32( offset );
-      __m128i vibdimin = _mm_set1_epi16( clpRng.min );
-      __m128i vibdimax = _mm_set1_epi16( clpRng.max );
-
-      for( int row = 0; row < height; row++ )
+      for (int col = 0; col < width; col += 8)
       {
-        for( int col = 0; col < width; col += 8 )
-        {
-          __m128i vsrc0 = _mm_loadu_si128( ( const __m128i * )&src0[col] );
-          __m128i vsrc1 = _mm_loadu_si128( ( const __m128i * )&src1[col] );
+        __m128i vsrc0 = _mm_loadu_si128((const __m128i *) &src0[col]);
+        __m128i vsrc1 = _mm_loadu_si128((const __m128i *) &src1[col]);
 
-          __m128i vtmp, vsum, vdst;
-          vsum = _mm_cvtepi16_epi32   ( vsrc0 );
-          vdst = _mm_cvtepi16_epi32   ( vsrc1 );
-          vsum = _mm_add_epi32        ( vsum, vdst );
-          vsum = _mm_add_epi32        ( vsum, voffset );
-          vtmp = _mm_srai_epi32       ( vsum, shift );
-
-          vsrc0 = _mm_unpackhi_epi64  ( vsrc0, vzero );
-          vsrc1 = _mm_unpackhi_epi64  ( vsrc1, vzero );
-          vsum = _mm_cvtepi16_epi32   ( vsrc0 );
-          vdst = _mm_cvtepi16_epi32   ( vsrc1 );
-          vsum = _mm_add_epi32        ( vsum, vdst );
-          vsum = _mm_add_epi32        ( vsum, voffset );
-          vsum = _mm_srai_epi32       ( vsum, shift );
-          vsum = _mm_packs_epi32      ( vtmp, vsum );
-
-          vsum = _mm_min_epi16( vibdimax, _mm_max_epi16( vibdimin, vsum ) );
-          _mm_storeu_si128( ( __m128i * )&dst[col], vsum );
-        }
-
-        src0 += src0Stride;
-        src1 += src1Stride;
-        dst  +=  dstStride;
+        vsrc0 = _mm_xor_si128(vsrc0, _mm_set1_epi16(0x7fff));
+        vsrc1 = _mm_xor_si128(vsrc1, _mm_set1_epi16(0x7fff));
+        vsrc0 = _mm_avg_epu16(vsrc0, vsrc1);
+        vsrc0 = _mm_xor_si128(vsrc0, _mm_set1_epi16(0x7fff));
+        vsrc0 = _mm_adds_epi16(vsrc0, _mm_set1_epi16(offset >> 1));
+        vsrc0 = _mm_sra_epi16(vsrc0, _mm_cvtsi32_si128(shift - 1));
+        vsrc0 = _mm_max_epi16(vsrc0, vibdimin);
+        vsrc0 = _mm_min_epi16(vsrc0, vibdimax);
+        _mm_storeu_si128((__m128i *) &dst[col], vsrc0);
       }
+
+      src0 += src0Stride;
+      src1 += src1Stride;
+      dst += dstStride;
     }
   }
   else if( W == 4 )
@@ -131,126 +120,118 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
 template<X86_VEXT vext>
 void copyBufferSimd(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
 {
-  __m128i x;
-#ifdef USE_AVX2
-  __m256i x16;
-#endif
-  int j, temp;
-  for (int i = 0; i < height; i++)
+  if (width < 8)
   {
-    j = 0;
-    temp = width;
-#ifdef USE_AVX2
-    while ((temp >> 4) > 0)
+    CHECK(width < 4, "width must be at least 4");
+
+    for (size_t x = 0; x < width; x += 4)
     {
-      x16 = _mm256_loadu_si256((const __m256i*)(&src[i * srcStride + j]));
-      _mm256_storeu_si256((__m256i*)(&dst[i * dstStride + j]), x16);
-      j += 16;
-      temp -= 16;
+      if (x > width - 4)
+        x = width - 4;
+      for (size_t y = 0; y < height; y++)
+      {
+        __m128i val = _mm_loadl_epi64((const __m128i *) (src + y * srcStride + x));
+        _mm_storel_epi64((__m128i *) (dst + y * dstStride + x), val);
+      }
     }
-#endif
-    while ((temp >> 3) > 0)
+  }
+  else
+  {
+    for (size_t x = 0; x < width; x += 8)
     {
-      x = _mm_loadu_si128((const __m128i*)(&src[ i * srcStride + j]));
-      _mm_storeu_si128((__m128i*)(&dst[ i * dstStride + j]), x);
-      j += 8;
-      temp -= 8;
-    }
-    while ((temp >> 2) > 0)
-    {
-      x = _mm_loadl_epi64((const __m128i*)(&src[i * srcStride + j]));
-      _mm_storel_epi64((__m128i*)(&dst[i*dstStride + j]), x);
-      j += 4;
-      temp -= 4;
-    }
-    while (temp > 0)
-    {
-      dst[i * dstStride + j] = src[i * srcStride + j];
-      j++;
-      temp--;
+      if (x > width - 8)
+        x = width - 8;
+      for (size_t y = 0; y < height; y++)
+      {
+        __m128i val = _mm_loadu_si128((const __m128i *) (src + y * srcStride + x));
+        _mm_storeu_si128((__m128i *) (dst + y * dstStride + x), val);
+      }
     }
   }
 }
-
 
 template<X86_VEXT vext>
 void paddingSimd(Pel *dst, int stride, int width, int height, int padSize)
 {
-  __m128i x;
-#ifdef USE_AVX2
-  __m256i x16;
-#endif
-  int temp, j;
-  for (int i = 1; i <= padSize; i++)
+  size_t extWidth = width + 2 * padSize;
+  CHECK(extWidth < 8, "width plus 2 times padding size must be at least 8");
+
+  if (padSize == 1)
   {
-    j = 0;
-    temp = width;
-#ifdef USE_AVX2
-    while ((temp >> 4) > 0)
+    for (size_t i = 0; i < height; i++)
     {
-
-      x16 = _mm256_loadu_si256((const __m256i*)(&(dst[j])));
-      _mm256_storeu_si256((__m256i*)(dst + j - i*stride), x16);
-      x16 = _mm256_loadu_si256((const __m256i*)(dst + j + (height - 1)*stride));
-      _mm256_storeu_si256((__m256i*)(dst + j + (height - 1 + i)*stride), x16);
-
-
-      j = j + 16;
-      temp = temp - 16;
+      Pel left                = dst[i * stride];
+      Pel right               = dst[i * stride + width - 1];
+      dst[i * stride - 1]     = left;
+      dst[i * stride + width] = right;
     }
-#endif
-    while ((temp >> 3) > 0)
+
+    dst -= 1;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
     {
-
-      x = _mm_loadu_si128((const __m128i*)(&(dst[j])));
-      _mm_storeu_si128((__m128i*)(dst + j - i*stride), x);
-      x = _mm_loadu_si128((const __m128i*)(dst + j + (height - 1)*stride));
-      _mm_storeu_si128((__m128i*)(dst + j + (height - 1 + i)*stride), x);
-
-      j = j + 8;
-      temp = temp - 8;
+      __m128i top = _mm_loadu_si128((const __m128i *) (dst + i));
+      _mm_storeu_si128((__m128i *) (dst - stride + i), top);
     }
-    while ((temp >> 2) > 0)
+    __m128i top = _mm_loadu_si128((const __m128i *) (dst + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst - stride + extWidth - 8), top);
+
+    dst += height * stride;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
     {
-      x = _mm_loadl_epi64((const __m128i*)(&dst[j]));
-      _mm_storel_epi64((__m128i*)(dst + j - i*stride), x);
-      x = _mm_loadl_epi64((const __m128i*)(dst + j + (height - 1)*stride));
-      _mm_storel_epi64((__m128i*)(dst + j + (height - 1 + i)*stride), x);
-
-      j = j + 4;
-      temp = temp - 4;
+      __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + i));
+      _mm_storeu_si128((__m128i *) (dst + i), bottom);
     }
-    while (temp > 0)
-    {
-      dst[j - i*stride] = dst[j];
-      dst[j + (height - 1 + i)*stride] = dst[j + (height - 1)*stride];
-      j++;
-      temp--;
-    }
+    __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst + extWidth - 8), bottom);
   }
-
-
-  //Left and Right Padding
-  Pel* ptr1 = dst - padSize*stride;
-  Pel* ptr2 = dst - padSize*stride + width - 1;
-  int offset = 0;
-  for (int i = 0; i < height + 2 * padSize; i++)
+  else if (padSize == 2)
   {
-    offset = stride * i;
-    for (int j = 1; j <= padSize; j++)
+    for (size_t i = 0; i < height; i++)
     {
-      *(ptr1 - j + offset) = *(ptr1 + offset);
-      *(ptr2 + j + offset) = *(ptr2 + offset);
+      Pel left                    = dst[i * stride];
+      Pel right                   = dst[i * stride + width - 1];
+      dst[i * stride - 2]         = left;
+      dst[i * stride - 1]         = left;
+      dst[i * stride + width]     = right;
+      dst[i * stride + width + 1] = right;
     }
 
+    dst -= 2;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
+    {
+      __m128i top = _mm_loadu_si128((const __m128i *) (dst + i));
+      _mm_storeu_si128((__m128i *) (dst - 2 * stride + i), top);
+      _mm_storeu_si128((__m128i *) (dst - stride + i), top);
+    }
+    __m128i top = _mm_loadu_si128((const __m128i *) (dst + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst - 2 * stride + extWidth - 8), top);
+    _mm_storeu_si128((__m128i *) (dst - stride + extWidth - 8), top);
+
+    dst += height * stride;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
+    {
+      __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + i));
+      _mm_storeu_si128((__m128i *) (dst + i), bottom);
+      _mm_storeu_si128((__m128i *) (dst + stride + i), bottom);
+    }
+    __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst + extWidth - 8), bottom);
+    _mm_storeu_si128((__m128i *) (dst + stride + extWidth - 8), bottom);
+  }
+  else
+  {
+    CHECK(false, "padding size must be 1 or 2");
   }
 }
+
 template< X86_VEXT vext >
 void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
-  __m128i mm_tmpx = _mm_unpacklo_epi64(_mm_set1_epi16(tmpx), _mm_set1_epi16(tmpy));
-  __m128i mm_boffset = _mm_set1_epi32(1);
-  __m128i mm_offset = _mm_set1_epi32(offset);
+  __m128i c        = _mm_unpacklo_epi16(_mm_set1_epi16(tmpx), _mm_set1_epi16(tmpy));
   __m128i vibdimin = _mm_set1_epi16(clpRng.min);
   __m128i vibdimax = _mm_set1_epi16(clpRng.max);
 
@@ -258,20 +239,22 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
   {
     for (int x = 0; x < width; x += 4)
     {
-      __m128i mm_a = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(gradX0 + x)), _mm_loadl_epi64((const __m128i *)(gradY0 + x)));
-      __m128i mm_b = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(gradX1 + x)), _mm_loadl_epi64((const __m128i *)(gradY1 + x)));
-      mm_a = _mm_sub_epi16(mm_a, mm_b);
-      mm_b = _mm_mulhi_epi16(mm_a, mm_tmpx);
-      mm_a = _mm_mullo_epi16(mm_a, mm_tmpx);
+      __m128i a   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (gradX0 + x)),
+                                     _mm_loadl_epi64((const __m128i *) (gradY0 + x)));
+      __m128i b   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (gradX1 + x)),
+                                     _mm_loadl_epi64((const __m128i *) (gradY1 + x)));
+      a           = _mm_sub_epi16(a, b);
+      __m128i sum = _mm_madd_epi16(a, c);
 
-      __m128i mm_sum = _mm_add_epi32(_mm_unpacklo_epi16(mm_a, mm_b), _mm_unpackhi_epi16(mm_a, mm_b));
-      mm_sum = _mm_srai_epi32(_mm_add_epi32(mm_sum, mm_boffset), 1);
-      mm_a = _mm_cvtepi16_epi32(_mm_loadl_epi64((const __m128i *)(src0 + x)));
-      mm_b = _mm_cvtepi16_epi32(_mm_loadl_epi64((const __m128i *)(src1 + x)));
-      mm_sum = _mm_add_epi32(_mm_add_epi32(mm_sum, mm_a), _mm_add_epi32(mm_b, mm_offset));
-      mm_sum = _mm_packs_epi32(_mm_srai_epi32(mm_sum, shift), mm_a);
-      mm_sum = _mm_min_epi16(vibdimax, _mm_max_epi16(vibdimin, mm_sum));
-      _mm_storel_epi64((__m128i *)(dst + x), mm_sum);
+      a   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (src0 + x)),
+                             _mm_loadl_epi64((const __m128i *) (src1 + x)));
+      sum = _mm_add_epi32(sum, _mm_madd_epi16(a, _mm_set1_epi16(2)));
+      sum = _mm_add_epi32(sum, _mm_set1_epi32(2 * offset + 1));
+      sum = _mm_sra_epi32(sum, _mm_cvtsi32_si128(shift + 1));
+      sum = _mm_packs_epi32(sum, sum);
+      sum = _mm_max_epi16(sum, vibdimin);
+      sum = _mm_min_epi16(sum, vibdimax);
+      _mm_storel_epi64((__m128i *) (dst + x), sum);
     }
     dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
     gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
@@ -291,7 +274,7 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   __m128i sumAbsGYTmp = _mm_setzero_si128();
   __m128i sumDIYTmp = _mm_setzero_si128();
   __m128i sumSignGyGxTmp = _mm_setzero_si128();
-  Pel tmpStore[8];
+
   for (int y = 0; y < 6; y++)
   {
     __m128i shiftSrcY0Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Tmp)), shift4);
@@ -321,16 +304,32 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
     gradY0 += widthG;
     gradY1 += widthG;
   }
-  _mm_storeu_si128((__m128i *)tmpStore, sumAbsGXTmp);
-  *sumAbsGX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, sumAbsGYTmp);
-  *sumAbsGY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, sumDIXTmp);
-  *sumDIX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, sumDIYTmp);
-  *sumDIY = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
-  _mm_storeu_si128((__m128i *)tmpStore, sumSignGyGxTmp);
-  *sumSignGY_GX = tmpStore[0] + tmpStore[1] + tmpStore[2] + tmpStore[3] + tmpStore[4] + tmpStore[5];
+
+  sumAbsGXTmp    = _mm_madd_epi16(sumAbsGXTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumDIXTmp      = _mm_madd_epi16(sumDIXTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumAbsGYTmp    = _mm_madd_epi16(sumAbsGYTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumDIYTmp      = _mm_madd_epi16(sumDIYTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumSignGyGxTmp = _mm_madd_epi16(sumSignGyGxTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+
+  __m128i a12 = _mm_unpacklo_epi32(sumAbsGXTmp, sumAbsGYTmp);
+  __m128i a3  = _mm_unpackhi_epi32(sumAbsGXTmp, sumAbsGYTmp);
+  __m128i b12 = _mm_unpacklo_epi32(sumDIXTmp, sumDIYTmp);
+  __m128i b3  = _mm_unpackhi_epi32(sumDIXTmp, sumDIYTmp);
+  __m128i c1  = _mm_unpacklo_epi64(a12, b12);
+  __m128i c2  = _mm_unpackhi_epi64(a12, b12);
+  __m128i c3  = _mm_unpacklo_epi64(a3, b3);
+
+  c1 = _mm_add_epi32(c1, c2);
+  c1 = _mm_add_epi32(c1, c3);
+
+  *sumAbsGX = _mm_cvtsi128_si32(c1);
+  *sumAbsGY = _mm_cvtsi128_si32(_mm_shuffle_epi32(c1, 0x55));
+  *sumDIX   = _mm_cvtsi128_si32(_mm_shuffle_epi32(c1, 0xaa));
+  *sumDIY   = _mm_cvtsi128_si32(_mm_shuffle_epi32(c1, 0xff));
+
+  sumSignGyGxTmp = _mm_add_epi32(sumSignGyGxTmp, _mm_shuffle_epi32(sumSignGyGxTmp, 0x4e));   // 01001110
+  sumSignGyGxTmp = _mm_add_epi32(sumSignGyGxTmp, _mm_shuffle_epi32(sumSignGyGxTmp, 0xb1));   // 10110001
+  *sumSignGY_GX  = _mm_cvtsi128_si32(sumSignGyGxTmp);
 }
 #endif
 

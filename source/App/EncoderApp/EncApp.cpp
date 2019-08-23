@@ -106,7 +106,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setTemporalSubsampleRatio                            ( m_temporalSubsampleRatio );
   m_cEncLib.setSourceWidth                                       ( m_iSourceWidth );
   m_cEncLib.setSourceHeight                                      ( m_iSourceHeight );
+#if JVET_O1164_RPR
+  m_cEncLib.setConformanceWindow                                 ( m_confWinLeft / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinRight / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinTop / SPS::getWinUnitY( m_InputChromaFormatIDC ), m_confWinBottom / SPS::getWinUnitY( m_InputChromaFormatIDC ) );
+  m_cEncLib.setScalingRatio                                      ( m_scalingRatioHor, m_scalingRatioVer );
+  m_cEncLib.setRPREnabled                                        ( m_rprEnabled );
+  m_cEncLib.setSwitchPocPeriod                                   ( m_switchPocPeriod );
+  m_cEncLib.setUpscaledOutput                                    ( m_upscaledOutput );
+#else
   m_cEncLib.setConformanceWindow                                 ( m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom );
+#endif
   m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
 
   //====== SPS constraint flags =======
@@ -118,7 +126,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoPartitionConstraintsOverrideConstraintFlag      ( !m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setNoPcmConstraintFlag                               ( !m_usePCM );
+#endif
   m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
   m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
@@ -363,7 +373,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
 #if JVET_O0050_LOCAL_DUAL_TREE
-  m_cEncLib.setUseFastLocalDualTree                              ( m_useFastLocalDualTree );
+  m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );
 #endif
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
@@ -387,8 +397,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFastUDIUseMPMEnabled                              ( m_bFastUDIUseMPMEnabled );
   m_cEncLib.setFastMEForGenBLowDelayEnabled                      ( m_bFastMEForGenBLowDelayEnabled );
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setPCMLog2MinSize                                    ( m_uiPCMLog2MinSize);
   m_cEncLib.setUsePCM                                            ( m_usePCM );
+#endif
   m_cEncLib.setUseISP                                            ( m_ISP );
   m_cEncLib.setUseFastISP                                        ( m_useFastISP );
 
@@ -397,10 +409,14 @@ void EncApp::xInitLibCfg()
   {
     m_cEncLib.setBitDepth((ChannelType)channelType, m_internalBitDepth[channelType]);
     m_cEncLib.setInputBitDepth((ChannelType)channelType, m_inputBitDepth[channelType]);
+#if !JVET_O0525_REMOVE_PCM
     m_cEncLib.setPCMBitDepth((ChannelType)channelType, m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[channelType] : m_internalBitDepth[channelType]);
+#endif
   }
 
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
+#endif
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
   m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
@@ -432,8 +448,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxNumOffsetsPerPic                               ( m_maxNumOffsetsPerPic);
 
   m_cEncLib.setSaoCtuBoundary                                    ( m_saoCtuBoundary);
+#if !JVET_O0525_REMOVE_PCM
   m_cEncLib.setPCMInputBitDepthFlag                              ( m_bPCMInputBitDepthFlag);
   m_cEncLib.setPCMFilterDisableFlag                              ( m_bPCMFilterDisableFlag);
+#endif
 
   m_cEncLib.setSaoGreedyMergeEnc                                 ( m_saoGreedyMergeEnc);
   m_cEncLib.setIntraSmoothingDisabledFlag                        (!m_enableIntraReferenceSmoothing );
@@ -867,10 +885,25 @@ void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList
       const PelUnitBuf* pcPicYuvRec = *(iterPicYuvRec++);
       if (!m_reconFileName.empty())
       {
+#if JVET_O1164_RPR
+        if( m_cEncLib.isRPREnabled() && m_cEncLib.getUpscaledOutput() )
+        {
+          const SPS& sps = *m_cEncLib.getSPS( 0 );
+          const PPS& pps = *m_cEncLib.getPPS( ( sps.getMaxPicWidthInLumaSamples() != pcPicYuvRec->get( COMPONENT_Y ).width || sps.getMaxPicHeightInLumaSamples() != pcPicYuvRec->get( COMPONENT_Y ).height ) ? ENC_PPS_ID_RPR : 0 );
+
+          m_cVideoIOYuvReconFile.writeUpscaledPicture( sps, pps, *pcPicYuvRec, ipCSC, m_packedYUVMode, m_cEncLib.getUpscaledOutput(), NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+        }
+        else
+        {
+          m_cVideoIOYuvReconFile.write( pcPicYuvRec->get( COMPONENT_Y ).width, pcPicYuvRec->get( COMPONENT_Y ).height, *pcPicYuvRec, ipCSC, m_packedYUVMode,
+            m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+        }
+#else
         m_cVideoIOYuvReconFile.write( *pcPicYuvRec,
                                       ipCSC,
                                       m_packedYUVMode,
                                       m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#endif
       }
     }
   }

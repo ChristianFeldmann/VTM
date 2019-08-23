@@ -1394,8 +1394,13 @@ SPS::SPS()
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
 // Structure
+#if JVET_O1164_PS
+, m_maxWidthInLumaSamples     (352)
+, m_maxHeightInLumaSamples    (288)
+#else
 , m_picWidthInLumaSamples     (352)
 , m_picHeightInLumaSamples    (288)
+#endif
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
 , m_CTUSize(0)
@@ -1413,9 +1418,11 @@ SPS::SPS()
 , m_allRplEntriesHasSameSignFlag ( true )
 , m_bLongTermRefsPresent      (false)
 // Tool list
+#if !JVET_O0525_REMOVE_PCM
 , m_pcmEnabledFlag            (false)
 , m_pcmLog2MaxSize            (  5)
 , m_uiPCMLog2MinSize          (  7)
+#endif
 #if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_transformSkipEnabledFlag  (false)
 , m_BDPCMEnabledFlag          (false)
@@ -1423,7 +1430,9 @@ SPS::SPS()
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
 , m_JointCbCrEnabledFlag      (false)
 #endif
+#if !JVET_O0525_REMOVE_PCM
 , m_bPCMFilterDisableFlag     (false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -1475,7 +1484,9 @@ SPS::SPS()
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_bitDepths.recon[ch] = 8;
+#if !JVET_O0525_REMOVE_PCM
     m_pcmBitDepths[ch] = 8;
+#endif
     m_qpBDOffset   [ch] = 0;
   }
 
@@ -1631,6 +1642,10 @@ PPS::PPS()
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
 , m_numVerVirtualBoundaries          (0)
 , m_numHorVirtualBoundaries          (0)
+#if JVET_O1164_PS
+, m_picWidthInLumaSamples( 352 )
+, m_picHeightInLumaSamples( 288 )
+#endif
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)
 {
@@ -1774,8 +1789,8 @@ bool ScalingList::checkDefaultScalingList()
   {
     for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
     {
-      if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0))
-       || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))
+          || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
       {
         continue;
       }
@@ -1841,7 +1856,7 @@ static void outputScalingListHelp(std::ostream &os)
   {
     for (uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
+      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0))))
       {
         os << "  " << MatrixType[sizeIdc][listIdc] << '\n';
       }
@@ -1856,7 +1871,7 @@ void ScalingList::outputScalingLists(std::ostream &os) const
     const uint32_t size = (sizeIdc == 1) ? 2 : ((sizeIdc == 2) ? 4 : 8);
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0))))
+      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0))))
       {
         const int *src = getScalingListAddress(sizeIdc, listIdc);
         os << (MatrixType[sizeIdc][listIdc]) << " =\n  ";
@@ -1906,7 +1921,7 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
     {
       int * const src = getScalingListAddress(sizeIdc, listIdc);
 
-      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1)) == 0)))
+      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
       {
         continue;
       }
@@ -2016,7 +2031,7 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
     case SCALING_LIST_32x32:
     case SCALING_LIST_64x64:
     case SCALING_LIST_128x128:
-      src = (listId < (SCALING_LIST_NUM / (NUMBER_OF_PREDICTION_MODES - 1))) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
+      src = (listId < (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES)) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
       break;
     default:
       THROW( "Invalid scaling list" );
@@ -2281,6 +2296,166 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
   else
   return minQtSize[getValIdx( slice, chType )];
 }
+
+#if JVET_O1164_RPR
+void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder )
+{
+  int i;
+  const SPS* sps = getSPS();
+  const PPS* pps = getPPS();
+
+  // this is needed for IBC
+  m_pcPic->unscaledPic = m_pcPic;
+
+  if( m_eSliceType == I_SLICE )
+  {
+    return;
+  }
+
+  freeScaledRefPicList( scaledRefPic );
+  
+  for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
+  {
+    if( refList == 1 && m_eSliceType != B_SLICE )
+    {
+      continue;
+    }
+
+    for( int rIdx = 0; rIdx < m_aiNumRefIdx[refList]; rIdx++ )
+    {
+      // if rescaling is needed, otherwise just reuse the original picture pointer; it is needed for motion field, otherwise motion field requires a copy as well
+      // reference resampling for the whole picture is not applied at decoder
+      if( ( m_apcRefPicList[refList][rIdx]->lwidth() == pps->getPicWidthInLumaSamples() && m_apcRefPicList[refList][rIdx]->lheight() == pps->getPicHeightInLumaSamples() ) || isDecoder )
+      {
+        m_scaledRefPicList[refList][rIdx] = m_apcRefPicList[refList][rIdx];
+      }
+      else
+      {
+        int poc = m_apcRefPicList[refList][rIdx]->getPOC();
+        // check whether the reference picture has already been scaled 
+        for( i = 0; i < MAX_NUM_REF; i++ )
+        {
+          if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc )
+          {
+            break;
+          }
+        }
+
+        if( i == MAX_NUM_REF )
+        {
+          int j;
+          // search for unused Picture structure in scaledRefPic
+          for( j = 0; j < MAX_NUM_REF; j++ )
+          {
+            if( scaledRefPic[j] == nullptr )
+            {
+              break;
+            }
+          }
+
+          CHECK( j >= MAX_NUM_REF, "scaledRefPic can not hold all reference pictures!" );
+
+          if( j >= MAX_NUM_REF )
+          {
+            j = 0;
+          }
+
+          if( scaledRefPic[j] == nullptr )
+          {
+            scaledRefPic[j] = new Picture;
+
+            scaledRefPic[j]->setBorderExtension( false );
+            scaledRefPic[j]->reconstructed = false;
+            scaledRefPic[j]->referenced = true;
+
+            scaledRefPic[j]->finalInit( *sps, *pps, apss, lmcsAps );
+
+            scaledRefPic[j]->poc = -1;
+
+            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder );
+          }
+
+          scaledRefPic[j]->poc = poc;
+          scaledRefPic[j]->longTerm = m_apcRefPicList[refList][rIdx]->longTerm;
+
+          // rescale the reference picture
+          const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
+#if RPR_CONF_WINDOW
+          Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getConformanceWindow(), scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
+#else
+          Picture::rescalePicture(m_apcRefPicList[refList][rIdx]->getRecoBuf(), scaledRefPic[j]->getRecoBuf(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling);
+#endif
+          scaledRefPic[j]->extendPicBorder();
+
+          m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];
+        }
+        else
+        {
+          m_scaledRefPicList[refList][rIdx] = scaledRefPic[i];
+        }
+      }
+    }
+  }
+
+  // make the scaled reference picture list as the default reference picture list
+  for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
+  {
+    if( refList == 1 && m_eSliceType != B_SLICE )
+    {
+      continue;
+    }
+
+    for( int rIdx = 0; rIdx < m_aiNumRefIdx[refList]; rIdx++ )
+    {
+      m_savedRefPicList[refList][rIdx] = m_apcRefPicList[refList][rIdx];
+      m_apcRefPicList[refList][rIdx] = m_scaledRefPicList[refList][rIdx];
+
+      // allow the access of the unscaled version in xPredInterBlk()
+      m_apcRefPicList[refList][rIdx]->unscaledPic = m_savedRefPicList[refList][rIdx];
+    }
+  }
+}
+
+void Slice::freeScaledRefPicList( Picture *scaledRefPic[] )
+{
+  if( m_eSliceType == I_SLICE )
+  {
+    return;
+  }
+  for( int i = 0; i < MAX_NUM_REF; i++ )
+  {
+    if( scaledRefPic[i] != nullptr )
+    {
+      scaledRefPic[i]->destroy();
+      scaledRefPic[i] = nullptr;
+    }
+  }
+}
+
+bool Slice::checkRPR()
+{
+  const PPS* pps = getPPS();
+
+  for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
+  {
+
+    if( refList == 1 && m_eSliceType != B_SLICE )
+    {
+      continue;
+    }
+
+    for( int rIdx = 0; rIdx < m_aiNumRefIdx[refList]; rIdx++ )
+    {
+      if( m_scaledRefPicList[refList][rIdx]->cs->pcv->lumaWidth != pps->getPicWidthInLumaSamples() || m_scaledRefPicList[refList][rIdx]->cs->pcv->lumaHeight != pps->getPicHeightInLumaSamples() )
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+#endif
 
 #if ENABLE_TRACING
 void xTraceVPSHeader()

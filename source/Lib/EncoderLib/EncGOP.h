@@ -229,7 +229,11 @@ public:
   void      setLastLTRefPoc(int iLastLTRefPoc) { m_lastLTRefPoc = iLastLTRefPoc; }
   int       getLastLTRefPoc() const { return m_lastLTRefPoc; }
 
+#if RPR_CTC_PRINT
+  void  printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths );
+#else
   void  printOutSummary      ( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths );
+#endif
 #if W0038_DB_OPT
   uint64_t  preLoopFilterPicAndCalcDist( Picture* pcPic );
 #endif
@@ -256,7 +260,11 @@ protected:
   void  xInitGOP          ( int iPOCLast, int iNumPicRcvd, bool isField
     , bool isEncodeLtRef
   );
+#if JVET_O1164_PS
+  void  xPicInitHashME( Picture *pic, const PPS *pps, PicList &rcListPic );
+#else
   void  xPicInitHashME     (Picture *pic, const SPS *sps, PicList &rcListPic);
+#endif
   void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
   void  xPicInitLMCS       (Picture *pic, Slice *slice);
 

@@ -116,7 +116,9 @@ EncAppCfg::EncAppCfg()
 , m_noPartitionConstraintsOverrideConstraintFlag(false)
 , m_bNoSaoConstraintFlag(false)
 , m_bNoAlfConstraintFlag(false)
+#if !JVET_O0525_REMOVE_PCM
 , m_bNoPcmConstraintFlag(false)
+#endif
 , m_bNoRefWraparoundConstraintFlag(false)
 , m_bNoTemporalMvpConstraintFlag(false)
 , m_bNoSbtmvpConstraintFlag(false)
@@ -992,7 +994,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
 #if JVET_O0050_LOCAL_DUAL_TREE
-  ("FastLocalDualTree",                               m_useFastLocalDualTree,                           false,  "Fast intra pass coding for local dual-tree in intra coding region (SCIPU)")
+  ("FastLocalDualTreeMode",                           m_fastLocalDualTreeMode,                              0,  "Fast intra pass coding for local dual-tree in intra coding region, 0: off, 1: use threshold, 2: one intra mode only")
 #endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
@@ -1152,12 +1154,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
+#if !JVET_O0525_REMOVE_PCM
   ("PCMEnabledFlag",                                  m_usePCM,                                         false)
   ("PCMLog2MaxSize",                                  m_pcmLog2MaxSize,                                    5u)
   ("PCMLog2MinSize",                                  m_uiPCMLog2MinSize,                                  3u)
 
   ("PCMInputBitDepthFlag",                            m_bPCMInputBitDepthFlag,                           true)
   ("PCMFilterDisableFlag",                            m_bPCMFilterDisableFlag,                          false)
+#endif
   ("IntraReferenceSmoothing",                         m_enableIntraReferenceSmoothing,                   true, "0: Disable use of intra reference smoothing (not valid in V1 profiles). 1: Enable use of intra reference smoothing (same as V1)")
   ("WeightedPredP,-wpP",                              m_useWeightedPred,                                false, "Use weighted prediction in P slices")
   ("WeightedPredB,-wpB",                              m_useWeightedBiPred,                              false, "Use weighted (bidirectional) prediction in B slices")
@@ -1378,6 +1382,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
 #endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
+#if JVET_O1164_RPR
+  ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
+  ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
+  ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
+  ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
+  ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
+#endif
     ;
 
 #if EXTENSION_360_VIDEO
@@ -1402,6 +1413,19 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
+   
+#if JVET_O1164_RPR
+  m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
+  if( m_fractionOfFrames != 1.0 )
+  {
+    m_framesToBeEncoded = int( m_framesToBeEncoded * m_fractionOfFrames );
+  }
+
+  if( m_rprEnabled && !m_switchPocPeriod )
+  {
+    m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
+  }
+#endif
 
   for (int i = 0; m_GOPList[i].m_POC != -1 && i < MAX_GOP + 1; i++)
   {
@@ -2224,6 +2248,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
  #else
   if (((int)m_fQP < 38) && m_bUsePerceptQPA && !m_bUseAdaptiveQP && (m_iSourceWidth <= 2048) && (m_iSourceHeight <= 1280)
  #endif
+ #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
+      && (!m_wcgChromaQpControl.enabled)
+ #endif
 #if MAX_TB_SIZE_SIGNALLING
       && ((1 << (m_log2MaxTbSize + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
 #else
@@ -2715,6 +2742,7 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_MTSIntraMaxCand < 0 || m_MTSIntraMaxCand > 5, "m_MTSIntraMaxCand must be greater than 0 and smaller than 6" );
   xConfirmPara( m_MTSInterMaxCand < 0 || m_MTSInterMaxCand > 5, "m_MTSInterMaxCand must be greater than 0 and smaller than 6" );
   xConfirmPara( m_MTS != 0 && m_MTSImplicit != 0, "Both explicit and implicit MTS cannot be enabled at the same time" );
+#if !JVET_O0525_REMOVE_PCM
   if( m_usePCM)
   {
     for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
@@ -2725,6 +2753,12 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(  m_uiPCMLog2MinSize > 5,                                      "PCMLog2MinSize must be 5 or smaller.");
     xConfirmPara(  m_pcmLog2MaxSize > 5,                                        "PCMLog2MaxSize must be 5 or smaller.");
     xConfirmPara(  m_pcmLog2MaxSize < m_uiPCMLog2MinSize,                       "PCMLog2MaxSize must be equal to or greater than m_uiPCMLog2MinSize.");
+  }
+#endif
+
+  if (m_useBDPCM)
+  {
+    xConfirmPara(!m_useTransformSkip, "BDPCM cannot be used when transform skip is disabled.");
   }
 
   if (m_sliceMode!=NO_SLICES)
@@ -2838,6 +2872,10 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( abs(m_sliceChromaQpOffsetIntraOrPeriodic[0]  + m_cbQpOffset ) > 12, "Intra/periodic Cb QP Offset, when combined with the PPS Cb offset, exceeds supported range (-12 to 12)" );
   xConfirmPara( abs(m_sliceChromaQpOffsetIntraOrPeriodic[1]                 ) > 12, "Intra/periodic Cr QP Offset exceeds supported range (-12 to 12)" );
   xConfirmPara( abs(m_sliceChromaQpOffsetIntraOrPeriodic[1]  + m_crQpOffset ) > 12, "Intra/periodic Cr QP Offset, when combined with the PPS Cr offset, exceeds supported range (-12 to 12)" );
+#endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+  xConfirmPara( m_fastLocalDualTreeMode < 0 || m_fastLocalDualTreeMode > 2, "FastLocalDualTreeMode must be in range [0..2]" );
 #endif
 
   int extraRPLs = 0;
@@ -3369,7 +3407,9 @@ void EncAppCfg::xPrintParameter()
 #if MAX_TB_SIZE_SIGNALLING
   msg( DETAILS, "Max TB size                            : %d \n", 1 << m_log2MaxTbSize );
 #endif
+#if !JVET_O0525_REMOVE_PCM
   msg( DETAILS, "Min PCM size                           : %d\n", 1 << m_uiPCMLog2MinSize);
+#endif
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );
   msg( DETAILS, "Decoding refresh type                  : %d\n", m_iDecodingRefreshType );
@@ -3394,8 +3434,10 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Input bit depth                        : (Y:%d, C:%d)\n", m_inputBitDepth[CHANNEL_TYPE_LUMA], m_inputBitDepth[CHANNEL_TYPE_CHROMA] );
   msg( DETAILS, "MSB-extended bit depth                 : (Y:%d, C:%d)\n", m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA], m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] );
   msg( DETAILS, "Internal bit depth                     : (Y:%d, C:%d)\n", m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA] );
+#if !JVET_O0525_REMOVE_PCM
   msg( DETAILS, "PCM sample bit depth                   : (Y:%d, C:%d)\n", m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA] : m_internalBitDepth[CHANNEL_TYPE_LUMA],
                                                                     m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] : m_internalBitDepth[CHANNEL_TYPE_CHROMA] );
+#endif
   msg( DETAILS, "Intra reference smoothing              : %s\n", (m_enableIntraReferenceSmoothing           ? "Enabled" : "Disabled") );
   msg( DETAILS, "cu_chroma_qp_offset_subdiv             : %d\n", m_cuChromaQpOffsetSubdiv);
   msg( DETAILS, "extended_precision_processing_flag     : %s\n", (m_extendedPrecisionProcessingFlag         ? "Enabled" : "Disabled") );
@@ -3485,7 +3527,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
+#if !JVET_O0525_REMOVE_PCM
   msg( VERBOSE, "PCM:%d ", (m_usePCM && (1<<m_uiPCMLog2MinSize) <= m_uiMaxCUWidth)? 1 : 0);
+#endif
 
   if (m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce)
   {
@@ -3616,7 +3660,7 @@ void EncAppCfg::xPrintParameter()
 #endif
   if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
 #if JVET_O0050_LOCAL_DUAL_TREE
-  msg( VERBOSE, "FastLocalDualTree:%d ", m_useFastLocalDualTree );
+  msg( VERBOSE, "FastLocalDualTree:%d ", m_fastLocalDualTreeMode );
 #endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
@@ -3626,6 +3670,17 @@ void EncAppCfg::xPrintParameter()
   }
   msg( VERBOSE, "NumWppThreads:%d+%d ", m_numWppThreads, m_numWppExtraLines );
   msg( VERBOSE, "EnsureWppBitEqual:%d ", m_ensureWppBitEqual );
+
+#if JVET_O1164_RPR
+  if( m_rprEnabled )
+  {
+    msg( VERBOSE, "RPR:%1.2lfx, %1.2lfx|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
+  }
+  else
+  {
+    msg( VERBOSE, "RPR:%d", 0 );
+  }
+#endif
 
 #if EXTENSION_360_VIDEO
   m_ext360.outputConfigurationSummary();

@@ -76,6 +76,10 @@ protected:
   int           m_statMode;                           ///< Config statistic mode (0 - bit stat, 1 - tool stat, 3 - both)
   bool          m_mctsCheck;
 
+#if JVET_O1164_RPR
+  int          m_upscaledOutput;                     ////< Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
+#endif
+
 public:
   DecAppCfg();
   virtual ~DecAppCfg();

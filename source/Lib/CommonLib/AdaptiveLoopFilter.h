@@ -91,7 +91,9 @@ public:
                                       const CPelBuf &srcLuma, const Area &blkDst, const Area &blk, const int shift,
                                       const int vbCTUHeight, int vbPos);
   void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk );
+#if !JVET_O0525_REMOVE_PCM
   void resetPCMBlkClassInfo(CodingStructure & cs, AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blk);
+#endif
   template<AlfFilterType filtType>
   static void filterBlk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
                         const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
@@ -154,6 +156,8 @@ protected:
   short                        m_chromaClippFinal[MAX_NUM_ALF_LUMA_COEFF];
 #endif
   int**                        m_laplacian[NUM_DIRECTIONS];
+  int *                        m_laplacianPtr[NUM_DIRECTIONS][m_CLASSIFICATION_BLK_SIZE + 5];
+  int m_laplacianData[NUM_DIRECTIONS][m_CLASSIFICATION_BLK_SIZE + 5][m_CLASSIFICATION_BLK_SIZE + 5];
   uint8_t*                     m_ctuEnableFlag[MAX_NUM_COMPONENT];
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   uint8_t*                     m_ctuAlternative[MAX_NUM_COMPONENT];

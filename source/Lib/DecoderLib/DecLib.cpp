@@ -490,7 +490,11 @@ Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const uint32
   {
     pcPic = new Picture();
 
+#if JVET_O1164_PS
+    pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
+#else
     pcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
+#endif
 
     m_cListPic.push_back( pcPic );
 
@@ -526,15 +530,27 @@ Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const uint32
 
     m_cListPic.push_back( pcPic );
 
+#if JVET_O1164_PS
+    pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
+#else
     pcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
+#endif
   }
   else
   {
+#if JVET_O1164_PS
+    if( !pcPic->Y().Size::operator==( Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ) ) || pcPic->cs->pcv->maxCUWidth != sps.getMaxCUWidth() || pcPic->cs->pcv->maxCUHeight != sps.getMaxCUHeight() )
+    {
+      pcPic->destroy();
+      pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
+    }
+#else
     if( !pcPic->Y().Size::operator==( Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ) ) || pcPic->cs->pcv->maxCUWidth != sps.getMaxCUWidth() || pcPic->cs->pcv->maxCUHeight != sps.getMaxCUHeight() )
     {
       pcPic->destroy();
       pcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
     }
+#endif
   }
 
   pcPic->setBorderExtension( false );
@@ -626,7 +642,21 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     msg( msgl, "[L%d ", iRefList);
     for (int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx(RefPicList(iRefList)); iRefIndex++)
     {
+#if RPR_CTC_PRINT
+      int xScale, yScale;
+      CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->unscaledPic->cs->pps, xScale, yScale );
+
+      if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
+      {
+        msg( msgl, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+      }
+      else
+      {
+        msg( msgl, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+      }
+#else
       msg( msgl, "%d ", pcSlice->getRefPOC(RefPicList(iRefList), iRefIndex));
+#endif
     }
     msg( msgl, "] ");
   }
@@ -849,7 +879,11 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->pcv   = pps->pcv;
 
     // Initialise the various objects for the new set of settings
+#if JVET_O1164_PS
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA ), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA ) );
+#else
     m_cSAO.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) );
+#endif
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
 #if JVET_O1170_IBC_VIRTUAL_BUFFER
@@ -904,7 +938,11 @@ void DecLib::xActivateParameterSets()
 
     if( sps->getALFEnabledFlag() )
     {
+#if JVET_O1164_PS
+      m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
+#else
       m_cALF.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
+#endif
     }
   }
   else
@@ -970,6 +1008,7 @@ void DecLib::xActivateParameterSets()
      }
   }
 
+  // Conformance checks
 #if JVET_O0244_DELTA_POC
   Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
   const SPS *sps = pSlice->getSPS();
@@ -983,6 +1022,18 @@ void DecLib::xActivateParameterSets()
   if( !sps->getUseWPBiPred() )
   {
     CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
+  }
+#endif
+
+#if JVET_O1164_PS
+#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
+  CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, int( sps->getMaxCUWidth() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
+  CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, int( sps->getMaxCUHeight() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
+#endif
+
+  if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
+  {    
+    CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
   }
 #endif
 }
@@ -1016,6 +1067,10 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 {
   m_apcSlicePilot->initSlice(); // the slice pilot is an object to prepare for a new slice
                                 // it is not associated with picture, sps or pps structures.
+
+#if JVET_O1164_RPR
+  Picture* scaledRefPic[MAX_NUM_REF] = {};
+#endif
 
   if (m_bFirstSliceInPicture)
   {
@@ -1213,6 +1268,10 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
   pcSlice->constructRefPicList(m_cListPic);
+
+#if JVET_O1164_RPR
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), true );
+#endif
 
     if (!pcSlice->isIntra())
     {
@@ -1434,6 +1493,10 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   m_bFirstSliceInPicture = false;
   m_uiSliceSegmentIdx++;
+
+#if JVET_O1164_RPR
+  pcSlice->freeScaledRefPicList( scaledRefPic );
+#endif
 
   return false;
 }

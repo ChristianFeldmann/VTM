@@ -857,6 +857,37 @@ Enables harmonization of Gop first field couple.
 Add Access Unit Delimiter NAL units between all Access Units.
 \\
 
+\Option{ScalingRatioHor} &
+%\ShortOption{\None} &
+\Default{1.0} &
+Scaling ratio in horizontal direction for reference picture resampling.
+\\
+
+\Option{ScalingRatioVer} &
+%\ShortOption{\None} &
+\Default{1.0} &
+Scaling ratio in vertical direction for reference picture resampling.
+\\
+
+\Option{FractionNumFrames} &
+%\ShortOption{\None} &
+\Default{1.0} &
+Encode a fraction of the specified in FramesToBeEncoded frames.
+\\
+
+\Option{SwitchPocPeriod} &
+%\ShortOption{\None} &
+\Default{0} &
+POC period at which resolution is changed.
+\\
+
+\Option{UpscaledOutput} &
+%\ShortOption{\None} &
+\Default{0} &
+Picture output options: output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for reference picture resampling.
+\\
+
+
 \end{OptionTableNoShorthand}
 
 %%
@@ -1290,6 +1321,19 @@ Enabling this parameter can reduce the visibility of CU boundaries in the coded 
  2 & Maximum RD-penalty (no 32x32 TU)\\
 \end{tabular}
 \\
+
+\Option{FastLocalDualTreeMode} &
+%\ShortOption{\None} &
+\Default{0} &
+Controls intra coding speedup introducted with local dual tree mode. 
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+ 0 & Disabled\\
+ 1 & Stop testing intra modes in inter slices, if best cost is more that 1.5 times inter cost.\\
+ 2 & Test only one intra mode in inter slices\\
+\end{tabular}
+\\
+
 
 \end{OptionTableNoShorthand}
 

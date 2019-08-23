@@ -58,6 +58,10 @@ enum PictureType
   PIC_RESIDUAL,
   PIC_ORG_RESI,
   PIC_RECON_WRAP,
+#if RPR_CTC_PRINT
+  PIC_ORIGINAL_INPUT,
+  PIC_TRUE_ORIGINAL_INPUT,
+#endif
   NUM_PIC_TYPES
 };
 #if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
@@ -247,11 +251,11 @@ private:
   PelStorage m_reco;
   PelStorage m_orgr;
 
-  TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
-  Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
+  std::vector<TCoeff> m_coeffs[MAX_NUM_COMPONENT];
+  std::vector<Pel>    m_pcmbuf[MAX_NUM_COMPONENT];
 #if JVET_O0119_BASE_PALETTE_444
-  bool   *m_runType  [MAX_NUM_COMPONENT];
-  Pel    *m_runLength[MAX_NUM_COMPONENT];
+  std::vector<PLTRunMode> m_runType[MAX_NUM_COMPONENT];
+  std::vector<Pel>        m_runLength[MAX_NUM_COMPONENT];
 #endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 

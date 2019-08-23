@@ -687,13 +687,13 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       if( m_rprEnabled )
       {
 #if RPR_CTC_PRINT
-        pcPicCurr->m_bufs[PIC_ORIGINAL_INPUT].getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
-        pcPicCurr->m_bufs[PIC_ORIGINAL_INPUT].getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
-        pcPicCurr->m_bufs[PIC_ORIGINAL_INPUT].getBuf( COMPONENT_Cr ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cr ) );
+        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
+        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
+        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cr ) );
 
-        pcPicCurr->m_bufs[PIC_TRUE_ORIGINAL_INPUT].getBuf( COMPONENT_Y ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Y ) );
-        pcPicCurr->m_bufs[PIC_TRUE_ORIGINAL_INPUT].getBuf( COMPONENT_Cb ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cb ) );
-        pcPicCurr->m_bufs[PIC_TRUE_ORIGINAL_INPUT].getBuf( COMPONENT_Cr ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cr ) );
+        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Y ) );
+        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cb ) );
+        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cr ) );
 #endif
 
         const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
@@ -915,8 +915,8 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
 #if RPR_CTC_PRINT
     if( m_rprEnabled )
     {
-      rpcPic->m_bufs[PIC_ORIGINAL_INPUT].create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
-      rpcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+      rpcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+      rpcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
     }
 #endif
 #else

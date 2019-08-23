@@ -995,6 +995,14 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   }
 
 #endif
+  if( tempCS->cost == MAX_DOUBLE && bestCS->cost == MAX_DOUBLE )
+  {
+    //although some coding modes were planned to be tried in RDO, no coding mode actually finished encoding due to early termination
+    //thus tempCS->cost and bestCS->cost are both MAX_DOUBLE; in this case, skip the following process for normal case
+    m_modeCtrl->finishCULevel( partitioner );
+    return;
+  }
+
   // set context states
   m_CABACEstimator->getCtx() = m_CurrCtx->best;
 

@@ -285,7 +285,7 @@ void TComHash::generateBlockHashValue(int picWidth, int picHeight, int width, in
 
   int length = 4 * sizeof(uint32_t);
 
-  uint32_t* p = new uint32_t[4];
+  uint32_t p[4];
   int pos = 0;
   for (int yPos = 0; yPos < yEnd; yPos++)
   {
@@ -328,9 +328,6 @@ void TComHash::generateBlockHashValue(int picWidth, int picHeight, int width, in
       pos += width - 1;
     }
   }
-
-  delete[] p;
-
 }
 
 void TComHash::addToHashMapByRowWithPrecalData(uint32_t* picHash[2], bool* picIsSame, int picWidth, int picHeight, int width, int height)
@@ -548,7 +545,7 @@ bool TComHash::getBlockHashValue(const PelUnitBuf &curPicBuf, int width, int hei
   }
 
   unsigned char* p = new unsigned char[length];
-  uint32_t* toHash = new uint32_t[4];
+  uint32_t toHash[4];
 
   int block2x2Num = (width*height) >> 2;
 
@@ -654,8 +651,6 @@ bool TComHash::getBlockHashValue(const PelUnitBuf &curPicBuf, int width, int hei
 
   hashValue1 = (hashValueBuffer[0][dstIdx][0] & crcMask) + addValue;
   hashValue2 = hashValueBuffer[1][dstIdx][0];
-
-  delete[] toHash;
 
   for (int i = 0; i < 2; i++)
   {

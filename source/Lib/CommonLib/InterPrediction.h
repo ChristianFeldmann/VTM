@@ -69,11 +69,13 @@ private:
   Distortion  m_bioSubBlkDistThres;
   Distortion  m_bioPredSubBlkDist[MAX_NUM_PARTS_IN_CTU];
 
+#if !JVET_O0304_SIMPLIFIED_BDOF
   int m_dotProduct1[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct2[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct3[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct5[BIO_TEMP_BUFFER_SIZE];
   int m_dotProduct6[BIO_TEMP_BUFFER_SIZE];
+#endif
 
 protected:
   InterpolationFilter  m_if;

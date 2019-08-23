@@ -1948,20 +1948,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, const RefPicList &
 
 int InterPrediction::rightShiftMSB(int numer, int denom)
 {
-  int     d;
-  int msbIdx = 0;
-  for (msbIdx = 0; msbIdx<32; msbIdx++)
-  {
-    if (denom < ((int)1 << msbIdx))
-    {
-      break;
-    }
-  }
-
-  int shiftIdx = msbIdx - 1;
-  d = (numer >> shiftIdx);
-
-  return d;
+  return numer >> floorLog2(denom);
 }
 
 void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )

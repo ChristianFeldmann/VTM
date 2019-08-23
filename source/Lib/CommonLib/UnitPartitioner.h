@@ -222,14 +222,6 @@ public:
   PartSplit getImplicitSplit (const CodingStructure &cs) { return CU_DONT_SPLIT; }; //not needed
 };
 
-
-
-
-namespace PartitionerFactory
-{
-  Partitioner* get( const Slice& slice );
-};
-
 //////////////////////////////////////////////////////////////////////////
 // Partitioner namespace - contains methods calculating the actual splits
 //////////////////////////////////////////////////////////////////////////

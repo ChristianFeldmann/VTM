@@ -462,6 +462,29 @@ void QuantRDOQ::xInitScalingList( const QuantRDOQ* other )
 {
   m_isErrScaleListOwner = other == nullptr;
 
+  size_t numElements = 0;
+
+  for (uint32_t sizeIdX = 0; sizeIdX < SCALING_LIST_SIZE_NUM; sizeIdX++)
+  {
+    for (uint32_t sizeIdY = 0; sizeIdY < SCALING_LIST_SIZE_NUM; sizeIdY++)
+    {
+      for (uint32_t qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
+      {
+        for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
+        {
+          numElements += g_scalingListSizeX[sizeIdX] * g_scalingListSizeX[sizeIdY];
+        }
+      }
+    }
+  }
+
+  if (m_isErrScaleListOwner)
+  {
+    m_errScale[0][0][0][0] = new double[numElements];
+  }
+
+  size_t offset = 0;
+
   for(uint32_t sizeIdX = 0; sizeIdX < SCALING_LIST_SIZE_NUM; sizeIdX++)
   {
     for(uint32_t sizeIdY = 0; sizeIdY < SCALING_LIST_SIZE_NUM; sizeIdY++)
@@ -472,7 +495,8 @@ void QuantRDOQ::xInitScalingList( const QuantRDOQ* other )
         {
           if( m_isErrScaleListOwner )
           {
-            m_errScale[sizeIdX][sizeIdY][listId][qp] = new double[g_scalingListSizeX[sizeIdX] * g_scalingListSizeX[sizeIdY]];
+            m_errScale[sizeIdX][sizeIdY][listId][qp] = m_errScale[0][0][0][0] + offset;
+            offset += g_scalingListSizeX[sizeIdX] * g_scalingListSizeX[sizeIdY];
           }
           else
           {
@@ -490,23 +514,7 @@ void QuantRDOQ::xDestroyScalingList()
 {
   if( !m_isErrScaleListOwner ) return;
 
-  for(uint32_t sizeIdX = 0; sizeIdX < SCALING_LIST_SIZE_NUM; sizeIdX++)
-  {
-    for(uint32_t sizeIdY = 0; sizeIdY < SCALING_LIST_SIZE_NUM; sizeIdY++)
-    {
-      for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
-      {
-        for(uint32_t qp = 0; qp < SCALING_LIST_REM_NUM; qp++)
-        {
-          if(m_errScale[sizeIdX][sizeIdY][listId][qp])
-          {
-            delete [] m_errScale[sizeIdX][sizeIdY][listId][qp];
-          }
-        }
-      }
-    }
-  }
-//   Quant::destroyScalingList();
+  delete[] m_errScale[0][0][0][0];
 }
 
 

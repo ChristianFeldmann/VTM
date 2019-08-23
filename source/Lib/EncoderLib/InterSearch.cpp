@@ -5428,7 +5428,7 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
   }
 }
 
-void solveEqual( double** dEqualCoeff, int iOrder, double* dAffinePara )
+void solveEqual(double dEqualCoeff[7][7], int iOrder, double *dAffinePara)
 {
   for ( int k = 0; k < iOrder; k++ )
   {
@@ -5614,12 +5614,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   int iParaNum = pu.cu->affineType ? 7 : 5;
   int affineParaNum = iParaNum - 1;
   int mvNum = pu.cu->affineType ? 3 : 2;
-  double **pdEqualCoeff;
-  pdEqualCoeff = new double *[iParaNum];
-  for ( int i = 0; i < iParaNum; i++ )
-  {
-    pdEqualCoeff[i] = new double[iParaNum];
-  }
+  double pdEqualCoeff[7][7];
 
   int64_t  i64EqualCoeff[7][7];
   Pel    *piError = m_tmpAffiError;
@@ -6080,11 +6075,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   acMvPred[0] = aamvpi.mvCandLT[mvpIdx];
   acMvPred[1] = aamvpi.mvCandRT[mvpIdx];
   acMvPred[2] = aamvpi.mvCandLB[mvpIdx];
-
-  // free buffer
-  for (int i = 0; i<iParaNum; i++)
-    delete[]pdEqualCoeff[i];
-  delete[]pdEqualCoeff;
 
   ruiBits = uiBitsBest;
   ruiCost = uiCostBest;

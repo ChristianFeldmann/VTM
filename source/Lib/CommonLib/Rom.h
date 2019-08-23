@@ -147,7 +147,6 @@ extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
 extern SizeIndexInfo* gp_sizeIdxInfo;
 extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
 extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
-extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
 
 #if JVET_O0105_ICT
 extern const int       g_ictModes[2][4];

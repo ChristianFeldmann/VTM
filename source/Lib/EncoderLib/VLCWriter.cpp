@@ -322,14 +322,14 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       WRITE_UVLC( pcPPS->getNumSlicesInPicMinus1(), "num_slices_in_pic_minus1" );
       int numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
       int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
-      int codeLength = (int)ceil(log2(numTilesInPic));
+      int codeLength = ceilLog2(numTilesInPic);
       int codeLength2 = codeLength;
       for (int i = 0; i < numSlicesInPic; ++i)
       {
         if (i > 0)
         {
           WRITE_CODE(pcPPS->getTopLeftBrickIdx(i), codeLength, "top_left_brick_idx ");
-          codeLength2 = (int)ceil(log2((numTilesInPic - pcPPS->getTopLeftBrickIdx(i) < 2) ? 2 : numTilesInPic - pcPPS->getTopLeftBrickIdx(i)));
+          codeLength2 = ceilLog2((numTilesInPic - pcPPS->getTopLeftBrickIdx(i) < 2) ? 2 : numTilesInPic - pcPPS->getTopLeftBrickIdx(i));
         }
         WRITE_CODE(pcPPS->getBottomRightBrickIdx(i) - pcPPS->getTopLeftBrickIdx(i), codeLength2, "bottom_right_brick_idx_delta");
       }
@@ -383,13 +383,13 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     WRITE_CODE( pcPPS->getNumVerVirtualBoundaries(), 2,                              "pps_num_ver_virtual_boundaries");
-    int numBits = (int)ceil(log2(pcPPS->pcv->lumaWidth) - 3);
+    int numBits = ceilLog2(pcPPS->pcv->lumaWidth) - 3;
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
       WRITE_CODE( pcPPS->getVirtualBoundariesPosX( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_x" );
     }
     WRITE_CODE( pcPPS->getNumHorVirtualBoundaries(), 2,                              "pps_num_hor_virtual_boundaries");
-    numBits = (int)ceil(log2(pcPPS->pcv->lumaHeight) - 3);
+    numBits = ceilLog2(pcPPS->pcv->lumaHeight) - 3;
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
       WRITE_CODE( pcPPS->getVirtualBoundariesPosY( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_y" );
@@ -535,7 +535,7 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
     if (param.numLumaFilters > 1)
     {
 #if JVET_O0491_HLS_CLEANUP
-      const int length =  (int)ceil(log2( param.numLumaFilters));
+      const int length =  ceilLog2( param.numLumaFilters);
 #endif
       for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
       {

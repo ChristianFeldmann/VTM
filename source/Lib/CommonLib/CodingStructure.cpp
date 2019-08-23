@@ -76,13 +76,6 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
-    m_coeffs[ i ] = nullptr;
-    m_pcmbuf[ i ] = nullptr;
-#if JVET_O0119_BASE_PALETTE_444
-    m_runType[i]   = nullptr;
-    m_runLength[i] = nullptr;
-#endif
-
     m_offsets[ i ] = 0;
   }
 
@@ -640,7 +633,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 #if JVET_O0119_BASE_PALETTE_444
-  bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
+  PLTRunMode *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 #endif
 
@@ -677,11 +670,11 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
       }
     }
 
-    coeffs[i] = m_coeffs[i] + m_offsets[i];
-    pcmbuf[i] = m_pcmbuf[i] + m_offsets[i];
+    coeffs[i] = m_coeffs[i].data() + m_offsets[i];
+    pcmbuf[i] = m_pcmbuf[i].data() + m_offsets[i];
 #if JVET_O0119_BASE_PALETTE_444
-    runType[i]   = m_runType[i]   + m_offsets[i];
-    runLength[i] = m_runLength[i] + m_offsets[i];
+    runType[i]   = m_runType[i].data() + m_offsets[i];
+    runLength[i] = m_runLength[i].data() + m_offsets[i];
 #endif
 
     unsigned areaSize = tu->blocks[i].area();
@@ -969,32 +962,23 @@ void CodingStructure::rebindPicBufs()
 
 void CodingStructure::createCoeffs()
 {
-  const unsigned numCh = getNumberValidComponents( area.chromaFormat );
+  const size_t numCh = getNumberValidComponents(area.chromaFormat);
 
-  for( unsigned i = 0; i < numCh; i++ )
+  for (size_t i = 0; i < numCh; i++)
   {
-    unsigned _area = area.blocks[i].area();
+    size_t _area = area.blocks[i].area();
 
-    m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
-    m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
+    m_coeffs[i].resize(_area);
+    m_pcmbuf[i].resize(_area);
 #if JVET_O0119_BASE_PALETTE_444
-    m_runType[i]   = _area > 0 ? ( bool*  ) xMalloc( bool, _area ) : nullptr;
-    m_runLength[i] = _area > 0 ? ( Pel*   ) xMalloc( Pel,  _area ) : nullptr;
+    m_runType[i].resize(_area);
+    m_runLength[i].resize(_area);
 #endif
   }
 }
 
 void CodingStructure::destroyCoeffs()
 {
-  for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
-  {
-    if( m_coeffs[i] ) { xFree( m_coeffs[i] ); m_coeffs[i] = nullptr; }
-    if( m_pcmbuf[i] ) { xFree( m_pcmbuf[i] ); m_pcmbuf[i] = nullptr; }
-#if JVET_O0119_BASE_PALETTE_444
-    if (m_runType[i])   { xFree(m_runType[i]);   m_runType[i]   = nullptr; }
-    if (m_runLength[i]) { xFree(m_runLength[i]); m_runLength[i] = nullptr; }
-#endif
-  }
 }
 
 void CodingStructure::initSubStructure( CodingStructure& subStruct, const ChannelType _chType, const UnitArea &subArea, const bool &isTuEnc )

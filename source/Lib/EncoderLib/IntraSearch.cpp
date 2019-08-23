@@ -1785,7 +1785,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   }
 
   Pel  *runLength = tu.getRunLens (compBegin);
-  bool *runType   = tu.getRunTypes(compBegin);
+  PLTRunMode *runType       = tu.getRunTypes(compBegin);
   cu.lastPLTSize[compBegin] = cs.prevPLT.curPLTSize[compBegin];
   //derive palette
   derivePLTLossy(cs, partitioner, compBegin, numComp);
@@ -1801,7 +1801,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, bits);
   }
   cu.useRotation[compBegin] = m_bestScanRotationMode;
-  memcpy(runType, m_runTypeRD, sizeof(bool)*width*height);
+  memcpy(runType, m_runTypeRD, sizeof(PLTRunMode) * width * height);
   memcpy(runLength, m_runLengthRD, sizeof(Pel)*width*height);
   //reconstruct pixel
   PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
@@ -1883,7 +1883,7 @@ void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partiti
   uint32_t height = cu.block(compBegin).height;
   uint32_t width = cu.block(compBegin).width;
   Pel  *runLength = tu.getRunLens (compBegin);
-  bool *runType   = tu.getRunTypes(compBegin);
+  PLTRunMode *   runType   = tu.getRunTypes(compBegin);
 
   cu.useRotation[compBegin] = (pltScanMode == PLT_SCAN_VERTRAV);
   m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];

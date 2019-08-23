@@ -488,7 +488,7 @@ struct TransformUnit : public UnitArea
   TransformUnit *prev;
 
 #if JVET_O0119_BASE_PALETTE_444
-  void init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType);
+  void init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, PLTRunMode **runType);
 #else
   void init(TCoeff **coeffs, Pel **pcmbuf);
 #endif
@@ -517,7 +517,7 @@ struct TransformUnit : public UnitArea
   const CPLTescapeBuf getescapeValue(const ComponentID id) const;
         Pel*      getPLTIndex(const ComponentID id);
         Pel*      getRunLens(const ComponentID id);
-        bool*     getRunTypes(const ComponentID id);
+        PLTRunMode *  getRunTypes(const ComponentID id);
 #endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -529,7 +529,7 @@ private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
 #if JVET_O0119_BASE_PALETTE_444
-  bool   *m_runType[MAX_NUM_TBLOCKS];
+  PLTRunMode *m_runType[MAX_NUM_TBLOCKS];
   Pel    *m_runLength[MAX_NUM_TBLOCKS];
 #endif
 };

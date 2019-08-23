@@ -47,9 +47,13 @@ constexpr int AdaptiveLoopFilter::AlfNumClippingValues[];
 AdaptiveLoopFilter::AdaptiveLoopFilter()
   : m_classifier( nullptr )
 {
-  for( int i = 0; i < NUM_DIRECTIONS; i++ )
+  for (size_t i = 0; i < NUM_DIRECTIONS; i++)
   {
-    m_laplacian[i] = nullptr;
+    m_laplacian[i] = m_laplacianPtr[i];
+    for (size_t j = 0; j < sizeof(m_laplacianPtr[i]) / sizeof(m_laplacianPtr[i][0]); j++)
+    {
+      m_laplacianPtr[i][j] = m_laplacianData[i][j];
+    }
   }
 
   for( int compIdx = 0; compIdx < MAX_NUM_COMPONENT; compIdx++ )
@@ -657,27 +661,15 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_tempBuf2.destroy();
   m_tempBuf2.create( format, Area( 0, 0, maxCUWidth + (MAX_ALF_PADDING_SIZE << 1), maxCUHeight + (MAX_ALF_PADDING_SIZE << 1) ), maxCUWidth, MAX_ALF_PADDING_SIZE, 0, false );
 
-  // Laplacian based activity
-  for( int i = 0; i < NUM_DIRECTIONS; i++ )
-  {
-    if ( m_laplacian[i] == nullptr )
-    {
-      m_laplacian[i] = new int*[m_CLASSIFICATION_BLK_SIZE + 5];
-
-      for( int y = 0; y < m_CLASSIFICATION_BLK_SIZE + 5; y++ )
-      {
-        m_laplacian[i][y] = new int[m_CLASSIFICATION_BLK_SIZE + 5];
-      }
-    }
-  }
-
   // Classification
   if ( m_classifier == nullptr )
   {
     m_classifier = new AlfClassifier*[picHeight];
-    for( int i = 0; i < picHeight; i++ )
+    m_classifier[0] = new AlfClassifier[picWidth * picHeight];
+
+    for (int i = 1; i < picHeight; i++)
     {
-      m_classifier[i] = new AlfClassifier[picWidth];
+      m_classifier[i] = m_classifier[0] + i * picWidth;
     }
   }
 
@@ -706,29 +698,10 @@ void AdaptiveLoopFilter::destroy()
   {
     return;
   }
-  for( int i = 0; i < NUM_DIRECTIONS; i++ )
-  {
-    if( m_laplacian[i] )
-    {
-      for( int y = 0; y < m_CLASSIFICATION_BLK_SIZE + 5; y++ )
-      {
-        delete[] m_laplacian[i][y];
-        m_laplacian[i][y] = nullptr;
-      }
-
-      delete[] m_laplacian[i];
-      m_laplacian[i] = nullptr;
-    }
-  }
 
   if( m_classifier )
   {
-    for( int i = 0; i < m_picHeight; i++ )
-    {
-      delete[] m_classifier[i];
-      m_classifier[i] = nullptr;
-    }
-
+    delete[] m_classifier[0];
     delete[] m_classifier;
     m_classifier = nullptr;
   }

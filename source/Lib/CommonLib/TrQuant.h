@@ -130,8 +130,8 @@ public:
 #endif
 
 protected:
-  TCoeff*  m_plTempCoeff;
-  uint32_t     m_uiMaxTrSize;
+  TCoeff   m_tempCoeff[MAX_TB_SIZEY * MAX_TB_SIZEY];
+  uint32_t m_uiMaxTrSize;
   bool     m_bEnc;
   bool     m_useTransformSkipFast;
 
@@ -139,7 +139,7 @@ protected:
 
 private:
   DepQuant *m_quant;          //!< Quantizer
-  TCoeff** m_mtsCoeffs;
+  TCoeff    m_mtsCoeffs[NUM_TRAFO_MODES_MTS][MAX_TB_SIZEY * MAX_TB_SIZEY];
   TCoeff   m_tempInMatrix [ 48 ];
   TCoeff   m_tempOutMatrix[ 48 ];
 #if JVET_O0105_ICT

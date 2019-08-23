@@ -156,6 +156,10 @@ private:
 #endif
 
 public:
+#if JVET_O1164_RPR
+  SPS*                      getSPS( int spsId ) { return m_spsMap.getPS( spsId ); };
+  APS**                     getApss() { return m_apss; }
+#endif
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
   std::vector<Ctx>          m_entropyCodingSyncContextStateVec;   ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
@@ -275,7 +279,11 @@ public:
                int& iNumEncoded, bool isTff );
 
 
+#if RPR_CTC_PRINT
+  void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }
+#else
   void printSummary(bool isField) { m_cGOPEncoder.printOutSummary (m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_spsMap.getFirstPS()->getBitDepths()); }
+#endif
 
 };
 

@@ -402,6 +402,11 @@ int AlfCovariance::gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) c
 
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
   : m_CABACEstimator( nullptr )
+#if JVET_O_MAX_NUM_ALF_APS_8
+  , m_apsIdStart( ALF_CTB_MAX_NUM_APS )
+#else
+  , m_apsIdStart( MAX_NUM_APS )
+#endif
 {
   for( int i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
@@ -501,11 +506,14 @@ void EncAdaptiveLoopFilter::create( const EncCfg* encCfg, const int picWidth, co
     m_diffFilterCoeff[i] = new int[MAX_NUM_ALF_LUMA_COEFF];
   }
 
+#if !JVET_O1164_PS
 #if JVET_O_MAX_NUM_ALF_APS_8
   m_apsIdStart = ALF_CTB_MAX_NUM_APS;
 #else
   m_apsIdStart = (int)MAX_NUM_APS;
 #endif
+#endif
+
   m_ctbDistortionFixedFilter = new double[m_numCTUsInPic];
   for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
   {

@@ -578,7 +578,11 @@ protected:
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 
+#if JVET_O1164_PS
+  void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
+#else
   void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps );
+#endif
 
 public:
   void resetBufferedUniMotions    () { m_uniMotions.reset(); }

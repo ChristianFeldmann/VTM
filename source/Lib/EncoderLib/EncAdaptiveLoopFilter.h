@@ -223,12 +223,12 @@ public:
   static constexpr int   m_MAX_SCAN_VAL = 11;
   static constexpr int   m_MAX_EXP_GOLOMB = 16;
 #endif
-  int m_alfWSSD;
   inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
   static std::vector<double>  m_lumaLevelToWeightPLUT;
   inline std::vector<double>& getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
 
 private:
+  int                    m_alfWSSD;
   const EncCfg*          m_encCfg;
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB

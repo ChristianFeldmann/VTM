@@ -104,6 +104,31 @@ void CS::setRefinedMotionField(CodingStructure &cs)
 }
 // CU tools
 
+#if JVET_O1164_RPR
+bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale )
+{
+
+#if RPR_CONF_WINDOW
+  const Window& curConfWindow = curPPS->getConformanceWindow();
+  int curPicWidth = curPPS->getPicWidthInLumaSamples() - (curConfWindow.getWindowLeftOffset() + curConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  int curPicHeight = curPPS->getPicHeightInLumaSamples() - (curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  const Window& refConfWindow = refPPS->getConformanceWindow();
+  int refPicWidth = refPPS->getPicWidthInLumaSamples() - (refConfWindow.getWindowLeftOffset() + refConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  int refPicHeight = refPPS->getPicHeightInLumaSamples() - (refConfWindow.getWindowTopOffset() + refConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+#else
+  int curPicWidth = curPPS->getPicWidthInLumaSamples();
+  int curPicHeight = curPPS->getPicHeightInLumaSamples();
+  int refPicWidth = refPPS->getPicWidthInLumaSamples();
+  int refPicHeight = refPPS->getPicHeightInLumaSamples();
+#endif
+
+  xScale = ( ( refPicWidth << 14 ) + ( curPicWidth >> 1 ) ) / curPicWidth;
+  yScale = ( ( refPicHeight << 14 ) + ( curPicHeight >> 1 ) ) / curPicHeight;
+
+  return refPicWidth != curPicWidth || refPicHeight != curPicHeight;
+}
+#endif
+
 bool CU::isIntra(const CodingUnit &cu)
 {
   return cu.predMode == MODE_INTRA;
@@ -163,15 +188,23 @@ bool CU::isSameCtu(const CodingUnit& cu, const CodingUnit& cu2)
 
 bool CU::isLastSubCUOfCtu( const CodingUnit &cu )
 {
+#if !JVET_O1164_PS
   const SPS &sps      = *cu.cs->sps;
+#endif
 #if JVET_O0050_LOCAL_DUAL_TREE
   const Area cuAreaY = cu.isSepTree() ? Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].size() ) ) : (const Area&)cu.Y();
 #else
   const Area cuAreaY = CS::isDualITree( *cu.cs ) ? Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].size() ) ) : ( const Area& ) cu.Y();
 #endif
 
+
+#if JVET_O1164_PS
+  return ( ( ( ( cuAreaY.x + cuAreaY.width  ) & cu.cs->pcv->maxCUWidthMask  ) == 0 || cuAreaY.x + cuAreaY.width  == cu.cs->pps->getPicWidthInLumaSamples()  ) &&
+           ( ( ( cuAreaY.y + cuAreaY.height ) & cu.cs->pcv->maxCUHeightMask ) == 0 || cuAreaY.y + cuAreaY.height == cu.cs->pps->getPicHeightInLumaSamples() ) );
+#else
   return ( ( ( ( cuAreaY.x + cuAreaY.width  ) & cu.cs->pcv->maxCUWidthMask  ) == 0 || cuAreaY.x + cuAreaY.width  == sps.getPicWidthInLumaSamples()  ) &&
            ( ( ( cuAreaY.y + cuAreaY.height ) & cu.cs->pcv->maxCUHeightMask ) == 0 || cuAreaY.y + cuAreaY.height == sps.getPicHeightInLumaSamples() ) );
+#endif
 }
 
 uint32_t CU::getCtuAddr( const CodingUnit &cu )
@@ -1738,6 +1771,9 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && ((pu.lheight() * pu.lwidth()) >= 128)
       && (pu.cu->GBiIdx == GBI_DEFAULT)
       && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag))
+#if JVET_O1164_RPR
+      && PU::isRefPicSameSize( pu )
+#endif
       ;
   }
   else
@@ -2178,7 +2214,11 @@ bool PU::getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv)
   int offsetY = currentMv.getVer();
 
 
+#if JVET_O1164_PS
+  if( rX < 0 || rY < 0 || rX >= pu.cs->slice->getPPS()->getPicWidthInLumaSamples() || rY >= pu.cs->slice->getPPS()->getPicHeightInLumaSamples() )
+#else
   if (rX < 0 || rY < 0 || rX >= pu.cs->slice->getSPS()->getPicWidthInLumaSamples() || rY >= pu.cs->slice->getSPS()->getPicHeightInLumaSamples())
+#endif
   {
     return false;
   }
@@ -3543,9 +3583,17 @@ void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
   int log2CtuSize = g_aucLog2[pu.cs->sps->getCTUSize()];
   int ctuX = ((puPos.x >> log2CtuSize) << log2CtuSize);
   int ctuY = ((puPos.y >> log2CtuSize) << log2CtuSize);
+#if JVET_O1164_PS
+  int horMax = std::min( (int)pu.cs->pps->getPicWidthInLumaSamples() - 1, ctuX + (int)pu.cs->sps->getCTUSize() + 3 );
+#else
   int horMax = std::min((int)pu.cs->sps->getPicWidthInLumaSamples() - 1, ctuX + (int)pu.cs->sps->getCTUSize() + 3);
+#endif
   int horMin = std::max((int)0, ctuX);
+#if JVET_O1164_PS
+  int verMax = std::min( (int)pu.cs->pps->getPicHeightInLumaSamples() - 1, ctuY + (int)pu.cs->sps->getCTUSize() - 1 );
+#else
   int verMax = std::min((int)pu.cs->sps->getPicHeightInLumaSamples() - 1, ctuY + (int)pu.cs->sps->getCTUSize() - 1);
+#endif
   int verMin = std::max((int)0, ctuY);
 
   posX = std::min(horMax, std::max(horMin, posX));
@@ -4682,5 +4730,33 @@ bool allowLfnstWithMip(const Size& block)
   return false;
 }
 #endif
+
+#if JVET_O1164_RPR
+bool PU::isRefPicSameSize( const PredictionUnit& pu )
+{
+  bool samePicSize = true;
+  int curPicWidth = pu.cs->pps->getPicWidthInLumaSamples();
+  int curPicHeight = pu.cs->pps->getPicHeightInLumaSamples();
+
+  if( pu.refIdx[0] >= 0 )
+  {
+    int refPicWidth = pu.cu->slice->getRefPic( REF_PIC_LIST_0, pu.refIdx[0] )->unscaledPic->cs->pps->getPicWidthInLumaSamples();
+    int refPicHeight = pu.cu->slice->getRefPic( REF_PIC_LIST_0, pu.refIdx[0] )->unscaledPic->cs->pps->getPicHeightInLumaSamples();
+
+    samePicSize = refPicWidth == curPicWidth && refPicHeight == curPicHeight;
+  }
+
+  if( pu.refIdx[1] >= 0 )
+  {
+    int refPicWidth = pu.cu->slice->getRefPic( REF_PIC_LIST_1, pu.refIdx[1] )->unscaledPic->cs->pps->getPicWidthInLumaSamples();
+    int refPicHeight = pu.cu->slice->getRefPic( REF_PIC_LIST_1, pu.refIdx[1] )->unscaledPic->cs->pps->getPicHeightInLumaSamples();
+
+    samePicSize = samePicSize && ( refPicWidth == curPicWidth && refPicHeight == curPicHeight );
+  }
+
+  return samePicSize;
+}
+#endif
+
 
 

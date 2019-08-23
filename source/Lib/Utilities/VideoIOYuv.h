@@ -50,6 +50,11 @@ using namespace std;
 // Class definition
 // ====================================================================================================================
 
+#if JVET_O1164_RPR
+#include "CommonLib/Slice.h"
+#include "CommonLib/Picture.h"
+#endif
+
 /// YUV file I/O class
 class VideoIOYuv
 {
@@ -77,7 +82,11 @@ public:
   bool  read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSpaceConversion ipcsc, int aiPad[2], ChromaFormat fileFormat=NUM_CHROMA_FORMAT, const bool bClipToRec709=false );     ///< read one frame with padding parameter
 
   // If fileFormat=NUM_CHROMA_FORMAT, use the format defined by pPicYuv
+#if JVET_O1164_RPR
+  bool  write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf& pic,
+#else
   bool  write( const CPelUnitBuf& pic,
+#endif
                const InputColourSpaceConversion ipCSC,
                const bool bPackedYUVOutputMode,
                int confLeft = 0, int confRight = 0, int confTop = 0, int confBottom = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one YUV frame with padding parameter
@@ -93,6 +102,10 @@ public:
   bool  isEof ();                                           ///< check for end-of-file
   bool  isFail();                                           ///< check for failure
 
+#if JVET_O1164_RPR
+  bool  writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPelUnitBuf& pic,
+    const InputColourSpaceConversion ipCSC, const bool bPackedYUVOutputMode, int outputChoice = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one upsaled YUV frame
+#endif
 
 };
 

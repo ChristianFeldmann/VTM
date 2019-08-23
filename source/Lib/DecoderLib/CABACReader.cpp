@@ -1854,11 +1854,18 @@ void CABACReader::sbt_mode( CodingUnit& cu )
 
 bool CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
 {
+#if !JVET_O1164_PS
   const SPS     &sps   = *cu.cs->sps;
+#endif
   const Position rbPos = recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].bottomRight().offset( 1, 1 ) );
 
+#if JVET_O1164_PS
+  if( ( ( rbPos.x & cu.cs->pcv->maxCUWidthMask ) == 0 || rbPos.x == cu.cs->pps->getPicWidthInLumaSamples() )
+  && ( ( rbPos.y & cu.cs->pcv->maxCUHeightMask ) == 0 || rbPos.y == cu.cs->pps->getPicHeightInLumaSamples() )
+#else
   if ( ( ( rbPos.x & cu.cs->pcv->maxCUWidthMask  ) == 0 || rbPos.x == sps.getPicWidthInLumaSamples () )
     && ( ( rbPos.y & cu.cs->pcv->maxCUHeightMask ) == 0 || rbPos.y == sps.getPicHeightInLumaSamples() )
+#endif
 #if JVET_O0050_LOCAL_DUAL_TREE
     && ( !cu.isSepTree() || cu.chromaFormat == CHROMA_400 || isChroma( cu.chType ) )
 #else

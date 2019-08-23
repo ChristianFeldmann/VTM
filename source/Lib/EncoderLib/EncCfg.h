@@ -677,6 +677,13 @@ protected:
   int                          m_cropOffsetRight;
   int                          m_cropOffsetBottom;
   bool                         m_calculateHdrMetrics;
+#endif  
+#if JVET_O1164_RPR
+  double      m_scalingRatioHor;
+  double      m_scalingRatioVer;
+  bool        m_rprEnabled;
+  int         m_switchPocPeriod;
+  int         m_upscaledOutput;
 #endif
 
 public:
@@ -1168,6 +1175,9 @@ public:
   //==== Tool list ========
   void      setBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_bitDepth[chType] = internalBitDepthForChannel; }
   void      setInputBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_inputBitDepth[chType] = internalBitDepthForChannel; }
+#if JVET_O1164_PS
+  int*      getInputBitDepth()                              { return m_inputBitDepth; }
+#endif
   void      setUseASR                       ( bool  b )     { m_bUseASR     = b; }
   void      setUseHADME                     ( bool  b )     { m_bUseHADME   = b; }
   void      setUseRDOQ                      ( bool  b )     { m_useRDOQ    = b; }
@@ -1198,6 +1208,9 @@ public:
   void      setDeltaQpRD                    ( uint32_t  u )     {m_uiDeltaQpRD  = u; }
   void      setFastDeltaQp                  ( bool  b )     {m_bFastDeltaQP = b; }
   int       getBitDepth                     (const ChannelType chType) const { return m_bitDepth[chType]; }
+#if JVET_O1164_PS
+  int*      getBitDepth                     ()      { return m_bitDepth; }
+#endif
   bool      getUseASR                       ()      { return m_bUseASR;     }
   bool      getUseHADME                     ()      { return m_bUseHADME;   }
   bool      getUseRDOQ                      ()      { return m_useRDOQ;    }
@@ -1687,6 +1700,14 @@ public:
   bool        getCalcluateHdrMetrics()                          const { return m_calculateHdrMetrics;}
 #endif
 
+#if JVET_O1164_RPR
+  void        setScalingRatio( double hor, double ver )              { m_scalingRatioHor = hor, m_scalingRatioVer = ver;  }
+  void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
+  bool        isRPREnabled()                                   const { return m_rprEnabled; }
+  void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
+  void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
+  int         getUpscaledOutput()                              const { return m_upscaledOutput; }
+#endif
 };
 
 //! \}

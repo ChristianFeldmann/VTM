@@ -216,6 +216,22 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_UVLC( pcPPS->getPPSId(),                             "pps_pic_parameter_set_id" );
   WRITE_UVLC( pcPPS->getSPSId(),                             "pps_seq_parameter_set_id" );
+
+#if JVET_O1164_PS
+  WRITE_UVLC( pcPPS->getPicWidthInLumaSamples(), "pic_width_in_luma_samples" );
+  WRITE_UVLC( pcPPS->getPicHeightInLumaSamples(), "pic_height_in_luma_samples" );
+  Window conf = pcPPS->getConformanceWindow();
+
+  WRITE_FLAG( conf.getWindowEnabledFlag(), "conformance_window_flag" );
+  if( conf.getWindowEnabledFlag() )
+  {
+    WRITE_UVLC( conf.getWindowLeftOffset(),   "conf_win_left_offset" );
+    WRITE_UVLC( conf.getWindowRightOffset(),  "conf_win_right_offset" );
+    WRITE_UVLC( conf.getWindowTopOffset(),    "conf_win_top_offset" );
+    WRITE_UVLC( conf.getWindowBottomOffset(), "conf_win_bottom_offset" );
+  }
+#endif
+
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
   WRITE_CODE( pcPPS->getNumExtraSliceHeaderBits(), 3,        "num_extra_slice_header_bits");
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
@@ -740,6 +756,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( 0,                                  "separate_colour_plane_flag");
   }
 
+#if JVET_O1164_PS
+  WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
+  WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );  
+#else
   WRITE_UVLC( pcSPS->getPicWidthInLumaSamples (),   "pic_width_in_luma_samples" );
   WRITE_UVLC( pcSPS->getPicHeightInLumaSamples(),   "pic_height_in_luma_samples" );
   Window conf = pcSPS->getConformanceWindow();
@@ -753,6 +773,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC( conf.getWindowTopOffset()    / SPS::getWinUnitY(pcSPS->getChromaFormatIdc() ), "conf_win_top_offset" );
     WRITE_UVLC( conf.getWindowBottomOffset() / SPS::getWinUnitY(pcSPS->getChromaFormatIdc() ), "conf_win_bottom_offset" );
   }
+#endif
 
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_luma_minus8" );
 
@@ -907,14 +928,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
 #endif
+
+#if !JVET_O1164_PS
   if( pcSPS->getCTUSize() + 2*(1 << pcSPS->getLog2MinCodingBlockSize()) <= pcSPS->getPicWidthInLumaSamples() )
   {
+#endif
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
     WRITE_UVLC( (pcSPS->getWrapAroundOffset()/(1 <<  pcSPS->getLog2MinCodingBlockSize()))-1,  "sps_ref_wraparound_offset_minus1" );
   }
+#if !JVET_O1164_PS
   }
+#endif
 
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
 

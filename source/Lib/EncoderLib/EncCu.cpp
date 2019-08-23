@@ -311,10 +311,12 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
 #endif
   m_pcIntraSearch->setModeCtrl( m_modeCtrl );
 
+#if !JVET_O1164_PS
   if ( ( m_pcEncCfg->getIBCHashSearch() && m_pcEncCfg->getIBCMode() ) || m_pcEncCfg->getAllowDisFracMMVD() )
   {
     m_ibcHashMap.init(m_pcEncCfg->getSourceWidth(), m_pcEncCfg->getSourceHeight());
   }
+#endif
 }
 
 // ====================================================================================================================
@@ -3826,8 +3828,13 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
         const int cuPelY = pu.Y().y;
         int roiWidth = pu.lwidth();
         int roiHeight = pu.lheight();
+#if JVET_O1164_PS
+        const int picWidth = pu.cs->slice->getPPS()->getPicWidthInLumaSamples();
+        const int picHeight = pu.cs->slice->getPPS()->getPicHeightInLumaSamples();
+#else
         const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
         const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
+#endif
         const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
         int xPred = pu.bv.getHor();
         int yPred = pu.bv.getVer();

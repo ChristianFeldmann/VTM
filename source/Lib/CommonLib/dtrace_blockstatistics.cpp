@@ -376,7 +376,11 @@ void writeBlockStatisticsHeader(const SPS *sps)
 
   DTRACE_HEADER( g_trace_ctx, "# VTMBMS Block Statistics\n");
   // sequence info
+#if JVET_O1164_PS
+  DTRACE_HEADER( g_trace_ctx, "# Sequence size: [%dx %d]\n", sps->getMaxPicWidthInLumaSamples(), sps->getMaxPicHeightInLumaSamples() );
+#else
   DTRACE_HEADER( g_trace_ctx, "# Sequence size: [%dx %d]\n", sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples());
+#endif
   // list statistics
   for( auto i = static_cast<int>(BlockStatistic::PredMode); i < static_cast<int>(BlockStatistic::NumBlockStatistics); i++)
   {

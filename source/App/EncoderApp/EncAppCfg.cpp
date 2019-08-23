@@ -1382,6 +1382,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
 #endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
+#if JVET_O1164_RPR
+  ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
+  ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
+  ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
+  ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
+  ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
+#endif
     ;
 
 #if EXTENSION_360_VIDEO
@@ -1406,6 +1413,19 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
+   
+#if JVET_O1164_RPR
+  m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
+  if( m_fractionOfFrames != 1.0 )
+  {
+    m_framesToBeEncoded = int( m_framesToBeEncoded * m_fractionOfFrames );
+  }
+
+  if( m_rprEnabled && !m_switchPocPeriod )
+  {
+    m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
+  }
+#endif
 
   for (int i = 0; m_GOPList[i].m_POC != -1 && i < MAX_GOP + 1; i++)
   {
@@ -3650,6 +3670,17 @@ void EncAppCfg::xPrintParameter()
   }
   msg( VERBOSE, "NumWppThreads:%d+%d ", m_numWppThreads, m_numWppExtraLines );
   msg( VERBOSE, "EnsureWppBitEqual:%d ", m_ensureWppBitEqual );
+
+#if JVET_O1164_RPR
+  if( m_rprEnabled )
+  {
+    msg( VERBOSE, "RPR:%1.2lfx, %1.2lfx|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
+  }
+  else
+  {
+    msg( VERBOSE, "RPR:%d", 0 );
+  }
+#endif
 
 #if EXTENSION_360_VIDEO
   m_ext360.outputConfigurationSummary();

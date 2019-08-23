@@ -608,7 +608,16 @@ protected:
   bool        m_bs2ModPOCAndType;
   bool        m_forceDecodeBitstream1;
 
-  bool        m_alf;                                          ///> Adaptive Loop Filter
+  bool        m_alf;                                          ///< Adaptive Loop Filter
+
+#if JVET_O1164_RPR
+  double      m_scalingRatioHor;
+  double      m_scalingRatioVer;
+  bool        m_rprEnabled;
+  double      m_fractionOfFrames;                             ///< encode a fraction of the frames as specified in FramesToBeEncoded
+  int         m_switchPocPeriod;
+  int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
+#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

@@ -42,6 +42,83 @@
 #include "Buffer.h"
 #include "InterpolationFilter.h"
 
+#if JVET_O0070_PROF
+void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
+{
+  int idx = 0;
+  const int dIshift = 1;
+  const int dIoffset = 1 << (dIshift - 1);
+
+  for (int h = 0; h < height; h++)
+  {
+    for (int w = 0; w < width; w++)
+    {
+      int32_t dI = dMvX[idx] * gradX[w] + dMvY[idx] * gradY[w];
+      dI = (dI + dIoffset) >> dIshift;
+
+      dI = (src[w] + dI + offset) >> shiftNum;
+      dst[w] = (Pel)ClipPel(dI, clpRng);
+
+      idx++;
+    }
+    gradX += gradStride;
+    gradY += gradStride;
+    dst += dstStride;
+    src += srcStride;
+  }
+}
+
+template<bool l1PROFEnabled = true>
+void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t w0, const ClpRng& clpRng)
+{
+  int idx = 16;
+  int32_t dI0 = 0;
+  int32_t dI1 = 0;
+  const int dIshift = 1;
+  const int dIoffset = 1 << (dIshift - 1);
+
+  const int clipbd = clpRng.bd;
+  const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + g_GbiLog2WeightBase;
+  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_GbiLog2WeightBase);
+
+  const int8_t w1 = g_GbiWeightBase - w0;
+
+  for (int h = 0; h < height; h++)
+  {
+    if (!(h & 3)) idx -= 16;
+    idx += 4;
+
+    for (int w = 0; w < width; w++)
+    {
+      if (!(w & 3)) idx -= 4;
+      dI0 = dMvX0[idx] * gradX0[w] + dMvY0[idx] * gradY0[w];
+      dI0 = (dI0 + dIoffset) >> dIshift;
+      if (l1PROFEnabled)
+      {
+        dI1 = dMvX1[idx] * gradX1[w] + dMvY1[idx] * gradY1[w];
+        dI1 = (dI1 + dIoffset) >> dIshift;
+        dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + (src1[w] + dI1) * w1 + offset), shiftNum), clpRng);
+      }
+      else
+        dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + src1[w] * w1 + offset), shiftNum), clpRng);
+
+      idx++;
+    }
+
+    gradX0 += gradStride;
+    gradY0 += gradStride;
+    if (l1PROFEnabled)
+    {
+      gradX1 += gradStride;
+      gradY1 += gradStride;
+    }
+    dst += dstStride;
+    src0 += srcStride;
+    src1 += srcStride;
+  }
+}
+#endif
+
 template< typename T >
 void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T* dest, int dstStride, int width, int height, int rshift, int offset, const ClpRng& clpRng )
 {
@@ -86,29 +163,37 @@ void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Str
   }
 }
 
+#if JVET_O0070_PROF
+template<bool PAD = true>
+#endif
 void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
 {
   Pel* srcTmp = pSrc + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
-#if JVET_N0325_BDOF
   int  shift1 = std::max<int>(6, (bitDepth - 6));
-#else
-  int  shift1 = std::max<int>(2, (IF_INTERNAL_PREC - bitDepth));
-#endif
 
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
     for (int x = 0; x < (width - 2 * BIO_EXTEND_SIZE); x++)
     {
+#if JVET_O0570_GRAD_SIMP
+      gradYTmp[x] = ( srcTmp[x + srcStride] >> shift1 ) - ( srcTmp[x - srcStride] >> shift1 );
+      gradXTmp[x] = ( srcTmp[x + 1] >> shift1 ) - ( srcTmp[x - 1] >> shift1 );
+#else
       gradYTmp[x] = (srcTmp[x + srcStride] - srcTmp[x - srcStride]) >> shift1;
       gradXTmp[x] = (srcTmp[x + 1] - srcTmp[x - 1]) >> shift1;
+#endif
     }
     gradXTmp += gradStride;
     gradYTmp += gradStride;
     srcTmp += srcStride;
   }
 
+#if JVET_O0070_PROF
+  if (PAD)
+  {
+#endif
   gradXTmp = gradX + gradStride + 1;
   gradYTmp = gradY + gradStride + 1;
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
@@ -128,17 +213,45 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   ::memcpy(gradXTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradXTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
   ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
   ::memcpy(gradYTmp + (height - 2 * BIO_EXTEND_SIZE)*gradStride, gradYTmp + (height - 2 * BIO_EXTEND_SIZE - 1)*gradStride, sizeof(Pel)*(width));
+#if JVET_O0070_PROF
+  }
+#endif
 }
+
+#if JVET_O0304_SIMPLIFIED_BDOF
+void calcBIOSumsCore(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
+{
+  int shift4 = std::max<int>(4, (bitDepth - 8));
+  int shift5 = std::max<int>(1, (bitDepth - 11));
+
+  for (int y = 0; y < 6; y++)
+  {
+    for (int x = 0; x < 6; x++)
+    {
+      int tmpGX = (gradX0[x] + gradX1[x]) >> shift5;
+      int tmpGY = (gradY0[x] + gradY1[x]) >> shift5;
+      int tmpDI = (int)((srcY1Tmp[x] >> shift4) - (srcY0Tmp[x] >> shift4));
+      *sumAbsGX += (tmpGX < 0 ? -tmpGX : tmpGX);
+      *sumAbsGY += (tmpGY < 0 ? -tmpGY : tmpGY);
+      *sumDIX += (tmpGX < 0 ? -tmpDI : (tmpGX == 0 ? 0 : tmpDI));
+      *sumDIY += (tmpGY < 0 ? -tmpDI : (tmpGY == 0 ? 0 : tmpDI));
+      *sumSignGY_GX += (tmpGY < 0 ? -tmpGX : (tmpGY == 0 ? 0 : tmpGX));
+
+    }
+    srcY1Tmp += src1Stride;
+    srcY0Tmp += src0Stride;
+    gradX0 += widthG;
+    gradX1 += widthG;
+    gradY0 += widthG;
+    gradY1 += widthG;
+  }
+}
+#endif
 
 void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
-#if JVET_N0325_BDOF
   int shift4 = std::max<int>(4, (bitDepth - 8));
   int shift5 = std::max<int>(1, (bitDepth - 11));
-#else
-  int shift4 = std::min<int>(8, (bitDepth - 4));
-  int shift5 = std::min<int>(5, (bitDepth - 7));
-#endif
   for (int y = 0; y < heightG; y++)
   {
     for (int x = 0; x < widthG; x++)
@@ -277,8 +390,12 @@ PelBufferOps::PelBufferOps()
 
   addBIOAvg4      = addBIOAvgCore;
   bioGradFilter   = gradFilterCore;
-  calcBIOPar      = calcBIOParCore;
+#if !JVET_O0304_SIMPLIFIED_BDOF
+  calcBIOPar = calcBIOParCore;
   calcBlkGradient = calcBlkGradientCore;
+#else
+  calcBIOSums = calcBIOSumsCore;
+#endif
 
   copyBuffer = copyBufferCore;
   padding = paddingCore;
@@ -289,6 +406,13 @@ PelBufferOps::PelBufferOps()
   removeHighFreq4 = removeHighFreq;
 #endif
 
+#if JVET_O0070_PROF
+  profGradFilter = gradFilterCore <false>;
+  applyPROF      = applyPROFCore;
+  applyBiPROF[1] = applyBiPROFCore;
+  applyBiPROF[0] = applyBiPROFCore <false>;
+  roundIntVector = nullptr;
+#endif
 }
 
 PelBufferOps g_pelBufOP = PelBufferOps();
@@ -408,9 +532,7 @@ void AreaBuf<Pel>::scaleSignal(const int scale, const bool dir, const ClpRng& cl
     {
       for (unsigned x = 0; x < width; x++)
       {
-#if JVET_N0220_LMCS_SIMPLIFICATION
         src[x] = (Pel)Clip3((Pel)(-maxAbsclipBD - 1), (Pel)maxAbsclipBD, src[x]);
-#endif
         sign = src[x] >= 0 ? 1 : -1;
         absval = sign * src[x];
         int val = sign * ((absval * scale + (1 << (CSCALE_FP_PREC - 1))) >> CSCALE_FP_PREC);

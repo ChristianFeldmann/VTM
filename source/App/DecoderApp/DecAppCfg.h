@@ -61,6 +61,7 @@ protected:
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
   InputColourSpaceConversion m_outputColourSpaceConvert;
+  int           m_iTargetLayer;                       ///< target stream layer to be decoded
 
   int           m_iMaxTemporalLayer;                  ///< maximum temporal layer to be decoded
   int           m_decodedPictureHashSEIEnabled;       ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
@@ -74,6 +75,10 @@ protected:
   std::string   m_cacheCfgFile;                       ///< Config file of cache model
   int           m_statMode;                           ///< Config statistic mode (0 - bit stat, 1 - tool stat, 3 - both)
   bool          m_mctsCheck;
+
+#if JVET_O1164_RPR
+  int          m_upscaledOutput;                     ////< Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
+#endif
 
 public:
   DecAppCfg();

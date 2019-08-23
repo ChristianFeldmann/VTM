@@ -69,8 +69,15 @@ private:
   uint32_t      m_uiNumPic;
   double    m_dFrmRate; //--CFG_KDY
   double    m_MSEyuvframe[MAX_NUM_COMPONENT]; // sum of MSEs
+#if RPR_CTC_PRINT
+  double    m_upscaledPSNR[MAX_NUM_COMPONENT];
+#endif
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze m_ext360;
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double    m_logDeltaESum[hdrtoolslib::NB_REF_WHITE];
+  double    m_psnrLSum[hdrtoolslib::NB_REF_WHITE];
 #endif
 
 public:
@@ -78,6 +85,9 @@ public:
   Analyze() { clear(); }
 
   void  addResult( double psnr[MAX_NUM_COMPONENT], double bits, const double MSEyuvframe[MAX_NUM_COMPONENT]
+#if RPR_CTC_PRINT
+    , const double upscaledPSNR[MAX_NUM_COMPONENT]
+#endif
     , bool isEncodeLtRef
   )
   {
@@ -88,6 +98,9 @@ public:
     {
       m_dPSNRSum[i] += psnr[i];
       m_MSEyuvframe[i] += MSEyuvframe[i];
+#if RPR_CTC_PRINT
+      m_upscaledPSNR[i] += upscaledPSNR[i];
+#endif
     }
 
     m_uiNumPic++;
@@ -96,11 +109,25 @@ public:
   double  getWPSNR      (const ComponentID compID) const { return m_dPSNRSum[compID] / (double)m_uiNumPic; }
 #endif
   double  getPsnr(ComponentID compID) const { return  m_dPSNRSum[compID];  }
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double getDeltaE()                  const { return m_logDeltaESum[0];  }
+  double getPsnrL()                   const { return m_psnrLSum[0];  }
+#endif
   double  getBits()                   const { return  m_dAddBits;   }
   void    setBits(double numBits)     { m_dAddBits = numBits; }
   uint32_t    getNumPic()                 const { return  m_uiNumPic;   }
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze& getExt360Info() { return m_ext360; }
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  void addHDRMetricsResult(double deltaE[hdrtoolslib::NB_REF_WHITE], double psnrL[hdrtoolslib::NB_REF_WHITE])
+  {
+    for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
+    {
+      m_logDeltaESum[i] += deltaE[i];
+      m_psnrLSum[i] += psnrL[i];
+    }
+  }
 #endif
 
   void    setFrmRate  (double dFrameRate) { m_dFrmRate = dFrameRate; } //--CFG_KDY
@@ -111,10 +138,20 @@ public:
     {
       m_dPSNRSum[i] = 0;
       m_MSEyuvframe[i] = 0;
+#if RPR_CTC_PRINT
+      m_upscaledPSNR[i] = 0;
+#endif
     }
     m_uiNumPic = 0;
 #if EXTENSION_360_VIDEO
     m_ext360.clear();
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
+    {
+      m_logDeltaESum[i] = 0.0;
+      m_psnrLSum[i] = 0.0;
+    }
 #endif
   }
 
@@ -159,9 +196,25 @@ public:
   }
 
 #if ENABLE_QPA || WCG_WPSNR
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false )
+#if RPR_CTC_PRINT
+  void    printOut( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths, const bool useWPSNR = false
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
 #else
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths )
+  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
+#endif
+#else
+  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      , const bool printHdrMetrics = false
+#endif
+  )
 #endif
   {
 #if !WCG_WPSNR
@@ -405,10 +458,16 @@ public:
           {
 #if ENABLE_QPA || WCG_WPSNR
             if (useWPSNR) {
-              msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR" );
+              msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-WPSNR   "  "U-WPSNR   "  "V-WPSNR   "  "YUV-WPSNR   " );
             } else
 #endif
-            msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR " );
+            msg( e_msg_level, "\tTotal Frames |   "   "Bitrate     "  "Y-PSNR    "  "U-PSNR    "  "V-PSNR    "  "YUV-PSNR   " );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+            if (printHdrMetrics)
+            {
+              msg(e_msg_level, "DeltaE   "  "PSNRL      ");
+            }
+#endif
 #if EXTENSION_360_VIDEO
             m_ext360.printHeader(e_msg_level);
 #endif
@@ -417,7 +476,12 @@ public:
             {
               msg(e_msg_level, "xY-PSNR           "  "xU-PSNR           "  "xV-PSNR           ");
             }
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+            if (printHdrMetrics && printHexPsnr)
+            {
+              msg(e_msg_level, "xDeltaE           "  "xPSNRL           ");
+            }
+#endif
             if (printSequenceMSE)
             {
               msg( e_msg_level, " Y-MSE     "  "U-MSE     "  "V-MSE    "  "YUV-MSE \n" );
@@ -442,8 +506,14 @@ public:
 #if ENABLE_QPA
                    useWPSNR ? getWPSNR(COMPONENT_Cr) :
 #endif
-                   getPsnr(COMPONENT_Cr) / (double)getNumPic(),
-                   PSNRyuv );
+              getPsnr(COMPONENT_Cr) / (double)getNumPic(),
+              PSNRyuv );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+            if (printHdrMetrics)
+            {
+              msg( e_msg_level, "  %8.4lf  " "%8.4lf  ", getDeltaE()/(double)getNumPic(), getPsnrL()/(double)getNumPic());
+            }
+#endif
 
 #if EXTENSION_360_VIDEO
             m_ext360.printPSNRs(getNumPic(), e_msg_level);
@@ -463,7 +533,33 @@ public:
               }
               msg(e_msg_level, "   %16" PRIx64 "  %16" PRIx64 "  %16" PRIx64 , xPsnr[COMPONENT_Y], xPsnr[COMPONENT_Cb], xPsnr[COMPONENT_Cr]);
             }
-
+#if JVET_O0756_CALCULATE_HDRMETRICS
+            if (printHexPsnr && printHdrMetrics)
+            {
+              double dDeltaE[MAX_NUM_COMPONENT];
+              uint64_t xDeltaE[MAX_NUM_COMPONENT];
+              for (int i = 0; i < 1; i++)
+              {
+                dDeltaE[i] = getDeltaE() / (double)getNumPic();
+                
+                copy(reinterpret_cast<uint8_t *>(&dDeltaE[i]),
+                     reinterpret_cast<uint8_t *>(&dDeltaE[i]) + sizeof(dDeltaE[i]),
+                     reinterpret_cast<uint8_t *>(&xDeltaE[i]));
+              }
+              
+              double dPsnrL[MAX_NUM_COMPONENT];
+              uint64_t xPsnrL[MAX_NUM_COMPONENT];
+              for (int i = 0; i < 1; i++)
+              {
+                dPsnrL[i] = getPsnrL() / (double)getNumPic();
+                
+                copy(reinterpret_cast<uint8_t *>(&dPsnrL[i]),
+                     reinterpret_cast<uint8_t *>(&dPsnrL[i]) + sizeof(dPsnrL[i]),
+                     reinterpret_cast<uint8_t *>(&xPsnrL[i]));
+              }
+              msg(e_msg_level, "   %16" PRIx64 "  %16" PRIx64 , xDeltaE[0], xPsnrL[0]);
+            }
+#endif
             if (printSequenceMSE)
             {
               msg( e_msg_level, "  %8.4lf  "   "%8.4lf  "    "%8.4lf  "   "%8.4lf\n",
@@ -476,6 +572,36 @@ public:
             {
               msg( e_msg_level, "\n");
             }
+#if RPR_CTC_PRINT
+            if( printRprPSNR )
+            {
+              double psnr[MAX_NUM_COMPONENT];
+              for( uint32_t componentIndex = 0; componentIndex < MAX_NUM_COMPONENT; componentIndex++ )
+              {
+                const ComponentID compID = ComponentID( componentIndex );
+
+                if( getNumPic() == 0 )
+                {
+                  psnr[compID] = 0.0;
+                }
+                else
+                {
+                  const uint32_t maxval = 255 << ( bitDepths.recon[toChannelType( compID )] - 8 );
+                  psnr[compID] = ( m_MSEyuvframe[compID] == 0 ) ? 999.99 : 10.0 * log10( ( maxval * maxval ) / ( m_MSEyuvframe[compID] / (double)getNumPic() ) );
+                }
+              }
+
+              msg( e_msg_level, "\nPSNR1 Y-PSNR     "  "U-PSNR     "  "V-PSNR\n" );
+              msg( e_msg_level, "     %8.4lf  "     " %8.4lf  "     " %8.4lf\n",
+                psnr[COMPONENT_Y], psnr[COMPONENT_Cb], psnr[COMPONENT_Cr] );
+
+              msg( e_msg_level, "PSNR2 Y-PSNR     "  "U-PSNR     "  "V-PSNR\n" );
+              msg( e_msg_level, "     %8.4lf  "     " %8.4lf  "     " %8.4lf\n",
+                m_upscaledPSNR[COMPONENT_Y] / (double)getNumPic(),
+                m_upscaledPSNR[COMPONENT_Cb] / (double)getNumPic(),
+                m_upscaledPSNR[COMPONENT_Cr] / (double)getNumPic());
+            }
+#endif
           }
         }
         break;

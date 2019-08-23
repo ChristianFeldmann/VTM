@@ -67,12 +67,15 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   , m_cuCache ( cuCache )
   , m_puCache ( puCache )
   , m_tuCache ( tuCache )
+#if JVET_O0070_PROF
+  , bestParent ( nullptr )
+#endif
+#if JVET_O1170_CHECK_BV_AT_DECODER
+  , resetIBCBuffer (false)
+#endif
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
-    m_coeffs[ i ] = nullptr;
-    m_pcmbuf[ i ] = nullptr;
-
     m_offsets[ i ] = 0;
   }
 
@@ -86,7 +89,10 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
 
   m_motionBuf     = nullptr;
   features.resize( NUM_ENC_FEATURES );
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+  treeType = TREE_D;
+  modeType = MODE_TYPE_ALL;
+#endif
 }
 
 void CodingStructure::destroy()
@@ -183,14 +189,116 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
   }
 }
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
+{
+  if( CS::isDualITree( *this ) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
+    return LDT_MODE_TYPE_INHERIT;
 
+  int width = partitioner.currArea().lwidth();
+  int height = partitioner.currArea().lheight();
+
+  if( width * height == 64 )
+  {
+    if( split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // qt or tt
+      return LDT_MODE_TYPE_INFER; //only intra mode allowed for child nodes (have 4x4)
+    else // bt
+      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+  }
+  else if( width * height == 128 )
+  {
+    if( split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // tt
+      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+    else // bt
+      return LDT_MODE_TYPE_INHERIT;
+  }
+  else
+  {
+    return LDT_MODE_TYPE_INHERIT;
+  }
+}
+
+void CodingStructure::clearCuPuTuIdxMap( const UnitArea &_area, uint32_t numCu, uint32_t numPu, uint32_t numTu, uint32_t* pOffset )
+{
+  UnitArea clippedArea = clipArea( _area, *picture );
+  uint32_t numCh = ::getNumberValidChannels( _area.chromaFormat );
+  for( uint32_t i = 0; i < numCh; i++ )
+  {
+    const CompArea &_selfBlk = area.blocks[i];
+    const CompArea     &_blk = clippedArea.blocks[i];
+
+    const UnitScale& scale = unitScale[_blk.compID];
+    const Area scaledSelf = scale.scale( _selfBlk );
+    const Area scaledBlk = scale.scale( _blk );
+    const size_t offset = rsAddr( scaledBlk.pos(), scaledSelf.pos(), scaledSelf.width );
+    unsigned *idxPtrCU = m_cuIdx[i] + offset;
+    AreaBuf<uint32_t>( idxPtrCU, scaledSelf.width, scaledBlk.size() ).fill( 0 );
+
+    unsigned *idxPtrPU = m_puIdx[i] + offset;
+    AreaBuf<uint32_t>( idxPtrPU, scaledSelf.width, scaledBlk.size() ).fill( 0 );
+
+    unsigned *idxPtrTU = m_tuIdx[i] + offset;
+    AreaBuf<uint32_t>( idxPtrTU, scaledSelf.width, scaledBlk.size() ).fill( 0 );
+  }
+
+  //pop cu/pu/tus
+  for( int i = m_numTUs; i > numTu; i-- )
+  {
+    m_tuCache.cache( tus.back() );
+    tus.pop_back();
+    m_numTUs--;
+  }
+  for( int i = m_numPUs; i > numPu; i-- )
+  {
+    m_puCache.cache( pus.back() );
+    pus.pop_back();
+    m_numPUs--;
+  }
+  for( int i = m_numCUs; i > numCu; i-- )
+  {
+    m_cuCache.cache( cus.back() );
+    cus.pop_back();
+    m_numCUs--;
+  }
+  for( int i = 0; i < 3; i++ )
+  {
+    m_offsets[i] = pOffset[i];
+  }
+}
+#endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+CodingUnit* CodingStructure::getLumaCU( const Position &pos )
+{
+  const ChannelType effChType = CHANNEL_TYPE_LUMA;
+  const CompArea &_blk = area.blocks[effChType];
+  CHECK( !_blk.contains( pos ), "must contain the pos" );
+
+  const unsigned idx = m_cuIdx[effChType][rsAddr( pos, _blk.pos(), _blk.width, unitScale[effChType] )];
+
+  if( idx != 0 ) return cus[idx - 1];
+  else           return nullptr;
+}
+#endif
 
 CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType effChType )
 {
   const CompArea &_blk = area.blocks[effChType];
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( !_blk.contains( pos ) || (treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA) )
+#else
   if( !_blk.contains( pos ) )
+#endif
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    //keep this check, which is helpful to identify bugs
+    if( treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA )
+    {
+      CHECK( parent == nullptr, "parent shall be valid; consider using function getLumaCU()" );
+      CHECK( parent->treeType != TREE_D, "wrong parent treeType " );
+    }
+#endif
     if( parent ) return parent->getCU( pos, effChType );
     else         return nullptr;
   }
@@ -207,8 +315,19 @@ const CodingUnit* CodingStructure::getCU( const Position &pos, const ChannelType
 {
   const CompArea &_blk = area.blocks[effChType];
 
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( !_blk.contains( pos ) || (treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA) )
+#else
   if( !_blk.contains( pos ) )
+#endif
   {
+#if JVET_O0050_LOCAL_DUAL_TREE
+    if( treeType == TREE_C && effChType == CHANNEL_TYPE_LUMA )
+    {
+      CHECK( parent == nullptr, "parent shall be valid; consider using function getLumaCU()" );
+      CHECK( parent->treeType != TREE_D, "wrong parent treeType" );
+    }
+#endif
     if( parent ) return parent->getCU( pos, effChType );
     else         return nullptr;
   }
@@ -286,13 +405,13 @@ TransformUnit* CodingStructure::getTU( const Position &pos, const ChannelType ef
           }
           else
           {
-#if JVET_N0473_DEBLOCK_INTERNAL_TRANSFORM_BOUNDARIES
             while( !tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].contains( pos ) )
-#else
-            while( pos != tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].pos() )
-#endif
             {
               extraIdx++;
+#if JVET_O0050_LOCAL_DUAL_TREE
+              CHECK( tus[idx - 1 + extraIdx]->cu->treeType == TREE_C, "tu searched by position points to a chroma tree CU" );
+              CHECK( extraIdx > 3, "extraIdx > 3" );
+#endif
             }
           }
         }
@@ -331,9 +450,13 @@ const TransformUnit * CodingStructure::getTU( const Position &pos, const Channel
           }
           else
           {
-            while( pos != tus[idx - 1 + extraIdx]->blocks[effChType].pos() )
+            while ( !tus[idx - 1 + extraIdx]->blocks[getFirstComponentOfChannel( effChType )].contains(pos) )
             {
               extraIdx++;
+#if JVET_O0050_LOCAL_DUAL_TREE
+              CHECK( tus[idx - 1 + extraIdx]->cu->treeType == TREE_C, "tu searched by position points to a chroma tree CU" );
+              CHECK( extraIdx > 3, "extraIdx > 3" );
+#endif
             }
           }
         }
@@ -359,6 +482,10 @@ CodingUnit& CodingStructure::addCU( const UnitArea &unit, const ChannelType chTy
   cu->firstTU   = nullptr;
   cu->lastTU    = nullptr;
   cu->chType    = chType;
+#if JVET_O0050_LOCAL_DUAL_TREE
+  cu->treeType = treeType;
+  cu->modeType = modeType;
+#endif
 
   CodingUnit *prevCU = m_numCUs > 0 ? cus.back() : nullptr;
 
@@ -505,6 +632,10 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
 
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+#if JVET_O0119_BASE_PALETTE_444
+  PLTRunMode *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
+  Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+#endif
 
   uint32_t numCh = ::getNumberValidComponents( area.chromaFormat );
 
@@ -539,14 +670,22 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
       }
     }
 
-    coeffs[i] = m_coeffs[i] + m_offsets[i];
-    pcmbuf[i] = m_pcmbuf[i] + m_offsets[i];
+    coeffs[i] = m_coeffs[i].data() + m_offsets[i];
+    pcmbuf[i] = m_pcmbuf[i].data() + m_offsets[i];
+#if JVET_O0119_BASE_PALETTE_444
+    runType[i]   = m_runType[i].data() + m_offsets[i];
+    runLength[i] = m_runLength[i].data() + m_offsets[i];
+#endif
 
     unsigned areaSize = tu->blocks[i].area();
     m_offsets[i] += areaSize;
   }
 
+#if JVET_O0119_BASE_PALETTE_444
+  tu->init( coeffs, pcmbuf, runLength, runType);
+#else
   tu->init( coeffs, pcmbuf );
+#endif
 
   return *tu;
 }
@@ -555,8 +694,45 @@ CUTraverser CodingStructure::traverseCUs( const UnitArea& unit, const ChannelTyp
 {
   CodingUnit* firstCU = getCU( isLuma( effChType ) ? unit.lumaPos() : unit.chromaPos(), effChType );
   CodingUnit* lastCU = firstCU;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+  if( !CS::isDualITree( *this ) ) //for a more generalized separate tree
+  {
+    bool bContinue = true;
+    CodingUnit* currCU = firstCU;
+    while( bContinue )
+    {
+      if( currCU == nullptr )
+      {
+        bContinue = false;
+        lastCU = currCU;
+      }
+      else if( currCU->chType != effChType )
+      {
+        lastCU = currCU;
+        currCU = currCU->next;
+      }
+      else
+      {
+        if( unit.contains( *currCU ) )
+        {
+          lastCU = currCU;
+          currCU = currCU->next;
+        }
+        else
+        {
+          bContinue = false;
+          lastCU = currCU;
+        }
+      }
+    }
+  }
+  else
+  {
+#endif
   do { } while( lastCU && ( lastCU = lastCU->next ) && unit.contains( *lastCU ) );
+#if JVET_O0050_LOCAL_DUAL_TREE
+  }
+#endif
 
   return CUTraverser( firstCU, lastCU );
 }
@@ -709,6 +885,64 @@ void CodingStructure::addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> &
   lut.push_back(mi);
 }
 
+#if JVET_O0119_BASE_PALETTE_444
+void CodingStructure::resetPrevPLT(PLTBuf& prevPLT)
+{
+  for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
+  {
+    prevPLT.curPLTSize[comp] = 0;
+    memset(prevPLT.curPLT[comp], 0, MAXPLTPREDSIZE * sizeof(Pel));
+  }
+}
+
+void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT)
+{
+  Pel stuffedPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
+  uint32_t tempCurPLTsize[MAX_NUM_COMPONENT];
+  uint32_t stuffPLTsize[MAX_NUM_COMPONENT];
+
+  for (int i = compBegin; i < (compBegin + numComp); i++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    tempCurPLTsize[comID] = curPLTSize[comID];
+    stuffPLTsize[i] = 0;
+    memcpy(stuffedPLT[i], curPLT[i], curPLTSize[comID] * sizeof(Pel));
+  }
+
+  for (int ch = compBegin; ch < (compBegin + numComp); ch++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((ch > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    if (ch > 1) break;
+    for (int i = 0; i < prevPLT.curPLTSize[comID]; i++)
+    {
+      if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= MAXPLTPREDSIZE)
+        break;
+
+      if (!reuseflag[comID][i])
+      {
+        if (ch == COMPONENT_Y)
+        {
+          stuffedPLT[0][tempCurPLTsize[comID] + stuffPLTsize[ch]] = prevPLT.curPLT[0][i];
+        }
+        else
+        {
+          stuffedPLT[1][tempCurPLTsize[comID] + stuffPLTsize[ch]] = prevPLT.curPLT[1][i];
+          stuffedPLT[2][tempCurPLTsize[comID] + stuffPLTsize[ch]] = prevPLT.curPLT[2][i];
+        }
+        stuffPLTsize[ch]++;
+      }
+    }
+  }
+
+  for (int i = compBegin; i < (compBegin + numComp); i++)
+  {
+    ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
+    prevPLT.curPLTSize[comID] = curPLTSize[comID] + stuffPLTsize[comID];
+    memcpy(prevPLT.curPLT[i], stuffedPLT[i], prevPLT.curPLTSize[comID] * sizeof(Pel));
+  }
+}
+#endif
+
 void CodingStructure::rebindPicBufs()
 {
   CHECK( parent, "rebindPicBufs can only be used for the top level CodingStructure" );
@@ -728,24 +962,23 @@ void CodingStructure::rebindPicBufs()
 
 void CodingStructure::createCoeffs()
 {
-  const unsigned numCh = getNumberValidComponents( area.chromaFormat );
+  const size_t numCh = getNumberValidComponents(area.chromaFormat);
 
-  for( unsigned i = 0; i < numCh; i++ )
+  for (size_t i = 0; i < numCh; i++)
   {
-    unsigned _area = area.blocks[i].area();
+    size_t _area = area.blocks[i].area();
 
-    m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
-    m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
+    m_coeffs[i].resize(_area);
+    m_pcmbuf[i].resize(_area);
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i].resize(_area);
+    m_runLength[i].resize(_area);
+#endif
   }
 }
 
 void CodingStructure::destroyCoeffs()
 {
-  for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
-  {
-    if( m_coeffs[i] ) { xFree( m_coeffs[i] ); m_coeffs[i] = nullptr; }
-    if( m_pcmbuf[i] ) { xFree( m_pcmbuf[i] ); m_pcmbuf[i] = nullptr; }
-  }
 }
 
 void CodingStructure::initSubStructure( CodingStructure& subStruct, const ChannelType _chType, const UnitArea &subArea, const bool &isTuEnc )
@@ -772,15 +1005,12 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.picture   = picture;
 
   subStruct.sps       = sps;
-#if HEVC_VPS
   subStruct.vps       = vps;
-#endif
   subStruct.pps       = pps;
-#if JVET_N0415_CTB_ALF
-  memcpy(subStruct.apss, apss, sizeof(apss));
-#else
-  subStruct.aps       = aps;
-#endif
+  memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
+
+  subStruct.lmcsAps = lmcsAps;
+
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
   subStruct.prevQP[_chType]
@@ -790,6 +1020,15 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.m_isTuEnc = isTuEnc;
 
   subStruct.motionLut = motionLut;
+
+#if JVET_O0119_BASE_PALETTE_444
+  subStruct.prevPLT = prevPLT;
+#endif
+
+#if JVET_O0050_LOCAL_DUAL_TREE
+  subStruct.treeType  = treeType;
+  subStruct.modeType  = modeType;
+#endif
 
   subStruct.initStructData( currQP[_chType], isLossless );
 
@@ -852,6 +1091,10 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
 
     motionLut = subStruct.motionLut;
   }
+#if JVET_O0119_BASE_PALETTE_444
+  prevPLT = subStruct.prevPLT;
+#endif
+
 #if ENABLE_WPP_PARALLELISM
 
   if( nullptr == parent )
@@ -879,8 +1122,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
         {
           // add an analogue CU into own CU store
           const UnitArea &cuPatch = *pcu;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+          CodingUnit &cu = addCU( cuPatch, pcu->chType );
+#else
           CodingUnit &cu = addCU( cuPatch, chType );
+#endif
 
           // copy the CU info from subPatch
           cu = *pcu;
@@ -898,8 +1144,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
         {
           // add an analogue PU into own PU store
           const UnitArea &puPatch = *ppu;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+          PredictionUnit &pu = addPU( puPatch, ppu->chType );
+#else
           PredictionUnit &pu = addPU( puPatch, chType );
+#endif
 
           // copy the PU info from subPatch
           pu = *ppu;
@@ -910,8 +1159,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
       {
         // add an analogue TU into own TU store
         const UnitArea &tuPatch = *ptu;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+        TransformUnit &tu = addTU( tuPatch, ptu->chType );
+#else
         TransformUnit &tu = addTU( tuPatch, chType );
+#endif
 
         // copy the TU info from subPatch
         tu = *ptu;
@@ -943,8 +1195,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
     {
       // add an analogue CU into own CU store
       const UnitArea &cuPatch = *pcu;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+      CodingUnit &cu = addCU( cuPatch, pcu->chType );
+#else
       CodingUnit &cu = addCU( cuPatch, chType );
+#endif
 
       // copy the CU info from subPatch
       cu = *pcu;
@@ -962,8 +1217,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
     {
       // add an analogue PU into own PU store
       const UnitArea &puPatch = *ppu;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+      PredictionUnit &pu = addPU( puPatch, ppu->chType );
+#else
       PredictionUnit &pu = addPU( puPatch, chType );
+#endif
 
       // copy the PU info from subPatch
       pu = *ppu;
@@ -974,8 +1232,11 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   {
     // add an analogue TU into own TU store
     const UnitArea &tuPatch = *ptu;
-
+#if JVET_O0050_LOCAL_DUAL_TREE
+    TransformUnit &tu = addTU( tuPatch, ptu->chType );
+#else
     TransformUnit &tu = addTU( tuPatch, chType );
+#endif
 
     // copy the TU info from subPatch
     tu = *ptu;
@@ -1034,6 +1295,9 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
 
     motionLut = other.motionLut;
   }
+#if JVET_O0119_BASE_PALETTE_444
+  prevPLT = other.prevPLT;
+#endif
 
   if( copyTUs )
   {
@@ -1348,16 +1612,12 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   const CodingUnit* cu = getCU( pos, _chType );
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-#if JVET_N0150_ONE_CTU_DELAY_WPP
   const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[curCu.cs->sps->getMaxCUWidth()];
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
   if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) && addCheck)
-#else
-  if( cu && CU::isSameSliceAndTile( *cu, curCu ) && ( cu->cs != curCu.cs || cu->idx <= curCu.idx ) )
-#endif
   {
     return cu;
   }
@@ -1367,23 +1627,15 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   }
 }
 
-#if JVET_N0150_ONE_CTU_DELAY_WPP
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
-#else
-const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
-#endif
 {
   const CodingUnit* cu = getCU( pos, _chType );
-#if JVET_N0150_ONE_CTU_DELAY_WPP
   const bool wavefrontsEnabled = this->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[this->sps->getMaxCUWidth()];
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   int xCurr = curPos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
   return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx && addCheck ) ? cu : nullptr;
-#else
-  return ( cu && cu->slice->getIndependentSliceIdx() == curSliceIdx && cu->tileIdx == curTileIdx ) ? cu : nullptr;
-#endif
 }
 
 const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, const PredictionUnit& curPu, const ChannelType _chType ) const
@@ -1391,16 +1643,12 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   const PredictionUnit* pu = getPU( pos, _chType );
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-#if JVET_N0150_ONE_CTU_DELAY_WPP
   const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[curPu.cs->sps->getMaxCUWidth()];
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
   if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) && addCheck )
-#else
-  if( pu && CU::isSameSliceAndTile( *pu->cu, *curPu.cu ) && ( pu->cs != curPu.cs || pu->idx <= curPu.idx ) )
-#endif
   {
     return pu;
   }
@@ -1415,16 +1663,12 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   const TransformUnit* tu = getTU( pos, _chType );
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-#if JVET_N0150_ONE_CTU_DELAY_WPP
   const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = g_aucLog2[curTu.cs->sps->getMaxCUWidth()];
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
   if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) && addCheck )
-#else
-  if( tu && CU::isSameSliceAndTile( *tu->cu, *curTu.cu ) && ( tu->cs != curTu.cs || tu->idx <= curTu.idx ) )
-#endif
   {
     return tu;
   }
@@ -1434,6 +1678,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   }
 }
 
+#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
 IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) const
 {
   const unsigned int unitAreaSubBlock = MIN_PU_SIZE * MIN_PU_SIZE;
@@ -1446,7 +1691,11 @@ IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) 
     for (SizeType x = 0; x < lumaArea.width; x += MIN_PU_SIZE)
     {
       Position pos = lumaArea.offset(x, y);
+#if JVET_O0050_LOCAL_DUAL_TREE
+      if (picture->cs->getMotionInfo(pos).isInter && picture->cs->getMotionInfo(pos).isIBCmot)
+#else
       if (picture->cs->getMotionInfo(pos).isInter) // need to change if inter slice allows dualtree
+#endif
       {
         ibcArea += unitAreaSubBlock;
       }
@@ -1465,3 +1714,4 @@ IbcLumaCoverage CodingStructure::getIbcLumaCoverage(const CompArea& chromaArea) 
 
   return coverage;
 }
+#endif

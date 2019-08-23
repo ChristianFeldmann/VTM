@@ -259,7 +259,7 @@ public:
   }
 };
 
-#if JVET_N0217_MATRIX_INTRAPRED
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 struct AvailableInfo
 {
   int  maxPosTop;

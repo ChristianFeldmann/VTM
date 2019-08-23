@@ -82,6 +82,8 @@ private:
 
   SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices, excluding prefix SEIs...
 
+  int                     m_iTargetLayer;                       ///< target stream layer to be decoded
+
   // functional classes
   IntraPrediction         m_cIntraPred;
   InterPrediction         m_cInterPred;
@@ -99,9 +101,6 @@ private:
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel              m_cacheModel;
-#endif
-#if !JVET_M0101_HLS
-  bool isSkipPictureForBLA(int& iPOCLastDisplay);
 #endif
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
@@ -148,6 +147,9 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
 
+  void  setTargetDecLayer (int val) { m_iTargetLayer = val; }
+  int   getTargetDecLayer()         { return m_iTargetLayer; }
+
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
@@ -168,20 +170,12 @@ protected:
 
   void      xActivateParameterSets();
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
-#if HEVC_VPS
   void      xDecodeVPS( InputNALUnit& nalu );
-#endif
-#if JVET_N0349_DPS
   void      xDecodeDPS( InputNALUnit& nalu );
-#endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);
-#if !JVET_M0101_HLS
-  void      xUpdatePreviousTid0POC( Slice *pSlice ) { if ((pSlice->getTLayer()==0) && (pSlice->isReferenceNalu() && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL_R)&& (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL_R))) { m_prevTid0POC=pSlice->getPOC(); } }
-#else
   void      xUpdatePreviousTid0POC(Slice *pSlice) { if ((pSlice->getTLayer() == 0) && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL) && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL))  { m_prevTid0POC = pSlice->getPOC(); }  }
-#endif
   void      xParsePrefixSEImessages();
   void      xParsePrefixSEIsForUnknownVCLNal();
 

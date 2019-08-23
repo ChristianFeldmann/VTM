@@ -43,7 +43,7 @@
 #include "CommonDefX86.h"
 #include "CommonLib/Unit.h"
 #include "CommonLib/Buffer.h"
-
+#include "CommonLib/InterpolationFilter.h"
 
 #if ENABLE_SIMD_OPT_BUFFER
 #ifdef TARGET_SIMD_X86
@@ -53,44 +53,33 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
 {
   if( W == 8 )
   {
-    // TODO: AVX2 impl
+    CHECK(offset & 1, "offset must be even");
+    CHECK(offset < -32768 || offset > 32767, "offset must be a 16-bit value");
+
+    __m128i vibdimin = _mm_set1_epi16(clpRng.min);
+    __m128i vibdimax = _mm_set1_epi16(clpRng.max);
+
+    for (int row = 0; row < height; row++)
     {
-      __m128i vzero    = _mm_setzero_si128();
-      __m128i voffset  = _mm_set1_epi32( offset );
-      __m128i vibdimin = _mm_set1_epi16( clpRng.min );
-      __m128i vibdimax = _mm_set1_epi16( clpRng.max );
-
-      for( int row = 0; row < height; row++ )
+      for (int col = 0; col < width; col += 8)
       {
-        for( int col = 0; col < width; col += 8 )
-        {
-          __m128i vsrc0 = _mm_loadu_si128( ( const __m128i * )&src0[col] );
-          __m128i vsrc1 = _mm_loadu_si128( ( const __m128i * )&src1[col] );
+        __m128i vsrc0 = _mm_loadu_si128((const __m128i *) &src0[col]);
+        __m128i vsrc1 = _mm_loadu_si128((const __m128i *) &src1[col]);
 
-          __m128i vtmp, vsum, vdst;
-          vsum = _mm_cvtepi16_epi32   ( vsrc0 );
-          vdst = _mm_cvtepi16_epi32   ( vsrc1 );
-          vsum = _mm_add_epi32        ( vsum, vdst );
-          vsum = _mm_add_epi32        ( vsum, voffset );
-          vtmp = _mm_srai_epi32       ( vsum, shift );
-
-          vsrc0 = _mm_unpackhi_epi64  ( vsrc0, vzero );
-          vsrc1 = _mm_unpackhi_epi64  ( vsrc1, vzero );
-          vsum = _mm_cvtepi16_epi32   ( vsrc0 );
-          vdst = _mm_cvtepi16_epi32   ( vsrc1 );
-          vsum = _mm_add_epi32        ( vsum, vdst );
-          vsum = _mm_add_epi32        ( vsum, voffset );
-          vsum = _mm_srai_epi32       ( vsum, shift );
-          vsum = _mm_packs_epi32      ( vtmp, vsum );
-
-          vsum = _mm_min_epi16( vibdimax, _mm_max_epi16( vibdimin, vsum ) );
-          _mm_storeu_si128( ( __m128i * )&dst[col], vsum );
-        }
-
-        src0 += src0Stride;
-        src1 += src1Stride;
-        dst  +=  dstStride;
+        vsrc0 = _mm_xor_si128(vsrc0, _mm_set1_epi16(0x7fff));
+        vsrc1 = _mm_xor_si128(vsrc1, _mm_set1_epi16(0x7fff));
+        vsrc0 = _mm_avg_epu16(vsrc0, vsrc1);
+        vsrc0 = _mm_xor_si128(vsrc0, _mm_set1_epi16(0x7fff));
+        vsrc0 = _mm_adds_epi16(vsrc0, _mm_set1_epi16(offset >> 1));
+        vsrc0 = _mm_sra_epi16(vsrc0, _mm_cvtsi32_si128(shift - 1));
+        vsrc0 = _mm_max_epi16(vsrc0, vibdimin);
+        vsrc0 = _mm_min_epi16(vsrc0, vibdimax);
+        _mm_storeu_si128((__m128i *) &dst[col], vsrc0);
       }
+
+      src0 += src0Stride;
+      src1 += src1Stride;
+      dst += dstStride;
     }
   }
   else if( W == 4 )
@@ -131,126 +120,118 @@ void addAvg_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int s
 template<X86_VEXT vext>
 void copyBufferSimd(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height)
 {
-  __m128i x;
-#ifdef USE_AVX2
-  __m256i x16;
-#endif
-  int j, temp;
-  for (int i = 0; i < height; i++)
+  if (width < 8)
   {
-    j = 0;
-    temp = width;
-#ifdef USE_AVX2
-    while ((temp >> 4) > 0)
+    CHECK(width < 4, "width must be at least 4");
+
+    for (size_t x = 0; x < width; x += 4)
     {
-      x16 = _mm256_loadu_si256((const __m256i*)(&src[i * srcStride + j]));
-      _mm256_storeu_si256((__m256i*)(&dst[i * dstStride + j]), x16);
-      j += 16;
-      temp -= 16;
+      if (x > width - 4)
+        x = width - 4;
+      for (size_t y = 0; y < height; y++)
+      {
+        __m128i val = _mm_loadl_epi64((const __m128i *) (src + y * srcStride + x));
+        _mm_storel_epi64((__m128i *) (dst + y * dstStride + x), val);
+      }
     }
-#endif
-    while ((temp >> 3) > 0)
+  }
+  else
+  {
+    for (size_t x = 0; x < width; x += 8)
     {
-      x = _mm_loadu_si128((const __m128i*)(&src[ i * srcStride + j]));
-      _mm_storeu_si128((__m128i*)(&dst[ i * dstStride + j]), x);
-      j += 8;
-      temp -= 8;
-    }
-    while ((temp >> 2) > 0)
-    {
-      x = _mm_loadl_epi64((const __m128i*)(&src[i * srcStride + j]));
-      _mm_storel_epi64((__m128i*)(&dst[i*dstStride + j]), x);
-      j += 4;
-      temp -= 4;
-    }
-    while (temp > 0)
-    {
-      dst[i * dstStride + j] = src[i * srcStride + j];
-      j++;
-      temp--;
+      if (x > width - 8)
+        x = width - 8;
+      for (size_t y = 0; y < height; y++)
+      {
+        __m128i val = _mm_loadu_si128((const __m128i *) (src + y * srcStride + x));
+        _mm_storeu_si128((__m128i *) (dst + y * dstStride + x), val);
+      }
     }
   }
 }
-
 
 template<X86_VEXT vext>
 void paddingSimd(Pel *dst, int stride, int width, int height, int padSize)
 {
-  __m128i x;
-#ifdef USE_AVX2
-  __m256i x16;
-#endif
-  int temp, j;
-  for (int i = 1; i <= padSize; i++)
+  size_t extWidth = width + 2 * padSize;
+  CHECK(extWidth < 8, "width plus 2 times padding size must be at least 8");
+
+  if (padSize == 1)
   {
-    j = 0;
-    temp = width;
-#ifdef USE_AVX2
-    while ((temp >> 4) > 0)
+    for (size_t i = 0; i < height; i++)
     {
-
-      x16 = _mm256_loadu_si256((const __m256i*)(&(dst[j])));
-      _mm256_storeu_si256((__m256i*)(dst + j - i*stride), x16);
-      x16 = _mm256_loadu_si256((const __m256i*)(dst + j + (height - 1)*stride));
-      _mm256_storeu_si256((__m256i*)(dst + j + (height - 1 + i)*stride), x16);
-
-
-      j = j + 16;
-      temp = temp - 16;
+      Pel left                = dst[i * stride];
+      Pel right               = dst[i * stride + width - 1];
+      dst[i * stride - 1]     = left;
+      dst[i * stride + width] = right;
     }
-#endif
-    while ((temp >> 3) > 0)
+
+    dst -= 1;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
     {
-
-      x = _mm_loadu_si128((const __m128i*)(&(dst[j])));
-      _mm_storeu_si128((__m128i*)(dst + j - i*stride), x);
-      x = _mm_loadu_si128((const __m128i*)(dst + j + (height - 1)*stride));
-      _mm_storeu_si128((__m128i*)(dst + j + (height - 1 + i)*stride), x);
-
-      j = j + 8;
-      temp = temp - 8;
+      __m128i top = _mm_loadu_si128((const __m128i *) (dst + i));
+      _mm_storeu_si128((__m128i *) (dst - stride + i), top);
     }
-    while ((temp >> 2) > 0)
+    __m128i top = _mm_loadu_si128((const __m128i *) (dst + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst - stride + extWidth - 8), top);
+
+    dst += height * stride;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
     {
-      x = _mm_loadl_epi64((const __m128i*)(&dst[j]));
-      _mm_storel_epi64((__m128i*)(dst + j - i*stride), x);
-      x = _mm_loadl_epi64((const __m128i*)(dst + j + (height - 1)*stride));
-      _mm_storel_epi64((__m128i*)(dst + j + (height - 1 + i)*stride), x);
-
-      j = j + 4;
-      temp = temp - 4;
+      __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + i));
+      _mm_storeu_si128((__m128i *) (dst + i), bottom);
     }
-    while (temp > 0)
-    {
-      dst[j - i*stride] = dst[j];
-      dst[j + (height - 1 + i)*stride] = dst[j + (height - 1)*stride];
-      j++;
-      temp--;
-    }
+    __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst + extWidth - 8), bottom);
   }
-
-
-  //Left and Right Padding
-  Pel* ptr1 = dst - padSize*stride;
-  Pel* ptr2 = dst - padSize*stride + width - 1;
-  int offset = 0;
-  for (int i = 0; i < height + 2 * padSize; i++)
+  else if (padSize == 2)
   {
-    offset = stride * i;
-    for (int j = 1; j <= padSize; j++)
+    for (size_t i = 0; i < height; i++)
     {
-      *(ptr1 - j + offset) = *(ptr1 + offset);
-      *(ptr2 + j + offset) = *(ptr2 + offset);
+      Pel left                    = dst[i * stride];
+      Pel right                   = dst[i * stride + width - 1];
+      dst[i * stride - 2]         = left;
+      dst[i * stride - 1]         = left;
+      dst[i * stride + width]     = right;
+      dst[i * stride + width + 1] = right;
     }
 
+    dst -= 2;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
+    {
+      __m128i top = _mm_loadu_si128((const __m128i *) (dst + i));
+      _mm_storeu_si128((__m128i *) (dst - 2 * stride + i), top);
+      _mm_storeu_si128((__m128i *) (dst - stride + i), top);
+    }
+    __m128i top = _mm_loadu_si128((const __m128i *) (dst + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst - 2 * stride + extWidth - 8), top);
+    _mm_storeu_si128((__m128i *) (dst - stride + extWidth - 8), top);
+
+    dst += height * stride;
+
+    for (size_t i = 0; i < extWidth - 8; i++)
+    {
+      __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + i));
+      _mm_storeu_si128((__m128i *) (dst + i), bottom);
+      _mm_storeu_si128((__m128i *) (dst + stride + i), bottom);
+    }
+    __m128i bottom = _mm_loadu_si128((const __m128i *) (dst - stride + extWidth - 8));
+    _mm_storeu_si128((__m128i *) (dst + extWidth - 8), bottom);
+    _mm_storeu_si128((__m128i *) (dst + stride + extWidth - 8), bottom);
+  }
+  else
+  {
+    CHECK(false, "padding size must be 1 or 2");
   }
 }
+
 template< X86_VEXT vext >
 void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {
-  __m128i mm_tmpx = _mm_unpacklo_epi64(_mm_set1_epi16(tmpx), _mm_set1_epi16(tmpy));
-  __m128i mm_boffset = _mm_set1_epi32(1);
-  __m128i mm_offset = _mm_set1_epi32(offset);
+  __m128i c        = _mm_unpacklo_epi16(_mm_set1_epi16(tmpx), _mm_set1_epi16(tmpy));
   __m128i vibdimin = _mm_set1_epi16(clpRng.min);
   __m128i vibdimax = _mm_set1_epi16(clpRng.max);
 
@@ -258,68 +239,401 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
   {
     for (int x = 0; x < width; x += 4)
     {
-      __m128i mm_a = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(gradX0 + x)), _mm_loadl_epi64((const __m128i *)(gradY0 + x)));
-      __m128i mm_b = _mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)(gradX1 + x)), _mm_loadl_epi64((const __m128i *)(gradY1 + x)));
-      mm_a = _mm_sub_epi16(mm_a, mm_b);
-      mm_b = _mm_mulhi_epi16(mm_a, mm_tmpx);
-      mm_a = _mm_mullo_epi16(mm_a, mm_tmpx);
+      __m128i a   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (gradX0 + x)),
+                                     _mm_loadl_epi64((const __m128i *) (gradY0 + x)));
+      __m128i b   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (gradX1 + x)),
+                                     _mm_loadl_epi64((const __m128i *) (gradY1 + x)));
+      a           = _mm_sub_epi16(a, b);
+      __m128i sum = _mm_madd_epi16(a, c);
 
-      __m128i mm_sum = _mm_add_epi32(_mm_unpacklo_epi16(mm_a, mm_b), _mm_unpackhi_epi16(mm_a, mm_b));
-      mm_sum = _mm_srai_epi32(_mm_add_epi32(mm_sum, mm_boffset), 1);
-      mm_a = _mm_cvtepi16_epi32(_mm_loadl_epi64((const __m128i *)(src0 + x)));
-      mm_b = _mm_cvtepi16_epi32(_mm_loadl_epi64((const __m128i *)(src1 + x)));
-      mm_sum = _mm_add_epi32(_mm_add_epi32(mm_sum, mm_a), _mm_add_epi32(mm_b, mm_offset));
-      mm_sum = _mm_packs_epi32(_mm_srai_epi32(mm_sum, shift), mm_a);
-      mm_sum = _mm_min_epi16(vibdimax, _mm_max_epi16(vibdimin, mm_sum));
-      _mm_storel_epi64((__m128i *)(dst + x), mm_sum);
+      a   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (src0 + x)),
+                             _mm_loadl_epi64((const __m128i *) (src1 + x)));
+      sum = _mm_add_epi32(sum, _mm_madd_epi16(a, _mm_set1_epi16(2)));
+      sum = _mm_add_epi32(sum, _mm_set1_epi32(2 * offset + 1));
+      sum = _mm_sra_epi32(sum, _mm_cvtsi32_si128(shift + 1));
+      sum = _mm_packs_epi32(sum, sum);
+      sum = _mm_max_epi16(sum, vibdimin);
+      sum = _mm_min_epi16(sum, vibdimax);
+      _mm_storel_epi64((__m128i *) (dst + x), sum);
     }
     dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
     gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
   }
 }
 
+#if JVET_O0304_SIMPLIFIED_BDOF
 template< X86_VEXT vext >
+void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
+
+{
+  int shift4 = std::max<int>(4, (bitDepth - 8));
+  int shift5 = std::max<int>(1, (bitDepth - 11));
+
+  __m128i sumAbsGXTmp = _mm_setzero_si128();
+  __m128i sumDIXTmp = _mm_setzero_si128();
+  __m128i sumAbsGYTmp = _mm_setzero_si128();
+  __m128i sumDIYTmp = _mm_setzero_si128();
+  __m128i sumSignGyGxTmp = _mm_setzero_si128();
+
+  for (int y = 0; y < 6; y++)
+  {
+    __m128i shiftSrcY0Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Tmp)), shift4);
+    __m128i shiftSrcY1Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Tmp)), shift4);
+    __m128i loadGradX0 = _mm_loadu_si128((__m128i*)(gradX0));
+    __m128i loadGradX1 = _mm_loadu_si128((__m128i*)(gradX1));
+    __m128i loadGradY0 = _mm_loadu_si128((__m128i*)(gradY0));
+    __m128i loadGradY1 = _mm_loadu_si128((__m128i*)(gradY1));
+    __m128i subTemp1 = _mm_sub_epi16(shiftSrcY1Tmp, shiftSrcY0Tmp);
+    __m128i packTempX = _mm_srai_epi16(_mm_add_epi16(loadGradX0, loadGradX1), shift5);
+    __m128i packTempY = _mm_srai_epi16(_mm_add_epi16(loadGradY0, loadGradY1), shift5);
+    __m128i gX = _mm_abs_epi16(packTempX);
+    __m128i gY = _mm_abs_epi16(packTempY);
+    __m128i dIX       = _mm_sign_epi16(subTemp1,  packTempX );
+    __m128i dIY       = _mm_sign_epi16(subTemp1,  packTempY );
+    __m128i signGY_GX = _mm_sign_epi16(packTempX, packTempY );
+
+    sumAbsGXTmp = _mm_add_epi16(sumAbsGXTmp, gX);
+    sumDIXTmp = _mm_add_epi16(sumDIXTmp, dIX);
+    sumAbsGYTmp = _mm_add_epi16(sumAbsGYTmp, gY);
+    sumDIYTmp = _mm_add_epi16(sumDIYTmp, dIY);
+    sumSignGyGxTmp = _mm_add_epi16(sumSignGyGxTmp, signGY_GX);
+    srcY0Tmp += src0Stride;
+    srcY1Tmp += src1Stride;
+    gradX0 += widthG;
+    gradX1 += widthG;
+    gradY0 += widthG;
+    gradY1 += widthG;
+  }
+
+  sumAbsGXTmp    = _mm_madd_epi16(sumAbsGXTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumDIXTmp      = _mm_madd_epi16(sumDIXTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumAbsGYTmp    = _mm_madd_epi16(sumAbsGYTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumDIYTmp      = _mm_madd_epi16(sumDIYTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+  sumSignGyGxTmp = _mm_madd_epi16(sumSignGyGxTmp, _mm_setr_epi16(1, 1, 1, 1, 1, 1, 0, 0));
+
+  __m128i a12 = _mm_unpacklo_epi32(sumAbsGXTmp, sumAbsGYTmp);
+  __m128i a3  = _mm_unpackhi_epi32(sumAbsGXTmp, sumAbsGYTmp);
+  __m128i b12 = _mm_unpacklo_epi32(sumDIXTmp, sumDIYTmp);
+  __m128i b3  = _mm_unpackhi_epi32(sumDIXTmp, sumDIYTmp);
+  __m128i c1  = _mm_unpacklo_epi64(a12, b12);
+  __m128i c2  = _mm_unpackhi_epi64(a12, b12);
+  __m128i c3  = _mm_unpacklo_epi64(a3, b3);
+
+  c1 = _mm_add_epi32(c1, c2);
+  c1 = _mm_add_epi32(c1, c3);
+
+  *sumAbsGX = _mm_cvtsi128_si32(c1);
+  *sumAbsGY = _mm_cvtsi128_si32(_mm_shuffle_epi32(c1, 0x55));
+  *sumDIX   = _mm_cvtsi128_si32(_mm_shuffle_epi32(c1, 0xaa));
+  *sumDIY   = _mm_cvtsi128_si32(_mm_shuffle_epi32(c1, 0xff));
+
+  sumSignGyGxTmp = _mm_add_epi32(sumSignGyGxTmp, _mm_shuffle_epi32(sumSignGyGxTmp, 0x4e));   // 01001110
+  sumSignGyGxTmp = _mm_add_epi32(sumSignGyGxTmp, _mm_shuffle_epi32(sumSignGyGxTmp, 0xb1));   // 10110001
+  *sumSignGY_GX  = _mm_cvtsi128_si32(sumSignGyGxTmp);
+}
+#endif
+
+#if JVET_O0070_PROF
+template< X86_VEXT vext >
+void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
+{
+  CHECKD((width & 3), "block width error!");
+
+  __m128i mm_dmvx, mm_dmvy, mm_gradx, mm_grady, mm_dI, mm_src;
+  __m128i mm_dIoffset = _mm_set1_epi32(1);
+  __m128i mm_offset = _mm_set1_epi32(offset);
+  __m128i vibdimin  = _mm_set1_epi32(clpRng.min);
+  __m128i vibdimax  = _mm_set1_epi32(clpRng.max);
+  __m128i vzero     = _mm_setzero_si128();
+
+  for (int h = 0; h < height; h++)
+  {
+    const int* vX = dMvX;
+    const int* vY = dMvY;
+    const Pel* gX = gradX;
+    const Pel* gY = gradY;
+    const Pel* src = srcPel;
+    Pel*       dst = dstPel;
+
+    for (int w = 0; w < width; w += 4)
+    {
+      mm_dmvx = _mm_loadu_si128((const __m128i *)vX);
+      mm_dmvy = _mm_loadu_si128((const __m128i *)vY);
+      mm_gradx = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX));
+      mm_grady = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY));
+      mm_src = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)src));
+
+      mm_dI = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
+      mm_dI = _mm_srai_epi32(_mm_add_epi32(mm_dI, mm_dIoffset), 1);
+      mm_dI = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mm_dI, mm_src), mm_offset), shiftNum);
+      mm_dI = _mm_packs_epi32(_mm_min_epi32(vibdimax, _mm_max_epi32(vibdimin, mm_dI)), vzero);
+      _mm_storel_epi64((__m128i *)dst, mm_dI);
+
+      vX += 4; vY += 4; gX += 4; gY += 4; src += 4; dst += 4;
+    }
+    dMvX += dMvStride;
+    dMvY += dMvStride;
+    gradX += gradStride;
+    gradY += gradStride;
+    srcPel += srcStride;
+    dstPel += dstStride;
+  }
+}
+
+template< X86_VEXT vext, bool l1PROFEnabled = true>
+void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t w0, const ClpRng& clpRng)
+{
+  const int rShift = IF_INTERNAL_PREC - clpRng.bd;
+  const int shiftNum = (rShift > 2 ? rShift : 2) + g_GbiLog2WeightBase;
+  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_GbiLog2WeightBase);
+  const int8_t w1 = g_GbiWeightBase - w0;
+
+  __m128i mm_offset = _mm_set1_epi32(offset);
+  __m128i mm_w0 = _mm_set1_epi32(w0);
+  __m128i mm_w1 = _mm_set1_epi32(w1);
+  __m128i vibdimin = _mm_set1_epi32(clpRng.min);
+  __m128i vibdimax = _mm_set1_epi32(clpRng.max);
+  __m128i vzero = _mm_setzero_si128();
+
+  __m128i mm_dmvx0, mm_dmvy0, mm_dmvx1, mm_dmvy1, mm_gradx0, mm_grady0, mm_gradx1, mm_grady1, mm_src0, mm_src1;
+  __m128i mm_dI0, mm_dI1, mm_dI;
+  __m128i mm_dIoffset = _mm_set1_epi32(1);
+  const int *mmMvX0, *mmMvY0, *mmMvX1, *mmMvY1;
+  const Pel *gX0, *gY0, *gX1, *gY1;
+
+  for (int h = 0; h < height; h++)
+  {
+    if (!(h & 3))
+    {
+      mmMvX0 = dMvX0;
+      mmMvY0 = dMvY0;
+      if (l1PROFEnabled)
+      {
+        mmMvX1 = dMvX1;
+        mmMvY1 = dMvY1;
+      }
+    }
+
+    mm_dmvx0 = _mm_loadu_si128((const __m128i *)mmMvX0);
+    mm_dmvy0 = _mm_loadu_si128((const __m128i *)mmMvY0);
+    gX0 = gradX0;
+    gY0 = gradY0;
+
+    if (l1PROFEnabled)
+    {
+      mm_dmvx1 = _mm_loadu_si128((const __m128i *)mmMvX1);
+      mm_dmvy1 = _mm_loadu_si128((const __m128i *)mmMvY1);
+      gX1 = gradX1;
+      gY1 = gradY1;
+    }
+
+    const Pel* pSrc0 = src0;
+    const Pel* pSrc1 = src1;
+    Pel*       pDst = dst;
+
+    for (int w = 0; w < width; w += 4)
+    {
+      mm_src0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)pSrc0));
+      mm_src1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)pSrc1));
+      mm_gradx0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX0));
+      mm_grady0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0));
+      mm_dI0 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx0, mm_gradx0), _mm_mullo_epi32(mm_dmvy0, mm_grady0));
+      mm_dI0 = _mm_srai_epi32(_mm_add_epi32(mm_dI0, mm_dIoffset), 1);
+      mm_dI0 = _mm_mullo_epi32(_mm_add_epi32(mm_src0, mm_dI0), mm_w0);
+      gX0 += 4; gY0 += 4;
+
+      if (l1PROFEnabled)
+      {
+        mm_gradx1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX1));
+        mm_grady1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY1));
+        mm_dI1 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx1, mm_gradx1), _mm_mullo_epi32(mm_dmvy1, mm_grady1));
+        mm_dI1 = _mm_srai_epi32(_mm_add_epi32(mm_dI1, mm_dIoffset), 1);
+        mm_dI1 = _mm_mullo_epi32(_mm_add_epi32(mm_src1, mm_dI1), mm_w1);
+        gX1 += 4; gY1 += 4;
+      }
+      else
+        mm_dI1 = _mm_mullo_epi32(mm_src1, mm_w1);
+
+      mm_dI = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mm_dI0, mm_dI1), mm_offset), shiftNum);
+      mm_dI = _mm_packs_epi32(_mm_min_epi32(vibdimax, _mm_max_epi32(vibdimin, mm_dI)), vzero);
+      _mm_storel_epi64((__m128i *)pDst, mm_dI);
+
+      pSrc0 += 4; pSrc1 += 4; pDst += 4;
+    }
+
+    mmMvX0 += dMvStride;
+    mmMvY0 += dMvStride;
+    gradX0 += gradStride;
+    gradY0 += gradStride;
+
+    if (l1PROFEnabled)
+    {
+      mmMvX1 += dMvStride;
+      mmMvY1 += dMvStride;
+      gradX1 += gradStride;
+      gradY1 += gradStride;
+    }
+
+    src0 += srcStride;
+    src1 += srcStride;
+    dst += dstStride;
+  }
+}
+
+template< X86_VEXT vext >
+void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLimit)
+{
+  CHECKD(size % 16 != 0, "Size must be multiple of 16!");
+#ifdef USE_AVX512
+  if (vext >= AVX512 && size >= 16)
+  {
+    __m512i dMvMin = _mm256_set1_epi32(-dmvLimit);
+    __m512i dMvMax = _mm256_set1_epi32(dmvLimit - 1 );
+    __m512i nOffset = _mm512_set1_epi32((1 << (nShift - 1)));
+    __m512i vones = _mm512_set1_epi32(1);
+    __m512i vzero = _mm512_setzero_si512();
+    for (int i = 0; i < size; i += 16, v += 16)
+    {
+      __m512i src = _mm512_loadu_si512(v);
+      __mmask16 mask = _mm512_cmpge_epi32_mask(src, vzero);
+      src = __mm512_add_epi32(src, nOffset);
+      __mm512i dst = _mm512_srai_epi32(_mm512_mask_sub_epi32(src, mask, src, vones), nShift);
+      dst = _mm512_min_epi32(dMvMax, _mm512_max_epi32(dMvMin, dst));
+      _mm512_storeu_si512(v, dst);
+    }
+  }
+  else
+#endif
+#ifdef USE_AVX2
+  if (vext >= AVX2 && size >= 8)
+  {
+    __m256i dMvMin = _mm256_set1_epi32(-dmvLimit);
+    __m256i dMvMax = _mm256_set1_epi32(dmvLimit - 1);
+    __m256i nOffset = _mm256_set1_epi32(1 << (nShift - 1));
+    __m256i vzero = _mm256_setzero_si256();
+    for (int i = 0; i < size; i += 8, v += 8)
+    {
+      __m256i src = _mm256_lddqu_si256((__m256i*)v);
+      __m256i of  = _mm256_cmpgt_epi32(src, vzero);
+      __m256i dst = _mm256_srai_epi32(_mm256_add_epi32(_mm256_add_epi32(src, nOffset), of), nShift);
+      dst = _mm256_min_epi32(dMvMax, _mm256_max_epi32(dMvMin, dst));
+      _mm256_storeu_si256((__m256i*)v, dst);
+    }
+  }
+  else
+#endif
+  {
+    __m128i dMvMin = _mm_set1_epi32(-dmvLimit);
+    __m128i dMvMax = _mm_set1_epi32(dmvLimit - 1);
+    __m128i nOffset = _mm_set1_epi32((1 << (nShift - 1)));
+    __m128i vzero = _mm_setzero_si128();
+    for (int i = 0; i < size; i += 4, v += 4)
+    {
+      __m128i src = _mm_loadu_si128((__m128i*)v);
+      __m128i of  = _mm_cmpgt_epi32(src, vzero);
+      __m128i dst = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(src, nOffset), of), nShift);
+      dst = _mm_min_epi32(dMvMax, _mm_max_epi32(dMvMin, dst));
+      _mm_storeu_si128((__m128i*)v, dst);
+    }
+  }
+}
+#endif
+
+#if JVET_O0070_PROF
+template< X86_VEXT vext, bool PAD = true>
+#else
+template< X86_VEXT vext >
+#endif
 void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
 {
+#if !JVET_O0570_GRAD_SIMP
   __m128i vzero = _mm_setzero_si128();
+#endif
   Pel* srcTmp = src + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
 
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
-#if JVET_N0325_BDOF
   int shift1 = std::max<int>(6, bitDepth - 6);
-#else
-  int shift1 = std::max<int>(2, (14 - bitDepth));
+#if JVET_O0570_GRAD_SIMP
+  __m128i mmShift1 = _mm_cvtsi32_si128( shift1 );
 #endif
-
   assert((widthInside & 3) == 0);
 
-  for (int y = 0; y < heightInside; y++)
+#if JVET_O0570_GRAD_SIMP
+  if ( ( widthInside & 7 ) == 0 )
   {
-    int x = 0;
-    for (; x < widthInside; x += 4)
+#endif
+    for (int y = 0; y < heightInside; y++)
     {
-      __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - srcStride)));
-      __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + srcStride)));
-      __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
-      __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
+      int x = 0;
+#if JVET_O0570_GRAD_SIMP
+      for ( ; x < widthInside; x += 8 )
+      {
+        __m128i mmPixTop    = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x - srcStride ) ), mmShift1 );
+        __m128i mmPixBottom = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x + srcStride ) ), mmShift1 );
+        __m128i mmPixLeft   = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x - 1 ) ), mmShift1 );
+        __m128i mmPixRight  = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x + 1 ) ), mmShift1 );
 
-      __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
-      __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
-      mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
-      mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
+        __m128i mmGradVer = _mm_sub_epi16( mmPixBottom, mmPixTop );
+        __m128i mmGradHor = _mm_sub_epi16( mmPixRight, mmPixLeft );
 
-      _mm_storel_epi64((__m128i *)(gradYTmp + x), mmGradVer);
-      _mm_storel_epi64((__m128i *)(gradXTmp + x), mmGradHor);
+        _mm_storeu_si128( ( __m128i * ) ( gradYTmp + x ), mmGradVer );
+        _mm_storeu_si128( ( __m128i * ) ( gradXTmp + x ), mmGradHor );
+      }
+#else
+      for (; x < widthInside; x += 4)
+      {
+        __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - srcStride)));
+        __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + srcStride)));
+        __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
+        __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
+
+        __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
+        __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
+        mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
+        mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
+
+        _mm_storel_epi64((__m128i *)(gradYTmp + x), mmGradVer);
+        _mm_storel_epi64((__m128i *)(gradXTmp + x), mmGradHor);
+      }
+#endif
+      gradXTmp += gradStride;
+      gradYTmp += gradStride;
+      srcTmp += srcStride;
     }
-
-    gradXTmp += gradStride;
-    gradYTmp += gradStride;
-    srcTmp += srcStride;
+#if JVET_O0570_GRAD_SIMP
   }
+  else
+  {
+    __m128i mmPixTop = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp - srcStride ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp ) ) ), mmShift1 );
+    for ( int y = 0; y < heightInside; y += 2 )
+    {
+      __m128i mmPixBottom = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp + srcStride ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp + ( srcStride << 1 ) ) ) ), mmShift1 );
+      __m128i mmPixLeft   = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp - 1 ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp - 1 + srcStride ) ) ), mmShift1 );
+      __m128i mmPixRight  = _mm_sra_epi16( _mm_unpacklo_epi64( _mm_loadl_epi64( (__m128i*) ( srcTmp + 1 ) ), _mm_loadl_epi64( (__m128i*) ( srcTmp + 1 + srcStride ) ) ), mmShift1 );
 
+      __m128i mmGradVer = _mm_sub_epi16( mmPixBottom, mmPixTop );
+      __m128i mmGradHor = _mm_sub_epi16( mmPixRight, mmPixLeft );
+
+      _mm_storel_epi64( (__m128i *) gradYTmp, mmGradVer );
+      _mm_storel_epi64( (__m128i *) ( gradYTmp + gradStride ), _mm_unpackhi_epi64( mmGradVer, mmGradHor ) );
+      _mm_storel_epi64( (__m128i *) gradXTmp, mmGradHor );
+      _mm_storel_epi64( (__m128i *) ( gradXTmp + gradStride ), _mm_unpackhi_epi64( mmGradHor, mmGradVer ) );
+
+      mmPixTop = mmPixBottom;
+      gradXTmp += gradStride << 1;
+      gradYTmp += gradStride << 1;
+      srcTmp   += srcStride << 1;
+    }
+  }
+#endif
+
+#if JVET_O0070_PROF
+  if (PAD)
+  {
+#endif
   gradXTmp = gradX + gradStride + 1;
   gradYTmp = gradY + gradStride + 1;
   for (int y = 0; y < heightInside; y++)
@@ -339,18 +653,16 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
   ::memcpy(gradXTmp + heightInside*gradStride, gradXTmp + (heightInside - 1)*gradStride, sizeof(Pel)*(width));
   ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
   ::memcpy(gradYTmp + heightInside*gradStride, gradYTmp + (heightInside - 1)*gradStride, sizeof(Pel)*(width));
+#if JVET_O0070_PROF
+  }
+#endif
 }
 
 template< X86_VEXT vext >
 void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
-#if JVET_N0325_BDOF
   int shift4 = std::max<int>(4, (bitDepth - 8));
   int shift5 = std::max<int>(1, (bitDepth - 11));
-#else
-  int shift4 = std::min<int>(8, (bitDepth - 4));
-  int shift5 = std::min<int>(5, (bitDepth - 7));
-#endif
   for (int y = 0; y < heightG; y++)
   {
     int x = 0;
@@ -927,8 +1239,12 @@ void PelBufferOps::_initPelBufOpsX86()
 
   addBIOAvg4      = addBIOAvg4_SSE<vext>;
   bioGradFilter   = gradFilter_SSE<vext>;
-  calcBIOPar      = calcBIOPar_SSE<vext>;
+#if !JVET_O0304_SIMPLIFIED_BDOF
+  calcBIOPar = calcBIOPar_SSE<vext>;
   calcBlkGradient = calcBlkGradient_SSE<vext>;
+#else
+  calcBIOSums = calcBIOSums_SSE<vext>;
+#endif
 
   copyBuffer = copyBufferSimd<vext>;
   padding    = paddingSimd<vext>;
@@ -942,6 +1258,13 @@ void PelBufferOps::_initPelBufOpsX86()
   removeWeightHighFreq4 = removeWeightHighFreq_SSE<vext, 4>;
   removeHighFreq8 = removeHighFreq_SSE<vext, 8>;
   removeHighFreq4 = removeHighFreq_SSE<vext, 4>;
+#endif
+#if JVET_O0070_PROF
+  profGradFilter = gradFilter_SSE<vext, false>;
+  applyPROF      = applyPROF_SSE<vext>;
+  applyBiPROF[1] = applyBiPROF_SSE<vext>;
+  applyBiPROF[0] = applyBiPROF_SSE<vext, false>;
+  roundIntVector = roundIntVector_SIMD<vext>;
 #endif
 }
 

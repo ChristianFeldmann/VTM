@@ -380,10 +380,8 @@ Distortion RdCost::getDistPart( const CPelBuf &org, const CPelBuf &cur, int bitD
 #if WCG_EXT
   if( orgLuma )
   {
-#if JVET_N0671_RDCOST_FIX
     cDtParam.cShiftX = getComponentScaleX(compID,  m_cf);
     cDtParam.cShiftY = getComponentScaleY(compID,  m_cf);
-#endif
     if( isChroma(compID) )
     {
       cDtParam.orgLuma  = *orgLuma;
@@ -2940,7 +2938,11 @@ void RdCost::restoreReshapeLumaLevelToWeightTable()
 
 void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt)
 {
+#if JVET_O0432_LMCS_ENCODER
+  if (m_signalType == RESHAPE_SIGNAL_SDR || m_signalType == RESHAPE_SIGNAL_HLG)
+#else
   if (m_signalType == RESHAPE_SIGNAL_SDR)
+#endif
   {
     if (sliceReshape.getSliceReshapeModelPresentFlag())
     {
@@ -2993,7 +2995,11 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   }
   // use luma to get weight
   double weight = 1.0;
+#if JVET_O0432_LMCS_ENCODER
+  if (m_signalType == RESHAPE_SIGNAL_SDR || m_signalType == RESHAPE_SIGNAL_HLG)
+#else
   if (m_signalType == RESHAPE_SIGNAL_SDR)
+#endif
   {
     if (compIdx == COMPONENT_Y)
     {
@@ -3028,12 +3034,8 @@ Distortion RdCost::xGetSSE_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const int  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3046,11 +3048,7 @@ Distortion RdCost::xGetSSE_WTD( const DistParam &rcDtParam )
     piOrg += iStrideOrg;
     piCur += iStrideCur;
 
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3070,12 +3068,8 @@ Distortion RdCost::xGetSSE2_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma           = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3085,11 +3079,7 @@ Distortion RdCost::xGetSSE2_WTD( const DistParam &rcDtParam )
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[1  ], piCur[1  ], uiShift, piOrgLuma[size_t(1)<<cShift]);   // piOrg[1] - piCur[1]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
     piOrg += iStrideOrg;
     piCur += iStrideCur;
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3109,12 +3099,8 @@ Distortion RdCost::xGetSSE4_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3126,11 +3112,7 @@ Distortion RdCost::xGetSSE4_WTD( const DistParam &rcDtParam )
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[3  ], piCur[3  ], uiShift, piOrgLuma[size_t(3)<<cShift] );   // piOrg[3] - piCur[3]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
     piOrg += iStrideOrg;
     piCur += iStrideCur;
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3150,12 +3132,8 @@ Distortion RdCost::xGetSSE8_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3171,11 +3149,7 @@ Distortion RdCost::xGetSSE8_WTD( const DistParam &rcDtParam )
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[7  ], piCur[7  ], uiShift, piOrgLuma[size_t(7)<<cShift  ]);  // piOrg[7] - piCur[7]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
     piOrg += iStrideOrg;
     piCur += iStrideCur;
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3194,12 +3168,8 @@ Distortion RdCost::xGetSSE16_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3223,11 +3193,7 @@ Distortion RdCost::xGetSSE16_WTD( const DistParam &rcDtParam )
     piOrg += iStrideOrg;
     piCur += iStrideCur;
 
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3246,12 +3212,8 @@ Distortion RdCost::xGetSSE16N_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
   for( ; iRows != 0; iRows-- )
@@ -3277,11 +3239,7 @@ Distortion RdCost::xGetSSE16N_WTD( const DistParam &rcDtParam )
     }
     piOrg += iStrideOrg;
     piCur += iStrideCur;
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3300,12 +3258,8 @@ Distortion RdCost::xGetSSE32_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t  iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth) << 1;
@@ -3345,11 +3299,7 @@ Distortion RdCost::xGetSSE32_WTD( const DistParam &rcDtParam )
     uiSum += getWeightedMSE(rcDtParam.compID, piOrg[31], piCur[31], uiShift, piOrgLuma[size_t(31)<<cShift ]);  //  iTemp = piOrg[31] - piCur[31]; uiSum += Distortion(( iTemp * iTemp ) >> uiShift);
     piOrg += iStrideOrg;
     piCur += iStrideCur;
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }
@@ -3368,12 +3318,8 @@ Distortion RdCost::xGetSSE64_WTD( const DistParam &rcDtParam )
   const int  iStrideOrg = rcDtParam.org.stride;
   const Pel* piOrgLuma        = rcDtParam.orgLuma.buf;
   const size_t iStrideOrgLuma   = rcDtParam.orgLuma.stride;
-#if JVET_N0671_RDCOST_FIX
   const size_t  cShift  = rcDtParam.cShiftX;
   const size_t  cShiftY = rcDtParam.cShiftY;
-#else
-  const size_t  cShift          = (rcDtParam.compID==COMPONENT_Y) ? 0 : 1; // assume 420, could use getComponentScaleX, getComponentScaleY
-#endif
 
   Distortion uiSum   = 0;
   uint32_t uiShift = DISTORTION_PRECISION_ADJUSTMENT((rcDtParam.bitDepth)) << 1;
@@ -3446,11 +3392,7 @@ Distortion RdCost::xGetSSE64_WTD( const DistParam &rcDtParam )
     piOrg += iStrideOrg;
     piCur += iStrideCur;
 
-#if JVET_N0671_RDCOST_FIX
     piOrgLuma += iStrideOrgLuma<<cShiftY;
-#else
-    piOrgLuma += iStrideOrgLuma<<cShift;
-#endif
   }
   return ( uiSum );
 }

@@ -67,11 +67,7 @@ public:
   };
 
   // leading SEIs
-#if HEVC_VPS
-  void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const VPS *vps, const SPS *sps);
-#else
   void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const SPS *sps);
-#endif
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
   void initSEIDisplayOrientation(SEIDisplayOrientation *sei);
   void initSEIToneMappingInfo(SEIToneMappingInfo *sei);

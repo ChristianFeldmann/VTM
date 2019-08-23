@@ -85,19 +85,22 @@ protected:
 
   void offsetBlock(const int channelBitDepth, const ClpRng& clpRng, int typeIdx, int* offset, const Pel* srcBlk, Pel* resBlk, int srcStride, int resStride,  int width, int height
                   , bool isLeftAvail, bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                   , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
-#endif
     );
   void invertQuantOffsets(ComponentID compIdx, int typeIdc, int typeAuxInfo, int* dstOffsets, int* srcOffsets);
   void reconstructBlkSAOParam(SAOBlkParam& recParam, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   int  getMergeList(CodingStructure& cs, int ctuRsAddr, SAOBlkParam* blkParams, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   void offsetCTU(const UnitArea& area, const CPelUnitBuf& src, PelUnitBuf& res, SAOBlkParam& saoblkParam, CodingStructure& cs);
+#if !JVET_O0525_REMOVE_PCM
   void xPCMLFDisableProcess(CodingStructure& cs);
   void xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
   void xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID);
+#else
+  void xLosslessDisableProcess(CodingStructure& cs);
+  void xLosslessCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
+  void xLosslessSampleRestoration(CodingUnit& cu, const ComponentID compID);
+#endif
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
   bool isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps);
   inline bool isProcessDisabled(int xPos, int yPos, int numVerVirBndry, int numHorVirBndry, int verVirBndryPos[], int horVirBndryPos[])
   {
@@ -120,7 +123,6 @@ protected:
     }
     return bDisabledFlag;
   }
-#endif
   Reshape* m_pcReshape;
 protected:
   uint32_t m_offsetStepLog2[MAX_NUM_COMPONENT]; //offset step

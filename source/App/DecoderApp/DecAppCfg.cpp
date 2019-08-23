@@ -87,6 +87,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   ("OutputBitDepthC,d",         m_outputBitDepth[CHANNEL_TYPE_CHROMA], 0,          "bit depth of YUV output chroma component (default: use luma output bit-depth)")
   ("OutputColourSpaceConvert",  outputColourSpaceConvert,              string(""), "Colour space conversion to apply to input 444 video. Permitted values are (empty string=UNCHANGED) " + getListOfColourSpaceConverts(false))
   ("MaxTemporalLayer,t",        m_iMaxTemporalLayer,                   -1,         "Maximum Temporal Layer to be decoded. -1 to decode all layers")
+  ("TargetLayer,p",             m_iTargetLayer,                        -1,         "Target bitstream Layer to be decoded.")
   ("SEIDecodedPictureHash,-dph",m_decodedPictureHashSEIEnabled,        1,          "Control handling of decoded picture hash SEI messages\n"
                                                                                    "\t1: check hash in SEI messages if available in the bitstream\n"
                                                                                    "\t0: ignore SEI message")
@@ -113,6 +114,9 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
   ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
+#if JVET_O1164_RPR
+  ( "UpscaledOutput",          m_upscaledOutput,                          0,       "Upscaled output for RPR" )
+#endif
   ;
 
   po::setDefaults(opts);
@@ -222,6 +226,7 @@ DecAppCfg::DecAppCfg()
 , m_iSkipFrame(0)
 // m_outputBitDepth array initialised below
 , m_outputColourSpaceConvert(IPCOLOURSPACE_UNCHANGED)
+, m_iTargetLayer(0)
 , m_iMaxTemporalLayer(-1)
 , m_decodedPictureHashSEIEnabled(0)
 , m_decodedNoDisplaySEIEnabled(false)

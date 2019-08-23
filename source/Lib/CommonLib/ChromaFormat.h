@@ -115,22 +115,24 @@ static inline int getTransformShift(const int channelBitDepth, const Size size, 
 
 
 //------------------------------------------------
-
+#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chFmt)
 {
   return g_aucChromaScale[chFmt][Clip3(0, (chromaQPMappingTableSize - 1), unscaledChromaQP)];
 }
+#endif
 
-
-#if HEVC_USE_SCALING_LISTS
 //======================================================================================================================
 //Scaling lists  =======================================================================================================
 //======================================================================================================================
 
 static inline int getScalingListType(const PredMode predMode, const ComponentID compID)
 {
+#if JVET_O0267_IBC_SCALING_LIST
+  return ((predMode == MODE_INTRA) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
+#else
   return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
-}
 #endif
+}
 
 #endif

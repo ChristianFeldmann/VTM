@@ -79,6 +79,10 @@ inline double xRoundIbdi(int bitDepth, double x)
 EncSampleAdaptiveOffset::EncSampleAdaptiveOffset()
 {
   m_CABACEstimator = NULL;
+
+#if JVET_O1164_PS
+  ::memset( m_saoDisabledRate, 0, sizeof( m_saoDisabledRate ) );
+#endif
 }
 
 EncSampleAdaptiveOffset::~EncSampleAdaptiveOffset()
@@ -113,7 +117,9 @@ void EncSampleAdaptiveOffset::createEncData(bool isPreDBFSamplesUsed, uint32_t n
 
   }
 
+#if !JVET_O1164_PS
   ::memset(m_saoDisabledRate, 0, sizeof(m_saoDisabledRate));
+#endif
 
   for(int typeIdc=0; typeIdc < NUM_SAO_NEW_TYPES; typeIdc++)
   {
@@ -210,11 +216,7 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
 #if ENABLE_QPA
                                           const double lambdaChromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                                           const bool bTestSAODisableAtPictureLevel, const double saoEncodingRate, const double saoEncodingRateChroma, const bool isPreDBFSamplesUsed, bool isGreedyMergeEncoding )
-#else
-                                          const bool bTestSAODisableAtPictureLevel, const double saoEncodingRate, const double saoEncodingRateChroma, const bool isPreDBFSamplesUsed )
-#endif
 {
   PelUnitBuf org = cs.getOrgBuf();
   PelUnitBuf res = cs.getRecoBuf();
@@ -239,11 +241,7 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
 #if ENABLE_QPA
                    lambdaChromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                    saoEncodingRate, saoEncodingRateChroma, isGreedyMergeEncoding );
-#else
-                   saoEncodingRate, saoEncodingRateChroma );
-#endif
 
   DTRACE_UPDATE(g_trace_ctx, (std::make_pair("poc", cs.slice->getPOC())));
   DTRACE_PIC_COMP(D_REC_CB_LUMA_SAO, cs, cs.getRecoBuf(), COMPONENT_Y);
@@ -253,7 +251,11 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
+#if !JVET_O0525_REMOVE_PCM
   xPCMLFDisableProcess(cs);
+#else
+  xLosslessDisableProcess(cs);
+#endif
 }
 
 
@@ -311,12 +313,12 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
       isBelowAvail      = (yPos + pcv.maxCUHeight < pcv.lumaHeight);
       isAboveRightAvail = ((yPos > 0) && (isRightAvail));
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
       int numHorVirBndry = 0, numVerVirBndry = 0;
       int horVirBndryPos[] = { -1,-1,-1 };
       int verVirBndryPos[] = { -1,-1,-1 };
+      int horVirBndryPosComp[] = { -1,-1,-1 };
+      int verVirBndryPosComp[] = { -1,-1,-1 };
       bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
-#endif
 
       for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
       {
@@ -329,24 +331,20 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
         int  orgStride  = orgYuv.get(compID).stride;
         Pel* orgBlk     = orgYuv.get(compID).bufAt( compArea );
 
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
         for (int i = 0; i < numHorVirBndry; i++)
         {
-          horVirBndryPos[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
+          horVirBndryPosComp[i] = (horVirBndryPos[i] >> ::getComponentScaleY(compID, area.chromaFormat)) - compArea.y;
         }
         for (int i = 0; i < numVerVirBndry; i++)
         {
-          verVirBndryPos[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
+          verVirBndryPosComp[i] = (verVirBndryPos[i] >> ::getComponentScaleX(compID, area.chromaFormat)) - compArea.x;
         }
-#endif
 
         getBlkStats(compID, cs.sps->getBitDepth(toChannelType(compID)), blkStats[ctuRsAddr][compID]
                   , srcBlk, orgBlk, srcStride, orgStride, compArea.width, compArea.height
                   , isLeftAvail,  isRightAvail, isAboveAvail, isBelowAvail, isAboveLeftAvail, isAboveRightAvail
                   , isCalculatePreDeblockSamples
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
-                  , isCtuCrossedByVirtualBoundaries, horVirBndryPos, verVirBndryPos, numHorVirBndry, numVerVirBndry
-#endif
+                  , isCtuCrossedByVirtualBoundaries, horVirBndryPosComp, verVirBndryPosComp, numHorVirBndry, numVerVirBndry
                   );
       }
       ctuRsAddr++;
@@ -625,7 +623,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
     m_CABACEstimator->resetBits();
     m_CABACEstimator->sao_offset_pars( modeParam[compIdx], compIdx, sliceEnabled[compIdx], bitDepths.recon[CHANNEL_TYPE_LUMA] );
     modeDist[compIdx] = 0;
-    minCost= m_lambda[compIdx]*(FracBitsScale*(double)m_CABACEstimator->getEstFracBits());
+    minCost           = m_lambda[compIdx] * (FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits());
     ctxBestLuma = SAOCtx( m_CABACEstimator->getCtx() );
     if(sliceEnabled[compIdx])
     {
@@ -647,7 +645,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
         m_CABACEstimator->getCtx() = SAOCtx( ctxStartLuma );
         m_CABACEstimator->resetBits();
         m_CABACEstimator->sao_offset_pars( testOffset[compIdx], compIdx, sliceEnabled[compIdx], bitDepths.recon[CHANNEL_TYPE_LUMA] );
-        double rate = FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+        double rate = FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
         cost = (double)dist[compIdx] + m_lambda[compIdx]*rate;
         if(cost < minCost)
         {
@@ -674,7 +672,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
     modeDist [component]         = 0;
     m_CABACEstimator->sao_offset_pars( modeParam[component], component, sliceEnabled[component], bitDepths.recon[CHANNEL_TYPE_CHROMA] );
     const uint64_t currentFracBits = m_CABACEstimator->getEstFracBits();
-    cost += m_lambda[component] * FracBitsScale * double( currentFracBits - previousFracBits );
+    cost += m_lambda[component] * FRAC_BITS_SCALE * (currentFracBits - previousFracBits);
     previousFracBits = currentFracBits;
   }
 
@@ -707,7 +705,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
       dist[component] = getDistortion(bitDepths.recon[CHANNEL_TYPE_CHROMA], typeIdc, testOffset[component].typeAuxInfo, invQuantOffset, blkStats[ctuRsAddr][component][typeIdc]);
       m_CABACEstimator->sao_offset_pars( testOffset[component], component, sliceEnabled[component], bitDepths.recon[CHANNEL_TYPE_CHROMA] );
       const uint64_t currentFracBits = m_CABACEstimator->getEstFracBits();
-      cost += dist[component] + (m_lambda[component] * FracBitsScale * double(currentFracBits - previousFracBits));
+      cost += dist[component] + (m_lambda[component] * FRAC_BITS_SCALE * (currentFracBits - previousFracBits));
       previousFracBits = currentFracBits;
     }
 
@@ -733,7 +731,7 @@ void EncSampleAdaptiveOffset::deriveModeNewRDO(const BitDepths &bitDepths, int c
   m_CABACEstimator->getCtx() = SAOCtx( ctxStartBlk );
   m_CABACEstimator->resetBits();
   m_CABACEstimator->sao_block_pars( modeParam, bitDepths, sliceEnabled, (mergeList[SAO_MERGE_LEFT]!= NULL), (mergeList[SAO_MERGE_ABOVE]!= NULL), false );
-  modeNormCost += FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+  modeNormCost += FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
 }
 
 void EncSampleAdaptiveOffset::deriveModeMergeRDO(const BitDepths &bitDepths, int ctuRsAddr, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES], bool* sliceEnabled, std::vector<SAOStatData**>& blkStats, SAOBlkParam& modeParam, double& modeNormCost )
@@ -776,7 +774,7 @@ void EncSampleAdaptiveOffset::deriveModeMergeRDO(const BitDepths &bitDepths, int
     m_CABACEstimator->getCtx() = SAOCtx( ctxStart );
     m_CABACEstimator->resetBits();
     m_CABACEstimator->sao_block_pars( testBlkParam, bitDepths, sliceEnabled, (mergeList[SAO_MERGE_LEFT]!= NULL), (mergeList[SAO_MERGE_ABOVE]!= NULL), false );
-    double rate = FracBitsScale*(double)m_CABACEstimator->getEstFracBits();
+    double rate = FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
     cost = normDist+rate;
 
     if(cost < modeNormCost)
@@ -797,11 +795,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
 #if ENABLE_QPA
                                                const double chromaWeight,
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
                                                const double saoEncodingRate, const double saoEncodingRateChroma, const bool isGreedymergeEncoding)
-#else
-                                               const double saoEncodingRate, const double saoEncodingRateChroma)
-#endif
 
 {
   const PreCalcValues& pcv = *cs.pcv;
@@ -820,7 +814,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   SAOBlkParam modeParam;
   double minCost, modeCost;
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   double minCost2 = 0;
   std::vector<SAOStatData**> groupBlkStat;
   if (isGreedymergeEncoding)
@@ -845,7 +838,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   double  Cost[2] = { 0, 0 };
   TempCtx ctxBeforeMerge(m_CtxCache);
   TempCtx ctxAfterMerge(m_CtxCache);
-#endif
 
   double totalCost = 0; // Used if bTestSAODisableAtPictureLevel==true
 
@@ -871,12 +863,10 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       const TempCtx  ctxStart ( m_CtxCache, SAOCtx( m_CABACEstimator->getCtx() ) );
       TempCtx        ctxBest  ( m_CtxCache );
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (ctuRsAddr == (mergeCtuAddr - 1))
       {
         ctxBeforeMerge = SAOCtx(m_CABACEstimator->getCtx());
       }
-#endif
 
       //get merge list
       SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES] = { NULL };
@@ -924,14 +914,10 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
         }
       } //mode
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (!isGreedymergeEncoding)
       {
-#endif
       totalCost += minCost;
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       }
-#endif
 
 
       m_CABACEstimator->getCtx() = SAOCtx( ctxBest );
@@ -940,7 +926,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       reconParams[ctuRsAddr] = codedParams[ctuRsAddr];
       reconstructBlkSAOParam(reconParams[ctuRsAddr], mergeList);
 
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       if (isGreedymergeEncoding)
       {
         if (ctuRsAddr == (mergeCtuAddr - 1))
@@ -985,7 +970,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
           testBlkParam[COMPONENT_Y].typeIdc = SAO_MERGE_LEFT;
           m_CABACEstimator->resetBits();
           m_CABACEstimator->sao_block_pars(testBlkParam, cs.sps->getBitDepths(), sliceEnabled, true, false, true);
-          double rate = FracBitsScale * (double)m_CABACEstimator->getEstFracBits();
+          double rate = FRAC_BITS_SCALE * m_CABACEstimator->getEstFracBits();
           modeCost += rate * groupSize;
           if (modeCost < minCost2)
           {
@@ -1056,11 +1041,8 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
       }
       else
       {
-#endif
       offsetCTU(area, srcYuv, resYuv, reconParams[ctuRsAddr], cs);
-#if K0238_SAO_GREEDY_MERGE_ENCODING
       }
-#endif
 
       ctuRsAddr++;
     } //ctuRsAddr
@@ -1071,7 +1053,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
   if (chromaWeight > 0.0) memcpy (m_lambda, cs.slice->getLambdas(), sizeof (m_lambda));
 
 #endif
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   //reconstruct
   if (isGreedymergeEncoding)
   {
@@ -1100,7 +1081,6 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
     }
     groupBlkStat.clear();
   }
-#endif
   if (!allBlksDisabled && (totalCost >= 0) && bTestSAODisableAtPictureLevel) //SAO has not beneficial in this case - disable it
   {
     for( ctuRsAddr = 0; ctuRsAddr < pcv.sizeInCtus; ctuRsAddr++)
@@ -1156,9 +1136,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
                         , Pel* srcBlk, Pel* orgBlk, int srcStride, int orgStride, int width, int height
                         , bool isLeftAvail,  bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail
                         , bool isCalculatePreDeblockSamples
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                         , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
-#endif
                         )
 {
   int x,y, startX, startY, endX, endY, edgeType, firstLineStartX, firstLineEndX;
@@ -1196,13 +1174,11 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           for (x=startX; x<endX; x++)
           {
             signRight =  (int8_t)sgn(srcLine[x] - srcLine[x+1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
             if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
             {
               signLeft = -signRight;
               continue;
             }
-#endif
             edgeType  =  signRight + signLeft;
             signLeft  = -signRight;
 
@@ -1225,13 +1201,11 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
               for (x=startX; x<endX; x++)
               {
                 signRight =  (int8_t)sgn(srcLine[x] - srcLine[x+1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                 if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, endY + y, numVerVirBndry, 0, verVirBndryPos, horVirBndryPos))
                 {
                   signLeft = -signRight;
                   continue;
                 }
-#endif
                 edgeType  =  signRight + signLeft;
                 signLeft  = -signRight;
 
@@ -1279,13 +1253,11 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           for (x=startX; x<endX; x++)
           {
             signDown  = (int8_t)sgn(srcLine[x] - srcLineBelow[x]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
             if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
             {
               signUpLine[x] = -signDown;
               continue;
             }
-#endif
             edgeType  = signDown + signUpLine[x];
             signUpLine[x]= -signDown;
 
@@ -1309,12 +1281,10 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
 
               for (x=startX; x<endX; x++)
               {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                 if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y + endY, 0, numHorVirBndry, verVirBndryPos, horVirBndryPos))
                 {
                   continue;
                 }
-#endif
                 edgeType = sgn(srcLine[x] - srcLineBelow[x]) + sgn(srcLine[x] - srcLineAbove[x]);
                 diff [edgeType] += (orgLine[x] - srcLine[x]);
                 count[edgeType] ++;
@@ -1358,12 +1328,10 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
         firstLineEndX   = (!isCalculatePreDeblockSamples) ? (isAboveAvail     ? endX : 1) : endX;
         for(x=firstLineStartX; x<firstLineEndX; x++)
         {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
           if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             continue;
           }
-#endif
           edgeType = sgn(srcLine[x] - srcLineAbove[x-1]) - signUpLine[x+1];
           diff [edgeType] += (orgLine[x] - srcLine[x]);
           count[edgeType] ++;
@@ -1380,13 +1348,11 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           for (x=startX; x<endX; x++)
           {
             signDown = (int8_t)sgn(srcLine[x] - srcLineBelow[x+1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
             if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
             {
               signDownLine[x + 1] = -signDown;
               continue;
             }
-#endif
             edgeType = signDown + signUpLine[x];
             diff [edgeType] += (orgLine[x] - srcLine[x]);
             count[edgeType] ++;
@@ -1416,12 +1382,10 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
 
               for (x=startX; x< endX; x++)
               {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                 if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y + endY, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
                 {
                   continue;
                 }
-#endif
                 edgeType = sgn(srcLine[x] - srcLineBelow[x+1]) + sgn(srcLine[x] - srcLineAbove[x-1]);
                 diff [edgeType] += (orgLine[x] - srcLine[x]);
                 count[edgeType] ++;
@@ -1465,12 +1429,10 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
                                                           ;
         for(x=firstLineStartX; x<firstLineEndX; x++)
         {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
           if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, 0, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
           {
             continue;
           }
-#endif
           edgeType = sgn(srcLine[x] - srcLineAbove[x+1]) - signUpLine[x-1];
           diff [edgeType] += (orgLine[x] - srcLine[x]);
           count[edgeType] ++;
@@ -1487,13 +1449,11 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
           for(x=startX; x<endX; x++)
           {
             signDown = (int8_t)sgn(srcLine[x] - srcLineBelow[x-1]);
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
             if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
             {
               signUpLine[x - 1] = -signDown;
               continue;
             }
-#endif
             edgeType = signDown + signUpLine[x];
 
             diff [edgeType] += (orgLine[x] - srcLine[x]);
@@ -1519,12 +1479,10 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
 
               for (x=startX; x<endX; x++)
               {
-#if JVET_N0438_LOOP_FILTER_DISABLED_ACROSS_VIR_BOUND
                 if (isCtuCrossedByVirtualBoundaries && isProcessDisabled(x, y + endY, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos))
                 {
                   continue;
                 }
-#endif
                 edgeType = sgn(srcLine[x] - srcLineBelow[x-1]) + sgn(srcLine[x] - srcLineAbove[x+1]);
                 diff [edgeType] += (orgLine[x] - srcLine[x]);
                 count[edgeType] ++;

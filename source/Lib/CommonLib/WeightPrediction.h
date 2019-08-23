@@ -71,7 +71,6 @@ public:
                                 const bool                  bRoundLuma = true,
                                 const ComponentID           maxNumComp = MAX_NUM_COMPONENT );
 
-#if JVET_N0146_DMVR_BDOF_CONDITION
   void addWeightBiComponent(    const CPelUnitBuf          &pcYuvSrc0,
                                 const CPelUnitBuf          &pcYuvSrc1,
                                 const ClpRngs              &clpRngs,
@@ -80,7 +79,6 @@ public:
                                       PelUnitBuf           &rpcYuvDst,
                                 const bool                  bRoundLuma = true,
                                 const ComponentID           Comp = COMPONENT_Y);
-#endif
 
   void  addWeightUni(           const CPelUnitBuf          &pcYuvSrc0,
                                 const ClpRngs              &clpRngs,

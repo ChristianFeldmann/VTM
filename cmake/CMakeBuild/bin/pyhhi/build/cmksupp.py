@@ -155,6 +155,7 @@ class CMakeLauncher(object):
                                          'mgwmake': 'MinGW Makefiles',
                                          'ninja': 'Ninja',
                                          'xcode': 'Xcode',
+                                         'vs16': 'Visual Studio 16 2019',
                                          'vs15': 'Visual Studio 15 2017',
                                          'vs14': 'Visual Studio 14 2015',
                                          'vs12': 'Visual Studio 12 2013',
@@ -178,13 +179,30 @@ class CMakeLauncher(object):
                                                            'vs12': ['msvc-18.0', 'msvc-17.0', 'msvc-16.0'],
                                                            'vs11': ['msvc-17.0', 'msvc-16.0'],
                                                            'vs10': ['msvc-16.0']}
+
             # vs15 has not a fixed compiler version and therefore the mapping is generated dynamically.
             if self._msvc_registry.is_version_installed((14, 1)):
                 cl_version = self._msvc_registry.get_compiler_version((14, 1))
                 msvc_str = 'msvc-' + ver.version_tuple_to_str(cl_version[:2])
                 if cl_version[1] < 20:
                     self._dict_to_vs_platform_toolset[msvc_str] = 'v141'
-                    self._dict_generator_alias_to_msvc_toolsets['vs15'] = [msvc_str, 'msvc-19.0', 'msvc-18.0', 'msvc-17.0', 'msvc-16.0']
+                    if not self._msvc_registry.is_vs2019_toolset((14, 1)):
+                        self._dict_generator_alias_to_msvc_toolsets['vs15'] = [msvc_str, 'msvc-19.0', 'msvc-18.0', 'msvc-17.0', 'msvc-16.0']
+                else:
+                    assert False
+
+            # vs16 has not a fixed compiler version and therefore the mapping is generated dynamically.
+            if self._msvc_registry.is_version_installed((14, 2)):
+                cl_version = self._msvc_registry.get_compiler_version((14, 2))
+                msvc_str = 'msvc-' + ver.version_tuple_to_str(cl_version[:2])
+                if cl_version[1] < 30:
+                    self._dict_to_vs_platform_toolset[msvc_str] = 'v142'
+                    msvc_version_list = [msvc_str]
+                    if self._msvc_registry.is_version_installed((14, 1)):
+                        cl_version = self._msvc_registry.get_compiler_version((14, 1))
+                        msvc_version_list.append("msvc-{0:d}.{1:d}".format(cl_version[0], cl_version[1]))
+                    msvc_version_list.extend(['msvc-19.0', 'msvc-18.0', 'msvc-17.0', 'msvc-16.0'])
+                    self._dict_generator_alias_to_msvc_toolsets['vs16'] = msvc_version_list
                 else:
                     assert False
 
@@ -259,38 +277,43 @@ class CMakeLauncher(object):
                     vs_toolset = "Intel C++ Compiler %d.%d" % (compiler_info.version_major_minor[0], compiler_info.version_major_minor[1])
                 else:
                     assert False
-                cmake_argv = ['-G', self._dict_to_cmake_generator[generator_alias],
-                              '-T', vs_toolset,
-                              '-A', self._dict_to_vs_platform_name[compiler_info.target_arch]]
+                cmake_argv = ['-G', self._dict_to_cmake_generator[generator_alias]]
+                if generator_alias == 'vs16':
+                    if ver.version_compare(compiler_info.version_major_minor, (19, 20)) < 0:
+                        cmake_argv.extend(['-T', self._dict_to_vs_platform_toolset['msvc-' + ver.version_tuple_to_str(compiler_info.version_major_minor)]])
+                    if compiler_info.target_arch != 'x86_64':
+                        cmake_argv.extend(['-A', self._dict_to_vs_platform_name[compiler_info.target_arch]])
+                else:
+                    cmake_argv.extend(['-T', vs_toolset, '-A', self._dict_to_vs_platform_name[compiler_info.target_arch]])
+
             elif generator_alias == 'xcode':
                 cmake_argv = ['-G', self._dict_to_cmake_generator[generator_alias]]
             elif generator_alias in ['umake', 'mgwmake', 'ninja']:
                 cmake_argv = ['-G', self._dict_to_cmake_generator[generator_alias],
-                              '-DCMAKE_BUILD_TYPE=' + self._dict_to_cmake_config[cfg]]
+                              '-DCMAKE_BUILD_TYPE:STRING=' + self._dict_to_cmake_config[cfg]]
                 if compiler_info.is_cross_compiler():
-                    cmake_argv.append('-DCMAKE_TOOLCHAIN_FILE=' + compiler_info.cmake_toolchain_file)
+                    cmake_argv.append('-DCMAKE_TOOLCHAIN_FILE:FILEPATH=' + compiler_info.cmake_toolchain_file)
                 else:
                     if compiler_info.cmake_cxx_compiler:
-                        cmake_argv.append('-DCMAKE_CXX_COMPILER=' + compiler_info.cmake_cxx_compiler)
+                        cmake_argv.append('-DCMAKE_CXX_COMPILER:FILEPATH=' + compiler_info.cmake_cxx_compiler)
                     if compiler_info.cmake_c_compiler:
-                        cmake_argv.append('-DCMAKE_C_COMPILER=' + compiler_info.cmake_c_compiler)
+                        cmake_argv.append('-DCMAKE_C_COMPILER:FILEPATH=' + compiler_info.cmake_c_compiler)
             if cmake_argv_optional:
                 # Add any additional arguments to the cmake command line.
                 cmake_argv.extend(cmake_argv_optional)
             if lnk_variant == 'shared':
-                cmake_argv.append('-DBUILD_SHARED_LIBS=1')
+                cmake_argv.append('-DBUILD_SHARED_LIBS:BOOL=ON')
             if self._is_multi_configuration_generator():
                 cmake_config_types = [self._dict_to_cmake_config[x] for x in self._default_config_types]
                 for b_cfg in build_configs:
                     if b_cfg not in self._default_config_types:
                         cmake_config_types.append(self._dict_to_cmake_config[b_cfg])
-                cmake_argv.append('-DCMAKE_CONFIGURATION_TYPES=' + ';'.join(cmake_config_types))
+                cmake_argv.append('-DCMAKE_CONFIGURATION_TYPES:STRING=' + ';'.join(cmake_config_types))
             # cmake_argv.append(self._top_dir)
             # print("launch_config(): cmake_args", cmake_argv)
             # print("build dir:", b_dir)
             # print("top dir:", self._top_dir)
-            if (not self._sys_info.is_windows()) and (ver.version_compare(self._cmake_finder.get_cmake_version(), (3, 13, 0)) >= 0):
-                # Not done for windows yet avoiding potential issues with command line length limits.
+            if ver.version_compare(self._cmake_finder.get_cmake_version(), (3, 13, 0)) >= 0:
                 cmake_argv.extend(['-S', self._top_dir, '-B', b_dir])
                 retv = self.launch_cmake(cmake_argv)
             else:
@@ -410,9 +433,11 @@ class CMakeLauncher(object):
         elif self._sys_info.get_platform() == 'macosx':
             generator_alias = 'xcode'
         elif self._sys_info.get_platform() == 'windows':
-            # e.g. 14.1, 14.0, 12.0 etc.
+            # e.g. 14.2, 14.1, 14.0, 12.0 etc.
             bb_vs_latest_version = self._msvc_registry.get_latest_version()
-            if ver.version_compare(bb_vs_latest_version, (14,1)) == 0:
+            if ver.version_compare(bb_vs_latest_version, (14, 2)) == 0:
+                generator_alias = 'vs16'
+            elif ver.version_compare(bb_vs_latest_version, (14, 1)) == 0:
                 generator_alias = 'vs15'
             else:
                 generator_alias = 'vs' + str(bb_vs_latest_version[0])
@@ -565,8 +590,20 @@ class CMakeLauncher(object):
                 self._add_cmake_build_tool_options(cmake_argv, ['-parallelizeTargets', '-jobs', str(build_jobs)])
 
     def _add_cmake_build_verbosity_option(self, cmake_argv, generator_alias, verbosity_level):
-        if generator_alias.startswith('vs'):
-            self._add_cmake_build_tool_options(cmake_argv, ['/verbosity:' + verbosity_level])
+        if verbosity_level == 'cmake':
+            cmake_version = self._cmake_finder.get_cmake_version()
+            if ver.version_compare(cmake_version, (3, 14)) >= 0:
+                # self._add_cmake_build_tool_options(cmake_argv, ['-v'])
+                # -v is a cmake option and not a build tool option and therefore
+                # it has to be inserted left of '--'
+                if '--' in cmake_argv:
+                    index = cmake_argv.index('--')
+                    cmake_argv.insert(index, '-v')
+                else:
+                    cmake_argv.append('-v')
+        else:
+            if generator_alias.startswith('vs'):
+                self._add_cmake_build_tool_options(cmake_argv, ['/verbosity:' + verbosity_level])
 
     def _add_cmake_build_tool_options(self, cmake_argv, build_tool_options):
         if not build_tool_options:

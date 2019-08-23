@@ -50,6 +50,10 @@
 #include "MCTS.h"
 #include <deque>
 
+#if JVET_O1164_RPR
+#include "CommonLib/InterpolationFilter.h"
+#endif
+
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
 #if ENABLE_WPP_PARALLELISM
 #include <mutex>
@@ -115,7 +119,6 @@ class AQpLayer;
 
 typedef std::list<SEI*> SEIMessages;
 
-#if JVET_N0857_TILES_BRICKS
 
 class Brick
 {
@@ -143,62 +146,7 @@ public:
   uint32_t  getFirstCtuRsAddr      () const                  { return m_firstCtuRsAddr; }
 };
 
-#else
-class Tile
-{
-private:
-  uint32_t      m_tileWidthInCtus;
-  uint32_t      m_tileHeightInCtus;
-  uint32_t      m_rightEdgePosInCtus;
-  uint32_t      m_bottomEdgePosInCtus;
-  uint32_t      m_firstCtuRsAddr;
 
-public:
-  Tile();
-  virtual ~Tile();
-
-  void      setTileWidthInCtus     ( uint32_t i )            { m_tileWidthInCtus = i; }
-  uint32_t      getTileWidthInCtus     () const              { return m_tileWidthInCtus; }
-  void      setTileHeightInCtus    ( uint32_t i )            { m_tileHeightInCtus = i; }
-  uint32_t      getTileHeightInCtus    () const              { return m_tileHeightInCtus; }
-  void      setRightEdgePosInCtus  ( uint32_t i )            { m_rightEdgePosInCtus = i; }
-  uint32_t      getRightEdgePosInCtus  () const              { return m_rightEdgePosInCtus; }
-  void      setBottomEdgePosInCtus ( uint32_t i )            { m_bottomEdgePosInCtus = i; }
-  uint32_t      getBottomEdgePosInCtus () const              { return m_bottomEdgePosInCtus; }
-  void      setFirstCtuRsAddr      ( uint32_t i )            { m_firstCtuRsAddr = i; }
-  uint32_t      getFirstCtuRsAddr      () const              { return m_firstCtuRsAddr; }
-};
-#endif
-
-#if !JVET_N0857_TILES_BRICKS
-struct TileMap
-{
-  TileMap();
-
-  void create( const SPS& sps, const PPS& pps );
-  void destroy();
-
-  uint32_t getTileIdxMap( uint32_t ctuRsAddr )       const { return *(tileIdxMap + ctuRsAddr); }
-  uint32_t getTileIdxMap( const Position& pos )  const { return getTileIdxMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
-  uint32_t getCtuTsToRsAddrMap( uint32_t ctuTsAddr ) const { return *(ctuTsToRsAddrMap + (ctuTsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuTsAddr)); }
-  uint32_t getCtuRsToTsAddrMap( uint32_t ctuRsAddr ) const { return *(ctuRsToTsAddrMap + (ctuRsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuRsAddr)); }
-  uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAddressInRaster, Slice *pcSlice) const;
-
-  const PreCalcValues* pcv;
-  std::vector<Tile> tiles;
-  uint32_t  numTiles;
-  uint32_t  numTileColumns;
-  uint32_t  numTileRows;
-  uint32_t* tileIdxMap;
-  uint32_t* ctuTsToRsAddrMap;
-  uint32_t* ctuRsToTsAddrMap;
-
-  void initTileMap( const SPS& sps, const PPS& pps );
-  void initCtuTsRsAddrMap();
-  uint32_t calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const;
-};
-
-#else
 struct BrickMap
 {
   BrickMap();
@@ -231,7 +179,6 @@ struct BrickMap
   void initBrickMap( const SPS& sps, const PPS& pps );
   void initCtuBsRsAddrMap();
 };
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -273,14 +220,14 @@ struct Picture : public UnitArea
          PelUnitBuf getResiBuf(const UnitArea &unit);
   const CPelUnitBuf getResiBuf(const UnitArea &unit) const;
 
-         PelBuf     getRecoBuf(const ComponentID compID);
-  const CPelBuf     getRecoBuf(const ComponentID compID) const;
-         PelBuf     getRecoBuf(const CompArea &blk);
-  const CPelBuf     getRecoBuf(const CompArea &blk) const;
-         PelUnitBuf getRecoBuf(const UnitArea &unit);
-  const CPelUnitBuf getRecoBuf(const UnitArea &unit) const;
-         PelUnitBuf getRecoBuf();
-  const CPelUnitBuf getRecoBuf() const;
+         PelBuf     getRecoBuf(const ComponentID compID, bool wrap=false);
+  const CPelBuf     getRecoBuf(const ComponentID compID, bool wrap=false) const;
+         PelBuf     getRecoBuf(const CompArea &blk, bool wrap=false);
+  const CPelBuf     getRecoBuf(const CompArea &blk, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false);
+  const CPelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(bool wrap=false);
+  const CPelUnitBuf getRecoBuf(bool wrap=false) const;
 
          PelBuf     getBuf(const ComponentID compID, const PictureType &type);
   const CPelBuf     getBuf(const ComponentID compID, const PictureType &type) const;
@@ -290,11 +237,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-#if JVET_N0415_CTB_ALF
-  void finalInit(const SPS& sps, const PPS& pps, APS** apss);
-#else
-  void finalInit(const SPS& sps, const PPS& pps, APS& aps);
-#endif
+  void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps);
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -304,6 +247,15 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
+#if JVET_O1164_RPR
+  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
+
+#if RPR_CONF_WINDOW
+  static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
+#else
+  static void   rescalePicture(const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
+#endif
+#endif
 
 public:
   bool m_bIsBorderExtended;
@@ -332,6 +284,9 @@ public:
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
+#if JVET_O1164_RPR
+  const Picture*           unscaledPic;
+#endif
 
   TComHash           m_hashMap;
   TComHash*          getHashMap() { return &m_hashMap; }
@@ -346,11 +301,7 @@ public:
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
-#if !JVET_N0857_TILES_BRICKS
-  TileMap*     tileMap;
-#else
   BrickMap*     brickMap;
-#endif
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
@@ -397,7 +348,6 @@ public:
       std::fill( m_alfCtuEnableFlag[compIdx].begin(), m_alfCtuEnableFlag[compIdx].end(), 0 );
     }
   }
-#if JVET_N0415_CTB_ALF
   std::vector<short> m_alfCtbFilterIndex;
   short* getAlfCtbFilterIndex() { return m_alfCtbFilterIndex.data(); }
   std::vector<short>& getAlfCtbFilterIndexVec() { return m_alfCtbFilterIndex; }
@@ -407,6 +357,18 @@ public:
     for (int i = 0; i < numEntries; i++)
     {
       m_alfCtbFilterIndex[i] = 0;
+    }
+  }
+#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
+  std::vector<uint8_t> m_alfCtuAlternative[MAX_NUM_COMPONENT];
+  std::vector<uint8_t>& getAlfCtuAlternative( int compIdx ) { return m_alfCtuAlternative[compIdx]; }
+  uint8_t* getAlfCtuAlternativeData( int compIdx ) { return m_alfCtuAlternative[compIdx].data(); }
+  void resizeAlfCtuAlternative( int numEntries )
+  {
+    for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+    {
+      m_alfCtuAlternative[compIdx].resize( numEntries );
+      std::fill( m_alfCtuAlternative[compIdx].begin(), m_alfCtuAlternative[compIdx].end(), 0 );
     }
   }
 #endif

@@ -1620,7 +1620,7 @@ int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfParam& alfParam )
   if( alfParam.numLumaFilters > 1 )
   {
 #if JVET_O0491_HLS_CLEANUP
-    const int coeffLength = (int)ceil(log2(alfParam.numLumaFilters));
+    const int coeffLength = ceilLog2(alfParam.numLumaFilters);
 #endif
     for( int i = 0; i < MAX_NUM_ALF_CLASSES; i++ )
     {

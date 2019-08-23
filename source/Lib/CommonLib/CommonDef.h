@@ -58,6 +58,8 @@
 #if _MSC_VER < 1900
 #error "MS Visual Studio version not supported. Please upgrade to Visual Studio 2015 or higher (or use other compilers)"
 #endif
+
+#include <intrin.h>
 #endif
 
 //! \ingroup CommonLib
@@ -688,6 +690,11 @@ static inline int floorLog2(uint32_t x)
 #ifdef __GNUC__
   return 31 - __builtin_clz(x);
 #else
+#ifdef _MSC_VER
+  unsigned long r = 0;
+  _BitScanReverse(&r, x);
+  return r;
+#else
   int result = 0;
   if (x & 0xffff0000)
   {
@@ -716,7 +723,14 @@ static inline int floorLog2(uint32_t x)
   }
   return result;
 #endif
+#endif
 }
+
+static inline int ceilLog2(uint32_t x)
+{
+  return floorLog2(x - 1) + 1;
+}
+
 
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )

@@ -831,8 +831,10 @@ private:
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;
+#if !JVET_O0299_APS_SCALINGLIST
   bool              m_scalingListPresentFlag;
   ScalingList       m_scalingList;
+#endif
   uint32_t              m_uiMaxDecPicBuffering[MAX_TLAYER];
   uint32_t              m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 

@@ -127,9 +127,6 @@ private:
   bool                    m_bFirst;
   int                     m_iLastRecoveryPicPOC;
   int                     m_lastRasPoc;
-#if JVET_O0299_APS_SCALINGLIST
-  ScalingListMode         m_ScalingListId;
-#endif
 
   //  Access channel
   EncLib*                 m_pcEncLib;

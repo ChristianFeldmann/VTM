@@ -1026,6 +1026,9 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 
   subStruct.lmcsAps = lmcsAps;
+#if JVET_O0299_APS_SCALINGLIST
+  subStruct.scalinglistAps = scalinglistAps;
+#endif
 
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;

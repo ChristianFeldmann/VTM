@@ -125,6 +125,11 @@ Slice::Slice()
 , m_lmcsAps                      (nullptr)
 , m_tileGroupLmcsEnabledFlag     (false)
 , m_tileGroupLmcsChromaResidualScaleFlag (false)
+#if JVET_O0299_APS_SCALINGLIST
+, m_scalingListApsId             ( -1 )
+, m_scalingListAps               ( nullptr )
+, m_tileGroupscalingListPresentFlag ( false )
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -734,6 +739,12 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLmcsChromaResidualScaleFlag = pSrc->m_tileGroupLmcsChromaResidualScaleFlag;
   m_lmcsAps = pSrc->m_lmcsAps;
   m_lmcsApsId = pSrc->m_lmcsApsId;
+
+#if JVET_O0299_APS_SCALINGLIST
+  m_tileGroupscalingListPresentFlag = pSrc->m_tileGroupscalingListPresentFlag;
+  m_scalingListAps                  = pSrc->m_scalingListAps;
+  m_scalingListApsId                = pSrc->m_scalingListApsId;
+#endif
 }
 
 
@@ -2298,7 +2309,11 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 }
 
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS& lmcsAps, APS& scalingListAps, const bool isDecoder )
+#else
 void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder )
+#endif
 {
   int i;
   const SPS* sps = getSPS();
@@ -2373,7 +2388,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
             scaledRefPic[j]->reconstructed = false;
             scaledRefPic[j]->referenced = true;
 
+#if JVET_O0299_APS_SCALINGLIST
+            scaledRefPic[ j ]->finalInit( *sps, *pps, apss, lmcsAps, scalingListAps );
+#else
             scaledRefPic[j]->finalInit( *sps, *pps, apss, lmcsAps );
+#endif
 
             scaledRefPic[j]->poc = -1;
 

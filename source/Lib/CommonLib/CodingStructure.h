@@ -107,6 +107,9 @@ public:
   APS*       alfApss[MAX_NUM_APS];
 #endif
   APS *      lmcsAps;
+#if JVET_O0299_APS_SCALINGLIST
+  APS *      scalinglistAps;
+#endif
   const VPS *vps;
   const PreCalcValues* pcv;
 

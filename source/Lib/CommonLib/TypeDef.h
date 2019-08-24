@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
+
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
 #if JVET_O1164_RPR
 #define JVET_O1164_PS                                     1
@@ -493,6 +495,9 @@ enum ApsTypeValues
 {
   ALF_APS = 0,
   LMCS_APS = 1,
+#if JVET_O0299_APS_SCALINGLIST
+  SCALING_LIST_APS = 2,
+#endif
 };
 
 enum QuantFlags

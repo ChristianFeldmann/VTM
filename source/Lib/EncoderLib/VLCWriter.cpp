@@ -396,11 +396,13 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     }
   }
 
+#if !JVET_O0299_APS_SCALINGLIST
   WRITE_FLAG( pcPPS->getScalingListPresentFlag() ? 1 : 0,                          "pps_scaling_list_data_present_flag" );
   if( pcPPS->getScalingListPresentFlag() )
   {
     codeScalingList( pcPPS->getScalingList() );
   }
+#endif
   WRITE_UVLC( pcPPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
   WRITE_FLAG( pcPPS->getSliceHeaderExtensionPresentFlag() ? 1 : 0, "slice_segment_header_extension_present_flag");
 
@@ -508,6 +510,12 @@ void HLSWriter::codeAPS( APS* pcAPS )
   {
     codeLmcsAps (pcAPS);
   }
+#if JVET_O0299_APS_SCALINGLIST
+  else if( pcAPS->getAPSType() == SCALING_LIST_APS )
+  {
+    codeScalingListAps( pcAPS );
+  }
+#endif
   WRITE_FLAG(0, "aps_extension_flag");   //Implementation when this flag is equal to 1 should be added when it is needed. Currently in the spec we don't have case when this flag is equal to 1
   xWriteRbspTrailingBits();
 }
@@ -609,6 +617,14 @@ void HLSWriter::codeLmcsAps( APS* pcAPS )
     }
   }
 }
+
+#if JVET_O0299_APS_SCALINGLIST
+void HLSWriter::codeScalingListAps( APS* pcAPS )
+{
+  ScalingList param = pcAPS->getScalingList();
+  codeScalingList( param );
+}
+#endif
 
 void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 {
@@ -1038,6 +1054,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
+#if !JVET_O0299_APS_SCALINGLIST
   if(pcSPS->getScalingListFlag())
   {
     WRITE_FLAG( pcSPS->getScalingListPresentFlag() ? 1 : 0,                          "sps_scaling_list_data_present_flag" );
@@ -1046,6 +1063,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       codeScalingList( pcSPS->getScalingList() );
     }
   }
+#endif
 
   const TimingInfo *timingInfo = pcSPS->getTimingInfo();
   WRITE_FLAG(timingInfo->getTimingInfoPresentFlag(),          "timing_info_present_flag");
@@ -1691,6 +1709,16 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
 
+#if JVET_O0299_APS_SCALINGLIST
+    if( pcSlice->getSPS()->getScalingListFlag() )
+    {
+      WRITE_FLAG( pcSlice->getscalingListPresentFlag() ? 1 : 0, "slice_scaling_list_present_flag" );
+      if( pcSlice->getscalingListPresentFlag() )
+      {
+        WRITE_CODE( pcSlice->getscalingListAPSId(), 3, "slice_scaling_list_aps_id" );
+      }
+    }
+#endif
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())
   {
     WRITE_UVLC(0,"slice_segment_header_extension_length");

@@ -685,6 +685,7 @@ static inline int floorLog2(uint32_t x)
 {
   if (x == 0)
   {
+    // note: ceilLog2() expects -1 as return value
     return -1;
   }
 #ifdef __GNUC__
@@ -728,7 +729,7 @@ static inline int floorLog2(uint32_t x)
 
 static inline int ceilLog2(uint32_t x)
 {
-  return floorLog2(x - 1) + 1;
+  return (x==0) ? -1 : floorLog2(x - 1);
 }
 
 

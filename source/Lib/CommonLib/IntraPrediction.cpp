@@ -254,7 +254,7 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   const int width  = dstSize.width;
   const int height = dstSize.height;
   const auto denom     = (width == height) ? (width << 1) : std::max(width,height);
-  const auto divShift  = g_aucLog2[denom];
+  const auto divShift  = floorLog2(denom);
   const auto divOffset = (denom >> 1);
 
   if ( width >= height )
@@ -289,7 +289,7 @@ int IntraPrediction::getWideAngle( int width, int height, int predMode )
   if ( predMode > DC_IDX && predMode <= VDIA_IDX )
   {
     int modeShift[] = { 0, 6, 10, 12, 14, 15 };
-    int deltaSize = abs(g_aucLog2[width] - g_aucLog2[height]);
+    int deltaSize = abs(floorLog2(width) - floorLog2(height));
     if (width > height && predMode < 2 + modeShift[deltaSize])
     {
       predMode += (VDIA_IDX - 1);
@@ -321,8 +321,8 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int            iHeight      = piPred.height;
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : PU::getFinalIntraMode( pu, channelType );
 
-  CHECK( g_aucLog2[iWidth] < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
-  CHECK( g_aucLog2[iWidth] > 7, "Size not allowed" );
+  CHECK( floorLog2(iWidth) < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
+  CHECK( floorLog2(iWidth) > 7, "Size not allowed" );
 
   const int multiRefIdx = m_ipaParam.multiRefIndex;
 #if JVET_O0364_PADDING
@@ -354,7 +354,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   if (m_ipaParam.applyPDPC)
   {
     PelBuf dstBuf = piPred;
-    const int scale = ((g_aucLog2[iWidth] - 2 + g_aucLog2[iHeight] - 2 + 2) >> 2);
+    const int scale = ((floorLog2(iWidth) - 2 + floorLog2(iHeight) - 2 + 2) >> 2);
     CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
 
 #if JVET_O0364_PDPC_DC
@@ -427,8 +427,8 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
 {
   const uint32_t width  = pDst.width;
   const uint32_t height = pDst.height;
-  const uint32_t log2W  = g_aucLog2[width  < 2 ? 2 : width];
-  const uint32_t log2H  = g_aucLog2[height < 2 ? 2 : height];
+  const uint32_t log2W  = floorLog2(width  < 2 ? 2 : width);
+  const uint32_t log2H  = floorLog2(height < 2 ? 2 : height);
 
   int leftColumn[MAX_CU_SIZE + 1], topRow[MAX_CU_SIZE + 1], bottomRow[MAX_CU_SIZE], rightColumn[MAX_CU_SIZE];
   const uint32_t offset = 1 << (log2W + log2H);
@@ -544,9 +544,9 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
       const int maxScale = 2;
 
 #if JVET_O0364_PADDING
-      m_ipaParam.angularScale = std::min(maxScale, g_aucLog2[sideSize] - (floorLog2(3 * m_ipaParam.invAngle - 2) - 8));
+      m_ipaParam.angularScale = std::min(maxScale, floorLog2(sideSize) - (floorLog2(3 * m_ipaParam.invAngle - 2) - 8));
 #else
-      m_ipaParam.angularScale = std::min(maxScale, g_aucLog2[sideSize] - (floorLog2(3 * m_ipaParam.invAngle - 2) - 7));
+      m_ipaParam.angularScale = std::min(maxScale, floorLog2(sideSize) - (floorLog2(3 * m_ipaParam.invAngle - 2) - 7));
 #endif
       m_ipaParam.applyPDPC &= m_ipaParam.angularScale >= 0;
     }
@@ -597,7 +597,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
 #else
       const int diff = std::min<int>( abs( dirMode - HOR_IDX ), abs( dirMode - VER_IDX ) );
 #endif
-      const int log2Size = ((g_aucLog2[puSize.width] + g_aucLog2[puSize.height]) >> 1);
+      const int log2Size = ((floorLog2(puSize.width) + floorLog2(puSize.height)) >> 1);
       CHECK( log2Size >= MAX_INTRA_FILTER_DEPTHS, "Size not supported" );
       filterFlag = (diff > m_aucIntraFilter[log2Size]);
     }
@@ -715,7 +715,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     refSide = bIsModeVer ? refLeft : refAbove;
 
     // Extend main reference to right using replication
-    const int log2Ratio = g_aucLog2[width] - g_aucLog2[height];
+    const int log2Ratio = floorLog2(width) - floorLog2(height);
     const int s         = std::max<int>(0, bIsModeVer ? log2Ratio : -log2Ratio);
     const int maxIndex  = (multiRefIdx << s) + 2;
     const int refLength = bIsModeVer ? m_topRefLength : m_leftRefLength;
@@ -770,7 +770,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
 
       if (m_ipaParam.applyPDPC)
       {
-        const int scale   = (g_aucLog2[width] + g_aucLog2[height] - 2) >> 2;
+        const int scale   = (floorLog2(width) + floorLog2(height) - 2) >> 2;
         const Pel topLeft = refMain[0];
         const Pel left    = refSide[1 + y];
         for (int x = 0; x < std::min(3 << scale, width); x++)
@@ -864,7 +864,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         }
       }
 #else
-      const int scale = ((g_aucLog2[width] - 2 + g_aucLog2[height] - 2 + 2) >> 2);
+      const int scale = ((floorLog2(width) - 2 + floorLog2(height) - 2 + 2) >> 2);
       CHECK(scale < 0 || scale > 31, "PDPC: scale < 0 || scale > 31");
       if (m_ipaParam.applyPDPC)
       {
@@ -2182,7 +2182,7 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
 #else
   CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
 #endif
-  CHECK( pu.lwidth() != (1 << g_aucLog2[pu.lwidth()]) || pu.lheight() != (1 << g_aucLog2[pu.lheight()]), "Error: expecting blocks of size 2^M x 2^N" );
+  CHECK( pu.lwidth() != (1 << floorLog2(pu.lwidth())) || pu.lheight() != (1 << floorLog2(pu.lheight())), "Error: expecting blocks of size 2^M x 2^N" );
 
   // generate mode-specific prediction
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);

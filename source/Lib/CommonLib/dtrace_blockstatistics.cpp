@@ -277,8 +277,8 @@ void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionI
   CMotionBuf mb = pu.getMotionBuf();
   bool foundMv[2] = { false, false };
   bool foundBi = false;
-  int32_t idxW  = (int32_t)(g_aucLog2[pu.lwidth() ] - MIN_CU_LOG2);
-  int32_t idxH  = (int32_t)(g_aucLog2[pu.lheight()] - MIN_CU_LOG2);
+  int32_t idxW  = (int32_t)(floorLog2(pu.lwidth() ) - MIN_CU_LOG2);
+  int32_t idxH  = (int32_t)(floorLog2(pu.lheight()) - MIN_CU_LOG2);
   for (int32_t y = 0; y < mb.height; y++)
   {
     for (int32_t x = 0; x < mb.width; x++)

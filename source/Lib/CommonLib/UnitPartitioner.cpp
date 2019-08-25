@@ -176,7 +176,7 @@ void Partitioner::copyState( const Partitioner& other )
 void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& maxDepth, const CodingStructure& cs ) const
 {
   unsigned          stdMinDepth = 0;
-  unsigned          stdMaxDepth = ( g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )]);
+  unsigned          stdMaxDepth = ( floorLog2(cs.sps->getCTUSize()) - floorLog2(cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )));
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
   const unsigned    curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( currArea().lumaPos() );
@@ -988,7 +988,7 @@ void PartitionerImpl::getTUIntraSubPartitions( Partitioning &sub, const UnitArea
 
   if( splitType == TU_1D_HORZ_SPLIT )
   {
-    nPartitions = tuArea.lumaSize().height >> g_aucLog2[splitDimensionSize];
+    nPartitions = tuArea.lumaSize().height >> floorLog2(splitDimensionSize);
 
     sub.resize( nPartitions );
 
@@ -1005,7 +1005,7 @@ void PartitionerImpl::getTUIntraSubPartitions( Partitioning &sub, const UnitArea
   }
   else if( splitType == TU_1D_VERT_SPLIT )
   {
-    nPartitions = tuArea.lumaSize().width >> g_aucLog2[splitDimensionSize];
+    nPartitions = tuArea.lumaSize().width >> floorLog2(splitDimensionSize);
 
     sub.resize( nPartitions );
 

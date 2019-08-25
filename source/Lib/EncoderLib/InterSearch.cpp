@@ -1447,7 +1447,7 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   const int cuPelY = pu.Y().y;
 
   const int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
-  const int ctuSizeLog2 = g_aucLog2[lcuWidth];
+  const int ctuSizeLog2 = floorLog2(lcuWidth);
   int numLeftCTUs = (1 << ((7 - ctuSizeLog2) << 1)) - ((ctuSizeLog2 < 7) ? 1 : 0);
 
   srLeft = -(numLeftCTUs * lcuWidth + (cuPelX % lcuWidth));
@@ -1840,12 +1840,12 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
   if (height < width)
   {
     isHorizontal = true;
-    baseNum = 1 << (g_aucLog2[width] - g_aucLog2[height]);
+    baseNum = 1 << (floorLog2(width) - floorLog2(height));
   }
   else
   {
     isHorizontal = false;
-    baseNum = 1 << (g_aucLog2[height] - g_aucLog2[width]);
+    baseNum = 1 << (floorLog2(height) - floorLog2(width));
   }
 
   int xPos = pu.cu->lumaPos().x;
@@ -4906,8 +4906,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           int mvScaleHor = nbMv[0].getHor() << shift;
           int mvScaleVer = nbMv[0].getVer() << shift;
           Mv dMv = nbMv[1] - nbMv[0];
-          dMvHorX = dMv.getHor() << (shift - g_aucLog2[mvInfo->w]);
-          dMvHorY = dMv.getVer() << (shift - g_aucLog2[mvInfo->w]);
+          dMvHorX = dMv.getHor() << (shift - floorLog2(mvInfo->w));
+          dMvHorY = dMv.getVer() << (shift - floorLog2(mvInfo->w));
           dMvVerX = -dMvHorY;
           dMvVerY = dMvHorX;
           vx = mvScaleHor + dMvHorX * (pu.Y().x - mvInfo->x) + dMvVerX * (pu.Y().y - mvInfo->y);
@@ -4954,8 +4954,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         mvAffine4Para[iRefList][iRefIdxTemp][1].roundAffinePrecInternal2Amvr(pu.cu->imv);
 
         int shift = MAX_CU_DEPTH;
-        int vx2 = (mvFour[0].getHor() << shift) - ((mvFour[1].getVer() - mvFour[0].getVer()) << (shift + g_aucLog2[pu.lheight()] - g_aucLog2[pu.lwidth()]));
-        int vy2 = (mvFour[0].getVer() << shift) + ((mvFour[1].getHor() - mvFour[0].getHor()) << (shift + g_aucLog2[pu.lheight()] - g_aucLog2[pu.lwidth()]));
+        int vx2 = (mvFour[0].getHor() << shift) - ((mvFour[1].getVer() - mvFour[0].getVer()) << (shift + floorLog2(pu.lheight()) - floorLog2(pu.lwidth())));
+        int vy2 = (mvFour[0].getVer() << shift) + ((mvFour[1].getHor() - mvFour[0].getHor()) << (shift + floorLog2(pu.lheight()) - floorLog2(pu.lwidth())));
         int offset = (1 << (shift - 1));
         vx2 = (vx2 + offset - (vx2 >= 0)) >> shift;
         vy2 = (vy2 + offset - (vy2 >= 0)) >> shift;
@@ -8232,7 +8232,7 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
 #if JVET_O1170_IBC_VIRTUAL_BUFFER
 bool InterSearch::searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize)
 {
-  const int ctuSizeLog2 = g_aucLog2[ctuSize];
+  const int ctuSizeLog2 = floorLog2(ctuSize);
 
   int refRightX = xPos + xBv + width - 1;
   int refBottomY = yPos + yBv + height - 1;

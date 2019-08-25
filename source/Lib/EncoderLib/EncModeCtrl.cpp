@@ -1147,7 +1147,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 {
   // Min/max depth
   unsigned minDepth = 0;
-  unsigned maxDepth = g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( m_slice->getSliceType(), partitioner.chType )];
+  unsigned maxDepth = floorLog2(cs.sps->getCTUSize()) - floorLog2(cs.sps->getMinQTSize( m_slice->getSliceType(), partitioner.chType ));
   if( m_pcEncCfg->getUseFastLCTU() )
   {
     if( auto adPartitioner = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )
@@ -1218,9 +1218,9 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       {
         const Position    &pos = partitioner.currQgPos;
 #if MAX_TB_SIZE_SIGNALLING
-        const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth)];
+        const unsigned mtsLog2 = (unsigned)floorLog2(std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth));
 #else
-        const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth)];
+        const unsigned mtsLog2 = (unsigned)floorLog2(std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth));
 #endif
         const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
 

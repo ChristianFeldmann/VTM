@@ -178,7 +178,7 @@ bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)
 
 bool CU::isSameCtu(const CodingUnit& cu, const CodingUnit& cu2)
 {
-  uint32_t ctuSizeBit = g_aucLog2[cu.cs->sps->getMaxCUWidth()];
+  uint32_t ctuSizeBit = floorLog2(cu.cs->sps->getMaxCUWidth());
 
   Position pos1Ctu(cu.lumaPos().x  >> ctuSizeBit, cu.lumaPos().y  >> ctuSizeBit);
   Position pos2Ctu(cu2.lumaPos().x >> ctuSizeBit, cu2.lumaPos().y >> ctuSizeBit);
@@ -312,7 +312,7 @@ bool CU::firstTestISPHorSplit( const int width, const int height, const Componen
 {
   //this function decides which split mode (horizontal or vertical) is tested first (encoder only)
   //we check the logarithmic aspect ratios of the block
-  int aspectRatio = g_aucLog2[width] - g_aucLog2[height];
+  int aspectRatio = floorLog2(width) - floorLog2(height);
   if( aspectRatio > 0 )
   {
     return true;
@@ -332,18 +332,18 @@ bool CU::firstTestISPHorSplit( const int width, const int height, const Componen
     const int cuAbove1dSplit = cuAbove != nullptr && cuAbove->predMode == MODE_INTRA ? cuAbove->ispMode               :  0;
     if( cuLeftWidth != -1 && cuAboveWidth == -1 )
     {
-      int cuLeftAspectRatio = g_aucLog2[cuLeftWidth] - g_aucLog2[cuLeftHeight];
+      int cuLeftAspectRatio = floorLog2(cuLeftWidth) - floorLog2(cuLeftHeight);
       return cuLeftAspectRatio < 0 ? false : cuLeftAspectRatio > 0 ? true : cuLeft1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
     }
     else if( cuLeftWidth == -1 && cuAboveWidth != -1 )
     {
-      int cuAboveAspectRatio = g_aucLog2[cuAboveWidth] - g_aucLog2[cuAboveHeight];
+      int cuAboveAspectRatio = floorLog2(cuAboveWidth) - floorLog2(cuAboveHeight);
       return cuAboveAspectRatio < 0 ? false : cuAboveAspectRatio > 0 ? true : cuAbove1dSplit == VER_INTRA_SUBPARTITIONS ? false : true;
     }
     else if( cuLeftWidth != -1 && cuAboveWidth != -1 )
     {
-      int cuLeftAspectRatio = g_aucLog2[cuLeftWidth] - g_aucLog2[cuLeftHeight];
-      int cuAboveAspectRatio = g_aucLog2[cuAboveWidth] - g_aucLog2[cuAboveHeight];
+      int cuLeftAspectRatio = floorLog2(cuLeftWidth) - floorLog2(cuLeftHeight);
+      int cuAboveAspectRatio = floorLog2(cuAboveWidth) - floorLog2(cuAboveHeight);
       if( cuLeftAspectRatio < 0 && cuAboveAspectRatio < 0 )
       {
         return false;
@@ -426,7 +426,7 @@ bool CU::canUseISP( const CodingUnit &cu, const ComponentID compID )
 
 bool CU::canUseISP( const int width, const int height, const int maxTrSize )
 {
-  bool  notEnoughSamplesToSplit = ( g_aucLog2[width] + g_aucLog2[height] <= ( g_aucLog2[MIN_TB_SIZEY] << 1 ) );
+  bool  notEnoughSamplesToSplit = ( floorLog2(width) + floorLog2(height) <= ( floorLog2(MIN_TB_SIZEY) << 1 ) );
   bool  cuSizeLargerThanMaxTrSize = width > maxTrSize || height > maxTrSize;
   if ( notEnoughSamplesToSplit || cuSizeLargerThanMaxTrSize )
   {
@@ -451,11 +451,11 @@ uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit 
     nonSplitDimensionSize = height;
   }
 
-  const int minNumberOfSamplesPerCu = 1 << ( ( g_aucLog2[MIN_TB_SIZEY] << 1 ) );
-  const int factorToMinSamples = nonSplitDimensionSize < minNumberOfSamplesPerCu ? minNumberOfSamplesPerCu >> g_aucLog2[nonSplitDimensionSize] : 1;
+  const int minNumberOfSamplesPerCu = 1 << ( ( floorLog2(MIN_TB_SIZEY) << 1 ) );
+  const int factorToMinSamples = nonSplitDimensionSize < minNumberOfSamplesPerCu ? minNumberOfSamplesPerCu >> floorLog2(nonSplitDimensionSize) : 1;
   partitionSize = ( splitDimensionSize >> divShift ) < factorToMinSamples ? factorToMinSamples : ( splitDimensionSize >> divShift );
 
-  CHECK( g_aucLog2[partitionSize] + g_aucLog2[nonSplitDimensionSize] < g_aucLog2[minNumberOfSamplesPerCu], "A partition has less than the minimum amount of samples!" );
+  CHECK( floorLog2(partitionSize) + floorLog2(nonSplitDimensionSize) < floorLog2(minNumberOfSamplesPerCu), "A partition has less than the minimum amount of samples!" );
   return partitionSize;
 }
 
@@ -468,7 +468,7 @@ bool CU::allLumaCBFsAreZero(const CodingUnit& cu)
   }
   else
   {
-    int numTotalTUs = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[cu.firstTU->lheight()] : cu.lwidth() >> g_aucLog2[cu.firstTU->lwidth()];
+    int numTotalTUs = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(cu.firstTU->lheight()) : cu.lwidth() >> floorLog2(cu.firstTU->lwidth());
     TransformUnit* tuPtr = cu.firstTU;
     for (int tuIdx = 0; tuIdx < numTotalTUs; tuIdx++)
     {
@@ -974,7 +974,7 @@ int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, co
   int              width        = int( pred.width );
   int              height       = int( pred.height );
   int              modeShift[ ] = { 0, 6, 10, 12, 14, 15 };
-  int              deltaSize    = abs( g_aucLog2[ width ] - g_aucLog2[ height ] );
+  int              deltaSize    = abs( floorLog2( width ) - floorLog2( height ) );
   int              predMode     = dirMode;
 
   if( width > height && dirMode < 2 + modeShift[ deltaSize ] )
@@ -1786,7 +1786,7 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
 // for ibc pu validation
 bool PU::isBlockVectorValid(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xStartInCU, int yStartInCU, int xBv, int yBv, int ctuSize)
 {
-  const int ctuSizeLog2 = g_aucLog2[ctuSize];
+  const int ctuSizeLog2 = floorLog2(ctuSize);
 
   int refRightX = xPos + xBv + width - 1;
   int refBottomY = yPos + yBv + height - 1;
@@ -2122,8 +2122,8 @@ void PU::getIbcMVPsEncOnly(PredictionUnit &pu, Mv* mvPred, int& nbPred)
   const PreCalcValues   &pcv = *pu.cs->pcv;
   const int  cuWidth = pu.blocks[COMPONENT_Y].width;
   const int  cuHeight = pu.blocks[COMPONENT_Y].height;
-  const int  log2UnitWidth = g_aucLog2[pcv.minCUWidth];
-  const int  log2UnitHeight = g_aucLog2[pcv.minCUHeight];
+  const int  log2UnitWidth = floorLog2(pcv.minCUWidth);
+  const int  log2UnitHeight = floorLog2(pcv.minCUHeight);
   const int  totalAboveUnits = (cuWidth >> log2UnitWidth) + 1;
   const int  totalLeftUnits = (cuHeight >> log2UnitHeight) + 1;
 
@@ -2526,12 +2526,12 @@ void PU::xInheritedAffineMv( const PredictionUnit &pu, const PredictionUnit* puN
   int shift = MAX_CU_DEPTH;
   int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
 
-  iDMvHorX = (mvRT - mvLT).getHor() << (shift - g_aucLog2[neiW]);
-  iDMvHorY = (mvRT - mvLT).getVer() << (shift - g_aucLog2[neiW]);
+  iDMvHorX = (mvRT - mvLT).getHor() << (shift - floorLog2(neiW));
+  iDMvHorY = (mvRT - mvLT).getVer() << (shift - floorLog2(neiW));
   if ( puNeighbour->cu->affineType == AFFINEMODEL_6PARAM && !isTopCtuBoundary )
   {
-    iDMvVerX = (mvLB - mvLT).getHor() << (shift - g_aucLog2[neiH]);
-    iDMvVerY = (mvLB - mvLT).getVer() << (shift - g_aucLog2[neiH]);
+    iDMvVerX = (mvLB - mvLT).getHor() << (shift - floorLog2(neiH));
+    iDMvVerY = (mvLB - mvLT).getVer() << (shift - floorLog2(neiH));
   }
   else
   {
@@ -2942,7 +2942,7 @@ void PU::getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], i
   int cuH = pu.Y().height;
   int vx, vy;
   int shift = MAX_CU_DEPTH;
-  int shiftHtoW = shift + g_aucLog2[cuW] - g_aucLog2[cuH];
+  int shiftHtoW = shift + floorLog2(cuW) - floorLog2(cuH);
 
   // motion info
   Mv cMv[2][4];
@@ -3518,13 +3518,13 @@ void PU::setAllAffineMv(PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPic
     }
   }
   int deltaMvHorX, deltaMvHorY, deltaMvVerX, deltaMvVerY;
-  deltaMvHorX = (affRT - affLT).getHor() << (shift - g_aucLog2[width]);
-  deltaMvHorY = (affRT - affLT).getVer() << (shift - g_aucLog2[width]);
+  deltaMvHorX = (affRT - affLT).getHor() << (shift - floorLog2(width));
+  deltaMvHorY = (affRT - affLT).getVer() << (shift - floorLog2(width));
   int height = pu.Y().height;
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
-    deltaMvVerX = (affLB - affLT).getHor() << (shift - g_aucLog2[height]);
-    deltaMvVerY = (affLB - affLT).getVer() << (shift - g_aucLog2[height]);
+    deltaMvVerX = (affLB - affLT).getHor() << (shift - floorLog2(height));
+    deltaMvVerY = (affLB - affLT).getVer() << (shift - floorLog2(height));
   }
   else
   {
@@ -3580,7 +3580,7 @@ void PU::setAllAffineMv(PredictionUnit& pu, Mv affLT, Mv affRT, Mv affLB, RefPic
 void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
 {
   Position puPos = pu.lumaPos();
-  int log2CtuSize = g_aucLog2[pu.cs->sps->getCTUSize()];
+  int log2CtuSize = floorLog2(pu.cs->sps->getCTUSize());
   int ctuX = ((puPos.x >> log2CtuSize) << log2CtuSize);
   int ctuY = ((puPos.y >> log2CtuSize) << log2CtuSize);
 #if JVET_O1164_PS
@@ -4103,8 +4103,8 @@ void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, c
 #endif
   }
 
-  int32_t idxW  = (int32_t)(g_aucLog2[pu.lwidth() ] - MIN_CU_LOG2);
-  int32_t idxH  = (int32_t)(g_aucLog2[pu.lheight()] - MIN_CU_LOG2);
+  int32_t idxW  = (int32_t)(floorLog2(pu.lwidth() ) - MIN_CU_LOG2);
+  int32_t idxH  = (int32_t)(floorLog2(pu.lheight()) - MIN_CU_LOG2);
   for( int32_t y = 0; y < mb.height; y++ )
   {
     for( int32_t x = 0; x < mb.width; x++ )
@@ -4652,7 +4652,7 @@ bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
 {
   const Size &size=tu.blocks[compID];
   const bool isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
-  return (!isTransformSkip) && (((g_aucLog2[size.width] + g_aucLog2[size.height]) & 1) == 1);
+  return (!isTransformSkip) && (((floorLog2(size.width) + floorLog2(size.height)) & 1) == 1);
 }
 
 bool TU::needsBlockSizeTrafoScale( const TransformUnit &tu, const ComponentID &compID )

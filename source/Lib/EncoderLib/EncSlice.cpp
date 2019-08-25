@@ -1091,7 +1091,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
 #else
     const unsigned     mts = std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth);
 #endif
-    const unsigned mtsLog2 = (unsigned)g_aucLog2[mts];
+    const unsigned mtsLog2 = (unsigned)floorLog2(mts);
     const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
     unsigned numAct = 0;    // number of block activities
     double   sumAct = 0.0; // sum of all block activities

@@ -1613,7 +1613,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[curCu.cs->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(curCu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
@@ -1631,7 +1631,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const P
 {
   const CodingUnit* cu = getCU( pos, _chType );
   const bool wavefrontsEnabled = this->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[this->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(this->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   int xCurr = curPos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
@@ -1644,7 +1644,7 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[curPu.cs->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(curPu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
@@ -1664,7 +1664,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[curTu.cs->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(curTu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;

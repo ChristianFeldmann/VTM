@@ -2922,7 +2922,7 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
         bool lastCbfIsInferred = false;
         if( cu.ispMode )
         {
-          uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+          uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
           if( subTuCounter == nTus - 1 )
           {
             TransformUnit* tuPointer = cu.firstTU;
@@ -3137,7 +3137,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
       bool lastCbfIsInferred = false;
       if (cu.ispMode)
       {
-        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
         if (subTuCounter == nTus - 1)
         {
           TransformUnit* tuPointer = cu.firstTU;

@@ -1228,8 +1228,8 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
   int32_t strideSrc0 = predSrc0.get(compIdx).stride;
   int32_t strideSrc1 = predSrc1.get(compIdx).stride;
 
-  int8_t log2Width = g_aucLog2[width] - 1;
-  int8_t log2Height = g_aucLog2[height] - 1;
+  int8_t log2Width = floorLog2(width) - 1;
+  int8_t log2Height = floorLog2(height) - 1;
   const char    log2WeightBase = 3;
   const ClpRng  clpRng = pu.cu->slice->clpRngs().comp[compIdx];
   const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;

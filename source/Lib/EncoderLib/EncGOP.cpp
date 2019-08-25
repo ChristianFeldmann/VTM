@@ -2447,9 +2447,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       const PreCalcValues &pcv = *pcPic->cs->pcv;
 #if MAX_TB_SIZE_SIGNALLING
-      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min (pcPic->cs->sps->getMaxTbSize(), pcv.maxCUWidth)];
+      const unsigned   mtsLog2 = (unsigned)floorLog2(std::min (pcPic->cs->sps->getMaxTbSize(), pcv.maxCUWidth));
 #else
-      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth)];
+      const unsigned   mtsLog2 = (unsigned)floorLog2(std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth));
 #endif
       pcPic->m_subCtuQP.resize ((pcv.maxCUWidth >> mtsLog2) * (pcv.maxCUHeight >> mtsLog2));
     }

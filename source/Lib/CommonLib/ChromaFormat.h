@@ -110,7 +110,7 @@ static inline uint64_t getTotalFracBits(const uint32_t width, const uint32_t hei
 
 static inline int getTransformShift(const int channelBitDepth, const Size size, const int maxLog2TrDynamicRange)
 {
-  return maxLog2TrDynamicRange - channelBitDepth - ( ( g_aucLog2[size.width] + g_aucLog2[size.height] ) >> 1 );
+  return maxLog2TrDynamicRange - channelBitDepth - ( ( floorLog2(size.width) + floorLog2(size.height) ) >> 1 );
 }
 
 

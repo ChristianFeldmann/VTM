@@ -217,9 +217,7 @@ std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry)     //in
   {
     in >> entry.m_deltaRefPics1[i];
   }
-#if JVET_N0100_PROPOSAL1
-  in >> entry.m_ltrp_in_slice_header_flag;
-#endif 
+
   return in;
 }
 

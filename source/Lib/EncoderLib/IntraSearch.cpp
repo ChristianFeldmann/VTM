@@ -290,8 +290,8 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 {
   CodingStructure       &cs            = *cu.cs;
   const SPS             &sps           = *cs.sps;
-  const uint32_t             uiWidthBit    = g_aucLog2[partitioner.currArea().lwidth() ];
-  const uint32_t             uiHeightBit   =                   g_aucLog2[partitioner.currArea().lheight()];
+  const uint32_t             uiWidthBit    = floorLog2(partitioner.currArea().lwidth() );
+  const uint32_t             uiHeightBit   =                   floorLog2(partitioner.currArea().lheight());
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) * FRAC_BITS_SCALE;
@@ -366,8 +366,8 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_regIntraRDListWithCosts.clear();
     m_ispTestedModes.clear();
     //save the number of subpartitions
-    m_ispTestedModes.numTotalParts[0] = (int)height >> g_aucLog2[CU::getISPSplitDim(width, height, TU_1D_HORZ_SPLIT)];
-    m_ispTestedModes.numTotalParts[1] = (int)width >> g_aucLog2[CU::getISPSplitDim(width, height, TU_1D_VERT_SPLIT)];
+    m_ispTestedModes.numTotalParts[0] = (int)height >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_HORZ_SPLIT));
+    m_ispTestedModes.numTotalParts[1] = (int)width >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_VERT_SPLIT));
 #else
     //variables for the full RD list without MRL modes
     m_rdModeListWithoutMrl      .clear();
@@ -469,9 +469,9 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         if( testMip)
         {
 #if JVET_O0925_MIP_SIMPLIFICATIONS
-          numModesForFullRD += fastMip? std::max(numModesForFullRD, g_aucLog2[std::min(pu.lwidth(), pu.lheight())] - 1) : numModesForFullRD;
+          numModesForFullRD += fastMip? std::max(numModesForFullRD, floorLog2(std::min(pu.lwidth(), pu.lheight())) - 1) : numModesForFullRD;
 #else
-          numModesForFullRD += fastMip? std::max(2, g_aucLog2[std::min(pu.lwidth(), pu.lheight())] - 1) : numModesForFullRD;
+          numModesForFullRD += fastMip? std::max(2, floorLog2(std::min(pu.lwidth(), pu.lheight())) - 1) : numModesForFullRD;
 #endif
         }
         const int numHadCand = (testMip ? 2 : 1) * 3;
@@ -2484,7 +2484,7 @@ void IntraSearch::xEncSubdivCbfQT( CodingStructure &cs, Partitioner &partitioner
       if( ispType != TU_NO_ISP )
       {
         bool rootCbfSoFar = false;
-        uint32_t nTus = currCU.ispMode == HOR_INTRA_SUBPARTITIONS ? currCU.lheight() >> g_aucLog2[currTU.lheight()] : currCU.lwidth() >> g_aucLog2[currTU.lwidth()];
+        uint32_t nTus = currCU.ispMode == HOR_INTRA_SUBPARTITIONS ? currCU.lheight() >> floorLog2(currTU.lheight()) : currCU.lwidth() >> floorLog2(currTU.lwidth());
         if( subTuCounter == nTus - 1 )
         {
           TransformUnit* tuPointer = currCU.firstTU;
@@ -3711,7 +3711,7 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         {
           //more restrictive exit condition
           bool tuIsDividedInRows = CU::divideTuInRows( cu );
-          int nSubPartitions = tuIsDividedInRows ? cu.lheight() >> g_aucLog2[cu.firstTU->lheight()] : cu.lwidth() >> g_aucLog2[cu.firstTU->lwidth()];
+          int nSubPartitions = tuIsDividedInRows ? cu.lheight() >> floorLog2(cu.firstTU->lheight()) : cu.lwidth() >> floorLog2(cu.firstTU->lwidth());
           double threshold = nSubPartitions == 2 ? 0.95 : subTuCounter == 1 ? 0.83 : 0.91;
           if( subTuCounter < nSubPartitions && csSplit->cost > bestCostSoFar*threshold )
           {
@@ -4563,7 +4563,7 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
       const int angWindowSize = 5;
       int       numSubPartsLeftMode, numSubPartsRightMode, numSubPartsRefMode, leftIntraMode = -1, rightIntraMode = -1;
       int       windowSize = candidate.modeId > DC_IDX ? angWindowSize : 1;
-      int       numSamples = cuSize.width << g_aucLog2[cuSize.height];
+      int       numSamples = cuSize.width << floorLog2(cuSize.height);
       int       numSubPartsLimit = numSamples >= 256 ? maxNumSubPartitions - 1 : 2;
 
       xFindAlreadyTestedNearbyIntraModes((int)candidate.modeId, &leftIntraMode, &rightIntraMode, (ISPType)candidate.ispMod, windowSize);

@@ -158,7 +158,7 @@ int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY
   int yPos = areaY.lumaPos().y;
   int ctuSize = cs.sps->getCTUSize();
   int numNeighbor = std::min(64, ctuSize);
-  int numNeighborLog = g_aucLog2[numNeighbor];
+  int numNeighborLog = floorLog2(numNeighbor);
   if (ctuSize == 128)
   {
     xPos = xPos / 64 * 64;

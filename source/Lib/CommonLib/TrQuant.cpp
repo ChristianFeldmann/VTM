@@ -837,8 +837,8 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   const unsigned maxLog2TrDynamicRange  = tu.cs->sps->getMaxLog2TrDynamicRange( toChannelType( compID ) );
   const unsigned bitDepth               = tu.cs->sps->getBitDepth(              toChannelType( compID ) );
   const int      TRANSFORM_MATRIX_SHIFT = g_transformMatrixShift[TRANSFORM_FORWARD];
-  const uint32_t transformWidthIndex    = g_aucLog2[width ] - 1;  // nLog2WidthMinus1, since transform start from 2-point
-  const uint32_t transformHeightIndex   = g_aucLog2[height] - 1;  // nLog2HeightMinus1, since transform start from 2-point
+  const uint32_t transformWidthIndex    = floorLog2(width ) - 1;  // nLog2WidthMinus1, since transform start from 2-point
+  const uint32_t transformHeightIndex   = floorLog2(height) - 1;  // nLog2HeightMinus1, since transform start from 2-point
 
 
   int trTypeHor = DCT2;
@@ -889,8 +889,8 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
 
   if( width > 1 && height > 1 ) // 2-D transform
   {
-    const int      shift_1st              = ((g_aucLog2[width ]) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
-    const int      shift_2nd              =  (g_aucLog2[height])            + TRANSFORM_MATRIX_SHIFT                          + COM16_C806_TRANS_PREC;
+    const int      shift_1st              = ((floorLog2(width )) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
+    const int      shift_2nd              =  (floorLog2(height))            + TRANSFORM_MATRIX_SHIFT                          + COM16_C806_TRANS_PREC;
     CHECK( shift_1st < 0, "Negative shift" );
     CHECK( shift_2nd < 0, "Negative shift" );
   TCoeff *tmp = ( TCoeff * ) alloca( width * height * sizeof( TCoeff ) );
@@ -900,14 +900,14 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   }
   else if( height == 1 ) //1-D horizontal transform
   {
-    const int      shift              = ((g_aucLog2[width ]) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
+    const int      shift              = ((floorLog2(width )) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
     CHECKD( ( transformWidthIndex < 0 ), "There is a problem with the width." );
     fastFwdTrans[trTypeHor][transformWidthIndex]( block, dstCoeff.buf, shift, 1, 0, skipWidth );
   }
   else //if (iWidth == 1) //1-D vertical transform
   {
-    int shift = ( ( g_aucLog2[height] ) + bitDepth + TRANSFORM_MATRIX_SHIFT ) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
+    int shift = ( ( floorLog2(height) ) + bitDepth + TRANSFORM_MATRIX_SHIFT ) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
     CHECKD( ( transformHeightIndex < 0 ), "There is a problem with the height." );
     fastFwdTrans[trTypeVer][transformHeightIndex]( block, dstCoeff.buf, shift, 1, 0, skipHeight );
@@ -923,8 +923,8 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   const int      TRANSFORM_MATRIX_SHIFT = g_transformMatrixShift[TRANSFORM_INVERSE];
   const TCoeff   clipMinimum            = -( 1 << maxLog2TrDynamicRange );
   const TCoeff   clipMaximum            =  ( 1 << maxLog2TrDynamicRange ) - 1;
-  const uint32_t transformWidthIndex    = g_aucLog2[width ] - 1;                                // nLog2WidthMinus1, since transform start from 2-point
-  const uint32_t transformHeightIndex   = g_aucLog2[height] - 1;                                // nLog2HeightMinus1, since transform start from 2-point
+  const uint32_t transformWidthIndex    = floorLog2(width ) - 1;                                // nLog2WidthMinus1, since transform start from 2-point
+  const uint32_t transformHeightIndex   = floorLog2(height) - 1;                                // nLog2HeightMinus1, since transform start from 2-point
 
 
   int trTypeHor = DCT2;
@@ -1096,7 +1096,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
     }
 
     double scaleSAD=1.0;
-    if (isLuma(compID) && tu.mtsIdx==MTS_SKIP && ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1 )
+    if (isLuma(compID) && tu.mtsIdx==MTS_SKIP && ((floorLog2(width) + floorLog2(height)) & 1) == 1 )
     {
       scaleSAD=1.0/1.414213562; // compensate for not scaling transform skip coefficients by 1/sqrt(2)
     }
@@ -1111,7 +1111,7 @@ void TrQuant::transformNxN( TransformUnit &tu, const ComponentID &compID, const 
 #endif
   int numTests = 0;
   std::vector<TrCost>::iterator itC = trCosts.begin();
-  const double fac   = facBB[g_aucLog2[std::max(width, height)]-2];
+  const double fac   = facBB[floorLog2(std::max(width, height))-2];
   const double thr   = fac * trCosts.begin()->first;
   const double thrTS = trCosts.begin()->first;
   while( itC != trCosts.end() )
@@ -1242,7 +1242,7 @@ void TrQuant::xGetCoeffEnergy( TransformUnit &tu, const ComponentID &compID, con
   {
     const int width   = tu.cu->blocks[compID].width;
     const int height  = tu.cu->blocks[compID].height;
-    const int log2Sl  = width <= height ? g_aucLog2[height >> g_aucLog2[width]] : g_aucLog2[width >> g_aucLog2[height]];
+    const int log2Sl  = width <= height ? floorLog2(height >> floorLog2(width)) : floorLog2(width >> floorLog2(height));
     const int diPos1  = width <= height ? width  : height;
     const int diPos2  = width <= height ? height : width;
     const int ofsPos1 = width <= height ? 1 : coeffs.stride;

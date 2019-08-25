@@ -729,7 +729,7 @@ static inline int floorLog2(uint32_t x)
 
 static inline int ceilLog2(uint32_t x)
 {
-  return (x==0) ? -1 : floorLog2(x - 1);
+  return (x==0) ? -1 : floorLog2(x - 1) + 1;
 }
 
 

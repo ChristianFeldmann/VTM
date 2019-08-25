@@ -981,8 +981,6 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
 #if !JVET_O0491_HLS_CLEANUP
     const int alfChromaIdc = m_alfParamTemp.enabledFlag[COMPONENT_Cb] * 2 + m_alfParamTemp.enabledFlag[COMPONENT_Cr];
     cost += lengthTruncatedUnary(alfChromaIdc, 3) * m_lambda[channel];
-#else
-    cost += 2 * m_lambda[channel]; // slice_alf_chroma_idc   u(2)
 #endif
   }
 
@@ -1450,7 +1448,7 @@ double EncAdaptiveLoopFilter::getUnfilteredDistortion( AlfCovariance* cov, Chann
 #if !JVET_O0491_HLS_CLEANUP
     dist = getUnfilteredDistortion( cov, 1 ) + lengthTruncatedUnary( 0, 3 ) * m_lambda[COMPONENT_Cb];
 #else
-    dist = getUnfilteredDistortion( cov, 1 ) + 2 * m_lambda[COMPONENT_Cb]; // slice_alf_chroma_idc    u(2)
+    dist = getUnfilteredDistortion( cov, 1 );
 #endif
   }
   return dist;
@@ -3419,7 +3417,7 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
 #endif
   setCtuEnableFlag(m_ctuEnableFlag, CHANNEL_TYPE_CHROMA, 1);
   getFrameStats(CHANNEL_TYPE_CHROMA, 0);
-  costOff = getUnfilteredDistortion(m_alfCovarianceFrame[CHANNEL_TYPE_CHROMA][0], CHANNEL_TYPE_CHROMA) + m_lambda[CHANNEL_TYPE_CHROMA] * 1.0;
+  costOff = getUnfilteredDistortion(m_alfCovarianceFrame[CHANNEL_TYPE_CHROMA][0], CHANNEL_TYPE_CHROMA);
   costMin = MAX_DOUBLE;
   m_CABACEstimator->getCtx() = AlfCtx(ctxBest);
   ctxStart = AlfCtx(m_CABACEstimator->getCtx());

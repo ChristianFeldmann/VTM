@@ -60,6 +60,8 @@
 #define RPR_CONF_WINDOW                                   1
 #endif
 
+#define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+
 #define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
 #define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
 

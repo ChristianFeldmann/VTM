@@ -46,13 +46,13 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_chType                    (toChannelType(m_compID))
   , m_width                     (tu.block(m_compID).width)
   , m_height                    (tu.block(m_compID).height)
-  , m_log2CGWidth               ( g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0] )
-  , m_log2CGHeight              ( g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1] )
+  , m_log2CGWidth               ( g_log2SbbSize[ floorLog2(m_width) ][ floorLog2(m_height) ][0] )
+  , m_log2CGHeight              ( g_log2SbbSize[ floorLog2(m_width) ][ floorLog2(m_height) ][1] )
   , m_log2CGSize                (m_log2CGWidth + m_log2CGHeight)
   , m_widthInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_width) >> m_log2CGWidth)
   , m_heightInGroups(std::min<unsigned>(JVET_C0024_ZERO_OUT_TH, m_height) >> m_log2CGHeight)
-  , m_log2BlockWidth            (g_aucLog2[m_width])
-  , m_log2BlockHeight           (g_aucLog2[m_height])
+  , m_log2BlockWidth            ((unsigned)floorLog2(m_width))
+  , m_log2BlockHeight           ((unsigned)floorLog2(m_height))
   , m_maxNumCoeff               (m_width * m_height)
   , m_signHiding                (signHide)
   , m_extendedPrecision         (tu.cs->sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag())
@@ -279,7 +279,7 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, 
 
 unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )
 {
-  return ( 7 - ((g_aucLog2[pu.lumaSize().width] + g_aucLog2[pu.lumaSize().height] + 1) >> 1) );
+  return ( 7 - ((floorLog2(pu.lumaSize().width) + floorLog2(pu.lumaSize().height) + 1) >> 1) );
 }
 
 unsigned DeriveCtx::CtxAffineFlag( const CodingUnit& cu )

@@ -1,4 +1,4 @@
-﻿/* The copyright in this software is being made available under the BSD
+/* The copyright in this software is being made available under the BSD
 * License, included below. This software may be subject to other third party
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
@@ -325,7 +325,7 @@ void MatrixIntraPrediction::doDownsampling(int* dst, const int* src, const SizeT
   const SizeType downsmpFactor = srcLen / dstLen;
   CHECKD( srcLen != dstLen * downsmpFactor, "Need integer downsampling factor." );
   CHECKD( ( downsmpFactor & ( downsmpFactor - 1 ) ) != 0, "Need power of two downsampling factor." );
-  const int log2DownsmpFactor = g_aucLog2[ downsmpFactor ];
+  const int log2DownsmpFactor = floorLog2( downsmpFactor );
 #if JVET_O0925_MIP_SIMPLIFICATIONS
   const int roundingOffset = ( 1 << ( log2DownsmpFactor - 1 ) );
 #else
@@ -408,7 +408,7 @@ void MatrixIntraPrediction::predictionUpsampling1D(int* const dst, const int* co
 #if !JVET_O0925_MIP_SIMPLIFICATIONS
   // TODO: Check if src and dst can ever be negative. If not assign unsigned type and simplify rounding.
 #endif
-  const int log2UpsmpFactor = g_aucLog2[ upsmpFactor ];
+  const int log2UpsmpFactor = floorLog2( upsmpFactor );
   CHECKD( upsmpFactor <= 1, "Upsampling factor must be at least 2." );
 #if JVET_O0925_MIP_SIMPLIFICATIONS
   const int roundingOffset = 1 << (log2UpsmpFactor - 1);

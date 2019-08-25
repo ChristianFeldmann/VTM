@@ -3158,7 +3158,7 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
         bool lastCbfIsInferred = false;
         if( cu.ispMode )
         {
-          uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+          uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
           if( subTuCounter == nTus - 1 )
           {
             TransformUnit* tuPointer = cu.firstTU;
@@ -3353,7 +3353,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, ChromaCbfs& c
       bool lastCbfIsInferred = false;
       if (cu.ispMode)
       {
-        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
         if (subTuCounter == nTus - 1)
         {
           TransformUnit* tuPointer = cu.firstTU;

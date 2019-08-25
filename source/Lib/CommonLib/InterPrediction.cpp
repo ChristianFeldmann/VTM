@@ -945,12 +945,12 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
   const int iBit = MAX_CU_DEPTH;
   int iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY;
-  iDMvHorX = (mvRT - mvLT).getHor() << (iBit - g_aucLog2[cxWidth]);
-  iDMvHorY = (mvRT - mvLT).getVer() << (iBit - g_aucLog2[cxWidth]);
+  iDMvHorX = (mvRT - mvLT).getHor() << (iBit - floorLog2(cxWidth));
+  iDMvHorY = (mvRT - mvLT).getVer() << (iBit - floorLog2(cxWidth));
   if ( pu.cu->affineType == AFFINEMODEL_6PARAM )
   {
-    iDMvVerX = (mvLB - mvLT).getHor() << (iBit - g_aucLog2[cxHeight]);
-    iDMvVerY = (mvLB - mvLT).getVer() << (iBit - g_aucLog2[cxHeight]);
+    iDMvVerX = (mvLB - mvLT).getHor() << (iBit - floorLog2(cxHeight));
+    iDMvVerY = (mvLB - mvLT).getVer() << (iBit - floorLog2(cxHeight));
   }
   else
   {
@@ -1650,12 +1650,12 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
       Mv mvLB = pu.mvAffi[list][2];
 
       int dMvHorX, dMvHorY, dMvVerX, dMvVerY;
-      dMvHorX = (mvRT - mvLT).getHor() << (bit - g_aucLog2[width]);
-      dMvHorY = (mvRT - mvLT).getVer() << (bit - g_aucLog2[width]);
+      dMvHorX = (mvRT - mvLT).getHor() << (bit - floorLog2(width));
+      dMvHorY = (mvRT - mvLT).getVer() << (bit - floorLog2(width));
       if (pu.cu->affineType == AFFINEMODEL_6PARAM)
       {
-        dMvVerX = (mvLB - mvLT).getHor() << (bit - g_aucLog2[height]);
-        dMvVerY = (mvLB - mvLT).getVer() << (bit - g_aucLog2[height]);
+        dMvVerX = (mvLB - mvLT).getHor() << (bit - floorLog2(height));
+        dMvVerY = (mvLB - mvLT).getVer() << (bit - floorLog2(height));
       }
       else
       {
@@ -2893,7 +2893,7 @@ void InterPrediction::xFillIBCBuffer(CodingUnit &cu)
 
       const unsigned int lcuWidth = cu.cs->slice->getSPS()->getMaxCUWidth();
       const int shiftSample = ::getComponentScaleX(area.compID, cu.chromaFormat);
-      const int ctuSizeLog2 = g_aucLog2[lcuWidth] - shiftSample;
+      const int ctuSizeLog2 = floorLog2(lcuWidth) - shiftSample;
       const int pux = area.x & ((m_IBCBufferWidth >> shiftSample) - 1);
       const int puy = area.y & (( 1 << ctuSizeLog2 ) - 1);
       const CompArea dstArea = CompArea(area.compID, cu.chromaFormat, Position(pux, puy), Size(area.width, area.height));
@@ -2909,7 +2909,7 @@ void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, c
 {
   const unsigned int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
   int shiftSample = ::getComponentScaleX(compID, pu.chromaFormat);
-  const int ctuSizeLog2 = g_aucLog2[lcuWidth] - shiftSample;
+  const int ctuSizeLog2 = floorLog2(lcuWidth) - shiftSample;
   pu.bv = pu.mv[REF_PIC_LIST_0];
   pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT);
   int refx, refy;

@@ -1769,7 +1769,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     if( m_pcEncCfg->getUseFastLCTU() )
     {
       unsigned minDepth = 0;
-      unsigned maxDepth = g_aucLog2[tempCS->sps->getCTUSize()] - g_aucLog2[tempCS->sps->getMinQTSize(slice.getSliceType(), partitioner.chType)];
+      unsigned maxDepth = floorLog2(tempCS->sps->getCTUSize()) - floorLog2(tempCS->sps->getMinQTSize(slice.getSliceType(), partitioner.chType));
 
       if( auto ad = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )
       {
@@ -2168,7 +2168,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
                 CodingUnit &cu = *bestCS->cus.front();
                 if( cu.firstTU->mtsIdx == MTS_SKIP )
                 {
-                  if( ( g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].width ] + g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].height ] ) >= 6 )
+                  if( ( floorLog2( cu.firstTU->blocks[ COMPONENT_Y ].width ) + floorLog2( cu.firstTU->blocks[ COMPONENT_Y ].height ) ) >= 6 )
                   {
                     endLfnstIdx = 0;
                   }
@@ -2189,7 +2189,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #if JVET_O0502_ISP_CLEANUP
               double threshold = 1.4;
 #else
-              double nSamples  = ( double ) ( cu.lwidth() << g_aucLog2[ cu.lheight() ] );
+              double nSamples  = ( double ) ( cu.lwidth() << floorLog2( cu.lheight() ) );
               double threshold = 1 + 1.4 / sqrt( nSamples );
 #endif
 
@@ -3280,7 +3280,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
 
-    if( abs(g_aucLog2[cu.lwidth()] - g_aucLog2[cu.lheight()]) >= 2 )
+    if( abs(floorLog2(cu.lwidth()) - floorLog2(cu.lheight())) >= 2 )
     {
       numTriangleCandidate = 30;
     }

@@ -546,7 +546,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       const uint32_t tileRowsMinus1 = pcPPS->getNumTileRowsMinus1();
       const uint32_t numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
       const uint32_t numTilesInPic = (tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1);
-      int codeLength = (int)ceil(log2(numTilesInPic));
+      int codeLength = ceilLog2(numTilesInPic);
       int codeLength2 = codeLength;
       if (numSlicesInPic > 0)
       {
@@ -559,7 +559,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           {
             READ_CODE( codeLength, uiCode, "top_left_brick_idx" );
             topLeft[i] = uiCode;
-            codeLength2 = (int)ceil(log2((numTilesInPic - topLeft[i] < 2) ? 2 : numTilesInPic - topLeft[i]));  //Bugfix
+            codeLength2 = ceilLog2((numTilesInPic - topLeft[i] < 2) ? 2 : numTilesInPic - topLeft[i]);
           }
           READ_CODE( codeLength2, uiCode, "bottom_right_brick_idx_delta");
           bottomRight[i] = topLeft[i] + uiCode;
@@ -652,7 +652,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #else
     uint32_t picWidth = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicWidthInLumaSamples(); // pcPPS->getPicWidthInLumaSamples();
 #endif
-    int numBits = (int)ceil(log2(picWidth) - 3);
+    int numBits = ceilLog2(picWidth) - 3;
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
       READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_x" ); pcPPS->setVirtualBoundariesPosX( uiCode << 3, i );
@@ -663,7 +663,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #else
     uint32_t picHeight = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicHeightInLumaSamples(); // pcPPS->getPicHeightInLumaSamples();
 #endif
-    numBits = (int)ceil(log2(picHeight) - 3);
+    numBits = ceilLog2(picHeight) - 3;
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
       READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_y" ); pcPPS->setVirtualBoundariesPosY( uiCode << 3, i );
@@ -855,7 +855,7 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
     if (param.numLumaFilters > 1)
     {
 #if JVET_O0491_HLS_CLEANUP
-      const int length =  (int)ceil(log2(param.numLumaFilters));
+      const int length =  ceilLog2(param.numLumaFilters);
 #endif
       for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
       {
@@ -1790,7 +1790,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         if (sps->getNumRPL0() > 1)
         {
-          int numBits = (int)ceil(log2(sps->getNumRPL0()));
+          int numBits = ceilLog2(sps->getNumRPL0());
           READ_CODE(numBits, uiCode, "ref_pic_list_idx[0]");
           pcSlice->setRPL0idx(uiCode);
           pcSlice->setRPL0(sps->getRPLList0()->getReferencePictureList(uiCode));
@@ -1845,7 +1845,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           if (sps->getNumRPL1() > 1)
           {
-            int numBits = (int)ceil(log2(sps->getNumRPL1()));
+            int numBits = ceilLog2(sps->getNumRPL1());
             READ_CODE(numBits, uiCode, "ref_pic_list_idx[1]");
             pcSlice->setRPL1idx(uiCode);
             pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(uiCode));

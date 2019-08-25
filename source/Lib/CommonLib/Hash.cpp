@@ -343,7 +343,7 @@ void TComHash::addToHashMapByRowWithPrecalData(uint32_t* picHash[2], bool* picIs
   addValue <<= m_CRCBits;
   int crcMask = 1 << m_CRCBits;
   crcMask -= 1;
-  int blockIdx = g_aucLog2[width] - 2;
+  int blockIdx = floorLog2(width) - 2;
 
   for (int xPos = 0; xPos < xEnd; xPos++)
   {

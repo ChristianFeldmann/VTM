@@ -1308,12 +1308,13 @@ void InterSearch::xIBCEstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
   //  Search key pattern initialization
   CPelBuf  tmpPattern = pBuf->Y();
   CPelBuf* pcPatternKey = &tmpPattern;
+  PelBuf tmpOrgLuma;
 
   if ((pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
   {
     const CompArea &area = pu.blocks[COMPONENT_Y];
     CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
-    PelBuf tmpOrgLuma = m_tmpStorageLCU.getBuf(tmpArea);
+    tmpOrgLuma = m_tmpStorageLCU.getBuf(tmpArea);
     tmpOrgLuma.copyFrom(tmpPattern);
     tmpOrgLuma.rspSignal(m_pcReshape->getFwdLUT());
     pcPatternKey = (CPelBuf*)&tmpOrgLuma;

@@ -3100,7 +3100,6 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
   TempCtx        ctxTempStart(m_CtxCache);
   TempCtx        ctxTempBest(m_CtxCache);
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
-  TempCtx        ctxTempFiltBest( m_CtxCache );
   TempCtx        ctxTempAltStart( m_CtxCache );
   TempCtx        ctxTempAltBest( m_CtxCache );
 #endif

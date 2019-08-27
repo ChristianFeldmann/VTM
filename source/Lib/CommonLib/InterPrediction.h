@@ -145,6 +145,9 @@ protected:
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                  , const bool& bioApplied
                                  , bool isIBC
+#if JVET_O1164_RPR
+                                 , const std::pair<int, int> scalingRatio = SCALE_1X
+#endif
                                  , SizeType dmvrWidth = 0
                                  , SizeType dmvrHeight = 0
                                  , bool bilinearMC = false
@@ -164,7 +167,11 @@ protected:
 #if JVET_O0070_PROF
   void xApplyBiPROF             (const PredictionUnit& pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng);
 #endif
+#if JVET_O1164_RPR
+  void xPredAffineBlk           ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng, const std::pair<int, int> scalingRatio = SCALE_1X );
+#else
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
+#endif
 
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
 
@@ -247,7 +254,7 @@ public:
 #endif
 
 #if JVET_O1164_RPR
-  bool xPredInterBlkRPR( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng );
+  bool xPredInterBlkRPR( const std::pair<int, int>& scalingRatio, const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng );
 #endif
 };
 

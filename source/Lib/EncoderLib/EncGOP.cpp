@@ -3894,18 +3894,15 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if RPR_CTC_PRINT
         if( m_pcEncLib->isRPREnabled() )
         {
-          const Picture* refPic = pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex );
-
-          int xScale, yScale;
-          CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), refPic->unscaledPic->cs->pps, xScale, yScale );
+          const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
 
           if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool( 1 - iRefList ) && pcSlice->getColRefIdx() == iRefIndex )
           {
-            msg( NOTICE, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+            msg( NOTICE, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
           }
           else
           {
-            msg( NOTICE, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+            msg( NOTICE, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
           }
         }
         else

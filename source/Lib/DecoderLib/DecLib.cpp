@@ -643,16 +643,15 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     for (int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx(RefPicList(iRefList)); iRefIndex++)
     {
 #if RPR_CTC_PRINT
-      int xScale, yScale;
-      CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->unscaledPic->cs->pps, xScale, yScale );
+      const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
 
       if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
       {
-        msg( msgl, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+        msg( msgl, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
       }
       else
       {
-        msg( msgl, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+        msg( msgl, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
       }
 #else
       msg( msgl, "%d ", pcSlice->getRefPOC(RefPicList(iRefList), iRefIndex));

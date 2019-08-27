@@ -113,6 +113,7 @@ if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
     if( USE_ADDRESS_SANITIZER )
       # add compile options
       add_compile_options( "-fsanitize=address" )
+      add_link_options( "-fsanitize=address" )
     endif()
   endif()
 

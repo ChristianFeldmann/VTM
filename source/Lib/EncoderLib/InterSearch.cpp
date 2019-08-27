@@ -5756,7 +5756,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     }
 
     double dAffinePara[6];
-    double dDeltaMv[6];
+    double dDeltaMv[6]={0.0, 0.0, 0.0, 0.0, 0.0, 0.0,};
     Mv acDeltaMv[3];
 
     solveEqual( pdEqualCoeff, affineParaNum, dAffinePara );

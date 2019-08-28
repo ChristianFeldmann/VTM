@@ -828,7 +828,7 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
    && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width * currTU.blocks[compID].height > 4)
   {
 #else
-  if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && TU::getCbf(currTU, compID) && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width*currTU.blocks[compID].height > 4)
+  if (slice.getLmcsEnabledFlag() && isChroma(compID) && TU::getCbf(currTU, compID) && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width*currTU.blocks[compID].height > 4)
   {
     if ( !(currTU.jointCbCr && compID == COMPONENT_Cr) ) // Joint chroma residual mode: chroma scaling took place already when doing Cb
 #endif

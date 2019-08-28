@@ -251,11 +251,11 @@ private:
   PelStorage m_reco;
   PelStorage m_orgr;
 
-  std::vector<TCoeff> m_coeffs[MAX_NUM_COMPONENT];
-  std::vector<Pel>    m_pcmbuf[MAX_NUM_COMPONENT];
+  TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
+  Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
 #if JVET_O0119_BASE_PALETTE_444
-  std::vector<PLTRunMode> m_runType[MAX_NUM_COMPONENT];
-  std::vector<Pel>        m_runLength[MAX_NUM_COMPONENT];
+  bool   *m_runType  [MAX_NUM_COMPONENT];
+  Pel    *m_runLength[MAX_NUM_COMPONENT];
 #endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 

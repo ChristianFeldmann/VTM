@@ -177,8 +177,8 @@ typedef AreaBuf<const MotionInfo> CMotionBuf;
 typedef AreaBuf<      TCoeff>  PLTescapeBuf;
 typedef AreaBuf<const TCoeff> CPLTescapeBuf;
 
-typedef AreaBuf<PLTRunMode>       PLTtypeBuf;
-typedef AreaBuf<const PLTRunMode> CPLTtypeBuf;
+typedef AreaBuf<      bool>  PLTtypeBuf;
+typedef AreaBuf<const bool> CPLTtypeBuf;
 #endif
 
 #define SIZE_AWARE_PER_EL_OP( OP, INC )                     \

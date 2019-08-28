@@ -1612,6 +1612,7 @@ private:
 #if JVET_O1164_RPR
   Picture*                   m_scaledRefPicList[NUM_REF_PIC_LIST_01][MAX_NUM_REF + 1];
   Picture*                   m_savedRefPicList[NUM_REF_PIC_LIST_01][MAX_NUM_REF + 1];
+  std::pair<int, int>        m_scalingRatio[NUM_REF_PIC_LIST_01][MAX_NUM_REF_PICS];
 #endif
 
 
@@ -2005,6 +2006,7 @@ public:
   void                        scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder );
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();
+  const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { return m_scalingRatio[refPicList][refIdx]; }
 #endif
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);

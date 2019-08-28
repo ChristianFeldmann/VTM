@@ -107,7 +107,6 @@ void CS::setRefinedMotionField(CodingStructure &cs)
 #if JVET_O1164_RPR
 bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale )
 {
-
 #if RPR_CONF_WINDOW
   const Window& curConfWindow = curPPS->getConformanceWindow();
   int curPicWidth = curPPS->getPicWidthInLumaSamples() - (curConfWindow.getWindowLeftOffset() + curConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
@@ -122,8 +121,8 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, const PPS* refPPS, in
   int refPicHeight = refPPS->getPicHeightInLumaSamples();
 #endif
 
-  xScale = ( ( refPicWidth << 14 ) + ( curPicWidth >> 1 ) ) / curPicWidth;
-  yScale = ( ( refPicHeight << 14 ) + ( curPicHeight >> 1 ) ) / curPicHeight;
+  xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
+  yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
 
   return refPicWidth != curPicWidth || refPicHeight != curPicHeight;
 }

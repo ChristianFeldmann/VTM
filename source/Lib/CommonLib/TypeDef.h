@@ -1144,11 +1144,7 @@ enum PLTRunMode
   PLT_RUN_INDEX = 0,
   PLT_RUN_COPY  = 1,
   NUM_PLT_RUN   = 2
-}
-#if __GNUC__
-__attribute__((packed))
-#endif
-;
+};
 #endif
 /// parameters for deblocking filter
 struct LFCUParam

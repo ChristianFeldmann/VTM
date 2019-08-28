@@ -2325,7 +2325,12 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
     {
       // if rescaling is needed, otherwise just reuse the original picture pointer; it is needed for motion field, otherwise motion field requires a copy as well
       // reference resampling for the whole picture is not applied at decoder
-      if( ( m_apcRefPicList[refList][rIdx]->lwidth() == pps->getPicWidthInLumaSamples() && m_apcRefPicList[refList][rIdx]->lheight() == pps->getPicHeightInLumaSamples() ) || isDecoder )
+
+      int xScale, yScale;
+      CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx]->slices[0]->getPPS(), xScale, yScale );
+      m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
+
+      if( m_scalingRatio[refList][rIdx] == SCALE_1X || isDecoder )
       {
         m_scaledRefPicList[refList][rIdx] = m_apcRefPicList[refList][rIdx];
       }

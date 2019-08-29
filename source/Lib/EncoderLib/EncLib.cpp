@@ -561,10 +561,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
   {
 #if JVET_O0299_APS_SCALINGLIST 
     aps.getScalingList().setDefaultScalingList();
-    if( aps.getScalingList().xParseScalingList( getScalingListFileName() ) )
-    {
-      THROW( "parse scaling list" );
-    }
+    CHECK( aps.getScalingList().xParseScalingList( getScalingListFileName() ), "Error Parsing Scaling List Input File" );
     aps.getScalingList().checkDcOfMatrix();
     if( aps.getScalingList().checkDefaultScalingList() == false )
     {

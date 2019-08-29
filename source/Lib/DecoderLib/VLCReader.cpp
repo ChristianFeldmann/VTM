@@ -351,7 +351,6 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
     else if (rpl->getLtrpInSliceHeaderFlag())
     {
       READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
-      std::cout << "poc_lsb_lt[listIdx][rplsIdx][j]= " << code << std::endl;
       rpl->setRefPicIdentifier(j, code, isLongTerm);
       numLtrp++;
       j++;

@@ -406,8 +406,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if T0196_SELECTIVE_RDOQ
                    m_useSelectiveRDOQ,
 #endif
-                   true,
-                   m_useTransformSkipFast
+                   true
   );
 
   // initialize encoder search class

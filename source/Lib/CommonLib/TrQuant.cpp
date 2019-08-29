@@ -217,8 +217,7 @@ void TrQuant::init( const Quant* otherQuant,
 #if T0196_SELECTIVE_RDOQ
                     const bool useSelectiveRDOQ,
 #endif
-                    const bool bEnc,
-                    const bool useTransformSkipFast
+                    const bool bEnc
 )
 {
   delete m_quant;

@@ -70,13 +70,12 @@ public:
   void init      (
                     const Quant* otherQuant,
                     const uint32_t uiMaxTrSize,
-                    const bool bUseRDOQ             = false,
-                    const bool bUseRDOQTS           = false,
+                    const bool bUseRDOQ,
+                    const bool bUseRDOQTS,
 #if T0196_SELECTIVE_RDOQ
-                    const bool useSelectiveRDOQ     = false,
+                    const bool useSelectiveRDOQ,
 #endif
-                    const bool bEnc                 = false,
-                    const bool useTransformSkipFast = false
+                    const bool bEnc
   );
   void getTrTypes(const TransformUnit tu, const ComponentID compID, int &trTypeHor, int &trTypeVer);
 

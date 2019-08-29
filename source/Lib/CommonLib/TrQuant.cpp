@@ -221,10 +221,6 @@ void TrQuant::init( const Quant* otherQuant,
                     const bool useTransformSkipFast
 )
 {
-  m_uiMaxTrSize          = uiMaxTrSize;
-  m_bEnc                 = bEnc;
-  m_useTransformSkipFast = useTransformSkipFast;
-
   delete m_quant;
   m_quant = nullptr;
 

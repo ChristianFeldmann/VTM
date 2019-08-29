@@ -131,11 +131,6 @@ public:
 
 protected:
   TCoeff   m_tempCoeff[MAX_TB_SIZEY * MAX_TB_SIZEY];
-  uint32_t m_uiMaxTrSize;
-  bool     m_bEnc;
-  bool     m_useTransformSkipFast;
-
-  bool     m_scalingListEnabledFlag;
 
 private:
   DepQuant *m_quant;          //!< Quantizer

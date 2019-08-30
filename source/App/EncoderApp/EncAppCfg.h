@@ -547,6 +547,19 @@ protected:
 #endif
 
   int       m_TMVPModeId;
+#if JVET_O0238_PPS_OR_SLICE
+  int       m_PPSorSliceMode;
+  bool      m_constantSliceHeaderParamsEnabledFlag;
+  int       m_PPSDepQuantEnabledIdc;
+  int       m_PPSRefPicListSPSIdc0;
+  int       m_PPSRefPicListSPSIdc1;
+  int       m_PPSTemporalMVPEnabledIdc;
+  int       m_PPSMvdL1ZeroIdc;
+  int       m_PPSCollocatedFromL0Idc;
+  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
+  uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
+  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
+#endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;                ///< enable rate control or not

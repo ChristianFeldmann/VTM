@@ -1265,6 +1265,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   // pps ID already initialised.
   pps.setSPSId(sps.getSPSId());
 
+  #if JVET_O0238_PPS_OR_SLICE
+  pps.setConstantSliceHeaderParamsEnabledFlag(getConstantSliceHeaderParamsEnabledFlag());
+  pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
+  pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
+  pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
+  pps.setPPSTemporalMVPEnabledIdc(getPPSTemporalMVPEnabledIdc());
+  pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
+  pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
+  pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
+  pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());
+  pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
+#endif
+
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 

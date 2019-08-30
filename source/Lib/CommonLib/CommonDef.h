@@ -215,9 +215,6 @@ static const int CU_DQP_EG_k =                                      0; ///< expg
 
 static const int SBH_THRESHOLD =                                    4; ///< value of the fixed SBH controlling threshold
 
-static const int C1FLAG_NUMBER =                                    8; ///< maximum number of largerThan1 flag coded in one chunk: 16 in HM5
-static const int C2FLAG_NUMBER =                                    1; ///< maximum number of largerThan2 flag coded in one chunk: 16 in HM5
-
 static const int MAX_NUM_VPS =                                     16;
 static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
@@ -263,8 +260,6 @@ static const int MDLM_L_IDX =                          LM_CHROMA_IDX + 1; ///< M
 static const int MDLM_T_IDX =                          LM_CHROMA_IDX + 2; ///< MDLM_T
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
-static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
-
 static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
@@ -288,12 +283,6 @@ static const int LFNST_SIG_NZ_CHROMA =                              1;
 #endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
-
-static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...
-
-static const int MDCS_MAXIMUM_WIDTH =                               8; ///< (measured in pixels) TUs with width greater than this can only use diagonal scan
-static const int MDCS_MAXIMUM_HEIGHT =                              8; ///< (measured in pixels) TUs with height greater than this can only use diagonal scan
-
 
 static const int LOG2_MAX_NUM_COLUMNS_MINUS1 =                      7;
 static const int LOG2_MAX_NUM_ROWS_MINUS1 =                         7;
@@ -321,8 +310,6 @@ static const int MAX_NUM_QP_VALUES =    MAX_QP + 1 - MIN_QP_VALUE_FOR_16_BIT; //
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME =4; ///< QP' to use for mixed_lossy_lossless coding.
-
-static const int CR_FROM_CB_REG_COST_SHIFT                        = 9;
 
 static const int RExt__GOLOMB_RICE_ADAPTATION_STATISTICS_SETS =     4;
 
@@ -364,9 +351,7 @@ static const int SCALING_LIST_BITS =                                8; ///< bit 
 static const int LOG2_SCALING_LIST_NEUTRAL_VALUE =                  4; ///< log2 of the value that, when used in a scaling list, has no effect on quantisation
 static const int SCALING_LIST_DC =                                 16; ///< default DC value
 
-static const int CONTEXT_STATE_BITS =                               6;
 static const int LAST_SIGNIFICANT_GROUPS =                         14;
-static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
@@ -460,11 +445,6 @@ static const int MAX_DELTA_QP   =                                   7;      ///<
 static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///< dqp=0 +- max_delta_qp + lossless mode
 
 static const int COM16_C806_TRANS_PREC =                            0;
-
-static const int NUM_MERGE_IDX_EXT_CTX =                            5;
-static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code
-static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
-
 
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma

@@ -219,6 +219,7 @@ std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry)     //in
   {
     in >> entry.m_deltaRefPics1[i];
   }
+
   return in;
 }
 
@@ -1439,6 +1440,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_RPLList1[i].m_numRefPicsActive = m_GOPList[i].m_numRefPicsActive1;
     m_RPLList0[i].m_numRefPics = m_GOPList[i].m_numRefPics0;
     m_RPLList1[i].m_numRefPics = m_GOPList[i].m_numRefPics1;
+#if JVET_N0100_PROPOSAL1
+    m_RPLList0[i].m_ltrp_in_slice_header_flag = m_GOPList[i].m_ltrp_in_slice_header_flag;
+    m_RPLList1[i].m_ltrp_in_slice_header_flag = m_GOPList[i].m_ltrp_in_slice_header_flag;
+#endif
     for (int j = 0; j < m_GOPList[i].m_numRefPics0; j++)
       m_RPLList0[i].m_deltaRefPics[j] = m_GOPList[i].m_deltaRefPics0[j];
     for (int j = 0; j < m_GOPList[i].m_numRefPics1; j++)

@@ -291,11 +291,24 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   uint32_t numStrp = 0;
   uint32_t numLtrp = 0;
 
+#if JVET_N0100_PROPOSAL1
+  if (sps->getLongTermRefsPresent())
+  {
+    READ_FLAG(code, "ltrp_in_slice_header_flag[ listIdx ][ rplsIdx ]");
+    rpl->setLtrpInSliceHeaderFlag(code);
+  }
+#endif
+
   bool isLongTerm;
   int prevDelta = MAX_INT;
   int deltaValue = 0;
   bool firstSTRP = true;
+
+#if JVET_N0100_PROPOSAL1
+  for (int ii = 0, j = 0; ii < numRefPic; ii++)
+#else
   for (int ii = 0; ii < numRefPic; ii++)
+#endif
   {
     isLongTerm = false;
     if (sps->getLongTermRefsPresent())
@@ -334,12 +347,22 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
       rpl->setRefPicIdentifier(ii, deltaValue, isLongTerm);
       numStrp++;
     }
-    else
+#if JVET_N0100_PROPOSAL1
+    else if (rpl->getLtrpInSliceHeaderFlag())
+    {
+      READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
+      rpl->setRefPicIdentifier(j, code, isLongTerm);
+      numLtrp++;
+      j++;
+    }
+#else
+    else   // else if( !ltrp_in_slice_header_flag[ listIdx ][ rplsIdx ] )
     {
       READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][i]");
       rpl->setRefPicIdentifier(ii, code, isLongTerm);
       numLtrp++;
     }
+#endif
   }
   rpl->setNumberOfShorttermPictures(numStrp);
   rpl->setNumberOfLongtermPictures(numLtrp);
@@ -1813,6 +1836,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           if (pcSlice->getRPL0()->isRefPicLongterm(i))
           {
+#if JVET_N0100_PROPOSAL1
+            if (pcSlice->getRPL0()->getLtrpInSliceHeaderFlag())
+            {
+              READ_CODE(sps->getBitsForPOC(), uiCode, "poc_lsb_lt[i][j]");
+              pcSlice->getLocalRPL0()->setRefPicIdentifier(i, uiCode, true);
+            }
+#endif
             READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
             pcSlice->getLocalRPL0()->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
             if (uiCode)
@@ -1882,6 +1912,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           if (pcSlice->getRPL1()->isRefPicLongterm(i))
           {
+#if JVET_N0100_PROPOSAL1
+            if (pcSlice->getRPL1()->getLtrpInSliceHeaderFlag())
+            {
+              READ_CODE(sps->getBitsForPOC(), uiCode, "poc_lsb_lt[i][j]");
+              pcSlice->getLocalRPL1()->setRefPicIdentifier(i, uiCode, true);
+            }
+#endif
             READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
             pcSlice->getLocalRPL1()->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
             if (uiCode)

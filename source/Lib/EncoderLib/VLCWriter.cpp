@@ -165,10 +165,20 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
 {
   WRITE_UVLC(rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures(), "num_ref_entries[ listIdx ][ rplsIdx ]");
   uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures();
+#if JVET_N0100_PROPOSAL1
+  if (isLongTermPresent)
+  {
+    WRITE_FLAG(rpl->getLtrpInSliceHeaderFlag(), "ltrp_in_slice_header_flag[ listIdx ][ rplsIdx ]");
+  }
+#endif
   int prevDelta = MAX_INT;
   int deltaValue = 0;
   bool firstSTRP = true;
+#if JVET_N0100_PROPOSAL1
+  for (int ii = 0, j = 0; ii < numRefPic; ii++)
+#else
   for (int ii = 0; ii < numRefPic; ii++)
+#endif
   {
     if (rpl->getNumberOfLongtermPictures() > 0)
       WRITE_FLAG(!rpl->isRefPicLongterm(ii), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]");
@@ -197,10 +207,18 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
       if (absDeltaValue > 0)
         WRITE_FLAG((deltaValue < 0) ? 0 : 1, "strp_entry_sign_flag[ listIdx ][ rplsIdx ][ i ]");  //0  means negative delta POC : 1 means positive
     }
+#if JVET_N0100_PROPOSAL1
+    else if (rpl->getLtrpInSliceHeaderFlag())
+    {
+      WRITE_CODE(rpl->getRefPicIdentifier(j), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][j]");
+      j++;
+    }
+#else
     else
     {
       WRITE_CODE(rpl->getRefPicIdentifier(ii), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][i]");
     }
+#endif
   }
 }
 
@@ -1267,6 +1285,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           if (pcSlice->getRPL0()->isRefPicLongterm(i))
           {
+#if JVET_N0100_PROPOSAL1
+            if (pcSlice->getRPL0()->getLtrpInSliceHeaderFlag())
+            {
+              WRITE_CODE(pcSlice->getRPL0()->getRefPicIdentifier(i), pcSlice->getSPS()->getBitsForPOC(),
+                         "poc_lsb_lt[listIdx][rplsIdx][j]");
+            }
+#endif
             WRITE_FLAG(pcSlice->getLocalRPL0()->getDeltaPocMSBPresentFlag(i) ? 1 : 0, "delta_poc_msb_present_flag[i][j]");
             if (pcSlice->getLocalRPL0()->getDeltaPocMSBPresentFlag(i))
             {
@@ -1323,6 +1348,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           if (pcSlice->getRPL1()->isRefPicLongterm(i))
           {
+#if JVET_N0100_PROPOSAL1
+            if (pcSlice->getRPL1()->getLtrpInSliceHeaderFlag())
+            {
+              WRITE_CODE(pcSlice->getRPL1()->getRefPicIdentifier(i), pcSlice->getSPS()->getBitsForPOC(),
+                         "poc_lsb_lt[listIdx][rplsIdx][j]");
+            }
+#endif
             WRITE_FLAG(pcSlice->getLocalRPL1()->getDeltaPocMSBPresentFlag(i) ? 1 : 0, "delta_poc_msb_present_flag[i][j]");
             if (pcSlice->getLocalRPL1()->getDeltaPocMSBPresentFlag(i))
             {

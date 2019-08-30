@@ -217,14 +217,9 @@ void TrQuant::init( const Quant* otherQuant,
 #if T0196_SELECTIVE_RDOQ
                     const bool useSelectiveRDOQ,
 #endif
-                    const bool bEnc,
-                    const bool useTransformSkipFast
+                    const bool bEnc
 )
 {
-  m_uiMaxTrSize          = uiMaxTrSize;
-  m_bEnc                 = bEnc;
-  m_useTransformSkipFast = useTransformSkipFast;
-
   delete m_quant;
   m_quant = nullptr;
 

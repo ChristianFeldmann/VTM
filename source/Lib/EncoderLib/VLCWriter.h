@@ -132,6 +132,9 @@ public:
   void  codeAPS                 ( APS* pcAPS );
   void  codeAlfAps              ( APS* pcAPS );
   void  codeLmcsAps             ( APS* pcAPS );
+#if JVET_O0299_APS_SCALINGLIST
+  void  codeScalingListAps      ( APS* pcAPS );
+#endif
   void  codeVPS                 ( const VPS* pcVPS );
   void  codeDPS                 ( const DPS* dps );
   void  codeSliceHeader         ( Slice* pcSlice );

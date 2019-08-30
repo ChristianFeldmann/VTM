@@ -720,11 +720,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
   }
 
+#if !JVET_O0299_APS_SCALINGLIST
   READ_FLAG( uiCode, "pps_scaling_list_data_present_flag" );           pcPPS->setScalingListPresentFlag( uiCode ? true : false );
   if(pcPPS->getScalingListPresentFlag ())
   {
     parseScalingList( &(pcPPS->getScalingList()) );
   }
+#endif
 
 
   READ_UVLC( uiCode, "log2_parallel_merge_level_minus2");
@@ -854,6 +856,20 @@ void HLSyntaxReader::parseAPS( APS* aps )
 
   READ_CODE(3, code, "aps_params_type");
   aps->setAPSType(code);
+#if JVET_O0299_APS_SCALINGLIST
+  if( code == ALF_APS )
+  {
+    parseAlfAps( aps );
+  }
+  else if( code == LMCS_APS )
+  {
+    parseLmcsAps( aps );
+  }
+  else if( code == SCALING_LIST_APS )
+  {
+    parseScalingListAps( aps );
+  }
+#else
   if (code == ALF_APS)
   {
     parseAlfAps(aps);
@@ -862,6 +878,7 @@ void HLSyntaxReader::parseAPS( APS* aps )
   {
     parseLmcsAps(aps);
   }
+#endif
   READ_FLAG(code, "aps_extension_flag");
   if (code)
   {
@@ -996,6 +1013,13 @@ void HLSyntaxReader::parseLmcsAps( APS* aps )
   aps->setReshaperAPSInfo(info);
 }
 
+#if JVET_O0299_APS_SCALINGLIST
+void HLSyntaxReader::parseScalingListAps( APS* aps )
+{
+  ScalingList& info = aps->getScalingList();
+  parseScalingList( &info );
+}
+#endif
 
 void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 {
@@ -1534,6 +1558,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   // KJS: remove scaling lists?
   READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
+#if !JVET_O0299_APS_SCALINGLIST
   if(pcSPS->getScalingListFlag())
   {
     READ_FLAG( uiCode, "sps_scaling_list_data_present_flag" );                 pcSPS->setScalingListPresentFlag ( uiCode );
@@ -1542,6 +1567,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       parseScalingList( &(pcSPS->getScalingList()) );
     }
   }
+#endif
 
   TimingInfo *timingInfo = pcSPS->getTimingInfo();
   READ_FLAG(       uiCode, "timing_info_present_flag");         timingInfo->setTimingInfoPresentFlag      (uiCode ? true : false);
@@ -2584,6 +2610,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #endif
       }
     }
+
+#if JVET_O0299_APS_SCALINGLIST
+      if( sps->getScalingListFlag() )
+      {
+        READ_FLAG( uiCode, "slice_scaling_list_present_flag" );
+        pcSlice->setscalingListPresentFlag( uiCode );
+      }
+      if( pcSlice->getscalingListPresentFlag() )
+      {
+        READ_CODE( 3, uiCode, "slice_scaling_list_aps_id" );
+        pcSlice->setscalingListAPSId( uiCode );
+      }
+#endif
 
     if( pcSlice->getSliceCurStartBrickIdx() == 0 )
   {

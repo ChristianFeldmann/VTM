@@ -153,6 +153,9 @@ public:
   void  parseAPS            ( APS* pcAPS );
   void  parseAlfAps         ( APS* pcAPS );
   void  parseLmcsAps        ( APS* pcAPS );
+#if JVET_O0299_APS_SCALINGLIST
+  void  parseScalingListAps ( APS* pcAPS );
+#endif
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);

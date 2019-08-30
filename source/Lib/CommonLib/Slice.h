@@ -839,8 +839,10 @@ private:
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;
+#if !JVET_O0299_APS_SCALINGLIST
   bool              m_scalingListPresentFlag;
   ScalingList       m_scalingList;
+#endif
   uint32_t              m_uiMaxDecPicBuffering[MAX_TLAYER];
   uint32_t              m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 
@@ -1074,10 +1076,12 @@ public:
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
+#if !JVET_O0299_APS_SCALINGLIST          // remove from SPS
   bool                    getScalingListPresentFlag() const                                               { return m_scalingListPresentFlag;                                     }
   void                    setScalingListPresentFlag( bool b )                                             { m_scalingListPresentFlag  = b;                                       }
   ScalingList&            getScalingList()                                                                { return m_scalingList; }
   const ScalingList&      getScalingList() const                                                          { return m_scalingList; }
+#endif
   uint32_t                    getMaxDecPicBuffering(uint32_t tlayer) const                                        { return m_uiMaxDecPicBuffering[tlayer];                               }
   void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                                   { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
   uint32_t                    getMaxLatencyIncreasePlus1(uint32_t tlayer) const                                   { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
@@ -1337,8 +1341,10 @@ private:
   bool             m_ppsDeblockingFilterDisabledFlag;
   int              m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
   int              m_deblockingFilterTcOffsetDiv2;      //< tc offset for deblocking filter
+#if !JVET_O0299_APS_SCALINGLIST     // PPS
   bool             m_scalingListPresentFlag;
   ScalingList      m_scalingList;                       //!< ScalingList class
+#endif
   bool             m_listsModificationPresentFlag;
   uint32_t             m_log2ParallelMergeLevelMinus2;
   int              m_numExtraSliceHeaderBits;
@@ -1518,10 +1524,12 @@ public:
   int                    getDeblockingFilterBetaOffsetDiv2() const                        { return m_deblockingFilterBetaOffsetDiv2;      } //!< get beta offset for deblocking filter
   void                   setDeblockingFilterTcOffsetDiv2(int val)                         { m_deblockingFilterTcOffsetDiv2 = val;         } //!< set tc offset for deblocking filter
   int                    getDeblockingFilterTcOffsetDiv2() const                          { return m_deblockingFilterTcOffsetDiv2;        } //!< get tc offset for deblocking filter
+#if! JVET_O0299_APS_SCALINGLIST           // PPS
   bool                   getScalingListPresentFlag() const                                { return m_scalingListPresentFlag;              }
   void                   setScalingListPresentFlag( bool b )                              { m_scalingListPresentFlag  = b;                }
   ScalingList&           getScalingList()                                                 { return m_scalingList;                         }
   const ScalingList&     getScalingList() const                                           { return m_scalingList;                         }
+#endif
   bool                   getListsModificationPresentFlag() const                          { return m_listsModificationPresentFlag;        }
   void                   setListsModificationPresentFlag( bool b )                        { m_listsModificationPresentFlag = b;           }
   uint32_t                   getLog2ParallelMergeLevelMinus2() const                          { return m_log2ParallelMergeLevelMinus2;        }
@@ -1566,6 +1574,9 @@ private:
   int                    m_APSType;                  // aps_params_type
   AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
+#if JVET_O0299_APS_SCALINGLIST
+  ScalingList            m_scalingListApsInfo;
+#endif
 
 public:
   APS();
@@ -1584,6 +1595,10 @@ public:
 
   void                   setReshaperAPSInfo(SliceReshapeInfo& reshapeAPSInfo)             { m_reshapeAPSInfo = reshapeAPSInfo;            }
   SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }
+#if JVET_O0299_APS_SCALINGLIST
+  void                   setScalingList( ScalingList& scalingListAPSInfo )                { m_scalingListApsInfo = scalingListAPSInfo;    }
+  ScalingList&           getScalingList()                                                 { return m_scalingListApsInfo;                  }
+#endif
 };
 struct WPScalingParam
 {
@@ -1751,6 +1766,11 @@ private:
   APS*                       m_lmcsAps;
   bool                       m_tileGroupLmcsEnabledFlag;
   bool                       m_tileGroupLmcsChromaResidualScaleFlag;
+#if JVET_O0299_APS_SCALINGLIST
+  int                        m_scalingListApsId;
+  APS*                       m_scalingListAps;
+  bool                       m_tileGroupscalingListPresentFlag;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -1779,6 +1799,15 @@ public:
   void                        setLmcsChromaResidualScaleFlag(bool b)                 { m_tileGroupLmcsChromaResidualScaleFlag = b;                  }
   bool                        getLmcsChromaResidualScaleFlag()                       { return m_tileGroupLmcsChromaResidualScaleFlag;               }
   const bool                  getLmcsChromaResidualScaleFlag()                 const { return m_tileGroupLmcsChromaResidualScaleFlag;               }
+#if JVET_O0299_APS_SCALINGLIST
+  void                        setscalingListAPS( APS* scalingListAps )               { m_scalingListAps = scalingListAps; m_scalingListApsId = ( scalingListAps ) ? scalingListAps->getAPSId() : -1; }
+  APS*                        getscalingListAPS()                                    { return m_scalingListAps;                                     }
+  void                        setscalingListAPSId( int scalingListApsId )            { m_scalingListApsId = scalingListApsId;                       }
+  int                         getscalingListAPSId()                            const { return m_scalingListApsId;                                   }
+  void                        setscalingListPresentFlag( bool b )                    { m_tileGroupscalingListPresentFlag = b;                       }
+  bool                        getscalingListPresentFlag()                            { return m_tileGroupscalingListPresentFlag;                    }
+  const bool                  getscalingListPresentFlag()                      const { return m_tileGroupLmcsEnabledFlag;                           }
+#endif
   void                        setPicOutputFlag( bool b   )                           { m_PicOutputFlag = b;                                          }
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }
   void                        setSaoEnabledFlag(ChannelType chType, bool s)          {m_saoEnabledFlag[chType] =s;                                   }
@@ -2048,7 +2077,11 @@ public:
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+  void                        scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS& lmcsAps, APS& scalingListAps, const bool isDecoder );
+#else
   void                        scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder );
+#endif
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();
   const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { return m_scalingRatio[refPicList][refIdx]; }

@@ -886,7 +886,11 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const
        PelUnitBuf Picture::getRecoBuf(bool wrap)                                 { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
+#if JVET_O0299_APS_SCALINGLIST
+void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps, APS& scalingListAps )
+#else
 void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps)
+#endif
 {
   for( auto &sei : SEIs )
   {
@@ -927,6 +931,9 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   cs->pps     = &pps;
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
   cs->lmcsAps = &lmcsAps;
+#if JVET_O0299_APS_SCALINGLIST  
+  cs->scalinglistAps = &scalingListAps;
+#endif
 
   cs->pcv     = pps.pcv;
 
@@ -947,6 +954,9 @@ void Picture::allocateNewSlice()
   memcpy(slice.getAlfAPSs(), cs->alfApss, sizeof(cs->alfApss));
 
   slice.setLmcsAPS(cs->lmcsAps);
+#if JVET_O0299_APS_SCALINGLIST
+  slice.setscalingListAPS( cs->scalinglistAps );
+#endif
 
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
@@ -964,6 +974,9 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   p->setAlfAPSs(cs->alfApss);
 
   p->setLmcsAPS(cs->lmcsAps);
+#if JVET_O0299_APS_SCALINGLIST
+  p->setscalingListAPS( cs->scalinglistAps );
+#endif
 
   Slice * pTmp = slices[i];
   slices[i] = p;
@@ -976,6 +989,9 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 #endif
 
   pTmp->setLmcsAPS(0);
+#if JVET_O0299_APS_SCALINGLIST
+  pTmp->setscalingListAPS( 0 );
+#endif
   return pTmp;
 }
 

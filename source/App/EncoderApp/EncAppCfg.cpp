@@ -1786,7 +1786,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   if (!singleTileInPicFlag)
   {
     //if (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
+#if SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES
+    if ( (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag) ||
+         (m_numSlicesInPicMinus1 != 0 && m_rectSliceFlag) )
+#else
     if (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag)
+#endif
     {
       int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
 
@@ -1878,6 +1883,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
         brickToSlice = 0;
       }
     }      // (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
+    else // single slice in picture
+    {
+      const int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
+      int numTilesInPic = (m_numTileRowsMinus1 + 1) * (m_numTileColumnsMinus1 + 1);
+      m_topLeftBrickIdx.resize(numSlicesInPic);
+      m_bottomRightBrickIdx.resize(numSlicesInPic);
+      m_topLeftBrickIdx[0] = 0;
+      m_bottomRightBrickIdx[0] = numTilesInPic - 1;
+    }
   }        // !singleTileInPicFlag
 
   if (m_rectSliceFlag && m_signalledSliceIdFlag)

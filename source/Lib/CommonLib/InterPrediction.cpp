@@ -1291,23 +1291,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   }
 }
 
-int getMSB( unsigned x )
-{
-  int msb = 0, bits = ( sizeof(int) << 3 ), y = 1;
-  while( x > 1u )
-  {
-    bits >>= 1;
-    y      = x >> bits;
-    if( y )
-    {
-      x    = y;
-      msb += bits;
-    }
-  }
-  msb += y;
-  return msb;
-}
-
 void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths)
 {
   const int     height = yuvDst.Y().height;

@@ -66,6 +66,9 @@ EncLib::EncLib()
   , m_cacheModel()
 #endif
   , m_lmcsAPS(nullptr)
+#if JVET_O0299_APS_SCALINGLIST
+  , m_scalinglistAPS( nullptr )
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   , m_doPlt( true )
 #endif
@@ -241,6 +244,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
   PPS &pps0=*(m_ppsMap.allocatePS(0));
+#if JVET_O0299_APS_SCALINGLIST
+  APS &aps0 = *( m_apsMap.allocatePS( SCALING_LIST_APS ) );
+  aps0.setAPSId( 0 );
+  aps0.setAPSType( SCALING_LIST_APS );
+#endif
 
   // initialize SPS
   xInitSPS(sps0);
@@ -406,8 +414,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if T0196_SELECTIVE_RDOQ
                    m_useSelectiveRDOQ,
 #endif
-                   true,
-                   m_useTransformSkipFast
+                   true
   );
 
   // initialize encoder search class
@@ -438,18 +445,31 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ER_CHROMA_QP_WCG_PPS
   if( m_wcgChromaQpControl.isEnabled() )
   {
+#if JVET_O0299_APS_SCALINGLIST  
+    xInitScalingLists( sps0, *m_apsMap.getPS( 1 ) );
+    xInitScalingLists( sps0, aps0 );
+#else
     xInitScalingLists( sps0, *m_ppsMap.getPS(1) );
     xInitScalingLists( sps0, pps0 );
+#endif
   }
   else
 #endif
   {
+#if JVET_O0299_APS_SCALINGLIST
+    xInitScalingLists( sps0, aps0 );
+#else
     xInitScalingLists( sps0, pps0 );
+#endif
   }
 #if JVET_O1164_RPR
   if( m_rprEnabled )
   {
+#if JVET_O0299_APS_SCALINGLIST
+    xInitScalingLists( sps0, *m_apsMap.getPS( ENC_PPS_ID_RPR ) );
+#else
     xInitScalingLists( sps0, *m_ppsMap.getPS( ENC_PPS_ID_RPR ) );
+#endif
   }
 #endif
 #if ENABLE_WPP_PARALLELISM
@@ -464,7 +484,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->create(sps0.getChromaFormatIdc(), Size(sps0.getPicWidthInLumaSamples(), sps0.getPicHeightInLumaSamples()), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false);
 #endif
     picBg->getRecoBuf().fill(0);
+#if JVET_O0299_APS_SCALINGLIST
+    picBg->finalInit( sps0, pps0, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+#else
     picBg->finalInit(sps0, pps0, m_apss, *m_lmcsAPS);
+#endif
     pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
@@ -480,14 +504,18 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   }
 }
 
+#if JVET_O0299_APS_SCALINGLIST
+void EncLib::xInitScalingLists( SPS &sps, APS &aps )
+#else
 void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
+#endif
 {
   // Initialise scaling lists
   // The encoder will only use the SPS scaling lists. The PPS will never be marked present.
   const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE] =
   {
-      sps.getMaxLog2TrDynamicRange(CHANNEL_TYPE_LUMA),
-      sps.getMaxLog2TrDynamicRange(CHANNEL_TYPE_CHROMA)
+    sps.getMaxLog2TrDynamicRange(CHANNEL_TYPE_LUMA),
+    sps.getMaxLog2TrDynamicRange(CHANNEL_TYPE_CHROMA)
   };
 
   Quant* quant = getTrQuant()->getQuant();
@@ -503,16 +531,23 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
       getTrQuant( jId )->getQuant()->setUseScalingList( false );
     }
 #endif
+#if !JVET_O0299_APS_SCALINGLIST
     sps.setScalingListPresentFlag(false);
     pps.setScalingListPresentFlag(false);
+#endif
   }
   else if(getUseScalingListId() == SCALING_LIST_DEFAULT)
   {
+#if JVET_O0299_APS_SCALINGLIST
+    aps.getScalingList().setDefaultScalingList ();
+    quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
+#else
     sps.getScalingList().setDefaultScalingList ();
     sps.setScalingListPresentFlag(false);
     pps.setScalingListPresentFlag(false);
 
     quant->setScalingList(&(sps.getScalingList()), maxLog2TrDynamicRange, sps.getBitDepths());
+#endif
     quant->setUseScalingList(true);
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
     for( int jId = 1; jId < m_numCuEncStacks; jId++ )
@@ -523,6 +558,16 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
   }
   else if(getUseScalingListId() == SCALING_LIST_FILE_READ)
   {
+#if JVET_O0299_APS_SCALINGLIST 
+    aps.getScalingList().setDefaultScalingList();
+    CHECK( aps.getScalingList().xParseScalingList( getScalingListFileName() ), "Error Parsing Scaling List Input File" );
+    aps.getScalingList().checkDcOfMatrix();
+    if( aps.getScalingList().checkDefaultScalingList() == false )
+    {
+      setUseScalingListId( SCALING_LIST_DEFAULT );
+    }
+    quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
+#else
     sps.getScalingList().setDefaultScalingList ();
     if(sps.getScalingList().xParseScalingList(getScalingListFileName()))
     {
@@ -533,6 +578,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     pps.setScalingListPresentFlag(false);
 
     quant->setScalingList(&(sps.getScalingList()), maxLog2TrDynamicRange, sps.getBitDepths());
+#endif
     quant->setUseScalingList(true);
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
     for( int jId = 1; jId < m_numCuEncStacks; jId++ )
@@ -546,7 +592,11 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     THROW("error : ScalingList == " << getUseScalingListId() << " not supported\n");
   }
 
+#if JVET_O0299_APS_SCALINGLIST 
+  if( getUseScalingListId() == SCALING_LIST_FILE_READ )
+#else
   if (getUseScalingListId() == SCALING_LIST_FILE_READ && sps.getScalingListPresentFlag())
+#endif
   {
     // Prepare delta's:
     for (uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
@@ -558,7 +608,11 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
         {
           continue;
         }
+#if JVET_O0299_APS_SCALINGLIST 
+        aps.getScalingList().checkPredMode( sizeId, listId );
+#else
         sps.getScalingList().checkPredMode( sizeId, listId );
+#endif
       }
     }
   }
@@ -621,7 +675,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
+#if JVET_O0299_APS_SCALINGLIST
+    picCurr->finalInit( *sps, *pps, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+#else
     picCurr->finalInit(*sps, *pps, m_apss, *m_lmcsAPS);
+#endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if (getUseAdaptiveQP())
@@ -717,7 +775,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap(*cPicYuvTrueOrg );
 #endif
 
+#if JVET_O0299_APS_SCALINGLIST
+      pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+#else
       pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+#endif
       PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
     }
@@ -816,7 +878,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
+#if JVET_O0299_APS_SCALINGLIST
+        pcField->finalInit( *pSPS, *pPPS, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+#else
         pcField->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+#endif
       }
 
       pcField->poc = m_iPOCLast;
@@ -1266,6 +1332,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   // pps ID already initialised.
   pps.setSPSId(sps.getSPSId());
 
+  #if JVET_O0238_PPS_OR_SLICE
+  pps.setConstantSliceHeaderParamsEnabledFlag(getConstantSliceHeaderParamsEnabledFlag());
+  pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
+  pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
+  pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
+  pps.setPPSTemporalMVPEnabledIdc(getPPSTemporalMVPEnabledIdc());
+  pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
+  pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
+  pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
+  pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());
+  pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
+#endif
+
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
@@ -1515,6 +1594,9 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       rpl->setNumberOfShorttermPictures(ge.m_numRefPics);
       rpl->setNumberOfLongtermPictures(0);   //Hardcoded as 0 for now. need to update this when implementing LTRP
       rpl->setNumberOfActivePictures(ge.m_numRefPicsActive);
+#if JVET_N0100_PROPOSAL1
+      rpl->setLtrpInSliceHeaderFlag(ge.m_ltrp_in_slice_header_flag);
+#endif
 
       for (int k = 0; k < ge.m_numRefPics; k++)
       {

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
+
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
 #if JVET_O1164_RPR
 #define JVET_O1164_PS                                     1
@@ -57,6 +59,9 @@
 #define RPR_CTC_PRINT                                     1
 #define RPR_CONF_WINDOW                                   1
 #endif
+
+#define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
+#define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
 
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
@@ -265,6 +270,9 @@
 #else
 #define MAX_TB_SIZE_SIGNALLING                            0
 #endif
+
+#define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
+
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
@@ -493,6 +501,9 @@ enum ApsTypeValues
 {
   ALF_APS = 0,
   LMCS_APS = 1,
+#if JVET_O0299_APS_SCALINGLIST
+  SCALING_LIST_APS = 2,
+#endif
 };
 
 enum QuantFlags

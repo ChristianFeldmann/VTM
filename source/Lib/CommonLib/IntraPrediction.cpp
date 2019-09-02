@@ -1525,140 +1525,131 @@ bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const
 {
   const CodingStructure& cs = *cu.cs;
   const Position refPos = posLT.offset(-1, -1);
-  const CodingUnit* pcCUAboveLeft = cs.isDecomp( refPos, chType ) ? cs.getCURestricted( refPos, cu, chType ) : nullptr;
+
+  if (!cs.isDecomp(refPos, chType))
+  {
+    return false;
+  }
+
   const bool isConstrained = cs.pps->getConstrainedIntraPred();
-  bool bAboveLeftFlag;
 
-  if (isConstrained)
-  {
-    bAboveLeftFlag = pcCUAboveLeft && CU::isIntra(*pcCUAboveLeft);
-  }
-  else
-  {
-    bAboveLeftFlag = (pcCUAboveLeft ? true : false);
-  }
-
-  return bAboveLeftFlag;
+  return !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
 }
 
 int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags)
 {
   const CodingStructure& cs = *cu.cs;
   const bool isConstrained = cs.pps->getConstrainedIntraPred();
-  bool *pbValidFlags = bValidFlags;
-  int iNumIntra = 0;
-  int maxDx = uiNumUnitsInPU * unitWidth;
 
-  for (uint32_t dx = 0; dx < maxDx; dx += unitWidth)
+  bool *    validFlags = bValidFlags;
+  int       numIntra   = 0;
+  const int maxDx      = uiNumUnitsInPU * unitWidth;
+
+  for (int dx = 0; dx < maxDx; dx += unitWidth)
   {
     const Position refPos = posLT.offset(dx, -1);
 
-    const CodingUnit* pcCUAbove = cs.isDecomp(refPos, chType) ? cs.getCURestricted(refPos, cu, chType) : nullptr;
-
-    if( pcCUAbove && ( ( isConstrained && CU::isIntra( *pcCUAbove ) ) || !isConstrained ) )
+    if (!cs.isDecomp(refPos, chType))
     {
-      iNumIntra++;
-      *pbValidFlags = true;
-    }
-    else if( !pcCUAbove )
-    {
-      return iNumIntra;
+      break;
     }
 
-    pbValidFlags++;
+    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
+
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+
+    validFlags++;
   }
-  return iNumIntra;
+
+  return numIntra;
 }
 
 int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *bValidFlags)
 {
   const CodingStructure& cs = *cu.cs;
   const bool isConstrained = cs.pps->getConstrainedIntraPred();
-  bool *pbValidFlags = bValidFlags;
-  int iNumIntra = 0;
-  int maxDy = uiNumUnitsInPU * unitHeight;
 
-  for (uint32_t dy = 0; dy < maxDy; dy += unitHeight)
+  bool *    validFlags = bValidFlags;
+  int       numIntra   = 0;
+  const int maxDy      = uiNumUnitsInPU * unitHeight;
+
+  for (int dy = 0; dy < maxDy; dy += unitHeight)
   {
     const Position refPos = posLT.offset(-1, dy);
 
-    const CodingUnit* pcCULeft = cs.isDecomp(refPos, chType) ? cs.getCURestricted(refPos, cu, chType) : nullptr;
-
-    if( pcCULeft && ( ( isConstrained && CU::isIntra( *pcCULeft ) ) || !isConstrained ) )
+    if (!cs.isDecomp(refPos, chType))
     {
-      iNumIntra++;
-      *pbValidFlags = true;
-    }
-    else if( !pcCULeft )
-    {
-      return iNumIntra;
+      break;
     }
 
-    pbValidFlags--; // opposite direction
+    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
+
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+
+    validFlags--;
   }
 
-  return iNumIntra;
+  return numIntra;
 }
 
 int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posRT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags )
 {
   const CodingStructure& cs = *cu.cs;
   const bool isConstrained = cs.pps->getConstrainedIntraPred();
-  bool *pbValidFlags = bValidFlags;
-  int iNumIntra = 0;
 
-  uint32_t maxDx = uiNumUnitsInPU * unitWidth;
+  bool *    validFlags = bValidFlags;
+  int       numIntra   = 0;
+  const int maxDx      = uiNumUnitsInPU * unitWidth;
 
-  for (uint32_t dx = 0; dx < maxDx; dx += unitWidth)
+  for (int dx = 0; dx < maxDx; dx += unitWidth)
   {
     const Position refPos = posRT.offset(unitWidth + dx, -1);
 
-    const CodingUnit* pcCUAbove = cs.isDecomp(refPos, chType) ? cs.getCURestricted(refPos, cu, chType) : nullptr;
-
-    if( pcCUAbove && ( ( isConstrained && CU::isIntra( *pcCUAbove ) ) || !isConstrained ) )
+    if (!cs.isDecomp(refPos, chType))
     {
-      iNumIntra++;
-      *pbValidFlags = true;
-    }
-    else if( !pcCUAbove )
-    {
-      return iNumIntra;
+      break;
     }
 
-    pbValidFlags++;
+    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
+
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+
+    validFlags++;
   }
 
-  return iNumIntra;
+  return numIntra;
 }
 
 int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLB, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *bValidFlags )
 {
   const CodingStructure& cs = *cu.cs;
   const bool isConstrained = cs.pps->getConstrainedIntraPred();
-  bool *pbValidFlags = bValidFlags;
-  int iNumIntra = 0;
-  int maxDy = uiNumUnitsInPU * unitHeight;
 
-  for (uint32_t dy = 0; dy < maxDy; dy += unitHeight)
+  bool *    validFlags = bValidFlags;
+  int       numIntra   = 0;
+  const int maxDy      = uiNumUnitsInPU * unitHeight;
+
+  for (int dy = 0; dy < maxDy; dy += unitHeight)
   {
     const Position refPos = posLB.offset(-1, unitHeight + dy);
 
-    const CodingUnit* pcCULeft = cs.isDecomp(refPos, chType) ? cs.getCURestricted(refPos, cu, chType) : nullptr;
-
-    if( pcCULeft && ( ( isConstrained && CU::isIntra( *pcCULeft ) ) || !isConstrained ) )
+    if (!cs.isDecomp(refPos, chType))
     {
-      iNumIntra++;
-      *pbValidFlags = true;
-    }
-    else if ( !pcCULeft )
-    {
-      return iNumIntra;
+      break;
     }
 
-    pbValidFlags--; // opposite direction
+    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
+
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+
+    validFlags--;
   }
 
-  return iNumIntra;
+  return numIntra;
 }
 
 // LumaRecPixels

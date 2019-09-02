@@ -2069,7 +2069,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), false );
+#else
     pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), false );
+#endif
 #endif
 
 #if JVET_O1164_PS
@@ -2189,9 +2193,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
 
     pcSlice->setList1IdxToList0Idx();
-
+    
     if (m_pcEncLib->getTMVPModeId() == 2)
     {
+#if JVET_O0238_PPS_OR_SLICE
+      assert (m_pcEncLib->getPPSTemporalMVPEnabledIdc() == 0);
+#endif
       if (iGOPid == 0) // first picture in SOP (i.e. forward B)
       {
         pcSlice->setEnableTMVPFlag(0);
@@ -2202,7 +2209,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setEnableTMVPFlag(1);
       }
     }
+#if JVET_O0238_PPS_OR_SLICE
+    else if (m_pcEncLib->getTMVPModeId() == 1 && m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
+#else
     else if (m_pcEncLib->getTMVPModeId() == 1)
+#endif
     {
       pcSlice->setEnableTMVPFlag(1);
     }
@@ -2499,6 +2510,20 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     xPicInitLMCS(pcPic, pcSlice);
 
+#if JVET_O0299_APS_SCALINGLIST
+    if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
+    {
+      pcSlice->setscalingListPresentFlag( true );
+      int apsId = 0;
+      pcSlice->setscalingListAPSId( apsId );
+
+      ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+      APS*  scalingListAPS = apsMap->getPS( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+      assert( scalingListAPS != NULL );
+      pcSlice->setscalingListAPS( scalingListAPS );
+    }
+#endif
+
     if( encPic )
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
@@ -2596,6 +2621,23 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       if( !m_pcEncLib->getLoopFilterDisable() )
       {
         m_pcEncLib->getLoopFilter()->initEncPicYuvBuffer( chromaFormatIDC, picWidth, picHeight );
+      }
+#endif
+
+#if JVET_O0299_APS_SCALINGLIST
+      if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
+      {
+        pcSlice->setscalingListPresentFlag( true );
+        int apsId = 0;
+        pcSlice->setscalingListAPSId( apsId );
+      }
+      for( int s = 0; s < uiNumSliceSegments; s++ )
+      {
+        pcPic->slices[ s ]->setscalingListPresentFlag( pcSlice->getscalingListPresentFlag() );
+        if( pcSlice->getscalingListPresentFlag() )
+        {
+          pcPic->slices[ s ]->setscalingListAPSId( pcSlice->getscalingListAPSId() );
+        }
       }
 #endif
 
@@ -2768,6 +2810,23 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           CHECK(aps != pcSlice->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
         }
       }
+
+#if JVET_O0299_APS_SCALINGLIST
+      // only 1 SCALING LIST data for 1 picture    
+      if( pcSlice->getSPS()->getScalingListFlag() && ( m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ ) )
+      {
+        int apsId = pcSlice->getscalingListAPSId();
+        ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+        APS* aps = apsMap->getPS( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+        bool writeAPS = aps && apsMap->getChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+        if( writeAPS )
+        {
+          actualTotalBits += xWriteAPS( accessUnit, aps );
+          apsMap->clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+          CHECK( aps != pcSlice->getscalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
+        }
+      }
+#endif
 
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
       {

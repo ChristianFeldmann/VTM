@@ -65,9 +65,11 @@ class InterPrediction : public WeightPrediction
 private:
   int m_shareState;
 
+#if !JVET_O0055_INT_DMVR_DIS_BDOF
   Distortion  m_bioDistThres;
   Distortion  m_bioSubBlkDistThres;
   Distortion  m_bioPredSubBlkDist[MAX_NUM_PARTS_IN_CTU];
+#endif
 
 #if !JVET_O0304_SIMPLIFIED_BDOF
   int m_dotProduct1[BIO_TEMP_BUFFER_SIZE];
@@ -132,7 +134,9 @@ protected:
 #endif
   int             rightShiftMSB(int numer, int    denom);
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
+#if !JVET_O0055_INT_DMVR_DIS_BDOF
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
+#endif
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
                                   , const bool& bioApplied
                                   , const bool luma, const bool chroma

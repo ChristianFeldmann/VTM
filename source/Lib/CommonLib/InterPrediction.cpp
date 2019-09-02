@@ -1291,23 +1291,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   }
 }
 
-int getMSB( unsigned x )
-{
-  int msb = 0, bits = ( sizeof(int) << 3 ), y = 1;
-  while( x > 1u )
-  {
-    bits >>= 1;
-    y      = x >> bits;
-    if( y )
-    {
-      x    = y;
-      msb += bits;
-    }
-  }
-  msb += y;
-  return msb;
-}
-
 void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths)
 {
   const int     height = yuvDst.Y().height;
@@ -1452,6 +1435,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
 }
 
 
+#if !JVET_O0055_INT_DMVR_DIS_BDOF
 bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* pYuvSrc0, const int src0Stride, const Pel* pYuvSrc1, const int src1Stride, const BitDepths &clipBitDepths)
 {
   const int     width = pu.lwidth();
@@ -1485,6 +1469,7 @@ bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel*
 
   return (dist >= m_bioDistThres);
 }
+#endif
 
 void InterPrediction::xAddBIOAvg4(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {

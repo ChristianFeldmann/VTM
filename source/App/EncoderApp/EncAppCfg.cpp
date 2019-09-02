@@ -219,6 +219,7 @@ std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry)     //in
   {
     in >> entry.m_deltaRefPics1[i];
   }
+
   return in;
 }
 
@@ -1202,6 +1203,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1: use MD5\n"
                                                                                                                "\t0: disable")
   ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
+#if JVET_O0238_PPS_OR_SLICE
+  ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
+                                                                                                                "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
+#endif
   ("FEN",                                             tmpFastInterSearchMode,   int(FASTINTERSEARCH_DISABLED), "fast encoder setting")
   ("ECU",                                             m_bUseEarlyCU,                                    false, "Early CU setting")
   ("FDM",                                             m_useFastDecisionForMerge,                         true, "Fast decision for Merge RD Cost")
@@ -1439,6 +1444,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_RPLList1[i].m_numRefPicsActive = m_GOPList[i].m_numRefPicsActive1;
     m_RPLList0[i].m_numRefPics = m_GOPList[i].m_numRefPics0;
     m_RPLList1[i].m_numRefPics = m_GOPList[i].m_numRefPics1;
+#if JVET_N0100_PROPOSAL1
+    m_RPLList0[i].m_ltrp_in_slice_header_flag = m_GOPList[i].m_ltrp_in_slice_header_flag;
+    m_RPLList1[i].m_ltrp_in_slice_header_flag = m_GOPList[i].m_ltrp_in_slice_header_flag;
+#endif
     for (int j = 0; j < m_GOPList[i].m_numRefPics0; j++)
       m_RPLList0[i].m_deltaRefPics[j] = m_GOPList[i].m_deltaRefPics0[j];
     for (int j = 0; j < m_GOPList[i].m_numRefPics1; j++)
@@ -1777,7 +1786,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   if (!singleTileInPicFlag)
   {
     //if (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
+#if SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES
+    if ( (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag) ||
+         (m_numSlicesInPicMinus1 != 0 && m_rectSliceFlag) )
+#else
     if (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag)
+#endif
     {
       int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
 
@@ -1869,6 +1883,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
         brickToSlice = 0;
       }
     }      // (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
+    else // single slice in picture
+    {
+      const int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
+      int numTilesInPic = (m_numTileRowsMinus1 + 1) * (m_numTileColumnsMinus1 + 1);
+      m_topLeftBrickIdx.resize(numSlicesInPic);
+      m_bottomRightBrickIdx.resize(numSlicesInPic);
+      m_topLeftBrickIdx[0] = 0;
+      m_bottomRightBrickIdx[0] = numTilesInPic - 1;
+    }
   }        // !singleTileInPicFlag
 
   if (m_rectSliceFlag && m_signalledSliceIdFlag)
@@ -3232,6 +3255,65 @@ bool EncAppCfg::xCheckParameter()
     m_BIO = false;
   }
 
+  #if JVET_O0238_PPS_OR_SLICE
+  // If m_PPSorSliceFlag is equal to 1, for each PPS parameter below,
+  //     0:  value is signaled in slice header
+  //     >0: value is derived from PPS parameter as value - 1
+  switch (m_PPSorSliceMode)
+  {
+  case 0: // All parameter values are signaled in slice header
+    m_constantSliceHeaderParamsEnabledFlag = 0;
+    m_PPSDepQuantEnabledIdc = 0;
+    m_PPSRefPicListSPSIdc0 = 0;
+    m_PPSRefPicListSPSIdc1 = 0;
+    m_PPSTemporalMVPEnabledIdc = 0;
+    m_PPSMvdL1ZeroIdc = 0;
+    m_PPSCollocatedFromL0Idc = 0;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 0;
+    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
+    break;
+  case 1: // RA setting
+    m_constantSliceHeaderParamsEnabledFlag = 1;
+    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
+    m_PPSRefPicListSPSIdc0 = 0;
+    m_PPSRefPicListSPSIdc1 = 0;
+    m_PPSTemporalMVPEnabledIdc = 0;
+    m_PPSMvdL1ZeroIdc = 0;
+    m_PPSCollocatedFromL0Idc = 0;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
+    break;
+  case 2: // LDB setting
+    m_constantSliceHeaderParamsEnabledFlag = 1;
+    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
+    m_PPSRefPicListSPSIdc0 = 2;
+    m_PPSRefPicListSPSIdc1 = 2;
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+    m_PPSMvdL1ZeroIdc = 2;
+    m_PPSCollocatedFromL0Idc = 1;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
+    break;
+  case 3: // LDP setting
+    m_constantSliceHeaderParamsEnabledFlag = 1;
+    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
+    m_PPSRefPicListSPSIdc0 = 2;
+    m_PPSRefPicListSPSIdc1 = 2;
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+    m_PPSMvdL1ZeroIdc = 0;
+    m_PPSCollocatedFromL0Idc = 0;
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1; 
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1; 
+    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
+    break;
+  default:
+    THROW("Invalid value for PPSorSliceMode");
+  }
+#endif
+
   if (m_toneMappingInfoSEIEnabled)
   {
     xConfirmPara( m_toneMapCodedDataBitDepth < 8 || m_toneMapCodedDataBitDepth > 14 , "SEIToneMapCodedDataBitDepth must be in rage 8 to 14");
@@ -3546,8 +3628,7 @@ void EncAppCfg::xPrintParameter()
   const int iWaveFrontSubstreams = m_entropyCodingSyncEnabledFlag ? (m_iSourceHeight + m_uiMaxCUHeight - 1) / m_uiMaxCUHeight : 1;
   msg( VERBOSE, " WaveFrontSynchro:%d WaveFrontSubstreams:%d", m_entropyCodingSyncEnabledFlag?1:0, iWaveFrontSubstreams);
   msg( VERBOSE, " ScalingList:%d ", m_useScalingListId );
-  msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId     );
-
+  msg( VERBOSE, "TMVPMode:%d ", m_TMVPModeId );
   msg( VERBOSE, " DQ:%d ", m_depQuantEnabledFlag);
   msg( VERBOSE, " SignBitHidingFlag:%d ", m_signDataHidingEnabledFlag);
   msg( VERBOSE, "RecalQP:%d ", m_recalculateQPAccordingToLambda ? 1 : 0 );

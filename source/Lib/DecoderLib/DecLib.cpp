@@ -838,6 +838,24 @@ void DecLib::xActivateParameterSets()
       }
     }
 
+#if JVET_O0299_APS_SCALINGLIST
+    APS* scalinglistAPS = NULL;
+    if( m_apcSlicePilot->getscalingListAPSId() != -1 )
+    {
+      scalinglistAPS = m_parameterSetManager.getAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
+      CHECK( scalinglistAPS == 0, "No SCALING LIST APS present" );
+    }
+
+    if( scalinglistAPS )
+    {
+      m_parameterSetManager.clearAPSChangedFlag( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
+      if( false == m_parameterSetManager.activateAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS ) )
+      {
+        THROW( "SCALING LIST APS activation failed!" );
+      }
+    }
+#endif
+
     xParsePrefixSEImessages();
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT==0
@@ -851,7 +869,11 @@ void DecLib::xActivateParameterSets()
     m_pcPic = xGetNewPicBuffer (*sps, *pps, m_apcSlicePilot->getTLayer());
 
     m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->finalInit( *sps, *pps, apss, *lmcsAPS, *scalinglistAPS );
+#else
     m_pcPic->finalInit(*sps, *pps, apss, *lmcsAPS);
+#endif
     m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs();
@@ -874,6 +896,9 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->pps   = pps;
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->cs->scalinglistAps = scalinglistAPS;
+#endif
 
     m_pcPic->cs->pcv   = pps->pcv;
 
@@ -925,9 +950,9 @@ void DecLib::xActivateParameterSets()
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
 #if MAX_TB_SIZE_SIGNALLING
-    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false, false );
+    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false );
 #else
-    m_cTrQuant.init( nullptr, MAX_TB_SIZEY, false, false, false, false, false );
+    m_cTrQuant.init( nullptr, MAX_TB_SIZEY, false, false, false, false );
 #endif
 
     // RdCost
@@ -957,6 +982,9 @@ void DecLib::xActivateParameterSets()
     const PPS *pps = pSlice->getPPS();
     APS** apss = pSlice->getAlfAPSs();
     APS *lmcsAPS = pSlice->getLmcsAPS();
+#if JVET_O0299_APS_SCALINGLIST
+    APS *scalinglistAPS = pSlice->getscalingListAPS();
+#endif
 
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
@@ -964,6 +992,9 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->pps   = pps;
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->cs->scalinglistAps = scalinglistAPS;
+#endif
 
     m_pcPic->cs->pcv   = pps->pcv;
 
@@ -993,6 +1024,12 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new LMCS APS has been decoded while processing a picture");
     }
+#if JVET_O0299_APS_SCALINGLIST
+    if( scalinglistAPS && m_parameterSetManager.getAPSChangedFlag( scalinglistAPS->getAPSId(), SCALING_LIST_APS ) )
+    {
+      EXIT( "Error - a new SCALING LIST APS has been decoded while processing a picture" );
+    }
+#endif
 
     xParsePrefixSEImessages();
 
@@ -1269,7 +1306,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   pcSlice->constructRefPicList(m_cListPic);
 
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), true );
+#else
   pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), true );
+#endif
 #endif
 
     if (!pcSlice->isIntra())
@@ -1405,6 +1446,27 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   Quant *quant = m_cTrQuant.getQuant();
 
+#if JVET_O0299_APS_SCALINGLIST
+  if( pcSlice->getSPS()->getScalingListFlag() )
+  {
+    ScalingList scalingList;
+    if( pcSlice->getscalingListPresentFlag() )
+    {
+      APS* scalingListAPS = pcSlice->getscalingListAPS();
+      scalingList = scalingListAPS->getScalingList();
+    }
+    else
+    {
+      scalingList.setDefaultScalingList();
+    }
+    quant->setScalingListDec( scalingList );
+    quant->setUseScalingList( true );
+  }
+  else
+  {
+    quant->setUseScalingList( false );
+  }
+#else
   if(pcSlice->getSPS()->getScalingListFlag())
   {
     ScalingList scalingList;
@@ -1427,6 +1489,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     quant->setUseScalingList(false);
   }
+#endif
 
 
   if (pcSlice->getSPS()->getUseReshaper())

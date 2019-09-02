@@ -145,6 +145,9 @@ private:
 #endif
 
   APS*                      m_lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+  APS*                      m_scalinglistAPS;
+#endif
 
   EncHRD                    m_encHRD;
 
@@ -172,7 +175,11 @@ protected:
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
+#if JVET_O0299_APS_SCALINGLIST
+  void  xInitScalingLists ( SPS &sps, APS &aps );     ///< initialize scaling lists
+#else
   void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
+#endif
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 

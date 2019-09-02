@@ -76,6 +76,9 @@ struct GOPEntry
   int m_numRefPics1;
   int m_deltaRefPics1[MAX_NUM_REF_PICS];
   bool m_isEncoded;
+#if JVET_N0100_PROPOSAL1
+  bool m_ltrp_in_slice_header_flag;
+#endif
   GOPEntry()
   : m_POC(-1)
   , m_QPOffset(0)
@@ -97,7 +100,10 @@ struct GOPEntry
     , m_numRefPics0(0)
     , m_numRefPicsActive1(0)
     , m_numRefPics1(0)
-  , m_isEncoded(false)
+    , m_isEncoded(false)
+#if JVET_N0100_PROPOSAL1
+    , m_ltrp_in_slice_header_flag(false)
+#endif
   {
     ::memset(m_deltaRefPics0, 0, sizeof(m_deltaRefPics0));
     ::memset(m_deltaRefPics1, 0, sizeof(m_deltaRefPics1));
@@ -114,6 +120,9 @@ struct RPLEntry
   int m_numRefPics;
   int m_deltaRefPics[MAX_NUM_REF_PICS];
   bool m_isEncoded;
+#if JVET_N0100_PROPOSAL1
+  bool m_ltrp_in_slice_header_flag;
+#endif
   RPLEntry()
     : m_POC(-1)
     , m_temporalId(0)
@@ -122,6 +131,9 @@ struct RPLEntry
     , m_sliceType('P')
     , m_numRefPics(0)
     , m_isEncoded(false)
+#if JVET_N0100_PROPOSAL1
+    , m_ltrp_in_slice_header_flag(false)
+#endif
   {
     ::memset(m_deltaRefPics, 0, sizeof(m_deltaRefPics));
   }
@@ -589,6 +601,18 @@ protected:
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
   int       m_TMVPModeId;
+#if JVET_O0238_PPS_OR_SLICE
+  bool      m_constantSliceHeaderParamsEnabledFlag;
+  int       m_PPSDepQuantEnabledIdc;
+  int       m_PPSRefPicListSPSIdc0;
+  int       m_PPSRefPicListSPSIdc1;
+  int       m_PPSTemporalMVPEnabledIdc;
+  int       m_PPSMvdL1ZeroIdc;
+  int       m_PPSCollocatedFromL0Idc;
+  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
+  uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
+  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
+#endif
   bool      m_DepQuantEnabledFlag;
   bool      m_SignDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;
@@ -1505,6 +1529,28 @@ public:
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
+#if JVET_O0238_PPS_OR_SLICE
+  void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }
+  bool         getConstantSliceHeaderParamsEnabledFlag ()            { return m_constantSliceHeaderParamsEnabledFlag; }
+  void         setPPSDepQuantEnabledIdc ( int u )                    { m_PPSDepQuantEnabledIdc = u; }
+  int          getPPSDepQuantEnabledIdc ()                           { return m_PPSDepQuantEnabledIdc; }
+  void         setPPSRefPicListSPSIdc0 ( int u )                     { m_PPSRefPicListSPSIdc0 = u; }
+  int          getPPSRefPicListSPSIdc0 ()                            { return m_PPSRefPicListSPSIdc0; }
+  void         setPPSRefPicListSPSIdc1 ( int u )                     { m_PPSRefPicListSPSIdc1 = u; }
+  int          getPPSRefPicListSPSIdc1 ()                            { return m_PPSRefPicListSPSIdc1; }
+  void         setPPSTemporalMVPEnabledIdc ( int u )                 { m_PPSTemporalMVPEnabledIdc = u; }
+  int          getPPSTemporalMVPEnabledIdc ()                        { return m_PPSTemporalMVPEnabledIdc; }
+  void         setPPSMvdL1ZeroIdc ( int u )                          { m_PPSMvdL1ZeroIdc = u; }
+  int          getPPSMvdL1ZeroIdc ()                                 { return m_PPSMvdL1ZeroIdc; }
+  void         setPPSCollocatedFromL0Idc ( int u )                   { m_PPSCollocatedFromL0Idc = u; }
+  int          getPPSCollocatedFromL0Idc ()                          { return m_PPSCollocatedFromL0Idc; }
+  void         setPPSSixMinusMaxNumMergeCandPlus1 ( uint32_t u )     { m_PPSSixMinusMaxNumMergeCandPlus1 = u; }
+  uint32_t	   getPPSSixMinusMaxNumMergeCandPlus1 ()                 { return m_PPSSixMinusMaxNumMergeCandPlus1; }
+  void         setPPSFiveMinusMaxNumSubblockMergeCandPlus1 ( uint32_t u ) { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }
+  uint32_t     getPPSFiveMinusMaxNumSubblockMergeCandPlus1 ()        { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }
+  void         setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ( uint32_t u ) { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
+  uint32_t     getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ()  { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
+#endif
   WeightedPredictionMethod getWeightedPredictionMethod() const       { return m_weightedPredictionMethod; }
   void         setWeightedPredictionMethod( WeightedPredictionMethod m ) { m_weightedPredictionMethod = m; }
   void         setDepQuantEnabledFlag( bool b )                      { m_DepQuantEnabledFlag = b;    }

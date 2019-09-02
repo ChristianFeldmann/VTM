@@ -448,7 +448,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
   READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
+  {
+    READ_UVLC(uiCode, "log2_max_transform_skip_block_size_minus2");
+    pcPPS->getPpsRangeExtension().setLog2MaxTransformSkipBlockSize(uiCode + 2);
+  }
+#else
   READ_FLAG( uiCode, "transform_skip_enabled_flag" );
   pcPPS->setUseTransformSkip ( uiCode ? true : false );
 #endif

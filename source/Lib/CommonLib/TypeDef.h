@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define BUGFIX_CHECK_PRED_MODE                            1 // bugfix on DC value check of ScalingList::checkPredMode()
+
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
 
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling

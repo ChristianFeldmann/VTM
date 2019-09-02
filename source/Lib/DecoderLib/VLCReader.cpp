@@ -2198,7 +2198,49 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
         }
       }
+    }
 
+    if (
+      sps->getSplitConsOverrideEnabledFlag()
+      )
+    {
+      READ_FLAG(uiCode, "partition_constrainst_override_flag");        pcSlice->setSplitConsOverrideFlag(uiCode ? true : false);
+      if (pcSlice->getSplitConsOverrideFlag())
+      {
+        READ_UVLC(uiCode, "log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
+        READ_UVLC(uiCode, "max_mtt_hierarchy_depth");                 pcSlice->setMaxBTDepth(uiCode);
+        if (pcSlice->getMaxBTDepth() != 0)
+        {
+          READ_UVLC(uiCode, "log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
+          READ_UVLC(uiCode, "log2_diff_max_tt_min_qt");             pcSlice->setMaxTTSize(pcSlice->getMinQTSize() << uiCode);
+        }
+        else
+        {
+          pcSlice->setMaxBTSize(pcSlice->getMinQTSize());
+          pcSlice->setMaxTTSize(pcSlice->getMinQTSize());
+        }
+        if (
+          pcSlice->isIntra() && sps->getUseDualITree()
+          )
+        {
+          READ_UVLC(uiCode, "log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
+          READ_UVLC(uiCode, "max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxBTDepthIChroma(uiCode);
+          if (pcSlice->getMaxBTDepthIChroma() != 0)
+          {
+            READ_UVLC(uiCode, "log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
+            READ_UVLC(uiCode, "log2_diff_max_tt_min_qt_chroma");             pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
+          }
+          else
+          {
+            pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma());
+            pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma());
+          }
+        }
+      }
+    }
+
+    if(!pcSlice->isIntra())
+    {
 #if JVET_O0238_PPS_OR_SLICE
       if (sps->getSPSTemporalMVPEnabledFlag() && !pps->getPPSTemporalMVPEnabledIdc())
 #else
@@ -2436,44 +2478,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     else
     {
       pcSlice->setSignDataHidingEnabledFlag( 0 );
-    }
-    if (
-      sps->getSplitConsOverrideEnabledFlag()
-      )
-    {
-      READ_FLAG(uiCode, "partition_constrainst_override_flag");        pcSlice->setSplitConsOverrideFlag(uiCode ? true : false);
-      if (pcSlice->getSplitConsOverrideFlag())
-      {
-        READ_UVLC(uiCode, "log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
-        READ_UVLC(uiCode, "max_mtt_hierarchy_depth");                 pcSlice->setMaxBTDepth(uiCode);
-        if (pcSlice->getMaxBTDepth() != 0)
-        {
-          READ_UVLC(uiCode, "log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
-          READ_UVLC(uiCode, "log2_diff_max_tt_min_qt");             pcSlice->setMaxTTSize(pcSlice->getMinQTSize() << uiCode);
-        }
-        else
-        {
-          pcSlice->setMaxBTSize(pcSlice->getMinQTSize());
-          pcSlice->setMaxTTSize(pcSlice->getMinQTSize());
-        }
-        if (
-          pcSlice->isIntra() && sps->getUseDualITree()
-          )
-        {
-          READ_UVLC(uiCode, "log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
-          READ_UVLC(uiCode, "max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxBTDepthIChroma(uiCode);
-          if (pcSlice->getMaxBTDepthIChroma() != 0)
-          {
-            READ_UVLC(uiCode, "log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
-            READ_UVLC(uiCode, "log2_diff_max_tt_min_qt_chroma");             pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
-          }
-          else
-          {
-            pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma());
-            pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma());
-          }
-        }
-      }
     }
 
 #if JVET_O0455_IBC_MAX_MERGE_NUM

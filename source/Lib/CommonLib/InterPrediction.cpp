@@ -1452,6 +1452,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
 }
 
 
+#if !JVET_O0055_INT_DMVR_DIS_BDOF
 bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* pYuvSrc0, const int src0Stride, const Pel* pYuvSrc1, const int src1Stride, const BitDepths &clipBitDepths)
 {
   const int     width = pu.lwidth();
@@ -1485,6 +1486,7 @@ bool InterPrediction::xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel*
 
   return (dist >= m_bioDistThres);
 }
+#endif
 
 void InterPrediction::xAddBIOAvg4(const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng)
 {

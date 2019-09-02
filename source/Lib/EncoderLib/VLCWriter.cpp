@@ -1479,6 +1479,48 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           }
         }
       }
+
+      //check if numrefidxes match the defaults. If not, override
+
+      if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
+          (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
+      {
+        int defaultL0 = std::min<int>(pcSlice->getRPL0()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL0DefaultActive());
+        int defaultL1 = pcSlice->isInterB() ? std::min<int>(pcSlice->getRPL1()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL1DefaultActive()) : 0;
+        bool overrideFlag = ( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) != defaultL0 || ( pcSlice->isInterB() && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) != defaultL1 ) );
+        WRITE_FLAG( overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag" );
+        if( overrideFlag )
+        {
+          if(pcSlice->getRPL0()->getNumRefEntries() > 1)
+          {
+            WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) - 1, "num_ref_idx_l0_active_minus1" );
+          }
+          else
+          {
+            pcSlice->setNumRefIdx( REF_PIC_LIST_0, 1);
+          }
+
+          if( pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1)
+          {
+            WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) - 1, "num_ref_idx_l1_active_minus1" );
+          }
+          else
+          {
+            pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0);
+          }
+        }
+        else
+        {
+          pcSlice->setNumRefIdx( REF_PIC_LIST_0, defaultL0 );
+          pcSlice->setNumRefIdx( REF_PIC_LIST_1, defaultL1 );
+        }
+      }
+      else
+      {
+        pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
+        pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
+      }
+
 #if JVET_O0238_PPS_OR_SLICE
       if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() && !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
       {
@@ -1576,48 +1618,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         }
       }
     }
-
-    //check if numrefidxes match the defaults. If not, override
-
-    if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
-        (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
-    {
-      int defaultL0 = std::min<int>(pcSlice->getRPL0()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL0DefaultActive());
-      int defaultL1 = pcSlice->isInterB() ? std::min<int>(pcSlice->getRPL1()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL1DefaultActive()) : 0;
-      bool overrideFlag = ( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) != defaultL0 || ( pcSlice->isInterB() && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) != defaultL1 ) );
-      WRITE_FLAG( overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag" );
-      if( overrideFlag )
-      {
-        if(pcSlice->getRPL0()->getNumRefEntries() > 1)
-        {
-          WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) - 1, "num_ref_idx_l0_active_minus1" );
-        }
-        else
-        {
-          pcSlice->setNumRefIdx( REF_PIC_LIST_0, 1);
-        }
-
-        if( pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1)
-        {
-          WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) - 1, "num_ref_idx_l1_active_minus1" );
-        }
-        else
-        {
-          pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0);
-        }
-      }
-      else
-      {
-        pcSlice->setNumRefIdx( REF_PIC_LIST_0, defaultL0 );
-        pcSlice->setNumRefIdx( REF_PIC_LIST_1, defaultL1 );
-      }
-    }
-    else
-    {
-      pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
-      pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
-    }
-
 
     if( pcSlice->isInterB() )
     {

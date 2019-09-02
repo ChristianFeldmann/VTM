@@ -1916,6 +1916,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       ReferencePictureList* rpl1 = pcSlice->getLocalRPL1();
       (*rpl1) = ReferencePictureList();
       pcSlice->setRPL1(rpl1);
+      pcSlice->setNumRefIdx(REF_PIC_LIST_0, 0);
+      pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
     }
     else
     {
@@ -2125,6 +2127,78 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         }
       }
 
+      if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
+          (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
+      {
+        READ_FLAG( uiCode, "num_ref_idx_active_override_flag");
+        if (uiCode)
+        {
+          if(pcSlice->getRPL0()->getNumRefEntries() > 1)
+          {
+            READ_UVLC (uiCode, "num_ref_idx_l0_active_minus1" );
+          }
+          else
+          {
+            uiCode = 0;
+          }
+          pcSlice->setNumRefIdx( REF_PIC_LIST_0, uiCode + 1 );
+          if (pcSlice->isInterB())
+          {
+            if(pcSlice->getRPL1()->getNumRefEntries() > 1)
+            {
+              READ_UVLC (uiCode, "num_ref_idx_l1_active_minus1" );
+            }
+            else
+            {
+              uiCode = 0;
+            }
+            pcSlice->setNumRefIdx( REF_PIC_LIST_1, uiCode + 1 );
+          }
+          else
+          {
+            pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
+          }
+        }
+        else
+        {
+          if(pcSlice->getRPL0()->getNumRefEntries() >= pps->getNumRefIdxL0DefaultActive())
+          {
+            pcSlice->setNumRefIdx(REF_PIC_LIST_0, pps->getNumRefIdxL0DefaultActive());
+          }
+          else
+          {
+            pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
+          }
+
+          if (pcSlice->isInterB())
+          {
+            if(pcSlice->getRPL1()->getNumRefEntries() >= pps->getNumRefIdxL1DefaultActive())
+            {
+              pcSlice->setNumRefIdx(REF_PIC_LIST_1, pps->getNumRefIdxL1DefaultActive());
+            }
+            else
+            {
+              pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
+            }
+          }
+          else
+          {
+            pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
+          }
+        }
+      }
+      else
+      {
+        if(!pcSlice->isIntra())
+        {
+          pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
+        }
+        if(pcSlice->isInterB())
+        {
+          pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
+        }
+      }
+
 #if JVET_O0238_PPS_OR_SLICE
       if (sps->getSPSTemporalMVPEnabledFlag() && !pps->getPPSTemporalMVPEnabledIdc())
 #else
@@ -2256,77 +2330,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     if (pcSlice->getIdrPicFlag())
     {
       pcSlice->setEnableTMVPFlag(false);
-    }
-    if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
-      (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
-    {
-      READ_FLAG( uiCode, "num_ref_idx_active_override_flag");
-      if (uiCode)
-      {
-        if(pcSlice->getRPL0()->getNumRefEntries() > 1)
-        {
-          READ_UVLC (uiCode, "num_ref_idx_l0_active_minus1" );
-        }
-        else
-        {
-          uiCode = 0;
-        }
-        pcSlice->setNumRefIdx( REF_PIC_LIST_0, uiCode + 1 );
-        if (pcSlice->isInterB())
-        {
-          if(pcSlice->getRPL1()->getNumRefEntries() > 1)
-          {
-            READ_UVLC (uiCode, "num_ref_idx_l1_active_minus1" );
-          }
-          else
-          {
-            uiCode = 0;
-          }
-          pcSlice->setNumRefIdx( REF_PIC_LIST_1, uiCode + 1 );
-        }
-        else
-        {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
-        }
-      }
-      else
-      {
-        if(pcSlice->getRPL0()->getNumRefEntries() >= pps->getNumRefIdxL0DefaultActive())
-        {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_0, pps->getNumRefIdxL0DefaultActive());
-        }
-        else
-        {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
-        }
-
-        if (pcSlice->isInterB())
-        {
-          if(pcSlice->getRPL1()->getNumRefEntries() >= pps->getNumRefIdxL1DefaultActive())
-          {
-            pcSlice->setNumRefIdx(REF_PIC_LIST_1, pps->getNumRefIdxL1DefaultActive());
-          }
-          else
-          {
-            pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
-          }
-        }
-        else
-        {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
-        }
-      }
-    }
-    else
-    {
-      if(!pcSlice->isIntra())
-      {
-        pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
-      }
-      if(pcSlice->isInterB())
-      {
-        pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
-      }
     }
     // }
 

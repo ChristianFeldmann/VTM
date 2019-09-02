@@ -2354,131 +2354,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-    if(sps->getSAOEnabledFlag())
-    {
-      READ_FLAG(uiCode, "slice_sao_luma_flag");  pcSlice->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, (bool)uiCode);
-
-      if (bChroma)
-      {
-        READ_FLAG(uiCode, "slice_sao_chroma_flag");  pcSlice->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, (bool)uiCode);
-      }
-    }
-
-    if( sps->getALFEnabledFlag() )
-    {
-      READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
-      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);
-      int alfChromaIdc = 0;
-      if (uiCode)
-      {
-#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
-#if JVET_O_MAX_NUM_ALF_APS_8
-        READ_CODE(3, uiCode, "tile_group_num_APS");
-#else
-        xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
-#endif
-#else
-        if (pcSlice->isIntra())
-        {
-          READ_FLAG(uiCode, "tile_group_num_APS");
-        }
-        else
-        {
-#if JVET_O_MAX_NUM_ALF_APS_8
-          READ_CODE(3, uiCode, "tile_group_num_APS");
-#else
-          xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
-#endif
-        }
-#endif
-        int numAps = uiCode;
-        pcSlice->setTileGroupNumAps(numAps);
-        std::vector<int> apsId(numAps, -1);
-        for (int i = 0; i < numAps; i++)
-        {
-#if JVET_O_MAX_NUM_ALF_APS_8
-          READ_CODE(3, uiCode, "tile_group_aps_id");
-#else
-          READ_CODE(5, uiCode, "tile_group_aps_id");
-#endif
-          apsId[i] = uiCode;
-        }
-
-
-        pcSlice->setAlfAPSs(apsId);
-#if JVET_O0616_400_CHROMA_SUPPORT
-        if (bChroma)
-        {
-#endif
-#if JVET_O0491_HLS_CLEANUP
-          READ_CODE(2, uiCode, "slice_alf_chroma_idc");   alfChromaIdc = uiCode;
-#else
-          alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
-#endif
-#if JVET_O0616_400_CHROMA_SUPPORT
-        }
-        else
-        {
-          alfChromaIdc = 0;
-        }
-#endif
-        if (alfChromaIdc)
-        {
-#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
-#if JVET_O_MAX_NUM_ALF_APS_8
-          READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
-#else
-          READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
-#endif
-#else
-          if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
-          {
-            uiCode = apsId[0];
-          }
-          else
-          {
-#if JVET_O_MAX_NUM_ALF_APS_8
-            READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
-#else
-            READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
-#endif
-          }
-#endif
-          pcSlice->setTileGroupApsIdChroma(uiCode);
-        }
-      }
-      else
-      {
-        pcSlice->setTileGroupNumAps(0);
-      }
-      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
-      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
-    }
-
-#if JVET_O0238_PPS_OR_SLICE
-    if (!pps->getPPSDepQuantEnabledIdc())
-    {
-      READ_FLAG(uiCode, "dep_quant_enabled_flag");
-    }
-    else
-    {
-      uiCode = pps->getPPSDepQuantEnabledIdc() - 1;
-    }
-#else
-    READ_FLAG( uiCode, "dep_quant_enabled_flag" );
-#endif
-
-    pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
-    if( !pcSlice->getDepQuantEnabledFlag() )
-    {
-      READ_FLAG( uiCode, "sign_data_hiding_enabled_flag" );
-      pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
-    }
-    else
-    {
-      pcSlice->setSignDataHidingEnabledFlag( 0 );
-    }
-
 #if JVET_O0455_IBC_MAX_MERGE_NUM
     if (!pcSlice->isIntra())
 #else
@@ -2651,6 +2526,131 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     else
     {
       pcSlice->setUseChromaQpAdj(false);
+    }
+
+    if(sps->getSAOEnabledFlag())
+    {
+      READ_FLAG(uiCode, "slice_sao_luma_flag");  pcSlice->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, (bool)uiCode);
+
+      if (bChroma)
+      {
+        READ_FLAG(uiCode, "slice_sao_chroma_flag");  pcSlice->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, (bool)uiCode);
+      }
+    }
+
+    if( sps->getALFEnabledFlag() )
+    {
+      READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);
+      int alfChromaIdc = 0;
+      if (uiCode)
+      {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+        READ_CODE(3, uiCode, "tile_group_num_APS");
+#else
+        xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
+#endif
+#else
+        if (pcSlice->isIntra())
+        {
+          READ_FLAG(uiCode, "tile_group_num_APS");
+        }
+        else
+        {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          READ_CODE(3, uiCode, "tile_group_num_APS");
+#else
+          xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
+#endif
+        }
+#endif
+        int numAps = uiCode;
+        pcSlice->setTileGroupNumAps(numAps);
+        std::vector<int> apsId(numAps, -1);
+        for (int i = 0; i < numAps; i++)
+        {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          READ_CODE(3, uiCode, "tile_group_aps_id");
+#else
+          READ_CODE(5, uiCode, "tile_group_aps_id");
+#endif
+          apsId[i] = uiCode;
+        }
+
+
+        pcSlice->setAlfAPSs(apsId);
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (bChroma)
+        {
+#endif
+#if JVET_O0491_HLS_CLEANUP
+          READ_CODE(2, uiCode, "slice_alf_chroma_idc");   alfChromaIdc = uiCode;
+#else
+          alfChromaIdc = truncatedUnaryEqProb(3);        //alf_chroma_idc
+#endif
+#if JVET_O0616_400_CHROMA_SUPPORT
+        }
+        else
+        {
+          alfChromaIdc = 0;
+        }
+#endif
+        if (alfChromaIdc)
+        {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+          READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
+#else
+          READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+#endif
+#else
+          if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
+          {
+            uiCode = apsId[0];
+          }
+          else
+          {
+#if JVET_O_MAX_NUM_ALF_APS_8
+            READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
+#else
+            READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+#endif
+          }
+#endif
+          pcSlice->setTileGroupApsIdChroma(uiCode);
+        }
+      }
+      else
+      {
+        pcSlice->setTileGroupNumAps(0);
+      }
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
+      pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+    }
+
+#if JVET_O0238_PPS_OR_SLICE
+    if (!pps->getPPSDepQuantEnabledIdc())
+    {
+      READ_FLAG(uiCode, "dep_quant_enabled_flag");
+    }
+    else
+    {
+      uiCode = pps->getPPSDepQuantEnabledIdc() - 1;
+    }
+#else
+    READ_FLAG( uiCode, "dep_quant_enabled_flag" );
+#endif
+
+    pcSlice->setDepQuantEnabledFlag( uiCode != 0 );
+    if( !pcSlice->getDepQuantEnabledFlag() )
+    {
+      READ_FLAG( uiCode, "sign_data_hiding_enabled_flag" );
+      pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
+    }
+    else
+    {
+      pcSlice->setSignDataHidingEnabledFlag( 0 );
     }
 
     if (pps->getDeblockingFilterControlPresentFlag())

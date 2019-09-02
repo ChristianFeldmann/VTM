@@ -1568,7 +1568,56 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
       }
 #endif
+    }
 
+    if( pcSlice->isInterB() )
+    {
+#if JVET_O0238_PPS_OR_SLICE
+      if (!pcSlice->getPPS()->getPPSMvdL1ZeroIdc())
+      {
+        WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
+      }
+#else
+      WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
+#endif
+    }
+
+    if( !pcSlice->isIntra() )
+    {
+      if( !pcSlice->isIntra() && pcSlice->getPPS()->getCabacInitPresentFlag() )
+      {
+        SliceType sliceType = pcSlice->getSliceType();
+        SliceType  encCABACTableIdx = pcSlice->getEncCABACTableIdx();
+        bool encCabacInitFlag = ( sliceType != encCABACTableIdx && encCABACTableIdx != I_SLICE ) ? true : false;
+        pcSlice->setCabacInitFlag( encCabacInitFlag );
+        WRITE_FLAG( encCabacInitFlag ? 1 : 0, "cabac_init_flag" );
+      }
+    }
+
+    if( pcSlice->getEnableTMVPFlag() )
+    {
+      if( pcSlice->getSliceType() == B_SLICE )
+      {
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pcSlice->getPPS()->getPPSCollocatedFromL0Idc())
+        {
+          WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
+        }
+#else
+        WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
+#endif
+      }
+
+      if( pcSlice->getSliceType() != I_SLICE &&
+        ( ( pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) > 1 ) ||
+          ( pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) > 1 ) ) )
+      {
+        WRITE_UVLC( pcSlice->getColRefIdx(), "collocated_ref_idx" );
+      }
+    }
+    if( ( pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE ) || ( pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE ) )
+    {
+      xCodePredWeightTable( pcSlice );
     }
     if( pcSlice->getSPS()->getSAOEnabledFlag() )
     {
@@ -1655,55 +1704,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
 
-    if( pcSlice->isInterB() )
-    {
-#if JVET_O0238_PPS_OR_SLICE
-      if (!pcSlice->getPPS()->getPPSMvdL1ZeroIdc())
-      {
-        WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
-      }
-#else
-      WRITE_FLAG( pcSlice->getMvdL1ZeroFlag() ? 1 : 0, "mvd_l1_zero_flag" );
-#endif
-    }
-
-    if( !pcSlice->isIntra() )
-    {
-      if( !pcSlice->isIntra() && pcSlice->getPPS()->getCabacInitPresentFlag() )
-      {
-        SliceType sliceType = pcSlice->getSliceType();
-        SliceType  encCABACTableIdx = pcSlice->getEncCABACTableIdx();
-        bool encCabacInitFlag = ( sliceType != encCABACTableIdx && encCABACTableIdx != I_SLICE ) ? true : false;
-        pcSlice->setCabacInitFlag( encCabacInitFlag );
-        WRITE_FLAG( encCabacInitFlag ? 1 : 0, "cabac_init_flag" );
-      }
-    }
-
-    if( pcSlice->getEnableTMVPFlag() )
-    {
-      if( pcSlice->getSliceType() == B_SLICE )
-      {
-#if JVET_O0238_PPS_OR_SLICE
-        if (!pcSlice->getPPS()->getPPSCollocatedFromL0Idc())
-        {
-          WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
-        }
-#else
-        WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
-#endif
-      }
-
-      if( pcSlice->getSliceType() != I_SLICE &&
-        ( ( pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) > 1 ) ||
-          ( pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) > 1 ) ) )
-      {
-        WRITE_UVLC( pcSlice->getColRefIdx(), "collocated_ref_idx" );
-      }
-    }
-    if( ( pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE ) || ( pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE ) )
-    {
-      xCodePredWeightTable( pcSlice );
-    }
 #if JVET_O0238_PPS_OR_SLICE
     if (!pcSlice->getPPS()->getPPSDepQuantEnabledIdc())
     {

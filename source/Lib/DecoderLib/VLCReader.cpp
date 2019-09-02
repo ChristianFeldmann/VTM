@@ -2267,6 +2267,92 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
+    if (pcSlice->getIdrPicFlag())
+    {
+      pcSlice->setEnableTMVPFlag(false);
+    }
+
+    if (pcSlice->isInterB())
+    {
+#if JVET_O0238_PPS_OR_SLICE
+      if (!pps->getPPSMvdL1ZeroIdc())
+      {
+        READ_FLAG(uiCode, "mvd_l1_zero_flag");
+      }
+      else
+      {
+        uiCode = pps->getPPSMvdL1ZeroIdc() - 1;
+      }
+#else   
+      READ_FLAG( uiCode, "mvd_l1_zero_flag" );
+#endif      
+
+      pcSlice->setMvdL1ZeroFlag( (uiCode ? true : false) );
+    }
+
+    pcSlice->setCabacInitFlag( false ); // default
+    if(pps->getCabacInitPresentFlag() && !pcSlice->isIntra())
+    {
+      READ_FLAG(uiCode, "cabac_init_flag");
+      pcSlice->setCabacInitFlag( uiCode ? true : false );
+      pcSlice->setEncCABACTableIdx( pcSlice->getSliceType() == B_SLICE ? ( uiCode ? P_SLICE : B_SLICE ) : ( uiCode ? B_SLICE : P_SLICE ) );
+    }
+
+    if ( pcSlice->getEnableTMVPFlag() )
+    {
+      if ( pcSlice->getSliceType() == B_SLICE )
+      {
+#if JVET_O0238_PPS_OR_SLICE
+        if (!pps->getPPSCollocatedFromL0Idc())
+        {
+          READ_FLAG(uiCode, "collocated_from_l0_flag");
+        }
+        else
+        {
+          uiCode = pps->getPPSCollocatedFromL0Idc() - 1;
+        }
+#else
+        READ_FLAG( uiCode, "collocated_from_l0_flag" );
+#endif
+        pcSlice->setColFromL0Flag(uiCode);
+      }
+      else
+      {
+        pcSlice->setColFromL0Flag( 1 );
+      }
+
+      if ( pcSlice->getSliceType() != I_SLICE &&
+           ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1)||
+           (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
+      {
+        READ_UVLC( uiCode, "collocated_ref_idx" );
+        pcSlice->setColRefIdx(uiCode);
+      }
+      else
+      {
+        pcSlice->setColRefIdx(0);
+      }
+    }
+    if ( (pps->getUseWP() && pcSlice->getSliceType()==P_SLICE) || (pps->getWPBiPred() && pcSlice->getSliceType()==B_SLICE) )
+    {
+      parsePredWeightTable(pcSlice, sps);
+      pcSlice->initWpScaling(sps);
+    }
+    else
+    {
+      WPScalingParam *wp;
+      for ( int iNumRef=0 ; iNumRef<((pcSlice->getSliceType() == B_SLICE )?2:1); iNumRef++ )
+      {
+        RefPicList  eRefPicList = ( iNumRef ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
+        for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
+        {
+          pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
+          wp[0].bPresentFlag = false;
+          wp[1].bPresentFlag = false;
+          wp[2].bPresentFlag = false;
+        }
+      }
+    }
 
     if(sps->getSAOEnabledFlag())
     {
@@ -2369,93 +2455,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
     }
 
-    if (pcSlice->getIdrPicFlag())
-    {
-      pcSlice->setEnableTMVPFlag(false);
-    }
-    // }
-
-    if (pcSlice->isInterB())
-    {
-#if JVET_O0238_PPS_OR_SLICE
-      if (!pps->getPPSMvdL1ZeroIdc())
-      {
-        READ_FLAG(uiCode, "mvd_l1_zero_flag");
-      }
-      else
-      {
-        uiCode = pps->getPPSMvdL1ZeroIdc() - 1;
-      }
-#else   
-      READ_FLAG( uiCode, "mvd_l1_zero_flag" );
-#endif      
-
-      pcSlice->setMvdL1ZeroFlag( (uiCode ? true : false) );
-    }
-
-    pcSlice->setCabacInitFlag( false ); // default
-    if(pps->getCabacInitPresentFlag() && !pcSlice->isIntra())
-    {
-      READ_FLAG(uiCode, "cabac_init_flag");
-      pcSlice->setCabacInitFlag( uiCode ? true : false );
-      pcSlice->setEncCABACTableIdx( pcSlice->getSliceType() == B_SLICE ? ( uiCode ? P_SLICE : B_SLICE ) : ( uiCode ? B_SLICE : P_SLICE ) );
-    }
-
-    if ( pcSlice->getEnableTMVPFlag() )
-    {
-      if ( pcSlice->getSliceType() == B_SLICE )
-      {
-#if JVET_O0238_PPS_OR_SLICE
-        if (!pps->getPPSCollocatedFromL0Idc())
-        {
-          READ_FLAG(uiCode, "collocated_from_l0_flag");
-        }
-        else
-        {
-          uiCode = pps->getPPSCollocatedFromL0Idc() - 1;
-        }
-#else
-        READ_FLAG( uiCode, "collocated_from_l0_flag" );
-#endif
-        pcSlice->setColFromL0Flag(uiCode);
-      }
-      else
-      {
-        pcSlice->setColFromL0Flag( 1 );
-      }
-
-      if ( pcSlice->getSliceType() != I_SLICE &&
-           ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1)||
-           (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
-      {
-        READ_UVLC( uiCode, "collocated_ref_idx" );
-        pcSlice->setColRefIdx(uiCode);
-      }
-      else
-      {
-        pcSlice->setColRefIdx(0);
-      }
-    }
-    if ( (pps->getUseWP() && pcSlice->getSliceType()==P_SLICE) || (pps->getWPBiPred() && pcSlice->getSliceType()==B_SLICE) )
-    {
-      parsePredWeightTable(pcSlice, sps);
-      pcSlice->initWpScaling(sps);
-    }
-    else
-    {
-      WPScalingParam *wp;
-      for ( int iNumRef=0 ; iNumRef<((pcSlice->getSliceType() == B_SLICE )?2:1); iNumRef++ )
-      {
-        RefPicList  eRefPicList = ( iNumRef ? REF_PIC_LIST_1 : REF_PIC_LIST_0 );
-        for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
-        {
-          pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
-          wp[0].bPresentFlag = false;
-          wp[1].bPresentFlag = false;
-          wp[2].bPresentFlag = false;
-        }
-      }
-    }
 #if JVET_O0238_PPS_OR_SLICE
     if (!pps->getPPSDepQuantEnabledIdc())
     {

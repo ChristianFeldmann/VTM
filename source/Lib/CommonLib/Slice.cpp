@@ -1599,8 +1599,7 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
 #endif
 
 PPSRExt::PPSRExt()
-: m_log2MaxTransformSkipBlockSize      (2)
-, m_crossComponentPredictionEnabledFlag(false)
+: m_crossComponentPredictionEnabledFlag(false)
 , m_cuChromaQpOffsetSubdiv             (0)
 , m_chromaQpOffsetListLen              (0)
 // m_ChromaQpAdjTableIncludingNullEntry initialized below

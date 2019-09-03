@@ -775,16 +775,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
           CHECK(bSkipTrailingExtensionBits, "Invalid state");
 
-#if JVET_O1136_TS_BDPCM_SIGNALLING
-          if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
-#else
-          if (pcPPS->getUseTransformSkip())
-#endif
-          {
-            READ_UVLC( uiCode, "log2_max_transform_skip_block_size_minus2");
-            ppsRangeExtension.setLog2MaxTransformSkipBlockSize(uiCode+2);
-          }
-
           READ_FLAG( uiCode, "cross_component_prediction_enabled_flag");
           ppsRangeExtension.setCrossComponentPredictionEnabledFlag(uiCode != 0);
 

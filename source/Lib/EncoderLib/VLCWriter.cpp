@@ -486,14 +486,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
         case PPS_EXT__REXT:
         {
           const PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
-#if JVET_O1136_TS_BDPCM_SIGNALLING
-          if (pcSPS->getTransformSkipEnabledFlag())
-#else
-          if (pcPPS->getUseTransformSkip())
-#endif
-          {
-            WRITE_UVLC( ppsRangeExtension.getLog2MaxTransformSkipBlockSize()-2,            "log2_max_transform_skip_block_size_minus2");
-          }
 
           WRITE_FLAG((ppsRangeExtension.getCrossComponentPredictionEnabledFlag() ? 1 : 0), "cross_component_prediction_enabled_flag" );
 

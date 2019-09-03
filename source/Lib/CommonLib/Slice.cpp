@@ -1632,7 +1632,9 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_TransquantBypassEnabledFlag      (false)
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+, m_log2MaxTransformSkipBlockSize    (2)
+#else
 , m_useTransformSkip                 (false)
 #endif
 , m_entropyCodingSyncEnabledFlag     (false)

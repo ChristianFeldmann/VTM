@@ -1856,7 +1856,7 @@ void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
       continue;
     if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
       getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-      && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == getScalingListDC(sizeId,predListIdx)))) // check DC value
+      && ((sizeId < SCALING_LIST_16x16) || listId == predListIdx ? getScalingListDefaultAddress(sizeId, predListIdx)[0] == getScalingListDC(sizeId, predListIdx) : (getScalingListDC(sizeId, listId) == getScalingListDC(sizeId, predListIdx)))) // check DC value
     {
       setRefMatrixId(sizeId, listId, predListIdx);
       setScalingListPredModeFlag(sizeId, listId, false);

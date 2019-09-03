@@ -1247,15 +1247,15 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
     picture->scheduler.setSplitThreadId();
     picture->scheduler.setSplitJobId( jId );
 
-    Partitioner* jobPartitioner = PartitionerFactory::get( *tempCS->slice );
+    QTBTPartitioner jobPartitioner;
     EncCu*       jobCuEnc       = m_pcEncLib->getCuEncoder( picture->scheduler.getSplitDataId( jId ) );
     auto*        jobBlkCache    = dynamic_cast<CacheBlkInfoCtrl*>( jobCuEnc->m_modeCtrl );
 #if REUSE_CU_RESULTS
     auto*        jobBestCache   = dynamic_cast<BestEncInfoCache*>( jobCuEnc->m_modeCtrl );
 #endif
 
-    jobPartitioner->copyState( partitioner );
-    jobCuEnc      ->copyState( this, *jobPartitioner, currArea, true );
+    jobPartitioner.copyState( partitioner );
+    jobCuEnc      ->copyState( this, jobPartitioner, currArea, true );
 
     if( jobBlkCache  ) { jobBlkCache ->tick(); }
 #if REUSE_CU_RESULTS
@@ -1267,9 +1267,7 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
 
     jobUsed[jId] = true;
 
-    jobCuEnc->xCompressCU( jobTemp, jobBest, *jobPartitioner );
-
-    delete jobPartitioner;
+    jobCuEnc->xCompressCU( jobTemp, jobBest, jobPartitioner );
 
     picture->scheduler.setSplitJobId( 0 );
     // thread stop

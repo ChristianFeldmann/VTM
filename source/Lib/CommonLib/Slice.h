@@ -1195,7 +1195,6 @@ public:
 class PPSRExt // Names aligned to text specification
 {
 private:
-  int              m_log2MaxTransformSkipBlockSize;
   bool             m_crossComponentPredictionEnabledFlag;
 
   // Chroma QP Adjustments
@@ -1210,15 +1209,11 @@ public:
 
   bool settingsDifferFromDefaults(const bool bTransformSkipEnabledFlag) const
   {
-    return (bTransformSkipEnabledFlag && (getLog2MaxTransformSkipBlockSize() !=2))
-        || (getCrossComponentPredictionEnabledFlag() )
+    return (getCrossComponentPredictionEnabledFlag() )
         || (getChromaQpOffsetListEnabledFlag() )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA) !=0 )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) !=0 );
   }
-
-  uint32_t                   getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize;         }
-  void                   setLog2MaxTransformSkipBlockSize( uint32_t u )                       { m_log2MaxTransformSkipBlockSize  = u;           }
 
   bool                   getCrossComponentPredictionEnabledFlag() const                   { return m_crossComponentPredictionEnabledFlag;   }
   void                   setCrossComponentPredictionEnabledFlag(bool value)               { m_crossComponentPredictionEnabledFlag = value;  }

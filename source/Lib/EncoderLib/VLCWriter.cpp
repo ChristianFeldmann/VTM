@@ -274,7 +274,12 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
   WRITE_FLAG( pcPPS->getConstrainedIntraPred() ? 1 : 0,      "constrained_intra_pred_flag" );
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  if (pcSPS->getTransformSkipEnabledFlag())
+  {
+    WRITE_UVLC(pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");
+  }
+#else
   WRITE_FLAG( pcPPS->getUseTransformSkip() ? 1 : 0,  "transform_skip_enabled_flag" );
 #endif
   WRITE_FLAG( pcPPS->getUseDQP() ? 1 : 0, "cu_qp_delta_enabled_flag" );
@@ -442,11 +447,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   bool pps_extension_present_flag=false;
   bool pps_extension_flags[NUM_PPS_EXTENSION_FLAGS]={false};
 
-#if JVET_O1136_TS_BDPCM_SIGNALLING
-  pps_extension_flags[PPS_EXT__REXT] = pcPPS->getPpsRangeExtension().settingsDifferFromDefaults(pcSPS->getTransformSkipEnabledFlag());
-#else
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   pps_extension_flags[PPS_EXT__REXT] = pcPPS->getPpsRangeExtension().settingsDifferFromDefaults(pcPPS->getUseTransformSkip());
-#endif
 
   // Other PPS extension flags checked here.
 
@@ -454,7 +456,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   {
     pps_extension_present_flag|=pps_extension_flags[i];
   }
-
+#endif
   WRITE_FLAG( (pps_extension_present_flag?1:0), "pps_extension_present_flag" );
 
   if (pps_extension_present_flag)

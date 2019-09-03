@@ -1546,10 +1546,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+  pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
+#else
   pps.setUseTransformSkip( m_useTransformSkip );
-#endif
   pps.getPpsRangeExtension().setLog2MaxTransformSkipBlockSize( m_log2MaxTransformSkipBlockSize  );
+#endif
 
 
   xInitPPSforTiles(pps);

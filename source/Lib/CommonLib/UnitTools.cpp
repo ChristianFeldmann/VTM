@@ -4479,7 +4479,7 @@ uint8_t CU::deriveGbiIdx( uint8_t gbiLO, uint8_t gbiL1 )
 bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
 #if JVET_O1136_TS_BDPCM_SIGNALLING
-  SizeType transformSkipMaxSize = 1 << cu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
+  SizeType transformSkipMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
 #endif
 
   bool bdpcmAllowed = compID == COMPONENT_Y;
@@ -4524,7 +4524,7 @@ void TU::setCbfAtDepth(TransformUnit &tu, const ComponentID &compID, const unsig
 bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
 {
   bool    tsAllowed = compID == COMPONENT_Y;
-  const int maxSize = tu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
+  const int maxSize = tu.cs->pps->getLog2MaxTransformSkipBlockSize();
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   tsAllowed &= tu.cs->sps->getTransformSkipEnabledFlag();
@@ -4556,7 +4556,7 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   mtsAllowed &= !tu.cu->ispMode;
   mtsAllowed &= !tu.cu->sbtInfo;
 #if JVET_O1136_TS_BDPCM_SIGNALLING
-  SizeType transformSkipMaxSize = 1 << tu.cs->pps->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize();
+  SizeType transformSkipMaxSize = 1 << tu.cs->pps->getLog2MaxTransformSkipBlockSize();
   mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
 #else
   mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= BDPCM_MAX_CU_SIZE && tu.lheight() <= BDPCM_MAX_CU_SIZE );

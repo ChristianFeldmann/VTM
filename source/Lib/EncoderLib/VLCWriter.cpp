@@ -277,7 +277,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   if (pcSPS->getTransformSkipEnabledFlag())
   {
-    WRITE_UVLC(pcPPS->getPpsRangeExtension().getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");
+    WRITE_UVLC(pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");
   }
 #else
   WRITE_FLAG( pcPPS->getUseTransformSkip() ? 1 : 0,  "transform_skip_enabled_flag" );

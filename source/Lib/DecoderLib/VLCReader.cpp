@@ -452,7 +452,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
   {
     READ_UVLC(uiCode, "log2_max_transform_skip_block_size_minus2");
-    pcPPS->getPpsRangeExtension().setLog2MaxTransformSkipBlockSize(uiCode + 2);
+    pcPPS->setLog2MaxTransformSkipBlockSize(uiCode + 2);
   }
 #else
   READ_FLAG( uiCode, "transform_skip_enabled_flag" );

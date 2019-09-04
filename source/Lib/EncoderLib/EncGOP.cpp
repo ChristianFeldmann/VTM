@@ -474,12 +474,14 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 #endif
   // The case that a specific SEI is not present is handled in xWriteSEI (empty list)
 
+#if HEVC_SEI
   // Active parameter sets SEI must always be the first SEI
   currentMessages = extractSeisByType(localMessages, SEI::ACTIVE_PARAMETER_SETS);
   CHECK(!(currentMessages.size() <= 1), "Unspecified error");
   xWriteSEI(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
   xClearSEIs(currentMessages, !testWrite);
-
+#endif
+  
   // Buffering period SEI must always be following active parameter sets
   currentMessages = extractSeisByType(localMessages, SEI::BUFFERING_PERIOD);
   CHECK(!(currentMessages.size() <= 1), "Unspecified error");
@@ -504,11 +506,13 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
     xClearSEIs(currentMessages, !testWrite);
   }
 
+#if HEVC_SEI
   // Scalable nesting SEI must always be the following DU info
   currentMessages = extractSeisByType(localMessages, SEI::SCALABLE_NESTING);
   xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
   xClearSEIs(currentMessages, !testWrite);
-
+#endif
+  
   // And finally everything else one by one
   xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, localMessages, accessUnit, itNalu, temporalId, sps);
   xClearSEIs(localMessages, !testWrite);
@@ -595,6 +599,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 {
   OutputNALUnit nalu(NAL_UNIT_PREFIX_SEI);
 
+#if HEVC_SEI
   if(m_pcCfg->getActiveParameterSetsSEIEnabled())
   {
     SEIActiveParameterSets *sei = new SEIActiveParameterSets;
@@ -672,6 +677,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiAlternativeTransferCharacteristics);
   }
 #endif
+#endif
 }
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
@@ -686,14 +692,17 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     seiMessages.push_back(bufferingPeriodSEI);
     m_bufferingPeriodSEIPresentInAU = true;
 
+#if HEVC_SEI
     if (m_pcCfg->getScalableNestingSEIEnabled())
     {
       SEIBufferingPeriod *bufferingPeriodSEIcopy = new SEIBufferingPeriod();
       bufferingPeriodSEI->copyTo(*bufferingPeriodSEIcopy);
       nestedSeiMessages.push_back(bufferingPeriodSEIcopy);
     }
+#endif
   }
 
+#if HEVC_SEI
   if (picInGOP ==0 && m_pcCfg->getSOPDescriptionSEIEnabled() ) // write SOP description SEI (if enabled) at the beginning of GOP
   {
     SEISOPDescription* sopDescriptionSEI = new SEISOPDescription();
@@ -744,8 +753,10 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
       delete seiColourRemappingInfo;
     }
   }
+#endif
 }
 
+#if HEVC_SEI
 void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
 {
   SEIMessages tmpMessages;
@@ -760,6 +771,7 @@ void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& n
     tmpMessages.clear();
   }
 }
+#endif
 
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
@@ -806,12 +818,14 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
       pictureTimingSEI->m_picStruct = (isField && slice->getPic()->topField)? 1 : isField? 2 : 0;
       seiMessages.push_back(pictureTimingSEI);
 
+#if HEVC_SEI
       if ( m_pcCfg->getScalableNestingSEIEnabled() ) // put picture timing SEI into scalable nesting SEI
       {
         SEIPictureTiming *pictureTimingSEIcopy = new SEIPictureTiming();
         pictureTimingSEI->copyTo(*pictureTimingSEIcopy);
         nestedSeiMessages.push_back(pictureTimingSEIcopy);
       }
+#endif
     }
 
     if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getSubPicCpbParamsPresentFlag() )
@@ -2993,6 +3007,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                        , isEncodeLtRef
       );
 
+#if HEVC_SEI
       // Only produce the Green Metadata SEI message with the last picture.
       if( m_pcCfg->getSEIGreenMetadataInfoSEIEnable() && pcSlice->getPOC() == ( m_pcCfg->getFramesToBeEncoded() - 1 )  )
       {
@@ -3000,7 +3015,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_seiEncoder.initSEIGreenMetadataInfo(seiGreenMetadataInfo, (uint32_t)(PSNR_Y * 100 + 0.5));
         trailingSeiMessages.push_back(seiGreenMetadataInfo);
       }
-
+#endif
+      
       xWriteTrailingSEIMessages(trailingSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS());
 
       printHash(m_pcCfg->getDecodedPictureHashSEIType(), digestStr);
@@ -3036,10 +3052,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       }
 
       xCreatePictureTimingSEI( m_pcCfg->getEfficientFieldIRAPEnabled() ? effFieldIRAPMap.GetIRAPGOPid() : 0, leadingSeiMessages, nestedSeiMessages, duInfoSeiMessages, pcSlice, isField, duData );
-      if( m_pcCfg->getScalableNestingSEIEnabled() )
+#if HEVC_SEI
+     if( m_pcCfg->getScalableNestingSEIEnabled() )
       {
         xCreateScalableNestingSEI( leadingSeiMessages, nestedSeiMessages );
       }
+#endif
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
       xWriteDuSEIMessages( duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
 

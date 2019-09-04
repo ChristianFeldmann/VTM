@@ -162,6 +162,7 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
   {
     switch (payloadType)
     {
+#if HEVC_SEI
     case SEI::USER_DATA_UNREGISTERED:
       sei = new SEIuserDataUnregistered;
       xParseSEIuserDataUnregistered((SEIuserDataUnregistered&) *sei, payloadSize, pDecodedMessageOutputStream);
@@ -170,7 +171,8 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       sei = new SEIActiveParameterSets;
       xParseSEIActiveParameterSets((SEIActiveParameterSets&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-    case SEI::DECODING_UNIT_INFO:
+#endif
+      case SEI::DECODING_UNIT_INFO:
       if (!sps)
       {
         msg( WARNING, "Warning: Found Decoding unit SEI message, but no active SPS is available. Ignoring.");
@@ -203,6 +205,7 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
         xParseSEIPictureTiming((SEIPictureTiming&)*sei, payloadSize, sps, pDecodedMessageOutputStream);
       }
       break;
+#if HEVC_SEI
     case SEI::RECOVERY_POINT:
       sei = new SEIRecoveryPoint;
       xParseSEIRecoveryPoint((SEIRecoveryPoint&) *sei, payloadSize, pDecodedMessageOutputStream);
@@ -274,6 +277,7 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       xParseSEIAlternativeTransferCharacteristics((SEIAlternativeTransferCharacteristics&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
 #endif
+#endif
     default:
       for (uint32_t i = 0; i < payloadSize; i++)
       {
@@ -292,18 +296,22 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
   {
     switch (payloadType)
     {
+#if HEVC_SEI
       case SEI::USER_DATA_UNREGISTERED:
         sei = new SEIuserDataUnregistered;
         xParseSEIuserDataUnregistered((SEIuserDataUnregistered&) *sei, payloadSize, pDecodedMessageOutputStream);
         break;
+#endif
       case SEI::DECODED_PICTURE_HASH:
         sei = new SEIDecodedPictureHash;
         xParseSEIDecodedPictureHash((SEIDecodedPictureHash&) *sei, payloadSize, pDecodedMessageOutputStream);
         break;
+#if HEVC_SEI
       case SEI::GREEN_METADATA:
         sei = new SEIGreenMetadataInfo;
         xParseSEIGreenMetadataInfo((SEIGreenMetadataInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
         break;
+#endif
       default:
         for (uint32_t i = 0; i < payloadSize; i++)
         {
@@ -368,6 +376,7 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
   setBitstream(bs);
 }
 
+#if HEVC_SEI
 /**
  * parse bitstream bs and unpack a user_data_unregistered SEI message
  * of payloasSize bytes into sei.
@@ -403,6 +412,7 @@ void SEIReader::xParseSEIuserDataUnregistered(SEIuserDataUnregistered &sei, uint
     (*pDecodedMessageOutputStream) << "  User data payload size: " << sei.userDataLength << "\n";
   }
 }
+#endif
 
 /**
  * parse bitstream bs and unpack a decoded picture hash SEI message
@@ -448,6 +458,7 @@ void SEIReader::xParseSEIDecodedPictureHash(SEIDecodedPictureHash& sei, uint32_t
   }
 }
 
+#if HEVC_SEI
 void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;
@@ -463,6 +474,7 @@ void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32
     sei_read_uvlc( pDecodedMessageOutputStream, val, "active_seq_parameter_set_id[i]");    sei.activeSeqParameterSetId[i] = val;
   }
 }
+#endif
 
 void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
 {
@@ -592,6 +604,7 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   }
 }
 
+#if HEVC_SEI
 void SEIReader::xParseSEIRecoveryPoint(SEIRecoveryPoint& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   int  iCode;
@@ -1172,5 +1185,6 @@ void SEIReader::xParseSEIGreenMetadataInfo(SEIGreenMetadataInfo& sei, uint32_t p
   sei_read_code(pDecodedMessageOutputStream, 16, code, "xsd_metric_value");
   sei.m_xsdMetricValue = code;
 }
+#endif
 
 //! \}

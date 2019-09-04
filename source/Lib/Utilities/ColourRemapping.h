@@ -42,6 +42,8 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#if HEVC_SEI
+
 #include "CommonLib/Picture.h"
 #include "CommonLib/SEI.h"
 #include <fstream>
@@ -71,3 +73,4 @@ public:
 
 #endif
 
+#endif

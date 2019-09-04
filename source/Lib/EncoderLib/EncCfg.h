@@ -518,6 +518,7 @@ protected:
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if HEVC_SEI
   bool      m_recoveryPointSEIEnabled;
   bool      m_toneMappingInfoSEIEnabled;
   int       m_toneMapId;
@@ -559,11 +560,15 @@ protected:
   bool      m_temporalLevel0IndexSEIEnabled;
   bool      m_gradualDecodingRefreshInfoEnabled;
   int       m_noDisplaySEITLayer;
+#endif
   bool      m_decodingUnitInfoSEIEnabled;
+#if HEVC_SEI
   bool      m_SOPDescriptionSEIEnabled;
   bool      m_scalableNestingSEIEnabled;
   bool      m_tmctsSEIEnabled;
+#endif
   bool      m_MCTSEncConstraint;
+#if HEVC_SEI
   bool      m_timeCodeSEIEnabled;
   int       m_timeCodeSEINumTs;
   SEITimeSet   m_timeSetArray[MAX_TIMECODE_SEI_SETS];
@@ -587,6 +592,7 @@ protected:
   bool      m_greenMetadataInfoSEIEnabled;
   uint8_t     m_greenMetadataType;
   uint8_t     m_xsdMetricType;
+#endif
   //====== Weighted Prediction ========
   bool      m_useWeightedPred;       //< Use of Weighting Prediction (P_SLICE)
   bool      m_useWeightedBiPred;    //< Use of Bi-directional Weighting Prediction (B_SLICE)
@@ -636,12 +642,16 @@ protected:
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
+#if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
+#endif
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
+#if HEVC_SEI
   bool      m_chromaResamplingFilterHintEnabled;              ///< Signals whether chroma sampling filter hint data is present
   int       m_chromaResamplingHorFilterIdc;                   ///< Specifies the Index of filter to use
   int       m_chromaResamplingVerFilterIdc;                   ///< Specifies the Index of filter to use
+#endif
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
   int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
@@ -1369,6 +1379,7 @@ public:
   bool  getBufferingPeriodSEIEnabled() const                         { return m_bufferingPeriodSEIEnabled; }
   void  setPictureTimingSEIEnabled(bool b)                           { m_pictureTimingSEIEnabled = b; }
   bool  getPictureTimingSEIEnabled() const                           { return m_pictureTimingSEIEnabled; }
+#if HEVC_SEI
   void  setRecoveryPointSEIEnabled(bool b)                           { m_recoveryPointSEIEnabled = b; }
   bool  getRecoveryPointSEIEnabled() const                           { return m_recoveryPointSEIEnabled; }
   void  setToneMappingInfoSEIEnabled(bool b)                         { m_toneMappingInfoSEIEnabled = b;  }
@@ -1451,16 +1462,20 @@ public:
   bool  getGradualDecodingRefreshInfoEnabled() const                 { return m_gradualDecodingRefreshInfoEnabled; }
   void  setNoDisplaySEITLayer(int b)                                 { m_noDisplaySEITLayer = b;    }
   int   getNoDisplaySEITLayer()                                      { return m_noDisplaySEITLayer; }
+#endif
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }
+#if HEVC_SEI
   void  setSOPDescriptionSEIEnabled(bool b)                          { m_SOPDescriptionSEIEnabled = b; }
   bool  getSOPDescriptionSEIEnabled() const                          { return m_SOPDescriptionSEIEnabled; }
   void  setScalableNestingSEIEnabled(bool b)                         { m_scalableNestingSEIEnabled = b; }
   bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
   void  setTMCTSSEIEnabled(bool b)                                   { m_tmctsSEIEnabled = b; }
   bool  getTMCTSSEIEnabled()                                         { return m_tmctsSEIEnabled; }
+#endif
   void  setMCTSEncConstraint(bool b)                                 { m_MCTSEncConstraint = b; }
   bool  getMCTSEncConstraint()                                       { return m_MCTSEncConstraint; }
+#if HEVC_SEI
   void  setTimeCodeSEIEnabled(bool b)                                { m_timeCodeSEIEnabled = b; }
   bool  getTimeCodeSEIEnabled()                                      { return m_timeCodeSEIEnabled; }
   void  setNumberOfTimeSets(int value)                               { m_timeCodeSEINumTs = value; }
@@ -1507,6 +1522,7 @@ public:
   uint8_t getSEIXSDMetricType() const                                  { return m_xsdMetricType; }
 
   const SEIMasteringDisplay &getMasteringDisplaySEI() const          { return m_masteringDisplay; }
+#endif
   void         setUseWP               ( bool b )                     { m_useWeightedPred   = b;    }
   void         setWPBiPred            ( bool b )                     { m_useWeightedBiPred = b;    }
   bool         getUseWP               ()                             { return m_useWeightedPred;   }
@@ -1599,8 +1615,10 @@ public:
   void         setHarmonizeGopFirstFieldCoupleEnabled( bool b )      { m_bHarmonizeGopFirstFieldCoupleEnabled = b; }
   bool         getHarmonizeGopFirstFieldCoupleEnabled( ) const       { return m_bHarmonizeGopFirstFieldCoupleEnabled; }
 
+#if HEVC_SEI
   void         setActiveParameterSetsSEIEnabled ( int b )            { m_activeParameterSetsSEIEnabled = b; }
   int          getActiveParameterSetsSEIEnabled ()                   { return m_activeParameterSetsSEIEnabled; }
+#endif
 
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
@@ -1666,12 +1684,14 @@ public:
   bool         getLowerBitRateConstraintFlag() const                 { return m_lowerBitRateConstraintFlag; }
   void         setLowerBitRateConstraintFlag(bool b)                 { m_lowerBitRateConstraintFlag=b; }
 
+#if HEVC_SEI
   bool         getChromaResamplingFilterHintEnabled()                { return m_chromaResamplingFilterHintEnabled;}
   void         setChromaResamplingFilterHintEnabled(bool i)          { m_chromaResamplingFilterHintEnabled = i;}
   int          getChromaResamplingHorFilterIdc()                     { return m_chromaResamplingHorFilterIdc;}
   void         setChromaResamplingHorFilterIdc(int i)                { m_chromaResamplingHorFilterIdc = i;}
   int          getChromaResamplingVerFilterIdc()                     { return m_chromaResamplingVerFilterIdc;}
   void         setChromaResamplingVerFilterIdc(int i)                { m_chromaResamplingVerFilterIdc = i;}
+#endif
 
   void         setSummaryOutFilename(const std::string &s)           { m_summaryOutFilename = s; }
   const std::string& getSummaryOutFilename() const                   { return m_summaryOutFilename; }

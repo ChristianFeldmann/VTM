@@ -456,9 +456,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSaoGreedyMergeEnc                                 ( m_saoGreedyMergeEnc);
   m_cEncLib.setIntraSmoothingDisabledFlag                        (!m_enableIntraReferenceSmoothing );
   m_cEncLib.setDecodedPictureHashSEIType                         ( m_decodedPictureHashSEIType );
+#if HEVC_SEI
   m_cEncLib.setRecoveryPointSEIEnabled                           ( m_recoveryPointSEIEnabled );
+#endif
   m_cEncLib.setBufferingPeriodSEIEnabled                         ( m_bufferingPeriodSEIEnabled );
   m_cEncLib.setPictureTimingSEIEnabled                           ( m_pictureTimingSEIEnabled );
+#if HEVC_SEI
   m_cEncLib.setToneMappingInfoSEIEnabled                         ( m_toneMappingInfoSEIEnabled );
   m_cEncLib.setTMISEIToneMapId                                   ( m_toneMapId );
   m_cEncLib.setTMISEIToneMapCancelFlag                           ( m_toneMapCancelFlag );
@@ -533,6 +536,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSEIGreenMetadataInfoSEIEnable                     ( m_greenMetadataType > 0 );
   m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
   m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
+#endif
 
   m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
   m_cEncLib.setNumColumnsMinus1                                  ( m_numTileColumnsMinus1 );
@@ -594,7 +598,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCostMode                                          ( m_costMode );
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
+#if HEVC_SEI
   m_cEncLib.setActiveParameterSetsSEIEnabled                     ( m_activeParameterSetsSEIEnabled );
+#endif
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
   m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
   m_cEncLib.setAspectRatioIdc                                    ( m_aspectRatioIdc );

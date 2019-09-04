@@ -66,8 +66,9 @@ private:
   // for output control
   int             m_iPOCLastDisplay;              ///< last POC in display order
   std::ofstream   m_seiMessageFileStream;         ///< Used for outputing SEI messages.
+#if HEVC_SEI
   ColourRemapping m_cColourRemapping;             ///< colour remapping handler
-
+#endif
 
 public:
   DecApp();

@@ -45,13 +45,15 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
 {
   switch (sei.payloadType())
   {
+#if HEVC_SEI
   case SEI::USER_DATA_UNREGISTERED:
     xWriteSEIuserDataUnregistered(*static_cast<const SEIuserDataUnregistered*>(&sei));
     break;
   case SEI::ACTIVE_PARAMETER_SETS:
     xWriteSEIActiveParameterSets(*static_cast<const SEIActiveParameterSets*>(& sei));
     break;
-  case SEI::DECODING_UNIT_INFO:
+#endif
+    case SEI::DECODING_UNIT_INFO:
     xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), sps);
     break;
   case SEI::DECODED_PICTURE_HASH:
@@ -63,6 +65,7 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::PICTURE_TIMING:
     xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps);
     break;
+#if HEVC_SEI
   case SEI::RECOVERY_POINT:
     xWriteSEIRecoveryPoint(*static_cast<const SEIRecoveryPoint*>(&sei));
     break;
@@ -119,6 +122,7 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::GREEN_METADATA:
       xWriteSEIGreenMetadataInfo(*static_cast<const SEIGreenMetadataInfo*>(&sei));
     break;
+#endif
   default:
     THROW("Trying to write unhandled SEI message");
     break;
@@ -185,6 +189,7 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
   }
 }
 
+#if HEVC_SEI
 /**
  * marshal a user_data_unregistered SEI message sei, storing the marshalled
  * representation in bitstream bs.
@@ -201,6 +206,7 @@ void SEIWriter::xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei
     WRITE_CODE(sei.userData[i], 8 , "user_data");
   }
 }
+#endif
 
 /**
  * marshal a decoded picture hash SEI message, storing the marshalled
@@ -227,6 +233,7 @@ void SEIWriter::xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei)
   }
 }
 
+#if HEVC_SEI
 void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 {
   WRITE_FLAG(sei.m_selfContainedCvsFlag,     "self_contained_cvs_flag");
@@ -240,6 +247,7 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
     WRITE_UVLC(sei.activeSeqParameterSetId[i], "active_seq_parameter_set_id");
   }
 }
+#endif
 
 void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps)
 {
@@ -328,6 +336,8 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *s
     }
   }
 }
+
+#if HEVC_SEI
 void SEIWriter::xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei)
 {
   WRITE_SVLC( sei.m_recoveryPocCnt,    "recovery_poc_cnt"    );
@@ -791,7 +801,7 @@ void SEIWriter::xWriteSEIMasteringDisplayColourVolume(const SEIMasteringDisplayC
   WRITE_CODE( sei.values.maxLuminance,     32,  "max_display_mastering_luminance" );
   WRITE_CODE( sei.values.minLuminance,     32,  "min_display_mastering_luminance" );
 }
-
+#endif
 
 void SEIWriter::xWriteByteAlign()
 {
@@ -805,6 +815,7 @@ void SEIWriter::xWriteByteAlign()
   }
 }
 
+#if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 void SEIWriter::xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei)
 {
@@ -819,5 +830,6 @@ void SEIWriter::xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo& sei)
   WRITE_CODE(sei.m_xsdMetricType, 8, "xsd_metric_type");
   WRITE_CODE(sei.m_xsdMetricValue, 16, "xsd_metric_value");
 }
+#endif
 
 //! \}

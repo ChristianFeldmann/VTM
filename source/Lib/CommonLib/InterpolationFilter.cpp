@@ -597,6 +597,12 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     {
       filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
     }
+#if JVET_O1164_RPR
+    else if( nFilterIdx == 2 )
+    {
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
+    }
+#endif
     else
     {
 #if JVET_O0057_ALTHPELIF
@@ -660,6 +666,12 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     {
       filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
     }
+#if JVET_O1164_RPR
+    else if( nFilterIdx == 2 )
+    {
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
+    }
+#endif
     else
     {
 #if JVET_O0057_ALTHPELIF

@@ -1169,6 +1169,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
 
+#if JVET_N0865_SYNTAX
+  READ_FLAG(uiCode, "gdr_enabled_flag");
+  pcSPS->setGDREnabledFlag(uiCode);
+#endif
+
   READ_UVLC(uiCode, "sps_seq_parameter_set_id");           pcSPS->setSPSId(uiCode);
 
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
@@ -1715,12 +1720,15 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   PPS* pps = NULL;
   SPS* sps = NULL;
 
-  if( pcSlice->getRapPicFlag())
+#if !JVET_N0865_SYNTAX
+  if (pcSlice->getRapPicFlag())
   {
-    READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
+    READ_FLAG(uiCode, "no_output_of_prior_pics_flag");   // ignored -- updated already
     pcSlice->setNoOutputPriorPicsFlag(uiCode ? true : false);
   }
-  READ_UVLC (    uiCode, "slice_pic_parameter_set_id" );  pcSlice->setPPSId(uiCode);
+#endif
+  READ_UVLC(uiCode, "slice_pic_parameter_set_id");
+  pcSlice->setPPSId(uiCode);
   pps = parameterSetManager->getPPS(uiCode);
   //!KS: need to add error handling code here, if PPS is not available
   CHECK(pps==0, "Invalid PPS");
@@ -1793,14 +1801,17 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
 
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);
-    if( pps->getOutputFlagPresentFlag() )
+#if !JVET_N0865_SYNTAX
+    if (pps->getOutputFlagPresentFlag())
     {
-      READ_FLAG( uiCode, "pic_output_flag" );    pcSlice->setPicOutputFlag( uiCode ? true : false );
+      READ_FLAG(uiCode, "pic_output_flag");
+      pcSlice->setPicOutputFlag(uiCode ? true : false);
     }
     else
     {
-      pcSlice->setPicOutputFlag( true );
+      pcSlice->setPicOutputFlag(true);
     }
+#endif
 
     // if (separate_colour_plane_flag == 1)
     //   read colour_plane_id
@@ -1810,6 +1821,31 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
+#if JVET_N0865_SYNTAX
+      if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+      {
+        READ_UVLC(uiCode, "recovery_poc_cnt");
+        int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
+        CHECK(uiCode < maxPicOrderCntLsb, "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+        pcSlice->setRecoveryPocCnt(uiCode);
+        pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
+      }
+      if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+      {
+        READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
+        pcSlice->setNoOutputPriorPicsFlag(uiCode);
+      }
+      if (pps->getOutputFlagPresentFlag())
+      {
+        READ_FLAG(uiCode, "pic_output_flag");
+        pcSlice->setPicOutputFlag(uiCode ? true : false);
+      }
+      else
+      {
+        pcSlice->setPicOutputFlag(true);
+      }
+#endif
+
       ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
       (*rpl0) = ReferencePictureList();
       pcSlice->setRPL0(rpl0);
@@ -1839,6 +1875,30 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         iPOCmsb = iPrevPOCmsb;
       }
       pcSlice->setPOC              (iPOCmsb+iPOClsb);
+#if JVET_N0865_SYNTAX
+      if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+      {
+        READ_UVLC(uiCode, "recovery_poc_cnt");
+        int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
+        CHECK(uiCode < maxPicOrderCntLsb, "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+        pcSlice->setRecoveryPocCnt(uiCode);
+        pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
+      }
+      if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+      {
+        READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
+        pcSlice->setNoOutputPriorPicsFlag(uiCode);
+      }
+      if (pps->getOutputFlagPresentFlag())
+      {
+        READ_FLAG(uiCode, "pic_output_flag");
+        pcSlice->setPicOutputFlag(uiCode ? true : false);
+      }
+      else
+      {
+        pcSlice->setPicOutputFlag(true);
+      }
+#endif
 
       //Read L0 related syntax elements
       if (sps->getNumRPL0() > 0)

@@ -788,6 +788,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
 
   codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
+#if JVET_N0865_SYNTAX
+  WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
+#endif
 
   WRITE_UVLC(pcSPS->getSPSId (), "sps_seq_parameter_set_id");
 
@@ -1220,10 +1223,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   const uint32_t         numberValidComponents = getNumberValidComponents(format);
   const bool         chromaEnabled         = isChromaEnabled(format);
 
-  if ( pcSlice->getRapPicFlag() )
+#if !JVET_N0865_SYNTAX
+  if (pcSlice->getRapPicFlag())
   {
-    WRITE_FLAG( pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag" );
+    WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
   }
+#endif
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
   int bitsSliceAddress = 1;
   if (!pcSlice->getPPS()->getRectSliceFlag())
@@ -1270,14 +1275,32 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );
 
-    if( pcSlice->getPPS()->getOutputFlagPresentFlag() )
+#if !JVET_N0865_SYNTAX
+    if (pcSlice->getPPS()->getOutputFlagPresentFlag())
     {
-      WRITE_FLAG( pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag" );
+      WRITE_FLAG(pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag");
     }
+#endif
 
     int pocBits = pcSlice->getSPS()->getBitsForPOC();
     int pocMask = (1 << pocBits) - 1;
     WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
+#if JVET_N0865_SYNTAX
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+    {
+      int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
+      CHECK((pcSlice->getRecoveryPocCnt() < maxPicOrderCntLsb), "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+      WRITE_UVLC(pcSlice->getRecoveryPocCnt(), "recovery_poc_cnt");
+    }
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+    {
+      WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
+    }
+    if (pcSlice->getPPS()->getOutputFlagPresentFlag())
+    {
+      WRITE_FLAG(pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag");
+    }
+#endif
     if( !pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent())
     {
       //Write L0 related syntax elements

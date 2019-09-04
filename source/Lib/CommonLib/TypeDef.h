@@ -276,6 +276,8 @@
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
+#define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
+
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 

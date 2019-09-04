@@ -134,8 +134,11 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
   {
     case SEI::BUFFERING_PERIOD:                     return "Buffering period";
     case SEI::PICTURE_TIMING:                       return "Picture timing";
+#if HEVC_SEI
     case SEI::PAN_SCAN_RECT:                        return "Pan-scan rectangle";                   // not currently decoded
+#endif
     case SEI::FILLER_PAYLOAD:                       return "Filler payload";                       // not currently decoded
+#if HEVC_SEI
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";                 // not currently decoded
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
     case SEI::RECOVERY_POINT:                       return "Recovery point";
@@ -152,9 +155,13 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::GREEN_METADATA:                       return "Green metadata information";
     case SEI::SOP_DESCRIPTION:                      return "Structure of pictures information";
     case SEI::ACTIVE_PARAMETER_SETS:                return "Active parameter sets";
+#endif
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
+#if HEVC_SEI
     case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
+#endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
+#if HEVC_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";
     case SEI::NO_DISPLAY:                           return "No display";
@@ -166,6 +173,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::COLOUR_REMAPPING_INFO:                return "Colour remapping info";
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
+#endif
 #endif
     default:                                        return "Unknown";
   }

@@ -397,6 +397,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           const bool isTff = pcPicTop->topField;
 
           bool display = true;
+#if HEVC_SEI
           if( m_decodedNoDisplaySEIEnabled )
           {
             SEIMessages noDisplay = getSeisByType( pcPic->SEIs, SEI::NO_DISPLAY );
@@ -406,6 +407,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
               display = false;
             }
           }
+#endif
 
           if (display)
           {
@@ -498,11 +500,12 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
         }
 
+#if HEVC_SEI
         if (m_seiMessageFileStream.is_open())
         {
           m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
         }
-
+#endif
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 
@@ -647,11 +650,13 @@ void DecApp::xFlushOutput( PicList* pcListPic )
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
         }
 
+#if HEVC_SEI
         if (m_seiMessageFileStream.is_open())
         {
           m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
         }
-
+#endif
+                                         
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 

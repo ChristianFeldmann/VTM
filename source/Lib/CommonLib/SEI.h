@@ -56,8 +56,11 @@ public:
   {
     BUFFERING_PERIOD                     = 0,
     PICTURE_TIMING                       = 1,
+#if HEVC_SEI
     PAN_SCAN_RECT                        = 2,
+#endif
     FILLER_PAYLOAD                       = 3,
+#if HEVC_SEI
     USER_DATA_REGISTERED_ITU_T_T35       = 4,
     USER_DATA_UNREGISTERED               = 5,
     RECOVERY_POINT                       = 6,
@@ -73,9 +76,13 @@ public:
     GREEN_METADATA                       = 56,
     SOP_DESCRIPTION                      = 128,
     ACTIVE_PARAMETER_SETS                = 129,
+#endif
     DECODING_UNIT_INFO                   = 130,
+#if HEVC_SEI
     TEMPORAL_LEVEL0_INDEX                = 131,
+#endif
     DECODED_PICTURE_HASH                 = 132,
+#if HEVC_SEI
     SCALABLE_NESTING                     = 133,
     REGION_REFRESH_INFO                  = 134,
     NO_DISPLAY                           = 135,
@@ -89,6 +96,7 @@ public:
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
 #endif
+#endif
   };
 
   SEI() {}
@@ -99,6 +107,7 @@ public:
   virtual PayloadType payloadType() const = 0;
 };
 
+#if HEVC_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;
 
 class SEIuserDataUnregistered : public SEI
@@ -119,6 +128,7 @@ public:
   uint32_t  userDataLength;
   uint8_t *userData;
 };
+#endif
 
 class SEIDecodedPictureHash : public SEI
 {
@@ -133,6 +143,7 @@ public:
   PictureHash m_pictureHash;
 };
 
+#if HEVC_SEI
 class SEIActiveParameterSets : public SEI
 {
 public:
@@ -150,6 +161,7 @@ public:
   int numSpsIdsMinus1;
   std::vector<int> activeSeqParameterSetId;
 };
+#endif
 
 class SEIBufferingPeriod : public SEI
 {
@@ -229,6 +241,7 @@ public:
   int m_picSptDpbOutputDuDelay;
 };
 
+#if HEVC_SEI
 class SEIRecoveryPoint : public SEI
 {
 public:
@@ -483,6 +496,7 @@ public:
 
     SEIMasteringDisplay values;
 };
+#endif
 
 typedef std::list<SEI*> SEIMessages;
 
@@ -495,6 +509,7 @@ SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
 /// delete list of SEI messages (freeing the referenced objects)
 void deleteSEIs (SEIMessages &seiList);
 
+#if HEVC_SEI
 class SEIScalableNesting : public SEI
 {
 public:
@@ -589,12 +604,14 @@ public:
   const TileSetData &tileSetData (const int index) const { return m_tile_set_data[index]; }
 
 };
+#endif
 
 #if ENABLE_TRACING
 void xTraceSEIHeader();
 void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
+#if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 class SEIAlternativeTransferCharacteristics : public SEI
 {
@@ -622,6 +639,7 @@ public:
     uint32_t m_xsdMetricType;
     uint32_t m_xsdMetricValue;
 };
+#endif
 
 #endif
 

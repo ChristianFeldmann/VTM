@@ -52,12 +52,15 @@ public:
   void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, bool isNested);
 
 protected:
+#if HEVC_SEI
   void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
   void xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei);
+#endif
   void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps);
   void xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei);
   void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps);
   void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps);
+#if HEVC_SEI
   void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
   void xWriteSEIFramePacking(const SEIFramePacking& sei);
   void xWriteSEISegmentedRectFramePacking(const SEISegmentedRectFramePacking& sei);
@@ -78,7 +81,8 @@ protected:
   void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);
 #endif
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
-
+#endif
+  
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps);
   void xWriteByteAlign();
 };

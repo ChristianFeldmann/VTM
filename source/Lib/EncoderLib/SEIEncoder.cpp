@@ -44,6 +44,7 @@ std::string hashToString(const PictureHash &digest, int numChar);
 //! \ingroup EncoderLib
 //! \{
 
+#if HEVC_SEI
 void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const SPS *sps)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -197,6 +198,7 @@ void SEIEncoder::initSEIToneMappingInfo(SEIToneMappingInfo *seiToneMappingInfo)
 void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Slice *slice, int picInGOP, int lastIdr, int currGOPSize)
 {
 }
+#endif
 
 void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, Slice *slice)
 {
@@ -224,6 +226,7 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_dpbDelayOffset = 0;
 }
 
+#if HEVC_SEI
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
@@ -257,7 +260,7 @@ void SEIEncoder::initSEIRecoveryPoint(SEIRecoveryPoint *recoveryPointSEI, Slice 
   recoveryPointSEI->m_exactMatchingFlag = ( slice->getPOC() == 0 ) ? (true) : (false);
   recoveryPointSEI->m_brokenLinkFlag    = false;
 }
-
+#endif
 
 //! calculate hashes for entire reconstructed picture
 void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPictureHashSEI, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths)
@@ -290,6 +293,7 @@ void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPicture
   }
 }
 
+#if HEVC_SEI
 void SEIEncoder::initTemporalLevel0IndexSEI(SEITemporalLevel0Index *temporalLevel0IndexSEI, Slice *slice)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -384,6 +388,7 @@ void SEIEncoder::initSEIKneeFunctionInfo(SEIKneeFunctionInfo *seiKneeFunctionInf
     }
   }
 }
+#endif
 
 template <typename T>
 static void readTokenValue(T            &returnedValue, /// value returned
@@ -453,6 +458,7 @@ static void readTokenValueAndValidate(T            &returnedValue, /// value ret
   }
 }
 
+#if HEVC_SEI
 // bool version does not have maximum and minimum values.
 static void readTokenValueAndValidate(bool         &returnedValue, /// value returned
                                       bool         &failed,        /// used and updated
@@ -652,6 +658,6 @@ void SEIEncoder::initSEIGreenMetadataInfo(SEIGreenMetadataInfo *seiGreenMetadata
     seiGreenMetadataInfo->m_xsdMetricType = m_pcCfg->getSEIXSDMetricType();
     seiGreenMetadataInfo->m_xsdMetricValue = u;
 }
-
+#endif
 
 //! \}

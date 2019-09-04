@@ -4293,7 +4293,11 @@ void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, Pel
 {
   CHECK( pOrg.buf == 0, "Encoder DPCM called without original buffer" );
 
+#if FLATTEN_BUFFERS
+  const int srcStride = m_refBufferStride[compID];
+#else
   const int srcStride = m_topRefLength + 1;
+#endif
   CPelBuf   pSrc = CPelBuf(getPredictorPtr(compID), srcStride, m_leftRefLength + 1);
 
   // Sample Adaptive intra-Prediction (SAP)
@@ -4302,7 +4306,11 @@ void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, Pel
     // left column filled with reference samples, remaining columns filled with pOrg data
     for( int y = 0; y < pDst.height; y++ )
     {
+#if FLATTEN_BUFFERS
+      pDst.at(0, y) = pSrc.at(1 + y, 1);
+#else
       pDst.at( 0, y ) = pSrc.at( 0, 1 + y );
+#endif
     }
     CPelBuf orgRest  = pOrg.subBuf( 0, 0, pOrg.width - 1, pOrg.height );
     PelBuf  predRest = pDst.subBuf( 1, 0, pDst.width - 1, pDst.height );

@@ -63,6 +63,10 @@
 #define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
 #define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
 
+#define FLATTEN_BUFFERS                                                                                                \
+  (1 && JVET_O0502_ISP_CLEANUP && JVET_O0364_PADDING && JVET_O0426_MRL_REF_SAMPLES_DC_MODE                             \
+   && JVET_O0925_MIP_SIMPLIFICATIONS && JVET_O0364_PDPC_DC)
+
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
 #define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF

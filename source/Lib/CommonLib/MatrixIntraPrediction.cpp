@@ -83,7 +83,11 @@ void MatrixIntraPrediction::prepareInputForPred(const CPelBuf &pSrc, const Area&
   m_refSamplesLeft.resize(block.height);
   for (int y = 0; y < block.height; y++)
   {
+#if FLATTEN_BUFFERS
+    m_refSamplesLeft[y] = pSrc.at(y + 1, 1);
+#else
     m_refSamplesLeft[y] = pSrc.at(0, y + 1);
+#endif
   }
 
   // Step 3: Compute the reduced boundary via Haar-downsampling (input for the prediction)

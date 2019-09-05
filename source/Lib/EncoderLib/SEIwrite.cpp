@@ -82,6 +82,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     }
 #endif
     break;
+#if JVET_O0041_FRAME_FIELD_SEI
+  case SEI::FRAME_FIELD_INFO:
+    xWriteSEIFrameFieldInfo(*static_cast<const SEIFrameFieldInfo*>(&sei));
+    break;
+#endif
 #if HEVC_SEI
   case SEI::RECOVERY_POINT:
     xWriteSEIRecoveryPoint(*static_cast<const SEIRecoveryPoint*>(&sei));
@@ -385,12 +390,13 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
   int i;
   const HRDParameters *hrd = sps->getHrdParameters();
 #endif
-
+#if !JVET_O0041_FRAME_FIELD_SEI
   {
     WRITE_CODE( sei.m_picStruct, 4,              "pic_struct" );
     WRITE_CODE( sei.m_sourceScanType, 2,         "source_scan_type" );
     WRITE_FLAG( sei.m_duplicateFlag ? 1 : 0,     "duplicate_flag" );
   }
+#endif
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   if( hrd->getCpbDpbDelaysPresentFlag() )
@@ -424,6 +430,34 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
   WRITE_CODE( sei.m_picDpbOutputDelay,     bp.m_dpbOutputDelayLength,                                          "dpb_output_delay" );
 #endif
 }
+
+#if JVET_O0041_FRAME_FIELD_SEI
+void SEIWriter::xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei)
+{
+  WRITE_FLAG( sei.m_fieldPicFlag ? 1 : 0,                    "field_pic_flag" );
+  if (sei.m_fieldPicFlag)
+  {
+    WRITE_FLAG( sei.m_bottomFieldFlag ? 1 : 0,               "bottom_field_flag" );
+    WRITE_FLAG( sei.m_pairingIndicatedFlag ? 1 : 0,          "pairing_indicated_flag" );
+    if (sei.m_pairingIndicatedFlag)
+    {
+      WRITE_FLAG( sei.m_pairedWithNextFieldFlag ? 1 : 0,     "paired_with_next_field_flag" );
+    }
+  }
+  else
+  {
+    WRITE_FLAG( sei.m_displayFieldsFromFrameFlag ? 1 : 0,     "display_fields_from_frame_flag" );
+    if (sei.m_displayFieldsFromFrameFlag)
+    {
+      WRITE_FLAG( sei.m_topFieldFirstFlag ? 1 : 0,            "display_fields_from_frame_flag" );
+    }
+    WRITE_UVLC( sei.m_displayElementalPeriodsMinus1,          "display_elemental_periods_minus1" );
+  }
+  WRITE_CODE( sei.m_sourceScanType, 2,                        "source_scan_type" );
+  WRITE_FLAG( sei.m_duplicateFlag ? 1 : 0,                    "duplicate_flag" );
+}
+#endif
+
 
 #if HEVC_SEI
 void SEIWriter::xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei)

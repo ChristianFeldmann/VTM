@@ -466,6 +466,9 @@ protected:
 #endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if JVET_O0041_FRAME_FIELD_SEI
+  bool      m_frameFieldInfoSEIEnabled;
+#endif
 #if HEVC_SEI
   bool      m_toneMappingInfoSEIEnabled;
   bool      m_chromaResamplingFilterSEIenabled;

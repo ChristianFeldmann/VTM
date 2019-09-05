@@ -128,9 +128,11 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 
 void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 {
+#if !JVET_O0041_FRAME_FIELD_SEI
   target.m_picStruct = m_picStruct;
   target.m_sourceScanType = m_sourceScanType;
   target.m_duplicateFlag = m_duplicateFlag;
+#endif
 
   target.m_auCpbRemovalDelay = m_auCpbRemovalDelay;
   target.m_picDpbOutputDelay = m_picDpbOutputDelay;

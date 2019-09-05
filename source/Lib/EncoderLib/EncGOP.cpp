@@ -787,6 +787,25 @@ void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& n
 }
 #endif
 
+#if JVET_O0041_FRAME_FIELD_SEI
+void EncGOP::xCreateFrameFieldInfoSEI  (SEIMessages& seiMessages, Slice *slice, bool isField)
+{
+  if (m_pcCfg->getFrameFieldInfoSEIEnabled())
+  {
+    SEIFrameFieldInfo *frameFieldInfoSEI = new SEIFrameFieldInfo();
+
+    // encode only very basic information. if more feature are supported, this should be moved to SEIEncoder
+    frameFieldInfoSEI->m_fieldPicFlag = isField;
+    if (isField)
+    {
+      frameFieldInfoSEI->m_bottomFieldFlag = !slice->getPic()->topField;
+    }
+    seiMessages.push_back(frameFieldInfoSEI);
+  }
+}
+#endif
+
+
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
   const HRDParameters *hrd = slice->getSPS()->getHrdParameters();
@@ -834,7 +853,9 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
 
     if( m_pcCfg->getPictureTimingSEIEnabled() )
     {
+#if !JVET_O0041_FRAME_FIELD_SEI
       pictureTimingSEI->m_picStruct = (isField && slice->getPic()->topField)? 1 : isField? 2 : 0;
+#endif
       seiMessages.push_back(pictureTimingSEI);
 
 #if HEVC_SEI
@@ -3069,7 +3090,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
   #endif
       }
-
+#if JVET_O0041_FRAME_FIELD_SEI
+      xCreateFrameFieldInfoSEI( leadingSeiMessages, pcSlice, isField );
+#endif
       xCreatePictureTimingSEI( m_pcCfg->getEfficientFieldIRAPEnabled() ? effFieldIRAPMap.GetIRAPGOPid() : 0, leadingSeiMessages, nestedSeiMessages, duInfoSeiMessages, pcSlice, isField, duData );
 #if HEVC_SEI
      if( m_pcCfg->getScalableNestingSEIEnabled() )

@@ -97,6 +97,9 @@ public:
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
 #endif
 #endif
+#if JVET_O0041_FRAME_FIELD_SEI
+    FRAME_FIELD_INFO                     = 168,
+#endif
   };
 
   SEI() {}
@@ -226,18 +229,29 @@ public:
   void copyTo (SEIPictureTiming& target) const;
 
   SEIPictureTiming()
+#if !JVET_O0041_FRAME_FIELD_SEI
   : m_picStruct               (0)
   , m_sourceScanType          (0)
   , m_duplicateFlag           (false)
   , m_picDpbOutputDuDelay     (0)
+#else
+  : m_auCpbRemovalDelay (0)
+  , m_picDpbOutputDelay (0)
+  , m_picDpbOutputDuDelay (0)
+  , m_numDecodingUnitsMinus1 (0)
+  , m_duCommonCpbRemovalDelayFlag (false)
+  , m_duCommonCpbRemovalDelayMinus1 (0)
+#endif
   {}
   virtual ~SEIPictureTiming()
   {
   }
 
+#if !JVET_O0041_FRAME_FIELD_SEI
   uint32_t  m_picStruct;
   uint32_t  m_sourceScanType;
   bool  m_duplicateFlag;
+#endif
 
   uint32_t  m_auCpbRemovalDelay;
   uint32_t  m_picDpbOutputDelay;
@@ -266,6 +280,38 @@ public:
   bool m_dpbOutputDuDelayPresentFlag;
   int m_picSptDpbOutputDuDelay;
 };
+
+
+#if JVET_O0041_FRAME_FIELD_SEI
+class SEIFrameFieldInfo : public SEI
+{
+public:
+  PayloadType payloadType() const { return FRAME_FIELD_INFO; }
+
+  SEIFrameFieldInfo()
+    : m_fieldPicFlag(false)
+    , m_bottomFieldFlag (false)
+    , m_pairingIndicatedFlag (false)
+    , m_pairedWithNextFieldFlag(false)
+    , m_displayFieldsFromFrameFlag(false)
+    , m_topFieldFirstFlag(false)
+    , m_displayElementalPeriodsMinus1(0)
+    , m_sourceScanType(0)
+    , m_duplicateFlag(false)
+  {}
+  virtual ~SEIFrameFieldInfo() {}
+  
+  bool m_fieldPicFlag;
+  bool m_bottomFieldFlag;
+  bool m_pairingIndicatedFlag;
+  bool m_pairedWithNextFieldFlag;
+  bool m_displayFieldsFromFrameFlag;
+  bool m_topFieldFirstFlag;
+  int  m_displayElementalPeriodsMinus1;
+  int  m_sourceScanType;
+  bool m_duplicateFlag;
+};
+#endif
 
 #if HEVC_SEI
 class SEIRecoveryPoint : public SEI

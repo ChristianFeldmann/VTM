@@ -200,13 +200,13 @@ void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Sli
 }
 #endif
 
-void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, Slice *slice)
+void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI)
 {
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(bufferingPeriodSEI != NULL), "Unspecified error");
-  CHECK(!(slice != NULL), "Unspecified error");
+  CHECK(!(m_isInitialized), "bufferingPeriodSEI already initialized");
+  CHECK(!(bufferingPeriodSEI != nullptr), "Need a bufferingPeriodSEI for initialization (got nullptr)");
 
   uint32_t uiInitialCpbRemovalDelay = (90000/2);                      // 0.5 sec
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][0]     = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][0]     = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][1]     = uiInitialCpbRemovalDelay;
@@ -218,6 +218,37 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][1]  = uiInitialCpbRemovalDelay;
 
   bufferingPeriodSEI->m_rapCpbParamsPresentFlag = 0;
+#else
+  bufferingPeriodSEI->m_initialCpbRemovalDelay  [0].resize(1);
+  bufferingPeriodSEI->m_initialCpbRemovalOffset [0].resize(1);
+  bufferingPeriodSEI->m_initialCpbRemovalDelay  [1].resize(1);
+  bufferingPeriodSEI->m_initialCpbRemovalOffset [1].resize(1);
+  bufferingPeriodSEI->m_initialCpbRemovalDelay [0][0]     = uiInitialCpbRemovalDelay;
+  bufferingPeriodSEI->m_initialCpbRemovalOffset[0][0]     = uiInitialCpbRemovalDelay;
+  bufferingPeriodSEI->m_initialCpbRemovalDelay [1][0]     = uiInitialCpbRemovalDelay;
+  bufferingPeriodSEI->m_initialCpbRemovalOffset[1][0]     = uiInitialCpbRemovalDelay;
+  bufferingPeriodSEI->m_bpNalCpbParamsPresentFlag = true;
+  bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;  
+  bufferingPeriodSEI->m_bpCpbCnt = 1;
+
+  bufferingPeriodSEI->m_initialCpbRemovalDelayLength = 16;                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
+  // Note: The following parameters require some knowledge about the GOP structure.
+  //       Using getIntraPeriod() should be avoided though, because it assumes certain GOP
+  //       properties, which are only valid in CTC.
+  //       Still copying this setting from HM for consistency, improvements welcome
+  bool isRandomAccess  = m_pcCfg->getIntraPeriod() > 0;
+  if( isRandomAccess )
+  {
+    bufferingPeriodSEI->m_cpbRemovalDelayLength = 6;                        // 32 = 2^5 (plus 1)
+    bufferingPeriodSEI->m_dpbOutputDelayLength =  6;                        // 32 + 3 = 2^6
+  }
+  else
+  {
+    bufferingPeriodSEI->m_cpbRemovalDelayLength = 9;                        // max. 2^10
+    bufferingPeriodSEI->m_dpbOutputDelayLength =  9;                        // max. 2^10
+  }
+
+#endif
   //for the concatenation, it can be set to one during splicing.
   bufferingPeriodSEI->m_concatenationFlag = 0;
   //since the temporal layer HRDParameters is not ready, we assumed it is fixed

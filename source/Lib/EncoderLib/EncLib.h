@@ -217,6 +217,9 @@ public:
   EncAdaptiveLoopFilter*  getALF                ()              { return  &m_cEncALF;              }
   EncGOP*                 getGOPEncoder         ()              { return  &m_cGOPEncoder;          }
   EncSlice*               getSliceEncoder       ()              { return  &m_cSliceEncoder;        }
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  EncHRD*                 getHRD                ()              { return  &m_encHRD;               }
+#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncCu*                  getCuEncoder          ( int jId = 0 ) { return  &m_cCuEncoder[jId];      }
 #else

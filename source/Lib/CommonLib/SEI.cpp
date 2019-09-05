@@ -96,21 +96,37 @@ void deleteSEIs (SEIMessages &seiList)
   seiList.clear();
 }
 
-void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target)
+void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 {
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   target.m_bpSeqParameterSetId = m_bpSeqParameterSetId;
   target.m_rapCpbParamsPresentFlag = m_rapCpbParamsPresentFlag;
+#else
+  target.m_bpNalCpbParamsPresentFlag = m_bpNalCpbParamsPresentFlag;
+  target.m_bpVclCpbParamsPresentFlag = m_bpVclCpbParamsPresentFlag;
+  target.m_initialCpbRemovalDelayLength = m_initialCpbRemovalDelayLength;
+  target.m_cpbRemovalDelayLength = m_cpbRemovalDelayLength;
+  target.m_dpbOutputDelayLength = m_dpbOutputDelayLength;
+  target.m_bpCpbCnt = m_bpCpbCnt;
+#endif
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_auCpbRemovalDelayDelta = m_auCpbRemovalDelayDelta;
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
   ::memcpy(target.m_initialCpbRemovalDelayOffset, m_initialCpbRemovalDelayOffset, sizeof(m_initialCpbRemovalDelayOffset));
   ::memcpy(target.m_initialAltCpbRemovalDelay, m_initialAltCpbRemovalDelay, sizeof(m_initialAltCpbRemovalDelay));
   ::memcpy(target.m_initialAltCpbRemovalDelayOffset, m_initialAltCpbRemovalDelayOffset, sizeof(m_initialAltCpbRemovalDelayOffset));
+#else
+  target.m_initialCpbRemovalDelay[0] = m_initialCpbRemovalDelay [0];
+  target.m_initialCpbRemovalDelay[1] = m_initialCpbRemovalDelay [1];
+  target.m_initialCpbRemovalOffset[0] = m_initialCpbRemovalOffset [0];
+  target.m_initialCpbRemovalOffset[1] = m_initialCpbRemovalOffset [1];
+#endif
 }
 
-void SEIPictureTiming::copyTo (SEIPictureTiming& target)
+void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 {
   target.m_picStruct = m_picStruct;
   target.m_sourceScanType = m_sourceScanType;

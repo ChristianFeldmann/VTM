@@ -1075,8 +1075,13 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 
 }
 
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1)
+#else
+void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLayer, uint32_t maxNumSubLayersMinus1)
+#endif
 {
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   uint32_t  uiCode;
   if( commonInfPresentFlag )
   {
@@ -1151,6 +1156,65 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, bool commonInfPresen
       }
     }
   }
+#else
+  uint32_t  symbol;
+  READ_FLAG( symbol, "general_nal_hrd_parameters_present_flag" );           hrd->setNalHrdParametersPresentFlag( symbol == 1 ? true : false );
+  READ_FLAG( symbol, "general_vcl_hrd_parameters_present_flag" );           hrd->setVclHrdParametersPresentFlag( symbol == 1 ? true : false );
+  if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
+  {
+    READ_FLAG( symbol, "decoding_unit_hrd_params_present_flag" );           hrd->setSubPicCpbParamsPresentFlag( symbol == 1 ? true : false );
+
+    READ_CODE( 4, symbol, "bit_rate_scale" );                       hrd->setBitRateScale( symbol );
+    READ_CODE( 4, symbol, "cpb_size_scale" );                       hrd->setCpbSizeScale( symbol );
+    if( hrd->getSubPicCpbParamsPresentFlag() )
+    {
+      READ_CODE( 4, symbol, "cpb_size_du_scale" );                  hrd->setDuCpbSizeScale( symbol );
+    }
+  }
+
+  for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
+  {
+    READ_FLAG( symbol, "fixed_pic_rate_general_flag" );                     hrd->setFixedPicRateFlag( i, symbol == 1 ? true : false  );
+    if( !hrd->getFixedPicRateFlag( i ) )
+    {
+      READ_FLAG( symbol, "fixed_pic_rate_within_cvs_flag" );                hrd->setFixedPicRateWithinCvsFlag( i, symbol == 1 ? true : false  );
+    }
+    else
+    {
+      hrd->setFixedPicRateWithinCvsFlag( i, true );
+    }
+
+    hrd->setLowDelayHrdFlag( i, false ); // Inferred to be 0 when not present
+    hrd->setCpbCntMinus1   ( i, 0 );     // Inferred to be 0 when not present
+
+    if( hrd->getFixedPicRateWithinCvsFlag( i ) )
+    {
+      READ_UVLC( symbol, "elemental_duration_in_tc_minus1" );             hrd->setPicDurationInTcMinus1( i, symbol );
+    }
+    else
+    {
+      READ_FLAG( symbol, "low_delay_hrd_flag" );                      hrd->setLowDelayHrdFlag( i, symbol == 1 ? true : false  );
+    }
+    if (!hrd->getLowDelayHrdFlag( i ))
+    {
+      READ_UVLC( symbol, "cpb_cnt_minus1" );                          hrd->setCpbCntMinus1( i, symbol );
+    }
+
+    for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
+    {
+      if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
+          ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
+      {
+        for( int j = 0; j <= ( hrd->getCpbCntMinus1( i ) ); j ++ )
+        {
+          READ_UVLC( symbol, "bit_rate_value_minus1" );             hrd->setBitRateValueMinus1( i, j, nalOrVcl, symbol );
+          READ_UVLC( symbol, "cpb_size_value_minus1" );             hrd->setCpbSizeValueMinus1( i, j, nalOrVcl, symbol );
+          READ_FLAG( symbol, "cbr_flag" );                          hrd->setCbrFlag( i, j, nalOrVcl, symbol == 1 ? true : false  );
+        }
+      }
+    }
+  }
+#endif
 }
 
 

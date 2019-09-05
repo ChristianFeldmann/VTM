@@ -60,6 +60,9 @@
 #include "Analyze.h"
 #include "RateCtrl.h"
 #include <vector>
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+#include "EncHRD.h"
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/ConvertColorFormat.H"
@@ -153,6 +156,10 @@ private:
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
+
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  EncHRD*                 m_HRD;
+#endif
 
   // clean decoding refresh
   bool                    m_bRefreshPending;

@@ -140,7 +140,12 @@ public:
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void  codeHrdParameters       ( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
+#else
+  void  codeHrdParameters       ( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
+#endif
+
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 

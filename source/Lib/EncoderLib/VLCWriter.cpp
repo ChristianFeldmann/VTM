@@ -704,8 +704,13 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 
 }
 
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void HLSWriter::codeHrdParameters( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 )
+#else
+void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1)
+#endif
 {
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   if( commonInfPresentFlag )
   {
     WRITE_FLAG( hrd->getNalHrdParametersPresentFlag() ? 1 : 0 ,  "nal_hrd_parameters_present_flag" );
@@ -773,6 +778,53 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, bool commonInfPrese
       }
     }
   }
+#else
+  WRITE_FLAG( hrd->getNalHrdParametersPresentFlag() ? 1 : 0 ,  "general_nal_hrd_parameters_present_flag" );
+  WRITE_FLAG( hrd->getVclHrdParametersPresentFlag() ? 1 : 0 ,  "general_vcl_hrd_parameters_present_flag" );
+  if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
+  {
+    WRITE_FLAG( hrd->getSubPicCpbParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
+  }
+  WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
+  WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
+
+  for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
+  {
+    WRITE_FLAG( hrd->getFixedPicRateFlag( i ) ? 1 : 0,          "fixed_pic_rate_general_flag");
+    bool fixedPixRateWithinCvsFlag = true;
+    if( !hrd->getFixedPicRateFlag( i ) )
+    {
+      fixedPixRateWithinCvsFlag = hrd->getFixedPicRateWithinCvsFlag( i );
+      WRITE_FLAG( hrd->getFixedPicRateWithinCvsFlag( i ) ? 1 : 0, "fixed_pic_rate_within_cvs_flag");
+    }
+    if( fixedPixRateWithinCvsFlag )
+    {
+      WRITE_UVLC( hrd->getPicDurationInTcMinus1( i ),           "elemental_duration_in_tc_minus1");
+    }
+    else
+    {
+      WRITE_FLAG( hrd->getLowDelayHrdFlag( i ) ? 1 : 0,           "low_delay_hrd_flag");
+    }
+    if (!hrd->getLowDelayHrdFlag( i ))
+    {
+      WRITE_UVLC( hrd->getCpbCntMinus1( i ),                      "cpb_cnt_minus1");
+    }
+
+    for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
+    {
+      if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
+          ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
+      {
+        for( int j = 0; j <= ( hrd->getCpbCntMinus1( i ) ); j ++ )
+        {
+          WRITE_UVLC( hrd->getBitRateValueMinus1( i, j, nalOrVcl ), "bit_rate_value_minus1");
+          WRITE_UVLC( hrd->getCpbSizeValueMinus1( i, j, nalOrVcl ), "cpb_size_value_minus1");
+          WRITE_FLAG( hrd->getCbrFlag( i, j, nalOrVcl ) ? 1 : 0, "cbr_flag");
+        }
+      }
+    }
+  }
+#endif
 }
 
 
@@ -788,6 +840,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
 
   codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
+#if JVET_N0865_SYNTAX
+  WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
+#endif
 
   WRITE_UVLC(pcSPS->getSPSId (), "sps_seq_parameter_set_id");
 
@@ -1220,10 +1275,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   const uint32_t         numberValidComponents = getNumberValidComponents(format);
   const bool         chromaEnabled         = isChromaEnabled(format);
 
-  if ( pcSlice->getRapPicFlag() )
+#if !JVET_N0865_SYNTAX
+  if (pcSlice->getRapPicFlag())
   {
-    WRITE_FLAG( pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag" );
+    WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
   }
+#endif
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
   int bitsSliceAddress = 1;
   if (!pcSlice->getPPS()->getRectSliceFlag())
@@ -1270,14 +1327,32 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );
 
-    if( pcSlice->getPPS()->getOutputFlagPresentFlag() )
+#if !JVET_N0865_SYNTAX
+    if (pcSlice->getPPS()->getOutputFlagPresentFlag())
     {
-      WRITE_FLAG( pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag" );
+      WRITE_FLAG(pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag");
     }
+#endif
 
     int pocBits = pcSlice->getSPS()->getBitsForPOC();
     int pocMask = (1 << pocBits) - 1;
     WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
+#if JVET_N0865_SYNTAX
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+    {
+      int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
+      CHECK((pcSlice->getRecoveryPocCnt() < maxPicOrderCntLsb), "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+      WRITE_UVLC(pcSlice->getRecoveryPocCnt(), "recovery_poc_cnt");
+    }
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+    {
+      WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
+    }
+    if (pcSlice->getPPS()->getOutputFlagPresentFlag())
+    {
+      WRITE_FLAG(pcSlice->getPicOutputFlag() ? 1 : 0, "pic_output_flag");
+    }
+#endif
     if( !pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent())
     {
       //Write L0 related syntax elements

@@ -2603,6 +2603,8 @@ bool EncAppCfg::xCheckParameter()
     m_crossComponentPredictionEnabledFlag = false;
   }
 
+  xConfirmPara( m_bufferingPeriodSEIEnabled == true && m_RCCpbSize == 0,  "RCCpbSize must be greater than zero, when buffering period SEI is enabled" );
+
   if ( m_CUTransquantBypassFlagForce && m_bUseHADME )
   {
     msg( WARNING, "****************************************************************************\n");

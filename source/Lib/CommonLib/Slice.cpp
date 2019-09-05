@@ -1497,6 +1497,10 @@ SPS::SPS()
 , m_LadfIntervalLowerBound    { 0 }
 #endif
 , m_MIP                       ( false )
+#if JVET_N0865_SYNTAX
+    ,m_GDREnabledFlag         (1)
+#endif
+
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

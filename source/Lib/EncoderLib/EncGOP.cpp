@@ -212,6 +212,9 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
   m_lastBPSEI          = 0;
   m_totalCoded         = 0;
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  m_HRD                = pcEncLib->getHRD();
+#endif
 
   m_AUWriterIf = pcEncLib->getAUWriterIf();
 
@@ -415,7 +418,11 @@ void EncGOP::xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUn
     return;
   }
   OutputNALUnit nalu(naluType, temporalId);
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false);
+#else
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, false);
+#endif
   auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
   auPos++;
 }
@@ -432,7 +439,11 @@ void EncGOP::xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages
     SEIMessages tmpMessages;
     tmpMessages.push_back(*sei);
     OutputNALUnit nalu(naluType, temporalId);
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+    m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false);
+#else
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, false);
+#endif
     auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
     auPos++;
   }
@@ -688,7 +699,10 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     || ( slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
-    m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI, slice);
+    m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI);
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+    m_HRD->setBufferingPeriodSEI(bufferingPeriodSEI);
+#endif
     seiMessages.push_back(bufferingPeriodSEI);
     m_bufferingPeriodSEIPresentInAU = true;
 
@@ -794,7 +808,12 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
       pictureTimingSEI->m_numNalusInDuMinus1.resize( numDU );
       pictureTimingSEI->m_duCpbRemovalDelayMinus1.resize( numDU );
     }
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+    const uint32_t cpbRemovalDelayLegth = m_HRD->getBufferingPeriodSEI()->m_cpbRemovalDelayLength;
+    pictureTimingSEI->m_auCpbRemovalDelay = std::min<int>(std::max<int>(1, m_totalCoded - m_lastBPSEI), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
+#else
     pictureTimingSEI->m_auCpbRemovalDelay = std::min<int>(std::max<int>(1, m_totalCoded - m_lastBPSEI), static_cast<int>(pow(2, static_cast<double>(hrd->getCpbRemovalDelayLengthMinus1()+1)))); // Syntax element signalled as minus, hence the .
+#endif
     pictureTimingSEI->m_picDpbOutputDelay = slice->getSPS()->getNumReorderPics(slice->getSPS()->getMaxTLayers()-1) + slice->getPOC() - m_totalCoded;
     if(m_pcCfg->getEfficientFieldIRAPEnabled() && IRAPGOPid > 0 && IRAPGOPid < m_iGopSize)
     {

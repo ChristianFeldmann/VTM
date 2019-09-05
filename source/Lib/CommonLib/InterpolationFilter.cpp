@@ -669,7 +669,7 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
 #if JVET_O1164_RPR
     else if( nFilterIdx == 2 )
     {
-      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
     }
 #endif
     else

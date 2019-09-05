@@ -896,6 +896,9 @@ private:
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   ChromaQpMappingTable m_chromaQpMappingTable;
 #endif
+#if JVET_N0865_SYNTAX
+  bool m_GDREnabledFlag;
+#endif
 
 public:
 
@@ -1184,6 +1187,10 @@ public:
   void      derivedChromaQPMappingTables()                                          { m_chromaQpMappingTable.derivedChromaQPMappingTables(); }
   const ChromaQpMappingTable& getChromaQpMappingTable()                   const     { return m_chromaQpMappingTable;}
   int       getMappedChromaQpValue(ComponentID compID, int qpVal)         const     { return m_chromaQpMappingTable.getMappedChromaQpValue(compID, qpVal); }
+#endif
+#if JVET_N0865_SYNTAX
+  void setGDREnabledFlag(bool flag) { m_GDREnabledFlag = flag; }
+  bool getGDREnabledFlag() const { return m_GDREnabledFlag; }
 #endif
 };
 
@@ -1752,6 +1759,10 @@ private:
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                   m_uiMaxBTSize;
 
+#if JVET_N0865_SYNTAX
+  int                        m_recoveryPocCnt;
+  int                        m_rpPicOrderCntVal;
+#endif
 #if JVET_O_MAX_NUM_ALF_APS_8
   APS*                       m_alfApss[ALF_CTB_MAX_NUM_APS];
 #else
@@ -2086,6 +2097,13 @@ public:
   bool                        checkRPR();
   const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { return m_scalingRatio[refPicList][refIdx]; }
 #endif
+#if JVET_N0865_SYNTAX
+  void                        setRecoveryPocCnt(int value) { m_recoveryPocCnt = value; }
+  int                         getRecoveryPocCnt() const { return m_recoveryPocCnt; }
+  void                        setRpPicOrderCntVal(int value) { m_rpPicOrderCntVal = value; }
+  int                         getRpPicOrderCntVal() const { return m_rpPicOrderCntVal; }
+#endif
+
 protected:
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);

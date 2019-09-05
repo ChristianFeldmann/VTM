@@ -59,11 +59,13 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   SPS* sps = NULL;
 
   uint32_t firstSliceSegmentInPic;
-  if( isRapPic )
+#if !JVET_N0865_SYNTAX
+  if (isRapPic)
   {
-    READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
+    READ_FLAG(uiCode, "no_output_of_prior_pics_flag");   // ignored -- updated already
   }
-  READ_UVLC (    uiCode, "slice_pic_parameter_set_id" );
+#endif
+  READ_UVLC(uiCode, "slice_pic_parameter_set_id");
   pps = parameterSetManager->getPPS(uiCode);
   //!KS: need to add error handling code here, if PPS is not available
   CHECK(pps==0, "Invalid PPS");
@@ -117,10 +119,12 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   }
 
   READ_UVLC (    uiCode, "slice_type" );
+#if !JVET_N0865_SYNTAX
   if( pps->getOutputFlagPresentFlag() )
   {
     READ_FLAG( uiCode, "pic_output_flag" );
   }
+#endif
 
 
   return firstSliceSegmentInPic;

@@ -1261,6 +1261,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("SEIBufferingPeriod",                              m_bufferingPeriodSEIEnabled,                      false, "Control generation of buffering period SEI messages")
   ("SEIPictureTiming",                                m_pictureTimingSEIEnabled,                        false, "Control generation of picture timing SEI messages")
+#if JVET_O0041_FRAME_FIELD_SEI
+  ("SEIFrameFieldInfo",                               m_frameFieldInfoSEIEnabled,                       false, "Control generation of frame field information SEI messages")
+#endif
 #if HEVC_SEI
   ("SEIToneMappingInfo",                              m_toneMappingInfoSEIEnabled,                      false, "Control generation of Tone Mapping SEI messages")
   ("SEIToneMapId",                                    m_toneMapId,                                          0, "Specifies Id of Tone Mapping SEI message for a given session")
@@ -2586,12 +2589,21 @@ bool EncAppCfg::xCheckParameter()
   
   if (m_isField)
   {
+#if JVET_O0041_FRAME_FIELD_SEI
+    if (!m_frameFieldInfoSEIEnabled)
+    {
+      msg( WARNING, "*************************************************************************************\n");
+      msg( WARNING, "** WARNING: Frame field information SEI should be enabled for field coding!        **\n");
+      msg( WARNING, "*************************************************************************************\n");
+    }
+#else
     if (!m_pictureTimingSEIEnabled)
     {
       msg( WARNING, "****************************************************************************\n");
       msg( WARNING, "** WARNING: Picture Timing SEI should be enabled for field coding!        **\n");
       msg( WARNING, "****************************************************************************\n");
     }
+#endif
   }
 
   if(m_crossComponentPredictionEnabledFlag && (m_chromaFormatIDC != CHROMA_444))

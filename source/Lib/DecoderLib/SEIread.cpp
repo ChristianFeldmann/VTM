@@ -239,6 +239,12 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       }
 #endif
       break;
+#if JVET_O0041_FRAME_FIELD_SEI
+    case SEI::FRAME_FIELD_INFO:
+      sei = new SEIFrameFieldInfo;
+      xParseSEIFrameFieldinfo((SEIFrameFieldInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
+      break;
+#endif
 #if HEVC_SEI
     case SEI::RECOVERY_POINT:
       sei = new SEIRecoveryPoint;
@@ -638,18 +644,21 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   int i;
 #endif
+#if !JVET_O0041_FRAME_FIELD_SEI
   uint32_t code;
+#endif
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   const HRDParameters *hrd = sps->getHrdParameters();
 #endif
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-
+#if !JVET_O0041_FRAME_FIELD_SEI
   {
     sei_read_code( pDecodedMessageOutputStream, 4, code, "pic_struct" );             sei.m_picStruct            = code;
     sei_read_code( pDecodedMessageOutputStream, 2, code, "source_scan_type" );       sei.m_sourceScanType       = code;
     sei_read_flag( pDecodedMessageOutputStream,    code, "duplicate_flag" );         sei.m_duplicateFlag        = (code == 1);
   }
+#endif
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   if( hrd->getCpbDpbDelaysPresentFlag())
@@ -699,6 +708,46 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   sei.m_picDpbOutputDelay = symbol;
 #endif
 }
+
+#if JVET_O0041_FRAME_FIELD_SEI
+void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
+{
+  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
+
+  uint32_t symbol;
+  sei_read_flag( pDecodedMessageOutputStream, symbol,      "field_pic_flag" );
+  sei.m_fieldPicFlag= symbol;
+  if (sei.m_fieldPicFlag)
+  {
+    sei_read_flag( pDecodedMessageOutputStream, symbol,    "bottom_field_flag" );
+    sei.m_bottomFieldFlag = symbol;
+    sei_read_flag( pDecodedMessageOutputStream, symbol,    "pairing_indicated_flag" );
+    sei.m_pairingIndicatedFlag = symbol;
+    if (sei.m_pairingIndicatedFlag)
+    {
+      sei_read_flag( pDecodedMessageOutputStream, symbol,  "paired_with_next_field_flag" );
+      sei.m_pairedWithNextFieldFlag = symbol;
+    }
+  }
+  else
+  {
+    sei_read_flag( pDecodedMessageOutputStream, symbol,    "display_fields_from_frame_flag" );
+    sei.m_displayFieldsFromFrameFlag = symbol;
+    if (sei.m_displayFieldsFromFrameFlag)
+    {
+      sei_read_flag( pDecodedMessageOutputStream, symbol,  "display_fields_from_frame_flag" );
+      sei.m_topFieldFirstFlag = symbol;
+    }
+    sei_read_uvlc( pDecodedMessageOutputStream, symbol,    "display_elemental_periods_minus1" );
+    sei.m_displayElementalPeriodsMinus1 = symbol;
+  }
+  sei_read_code( pDecodedMessageOutputStream, 2, symbol,   "source_scan_type" );
+  sei.m_sourceScanType = symbol;
+  sei_read_flag( pDecodedMessageOutputStream, symbol,      "duplicate_flag" );
+  sei.m_duplicateFlag = symbol;
+}
+#endif
+
 
 #if HEVC_SEI
 void SEIReader::xParseSEIRecoveryPoint(SEIRecoveryPoint& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)

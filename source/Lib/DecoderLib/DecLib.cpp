@@ -925,6 +925,7 @@ void DecLib::xActivateParameterSets()
 
     if(!m_SEIs.empty())
     {
+#if !JVET_O0041_FRAME_FIELD_SEI
       // Check if any new Picture Timing SEI has arrived
       SEIMessages pictureTimingSEIs = getSeisByType(m_SEIs, SEI::PICTURE_TIMING);
       if (pictureTimingSEIs.size()>0)
@@ -933,6 +934,16 @@ void DecLib::xActivateParameterSets()
         isField    = (pictureTiming->m_picStruct == 1) || (pictureTiming->m_picStruct == 2) || (pictureTiming->m_picStruct == 9) || (pictureTiming->m_picStruct == 10) || (pictureTiming->m_picStruct == 11) || (pictureTiming->m_picStruct == 12);
         isTopField = (pictureTiming->m_picStruct == 1) || (pictureTiming->m_picStruct == 9) || (pictureTiming->m_picStruct == 11);
       }
+#else
+      // Check if any new Frame Field Info SEI has arrived
+      SEIMessages frameFieldSEIs = getSeisByType(m_SEIs, SEI::FRAME_FIELD_INFO);
+      if (frameFieldSEIs.size()>0)
+      {
+        SEIFrameFieldInfo* ff = (SEIFrameFieldInfo*) *(frameFieldSEIs.begin());
+        isField    = ff->m_fieldPicFlag;
+        isTopField = isField && (!ff->m_bottomFieldFlag);
+      }
+#endif
     }
 
     //Set Field/Frame coding mode

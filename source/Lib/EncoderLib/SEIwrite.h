@@ -69,6 +69,9 @@ protected:
   void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei);
   void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod& bp);
 #endif
+#if JVET_O0041_FRAME_FIELD_SEI
+  void xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei);
+#endif
 #if HEVC_SEI
   void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
   void xWriteSEIFramePacking(const SEIFramePacking& sei);

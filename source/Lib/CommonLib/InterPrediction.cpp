@@ -1159,6 +1159,14 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         iMvScaleTmpVer = curMv.ver;
       }
 
+#if JVET_O1164_RPR
+      if( xPredInterBlkRPR( scalingRatio, *pu.cs->pps, CompArea( compID, chFmt, pu.blocks[compID].offset( w, h ), Size( blockWidth, blockHeight ) ), refPic, Mv( iMvScaleTmpHor, iMvScaleTmpVer ), dstBuf.buf + w + h * dstBuf.stride, dstBuf.stride, bi, wrapRef, clpRng, 2 ) )
+      {
+        CHECK( enablePROF, "PROF should be disabled with RPR" );
+      }
+      else
+      {
+#endif
       // get the MV in high precision
       int xFrac, yFrac, xInt, yInt;
 
@@ -1183,14 +1191,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         yFrac = iMvScaleTmpVer & 31;
       }
 
-#if JVET_O1164_RPR
-      if( xPredInterBlkRPR( scalingRatio, *pu.cs->pps, CompArea( compID, chFmt, pu.blocks[compID].offset( xInt + w, yInt + h ), pu.blocks[compID] ), refPic, Mv( iMvScaleTmpHor, iMvScaleTmpVer ), dstBuf.buf + w + h * dstBuf.stride, dstBuf.stride, bi, wrapRef, clpRng, 2 ) )
-      {
-        CHECK( enablePROF, "PROF should be disabled with RPR" );
-      }
-      else
-      {
-#endif
       const CPelBuf refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, pu.blocks[compID].offset(xInt + w, yInt + h), pu.blocks[compID] ), wrapRef );
 #if !JVET_O0070_PROF
       PelBuf &dstBuf = dstPic.bufs[compID];

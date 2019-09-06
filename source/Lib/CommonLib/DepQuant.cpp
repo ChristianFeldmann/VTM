@@ -138,7 +138,7 @@ namespace DQIntern
     const NbInfoOut*    getNbInfoOut( int hd, int vd ) const { return m_scanId2NbInfoOutArray[hd][vd]; }
     const TUParameters* getTUPars   ( const CompArea& area, const ComponentID compID ) const
     {
-      return m_tuParameters[g_aucLog2[area.width]][g_aucLog2[area.height]][toChannelType(compID)];
+      return m_tuParameters[floorLog2(area.width)][floorLog2(area.height)][toChannelType(compID)];
     }
   private:
     void  xInitScanArrays   ();
@@ -347,8 +347,10 @@ namespace DQIntern
     const uint32_t nonzeroWidth  = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_width);
     const uint32_t nonzeroHeight = std::min<uint32_t>(JVET_C0024_ZERO_OUT_TH, m_height);
     m_numCoeff                   = nonzeroWidth * nonzeroHeight;
-    m_log2SbbWidth        = g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][0];
-    m_log2SbbHeight       = g_log2SbbSize[ g_aucLog2[m_width] ][ g_aucLog2[m_height] ][1];
+    const int log2W       = floorLog2( m_width  );
+    const int log2H       = floorLog2( m_height );
+    m_log2SbbWidth        = g_log2SbbSize[ log2W ][ log2H ][0];
+    m_log2SbbHeight       = g_log2SbbSize[ log2W ][ log2H ][1];
     m_log2SbbSize         = m_log2SbbWidth + m_log2SbbHeight;
     m_sbbSize             = ( 1 << m_log2SbbSize );
     m_sbbMask             = m_sbbSize - 1;
@@ -362,8 +364,6 @@ namespace DQIntern
     SizeType        vsId  = gp_sizeIdxInfo->idxFrom( m_height );
     m_scanSbbId2SbbPos    = g_scanOrder     [ SCAN_UNGROUPED   ][ m_scanType ][ hsbb ][ vsbb ];
     m_scanId2BlkPos       = g_scanOrder     [ SCAN_GROUPED_4x4 ][ m_scanType ][ hsId ][ vsId ];
-    int log2W             = g_aucLog2[ m_width  ];
-    int log2H             = g_aucLog2[ m_height ];
     m_scanId2NbInfoSbb    = rom.getNbInfoSbb( log2W, log2H );
     m_scanId2NbInfoOut    = rom.getNbInfoOut( log2W, log2H );
     m_scanInfo            = new ScanInfo[ m_numCoeff ];
@@ -504,7 +504,7 @@ namespace DQIntern
       {
         bool rootCbfSoFar = false;
         bool isLastSubPartition = CU::isISPLast(*tu.cu, tu.Y(), compID);
-        uint32_t nTus = tu.cu->ispMode == HOR_INTRA_SUBPARTITIONS ? tu.cu->lheight() >> g_aucLog2[tu.lheight()] : tu.cu->lwidth() >> g_aucLog2[tu.lwidth()];
+        uint32_t nTus = tu.cu->ispMode == HOR_INTRA_SUBPARTITIONS ? tu.cu->lheight() >> floorLog2(tu.lheight()) : tu.cu->lwidth() >> floorLog2(tu.lwidth());
         if( isLastSubPartition )
         {
           TransformUnit* tuPointer = tu.cu->firstTU;
@@ -546,7 +546,7 @@ namespace DQIntern
       int32_t             bitOffset   = ( xy ? cbfDeltaBits : 0 );
       int32_t*            lastBits    = ( xy ? m_lastBitsY : m_lastBitsX );
       const unsigned      size        = ( xy ? tuPars.m_height : tuPars.m_width );
-      const unsigned      log2Size    = g_aucNextLog2[ size ];
+      const unsigned      log2Size    = ceilLog2( size );
       const bool          useYCtx     = ( xy != 0 );
       const CtxSet&       ctxSetLast  = ( useYCtx ? Ctx::LastY : Ctx::LastX )[ chType ];
       const unsigned      lastShift   = ( compID == COMPONENT_Y ? (log2Size+1)>>2 : Clip3<unsigned>(0,2,size>>3) );
@@ -1769,8 +1769,8 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
     const int         height          = rect.height;
     uint32_t          scalingListType = getScalingListType(tu.cu->predMode, compID);
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-    const uint32_t    log2TrWidth     = g_aucLog2[width];
-    const uint32_t    log2TrHeight    = g_aucLog2[height];
+    const uint32_t    log2TrWidth     = floorLog2(width);
+    const uint32_t    log2TrHeight    = floorLog2(height);
     const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)));
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
@@ -1796,8 +1796,8 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
     const int         height          = rect.height;
     uint32_t          scalingListType = getScalingListType(tu.cu->predMode, compID);
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-    const uint32_t    log2TrWidth  = g_aucLog2[width];
-    const uint32_t    log2TrHeight = g_aucLog2[height];
+    const uint32_t    log2TrWidth  = floorLog2(width);
+    const uint32_t    log2TrHeight = floorLog2(height);
 
     const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)));
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );

@@ -416,7 +416,7 @@ void QuantRDOQ::xSetErrScaleCoeff( uint32_t list, uint32_t sizeX, uint32_t sizeY
 
   double dErrScale = (double)( 1 << SCALE_BITS );                                // Compensate for scaling of bitcount in Lagrange cost function
 
-  const bool needsSqrt2 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  const bool needsSqrt2 = ((floorLog2(width) + floorLog2(height)) & 1) == 1;
   double dTransShift = (double)iTransformShift + ( needsSqrt2 ? -0.5 : 0.0 );
   dErrScale = dErrScale*pow( 2.0, ( -2.0*dTransShift ) );                     // Compensate for scaling through forward transform
 
@@ -605,8 +605,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   }
 
   double     d64BlockUncodedCost               = 0;
-  const uint32_t uiLog2BlockWidth                  = g_aucLog2[uiWidth];
-  const uint32_t uiLog2BlockHeight                 = g_aucLog2[uiHeight];
+  const uint32_t uiLog2BlockWidth                  = floorLog2(uiWidth);
+  const uint32_t uiLog2BlockHeight                 = floorLog2(uiHeight);
   const uint32_t uiMaxNumCoeff                     = rect.area();
 
   CHECK(compID >= MAX_NUM_TBLOCKS, "Invalid component ID");
@@ -965,7 +965,7 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
     {
       bool rootCbfSoFar       = false;
       bool isLastSubPartition = CU::isISPLast(*tu.cu, tu.Y(), compID);
-      uint32_t nTus = tu.cu->ispMode == HOR_INTRA_SUBPARTITIONS ? tu.cu->lheight() >> g_aucLog2[tu.lheight()] : tu.cu->lwidth() >> g_aucLog2[tu.lwidth()];
+      uint32_t nTus = tu.cu->ispMode == HOR_INTRA_SUBPARTITIONS ? tu.cu->lheight() >> floorLog2(tu.lheight()) : tu.cu->lwidth() >> floorLog2(tu.lwidth());
       if( isLastSubPartition )
       {
         TransformUnit* tuPointer = tu.cu->firstTU;

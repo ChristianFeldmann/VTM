@@ -145,9 +145,6 @@ extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
 // Misc.
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
-extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
-extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
-extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
 
 #if JVET_O0105_ICT
 extern const int       g_ictModes[2][4];
@@ -155,22 +152,22 @@ extern const int       g_ictModes[2][4];
 
 inline bool is34( const SizeType& size )
 {
-  return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 1 ) ) );
+  return ( size & ( ( int64_t ) 1 << ( floorLog2(size) - 1 ) ) );
 }
 
 inline bool is58( const SizeType& size )
 {
-  return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 2 ) ) );
+  return ( size & ( ( int64_t ) 1 << ( floorLog2(size) - 2 ) ) );
 }
 
 inline bool isNonLog2BlockSize( const Size& size )
 {
-  return ( ( 1 << g_aucLog2[size.width] ) != size.width ) || ( ( 1 << g_aucLog2[size.height] ) != size.height );
+  return ( ( 1 << floorLog2(size.width) ) != size.width ) || ( ( 1 << floorLog2(size.height) ) != size.height );
 }
 
 inline bool isNonLog2Size( const SizeType& size )
 {
-  return ( ( 1 << g_aucLog2[size] ) != size );
+  return ( ( 1 << floorLog2(size) ) != size );
 }
 
 extern UnitScale     g_miScaling; // scaling object for motion scaling

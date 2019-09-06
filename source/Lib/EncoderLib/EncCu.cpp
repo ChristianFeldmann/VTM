@@ -1004,6 +1004,14 @@ void EncCu::xCompressCU( CodingStructure *&tempCS, CodingStructure *&bestCS, Par
   }
 
 #endif
+  if( tempCS->cost == MAX_DOUBLE && bestCS->cost == MAX_DOUBLE )
+  {
+    //although some coding modes were planned to be tried in RDO, no coding mode actually finished encoding due to early termination
+    //thus tempCS->cost and bestCS->cost are both MAX_DOUBLE; in this case, skip the following process for normal case
+    m_modeCtrl->finishCULevel( partitioner );
+    return;
+  }
+
   // set context states
   m_CABACEstimator->getCtx() = m_CurrCtx->best;
 
@@ -1239,15 +1247,15 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
     picture->scheduler.setSplitThreadId();
     picture->scheduler.setSplitJobId( jId );
 
-    Partitioner* jobPartitioner = PartitionerFactory::get( *tempCS->slice );
+    QTBTPartitioner jobPartitioner;
     EncCu*       jobCuEnc       = m_pcEncLib->getCuEncoder( picture->scheduler.getSplitDataId( jId ) );
     auto*        jobBlkCache    = dynamic_cast<CacheBlkInfoCtrl*>( jobCuEnc->m_modeCtrl );
 #if REUSE_CU_RESULTS
     auto*        jobBestCache   = dynamic_cast<BestEncInfoCache*>( jobCuEnc->m_modeCtrl );
 #endif
 
-    jobPartitioner->copyState( partitioner );
-    jobCuEnc      ->copyState( this, *jobPartitioner, currArea, true );
+    jobPartitioner.copyState( partitioner );
+    jobCuEnc      ->copyState( this, jobPartitioner, currArea, true );
 
     if( jobBlkCache  ) { jobBlkCache ->tick(); }
 #if REUSE_CU_RESULTS
@@ -1259,9 +1267,7 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
 
     jobUsed[jId] = true;
 
-    jobCuEnc->xCompressCU( jobTemp, jobBest, *jobPartitioner );
-
-    delete jobPartitioner;
+    jobCuEnc->xCompressCU( jobTemp, jobBest, jobPartitioner );
 
     picture->scheduler.setSplitJobId( 0 );
     // thread stop
@@ -1769,7 +1775,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     if( m_pcEncCfg->getUseFastLCTU() )
     {
       unsigned minDepth = 0;
-      unsigned maxDepth = g_aucLog2[tempCS->sps->getCTUSize()] - g_aucLog2[tempCS->sps->getMinQTSize(slice.getSliceType(), partitioner.chType)];
+      unsigned maxDepth = floorLog2(tempCS->sps->getCTUSize()) - floorLog2(tempCS->sps->getMinQTSize(slice.getSliceType(), partitioner.chType));
 
       if( auto ad = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )
       {
@@ -2168,7 +2174,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
                 CodingUnit &cu = *bestCS->cus.front();
                 if( cu.firstTU->mtsIdx == MTS_SKIP )
                 {
-                  if( ( g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].width ] + g_aucLog2[ cu.firstTU->blocks[ COMPONENT_Y ].height ] ) >= 6 )
+                  if( ( floorLog2( cu.firstTU->blocks[ COMPONENT_Y ].width ) + floorLog2( cu.firstTU->blocks[ COMPONENT_Y ].height ) ) >= 6 )
                   {
                     endLfnstIdx = 0;
                   }
@@ -2189,7 +2195,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #if JVET_O0502_ISP_CLEANUP
               double threshold = 1.4;
 #else
-              double nSamples  = ( double ) ( cu.lwidth() << g_aucLog2[ cu.lheight() ] );
+              double nSamples  = ( double ) ( cu.lwidth() << floorLog2( cu.lheight() ) );
               double threshold = 1 + 1.4 / sqrt( nSamples );
 #endif
 
@@ -3280,7 +3286,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     PredictionUnit &pu  = tempCS->addPU( cu, partitioner.chType );
 
-    if( abs(g_aucLog2[cu.lwidth()] - g_aucLog2[cu.lheight()]) >= 2 )
+    if( abs(floorLog2(cu.lwidth()) - floorLog2(cu.lheight())) >= 2 )
     {
       numTriangleCandidate = 30;
     }

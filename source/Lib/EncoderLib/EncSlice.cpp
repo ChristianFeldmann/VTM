@@ -1091,7 +1091,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
 #else
     const unsigned     mts = std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth);
 #endif
-    const unsigned mtsLog2 = (unsigned)g_aucLog2[mts];
+    const unsigned mtsLog2 = (unsigned)floorLog2(mts);
     const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
     unsigned numAct = 0;    // number of block activities
     double   sumAct = 0.0; // sum of all block activities
@@ -2014,6 +2014,9 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
   const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
   boundingCtuTSAddrSlice=0;
   haveReachedTileBoundary=false;
+#if SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES
+  int numSlicesInPic = pps.getNumSlicesInPicMinus1() + 1;
+#endif
 
   switch (sliceMode)
   {
@@ -2070,6 +2073,37 @@ void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice,
       }
       break;
     default:
+#if SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES
+      if(numSlicesInPic > 1)
+      {
+        const uint32_t startBrickIdx = tileMap.getBrickIdxBsMap(startCtuTSAddrSlice);
+        uint32_t endBrickIdx = -1;
+        if (pps.getRectSliceFlag())  //rectangular slice
+        {
+          uint32_t sliceIdx = 0;
+          while (endBrickIdx == -1 && sliceIdx <= pps.getNumSlicesInPicMinus1())
+          {
+            if (pps.getTopLeftBrickIdx(sliceIdx) == startBrickIdx)
+              endBrickIdx = pps.getBottomRightBrickIdx(sliceIdx);
+            sliceIdx++;
+          }
+          if (endBrickIdx == -1)
+            EXIT("Incorrect rectangular slice definition");
+        }
+
+        uint32_t currentTileIdx = startBrickIdx;
+        int tmpAddr = -1;
+        for (int i = startCtuTSAddrSlice; i < numberOfCtusInFrame; i++)
+        {
+          currentTileIdx = tileMap.getBrickIdxBsMap(i);
+          if (currentTileIdx == endBrickIdx)
+            tmpAddr = i;
+        }
+        boundingCtuTSAddrSlice = (tmpAddr != -1) ? tmpAddr : numberOfCtusInFrame - 1;
+        boundingCtuTSAddrSlice++;
+        break;
+      }
+#endif
       boundingCtuTSAddrSlice    = numberOfCtusInFrame;
       break;
   }

@@ -132,12 +132,20 @@ public:
   void  codeAPS                 ( APS* pcAPS );
   void  codeAlfAps              ( APS* pcAPS );
   void  codeLmcsAps             ( APS* pcAPS );
+#if JVET_O0299_APS_SCALINGLIST
+  void  codeScalingListAps      ( APS* pcAPS );
+#endif
   void  codeVPS                 ( const VPS* pcVPS );
   void  codeDPS                 ( const DPS* dps );
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void  codeHrdParameters       ( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
+#else
+  void  codeHrdParameters       ( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
+#endif
+
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 
@@ -153,7 +161,6 @@ private:
   void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
   void truncatedUnaryEqProb( int symbol, int maxSymbol );
 #endif
-  void  codeReshaper            ( const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);
 };
 
 //! \}

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
+
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
 #if JVET_O1164_RPR
 #define JVET_O1164_PS                                     1
@@ -57,6 +59,9 @@
 #define RPR_CTC_PRINT                                     1
 #define RPR_CONF_WINDOW                                   1
 #endif
+
+#define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
+#define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
 
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
@@ -245,9 +250,12 @@
 #define JVET_O0610_CFG                                    1 // config default change for "Adopt to mandate the presence of AU delimiter for each AU", config parameter should be removed later
 
 #define JVET_O0491_HLS_CLEANUP                            1
+#define JVET_O0041_FRAME_FIELD_SEI                        1
 
 #define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
+
+#define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -266,7 +274,13 @@
 #define MAX_TB_SIZE_SIGNALLING                            0
 #endif
 
+#define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
+
+#define JVET_N0865_SYNTAX                                 1 // JVET_N0865 syntax elements
+
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
+
+#define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
@@ -493,6 +507,9 @@ enum ApsTypeValues
 {
   ALF_APS = 0,
   LMCS_APS = 1,
+#if JVET_O0299_APS_SCALINGLIST
+  SCALING_LIST_APS = 2,
+#endif
 };
 
 enum QuantFlags
@@ -1144,11 +1161,7 @@ enum PLTRunMode
   PLT_RUN_INDEX = 0,
   PLT_RUN_COPY  = 1,
   NUM_PLT_RUN   = 2
-}
-#if __GNUC__
-__attribute__((packed))
-#endif
-;
+};
 #endif
 /// parameters for deblocking filter
 struct LFCUParam

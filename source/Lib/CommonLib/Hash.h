@@ -105,7 +105,7 @@ public:
   void addToHashMapByRowWithPrecalData(uint32_t* srcHash[2], bool* srcIsSame, int picWidth, int picHeight, int width, int height);
   bool isInitial() { return tableHasContent; }
   void setInitial() { tableHasContent = true; }
-  uint16_t* getHashPic(int baseSize) const { return hashPic[g_aucLog2[baseSize] - 2]; }
+  uint16_t* getHashPic(int baseSize) const { return hashPic[floorLog2(baseSize) - 2]; }
 
 
 public:

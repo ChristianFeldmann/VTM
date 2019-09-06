@@ -65,9 +65,11 @@ class InterPrediction : public WeightPrediction
 private:
   int m_shareState;
 
+#if !JVET_O0055_INT_DMVR_DIS_BDOF
   Distortion  m_bioDistThres;
   Distortion  m_bioSubBlkDistThres;
   Distortion  m_bioPredSubBlkDist[MAX_NUM_PARTS_IN_CTU];
+#endif
 
 #if !JVET_O0304_SIMPLIFIED_BDOF
   int m_dotProduct1[BIO_TEMP_BUFFER_SIZE];
@@ -132,7 +134,9 @@ protected:
 #endif
   int             rightShiftMSB(int numer, int    denom);
   void            applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf &yuvSrc0, const CPelUnitBuf &yuvSrc1, const int &refIdx0, const int &refIdx1, PelUnitBuf &yuvDst, const BitDepths &clipBitDepths);
+#if !JVET_O0055_INT_DMVR_DIS_BDOF
   bool            xCalcBiPredSubBlkDist(const PredictionUnit &pu, const Pel* yuvSrc0, const int src0Stride, const Pel* yuvSrc1, const int src1Stride, const BitDepths &clipBitDepths);
+#endif
   void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
                                   , const bool& bioApplied
                                   , const bool luma, const bool chroma
@@ -145,6 +149,9 @@ protected:
   void xPredInterBlk            ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng
                                  , const bool& bioApplied
                                  , bool isIBC
+#if JVET_O1164_RPR
+                                 , const std::pair<int, int> scalingRatio = SCALE_1X
+#endif
                                  , SizeType dmvrWidth = 0
                                  , SizeType dmvrHeight = 0
                                  , bool bilinearMC = false
@@ -164,7 +171,11 @@ protected:
 #if JVET_O0070_PROF
   void xApplyBiPROF             (const PredictionUnit& pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng);
 #endif
+#if JVET_O1164_RPR
+  void xPredAffineBlk           ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng, const std::pair<int, int> scalingRatio = SCALE_1X );
+#else
   void xPredAffineBlk( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng );
+#endif
 
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
 
@@ -247,7 +258,7 @@ public:
 #endif
 
 #if JVET_O1164_RPR
-  bool xPredInterBlkRPR( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng );
+  bool xPredInterBlkRPR( const std::pair<int, int>& scalingRatio, const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& mv, PelUnitBuf& dstPic, const bool bi, const bool wrapRef, const ClpRng& clpRng );
 #endif
 };
 

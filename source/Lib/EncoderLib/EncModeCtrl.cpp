@@ -783,14 +783,14 @@ void BestEncInfoCache::init( const Slice &slice )
   m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
   m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
 #if JVET_O0119_BASE_PALETTE_444
-  m_runType   = new PLTRunMode[numCoeff * MAX_NUM_TUS];
+  m_runType   = new bool[numCoeff*MAX_NUM_TUS];
   m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
 #endif
 #else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
 #if JVET_O0119_BASE_PALETTE_444
-  m_runType   = new PLTRunMode[numCoeff];
+  m_runType   = new bool[numCoeff];
   m_runLength = new Pel [numCoeff];
 #endif
 #endif
@@ -798,7 +798,7 @@ void BestEncInfoCache::init( const Slice &slice )
   TCoeff *coeffPtr = m_pCoeff;
   Pel    *pcmPtr   = m_pPcmBuf;
 #if JVET_O0119_BASE_PALETTE_444
-  PLTRunMode *runTypePtr   = m_runType;
+  bool   *runTypePtr   = m_runType;
   Pel    *runLengthPtr = m_runLength;
 #endif
 
@@ -817,9 +817,7 @@ void BestEncInfoCache::init( const Slice &slice )
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
 #if JVET_O0119_BASE_PALETTE_444
-            PLTRunMode *runType[MAX_NUM_TBLOCKS] = {
-              0,
-            };
+            bool   *runType[MAX_NUM_TBLOCKS]   = { 0, };
             Pel    *runLength[MAX_NUM_TBLOCKS] = { 0, };
 #endif
 
@@ -1147,7 +1145,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 {
   // Min/max depth
   unsigned minDepth = 0;
-  unsigned maxDepth = g_aucLog2[cs.sps->getCTUSize()] - g_aucLog2[cs.sps->getMinQTSize( m_slice->getSliceType(), partitioner.chType )];
+  unsigned maxDepth = floorLog2(cs.sps->getCTUSize()) - floorLog2(cs.sps->getMinQTSize( m_slice->getSliceType(), partitioner.chType ));
   if( m_pcEncCfg->getUseFastLCTU() )
   {
     if( auto adPartitioner = dynamic_cast<AdaptiveDepthPartitioner*>( &partitioner ) )
@@ -1218,9 +1216,9 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       {
         const Position    &pos = partitioner.currQgPos;
 #if MAX_TB_SIZE_SIGNALLING
-        const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth)];
+        const unsigned mtsLog2 = (unsigned)floorLog2(std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth));
 #else
-        const unsigned mtsLog2 = (unsigned)g_aucLog2[std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth)];
+        const unsigned mtsLog2 = (unsigned)floorLog2(std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth));
 #endif
         const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
 

@@ -289,7 +289,7 @@ public:
       uiTemp2  >>=   MAX_CU_DEPTH;
     }
 
-    return uiLength2 + ( g_aucPrevLog2[uiTemp2] << 1 );
+    return uiLength2 + ( floorLog2(uiTemp2) << 1 );
   }
   Distortion     getCostOfVectorWithPredictor( const int x, const int y, const unsigned imvShift )  { return Distortion( m_motionLambda * getBitsOfVectorWithPredictor(x, y, imvShift )); }
   uint32_t           getBitsOfVectorWithPredictor( const int x, const int y, const unsigned imvShift )  { return xGetExpGolombNumberOfBits(((x << m_iCostScale) - m_mvPredictor.getHor())>>imvShift) + xGetExpGolombNumberOfBits(((y << m_iCostScale) - m_mvPredictor.getVer())>>imvShift); }

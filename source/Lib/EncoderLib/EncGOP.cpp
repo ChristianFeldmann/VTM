@@ -212,6 +212,9 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
   m_lastBPSEI          = 0;
   m_totalCoded         = 0;
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  m_HRD                = pcEncLib->getHRD();
+#endif
 
   m_AUWriterIf = pcEncLib->getAUWriterIf();
 
@@ -415,7 +418,11 @@ void EncGOP::xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUn
     return;
   }
   OutputNALUnit nalu(naluType, temporalId);
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false);
+#else
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, false);
+#endif
   auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
   auPos++;
 }
@@ -432,7 +439,11 @@ void EncGOP::xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages
     SEIMessages tmpMessages;
     tmpMessages.push_back(*sei);
     OutputNALUnit nalu(naluType, temporalId);
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+    m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false);
+#else
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, false);
+#endif
     auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
     auPos++;
   }
@@ -474,12 +485,14 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 #endif
   // The case that a specific SEI is not present is handled in xWriteSEI (empty list)
 
+#if HEVC_SEI
   // Active parameter sets SEI must always be the first SEI
   currentMessages = extractSeisByType(localMessages, SEI::ACTIVE_PARAMETER_SETS);
   CHECK(!(currentMessages.size() <= 1), "Unspecified error");
   xWriteSEI(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
   xClearSEIs(currentMessages, !testWrite);
-
+#endif
+  
   // Buffering period SEI must always be following active parameter sets
   currentMessages = extractSeisByType(localMessages, SEI::BUFFERING_PERIOD);
   CHECK(!(currentMessages.size() <= 1), "Unspecified error");
@@ -504,11 +517,13 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
     xClearSEIs(currentMessages, !testWrite);
   }
 
+#if HEVC_SEI
   // Scalable nesting SEI must always be the following DU info
   currentMessages = extractSeisByType(localMessages, SEI::SCALABLE_NESTING);
   xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
   xClearSEIs(currentMessages, !testWrite);
-
+#endif
+  
   // And finally everything else one by one
   xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, localMessages, accessUnit, itNalu, temporalId, sps);
   xClearSEIs(localMessages, !testWrite);
@@ -595,6 +610,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 {
   OutputNALUnit nalu(NAL_UNIT_PREFIX_SEI);
 
+#if HEVC_SEI
   if(m_pcCfg->getActiveParameterSetsSEIEnabled())
   {
     SEIActiveParameterSets *sei = new SEIActiveParameterSets;
@@ -672,6 +688,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiAlternativeTransferCharacteristics);
   }
 #endif
+#endif
 }
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
@@ -682,18 +699,24 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     || ( slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
-    m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI, slice);
+    m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI);
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+    m_HRD->setBufferingPeriodSEI(bufferingPeriodSEI);
+#endif
     seiMessages.push_back(bufferingPeriodSEI);
     m_bufferingPeriodSEIPresentInAU = true;
 
+#if HEVC_SEI
     if (m_pcCfg->getScalableNestingSEIEnabled())
     {
       SEIBufferingPeriod *bufferingPeriodSEIcopy = new SEIBufferingPeriod();
       bufferingPeriodSEI->copyTo(*bufferingPeriodSEIcopy);
       nestedSeiMessages.push_back(bufferingPeriodSEIcopy);
     }
+#endif
   }
 
+#if HEVC_SEI
   if (picInGOP ==0 && m_pcCfg->getSOPDescriptionSEIEnabled() ) // write SOP description SEI (if enabled) at the beginning of GOP
   {
     SEISOPDescription* sopDescriptionSEI = new SEISOPDescription();
@@ -744,8 +767,10 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
       delete seiColourRemappingInfo;
     }
   }
+#endif
 }
 
+#if HEVC_SEI
 void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
 {
   SEIMessages tmpMessages;
@@ -760,6 +785,26 @@ void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& n
     tmpMessages.clear();
   }
 }
+#endif
+
+#if JVET_O0041_FRAME_FIELD_SEI
+void EncGOP::xCreateFrameFieldInfoSEI  (SEIMessages& seiMessages, Slice *slice, bool isField)
+{
+  if (m_pcCfg->getFrameFieldInfoSEIEnabled())
+  {
+    SEIFrameFieldInfo *frameFieldInfoSEI = new SEIFrameFieldInfo();
+
+    // encode only very basic information. if more feature are supported, this should be moved to SEIEncoder
+    frameFieldInfoSEI->m_fieldPicFlag = isField;
+    if (isField)
+    {
+      frameFieldInfoSEI->m_bottomFieldFlag = !slice->getPic()->topField;
+    }
+    seiMessages.push_back(frameFieldInfoSEI);
+  }
+}
+#endif
+
 
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
@@ -782,7 +827,12 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
       pictureTimingSEI->m_numNalusInDuMinus1.resize( numDU );
       pictureTimingSEI->m_duCpbRemovalDelayMinus1.resize( numDU );
     }
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+    const uint32_t cpbRemovalDelayLegth = m_HRD->getBufferingPeriodSEI()->m_cpbRemovalDelayLength;
+    pictureTimingSEI->m_auCpbRemovalDelay = std::min<int>(std::max<int>(1, m_totalCoded - m_lastBPSEI), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
+#else
     pictureTimingSEI->m_auCpbRemovalDelay = std::min<int>(std::max<int>(1, m_totalCoded - m_lastBPSEI), static_cast<int>(pow(2, static_cast<double>(hrd->getCpbRemovalDelayLengthMinus1()+1)))); // Syntax element signalled as minus, hence the .
+#endif
     pictureTimingSEI->m_picDpbOutputDelay = slice->getSPS()->getNumReorderPics(slice->getSPS()->getMaxTLayers()-1) + slice->getPOC() - m_totalCoded;
     if(m_pcCfg->getEfficientFieldIRAPEnabled() && IRAPGOPid > 0 && IRAPGOPid < m_iGopSize)
     {
@@ -803,15 +853,19 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
 
     if( m_pcCfg->getPictureTimingSEIEnabled() )
     {
+#if !JVET_O0041_FRAME_FIELD_SEI
       pictureTimingSEI->m_picStruct = (isField && slice->getPic()->topField)? 1 : isField? 2 : 0;
+#endif
       seiMessages.push_back(pictureTimingSEI);
 
+#if HEVC_SEI
       if ( m_pcCfg->getScalableNestingSEIEnabled() ) // put picture timing SEI into scalable nesting SEI
       {
         SEIPictureTiming *pictureTimingSEIcopy = new SEIPictureTiming();
         pictureTimingSEI->copyTo(*pictureTimingSEIcopy);
         nestedSeiMessages.push_back(pictureTimingSEIcopy);
       }
+#endif
     }
 
     if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getSubPicCpbParamsPresentFlag() )
@@ -2069,7 +2123,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), false );
+#else
     pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), false );
+#endif
 #endif
 
 #if JVET_O1164_PS
@@ -2189,9 +2247,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
 
     pcSlice->setList1IdxToList0Idx();
-
+    
     if (m_pcEncLib->getTMVPModeId() == 2)
     {
+#if JVET_O0238_PPS_OR_SLICE
+      assert (m_pcEncLib->getPPSTemporalMVPEnabledIdc() == 0);
+#endif
       if (iGOPid == 0) // first picture in SOP (i.e. forward B)
       {
         pcSlice->setEnableTMVPFlag(0);
@@ -2202,7 +2263,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setEnableTMVPFlag(1);
       }
     }
+#if JVET_O0238_PPS_OR_SLICE
+    else if (m_pcEncLib->getTMVPModeId() == 1 && m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
+#else
     else if (m_pcEncLib->getTMVPModeId() == 1)
+#endif
     {
       pcSlice->setEnableTMVPFlag(1);
     }
@@ -2447,9 +2512,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       const PreCalcValues &pcv = *pcPic->cs->pcv;
 #if MAX_TB_SIZE_SIGNALLING
-      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min (pcPic->cs->sps->getMaxTbSize(), pcv.maxCUWidth)];
+      const unsigned   mtsLog2 = (unsigned)floorLog2(std::min (pcPic->cs->sps->getMaxTbSize(), pcv.maxCUWidth));
 #else
-      const unsigned   mtsLog2 = (unsigned)g_aucLog2[std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth)];
+      const unsigned   mtsLog2 = (unsigned)floorLog2(std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth));
 #endif
       pcPic->m_subCtuQP.resize ((pcv.maxCUWidth >> mtsLog2) * (pcv.maxCUHeight >> mtsLog2));
     }
@@ -2498,6 +2563,20 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     xPicInitLMCS(pcPic, pcSlice);
+
+#if JVET_O0299_APS_SCALINGLIST
+    if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
+    {
+      pcSlice->setscalingListPresentFlag( true );
+      int apsId = 0;
+      pcSlice->setscalingListAPSId( apsId );
+
+      ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+      APS*  scalingListAPS = apsMap->getPS( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+      assert( scalingListAPS != NULL );
+      pcSlice->setscalingListAPS( scalingListAPS );
+    }
+#endif
 
     if( encPic )
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
@@ -2596,6 +2675,23 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       if( !m_pcEncLib->getLoopFilterDisable() )
       {
         m_pcEncLib->getLoopFilter()->initEncPicYuvBuffer( chromaFormatIDC, picWidth, picHeight );
+      }
+#endif
+
+#if JVET_O0299_APS_SCALINGLIST
+      if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
+      {
+        pcSlice->setscalingListPresentFlag( true );
+        int apsId = 0;
+        pcSlice->setscalingListAPSId( apsId );
+      }
+      for( int s = 0; s < uiNumSliceSegments; s++ )
+      {
+        pcPic->slices[ s ]->setscalingListPresentFlag( pcSlice->getscalingListPresentFlag() );
+        if( pcSlice->getscalingListPresentFlag() )
+        {
+          pcPic->slices[ s ]->setscalingListAPSId( pcSlice->getscalingListAPSId() );
+        }
       }
 #endif
 
@@ -2769,6 +2865,23 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
+#if JVET_O0299_APS_SCALINGLIST
+      // only 1 SCALING LIST data for 1 picture    
+      if( pcSlice->getSPS()->getScalingListFlag() && ( m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ ) )
+      {
+        int apsId = pcSlice->getscalingListAPSId();
+        ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
+        APS* aps = apsMap->getPS( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+        bool writeAPS = aps && apsMap->getChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+        if( writeAPS )
+        {
+          actualTotalBits += xWriteAPS( accessUnit, aps );
+          apsMap->clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+          CHECK( aps != pcSlice->getscalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
+        }
+      }
+#endif
+
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
       {
 #if JVET_O_MAX_NUM_ALF_APS_8
@@ -2934,6 +3047,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                        , isEncodeLtRef
       );
 
+#if HEVC_SEI
       // Only produce the Green Metadata SEI message with the last picture.
       if( m_pcCfg->getSEIGreenMetadataInfoSEIEnable() && pcSlice->getPOC() == ( m_pcCfg->getFramesToBeEncoded() - 1 )  )
       {
@@ -2941,7 +3055,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_seiEncoder.initSEIGreenMetadataInfo(seiGreenMetadataInfo, (uint32_t)(PSNR_Y * 100 + 0.5));
         trailingSeiMessages.push_back(seiGreenMetadataInfo);
       }
-
+#endif
+      
       xWriteTrailingSEIMessages(trailingSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS());
 
       printHash(m_pcCfg->getDecodedPictureHashSEIType(), digestStr);
@@ -2975,12 +3090,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
   #endif
       }
-
+#if JVET_O0041_FRAME_FIELD_SEI
+      xCreateFrameFieldInfoSEI( leadingSeiMessages, pcSlice, isField );
+#endif
       xCreatePictureTimingSEI( m_pcCfg->getEfficientFieldIRAPEnabled() ? effFieldIRAPMap.GetIRAPGOPid() : 0, leadingSeiMessages, nestedSeiMessages, duInfoSeiMessages, pcSlice, isField, duData );
-      if( m_pcCfg->getScalableNestingSEIEnabled() )
+#if HEVC_SEI
+     if( m_pcCfg->getScalableNestingSEIEnabled() )
       {
         xCreateScalableNestingSEI( leadingSeiMessages, nestedSeiMessages );
       }
+#endif
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
       xWriteDuSEIMessages( duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
 
@@ -3595,7 +3714,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( m_pcEncLib->isRPREnabled() )
   {
-    const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].get( COMPONENT_Y ) : pcPic->m_bufs[PIC_ORIGINAL_INPUT].get( COMPONENT_Y );
+    const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
 #if RPR_CONF_WINDOW
     // the input source picture has a conformance window derived at encoder
@@ -3645,7 +3764,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if RPR_CTC_PRINT
     if( m_pcEncLib->isRPREnabled() )
     {
-      const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->m_bufs[PIC_TRUE_ORIGINAL_INPUT].get( compID ) : pcPic->m_bufs[PIC_ORIGINAL_INPUT].get( compID );
+      const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
 #if ENABLE_QPA
       const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ) );
@@ -3894,18 +4013,15 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #if RPR_CTC_PRINT
         if( m_pcEncLib->isRPREnabled() )
         {
-          const Picture* refPic = pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex );
-
-          int xScale, yScale;
-          CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), refPic->unscaledPic->cs->pps, xScale, yScale );
+          const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
 
           if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool( 1 - iRefList ) && pcSlice->getColRefIdx() == iRefIndex )
           {
-            msg( NOTICE, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+            msg( NOTICE, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
           }
           else
           {
-            msg( NOTICE, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+            msg( NOTICE, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
           }
         }
         else

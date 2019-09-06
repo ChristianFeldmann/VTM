@@ -125,6 +125,11 @@ Slice::Slice()
 , m_lmcsAps                      (nullptr)
 , m_tileGroupLmcsEnabledFlag     (false)
 , m_tileGroupLmcsChromaResidualScaleFlag (false)
+#if JVET_O0299_APS_SCALINGLIST
+, m_scalingListApsId             ( -1 )
+, m_scalingListAps               ( nullptr )
+, m_tileGroupscalingListPresentFlag ( false )
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -734,6 +739,12 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLmcsChromaResidualScaleFlag = pSrc->m_tileGroupLmcsChromaResidualScaleFlag;
   m_lmcsAps = pSrc->m_lmcsAps;
   m_lmcsApsId = pSrc->m_lmcsApsId;
+
+#if JVET_O0299_APS_SCALINGLIST
+  m_tileGroupscalingListPresentFlag = pSrc->m_tileGroupscalingListPresentFlag;
+  m_scalingListAps                  = pSrc->m_scalingListAps;
+  m_scalingListApsId                = pSrc->m_scalingListApsId;
+#endif
 }
 
 
@@ -1197,6 +1208,9 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   pLocalRPL0->setNumberOfLongtermPictures(numOfLTRPL0);
   pLocalRPL0->setNumberOfShorttermPictures(numOfSTRPL0);
   pLocalRPL0->setNumberOfActivePictures((numOfLTRPL0 + numOfSTRPL0 < pRPL0->getNumberOfActivePictures()) ? numOfLTRPL0 + numOfSTRPL0 : pRPL0->getNumberOfActivePictures());
+#if JVET_N0100_PROPOSAL1
+  pLocalRPL0->setLtrpInSliceHeaderFlag(pRPL0->getLtrpInSliceHeaderFlag());
+#endif
   this->setRPL0idx(-1);
   this->setRPL0(pLocalRPL0);
 
@@ -1230,6 +1244,9 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   pLocalRPL1->setNumberOfLongtermPictures(numOfLTRPL1);
   pLocalRPL1->setNumberOfShorttermPictures(numOfSTRPL1);
   pLocalRPL1->setNumberOfActivePictures((isDisallowMixedRefPic) ? (numOfLTRPL1 + numOfSTRPL1) : (((numOfLTRPL1 + numOfSTRPL1) < pRPL1->getNumberOfActivePictures()) ? (numOfLTRPL1 + numOfSTRPL1) : pRPL1->getNumberOfActivePictures()));
+#if JVET_N0100_PROPOSAL1
+  pLocalRPL1->setLtrpInSliceHeaderFlag(pRPL1->getLtrpInSliceHeaderFlag());
+#endif
   this->setRPL1idx(-1);
   this->setRPL1(pLocalRPL1);
 }
@@ -1480,6 +1497,10 @@ SPS::SPS()
 , m_LadfIntervalLowerBound    { 0 }
 #endif
 , m_MIP                       ( false )
+#if JVET_N0865_SYNTAX
+    ,m_GDREnabledFlag         (1)
+#endif
+
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -1582,8 +1603,7 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
 #endif
 
 PPSRExt::PPSRExt()
-: m_log2MaxTransformSkipBlockSize      (2)
-, m_crossComponentPredictionEnabledFlag(false)
+: m_crossComponentPredictionEnabledFlag(false)
 , m_cuChromaQpOffsetSubdiv             (0)
 , m_chromaQpOffsetListLen              (0)
 // m_ChromaQpAdjTableIncludingNullEntry initialized below
@@ -1615,7 +1635,9 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_TransquantBypassEnabledFlag      (false)
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O1136_TS_BDPCM_SIGNALLING
+, m_log2MaxTransformSkipBlockSize    (2)
+#else
 , m_useTransformSkip                 (false)
 #endif
 , m_entropyCodingSyncEnabledFlag     (false)
@@ -1634,6 +1656,18 @@ PPS::PPS()
 , m_numBricksInPic                   (1)
 , m_signalledSliceIdFlag             (false)
 ,m_signalledSliceIdLengthMinus1      (0)
+#if JVET_O0238_PPS_OR_SLICE
+, m_constantSliceHeaderParamsEnabledFlag (false)
+, m_PPSDepQuantEnabledIdc            (0)
+, m_PPSRefPicListSPSIdc0             (0)
+, m_PPSRefPicListSPSIdc1             (0)
+, m_PPSTemporalMVPEnabledIdc         (0)
+, m_PPSMvdL1ZeroIdc                  (0)
+, m_PPSCollocatedFromL0Idc           (0)
+, m_PPSSixMinusMaxNumMergeCandPlus1  (0)
+, m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 (0)
+, m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
+#endif
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)
@@ -1672,6 +1706,9 @@ ReferencePictureList::ReferencePictureList()
   : m_numberOfShorttermPictures(0)
   , m_numberOfLongtermPictures(0)
   , m_numberOfActivePictures(MAX_INT)
+#if JVET_N0100_PROPOSAL1
+  , m_ltrp_in_slice_header_flag(0)
+#endif
 {
   ::memset(m_isLongtermRefPic, 0, sizeof(m_isLongtermRefPic));
   ::memset(m_refPicIdentifier, 0, sizeof(m_refPicIdentifier));
@@ -1824,7 +1861,7 @@ void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
       continue;
     if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
       getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-      && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == getScalingListDC(sizeId,predListIdx)))) // check DC value
+      && ((sizeId < SCALING_LIST_16x16) || listId == predListIdx ? getScalingListDefaultAddress(sizeId, predListIdx)[0] == getScalingListDC(sizeId, predListIdx) : (getScalingListDC(sizeId, listId) == getScalingListDC(sizeId, predListIdx)))) // check DC value
     {
       setRefMatrixId(sizeId, listId, predListIdx);
       setScalingListPredModeFlag(sizeId, listId, false);
@@ -2298,7 +2335,11 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 }
 
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS& lmcsAps, APS& scalingListAps, const bool isDecoder )
+#else
 void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder )
+#endif
 {
   int i;
   const SPS* sps = getSPS();
@@ -2325,7 +2366,12 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
     {
       // if rescaling is needed, otherwise just reuse the original picture pointer; it is needed for motion field, otherwise motion field requires a copy as well
       // reference resampling for the whole picture is not applied at decoder
-      if( ( m_apcRefPicList[refList][rIdx]->lwidth() == pps->getPicWidthInLumaSamples() && m_apcRefPicList[refList][rIdx]->lheight() == pps->getPicHeightInLumaSamples() ) || isDecoder )
+
+      int xScale, yScale;
+      CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx]->slices[0]->getPPS(), xScale, yScale );
+      m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
+
+      if( m_scalingRatio[refList][rIdx] == SCALE_1X || isDecoder )
       {
         m_scaledRefPicList[refList][rIdx] = m_apcRefPicList[refList][rIdx];
       }
@@ -2368,7 +2414,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, 
             scaledRefPic[j]->reconstructed = false;
             scaledRefPic[j]->referenced = true;
 
+#if JVET_O0299_APS_SCALINGLIST
+            scaledRefPic[ j ]->finalInit( *sps, *pps, apss, lmcsAps, scalingListAps );
+#else
             scaledRefPic[j]->finalInit( *sps, *pps, apss, lmcsAps );
+#endif
 
             scaledRefPic[j]->poc = -1;
 

@@ -88,6 +88,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   memcpy(cs.alfApss, slice->getAlfAPSs(), sizeof(cs.alfApss));
 
   cs.lmcsAps = slice->getLmcsAPS();
+#if JVET_O0299_APS_SCALINGLIST
+  cs.scalinglistAps   = slice->getscalingListAPS();
+#endif
 
   cs.pcv              = slice->getPPS()->pcv;
   cs.chromaQpAdj      = 0;

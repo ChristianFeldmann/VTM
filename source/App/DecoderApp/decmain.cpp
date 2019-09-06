@@ -100,9 +100,9 @@ int main(int argc, char* argv[])
     std::cerr << e.what() << std::endl;
     returnCode = EXIT_FAILURE;
   }
-  catch( ... )
+  catch (const std::bad_alloc &e)
   {
-    std::cerr << "Unspecified error occurred" << std::endl;
+    std::cout << "Memory allocation failed: " << e.what() << std::endl;
     returnCode = EXIT_FAILURE;
   }
 #endif

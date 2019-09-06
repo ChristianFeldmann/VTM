@@ -60,6 +60,9 @@
 #include "Analyze.h"
 #include "RateCtrl.h"
 #include <vector>
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+#include "EncHRD.h"
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/ConvertColorFormat.H"
@@ -153,6 +156,10 @@ private:
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
+
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  EncHRD*                 m_HRD;
+#endif
 
   // clean decoding refresh
   bool                    m_bRefreshPending;
@@ -304,12 +311,17 @@ protected:
 
   void xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS *sps, const PPS *pps);
   void xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice);
+#if JVET_O0041_FRAME_FIELD_SEI
+  void xCreateFrameFieldInfoSEI (SEIMessages& seiMessages, Slice *slice, bool isField);
+#endif
   void xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData);
   void xUpdateDuData(AccessUnit &testAU, std::deque<DUData> &duData);
   void xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUData> &duData, const SPS *sps);
   void xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI);
 
+#if HEVC_SEI
   void xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& nestedSeiMessages);
+#endif
   void xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xClearSEIs(SEIMessages& seiMessages, bool deleteMessages);

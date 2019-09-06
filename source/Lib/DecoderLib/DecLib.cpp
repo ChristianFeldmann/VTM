@@ -643,16 +643,15 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     for (int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx(RefPicList(iRefList)); iRefIndex++)
     {
 #if RPR_CTC_PRINT
-      int xScale, yScale;
-      CU::getRprScaling( pcSlice->getSPS(), pcSlice->getPPS(), pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->unscaledPic->cs->pps, xScale, yScale );
+      const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
 
       if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
       {
-        msg( msgl, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+        msg( msgl, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
       }
       else
       {
-        msg( msgl, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( xScale ) / ( 1 << 14 ), double( yScale ) / ( 1 << 14 ) );
+        msg( msgl, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
       }
 #else
       msg( msgl, "%d ", pcSlice->getRefPOC(RefPicList(iRefList), iRefIndex));
@@ -839,6 +838,24 @@ void DecLib::xActivateParameterSets()
       }
     }
 
+#if JVET_O0299_APS_SCALINGLIST
+    APS* scalinglistAPS = NULL;
+    if( m_apcSlicePilot->getscalingListAPSId() != -1 )
+    {
+      scalinglistAPS = m_parameterSetManager.getAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
+      CHECK( scalinglistAPS == 0, "No SCALING LIST APS present" );
+    }
+
+    if( scalinglistAPS )
+    {
+      m_parameterSetManager.clearAPSChangedFlag( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
+      if( false == m_parameterSetManager.activateAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS ) )
+      {
+        THROW( "SCALING LIST APS activation failed!" );
+      }
+    }
+#endif
+
     xParsePrefixSEImessages();
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT==0
@@ -852,7 +869,11 @@ void DecLib::xActivateParameterSets()
     m_pcPic = xGetNewPicBuffer (*sps, *pps, m_apcSlicePilot->getTLayer());
 
     m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->finalInit( *sps, *pps, apss, *lmcsAPS, *scalinglistAPS );
+#else
     m_pcPic->finalInit(*sps, *pps, apss, *lmcsAPS);
+#endif
     m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs();
@@ -875,6 +896,9 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->pps   = pps;
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->cs->scalinglistAps = scalinglistAPS;
+#endif
 
     m_pcPic->cs->pcv   = pps->pcv;
 
@@ -901,6 +925,7 @@ void DecLib::xActivateParameterSets()
 
     if(!m_SEIs.empty())
     {
+#if !JVET_O0041_FRAME_FIELD_SEI
       // Check if any new Picture Timing SEI has arrived
       SEIMessages pictureTimingSEIs = getSeisByType(m_SEIs, SEI::PICTURE_TIMING);
       if (pictureTimingSEIs.size()>0)
@@ -909,6 +934,16 @@ void DecLib::xActivateParameterSets()
         isField    = (pictureTiming->m_picStruct == 1) || (pictureTiming->m_picStruct == 2) || (pictureTiming->m_picStruct == 9) || (pictureTiming->m_picStruct == 10) || (pictureTiming->m_picStruct == 11) || (pictureTiming->m_picStruct == 12);
         isTopField = (pictureTiming->m_picStruct == 1) || (pictureTiming->m_picStruct == 9) || (pictureTiming->m_picStruct == 11);
       }
+#else
+      // Check if any new Frame Field Info SEI has arrived
+      SEIMessages frameFieldSEIs = getSeisByType(m_SEIs, SEI::FRAME_FIELD_INFO);
+      if (frameFieldSEIs.size()>0)
+      {
+        SEIFrameFieldInfo* ff = (SEIFrameFieldInfo*) *(frameFieldSEIs.begin());
+        isField    = ff->m_fieldPicFlag;
+        isTopField = isField && (!ff->m_bottomFieldFlag);
+      }
+#endif
     }
 
     //Set Field/Frame coding mode
@@ -926,9 +961,9 @@ void DecLib::xActivateParameterSets()
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
 #if MAX_TB_SIZE_SIGNALLING
-    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false, false );
+    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false );
 #else
-    m_cTrQuant.init( nullptr, MAX_TB_SIZEY, false, false, false, false, false );
+    m_cTrQuant.init( nullptr, MAX_TB_SIZEY, false, false, false, false );
 #endif
 
     // RdCost
@@ -958,6 +993,9 @@ void DecLib::xActivateParameterSets()
     const PPS *pps = pSlice->getPPS();
     APS** apss = pSlice->getAlfAPSs();
     APS *lmcsAPS = pSlice->getLmcsAPS();
+#if JVET_O0299_APS_SCALINGLIST
+    APS *scalinglistAPS = pSlice->getscalingListAPS();
+#endif
 
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
@@ -965,6 +1003,9 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->pps   = pps;
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->cs->scalinglistAps = scalinglistAPS;
+#endif
 
     m_pcPic->cs->pcv   = pps->pcv;
 
@@ -994,6 +1035,12 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new LMCS APS has been decoded while processing a picture");
     }
+#if JVET_O0299_APS_SCALINGLIST
+    if( scalinglistAPS && m_parameterSetManager.getAPSChangedFlag( scalinglistAPS->getAPSId(), SCALING_LIST_APS ) )
+    {
+      EXIT( "Error - a new SCALING LIST APS has been decoded while processing a picture" );
+    }
+#endif
 
     xParsePrefixSEImessages();
 
@@ -1056,7 +1103,7 @@ void DecLib::xParsePrefixSEImessages()
   while (!m_prefixSEINALUs.empty())
   {
     InputNALUnit &nalu=*m_prefixSEINALUs.front();
-    m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, m_parameterSetManager.getActiveSPS(), m_pDecodedSEIOutputStream );
+    m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
     delete m_prefixSEINALUs.front();
     m_prefixSEINALUs.pop_front();
   }
@@ -1270,7 +1317,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   pcSlice->constructRefPicList(m_cListPic);
 
 #if JVET_O1164_RPR
+#if JVET_O0299_APS_SCALINGLIST
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), true );
+#else
   pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), true );
+#endif
 #endif
 
     if (!pcSlice->isIntra())
@@ -1406,6 +1457,27 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   Quant *quant = m_cTrQuant.getQuant();
 
+#if JVET_O0299_APS_SCALINGLIST
+  if( pcSlice->getSPS()->getScalingListFlag() )
+  {
+    ScalingList scalingList;
+    if( pcSlice->getscalingListPresentFlag() )
+    {
+      APS* scalingListAPS = pcSlice->getscalingListAPS();
+      scalingList = scalingListAPS->getScalingList();
+    }
+    else
+    {
+      scalingList.setDefaultScalingList();
+    }
+    quant->setScalingListDec( scalingList );
+    quant->setUseScalingList( true );
+  }
+  else
+  {
+    quant->setUseScalingList( false );
+  }
+#else
   if(pcSlice->getSPS()->getScalingListFlag())
   {
     ScalingList scalingList;
@@ -1428,6 +1500,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     quant->setUseScalingList(false);
   }
+#endif
 
 
   if (pcSlice->getSPS()->getUseReshaper())
@@ -1582,7 +1655,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
-        m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, m_parameterSetManager.getActiveSPS(), m_pDecodedSEIOutputStream );
+        m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
       }
       else
       {

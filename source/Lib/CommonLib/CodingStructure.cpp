@@ -76,6 +76,13 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
+    m_coeffs[ i ] = nullptr;
+    m_pcmbuf[ i ] = nullptr;
+#if JVET_O0119_BASE_PALETTE_444
+    m_runType[i]   = nullptr;
+    m_runLength[i] = nullptr;
+#endif
+
     m_offsets[ i ] = 0;
   }
 
@@ -633,7 +640,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 #if JVET_O0119_BASE_PALETTE_444
-  PLTRunMode *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
+  bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
 #endif
 
@@ -670,11 +677,11 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
       }
     }
 
-    coeffs[i] = m_coeffs[i].data() + m_offsets[i];
-    pcmbuf[i] = m_pcmbuf[i].data() + m_offsets[i];
+    coeffs[i] = m_coeffs[i] + m_offsets[i];
+    pcmbuf[i] = m_pcmbuf[i] + m_offsets[i];
 #if JVET_O0119_BASE_PALETTE_444
-    runType[i]   = m_runType[i].data() + m_offsets[i];
-    runLength[i] = m_runLength[i].data() + m_offsets[i];
+    runType[i]   = m_runType[i]   + m_offsets[i];
+    runLength[i] = m_runLength[i] + m_offsets[i];
 #endif
 
     unsigned areaSize = tu->blocks[i].area();
@@ -962,23 +969,32 @@ void CodingStructure::rebindPicBufs()
 
 void CodingStructure::createCoeffs()
 {
-  const size_t numCh = getNumberValidComponents(area.chromaFormat);
+  const unsigned numCh = getNumberValidComponents( area.chromaFormat );
 
-  for (size_t i = 0; i < numCh; i++)
+  for( unsigned i = 0; i < numCh; i++ )
   {
-    size_t _area = area.blocks[i].area();
+    unsigned _area = area.blocks[i].area();
 
-    m_coeffs[i].resize(_area);
-    m_pcmbuf[i].resize(_area);
+    m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
+    m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
 #if JVET_O0119_BASE_PALETTE_444
-    m_runType[i].resize(_area);
-    m_runLength[i].resize(_area);
+    m_runType[i]   = _area > 0 ? ( bool*  ) xMalloc( bool, _area ) : nullptr;
+    m_runLength[i] = _area > 0 ? ( Pel*   ) xMalloc( Pel,  _area ) : nullptr;
 #endif
   }
 }
 
 void CodingStructure::destroyCoeffs()
 {
+  for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
+  {
+    if( m_coeffs[i] ) { xFree( m_coeffs[i] ); m_coeffs[i] = nullptr; }
+    if( m_pcmbuf[i] ) { xFree( m_pcmbuf[i] ); m_pcmbuf[i] = nullptr; }
+#if JVET_O0119_BASE_PALETTE_444
+    if (m_runType[i])   { xFree(m_runType[i]);   m_runType[i]   = nullptr; }
+    if (m_runLength[i]) { xFree(m_runLength[i]); m_runLength[i] = nullptr; }
+#endif
+  }
 }
 
 void CodingStructure::initSubStructure( CodingStructure& subStruct, const ChannelType _chType, const UnitArea &subArea, const bool &isTuEnc )
@@ -1010,6 +1026,9 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 
   subStruct.lmcsAps = lmcsAps;
+#if JVET_O0299_APS_SCALINGLIST
+  subStruct.scalinglistAps = scalinglistAps;
+#endif
 
   subStruct.slice     = slice;
   subStruct.baseQP    = baseQP;
@@ -1613,7 +1632,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[curCu.cs->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(curCu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
@@ -1631,7 +1650,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const P
 {
   const CodingUnit* cu = getCU( pos, _chType );
   const bool wavefrontsEnabled = this->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[this->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(this->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   int xCurr = curPos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
@@ -1644,7 +1663,7 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[curPu.cs->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(curPu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;
@@ -1664,7 +1683,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
   const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-  int ctuSizeBit = g_aucLog2[curTu.cs->sps->getMaxCUWidth()];
+  int ctuSizeBit = floorLog2(curTu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   bool addCheck = (wavefrontsEnabled && (xNbY >> ctuSizeBit) >= (xCurr >> ctuSizeBit) + 1 ) ? false : true;

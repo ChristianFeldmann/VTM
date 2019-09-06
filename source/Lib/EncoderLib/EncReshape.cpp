@@ -2196,7 +2196,7 @@ void EncReshape::adjustLmcsPivot()
   int bdShift = m_lumaBD - 10;
   int totCW = bdShift != 0 ? (bdShift > 0 ? m_reshapeLUTSize / (1 << bdShift) : m_reshapeLUTSize * (1 << (-bdShift))) : m_reshapeLUTSize;
   int orgCW = totCW / PIC_CODE_CW_BINS;
-  int log2SegSize = g_aucLog2[LMCS_SEG_SIZE];
+  int log2SegSize = floorLog2(LMCS_SEG_SIZE);
 
   m_reshapePivot[0] = 0;
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)

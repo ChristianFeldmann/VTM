@@ -237,7 +237,11 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
+#if JVET_O0299_APS_SCALINGLIST
+  void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps, APS& scalingListAps );
+#else
   void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps);
+#endif
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}

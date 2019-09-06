@@ -96,25 +96,43 @@ void deleteSEIs (SEIMessages &seiList)
   seiList.clear();
 }
 
-void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target)
+void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 {
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   target.m_bpSeqParameterSetId = m_bpSeqParameterSetId;
   target.m_rapCpbParamsPresentFlag = m_rapCpbParamsPresentFlag;
+#else
+  target.m_bpNalCpbParamsPresentFlag = m_bpNalCpbParamsPresentFlag;
+  target.m_bpVclCpbParamsPresentFlag = m_bpVclCpbParamsPresentFlag;
+  target.m_initialCpbRemovalDelayLength = m_initialCpbRemovalDelayLength;
+  target.m_cpbRemovalDelayLength = m_cpbRemovalDelayLength;
+  target.m_dpbOutputDelayLength = m_dpbOutputDelayLength;
+  target.m_bpCpbCnt = m_bpCpbCnt;
+#endif
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_auCpbRemovalDelayDelta = m_auCpbRemovalDelayDelta;
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
   ::memcpy(target.m_initialCpbRemovalDelayOffset, m_initialCpbRemovalDelayOffset, sizeof(m_initialCpbRemovalDelayOffset));
   ::memcpy(target.m_initialAltCpbRemovalDelay, m_initialAltCpbRemovalDelay, sizeof(m_initialAltCpbRemovalDelay));
   ::memcpy(target.m_initialAltCpbRemovalDelayOffset, m_initialAltCpbRemovalDelayOffset, sizeof(m_initialAltCpbRemovalDelayOffset));
+#else
+  target.m_initialCpbRemovalDelay[0] = m_initialCpbRemovalDelay [0];
+  target.m_initialCpbRemovalDelay[1] = m_initialCpbRemovalDelay [1];
+  target.m_initialCpbRemovalOffset[0] = m_initialCpbRemovalOffset [0];
+  target.m_initialCpbRemovalOffset[1] = m_initialCpbRemovalOffset [1];
+#endif
 }
 
-void SEIPictureTiming::copyTo (SEIPictureTiming& target)
+void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 {
+#if !JVET_O0041_FRAME_FIELD_SEI
   target.m_picStruct = m_picStruct;
   target.m_sourceScanType = m_sourceScanType;
   target.m_duplicateFlag = m_duplicateFlag;
+#endif
 
   target.m_auCpbRemovalDelay = m_auCpbRemovalDelay;
   target.m_picDpbOutputDelay = m_picDpbOutputDelay;
@@ -134,8 +152,11 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
   {
     case SEI::BUFFERING_PERIOD:                     return "Buffering period";
     case SEI::PICTURE_TIMING:                       return "Picture timing";
+#if HEVC_SEI
     case SEI::PAN_SCAN_RECT:                        return "Pan-scan rectangle";                   // not currently decoded
+#endif
     case SEI::FILLER_PAYLOAD:                       return "Filler payload";                       // not currently decoded
+#if HEVC_SEI
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";                 // not currently decoded
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
     case SEI::RECOVERY_POINT:                       return "Recovery point";
@@ -152,9 +173,13 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::GREEN_METADATA:                       return "Green metadata information";
     case SEI::SOP_DESCRIPTION:                      return "Structure of pictures information";
     case SEI::ACTIVE_PARAMETER_SETS:                return "Active parameter sets";
+#endif
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
+#if HEVC_SEI
     case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
+#endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
+#if HEVC_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";
     case SEI::NO_DISPLAY:                           return "No display";
@@ -166,6 +191,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::COLOUR_REMAPPING_INFO:                return "Colour remapping info";
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
+#endif
 #endif
     default:                                        return "Unknown";
   }

@@ -1833,9 +1833,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       }
       else
       {
-        if (numIndices
-            && strPos < endPos - 1)   // if numIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos
-                                      // == endPos - 1, the last PLTRunMode was already coded
+        if (numIndices && strPos < endPos - 1) // if numIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
         {
           m_BinEncoder.encodeBin((runType.at(posx, posy)), Ctx::RunTypeFlag());
         }
@@ -1860,8 +1858,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       if (lastRunPos != strPos)
       {
         numIndices -= (runType.at(posx, posy) == PLT_RUN_INDEX);
-        cu_run_val(runLength.at(posx, posy) - 1, runType.at(posx, posy), curLevel,
-                   endPos - strPos - numIndices - 1 - lastRunType);
+        cu_run_val(runLength.at(posx, posy) - 1, (PLTRunMode)runType.at(posx, posy), curLevel, endPos - strPos - numIndices - 1 - lastRunType);
       }
 
     }
@@ -2922,7 +2919,7 @@ void CABACWriter::transform_tree( const CodingStructure& cs, Partitioner& partit
         bool lastCbfIsInferred = false;
         if( cu.ispMode )
         {
-          uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+          uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
           if( subTuCounter == nTus - 1 )
           {
             TransformUnit* tuPointer = cu.firstTU;
@@ -3137,7 +3134,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, ChromaC
       bool lastCbfIsInferred = false;
       if (cu.ispMode)
       {
-        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> g_aucLog2[tu.lheight()] : cu.lwidth() >> g_aucLog2[tu.lwidth()];
+        uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
         if (subTuCounter == nTus - 1)
         {
           TransformUnit* tuPointer = cu.firstTU;

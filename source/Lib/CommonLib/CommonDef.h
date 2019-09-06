@@ -58,6 +58,8 @@
 #if _MSC_VER < 1900
 #error "MS Visual Studio version not supported. Please upgrade to Visual Studio 2015 or higher (or use other compilers)"
 #endif
+
+#include <intrin.h>
 #endif
 
 //! \ingroup CommonLib
@@ -213,9 +215,6 @@ static const int CU_DQP_EG_k =                                      0; ///< expg
 
 static const int SBH_THRESHOLD =                                    4; ///< value of the fixed SBH controlling threshold
 
-static const int C1FLAG_NUMBER =                                    8; ///< maximum number of largerThan1 flag coded in one chunk: 16 in HM5
-static const int C2FLAG_NUMBER =                                    1; ///< maximum number of largerThan2 flag coded in one chunk: 16 in HM5
-
 static const int MAX_NUM_VPS =                                     16;
 static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
@@ -261,8 +260,6 @@ static const int MDLM_L_IDX =                          LM_CHROMA_IDX + 1; ///< M
 static const int MDLM_T_IDX =                          LM_CHROMA_IDX + 2; ///< MDLM_T
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
-static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
-
 static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
@@ -286,12 +283,6 @@ static const int LFNST_SIG_NZ_CHROMA =                              1;
 #endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
-
-static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...
-
-static const int MDCS_MAXIMUM_WIDTH =                               8; ///< (measured in pixels) TUs with width greater than this can only use diagonal scan
-static const int MDCS_MAXIMUM_HEIGHT =                              8; ///< (measured in pixels) TUs with height greater than this can only use diagonal scan
-
 
 static const int LOG2_MAX_NUM_COLUMNS_MINUS1 =                      7;
 static const int LOG2_MAX_NUM_ROWS_MINUS1 =                         7;
@@ -319,8 +310,6 @@ static const int MAX_NUM_QP_VALUES =    MAX_QP + 1 - MIN_QP_VALUE_FOR_16_BIT; //
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME =4; ///< QP' to use for mixed_lossy_lossless coding.
-
-static const int CR_FROM_CB_REG_COST_SHIFT                        = 9;
 
 static const int RExt__GOLOMB_RICE_ADAPTATION_STATISTICS_SETS =     4;
 
@@ -362,9 +351,7 @@ static const int SCALING_LIST_BITS =                                8; ///< bit 
 static const int LOG2_SCALING_LIST_NEUTRAL_VALUE =                  4; ///< log2 of the value that, when used in a scaling list, has no effect on quantisation
 static const int SCALING_LIST_DC =                                 16; ///< default DC value
 
-static const int CONTEXT_STATE_BITS =                               6;
 static const int LAST_SIGNIFICANT_GROUPS =                         14;
-static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
@@ -459,11 +446,6 @@ static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///<
 
 static const int COM16_C806_TRANS_PREC =                            0;
 
-static const int NUM_MERGE_IDX_EXT_CTX =                            5;
-static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code
-static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
-
-
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -536,6 +518,9 @@ static const int  EPBIN_WEIGHT_FACTOR =                           4;
 #endif
 #if JVET_O1164_RPR
 static const int ENC_PPS_ID_RPR =                                 3;
+static const int SCALE_RATIO_BITS =                              14;
+static const int MAX_SCALING_RATIO =                              8;  // max scaling ratio allowed in the software, it is used to allocated an internla buffer in the rescaling
+static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
 #endif
 
 // ====================================================================================================================
@@ -683,10 +668,16 @@ static inline int floorLog2(uint32_t x)
 {
   if (x == 0)
   {
+    // note: ceilLog2() expects -1 as return value
     return -1;
   }
 #ifdef __GNUC__
   return 31 - __builtin_clz(x);
+#else
+#ifdef _MSC_VER
+  unsigned long r = 0;
+  _BitScanReverse(&r, x);
+  return r;
 #else
   int result = 0;
   if (x & 0xffff0000)
@@ -716,7 +707,14 @@ static inline int floorLog2(uint32_t x)
   }
   return result;
 #endif
+#endif
 }
+
+static inline int ceilLog2(uint32_t x)
+{
+  return (x==0) ? -1 : floorLog2(x - 1) + 1;
+}
+
 
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )

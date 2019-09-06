@@ -1308,12 +1308,13 @@ void InterSearch::xIBCEstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
   //  Search key pattern initialization
   CPelBuf  tmpPattern = pBuf->Y();
   CPelBuf* pcPatternKey = &tmpPattern;
+  PelBuf tmpOrgLuma;
 
   if ((pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
   {
     const CompArea &area = pu.blocks[COMPONENT_Y];
     CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
-    PelBuf tmpOrgLuma = m_tmpStorageLCU.getBuf(tmpArea);
+    tmpOrgLuma = m_tmpStorageLCU.getBuf(tmpArea);
     tmpOrgLuma.copyFrom(tmpPattern);
     tmpOrgLuma.rspSignal(m_pcReshape->getFwdLUT());
     pcPatternKey = (CPelBuf*)&tmpOrgLuma;
@@ -1447,7 +1448,7 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   const int cuPelY = pu.Y().y;
 
   const int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
-  const int ctuSizeLog2 = g_aucLog2[lcuWidth];
+  const int ctuSizeLog2 = floorLog2(lcuWidth);
   int numLeftCTUs = (1 << ((7 - ctuSizeLog2) << 1)) - ((ctuSizeLog2 < 7) ? 1 : 0);
 
   srLeft = -(numLeftCTUs * lcuWidth + (cuPelX % lcuWidth));
@@ -1840,12 +1841,12 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
   if (height < width)
   {
     isHorizontal = true;
-    baseNum = 1 << (g_aucLog2[width] - g_aucLog2[height]);
+    baseNum = 1 << (floorLog2(width) - floorLog2(height));
   }
   else
   {
     isHorizontal = false;
-    baseNum = 1 << (g_aucLog2[height] - g_aucLog2[width]);
+    baseNum = 1 << (floorLog2(height) - floorLog2(width));
   }
 
   int xPos = pu.cu->lumaPos().x;
@@ -4906,8 +4907,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
           int mvScaleHor = nbMv[0].getHor() << shift;
           int mvScaleVer = nbMv[0].getVer() << shift;
           Mv dMv = nbMv[1] - nbMv[0];
-          dMvHorX = dMv.getHor() << (shift - g_aucLog2[mvInfo->w]);
-          dMvHorY = dMv.getVer() << (shift - g_aucLog2[mvInfo->w]);
+          dMvHorX = dMv.getHor() << (shift - floorLog2(mvInfo->w));
+          dMvHorY = dMv.getVer() << (shift - floorLog2(mvInfo->w));
           dMvVerX = -dMvHorY;
           dMvVerY = dMvHorX;
           vx = mvScaleHor + dMvHorX * (pu.Y().x - mvInfo->x) + dMvVerX * (pu.Y().y - mvInfo->y);
@@ -4954,8 +4955,8 @@ void InterSearch::xPredAffineInterSearch( PredictionUnit&       pu,
         mvAffine4Para[iRefList][iRefIdxTemp][1].roundAffinePrecInternal2Amvr(pu.cu->imv);
 
         int shift = MAX_CU_DEPTH;
-        int vx2 = (mvFour[0].getHor() << shift) - ((mvFour[1].getVer() - mvFour[0].getVer()) << (shift + g_aucLog2[pu.lheight()] - g_aucLog2[pu.lwidth()]));
-        int vy2 = (mvFour[0].getVer() << shift) + ((mvFour[1].getHor() - mvFour[0].getHor()) << (shift + g_aucLog2[pu.lheight()] - g_aucLog2[pu.lwidth()]));
+        int vx2 = (mvFour[0].getHor() << shift) - ((mvFour[1].getVer() - mvFour[0].getVer()) << (shift + floorLog2(pu.lheight()) - floorLog2(pu.lwidth())));
+        int vy2 = (mvFour[0].getVer() << shift) + ((mvFour[1].getHor() - mvFour[0].getHor()) << (shift + floorLog2(pu.lheight()) - floorLog2(pu.lwidth())));
         int offset = (1 << (shift - 1));
         vx2 = (vx2 + offset - (vx2 >= 0)) >> shift;
         vy2 = (vy2 + offset - (vy2 >= 0)) >> shift;
@@ -5755,7 +5756,7 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
     }
 
     double dAffinePara[6];
-    double dDeltaMv[6];
+    double dDeltaMv[6]={0.0, 0.0, 0.0, 0.0, 0.0, 0.0,};
     Mv acDeltaMv[3];
 
     solveEqual( pdEqualCoeff, affineParaNum, dAffinePara );
@@ -6858,7 +6859,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     tu.checkTuNoResidual( partitioner.currPartIdx() );
 
     const Slice           &slice = *cs.slice;
-    if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag())
+    if (slice.getLmcsEnabledFlag() && slice.getLmcsChromaResidualScaleFlag() && !(CS::isDualITree(cs) && slice.isIntra() && tu.cu->predMode==MODE_IBC ))
     {
       const CompArea      &areaY = tu.blocks[COMPONENT_Y];
 #if JVET_O1109_UNFIY_CRS
@@ -6997,7 +6998,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if RDOQ_CHROMA_LAMBDA
           m_pcTrQuant->selectLambda(compID);
 #endif
-          if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
+          if (slice.getLmcsEnabledFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
           {
 #if JVET_O0429_CRS_LAMBDA_FIX
             double cRescale = (double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj());
@@ -7033,7 +7034,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             PelBuf resiBuf = csFull->getResiBuf( compArea );
             crossComponentPrediction( tu, compID, lumaResi, resiBuf, resiBuf, false );
           }
-          if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width*tu.blocks[compID].height > 4)
+          if (slice.getLmcsEnabledFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width*tu.blocks[compID].height > 4)
           {
             PelBuf resiBuf = csFull->getResiBuf(compArea);
             resiBuf.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
@@ -7125,7 +7126,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             CPelBuf orgResiBuf = csFull->getOrgResiBuf(compArea);
 
             m_pcTrQuant->invTransformNxN(tu, compID, resiBuf, cQP);
-            if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width*tu.blocks[compID].height > 4)
+            if (slice.getLmcsEnabledFlag() && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width*tu.blocks[compID].height > 4)
             {
               resiBuf.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
             }
@@ -7226,7 +7227,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
 #if JVET_O0105_ICT
       const int channelBitDepth = sps.getBitDepth(toChannelType(COMPONENT_Cb));
-      bool      reshape         = slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag()
+      bool      reshape         = slice.getLmcsEnabledFlag() && slice.getLmcsChromaResidualScaleFlag()
                                && tu.blocks[COMPONENT_Cb].width * tu.blocks[COMPONENT_Cb].height > 4;
       double minCostCbCr = minCost[COMPONENT_Cb] + minCost[COMPONENT_Cr];
       bool   isLastBest  = false;
@@ -8232,7 +8233,7 @@ uint64_t InterSearch::xCalcPuMeBits(PredictionUnit& pu)
 #if JVET_O1170_IBC_VIRTUAL_BUFFER
 bool InterSearch::searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize)
 {
-  const int ctuSizeLog2 = g_aucLog2[ctuSize];
+  const int ctuSizeLog2 = floorLog2(ctuSize);
 
   int refRightX = xPos + xBv + width - 1;
   int refBottomY = yPos + yBv + height - 1;

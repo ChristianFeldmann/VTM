@@ -262,27 +262,6 @@ uint32_t g_log2SbbSize[MAX_CU_DEPTH + 1][MAX_CU_DEPTH + 1][2] =
 // initialize ROM variables
 void initROM()
 {
-  int c;
-
-  // g_aucConvertToBit[ x ]: log2(x/4), if x=4 -> 0, x=8 -> 1, x=16 -> 2, ...
-  // g_aucLog2[ x ]: log2(x), if x=1 -> 0, x=2 -> 1, x=4 -> 2, x=8 -> 3, x=16 -> 4, ...
-  ::memset(g_aucLog2, 0, sizeof(g_aucLog2));
-  c = 0;
-  for( int i = 0, n = 0; i <= MAX_CU_SIZE; i++ )
-  {
-    g_aucNextLog2[i] = i <= 1 ? 0 : c + 1;
-
-    if( i == ( 1 << n ) )
-    {
-      c = n;
-      n++;
-    }
-
-    g_aucPrevLog2[i] = c;
-    g_aucLog2    [i] = c;
-  }
-
-
   gp_sizeIdxInfo = new SizeIndexInfoLog2();
   gp_sizeIdxInfo->init(MAX_CU_SIZE);
 
@@ -337,7 +316,7 @@ void initROM()
       //--------------------------------------------------------------------------------------------------
 
       //grouped scan orders
-      const uint32_t* log2Sbb        = g_log2SbbSize[g_aucLog2[blockWidth]][g_aucLog2[blockHeight]];
+      const uint32_t* log2Sbb        = g_log2SbbSize[floorLog2(blockWidth)][floorLog2(blockHeight)];
       const uint32_t  log2CGWidth    = log2Sbb[0];
       const uint32_t  log2CGHeight   = log2Sbb[1];
 
@@ -629,9 +608,6 @@ const int g_sortedMipMpms[3][NUM_MPM_MIP] =
 // Misc.
 // ====================================================================================================================
 SizeIndexInfo*           gp_sizeIdxInfo = NULL;
-int8_t                    g_aucLog2    [MAX_CU_SIZE + 1];
-int8_t                    g_aucNextLog2[MAX_CU_SIZE + 1];
-int8_t                    g_aucPrevLog2[MAX_CU_SIZE + 1];
 
 #if JVET_O0105_ICT
 const int                 g_ictModes[2][4] = { { 0, 3, 1, 2 }, { 0, -3, -1, -2 } };

@@ -97,6 +97,9 @@ private:
   SampleAdaptiveOffset    m_cSAO;
   AdaptiveLoopFilter      m_cALF;
   Reshape                 m_cReshaper;                        ///< reshaper class
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  HRD                     m_HRD;
+#endif
   // decoder side RD cost computation
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE

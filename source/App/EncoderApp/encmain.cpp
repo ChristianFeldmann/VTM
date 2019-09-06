@@ -156,12 +156,12 @@ int main(int argc, char* argv[])
   catch( Exception &e )
   {
     std::cerr << e.what() << std::endl;
-    return 1;
+    return EXIT_FAILURE;
   }
-  catch( ... )
+  catch (const std::bad_alloc &e)
   {
-    std::cerr << "Unspecified error occurred" << std::endl;
-    return 1;
+    std::cout << "Memory allocation failed: " << e.what() << std::endl;
+    return EXIT_FAILURE;
   }
 #endif
   // ending time

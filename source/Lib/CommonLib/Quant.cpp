@@ -480,8 +480,8 @@ void Quant::dequant(const TransformUnit &tu,
     const Intermediate_Int inputMinimum        = -(1 << (targetInputBitDepth - 1));
     const Intermediate_Int inputMaximum        =  (1 << (targetInputBitDepth - 1)) - 1;
 
-    const uint32_t uiLog2TrWidth  = g_aucLog2[uiWidth];
-    const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
+    const uint32_t uiLog2TrWidth  = floorLog2(uiWidth);
+    const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
     int *piDequantCoef        = getDequantCoeff(scalingListType, QP_rem, uiLog2TrWidth, uiLog2TrHeight);
 
     if(rightShift > 0)
@@ -673,7 +673,7 @@ void Quant::xSetScalingListEnc(ScalingList *scalingList, uint32_t listId, uint32
   int *coeff  = scalingList->getScalingListAddress(sizeId,listId);
   quantcoeff  = getQuantCoeff(listId, qp, sizeId, sizeId);
 
-  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  const bool blockIsNotPowerOf4 = ((floorLog2(width) + floorLog2(height)) & 1) == 1;
   int quantScales = g_quantScales[blockIsNotPowerOf4?1:0][qp];
 
   processScalingListEnc(coeff,
@@ -701,7 +701,7 @@ void Quant::xSetScalingListDec(const ScalingList &scalingList, uint32_t listId, 
 
   dequantcoeff = getDequantCoeff(listId, qp, sizeId, sizeId);
 
-  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  const bool blockIsNotPowerOf4 = ((floorLog2(width) + floorLog2(height)) & 1) == 1;
   int invQuantScale = g_invQuantScales[blockIsNotPowerOf4?1:0][qp];
 
   processScalingListDec(coeff,
@@ -729,7 +729,7 @@ void Quant::xSetRecScalingListEnc(ScalingList *scalingList, uint32_t listId, uin
   int *quantcoeff;
   int *coeff = scalingList->getScalingListAddress(largeSideId, listId);//4x4, 8x8
   quantcoeff = getQuantCoeff(listId, qp, sizeIdw, sizeIdh);//final quantCoeff (downsample)
-  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  const bool blockIsNotPowerOf4 = ((floorLog2(width) + floorLog2(height)) & 1) == 1;
   int quantScales = g_quantScales[blockIsNotPowerOf4?1:0][qp];
 
   processScalingListEnc(coeff,
@@ -757,7 +757,7 @@ void Quant::xSetRecScalingListDec(const ScalingList &scalingList, uint32_t listI
   const int *coeff = scalingList.getScalingListAddress(largeSideId, listId);
   int *dequantcoeff;
   dequantcoeff = getDequantCoeff(listId, qp, sizeIdw, sizeIdh);
-  const bool blockIsNotPowerOf4 = ((g_aucLog2[width] + g_aucLog2[height]) & 1) == 1;
+  const bool blockIsNotPowerOf4 = ((floorLog2(width) + floorLog2(height)) & 1) == 1;
   int invQuantScale = g_invQuantScales[blockIsNotPowerOf4 ? 1 : 0][qp];
   processScalingListDec(coeff,
                         dequantcoeff,
@@ -800,7 +800,7 @@ void Quant::xSetFlatScalingList(uint32_t list, uint32_t sizeX, uint32_t sizeY, i
   int *quantcoeff;
   int *dequantcoeff;
 
-  const bool blockIsNotPowerOf4 = ((g_aucLog2[g_scalingListSizeX[sizeX]] + g_aucLog2[g_scalingListSizeX[sizeY]]) & 1) == 1;
+  const bool blockIsNotPowerOf4 = ((floorLog2(g_scalingListSizeX[sizeX]) + floorLog2(g_scalingListSizeX[sizeY])) & 1) == 1;
   int quantScales    = g_quantScales   [blockIsNotPowerOf4?1:0][qp];
   int invQuantScales = g_invQuantScales[blockIsNotPowerOf4?1:0][qp] << 4;
 
@@ -1014,8 +1014,8 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     TCoeff deltaU[MAX_TB_SIZEY * MAX_TB_SIZEY];
     int scalingListType = getScalingListType(tu.cu->predMode, compID);
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
-    const uint32_t uiLog2TrWidth = g_aucLog2[uiWidth];
-    const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
+    const uint32_t uiLog2TrWidth = floorLog2(uiWidth);
+    const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
 #if JVET_O0919_TS_MIN_QP
     int *piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
 #else
@@ -1104,8 +1104,8 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
   int scalingListType = getScalingListType(tu.cu->predMode, compID);
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
 
-  const uint32_t uiLog2TrWidth  = g_aucLog2[uiWidth];
-  const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
+  const uint32_t uiLog2TrWidth  = floorLog2(uiWidth);
+  const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
 #if JVET_O0919_TS_MIN_QP
   int *piQuantCoeff         = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
 #else
@@ -1179,8 +1179,8 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
 
   CHECK( scalingListType >= SCALING_LIST_NUM, "Invalid scaling list" );
 
-  const uint32_t uiLog2TrWidth      = g_aucLog2[uiWidth];
-  const uint32_t uiLog2TrHeight     = g_aucLog2[uiHeight];
+  const uint32_t uiLog2TrWidth      = floorLog2(uiWidth);
+  const uint32_t uiLog2TrHeight     = floorLog2(uiHeight);
 #if JVET_O0919_TS_MIN_QP
   const int *const piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
 #else
@@ -1266,8 +1266,8 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
     const Intermediate_Int inputMinimum = -(1 << (targetInputBitDepth - 1));
     const Intermediate_Int inputMaximum =  (1 << (targetInputBitDepth - 1)) - 1;
 
-    const uint32_t uiLog2TrWidth  = g_aucLog2[uiWidth];
-    const uint32_t uiLog2TrHeight = g_aucLog2[uiHeight];
+    const uint32_t uiLog2TrWidth  = floorLog2(uiWidth);
+    const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
     int *piDequantCoef        = getDequantCoeff(scalingListType, QP_rem, uiLog2TrWidth, uiLog2TrHeight);
 
     if (rightShift > 0)

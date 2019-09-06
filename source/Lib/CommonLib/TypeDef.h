@@ -281,6 +281,7 @@
 #define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
 
 #define JVET_N0865_SYNTAX                                 1 // JVET_N0865 syntax elements
+#define JVET_N0865_GRA2GDR                                1 // Changing the name of GRA to GDR
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
@@ -1047,7 +1048,11 @@ enum NalUnitType
   NAL_UNIT_CODED_SLICE_IDR_W_RADL,      // 24
   NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
   NAL_UNIT_CODED_SLICE_CRA,             // 26
+#if JVET_N0865_GRA2GDR
+  NAL_UNIT_CODED_SLICE_GDR,             // 27
+#else
   NAL_UNIT_CODED_SLICE_GRA,             // 27
+#endif
   NAL_UNIT_UNSPECIFIED_28,              // 29
   NAL_UNIT_UNSPECIFIED_29,              // 30
   NAL_UNIT_UNSPECIFIED_30,              // 31

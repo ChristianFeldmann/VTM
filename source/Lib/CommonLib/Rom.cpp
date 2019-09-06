@@ -79,7 +79,11 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
   case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
   case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
+#if JVET_N0865_GRA2GDR
+  case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
+#else
   case NAL_UNIT_CODED_SLICE_GRA:        return "GRA";
+#endif
   default:                              return "UNK";
   }
 }

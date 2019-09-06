@@ -1882,7 +1882,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
 #if JVET_N0865_SYNTAX
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
       if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+#endif
       {
         READ_UVLC(uiCode, "recovery_poc_cnt");
         int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
@@ -1890,7 +1894,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setRecoveryPocCnt(uiCode);
         pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
       }
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#else
       if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#endif
       {
         READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
         pcSlice->setNoOutputPriorPicsFlag(uiCode);
@@ -1938,7 +1946,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
       pcSlice->setPOC              (iPOCmsb+iPOClsb);
 #if JVET_N0865_SYNTAX
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
       if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+#endif
       {
         READ_UVLC(uiCode, "recovery_poc_cnt");
         int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
@@ -1946,7 +1958,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setRecoveryPocCnt(uiCode);
         pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
       }
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#else
       if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#endif
       {
         READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
         pcSlice->setNoOutputPriorPicsFlag(uiCode);

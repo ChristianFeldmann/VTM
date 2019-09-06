@@ -2025,7 +2025,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_N0100_PROPOSAL1
             if (pcSlice->getRPL0()->getLtrpInSliceHeaderFlag())
             {
-              READ_CODE(sps->getBitsForPOC(), uiCode, "poc_lsb_lt[i][j]");
+              READ_CODE(sps->getBitsForPOC(), uiCode, "slice_poc_lsb_lt[i][j]");
               pcSlice->getLocalRPL0()->setRefPicIdentifier(i, uiCode, true);
             }
 #endif
@@ -2112,7 +2112,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_N0100_PROPOSAL1
             if (pcSlice->getRPL1()->getLtrpInSliceHeaderFlag())
             {
-              READ_CODE(sps->getBitsForPOC(), uiCode, "poc_lsb_lt[i][j]");
+              READ_CODE(sps->getBitsForPOC(), uiCode, "slice_poc_lsb_lt[i][j]");
               pcSlice->getLocalRPL1()->setRefPicIdentifier(i, uiCode, true);
             }
 #endif
@@ -2204,15 +2204,15 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       sps->getSplitConsOverrideEnabledFlag()
       )
     {
-      READ_FLAG(uiCode, "partition_constrainst_override_flag");        pcSlice->setSplitConsOverrideFlag(uiCode ? true : false);
+      READ_FLAG(uiCode, "partition_constraints_override_flag");        pcSlice->setSplitConsOverrideFlag(uiCode ? true : false);
       if (pcSlice->getSplitConsOverrideFlag())
       {
-        READ_UVLC(uiCode, "log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
-        READ_UVLC(uiCode, "max_mtt_hierarchy_depth");                 pcSlice->setMaxBTDepth(uiCode);
+        READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
+        READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_luma");                 pcSlice->setMaxBTDepth(uiCode);
         if (pcSlice->getMaxBTDepth() != 0)
         {
-          READ_UVLC(uiCode, "log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
-          READ_UVLC(uiCode, "log2_diff_max_tt_min_qt");             pcSlice->setMaxTTSize(pcSlice->getMinQTSize() << uiCode);
+          READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
+          READ_UVLC(uiCode, "slice_log2_diff_max_tt_min_qt");             pcSlice->setMaxTTSize(pcSlice->getMinQTSize() << uiCode);
         }
         else
         {
@@ -2223,12 +2223,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           pcSlice->isIntra() && sps->getUseDualITree()
           )
         {
-          READ_UVLC(uiCode, "log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
-          READ_UVLC(uiCode, "max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxBTDepthIChroma(uiCode);
+          READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
+          READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxBTDepthIChroma(uiCode);
           if (pcSlice->getMaxBTDepthIChroma() != 0)
           {
-            READ_UVLC(uiCode, "log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
-            READ_UVLC(uiCode, "log2_diff_max_tt_min_qt_chroma");             pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
+            READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
+            READ_UVLC(uiCode, "slice_log2_diff_max_tt_min_qt_chroma");             pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
           }
           else
           {
@@ -2400,7 +2400,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_O0238_PPS_OR_SLICE
         if (!pps->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
         {
-          READ_UVLC(uiCode, "five_minus_max_num_affine_merge_cand");
+          READ_UVLC(uiCode, "five_minus_max_num_subblock_merge_cand");
         }
         else
         {
@@ -2413,13 +2413,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
       if ( sps->getFpelMmvdEnabledFlag() )
       {
-        READ_FLAG( uiCode, "tile_group_fracmmvd_disabled_flag" );
+        READ_FLAG( uiCode, "slice_fpel_mmvd_enabled_flag" );
         pcSlice->setDisFracMMVD( uiCode ? true : false );
       }
 #if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
       if (sps->getBdofDmvrSlicePresentFlag())
       {
-        READ_FLAG(uiCode, "tile_group_bdof_dmvr_disabled_flag");
+        READ_FLAG(uiCode, "slice_disable_bdof_dmvr_flag");
         pcSlice->setDisBdofDmvrFlag(uiCode ? true : false);
       }
 #endif
@@ -2448,7 +2448,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #if JVET_O0455_IBC_MAX_MERGE_NUM
     if (sps->getIBCFlag())
     {
-      READ_UVLC(uiCode, "six_minus_max_num_ibc_merge_cand");
+      READ_UVLC(uiCode, "slice_six_minus_max_num_ibc_merge_cand");
       pcSlice->setMaxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS - uiCode);
     }
 #endif
@@ -2540,26 +2540,26 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if( sps->getALFEnabledFlag() )
     {
-      READ_FLAG(uiCode, "tile_group_alf_enabled_flag");
+      READ_FLAG(uiCode, "slice_alf_enabled_flag");
       pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);
       int alfChromaIdc = 0;
       if (uiCode)
       {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
 #if JVET_O_MAX_NUM_ALF_APS_8
-        READ_CODE(3, uiCode, "tile_group_num_APS");
+        READ_CODE(3, uiCode, "slice_num_alf_aps_ids_luma");
 #else
         xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
 #endif
 #else
         if (pcSlice->isIntra())
         {
-          READ_FLAG(uiCode, "tile_group_num_APS");
+          READ_FLAG(uiCode, "slice_num_alf_aps_ids_luma");
         }
         else
         {
 #if JVET_O_MAX_NUM_ALF_APS_8
-          READ_CODE(3, uiCode, "tile_group_num_APS");
+          READ_CODE(3, uiCode, "slice_num_alf_aps_ids_luma");
 #else
           xReadTruncBinCode(uiCode, ALF_CTB_MAX_NUM_APS + 1);
 #endif
@@ -2571,9 +2571,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         for (int i = 0; i < numAps; i++)
         {
 #if JVET_O_MAX_NUM_ALF_APS_8
-          READ_CODE(3, uiCode, "tile_group_aps_id");
+          READ_CODE(3, uiCode, "slice_alf_aps_id_luma");
 #else
-          READ_CODE(5, uiCode, "tile_group_aps_id");
+          READ_CODE(5, uiCode, "slice_alf_aps_id_luma");
 #endif
           apsId[i] = uiCode;
         }
@@ -2600,9 +2600,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
 #if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
 #if JVET_O_MAX_NUM_ALF_APS_8
-          READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
+          READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
 #else
-          READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+          READ_CODE(5, uiCode, "slice_alf_aps_id_chroma");
 #endif
 #else
           if (pcSlice->isIntra() && pcSlice->getTileGroupNumAps() == 1)
@@ -2612,9 +2612,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           else
           {
 #if JVET_O_MAX_NUM_ALF_APS_8
-            READ_CODE(3, uiCode, "tile_group_aps_id_chroma");
+            READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
 #else
-            READ_CODE(5, uiCode, "tile_group_aps_id_chroma");
+            READ_CODE(5, uiCode, "slice_alf_aps_id_chroma");
 #endif
           }
 #endif

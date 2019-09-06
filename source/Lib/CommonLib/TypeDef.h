@@ -281,6 +281,7 @@
 #define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
 
 #define JVET_N0865_SYNTAX                                 1 // JVET_N0865 syntax elements
+#define JVET_N0865_NONSYNTAX                              1 // JVET_N0865 other than syntax parts
 #define JVET_N0865_GRA2GDR                                1 // Changing the name of GRA to GDR
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text

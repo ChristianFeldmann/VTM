@@ -1135,6 +1135,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
+#if JVET_N0865_NONSYNTAX
+  if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
+    CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
+#endif
+
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_parameterSetManager, m_prevTid0POC );
 

@@ -174,11 +174,7 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
   int prevDelta = MAX_INT;
   int deltaValue = 0;
   bool firstSTRP = true;
-#if JVET_N0100_PROPOSAL1
-  for (int ii = 0, j = 0; ii < numRefPic; ii++)
-#else
   for (int ii = 0; ii < numRefPic; ii++)
-#endif
   {
     if (rpl->getNumberOfLongtermPictures() > 0)
       WRITE_FLAG(!rpl->isRefPicLongterm(ii), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]");
@@ -208,17 +204,13 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
         WRITE_FLAG((deltaValue < 0) ? 0 : 1, "strp_entry_sign_flag[ listIdx ][ rplsIdx ][ i ]");  //0  means negative delta POC : 1 means positive
     }
 #if JVET_N0100_PROPOSAL1
-    else if (rpl->getLtrpInSliceHeaderFlag())
-    {
-      WRITE_CODE(rpl->getRefPicIdentifier(j), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][j]");
-      j++;
-    }
+    else if (!rpl->getLtrpInSliceHeaderFlag())
 #else
     else
+#endif
     {
       WRITE_CODE(rpl->getRefPicIdentifier(ii), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][i]");
     }
-#endif
   }
 }
 

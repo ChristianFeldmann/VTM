@@ -304,11 +304,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   int deltaValue = 0;
   bool firstSTRP = true;
 
-#if JVET_N0100_PROPOSAL1
-  for (int ii = 0, j = 0; ii < numRefPic; ii++)
-#else
   for (int ii = 0; ii < numRefPic; ii++)
-#endif
   {
     isLongTerm = false;
     if (sps->getLongTermRefsPresent())
@@ -348,12 +344,12 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
       numStrp++;
     }
 #if JVET_N0100_PROPOSAL1
-    else if (rpl->getLtrpInSliceHeaderFlag())
+    else
     {
-      READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
-      rpl->setRefPicIdentifier(j, code, isLongTerm);
+      if (!rpl->getLtrpInSliceHeaderFlag())
+        READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
+      rpl->setRefPicIdentifier(ii, code, isLongTerm);
       numLtrp++;
-      j++;
     }
 #else
     else   // else if( !ltrp_in_slice_header_flag[ listIdx ][ rplsIdx ] )

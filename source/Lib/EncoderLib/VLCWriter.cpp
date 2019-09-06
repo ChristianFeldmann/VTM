@@ -1479,6 +1479,84 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           }
         }
       }
+
+      //check if numrefidxes match the defaults. If not, override
+
+      if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
+          (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
+      {
+        int defaultL0 = std::min<int>(pcSlice->getRPL0()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL0DefaultActive());
+        int defaultL1 = pcSlice->isInterB() ? std::min<int>(pcSlice->getRPL1()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL1DefaultActive()) : 0;
+        bool overrideFlag = ( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) != defaultL0 || ( pcSlice->isInterB() && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) != defaultL1 ) );
+        WRITE_FLAG( overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag" );
+        if( overrideFlag )
+        {
+          if(pcSlice->getRPL0()->getNumRefEntries() > 1)
+          {
+            WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) - 1, "num_ref_idx_l0_active_minus1" );
+          }
+          else
+          {
+            pcSlice->setNumRefIdx( REF_PIC_LIST_0, 1);
+          }
+
+          if( pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1)
+          {
+            WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) - 1, "num_ref_idx_l1_active_minus1" );
+          }
+          else
+          {
+            pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0);
+          }
+        }
+        else
+        {
+          pcSlice->setNumRefIdx( REF_PIC_LIST_0, defaultL0 );
+          pcSlice->setNumRefIdx( REF_PIC_LIST_1, defaultL1 );
+        }
+      }
+      else
+      {
+        pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
+        pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
+      }
+    }
+
+    if (
+      pcSlice->getSPS()->getSplitConsOverrideEnabledFlag()
+      )
+    {
+      WRITE_FLAG(pcSlice->getSplitConsOverrideFlag() ? 1 : 0, "partition_constrainst_override_flag");
+      if (pcSlice->getSplitConsOverrideFlag())
+      {
+        WRITE_UVLC(floorLog2(pcSlice->getMinQTSize()) - pcSlice->getSPS()->getLog2MinCodingBlockSize(), "log2_diff_min_qt_min_cb");
+        WRITE_UVLC(pcSlice->getMaxBTDepth(), "max_bt_depth");
+        if (pcSlice->getMaxBTDepth() != 0)
+        {
+          CHECK(pcSlice->getMaxBTSize() < pcSlice->getMinQTSize(), "maxBtSize is smaller than minQtSize");
+          WRITE_UVLC(floorLog2(pcSlice->getMaxBTSize()) - floorLog2(pcSlice->getMinQTSize()), "log2_diff_max_bt_min_qt");
+          CHECK(pcSlice->getMaxTTSize() < pcSlice->getMinQTSize(), "maxTtSize is smaller than minQtSize");
+          WRITE_UVLC(floorLog2(pcSlice->getMaxTTSize()) - floorLog2(pcSlice->getMinQTSize()), "log2_diff_max_tt_min_qt");
+        }
+        if (
+          pcSlice->isIntra() && pcSlice->getSPS()->getUseDualITree()
+          )
+        {
+          WRITE_UVLC(floorLog2(pcSlice->getMinQTSizeIChroma()) - pcSlice->getSPS()->getLog2MinCodingBlockSize(), "log2_diff_min_qt_min_cb_chroma");
+          WRITE_UVLC(pcSlice->getMaxBTDepthIChroma(), "max_mtt_hierarchy_depth_chroma");
+          if (pcSlice->getMaxBTDepthIChroma() != 0)
+          {
+            CHECK(pcSlice->getMaxBTSizeIChroma() < pcSlice->getMinQTSizeIChroma(), "maxBtSizeC is smaller than minQtSizeC");
+            WRITE_UVLC(floorLog2(pcSlice->getMaxBTSizeIChroma()) - floorLog2(pcSlice->getMinQTSizeIChroma()), "log2_diff_max_bt_min_qt_chroma");
+            CHECK(pcSlice->getMaxTTSizeIChroma() < pcSlice->getMinQTSizeIChroma(), "maxTtSizeC is smaller than minQtSizeC");
+            WRITE_UVLC(floorLog2(pcSlice->getMaxTTSizeIChroma()) - floorLog2(pcSlice->getMinQTSizeIChroma()), "log2_diff_max_tt_min_qt_chroma");
+          }
+        }
+      }
+    }
+
+    if(!pcSlice->isIntra())
+    {
 #if JVET_O0238_PPS_OR_SLICE
       if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() && !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
       {
@@ -1490,134 +1568,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
       }
 #endif
-
     }
-    if( pcSlice->getSPS()->getSAOEnabledFlag() )
-    {
-      WRITE_FLAG( pcSlice->getSaoEnabledFlag( CHANNEL_TYPE_LUMA ), "slice_sao_luma_flag" );
-      if( chromaEnabled )
-      {
-        WRITE_FLAG( pcSlice->getSaoEnabledFlag( CHANNEL_TYPE_CHROMA ), "slice_sao_chroma_flag" );
-      }
-    }
-
-    if( pcSlice->getSPS()->getALFEnabledFlag() )
-    {
-      const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
-      WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
-
-      if (alfEnabled)
-      {
-#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
-#if JVET_O_MAX_NUM_ALF_APS_8
-        WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
-#else
-        xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
-#endif
-#else
-        if (pcSlice->isIntra())
-        {
-          WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
-        }
-        else
-        {
-#if JVET_O_MAX_NUM_ALF_APS_8
-          WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
-#else
-          xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
-#endif
-        }
-#endif
-        const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
-        for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
-        {
-#if JVET_O_MAX_NUM_ALF_APS_8
-          WRITE_CODE(apsId[i], 3, "tile_group_aps_id");
-#else
-          WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
-#endif
-        }
-
-        const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
-#if JVET_O0616_400_CHROMA_SUPPORT
-        if (chromaEnabled)
-        {
-#endif
-#if JVET_O0491_HLS_CLEANUP
-          WRITE_CODE(alfChromaIdc, 2, "slice_alf_chroma_idc");
-#else
-          truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
-#endif
-#if JVET_O0616_400_CHROMA_SUPPORT
-        }
-#endif
-        if (alfChromaIdc)
-        {
-#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
-#if JVET_O_MAX_NUM_ALF_APS_8
-          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
-#else
-          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
-#endif
-#else
-          if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
-          {
-            CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
-          }
-          else
-          {
-#if JVET_O_MAX_NUM_ALF_APS_8
-            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
-#else
-            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
-#endif
-          }
-#endif
-        }
-      }
-    }
-
-    //check if numrefidxes match the defaults. If not, override
-
-    if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
-        (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
-    {
-      int defaultL0 = std::min<int>(pcSlice->getRPL0()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL0DefaultActive());
-      int defaultL1 = pcSlice->isInterB() ? std::min<int>(pcSlice->getRPL1()->getNumRefEntries(), pcSlice->getPPS()->getNumRefIdxL1DefaultActive()) : 0;
-      bool overrideFlag = ( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) != defaultL0 || ( pcSlice->isInterB() && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) != defaultL1 ) );
-      WRITE_FLAG( overrideFlag ? 1 : 0, "num_ref_idx_active_override_flag" );
-      if( overrideFlag )
-      {
-        if(pcSlice->getRPL0()->getNumRefEntries() > 1)
-        {
-          WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) - 1, "num_ref_idx_l0_active_minus1" );
-        }
-        else
-        {
-          pcSlice->setNumRefIdx( REF_PIC_LIST_0, 1);
-        }
-
-        if( pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1)
-        {
-          WRITE_UVLC( pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) - 1, "num_ref_idx_l1_active_minus1" );
-        }
-        else
-        {
-          pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0);
-        }
-      }
-      else
-      {
-        pcSlice->setNumRefIdx( REF_PIC_LIST_0, defaultL0 );
-        pcSlice->setNumRefIdx( REF_PIC_LIST_1, defaultL1 );
-      }
-    }
-    else
-    {
-      pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
-      pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
-    }
-
 
     if( pcSlice->isInterB() )
     {
@@ -1662,58 +1613,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           ( pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx( REF_PIC_LIST_1 ) > 1 ) ) )
       {
         WRITE_UVLC( pcSlice->getColRefIdx(), "collocated_ref_idx" );
-      }
-    }
-    if( ( pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE ) || ( pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE ) )
-    {
-      xCodePredWeightTable( pcSlice );
-    }
-#if JVET_O0238_PPS_OR_SLICE
-    if (!pcSlice->getPPS()->getPPSDepQuantEnabledIdc())
-    {
-      WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
-    }
-#else
-    WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
-#endif
-    if( !pcSlice->getDepQuantEnabledFlag() )
-    {
-      WRITE_FLAG( pcSlice->getSignDataHidingEnabledFlag() ? 1 : 0, "sign_data_hiding_enabled_flag" );
-    }
-    else
-    {
-      CHECK( pcSlice->getSignDataHidingEnabledFlag(), "sign data hiding not supported when dependent quantization is enabled" );
-    }
-    if (
-      pcSlice->getSPS()->getSplitConsOverrideEnabledFlag()
-      )
-    {
-      WRITE_FLAG(pcSlice->getSplitConsOverrideFlag() ? 1 : 0, "partition_constrainst_override_flag");
-      if (pcSlice->getSplitConsOverrideFlag())
-      {
-        WRITE_UVLC(floorLog2(pcSlice->getMinQTSize()) - pcSlice->getSPS()->getLog2MinCodingBlockSize(), "log2_diff_min_qt_min_cb");
-        WRITE_UVLC(pcSlice->getMaxBTDepth(), "max_bt_depth");
-        if (pcSlice->getMaxBTDepth() != 0)
-        {
-          CHECK(pcSlice->getMaxBTSize() < pcSlice->getMinQTSize(), "maxBtSize is smaller than minQtSize");
-          WRITE_UVLC(floorLog2(pcSlice->getMaxBTSize()) - floorLog2(pcSlice->getMinQTSize()), "log2_diff_max_bt_min_qt");
-          CHECK(pcSlice->getMaxTTSize() < pcSlice->getMinQTSize(), "maxTtSize is smaller than minQtSize");
-          WRITE_UVLC(floorLog2(pcSlice->getMaxTTSize()) - floorLog2(pcSlice->getMinQTSize()), "log2_diff_max_tt_min_qt");
-        }
-        if (
-          pcSlice->isIntra() && pcSlice->getSPS()->getUseDualITree()
-          )
-        {
-          WRITE_UVLC(floorLog2(pcSlice->getMinQTSizeIChroma()) - pcSlice->getSPS()->getLog2MinCodingBlockSize(), "log2_diff_min_qt_min_cb_chroma");
-          WRITE_UVLC(pcSlice->getMaxBTDepthIChroma(), "max_mtt_hierarchy_depth_chroma");
-          if (pcSlice->getMaxBTDepthIChroma() != 0)
-          {
-            CHECK(pcSlice->getMaxBTSizeIChroma() < pcSlice->getMinQTSizeIChroma(), "maxBtSizeC is smaller than minQtSizeC");
-            WRITE_UVLC(floorLog2(pcSlice->getMaxBTSizeIChroma()) - floorLog2(pcSlice->getMinQTSizeIChroma()), "log2_diff_max_bt_min_qt_chroma");
-            CHECK(pcSlice->getMaxTTSizeIChroma() < pcSlice->getMinQTSizeIChroma(), "maxTtSizeC is smaller than minQtSizeC");
-            WRITE_UVLC(floorLog2(pcSlice->getMaxTTSizeIChroma()) - floorLog2(pcSlice->getMinQTSizeIChroma()), "log2_diff_max_tt_min_qt_chroma");
-          }
-        }
       }
     }
 #if JVET_O0455_IBC_MAX_MERGE_NUM
@@ -1840,6 +1739,111 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_FLAG(pcSlice->getUseChromaQpAdj(), "cu_chroma_qp_offset_enabled_flag");
     }
 
+    if( ( pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE ) || ( pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE ) )
+    {
+      xCodePredWeightTable( pcSlice );
+    }
+    if( pcSlice->getSPS()->getSAOEnabledFlag() )
+    {
+      WRITE_FLAG( pcSlice->getSaoEnabledFlag( CHANNEL_TYPE_LUMA ), "slice_sao_luma_flag" );
+      if( chromaEnabled )
+      {
+        WRITE_FLAG( pcSlice->getSaoEnabledFlag( CHANNEL_TYPE_CHROMA ), "slice_sao_chroma_flag" );
+      }
+    }
+
+    if( pcSlice->getSPS()->getALFEnabledFlag() )
+    {
+      const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
+      WRITE_FLAG(alfEnabled, "tile_group_alf_enabled_flag");
+
+      if (alfEnabled)
+      {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+        WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
+#else
+        xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#endif
+#else
+        if (pcSlice->isIntra())
+        {
+          WRITE_FLAG(pcSlice->getTileGroupNumAps(), "tile_group_num_APS");
+        }
+        else
+        {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "tile_group_num_aps");
+#else
+          xWriteTruncBinCode(pcSlice->getTileGroupNumAps(), ALF_CTB_MAX_NUM_APS + 1);
+#endif
+        }
+#endif
+        const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
+        for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
+        {
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(apsId[i], 3, "tile_group_aps_id");
+#else
+          WRITE_CODE(apsId[i], 5, "tile_group_aps_id");
+#endif
+        }
+
+        const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2 ;
+#if JVET_O0616_400_CHROMA_SUPPORT
+        if (chromaEnabled)
+        {
+#endif
+#if JVET_O0491_HLS_CLEANUP
+          WRITE_CODE(alfChromaIdc, 2, "slice_alf_chroma_idc");
+#else
+          truncatedUnaryEqProb(alfChromaIdc, 3);   // alf_chroma_idc
+#endif
+#if JVET_O0616_400_CHROMA_SUPPORT
+        }
+#endif
+        if (alfChromaIdc)
+        {
+#if JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL
+#if JVET_O_MAX_NUM_ALF_APS_8
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
+#else
+          WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#endif
+#else
+          if (pcSlice->isIntra()&& pcSlice->getTileGroupNumAps() == 1)
+          {
+            CHECK(pcSlice->getTileGroupApsIdChroma() != apsId[0], "wrong tile group chroma aps id");
+          }
+          else
+          {
+#if JVET_O_MAX_NUM_ALF_APS_8
+            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "tile_group_aps_id_chroma");
+#else
+            WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 5, "tile_group_aps_id_chroma");
+#endif
+          }
+#endif
+        }
+      }
+    }
+
+#if JVET_O0238_PPS_OR_SLICE
+    if (!pcSlice->getPPS()->getPPSDepQuantEnabledIdc())
+    {
+      WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
+    }
+#else
+    WRITE_FLAG( pcSlice->getDepQuantEnabledFlag() ? 1 : 0, "dep_quant_enabled_flag" );
+#endif
+    if( !pcSlice->getDepQuantEnabledFlag() )
+    {
+      WRITE_FLAG( pcSlice->getSignDataHidingEnabledFlag() ? 1 : 0, "sign_data_hiding_enabled_flag" );
+    }
+    else
+    {
+      CHECK( pcSlice->getSignDataHidingEnabledFlag(), "sign data hiding not supported when dependent quantization is enabled" );
+    }
     if (pcSlice->getPPS()->getDeblockingFilterControlPresentFlag())
     {
       if (pcSlice->getPPS()->getDeblockingFilterOverrideEnabledFlag() )

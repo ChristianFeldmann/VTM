@@ -147,21 +147,32 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
 
       x0 = _mm_add_epi16(x0, x1);
       x2 = _mm_add_epi16(x2, x3);
-      x0 = _mm_add_epi16(x0, x2);
-
       x4 = _mm_add_epi16(x4, x5);
       x6 = _mm_add_epi16(x6, x7);
-      x4 = _mm_add_epi16(x4, x6);
 
-      x1 = _mm_unpacklo_epi16(x0, x4);
-      x5 = _mm_unpackhi_epi16(x0, x4);
-      x0 = _mm_unpacklo_epi16(x1, x5);
-      x4 = _mm_unpackhi_epi16(x1, x5);
+      __m128i x0l = _mm_cvtepu16_epi32(x0);
+      __m128i x0h = _mm_unpackhi_epi16(x0, _mm_setzero_si128());
+      __m128i x2l = _mm_cvtepu16_epi32(x2);
+      __m128i x2h = _mm_unpackhi_epi16(x2, _mm_setzero_si128());
+      __m128i x4l = _mm_cvtepu16_epi32(x4);
+      __m128i x4h = _mm_unpackhi_epi16(x4, _mm_setzero_si128());
+      __m128i x6l = _mm_cvtepu16_epi32(x6);
+      __m128i x6h = _mm_unpackhi_epi16(x6, _mm_setzero_si128());
 
-      __m128i sumV  = _mm_cvtepu16_epi32(x0);
-      __m128i sumH  = _mm_unpackhi_epi16(x0, _mm_setzero_si128());
-      __m128i sumD0 = _mm_cvtepu16_epi32(x4);
-      __m128i sumD1 = _mm_unpackhi_epi16(x4, _mm_setzero_si128());
+      x0l = _mm_add_epi32(x0l, x2l);
+      x4l = _mm_add_epi32(x4l, x6l);
+      x0h = _mm_add_epi32(x0h, x2h);
+      x4h = _mm_add_epi32(x4h, x6h);
+
+      x2l = _mm_unpacklo_epi32(x0l, x4l);
+      x2h = _mm_unpackhi_epi32(x0l, x4l);
+      x6l = _mm_unpacklo_epi32(x0h, x4h);
+      x6h = _mm_unpackhi_epi32(x0h, x4h);
+
+      __m128i sumV  = _mm_unpacklo_epi32(x2l, x6l);
+      __m128i sumH  = _mm_unpackhi_epi32(x2l, x6l);
+      __m128i sumD0 = _mm_unpacklo_epi32(x2h, x6h);
+      __m128i sumD1 = _mm_unpackhi_epi32(x2h, x6h);
 
       //      uint32_t tempAct = sumV + sumH;
       __m128i tempAct = _mm_add_epi32(sumV, sumH);

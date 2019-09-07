@@ -1722,6 +1722,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
     case NAL_UNIT_CODED_SLICE_IDR_N_LP:
     case NAL_UNIT_CODED_SLICE_CRA:
+#if JVET_N0865_NONSYNTAX
+    case NAL_UNIT_CODED_SLICE_GDR:
+#endif
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
       ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);

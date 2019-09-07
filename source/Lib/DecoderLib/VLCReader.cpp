@@ -1877,6 +1877,63 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     //   read colour_plane_id
     //   (separate_colour_plane_flag == 1) is not supported in this version of the standard.
 
+#if RPL_IN_IDR_FIX
+    READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
+    if (pcSlice->getIdrPicFlag())
+      pcSlice->setPOC(uiCode);
+    else
+    {
+      int iPOClsb = uiCode;
+      int iPrevPOC = prevTid0POC;
+      int iMaxPOClsb = 1 << sps->getBitsForPOC();
+      int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
+      int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+      int iPOCmsb;
+      if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+      }
+      else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      }
+      else
+      {
+        iPOCmsb = iPrevPOCmsb;
+      }
+      pcSlice->setPOC(iPOCmsb + iPOClsb);
+    }
+
+#if JVET_N0865_SYNTAX
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+    {
+      READ_UVLC(uiCode, "recovery_poc_cnt");
+      int maxPicOrderCntLsb = (int)pow(2, pcSlice->getSPS()->getBitsForPOC());
+      CHECK(uiCode < maxPicOrderCntLsb, "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+      pcSlice->setRecoveryPocCnt(uiCode);
+      pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
+    }
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+    {
+      READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
+      pcSlice->setNoOutputPriorPicsFlag(uiCode);
+    }
+    if (pps->getOutputFlagPresentFlag())
+    {
+      READ_FLAG(uiCode, "pic_output_flag");
+      pcSlice->setPicOutputFlag(uiCode ? true : false);
+    }
+    else
+    {
+      pcSlice->setPicOutputFlag(true);
+    }
+#endif
+#endif
+
+#if RPL_IN_IDR_FIX
+    if ( !pcSlice->getIdrPicFlag() || sps->getIDRRefParamListPresent() )
+    {
+#else
     if( pcSlice->getIdrPicFlag() && !(sps->getIDRRefParamListPresent()))
     {
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
@@ -1961,7 +2018,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setPicOutputFlag(true);
       }
 #endif
-
+#endif
       //Read L0 related syntax elements
       if (sps->getNumRPL0() > 0)
       {

@@ -282,6 +282,8 @@
 
 #define JVET_N0865_SYNTAX                                 1 // JVET_N0865 syntax elements
 
+#define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
+
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC

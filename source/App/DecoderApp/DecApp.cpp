@@ -230,7 +230,11 @@ uint32_t DecApp::decode()
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
+#if JVET_N0865_NONSYNTAX
+      if ((bNewPicture || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR) && m_cDecLib.getNoOutputPriorPicsFlag())
+#else
       if ( (bNewPicture || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) && m_cDecLib.getNoOutputPriorPicsFlag() )
+#endif
       {
         m_cDecLib.checkNoOutputPriorPics( pcListPic );
         m_cDecLib.setNoOutputPriorPicsFlag (false);

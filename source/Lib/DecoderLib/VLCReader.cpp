@@ -1909,7 +1909,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       READ_UVLC(uiCode, "recovery_poc_cnt");
       int maxPicOrderCntLsb = (int)pow(2, pcSlice->getSPS()->getBitsForPOC());
-      CHECK(uiCode < maxPicOrderCntLsb, "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+      CHECK(uiCode < maxPicOrderCntLsb, "The value of recovery_poc_cnt exceeds (POC LSB cycle - 1)");
       pcSlice->setRecoveryPocCnt(uiCode);
       pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
     }

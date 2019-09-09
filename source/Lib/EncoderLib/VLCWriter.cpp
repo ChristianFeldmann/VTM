@@ -1333,7 +1333,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
     {
       int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
-      CHECK((pcSlice->getRecoveryPocCnt() < maxPicOrderCntLsb), "recovery_poc_cnt > MaxPicOrderCntLsb ? 1");
+      CHECK((pcSlice->getRecoveryPocCnt() < maxPicOrderCntLsb), "The value of recovery_poc_cnt exceeds (POC LSB cycle - 1)");
       WRITE_UVLC(pcSlice->getRecoveryPocCnt(), "recovery_poc_cnt");
     }
     if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))

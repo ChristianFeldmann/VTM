@@ -122,6 +122,9 @@ private:
 #else
   bool                    m_craNoRaslOutputFlag;    //value of variable NoRaslOutputFlag of the last CRA pic
 #endif
+#if JVET_O0428_LMCS_CLEANUP
+  int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
+#endif
   std::ostream           *m_pDecodedSEIOutputStream;
 
   int                     m_decodedPictureHashSEIEnabled;  ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message

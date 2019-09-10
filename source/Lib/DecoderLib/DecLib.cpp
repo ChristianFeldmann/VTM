@@ -411,6 +411,9 @@ DecLib::DecLib()
 #else
   , m_craNoRaslOutputFlag(false)
 #endif
+#if JVET_O0428_LMCS_CLEANUP
+  , m_sliceLmcsApsId(-1)
+#endif
   , m_pDecodedSEIOutputStream(NULL)
   , m_decodedPictureHashSEIEnabled(false)
   , m_numberOfChecksumErrorsDetected(0)
@@ -1562,6 +1565,16 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     if (pcSlice->getLmcsEnabledFlag())
     {
       APS* lmcsAPS = pcSlice->getLmcsAPS();
+#if JVET_O0428_LMCS_CLEANUP
+      if (m_bFirstSliceInPicture)
+      {
+        m_sliceLmcsApsId = lmcsAPS->getAPSId();
+      }
+      else
+      {
+        CHECK(lmcsAPS->getAPSId() != m_sliceLmcsApsId, "same APS ID shall be used for all slices in one picture");
+      }
+#endif
       SliceReshapeInfo& sInfo = lmcsAPS->getReshaperAPSInfo();
       SliceReshapeInfo& tInfo = m_cReshaper.getSliceReshaperInfo();
       tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;

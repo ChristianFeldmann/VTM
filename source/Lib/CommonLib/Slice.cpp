@@ -1608,16 +1608,8 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
 
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
-, m_cuChromaQpOffsetSubdiv             (0)
-, m_chromaQpOffsetListLen              (0)
-// m_ChromaQpAdjTableIncludingNullEntry initialized below
 // m_log2SaoOffsetScale initialized below
 {
-  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
-  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CrOffset = 0;
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.JointCbCrOffset = 0;
-#endif
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_log2SaoOffsetScale[ch] = 0;
@@ -1635,6 +1627,8 @@ PPS::PPS()
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)
 , m_chromaCbCrQpOffset               (0)
+, m_cuChromaQpOffsetSubdiv             (0)
+, m_chromaQpOffsetListLen              (0)
 , m_numRefIdxL0DefaultActive         (1)
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
@@ -1687,6 +1681,11 @@ PPS::PPS()
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)
 {
+  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
+  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CrOffset = 0;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+  m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.JointCbCrOffset = 0;
+#endif
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
 }

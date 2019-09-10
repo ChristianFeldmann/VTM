@@ -485,6 +485,44 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
   pcPPS->setSliceChromaQpFlag( uiCode ? true : false );
 
+  READ_FLAG( uiCode, "chroma_qp_offset_list_enabled_flag");
+  if (uiCode == 0)
+  {
+    pcPPS->clearChromaQpOffsetList();
+    pcPPS->setCuChromaQpOffsetSubdiv(0);
+  }
+  else
+  {
+    READ_UVLC(uiCode, "cu_chroma_qp_offset_subdiv"); pcPPS->setCuChromaQpOffsetSubdiv(uiCode);
+    uint32_t tableSizeMinus1 = 0;
+    READ_UVLC(tableSizeMinus1, "chroma_qp_offset_list_len_minus1");
+    CHECK(tableSizeMinus1 >= MAX_QP_OFFSET_LIST_SIZE, "Table size exceeds maximum");
+
+    for (int cuChromaQpOffsetIdx = 0; cuChromaQpOffsetIdx <= (tableSizeMinus1); cuChromaQpOffsetIdx++)
+    {
+      int cbOffset;
+      int crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      int jointCbCrOffset;
+#endif
+      READ_SVLC(cbOffset, "cb_qp_offset_list[i]");
+      CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
+      READ_SVLC(crOffset, "cr_qp_offset_list[i]");
+      CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+      CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
+#endif
+      // table uses +1 for index (see comment inside the function)
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
+#else
+      pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
+#endif
+    }
+    CHECK(pcPPS->getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list lenght");
+  }
+
   READ_FLAG( uiCode, "weighted_pred_flag" );          // Use of Weighting Prediction (P_SLICE)
   pcPPS->setUseWP( uiCode==1 );
   READ_FLAG( uiCode, "weighted_bipred_flag" );         // Use of Bi-Directional Weighting Prediction (B_SLICE)
@@ -773,44 +811,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
           READ_FLAG( uiCode, "cross_component_prediction_enabled_flag");
           ppsRangeExtension.setCrossComponentPredictionEnabledFlag(uiCode != 0);
-
-          READ_FLAG( uiCode, "chroma_qp_offset_list_enabled_flag");
-          if (uiCode == 0)
-          {
-            ppsRangeExtension.clearChromaQpOffsetList();
-            ppsRangeExtension.setCuChromaQpOffsetSubdiv(0);
-          }
-          else
-          {
-            READ_UVLC(uiCode, "cu_chroma_qp_offset_subdiv"); ppsRangeExtension.setCuChromaQpOffsetSubdiv(uiCode);
-            uint32_t tableSizeMinus1 = 0;
-            READ_UVLC(tableSizeMinus1, "chroma_qp_offset_list_len_minus1");
-            CHECK(tableSizeMinus1 >= MAX_QP_OFFSET_LIST_SIZE, "Table size exceeds maximum");
-
-            for (int cuChromaQpOffsetIdx = 0; cuChromaQpOffsetIdx <= (tableSizeMinus1); cuChromaQpOffsetIdx++)
-            {
-              int cbOffset;
-              int crOffset;
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-              int jointCbCrOffset;
-#endif
-              READ_SVLC(cbOffset, "cb_qp_offset_list[i]");
-              CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
-              READ_SVLC(crOffset, "cr_qp_offset_list[i]");
-              CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-              READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
-              CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
-#endif
-              // table uses +1 for index (see comment inside the function)
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-              ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
-#else
-              ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
-#endif
-            }
-            CHECK(ppsRangeExtension.getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list lenght");
-          }
 
           READ_UVLC( uiCode, "log2_sao_offset_scale_luma");
           ppsRangeExtension.setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA, uiCode);
@@ -2594,7 +2594,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-    if (pps->getPpsRangeExtension().getChromaQpOffsetListEnabledFlag())
+    if (pps->getChromaQpOffsetListEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
     }

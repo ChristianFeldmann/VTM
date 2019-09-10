@@ -59,11 +59,11 @@ inline int32_t getScaleVal(int32_t &area)
 template<X86_VEXT vext>
 static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
                                         const CPelBuf &srcLuma, const Area &blkDst, const Area &blk, const int shift,
-                                        const int vbCTUHeight, int vbPos
 #if JVET_O0625_ALF_PADDING
-                                        , const int alfBryList[4]
+                                        const int vbCTUHeight, int vbPos, const int alfBryList[4] )
+#else
+                                        const int vbCTUHeight, int vbPos )
 #endif
-)
 {
   CHECK((blk.height & 7) != 0, "Block height must be a multiple of 8");
   CHECK((blk.width & 7) != 0, "Block width must be a multiple of 8");
@@ -1083,8 +1083,8 @@ template <X86_VEXT vext>
 void AdaptiveLoopFilter::_initAdaptiveLoopFilterX86()
 {
   m_deriveClassificationBlk = simdDeriveClassificationBlk<vext>;
-  m_filter7x7Blk = simdFilter7x7Blk<vext>;
   m_filter5x5Blk = simdFilter5x5Blk<vext>;
+  m_filter7x7Blk = simdFilter7x7Blk<vext>;
 }
 
 template void AdaptiveLoopFilter::_initAdaptiveLoopFilterX86<SIMDX86>();

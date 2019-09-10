@@ -1930,12 +1930,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #endif
 #endif
 
-#if RPL_IN_IDR_FIX
-    if ( !pcSlice->getIdrPicFlag() || sps->getIDRRefParamListPresent() )
-    {
-#else
     if( pcSlice->getIdrPicFlag() && !(sps->getIDRRefParamListPresent()))
     {
+#if !RPL_IN_IDR_FIX
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
 #if JVET_N0865_SYNTAX
@@ -1962,7 +1959,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setPicOutputFlag(true);
       }
 #endif
-
+#endif
       ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
       (*rpl0) = ReferencePictureList();
       pcSlice->setRPL0(rpl0);
@@ -1974,6 +1971,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     else
     {
+#if !RPL_IN_IDR_FIX
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       int iPOClsb = uiCode;
       int iPrevPOC = prevTid0POC;

@@ -1905,15 +1905,23 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
 
 #if JVET_N0865_SYNTAX
+#if !JVET_N0865_GRA2GDR
     if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
-    {
+#else
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#endif
+      {
       READ_UVLC(uiCode, "recovery_poc_cnt");
       int maxPicOrderCntLsb = (int)pow(2, pcSlice->getSPS()->getBitsForPOC());
       CHECK(uiCode < maxPicOrderCntLsb, "The value of recovery_poc_cnt exceeds (POC LSB cycle - 1)");
       pcSlice->setRecoveryPocCnt(uiCode);
       pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
     }
+#if !JVET_N0865_GRA2GDR
     if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#else
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#endif
     {
       READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
       pcSlice->setNoOutputPriorPicsFlag(uiCode);

@@ -1330,13 +1330,21 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     int pocMask = (1 << pocBits) - 1;
     WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
 #if JVET_N0865_SYNTAX
+#if JVET_N0865_GRA2GDR
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
     if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+#endif
     {
       int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
       CHECK((pcSlice->getRecoveryPocCnt() < maxPicOrderCntLsb), "The value of recovery_poc_cnt exceeds (POC LSB cycle - 1)");
       WRITE_UVLC(pcSlice->getRecoveryPocCnt(), "recovery_poc_cnt");
     }
+#if JVET_N0865_GRA2GDR
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#else
     if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#endif
     {
       WRITE_FLAG(pcSlice->getNoOutputPriorPicsFlag() ? 1 : 0, "no_output_of_prior_pics_flag");
     }

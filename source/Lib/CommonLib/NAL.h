@@ -79,7 +79,11 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+#if JVET_N0865_GRA2GDR
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR
+#else
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA
+#endif
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL;
   }
@@ -98,8 +102,11 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
+#if JVET_N0865_GRA2GDR
+        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR;
+#else
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA;
-
+#endif
   }
 };
 

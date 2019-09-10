@@ -1691,7 +1691,11 @@ private:
   bool                       m_colFromL0Flag;  // collocated picture from List0 flag
 
   bool                       m_noOutputPriorPicsFlag;
+#if JVET_N0865_NONSYNTAX
+  bool                       m_noIncorrectPicOutputFlag;
+#else
   bool                       m_noRaslOutputFlag;
+#endif
   bool                       m_handleCraAsCvsStartFlag;
 
   uint32_t                       m_colRefIdx;
@@ -1985,8 +1989,13 @@ public:
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
 
+#if JVET_N0865_NONSYNTAX
+  void                        setNoIncorrectPicOutputFlag(bool val)                  { m_noIncorrectPicOutputFlag = val;                             }
+  bool                        getNoIncorrectPicOutputFlag() const                    { return m_noIncorrectPicOutputFlag;                                    }
+#else
   void                        setNoRaslOutputFlag( bool val )                        { m_noRaslOutputFlag = val;                                     }
   bool                        getNoRaslOutputFlag() const                            { return m_noRaslOutputFlag;                                    }
+#endif
 
   void                        setHandleCraAsCvsStartFlag( bool val )                 { m_handleCraAsCvsStartFlag = val;                                   }
   bool                        getHandleCraAsCvsStartFlag() const                     { return m_handleCraAsCvsStartFlag;                                  }

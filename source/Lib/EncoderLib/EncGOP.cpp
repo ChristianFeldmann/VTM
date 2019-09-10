@@ -2943,18 +2943,32 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         OutputNALUnit nalu( pcSlice->getNalUnitType(), pcSlice->getTLayer() );
         m_HLSWriter->setBitstream( &nalu.m_Bitstream );
 
+#if JVET_N0865_NONSYNTAX
+        pcSlice->setNoIncorrectPicOutputFlag(false);
+#else
         pcSlice->setNoRaslOutputFlag(false);
+#endif
         if (pcSlice->isIRAP())
         {
           if (pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
           {
+#if JVET_N0865_NONSYNTAX
+            pcSlice->setNoIncorrectPicOutputFlag(true);
+#else
             pcSlice->setNoRaslOutputFlag(true);
+#endif
           }
           //the inference for NoOutputPriorPicsFlag
           // KJS: This cannot happen at the encoder
+#if JVET_N0865_NONSYNTAX
+          if (!m_bFirst && (pcSlice->isIRAP() || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR) && pcSlice->getNoIncorrectPicOutputFlag())
+          {
+            if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR)
+#else
           if (!m_bFirst && pcSlice->isIRAP() && pcSlice->getNoRaslOutputFlag())
           {
             if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
+#endif
             {
               pcSlice->setNoOutputPriorPicsFlag(true);
             }

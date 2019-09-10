@@ -406,7 +406,11 @@ DecLib::DecLib()
   , m_bFirstSliceInBitstream(true)
   , m_lastPOCNoOutputPriorPics(-1)
   , m_isNoOutputPriorPics(false)
+#if JVET_N0865_NONSYNTAX
+  , m_lastNoIncorrectPicOutputFlag(false)
+#else
   , m_craNoRaslOutputFlag(false)
+#endif
   , m_pDecodedSEIOutputStream(NULL)
   , m_decodedPictureHashSEIEnabled(false)
   , m_numberOfChecksumErrorsDetected(0)
@@ -1135,6 +1139,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
+#if JVET_N0865_NONSYNTAX
+  if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
+    CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
+#endif
+
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_parameterSetManager, m_prevTid0POC );
 
@@ -1165,14 +1174,38 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setAssociatedIRAPType(m_associatedIRAPType);
 
   //For inference of NoOutputOfPriorPicsFlag
+#if JVET_N0865_NONSYNTAX
+  if (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
   if (m_apcSlicePilot->getRapPicFlag())
+#endif
   {
+#if JVET_N0865_NONSYNTAX
+    if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) || 
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence))
+    {
+      m_apcSlicePilot->setNoIncorrectPicOutputFlag(true);
+    }
+#else
     if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()))
     {
       m_apcSlicePilot->setNoRaslOutputFlag(true);
     }
+#endif
     //the inference for NoOutputPriorPicsFlag
+#if JVET_N0865_NONSYNTAX
+    if (!m_bFirstSliceInBitstream &&
+        (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+        m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+    {
+      if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+      {
+        m_apcSlicePilot->setNoOutputPriorPicsFlag(true);
+      }
+    }
+#else
     if (!m_bFirstSliceInBitstream && m_apcSlicePilot->getRapPicFlag() && m_apcSlicePilot->getNoRaslOutputFlag())
     {
       if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
@@ -1180,17 +1213,29 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         m_apcSlicePilot->setNoOutputPriorPicsFlag(true);
       }
     }
+#endif
     else
     {
       m_apcSlicePilot->setNoOutputPriorPicsFlag(false);
     }
 
+#if JVET_N0865_NONSYNTAX
+    if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+    {
+      m_lastNoIncorrectPicOutputFlag = m_apcSlicePilot->getNoIncorrectPicOutputFlag();
+    }
+#else
     if(m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
     {
       m_craNoRaslOutputFlag = m_apcSlicePilot->getNoRaslOutputFlag();
     }
+#endif
   }
+#if JVET_N0865_NONSYNTAX
+  if ((m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) && m_apcSlicePilot->getNoOutputPriorPicsFlag())
+#else
   if (m_apcSlicePilot->getRapPicFlag() && m_apcSlicePilot->getNoOutputPriorPicsFlag())
+#endif
   {
     m_lastPOCNoOutputPriorPics = m_apcSlicePilot->getPOC();
     m_isNoOutputPriorPics = true;
@@ -1203,13 +1248,22 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //For inference of PicOutputFlag
   if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
   {
+#if JVET_N0865_NONSYNTAX
+    if (m_lastNoIncorrectPicOutputFlag)
+#else
     if ( m_craNoRaslOutputFlag )
+#endif
     {
       m_apcSlicePilot->setPicOutputFlag(false);
     }
   }
 
+#if JVET_N0865_NONSYNTAX
+  if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+      m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
+#else
   if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_craNoRaslOutputFlag) //Reset POC MSB when CRA has NoRaslOutputFlag equal to 1
+#endif
   {
     PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId());
     CHECK(pps == 0, "No PPS present");
@@ -1668,6 +1722,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
     case NAL_UNIT_CODED_SLICE_IDR_N_LP:
     case NAL_UNIT_CODED_SLICE_CRA:
+#if JVET_N0865_NONSYNTAX
+    case NAL_UNIT_CODED_SLICE_GDR:
+#endif
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
       ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);

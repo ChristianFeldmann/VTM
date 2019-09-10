@@ -76,7 +76,11 @@ Slice::Slice()
 , m_pcPic                         ( NULL )
 , m_colFromL0Flag                 ( true )
 , m_noOutputPriorPicsFlag         ( false )
+#if JVET_N0865_NONSYNTAX
+, m_noIncorrectPicOutputFlag      ( false )
+#else 
 , m_noRaslOutputFlag              ( false )
+#endif
 , m_handleCraAsCvsStartFlag            ( false )
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )

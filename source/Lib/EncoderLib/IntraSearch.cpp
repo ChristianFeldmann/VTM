@@ -1794,7 +1794,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   //calculate palette index
   preCalcPLTIndex(cs, partitioner, compBegin, numComp);
   //derive run
-  uint64_t bits = MAX_UINT;
+  uint64_t bits = MAX_UINT64;
   deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, bits);
   if ((cu.curPLTSize[compBegin] + cu.useEscape[compBegin]) > 1)
   {

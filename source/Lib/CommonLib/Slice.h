@@ -767,7 +767,7 @@ private:
   unsigned    m_CTUSize;
   unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
   unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned    m_maxBTDepth[3];
+  unsigned    m_maxMTTHierarchyDepth[3];
   unsigned    m_maxBTSize[3];
   unsigned    m_maxTTSize[3];
   bool        m_idrRefParamList;
@@ -953,13 +953,13 @@ public:
   unsigned                getMinQTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA)
                                                                                                     const { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2]) : m_minQT[1]; }
-  void                    setMaxBTDepth(unsigned    maxBTDepth,
-                                        unsigned    maxBTDepthI,
-                                        unsigned    maxBTDepthIChroma)
-                                                                                                          { m_maxBTDepth[1] = maxBTDepth; m_maxBTDepth[0] = maxBTDepthI; m_maxBTDepth[2] = maxBTDepthIChroma; }
-  unsigned                getMaxBTDepth()                                                           const { return m_maxBTDepth[1]; }
-  unsigned                getMaxBTDepthI()                                                          const { return m_maxBTDepth[0]; }
-  unsigned                getMaxBTDepthIChroma()                                                    const { return m_maxBTDepth[2]; }
+  void                    setMaxMTTHierarchyDepth(unsigned    maxMTTHierarchyDepth,
+                                        unsigned    maxMTTHierarchyDepthI,
+                                        unsigned    maxMTTHierarchyDepthIChroma)
+                                                                                                          { m_maxMTTHierarchyDepth[1] = maxMTTHierarchyDepth; m_maxMTTHierarchyDepth[0] = maxMTTHierarchyDepthI; m_maxMTTHierarchyDepth[2] = maxMTTHierarchyDepthIChroma; }
+  unsigned                getMaxMTTHierarchyDepth()                                                 const { return m_maxMTTHierarchyDepth[1]; }
+  unsigned                getMaxMTTHierarchyDepthI()                                                const { return m_maxMTTHierarchyDepth[0]; }
+  unsigned                getMaxMTTHierarchyDepthIChroma()                                          const { return m_maxMTTHierarchyDepth[2]; }
   void                    setMaxBTSize(unsigned    maxBTSize,
                                        unsigned    maxBTSizeI,
                                        unsigned    maxBTSizeC)
@@ -1754,11 +1754,11 @@ private:
   double                     m_dProcessingTime;
   bool                       m_splitConsOverrideFlag;
   uint32_t                   m_uiMinQTSize;
-  uint32_t                   m_uiMaxBTDepth;
+  uint32_t                   m_uiMaxMTTHierarchyDepth;
   uint32_t                   m_uiMaxTTSize;
 
   uint32_t                   m_uiMinQTSizeIChroma;
-  uint32_t                   m_uiMaxBTDepthIChroma;
+  uint32_t                   m_uiMaxMTTHierarchyDepthIChroma;
   uint32_t                   m_uiMaxBTSizeIChroma;
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                   m_uiMaxBTSize;
@@ -1917,15 +1917,15 @@ public:
   bool                        getSplitConsOverrideFlag() const                       { return m_splitConsOverrideFlag; }
   void                        setMinQTSize(int i)                                    { m_uiMinQTSize = i; }
   uint32_t                    getMinQTSize() const                                   { return m_uiMinQTSize; }
-  void                        setMaxBTDepth(int i)                                   { m_uiMaxBTDepth = i; }
-  uint32_t                    getMaxBTDepth() const                                  { return m_uiMaxBTDepth; }
+  void                        setMaxMTTHierarchyDepth(int i)                         { m_uiMaxMTTHierarchyDepth = i; }
+  uint32_t                    getMaxMTTHierarchyDepth() const                        { return m_uiMaxMTTHierarchyDepth; }
   void                        setMaxTTSize(int i)                                    { m_uiMaxTTSize = i; }
   uint32_t                    getMaxTTSize() const                                   { return m_uiMaxTTSize; }
 
   void                        setMinQTSizeIChroma(int i)                             { m_uiMinQTSizeIChroma = i; }
   uint32_t                    getMinQTSizeIChroma() const                            { return m_uiMinQTSizeIChroma; }
-  void                        setMaxBTDepthIChroma(int i)                            { m_uiMaxBTDepthIChroma = i; }
-  uint32_t                    getMaxBTDepthIChroma() const                           { return m_uiMaxBTDepthIChroma; }
+  void                        setMaxMTTHierarchyDepthIChroma(int i)                  { m_uiMaxMTTHierarchyDepthIChroma = i; }
+  uint32_t                    getMaxMTTHierarchyDepthIChroma() const                 { return m_uiMaxMTTHierarchyDepthIChroma; }
   void                        setMaxBTSizeIChroma(int i)                             { m_uiMaxBTSizeIChroma = i; }
   uint32_t                    getMaxBTSizeIChroma() const                            { return m_uiMaxBTSizeIChroma; }
   void                        setMaxTTSizeIChroma(int i)                             { m_uiMaxTTSizeIChroma = i; }
@@ -2368,7 +2368,7 @@ public:
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
     , ISingleTree         ( !sps.getUseDualITree() )
-    , maxBtDepth          { sps.getMaxBTDepthI(), sps.getMaxBTDepth(), sps.getMaxBTDepthIChroma() }
+    , maxBtDepth          { sps.getMaxMTTHierarchyDepthI(), sps.getMaxMTTHierarchyDepth(), sps.getMaxMTTHierarchyDepthIChroma() }
     , minBtSize           { 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize() }
     , maxBtSize           { sps.getMaxBTSizeI(), sps.getMaxBTSize(), sps.getMaxBTSizeIChroma() }
     , minTtSize           { 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize() }

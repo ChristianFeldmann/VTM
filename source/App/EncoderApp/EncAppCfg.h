@@ -258,9 +258,9 @@ protected:
   unsigned  m_uiCTUSize;
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned  m_uiMaxBTDepth;
-  unsigned  m_uiMaxBTDepthI;
-  unsigned  m_uiMaxBTDepthIChroma;
+  unsigned  m_uiMaxMTTHierarchyDepth;
+  unsigned  m_uiMaxMTTHierarchyDepthI;
+  unsigned  m_uiMaxMTTHierarchyDepthIChroma;
   bool      m_dualTree;
   bool      m_LFNST;
   bool      m_useFastLFNST;

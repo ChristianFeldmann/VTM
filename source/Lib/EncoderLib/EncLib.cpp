@@ -1106,21 +1106,21 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setCTUSize                             ( m_CTUSize );
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
-  sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setMaxMTTHierarchyDepth                ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
   unsigned maxBtSize[3], maxTtSize[3];
   memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
   memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
-  if (m_uiMaxBTDepth)
+  if (m_uiMaxMTTHierarchyDepth)
   {
     maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
     maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
   }
-  if (m_uiMaxBTDepthI)
+  if (m_uiMaxMTTHierarchyDepthI)
   {
     maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
     maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
   }
-  if (m_uiMaxBTDepthIChroma)
+  if (m_uiMaxMTTHierarchyDepthIChroma)
   {
     maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
     maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);

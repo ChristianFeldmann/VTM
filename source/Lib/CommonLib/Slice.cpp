@@ -118,10 +118,10 @@ Slice::Slice()
 , m_dProcessingTime               ( 0 )
 , m_splitConsOverrideFlag         ( false )
 , m_uiMinQTSize                   ( 0 )
-, m_uiMaxBTDepth                  ( 0 )
+, m_uiMaxMTTHierarchyDepth                  ( 0 )
 , m_uiMaxTTSize                   ( 0 )
 , m_uiMinQTSizeIChroma            ( 0 )
-, m_uiMaxBTDepthIChroma           ( 0 )
+, m_uiMaxMTTHierarchyDepthIChroma           ( 0 )
 , m_uiMaxBTSizeIChroma            ( 0 )
 , m_uiMaxTTSizeIChroma            ( 0 )
 , m_uiMaxBTSize                   ( 0 )
@@ -728,10 +728,10 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
   m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
-  m_uiMaxBTDepth                  = pSrc->m_uiMaxBTDepth;
+  m_uiMaxMTTHierarchyDepth                  = pSrc->m_uiMaxMTTHierarchyDepth;
   m_uiMaxTTSize                   = pSrc->m_uiMaxTTSize;
   m_uiMinQTSizeIChroma            = pSrc->m_uiMinQTSizeIChroma;
-  m_uiMaxBTDepthIChroma           = pSrc->m_uiMaxBTDepthIChroma;
+  m_uiMaxMTTHierarchyDepthIChroma           = pSrc->m_uiMaxMTTHierarchyDepthIChroma;
   m_uiMaxBTSizeIChroma            = pSrc->m_uiMaxBTSizeIChroma;
   m_uiMaxTTSizeIChroma            = pSrc->m_uiMaxTTSizeIChroma;
   m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
@@ -1426,7 +1426,7 @@ SPS::SPS()
 , m_log2DiffMaxMinCodingBlockSize(0)
 , m_CTUSize(0)
 , m_minQT{ 0, 0, 0 }
-, m_maxBTDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
+, m_maxMTTHierarchyDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
 , m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
 , m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
 , m_uiMaxCUWidth              ( 32)
@@ -2300,7 +2300,7 @@ uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
 {
   if ( slice.getSplitConsOverrideFlag() )
-    return (!slice.isIntra() || isLuma(chType) || ISingleTree) ? slice.getMaxBTDepth() : slice.getMaxBTDepthIChroma();
+    return (!slice.isIntra() || isLuma(chType) || ISingleTree) ? slice.getMaxMTTHierarchyDepth() : slice.getMaxMTTHierarchyDepthIChroma();
   else
   return maxBtDepth[getValIdx( slice, chType )];
 }

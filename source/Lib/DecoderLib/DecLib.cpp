@@ -1799,7 +1799,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_RESERVED_NVCL_22:
     case NAL_UNIT_RESERVED_NVCL_23:
 #endif
-      msg(NOTICE, "Note: found reserved NAL unit.\n");
+      msg( NOTICE, "Note: found reserved NAL unit.\n");
       return false;
     case NAL_UNIT_UNSPECIFIED_28:
     case NAL_UNIT_UNSPECIFIED_29:

@@ -286,8 +286,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_FLAG( pcPPS->getSliceChromaQpFlag() ? 1 : 0,          "pps_slice_chroma_qp_offsets_present_flag" );
 
-  WRITE_FLAG(uint32_t(pcPPS->getChromaQpOffsetListEnabledFlag()),           "chroma_qp_offset_list_enabled_flag" );
-  if (pcPPS->getChromaQpOffsetListEnabledFlag())
+  WRITE_FLAG(uint32_t(pcPPS->getCuChromaQpOffsetEnabledFlag()),         "cu_chroma_qp_offset_enabled_flag" );
+  if (pcPPS->getCuChromaQpOffsetEnabledFlag())
   {
     WRITE_UVLC(pcPPS->getCuChromaQpOffsetSubdiv(),                      "cu_chroma_qp_offset_subdiv");
     WRITE_UVLC(pcPPS->getChromaQpOffsetListLen() - 1,                   "chroma_qp_offset_list_len_minus1");
@@ -1734,7 +1734,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       CHECK(numberValidComponents < COMPONENT_Cr+1, "Too many valid components");
     }
 
-    if (pcSlice->getPPS()->getChromaQpOffsetListEnabledFlag())
+    if (pcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag())
     {
       WRITE_FLAG(pcSlice->getUseChromaQpAdj(), "cu_chroma_qp_offset_enabled_flag");
     }

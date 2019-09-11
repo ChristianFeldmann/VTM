@@ -485,7 +485,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
   pcPPS->setSliceChromaQpFlag( uiCode ? true : false );
 
-  READ_FLAG( uiCode, "chroma_qp_offset_list_enabled_flag");
+  READ_FLAG( uiCode, "cu_chroma_qp_offset_enabled_flag");
   if (uiCode == 0)
   {
     pcPPS->clearChromaQpOffsetList();
@@ -2594,7 +2594,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-    if (pps->getChromaQpOffsetListEnabledFlag())
+    if (pps->getCuChromaQpOffsetEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
     }

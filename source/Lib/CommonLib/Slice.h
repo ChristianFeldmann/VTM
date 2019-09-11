@@ -1204,11 +1204,6 @@ class PPSRExt // Names aligned to text specification
 private:
   bool             m_crossComponentPredictionEnabledFlag;
 
-  // Chroma QP Adjustments
-  int              m_cuChromaQpOffsetSubdiv;
-  int              m_chromaQpOffsetListLen; // size (excludes the null entry used in the following array).
-  ChromaQpAdj      m_ChromaQpAdjTableIncludingNullEntry[1+MAX_QP_OFFSET_LIST_SIZE]; //!< Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
-
   uint32_t             m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
 
 public:
@@ -1217,42 +1212,12 @@ public:
   bool settingsDifferFromDefaults(const bool bTransformSkipEnabledFlag) const
   {
     return (getCrossComponentPredictionEnabledFlag() )
-        || (getChromaQpOffsetListEnabledFlag() )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA) !=0 )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) !=0 );
   }
 
   bool                   getCrossComponentPredictionEnabledFlag() const                   { return m_crossComponentPredictionEnabledFlag;   }
   void                   setCrossComponentPredictionEnabledFlag(bool value)               { m_crossComponentPredictionEnabledFlag = value;  }
-
-  void                   clearChromaQpOffsetList()                                        { m_chromaQpOffsetListLen = 0;                    }
-
-  uint32_t               getCuChromaQpOffsetSubdiv () const                               { return m_cuChromaQpOffsetSubdiv;                }
-  void                   setCuChromaQpOffsetSubdiv ( uint32_t u )                         { m_cuChromaQpOffsetSubdiv = u;                   }
-
-  bool                   getChromaQpOffsetListEnabledFlag() const                         { return getChromaQpOffsetListLen()>0;            }
-  int                    getChromaQpOffsetListLen() const                                 { return m_chromaQpOffsetListLen;                 }
-
-  const ChromaQpAdj&     getChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1 ) const
-  {
-    CHECK(cuChromaQpOffsetIdxPlus1 >= m_chromaQpOffsetListLen+1, "Invalid chroma QP offset");
-    return m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1]; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
-  }
-
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset, int jointCbCrOffset )
-#else
-  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset )
-#endif
-  {
-    CHECK(cuChromaQpOffsetIdxPlus1 == 0 || cuChromaQpOffsetIdxPlus1 > MAX_QP_OFFSET_LIST_SIZE, "Invalid chroma QP offset");
-    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CbOffset = cbOffset; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
-    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CrOffset = crOffset;
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.JointCbCrOffset = jointCbCrOffset;
-#endif
-    m_chromaQpOffsetListLen = std::max(m_chromaQpOffsetListLen, cuChromaQpOffsetIdxPlus1);
-  }
 
   // Now: getPpsRangeExtension().getLog2SaoOffsetScale and getPpsRangeExtension().setLog2SaoOffsetScale
   uint32_t                   getLog2SaoOffsetScale(ChannelType type) const                    { return m_log2SaoOffsetScale[type];             }
@@ -1278,6 +1243,11 @@ private:
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
   int              m_chromaCbCrQpOffset;
+
+  // Chroma QP Adjustments
+  int              m_cuChromaQpOffsetSubdiv;
+  int              m_chromaQpOffsetListLen; // size (excludes the null entry used in the following array).
+  ChromaQpAdj      m_ChromaQpAdjTableIncludingNullEntry[1+MAX_QP_OFFSET_LIST_SIZE]; //!< Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
 
   uint32_t             m_numRefIdxL0DefaultActive;
   uint32_t             m_numRefIdxL1DefaultActive;
@@ -1413,6 +1383,34 @@ public:
   int                    getQpOffset(ComponentID compID) const
   {
     return (compID==COMPONENT_Y) ? 0 : (compID==COMPONENT_Cb ? m_chromaCbQpOffset : compID==COMPONENT_Cr ? m_chromaCrQpOffset : m_chromaCbCrQpOffset );
+  }
+
+  uint32_t               getCuChromaQpOffsetSubdiv () const                               { return m_cuChromaQpOffsetSubdiv;                }
+  void                   setCuChromaQpOffsetSubdiv ( uint32_t u )                         { m_cuChromaQpOffsetSubdiv = u;                   }
+
+  bool                   getCuChromaQpOffsetEnabledFlag() const                           { return getChromaQpOffsetListLen()>0;            }
+  int                    getChromaQpOffsetListLen() const                                 { return m_chromaQpOffsetListLen;                 }
+  void                   clearChromaQpOffsetList()                                        { m_chromaQpOffsetListLen = 0;                    }
+
+  const ChromaQpAdj&     getChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1 ) const
+  {
+    CHECK(cuChromaQpOffsetIdxPlus1 >= m_chromaQpOffsetListLen+1, "Invalid chroma QP offset");
+    return m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1]; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
+  }
+
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset, int jointCbCrOffset )
+#else
+  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset )
+#endif
+  {
+    CHECK(cuChromaQpOffsetIdxPlus1 == 0 || cuChromaQpOffsetIdxPlus1 > MAX_QP_OFFSET_LIST_SIZE, "Invalid chroma QP offset");
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CbOffset = cbOffset; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CrOffset = crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.JointCbCrOffset = jointCbCrOffset;
+#endif
+    m_chromaQpOffsetListLen = std::max(m_chromaQpOffsetListLen, cuChromaQpOffsetIdxPlus1);
   }
 
   void                   setNumRefIdxL0DefaultActive(uint32_t ui)                             { m_numRefIdxL0DefaultActive=ui;                }

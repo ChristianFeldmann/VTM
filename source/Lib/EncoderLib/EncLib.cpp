@@ -1390,19 +1390,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   if ( m_cuChromaQpOffsetSubdiv >= 0 )
   {
-    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
-    pps.getPpsRangeExtension().clearChromaQpOffsetList();
+    pps.setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
+    pps.clearChromaQpOffsetList();
 #if JVET_O1168_CU_CHROMA_QP_OFFSET
-    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6, 6);
+    pps.setChromaQpOffsetListEntry(1, 6, 6, 6);
 #else
-    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
+    pps.setChromaQpOffsetListEntry(1, 6, 6);
 #endif
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
   {
-    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(0);
-    pps.getPpsRangeExtension().clearChromaQpOffsetList();
+    pps.setCuChromaQpOffsetSubdiv(0);
+    pps.clearChromaQpOffsetList();
   }
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
   pps.getPpsRangeExtension().setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA,   m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA  ]);

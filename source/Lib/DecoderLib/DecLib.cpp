@@ -1562,11 +1562,15 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   if (pcSlice->getSPS()->getUseReshaper())
   {
+#if JVET_O0428_LMCS_CLEANUP
+    if (m_bFirstSliceInPicture)
+      m_sliceLmcsApsId = -1;
+#endif
     if (pcSlice->getLmcsEnabledFlag())
     {
       APS* lmcsAPS = pcSlice->getLmcsAPS();
 #if JVET_O0428_LMCS_CLEANUP
-      if (m_bFirstSliceInPicture)
+      if (m_sliceLmcsApsId == -1)
       {
         m_sliceLmcsApsId = lmcsAPS->getAPSId();
       }

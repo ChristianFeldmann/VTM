@@ -216,6 +216,12 @@ void Slice::initSlice()
   m_jointCbCrSignFlag    = false;
 #endif
   m_enableTMVPFlag       = true;
+#if JVET_N0494_DRAP
+  m_bEnableDRAPSEI       = false;
+  m_bUseLTforDRAP        = false;
+  m_bIsDRAP              = false;
+  m_iLatestDRAPPOC       = MAX_INT;
+#endif
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   resetTileGroupAlfEnabledFlag();
 #endif
@@ -1094,6 +1100,97 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
   return 0;
 }
 
+#if JVET_N0494_DRAP
+bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int iPOC )
+{
+  for (int i = 0; i < rpl->getNumberOfLongtermPictures() + rpl->getNumberOfShorttermPictures(); i++)
+  {
+    if (rpl->isRefPicLongterm(i))
+    {
+      if (iPOC == rpl->getRefPicIdentifier(i))
+      {
+        return true;
+      }
+    }
+    else
+    {
+      if (iPOC == getPOC() - rpl->getRefPicIdentifier(i))
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )  
+{ 
+  if ( !getEnableDRAPSEI() )
+    return false;
+  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) || 
+         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) ); 
+}
+
+void Slice::checkConformanceForDRAP( uint32_t temporalId )
+{
+  if (!(isDRAP() || cvsHasPreviousDRAP()))
+    return;
+ 
+  if (isDRAP())
+  {    
+    if (!(getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_TRAIL ||
+          getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_STSA))
+    {
+      msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture should be a trailing picture.\n");
+    }
+    if ( temporalId != 0)
+    {
+      msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall have a temporal sublayer identifier equal to 0.\n");
+    }
+    for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
+    {
+      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC()) 
+      {
+        msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
+                      "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
+      }
+    }
+    for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_1); i++)
+    {
+      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC()) 
+      {
+        msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
+                      "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
+      }
+    }
+  }
+
+  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC()) 
+  {
+    for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
+    {
+      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() < getLatestDRAPPOC() && getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC())
+      {
+        msg( WARNING, "Warning, non-conforming bitstream. Any picture that follows the DRAP picture in both decoding order "
+                    "and output order shall not include, in the active entries of its reference picture lists, any picture "
+                    "that precedes the DRAP picture in decoding order or output order, with the exception of the preceding "
+                    "IRAP picture in decoding order. Problem is POC %d in RPL0.\n", getRefPic(REF_PIC_LIST_0,i)->getPOC());
+      }
+    }
+    for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_1); i++)
+    {
+      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() < getLatestDRAPPOC() && getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC())
+      {
+        msg( WARNING, "Warning, non-conforming bitstream. Any picture that follows the DRAP picture in both decoding order "
+                    "and output order shall not include, in the active entries of its reference picture lists, any picture "
+                    "that precedes the DRAP picture in decoding order or output order, with the exception of the preceding "
+                    "IRAP picture in decoding order. Problem is POC %d in RPL1", getRefPic(REF_PIC_LIST_1,i)->getPOC());
+      }
+    }
+  }
+}
+#endif
+
 void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1)
 {
   Picture* rpcPic;
@@ -1117,12 +1214,20 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while (iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
+#if JVET_N0494_DRAP 
+      if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
+#else
       if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii))
+#endif
       {
         isAvailable = true;
         break;
       }
+#if JVET_N0494_DRAP
+      else if (pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL0->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
+#else
       else if (pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL0->getRefPicIdentifier(ii))
+#endif
       {
         isAvailable = true;
         break;
@@ -1137,6 +1242,31 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       isAvailable = false;
     }
   }
+
+#if JVET_N0494_DRAP
+  if (getEnableDRAPSEI())
+  {
+    pLocalRPL0->setNumberOfShorttermPictures(numOfSTRPL0);
+    pLocalRPL0->setNumberOfLongtermPictures(numOfLTRPL0);
+    if (!isIRAP() && !isPOCInRefPicList(pLocalRPL0, getAssociatedIRAPPOC()))
+    {
+      if (getUseLTforDRAP() && !isPOCInRefPicList(pRPL1, getAssociatedIRAPPOC()))
+      {
+        // Adding associated IRAP as longterm picture
+        pLocalRPL0->setRefPicIdentifier(refPicIdxL0, getAssociatedIRAPPOC(), true);
+        refPicIdxL0++;
+        numOfLTRPL0++;
+      }
+      else
+      {
+        // Adding associated IRAP as shortterm picture
+        pLocalRPL0->setRefPicIdentifier(refPicIdxL0, this->getPOC() - getAssociatedIRAPPOC(), false);
+        refPicIdxL0++;
+        numOfSTRPL0++;
+      }
+    }
+  }
+#endif
 
   ReferencePictureList* pLocalRPL1 = this->getLocalRPL1();
   (*pLocalRPL1) = ReferencePictureList();
@@ -1154,12 +1284,20 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while (iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
+#if JVET_N0494_DRAP
+      if (!pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL1->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
+#else
       if (!pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL1->getRefPicIdentifier(ii))
+#endif
       {
         isAvailable = true;
         break;
       }
+#if JVET_N0494_DRAP
+      else if (pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL1->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
+#else
       else if (pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL1->getRefPicIdentifier(ii))
+#endif
       {
         isAvailable = true;
         break;
@@ -1234,9 +1372,13 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       {
         pLocalRPL1->setRefPicIdentifier(refPicIdxL1, pLocalRPL0->getRefPicIdentifier(ii), pLocalRPL0->isRefPicLongterm(ii));
         refPicIdxL1++;
+#if JVET_N0494_DRAP
+        numOfSTRPL1 = numOfSTRPL1 + ((pLocalRPL0->isRefPicLongterm(ii)) ? 0 : 1);
+        numOfLTRPL1 = numOfLTRPL1 + ((pLocalRPL0->isRefPicLongterm(ii)) ? 1 : 0);
+#else
         numOfSTRPL1 = numOfSTRPL1 + ((pRPL0->isRefPicLongterm(ii)) ? 0 : 1);
         numOfLTRPL1 = numOfLTRPL1 + ((pRPL0->isRefPicLongterm(ii)) ? 1 : 0);
-
+#endif
         numOfNeedToFill--;
       }
     }

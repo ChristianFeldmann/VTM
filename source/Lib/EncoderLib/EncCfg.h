@@ -258,6 +258,9 @@ protected:
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
+#if JVET_N0494_DRAP
+  int       m_iDrapPeriod;
+#endif
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
@@ -520,6 +523,9 @@ protected:
   bool      m_pictureTimingSEIEnabled;
 #if JVET_O0041_FRAME_FIELD_SEI
   bool      m_frameFieldInfoSEIEnabled;
+#endif
+#if JVET_N0494_DRAP
+  bool      m_dependentRAPIndicationSEIEnabled;
 #endif
 #if HEVC_SEI
   bool      m_recoveryPointSEIEnabled;
@@ -868,6 +874,9 @@ public:
   void      setEncodedFlag(uint32_t  i, bool value) { m_RPLList0[i].m_isEncoded = value; m_RPLList1[i].m_isEncoded = value; }
   void      setMaxDecPicBuffering           ( uint32_t u, uint32_t tlayer ) { m_maxDecPicBuffering[tlayer] = u;    }
   void      setNumReorderPics               ( int  i, uint32_t tlayer ) { m_numReorderPics[tlayer] = i;    }
+#if JVET_N0494_DRAP
+  void      setDrapPeriod                   (int iDrapPeriod) { m_iDrapPeriod = iDrapPeriod; }
+#endif
 
   void      setBaseQP                       ( int   i )      { m_iQP = i; }
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
@@ -1165,6 +1174,9 @@ public:
   int       getGOPSize                      () const     { return  m_iGOPSize; }
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }
   int       getNumReorderPics               (uint32_t tlayer) { return m_numReorderPics[tlayer]; }
+#if JVET_N0494_DRAP
+  int       getDrapPeriod                   ()     { return m_iDrapPeriod; }
+#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }
   int       getLambdaFromQPEnable           () const    { return  m_lambdaFromQPEnable; }
@@ -1385,6 +1397,10 @@ public:
 #if JVET_O0041_FRAME_FIELD_SEI
   void  setFrameFieldInfoSEIEnabled(bool b)                           { m_frameFieldInfoSEIEnabled = b; }
   bool  getFrameFieldInfoSEIEnabled() const                           { return m_frameFieldInfoSEIEnabled; }
+#endif
+#if JVET_N0494_DRAP
+  void  setDependentRAPIndicationSEIEnabled(bool b)                  { m_dependentRAPIndicationSEIEnabled = b; }
+  int   getDependentRAPIndicationSEIEnabled() const                  { return m_dependentRAPIndicationSEIEnabled; }
 #endif
 #if HEVC_SEI
   void  setRecoveryPointSEIEnabled(bool b)                           { m_recoveryPointSEIEnabled = b; }

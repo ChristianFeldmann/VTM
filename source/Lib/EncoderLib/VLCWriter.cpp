@@ -176,7 +176,11 @@ void HLSWriter::xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTerm
   bool firstSTRP = true;
   for (int ii = 0; ii < numRefPic; ii++)
   {
+#if JVET_N0494_DRAP
+    if (isLongTermPresent)
+#else
     if (rpl->getNumberOfLongtermPictures() > 0)
+#endif
       WRITE_FLAG(!rpl->isRefPicLongterm(ii), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]");
     if (!rpl->isRefPicLongterm(ii))
     {

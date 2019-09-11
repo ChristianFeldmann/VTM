@@ -1017,6 +1017,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("IntraPeriod,-ip",                                 m_iIntraPeriod,                                      -1, "Intra period in frames, (-1: only first frame)")
   ("DecodingRefreshType,-dr",                         m_iDecodingRefreshType,                               0, "Intra refresh type (0:none 1:CRA 2:IDR 3:RecPointSEI)")
   ("GOPSize,g",                                       m_iGOPSize,                                           1, "GOP size of temporal structure")
+#if JVET_N0494_DRAP
+  ("DRAPPeriod",                                      m_iDrapPeriod,                                        0, "DRAP period in frames (0: disable Dependent RAP indication SEI messages)")
+#endif
   ("ReWriteParamSets",                                m_rewriteParamSets,                           false, "Enable rewriting of Parameter sets before every (intra) random access point")
   //Alias with same name as in HM
   ("ReWriteParamSetsFlag",                            m_rewriteParamSets,                           false, "Alias for ReWriteParamSets")
@@ -2579,6 +2582,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_iGOPSize < 1 ,                                                            "GOP Size must be greater or equal to 1" );
   xConfirmPara( m_iGOPSize > 1 &&  m_iGOPSize % 2,                                          "GOP Size must be a multiple of 2, if GOP Size is greater than 1" );
   xConfirmPara( (m_iIntraPeriod > 0 && m_iIntraPeriod < m_iGOPSize) || m_iIntraPeriod == 0, "Intra period must be more than GOP size, or -1 , not 0" );
+#if JVET_N0494_DRAP
+  xConfirmPara( m_iDrapPeriod < 0,                                                          "DRAP period must be greater or equal to 0" ); 
+#endif
   xConfirmPara( m_iDecodingRefreshType < 0 || m_iDecodingRefreshType > 3,                   "Decoding Refresh Type must be comprised between 0 and 3 included" );
 #if HEVC_SEI
   if(m_iDecodingRefreshType == 3)
@@ -3346,6 +3352,10 @@ bool EncAppCfg::xCheckParameter()
     THROW("Invalid value for PPSorSliceMode");
   }
 #endif
+#if JVET_N0494_DRAP
+  xConfirmPara(m_iDrapPeriod > 0 && m_PPSRefPicListSPSIdc0 > 0, "PPSRefPicListSPSIdc0 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
+  xConfirmPara(m_iDrapPeriod > 0 && m_PPSRefPicListSPSIdc1 > 0, "PPSRefPicListSPSIdc1 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
+#endif
 
 #if HEVC_SEI
   if (m_toneMappingInfoSEIEnabled)
@@ -3534,6 +3544,9 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );
   msg( DETAILS, "Decoding refresh type                  : %d\n", m_iDecodingRefreshType );
+#if JVET_N0494_DRAP 
+  msg( DETAILS, "DRAP period                            : %d\n", m_iDrapPeriod );
+#endif
 #if QP_SWITCHING_FOR_PARALLEL
   if (m_qpIncrementAtSourceFrame.bPresent)
   {

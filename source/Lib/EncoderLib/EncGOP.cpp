@@ -88,6 +88,9 @@ EncGOP::EncGOP()
   m_iNumPicCoded        = 0; //Niko
   m_bFirst              = true;
   m_iLastRecoveryPicPOC = 0;
+#if JVET_N0494_DRAP
+  m_iLatestDRAPPOC      = MAX_INT;
+#endif
   m_lastRasPoc          = MAX_INT;
 
   m_pcCfg               = NULL;
@@ -715,6 +718,15 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     }
 #endif
   }
+
+#if JVET_N0494_DRAP
+  if (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && slice->isDRAP())
+  {
+    SEIDependentRAPIndication *dependentRAPIndicationSEI = new SEIDependentRAPIndication();
+    m_seiEncoder.initSEIDependentRAPIndication(dependentRAPIndicationSEI);
+    seiMessages.push_back(dependentRAPIndicationSEI);
+  }
+#endif
 
 #if HEVC_SEI
   if (picInGOP ==0 && m_pcCfg->getSOPDescriptionSEIEnabled() ) // write SOP description SEI (if enabled) at the beginning of GOP
@@ -2039,7 +2051,50 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
     }
 
+#if JVET_N0494_DRAP
+    pcSlice->setEnableDRAPSEI(m_pcEncLib->getDependentRAPIndicationSEIEnabled());
+    if (m_pcEncLib->getDependentRAPIndicationSEIEnabled()) 
+    {
+      // Only mark the picture as DRAP if all of the following applies:
+      //  1) DRAP indication SEI messages are enabled
+      //  2) The current picture is not an intra picture
+      //  3) The current picture is in the DRAP period
+      //  4) The current picture is a trailing picture
+      pcSlice->setDRAP(m_pcEncLib->getDependentRAPIndicationSEIEnabled() && m_pcEncLib->getDrapPeriod() > 0 && !pcSlice->isIntra() && 
+              pocCurr % m_pcEncLib->getDrapPeriod() == 0 && pocCurr > pcSlice->getAssociatedIRAPPOC()); 
+      
+      if (pcSlice->isDRAP())
+      {
+        int pocCycle = 1 << (pcSlice->getSPS()->getBitsForPOC());
+        int deltaPOC = pocCurr > pcSlice->getAssociatedIRAPPOC() ? pocCurr - pcSlice->getAssociatedIRAPPOC() : pocCurr - ( pcSlice->getAssociatedIRAPPOC() & (pocCycle -1) ); 
+        CHECK(deltaPOC > (pocCycle >> 1), "Use a greater value for POC wraparound to enable a POC distance between IRAP and DRAP of " << deltaPOC << ".");
+        m_iLatestDRAPPOC = pocCurr;
+        pcSlice->setTLayer(0); // Force DRAP picture to have temporal layer 0
+      }
+      pcSlice->setLatestDRAPPOC(m_iLatestDRAPPOC);
+      pcSlice->setUseLTforDRAP(false); // When set, sets the associated IRAP as long-term in RPL0 at slice level, unless the associated IRAP is already included in RPL0 or RPL1 defined in SPS
+
+      PicList::iterator iterPic = rcListPic.begin();
+      Picture *rpcPic;
+      while (iterPic != rcListPic.end())
+      {
+        rpcPic = *(iterPic++);
+        if ( pcSlice->isDRAP() && rpcPic->getPOC() != pocCurr )
+        {
+            rpcPic->precedingDRAP = true;
+        }
+        else if ( !pcSlice->isDRAP() && rpcPic->getPOC() == pocCurr )
+        {
+          rpcPic->precedingDRAP = false;
+        }
+      }
+    }
+
+    if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0 || 
+        (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && !pcSlice->isIRAP() && ( pcSlice->isDRAP() || !pcSlice->isPOCInRefPicList(pcSlice->getRPL0(), pcSlice->getAssociatedIRAPPOC())) ))
+#else
     if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0)
+#endif
     {
       pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
     }
@@ -3910,6 +3965,9 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   {
     c += 32;
   }
+#if JVET_N0494_DRAP
+  if (m_pcCfg->getDependentRAPIndicationSEIEnabled() && pcSlice->isDRAP()) c = 'D';
+#endif
 
   if( g_verbosity >= NOTICE )
   {

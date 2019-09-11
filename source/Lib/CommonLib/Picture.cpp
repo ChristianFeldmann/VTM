@@ -738,6 +738,9 @@ Picture::Picture()
   layer                = std::numeric_limits<uint32_t>::max();
   fieldPic             = false;
   topField             = false;
+#if JVET_N0494_DRAP
+  precedingDRAP        = false; 
+#endif
   for( int i = 0; i < MAX_NUM_CHANNEL_TYPE; i++ )
   {
     m_prevQP[i] = -1;

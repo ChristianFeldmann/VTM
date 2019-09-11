@@ -87,6 +87,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIFrameFieldInfo(*static_cast<const SEIFrameFieldInfo*>(&sei));
     break;
 #endif
+#if JVET_N0494_DRAP
+  case SEI::DEPENDENT_RAP_INDICATION:
+    xWriteSEIDependentRAPIndication(*static_cast<const SEIDependentRAPIndication*>(&sei));
+    break;
+#endif
 #if HEVC_SEI
   case SEI::RECOVERY_POINT:
     xWriteSEIRecoveryPoint(*static_cast<const SEIRecoveryPoint*>(&sei));
@@ -458,6 +463,12 @@ void SEIWriter::xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei)
 }
 #endif
 
+#if JVET_N0494_DRAP
+void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& /*sei*/)
+{
+  // intentionally empty
+}
+#endif
 
 #if HEVC_SEI
 void SEIWriter::xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei)

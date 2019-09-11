@@ -113,7 +113,7 @@ void VLCReader::xReadCode (uint32_t uiLength, uint32_t& ruiCode, const char *pSy
 void VLCReader::xReadCode (uint32_t uiLength, uint32_t& ruiCode)
 #endif
 {
-  CHECK( uiLength == 0, "Reading a code of lenght '0'" );
+  CHECK( uiLength == 0, "Reading a code of length '0'" );
   m_pcBitstream->read (uiLength, ruiCode);
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatistics::IncrementStatisticEP(pSymbolName, uiLength, ruiCode);
@@ -520,7 +520,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
 #endif
     }
-    CHECK(pcPPS->getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list lenght");
+    CHECK(pcPPS->getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list length");
   }
 
   READ_FLAG( uiCode, "weighted_pred_flag" );          // Use of Weighting Prediction (P_SLICE)

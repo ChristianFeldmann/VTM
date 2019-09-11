@@ -887,8 +887,10 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
       if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
       {
         numLeadingPicsFound++;
-        int limitNonLP = (pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag()) ? 1 : 0;
-        CHECK(numLeadingPicsFound > limitNonLP, "Invalid POC");
+        int limitNonLP = 0;
+        if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
+          limitNonLP = 1;
+        CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
       }
     }
 #else

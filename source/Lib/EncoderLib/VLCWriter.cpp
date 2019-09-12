@@ -878,7 +878,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getIDRRefParamListPresent(),                 "sps_idr_rpl_present_flag" );
   // KJS: Marakech decision: sub-layers added back
   const bool subLayerOrderingInfoPresentFlag = 1;
+#if JVET_O0178_PROPOSAL2
+  if (pcSPS->getMaxTLayers() > 1)
+  {
+    WRITE_FLAG(subLayerOrderingInfoPresentFlag,       "sps_sub_layer_ordering_info_present_flag");
+  }
+#else
   WRITE_FLAG(subLayerOrderingInfoPresentFlag,       "sps_sub_layer_ordering_info_present_flag");
+#endif
   for(uint32_t i=0; i <= pcSPS->getMaxTLayers()-1; i++)
   {
     WRITE_UVLC( pcSPS->getMaxDecPicBuffering(i) - 1,       "sps_max_dec_pic_buffering_minus1[i]" );

@@ -887,9 +887,9 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const
 const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
 #if JVET_O0299_APS_SCALINGLIST
-void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps, APS& scalingListAps )
+void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
 #else
-void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps)
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps)
 #endif
 {
   for( auto &sei : SEIs )
@@ -930,9 +930,9 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
-  cs->lmcsAps = &lmcsAps;
+  cs->lmcsAps = lmcsAps;
 #if JVET_O0299_APS_SCALINGLIST  
-  cs->scalinglistAps = &scalingListAps;
+  cs->scalinglistAps = scalingListAps;
 #endif
 
   cs->pcv     = pps.pcv;

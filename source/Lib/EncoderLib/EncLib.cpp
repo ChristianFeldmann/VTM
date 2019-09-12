@@ -484,9 +484,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
     picBg->getRecoBuf().fill(0);
 #if JVET_O0299_APS_SCALINGLIST
-    picBg->finalInit( sps0, pps0, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+    picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-    picBg->finalInit(sps0, pps0, m_apss, *m_lmcsAPS);
+    picBg->finalInit(sps0, pps0, m_apss, m_lmcsAPS);
 #endif
     pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
     picBg->allocateNewSlice();
@@ -675,9 +675,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
 #if JVET_O0299_APS_SCALINGLIST
-    picCurr->finalInit( *sps, *pps, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+    picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-    picCurr->finalInit(*sps, *pps, m_apss, *m_lmcsAPS);
+    picCurr->finalInit(*sps, *pps, m_apss, m_lmcsAPS);
 #endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
@@ -775,9 +775,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 #endif
 
 #if JVET_O0299_APS_SCALINGLIST
-      pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+      pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, m_lmcsAPS);
 #endif
       PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
@@ -878,9 +878,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 #if JVET_O0299_APS_SCALINGLIST
-        pcField->finalInit( *pSPS, *pPPS, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+        pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-        pcField->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+        pcField->finalInit(*pSPS, *pPPS, m_apss, m_lmcsAPS);
 #endif
       }
 

@@ -238,9 +238,9 @@ struct Picture : public UnitArea
 
   void extendPicBorder();
 #if JVET_O0299_APS_SCALINGLIST
-  void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps, APS& scalingListAps );
+  void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 #else
-  void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps);
+  void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps);
 #endif
 
   int  getPOC()                               const { return poc; }

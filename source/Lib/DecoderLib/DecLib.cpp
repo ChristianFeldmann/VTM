@@ -877,9 +877,9 @@ void DecLib::xActivateParameterSets()
 
     m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
 #if JVET_O0299_APS_SCALINGLIST
-    m_pcPic->finalInit( *sps, *pps, apss, *lmcsAPS, *scalinglistAPS );
+    m_pcPic->finalInit( *sps, *pps, apss, lmcsAPS, scalinglistAPS );
 #else
-    m_pcPic->finalInit(*sps, *pps, apss, *lmcsAPS);
+    m_pcPic->finalInit(*sps, *pps, apss, lmcsAPS);
 #endif
     m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
@@ -1375,9 +1375,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), true );
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), true );
 #else
-  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), true );
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), pcSlice->getLmcsAPS(), true );
 #endif
 #endif
 

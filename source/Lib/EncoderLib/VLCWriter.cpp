@@ -101,7 +101,7 @@ bool g_HLSTraceEnable = true;
 
 void VLCWriter::xWriteCode     ( uint32_t uiCode, uint32_t uiLength )
 {
-  CHECK( uiLength == 0, "Code of lenght '0' not supported" );
+  CHECK( uiLength == 0, "Code of length '0' not supported" );
   m_pcBitIf->write( uiCode, uiLength );
 }
 
@@ -2014,7 +2014,7 @@ void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
   while (maxOffset >= (1u << (offsetLenMinus1 + 1)))
   {
     offsetLenMinus1++;
-    CHECK(offsetLenMinus1 + 1 >= 32, "Invalid offset lenght minus 1");
+    CHECK(offsetLenMinus1 + 1 >= 32, "Invalid offset length minus 1");
   }
 
   WRITE_UVLC(pSlice->getNumberOfSubstreamSizes(), "num_entry_point_offsets");

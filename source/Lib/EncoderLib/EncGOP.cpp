@@ -2124,9 +2124,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcSlice->constructRefPicList(rcListPic);
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), false );
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
 #else
-    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), false );
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), false );
 #endif
 #endif
 

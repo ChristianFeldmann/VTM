@@ -2096,7 +2096,7 @@ public:
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-  void                        scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS& lmcsAps, APS& scalingListAps, const bool isDecoder );
+  void                        scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
 #else
   void                        scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder );
 #endif

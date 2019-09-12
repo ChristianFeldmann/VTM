@@ -2339,9 +2339,9 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
 
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS& lmcsAps, APS& scalingListAps, const bool isDecoder )
+void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder )
 #else
-void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder )
+void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, const bool isDecoder )
 #endif
 {
   int i;

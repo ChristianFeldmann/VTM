@@ -284,7 +284,7 @@
 #define JVET_N0865_NONSYNTAX                              1 // JVET_N0865 other than syntax parts
 #define JVET_N0865_GRA2GDR                                1 // Changing the name of GRA to GDR
 
-#define JVET_O0178_PROPOSAL2                              1 // JVET_O0178 Proposal2 - conditionally signal sps_sub_layer_ordering_info_present_flag
+#define JVET_O0178                                        1 // JVET_O0178 - conditionally signal sps_sub_layer_ordering_info_present_flag
 
 #define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
 

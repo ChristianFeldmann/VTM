@@ -142,16 +142,16 @@ void readNalUnitHeader(InputNALUnit& nalu)
   // When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
   CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
   uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
-  nalu.m_nalUnitType = (NalUnitType)((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
-  nalu.m_nuhLayerId = bs.read(7);                    // nuh_layer_id
-#if EMULATION_PREVENTION_FIX
+  nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
+  nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id
+ #if EMULATION_PREVENTION_FIX
   CHECK (nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
   nalu.m_nuhLayerId--;
   CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
 #else
   CHECK(nalu.m_nuhLayerId > 126, "Layer ID out of range");
 #endif
-  uint32_t nuh_reserved_zero_bit = bs.read(1);       // nuh_reserved_zero_bit
+  uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
   CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
 #endif
 

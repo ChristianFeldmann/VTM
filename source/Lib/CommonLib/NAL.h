@@ -60,8 +60,8 @@ struct NALUnit
   ,m_temporalId  (src.m_temporalId)
   ,m_nuhLayerId  (src.m_nuhLayerId)
 #if JVET_O0179
-    , m_forbiddenZeroBit(src.m_forbiddenZeroBit)
-    , m_nuhReservedZeroBit(src.m_nuhReservedZeroBit)
+  , m_forbiddenZeroBit(src.m_forbiddenZeroBit)
+  , m_nuhReservedZeroBit(src.m_nuhReservedZeroBit)
 #endif
   { }
   /** construct an NALunit structure with given header values. */

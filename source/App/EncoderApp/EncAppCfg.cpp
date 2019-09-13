@@ -2605,6 +2605,15 @@ bool EncAppCfg::xCheckParameter()
     }
 #endif
   }
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  if ( m_pictureTimingSEIEnabled && (!m_bufferingPeriodSEIEnabled))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: Picture Timing SEI requires Buffering Period SEI. Disabling.  **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_pictureTimingSEIEnabled = false;
+  }
+#endif
 
   if(m_crossComponentPredictionEnabledFlag && (m_chromaFormatIDC != CHROMA_444))
   {

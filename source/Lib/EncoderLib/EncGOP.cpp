@@ -808,6 +808,15 @@ void EncGOP::xCreateFrameFieldInfoSEI  (SEIMessages& seiMessages, Slice *slice, 
 
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  // Picture timing depends on buffering period. When either of those is not disabled,
+  // initialization would fail. Needs more cleanup after DU timing is integrated.
+  if (!(m_pcCfg->getPictureTimingSEIEnabled() && m_pcCfg->getBufferingPeriodSEIEnabled()))
+  {
+    return;
+  }
+#endif
+
   const HRDParameters *hrd = slice->getSPS()->getHrdParameters();
 
   // update decoding unit parameters

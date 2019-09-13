@@ -130,14 +130,21 @@ void readNalUnitHeader(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-  bool zeroTidRequiredFlag = bs.read(1);              // zero_tid_required_flag
-  nalu.m_temporalId = bs.read(3) - 1;                 // nuh_temporal_id_plus1
-  //When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
+#if JVET_O0179
+  nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
+  nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
+  nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
+  nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
+  nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
+#else
+  bool zeroTidRequiredFlag = bs.read(1);       // zero_tid_required_flag
+  nalu.m_temporalId        = bs.read(3) - 1;   // nuh_temporal_id_plus1
+  // When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
   CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
   uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
   nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
   nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id
-#if EMULATION_PREVENTION_FIX
+ #if EMULATION_PREVENTION_FIX
   CHECK (nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
   nalu.m_nuhLayerId--;
   CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
@@ -146,6 +153,7 @@ void readNalUnitHeader(InputNALUnit& nalu)
 #endif
   uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
   CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
+#endif
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatistics::IncrementStatisticEP(STATS__NAL_UNIT_HEADER_BITS, 1+3+4+7+1, 0);
@@ -160,10 +168,12 @@ void readNalUnitHeader(InputNALUnit& nalu)
   {
     if ( nalu.m_temporalId )
     {
+#if !JVET_O0179
       CHECK(
            (uint32_t)nalu.m_nalUnitType >= 16
         && (uint32_t)nalu.m_nalUnitType <= 31
             , "Invalid NAL type" );
+#endif
     }
     else
     {

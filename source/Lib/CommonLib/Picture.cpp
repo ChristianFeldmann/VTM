@@ -739,7 +739,7 @@ Picture::Picture()
   fieldPic             = false;
   topField             = false;
 #if JVET_N0494_DRAP
-  precedingDRAP        = false; 
+  precedingDRAP        = false;
 #endif
   for( int i = 0; i < MAX_NUM_CHANNEL_TYPE; i++ )
   {

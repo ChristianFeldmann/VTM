@@ -272,7 +272,7 @@ public:
   bool fieldPic;
   int  m_prevQP[MAX_NUM_CHANNEL_TYPE];
 #if JVET_N0494_DRAP
-  int precedingDRAP; // preceding a DRAP picture in decoding order
+  bool precedingDRAP; // preceding a DRAP picture in decoding order
 #endif
 
   int  poc;

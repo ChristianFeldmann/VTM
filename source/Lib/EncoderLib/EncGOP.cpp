@@ -89,7 +89,7 @@ EncGOP::EncGOP()
   m_bFirst              = true;
   m_iLastRecoveryPicPOC = 0;
 #if JVET_N0494_DRAP
-  m_iLatestDRAPPOC      = MAX_INT;
+  m_latestDRAPPOC       = MAX_INT;
 #endif
   m_lastRasPoc          = MAX_INT;
 
@@ -2053,25 +2053,25 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
 #if JVET_N0494_DRAP
     pcSlice->setEnableDRAPSEI(m_pcEncLib->getDependentRAPIndicationSEIEnabled());
-    if (m_pcEncLib->getDependentRAPIndicationSEIEnabled()) 
+    if (m_pcEncLib->getDependentRAPIndicationSEIEnabled())
     {
       // Only mark the picture as DRAP if all of the following applies:
       //  1) DRAP indication SEI messages are enabled
       //  2) The current picture is not an intra picture
       //  3) The current picture is in the DRAP period
       //  4) The current picture is a trailing picture
-      pcSlice->setDRAP(m_pcEncLib->getDependentRAPIndicationSEIEnabled() && m_pcEncLib->getDrapPeriod() > 0 && !pcSlice->isIntra() && 
-              pocCurr % m_pcEncLib->getDrapPeriod() == 0 && pocCurr > pcSlice->getAssociatedIRAPPOC()); 
+      pcSlice->setDRAP(m_pcEncLib->getDependentRAPIndicationSEIEnabled() && m_pcEncLib->getDrapPeriod() > 0 && !pcSlice->isIntra() &&
+              pocCurr % m_pcEncLib->getDrapPeriod() == 0 && pocCurr > pcSlice->getAssociatedIRAPPOC());
       
       if (pcSlice->isDRAP())
       {
         int pocCycle = 1 << (pcSlice->getSPS()->getBitsForPOC());
         int deltaPOC = pocCurr > pcSlice->getAssociatedIRAPPOC() ? pocCurr - pcSlice->getAssociatedIRAPPOC() : pocCurr - ( pcSlice->getAssociatedIRAPPOC() & (pocCycle -1) ); 
         CHECK(deltaPOC > (pocCycle >> 1), "Use a greater value for POC wraparound to enable a POC distance between IRAP and DRAP of " << deltaPOC << ".");
-        m_iLatestDRAPPOC = pocCurr;
+        m_latestDRAPPOC = pocCurr;
         pcSlice->setTLayer(0); // Force DRAP picture to have temporal layer 0
       }
-      pcSlice->setLatestDRAPPOC(m_iLatestDRAPPOC);
+      pcSlice->setLatestDRAPPOC(m_latestDRAPPOC);
       pcSlice->setUseLTforDRAP(false); // When set, sets the associated IRAP as long-term in RPL0 at slice level, unless the associated IRAP is already included in RPL0 or RPL1 defined in SPS
 
       PicList::iterator iterPic = rcListPic.begin();

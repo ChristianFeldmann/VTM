@@ -217,10 +217,10 @@ void Slice::initSlice()
 #endif
   m_enableTMVPFlag       = true;
 #if JVET_N0494_DRAP
-  m_bEnableDRAPSEI       = false;
-  m_bUseLTforDRAP        = false;
-  m_bIsDRAP              = false;
-  m_iLatestDRAPPOC       = MAX_INT;
+  m_enableDRAPSEI        = false;
+  m_useLTforDRAP         = false;
+  m_isDRAP               = false;
+  m_latestDRAPPOC        = MAX_INT;
 #endif
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   resetTileGroupAlfEnabledFlag();
@@ -1101,20 +1101,20 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
 }
 
 #if JVET_N0494_DRAP
-bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int iPOC )
+bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
 {
   for (int i = 0; i < rpl->getNumberOfLongtermPictures() + rpl->getNumberOfShorttermPictures(); i++)
   {
     if (rpl->isRefPicLongterm(i))
     {
-      if (iPOC == rpl->getRefPicIdentifier(i))
+      if (poc == rpl->getRefPicIdentifier(i))
       {
         return true;
       }
     }
     else
     {
-      if (iPOC == getPOC() - rpl->getRefPicIdentifier(i))
+      if (poc == getPOC() - rpl->getRefPicIdentifier(i))
       {
         return true;
       }
@@ -1125,8 +1125,10 @@ bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int iPOC )
 
 bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )  
 { 
-  if ( !getEnableDRAPSEI() )
+  if (!getEnableDRAPSEI())
+  {
     return false;
+  }
   return ( isDRAP() && poc != getAssociatedIRAPPOC() ) || 
          ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) ); 
 }
@@ -1134,7 +1136,9 @@ bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )
 void Slice::checkConformanceForDRAP( uint32_t temporalId )
 {
   if (!(isDRAP() || cvsHasPreviousDRAP()))
+  {
     return;
+  }
  
   if (isDRAP())
   {    

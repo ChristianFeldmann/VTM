@@ -1644,10 +1644,10 @@ private:
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
 #if JVET_N0494_DRAP
-  bool                       m_bEnableDRAPSEI;
-  bool                       m_bUseLTforDRAP;
-  bool                       m_bIsDRAP;
-  int                        m_iLatestDRAPPOC;
+  bool                       m_enableDRAPSEI;
+  bool                       m_useLTforDRAP;
+  bool                       m_isDRAP;
+  int                        m_latestDRAPPOC;
 #endif
   const ReferencePictureList* m_pRPL0;                //< pointer to RPL for L0, either in the SPS or the local RPS in the same slice header
   const ReferencePictureList* m_pRPL1;                //< pointer to RPL for L1, either in the SPS or the local RPS in the same slice header
@@ -1913,17 +1913,17 @@ public:
   bool                        isInterP() const                                       { return m_eSliceType == P_SLICE;                               }
 
 #if JVET_N0494_DRAP
-  bool                        getEnableDRAPSEI () const                              { return m_bEnableDRAPSEI;                                      }
-  void                        setEnableDRAPSEI ( bool b )                            { m_bEnableDRAPSEI = b;                                         }
-  bool                        getUseLTforDRAP () const                               { return m_bUseLTforDRAP;                                       }
-  void                        setUseLTforDRAP ( bool b )                             { m_bUseLTforDRAP = b;                                          }
-  bool                        isDRAP () const                                        { return m_bIsDRAP;                                             }
-  void                        setDRAP ( bool b )                                     { m_bIsDRAP = b;                                                }
-  void                        setLatestDRAPPOC ( int i )                             { m_iLatestDRAPPOC = i;                                         }
-  int                         getLatestDRAPPOC () const                              { return m_iLatestDRAPPOC;                                      }
-  bool                        cvsHasPreviousDRAP() const                             { return m_iLatestDRAPPOC != MAX_INT;                           }
+  bool                        getEnableDRAPSEI () const                              { return m_enableDRAPSEI;                                       }
+  void                        setEnableDRAPSEI ( bool b )                            { m_enableDRAPSEI = b;                                          }
+  bool                        getUseLTforDRAP () const                               { return m_useLTforDRAP;                                        }
+  void                        setUseLTforDRAP ( bool b )                             { m_useLTforDRAP = b;                                           }
+  bool                        isDRAP () const                                        { return m_isDRAP;                                              }
+  void                        setDRAP ( bool b )                                     { m_isDRAP = b;                                                 }
+  void                        setLatestDRAPPOC ( int i )                             { m_latestDRAPPOC = i;                                          }
+  int                         getLatestDRAPPOC () const                              { return m_latestDRAPPOC;                                       }
+  bool                        cvsHasPreviousDRAP() const                             { return m_latestDRAPPOC != MAX_INT;                            }
   bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder ); 
-  bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int iPOC );
+  bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
   void                        checkConformanceForDRAP( uint32_t temporalId );
 #endif
 

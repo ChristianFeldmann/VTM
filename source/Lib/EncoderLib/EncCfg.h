@@ -259,7 +259,7 @@ protected:
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
 #if JVET_N0494_DRAP
-  int       m_iDrapPeriod;
+  int       m_drapPeriod;
 #endif
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
@@ -875,7 +875,7 @@ public:
   void      setMaxDecPicBuffering           ( uint32_t u, uint32_t tlayer ) { m_maxDecPicBuffering[tlayer] = u;    }
   void      setNumReorderPics               ( int  i, uint32_t tlayer ) { m_numReorderPics[tlayer] = i;    }
 #if JVET_N0494_DRAP
-  void      setDrapPeriod                   (int iDrapPeriod) { m_iDrapPeriod = iDrapPeriod; }
+  void      setDrapPeriod                   (int drapPeriod) { m_drapPeriod = drapPeriod; }
 #endif
 
   void      setBaseQP                       ( int   i )      { m_iQP = i; }
@@ -1175,7 +1175,7 @@ public:
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }
   int       getNumReorderPics               (uint32_t tlayer) { return m_numReorderPics[tlayer]; }
 #if JVET_N0494_DRAP
-  int       getDrapPeriod                   ()     { return m_iDrapPeriod; }
+  int       getDrapPeriod                   ()     { return m_drapPeriod; }
 #endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }

@@ -180,7 +180,7 @@ protected:
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
 #if JVET_N0494_DRAP
-  int       m_iDrapPeriod;                                    ///< period of dependent RAP pictures
+  int       m_drapPeriod;                                     ///< period of dependent RAP pictures
 #endif
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
   RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file

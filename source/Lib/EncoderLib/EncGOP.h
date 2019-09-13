@@ -130,7 +130,7 @@ private:
   bool                    m_bFirst;
   int                     m_iLastRecoveryPicPOC;
 #if JVET_N0494_DRAP
-  int                     m_iLatestDRAPPOC;
+  int                     m_latestDRAPPOC;
 #endif
   int                     m_lastRasPoc;
 

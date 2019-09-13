@@ -284,6 +284,8 @@
 #define JVET_N0865_NONSYNTAX                              1 // JVET_N0865 other than syntax parts
 #define JVET_N0865_GRA2GDR                                1 // Changing the name of GRA to GDR
 
+#define JVET_O0178                                        1 // JVET_O0178 - conditionally signal sps_sub_layer_ordering_info_present_flag
+
 #define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
 
 #define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text

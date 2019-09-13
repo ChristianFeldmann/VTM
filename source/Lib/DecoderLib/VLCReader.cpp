@@ -1286,7 +1286,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_idr_rpl_present_flag" ); pcSPS->setIDRRefParamListPresent( (bool) uiCode);
   // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
+#if JVET_O0178
+  if (pcSPS->getMaxTLayers() > 1)
+  {
+    READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
+  }
+  else
+  {
+    subLayerOrderingInfoPresentFlag = 0;
+  }
+#else
   READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
+#endif
 
   for(uint32_t i=0; i <= pcSPS->getMaxTLayers()-1; i++)
   {

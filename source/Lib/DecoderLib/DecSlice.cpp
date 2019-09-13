@@ -178,7 +178,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     }
     else if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
     {
-      // Synchronize cabac probabilities with upper-right CTU if it's available and at the start of a line.
+      // Synchronize cabac probabilities with top CTU if it's available and at the start of a line.
       if( ctuTsAddr != startCtuTsAddr ) // if it is the first CTU, then the entropy coder has already been reset
       {
         cabacReader.initCtxModels( *slice );
@@ -188,7 +188,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       }
       if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {
-        // Top-right is available, so use it.
+        // Top is available, so use it.
         cabacReader.getCtx() = m_entropyCodingSyncContextState;
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();

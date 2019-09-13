@@ -84,11 +84,9 @@ void read2(InputNALUnit& nalu)
   uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
   nalu.m_nalUnitType = (NalUnitType)((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
   nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id
-#if EMULATION_PREVENTION_FIX
   CHECK(nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
   nalu.m_nuhLayerId--;
   CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
-#endif
   CHECK((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126), "Layer ID out of range");
   uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
   CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
@@ -245,11 +243,7 @@ void StreamMergeApp::writeNewVPS(ostream& out, int nLayerId, int nTemporalId)
   bsNALUHeader.write(nTemporalId + 1, 3);                // nuh_temporal_id_plus1
   uint32_t nalUnitTypeLsb = NAL_UNIT_VPS - (1 << 4);
   bsNALUHeader.write(nalUnitTypeLsb, 4);   // nal_unit_type_lsb
-#if EMULATION_PREVENTION_FIX
   bsNALUHeader.write(nLayerId + 1, 7);     // nuh_layer_id
-#else
-  bsNALUHeader.write(nLayerId, 7);         // nuh_layer_id
-#endif
   bsNALUHeader.write(0, 1);                // nuh_reserved_zero_bit
 
   out.write(reinterpret_cast<const char*>(start_code_prefix), 4);
@@ -344,11 +338,7 @@ uint32_t StreamMergeApp::mergeStreams()
 
         //update the nul_layer_id
         uint8_t *p = (uint8_t*)nalu.getBitstream().getFifo().data();
-#if EMULATION_PREVENTION_FIX
         p[1] = ((layerId + 1) << 1) & 0xff;
-#else
-        p[1] = (layerId << 1) & 0xff;
-#endif
 
         bitstreamFileOut.write((const char*)p, nalu.getBitstream().getFifo().size());
 

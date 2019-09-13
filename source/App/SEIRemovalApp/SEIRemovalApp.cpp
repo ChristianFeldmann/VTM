@@ -72,6 +72,13 @@ void read2(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
+#if JVET_O0179
+  nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
+  nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
+  nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
+  nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
+  nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
+#else
   bool zeroTidRequiredFlag = bs.read(1);              // zero_tid_required_flag
   nalu.m_temporalId = bs.read(3) - 1;                 // nuh_temporal_id_plus1
   CHECK(nalu.m_temporalId < 0, "Temporal ID is negative.");
@@ -86,6 +93,7 @@ void read2(InputNALUnit& nalu)
   CHECK((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126), "Layer ID out of range");
   uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
   CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
+#endif
 }
 
 uint32_t SEIRemovalApp::decode()

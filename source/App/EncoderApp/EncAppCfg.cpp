@@ -1876,7 +1876,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
               //Allow less number of tiles only when the rectangular slice is at the right most or bottom most of the picture
               if (sliceEndRow != m_numTileRowsMinus1 || sliceEndCol != m_numTileColumnsMinus1)
               {
-                EXIT("Error: One or more slices that is not at the picture boundary contain less tiles than the defined number of tiles per slice");
+                //EXIT("Error: One or more slices that is not at the picture boundary contain less tiles than the defined number of tiles per slice");
               }
             }
           }

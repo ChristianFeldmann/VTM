@@ -973,9 +973,11 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   p->setPPS(cs->pps);
   p->setAlfAPSs(cs->alfApss);
 
-  p->setLmcsAPS(cs->lmcsAps);
+  if(cs->lmcsAps != nullptr)
+    p->setLmcsAPS(cs->lmcsAps);
 #if JVET_O0299_APS_SCALINGLIST
-  p->setscalingListAPS( cs->scalinglistAps );
+  if(cs->scalinglistAps != nullptr)
+    p->setscalingListAPS( cs->scalinglistAps );
 #endif
 
   Slice * pTmp = slices[i];

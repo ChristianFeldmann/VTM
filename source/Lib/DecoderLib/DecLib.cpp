@@ -770,6 +770,72 @@ void DecLib::xCreateLostPicture(int iLostPoc)
 
 }
 
+#if JVET_O0299_APS_SCALINGLIST
+void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
+#else
+void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS)
+#endif
+{
+  //luma APSs
+  for (int i = 0; i < pSlice->getTileGroupApsIdLuma().size(); i++)
+  {
+    int apsId = pSlice->getTileGroupApsIdLuma()[i];
+    APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
+
+    if (aps)
+    {
+      apss[apsId] = aps;
+      if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+    }
+  }
+
+  //chroma APS
+  int apsId = pSlice->getTileGroupApsIdChroma();
+  APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
+  if (aps)
+  {
+    apss[apsId] = aps;
+    if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+    {
+      THROW("APS activation failed!");
+    }
+  }
+
+  if (pSlice->getLmcsEnabledFlag() && lmcsAPS == nullptr)
+  {
+    lmcsAPS = parameterSetManager.getAPS(pSlice->getLmcsAPSId(), LMCS_APS);
+    CHECK(lmcsAPS == nullptr, "No LMCS APS present");
+    if (lmcsAPS)
+    {
+      parameterSetManager.clearAPSChangedFlag(pSlice->getLmcsAPSId(), LMCS_APS);
+      if (false == parameterSetManager.activateAPS(pSlice->getLmcsAPSId(), LMCS_APS))
+      {
+        THROW("LMCS APS activation failed!");
+      }
+    }
+  }
+  pSlice->setLmcsAPS(lmcsAPS);
+
+#if JVET_O0299_APS_SCALINGLIST
+  if( pSlice->getscalingListPresentFlag() && scalingListAPS == nullptr)
+  {
+    scalingListAPS = parameterSetManager.getAPS( pSlice->getscalingListAPSId(), SCALING_LIST_APS );
+    CHECK( scalingListAPS == nullptr, "No SCALING LIST APS present" );
+    if( scalingListAPS )
+    {
+      parameterSetManager.clearAPSChangedFlag( pSlice->getscalingListAPSId(), SCALING_LIST_APS );
+      if( false == parameterSetManager.activateAPS( pSlice->getscalingListAPSId(), SCALING_LIST_APS ) )
+      {
+        THROW( "SCALING LIST APS activation failed!" );
+      }
+    }
+  }
+  pSlice->setscalingListAPS(scalingListAPS);
+#endif
+}
 
 void DecLib::xActivateParameterSets()
 {
@@ -799,68 +865,24 @@ void DecLib::xActivateParameterSets()
       THROW("Parameter set activation failed!");
     }
     m_parameterSetManager.getApsMap()->clear();
-    //luma APSs
-    for (int i = 0; i < m_apcSlicePilot->getTileGroupApsIdLuma().size(); i++)
+#if JVET_O_MAX_NUM_ALF_APS_8
+    for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
+#else
+    for (int i = 0; i < MAX_NUM_APS; i++)
+#endif
     {
-      int apsId = m_apcSlicePilot->getTileGroupApsIdLuma()[i];
-      APS* aps = m_parameterSetManager.getAPS(apsId, ALF_APS);
-
+      APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
       if (aps)
       {
-        m_parameterSetManager.clearAPSChangedFlag(apsId, ALF_APS);
-        apss[apsId] = aps;
-        if (false == m_parameterSetManager.activateAPS(apsId, ALF_APS))
-        {
-          THROW("APS activation failed!");
-        }
+        m_parameterSetManager.clearAPSChangedFlag(i, ALF_APS);
       }
     }
-
-    //chroma APS
-    int apsId = m_apcSlicePilot->getTileGroupApsIdChroma();
-    APS* aps = m_parameterSetManager.getAPS(apsId, ALF_APS);
-    if (aps)
-    {
-      m_parameterSetManager.clearAPSChangedFlag(apsId, ALF_APS);
-      apss[apsId] = aps;
-      if (false == m_parameterSetManager.activateAPS(apsId, ALF_APS))
-      {
-        THROW("APS activation failed!");
-      }
-    }
-
-    APS* lmcsAPS = NULL;
-    if (m_apcSlicePilot->getLmcsAPSId() != -1)
-    {
-      lmcsAPS = m_parameterSetManager.getAPS(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS);
-      CHECK(lmcsAPS == 0, "No LMCS APS present");
-    }
-
-    if (lmcsAPS)
-    {
-      m_parameterSetManager.clearAPSChangedFlag(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS);
-      if (false == m_parameterSetManager.activateAPS(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS))
-      {
-        THROW("LMCS APS activation failed!");
-      }
-    }
-
+    APS* lmcsAPS = nullptr;
 #if JVET_O0299_APS_SCALINGLIST
-    APS* scalinglistAPS = NULL;
-    if( m_apcSlicePilot->getscalingListAPSId() != -1 )
-    {
-      scalinglistAPS = m_parameterSetManager.getAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
-      CHECK( scalinglistAPS == 0, "No SCALING LIST APS present" );
-    }
-
-    if( scalinglistAPS )
-    {
-      m_parameterSetManager.clearAPSChangedFlag( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
-      if( false == m_parameterSetManager.activateAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS ) )
-      {
-        THROW( "SCALING LIST APS activation failed!" );
-      }
-    }
+    APS* scalinglistAPS = nullptr;
+    activateAPS(m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
+#else
+    activateAPS(m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS);
 #endif
 
     xParsePrefixSEImessages();
@@ -1047,6 +1069,17 @@ void DecLib::xActivateParameterSets()
     {
       EXIT( "Error - a new SCALING LIST APS has been decoded while processing a picture" );
     }
+#endif
+
+#if JVET_O0299_APS_SCALINGLIST
+    activateAPS(pSlice, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
+#else
+    activateAPS(pSlice, m_parameterSetManager, apss, lmcsAPS);
+#endif
+
+    m_pcPic->cs->lmcsAps = lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->cs->scalinglistAps = scalinglistAPS;
 #endif
 
     xParsePrefixSEImessages();

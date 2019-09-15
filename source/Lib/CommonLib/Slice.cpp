@@ -1737,7 +1737,7 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
     }
     for (int j = 0; j < numPtsInCQPTableMinus1; j++)
     {
-      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1 + 1) >> 1;
+      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1) >> 1;
       for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
       {
         m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]

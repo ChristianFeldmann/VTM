@@ -3016,14 +3016,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
     int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
 #endif
-#if RPR_BUFFER
-#if RPR_CONF_WINDOW
-    const Window& curConfWindow = pps.getConformanceWindow();
-    int curPicHeight = pps.getPicHeightInLumaSamples() - ( curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( refPic->cs->sps->getChromaFormatIdc() );
-#else
-    int curPicHeight = pps.getPicHeightInLumaSamples();
-#endif
-#endif
 
     const int posShift = SCALE_RATIO_BITS - 4;
     int stepX = ( scalingRatio.first + 8 ) >> 4;
@@ -3137,11 +3129,7 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
 
           int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
 
-          //for(int y = 0; y < vFilterSize; y++) 
-          {
-            m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tmpBuf.buf, tmpBuf.stride, /*backupWidth*/1, /*backupHeight*/1 + vFilterSize - 1, xFrac, false, chFmt, clpRng, filterIndex, false, useAltHpelIf );
-          }
-
+          m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tmpBuf.buf, tmpBuf.stride, /*backupWidth*/1, /*backupHeight*/1 + vFilterSize - 1, xFrac, false, chFmt, clpRng, filterIndex, false, useAltHpelIf );
 
           JVET_J0090_SET_CACHE_ENABLE( false );
           m_if.filterVer( compID, (Pel*)tmpBuf.buf + ( ( vFilterSize >> 1 ) - 1 ) * tmpBuf.stride, tmpBuf.stride, /*dstBuf.buf*/tempDstBuf, dstStride, /*backupWidth*/1, /*backupHeight*/1, yFrac, false, rndRes, chFmt, clpRng, filterIndex, false, useAltHpelIf );

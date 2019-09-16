@@ -367,7 +367,7 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     currSubdiv++;
   }
   qgEnable       &= (currSubdiv <= cs.pps->getCuQpDeltaSubdiv());
-  qgChromaEnable &= (currSubdiv <= cs.pps->getPpsRangeExtension().getCuChromaQpOffsetSubdiv());
+  qgChromaEnable &= (currSubdiv <= cs.pps->getCuChromaQpOffsetSubdiv());
   m_partStack.back().qgEnable       = qgEnable;
   m_partStack.back().qgChromaEnable = qgChromaEnable;
   if (qgEnable)

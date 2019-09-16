@@ -767,7 +767,7 @@ private:
   unsigned    m_CTUSize;
   unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
   unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned    m_maxBTDepth[3];
+  unsigned    m_maxMTTHierarchyDepth[3];
   unsigned    m_maxBTSize[3];
   unsigned    m_maxTTSize[3];
   bool        m_idrRefParamList;
@@ -953,13 +953,13 @@ public:
   unsigned                getMinQTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA)
                                                                                                     const { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2]) : m_minQT[1]; }
-  void                    setMaxBTDepth(unsigned    maxBTDepth,
-                                        unsigned    maxBTDepthI,
-                                        unsigned    maxBTDepthIChroma)
-                                                                                                          { m_maxBTDepth[1] = maxBTDepth; m_maxBTDepth[0] = maxBTDepthI; m_maxBTDepth[2] = maxBTDepthIChroma; }
-  unsigned                getMaxBTDepth()                                                           const { return m_maxBTDepth[1]; }
-  unsigned                getMaxBTDepthI()                                                          const { return m_maxBTDepth[0]; }
-  unsigned                getMaxBTDepthIChroma()                                                    const { return m_maxBTDepth[2]; }
+  void                    setMaxMTTHierarchyDepth(unsigned    maxMTTHierarchyDepth,
+                                        unsigned    maxMTTHierarchyDepthI,
+                                        unsigned    maxMTTHierarchyDepthIChroma)
+                                                                                                          { m_maxMTTHierarchyDepth[1] = maxMTTHierarchyDepth; m_maxMTTHierarchyDepth[0] = maxMTTHierarchyDepthI; m_maxMTTHierarchyDepth[2] = maxMTTHierarchyDepthIChroma; }
+  unsigned                getMaxMTTHierarchyDepth()                                                 const { return m_maxMTTHierarchyDepth[1]; }
+  unsigned                getMaxMTTHierarchyDepthI()                                                const { return m_maxMTTHierarchyDepth[0]; }
+  unsigned                getMaxMTTHierarchyDepthIChroma()                                          const { return m_maxMTTHierarchyDepth[2]; }
   void                    setMaxBTSize(unsigned    maxBTSize,
                                        unsigned    maxBTSizeI,
                                        unsigned    maxBTSizeC)
@@ -1204,11 +1204,6 @@ class PPSRExt // Names aligned to text specification
 private:
   bool             m_crossComponentPredictionEnabledFlag;
 
-  // Chroma QP Adjustments
-  int              m_cuChromaQpOffsetSubdiv;
-  int              m_chromaQpOffsetListLen; // size (excludes the null entry used in the following array).
-  ChromaQpAdj      m_ChromaQpAdjTableIncludingNullEntry[1+MAX_QP_OFFSET_LIST_SIZE]; //!< Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
-
   uint32_t             m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
 
 public:
@@ -1217,42 +1212,12 @@ public:
   bool settingsDifferFromDefaults(const bool bTransformSkipEnabledFlag) const
   {
     return (getCrossComponentPredictionEnabledFlag() )
-        || (getChromaQpOffsetListEnabledFlag() )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA) !=0 )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) !=0 );
   }
 
   bool                   getCrossComponentPredictionEnabledFlag() const                   { return m_crossComponentPredictionEnabledFlag;   }
   void                   setCrossComponentPredictionEnabledFlag(bool value)               { m_crossComponentPredictionEnabledFlag = value;  }
-
-  void                   clearChromaQpOffsetList()                                        { m_chromaQpOffsetListLen = 0;                    }
-
-  uint32_t               getCuChromaQpOffsetSubdiv () const                               { return m_cuChromaQpOffsetSubdiv;                }
-  void                   setCuChromaQpOffsetSubdiv ( uint32_t u )                         { m_cuChromaQpOffsetSubdiv = u;                   }
-
-  bool                   getChromaQpOffsetListEnabledFlag() const                         { return getChromaQpOffsetListLen()>0;            }
-  int                    getChromaQpOffsetListLen() const                                 { return m_chromaQpOffsetListLen;                 }
-
-  const ChromaQpAdj&     getChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1 ) const
-  {
-    CHECK(cuChromaQpOffsetIdxPlus1 >= m_chromaQpOffsetListLen+1, "Invalid chroma QP offset");
-    return m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1]; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
-  }
-
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset, int jointCbCrOffset )
-#else
-  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset )
-#endif
-  {
-    CHECK(cuChromaQpOffsetIdxPlus1 == 0 || cuChromaQpOffsetIdxPlus1 > MAX_QP_OFFSET_LIST_SIZE, "Invalid chroma QP offset");
-    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CbOffset = cbOffset; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
-    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CrOffset = crOffset;
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.JointCbCrOffset = jointCbCrOffset;
-#endif
-    m_chromaQpOffsetListLen = std::max(m_chromaQpOffsetListLen, cuChromaQpOffsetIdxPlus1);
-  }
 
   // Now: getPpsRangeExtension().getLog2SaoOffsetScale and getPpsRangeExtension().setLog2SaoOffsetScale
   uint32_t                   getLog2SaoOffsetScale(ChannelType type) const                    { return m_log2SaoOffsetScale[type];             }
@@ -1278,6 +1243,11 @@ private:
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
   int              m_chromaCbCrQpOffset;
+
+  // Chroma QP Adjustments
+  int              m_cuChromaQpOffsetSubdiv;
+  int              m_chromaQpOffsetListLen; // size (excludes the null entry used in the following array).
+  ChromaQpAdj      m_ChromaQpAdjTableIncludingNullEntry[1+MAX_QP_OFFSET_LIST_SIZE]; //!< Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
 
   uint32_t             m_numRefIdxL0DefaultActive;
   uint32_t             m_numRefIdxL1DefaultActive;
@@ -1413,6 +1383,34 @@ public:
   int                    getQpOffset(ComponentID compID) const
   {
     return (compID==COMPONENT_Y) ? 0 : (compID==COMPONENT_Cb ? m_chromaCbQpOffset : compID==COMPONENT_Cr ? m_chromaCrQpOffset : m_chromaCbCrQpOffset );
+  }
+
+  uint32_t               getCuChromaQpOffsetSubdiv () const                               { return m_cuChromaQpOffsetSubdiv;                }
+  void                   setCuChromaQpOffsetSubdiv ( uint32_t u )                         { m_cuChromaQpOffsetSubdiv = u;                   }
+
+  bool                   getCuChromaQpOffsetEnabledFlag() const                           { return getChromaQpOffsetListLen()>0;            }
+  int                    getChromaQpOffsetListLen() const                                 { return m_chromaQpOffsetListLen;                 }
+  void                   clearChromaQpOffsetList()                                        { m_chromaQpOffsetListLen = 0;                    }
+
+  const ChromaQpAdj&     getChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1 ) const
+  {
+    CHECK(cuChromaQpOffsetIdxPlus1 >= m_chromaQpOffsetListLen+1, "Invalid chroma QP offset");
+    return m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1]; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
+  }
+
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset, int jointCbCrOffset )
+#else
+  void                   setChromaQpOffsetListEntry( int cuChromaQpOffsetIdxPlus1, int cbOffset, int crOffset )
+#endif
+  {
+    CHECK(cuChromaQpOffsetIdxPlus1 == 0 || cuChromaQpOffsetIdxPlus1 > MAX_QP_OFFSET_LIST_SIZE, "Invalid chroma QP offset");
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CbOffset = cbOffset; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0, and entries [cu_chroma_qp_offset_idx+1...] otherwise
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.CrOffset = crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+    m_ChromaQpAdjTableIncludingNullEntry[cuChromaQpOffsetIdxPlus1].u.comp.JointCbCrOffset = jointCbCrOffset;
+#endif
+    m_chromaQpOffsetListLen = std::max(m_chromaQpOffsetListLen, cuChromaQpOffsetIdxPlus1);
   }
 
   void                   setNumRefIdxL0DefaultActive(uint32_t ui)                             { m_numRefIdxL0DefaultActive=ui;                }
@@ -1643,6 +1641,12 @@ private:
   int                        m_iLastIDR;
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
+#if JVET_N0494_DRAP
+  bool                       m_enableDRAPSEI;
+  bool                       m_useLTforDRAP;
+  bool                       m_isDRAP;
+  int                        m_latestDRAPPOC;
+#endif
   const ReferencePictureList* m_pRPL0;                //< pointer to RPL for L0, either in the SPS or the local RPS in the same slice header
   const ReferencePictureList* m_pRPL1;                //< pointer to RPL for L1, either in the SPS or the local RPS in the same slice header
   ReferencePictureList        m_localRPL0;            //< RPL for L0 when present in slice header
@@ -1691,7 +1695,11 @@ private:
   bool                       m_colFromL0Flag;  // collocated picture from List0 flag
 
   bool                       m_noOutputPriorPicsFlag;
+#if JVET_N0865_NONSYNTAX
+  bool                       m_noIncorrectPicOutputFlag;
+#else
   bool                       m_noRaslOutputFlag;
+#endif
   bool                       m_handleCraAsCvsStartFlag;
 
   uint32_t                       m_colRefIdx;
@@ -1750,11 +1758,11 @@ private:
   double                     m_dProcessingTime;
   bool                       m_splitConsOverrideFlag;
   uint32_t                   m_uiMinQTSize;
-  uint32_t                   m_uiMaxBTDepth;
+  uint32_t                   m_uiMaxMTTHierarchyDepth;
   uint32_t                   m_uiMaxTTSize;
 
   uint32_t                   m_uiMinQTSizeIChroma;
-  uint32_t                   m_uiMaxBTDepthIChroma;
+  uint32_t                   m_uiMaxMTTHierarchyDepthIChroma;
   uint32_t                   m_uiMaxBTSizeIChroma;
   uint32_t                   m_uiMaxTTSizeIChroma;
   uint32_t                   m_uiMaxBTSize;
@@ -1906,6 +1914,21 @@ public:
   bool                        isInterB() const                                       { return m_eSliceType == B_SLICE;                               }
   bool                        isInterP() const                                       { return m_eSliceType == P_SLICE;                               }
 
+#if JVET_N0494_DRAP
+  bool                        getEnableDRAPSEI () const                              { return m_enableDRAPSEI;                                       }
+  void                        setEnableDRAPSEI ( bool b )                            { m_enableDRAPSEI = b;                                          }
+  bool                        getUseLTforDRAP () const                               { return m_useLTforDRAP;                                        }
+  void                        setUseLTforDRAP ( bool b )                             { m_useLTforDRAP = b;                                           }
+  bool                        isDRAP () const                                        { return m_isDRAP;                                              }
+  void                        setDRAP ( bool b )                                     { m_isDRAP = b;                                                 }
+  void                        setLatestDRAPPOC ( int i )                             { m_latestDRAPPOC = i;                                          }
+  int                         getLatestDRAPPOC () const                              { return m_latestDRAPPOC;                                       }
+  bool                        cvsHasPreviousDRAP() const                             { return m_latestDRAPPOC != MAX_INT;                            }
+  bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder ); 
+  bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
+  void                        checkConformanceForDRAP( uint32_t temporalId );
+#endif
+
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }
 
@@ -1913,15 +1936,15 @@ public:
   bool                        getSplitConsOverrideFlag() const                       { return m_splitConsOverrideFlag; }
   void                        setMinQTSize(int i)                                    { m_uiMinQTSize = i; }
   uint32_t                    getMinQTSize() const                                   { return m_uiMinQTSize; }
-  void                        setMaxBTDepth(int i)                                   { m_uiMaxBTDepth = i; }
-  uint32_t                    getMaxBTDepth() const                                  { return m_uiMaxBTDepth; }
+  void                        setMaxMTTHierarchyDepth(int i)                         { m_uiMaxMTTHierarchyDepth = i; }
+  uint32_t                    getMaxMTTHierarchyDepth() const                        { return m_uiMaxMTTHierarchyDepth; }
   void                        setMaxTTSize(int i)                                    { m_uiMaxTTSize = i; }
   uint32_t                    getMaxTTSize() const                                   { return m_uiMaxTTSize; }
 
   void                        setMinQTSizeIChroma(int i)                             { m_uiMinQTSizeIChroma = i; }
   uint32_t                    getMinQTSizeIChroma() const                            { return m_uiMinQTSizeIChroma; }
-  void                        setMaxBTDepthIChroma(int i)                            { m_uiMaxBTDepthIChroma = i; }
-  uint32_t                    getMaxBTDepthIChroma() const                           { return m_uiMaxBTDepthIChroma; }
+  void                        setMaxMTTHierarchyDepthIChroma(int i)                  { m_uiMaxMTTHierarchyDepthIChroma = i; }
+  uint32_t                    getMaxMTTHierarchyDepthIChroma() const                 { return m_uiMaxMTTHierarchyDepthIChroma; }
   void                        setMaxBTSizeIChroma(int i)                             { m_uiMaxBTSizeIChroma = i; }
   uint32_t                    getMaxBTSizeIChroma() const                            { return m_uiMaxBTSizeIChroma; }
   void                        setMaxTTSizeIChroma(int i)                             { m_uiMaxTTSizeIChroma = i; }
@@ -1985,8 +2008,13 @@ public:
   void                        setNoOutputPriorPicsFlag( bool val )                   { m_noOutputPriorPicsFlag = val;                                }
   bool                        getNoOutputPriorPicsFlag() const                       { return m_noOutputPriorPicsFlag;                               }
 
+#if JVET_N0865_NONSYNTAX
+  void                        setNoIncorrectPicOutputFlag(bool val)                  { m_noIncorrectPicOutputFlag = val;                             }
+  bool                        getNoIncorrectPicOutputFlag() const                    { return m_noIncorrectPicOutputFlag;                                    }
+#else
   void                        setNoRaslOutputFlag( bool val )                        { m_noRaslOutputFlag = val;                                     }
   bool                        getNoRaslOutputFlag() const                            { return m_noRaslOutputFlag;                                    }
+#endif
 
   void                        setHandleCraAsCvsStartFlag( bool val )                 { m_handleCraAsCvsStartFlag = val;                                   }
   bool                        getHandleCraAsCvsStartFlag() const                     { return m_handleCraAsCvsStartFlag;                                  }
@@ -2089,7 +2117,7 @@ public:
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-  void                        scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS& lmcsAps, APS& scalingListAps, const bool isDecoder );
+  void                        scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
 #else
   void                        scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS& lmcsAps, const bool isDecoder );
 #endif
@@ -2359,7 +2387,7 @@ public:
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
     , ISingleTree         ( !sps.getUseDualITree() )
-    , maxBtDepth          { sps.getMaxBTDepthI(), sps.getMaxBTDepth(), sps.getMaxBTDepthIChroma() }
+    , maxBtDepth          { sps.getMaxMTTHierarchyDepthI(), sps.getMaxMTTHierarchyDepth(), sps.getMaxMTTHierarchyDepthIChroma() }
     , minBtSize           { 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize() }
     , maxBtSize           { sps.getMaxBTSizeI(), sps.getMaxBTSize(), sps.getMaxBTSizeIChroma() }
     , minTtSize           { 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize(), 1u << sps.getLog2MinCodingBlockSize() }

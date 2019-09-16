@@ -1146,9 +1146,9 @@ bool VideoIOYuv::write( const CPelUnitBuf& picTop, const CPelUnitBuf& picBottom,
     const uint32_t    width444   = areaTopY.width  - (confLeft + confRight);
     const uint32_t    height444  = areaTopY.height - (confTop + confBottom);
 
-    CHECK(areaTop.width  == areaBottom.width , "Incompatible formats");
-    CHECK(areaTop.height == areaBottom.height, "Incompatible formats");
-    CHECK(areaTop.stride == areaBottom.stride, "Incompatible formats");
+    CHECK(areaTop.width  != areaBottom.width , "Incompatible formats");
+    CHECK(areaTop.height != areaBottom.height, "Incompatible formats");
+    CHECK(areaTop.stride != areaBottom.stride, "Incompatible formats");
 
     if ((width444 == 0) || (height444 == 0))
     {

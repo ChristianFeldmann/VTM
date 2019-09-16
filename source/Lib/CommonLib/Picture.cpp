@@ -738,6 +738,9 @@ Picture::Picture()
   layer                = std::numeric_limits<uint32_t>::max();
   fieldPic             = false;
   topField             = false;
+#if JVET_N0494_DRAP
+  precedingDRAP        = false;
+#endif
   for( int i = 0; i < MAX_NUM_CHANNEL_TYPE; i++ )
   {
     m_prevQP[i] = -1;
@@ -887,9 +890,9 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const
 const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
 #if JVET_O0299_APS_SCALINGLIST
-void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps, APS& scalingListAps )
+void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
 #else
-void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps)
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps)
 #endif
 {
   for( auto &sei : SEIs )
@@ -930,9 +933,9 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
-  cs->lmcsAps = &lmcsAps;
+  cs->lmcsAps = lmcsAps;
 #if JVET_O0299_APS_SCALINGLIST  
-  cs->scalinglistAps = &scalingListAps;
+  cs->scalinglistAps = scalingListAps;
 #endif
 
   cs->pcv     = pps.pcv;
@@ -973,9 +976,11 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   p->setPPS(cs->pps);
   p->setAlfAPSs(cs->alfApss);
 
-  p->setLmcsAPS(cs->lmcsAps);
+  if(cs->lmcsAps != nullptr)
+    p->setLmcsAPS(cs->lmcsAps);
 #if JVET_O0299_APS_SCALINGLIST
-  p->setscalingListAPS( cs->scalinglistAps );
+  if(cs->scalinglistAps != nullptr)
+    p->setscalingListAPS( cs->scalinglistAps );
 #endif
 
   Slice * pTmp = slices[i];

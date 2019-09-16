@@ -890,10 +890,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
   ("MinQTChromaISlice",                               m_uiMinQT[2],                                        4u, "MinQTChromaISlice")
   ("MinQTNonISlice",                                  m_uiMinQT[1],                                        8u, "MinQTNonISlice")
-  ("MaxBTDepth",                                      m_uiMaxBTDepth,                                      3u, "MaxBTDepth")
-  ("MaxBTDepthI",                                     m_uiMaxBTDepthI,                                     3u, "MaxBTDepthI")
-  ("MaxBTDepthISliceL",                               m_uiMaxBTDepthI,                                     3u, "MaxBTDepthISliceL")
-  ("MaxBTDepthISliceC",                               m_uiMaxBTDepthIChroma,                               3u, "MaxBTDepthISliceC")
+  ("MaxMTTHierarchyDepth",                            m_uiMaxMTTHierarchyDepth,                            3u, "MaxMTTHierarchyDepth")
+  ("MaxMTTHierarchyDepthI",                           m_uiMaxMTTHierarchyDepthI,                           3u, "MaxMTTHierarchyDepthI")
+  ("MaxMTTHierarchyDepthISliceL",                     m_uiMaxMTTHierarchyDepthI,                           3u, "MaxMTTHierarchyDepthISliceL")
+  ("MaxMTTHierarchyDepthISliceC",                     m_uiMaxMTTHierarchyDepthIChroma,                     3u, "MaxMTTHierarchyDepthISliceC")
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ( "LFNST",                                          m_LFNST,                                          false, "Enable LFNST (0:off, 1:on)  [default: off]" )
   ( "FastLFNST",                                      m_useFastLFNST,                                   false, "Fast methods for LFNST" )
@@ -1017,6 +1017,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("IntraPeriod,-ip",                                 m_iIntraPeriod,                                      -1, "Intra period in frames, (-1: only first frame)")
   ("DecodingRefreshType,-dr",                         m_iDecodingRefreshType,                               0, "Intra refresh type (0:none 1:CRA 2:IDR 3:RecPointSEI)")
   ("GOPSize,g",                                       m_iGOPSize,                                           1, "GOP size of temporal structure")
+#if JVET_N0494_DRAP
+  ("DRAPPeriod",                                      m_drapPeriod,                                         0, "DRAP period in frames (0: disable Dependent RAP indication SEI messages)")
+#endif
   ("ReWriteParamSets",                                m_rewriteParamSets,                           false, "Enable rewriting of Parameter sets before every (intra) random access point")
   //Alias with same name as in HM
   ("ReWriteParamSetsFlag",                            m_rewriteParamSets,                           false, "Alias for ReWriteParamSets")
@@ -1871,14 +1874,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
             {
               EXIT("Error: One or more slices contain more tiles than the defined number of tiles per slice");
             }
-            if ((sliceEndRow - sliceStartRow + 1) * (sliceEndCol - sliceStartCol + 1) < m_sliceArgument)
-            {
-              //Allow less number of tiles only when the rectangular slice is at the right most or bottom most of the picture
-              if (sliceEndRow != m_numTileRowsMinus1 || sliceEndCol != m_numTileColumnsMinus1)
-              {
-                EXIT("Error: One or more slices that is not at the picture boundary contain less tiles than the defined number of tiles per slice");
-              }
-            }
           }
         }
         //Check gap case
@@ -2579,6 +2574,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_iGOPSize < 1 ,                                                            "GOP Size must be greater or equal to 1" );
   xConfirmPara( m_iGOPSize > 1 &&  m_iGOPSize % 2,                                          "GOP Size must be a multiple of 2, if GOP Size is greater than 1" );
   xConfirmPara( (m_iIntraPeriod > 0 && m_iIntraPeriod < m_iGOPSize) || m_iIntraPeriod == 0, "Intra period must be more than GOP size, or -1 , not 0" );
+#if JVET_N0494_DRAP
+  xConfirmPara( m_drapPeriod < 0,                                                           "DRAP period must be greater or equal to 0" );
+#endif
   xConfirmPara( m_iDecodingRefreshType < 0 || m_iDecodingRefreshType > 3,                   "Decoding Refresh Type must be comprised between 0 and 3 included" );
 #if HEVC_SEI
   if(m_iDecodingRefreshType == 3)
@@ -2605,6 +2603,15 @@ bool EncAppCfg::xCheckParameter()
     }
 #endif
   }
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  if ( m_pictureTimingSEIEnabled && (!m_bufferingPeriodSEIEnabled))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: Picture Timing SEI requires Buffering Period SEI. Disabling.  **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_pictureTimingSEIEnabled = false;
+  }
+#endif
 
   if(m_crossComponentPredictionEnabledFlag && (m_chromaFormatIDC != CHROMA_444))
   {
@@ -3346,6 +3353,10 @@ bool EncAppCfg::xCheckParameter()
     THROW("Invalid value for PPSorSliceMode");
   }
 #endif
+#if JVET_N0494_DRAP
+  xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc0 > 0, "PPSRefPicListSPSIdc0 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
+  xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc1 > 0, "PPSRefPicListSPSIdc1 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
+#endif
 
 #if HEVC_SEI
   if (m_toneMappingInfoSEIEnabled)
@@ -3534,6 +3545,9 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );
   msg( DETAILS, "Decoding refresh type                  : %d\n", m_iDecodingRefreshType );
+#if JVET_N0494_DRAP 
+  msg( DETAILS, "DRAP period                            : %d\n", m_drapPeriod );
+#endif
 #if QP_SWITCHING_FOR_PARALLEL
   if (m_qpIncrementAtSourceFrame.bPresent)
   {

@@ -266,7 +266,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   omp_set_nested( true );
 #endif
 
+#if JVET_N0494_DRAP
+  if (getUseCompositeRef() || getDependentRAPIndicationSEIEnabled())
+#else
   if (getUseCompositeRef())
+#endif
   {
     sps0.setLongTermRefsPresent(true);
   }
@@ -484,9 +488,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
     picBg->getRecoBuf().fill(0);
 #if JVET_O0299_APS_SCALINGLIST
-    picBg->finalInit( sps0, pps0, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+    picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-    picBg->finalInit(sps0, pps0, m_apss, *m_lmcsAPS);
+    picBg->finalInit(sps0, pps0, m_apss, m_lmcsAPS);
 #endif
     pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
     picBg->allocateNewSlice();
@@ -675,9 +679,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
 #if JVET_O0299_APS_SCALINGLIST
-    picCurr->finalInit( *sps, *pps, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+    picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-    picCurr->finalInit(*sps, *pps, m_apss, *m_lmcsAPS);
+    picCurr->finalInit(*sps, *pps, m_apss, m_lmcsAPS);
 #endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
@@ -775,9 +779,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 #endif
 
 #if JVET_O0299_APS_SCALINGLIST
-      pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+      pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+      pcPicCurr->finalInit(*pSPS, *pPPS, m_apss, m_lmcsAPS);
 #endif
       PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
@@ -878,9 +882,9 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
 #if JVET_O0299_APS_SCALINGLIST
-        pcField->finalInit( *pSPS, *pPPS, m_apss, *m_lmcsAPS, *m_scalinglistAPS );
+        pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
-        pcField->finalInit(*pSPS, *pPPS, m_apss, *m_lmcsAPS);
+        pcField->finalInit(*pSPS, *pPPS, m_apss, m_lmcsAPS);
 #endif
       }
 
@@ -1106,21 +1110,21 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setCTUSize                             ( m_CTUSize );
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
-  sps.setMaxBTDepth                          ( m_uiMaxBTDepth, m_uiMaxBTDepthI, m_uiMaxBTDepthIChroma );
+  sps.setMaxMTTHierarchyDepth                ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
   unsigned maxBtSize[3], maxTtSize[3];
   memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
   memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
-  if (m_uiMaxBTDepth)
+  if (m_uiMaxMTTHierarchyDepth)
   {
     maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
     maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
   }
-  if (m_uiMaxBTDepthI)
+  if (m_uiMaxMTTHierarchyDepthI)
   {
     maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
     maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
   }
-  if (m_uiMaxBTDepthIChroma)
+  if (m_uiMaxMTTHierarchyDepthIChroma)
   {
     maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
     maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);
@@ -1390,19 +1394,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   if ( m_cuChromaQpOffsetSubdiv >= 0 )
   {
-    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
-    pps.getPpsRangeExtension().clearChromaQpOffsetList();
+    pps.setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
+    pps.clearChromaQpOffsetList();
 #if JVET_O1168_CU_CHROMA_QP_OFFSET
-    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6, 6);
+    pps.setChromaQpOffsetListEntry(1, 6, 6, 6);
 #else
-    pps.getPpsRangeExtension().setChromaQpOffsetListEntry(1, 6, 6);
+    pps.setChromaQpOffsetListEntry(1, 6, 6);
 #endif
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
   {
-    pps.getPpsRangeExtension().setCuChromaQpOffsetSubdiv(0);
-    pps.getPpsRangeExtension().clearChromaQpOffsetList();
+    pps.setCuChromaQpOffsetSubdiv(0);
+    pps.clearChromaQpOffsetList();
   }
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
   pps.getPpsRangeExtension().setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA,   m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA  ]);

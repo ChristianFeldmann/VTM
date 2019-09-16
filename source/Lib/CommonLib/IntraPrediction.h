@@ -65,6 +65,13 @@ static const uint32_t MAX_INTRA_FILTER_DEPTHS=8;
 
 class IntraPrediction
 {
+#if FLATTEN_BUFFERS
+protected:
+  Pel      m_refBuffer[MAX_NUM_COMPONENT][NUM_PRED_BUF][(MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX) * 2];
+  uint32_t m_refBufferStride[MAX_NUM_COMPONENT];
+
+private:
+#else
 private:
 
   Pel* m_piYuvExt[MAX_NUM_COMPONENT][NUM_PRED_BUF];
@@ -73,6 +80,7 @@ private:
   PelBuf m_pelBufISP[2];
 #endif
   int  m_iYuvExtSize;
+#endif
 
   Pel* m_yuvExt2[MAX_NUM_COMPONENT][4];
   int  m_yuvExtSize2;
@@ -153,10 +161,11 @@ protected:
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
-  void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
-    , int multiRefIdx
-#if JVET_O0502_ISP_CLEANUP
-    , int predStride = 0
+  void xFilterReferenceSamples(const Pel *refBufUnfiltered, Pel *refBufFiltered, const CompArea &area, const SPS &sps,
+                               int multiRefIdx
+#if JVET_O0502_ISP_CLEANUP && !FLATTEN_BUFFERS
+                               ,
+                               int predStride = 0
 #endif
   );
 
@@ -174,7 +183,14 @@ public:
 
   // Angular Intra
   void predIntraAng               ( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
+#if FLATTEN_BUFFERS
+  Pel *getPredictorPtr(const ComponentID compId)
+  {
+    return m_refBuffer[compId][m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED];
+  }
+#else
   Pel* getPredictorPtr            ( const ComponentID compId ) { return m_piYuvExt[compId][m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED]; }
+#endif
 
   // Cross-component Chroma
   void predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir);
@@ -183,7 +199,9 @@ public:
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
 #if JVET_O0502_ISP_CLEANUP
   void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
+#if !FLATTEN_BUFFERS
   const PelBuf& getISPBuffer      () { return m_pelBufISP[m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED]; }
+#endif
 #endif
 
   // Matrix-based intra prediction

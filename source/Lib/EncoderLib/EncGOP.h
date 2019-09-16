@@ -129,6 +129,9 @@ private:
   int                     m_iNumPicCoded;
   bool                    m_bFirst;
   int                     m_iLastRecoveryPicPOC;
+#if JVET_N0494_DRAP
+  int                     m_latestDRAPPOC;
+#endif
   int                     m_lastRasPoc;
 
   //  Access channel

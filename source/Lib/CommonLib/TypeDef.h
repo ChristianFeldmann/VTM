@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
+
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
 
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
@@ -62,6 +64,10 @@
 
 #define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
 #define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
+
+#define FLATTEN_BUFFERS                                                                                                \
+  (1 && JVET_O0502_ISP_CLEANUP && JVET_O0364_PADDING && JVET_O0426_MRL_REF_SAMPLES_DC_MODE                             \
+   && JVET_O0925_MIP_SIMPLIFICATIONS && JVET_O0364_PDPC_DC)
 
 #define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
 
@@ -277,8 +283,14 @@
 #define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
 
 #define JVET_N0865_SYNTAX                                 1 // JVET_N0865 syntax elements
+#define JVET_N0865_NONSYNTAX                              1 // JVET_N0865 other than syntax parts
+#define JVET_N0865_GRA2GDR                                1 // Changing the name of GRA to GDR
 
-#define EMULATION_PREVENTION_FIX                          1 // fix for start code emulation reported in #270. Diverges from specification text
+#define JVET_O0178                                        1 // JVET_O0178 - conditionally signal sps_sub_layer_ordering_info_present_flag
+
+#define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
+
+#define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
@@ -1016,6 +1028,52 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
+#if JVET_O0179
+  NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
+  NAL_UNIT_CODED_SLICE_STSA,        // 1
+  NAL_UNIT_CODED_SLICE_RASL,        // 2
+  NAL_UNIT_CODED_SLICE_RADL,        // 3
+
+  NAL_UNIT_RESERVED_VCL_4, 
+  NAL_UNIT_RESERVED_VCL_5,
+  NAL_UNIT_RESERVED_VCL_6,
+  NAL_UNIT_RESERVED_VCL_7,
+
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
+  NAL_UNIT_CODED_SLICE_CRA,         // 10
+#if JVET_N0865_GRA2GDR
+  NAL_UNIT_CODED_SLICE_GDR,         // 11
+#else
+  NAL_UNIT_CODED_SLICE_GRA,         // 11
+#endif
+
+  NAL_UNIT_RESERVED_IRAP_VCL_12,
+  NAL_UNIT_RESERVED_IRAP_VCL_13,
+
+  NAL_UNIT_RESERVED_VCL_14,
+  NAL_UNIT_RESERVED_VCL_15,
+
+  NAL_UNIT_SPS,                     // 16
+  NAL_UNIT_PPS,                     // 17
+  NAL_UNIT_APS,                     // 18
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 19
+  NAL_UNIT_EOS,                     // 20
+  NAL_UNIT_EOB,                     // 21
+  NAL_UNIT_PREFIX_SEI,              // 22
+  NAL_UNIT_SUFFIX_SEI,              // 23
+  NAL_UNIT_DPS,                     // 24
+  NAL_UNIT_VPS,                     // 25
+
+  NAL_UNIT_RESERVED_NVCL_26,
+  NAL_UNIT_RESERVED_NVCL_27,
+
+  NAL_UNIT_UNSPECIFIED_28,
+  NAL_UNIT_UNSPECIFIED_29,
+  NAL_UNIT_UNSPECIFIED_30,
+  NAL_UNIT_UNSPECIFIED_31,
+  NAL_UNIT_INVALID
+#else
   NAL_UNIT_PPS = 0,                     // 0
   NAL_UNIT_ACCESS_UNIT_DELIMITER,       // 1
   NAL_UNIT_PREFIX_SEI,                  // 2
@@ -1043,12 +1101,17 @@ enum NalUnitType
   NAL_UNIT_CODED_SLICE_IDR_W_RADL,      // 24
   NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
   NAL_UNIT_CODED_SLICE_CRA,             // 26
+#if JVET_N0865_GRA2GDR
+  NAL_UNIT_CODED_SLICE_GDR,             // 27
+#else
   NAL_UNIT_CODED_SLICE_GRA,             // 27
+#endif
   NAL_UNIT_UNSPECIFIED_28,              // 29
   NAL_UNIT_UNSPECIFIED_29,              // 30
   NAL_UNIT_UNSPECIFIED_30,              // 31
   NAL_UNIT_UNSPECIFIED_31,              // 32
   NAL_UNIT_INVALID
+#endif
 };
 
 #if SHARP_LUMA_DELTA_QP

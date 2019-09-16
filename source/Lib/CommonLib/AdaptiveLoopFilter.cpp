@@ -1569,7 +1569,7 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
 #if JVET_O0625_ALF_PADDING
           int idx1 = 1, idx2 = 2, idx3 = 3;
           const int pixXPos = blkDst.x + j + jj;
-
+          // vertical 2-side padding
           if ( alfLeftBryPos != ALF_NONE_BOUNDARY && pixXPos >= alfLeftBryPos && pixXPos <= alfLeftBryPos + ( bChroma ? 1 : 2 ) )
           {
             const int pixXpos = blkDst.x + j + jj;

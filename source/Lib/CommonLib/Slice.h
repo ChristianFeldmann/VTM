@@ -1641,6 +1641,12 @@ private:
   int                        m_iLastIDR;
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
+#if JVET_N0494_DRAP
+  bool                       m_enableDRAPSEI;
+  bool                       m_useLTforDRAP;
+  bool                       m_isDRAP;
+  int                        m_latestDRAPPOC;
+#endif
   const ReferencePictureList* m_pRPL0;                //< pointer to RPL for L0, either in the SPS or the local RPS in the same slice header
   const ReferencePictureList* m_pRPL1;                //< pointer to RPL for L1, either in the SPS or the local RPS in the same slice header
   ReferencePictureList        m_localRPL0;            //< RPL for L0 when present in slice header
@@ -1907,6 +1913,21 @@ public:
   bool                        isIntra() const                                        { return m_eSliceType == I_SLICE;                               }
   bool                        isInterB() const                                       { return m_eSliceType == B_SLICE;                               }
   bool                        isInterP() const                                       { return m_eSliceType == P_SLICE;                               }
+
+#if JVET_N0494_DRAP
+  bool                        getEnableDRAPSEI () const                              { return m_enableDRAPSEI;                                       }
+  void                        setEnableDRAPSEI ( bool b )                            { m_enableDRAPSEI = b;                                          }
+  bool                        getUseLTforDRAP () const                               { return m_useLTforDRAP;                                        }
+  void                        setUseLTforDRAP ( bool b )                             { m_useLTforDRAP = b;                                           }
+  bool                        isDRAP () const                                        { return m_isDRAP;                                              }
+  void                        setDRAP ( bool b )                                     { m_isDRAP = b;                                                 }
+  void                        setLatestDRAPPOC ( int i )                             { m_latestDRAPPOC = i;                                          }
+  int                         getLatestDRAPPOC () const                              { return m_latestDRAPPOC;                                       }
+  bool                        cvsHasPreviousDRAP() const                             { return m_latestDRAPPOC != MAX_INT;                            }
+  bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder ); 
+  bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
+  void                        checkConformanceForDRAP( uint32_t temporalId );
+#endif
 
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }

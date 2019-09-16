@@ -271,6 +271,9 @@ public:
   bool topField;
   bool fieldPic;
   int  m_prevQP[MAX_NUM_CHANNEL_TYPE];
+#if JVET_N0494_DRAP
+  bool precedingDRAP; // preceding a DRAP picture in decoding order
+#endif
 
   int  poc;
   uint32_t layer;

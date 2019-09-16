@@ -179,6 +179,9 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
 #endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
+#if JVET_N0494_DRAP
+    case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
+#endif
 #if HEVC_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";

@@ -245,6 +245,12 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       xParseSEIFrameFieldinfo((SEIFrameFieldInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
 #endif
+#if JVET_N0494_DRAP
+    case SEI::DEPENDENT_RAP_INDICATION:
+      sei = new SEIDependentRAPIndication;
+      xParseSEIDependentRAPIndication((SEIDependentRAPIndication&) *sei, payloadSize, pDecodedMessageOutputStream);
+      break;
+#endif
 #if HEVC_SEI
     case SEI::RECOVERY_POINT:
       sei = new SEIRecoveryPoint;
@@ -745,6 +751,13 @@ void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, uint32_t payload
   sei.m_sourceScanType = symbol;
   sei_read_flag( pDecodedMessageOutputStream, symbol,      "duplicate_flag" );
   sei.m_duplicateFlag = symbol;
+}
+#endif
+
+#if JVET_N0494_DRAP
+void SEIReader::xParseSEIDependentRAPIndication( SEIDependentRAPIndication& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream )
+{
+  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 }
 #endif
 

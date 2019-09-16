@@ -72,6 +72,9 @@ protected:
 #if JVET_O0041_FRAME_FIELD_SEI
   void xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei);
 #endif
+#if JVET_N0494_DRAP
+  void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
+#endif
 #if HEVC_SEI
   void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
   void xWriteSEIFramePacking(const SEIFramePacking& sei);

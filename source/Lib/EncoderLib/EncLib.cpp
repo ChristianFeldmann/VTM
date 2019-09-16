@@ -266,7 +266,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   omp_set_nested( true );
 #endif
 
+#if JVET_N0494_DRAP
+  if (getUseCompositeRef() || getDependentRAPIndicationSEIEnabled())
+#else
   if (getUseCompositeRef())
+#endif
   {
     sps0.setLongTermRefsPresent(true);
   }

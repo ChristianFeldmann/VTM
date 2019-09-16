@@ -324,6 +324,14 @@ void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPicture
   }
 }
 
+#if JVET_N0494_DRAP
+void SEIEncoder::initSEIDependentRAPIndication(SEIDependentRAPIndication *seiDependentRAPIndication)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiDependentRAPIndication!=NULL), "Unspecified error");
+}
+#endif
+
 #if HEVC_SEI
 void SEIEncoder::initTemporalLevel0IndexSEI(SEITemporalLevel0Index *temporalLevel0IndexSEI, Slice *slice)
 {

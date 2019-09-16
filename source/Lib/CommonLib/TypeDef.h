@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
+
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
 
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling

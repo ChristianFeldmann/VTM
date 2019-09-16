@@ -160,6 +160,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );
   m_cEncLib.setDecodingRefreshType                               ( m_iDecodingRefreshType );
   m_cEncLib.setGOPSize                                           ( m_iGOPSize );
+#if JVET_N0494_DRAP  
+  m_cEncLib.setDrapPeriod                                        ( m_drapPeriod );
+#endif
   m_cEncLib.setReWriteParamSets                                  ( m_rewriteParamSets );
   m_cEncLib.setRPLList0                                          ( m_RPLList0);
   m_cEncLib.setRPLList1                                          ( m_RPLList1);
@@ -458,6 +461,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setDecodedPictureHashSEIType                         ( m_decodedPictureHashSEIType );
 #if HEVC_SEI
   m_cEncLib.setRecoveryPointSEIEnabled                           ( m_recoveryPointSEIEnabled );
+#endif
+#if JVET_N0494_DRAP
+  m_cEncLib.setDependentRAPIndicationSEIEnabled                  ( m_drapPeriod > 0 );
 #endif
   m_cEncLib.setBufferingPeriodSEIEnabled                         ( m_bufferingPeriodSEIEnabled );
   m_cEncLib.setPictureTimingSEIEnabled                           ( m_pictureTimingSEIEnabled );

@@ -637,6 +637,10 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     c += 32;  // tolower
   }
 
+#if JVET_N0494_DRAP
+  if (pcSlice->isDRAP()) c = 'D';
+#endif
+
   //-- For time output for each slice
   msg( msgl, "POC %4d TId: %1d ( %c-SLICE, QP%3d ) ", pcSlice->getPOC(),
          pcSlice->getTLayer(),
@@ -1544,6 +1548,16 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     //---------------
     pcSlice->setRefPOCList();
 
+#if JVET_N0494_DRAP
+    SEIMessages drapSEIs = getSeisByType(m_pcPic->SEIs, SEI::DEPENDENT_RAP_INDICATION );
+    if (!drapSEIs.empty())
+    {
+      msg( NOTICE, "Dependent RAP indication SEI decoded\n");
+      pcSlice->setDRAP(true);
+      pcSlice->setLatestDRAPPOC(pcSlice->getPOC());
+    }
+    pcSlice->checkConformanceForDRAP(nalu.m_temporalId);
+#endif
 
   Quant *quant = m_cTrQuant.getQuant();
 

@@ -2116,9 +2116,17 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
         }
         else
         {
-          pDst0[i] = (pRecSrc0[mult * i]             * c0_6tap + pRecSrc0[mult * i + 1]             * c1_6tap + pRecSrc0[mult * i - 1]             * c2_6tap
-                    + pRecSrc0[mult * i + strOffset] * c3_6tap + pRecSrc0[mult * i + 1 + strOffset] * c4_6tap + pRecSrc0[mult * i - 1 + strOffset] * c5_6tap
-                    + offset_6tap) >> shift_6tap;
+          int s = offset_6tap;
+          s += pRecSrc0[mult * i] * c0_6tap;
+          s += pRecSrc0[mult * i + 1] * c1_6tap;
+          s += pRecSrc0[mult * i - 1] * c2_6tap;
+          if (pu.chromaFormat == CHROMA_420)
+          {
+            s += pRecSrc0[mult * i + strOffset] * c3_6tap;
+            s += pRecSrc0[mult * i + 1 + strOffset] * c4_6tap;
+            s += pRecSrc0[mult * i - 1 + strOffset] * c5_6tap;
+          }
+          pDst0[i] = s >> shift_6tap;
         }
       }
     }

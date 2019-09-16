@@ -724,10 +724,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   bool useAltHpelIf = pu.cu->imv == IMV_HPEL;
 #endif
 
-  CHECK( pu.blocks[compID].width != dstPic.bufs[compID].width, "Destination buffer width doesn't match PU width" );
-  CHECK( pu.blocks[compID].height != dstPic.bufs[compID].height, "Destination buffer height doesn't match PU height" );
-
-  if( !isIBC && xPredInterBlkRPR( scalingRatio, *pu.cs->pps, pu.blocks[compID], refPic, mv, dstPic.bufs[compID].buf, dstPic.bufs[compID].stride, bi, wrapRef, clpRng, 0, useAltHpelIf ) )
+  if( !isIBC && xPredInterBlkRPR( scalingRatio, *pu.cs->pps, CompArea( compID, chFmt, pu.blocks[compID], Size( dstPic.bufs[compID].width, dstPic.bufs[compID].height ) ), refPic, mv, dstPic.bufs[compID].buf, dstPic.bufs[compID].stride, bi, wrapRef, clpRng, 0, useAltHpelIf ) )
   {
     CHECK( bilinearMC, "DMVR should be disabled with RPR" );
     CHECK( bioApplied, "BDOF should be disabled with RPR" );
@@ -1008,9 +1005,6 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   enablePROF &= !m_encOnly || pu.cu->slice->getCheckLDC() || iDMvHorX > profThres || iDMvHorY > profThres || iDMvVerX > profThres || iDMvVerY > profThres || iDMvHorX < -profThres || iDMvHorY < -profThres || iDMvVerX < -profThres || iDMvVerY < -profThres;
 #if JVET_O1164_RPR
   enablePROF &= pu.cs->pps->getPicWidthInLumaSamples() == refPic->cs->pps->getPicWidthInLumaSamples() && pu.cs->pps->getPicHeightInLumaSamples() == refPic->cs->pps->getPicHeightInLumaSamples();
-
-  CHECK( pu.blocks[compID].width != dstPic.bufs[compID].width, "Destination buffer width doesn't match PU width" );
-  CHECK( pu.blocks[compID].height != dstPic.bufs[compID].height, "Destination buffer height doesn't match PU height" );
 #endif
 
   if (compID == COMPONENT_Y)
@@ -3050,7 +3044,7 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
 
     int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
 
-    int refHeight = ( height * refPicHeight ) / curPicHeight;
+    int refHeight = height * scalingRatio.second >> SCALE_RATIO_BITS;
     refHeight = std::max<int>( 1, refHeight );
 
     CHECK( MAX_CU_SIZE * MAX_SCALING_RATIO < refHeight + vFilterSize - 1 + extSize, "Buffer size is not enough, increase MAX_SCALING_RATIO" );

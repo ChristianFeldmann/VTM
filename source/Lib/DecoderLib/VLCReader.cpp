@@ -588,13 +588,31 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       std::vector<std::vector<int>>  brickRowHeightMinus1 (numTilesInPic);
       for( int i = 0; i < numTilesInPic; i++ )
       {
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        if (pcPPS->getTileHeight(i) > 1)
+        {
+#endif
         READ_FLAG( uiCode, "brick_split_flag [i]" );
         brickSplitFlag[i] = (uiCode == 1);
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        }
+        else
+          brickSplitFlag[i] = 0;
+#endif
 
         if( brickSplitFlag[i] )
         {
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+          if (pcPPS->getTileHeight(i) > 2)
+          {
+#endif
           READ_FLAG( uiCode, "uniform_brick_spacing_flag [i]" );
           uniformBrickSpacingFlag[i] = (uiCode == 1);
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+          }
+          else
+            uniformBrickSpacingFlag[i] = 1;
+#endif
           if( uniformBrickSpacingFlag[i] )
           {
             READ_UVLC( uiCode, "brick_height_minus1" );

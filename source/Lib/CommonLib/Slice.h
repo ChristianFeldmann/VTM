@@ -1271,6 +1271,9 @@ private:
   int              m_numTileRowsMinus1;
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+  std::vector<int> m_tileHeight;
+#endif
 
   bool             m_singleTileInPicFlag;
   int              m_tileColsWidthMinus1;
@@ -1454,6 +1457,10 @@ public:
   int                    getNumTileRowsMinus1() const                                     { return m_numTileRowsMinus1;                   }
   void                   setTileRowHeight(const std::vector<int>& rowHeight)              { m_tileRowHeight = rowHeight;                  }
   uint32_t               getTileRowHeight(uint32_t rowIdx) const                          { return m_tileRowHeight[rowIdx];               }
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+  void                   setTileHeight(uint32_t tileIdx, uint32_t tileHeight)             { m_tileHeight[tileIdx] = tileHeight;           }
+  uint32_t               getTileHeight(uint32_t tileIdx) const                            { return m_tileHeight[tileIdx];                 }
+#endif
 
   bool                   getSingleTileInPicFlag() const                                   { return m_singleTileInPicFlag;                 }
   void                   setSingleTileInPicFlag(bool val)                                 { m_singleTileInPicFlag = val;                  }

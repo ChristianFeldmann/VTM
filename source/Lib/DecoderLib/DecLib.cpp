@@ -1816,7 +1816,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         AUDReader audReader;
         uint32_t picType;
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
+#if JVET_O0610_DETECT_AUD
         return !m_bFirstSliceInPicture;
+#else
+        msg( NOTICE, "Note: found NAL_UNIT_ACCESS_UNIT_DELIMITER\n");
+        return false;
+#endif
       }
 
     case NAL_UNIT_EOB:

@@ -254,6 +254,7 @@
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
 #define JVET_O0610_CFG                                    1 // config default change for "Adopt to mandate the presence of AU delimiter for each AU", config parameter should be removed later
+#define JVET_O0610_DETECT_AUD                             1 // JVET-O0610: detect presence of mandatory access unit delimiters
 
 #define JVET_O0491_HLS_CLEANUP                            1
 #define JVET_O0041_FRAME_FIELD_SEI                        1

@@ -2028,7 +2028,10 @@ void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
     CHECK(offsetLenMinus1 + 1 >= 32, "Invalid offset length minus 1");
   }
 
+#if !JVET_O0145_ENTRYPOINT_SIGNALLING
   WRITE_UVLC(pSlice->getNumberOfSubstreamSizes(), "num_entry_point_offsets");
+#endif
+  printf("Number of entry points: %d\n", pSlice->getNumberOfSubstreamSizes());
   if (pSlice->getNumberOfSubstreamSizes()>0)
   {
     WRITE_UVLC(offsetLenMinus1, "offset_len_minus1");

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0145_ENTRYPOINT_SIGNALLING                  1 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
 
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS

@@ -840,6 +840,9 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
   // loop through all pictures in the reference picture buffer
   PicList::iterator iterPic = rcListPic.begin();
+#if JVET_OO147_LEADING_PIC_CHECKING
+  int numLeadingPicsFound = 0;
+#endif
   while ( iterPic != rcListPic.end())
   {
     Picture* pcPic = *(iterPic++);
@@ -887,6 +890,20 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
+#if JVET_OO147_LEADING_PIC_CHECKING
+    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) && 
+        (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL)  )
+    {
+      if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
+      {
+        numLeadingPicsFound++;
+        int limitNonLP = 0;
+        if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
+          limitNonLP = 1;
+        CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
+      }
+    }
+#else
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
         nalUnitType == NAL_UNIT_CODED_SLICE_RADL )
       {
@@ -897,6 +914,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
           CHECK( pcPic->poc > this->getAssociatedIRAPPOC(), "Invalid POC");
         }
       }
+#endif
 
     // Any RASL picture associated with a CRA or BLA picture shall precede any
     // RADL picture associated with the CRA or BLA picture in output order

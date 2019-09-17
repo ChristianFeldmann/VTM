@@ -1816,8 +1816,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         AUDReader audReader;
         uint32_t picType;
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
-        msg( NOTICE, "Note: found NAL_UNIT_ACCESS_UNIT_DELIMITER\n");
-        return false;
+        return !m_bFirstSliceInPicture;
       }
 
     case NAL_UNIT_EOB:

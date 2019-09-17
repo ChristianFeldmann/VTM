@@ -584,7 +584,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       std::vector<bool> brickSplitFlag (numTilesInPic);
       std::vector<bool> uniformBrickSpacingFlag (numTilesInPic);
       std::vector<int>  brickHeightMinus1 (numTilesInPic);
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+      std::vector<int> numBrickRowsMinus2(numTilesInPic);
+#else
       std::vector<int>  numBrickRowsMinus1 (numTilesInPic);
+#endif 
       std::vector<std::vector<int>>  brickRowHeightMinus1 (numTilesInPic);
       for( int i = 0; i < numTilesInPic; i++ )
       {
@@ -602,6 +606,16 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           }
           else
           {
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+            READ_UVLC(uiCode, "num_brick_rows_minus2 [i]");
+            numBrickRowsMinus2[i] = uiCode;
+            for (int j = 0; j <= numBrickRowsMinus2[i]; j++)
+            {
+              brickRowHeightMinus1[i].resize(numBrickRowsMinus2[i]);
+              READ_UVLC(uiCode, "brick_row_height_minus1 [i][j]");
+              brickRowHeightMinus1[i][j] = uiCode;
+            }
+#else
             READ_UVLC( uiCode, "num_brick_rows_minus1 [i]" );
             numBrickRowsMinus1[i] = uiCode;
             for(int j = 0; j < numBrickRowsMinus1[i]; j++ )
@@ -610,13 +624,18 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
               READ_UVLC( uiCode, "brick_row_height_minus1 [i][j]" );
               brickRowHeightMinus1[i][j]=uiCode;
             }
+#endif
           }
         }
       }
       pcPPS->setBrickSplitFlag(brickSplitFlag);
       pcPPS->setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
       pcPPS->setBrickHeightMinus1(brickHeightMinus1);
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+      pcPPS->setNumBrickRowsMinus2(numBrickRowsMinus2);
+#else
       pcPPS->setNumBrickRowsMinus1(numBrickRowsMinus1);
+#endif 
       pcPPS->setBrickRowHeightMinus1(brickRowHeightMinus1);
     }
     READ_FLAG (uiCode, "single_brick_per_slice_flag" );         pcPPS->setSingleBrickPerSliceFlag(uiCode == 1);

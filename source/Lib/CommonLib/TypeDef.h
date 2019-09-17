@@ -51,7 +51,7 @@
 #include <cassert>
 
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
-
+#define JVET_O0173_O0176_O0338_NUMBRICK_M2                1 // JVET-O0173, O0176, O0338 : Replacing num_brick_rows_minus1 with num_brick_rows_minus2
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
 
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling

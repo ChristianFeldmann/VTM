@@ -1811,7 +1811,11 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     std::vector<bool> brickSplitFlag (numTiles, false);
     std::vector<bool> uniformBrickSpacingFlag (numTiles, false);
     std::vector<int>  brickHeightMinus1 (numTiles, 0);
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+    std::vector<int> numBrickRowsMinus2(numTiles, 0);
+#else
     std::vector<int>  numBrickRowsMinus1 (numTiles, 0);
+#endif
     std::vector<std::vector<int>>  brickRowHeightMinus1 (numTiles);
 
     for (auto &brickSplit: m_brickSplitMap)
@@ -1827,7 +1831,11 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
       }
       else
       {
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+        numBrickRowsMinus2[tileIdx] = brickSplit.second.m_numSplits - 1;
+#else
         numBrickRowsMinus1[tileIdx]=brickSplit.second.m_numSplits;
+#endif 
         brickRowHeightMinus1[tileIdx].resize(brickSplit.second.m_numSplits);
         for (int i=0; i<brickSplit.second.m_numSplits; i++)
         {
@@ -1838,7 +1846,11 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setBrickSplitFlag(brickSplitFlag);
     pps.setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
     pps.setBrickHeightMinus1(brickHeightMinus1);
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+    pps.setNumBrickRowsMinus2(numBrickRowsMinus2);
+#else
     pps.setNumBrickRowsMinus1(numBrickRowsMinus1);
+#endif 
     pps.setBrickRowHeightMinus1(brickRowHeightMinus1);
 
     // check brick dimensions
@@ -1880,7 +1892,11 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
         else
         {
           int cumulativeHeight=0;
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+          for (int i = 0; i <= pps.getNumBrickRowsMinus2(tileIdx); i++)
+#else 
           for (int i = 0; i < pps.getNumBrickRowsMinus1(tileIdx); i++)
+#endif 
           {
             cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
           }

@@ -349,9 +349,15 @@ void HLSWriter::codePPS( const PPS* pcPPS )
           WRITE_UVLC( pcPPS->getBrickHeightMinus1(i), "brick_height_minus1" );
         else
         {
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+          WRITE_UVLC(pcPPS->getNumBrickRowsMinus2(i), "num_brick_rows_minus2 [i]");
+          for (int j = 0; j <= pcPPS->getNumBrickRowsMinus2(i); j++)
+            WRITE_UVLC(pcPPS->getBrickRowHeightMinus1(i, j), "brick_row_height_minus1 [i][j]");
+#else                    
           WRITE_UVLC( pcPPS->getNumBrickRowsMinus1(i), "num_brick_rows_minus1 [i]" );
           for(int j = 0; j < pcPPS->getNumBrickRowsMinus1(i); j++ )
             WRITE_UVLC( pcPPS->getBrickRowHeightMinus1(i,j), "brick_row_height_minus1 [i][j]" );
+#endif 
         }
       }
     }

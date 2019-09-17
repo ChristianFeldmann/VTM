@@ -589,6 +589,52 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
     {
       std::vector<uint32_t> rowHeight2;
       std::vector<uint32_t> rowBd2;
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+      int numBrickRowsMinus2 = 0;
+      if (pps.getUniformBrickSpacingFlag(tileIdx))
+      {
+        int brickHeight            = pps.getBrickHeightMinus1(tileIdx) + 1;
+        int remainingHeightInCtbsY = tileRowHeight[tileY];
+        int brickInTile            = 0;
+        while (remainingHeightInCtbsY > brickHeight)
+        {
+          rowHeight2.resize(brickInTile + 1);
+          rowHeight2[brickInTile++] = brickHeight;
+          remainingHeightInCtbsY -= brickHeight;
+        }
+        rowHeight2.resize(brickInTile + 1);
+        rowHeight2[brickInTile] = remainingHeightInCtbsY;
+        numBrickRowsMinus2      = brickInTile;
+      }
+      else
+      {
+        numBrickRowsMinus2 = pps.getNumBrickRowsMinus2(tileIdx);
+        rowHeight2.resize(numBrickRowsMinus2 + 1);
+        rowHeight2[numBrickRowsMinus2 + 1] = tileRowHeight[tileY];
+        for (int j = 0; j <= numBrickRowsMinus2; j++)
+        {
+          rowHeight2[j] = pps.getBrickRowHeightMinus1(tileIdx, j) + 1;
+          rowHeight2[numBrickRowsMinus2 + 1] -= rowHeight2[j];
+        }
+      }
+      rowBd2.resize(numBrickRowsMinus2 + 2);
+      rowBd2[0] = 0;
+      for (int j = 0; j <= numBrickRowsMinus2 + 1; j++)
+      {
+        rowBd2[j + 1] = rowBd2[j] + rowHeight2[j];
+      }
+      for (int j = 0; j <= numBrickRowsMinus2 + 1; j++)
+      {
+        bricks.resize(bricks.size() + 1);
+        bricks[brickIdx].setColBd(tileColBd[tileX]);
+        bricks[brickIdx].setRowBd(tileRowBd[tileY] + rowBd2[j]);
+        bricks[brickIdx].setWidthInCtus(tileColWidth[tileX]);
+        bricks[brickIdx].setHeightInCtus(rowHeight2[j]);
+        bricks[brickIdx].setFirstCtuRsAddr(bricks[brickIdx].getColBd()
+                                           + bricks[brickIdx].getRowBd() * frameWidthInCtus);
+        brickIdx++;
+      }
+#else
       int numBrickRowsMinus1 = 0;
       if (pps.getUniformBrickSpacingFlag(tileIdx))
       {
@@ -632,6 +678,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
         bricks[ brickIdx ].setFirstCtuRsAddr(bricks[ brickIdx ].getColBd() + bricks[ brickIdx ].getRowBd() * frameWidthInCtus);
         brickIdx++;
       }
+      #endif
     }
   }
 

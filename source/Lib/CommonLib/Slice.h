@@ -170,7 +170,7 @@ public:
   void       processRefMatrix(uint32_t sizeId, uint32_t listId , uint32_t refListId );
   bool       xParseScalingList(const std::string &fileName);
   void       setDefaultScalingList();
-  bool       checkDefaultScalingList();
+  bool       isNotDefaultScalingList();
 
 private:
   void       outputScalingLists(std::ostream &os) const;

@@ -1984,9 +1984,9 @@ void ScalingList::setDefaultScalingList()
   }
 }
 /** check if use default quantization matrix
- * \returns true if use default quantization matrix in all size
+ * \returns true if the scaling list is not equal to the default quantization matrix
 */
-bool ScalingList::checkDefaultScalingList()
+bool ScalingList::isNotDefaultScalingList()
 {
   bool isAllDefault = true;
   for ( uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
@@ -1998,13 +1998,14 @@ bool ScalingList::checkDefaultScalingList()
       {
         continue;
       }
-      if( !::memcmp(getScalingListAddress(sizeId,listId), getScalingListDefaultAddress(sizeId, listId),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) // check DC value
+      if( !( !::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId])) // check value of matrix
+         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) ) // check DC value
       {
         isAllDefault = false;
         break;
       }
     }
+    if (!isAllDefault) break;
   }
 
   return !isAllDefault;

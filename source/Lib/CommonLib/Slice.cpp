@@ -1984,9 +1984,9 @@ void ScalingList::setDefaultScalingList()
   }
 }
 /** check if use default quantization matrix
- * \returns true if use default quantization matrix in all size
+ * \returns true if the scaling list is not equal to the default quantization matrix
 */
-bool ScalingList::checkDefaultScalingList()
+bool ScalingList::isNotDefaultScalingList()
 {
   bool isAllDefault = true;
   for ( uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
@@ -2005,6 +2005,7 @@ bool ScalingList::checkDefaultScalingList()
         break;
       }
     }
+    if (!isAllDefault) break;
   }
 
   return !isAllDefault;

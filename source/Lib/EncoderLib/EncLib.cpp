@@ -565,7 +565,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     aps.getScalingList().setDefaultScalingList();
     CHECK( aps.getScalingList().xParseScalingList( getScalingListFileName() ), "Error Parsing Scaling List Input File" );
     aps.getScalingList().checkDcOfMatrix();
-    if( aps.getScalingList().checkDefaultScalingList() == false )
+    if( aps.getScalingList().isNotDefaultScalingList() == false )
     {
       setUseScalingListId( SCALING_LIST_DEFAULT );
     }
@@ -577,7 +577,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
       THROW( "parse scaling list");
     }
     sps.getScalingList().checkDcOfMatrix();
-    sps.setScalingListPresentFlag(sps.getScalingList().checkDefaultScalingList());
+    sps.setScalingListPresentFlag(sps.getScalingList().isNotDefaultScalingList());
     pps.setScalingListPresentFlag(false);
 
     quant->setScalingList(&(sps.getScalingList()), maxLog2TrDynamicRange, sps.getBitDepths());

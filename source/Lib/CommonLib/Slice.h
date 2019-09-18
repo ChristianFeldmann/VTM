@@ -1474,8 +1474,8 @@ public:
   int                    getBrickHeightMinus1(int i) const                                { return m_brickHeightMinus1[i];                }
   void                   setBrickHeightMinus1(std::vector<int>& val)                      { m_brickHeightMinus1 = val;                    }
 #if JVET_O0173_O0176_O0338_NUMBRICK_M2
-  int  getNumBrickRowsMinus2(int i) const { return m_numBrickRowsMinus2[i]; }
-  void setNumBrickRowsMinus2(std::vector<int> &val) { m_numBrickRowsMinus2 = val; }
+  int                    getNumBrickRowsMinus2(int i) const { return m_numBrickRowsMinus2[i]; }
+  void                   setNumBrickRowsMinus2(std::vector<int> &val) { m_numBrickRowsMinus2 = val; }
 #else
   int                    getNumBrickRowsMinus1(int i) const                               { return m_numBrickRowsMinus1[i];               }
   void                   setNumBrickRowsMinus1(std::vector<int>& val)                     { m_numBrickRowsMinus1 = val;                   }

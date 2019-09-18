@@ -1834,7 +1834,7 @@ public:
   int                         getscalingListAPSId()                            const { return m_scalingListApsId;                                   }
   void                        setscalingListPresentFlag( bool b )                    { m_tileGroupscalingListPresentFlag = b;                       }
   bool                        getscalingListPresentFlag()                            { return m_tileGroupscalingListPresentFlag;                    }
-  const bool                  getscalingListPresentFlag()                      const { return m_tileGroupLmcsEnabledFlag;                           }
+  const bool                  getscalingListPresentFlag()                      const { return m_tileGroupscalingListPresentFlag;                    }
 #endif
   void                        setPicOutputFlag( bool b   )                           { m_PicOutputFlag = b;                                          }
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }

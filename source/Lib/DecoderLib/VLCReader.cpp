@@ -2293,6 +2293,15 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
+#if JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK
+    if (pcSlice->isInterP() || pcSlice->isInterB())
+    {
+      CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 0, "Number of active entries in RPL0 of P or B picture shall be greater than 0");
+      if (pcSlice->isInterB())
+        CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 0, "Number of active entries in RPL1 of B picture shall be greater than 0");
+    }
+#endif
+
     if (
       sps->getSplitConsOverrideEnabledFlag()
       )

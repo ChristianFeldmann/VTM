@@ -696,10 +696,17 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
 {
+#if JVET_OO152_BP_SEI_GDR
+  if ((m_pcCfg->getBufferingPeriodSEIEnabled()) && (slice->isIRAP() || slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+    (slice->getSPS()->getVuiParametersPresentFlag()) &&
+    ((slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag())
+      || (slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag())))
+#else
   if( ( m_pcCfg->getBufferingPeriodSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) &&
     ( slice->getSPS()->getVuiParametersPresentFlag() ) &&
     ( ( slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
     || ( slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
+#endif
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
     m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI);

@@ -54,6 +54,8 @@
 
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
 
+#define JVET_OO152_BP_SEI_GDR                             1 // JVET-O0152: Allowing association of a buffering period SEI with GDR picture
+
 #define JVET_OO147_LEADING_PIC_CHECKING                   1 // JVET-O0147: Constraints on leading pictures
 
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS

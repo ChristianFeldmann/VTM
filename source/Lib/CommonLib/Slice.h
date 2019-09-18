@@ -1279,7 +1279,11 @@ private:
   std::vector<bool> m_brickSplitFlag;
   std::vector<bool> m_uniformBrickSpacingFlag;
   std::vector<int> m_brickHeightMinus1;
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+  std::vector<int> m_numBrickRowsMinus2;
+#else
   std::vector<int> m_numBrickRowsMinus1;
+#endif 
   std::vector<std::vector<int>> m_brickRowHeightMinus1;
   bool             m_singleBrickPerSliceFlag;
   bool             m_rectSliceFlag;
@@ -1469,8 +1473,13 @@ public:
   void                   setUniformBrickSpacingFlag(std::vector<bool>& val)               { m_uniformBrickSpacingFlag = val;              }
   int                    getBrickHeightMinus1(int i) const                                { return m_brickHeightMinus1[i];                }
   void                   setBrickHeightMinus1(std::vector<int>& val)                      { m_brickHeightMinus1 = val;                    }
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+  int                    getNumBrickRowsMinus2(int i) const { return m_numBrickRowsMinus2[i]; }
+  void                   setNumBrickRowsMinus2(std::vector<int> &val) { m_numBrickRowsMinus2 = val; }
+#else
   int                    getNumBrickRowsMinus1(int i) const                               { return m_numBrickRowsMinus1[i];               }
   void                   setNumBrickRowsMinus1(std::vector<int>& val)                     { m_numBrickRowsMinus1 = val;                   }
+ #endif
   int                    getBrickRowHeightMinus1(int i, int j) const                      { return m_brickRowHeightMinus1[i][j];          }
   void                   setBrickRowHeightMinus1(std::vector<std::vector<int>>& val)      { m_brickRowHeightMinus1 = val;                 }
   bool                   getSingleBrickPerSliceFlag() const                               { return m_singleBrickPerSliceFlag;             }

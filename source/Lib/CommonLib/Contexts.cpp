@@ -684,6 +684,7 @@ const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
   {   8,   8, },
 });
 
+#if JVET_O0119_BASE_PALETTE_444
 const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet
 ({
   { CNU, },
@@ -723,6 +724,7 @@ const CtxSet ContextSetCfg::CopyRunModel = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU, },
   { DWS, DWS, DWS, },
 });
+#endif
 
 const CtxSet ContextSetCfg::RdpcmFlag = ContextSetCfg::addCtxSet
 ({

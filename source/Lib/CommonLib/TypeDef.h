@@ -296,6 +296,9 @@
 
 #define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
 
+#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
+
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;

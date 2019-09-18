@@ -336,6 +336,12 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       }
     }
     WRITE_FLAG( pcPPS->getBrickSplittingPresentFlag() ? 1 : 0, "brick_splitting_present_flag" );
+#if JVET_O0176_PROPOSAL3
+    if (pcPPS->getBrickSplittingPresentFlag())
+    {
+      CHECK(pcPPS->getRectSliceFlag() != true, "rect_slice_flag must be equal to 1 for brick_splitting_present_flag equal to 1");
+    }
+#endif
 
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
 

@@ -93,6 +93,11 @@ public:
     CHROMA_RESAMPLING_FILTER_HINT        = 140,
     KNEE_FUNCTION_INFO                   = 141,
     COLOUR_REMAPPING_INFO                = 142,
+#endif
+#if JVET_N0494_DRAP
+    DEPENDENT_RAP_INDICATION             = 145,
+#endif
+#if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
 #endif
@@ -145,6 +150,17 @@ public:
 
   PictureHash m_pictureHash;
 };
+
+#if JVET_N0494_DRAP
+class SEIDependentRAPIndication : public SEI
+{
+public:
+  PayloadType payloadType() const { return DEPENDENT_RAP_INDICATION; }
+  SEIDependentRAPIndication() { }
+
+  virtual ~SEIDependentRAPIndication() { }
+};
+#endif
 
 #if HEVC_SEI
 class SEIActiveParameterSets : public SEI

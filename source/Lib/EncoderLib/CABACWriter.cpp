@@ -3274,7 +3274,7 @@ void CABACWriter::cu_chroma_qp_offset( const CodingUnit& cu )
   else
   {
     m_BinEncoder.encodeBin( 1, Ctx::ChromaQpAdjFlag() );
-    int length = cu.cs->pps->getPpsRangeExtension().getChromaQpOffsetListLen();
+    int length = cu.cs->pps->getChromaQpOffsetListLen();
     if( length > 1 )
     {
       unary_max_symbol( qpAdj-1, Ctx::ChromaQpAdjIdc(), Ctx::ChromaQpAdjIdc(), length-1 );

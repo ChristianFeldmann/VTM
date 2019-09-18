@@ -162,6 +162,13 @@ uint32_t DecApp::decode()
         bNewPicture = m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
         if (bNewPicture)
         {
+#if JVET_O0610_DETECT_AUD
+          // check if new picture was detected at an access unit delimiter NALU
+          if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER) 
+          {
+            msg( ERROR, "Error: New picture detected without access unit delimiter. VVC requires the presence of access unit delimiters.\n");
+          }
+#endif
           bitstreamFile.clear();
           /* location points to the current nalunit payload[1] due to the
            * need for the annexB parser to read three extra bytes.
@@ -230,7 +237,11 @@ uint32_t DecApp::decode()
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
+#if JVET_N0865_NONSYNTAX
+      if ((bNewPicture || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR) && m_cDecLib.getNoOutputPriorPicsFlag())
+#else
       if ( (bNewPicture || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) && m_cDecLib.getNoOutputPriorPicsFlag() )
+#endif
       {
         m_cDecLib.checkNoOutputPriorPics( pcListPic );
         m_cDecLib.setNoOutputPriorPicsFlag (false);
@@ -247,8 +258,13 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInPicture (false);
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
+#if JVET_N0865_GRA2GDR
+      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL_15)
+        || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GDR)))
+#else
       if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL_15)
         || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GRA)))
+#endif
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }

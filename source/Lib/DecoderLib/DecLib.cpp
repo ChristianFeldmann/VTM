@@ -406,7 +406,14 @@ DecLib::DecLib()
   , m_bFirstSliceInBitstream(true)
   , m_lastPOCNoOutputPriorPics(-1)
   , m_isNoOutputPriorPics(false)
+#if JVET_N0865_NONSYNTAX
+  , m_lastNoIncorrectPicOutputFlag(false)
+#else
   , m_craNoRaslOutputFlag(false)
+#endif
+#if JVET_O0428_LMCS_CLEANUP
+  , m_sliceLmcsApsId(-1)
+#endif
   , m_pDecodedSEIOutputStream(NULL)
   , m_decodedPictureHashSEIEnabled(false)
   , m_numberOfChecksumErrorsDetected(0)
@@ -630,6 +637,10 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     c += 32;  // tolower
   }
 
+#if JVET_N0494_DRAP
+  if (pcSlice->isDRAP()) c = 'D';
+#endif
+
   //-- For time output for each slice
   msg( msgl, "POC %4d TId: %1d ( %c-SLICE, QP%3d ) ", pcSlice->getPOC(),
          pcSlice->getTLayer(),
@@ -763,6 +774,72 @@ void DecLib::xCreateLostPicture(int iLostPoc)
 
 }
 
+#if JVET_O0299_APS_SCALINGLIST
+void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
+#else
+void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS)
+#endif
+{
+  //luma APSs
+  for (int i = 0; i < pSlice->getTileGroupApsIdLuma().size(); i++)
+  {
+    int apsId = pSlice->getTileGroupApsIdLuma()[i];
+    APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
+
+    if (aps)
+    {
+      apss[apsId] = aps;
+      if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+    }
+  }
+
+  //chroma APS
+  int apsId = pSlice->getTileGroupApsIdChroma();
+  APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
+  if (aps)
+  {
+    apss[apsId] = aps;
+    if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+    {
+      THROW("APS activation failed!");
+    }
+  }
+
+  if (pSlice->getLmcsEnabledFlag() && lmcsAPS == nullptr)
+  {
+    lmcsAPS = parameterSetManager.getAPS(pSlice->getLmcsAPSId(), LMCS_APS);
+    CHECK(lmcsAPS == nullptr, "No LMCS APS present");
+    if (lmcsAPS)
+    {
+      parameterSetManager.clearAPSChangedFlag(pSlice->getLmcsAPSId(), LMCS_APS);
+      if (false == parameterSetManager.activateAPS(pSlice->getLmcsAPSId(), LMCS_APS))
+      {
+        THROW("LMCS APS activation failed!");
+      }
+    }
+  }
+  pSlice->setLmcsAPS(lmcsAPS);
+
+#if JVET_O0299_APS_SCALINGLIST
+  if( pSlice->getscalingListPresentFlag() && scalingListAPS == nullptr)
+  {
+    scalingListAPS = parameterSetManager.getAPS( pSlice->getscalingListAPSId(), SCALING_LIST_APS );
+    CHECK( scalingListAPS == nullptr, "No SCALING LIST APS present" );
+    if( scalingListAPS )
+    {
+      parameterSetManager.clearAPSChangedFlag( pSlice->getscalingListAPSId(), SCALING_LIST_APS );
+      if( false == parameterSetManager.activateAPS( pSlice->getscalingListAPSId(), SCALING_LIST_APS ) )
+      {
+        THROW( "SCALING LIST APS activation failed!" );
+      }
+    }
+  }
+  pSlice->setscalingListAPS(scalingListAPS);
+#endif
+}
 
 void DecLib::xActivateParameterSets()
 {
@@ -792,68 +869,24 @@ void DecLib::xActivateParameterSets()
       THROW("Parameter set activation failed!");
     }
     m_parameterSetManager.getApsMap()->clear();
-    //luma APSs
-    for (int i = 0; i < m_apcSlicePilot->getTileGroupApsIdLuma().size(); i++)
+#if JVET_O_MAX_NUM_ALF_APS_8
+    for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
+#else
+    for (int i = 0; i < MAX_NUM_APS; i++)
+#endif
     {
-      int apsId = m_apcSlicePilot->getTileGroupApsIdLuma()[i];
-      APS* aps = m_parameterSetManager.getAPS(apsId, ALF_APS);
-
+      APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
       if (aps)
       {
-        m_parameterSetManager.clearAPSChangedFlag(apsId, ALF_APS);
-        apss[apsId] = aps;
-        if (false == m_parameterSetManager.activateAPS(apsId, ALF_APS))
-        {
-          THROW("APS activation failed!");
-        }
+        m_parameterSetManager.clearAPSChangedFlag(i, ALF_APS);
       }
     }
-
-    //chroma APS
-    int apsId = m_apcSlicePilot->getTileGroupApsIdChroma();
-    APS* aps = m_parameterSetManager.getAPS(apsId, ALF_APS);
-    if (aps)
-    {
-      m_parameterSetManager.clearAPSChangedFlag(apsId, ALF_APS);
-      apss[apsId] = aps;
-      if (false == m_parameterSetManager.activateAPS(apsId, ALF_APS))
-      {
-        THROW("APS activation failed!");
-      }
-    }
-
-    APS* lmcsAPS = NULL;
-    if (m_apcSlicePilot->getLmcsAPSId() != -1)
-    {
-      lmcsAPS = m_parameterSetManager.getAPS(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS);
-      CHECK(lmcsAPS == 0, "No LMCS APS present");
-    }
-
-    if (lmcsAPS)
-    {
-      m_parameterSetManager.clearAPSChangedFlag(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS);
-      if (false == m_parameterSetManager.activateAPS(m_apcSlicePilot->getLmcsAPSId(), LMCS_APS))
-      {
-        THROW("LMCS APS activation failed!");
-      }
-    }
-
+    APS* lmcsAPS = nullptr;
 #if JVET_O0299_APS_SCALINGLIST
-    APS* scalinglistAPS = NULL;
-    if( m_apcSlicePilot->getscalingListAPSId() != -1 )
-    {
-      scalinglistAPS = m_parameterSetManager.getAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
-      CHECK( scalinglistAPS == 0, "No SCALING LIST APS present" );
-    }
-
-    if( scalinglistAPS )
-    {
-      m_parameterSetManager.clearAPSChangedFlag( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS );
-      if( false == m_parameterSetManager.activateAPS( m_apcSlicePilot->getscalingListAPSId(), SCALING_LIST_APS ) )
-      {
-        THROW( "SCALING LIST APS activation failed!" );
-      }
-    }
+    APS* scalinglistAPS = nullptr;
+    activateAPS(m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
+#else
+    activateAPS(m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS);
 #endif
 
     xParsePrefixSEImessages();
@@ -870,9 +903,9 @@ void DecLib::xActivateParameterSets()
 
     m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
 #if JVET_O0299_APS_SCALINGLIST
-    m_pcPic->finalInit( *sps, *pps, apss, *lmcsAPS, *scalinglistAPS );
+    m_pcPic->finalInit( *sps, *pps, apss, lmcsAPS, scalinglistAPS );
 #else
-    m_pcPic->finalInit(*sps, *pps, apss, *lmcsAPS);
+    m_pcPic->finalInit(*sps, *pps, apss, lmcsAPS);
 #endif
     m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
@@ -1042,6 +1075,17 @@ void DecLib::xActivateParameterSets()
     }
 #endif
 
+#if JVET_O0299_APS_SCALINGLIST
+    activateAPS(pSlice, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
+#else
+    activateAPS(pSlice, m_parameterSetManager, apss, lmcsAPS);
+#endif
+
+    m_pcPic->cs->lmcsAps = lmcsAPS;
+#if JVET_O0299_APS_SCALINGLIST
+    m_pcPic->cs->scalinglistAps = scalinglistAPS;
+#endif
+
     xParsePrefixSEImessages();
 
     // Check if any new SEI has arrived
@@ -1135,6 +1179,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
+#if JVET_N0865_NONSYNTAX
+  if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
+    CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
+#endif
+
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_parameterSetManager, m_prevTid0POC );
 
@@ -1165,14 +1214,38 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setAssociatedIRAPType(m_associatedIRAPType);
 
   //For inference of NoOutputOfPriorPicsFlag
+#if JVET_N0865_NONSYNTAX
+  if (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
   if (m_apcSlicePilot->getRapPicFlag())
+#endif
   {
+#if JVET_N0865_NONSYNTAX
+    if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) || 
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence))
+    {
+      m_apcSlicePilot->setNoIncorrectPicOutputFlag(true);
+    }
+#else
     if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()))
     {
       m_apcSlicePilot->setNoRaslOutputFlag(true);
     }
+#endif
     //the inference for NoOutputPriorPicsFlag
+#if JVET_N0865_NONSYNTAX
+    if (!m_bFirstSliceInBitstream &&
+        (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+        m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+    {
+      if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+      {
+        m_apcSlicePilot->setNoOutputPriorPicsFlag(true);
+      }
+    }
+#else
     if (!m_bFirstSliceInBitstream && m_apcSlicePilot->getRapPicFlag() && m_apcSlicePilot->getNoRaslOutputFlag())
     {
       if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
@@ -1180,17 +1253,29 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         m_apcSlicePilot->setNoOutputPriorPicsFlag(true);
       }
     }
+#endif
     else
     {
       m_apcSlicePilot->setNoOutputPriorPicsFlag(false);
     }
 
+#if JVET_N0865_NONSYNTAX
+    if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+    {
+      m_lastNoIncorrectPicOutputFlag = m_apcSlicePilot->getNoIncorrectPicOutputFlag();
+    }
+#else
     if(m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
     {
       m_craNoRaslOutputFlag = m_apcSlicePilot->getNoRaslOutputFlag();
     }
+#endif
   }
+#if JVET_N0865_NONSYNTAX
+  if ((m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) && m_apcSlicePilot->getNoOutputPriorPicsFlag())
+#else
   if (m_apcSlicePilot->getRapPicFlag() && m_apcSlicePilot->getNoOutputPriorPicsFlag())
+#endif
   {
     m_lastPOCNoOutputPriorPics = m_apcSlicePilot->getPOC();
     m_isNoOutputPriorPics = true;
@@ -1203,13 +1288,22 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //For inference of PicOutputFlag
   if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
   {
+#if JVET_N0865_NONSYNTAX
+    if (m_lastNoIncorrectPicOutputFlag)
+#else
     if ( m_craNoRaslOutputFlag )
+#endif
     {
       m_apcSlicePilot->setPicOutputFlag(false);
     }
   }
 
+#if JVET_N0865_NONSYNTAX
+  if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+      m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
+#else
   if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_craNoRaslOutputFlag) //Reset POC MSB when CRA has NoRaslOutputFlag equal to 1
+#endif
   {
     PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId());
     CHECK(pps == 0, "No PPS present");
@@ -1318,9 +1412,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), true );
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), true );
 #else
-  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), *pcSlice->getLmcsAPS(), true );
+  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), pcSlice->getLmcsAPS(), true );
 #endif
 #endif
 
@@ -1454,6 +1548,16 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     //---------------
     pcSlice->setRefPOCList();
 
+#if JVET_N0494_DRAP
+    SEIMessages drapSEIs = getSeisByType(m_pcPic->SEIs, SEI::DEPENDENT_RAP_INDICATION );
+    if (!drapSEIs.empty())
+    {
+      msg( NOTICE, "Dependent RAP indication SEI decoded\n");
+      pcSlice->setDRAP(true);
+      pcSlice->setLatestDRAPPOC(pcSlice->getPOC());
+    }
+    pcSlice->checkConformanceForDRAP(nalu.m_temporalId);
+#endif
 
   Quant *quant = m_cTrQuant.getQuant();
 
@@ -1505,9 +1609,23 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   if (pcSlice->getSPS()->getUseReshaper())
   {
+#if JVET_O0428_LMCS_CLEANUP
+    if (m_bFirstSliceInPicture)
+      m_sliceLmcsApsId = -1;
+#endif
     if (pcSlice->getLmcsEnabledFlag())
     {
       APS* lmcsAPS = pcSlice->getLmcsAPS();
+#if JVET_O0428_LMCS_CLEANUP
+      if (m_sliceLmcsApsId == -1)
+      {
+        m_sliceLmcsApsId = lmcsAPS->getAPSId();
+      }
+      else
+      {
+        CHECK(lmcsAPS->getAPSId() != m_sliceLmcsApsId, "same APS ID shall be used for all slices in one picture");
+      }
+#endif
       SliceReshapeInfo& sInfo = lmcsAPS->getReshaperAPSInfo();
       SliceReshapeInfo& tInfo = m_cReshaper.getSliceReshaperInfo();
       tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
@@ -1668,6 +1786,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
     case NAL_UNIT_CODED_SLICE_IDR_N_LP:
     case NAL_UNIT_CODED_SLICE_CRA:
+#if JVET_N0865_NONSYNTAX
+    case NAL_UNIT_CODED_SLICE_GDR:
+#endif
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
       ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);
@@ -1695,26 +1816,44 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         AUDReader audReader;
         uint32_t picType;
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
+#if JVET_O0610_DETECT_AUD
+        return !m_bFirstSliceInPicture;
+#else
         msg( NOTICE, "Note: found NAL_UNIT_ACCESS_UNIT_DELIMITER\n");
         return false;
+#endif
       }
 
     case NAL_UNIT_EOB:
       return false;
 
+#if JVET_O0179
+    case NAL_UNIT_RESERVED_IRAP_VCL_12:
+    case NAL_UNIT_RESERVED_IRAP_VCL_13:
+#else
     case NAL_UNIT_RESERVED_VCL_12:
     case NAL_UNIT_RESERVED_VCL_13:
+#endif
     case NAL_UNIT_RESERVED_VCL_14:
     case NAL_UNIT_RESERVED_VCL_15:
       msg( NOTICE, "Note: found reserved VCL NAL unit.\n");
       xParsePrefixSEIsForUnknownVCLNal();
       return false;
+#if JVET_O0179
+    case NAL_UNIT_RESERVED_VCL_4:
+    case NAL_UNIT_RESERVED_VCL_5:
+    case NAL_UNIT_RESERVED_VCL_6:
+    case NAL_UNIT_RESERVED_VCL_7:
+    case NAL_UNIT_RESERVED_NVCL_26:
+    case NAL_UNIT_RESERVED_NVCL_27:
+#else
     case NAL_UNIT_RESERVED_NVCL_5:
     case NAL_UNIT_RESERVED_NVCL_6:
     case NAL_UNIT_RESERVED_NVCL_7:
     case NAL_UNIT_RESERVED_NVCL_21:
     case NAL_UNIT_RESERVED_NVCL_22:
     case NAL_UNIT_RESERVED_NVCL_23:
+#endif
       msg( NOTICE, "Note: found reserved NAL unit.\n");
       return false;
     case NAL_UNIT_UNSPECIFIED_28:

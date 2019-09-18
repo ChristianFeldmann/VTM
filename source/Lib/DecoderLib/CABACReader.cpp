@@ -3479,7 +3479,7 @@ void CABACReader::cu_chroma_qp_offset( CodingUnit& cu )
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__CHROMA_QP_ADJUSTMENT, cu.blocks[cu.chType].lumaSize(), CHANNEL_TYPE_CHROMA );
 
   // cu_chroma_qp_offset_flag
-  int       length  = cu.cs->pps->getPpsRangeExtension().getChromaQpOffsetListLen();
+  int       length  = cu.cs->pps->getChromaQpOffsetListLen();
   unsigned  qpAdj   = m_BinDecoder.decodeBin( Ctx::ChromaQpAdjFlag() );
   if( qpAdj && length > 1 )
   {

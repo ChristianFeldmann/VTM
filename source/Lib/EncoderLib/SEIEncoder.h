@@ -77,6 +77,9 @@ public:
   void initSEISOPDescription(SEISOPDescription *sei, Slice *slice, int picInGOP, int lastIdr, int currGOPSize);
 #endif
   void initSEIBufferingPeriod(SEIBufferingPeriod *sei);
+#if JVET_N0494_DRAP
+  void initSEIDependentRAPIndication(SEIDependentRAPIndication *sei);
+#endif
 #if HEVC_SEI
   void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
   void initSEIRecoveryPoint(SEIRecoveryPoint *sei, Slice *slice);

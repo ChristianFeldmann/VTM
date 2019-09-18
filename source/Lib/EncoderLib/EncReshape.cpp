@@ -320,9 +320,16 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
       double variance = double(sumSq) / numPixInPart - average * average;
       int binLen = m_reshapeLUTSize / m_binNum;
       uint32_t binIdx = (uint32_t)(pxlY / binLen);
-      average = average / (double)(1 << (m_lumaBD - 10));
-      variance = variance / (double)(1 << (2 * (m_lumaBD - 10)));
-      binIdx = (uint32_t)((pxlY >> (m_lumaBD - 10)) / binLen);
+      if (m_lumaBD > 10)
+      {
+        average = average / (double)(1 << (m_lumaBD - 10));
+        variance = variance / (double)(1 << (2 * m_lumaBD - 20));
+      }
+      else if (m_lumaBD < 10)
+      {
+        average = average * (double)(1 << (10 - m_lumaBD));
+        variance = variance * (double)(1 << (20 - 2 * m_lumaBD));
+      }
       double varLog10 = log10(variance + 1.0);
       stats.binVar[binIdx] += varLog10;
       binCnt[binIdx]++;
@@ -1840,13 +1847,6 @@ void EncReshape::constructReshaperLMCS()
   int log2HistLenth = floorLog2(histLenth);
   int i;
 
-  if (bdShift != 0)
-  {
-    for (int i = 0; i < PIC_ANALYZE_CW_BINS; i++)
-    {
-      m_binCW[i] = bdShift > 0 ? m_binCW[i] * (1 << bdShift) : m_binCW[i] / (1 << (-bdShift));
-    }
-  }
   if (m_binNum == PIC_ANALYZE_CW_BINS)
   {
     for (int i = 0; i < PIC_CODE_CW_BINS; i++)
@@ -1881,6 +1881,14 @@ void EncReshape::constructReshaperLMCS()
 #if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
   adjustLmcsPivot();
 #endif
+
+  if (bdShift != 0)
+  {
+    for (int i = 0; i < PIC_ANALYZE_CW_BINS; i++)
+    {
+      m_binCW[i] = bdShift > 0 ? m_binCW[i] * (1 << bdShift) : m_binCW[i] / (1 << (-bdShift));
+    }
+  }
 
   int maxAbsDeltaCW = 0, absDeltaCW = 0, deltaCW = 0;
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)

@@ -589,6 +589,52 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
     {
       std::vector<uint32_t> rowHeight2;
       std::vector<uint32_t> rowBd2;
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+      int numBrickRowsMinus2 = 0;
+      if (pps.getUniformBrickSpacingFlag(tileIdx))
+      {
+        int brickHeight            = pps.getBrickHeightMinus1(tileIdx) + 1;
+        int remainingHeightInCtbsY = tileRowHeight[tileY];
+        int brickInTile            = 0;
+        while (remainingHeightInCtbsY > brickHeight)
+        {
+          rowHeight2.resize(brickInTile + 1);
+          rowHeight2[brickInTile++] = brickHeight;
+          remainingHeightInCtbsY -= brickHeight;
+        }
+        rowHeight2.resize(brickInTile + 1);
+        rowHeight2[brickInTile] = remainingHeightInCtbsY;
+        numBrickRowsMinus2      = brickInTile;
+      }
+      else
+      {
+        numBrickRowsMinus2 = pps.getNumBrickRowsMinus2(tileIdx);
+        rowHeight2.resize(numBrickRowsMinus2 + 1);
+        rowHeight2[numBrickRowsMinus2 + 1] = tileRowHeight[tileY];
+        for (int j = 0; j <= numBrickRowsMinus2; j++)
+        {
+          rowHeight2[j] = pps.getBrickRowHeightMinus1(tileIdx, j) + 1;
+          rowHeight2[numBrickRowsMinus2 + 1] -= rowHeight2[j];
+        }
+      }
+      rowBd2.resize(numBrickRowsMinus2 + 2);
+      rowBd2[0] = 0;
+      for (int j = 0; j <= numBrickRowsMinus2 + 1; j++)
+      {
+        rowBd2[j + 1] = rowBd2[j] + rowHeight2[j];
+      }
+      for (int j = 0; j <= numBrickRowsMinus2 + 1; j++)
+      {
+        bricks.resize(bricks.size() + 1);
+        bricks[brickIdx].setColBd(tileColBd[tileX]);
+        bricks[brickIdx].setRowBd(tileRowBd[tileY] + rowBd2[j]);
+        bricks[brickIdx].setWidthInCtus(tileColWidth[tileX]);
+        bricks[brickIdx].setHeightInCtus(rowHeight2[j]);
+        bricks[brickIdx].setFirstCtuRsAddr(bricks[brickIdx].getColBd()
+                                           + bricks[brickIdx].getRowBd() * frameWidthInCtus);
+        brickIdx++;
+      }
+#else
       int numBrickRowsMinus1 = 0;
       if (pps.getUniformBrickSpacingFlag(tileIdx))
       {
@@ -632,6 +678,7 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
         bricks[ brickIdx ].setFirstCtuRsAddr(bricks[ brickIdx ].getColBd() + bricks[ brickIdx ].getRowBd() * frameWidthInCtus);
         brickIdx++;
       }
+      #endif
     }
   }
 
@@ -738,6 +785,9 @@ Picture::Picture()
   layer                = std::numeric_limits<uint32_t>::max();
   fieldPic             = false;
   topField             = false;
+#if JVET_N0494_DRAP
+  precedingDRAP        = false;
+#endif
   for( int i = 0; i < MAX_NUM_CHANNEL_TYPE; i++ )
   {
     m_prevQP[i] = -1;
@@ -887,9 +937,9 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const
 const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
 #if JVET_O0299_APS_SCALINGLIST
-void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps, APS& scalingListAps )
+void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
 #else
-void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcsAps)
+void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps)
 #endif
 {
   for( auto &sei : SEIs )
@@ -930,9 +980,9 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS& lmcs
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
-  cs->lmcsAps = &lmcsAps;
+  cs->lmcsAps = lmcsAps;
 #if JVET_O0299_APS_SCALINGLIST  
-  cs->scalinglistAps = &scalingListAps;
+  cs->scalinglistAps = scalingListAps;
 #endif
 
   cs->pcv     = pps.pcv;
@@ -973,9 +1023,11 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   p->setPPS(cs->pps);
   p->setAlfAPSs(cs->alfApss);
 
-  p->setLmcsAPS(cs->lmcsAps);
+  if(cs->lmcsAps != nullptr)
+    p->setLmcsAPS(cs->lmcsAps);
 #if JVET_O0299_APS_SCALINGLIST
-  p->setscalingListAPS( cs->scalinglistAps );
+  if(cs->scalinglistAps != nullptr)
+    p->setscalingListAPS( cs->scalinglistAps );
 #endif
 
   Slice * pTmp = slices[i];

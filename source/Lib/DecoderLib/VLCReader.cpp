@@ -113,7 +113,7 @@ void VLCReader::xReadCode (uint32_t uiLength, uint32_t& ruiCode, const char *pSy
 void VLCReader::xReadCode (uint32_t uiLength, uint32_t& ruiCode)
 #endif
 {
-  CHECK( uiLength == 0, "Reading a code of lenght '0'" );
+  CHECK( uiLength == 0, "Reading a code of length '0'" );
   m_pcBitstream->read (uiLength, ruiCode);
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatistics::IncrementStatisticEP(pSymbolName, uiLength, ruiCode);
@@ -485,6 +485,44 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
   pcPPS->setSliceChromaQpFlag( uiCode ? true : false );
 
+  READ_FLAG( uiCode, "cu_chroma_qp_offset_enabled_flag");
+  if (uiCode == 0)
+  {
+    pcPPS->clearChromaQpOffsetList();
+    pcPPS->setCuChromaQpOffsetSubdiv(0);
+  }
+  else
+  {
+    READ_UVLC(uiCode, "cu_chroma_qp_offset_subdiv"); pcPPS->setCuChromaQpOffsetSubdiv(uiCode);
+    uint32_t tableSizeMinus1 = 0;
+    READ_UVLC(tableSizeMinus1, "chroma_qp_offset_list_len_minus1");
+    CHECK(tableSizeMinus1 >= MAX_QP_OFFSET_LIST_SIZE, "Table size exceeds maximum");
+
+    for (int cuChromaQpOffsetIdx = 0; cuChromaQpOffsetIdx <= (tableSizeMinus1); cuChromaQpOffsetIdx++)
+    {
+      int cbOffset;
+      int crOffset;
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      int jointCbCrOffset;
+#endif
+      READ_SVLC(cbOffset, "cb_qp_offset_list[i]");
+      CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
+      READ_SVLC(crOffset, "cr_qp_offset_list[i]");
+      CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+      CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
+#endif
+      // table uses +1 for index (see comment inside the function)
+#if JVET_O1168_CU_CHROMA_QP_OFFSET
+      pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
+#else
+      pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
+#endif
+    }
+    CHECK(pcPPS->getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list length");
+  }
+
   READ_FLAG( uiCode, "weighted_pred_flag" );          // Use of Weighting Prediction (P_SLICE)
   pcPPS->setUseWP( uiCode==1 );
   READ_FLAG( uiCode, "weighted_bipred_flag" );         // Use of Bi-Directional Weighting Prediction (B_SLICE)
@@ -546,7 +584,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       std::vector<bool> brickSplitFlag (numTilesInPic);
       std::vector<bool> uniformBrickSpacingFlag (numTilesInPic);
       std::vector<int>  brickHeightMinus1 (numTilesInPic);
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+      std::vector<int> numBrickRowsMinus2(numTilesInPic);
+#else
       std::vector<int>  numBrickRowsMinus1 (numTilesInPic);
+#endif 
       std::vector<std::vector<int>>  brickRowHeightMinus1 (numTilesInPic);
       for( int i = 0; i < numTilesInPic; i++ )
       {
@@ -564,6 +606,16 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           }
           else
           {
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+            READ_UVLC(uiCode, "num_brick_rows_minus2 [i]");
+            numBrickRowsMinus2[i] = uiCode;
+            for (int j = 0; j <= numBrickRowsMinus2[i]; j++)
+            {
+              brickRowHeightMinus1[i].resize(numBrickRowsMinus2[i]);
+              READ_UVLC(uiCode, "brick_row_height_minus1 [i][j]");
+              brickRowHeightMinus1[i][j] = uiCode;
+            }
+#else
             READ_UVLC( uiCode, "num_brick_rows_minus1 [i]" );
             numBrickRowsMinus1[i] = uiCode;
             for(int j = 0; j < numBrickRowsMinus1[i]; j++ )
@@ -572,13 +624,18 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
               READ_UVLC( uiCode, "brick_row_height_minus1 [i][j]" );
               brickRowHeightMinus1[i][j]=uiCode;
             }
+#endif
           }
         }
       }
       pcPPS->setBrickSplitFlag(brickSplitFlag);
       pcPPS->setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
       pcPPS->setBrickHeightMinus1(brickHeightMinus1);
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+      pcPPS->setNumBrickRowsMinus2(numBrickRowsMinus2);
+#else
       pcPPS->setNumBrickRowsMinus1(numBrickRowsMinus1);
+#endif 
       pcPPS->setBrickRowHeightMinus1(brickRowHeightMinus1);
     }
     READ_FLAG (uiCode, "single_brick_per_slice_flag" );         pcPPS->setSingleBrickPerSliceFlag(uiCode == 1);
@@ -699,26 +756,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     READ_CODE( 2, uiCode, "pps_num_ver_virtual_boundaries");        pcPPS->setNumVerVirtualBoundaries( uiCode );
-#if JVET_O1164_PS
-    uint32_t picWidth = pcPPS->getPicWidthInLumaSamples();
-#else
-    uint32_t picWidth = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicWidthInLumaSamples(); // pcPPS->getPicWidthInLumaSamples();
-#endif
-    int numBits = ceilLog2(picWidth) - 3;
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
-      READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_x" ); pcPPS->setVirtualBoundariesPosX( uiCode << 3, i );
+      READ_CODE(13, uiCode, "pps_virtual_boundaries_pos_x");        pcPPS->setVirtualBoundariesPosX(uiCode << 3, i);
     }
     READ_CODE( 2, uiCode, "pps_num_hor_virtual_boundaries");        pcPPS->setNumHorVirtualBoundaries( uiCode );
-#if JVET_O1164_PS
-    uint32_t picHeight = pcPPS->getPicHeightInLumaSamples();
-#else
-    uint32_t picHeight = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicHeightInLumaSamples(); // pcPPS->getPicHeightInLumaSamples();
-#endif
-    numBits = ceilLog2(picHeight) - 3;
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
-      READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_y" ); pcPPS->setVirtualBoundariesPosY( uiCode << 3, i );
+      READ_CODE(13, uiCode, "pps_virtual_boundaries_pos_y");        pcPPS->setVirtualBoundariesPosY(uiCode << 3, i);
     }
   }
 
@@ -773,44 +818,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
           READ_FLAG( uiCode, "cross_component_prediction_enabled_flag");
           ppsRangeExtension.setCrossComponentPredictionEnabledFlag(uiCode != 0);
-
-          READ_FLAG( uiCode, "chroma_qp_offset_list_enabled_flag");
-          if (uiCode == 0)
-          {
-            ppsRangeExtension.clearChromaQpOffsetList();
-            ppsRangeExtension.setCuChromaQpOffsetSubdiv(0);
-          }
-          else
-          {
-            READ_UVLC(uiCode, "cu_chroma_qp_offset_subdiv"); ppsRangeExtension.setCuChromaQpOffsetSubdiv(uiCode);
-            uint32_t tableSizeMinus1 = 0;
-            READ_UVLC(tableSizeMinus1, "chroma_qp_offset_list_len_minus1");
-            CHECK(tableSizeMinus1 >= MAX_QP_OFFSET_LIST_SIZE, "Table size exceeds maximum");
-
-            for (int cuChromaQpOffsetIdx = 0; cuChromaQpOffsetIdx <= (tableSizeMinus1); cuChromaQpOffsetIdx++)
-            {
-              int cbOffset;
-              int crOffset;
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-              int jointCbCrOffset;
-#endif
-              READ_SVLC(cbOffset, "cb_qp_offset_list[i]");
-              CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
-              READ_SVLC(crOffset, "cr_qp_offset_list[i]");
-              CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-              READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
-              CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
-#endif
-              // table uses +1 for index (see comment inside the function)
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
-              ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
-#else
-              ppsRangeExtension.setChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1, cbOffset, crOffset);
-#endif
-            }
-            CHECK(ppsRangeExtension.getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list lenght");
-          }
 
           READ_UVLC( uiCode, "log2_sao_offset_scale_luma");
           ppsRangeExtension.setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA, uiCode);
@@ -1286,7 +1293,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_idr_rpl_present_flag" ); pcSPS->setIDRRefParamListPresent( (bool) uiCode);
   // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
+#if JVET_O0178
+  if (pcSPS->getMaxTLayers() > 1)
+  {
+    READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
+  }
+  else
+  {
+    subLayerOrderingInfoPresentFlag = 0;
+  }
+#else
   READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
+#endif
 
   for(uint32_t i=0; i <= pcSPS->getMaxTLayers()-1; i++)
   {
@@ -1423,7 +1441,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 }
 
   pcSPS->setMinQTSizes(minQT);
-  pcSPS->setMaxBTDepth(maxBTD[1], maxBTD[0], maxBTD[2]);
+  pcSPS->setMaxMTTHierarchyDepth(maxBTD[1], maxBTD[0], maxBTD[2]);
   pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
   pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
 
@@ -1877,12 +1895,78 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     //   read colour_plane_id
     //   (separate_colour_plane_flag == 1) is not supported in this version of the standard.
 
+#if RPL_IN_IDR_FIX
+    READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
+    if (pcSlice->getIdrPicFlag())
+      pcSlice->setPOC(uiCode);
+    else
+    {
+      int iPOClsb = uiCode;
+      int iPrevPOC = prevTid0POC;
+      int iMaxPOClsb = 1 << sps->getBitsForPOC();
+      int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
+      int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+      int iPOCmsb;
+      if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+      }
+      else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      }
+      else
+      {
+        iPOCmsb = iPrevPOCmsb;
+      }
+      pcSlice->setPOC(iPOCmsb + iPOClsb);
+    }
+
+#if JVET_N0865_SYNTAX
+#if !JVET_N0865_GRA2GDR
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+#else
+    if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#endif
+      {
+      READ_UVLC(uiCode, "recovery_poc_cnt");
+      int maxPicOrderCntLsb = (int)pow(2, pcSlice->getSPS()->getBitsForPOC());
+      CHECK(uiCode < maxPicOrderCntLsb, "The value of recovery_poc_cnt exceeds (POC LSB cycle - 1)");
+      pcSlice->setRecoveryPocCnt(uiCode);
+      pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
+    }
+#if !JVET_N0865_GRA2GDR
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#else
+    if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#endif
+    {
+      READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
+      pcSlice->setNoOutputPriorPicsFlag(uiCode);
+    }
+    if (pps->getOutputFlagPresentFlag())
+    {
+      READ_FLAG(uiCode, "pic_output_flag");
+      pcSlice->setPicOutputFlag(uiCode ? true : false);
+    }
+    else
+    {
+      pcSlice->setPicOutputFlag(true);
+    }
+#endif
+#endif
+
     if( pcSlice->getIdrPicFlag() && !(sps->getIDRRefParamListPresent()))
     {
+#if !RPL_IN_IDR_FIX
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       pcSlice->setPOC(uiCode);
 #if JVET_N0865_SYNTAX
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
       if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+#endif
       {
         READ_UVLC(uiCode, "recovery_poc_cnt");
         int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
@@ -1890,7 +1974,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setRecoveryPocCnt(uiCode);
         pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
       }
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#else
       if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#endif
       {
         READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
         pcSlice->setNoOutputPriorPicsFlag(uiCode);
@@ -1905,7 +1993,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setPicOutputFlag(true);
       }
 #endif
-
+#endif
       ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
       (*rpl0) = ReferencePictureList();
       pcSlice->setRPL0(rpl0);
@@ -1917,6 +2005,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     else
     {
+#if !RPL_IN_IDR_FIX
       READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
       int iPOClsb = uiCode;
       int iPrevPOC = prevTid0POC;
@@ -1938,7 +2027,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
       pcSlice->setPOC              (iPOCmsb+iPOClsb);
 #if JVET_N0865_SYNTAX
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+#else
       if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA)
+#endif
       {
         READ_UVLC(uiCode, "recovery_poc_cnt");
         int maxPicOrderCntLsb = (int) pow(2, pcSlice->getSPS()->getBitsForPOC());
@@ -1946,7 +2039,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setRecoveryPocCnt(uiCode);
         pcSlice->setRpPicOrderCntVal(pcSlice->getPOC() + pcSlice->getRecoveryPocCnt());
       }
+#if JVET_N0865_GRA2GDR
+      if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR))
+#else
       if (pcSlice->getRapPicFlag() || (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA))
+#endif
       {
         READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
         pcSlice->setNoOutputPriorPicsFlag(uiCode);
@@ -1961,7 +2058,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         pcSlice->setPicOutputFlag(true);
       }
 #endif
-
+#endif
       //Read L0 related syntax elements
       if (sps->getNumRPL0() > 0)
       {
@@ -2196,6 +2293,15 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
+#if JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK
+    if (pcSlice->isInterP() || pcSlice->isInterB())
+    {
+      CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_0) == 0, "Number of active entries in RPL0 of P or B picture shall be greater than 0");
+      if (pcSlice->isInterB())
+        CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_1) == 0, "Number of active entries in RPL1 of B picture shall be greater than 0");
+    }
+#endif
+
     if (
       sps->getSplitConsOverrideEnabledFlag()
       )
@@ -2204,8 +2310,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       if (pcSlice->getSplitConsOverrideFlag())
       {
         READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
-        READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_luma");                 pcSlice->setMaxBTDepth(uiCode);
-        if (pcSlice->getMaxBTDepth() != 0)
+        READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_luma");                 pcSlice->setMaxMTTHierarchyDepth(uiCode);
+        if (pcSlice->getMaxMTTHierarchyDepth() != 0)
         {
           READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
           READ_UVLC(uiCode, "slice_log2_diff_max_tt_min_qt");             pcSlice->setMaxTTSize(pcSlice->getMinQTSize() << uiCode);
@@ -2220,8 +2326,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
           )
         {
           READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
-          READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxBTDepthIChroma(uiCode);
-          if (pcSlice->getMaxBTDepthIChroma() != 0)
+          READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxMTTHierarchyDepthIChroma(uiCode);
+          if (pcSlice->getMaxMTTHierarchyDepthIChroma() != 0)
           {
             READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
             READ_UVLC(uiCode, "slice_log2_diff_max_tt_min_qt_chroma");             pcSlice->setMaxTTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
@@ -2515,7 +2621,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-    if (pps->getPpsRangeExtension().getChromaQpOffsetListEnabledFlag())
+    if (pps->getCuChromaQpOffsetEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
     }

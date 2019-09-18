@@ -88,6 +88,9 @@ EncGOP::EncGOP()
   m_iNumPicCoded        = 0; //Niko
   m_bFirst              = true;
   m_iLastRecoveryPicPOC = 0;
+#if JVET_N0494_DRAP
+  m_latestDRAPPOC       = MAX_INT;
+#endif
   m_lastRasPoc          = MAX_INT;
 
   m_pcCfg               = NULL;
@@ -693,10 +696,17 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
 {
+#if JVET_OO152_BP_SEI_GDR
+  if ((m_pcCfg->getBufferingPeriodSEIEnabled()) && (slice->isIRAP() || slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+    (slice->getSPS()->getVuiParametersPresentFlag()) &&
+    ((slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag())
+      || (slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag())))
+#else
   if( ( m_pcCfg->getBufferingPeriodSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) &&
     ( slice->getSPS()->getVuiParametersPresentFlag() ) &&
     ( ( slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
     || ( slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
+#endif
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
     m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI);
@@ -715,6 +725,15 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     }
 #endif
   }
+
+#if JVET_N0494_DRAP
+  if (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && slice->isDRAP())
+  {
+    SEIDependentRAPIndication *dependentRAPIndicationSEI = new SEIDependentRAPIndication();
+    m_seiEncoder.initSEIDependentRAPIndication(dependentRAPIndicationSEI);
+    seiMessages.push_back(dependentRAPIndicationSEI);
+  }
+#endif
 
 #if HEVC_SEI
   if (picInGOP ==0 && m_pcCfg->getSOPDescriptionSEIEnabled() ) // write SOP description SEI (if enabled) at the beginning of GOP
@@ -808,6 +827,15 @@ void EncGOP::xCreateFrameFieldInfoSEI  (SEIMessages& seiMessages, Slice *slice, 
 
 void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData)
 {
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  // Picture timing depends on buffering period. When either of those is not disabled,
+  // initialization would fail. Needs more cleanup after DU timing is integrated.
+  if (!(m_pcCfg->getPictureTimingSEIEnabled() && m_pcCfg->getBufferingPeriodSEIEnabled()))
+  {
+    return;
+  }
+#endif
+
   const HRDParameters *hrd = slice->getSPS()->getHrdParameters();
 
   // update decoding unit parameters
@@ -2039,7 +2067,50 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
     }
 
+#if JVET_N0494_DRAP
+    pcSlice->setEnableDRAPSEI(m_pcEncLib->getDependentRAPIndicationSEIEnabled());
+    if (m_pcEncLib->getDependentRAPIndicationSEIEnabled())
+    {
+      // Only mark the picture as DRAP if all of the following applies:
+      //  1) DRAP indication SEI messages are enabled
+      //  2) The current picture is not an intra picture
+      //  3) The current picture is in the DRAP period
+      //  4) The current picture is a trailing picture
+      pcSlice->setDRAP(m_pcEncLib->getDependentRAPIndicationSEIEnabled() && m_pcEncLib->getDrapPeriod() > 0 && !pcSlice->isIntra() &&
+              pocCurr % m_pcEncLib->getDrapPeriod() == 0 && pocCurr > pcSlice->getAssociatedIRAPPOC());
+      
+      if (pcSlice->isDRAP())
+      {
+        int pocCycle = 1 << (pcSlice->getSPS()->getBitsForPOC());
+        int deltaPOC = pocCurr > pcSlice->getAssociatedIRAPPOC() ? pocCurr - pcSlice->getAssociatedIRAPPOC() : pocCurr - ( pcSlice->getAssociatedIRAPPOC() & (pocCycle -1) ); 
+        CHECK(deltaPOC > (pocCycle >> 1), "Use a greater value for POC wraparound to enable a POC distance between IRAP and DRAP of " << deltaPOC << ".");
+        m_latestDRAPPOC = pocCurr;
+        pcSlice->setTLayer(0); // Force DRAP picture to have temporal layer 0
+      }
+      pcSlice->setLatestDRAPPOC(m_latestDRAPPOC);
+      pcSlice->setUseLTforDRAP(false); // When set, sets the associated IRAP as long-term in RPL0 at slice level, unless the associated IRAP is already included in RPL0 or RPL1 defined in SPS
+
+      PicList::iterator iterPic = rcListPic.begin();
+      Picture *rpcPic;
+      while (iterPic != rcListPic.end())
+      {
+        rpcPic = *(iterPic++);
+        if ( pcSlice->isDRAP() && rpcPic->getPOC() != pocCurr )
+        {
+            rpcPic->precedingDRAP = true;
+        }
+        else if ( !pcSlice->isDRAP() && rpcPic->getPOC() == pocCurr )
+        {
+          rpcPic->precedingDRAP = false;
+        }
+      }
+    }
+
+    if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0 || 
+        (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && !pcSlice->isIRAP() && ( pcSlice->isDRAP() || !pcSlice->isPOCInRefPicList(pcSlice->getRPL0(), pcSlice->getAssociatedIRAPPOC())) ))
+#else
     if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0)
+#endif
     {
       pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
     }
@@ -2124,9 +2195,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcSlice->constructRefPicList(rcListPic);
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST
-    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), *pcSlice->getscalingListAPS(), false );
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
 #else
-    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), *pcSlice->getLmcsAPS(), false );
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), false );
 #endif
 #endif
 
@@ -2943,18 +3014,32 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         OutputNALUnit nalu( pcSlice->getNalUnitType(), pcSlice->getTLayer() );
         m_HLSWriter->setBitstream( &nalu.m_Bitstream );
 
+#if JVET_N0865_NONSYNTAX
+        pcSlice->setNoIncorrectPicOutputFlag(false);
+#else
         pcSlice->setNoRaslOutputFlag(false);
+#endif
         if (pcSlice->isIRAP())
         {
           if (pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
           {
+#if JVET_N0865_NONSYNTAX
+            pcSlice->setNoIncorrectPicOutputFlag(true);
+#else
             pcSlice->setNoRaslOutputFlag(true);
+#endif
           }
           //the inference for NoOutputPriorPicsFlag
           // KJS: This cannot happen at the encoder
+#if JVET_N0865_NONSYNTAX
+          if (!m_bFirst && (pcSlice->isIRAP() || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR) && pcSlice->getNoIncorrectPicOutputFlag())
+          {
+            if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR)
+#else
           if (!m_bFirst && pcSlice->isIRAP() && pcSlice->getNoRaslOutputFlag())
           {
             if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
+#endif
             {
               pcSlice->setNoOutputPriorPicsFlag(true);
             }
@@ -3910,6 +3995,9 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   {
     c += 32;
   }
+#if JVET_N0494_DRAP
+  if (m_pcCfg->getDependentRAPIndicationSEIEnabled() && pcSlice->isDRAP()) c = 'D';
+#endif
 
   if( g_verbosity >= NOTICE )
   {

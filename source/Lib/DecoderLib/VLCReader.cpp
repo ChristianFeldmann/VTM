@@ -756,26 +756,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     READ_CODE( 2, uiCode, "pps_num_ver_virtual_boundaries");        pcPPS->setNumVerVirtualBoundaries( uiCode );
-#if JVET_O1164_PS
-    uint32_t picWidth = pcPPS->getPicWidthInLumaSamples();
-#else
-    uint32_t picWidth = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicWidthInLumaSamples(); // pcPPS->getPicWidthInLumaSamples();
-#endif
-    int numBits = ceilLog2(picWidth) - 3;
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
-      READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_x" ); pcPPS->setVirtualBoundariesPosX( uiCode << 3, i );
+      READ_CODE(13, uiCode, "pps_virtual_boundaries_pos_x");        pcPPS->setVirtualBoundariesPosX(uiCode << 3, i);
     }
     READ_CODE( 2, uiCode, "pps_num_hor_virtual_boundaries");        pcPPS->setNumHorVirtualBoundaries( uiCode );
-#if JVET_O1164_PS
-    uint32_t picHeight = pcPPS->getPicHeightInLumaSamples();
-#else
-    uint32_t picHeight = parameterSetManager->getSPS( pcPPS->getSPSId() )->getPicHeightInLumaSamples(); // pcPPS->getPicHeightInLumaSamples();
-#endif
-    numBits = ceilLog2(picHeight) - 3;
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
-      READ_CODE( numBits, uiCode, "pps_virtual_boundaries_pos_y" ); pcPPS->setVirtualBoundariesPosY( uiCode << 3, i );
+      READ_CODE(13, uiCode, "pps_virtual_boundaries_pos_y");        pcPPS->setVirtualBoundariesPosY(uiCode << 3, i);
     }
   }
 
@@ -2304,6 +2292,15 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         }
       }
     }
+
+#if JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK
+    if (pcSlice->isInterP() || pcSlice->isInterB())
+    {
+      CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 0, "Number of active entries in RPL0 of P or B picture shall be greater than 0");
+      if (pcSlice->isInterB())
+        CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 0, "Number of active entries in RPL1 of B picture shall be greater than 0");
+    }
+#endif
 
     if (
       sps->getSplitConsOverrideEnabledFlag()

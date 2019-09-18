@@ -50,8 +50,16 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
+
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
+
 #define JVET_O0173_O0176_O0338_NUMBRICK_M2                1 // JVET-O0173, O0176, O0338 : Replacing num_brick_rows_minus1 with num_brick_rows_minus2
+
+#define JVET_OO152_BP_SEI_GDR                             1 // JVET-O0152: Allowing association of a buffering period SEI with GDR picture
+
+#define JVET_OO147_LEADING_PIC_CHECKING                   1 // JVET-O0147: Constraints on leading pictures
+
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
 
 #define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
@@ -291,6 +299,9 @@
 #define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
 
 #define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
+
+#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
+
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

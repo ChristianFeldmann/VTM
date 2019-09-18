@@ -336,6 +336,12 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       }
     }
     WRITE_FLAG( pcPPS->getBrickSplittingPresentFlag() ? 1 : 0, "brick_splitting_present_flag" );
+#if JVET_O0176_PROPOSAL3
+    if (pcPPS->getBrickSplittingPresentFlag())
+    {
+      CHECK(pcPPS->getRectSliceFlag() != true, "rect_slice_flag must be equal to 1 for brick_splitting_present_flag equal to 1");
+    }
+#endif
 
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
 
@@ -439,16 +445,14 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     WRITE_CODE( pcPPS->getNumVerVirtualBoundaries(), 2,                              "pps_num_ver_virtual_boundaries");
-    int numBits = ceilLog2(pcPPS->pcv->lumaWidth) - 3;
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
-      WRITE_CODE( pcPPS->getVirtualBoundariesPosX( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_x" );
+      WRITE_CODE(pcPPS->getVirtualBoundariesPosX(i) >> 3, 13,                        "pps_virtual_boundaries_pos_x");
     }
     WRITE_CODE( pcPPS->getNumHorVirtualBoundaries(), 2,                              "pps_num_hor_virtual_boundaries");
-    numBits = ceilLog2(pcPPS->pcv->lumaHeight) - 3;
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
-      WRITE_CODE( pcPPS->getVirtualBoundariesPosY( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_y" );
+      WRITE_CODE(pcPPS->getVirtualBoundariesPosY(i) >> 3, 13,                        "pps_virtual_boundaries_pos_y");
     }
   }
 

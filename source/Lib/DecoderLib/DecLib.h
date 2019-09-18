@@ -163,6 +163,7 @@ public:
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
+  bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
@@ -172,6 +173,7 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+
 protected:
   void  xUpdateRasInit(Slice* slice);
 

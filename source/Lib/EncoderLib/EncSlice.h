@@ -92,18 +92,19 @@ private:
   uint32_t                    m_uiSliceSegmentIdx;
   Ctx                     m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
   SliceType               m_encCABACTableIdx;
-#if SHARP_LUMA_DELTA_QP
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   int                     m_gopID;
 #endif
 
-#if SHARP_LUMA_DELTA_QP
 public:
-  int getGopId()        const { return m_gopID; }
-  double  calculateLambda( const Slice* slice, const int GOPid, const int depth, const double refQP, const double dQP, int &iQP );
+  double  initializeLambda(const Slice* slice, const int GOPid, const int refQP, const double dQP); // called by calculateLambda() and updateLambda()
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+  int     getGopId() const { return m_gopID; }
+  double  calculateLambda( const Slice* slice, const int GOPid, const double refQP, const double dQP, int &iQP );
+#endif
   void    setUpLambda( Slice* slice, const double dLambda, int iQP );
 
 private:
-#endif
   void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, bool &haveReachedTileBoundary, Picture* pcPic, const int sliceMode, const int sliceArgument );
 
 

@@ -1799,6 +1799,9 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
 
   int numTiles= (m_iNumColumnsMinus1 + 1) * (m_iNumRowsMinus1 + 1);
   pps.setNumTilesInPic(numTiles);
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+  std::vector<int> tileHeight(numTiles);
+#endif
 
   if (m_brickSplitMap.empty())
   {
@@ -1870,11 +1873,12 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
       const int tileY = tileIdx / (m_iNumColumnsMinus1 + 1);
 
-      int tileHeight = tileRowHeight[tileY];
+      tileHeight[tileIdx] = tileRowHeight[tileY];
 
-      pps.setTileHeight(tileIdx, tileHeight);
-
-      CHECK((tileHeight <= 1) && (pps.getBrickSplitFlag(tileIdx) == 0), "The value of brick_split_flag[ i ] shall be 0 if tileHeight <= 1");
+      if (tileHeight[tileIdx] <= 1)
+      {
+        CHECK(pps.getBrickSplitFlag(tileIdx) != 0, "The value of brick_split_flag[ i ] shall be 0 if tileHeight <= 1");
+      }
 #endif
       if (pps.getBrickSplitFlag(tileIdx))
       {
@@ -1884,11 +1888,18 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
         int tileHeight = tileRowHeight [tileY];
 #endif
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
-        CHECK((tileHeight <= 2) && (pps.getUniformBrickSpacingFlag(tileIdx) == 1), "The value of uniform_brick_spacing_flag[ i ] shall be 1 if tileHeight <= 2");
+        if (tileHeight[tileIdx] <= 2)
+        {
+          CHECK(pps.getUniformBrickSpacingFlag(tileIdx) != 1, "The value of uniform_brick_spacing_flag[ i ] shall be 1 if tileHeight <= 2");
+        }
 #endif
         if (pps.getUniformBrickSpacingFlag(tileIdx))
         {
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+          CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight[tileIdx], "Brick height larger than or equal to tile height");
+#else
           CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight, "Brick height larger than or equal to tile height");
+#endif
         }
         else
         {
@@ -1897,12 +1908,18 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
           {
             cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
           }
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+          CHECK(cumulativeHeight >= tileHeight[tileIdx], "Cumulative brick height larger than or equal to tile height");
+#else
           CHECK(cumulativeHeight >= tileHeight, "Cumulative brick height larger than or equal to tile height");
+#endif
         }
       }
     }
   }
-
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+  pps.setTileHeight(tileHeight);
+#endif
 }
 
 void  EncCfg::xCheckGSParameters()

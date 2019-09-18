@@ -1458,7 +1458,7 @@ public:
   void                   setTileRowHeight(const std::vector<int>& rowHeight)              { m_tileRowHeight = rowHeight;                  }
   uint32_t               getTileRowHeight(uint32_t rowIdx) const                          { return m_tileRowHeight[rowIdx];               }
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
-  void                   setTileHeight(uint32_t tileIdx, uint32_t tileHeight)             { m_tileHeight[tileIdx] = tileHeight;           }
+  void                   setTileHeight(const std::vector<int>& tileHeight)                { m_tileHeight = tileHeight;                    }
   uint32_t               getTileHeight(uint32_t tileIdx) const                            { return m_tileHeight[tileIdx];                 }
 #endif
 

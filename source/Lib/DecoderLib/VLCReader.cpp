@@ -592,12 +592,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
         if (pcPPS->getTileHeight(i) > 1)
         {
 #endif
-        READ_FLAG( uiCode, "brick_split_flag [i]" );
-        brickSplitFlag[i] = (uiCode == 1);
+          READ_FLAG(uiCode, "brick_split_flag [i]");
+          brickSplitFlag[i] = (uiCode == 1);
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
         }
         else
+        {
           brickSplitFlag[i] = 0;
+        }
 #endif
 
         if( brickSplitFlag[i] )
@@ -606,12 +608,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           if (pcPPS->getTileHeight(i) > 2)
           {
 #endif
-          READ_FLAG( uiCode, "uniform_brick_spacing_flag [i]" );
-          uniformBrickSpacingFlag[i] = (uiCode == 1);
+            READ_FLAG(uiCode, "uniform_brick_spacing_flag [i]");
+            uniformBrickSpacingFlag[i] = (uiCode == 1);
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
           }
           else
+          {
             uniformBrickSpacingFlag[i] = 1;
+          }
 #endif
           if( uniformBrickSpacingFlag[i] )
           {

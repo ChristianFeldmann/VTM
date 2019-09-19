@@ -586,6 +586,60 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       std::vector<int>  brickHeightMinus1 (numTilesInPic);
       std::vector<int>  numBrickRowsMinus1 (numTilesInPic);
       std::vector<std::vector<int>>  brickRowHeightMinus1 (numTilesInPic);
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+      int m_maxCUHeight = parameterSetManager->getSPS(pcPPS->getSPSId())->getMaxCUHeight();
+      int m_maxCUWidth = parameterSetManager->getSPS(pcPPS->getSPSId())->getMaxCUWidth();
+      int picHeightInCtus = (pcPPS->getPicHeightInLumaSamples() + m_maxCUHeight - 1) / m_maxCUHeight;
+      int picWidthInCtus = (pcPPS->getPicWidthInLumaSamples() + m_maxCUWidth - 1) / m_maxCUWidth;
+
+      if (pcPPS->getUniformTileSpacingFlag())
+      {
+        int numTileRow = 1;
+        int lastTileRowHeight = picHeightInCtus;
+        while (lastTileRowHeight > (pcPPS->getTileRowsHeightMinus1() + 1))
+        {
+          numTileRow++;
+          lastTileRowHeight = lastTileRowHeight - (pcPPS->getTileRowsHeightMinus1() + 1);
+        }
+        int numTileColumn = 1;
+        int lastTileColumnWidth = picWidthInCtus;
+        while (lastTileColumnWidth > (pcPPS->getTileColsWidthMinus1() + 1))
+        {
+          numTileColumn++;
+          lastTileColumnWidth = lastTileColumnWidth - (pcPPS->getTileColsWidthMinus1() + 1);
+        }
+
+        std::vector<int> tileHeight(numTileRow * numTileColumn);
+        for (int tileIdx = 0; tileIdx < (numTileRow - 1) * numTileColumn; tileIdx++)
+        {
+          tileHeight[tileIdx] = pcPPS->getTileRowsHeightMinus1() + 1;
+        }
+        for (int tileIdx = (numTileRow - 1) * numTileColumn; tileIdx < numTileRow * numTileColumn; tileIdx++)
+        {
+          tileHeight[tileIdx] = lastTileRowHeight;
+        }
+        pcPPS->setTileHeight(tileHeight);
+      }
+      else
+      {
+        int tileIdx = 0;
+        int lastTileRowHeight = picHeightInCtus;
+        std::vector<int> tileHeight(numTilesInPic);
+        for (int row = 0; row < pcPPS->getNumTileRowsMinus1(); row++)
+        {
+          for (int col = 0; col <= pcPPS->getNumTileColumnsMinus1(); col++)
+          {
+            tileHeight[tileIdx++] = pcPPS->getTileRowHeight(row);
+          }
+          lastTileRowHeight = lastTileRowHeight - pcPPS->getTileRowHeight(row);
+        }
+        for (int col = 0; col <= pcPPS->getNumTileColumnsMinus1(); col++)
+        {
+          tileHeight[tileIdx++] = lastTileRowHeight;
+        }
+        pcPPS->setTileHeight(tileHeight);
+      }
+#endif
       for( int i = 0; i < numTilesInPic; i++ )
       {
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION

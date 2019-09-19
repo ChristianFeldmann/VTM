@@ -109,8 +109,14 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_dpbOutputDelayLength = m_dpbOutputDelayLength;
   target.m_bpCpbCnt = m_bpCpbCnt;
 #endif
+#if !FIX_SEI_O0189
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
+#endif
+#if JVET_O0189_DU
+  target.m_duCpbRemovalDelayIncrementLength = m_duCpbRemovalDelayIncrementLength;
+  target.m_dpbOutputDelayDuLength = m_dpbOutputDelayDuLength;
+#endif
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_auCpbRemovalDelayDelta = m_auCpbRemovalDelayDelta;
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI

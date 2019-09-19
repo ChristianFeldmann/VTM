@@ -2868,13 +2868,31 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
   }
 
-
   std::vector<uint32_t> entryPointOffset;
   if( !pps->getSingleTileInPicFlag() || pps->getEntropyCodingSyncEnabledFlag() )
   {
     uint32_t numEntryPointOffsets;
     uint32_t offsetLenMinus1;
+#if JVET_O0145_ENTRYPOINT_SIGNALLING
+    if (pps->getEntropyCodingSyncEnabledFlag() == 0)
+    {
+      numEntryPointOffsets = pcSlice->getSliceNumBricks() - 1;
+    }
+    else
+    {
+      int numBrickSpecificCtuRowsInSlice = 0;
+      for (int i = 0; i < pcSlice->getSliceNumBricks(); i++)
+      {
+        //TODO: Update this when JVET-O0143 is implemented to handle the case when current slice is rectangular slice.
+        //      Need to access the variable SliceBrickIdx[] which has dependency to BricksToSliceMap[]
+        int numberOfCTURow = (int)ceil(pps->getPicHeightInLumaSamples() / sps->getCTUSize());
+        numBrickSpecificCtuRowsInSlice += numberOfCTURow;
+      }
+      numEntryPointOffsets = numBrickSpecificCtuRowsInSlice - 1;
+    }
+#else
     READ_UVLC( numEntryPointOffsets, "num_entry_point_offsets" );
+#endif
     if( numEntryPointOffsets > 0 )
     {
       READ_UVLC( offsetLenMinus1, "offset_len_minus1" );

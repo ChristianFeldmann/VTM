@@ -247,14 +247,19 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI)
     bufferingPeriodSEI->m_cpbRemovalDelayLength = 9;                        // max. 2^10
     bufferingPeriodSEI->m_dpbOutputDelayLength =  9;                        // max. 2^10
   }
-
+#if JVET_O0189_DU
+  bufferingPeriodSEI->m_duCpbRemovalDelayIncrementLength = 7;               // ceil( log2( tick_divisor_minus2 + 2 ) )
+  bufferingPeriodSEI->m_dpbOutputDelayDuLength = bufferingPeriodSEI->m_dpbOutputDelayLength + bufferingPeriodSEI->m_duCpbRemovalDelayIncrementLength;
+#endif
 #endif
   //for the concatenation, it can be set to one during splicing.
   bufferingPeriodSEI->m_concatenationFlag = 0;
   //since the temporal layer HRDParameters is not ready, we assumed it is fixed
   bufferingPeriodSEI->m_auCpbRemovalDelayDelta = 1;
+#if !FIX_SEI_O0189
   bufferingPeriodSEI->m_cpbDelayOffset = 0;
   bufferingPeriodSEI->m_dpbDelayOffset = 0;
+#endif
 }
 
 #if HEVC_SEI

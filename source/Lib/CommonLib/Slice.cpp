@@ -755,6 +755,17 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_scalingListAps                  = pSrc->m_scalingListAps;
   m_scalingListApsId                = pSrc->m_scalingListApsId;
 #endif
+#if JVET_O0189_DU
+#if JVET_O1164_RPR
+  for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
+  {
+    for (int j = 0; j < MAX_NUM_REF_PICS; j ++ )
+    {
+      m_scalingRatio[i][j]          = pSrc->m_scalingRatio[i][j];
+    }
+  }
+#endif
+#endif
 }
 
 
@@ -1636,6 +1647,9 @@ SPS::SPS()
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
+#if FIX_HRD_O0189
+, m_hrdParametersPresentFlag  (false)
+#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)

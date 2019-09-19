@@ -789,10 +789,33 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
   WRITE_FLAG( hrd->getVclHrdParametersPresentFlag() ? 1 : 0 ,  "general_vcl_hrd_parameters_present_flag" );
   if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
   {
+#if JVET_O0189_DU
+    WRITE_FLAG( hrd->getDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
+#else
     WRITE_FLAG( hrd->getSubPicCpbParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
+#endif
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      WRITE_CODE( hrd->getTickDivisorMinus2(), 8,            "tick_divisor_minus2" );
+      WRITE_FLAG( hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() ? 1 : 0, "decoding_unit_cpb_params_in_pic_timing_sei_flag" );
+    }
+#endif
+#if FIX_HRD_O0189
+    WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
+    WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
+#endif
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
   }
+#endif
+  }
+#if !FIX_HRD_O0189
   WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
   WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
+#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {
@@ -1161,12 +1184,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
 
   const TimingInfo *timingInfo = pcSPS->getTimingInfo();
+#if JVET_O0189_DU
+  WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),          "general_hrd_parameters_present_flag");
+    if( pcSPS->getHrdParametersPresentFlag() )
+#else
   WRITE_FLAG(timingInfo->getTimingInfoPresentFlag(),          "timing_info_present_flag");
   if(timingInfo->getTimingInfoPresentFlag())
+#endif
   {
     WRITE_CODE(timingInfo->getNumUnitsInTick(), 32,           "num_units_in_tick");
     WRITE_CODE(timingInfo->getTimeScale(),      32,           "time_scale");
+#if !JVET_O0189_DU
     WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),              "hrd_parameters_present_flag");
+#endif
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       codeHrdParameters(pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );

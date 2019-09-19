@@ -71,11 +71,20 @@ protected:
   void xParseSEIuserDataUnregistered          (SEIuserDataUnregistered &sei,          uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIActiveParameterSets           (SEIActiveParameterSets  &sei,          uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
+#if JVET_O0189_DU
+  void xParseSEIDecodingUnitInfo              (SEIDecodingUnitInfo& sei,              uint32_t payloadSize, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream);
+#else
   void xParseSEIDecodingUnitInfo              (SEIDecodingUnitInfo& sei,              uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream);
+#endif
   void xParseSEIDecodedPictureHash            (SEIDecodedPictureHash& sei,            uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
+#if JVET_O0189_DU
+  void xParseSEIBufferingPeriod               (SEIBufferingPeriod& sei,               uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream);
+  void xParseSEIPictureTiming                 (SEIPictureTiming& sei,                 uint32_t payloadSize, const SPS *sps, const SEIBufferingPeriod& bp, std::ostream *pDecodedMessageOutputStream);
+#else
   void xParseSEIBufferingPeriod               (SEIBufferingPeriod& sei,               uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIPictureTiming                 (SEIPictureTiming& sei,                 uint32_t payloadSize, const SEIBufferingPeriod& bp, std::ostream *pDecodedMessageOutputStream);
+#endif
 #else
   void xParseSEIBufferingPeriod               (SEIBufferingPeriod& sei,               uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream);
   void xParseSEIPictureTiming                 (SEIPictureTiming& sei,                 uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream);

@@ -272,6 +272,11 @@
 #define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
 
+#define JVET_O0189_DU                                     1
+#if JVET_O0189_DU
+#define FIX_SEI_O0189                                     1
+#define FIX_HRD_O0189                                     1
+#endif
 #define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1

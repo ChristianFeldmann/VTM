@@ -65,9 +65,17 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 # if U0132_TARGET_BITS_SATURATION
   int cpbSize          = encCfg->getCpbSize();
   CHECK(!(cpbSize!=0), "Unspecified error");  // CPB size may not be equal to zero. ToDo: have a better default and check for level constraints
+#if FIX_HRD_O0189
+  if( !encCfg->getHrdParametersPresentFlag() && !encCfg->getCpbSaturationEnabled() )
+#else
   if( !encCfg->getVuiParametersPresentFlag() && !encCfg->getCpbSaturationEnabled() )
+#endif
+#else
+#if FIX_HRD_O0189
+  if( !encCfg->getHrdParametersPresentFlag() )
 #else
   if( !encCfg.getVuiParametersPresentFlag() )
+#endif
 #endif
   {
     return;
@@ -112,25 +120,46 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
   bool rateCnt = ( bitRate > 0 );
   m_hrdParams.setNalHrdParametersPresentFlag( rateCnt );
   m_hrdParams.setVclHrdParametersPresentFlag( rateCnt );
+#if JVET_O0189_DU
+  useSubCpbParams &= ( m_hrdParams.getNalHrdParametersPresentFlag() || m_hrdParams.getVclHrdParametersPresentFlag() );
+  m_hrdParams.setDecodingUnitHrdParamsPresentFlag( useSubCpbParams );
+#else
   m_hrdParams.setSubPicCpbParamsPresentFlag( useSubCpbParams );
+#endif
 
+#if JVET_O0189_DU
+  if( m_hrdParams.getDecodingUnitHrdParamsPresentFlag() )
+#else
   if( m_hrdParams.getSubPicCpbParamsPresentFlag() )
+#endif
   {
     m_hrdParams.setTickDivisorMinus2( 100 - 2 );                          //
+#if !JVET_O0189_DU
     m_hrdParams.setDuCpbRemovalDelayLengthMinus1( 7 );                    // 8-bit precision ( plus 1 for last DU in AU )
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     m_hrdParams.setSubPicCpbParamsInPicTimingSEIFlag( true );
 #else
+#if JVET_O0189_DU
+    m_hrdParams.setDecodingUnitCpbParamsInPicTimingSeiFlag( !encCfg->getDecodingUnitInfoSEIEnabled() );
+#else
     m_hrdParams.setDecodingUnitHrdParamsPresentFlag( true );
 #endif
+#endif
+#if !JVET_O0189_DU
     m_hrdParams.setDpbOutputDelayDuLengthMinus1( 5 + 7 );                 // With sub-clock tick factor of 100, at least 7 bits to have the same value as AU dpb delay
+#endif
   }
   else
   {
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     m_hrdParams.setSubPicCpbParamsInPicTimingSEIFlag( false );
 #else
+#if JVET_O0189_DU
+    m_hrdParams.setDecodingUnitCpbParamsInPicTimingSeiFlag( false );
+#else
     m_hrdParams.setDecodingUnitHrdParamsPresentFlag( false );
+#endif
 #endif
   }
 
@@ -157,7 +186,11 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
   m_hrdParams.setCpbSizeScale( 6 );                                       // in units of 2^( 4 + 6 ) = 1,024 bit
 #endif
 
+#if JVET_O0189_DU
+  m_hrdParams.setCpbSizeDuScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
+#else
   m_hrdParams.setDuCpbSizeScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
+#endif
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   m_hrdParams.setInitialCpbRemovalDelayLengthMinus1(15);                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit

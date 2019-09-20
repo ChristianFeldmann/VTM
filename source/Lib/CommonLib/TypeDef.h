@@ -50,6 +50,10 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA           1 // JVET-O0143: Remove signaling of top_right_brick_idx
+
+#define JVET_O0236_PPS_PARSING_DEPENDENCY                 1 // JVET-O0236: Resolves a PPS parsing dependency
+
 #define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
 
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  1 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder

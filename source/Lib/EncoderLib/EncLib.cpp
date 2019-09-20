@@ -1783,12 +1783,31 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setTileColumnWidth( m_tileColumnWidth );
     pps.setTileRowHeight( m_tileRowHeight );
   }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  else
+  {
+    pps.setTileColsWidthMinus1(m_uniformTileColsWidthMinus1);
+    pps.setTileRowsHeightMinus1(m_uniformTileRowHeightMinus1);
+  }
+#endif
   pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
 
   //pps.setRectSliceFlag( m_rectSliceFlag );
   pps.setNumSlicesInPicMinus1( m_numSlicesInPicMinus1 );
   pps.setTopLeftBrickIdx(m_topLeftBrickIdx);
   pps.setBottomRightBrickIdx(m_bottomRightBrickIdx);
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (m_numSlicesInPicMinus1 > 0)
+  {
+    std::vector<int> bottomrightdelta(m_numSlicesInPicMinus1 + 1);
+    for (int i = 0; i < m_numSlicesInPicMinus1 + 1; i++)
+    {
+      bottomrightdelta[i] = (i == 0) ? m_bottomRightBrickIdx[i] : m_bottomRightBrickIdx[i] - m_bottomRightBrickIdx[i - 1];
+    }
+    pps.setBottomRightBrickIdxDelta(bottomrightdelta);
+  }
+#endif
+
   pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_loopFilterAcrossSlicesEnabledFlag );
   pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
@@ -1914,6 +1933,25 @@ void  EncCfg::xCheckGSParameters()
   int   iHeightInCU = ( m_iSourceHeight%m_maxCUHeight ) ? m_iSourceHeight/m_maxCUHeight + 1 : m_iSourceHeight/m_maxCUHeight;
   uint32_t  uiCummulativeColumnWidth = 0;
   uint32_t  uiCummulativeRowHeight = 0;
+
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (m_tileUniformSpacingFlag && m_uniformTileColsWidthMinus1 == -1)
+  {
+    EXIT("Uniform tiles specified with unspecified or invalid UniformTileColsWidthMinus1 value");
+  }
+  if (m_tileUniformSpacingFlag && m_uniformTileRowHeightMinus1 == -1)
+  {
+    EXIT("Uniform tiles specified with unspecified or invalid UniformTileRowHeightMinus1 value");
+  }
+  if (m_tileUniformSpacingFlag && m_uniformTileColsWidthMinus1 >= iWidthInCU)
+  {
+    EXIT("UniformTileColsWidthMinus1 too large");
+  }
+  if (m_tileUniformSpacingFlag && m_uniformTileRowHeightMinus1 >= iHeightInCU)
+  {
+    EXIT("UniformTileRowHeightMinus1 too large");
+  }
+#endif
 
   //check the column relative parameters
   if( m_iNumColumnsMinus1 >= (1<<(LOG2_MAX_NUM_COLUMNS_MINUS1+1)) )

@@ -343,7 +343,17 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     }
 #endif
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+    int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#else
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
+#if JVET_O0236_PPS_PARSING_DEPENDENCY
+    if (pcPPS->getUniformTileSpacingFlag() && pcPPS->getBrickSplittingPresentFlag())
+    {
+      WRITE_UVLC(numTilesInPic - 1, "num_tiles_in_pic_minus1");
+    }
+#endif
 
     for( int i = 0; pcPPS->getBrickSplittingPresentFlag()  &&  i < numTilesInPic; i++ )
     {
@@ -383,17 +393,30 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     {
       WRITE_UVLC( pcPPS->getNumSlicesInPicMinus1(), "num_slices_in_pic_minus1" );
       int numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
+#if !JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
       int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
       int codeLength = ceilLog2(numTilesInPic);
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+      WRITE_UVLC(codeLength, "bottom_right_brick_idx_length_minus1 ");
+#else
       int codeLength2 = codeLength;
+#endif
       for (int i = 0; i < numSlicesInPic; ++i)
       {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+        int delta = (i == 0) ? pcPPS->getBottomRightBrickIdx(i) : pcPPS->getBottomRightBrickIdx(i) - pcPPS->getBottomRightBrickIdx(i - 1);
+        int sign = (delta > 0) ? 1 : 0;
+        WRITE_CODE(delta, codeLength, "bottom_right_brick_idx_delta");
+        WRITE_FLAG(sign, "brick_idx_delta_sign_flag");
+#else
         if (i > 0)
         {
           WRITE_CODE(pcPPS->getTopLeftBrickIdx(i), codeLength, "top_left_brick_idx ");
           codeLength2 = ceilLog2((numTilesInPic - pcPPS->getTopLeftBrickIdx(i) < 2) ? 2 : numTilesInPic - pcPPS->getTopLeftBrickIdx(i));
         }
         WRITE_CODE(pcPPS->getBottomRightBrickIdx(i) - pcPPS->getTopLeftBrickIdx(i), codeLength2, "bottom_right_brick_idx_delta");
+#endif
       }
     }
 

@@ -519,6 +519,36 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
   const uint32_t frameWidthInCtus  = pcv->widthInCtus;
   const uint32_t frameHeightInCtus = pcv->heightInCtus;
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  std::vector<uint32_t> tileRowHeight;
+  std::vector<uint32_t> tileColWidth;
+  if (pps.getUniformTileSpacingFlag())
+  {
+    int tileWidthInCTUs = pps.getTileColsWidthMinus1() + 1;
+    int tileHeightInCTUs = pps.getTileRowsHeightMinus1() + 1;
+    int tileWidthInLumaSamples = tileWidthInCTUs * sps.getCTUSize();
+    int tileHeightInLumaSamples = tileHeightInCTUs * sps.getCTUSize();
+
+    numTileColumns = (pps.getPicWidthInLumaSamples() + tileWidthInLumaSamples - 1) / tileWidthInLumaSamples;
+    numTileRows = (pps.getPicHeightInLumaSamples() + tileHeightInLumaSamples - 1) / tileHeightInLumaSamples;
+    numTiles = numTileColumns * numTileRows;
+
+    int remainingHeightInCtbsY = frameHeightInCtus;
+    while (remainingHeightInCtbsY > tileHeightInCTUs)
+    {
+      tileRowHeight.push_back(tileHeightInCTUs);
+      remainingHeightInCtbsY -= tileHeightInCTUs;
+    }
+    tileRowHeight.push_back(remainingHeightInCtbsY);
+
+    int remainingWidthInCtbsY = frameWidthInCtus;
+    while (remainingWidthInCtbsY > tileWidthInCTUs)
+    {
+      tileColWidth.push_back(tileWidthInCTUs);
+      remainingWidthInCtbsY -= tileWidthInCTUs;
+    }
+    tileColWidth.push_back(remainingWidthInCtbsY);
+#else
   std::vector<uint32_t> tileRowHeight (numTileRows);
   std::vector<uint32_t> tileColWidth (numTileColumns);
 
@@ -533,9 +563,14 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
     {
       tileColWidth[col] = (col+1)*frameWidthInCtus/numTileColumns - (col*frameWidthInCtus)/numTileColumns;
     }
+#endif
   }
   else
   {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+    tileColWidth.resize(numTileColumns);
+    tileRowHeight.resize(numTileRows);
+#endif
     tileColWidth[ numTileColumns - 1 ] = frameWidthInCtus;
     for( int i = 0; i < numTileColumns - 1; i++ )
     {
@@ -572,9 +607,13 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
   int brickIdx = 0;
   for(int tileIdx=0; tileIdx< numTiles; tileIdx++)
   {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+    int tileX = tileIdx % numTileColumns;
+    int tileY = tileIdx / numTileColumns;
+#else
     int tileX = tileIdx % ( pps.getNumTileColumnsMinus1() + 1 );
     int tileY = tileIdx / ( pps.getNumTileColumnsMinus1() + 1 );
-
+#endif
     if ( !pps.getBrickSplittingPresentFlag() || !pps.getBrickSplitFlag(tileIdx))
     {
       bricks.resize(bricks.size()+1);
@@ -697,6 +736,49 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
       }
     }
   }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (pps.getRectSliceFlag())
+  {
+    int numSlicesInPic = (pps.getNumSlicesInPicMinus1() + 1);
+    int numBricksInPic = (int)bricks.size();
+
+    std::vector<int> bricksToSliceMap(numBricksInPic);
+    std::vector<int> numBricksInSlice(numSlicesInPic);
+
+    m_topLeftBrickIdx.resize(numSlicesInPic);
+    m_bottomRightBrickIdx.resize(numSlicesInPic);
+
+    if (numSlicesInPic == 1)
+    {
+      m_topLeftBrickIdx[0] = 0;
+      m_bottomRightBrickIdx[0] = numBricksInPic - 1;
+    }
+    else
+    {
+      for (int i = 0; i < numSlicesInPic; i++)
+      {
+        for (int j = 0; i == 0 && j < numBricksInPic; j++)
+        {
+          bricksToSliceMap[j] = -1;
+        }
+        numBricksInSlice[i] = 0;
+        m_bottomRightBrickIdx[i] = pps.getBottomRightBrickIdxDelta(i) + ((i == 0) ? 0 : m_bottomRightBrickIdx[i - 1]);
+        for (int j = m_bottomRightBrickIdx[i]; j >= 0; j--)
+        {
+          if (bricks[j].getColBd() <= bricks[m_bottomRightBrickIdx[i]].getColBd() &&
+            bricks[j].getRowBd() <= bricks[m_bottomRightBrickIdx[i]].getRowBd() &&
+            bricksToSliceMap[j] == -1)
+          {
+            m_topLeftBrickIdx[i] = j;
+            numBricksInSlice[i]++;
+            bricksToSliceMap[j] = i;
+          }
+        }
+      }
+    }
+  }
+#endif
+
 }
 
 

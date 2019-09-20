@@ -61,6 +61,12 @@ void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& 
 void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps )
 #endif
 {
+  if (sps.getWrapAroundEnabledFlag())
+  {
+    wrapClipMv(rcMv, pos, size, &sps, &pps);
+    return;
+  }
+
   int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   int iOffset = 8;
 #if JVET_O1164_PS
@@ -76,11 +82,6 @@ void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& 
   int iVerMax = ( sps.getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
 #endif
   int iVerMin = ( -( int ) sps.getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
-
-  if( sps.getWrapAroundEnabledFlag() )
-  {
-    return;
-  }
 
   rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );

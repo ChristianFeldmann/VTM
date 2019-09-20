@@ -1069,7 +1069,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
       }
       else
       {
-        int scaledDistToBuffPeriod = (m_totalCoded[i] - m_lastBPSEI[i]) * pow(2, static_cast<double>(maxNumSubLayers - 1 - i));
+        int scaledDistToBuffPeriod = (m_totalCoded[i] - m_lastBPSEI[i]) * static_cast<int>(pow(2, static_cast<double>(maxNumSubLayers - 1 - i)));
         pictureTimingSEI->m_auCpbRemovalDelay[i] = std::min<int>(std::max<int>(1, scaledDistToBuffPeriod), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
         CHECK( (scaledDistToBuffPeriod) > pow(2, static_cast<double>(cpbRemovalDelayLegth)), " cpbRemovalDelayLegth too small for m_auCpbRemovalDelay[i] at picture timing SEI " );
       }

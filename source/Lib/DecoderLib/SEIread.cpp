@@ -819,7 +819,7 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
       sei_read_flag( pDecodedMessageOutputStream,    symbol, "cpb_removal_delay_delta_enabled_flag[i]" );         sei.m_cpbRemovalDelayDeltaEnabledFlag[i]        = (symbol == 1);
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[ i ] )
       {
-        sei_read_code( pDecodedMessageOutputStream, ceil(log2(bp.m_numCpbRemovalDelayDeltas)), symbol, "cpb_removal_delay_delta_idx[i]" );
+        sei_read_code( pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]" );
         sei.m_cpbRemovalDelayDeltaIdx[ i ] = symbol;
       }
       else

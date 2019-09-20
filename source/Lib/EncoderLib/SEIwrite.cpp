@@ -544,7 +544,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
       WRITE_FLAG( sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]" );
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
       {
-        WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceil(log2(bp.m_numCpbRemovalDelayDeltas)),               "cpb_removal_delay_delta_idx[i]" );
+        WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
       }
       else
       {

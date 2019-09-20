@@ -310,6 +310,7 @@
 
 #define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
 
+#define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

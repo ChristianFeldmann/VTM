@@ -570,6 +570,9 @@ protected:
   bool      m_gradualDecodingRefreshInfoEnabled;
   int       m_noDisplaySEITLayer;
 #endif
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
+#endif
   bool      m_decodingUnitInfoSEIEnabled;
 #if HEVC_SEI
   bool      m_SOPDescriptionSEIEnabled;
@@ -1488,6 +1491,10 @@ public:
   bool  getGradualDecodingRefreshInfoEnabled() const                 { return m_gradualDecodingRefreshInfoEnabled; }
   void  setNoDisplaySEITLayer(int b)                                 { m_noDisplaySEITLayer = b;    }
   int   getNoDisplaySEITLayer()                                      { return m_noDisplaySEITLayer; }
+#endif
+#if JVET_N0867_TEMP_SCAL_HRD
+  void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
+  bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
 #endif
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }

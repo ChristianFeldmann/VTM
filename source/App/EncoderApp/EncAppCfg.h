@@ -469,6 +469,9 @@ protected:
 #endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
+#endif
 #if JVET_O0189_DU
   bool      m_decodingUnitInfoSEIEnabled;
 #endif

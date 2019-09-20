@@ -952,7 +952,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
               }
               else
               {
-                assert(0);
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
               }
             }
               break;
@@ -996,13 +996,13 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
               }
               else
               {
-                assert(0);
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
               }
             }
               break;
             default:
             {
-              assert (0);
+              THROW("m_cpbRemovalDelayDeltaIdx not supported for the current GOP size");
             }
               break;
           }
@@ -1027,7 +1027,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
               }
               else
               {
-                assert(0);
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
               }
             }
               break;
@@ -1055,13 +1055,13 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
               }
               else
               {
-                assert(0);
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
               }
             }
               break;
             default:
             {
-              assert (0);
+              THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
             }
               break;
           }

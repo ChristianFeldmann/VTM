@@ -470,6 +470,9 @@ void EncApp::xInitLibCfg()
 #if JVET_O0041_FRAME_FIELD_SEI
   m_cEncLib.setFrameFieldInfoSEIEnabled                          ( m_frameFieldInfoSEIEnabled );
 #endif
+#if JVET_N0867_TEMP_SCAL_HRD
+   m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
+#endif
 #if JVET_O0189_DU
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
 #endif

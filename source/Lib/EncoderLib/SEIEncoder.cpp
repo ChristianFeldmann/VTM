@@ -281,7 +281,7 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_dpbDelayOffset = 0;
 #endif
 #if JVET_N0867_TEMP_SCAL_HRD
-  bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag = ((bufferingPeriodSEI->m_bpMaxSubLayers > 1) && (( m_pcCfg->getGOPSize() == 8 && bufferingPeriodSEI->m_bpMaxSubLayers == 4) || ( m_pcCfg->getGOPSize() == 16 && bufferingPeriodSEI->m_bpMaxSubLayers == 5)) ) ? (true) : (false);
+  bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag = m_pcCfg->getBpDeltasGOPStructure() ;
   if (bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag)
   {
     switch (m_pcCfg->getGOPSize())
@@ -334,7 +334,7 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
       default:
       {
-        assert (0);
+        THROW("m_cpbRemovalDelayDelta not applicable for the GOP size");
       }
         break;
     }

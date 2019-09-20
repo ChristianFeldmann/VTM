@@ -1119,82 +1119,22 @@ void EncCu::updateLambda (Slice* slice, const int dQP,
                           const bool updateRdCostLambda)
 {
 #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
- if (useWCGChromaControl)
- {
-  int    NumberBFrames = ( m_pcEncCfg->getGOPSize() - 1 );
-  int    SHIFT_QP = 12;
-  double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(slice->getPic()->fieldPic ? NumberBFrames/2 : NumberBFrames) );
-
-  int bitdepth_luma_qp_scale = 6
-                               * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
-                                  - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-  double qp_temp = (double) dQP + bitdepth_luma_qp_scale - SHIFT_QP;
-
-  double dQPFactor = m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_QPFactor;
-
-  if( slice->getSliceType() == I_SLICE )
+  if (useWCGChromaControl)
   {
-    if( m_pcEncCfg->getIntraQpFactor() >= 0.0 && m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_sliceType != I_SLICE )
-    {
-      dQPFactor = m_pcEncCfg->getIntraQpFactor();
-    }
-    else
-    {
-      if( m_pcEncCfg->getLambdaFromQPEnable() )
-      {
-        dQPFactor = 0.57;
-      }
-      else
-      {
-        dQPFactor = 0.57*dLambda_scale;
-      }
-    }
-  }
-  else if( m_pcEncCfg->getLambdaFromQPEnable() )
-  {
-    dQPFactor = 0.57;
-  }
+    const double lambda = m_pcSliceEncoder->initializeLambda (slice, m_pcSliceEncoder->getGopId(), slice->getSliceQp(), (double)dQP);
+    const int clippedQP = Clip3 (-slice->getSPS()->getQpBDOffset (CHANNEL_TYPE_LUMA), MAX_QP, dQP);
 
-  double dLambda = dQPFactor*pow( 2.0, qp_temp/3.0 );
-  int depth = slice->getDepth();
-
-  if( !m_pcEncCfg->getLambdaFromQPEnable() && depth>0 )
-  {
-    int qp_temp_slice = slice->getSliceQp() + bitdepth_luma_qp_scale - SHIFT_QP; // avoid lambda  over adjustment,  use slice_qp here
-    dLambda *= Clip3( 2.00, 4.00, (qp_temp_slice / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
+    m_pcSliceEncoder->setUpLambda (slice, lambda, clippedQP);
+    return;
   }
-  if( !m_pcEncCfg->getUseHADME() && slice->getSliceType( ) != I_SLICE )
-  {
-    dLambda *= 0.95;
-  }
-
-  const int temporalId = m_pcEncCfg->getGOPEntry( m_pcSliceEncoder->getGopId() ).m_temporalId;
-  const std::vector<double> &intraLambdaModifiers = m_pcEncCfg->getIntraLambdaModifier();
-  double lambdaModifier;
-  if( slice->getSliceType( ) != I_SLICE || intraLambdaModifiers.empty())
-  {
-    lambdaModifier = m_pcEncCfg->getLambdaModifier(temporalId);
-  }
-  else
-  {
-    lambdaModifier = intraLambdaModifiers[(temporalId < intraLambdaModifiers.size()) ? temporalId : (intraLambdaModifiers.size() - 1)];
-  }
-  dLambda *= lambdaModifier;
-
-  int qpBDoffset = slice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA);
-  int iQP = Clip3(-qpBDoffset, MAX_QP, (int)floor((double)dQP + 0.5));
-  m_pcSliceEncoder->setUpLambda(slice, dLambda, iQP);
-
-  return;
- }
 #endif
   int iQP = dQP;
   const double oldQP     = (double)slice->getSliceQpBase();
 #if ENABLE_QPA_SUB_CTU
   const double oldLambda = (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && slice->getPPS()->getUseDQP()) ? slice->getLambdas()[0] :
-                           m_pcSliceEncoder->calculateLambda (slice, m_pcSliceEncoder->getGopId(), slice->getDepth(), oldQP, oldQP, iQP);
+                           m_pcSliceEncoder->calculateLambda (slice, m_pcSliceEncoder->getGopId(), oldQP, oldQP, iQP);
 #else
-  const double oldLambda = m_pcSliceEncoder->calculateLambda (slice, m_pcSliceEncoder->getGopId(), slice->getDepth(), oldQP, oldQP, iQP);
+  const double oldLambda = m_pcSliceEncoder->calculateLambda (slice, m_pcSliceEncoder->getGopId(), oldQP, oldQP, iQP);
 #endif
   const double newLambda = oldLambda * pow (2.0, ((double)dQP - oldQP) / 3.0);
 #if RDOQ_CHROMA_LAMBDA

@@ -134,6 +134,9 @@ Slice::Slice()
 , m_scalingListAps               ( nullptr )
 , m_tileGroupscalingListPresentFlag ( false )
 #endif
+#if JVET_O0181
+, m_nonReferencePicFlag          ( 0 )
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {

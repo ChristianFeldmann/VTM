@@ -1363,6 +1363,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
   }
 
+#if JVET_O0181
+    WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 0 : 1, "non_reference_picture_flag");
+#endif
+
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );

@@ -1799,6 +1799,9 @@ private:
   APS*                       m_scalingListAps;
   bool                       m_tileGroupscalingListPresentFlag;
 #endif
+#if JVET_O0181
+  bool                       m_nonReferencePicFlag;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -2139,6 +2142,10 @@ public:
   int                         getRecoveryPocCnt() const { return m_recoveryPocCnt; }
   void                        setRpPicOrderCntVal(int value) { m_rpPicOrderCntVal = value; }
   int                         getRpPicOrderCntVal() const { return m_rpPicOrderCntVal; }
+#endif
+#if JVET_O0181
+  void                        setNonRefPictFlag(bool value) { m_nonReferencePicFlag = value; }
+  bool                        getNonRefPictFlag() const { return m_nonReferencePicFlag;  }
 #endif
 
 protected:

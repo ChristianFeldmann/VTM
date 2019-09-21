@@ -698,7 +698,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           int delta = uiCode;
           READ_FLAG(uiCode, "brick_idx_delta_sign_flag");
           int sign = uiCode;
-          if (sign == 0) {
+          if (sign == 0)
+          {
             delta = -delta;
           }
           bottomRightBrickIdxDelta[i] = delta;

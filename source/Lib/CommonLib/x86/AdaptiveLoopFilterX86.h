@@ -763,10 +763,8 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   const int alfRightBryPos = (alfBryList[3] != ALF_NONE_BOUNDARY) ? alfBryList[3] : ALF_NONE_BOUNDARY;
   const char mask1Array[16] = { 0, 1, 4, 5, 8, 9, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, };
   const char mask2Array[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 10, 11, 14, 15, };
-  const char mask3Array[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 10, 11, 14, 15, };
   const __m128i mmMask1 = _mm_lddqu_si128((__m128i*) mask1Array);
   const __m128i mmMask2 = _mm_lddqu_si128((__m128i*) mask2Array);
-  const __m128i mmMask3 = _mm_lddqu_si128((__m128i*) mask3Array);
 
   int botBryLines = ((((alfBotBryPos - 4) & (vbCTUHeight - 1)) == vbPos) && alfBotBryPos != ALF_NONE_BOUNDARY) ? 2 : 4;
 #endif
@@ -948,7 +946,7 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           xmm70 = _mm_blend_epi16(xmm70, xmm60, 0x80);
           __m128i xmm80Tmp = _mm_shuffle_epi8(xmm60, mmMask2);
           xmm80 = _mm_blend_epi16(xmm80, xmm80Tmp, 0xC0);
-          __m128i xmm91Tmp = _mm_shuffle_epi8(cur, mmMask3);
+          __m128i xmm91Tmp = _mm_shuffle_epi8(cur, mmMask2);
           xmm91 = _mm_blend_epi16(xmm91, xmm91Tmp, 0xE0);
           __m128i xmm101Tmp = _mm_shuffle_epi8(cur, mmMask2);
           xmm101 = _mm_blend_epi16(xmm101, xmm101Tmp, 0xC0);

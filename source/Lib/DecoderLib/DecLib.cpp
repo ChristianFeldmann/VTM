@@ -1395,6 +1395,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->referenced  = true;
   m_pcPic->layer       = nalu.m_temporalId;
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (pcSlice->getPPS()->getRectSliceFlag())
+  {
+    int sliceIdx = pcSlice->getSliceIndex();
+    int topLeft = pcSlice->getPic()->brickMap->getTopLeftBrickIdx(sliceIdx);
+    int bottomRight = pcSlice->getPic()->brickMap->getBottomRightBrickIdx(sliceIdx);
+
+    pcSlice->setSliceCurStartBrickIdx(topLeft);
+    pcSlice->setSliceCurEndBrickIdx(bottomRight);
+    pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
+  }
+#endif
+
   // When decoding the slice header, the stored start and end addresses were actually RS addresses, not TS addresses.
   // Now, having set up the maps, convert them to the correct form.
   const BrickMap& tileMap = *(m_pcPic->brickMap);

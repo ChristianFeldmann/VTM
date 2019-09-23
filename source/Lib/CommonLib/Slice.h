@@ -1290,7 +1290,9 @@ private:
   int              m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
   std::vector<int> m_bottomRightBrickIdx;
-
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  std::vector<int> m_bottomRightBrickIdxDelta;
+#endif
   int              m_numTilesInPic;
   int              m_numBricksInPic;
   bool             m_signalledSliceIdFlag;
@@ -1492,6 +1494,10 @@ public:
   void                   setTopLeftBrickIdx(const std::vector<int>& val)                  { m_topLeftBrickIdx = val;                      }
   int                    getBottomRightBrickIdx(uint32_t columnIdx) const                 { return  m_bottomRightBrickIdx[columnIdx];     }
   void                   setBottomRightBrickIdx(const std::vector<int>& val)              { m_bottomRightBrickIdx = val;                  }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int                    getBottomRightBrickIdxDelta(uint32_t delta) const                { return  m_bottomRightBrickIdxDelta[delta];    }
+  void                   setBottomRightBrickIdxDelta(const std::vector<int>& val)         { m_bottomRightBrickIdxDelta = val;             }
+#endif
   int                    getNumTilesInPic() const                                         { return m_numTilesInPic;                       }
   void                   setNumTilesInPic(int val)                                        { m_numTilesInPic = val;                        }
   int                    getNumBricksInPic() const                                        { return m_numBricksInPic;                      }

@@ -554,6 +554,13 @@ void EncApp::xInitLibCfg()
 #endif
 
   m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (m_tileUniformSpacingFlag)
+  {
+    m_cEncLib.setUniformTileColsWidthMinus1                      ( m_uniformTileColsWidthMinus1 );
+    m_cEncLib.setUniformTileRowHeightMinus1                      ( m_uniformTileRowHeightMinus1 );
+  }
+#endif
   m_cEncLib.setNumColumnsMinus1                                  ( m_numTileColumnsMinus1 );
   m_cEncLib.setNumRowsMinus1                                     ( m_numTileRowsMinus1 );
   if(!m_tileUniformSpacingFlag)

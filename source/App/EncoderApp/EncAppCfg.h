@@ -445,6 +445,10 @@ protected:
   bool      m_tileUniformSpacingFlag;
   int       m_numTileColumnsMinus1;
   int       m_numTileRowsMinus1;
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int       m_uniformTileColsWidthMinus1;
+  int       m_uniformTileRowHeightMinus1;
+#endif
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;

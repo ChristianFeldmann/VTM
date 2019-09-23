@@ -576,7 +576,24 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
     READ_FLAG( uiCode, "brick_splitting_present_flag" );                 pcPPS->setBrickSplittingPresentFlag(uiCode == 1);
 
+#if JVET_O0236_PPS_PARSING_DEPENDENCY
+    int numTilesInPic = 0;
+    if (pcPPS->getUniformTileSpacingFlag())
+    {
+      if (pcPPS->getBrickSplittingPresentFlag())
+      {
+        READ_UVLC(uiCode, "num_tiles_in_pic_minus1");
+        numTilesInPic = uiCode + 1;
+      }
+    }
+    else
+    {
+      numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+    }
+#else
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
+
     pcPPS->setNumTilesInPic(numTilesInPic);
 
     if (pcPPS->getBrickSplittingPresentFlag())
@@ -651,19 +668,42 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     if(pcPPS->getRectSliceFlag() && !pcPPS->getSingleBrickPerSliceFlag())
     {
       READ_UVLC (uiCode, "num_slices_in_pic_minus1" );          pcPPS->setNumSlicesInPicMinus1(uiCode);
+#if JVET_O0236_PPS_PARSING_DEPENDENCY
+      const uint32_t numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
+#else
       const uint32_t tileColumnsMinus1 = pcPPS->getNumTileColumnsMinus1();
       const uint32_t tileRowsMinus1 = pcPPS->getNumTileRowsMinus1();
       const uint32_t numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
       const uint32_t numTilesInPic = (tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1);
       int codeLength = ceilLog2(numTilesInPic);
       int codeLength2 = codeLength;
+#endif
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+      uint32_t codeLen;
+      READ_UVLC(codeLen, "bottom_right_brick_idx_length_minus1 ");
+#endif
       if (numSlicesInPic > 0)
       {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+        std::vector<int> bottomRightBrickIdxDelta(numSlicesInPic);
+#else
         std::vector<int> topLeft(numSlicesInPic);
         std::vector<int> bottomRight(numSlicesInPic);
         topLeft[0] = 0;
+#endif
         for (uint32_t i = 0; i < numSlicesInPic; i++)
         {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+          READ_CODE(codeLen, uiCode, "bottom_right_brick_idx_delta");
+          int delta = uiCode;
+          READ_FLAG(uiCode, "brick_idx_delta_sign_flag");
+          int sign = uiCode;
+          if (sign == 0)
+          {
+            delta = -delta;
+          }
+          bottomRightBrickIdxDelta[i] = delta;
+#else
           if (i > 0)
           {
             READ_CODE( codeLength, uiCode, "top_left_brick_idx" );
@@ -672,9 +712,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
           }
           READ_CODE( codeLength2, uiCode, "bottom_right_brick_idx_delta");
           bottomRight[i] = topLeft[i] + uiCode;
+#endif
         }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+        pcPPS->setBottomRightBrickIdxDelta(bottomRightBrickIdxDelta);
+#else
         pcPPS->setTopLeftBrickIdx(topLeft);
         pcPPS->setBottomRightBrickIdx(bottomRight);
+#endif
       }
     }
     if (pcPPS->getRectSliceFlag() && pcPPS->getSingleBrickPerSliceFlag())
@@ -1875,8 +1920,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           sliceIdx++;
         }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+        pcSlice->setSliceIndex(sliceIdx);
+#else
         pcSlice->setSliceCurStartBrickIdx(pps->getTopLeftBrickIdx(sliceIdx));
         pcSlice->setSliceCurEndBrickIdx(pps->getBottomRightBrickIdx(sliceIdx));
+#endif
       }
       else
       {
@@ -1894,6 +1943,16 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     else if (pps->getSingleBrickPerSliceFlag())
     {
       pcSlice->setSliceNumBricks(1);
+    }
+#endif
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+    if (pps->getRectSliceFlag())
+    {
+      if (pcSlice->getSliceIndex() != 0)
+      {
+        pcSlice->setSliceCurStartBrickIdx(pcSlice->getPic()->brickMap->getTopLeftBrickIdx(pcSlice->getSliceIndex()));
+        pcSlice->setSliceCurEndBrickIdx(pcSlice->getPic()->brickMap->getBottomRightBrickIdx(pcSlice->getSliceIndex()));
+      }
     }
 #endif
     pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());

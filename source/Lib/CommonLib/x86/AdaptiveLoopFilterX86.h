@@ -64,7 +64,7 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
   const int posY = blk.pos().y;
 #if JVET_O0625_ALF_PADDING
   const __m128i mmZero = _mm_setzero_si128();
-  const __m128i mmLut  = _mm_setr_epi8(0, 0, 0, 127, 63, 47, 31, 0, -1, 0, 0, 0, 0, 0, 0, 0);
+  const __m128i mmLut  = _mm_setr_epi8(0, 0, 0, (char) 192, (char) 128, 112, 96, 0, 64, 0, 0, 0, 0, 0, 0, 0);
 #endif
 
   // 18x40 array
@@ -268,7 +268,7 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
       __m128i verStrides = _mm_setr_epi32(verBlkStride, verBlkStride,  verBlkStride2, verBlkStride2);
       __m128i horStrides = _mm_setr_epi32(horBlkStride, horBlkStride2, horBlkStride,  horBlkStride2);
       __m128i alfArea    = _mm_mullo_epi16(verStrides, horStrides);
-      const __m128i scaleValue = _mm_add_epi8(_mm_shuffle_epi8(mmLut, _mm_srli_epi32(_mm_add_epi32(alfArea, _mm_set1_epi32(4)), 3)), _mm_set1_epi32(65));
+      const __m128i scaleValue = _mm_shuffle_epi8(mmLut, _mm_srli_epi32(_mm_add_epi32(alfArea, _mm_set1_epi32(4)), 3));
       __m128i activity = _mm_mullo_epi32(tempAct, scaleValue);
 #else
       const uint32_t scale  = (z == vbPos - 4 || z == vbPos) ? 96 : 64;

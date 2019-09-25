@@ -3007,15 +3007,8 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
   if( scaled )
   {
     int row, col;
-
-#if RPR_CONF_WINDOW
-    const Window& inputConfWindow = refPic->cs->pps->getConformanceWindow();
-    int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples() - ( inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset() ) * SPS::getWinUnitX( refPic->cs->sps->getChromaFormatIdc() );
-    int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples() - ( inputConfWindow.getWindowTopOffset() + inputConfWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( refPic->cs->sps->getChromaFormatIdc() );
-#else
     int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
     int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
-#endif
 
     const int posShift = SCALE_RATIO_BITS - 4;
     int stepX = ( scalingRatio.first + 8 ) >> 4;

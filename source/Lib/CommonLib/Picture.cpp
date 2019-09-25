@@ -1340,6 +1340,7 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   const TFilterCoeff* filterHor = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
   const TFilterCoeff* filterVer = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
   const int numFracPositions = useLumaFilter ? 15 : 31;
+  const int numFracShift = useLumaFilter ? 4 : 5;
 
   if( downsampling )
   {
@@ -1377,7 +1378,7 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   {
     const Pel* org = orgSrc;
     int integer = ( i * orgWidth ) / scaledWidth;
-    int frac = ( ( i * orgWidth << 4 ) / scaledWidth ) & numFracPositions;
+    int frac = ( ( i * orgWidth << numFracShift ) / scaledWidth ) & numFracPositions;
 
     int* tmp = buf + i;
 
@@ -1404,7 +1405,7 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   for( int j = 0; j < paddedHeight; j++ )
   {
     int integer = ( j * orgHeight ) / scaledHeight;
-    int frac = ( ( j * orgHeight << 4 ) / scaledHeight ) & numFracPositions;
+    int frac = ( ( j * orgHeight << numFracShift ) / scaledHeight ) & numFracPositions;
 
     for( int i = 0; i < paddedWidth; i++ )
     {

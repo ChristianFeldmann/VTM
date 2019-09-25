@@ -50,7 +50,21 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA           1 // JVET-O0143: Remove signaling of top_right_brick_idx
+
+#define JVET_O0236_PPS_PARSING_DEPENDENCY                 1 // JVET-O0236: Resolves a PPS parsing dependency
+
+#define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
+
+#define JVET_O0145_ENTRYPOINT_SIGNALLING                  1 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
+
+#define JVET_O0173_O0176_O0338_NUMBRICK_M2                1 // JVET-O0173, O0176, O0338 : Replacing num_brick_rows_minus1 with num_brick_rows_minus2
+
+#define JVET_OO152_BP_SEI_GDR                             1 // JVET-O0152: Allowing association of a buffering period SEI with GDR picture
+
+#define JVET_OO147_LEADING_PIC_CHECKING                   1 // JVET-O0147: Constraints on leading pictures
 
 #define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
 
@@ -254,6 +268,7 @@
 #define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
 
 #define JVET_O0610_CFG                                    1 // config default change for "Adopt to mandate the presence of AU delimiter for each AU", config parameter should be removed later
+#define JVET_O0610_DETECT_AUD                             1 // JVET-O0610: detect presence of mandatory access unit delimiters
 
 #define JVET_O0491_HLS_CLEANUP                            1
 #define JVET_O0041_FRAME_FIELD_SEI                        1
@@ -261,6 +276,11 @@
 #define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
 
+#define JVET_O0189_DU                                     1
+#if JVET_O0189_DU
+#define FIX_SEI_O0189                                     1
+#define FIX_HRD_O0189                                     1
+#endif
 #define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
@@ -291,6 +311,10 @@
 #define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
 
 #define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
+
+#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
+
+#define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

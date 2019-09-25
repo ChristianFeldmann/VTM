@@ -165,6 +165,13 @@ struct BrickMap
 
   uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool addressInRaster, Slice *slice) const;
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int     getTopLeftBrickIdx(uint32_t val) const                    { return  m_topLeftBrickIdx[val]; }
+  void    setTopLeftBrickIdx(const std::vector<int>& val)           { m_topLeftBrickIdx = val; }
+  int     getBottomRightBrickIdx(uint32_t val) const                { return  m_bottomRightBrickIdx[val]; }
+  void    setBottomRightBrickIdx(const std::vector<int>& val)       { m_bottomRightBrickIdx = val; }
+#endif
+
   const PreCalcValues* pcv;
   std::vector<Brick> bricks;
 
@@ -175,6 +182,11 @@ struct BrickMap
   uint32_t* brickIdxBsMap;
   uint32_t* ctuBsToRsAddrMap;
   uint32_t* ctuRsToBsAddrMap;
+
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  std::vector<int> m_topLeftBrickIdx;
+  std::vector<int> m_bottomRightBrickIdx;
+#endif
 
   void initBrickMap( const SPS& sps, const PPS& pps );
   void initCtuBsRsAddrMap();

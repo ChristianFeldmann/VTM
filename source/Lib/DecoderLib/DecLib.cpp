@@ -1207,6 +1207,22 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "poc", m_apcSlicePilot->getPOC() ) );
 
+#if JVET_O0610_DETECT_AUD
+#if JVET_N0865_NONSYNTAX
+  if ((m_bFirstSliceInPicture ||
+        m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ||
+        m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+      getNoOutputPriorPicsFlag())
+#else
+    if ((m_bFirstSliceInPicture ||
+          m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
+        && getNoOutputPriorPicsFlag() )
+#endif
+    {
+      checkNoOutputPriorPics(&m_cListPic);
+      setNoOutputPriorPicsFlag (false);
+    }
+#endif
 
   xUpdatePreviousTid0POC(m_apcSlicePilot);
 
@@ -1378,6 +1394,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->layer       = pcSlice->getTLayer();
   m_pcPic->referenced  = true;
   m_pcPic->layer       = nalu.m_temporalId;
+
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (pcSlice->getPPS()->getRectSliceFlag())
+  {
+    int sliceIdx = pcSlice->getSliceIndex();
+    int topLeft = pcSlice->getPic()->brickMap->getTopLeftBrickIdx(sliceIdx);
+    int bottomRight = pcSlice->getPic()->brickMap->getBottomRightBrickIdx(sliceIdx);
+
+    pcSlice->setSliceCurStartBrickIdx(topLeft);
+    pcSlice->setSliceCurEndBrickIdx(bottomRight);
+    pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
+  }
+#endif
 
   // When decoding the slice header, the stored start and end addresses were actually RS addresses, not TS addresses.
   // Now, having set up the maps, convert them to the correct form.
@@ -1816,8 +1845,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         AUDReader audReader;
         uint32_t picType;
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
+#if JVET_O0610_DETECT_AUD
+        return !m_bFirstSliceInPicture;
+#else
         msg( NOTICE, "Note: found NAL_UNIT_ACCESS_UNIT_DELIMITER\n");
         return false;
+#endif
       }
 
     case NAL_UNIT_EOB:

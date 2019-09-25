@@ -145,19 +145,31 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
       x6 = _mm_loadu_si128((__m128i *) &colSums[i + 4][j + 4]);
       x7 = (z2 == vbPos - 4) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 5][j + 4]);
 
-      x0 = _mm_add_epi16(x0, x1);
-      x2 = _mm_add_epi16(x2, x3);
-      x4 = _mm_add_epi16(x4, x5);
-      x6 = _mm_add_epi16(x6, x7);
-
       __m128i x0l = _mm_cvtepu16_epi32(x0);
       __m128i x0h = _mm_unpackhi_epi16(x0, _mm_setzero_si128());
+      __m128i x1l = _mm_cvtepu16_epi32(x1);
+      __m128i x1h = _mm_unpackhi_epi16(x1, _mm_setzero_si128());
       __m128i x2l = _mm_cvtepu16_epi32(x2);
       __m128i x2h = _mm_unpackhi_epi16(x2, _mm_setzero_si128());
+      __m128i x3l = _mm_cvtepu16_epi32(x3);
+      __m128i x3h = _mm_unpackhi_epi16(x3, _mm_setzero_si128());
       __m128i x4l = _mm_cvtepu16_epi32(x4);
       __m128i x4h = _mm_unpackhi_epi16(x4, _mm_setzero_si128());
+      __m128i x5l = _mm_cvtepu16_epi32(x5);
+      __m128i x5h = _mm_unpackhi_epi16(x5, _mm_setzero_si128());
       __m128i x6l = _mm_cvtepu16_epi32(x6);
       __m128i x6h = _mm_unpackhi_epi16(x6, _mm_setzero_si128());
+      __m128i x7l = _mm_cvtepu16_epi32(x7);
+      __m128i x7h = _mm_unpackhi_epi16(x7, _mm_setzero_si128());
+
+      x0l = _mm_add_epi32(x0l, x1l);
+      x2l = _mm_add_epi32(x2l, x3l);
+      x4l = _mm_add_epi32(x4l, x5l);
+      x6l = _mm_add_epi32(x6l, x7l);
+      x0h = _mm_add_epi32(x0h, x1h);
+      x2h = _mm_add_epi32(x2h, x3h);
+      x4h = _mm_add_epi32(x4h, x5h);
+      x6h = _mm_add_epi32(x6h, x7h);
 
       x0l = _mm_add_epi32(x0l, x2l);
       x4l = _mm_add_epi32(x4l, x6l);

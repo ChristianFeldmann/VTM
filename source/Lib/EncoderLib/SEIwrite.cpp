@@ -57,8 +57,13 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIActiveParameterSets(*static_cast<const SEIActiveParameterSets*>(& sei));
     break;
 #endif
+#if JVET_O0189_DU
+  case SEI::DECODING_UNIT_INFO:
+    xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), sps, hrd);
+#else
     case SEI::DECODING_UNIT_INFO:
     xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), sps);
+#endif
     break;
   case SEI::DECODED_PICTURE_HASH:
     xWriteSEIDecodedPictureHash(*static_cast<const SEIDecodedPictureHash*>(&sei));
@@ -67,8 +72,13 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei), sps);
 #else
+#if JVET_O0189_DU
+    xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei), sps);
+    hrd.setBufferingPeriodSEI(static_cast<const SEIBufferingPeriod*>(&sei));
+#else
     xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei));
     hrd.setBufferingPeriodSEI(static_cast<const SEIBufferingPeriod*>(&sei));
+#endif
 #endif
     break;
   case SEI::PICTURE_TIMING:
@@ -78,7 +88,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     {
       const SEIBufferingPeriod *bp = hrd.getBufferingPeriodSEI();
       CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Picture Timing SEI");
+#if JVET_O0189_DU
+      xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps, *bp);
+#else
       xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), *bp);
+#endif
     }
 #endif
     break;
@@ -288,7 +302,11 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 }
 #endif
 
+#if JVET_O0189_DU
+void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps, HRD &hrd)
+#else
 void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps)
+#endif
 {
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
@@ -297,19 +315,31 @@ void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const 
   if(sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag())
 #endif
   {
+#if JVET_O0189_DU
+    WRITE_CODE( sei.m_duSptCpbRemovalDelay, hrd.getBufferingPeriodSEI()->getDuCpbRemovalDelayIncrementLength(), "du_spt_cpb_removal_delay_increment");
+#else
     WRITE_CODE( sei.m_duSptCpbRemovalDelay, (sps->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1), "du_spt_cpb_removal_delay_increment");
+#endif
   }
   WRITE_FLAG( sei.m_dpbOutputDuDelayPresentFlag, "dpb_output_du_delay_present_flag");
   if(sei.m_dpbOutputDuDelayPresentFlag)
   {
+#if JVET_O0189_DU
+    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, hrd.getBufferingPeriodSEI()->getDpbOutputDelayDuLength(), "pic_spt_dpb_output_du_delay");
+#else
     WRITE_CODE(sei.m_picSptDpbOutputDuDelay, sps->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, "pic_spt_dpb_output_du_delay");
+#endif
   }
 }
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps)
 #else
+#if JVET_O0189_DU
+void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps)
+#else
 void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
+#endif
 #endif
 {
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
@@ -358,6 +388,15 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
     WRITE_CODE( sei.m_cpbRemovalDelayLength - 1,        5, "cpb_removal_delay_length_minus1" );
     CHECK (sei.m_dpbOutputDelayLength < 1, "sei.m_dpbOutputDelayLength must be > 0");
     WRITE_CODE( sei.m_dpbOutputDelayLength - 1,         5, "dpb_output_delay_length_minus1" );
+#if JVET_O0189_DU
+    if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      CHECK (sei.m_duCpbRemovalDelayIncrementLength < 1, "sei.m_duCpbRemovalDelayIncrementLength must be > 0");
+      WRITE_CODE( sei.m_duCpbRemovalDelayIncrementLength - 1, 5, "du_cpb_removal_delay_increment_length_minus1" );
+      CHECK (sei.m_dpbOutputDelayDuLength < 1, "sei.m_dpbOutputDelayDuLength must be > 0");
+      WRITE_CODE( sei.m_dpbOutputDelayDuLength - 1, 5, "dpb_output_delay_du_length_minus1" );
+    }
+#endif
   }
 
   WRITE_FLAG( sei.m_concatenationFlag, "concatenation_flag");
@@ -388,7 +427,11 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps)
 #else
+#if JVET_O0189_DU
+void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod &bp)
+#else
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod &bp)
+#endif
 #endif
 {
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
@@ -433,6 +476,29 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
 #else
   WRITE_CODE( sei.m_auCpbRemovalDelay - 1, bp.m_cpbRemovalDelayLength,                                         "cpb_removal_delay_minus1" );
   WRITE_CODE( sei.m_picDpbOutputDelay,     bp.m_dpbOutputDelayLength,                                          "dpb_output_delay" );
+#endif
+#if JVET_O0189_DU
+  if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() )
+  {
+    WRITE_CODE( sei.m_picDpbOutputDuDelay, bp.m_dpbOutputDelayDuLength, "pic_dpb_output_du_delay" );
+  }
+  if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() && sps->getHrdParameters()->getDecodingUnitCpbParamsInPicTimingSeiFlag() )
+  {
+    WRITE_UVLC( sei.m_numDecodingUnitsMinus1, "num_decoding_units_minus1" );
+    WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
+    if( sei.m_duCommonCpbRemovalDelayFlag )
+    {
+      WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1, bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1" );
+    }
+    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+    {
+      WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
+      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+      {
+        WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i]" );
+      }
+    }
+  }
 #endif
 }
 

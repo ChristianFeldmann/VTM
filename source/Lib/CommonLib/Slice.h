@@ -170,7 +170,7 @@ public:
   void       processRefMatrix(uint32_t sizeId, uint32_t listId , uint32_t refListId );
   bool       xParseScalingList(const std::string &fileName);
   void       setDefaultScalingList();
-  bool       checkDefaultScalingList();
+  bool       isNotDefaultScalingList();
 
 private:
   void       outputScalingLists(std::ostream &os) const;
@@ -1279,14 +1279,20 @@ private:
   std::vector<bool> m_brickSplitFlag;
   std::vector<bool> m_uniformBrickSpacingFlag;
   std::vector<int> m_brickHeightMinus1;
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+  std::vector<int> m_numBrickRowsMinus2;
+#else
   std::vector<int> m_numBrickRowsMinus1;
+#endif 
   std::vector<std::vector<int>> m_brickRowHeightMinus1;
   bool             m_singleBrickPerSliceFlag;
   bool             m_rectSliceFlag;
   int              m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
   std::vector<int> m_bottomRightBrickIdx;
-
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  std::vector<int> m_bottomRightBrickIdxDelta;
+#endif
   int              m_numTilesInPic;
   int              m_numBricksInPic;
   bool             m_signalledSliceIdFlag;
@@ -1469,8 +1475,13 @@ public:
   void                   setUniformBrickSpacingFlag(std::vector<bool>& val)               { m_uniformBrickSpacingFlag = val;              }
   int                    getBrickHeightMinus1(int i) const                                { return m_brickHeightMinus1[i];                }
   void                   setBrickHeightMinus1(std::vector<int>& val)                      { m_brickHeightMinus1 = val;                    }
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+  int                    getNumBrickRowsMinus2(int i) const { return m_numBrickRowsMinus2[i]; }
+  void                   setNumBrickRowsMinus2(std::vector<int> &val) { m_numBrickRowsMinus2 = val; }
+#else
   int                    getNumBrickRowsMinus1(int i) const                               { return m_numBrickRowsMinus1[i];               }
   void                   setNumBrickRowsMinus1(std::vector<int>& val)                     { m_numBrickRowsMinus1 = val;                   }
+ #endif
   int                    getBrickRowHeightMinus1(int i, int j) const                      { return m_brickRowHeightMinus1[i][j];          }
   void                   setBrickRowHeightMinus1(std::vector<std::vector<int>>& val)      { m_brickRowHeightMinus1 = val;                 }
   bool                   getSingleBrickPerSliceFlag() const                               { return m_singleBrickPerSliceFlag;             }
@@ -1483,6 +1494,10 @@ public:
   void                   setTopLeftBrickIdx(const std::vector<int>& val)                  { m_topLeftBrickIdx = val;                      }
   int                    getBottomRightBrickIdx(uint32_t columnIdx) const                 { return  m_bottomRightBrickIdx[columnIdx];     }
   void                   setBottomRightBrickIdx(const std::vector<int>& val)              { m_bottomRightBrickIdx = val;                  }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int                    getBottomRightBrickIdxDelta(uint32_t delta) const                { return  m_bottomRightBrickIdxDelta[delta];    }
+  void                   setBottomRightBrickIdxDelta(const std::vector<int>& val)         { m_bottomRightBrickIdxDelta = val;             }
+#endif
   int                    getNumTilesInPic() const                                         { return m_numTilesInPic;                       }
   void                   setNumTilesInPic(int val)                                        { m_numTilesInPic = val;                        }
   int                    getNumBricksInPic() const                                        { return m_numBricksInPic;                      }
@@ -1790,6 +1805,9 @@ private:
   APS*                       m_scalingListAps;
   bool                       m_tileGroupscalingListPresentFlag;
 #endif
+#if JVET_O0181
+  bool                       m_nonReferencePicFlag;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -1825,7 +1843,7 @@ public:
   int                         getscalingListAPSId()                            const { return m_scalingListApsId;                                   }
   void                        setscalingListPresentFlag( bool b )                    { m_tileGroupscalingListPresentFlag = b;                       }
   bool                        getscalingListPresentFlag()                            { return m_tileGroupscalingListPresentFlag;                    }
-  const bool                  getscalingListPresentFlag()                      const { return m_tileGroupLmcsEnabledFlag;                           }
+  const bool                  getscalingListPresentFlag()                      const { return m_tileGroupscalingListPresentFlag;                    }
 #endif
   void                        setPicOutputFlag( bool b   )                           { m_PicOutputFlag = b;                                          }
   bool                        getPicOutputFlag() const                               { return m_PicOutputFlag;                                       }
@@ -2130,6 +2148,10 @@ public:
   int                         getRecoveryPocCnt() const { return m_recoveryPocCnt; }
   void                        setRpPicOrderCntVal(int value) { m_rpPicOrderCntVal = value; }
   int                         getRpPicOrderCntVal() const { return m_rpPicOrderCntVal; }
+#endif
+#if JVET_O0181
+  void                        setNonRefPictFlag(bool value) { m_nonReferencePicFlag = value; }
+  bool                        getNonRefPictFlag() const { return m_nonReferencePicFlag;  }
 #endif
 
 protected:

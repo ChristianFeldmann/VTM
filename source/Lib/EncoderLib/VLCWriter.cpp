@@ -336,8 +336,24 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       }
     }
     WRITE_FLAG( pcPPS->getBrickSplittingPresentFlag() ? 1 : 0, "brick_splitting_present_flag" );
+#if JVET_O0176_PROPOSAL3
+    if (pcPPS->getBrickSplittingPresentFlag())
+    {
+      CHECK(pcPPS->getRectSliceFlag() != true, "rect_slice_flag must be equal to 1 for brick_splitting_present_flag equal to 1");
+    }
+#endif
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+    int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#else
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
+#if JVET_O0236_PPS_PARSING_DEPENDENCY
+    if (pcPPS->getUniformTileSpacingFlag() && pcPPS->getBrickSplittingPresentFlag())
+    {
+      WRITE_UVLC(numTilesInPic - 1, "num_tiles_in_pic_minus1");
+    }
+#endif
 
     for( int i = 0; pcPPS->getBrickSplittingPresentFlag()  &&  i < numTilesInPic; i++ )
     {
@@ -349,9 +365,15 @@ void HLSWriter::codePPS( const PPS* pcPPS )
           WRITE_UVLC( pcPPS->getBrickHeightMinus1(i), "brick_height_minus1" );
         else
         {
+#if JVET_O0173_O0176_O0338_NUMBRICK_M2
+          WRITE_UVLC(pcPPS->getNumBrickRowsMinus2(i), "num_brick_rows_minus2 [i]");
+          for (int j = 0; j <= pcPPS->getNumBrickRowsMinus2(i); j++)
+            WRITE_UVLC(pcPPS->getBrickRowHeightMinus1(i, j), "brick_row_height_minus1 [i][j]");
+#else                    
           WRITE_UVLC( pcPPS->getNumBrickRowsMinus1(i), "num_brick_rows_minus1 [i]" );
           for(int j = 0; j < pcPPS->getNumBrickRowsMinus1(i); j++ )
             WRITE_UVLC( pcPPS->getBrickRowHeightMinus1(i,j), "brick_row_height_minus1 [i][j]" );
+#endif 
         }
       }
     }
@@ -371,17 +393,30 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     {
       WRITE_UVLC( pcPPS->getNumSlicesInPicMinus1(), "num_slices_in_pic_minus1" );
       int numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
+#if !JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
       int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
       int codeLength = ceilLog2(numTilesInPic);
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+      WRITE_UVLC(codeLength, "bottom_right_brick_idx_length_minus1 ");
+#else
       int codeLength2 = codeLength;
+#endif
       for (int i = 0; i < numSlicesInPic; ++i)
       {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+        int delta = (i == 0) ? pcPPS->getBottomRightBrickIdx(i) : pcPPS->getBottomRightBrickIdx(i) - pcPPS->getBottomRightBrickIdx(i - 1);
+        int sign = (delta > 0) ? 1 : 0;
+        WRITE_CODE(delta, codeLength, "bottom_right_brick_idx_delta");
+        WRITE_FLAG(sign, "brick_idx_delta_sign_flag");
+#else
         if (i > 0)
         {
           WRITE_CODE(pcPPS->getTopLeftBrickIdx(i), codeLength, "top_left_brick_idx ");
           codeLength2 = ceilLog2((numTilesInPic - pcPPS->getTopLeftBrickIdx(i) < 2) ? 2 : numTilesInPic - pcPPS->getTopLeftBrickIdx(i));
         }
         WRITE_CODE(pcPPS->getBottomRightBrickIdx(i) - pcPPS->getTopLeftBrickIdx(i), codeLength2, "bottom_right_brick_idx_delta");
+#endif
       }
     }
 
@@ -433,16 +468,14 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   if( pcPPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     WRITE_CODE( pcPPS->getNumVerVirtualBoundaries(), 2,                              "pps_num_ver_virtual_boundaries");
-    int numBits = ceilLog2(pcPPS->pcv->lumaWidth) - 3;
     for( unsigned i = 0; i < pcPPS->getNumVerVirtualBoundaries(); i++ )
     {
-      WRITE_CODE( pcPPS->getVirtualBoundariesPosX( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_x" );
+      WRITE_CODE(pcPPS->getVirtualBoundariesPosX(i) >> 3, 13,                        "pps_virtual_boundaries_pos_x");
     }
     WRITE_CODE( pcPPS->getNumHorVirtualBoundaries(), 2,                              "pps_num_hor_virtual_boundaries");
-    numBits = ceilLog2(pcPPS->pcv->lumaHeight) - 3;
     for( unsigned i = 0; i < pcPPS->getNumHorVirtualBoundaries(); i++ )
     {
-      WRITE_CODE( pcPPS->getVirtualBoundariesPosY( i ) >> 3, numBits,                "pps_virtual_boundaries_pos_y" );
+      WRITE_CODE(pcPPS->getVirtualBoundariesPosY(i) >> 3, 13,                        "pps_virtual_boundaries_pos_y");
     }
   }
 
@@ -779,10 +812,33 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
   WRITE_FLAG( hrd->getVclHrdParametersPresentFlag() ? 1 : 0 ,  "general_vcl_hrd_parameters_present_flag" );
   if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
   {
+#if JVET_O0189_DU
+    WRITE_FLAG( hrd->getDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
+#else
     WRITE_FLAG( hrd->getSubPicCpbParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
+#endif
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      WRITE_CODE( hrd->getTickDivisorMinus2(), 8,            "tick_divisor_minus2" );
+      WRITE_FLAG( hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() ? 1 : 0, "decoding_unit_cpb_params_in_pic_timing_sei_flag" );
+    }
+#endif
+#if FIX_HRD_O0189
+    WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
+    WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
+#endif
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
   }
+#endif
+  }
+#if !FIX_HRD_O0189
   WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
   WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
+#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {
@@ -1151,12 +1207,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
 
   const TimingInfo *timingInfo = pcSPS->getTimingInfo();
+#if JVET_O0189_DU
+  WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),          "general_hrd_parameters_present_flag");
+    if( pcSPS->getHrdParametersPresentFlag() )
+#else
   WRITE_FLAG(timingInfo->getTimingInfoPresentFlag(),          "timing_info_present_flag");
   if(timingInfo->getTimingInfoPresentFlag())
+#endif
   {
     WRITE_CODE(timingInfo->getNumUnitsInTick(), 32,           "num_units_in_tick");
     WRITE_CODE(timingInfo->getTimeScale(),      32,           "time_scale");
+#if !JVET_O0189_DU
     WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),              "hrd_parameters_present_flag");
+#endif
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       codeHrdParameters(pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
@@ -1322,6 +1385,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
   }
+
+#if JVET_O0181
+    WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 0 : 1, "non_reference_picture_flag");
+#endif
 
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
@@ -2028,7 +2095,9 @@ void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
     CHECK(offsetLenMinus1 + 1 >= 32, "Invalid offset length minus 1");
   }
 
+#if !JVET_O0145_ENTRYPOINT_SIGNALLING
   WRITE_UVLC(pSlice->getNumberOfSubstreamSizes(), "num_entry_point_offsets");
+#endif
   if (pSlice->getNumberOfSubstreamSizes()>0)
   {
     WRITE_UVLC(offsetLenMinus1, "offset_len_minus1");

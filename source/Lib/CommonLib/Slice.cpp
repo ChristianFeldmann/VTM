@@ -134,6 +134,9 @@ Slice::Slice()
 , m_scalingListAps               ( nullptr )
 , m_tileGroupscalingListPresentFlag ( false )
 #endif
+#if JVET_O0181
+, m_nonReferencePicFlag          ( 0 )
+#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -755,6 +758,17 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_scalingListAps                  = pSrc->m_scalingListAps;
   m_scalingListApsId                = pSrc->m_scalingListApsId;
 #endif
+#if JVET_O0189_DU
+#if JVET_O1164_RPR
+  for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
+  {
+    for (int j = 0; j < MAX_NUM_REF_PICS; j ++ )
+    {
+      m_scalingRatio[i][j]          = pSrc->m_scalingRatio[i][j];
+    }
+  }
+#endif
+#endif
 }
 
 
@@ -840,6 +854,9 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
   // loop through all pictures in the reference picture buffer
   PicList::iterator iterPic = rcListPic.begin();
+#if JVET_OO147_LEADING_PIC_CHECKING
+  int numLeadingPicsFound = 0;
+#endif
   while ( iterPic != rcListPic.end())
   {
     Picture* pcPic = *(iterPic++);
@@ -887,6 +904,20 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
+#if JVET_OO147_LEADING_PIC_CHECKING
+    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) && 
+        (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL)  )
+    {
+      if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
+      {
+        numLeadingPicsFound++;
+        int limitNonLP = 0;
+        if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
+          limitNonLP = 1;
+        CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
+      }
+    }
+#else
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
         nalUnitType == NAL_UNIT_CODED_SLICE_RADL )
       {
@@ -897,6 +928,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
           CHECK( pcPic->poc > this->getAssociatedIRAPPOC(), "Invalid POC");
         }
       }
+#endif
 
     // Any RASL picture associated with a CRA or BLA picture shall precede any
     // RADL picture associated with the CRA or BLA picture in output order
@@ -1618,6 +1650,9 @@ SPS::SPS()
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
+#if FIX_HRD_O0189
+, m_hrdParametersPresentFlag  (false)
+#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
@@ -1737,7 +1772,7 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
     }
     for (int j = 0; j < numPtsInCQPTableMinus1; j++)
     {
-      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1 + 1) >> 1;
+      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1) >> 1;
       for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
       {
         m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
@@ -1966,9 +2001,9 @@ void ScalingList::setDefaultScalingList()
   }
 }
 /** check if use default quantization matrix
- * \returns true if use default quantization matrix in all size
+ * \returns true if the scaling list is not equal to the default quantization matrix
 */
-bool ScalingList::checkDefaultScalingList()
+bool ScalingList::isNotDefaultScalingList()
 {
   bool isAllDefault = true;
   for ( uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
@@ -1980,13 +2015,14 @@ bool ScalingList::checkDefaultScalingList()
       {
         continue;
       }
-      if( !::memcmp(getScalingListAddress(sizeId,listId), getScalingListDefaultAddress(sizeId, listId),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) // check DC value
+      if( !( !::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId])) // check value of matrix
+         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) ) // check DC value
       {
         isAllDefault = false;
         break;
       }
     }
+    if (!isAllDefault) break;
   }
 
   return !isAllDefault;

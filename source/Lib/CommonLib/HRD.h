@@ -92,18 +92,30 @@ class HRDParameters
 private:
   bool     m_nalHrdParametersPresentFlag;
   bool     m_vclHrdParametersPresentFlag;
+#if !JVET_O0189_DU
   bool     m_subPicCpbParamsPresentFlag;
+#endif
   uint32_t m_tickDivisorMinus2;
+#if JVET_O0189_DU
+  bool     m_decodingUnitCpbParamsInPicTimingSeiFlag;
+#else
   uint32_t m_duCpbRemovalDelayLengthMinus1;
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   bool     m_subPicCpbParamsInPicTimingSEIFlag;
 #else
   bool     m_decodingUnitHrdParamsPresentFlag;
 #endif
+#if !JVET_O0189_DU
   uint32_t m_dpbOutputDelayDuLengthMinus1;
+#endif
   uint32_t m_bitRateScale;
   uint32_t m_cpbSizeScale;
+#if JVET_O0189_DU
+  uint32_t m_cpbSizeDuScale;
+#else
   uint32_t m_ducpbSizeScale;
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   uint32_t m_initialCpbRemovalDelayLengthMinus1;
   uint32_t m_cpbRemovalDelayLengthMinus1;
@@ -115,17 +127,28 @@ public:
   HRDParameters()
     :m_nalHrdParametersPresentFlag       (false)
     ,m_vclHrdParametersPresentFlag       (false)
+#if !JVET_O0189_DU
     ,m_subPicCpbParamsPresentFlag        (false)
+#endif
     ,m_tickDivisorMinus2                 (0)
+#if JVET_O0189_DU
+    ,m_decodingUnitCpbParamsInPicTimingSeiFlag (false)
+#else
     ,m_duCpbRemovalDelayLengthMinus1     (0)
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     ,m_subPicCpbParamsInPicTimingSEIFlag (false)
 #else
     ,m_decodingUnitHrdParamsPresentFlag  (false)
 #endif
+#if !JVET_O0189_DU
     ,m_dpbOutputDelayDuLengthMinus1      (0)
+#endif
     ,m_bitRateScale                      (0)
     ,m_cpbSizeScale                      (0)
+#if JVET_O0189_DU
+    ,m_cpbSizeDuScale                    (0)
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     ,m_initialCpbRemovalDelayLengthMinus1(23)
     ,m_cpbRemovalDelayLengthMinus1       (23)
@@ -141,14 +164,18 @@ public:
   void      setVclHrdParametersPresentFlag( bool flag )                                { m_vclHrdParametersPresentFlag = flag;                      }
   bool      getVclHrdParametersPresentFlag( ) const                                    { return m_vclHrdParametersPresentFlag;                      }
 
+#if !JVET_O0189_DU
   void      setSubPicCpbParamsPresentFlag( bool flag )                                 { m_subPicCpbParamsPresentFlag = flag;                       }
   bool      getSubPicCpbParamsPresentFlag( ) const                                     { return m_subPicCpbParamsPresentFlag;                       }
+#endif
 
   void      setTickDivisorMinus2( uint32_t value )                                     { m_tickDivisorMinus2 = value;                               }
   uint32_t  getTickDivisorMinus2( ) const                                              { return m_tickDivisorMinus2;                                }
 
+#if !JVET_O0189_DU
   void      setDuCpbRemovalDelayLengthMinus1( uint32_t value )                         { m_duCpbRemovalDelayLengthMinus1 = value;                   }
   uint32_t  getDuCpbRemovalDelayLengthMinus1( ) const                                  { return m_duCpbRemovalDelayLengthMinus1;                    }
+#endif
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void      setSubPicCpbParamsInPicTimingSEIFlag( bool flag)                           { m_subPicCpbParamsInPicTimingSEIFlag = flag;                }
@@ -158,16 +185,27 @@ public:
   bool      getDecodingUnitHrdParamsPresentFlag( ) const                               { return m_decodingUnitHrdParamsPresentFlag;                 }
 #endif
 
+#if !JVET_O0189_DU
   void      setDpbOutputDelayDuLengthMinus1(uint32_t value )                           { m_dpbOutputDelayDuLengthMinus1 = value;                    }
   uint32_t  getDpbOutputDelayDuLengthMinus1( ) const                                   { return m_dpbOutputDelayDuLengthMinus1;                     }
+#endif
+#if JVET_O0189_DU
+  void      setDecodingUnitCpbParamsInPicTimingSeiFlag( uint32_t value )               { m_decodingUnitCpbParamsInPicTimingSeiFlag = value;                                    }
+  uint32_t  getDecodingUnitCpbParamsInPicTimingSeiFlag( ) const                        { return m_decodingUnitCpbParamsInPicTimingSeiFlag;                                     }
+#endif
 
   void      setBitRateScale( uint32_t value )                                          { m_bitRateScale = value;                                    }
   uint32_t  getBitRateScale( ) const                                                   { return m_bitRateScale;                                     }
 
   void      setCpbSizeScale( uint32_t value )                                          { m_cpbSizeScale = value;                                    }
   uint32_t  getCpbSizeScale( ) const                                                   { return m_cpbSizeScale;                                     }
+#if JVET_O0189_DU
+  void      setCpbSizeDuScale( uint32_t value )                                        { m_cpbSizeDuScale = value;                                  }
+  uint32_t  getCpbSizeDuScale( ) const                                                 { return m_cpbSizeDuScale;                                   }
+#else
   void      setDuCpbSizeScale( uint32_t value )                                        { m_ducpbSizeScale = value;                                  }
   uint32_t  getDuCpbSizeScale( ) const                                                 { return m_ducpbSizeScale;                                   }
+#endif
 
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void      setInitialCpbRemovalDelayLengthMinus1( uint32_t value )                    { m_initialCpbRemovalDelayLengthMinus1 = value;              }

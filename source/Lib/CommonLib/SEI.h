@@ -200,8 +200,14 @@ public:
   , m_dpbOutputDelayLength (0)
   , m_bpCpbCnt (0)
 #endif
+#if JVET_O0189_DU
+  , m_duCpbRemovalDelayIncrementLength (0)
+  , m_dpbOutputDelayDuLength (0)
+#endif
+#if !FIX_SEI_O0189
   , m_cpbDelayOffset      (0)
   , m_dpbDelayOffset      (0)
+#endif
   {
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
@@ -212,6 +218,12 @@ public:
   }
   virtual ~SEIBufferingPeriod() {}
 
+#if JVET_O0189_DU
+  void      setDuCpbRemovalDelayIncrementLength( uint32_t value )        { m_duCpbRemovalDelayIncrementLength = value;        }
+  uint32_t  getDuCpbRemovalDelayIncrementLength( ) const                 { return m_duCpbRemovalDelayIncrementLength;         }
+  void      setDpbOutputDelayDuLength( uint32_t value )                  { m_dpbOutputDelayDuLength = value;                  }
+  uint32_t  getDpbOutputDelayDuLength( ) const                           { return m_dpbOutputDelayDuLength;                   }
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   uint32_t m_bpSeqParameterSetId;
   bool m_rapCpbParamsPresentFlag;
@@ -223,8 +235,14 @@ public:
   uint32_t m_dpbOutputDelayLength;
   int      m_bpCpbCnt;
 #endif
+#if JVET_O0189_DU
+  uint32_t m_duCpbRemovalDelayIncrementLength;
+  uint32_t m_dpbOutputDelayDuLength;
+#endif
+#if !FIX_SEI_O0189
   uint32_t m_cpbDelayOffset;
   uint32_t m_dpbDelayOffset;
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   uint32_t m_initialCpbRemovalDelay         [MAX_CPB_CNT][2];
   uint32_t m_initialCpbRemovalDelayOffset   [MAX_CPB_CNT][2];

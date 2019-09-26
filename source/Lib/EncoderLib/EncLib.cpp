@@ -1087,8 +1087,15 @@ void EncLib::xInitSPS(SPS &sps)
   profileTierLevel->setLevelIdc                    (m_level);
   profileTierLevel->setTierFlag                    (m_levelTier);
   profileTierLevel->setProfileIdc                  (m_profile);
-  profileTierLevel->setSubProfileIdc               (m_subProfile);
-
+#if JVET_O0044_MULTI_SUB_PROFILE
+  profileTierLevel->setNumSubProfile(m_numSubProfile);
+  for (int k = 0; k < m_numSubProfile; k++)
+  {
+    profileTierLevel->setSubProfileIdc(k, m_subProfile[k]);
+  }
+#else
+  profileTierLevel->setSubProfileIdc(m_subProfile);
+#endif
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */

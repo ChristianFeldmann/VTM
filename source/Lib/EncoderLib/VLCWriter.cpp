@@ -2039,7 +2039,16 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 {
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
-  WRITE_CODE( ptl->getSubProfileIdc(), 24,      "general_sub_profile_idc"                );
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
+  for (int i = 0; i < ptl->getNumSubProfile(); i++)
+  {
+    WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
+  }
+#else
+  WRITE_CODE(ptl->getSubProfileIdc(), 24, "general_sub_profile_idc");
+#endif
 
   codeConstraintInfo(ptl->getConstraintInfo());
 

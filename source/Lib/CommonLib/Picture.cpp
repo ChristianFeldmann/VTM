@@ -643,14 +643,14 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
         }
         rowHeight2.resize(brickInTile + 1);
         rowHeight2[brickInTile] = remainingHeightInCtbsY;
-        numBrickRowsMinus2      = brickInTile;
+        numBrickRowsMinus2      = brickInTile - 1;
       }
       else
       {
         numBrickRowsMinus2 = pps.getNumBrickRowsMinus2(tileIdx);
-        rowHeight2.resize(numBrickRowsMinus2 + 1);
+        rowHeight2.resize(numBrickRowsMinus2 + 2);
         rowHeight2[numBrickRowsMinus2 + 1] = tileRowHeight[tileY];
-        for (int j = 0; j <= numBrickRowsMinus2; j++)
+        for (int j = 0; j < numBrickRowsMinus2 + 1; j++)
         {
           rowHeight2[j] = pps.getBrickRowHeightMinus1(tileIdx, j) + 1;
           rowHeight2[numBrickRowsMinus2 + 1] -= rowHeight2[j];
@@ -658,19 +658,18 @@ void BrickMap::initBrickMap( const SPS& sps, const PPS& pps )
       }
       rowBd2.resize(numBrickRowsMinus2 + 2);
       rowBd2[0] = 0;
-      for (int j = 0; j <= numBrickRowsMinus2 + 1; j++)
+      for (int j = 0; j < numBrickRowsMinus2 + 1; j++)
       {
         rowBd2[j + 1] = rowBd2[j] + rowHeight2[j];
       }
-      for (int j = 0; j <= numBrickRowsMinus2 + 1; j++)
+      for (int j = 0; j < numBrickRowsMinus2 + 2; j++)
       {
         bricks.resize(bricks.size() + 1);
         bricks[brickIdx].setColBd(tileColBd[tileX]);
         bricks[brickIdx].setRowBd(tileRowBd[tileY] + rowBd2[j]);
         bricks[brickIdx].setWidthInCtus(tileColWidth[tileX]);
         bricks[brickIdx].setHeightInCtus(rowHeight2[j]);
-        bricks[brickIdx].setFirstCtuRsAddr(bricks[brickIdx].getColBd()
-                                           + bricks[brickIdx].getRowBd() * frameWidthInCtus);
+        bricks[brickIdx].setFirstCtuRsAddr(bricks[brickIdx].getColBd() + bricks[brickIdx].getRowBd() * frameWidthInCtus);
         brickIdx++;
       }
 #else

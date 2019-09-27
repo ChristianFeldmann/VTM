@@ -2015,11 +2015,21 @@ bool ScalingList::isNotDefaultScalingList()
       {
         continue;
       }
-      if( !( !::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId])) // check value of matrix
-         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) ) // check DC value
+      if (sizeId < SCALING_LIST_16x16)
       {
-        isAllDefault = false;
-        break;
+        if (::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * (int)g_scalingListSize[sizeId]))
+        {
+          isAllDefault = false;
+          break;
+        }
+      }
+      else
+      {
+        if ((::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * MAX_MATRIX_COEF_NUM)) || (getScalingListDC(sizeId, listId) != 16))
+        {
+          isAllDefault = false;
+          break;
+        }
       }
     }
     if (!isAllDefault) break;

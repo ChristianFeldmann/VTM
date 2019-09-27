@@ -75,6 +75,141 @@ AdaptiveLoopFilter::AdaptiveLoopFilter()
 #endif
 }
 
+#if JVET_O0625_ALF_PADDING
+void AdaptiveLoopFilter::getAlfBoundary( const CodingStructure& cs, int posX, int posY, int &topBry, int &botBry, int &leftBry, int &rightBry )
+{
+  const Slice& slice = *( cs.slice );
+  const PPS&   pps   = *( cs.pps );
+  int   ctuSize = slice.getSPS()->getCTUSize();
+  const Position currCtuPos( posX, posY );
+  const CodingUnit *currCtu = cs.getCU( currCtuPos, CHANNEL_TYPE_LUMA );
+
+  topBry = botBry = leftBry = rightBry = ALF_NONE_BOUNDARY;
+
+  /* TODO: sub-picture boundary */
+  /* top boundary excluding the top picture boundary */
+  if ( posY > ctuSize )
+  {
+    const Position prevCtuPos( posX, posY - ctuSize );
+    const CodingUnit *prevCtu = cs.getCU( prevCtuPos, CHANNEL_TYPE_LUMA );
+
+    if ( !slice.getLFCrossSliceBoundaryFlag() && !CU::isSameSlice( *currCtu, *prevCtu ) )
+    {
+      topBry = posY;
+    }
+
+    if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *prevCtu ) )
+    {
+      topBry = posY;
+    }
+  }
+
+  /* bottom boundary excluding the bottom picture boundary */
+  if ( posY + ctuSize < cs.pcv->lumaHeight )
+  {
+    const Position nextCtuPos( posX, posY + ctuSize );
+    const CodingUnit *nextCtu = cs.getCU( nextCtuPos, CHANNEL_TYPE_LUMA );
+
+    if ( !slice.getLFCrossSliceBoundaryFlag() && !CU::isSameSlice( *currCtu, *nextCtu ) )
+    {
+      botBry = posY + ctuSize;
+    }
+
+    if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *nextCtu ) )
+    {
+      botBry = posY + ctuSize;
+    }
+  }
+
+  /* left boundary excluding the left picture boundary */
+  if ( posX > ctuSize )
+  {
+    const Position prevCtuPos( posX - ctuSize, posY );
+    const CodingUnit *prevCtu = cs.getCU( prevCtuPos, CHANNEL_TYPE_LUMA );
+
+    if ( !slice.getLFCrossSliceBoundaryFlag() && !CU::isSameSlice( *currCtu, *prevCtu ) )
+    {
+      leftBry = posX;
+    }
+
+    if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *prevCtu ) )
+    {
+      leftBry = posX;
+    }
+  }
+
+  /* right boundary excluding the right picture boundary */
+  if ( posX + ctuSize < cs.pcv->lumaWidth )
+  {
+    const Position nextCtuPos( posX + ctuSize, posY );
+    const CodingUnit *nextCtu = cs.getCU( nextCtuPos, CHANNEL_TYPE_LUMA );
+
+    if ( !slice.getLFCrossSliceBoundaryFlag() && !CU::isSameSlice( *currCtu, *nextCtu ) )
+    {
+      rightBry = posX + ctuSize;
+    }
+
+    if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *nextCtu ) )
+    {
+      rightBry = posX + ctuSize;
+    }
+  }
+
+  if( pps.getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+  {
+    for( int i = 0; i < pps.getNumHorVirtualBoundaries(); i++ )
+    {
+      if( pps.getVirtualBoundariesPosY( i ) == posY )
+      {
+        topBry = posY;
+      }
+      else if( pps.getVirtualBoundariesPosY( i ) == posY + ctuSize )
+      {
+        botBry = posY + ctuSize;
+      }
+    }
+
+    for( int i = 0; i < pps.getNumVerVirtualBoundaries(); i++ )
+    {
+      if( pps.getVirtualBoundariesPosX( i ) == posX )
+      {
+        leftBry = posX;
+      }
+      else if( pps.getVirtualBoundariesPosX( i ) == posX + ctuSize )
+      {
+        rightBry = posX + ctuSize;
+      }
+    }
+  }
+}
+
+bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, int &topBry, int &botBry, int &leftBry, int &rightBry, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
+{
+  numHorVirBndry = 0; numVerVirBndry = 0;
+
+  if( pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+  {
+    for( int i = 0; i < pps->getNumHorVirtualBoundaries(); i++ )
+    {
+      if( yPos < pps->getVirtualBoundariesPosY(i) && pps->getVirtualBoundariesPosY(i) < yPos + height )
+      {
+        horVirBndryPos[numHorVirBndry++] = pps->getVirtualBoundariesPosY(i);
+      }
+    }
+    for( int i = 0; i < pps->getNumVerVirtualBoundaries(); i++ )
+    {
+      if( xPos < pps->getVirtualBoundariesPosX(i) && pps->getVirtualBoundariesPosX(i) < xPos + width )
+      {
+        verVirBndryPos[numVerVirBndry++] = pps->getVirtualBoundariesPosX(i);
+      }
+    }
+  }
+
+  getAlfBoundary( cs, xPos, yPos, topBry, botBry, leftBry, rightBry );
+
+  return numHorVirBndry > 0 || numVerVirBndry > 0 || ( topBry != ALF_NONE_BOUNDARY ) || ( botBry != ALF_NONE_BOUNDARY ) || ( leftBry != ALF_NONE_BOUNDARY ) || ( rightBry != ALF_NONE_BOUNDARY );
+}
+#else
 bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
 {
   clipTop = false; clipBottom = false; clipLeft = false; clipRight = false;
@@ -114,6 +249,7 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
   }
   return numHorVirBndry > 0 || numVerVirBndry > 0 || clipTop || clipBottom || clipLeft || clipRight;
 }
+#endif
 
 const int AdaptiveLoopFilter::m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
 {
@@ -232,10 +368,16 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
   const PreCalcValues& pcv = *cs.pcv;
 
   int ctuIdx = 0;
+#if !JVET_O0625_ALF_PADDING
   bool clipTop = false, clipBottom = false, clipLeft = false, clipRight = false;
+#endif
   int numHorVirBndry = 0, numVerVirBndry = 0;
   int horVirBndryPos[] = { 0, 0, 0 };
   int verVirBndryPos[] = { 0, 0, 0 };
+#if JVET_O0625_ALF_PADDING
+  int alfBryList[4] = { ALF_NONE_BOUNDARY, ALF_NONE_BOUNDARY, ALF_NONE_BOUNDARY, ALF_NONE_BOUNDARY }; // 0 - top, 1 - bottom, 2 - left, 3 - right.
+#endif
+
   for( int yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
   {
     for( int xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth )
@@ -247,24 +389,36 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
       {
         ctuEnableFlag |= m_ctuEnableFlag[compIdx][ctuIdx] > 0;
       }
+#if JVET_O0625_ALF_PADDING
+      if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
+#else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
+#endif
       {
         int yStart = yPos;
         for( int i = 0; i <= numHorVirBndry; i++ )
         {
           const int yEnd = i == numHorVirBndry ? yPos + height : horVirBndryPos[i];
           const int h = yEnd - yStart;
+#if JVET_O0625_ALF_PADDING
+          const bool clipT = ( i == 0 && alfBryList[0] != ALF_NONE_BOUNDARY ) || ( i > 0 ) || ( yStart == 0 );
+          const bool clipB = ( i == numHorVirBndry && alfBryList[1] != ALF_NONE_BOUNDARY ) || ( i < numHorVirBndry ) || ( yEnd == pcv.lumaHeight );
+#else
           const bool clipT = ( i == 0 && clipTop ) || ( i > 0 ) || ( yStart == 0 );
           const bool clipB = ( i == numHorVirBndry && clipBottom ) || ( i < numHorVirBndry ) || ( yEnd == pcv.lumaHeight );
-
+#endif
           int xStart = xPos;
           for( int j = 0; j <= numVerVirBndry; j++ )
           {
             const int xEnd = j == numVerVirBndry ? xPos + width : verVirBndryPos[j];
             const int w = xEnd - xStart;
+#if JVET_O0625_ALF_PADDING
+            const bool clipL = ( j == 0 && alfBryList[2] != ALF_NONE_BOUNDARY ) || ( j > 0 ) || ( xStart == 0 );
+            const bool clipR = ( j == numVerVirBndry && alfBryList[3] != ALF_NONE_BOUNDARY ) || ( j < numVerVirBndry ) || ( xEnd == pcv.lumaWidth );
+#else
             const bool clipL = ( j == 0 && clipLeft ) || ( j > 0 ) || ( xStart == 0 );
             const bool clipR = ( j == numVerVirBndry && clipRight ) || ( j < numVerVirBndry ) || ( xEnd == pcv.lumaWidth );
-
+#endif
             const int wBuf = w + (clipL ? 0 : MAX_ALF_PADDING_SIZE) + (clipR ? 0 : MAX_ALF_PADDING_SIZE);
             const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);
             PelUnitBuf buf = m_tempBuf2.subBuf( UnitArea( cs.area.chromaFormat, Area( 0, 0, wBuf, hBuf ) ) );
@@ -276,7 +430,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
             {
               const Area blkSrc( 0, 0, w, h );
               const Area blkDst( xStart, yStart, w, h );
+#if JVET_O0625_ALF_PADDING
+              deriveClassification( m_classifier, buf.get(COMPONENT_Y), blkDst, blkSrc, alfBryList );
+#else
               deriveClassification( m_classifier, buf.get(COMPONENT_Y), blkDst, blkSrc );
+#endif
 #if !JVET_O0525_REMOVE_PCM
               const Area blkPCM( xStart, yStart, w, h );
               resetPCMBlkClassInfo( cs, m_classifier, buf.get(COMPONENT_Y), blkPCM );
@@ -296,7 +454,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
               }
               m_filter7x7Blk(m_classifier, recYuv, buf, blkDst, blkSrc, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
                 , m_alfVBLumaCTUHeight
+#if JVET_O0625_ALF_PADDING
+                , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#else
                 , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+#endif
               );
             }
 
@@ -317,7 +479,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                 m_filter5x5Blk(m_classifier, recYuv, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs
 #endif
                   , m_alfVBChmaCTUHeight
+#if JVET_O0625_ALF_PADDING
+                  , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
+#else
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
+#endif
               }
             }
 
@@ -333,7 +499,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
       if( m_ctuEnableFlag[COMPONENT_Y][ctuIdx] )
       {
         Area blk( xPos, yPos, width, height );
+#if JVET_O0625_ALF_PADDING
+        deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk, blk, alfBryList );
+#else
         deriveClassification( m_classifier, tmpYuv.get( COMPONENT_Y ), blk, blk );
+#endif
 #if !JVET_O0525_REMOVE_PCM
         Area blkPCM(xPos, yPos, width, height);
         resetPCMBlkClassInfo(cs, m_classifier, tmpYuv.get(COMPONENT_Y), blkPCM);
@@ -353,7 +523,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
         }
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
+#if JVET_O0625_ALF_PADDING
+          , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#else
           , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
+#endif
         );
       }
 
@@ -373,7 +547,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
           m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, blk, compID, m_chromaCoeffFinal, m_chromaClippFinal, m_clpRngs.comp[compIdx], cs
 #endif
             , m_alfVBChmaCTUHeight
+#if JVET_O0625_ALF_PADDING
+            , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
+#else
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
+#endif
         }
       }
       }
@@ -718,7 +896,11 @@ void AdaptiveLoopFilter::destroy()
   m_created = false;
 }
 
+#if JVET_O0625_ALF_PADDING
+void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk, const int alfBryList[4] )
+#else
 void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk )
+#endif
 {
   int height = blk.pos().y + blk.height;
   int width = blk.pos().x + blk.width;
@@ -730,10 +912,16 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
     for( int j = blk.pos().x; j < width; j += m_CLASSIFICATION_BLK_SIZE )
     {
       int nWidth = std::min( j + m_CLASSIFICATION_BLK_SIZE, width ) - j;
+#if JVET_O0625_ALF_PADDING
+      m_deriveClassificationBlk( classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
+        , m_alfVBLumaCTUHeight
+        , ( ( i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight ) ? m_picHeight : m_alfVBLumaPos ), alfBryList );
+#else
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
         , ((i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
       );
+#endif
     }
   }
 }
@@ -789,9 +977,15 @@ void AdaptiveLoopFilter::resetPCMBlkClassInfo(CodingStructure & cs,  AlfClassifi
 }
 #endif
 
+#if JVET_O0625_ALF_PADDING
+void AdaptiveLoopFilter::deriveClassificationBlk( AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+                                                 const CPelBuf &srcLuma, const Area &blkDst, const Area &blk,
+                                                 const int shift, const int vbCTUHeight, int vbPos, const int alfBryList[4] )
+#else
 void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
                                                  const CPelBuf &srcLuma, const Area &blkDst, const Area &blk,
                                                  const int shift, const int vbCTUHeight, int vbPos)
+#endif
 {
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
 
@@ -856,11 +1050,34 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int
         int jM6 = j - 6;
         int jM4 = j - 4;
         int jM2 = j - 2;
-
+#if JVET_O0625_ALF_PADDING
+        if ( ( blkDst.pos().x + j - 2 > 0 ) && ( blkDst.pos().x + j - 2 == alfBryList[3] ) )
+        {
+          pYver[jM6] += pYver[jM4] + pYver[jM2];
+          pYhor[jM6] += pYhor[jM4] + pYhor[jM2];
+          pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2];
+          pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2];
+        }
+        else if ( ( blkDst.pos().x + jM6 > 0 ) && ( blkDst.pos().x + jM6 == alfBryList[2] ) )
+        {
+          pYver[jM6] = pYver[jM4] + pYver[jM2] + pYver[j];
+          pYhor[jM6] = pYhor[jM4] + pYhor[jM2] + pYhor[j];
+          pYdig0[jM6] = pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
+          pYdig1[jM6] = pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
+        }
+        else
+        {
+          pYver[jM6] += pYver[jM4] + pYver[jM2] + pYver[j];
+          pYhor[jM6] += pYhor[jM4] + pYhor[jM2] + pYhor[j];
+          pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
+          pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
+        }
+#else
         pYver[jM6] += pYver[jM4] + pYver[jM2] + pYver[j];
         pYhor[jM6] += pYhor[jM4] + pYhor[jM2] + pYhor[j];
         pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
         pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
+#endif
       }
     }
   }
@@ -894,12 +1111,53 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int
     for( int j = 0; j < blk.width; j += clsSizeX )
     {
       int sumV = 0; int sumH = 0; int sumD0 = 0; int sumD1 = 0;
+#if JVET_O0625_ALF_PADDING
+      int horBlkStride = 8, verBlkStride = 8;
+
+      if ( ( alfBryList[2] != ALF_NONE_BOUNDARY && ( j + blkDst.pos().x == alfBryList[2] ) ) ||
+           ( alfBryList[3] != ALF_NONE_BOUNDARY && ( j + blkDst.pos().x == alfBryList[3] - 4 ) ) )
+      {
+        horBlkStride = 6;
+      }
+
+      if ( alfBryList[0] != ALF_NONE_BOUNDARY && ( i + blkDst.pos().y == alfBryList[0] ) )
+      {
+        sumV  = pYver2[j] + pYver4[j] + pYver6[j];
+        sumH  = pYhor2[j] + pYhor4[j] + pYhor6[j];
+        sumD0 = pYdig02[j] + pYdig04[j] + pYdig06[j];
+        sumD1 = pYdig12[j] + pYdig14[j] + pYdig16[j];
+        verBlkStride = 6;
+      }
+      else if ( alfBryList[1] != ALF_NONE_BOUNDARY && ( i + blkDst.pos().y == alfBryList[1] - 4 ) )
+      {
+        if ( ( ( alfBryList[1] - 4 ) % vbCTUHeight ) == vbPos )
+        {
+          sumV  = pYver2[j] + pYver4[j];
+          sumH  = pYhor2[j] + pYhor4[j];
+          sumD0 = pYdig02[j] + pYdig04[j];
+          sumD1 = pYdig12[j] + pYdig14[j];
+          verBlkStride = 4;
+        }
+        else
+        {
+          sumV = pYver[j] + pYver2[j] + pYver4[j];
+          sumH = pYhor[j] + pYhor2[j] + pYhor4[j];
+          sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j];
+          sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j];
+          verBlkStride = 6;
+        }
+      }
+      else
+#endif
       if (((i + blkDst.pos().y) % vbCTUHeight) == (vbPos - 4))
       {
         sumV = pYver[j] + pYver2[j] + pYver4[j];
         sumH = pYhor[j] + pYhor2[j] + pYhor4[j];
         sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j];
         sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j];
+#if JVET_O0625_ALF_PADDING
+        verBlkStride = 6;
+#endif
       }
       else if (((i + blkDst.pos().y) % vbCTUHeight) == vbPos)
       {
@@ -907,6 +1165,9 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int
         sumH = pYhor2[j] + pYhor4[j] + pYhor6[j];
         sumD0 = pYdig02[j] + pYdig04[j] + pYdig06[j];
         sumD1 = pYdig12[j] + pYdig14[j] + pYdig16[j];
+#if JVET_O0625_ALF_PADDING
+        verBlkStride = 6;
+#endif
       }
       else
       {
@@ -919,6 +1180,29 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int
       int tempAct = sumV + sumH;
       int activity = 0;
 
+#if JVET_O0625_ALF_PADDING
+      int alfArea = horBlkStride * verBlkStride;
+      if ( alfArea == 64 )
+      {
+        activity = (Pel)Clip3<int>( 0, maxActivity, ( tempAct * 64 ) >> shift );
+      }
+      else if ( alfArea == 48 )
+      {
+        activity = (Pel) Clip3<int>( 0, maxActivity, ( tempAct * 96 ) >> shift );
+      }
+      else if ( alfArea == 36 )
+      {
+        activity = (Pel) Clip3<int>( 0, maxActivity, ( tempAct * 112 ) >> shift );
+      }
+      else if ( alfArea == 32 )
+      {
+        activity = (Pel) Clip3<int>( 0, maxActivity, ( tempAct * 128 ) >> shift );
+      }
+      else if ( alfArea == 24 )
+      {
+        activity = (Pel) Clip3<int>( 0, maxActivity, ( tempAct * 192 ) >> shift );
+      }
+#else
       const int y = (i + blkDst.pos().y) & (vbCTUHeight - 1);
       if (y == vbPos - 4 || y == vbPos)
       {
@@ -928,6 +1212,7 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int
       {
         activity = (Pel)Clip3<int>(0, maxActivity, (tempAct * 64) >> shift);
       }
+#endif
       int classIdx = th[activity];
 
       int hv1, hv0, d1, d0, hvd1, hvd0;
@@ -1002,10 +1287,17 @@ void AdaptiveLoopFilter::deriveClassificationBlk(AlfClassifier **classifier, int
 }
 
 template<AlfFilterType filtType>
+#if JVET_O0625_ALF_PADDING
+void AdaptiveLoopFilter::filterBlk( AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+                                   const Area &blkDst, const Area &blk, const ComponentID compId,
+                                   const short *filterSet, const short *fClipSet, const ClpRng &clpRng,
+                                   CodingStructure &cs, const int vbCTUHeight, int vbPos, const int alfBryList[4] )
+#else
 void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
                                    const Area &blkDst, const Area &blk, const ComponentID compId,
                                    const short *filterSet, const short *fClipSet, const ClpRng &clpRng,
                                    CodingStructure &cs, const int vbCTUHeight, int vbPos)
+#endif
 {
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
 
@@ -1066,6 +1358,16 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
   std::array<int, MAX_NUM_ALF_LUMA_COEFF> filterCoeff;
   std::array<int, MAX_NUM_ALF_LUMA_COEFF> filterClipp;
 
+#if JVET_O0625_ALF_PADDING
+  const int chromaScaleY   = getComponentScaleY( bChroma ? COMPONENT_Cb : COMPONENT_Y, cs.slice->getSPS()->getChromaFormatIdc() );
+  const int chromaScaleX   = getComponentScaleX( bChroma ? COMPONENT_Cb : COMPONENT_Y, cs.slice->getSPS()->getChromaFormatIdc() );
+  const int alfTopBryPos   = ( alfBryList[0] != ALF_NONE_BOUNDARY ) ? ( alfBryList[0] >> chromaScaleY ) : ALF_NONE_BOUNDARY;
+  const int alfBotBryPos   = ( alfBryList[1] != ALF_NONE_BOUNDARY ) ? ( alfBryList[1] >> chromaScaleY ) : ALF_NONE_BOUNDARY;
+  const int alfLeftBryPos  = ( alfBryList[2] != ALF_NONE_BOUNDARY ) ? ( alfBryList[2] >> chromaScaleX ) : ALF_NONE_BOUNDARY;
+  const int alfRightBryPos = ( alfBryList[3] != ALF_NONE_BOUNDARY ) ? ( alfBryList[3] >> chromaScaleX ) : ALF_NONE_BOUNDARY;
+
+  int botBryLines = ( ( ( ( alfBotBryPos - ( 4 >> chromaScaleY ) ) % vbCTUHeight ) == vbPos ) && alfBotBryPos != ALF_NONE_BOUNDARY ) ? 2 : 4;
+#endif
   pImgYPad0 = src + startHeight * srcStride + startWidth;
   pImgYPad1 = pImgYPad0 + srcStride;
   pImgYPad2 = pImgYPad0 - srcStride;
@@ -1193,6 +1495,9 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
         pRec1 = pRec0 + j + ii * dstStride;
 
         const int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
+#if JVET_O0625_ALF_PADDING
+        const int pixYPos = blkDst.y + i + ii;
+#endif
         if (yVb < vbPos && (yVb >= vbPos - (bChroma ? 2 : 4)))   // above
         {
           pImg1 = (yVb == vbPos - 1) ? pImg0 : pImg1;
@@ -1203,6 +1508,30 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
           pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
           pImg6 = (yVb >= vbPos - 3) ? pImg4 : pImg6;
         }
+#if JVET_O0625_ALF_PADDING
+        else if ( alfBotBryPos != ALF_NONE_BOUNDARY && pixYPos < alfBotBryPos && pixYPos >= alfBotBryPos - ( bChroma ? ( botBryLines >> 1 ) : botBryLines ) ) //above
+        {
+          const int pixYpos = blkDst.y + i + ii;
+          pImg1 = ( pixYpos == alfBotBryPos - 1 ) ? pImg0 : pImg1;
+          pImg3 = ( pixYpos >= alfBotBryPos - 2 ) ? pImg1 : pImg3;
+          pImg5 = ( pixYpos >= alfBotBryPos - 3 ) ? pImg3 : pImg5;
+
+          pImg2 = ( pixYpos == alfBotBryPos - 1 ) ? pImg0 : pImg2;
+          pImg4 = ( pixYpos >= alfBotBryPos - 2 ) ? pImg2 : pImg4;
+          pImg6 = ( pixYpos >= alfBotBryPos - 3 ) ? pImg4 : pImg6;
+        }
+        else if ( alfTopBryPos != ALF_NONE_BOUNDARY && pixYPos >= alfTopBryPos && pixYPos <= alfTopBryPos + ( bChroma ? 1 : 2 ) ) //bottom
+        {
+          const int pixYpos = blkDst.y + i + ii;
+          pImg1 = ( pixYpos == alfTopBryPos     ) ? pImg0 : pImg1;
+          pImg3 = ( pixYpos <= alfTopBryPos + 1 ) ? pImg1 : pImg3;
+          pImg5 = ( pixYpos <= alfTopBryPos + 2 ) ? pImg3 : pImg5;
+
+          pImg2 = ( pixYpos == alfTopBryPos     ) ? pImg0 : pImg2;
+          pImg4 = ( pixYpos <= alfTopBryPos + 1 ) ? pImg2 : pImg4;
+          pImg6 = ( pixYpos <= alfTopBryPos + 2 ) ? pImg4 : pImg6;
+        }
+#endif
         else if (yVb >= vbPos && (yVb <= vbPos + (bChroma ? 1 : 3)))   // bottom
         {
           pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
@@ -1237,6 +1566,55 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
 
           int sum = 0;
           const Pel curr = pImg0[+0];
+#if JVET_O0625_ALF_PADDING
+          int idx1 = 1, idx2 = 2, idx3 = 3;
+          const int pixXPos = blkDst.x + j + jj;
+          // vertical 2-side padding
+          if ( alfLeftBryPos != ALF_NONE_BOUNDARY && pixXPos >= alfLeftBryPos && pixXPos <= alfLeftBryPos + ( bChroma ? 1 : 2 ) )
+          {
+            const int pixXpos = blkDst.x + j + jj;
+            idx1 = ( pixXpos == alfLeftBryPos ) ? 0 : 1;
+            idx2 = ( pixXpos <= alfLeftBryPos + 1 ) ? idx1 : 2;
+            idx3 = ( pixXpos <= alfLeftBryPos + 2 ) ? idx2 : 3;
+          }
+          else if ( alfRightBryPos != ALF_NONE_BOUNDARY && pixXPos < alfRightBryPos && pixXPos >= alfRightBryPos - ( bChroma ? 2 : 4 ) )
+          {
+            const int pixXpos = blkDst.x + j + jj;
+            idx1 = ( pixXpos == alfRightBryPos - 1 ) ? 0 : 1;
+            idx2 = ( pixXpos >= alfRightBryPos - 2 ) ? idx1 : 2;
+            idx3 = ( pixXpos >= alfRightBryPos - 3 ) ? idx2 : 3;
+          }
+
+          if( filtType == ALF_FILTER_7 )
+          {
+            sum += filterCoeff[0] * ( clipALF(filterClipp[0], curr, pImg5[+0], pImg6[+0]) );
+
+            sum += filterCoeff[1] * ( clipALF(filterClipp[1], curr, pImg3[+idx1], pImg4[-idx1]) );
+            sum += filterCoeff[2] * ( clipALF(filterClipp[2], curr, pImg3[+0], pImg4[+0]) );
+            sum += filterCoeff[3] * ( clipALF(filterClipp[3], curr, pImg3[-idx1], pImg4[+idx1]) );
+
+            sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg1[+idx2], pImg2[-idx2]) );
+            sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg1[+idx1], pImg2[-idx1]) );
+            sum += filterCoeff[6] * ( clipALF(filterClipp[6], curr, pImg1[+0], pImg2[+0]) );
+            sum += filterCoeff[7] * ( clipALF(filterClipp[7], curr, pImg1[-idx1], pImg2[+idx1]) );
+            sum += filterCoeff[8] * ( clipALF(filterClipp[8], curr, pImg1[-idx2], pImg2[+idx2]) );
+
+            sum += filterCoeff[9] * ( clipALF(filterClipp[9], curr, pImg0[+idx3], pImg0[-idx3]) );
+            sum += filterCoeff[10] * ( clipALF(filterClipp[10], curr, pImg0[+idx2], pImg0[-idx2]) );
+            sum += filterCoeff[11] * ( clipALF(filterClipp[11], curr, pImg0[+idx1], pImg0[-idx1]) );
+          }
+          else
+          {
+            sum += filterCoeff[0] * ( clipALF(filterClipp[0], curr, pImg3[+0], pImg4[+0]) );
+
+            sum += filterCoeff[1] * ( clipALF(filterClipp[1], curr, pImg1[+idx1], pImg2[-idx1]) );
+            sum += filterCoeff[2] * ( clipALF(filterClipp[2], curr, pImg1[+0], pImg2[+0]) );
+            sum += filterCoeff[3] * ( clipALF(filterClipp[3], curr, pImg1[-idx1], pImg2[+idx1]) );
+
+            sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg0[+idx2], pImg0[-idx2]) );
+            sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg0[+idx1], pImg0[-idx1]) );
+          }
+#else
           if( filtType == ALF_FILTER_7 )
           {
             sum += filterCoeff[0] * ( clipALF(filterClipp[0], curr, pImg5[+0], pImg6[+0]) );
@@ -1266,7 +1644,7 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
             sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg0[+2], pImg0[-2]) );
             sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg0[+1], pImg0[-1]) );
           }
-
+#endif
           sum = ( sum + offset ) >> shift;
           sum += curr;
           pRec1[jj] = ClipPel( sum, clpRng );

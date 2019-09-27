@@ -170,6 +170,18 @@ bool CU::isSameTile(const CodingUnit& cu, const CodingUnit& cu2)
   return cu.tileIdx == cu2.tileIdx;
 }
 
+#if JVET_O0625_ALF_PADDING
+bool CU::isSameBrick( const CodingUnit& cu, const CodingUnit& cu2 )
+{
+  const Picture&  pcPic    = *( cu.cs->picture );
+  const BrickMap& tileMap  = *( pcPic.brickMap );
+  const uint32_t brickIdx  = tileMap.getBrickIdxRsMap( cu.lumaPos() );
+  const uint32_t brickIdx2 = tileMap.getBrickIdxRsMap( cu2.lumaPos() );
+
+  return brickIdx == brickIdx2;
+}
+#endif
+
 bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)
 {
   return ( cu.slice->getIndependentSliceIdx() == cu2.slice->getIndependentSliceIdx() ) && ( cu.tileIdx == cu2.tileIdx );

@@ -36,6 +36,8 @@
 #include <list>
 #include <map>
 
+#define JVET_O0549_ENCODER_ONLY_FILTER_POL 1 // JVET-O0549: Encoder-only GOP-based temporal filter. Program Options Lite related changes.
+
 #ifndef __PROGRAM_OPTIONS_LITE__
 #define __PROGRAM_OPTIONS_LITE__
 
@@ -196,6 +198,9 @@ namespace df
         }
         std::list<std::string> opt_long;
         std::list<std::string> opt_short;
+#if JVET_O0549_ENCODER_ONLY_FILTER_POL
+        std::list<std::string> opt_prefix;
+#endif
         OptionBase* opt;
       };
 
@@ -207,6 +212,9 @@ namespace df
       typedef std::map<std::string, NamesPtrList> NamesMap;
       NamesMap opt_long_map;
       NamesMap opt_short_map;
+#if JVET_O0549_ENCODER_ONLY_FILTER_POL
+      NamesMap opt_prefix_map;
+#endif
     };
 
     /* Class with templated overloaded operator(), for use by Options::addOptions() */

@@ -658,6 +658,7 @@ bool PU::isMIP(const PredictionUnit &pu, const ChannelType &chType)
   return (chType == CHANNEL_TYPE_LUMA && pu.cu->mipFlag);
 }
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int PU::getMipSizeId(const PredictionUnit &pu)
 {
   if ((pu.lwidth() == 4) && (pu.lheight() == 4))
@@ -674,7 +675,6 @@ int PU::getMipSizeId(const PredictionUnit &pu)
   }
 }
 
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int PU::getMipMPMs(const PredictionUnit &pu, unsigned *mpm)
 {
   const CompArea &area = pu.block( getFirstComponentOfChannel( CHANNEL_TYPE_LUMA ) );

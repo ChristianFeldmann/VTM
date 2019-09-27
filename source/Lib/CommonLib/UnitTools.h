@@ -145,8 +145,8 @@ namespace PU
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
 #if !JVET_O0925_MIP_SIMPLIFICATIONS
   int           getMipMPMs            (const PredictionUnit &pu, unsigned *mpm);
-#endif
   int           getMipSizeId          (const PredictionUnit &pu);
+#endif
   uint32_t      getIntraDirLuma       (const PredictionUnit &pu);
 #if !JVET_O0925_MIP_SIMPLIFICATIONS
   AvailableInfo getAvailableInfoLuma  (const PredictionUnit &pu);

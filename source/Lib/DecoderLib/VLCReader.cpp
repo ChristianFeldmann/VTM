@@ -3125,7 +3125,18 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   uint32_t symbol;
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
-  READ_CODE(24 , symbol,   "general_sub_profile_idc"         ); ptl->setSubProfileIdc  (symbol);
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  READ_CODE(8, symbol, "num_sub_profiles");
+  uint8_t numSubProfiles = symbol;
+  ptl->setNumSubProfile( numSubProfiles );
+  for (int i = 0; i < numSubProfiles; i++)
+  {
+    READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
+  }
+#else
+  READ_CODE(24, symbol, "general_sub_profile_idc"); ptl->setSubProfileIdc(symbol);
+#endif
 
   parseConstraintInfo( ptl->getConstraintInfo() );
 

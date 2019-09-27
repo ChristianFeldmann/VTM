@@ -510,6 +510,18 @@ uint32_t SMultiValueInput<uint32_t>::readValue(const char *&pStr, bool &bSuccess
   return val;
 }
 
+#if JVET_O0044_MULTI_SUB_PROFILE
+template<>
+uint8_t SMultiValueInput<uint8_t>::readValue(const char *&pStr, bool &bSuccess)
+{
+  char *eptr;
+  uint32_t val = strtoul(pStr, &eptr, 0);
+  pStr = eptr;
+  bSuccess = !(*eptr != 0 && !isspace(*eptr) && *eptr != ',') && !(val<minValIncl || val>maxValIncl);
+  return val;
+}
+#endif
+
 template<>
 int SMultiValueInput<int>::readValue(const char *&pStr, bool &bSuccess)
 {
@@ -767,6 +779,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosX       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosY       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  SMultiValueInput<uint8_t> cfg_SubProfile(0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+#endif
+
   int warnUnknowParameter = 0;
 
 #if ENABLE_TRACING
@@ -872,7 +889,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
-  ("SubProfile",                                      m_subProfile,                                        0u, "Sub-profile idc")
+#if JVET_O0044_MULTI_SUB_PROFILE
+  ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
+#else
+    ("SubProfile", m_subProfile, 0u, "Sub-profile idc")
+#endif
   ("EnableDecodingParameterSet",                      m_decodingParameterSetEnabled,                    false, "Enables writing of Decoding Parameter Set")
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
@@ -1643,6 +1664,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_tileRowHeight.clear();
   }
+ #if JVET_O0044_MULTI_SUB_PROFILE
+  m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
+  m_subProfile.resize(m_numSubProfile);
+  for (uint8_t i = 0; i < m_numSubProfile; ++i)
+  {
+    m_subProfile[i] = cfg_SubProfile.values[i];
+  }
+#endif 
+  
 #if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
   if (m_tileUniformSpacingFlag)
   {

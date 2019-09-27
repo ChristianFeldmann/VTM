@@ -84,7 +84,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setVPS(&vps);
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
+#if JVET_O0044_MULTI_SUB_PROFILE
+  m_cEncLib.setNumSubProfile                                     ( m_numSubProfile );
+  for (int i = 0; i < m_numSubProfile; i++)
+  {
+    m_cEncLib.setSubProfile(i, m_subProfile[i]);
+  }
+#else
   m_cEncLib.setSubProfile                                        ( m_subProfile );
+#endif
   m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);

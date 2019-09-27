@@ -2449,7 +2449,12 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
-  , m_subProfileIdc   (0)
+#if JVET_O0044_MULTI_SUB_PROFILE
+  , m_numSubProfile(0)
+  , m_subProfileIdc(0)
+#else
+  , m_subProfileIdc(0)
+#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));

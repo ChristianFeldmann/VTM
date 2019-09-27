@@ -1729,6 +1729,11 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {
   VPS* vps = new VPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+
+#if JVET_O0245_VPS_DPS_APS
+  CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
+#endif
+
   m_HLSReader.parseVPS( vps );
   delete vps;
 }
@@ -1737,6 +1742,11 @@ void DecLib::xDecodeDPS( InputNALUnit& nalu )
 {
   DPS* dps = new DPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+
+#if JVET_O0245_VPS_DPS_APS
+  CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+#endif
+
   m_HLSReader.parseDPS( dps );
   m_parameterSetManager.storeDPS( dps, nalu.getBitstream().getFifo() );
 }

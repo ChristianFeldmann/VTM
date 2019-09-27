@@ -323,6 +323,11 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
 {
   OutputNALUnit nalu(NAL_UNIT_VPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+
+#if JVET_O0245_VPS_DPS_APS
+  CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
+#endif
+
   m_HLSWriter->codeVPS( vps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -334,6 +339,11 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
   {
     OutputNALUnit nalu(NAL_UNIT_DPS);
     m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+
+#if JVET_O0245_VPS_DPS_APS
+    CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+#endif
+
     m_HLSWriter->codeDPS( dps );
     accessUnit.push_back(new NALUnitEBSP(nalu));
     return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;

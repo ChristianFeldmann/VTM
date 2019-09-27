@@ -1922,6 +1922,16 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
       }
       m_numHashMVStoreds[eRefPicList][refIdx] = 0;
 
+#if JVET_O1164_RPR
+      const std::pair<int, int>& scaleRatio = pu.cu->slice->getScalingRatio( eRefPicList, refIdx );
+      if( scaleRatio != SCALE_1X )
+      {
+        continue;
+      }
+
+      CHECK( pu.cu->slice->getRefPic( eRefPicList, refIdx )->getHashMap() == nullptr, "Hash table is not initialized" );
+#endif
+
       if (refList == 0 || pu.cu->slice->getList1IdxToList0Idx(refIdx) < 0)
       {
         int count = static_cast<int>(pu.cu->slice->getRefPic(eRefPicList, refIdx)->getHashMap()->count(hashValue1s[idxNonSimple]));
@@ -2111,6 +2121,16 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
         }
       }
       m_numHashMVStoreds[eRefPicList][refIdx] = 0;
+
+#if JVET_O1164_RPR
+      const std::pair<int, int>& scaleRatio = pu.cu->slice->getScalingRatio( eRefPicList, refIdx );
+      if( scaleRatio != SCALE_1X )
+      {
+        continue;
+      }
+
+      CHECK( pu.cu->slice->getRefPic( eRefPicList, refIdx )->getHashMap() == nullptr, "Hash table is not initialized" );
+#endif
 
       if (refList == 0 || pu.cu->slice->getList1IdxToList0Idx(refIdx) < 0)
       {

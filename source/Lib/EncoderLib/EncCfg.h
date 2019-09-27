@@ -486,6 +486,9 @@ protected:
   uint32_t      m_pcmLog2MaxSize;
   uint32_t      m_uiPCMLog2MinSize;
 #endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  bool      m_gopBasedTemporalFilterEnabled;
+#endif
   //====== Slice ========
   SliceConstraint m_sliceMode;
   int       m_sliceArgument;
@@ -1290,6 +1293,10 @@ public:
   bool      getUsePCM                       ()      { return m_usePCM;                 }
   uint32_t      getPCMLog2MaxSize               ()      { return m_pcmLog2MaxSize;  }
   uint32_t      getPCMLog2MinSize               ()      { return  m_uiPCMLog2MinSize;  }
+#endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  void  setGopBasedTemporalFilterEnabled(bool flag) { m_gopBasedTemporalFilterEnabled = flag; }
+  bool  getGopBasedTemporalFilterEnabled()          { return m_gopBasedTemporalFilterEnabled; }
 #endif
 
   bool      getCrossComponentPredictionEnabledFlag     ()                const { return m_crossComponentPredictionEnabledFlag;   }

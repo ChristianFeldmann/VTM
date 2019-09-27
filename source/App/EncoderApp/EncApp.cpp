@@ -48,6 +48,10 @@
 #include "AppEncHelper360/TExt360AppEncTop.h"
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+#include "EncoderLib/EncTemporalFilter.h"
+#endif
+
 using namespace std;
 
 //! \ingroup EncoderApp
@@ -692,6 +696,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCropOffsetBottom                                  (m_cropOffsetBottom);
   m_cEncLib.setCalculateHdrMetrics                               (m_calculateHdrMetrics);
 #endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
+#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList
@@ -792,6 +799,17 @@ void EncApp::encode()
   TExt360AppEncTop           ext360(*this, m_cEncLib.getGOPEncoder()->getExt360Data(), *(m_cEncLib.getGOPEncoder()), orgPic);
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  EncTemporalFilter temporalFilter;
+  if (m_gopBasedTemporalFilterEnabled)
+  {
+    temporalFilter.init(m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
+      m_aiPad, m_bClipInputVideoToRec709Range, m_inputFileName, m_chromaFormatIDC,
+      m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
+      m_gopBasedTemporalFilterFutureReference);
+  }
+#endif
+
   while ( !bEos )
   {
     // read input YUV file
@@ -806,6 +824,13 @@ void EncApp::encode()
     }
 #else
     m_cVideoIOYuvInputFile.read( orgPic, trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+    if (m_gopBasedTemporalFilterEnabled)
+    {
+      temporalFilter.filter(&orgPic, m_iFrameRcvd);
+    }
 #endif
 
     // increase number of received frames

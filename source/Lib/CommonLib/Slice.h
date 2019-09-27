@@ -363,7 +363,12 @@ class ProfileTierLevel
 {
   Level::Tier       m_tierFlag;
   Profile::Name     m_profileIdc;
+#if JVET_O0044_MULTI_SUB_PROFILE
+  uint8_t           m_numSubProfile;
+  std::vector<uint32_t>          m_subProfileIdc;
+#else
   uint32_t          m_subProfileIdc;
+#endif
   Level::Name       m_levelIdc;
 
   ConstraintInfo    m_constraintInfo;
@@ -379,9 +384,16 @@ public:
   Profile::Name getProfileIdc() const                       { return m_profileIdc;                  }
   void          setProfileIdc(Profile::Name x)              { m_profileIdc = x;                     }
 
-  uint32_t      getSubProfileIdc() const                    { return m_subProfileIdc;               }
-  void          setSubProfileIdc(uint32_t x)                { m_subProfileIdc = x;                  }
+#if JVET_O0044_MULTI_SUB_PROFILE
+  uint32_t      getSubProfileIdc(int i) const               { return m_subProfileIdc[i]; }
+  void          setSubProfileIdc(int i, uint32_t x)         { m_subProfileIdc[i] = x; }
 
+  uint8_t       getNumSubProfile() const                    { return m_numSubProfile; }
+  void          setNumSubProfile(uint8_t x)                 { m_numSubProfile = x; m_subProfileIdc.resize(m_numSubProfile); }
+#else
+  uint32_t      getSubProfileIdc() const { return m_subProfileIdc; }
+  void          setSubProfileIdc(uint32_t x) { m_subProfileIdc = x; }
+#endif
 
   Level::Name   getLevelIdc() const                         { return m_levelIdc;                    }
   void          setLevelIdc(Level::Name x)                  { m_levelIdc = x;                       }
@@ -899,6 +911,9 @@ private:
 #if JVET_N0865_SYNTAX
   bool m_GDREnabledFlag;
 #endif
+#if JVET_O0177_PROPOSAL1
+  bool              m_SubLayerCbpParametersPresentFlag;
+#endif
 
 public:
 
@@ -1191,6 +1206,10 @@ public:
 #if JVET_N0865_SYNTAX
   void setGDREnabledFlag(bool flag) { m_GDREnabledFlag = flag; }
   bool getGDREnabledFlag() const { return m_GDREnabledFlag; }
+#endif
+#if JVET_O0177_PROPOSAL1
+  void      setSubLayerParametersPresentFlag(bool flag)                             { m_SubLayerCbpParametersPresentFlag = flag; }
+  bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
 #endif
 };
 

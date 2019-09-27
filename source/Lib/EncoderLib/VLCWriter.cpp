@@ -1220,10 +1220,22 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if !JVET_O0189_DU
     WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),              "hrd_parameters_present_flag");
 #endif
+#if JVET_O0177_PROPOSAL1
+    WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sub_layer_cpb_parameters_present_flag");
+    if (pcSPS->getSubLayerParametersPresentFlag())
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), 0, pcSPS->getMaxTLayers() - 1);
+    }
+    else
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
+    }
+#else
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       codeHrdParameters(pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
     }
+#endif
   }
 
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );
@@ -2039,7 +2051,16 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 {
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
-  WRITE_CODE( ptl->getSubProfileIdc(), 24,      "general_sub_profile_idc"                );
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
+  for (int i = 0; i < ptl->getNumSubProfile(); i++)
+  {
+    WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
+  }
+#else
+  WRITE_CODE(ptl->getSubProfileIdc(), 24, "general_sub_profile_idc");
+#endif
 
   codeConstraintInfo(ptl->getConstraintInfo());
 

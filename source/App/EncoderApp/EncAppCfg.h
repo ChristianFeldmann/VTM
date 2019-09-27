@@ -170,7 +170,12 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+#if JVET_O0044_MULTI_SUB_PROFILE
+  std::vector<uint32_t>  m_subProfile;
+  uint8_t      m_numSubProfile;
+#else
   uint32_t      m_subProfile;
+#endif
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
@@ -479,6 +484,9 @@ protected:
 #endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
+#endif
 #if JVET_O0189_DU
   bool      m_decodingUnitInfoSEIEnabled;
 #endif

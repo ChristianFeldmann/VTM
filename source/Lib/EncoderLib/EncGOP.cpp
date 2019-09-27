@@ -104,7 +104,12 @@ EncGOP::EncGOP()
   m_numLongTermRefPicSPS = 0;
   ::memset(m_ltRefPicPocLsbSps, 0, sizeof(m_ltRefPicPocLsbSps));
   ::memset(m_ltRefPicUsedByCurrPicFlag, 0, sizeof(m_ltRefPicUsedByCurrPicFlag));
+#if !JVET_N0867_TEMP_SCAL_HRD
   m_lastBPSEI           = 0;
+#else
+  ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
+  m_rapWithLeading      = false;
+#endif
   m_bufferingPeriodSEIPresentInAU = false;
   m_associatedIRAPType  = NAL_UNIT_CODED_SLICE_IDR_N_LP;
   m_associatedIRAPPOC   = 0;
@@ -213,8 +218,13 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_pcSAO                = pcEncLib->getSAO();
   m_pcALF = pcEncLib->getALF();
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
+#if !JVET_N0867_TEMP_SCAL_HRD
   m_lastBPSEI          = 0;
   m_totalCoded         = 0;
+#else
+  ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
+  ::memset(m_totalCoded, 0, sizeof(m_totalCoded));
+#endif
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
   m_HRD                = pcEncLib->getHRD();
 #endif
@@ -313,6 +323,11 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
 {
   OutputNALUnit nalu(NAL_UNIT_VPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+
+#if JVET_O0245_VPS_DPS_APS
+  CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
+#endif
+
   m_HLSWriter->codeVPS( vps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -324,6 +339,11 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
   {
     OutputNALUnit nalu(NAL_UNIT_DPS);
     m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+
+#if JVET_O0245_VPS_DPS_APS
+    CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+#endif
+
     m_HLSWriter->codeDPS( dps );
     accessUnit.push_back(new NALUnitEBSP(nalu));
     return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -422,7 +442,11 @@ void EncGOP::xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUn
   }
   OutputNALUnit nalu(naluType, temporalId);
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
+#if !JVET_N0867_TEMP_SCAL_HRD
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false);
+#else
+  m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false, temporalId);
+#endif
 #else
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, false);
 #endif
@@ -443,7 +467,11 @@ void EncGOP::xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages
     tmpMessages.push_back(*sei);
     OutputNALUnit nalu(naluType, temporalId);
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
+#if !JVET_N0867_TEMP_SCAL_HRD
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false);
+#else
+    m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false, temporalId);
+#endif
 #else
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, false);
 #endif
@@ -723,7 +751,12 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
 #endif
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
+#if !JVET_N0867_TEMP_SCAL_HRD
     m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI);
+#else
+    bool noLeadingPictures = ( (slice->getNalUnitType()!= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (slice->getNalUnitType()!= NAL_UNIT_CODED_SLICE_CRA) )?(true):(false);
+    m_seiEncoder.initSEIBufferingPeriod(bufferingPeriodSEI,noLeadingPictures);
+#endif
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
     m_HRD->setBufferingPeriodSEI(bufferingPeriodSEI);
 #endif
@@ -879,11 +912,187 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     }
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
     const uint32_t cpbRemovalDelayLegth = m_HRD->getBufferingPeriodSEI()->m_cpbRemovalDelayLength;
+#if !JVET_N0867_TEMP_SCAL_HRD
     pictureTimingSEI->m_auCpbRemovalDelay = std::min<int>(std::max<int>(1, m_totalCoded - m_lastBPSEI), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
+#else
+    const uint32_t maxNumSubLayers = slice->getSPS()->getMaxTLayers();
+    pictureTimingSEI->m_ptMaxSubLayers = maxNumSubLayers;
+    pictureTimingSEI->m_auCpbRemovalDelay[maxNumSubLayers-1] = std::min<int>(std::max<int>(1, m_totalCoded[maxNumSubLayers-1] - m_lastBPSEI[maxNumSubLayers-1]), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
+    CHECK( (m_totalCoded[maxNumSubLayers-1] - m_lastBPSEI[maxNumSubLayers-1]) > pow(2, static_cast<double>(cpbRemovalDelayLegth)), " cpbRemovalDelayLegth too small for m_auCpbRemovalDelay[pt_max_sub_layers_minus1] at picture timing SEI " );
+    const uint32_t temporalId = slice->getTLayer();
+    for( int i = temporalId ; i < maxNumSubLayers - 1 ; i ++ )
+    {
+      int indexWithinGOP = (m_totalCoded[maxNumSubLayers - 1] - m_lastBPSEI[maxNumSubLayers - 1]) % m_pcCfg->getGOPSize();
+      pictureTimingSEI->m_subLayerDelaysPresentFlag[i] = true;
+      if( ((m_rapWithLeading == true) && (indexWithinGOP == 0)) || (m_totalCoded[maxNumSubLayers - 1] == 0) || m_bufferingPeriodSEIPresentInAU)
+      {
+        pictureTimingSEI->m_cpbRemovalDelayDeltaEnabledFlag[i] = false;
+      }
+      else
+      {
+        pictureTimingSEI->m_cpbRemovalDelayDeltaEnabledFlag[i] = m_HRD->getBufferingPeriodSEI()->m_cpbRemovalDelayDeltasPresentFlag;
+      }
+      if( pictureTimingSEI->m_cpbRemovalDelayDeltaEnabledFlag[i] )
+      {
+        if( m_rapWithLeading == false )
+        {
+          switch (m_pcCfg->getGOPSize())
+          {
+            case 8:
+            {
+              if((indexWithinGOP == 1 && i == 2))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 0;
+              }
+              else if((indexWithinGOP == 2 && i == 2) || (indexWithinGOP == 6 && i == 2))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 1;
+              }
+              else if((indexWithinGOP == 1 && i == 1) || (indexWithinGOP == 3 && i == 2))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 2;
+              }
+              else if(indexWithinGOP == 2 && i == 1)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 3;
+              }
+              else if(indexWithinGOP == 1 && i == 0)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 4;
+              }
+              else
+              {
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
+              }
+            }
+              break;
+            case 16:
+            {
+              if((indexWithinGOP == 1 && i == 3))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 0;
+              }
+              else if((indexWithinGOP == 2 && i == 3) || (indexWithinGOP == 10 && i == 3) || (indexWithinGOP == 14 && i == 3))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 1;
+              }
+              else if((indexWithinGOP == 1 && i == 2) || (indexWithinGOP == 3 && i == 3) || (indexWithinGOP == 7 && i == 3) || (indexWithinGOP == 11 && i == 3))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 2;
+              }
+              else if(indexWithinGOP == 4 && i == 3)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 3;
+              }
+              else if((indexWithinGOP == 2 && i == 2) || (indexWithinGOP == 10 && i == 2))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 4;
+              }
+              else if(indexWithinGOP == 1 && i == 1)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 5;
+              }
+              else if(indexWithinGOP == 3 && i == 2)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 6;
+              }
+              else if(indexWithinGOP == 2 && i == 1)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 7;
+              }
+              else if(indexWithinGOP == 1 && i == 0)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 8;
+              }
+              else
+              {
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
+              }
+            }
+              break;
+            default:
+            {
+              THROW("m_cpbRemovalDelayDeltaIdx not supported for the current GOP size");
+            }
+              break;
+          }
+        }
+        else
+        {
+          switch (m_pcCfg->getGOPSize())
+          {
+            case 8:
+            {
+              if((indexWithinGOP == 1 && i == 2) || (indexWithinGOP == 5 && i == 2))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 0;
+              }
+              else if(indexWithinGOP == 2 && i == 2)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 1;
+              }
+              else if(indexWithinGOP == 1 && i == 1)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 2;
+              }
+              else
+              {
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
+              }
+            }
+              break;
+            case 16:
+            {
+              if((indexWithinGOP == 1 && i == 3) || (indexWithinGOP == 9 && i == 3) || (indexWithinGOP == 13 && i == 3))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 0;
+              }
+              else if((indexWithinGOP == 2 && i == 3) || (indexWithinGOP == 6 && i == 3) || (indexWithinGOP == 10 && i == 3))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 1;
+              }
+              else if((indexWithinGOP == 1 && i == 2) || (indexWithinGOP == 9 && i == 2) || (indexWithinGOP == 3 && i == 3))
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 2;
+              }
+              else if(indexWithinGOP == 2 && i == 2)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 3;
+              }
+              else if(indexWithinGOP == 1 && i == 1)
+              {
+                pictureTimingSEI->m_cpbRemovalDelayDeltaIdx[i] = 4;
+              }
+              else
+              {
+                THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
+              }
+            }
+              break;
+            default:
+            {
+              THROW("m_cpbRemovalDelayDeltaIdx not applicable for the sub-layer and GOP size");
+            }
+              break;
+          }
+        }
+      }
+      else
+      {
+        int scaledDistToBuffPeriod = (m_totalCoded[i] - m_lastBPSEI[i]) * static_cast<int>(pow(2, static_cast<double>(maxNumSubLayers - 1 - i)));
+        pictureTimingSEI->m_auCpbRemovalDelay[i] = std::min<int>(std::max<int>(1, scaledDistToBuffPeriod), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
+        CHECK( (scaledDistToBuffPeriod) > pow(2, static_cast<double>(cpbRemovalDelayLegth)), " cpbRemovalDelayLegth too small for m_auCpbRemovalDelay[i] at picture timing SEI " );
+      }
+    }
+#endif
 #else
     pictureTimingSEI->m_auCpbRemovalDelay = std::min<int>(std::max<int>(1, m_totalCoded - m_lastBPSEI), static_cast<int>(pow(2, static_cast<double>(hrd->getCpbRemovalDelayLengthMinus1()+1)))); // Syntax element signalled as minus, hence the .
 #endif
+#if !JVET_N0867_TEMP_SCAL_HRD
     pictureTimingSEI->m_picDpbOutputDelay = slice->getSPS()->getNumReorderPics(slice->getSPS()->getMaxTLayers()-1) + slice->getPOC() - m_totalCoded;
+#else
+    pictureTimingSEI->m_picDpbOutputDelay = slice->getSPS()->getNumReorderPics(slice->getSPS()->getMaxTLayers()-1) + slice->getPOC() - m_totalCoded[maxNumSubLayers-1];
+#endif
     if(m_pcCfg->getEfficientFieldIRAPEnabled() && IRAPGOPid > 0 && IRAPGOPid < m_iGopSize)
     {
       // if pictures have been swapped there is likely one more picture delay on their tid. Very rough approximation
@@ -897,7 +1106,18 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     }
     if (m_bufferingPeriodSEIPresentInAU)
     {
+#if !JVET_N0867_TEMP_SCAL_HRD
       m_lastBPSEI = m_totalCoded;
+#else
+      for( int i = temporalId ; i < maxNumSubLayers ; i ++ )
+      {
+        m_lastBPSEI[i] = m_totalCoded[i];
+      }
+      if( (slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL)||(slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) )
+      {
+        m_rapWithLeading = true;
+      }
+#endif
     }
 
 
@@ -3238,7 +3458,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     m_bFirst = false;
     m_iNumPicCoded++;
     if (!(m_pcCfg->getUseCompositeRef() && isEncodeLtRef))
+#if !JVET_N0867_TEMP_SCAL_HRD
       m_totalCoded ++;
+#else
+    {
+      for( int i = pcSlice->getTLayer() ; i < pcSlice->getSPS()->getMaxTLayers() ; i ++ )
+      {
+        m_totalCoded[i]++;
+      }
+    }
+#endif
     /* logging: insert a newline at end of picture period */
 
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
@@ -4369,7 +4598,11 @@ NalUnitType EncGOP::getNalUnitType(int pocCurr, int lastIDR, bool isField)
 {
   if (pocCurr == 0)
   {
+#if !JVET_N0867_TEMP_SCAL_HRD
     return NAL_UNIT_CODED_SLICE_IDR_W_RADL;
+#else
+    return NAL_UNIT_CODED_SLICE_IDR_N_LP;
+#endif
   }
 
   if (m_pcCfg->getEfficientFieldIRAPEnabled() && isField && pocCurr == (m_pcCfg->getUseCompositeRef() ? 2: 1))

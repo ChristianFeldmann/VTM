@@ -234,7 +234,12 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+#if JVET_O0044_MULTI_SUB_PROFILE
+  std::vector<uint32_t>      m_subProfile;
+  uint8_t       m_numSubProfile;
+#else
   uint32_t      m_subProfile;
+#endif
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
   bool m_nonPackedConstraintFlag;
@@ -577,6 +582,9 @@ protected:
   bool      m_gradualDecodingRefreshInfoEnabled;
   int       m_noDisplaySEITLayer;
 #endif
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
+#endif
   bool      m_decodingUnitInfoSEIEnabled;
 #if HEVC_SEI
   bool      m_SOPDescriptionSEIEnabled;
@@ -755,8 +763,12 @@ public:
 
   void setProfile(Profile::Name profile) { m_profile = profile; }
   void setLevel(Level::Tier tier, Level::Name level) { m_levelTier = tier; m_level = level; }
+#if JVET_O0044_MULTI_SUB_PROFILE
+  void setNumSubProfile( uint8_t numSubProfile) { m_numSubProfile = numSubProfile; m_subProfile.resize(m_numSubProfile); }
+  void setSubProfile( int i, uint32_t subProfile) { m_subProfile[i] = subProfile; }
+#else
   void setSubProfile(uint32_t subProfile) { m_subProfile = subProfile; }
-
+#endif
   bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
   void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }
   uint32_t  getMaxBitDepthConstraintIdc() const { return m_maxBitDepthConstraintIdc; }
@@ -1505,6 +1517,10 @@ public:
   bool  getGradualDecodingRefreshInfoEnabled() const                 { return m_gradualDecodingRefreshInfoEnabled; }
   void  setNoDisplaySEITLayer(int b)                                 { m_noDisplaySEITLayer = b;    }
   int   getNoDisplaySEITLayer()                                      { return m_noDisplaySEITLayer; }
+#endif
+#if JVET_N0867_TEMP_SCAL_HRD
+  void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
+  bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
 #endif
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }

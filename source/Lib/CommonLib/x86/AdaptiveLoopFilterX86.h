@@ -44,7 +44,11 @@
 template<X86_VEXT vext>
 static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
                                         const CPelBuf &srcLuma, const Area &blkDst, const Area &blk, const int shift,
-                                        const int vbCTUHeight, int vbPos)
+#if JVET_O0625_ALF_PADDING
+                                        const int vbCTUHeight, int vbPos, const int alfBryList[4] )
+#else
+                                        const int vbCTUHeight, int vbPos )
+#endif
 {
   CHECK((blk.height & 7) != 0, "Block height must be a multiple of 8");
   CHECK((blk.width & 7) != 0, "Block width must be a multiple of 8");
@@ -58,6 +62,10 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
 
   const int posX = blk.pos().x;
   const int posY = blk.pos().y;
+#if JVET_O0625_ALF_PADDING
+  const __m128i mmZero = _mm_setzero_si128();
+  const __m128i mmLut  = _mm_setr_epi8(0, 0, 0, (char) 192, (char) 128, 112, 96, 0, 64, 0, 0, 0, 0, 0, 0, 0);
+#endif
 
   // 18x40 array
   uint16_t colSums[(AdaptiveLoopFilter::m_CLASSIFICATION_BLK_SIZE + 4) >> 1]
@@ -116,8 +124,24 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
       const __m128i di0 = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(nw, se)));
       const __m128i di1 = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(ne, sw)));
 
+#if JVET_O0625_ALF_PADDING
+      __m128i hv  = _mm_hadd_epi16(ver, hor);
+      __m128i di  = _mm_hadd_epi16(di0, di1);
+      int leftPos = blkDst.pos().x + j;
+      if ( ( leftPos > 0 ) && ( leftPos == alfBryList[2] ) ) //left: cut the left one value 
+      {
+        hv = _mm_blend_epi16(hv, mmZero, 0x11);
+        di = _mm_blend_epi16(di, mmZero, 0x11);
+      }
+      else if ( ( leftPos > 0 ) && ( leftPos == alfBryList[3] ) ) //right: cut the right values 
+      {
+        hv = _mm_blend_epi16(hv, mmZero, 0xEE);
+        di = _mm_blend_epi16(di, mmZero, 0xEE);
+      }
+#else
       const __m128i hv  = _mm_hadd_epi16(ver, hor);
       const __m128i di  = _mm_hadd_epi16(di0, di1);
+#endif
       const __m128i all = _mm_hadd_epi16(hv, di);
 
       const __m128i t = _mm_blend_epi16(all, prev, 0xaa);
@@ -132,7 +156,66 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
     {
       __m128i x0, x1, x2, x3, x4, x5, x6, x7;
 
-      const uint32_t z  = (2 * i + blkDst.pos().y) & (vbCTUHeight - 1);
+#if JVET_O0625_ALF_PADDING
+      uint32_t horBlkStride = 8, horBlkStride2 = 8, verBlkStride = 8, verBlkStride2 = 8;
+      
+      //left
+      if ((alfBryList[2] != ALF_NONE_BOUNDARY) && (j + blkDst.pos().x == alfBryList[2]))
+      {
+        horBlkStride = 6;
+      }
+
+      //right
+      if ((alfBryList[3] != ALF_NONE_BOUNDARY) && (j + blkDst.pos().x + 8 == alfBryList[3]))
+      {
+        horBlkStride2 = 6;
+      }
+
+      //top 4 lines
+      const uint32_t topPos = 2 * i + blkDst.pos().y;
+      x0 = _mm_loadu_si128((__m128i *) &colSums[i + 0][j + 4]);
+      x1 = _mm_loadu_si128((__m128i *) &colSums[i + 1][j + 4]);
+      x2 = _mm_loadu_si128((__m128i *) &colSums[i + 2][j + 4]);
+      x3 = _mm_loadu_si128((__m128i *) &colSums[i + 3][j + 4]);
+
+      if (alfBryList[0] != ALF_NONE_BOUNDARY && (topPos == alfBryList[0]))
+      {
+        x0 = _mm_setzero_si128();
+        verBlkStride = 6;
+      }
+      else if ((topPos & (vbCTUHeight - 1)) == (vbPos - 4))
+      {
+        x3 = _mm_setzero_si128();
+        verBlkStride = 6;
+      }
+
+      //bottom 4 lines
+      const uint32_t topPos2 = topPos + 4;
+      x4 = _mm_loadu_si128((__m128i *) &colSums[i + 2][j + 4]);
+      x5 = _mm_loadu_si128((__m128i *) &colSums[i + 3][j + 4]);
+      x6 = _mm_loadu_si128((__m128i *) &colSums[i + 4][j + 4]);
+      x7 = _mm_loadu_si128((__m128i *) &colSums[i + 5][j + 4]);
+
+      if (alfBryList[1] != ALF_NONE_BOUNDARY && (topPos2 == alfBryList[1] - 4))
+      {
+        x7 = _mm_setzero_si128();
+        if (((alfBryList[1] - 4) & (vbCTUHeight - 1)) == vbPos)  //between vb and bottom boundary
+        {
+          x4 = _mm_setzero_si128();          
+          verBlkStride2 = 4;
+        }
+        else
+        {
+          verBlkStride2 = 6;
+        }
+      }
+      else if ((topPos2 & (vbCTUHeight - 1)) == vbPos)
+      {
+        x4 = _mm_setzero_si128();
+        verBlkStride2 = 6;
+      }
+#else
+      const uint32_t z = (2 * i + blkDst.pos().y) & (vbCTUHeight - 1);
       const uint32_t z2 = (2 * i + 4 + blkDst.pos().y) & (vbCTUHeight - 1);
 
       x0 = (z == vbPos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 0][j + 4]);
@@ -144,6 +227,7 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
       x5 = _mm_loadu_si128((__m128i *) &colSums[i + 3][j + 4]);
       x6 = _mm_loadu_si128((__m128i *) &colSums[i + 4][j + 4]);
       x7 = (z2 == vbPos - 4) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 5][j + 4]);
+#endif
 
       __m128i x0l = _mm_cvtepu16_epi32(x0);
       __m128i x0h = _mm_unpackhi_epi16(x0, _mm_setzero_si128());
@@ -192,9 +276,17 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
       //      const uint32_t activity = std::min<uint32_t>(15, tempAct * scale >> shift);
       //      static const uint8_t th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
       //      uint8_t classIdx = th[activity];
+#if JVET_O0625_ALF_PADDING
+      __m128i verStrides = _mm_setr_epi32(verBlkStride, verBlkStride,  verBlkStride2, verBlkStride2);
+      __m128i horStrides = _mm_setr_epi32(horBlkStride, horBlkStride2, horBlkStride,  horBlkStride2);
+      __m128i alfArea    = _mm_mullo_epi16(verStrides, horStrides);
+      const __m128i scaleValue = _mm_shuffle_epi8(mmLut, _mm_srli_epi32(_mm_add_epi32(alfArea, _mm_set1_epi32(4)), 3));
+      __m128i activity = _mm_mullo_epi32(tempAct, scaleValue);
+#else
       const uint32_t scale  = (z == vbPos - 4 || z == vbPos) ? 96 : 64;
       const uint32_t scale2 = (z2 == vbPos - 4 || z2 == vbPos) ? 96 : 64;
       __m128i activity = _mm_mullo_epi32(tempAct, _mm_unpacklo_epi64(_mm_set1_epi32(scale), _mm_set1_epi32(scale2)));
+#endif
       activity         = _mm_srl_epi32(activity, _mm_cvtsi32_si128(shift));
       activity         = _mm_min_epi32(activity, _mm_set1_epi32(15));
       __m128i classIdx = _mm_shuffle_epi8(_mm_setr_epi8(0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4), activity);
@@ -295,10 +387,18 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
 }
 
 template<X86_VEXT vext>
+#if JVET_O0625_ALF_PADDING
 static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
-                             const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
-                             const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
-                             int vbPos)
+  const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+  const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+  int vbPos, const int alfBryList[4])
+#else
+static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+  const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+  const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+  int vbPos)
+#endif
+
 {
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
   CHECK(!isChroma(compId), "ALF 5x5 filter is for chroma only");
@@ -332,6 +432,21 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
 
   const Pel *src = srcBuffer.buf + blk.y * srcStride + blk.x;
   Pel *      dst = dstBuffer.buf + blkDst.y * dstStride + blkDst.x;
+
+#if JVET_O0625_ALF_PADDING
+  const SPS*     sps = cs.slice->getSPS();
+  const bool bChroma = true;
+  ChromaFormat nChromaFormat = sps->getChromaFormatIdc();
+  const int chromaScaleY = getComponentScaleY(bChroma ? COMPONENT_Cb : COMPONENT_Y, nChromaFormat);
+  const int chromaScaleX = getComponentScaleX(bChroma ? COMPONENT_Cb : COMPONENT_Y, nChromaFormat);
+  const int alfTopBryPos = (alfBryList[0] != ALF_NONE_BOUNDARY) ? (alfBryList[0] >> chromaScaleY) : ALF_NONE_BOUNDARY;
+  const int alfBotBryPos = (alfBryList[1] != ALF_NONE_BOUNDARY) ? (alfBryList[1] >> chromaScaleY) : ALF_NONE_BOUNDARY;
+  const int alfLeftBryPos = (alfBryList[2] != ALF_NONE_BOUNDARY) ? (alfBryList[2] >> chromaScaleX) : ALF_NONE_BOUNDARY;
+  const int alfRightBryPos = (alfBryList[3] != ALF_NONE_BOUNDARY) ? (alfBryList[3] >> chromaScaleX) : ALF_NONE_BOUNDARY;
+  const char maskArray[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 10, 11, 14, 15, };
+  const __m128i mmMask = _mm_lddqu_si128((__m128i*) maskArray);
+  int botBryLines = ((((alfBotBryPos - (4 >> chromaScaleY)) & (vbCTUHeight - 1)) == vbPos) && alfBotBryPos != ALF_NONE_BOUNDARY) ? 1 : 2;
+#endif
 
 #if !JVET_O0525_REMOVE_PCM
   bool pcmFlags2x2[8] = {0,0,0,0,0,0,0,0};
@@ -410,6 +525,9 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         pImg3 = pImg1 + srcStride;
         pImg4 = pImg2 - srcStride;
 
+#if JVET_O0625_ALF_PADDING
+        const int yV = (int)(blkDst.y + i + ii);
+#endif
         const int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
         if (yVb < vbPos && (yVb >= vbPos - 2))   // above
         {
@@ -419,6 +537,24 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           pImg2 = (yVb == vbPos - 1) ? pImg0 : pImg2;
           pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
         }
+#if JVET_O0625_ALF_PADDING
+        else if (alfBotBryPos != ALF_NONE_BOUNDARY && yV < alfBotBryPos && yV >= alfBotBryPos - botBryLines) //above
+        {
+          pImg1 = (yV == alfBotBryPos - 1) ? pImg0 : pImg1;
+          pImg3 = (yV >= alfBotBryPos - 2) ? pImg1 : pImg3;
+
+          pImg2 = (yV == alfBotBryPos - 1) ? pImg0 : pImg2;
+          pImg4 = (yV >= alfBotBryPos - 2) ? pImg2 : pImg4;
+        }
+        else if (alfTopBryPos != ALF_NONE_BOUNDARY && yV >= alfTopBryPos && yV <= alfTopBryPos + 1) //bottom
+        {
+          pImg1 = (yV == alfTopBryPos) ? pImg0 : pImg1;
+          pImg3 = (yV <= alfTopBryPos + 1) ? pImg1 : pImg3;
+
+          pImg2 = (yV == alfTopBryPos) ? pImg0 : pImg2;
+          pImg4 = (yV <= alfTopBryPos + 1) ? pImg2 : pImg4;
+        }
+#endif
         else if (yVb >= vbPos && (yVb <= vbPos + 1))   // bottom
         {
           pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
@@ -428,16 +564,55 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
         }
         __m128i cur = _mm_loadu_si128((const __m128i *) pImg0);
-
+#if JVET_O0625_ALF_PADDING
+        // vertical 2-side padding
+        bool leftBry = alfLeftBryPos != ALF_NONE_BOUNDARY && (blkDst.x + j) >= alfLeftBryPos && (blkDst.x + j) <= alfLeftBryPos + 1;
+        bool rightBry = alfRightBryPos != ALF_NONE_BOUNDARY && (blkDst.x + j) < alfRightBryPos && (blkDst.x + j + 8) >= alfRightBryPos;
+        __m128i xmm00 = _mm_lddqu_si128((__m128i*) (pImg3 + 0));
+        __m128i xmm01 = _mm_lddqu_si128((__m128i*) (pImg4 + 0));
+        __m128i xmm10 = _mm_lddqu_si128((__m128i*) (pImg1 + 1));
+        __m128i xmm11 = _mm_lddqu_si128((__m128i*) (pImg2 - 1));
+        __m128i xmm20 = _mm_lddqu_si128((__m128i*) (pImg1 + 0));
+        __m128i xmm21 = _mm_lddqu_si128((__m128i*) (pImg2 + 0));
+        __m128i xmm30 = _mm_lddqu_si128((__m128i*) (pImg1 - 1));
+        __m128i xmm31 = _mm_lddqu_si128((__m128i*) (pImg2 + 1));
+        __m128i xmm40 = _mm_lddqu_si128((__m128i*) (pImg0 + 2));
+        __m128i xmm41 = _mm_lddqu_si128((__m128i*) (pImg0 - 2));
+        __m128i xmm50 = _mm_lddqu_si128((__m128i*) (pImg0 + 1));
+        __m128i xmm51 = _mm_lddqu_si128((__m128i*) (pImg0 - 1));
+        if (leftBry)
+        {
+          xmm10 = _mm_blend_epi16(xmm10, xmm20, 0x01);
+          xmm31 = _mm_blend_epi16(xmm31, xmm21, 0x01);
+          __m128i xmm40Tmp = _mm_shufflelo_epi16(cur, 0xe8);
+          xmm40 = _mm_blend_epi16(xmm40, xmm40Tmp, 0x03);
+          xmm50 = _mm_blend_epi16(xmm50, cur, 0x01);
+        }
+        if (rightBry)
+        {
+          xmm11 = _mm_blend_epi16(xmm11, xmm21, 0x80);
+          xmm30 = _mm_blend_epi16(xmm30, xmm20, 0x80);
+          __m128i xmm41Tmp = _mm_shuffle_epi8(cur, mmMask);
+          xmm41 = _mm_blend_epi16(xmm41, xmm41Tmp, 0xC0);
+          xmm51 = _mm_blend_epi16(xmm51, cur, 0x80);
+        }        
+#endif
         __m128i accumA = mmOffset;
         __m128i accumB = mmOffset;
 
+#if JVET_O0625_ALF_PADDING
+        auto process2coeffs = [&](const int i, __m128i ptr0, __m128i ptr1, __m128i ptr2, __m128i ptr3) {
+          const __m128i val00 = _mm_sub_epi16(ptr0, cur);
+          const __m128i val10 = _mm_sub_epi16(ptr2, cur);
+          const __m128i val01 = _mm_sub_epi16(ptr1, cur);
+          const __m128i val11 = _mm_sub_epi16(ptr3, cur);
+#else
         auto process2coeffs = [&](const int i, const Pel *ptr0, const Pel *ptr1, const Pel *ptr2, const Pel *ptr3) {
           const __m128i val00 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr0), cur);
           const __m128i val10 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr2), cur);
           const __m128i val01 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr1), cur);
           const __m128i val11 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr3), cur);
-
+#endif
           __m128i val01A = _mm_unpacklo_epi16(val00, val10);
           __m128i val01B = _mm_unpackhi_epi16(val00, val10);
           __m128i val01C = _mm_unpacklo_epi16(val01, val11);
@@ -466,10 +641,15 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           accumB = _mm_add_epi32(accumB, _mm_madd_epi16(val01B, coeff01A));
         };
 
+#if JVET_O0625_ALF_PADDING
+        process2coeffs(0, xmm00, xmm01, xmm10, xmm11);
+        process2coeffs(1, xmm20, xmm21, xmm30, xmm31);
+        process2coeffs(2, xmm40, xmm41, xmm50, xmm51);
+#else
         process2coeffs(0, pImg3 + 0, pImg4 + 0, pImg1 + 1, pImg2 - 1);
         process2coeffs(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
         process2coeffs(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
-
+#endif
         accumA = _mm_srai_epi32(accumA, SHIFT);
         accumB = _mm_srai_epi32(accumB, SHIFT);
         accumA = _mm_packs_epi32(accumA, accumB);
@@ -540,10 +720,17 @@ static const uint16_t shuffleTab[4][2][8] = {
 };
 
 template<X86_VEXT vext>
+#if JVET_O0625_ALF_PADDING
 static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
-                             const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
-                             const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
-                             int vbPos)
+  const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+  const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+  int vbPos, const int alfBryList[4])
+#else
+static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
+  const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+  const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+  int vbPos)
+#endif
 {
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
   CHECK(isChroma(compId), "7x7 ALF filter is meant for luma only");
@@ -580,6 +767,19 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   const __m128i mmOffset = _mm_set1_epi32(ROUND);
   const __m128i mmMin = _mm_set1_epi16( clpRng.min );
   const __m128i mmMax = _mm_set1_epi16( clpRng.max );
+
+#if JVET_O0625_ALF_PADDING
+  const int alfTopBryPos = (alfBryList[0] != ALF_NONE_BOUNDARY) ? alfBryList[0] : ALF_NONE_BOUNDARY;
+  const int alfBotBryPos = (alfBryList[1] != ALF_NONE_BOUNDARY) ? alfBryList[1] : ALF_NONE_BOUNDARY;
+  const int alfLeftBryPos = (alfBryList[2] != ALF_NONE_BOUNDARY) ? alfBryList[2] : ALF_NONE_BOUNDARY;
+  const int alfRightBryPos = (alfBryList[3] != ALF_NONE_BOUNDARY) ? alfBryList[3] : ALF_NONE_BOUNDARY;
+  const char mask1Array[16] = { 0, 1, 4, 5, 8, 9, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, };
+  const char mask2Array[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 10, 11, 14, 15, };
+  const __m128i mmMask1 = _mm_lddqu_si128((__m128i*) mask1Array);
+  const __m128i mmMask2 = _mm_lddqu_si128((__m128i*) mask2Array);
+
+  int botBryLines = ((((alfBotBryPos - 4) & (vbCTUHeight - 1)) == vbPos) && alfBotBryPos != ALF_NONE_BOUNDARY) ? 2 : 4;
+#endif
 
   for (size_t i = 0; i < height; i += STEP_Y)
   {
@@ -670,6 +870,28 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
           pImg6 = (yVb >= vbPos - 3) ? pImg4 : pImg6;
         }
+#if JVET_O0625_ALF_PADDING
+        else if (alfBotBryPos != ALF_NONE_BOUNDARY && (blkDst.y + i + ii) < alfBotBryPos && (blkDst.y + i + ii) >= alfBotBryPos - botBryLines) //above
+        {
+          pImg1 = ((blkDst.y + i + ii) == alfBotBryPos - 1) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + ii) >= alfBotBryPos - 2) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + ii) >= alfBotBryPos - 3) ? pImg3 : pImg5;
+
+          pImg2 = ((blkDst.y + i + ii) == alfBotBryPos - 1) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + ii) >= alfBotBryPos - 2) ? pImg2 : pImg4;
+          pImg6 = ((blkDst.y + i + ii) >= alfBotBryPos - 3) ? pImg4 : pImg6;
+        }
+        else if (alfTopBryPos != ALF_NONE_BOUNDARY && (blkDst.y + i + ii) >= alfTopBryPos && (blkDst.y + i + ii) <= alfTopBryPos + 2) //bottom
+        {
+          pImg1 = ((blkDst.y + i + ii) == alfTopBryPos) ? pImg0 : pImg1;
+          pImg3 = ((blkDst.y + i + ii) <= alfTopBryPos + 1) ? pImg1 : pImg3;
+          pImg5 = ((blkDst.y + i + ii) <= alfTopBryPos + 2) ? pImg3 : pImg5;
+
+          pImg2 = ((blkDst.y + i + ii) == alfTopBryPos) ? pImg0 : pImg2;
+          pImg4 = ((blkDst.y + i + ii) <= alfTopBryPos + 1) ? pImg2 : pImg4;
+          pImg6 = ((blkDst.y + i + ii) <= alfTopBryPos + 2) ? pImg4 : pImg6;
+        }
+#endif
         else if (yVb >= vbPos && (yVb <= vbPos + 3))   // bottom
         {
           pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
@@ -680,17 +902,86 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
         }
-
         __m128i cur = _mm_loadu_si128((const __m128i *) pImg0);
 
+#if JVET_O0625_ALF_PADDING
+        // vertical 2-side padding
+        bool leftBry = alfLeftBryPos != ALF_NONE_BOUNDARY && (blkDst.x + j) >= alfLeftBryPos && (blkDst.x + j) <= alfLeftBryPos + 2;
+        bool rightBry = alfRightBryPos != ALF_NONE_BOUNDARY && (blkDst.x + j) < alfRightBryPos && (blkDst.x + j + 8) >= alfRightBryPos;
+        __m128i xmm00 = _mm_lddqu_si128((__m128i*) (pImg5 + 0));
+        __m128i xmm01 = _mm_lddqu_si128((__m128i*) (pImg6 + 0));
+        __m128i xmm10 = _mm_lddqu_si128((__m128i*) (pImg3 + 1));
+        __m128i xmm11 = _mm_lddqu_si128((__m128i*) (pImg4 - 1));
+        __m128i xmm20 = _mm_lddqu_si128((__m128i*) (pImg3 + 0));
+        __m128i xmm21 = _mm_lddqu_si128((__m128i*) (pImg4 + 0));
+        __m128i xmm30 = _mm_lddqu_si128((__m128i*) (pImg3 - 1));
+        __m128i xmm31 = _mm_lddqu_si128((__m128i*) (pImg4 + 1));
+        __m128i xmm40 = _mm_lddqu_si128((__m128i*) (pImg1 + 2));
+        __m128i xmm41 = _mm_lddqu_si128((__m128i*) (pImg2 - 2));
+        __m128i xmm50 = _mm_lddqu_si128((__m128i*) (pImg1 + 1));
+        __m128i xmm51 = _mm_lddqu_si128((__m128i*) (pImg2 - 1));
+        __m128i xmm60 = _mm_lddqu_si128((__m128i*) (pImg1 + 0));
+        __m128i xmm61 = _mm_lddqu_si128((__m128i*) (pImg2 + 0));
+        __m128i xmm70 = _mm_lddqu_si128((__m128i*) (pImg1 - 1));
+        __m128i xmm71 = _mm_lddqu_si128((__m128i*) (pImg2 + 1));
+        __m128i xmm80 = _mm_lddqu_si128((__m128i*) (pImg1 - 2));
+        __m128i xmm81 = _mm_lddqu_si128((__m128i*) (pImg2 + 2));
+        __m128i xmm90 = _mm_lddqu_si128((__m128i*) (pImg0 + 3));
+        __m128i xmm91 = _mm_lddqu_si128((__m128i*) (pImg0 - 3));
+        __m128i xmm100 = _mm_lddqu_si128((__m128i*) (pImg0 + 2));
+        __m128i xmm101 = _mm_lddqu_si128((__m128i*) (pImg0 - 2));
+        __m128i xmm110 = _mm_lddqu_si128((__m128i*) (pImg0 + 1));
+        __m128i xmm111 = _mm_lddqu_si128((__m128i*) (pImg0 - 1));
+        if (leftBry)
+        {
+          xmm10 = _mm_blend_epi16(xmm10, xmm20, 0x01);
+          xmm31 = _mm_blend_epi16(xmm31, xmm21, 0x01);
+          __m128i xmm40Tmp = _mm_shufflelo_epi16(xmm60, 0xe8);
+          xmm40 = _mm_blend_epi16(xmm40, xmm40Tmp, 0x03);
+          xmm50 = _mm_blend_epi16(xmm50, xmm60, 0x01);
+          xmm71 = _mm_blend_epi16(xmm71, xmm61, 0x01);
+          __m128i xmm81Tmp = _mm_shufflelo_epi16(xmm61, 0xe8);
+          xmm81 = _mm_blend_epi16(xmm81, xmm81Tmp, 0x03);
+          __m128i xmm90Tmp = _mm_shuffle_epi8(cur, mmMask1);
+          xmm90 = _mm_blend_epi16(xmm90, xmm90Tmp, 0x07);
+          __m128i xmm100Tmp = _mm_shufflelo_epi16(cur, 0xe8);
+          xmm100 = _mm_blend_epi16(xmm100, xmm100Tmp, 0x03);
+          xmm110 = _mm_blend_epi16(xmm110, cur, 0x01);
+        }
+        if (rightBry)
+        {
+          xmm11 = _mm_blend_epi16(xmm11, xmm21, 0x80);
+          xmm30 = _mm_blend_epi16(xmm30, xmm20, 0x80);
+          __m128i xmm41Tmp = _mm_shuffle_epi8(xmm61, mmMask2);
+          xmm41 = _mm_blend_epi16(xmm41, xmm41Tmp, 0xC0);
+          xmm51 = _mm_blend_epi16(xmm51, xmm61, 0x80);
+          xmm70 = _mm_blend_epi16(xmm70, xmm60, 0x80);
+          __m128i xmm80Tmp = _mm_shuffle_epi8(xmm60, mmMask2);
+          xmm80 = _mm_blend_epi16(xmm80, xmm80Tmp, 0xC0);
+          __m128i xmm91Tmp = _mm_shuffle_epi8(cur, mmMask2);
+          xmm91 = _mm_blend_epi16(xmm91, xmm91Tmp, 0xE0);
+          __m128i xmm101Tmp = _mm_shuffle_epi8(cur, mmMask2);
+          xmm101 = _mm_blend_epi16(xmm101, xmm101Tmp, 0xC0);
+          xmm111 = _mm_blend_epi16(xmm111, cur, 0x80);
+        }
+
+#endif
         __m128i accumA = mmOffset;
         __m128i accumB = mmOffset;
 
+#if JVET_O0625_ALF_PADDING
+        auto process2coeffs = [&](const int i, __m128i ptr0, __m128i ptr1, __m128i ptr2, __m128i ptr3) {
+          const __m128i val00 = _mm_sub_epi16(ptr0, cur);
+          const __m128i val10 = _mm_sub_epi16(ptr2, cur);
+          const __m128i val01 = _mm_sub_epi16(ptr1, cur);
+          const __m128i val11 = _mm_sub_epi16(ptr3, cur);
+#else
         auto process2coeffs = [&](const int i, const Pel *ptr0, const Pel *ptr1, const Pel *ptr2, const Pel *ptr3) {
           const __m128i val00 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr0), cur);
           const __m128i val10 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr2), cur);
           const __m128i val01 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr1), cur);
           const __m128i val11 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) ptr3), cur);
+#endif
 
           __m128i val01A = _mm_unpacklo_epi16(val00, val10);
           __m128i val01B = _mm_unpackhi_epi16(val00, val10);
@@ -723,12 +1014,23 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           accumB = _mm_add_epi32(accumB, _mm_madd_epi16(val01B, coeff01B));
         };
 
+
+#if JVET_O0625_ALF_PADDING
+        process2coeffs(0, xmm00, xmm01, xmm10, xmm11);
+        process2coeffs(1, xmm20, xmm21, xmm30, xmm31);
+        process2coeffs(2, xmm40, xmm41, xmm50, xmm51);
+        process2coeffs(3, xmm60, xmm61, xmm70, xmm71);
+        process2coeffs(4, xmm80, xmm81, xmm90, xmm91);
+        process2coeffs(5, xmm100, xmm101, xmm110, xmm111);
+#else
         process2coeffs(0, pImg5 + 0, pImg6 + 0, pImg3 + 1, pImg4 - 1);
         process2coeffs(1, pImg3 + 0, pImg4 + 0, pImg3 - 1, pImg4 + 1);
         process2coeffs(2, pImg1 + 2, pImg2 - 2, pImg1 + 1, pImg2 - 1);
         process2coeffs(3, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
         process2coeffs(4, pImg1 - 2, pImg2 + 2, pImg0 + 3, pImg0 - 3);
         process2coeffs(5, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
+#endif
+
 
         accumA = _mm_srai_epi32(accumA, SHIFT);
         accumB = _mm_srai_epi32(accumB, SHIFT);

@@ -1280,6 +1280,27 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
       }
     }
   }
+#if JVET_O0177_PROPOSAL1
+  for (int i = 0; i < firstSubLayer; i++)
+  {
+    for (int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl++)
+    {
+      if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
+          ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
+      {
+        for (int j = 0; j <= (hrd->getCpbCntMinus1(i)); j++)
+        {
+          uint32_t bitRate = hrd->getBitRateValueMinus1(maxNumSubLayersMinus1, j, nalOrVcl);
+          hrd->setBitRateValueMinus1(i, j, nalOrVcl, bitRate);
+          uint32_t cpbSize = hrd->getCpbSizeValueMinus1(maxNumSubLayersMinus1, j, nalOrVcl);
+          hrd->setCpbSizeValueMinus1(i, j, nalOrVcl, cpbSize);
+          bool flag = hrd->getCbrFlag(maxNumSubLayersMinus1, j, nalOrVcl);
+          hrd->setCbrFlag(i, j, nalOrVcl, flag);
+        }
+      }
+    }
+  }
+#endif
 #endif
 }
 
@@ -1726,10 +1747,22 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if !JVET_O0189_DU
     READ_FLAG(     uiCode, "hrd_parameters_present_flag");        pcSPS->setHrdParametersPresentFlag(uiCode);
 #endif
+#if JVET_O0177_PROPOSAL1
+    READ_FLAG( uiCode, "sub_layer_cpb_parameters_present_flag");  pcSPS->setSubLayerParametersPresentFlag(uiCode);
+    if (pcSPS->getSubLayerParametersPresentFlag())
+    {
+      parseHrdParameters(pcSPS->getHrdParameters(), 0, pcSPS->getMaxTLayers() - 1);
+    }
+    else
+    {
+      parseHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
+    }
+#else
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       parseHrdParameters( pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
     }
+#endif
   }
 
   READ_FLAG( uiCode, "vui_parameters_present_flag" );             pcSPS->setVuiParametersPresentFlag(uiCode);
@@ -3092,7 +3125,18 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   uint32_t symbol;
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
-  READ_CODE(24 , symbol,   "general_sub_profile_idc"         ); ptl->setSubProfileIdc  (symbol);
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  READ_CODE(8, symbol, "num_sub_profiles");
+  uint8_t numSubProfiles = symbol;
+  ptl->setNumSubProfile( numSubProfiles );
+  for (int i = 0; i < numSubProfiles; i++)
+  {
+    READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
+  }
+#else
+  READ_CODE(24, symbol, "general_sub_profile_idc"); ptl->setSubProfileIdc(symbol);
+#endif
 
   parseConstraintInfo( ptl->getConstraintInfo() );
 

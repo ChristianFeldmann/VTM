@@ -171,8 +171,14 @@ private:
   int                     m_associatedIRAPPOC;
 
   std::vector<int>        m_vRVM_RP;
+#if !JVET_N0867_TEMP_SCAL_HRD
   uint32_t                    m_lastBPSEI;
   uint32_t                    m_totalCoded;
+#else
+  uint32_t                    m_lastBPSEI[MAX_TLAYER];
+  uint32_t                    m_totalCoded[MAX_TLAYER];
+  bool                        m_rapWithLeading;
+#endif
   bool                    m_bufferingPeriodSEIPresentInAU;
   SEIEncoder              m_seiEncoder;
 #if W0038_DB_OPT

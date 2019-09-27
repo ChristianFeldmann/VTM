@@ -88,7 +88,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setVPS(&vps);
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
+#if JVET_O0044_MULTI_SUB_PROFILE
+  m_cEncLib.setNumSubProfile                                     ( m_numSubProfile );
+  for (int i = 0; i < m_numSubProfile; i++)
+  {
+    m_cEncLib.setSubProfile(i, m_subProfile[i]);
+  }
+#else
   m_cEncLib.setSubProfile                                        ( m_subProfile );
+#endif
   m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
@@ -473,6 +481,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPictureTimingSEIEnabled                           ( m_pictureTimingSEIEnabled );
 #if JVET_O0041_FRAME_FIELD_SEI
   m_cEncLib.setFrameFieldInfoSEIEnabled                          ( m_frameFieldInfoSEIEnabled );
+#endif
+#if JVET_N0867_TEMP_SCAL_HRD
+   m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
 #endif
 #if JVET_O0189_DU
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );

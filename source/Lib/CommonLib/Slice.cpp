@@ -1685,6 +1685,9 @@ SPS::SPS()
 #if JVET_N0865_SYNTAX
     ,m_GDREnabledFlag         (1)
 #endif
+#if JVET_O0177_PROPOSAL1
+, m_SubLayerCbpParametersPresentFlag (1)
+#endif
 
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
@@ -2015,11 +2018,21 @@ bool ScalingList::isNotDefaultScalingList()
       {
         continue;
       }
-      if( !( !::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId])) // check value of matrix
-         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) ) // check DC value
+      if (sizeId < SCALING_LIST_16x16)
       {
-        isAllDefault = false;
-        break;
+        if (::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * (int)g_scalingListSize[sizeId]))
+        {
+          isAllDefault = false;
+          break;
+        }
+      }
+      else
+      {
+        if ((::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * MAX_MATRIX_COEF_NUM)) || (getScalingListDC(sizeId, listId) != 16))
+        {
+          isAllDefault = false;
+          break;
+        }
       }
     }
     if (!isAllDefault) break;
@@ -2436,7 +2449,12 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
-  , m_subProfileIdc   (0)
+#if JVET_O0044_MULTI_SUB_PROFILE
+  , m_numSubProfile(0)
+  , m_subProfileIdc(0)
+#else
+  , m_subProfileIdc(0)
+#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));

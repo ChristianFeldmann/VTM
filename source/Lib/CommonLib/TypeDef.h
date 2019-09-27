@@ -52,6 +52,10 @@
 
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
 
+#define JVET_O0245_VPS_DPS_APS                            1 // JVET-O0245: constraints for VPS, DPS, and APS
+
+#define JVET_O0044_MULTI_SUB_PROFILE                      1 // JVET-O0044: Zero or more sub profile fields
+
 #define JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA           1 // JVET-O0143: Remove signaling of top_right_brick_idx
 
 #define JVET_O0236_PPS_PARSING_DEPENDENCY                 1 // JVET-O0236: Resolves a PPS parsing dependency
@@ -77,6 +81,8 @@
 #define RPR_CTC_PRINT                                     1
 #define RPR_CONF_WINDOW                                   1
 #endif
+
+#define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
 
 #define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
 #define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
@@ -284,6 +290,7 @@
 #define FIX_HRD_O0189                                     1
 #endif
 #define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
+#define JVET_N0867_TEMP_SCAL_HRD                          1 // JVET-N0867 temporal scalability support for HRD in buffering period and picture timing SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -317,6 +324,8 @@
 #define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
 
 #define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
+
+#define JVET_O0177_PROPOSAL1                              1 // JVET_O0177 proposal 1: Allow signaling of HRD parameters for temporal sub-layers optionally controlled by a flag
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
@@ -380,7 +389,7 @@ typedef std::pair<int, int>  TrCost;
 // ====================================================================================================================
 
 #ifndef ENABLE_TRACING
-#define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
+#define ENABLE_TRACING                                    1 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
 #endif
 
 #if ENABLE_TRACING

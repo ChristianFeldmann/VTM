@@ -116,7 +116,6 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
       m_timingInfo.setNumUnitsInTick( m_timingInfo.getNumUnitsInTick() * temporalSubsampleRatio );
     }
   }
-
   bool rateCnt = ( bitRate > 0 );
   m_hrdParams.setNalHrdParametersPresentFlag( rateCnt );
   m_hrdParams.setVclHrdParametersPresentFlag( rateCnt );

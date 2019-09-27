@@ -60,7 +60,7 @@
 
 #define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
 
-#define JVET_O0145_ENTRYPOINT_SIGNALLING                  1 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+#define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
 

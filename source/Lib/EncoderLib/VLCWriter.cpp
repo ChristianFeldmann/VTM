@@ -357,10 +357,24 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
     for( int i = 0; pcPPS->getBrickSplittingPresentFlag()  &&  i < numTilesInPic; i++ )
     {
-      WRITE_FLAG( pcPPS->getBrickSplitFlag(i) ? 1 : 0, "brick_split_flag [i]" );
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+      if (pcPPS->getTileHeight(i) > 1)
+      {
+#endif
+        WRITE_FLAG(pcPPS->getBrickSplitFlag(i) ? 1 : 0, "brick_split_flag [i]");
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+      }
+#endif
       if( pcPPS->getBrickSplitFlag(i) )
       {
-        WRITE_FLAG( pcPPS->getUniformBrickSpacingFlag(i) ? 1 : 0, "uniform_brick_spacing_flag [i]" );
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        if (pcPPS->getTileHeight(i) > 2)
+        {
+#endif
+          WRITE_FLAG(pcPPS->getUniformBrickSpacingFlag(i) ? 1 : 0, "uniform_brick_spacing_flag [i]");
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        }
+#endif
         if( pcPPS->getUniformBrickSpacingFlag(i) )
           WRITE_UVLC( pcPPS->getBrickHeightMinus1(i), "brick_height_minus1" );
         else

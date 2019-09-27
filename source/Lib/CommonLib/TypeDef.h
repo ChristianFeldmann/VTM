@@ -85,6 +85,8 @@
 #define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
 #define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
 
+#define JVET_O0452_PPS_BRICK_SIGNALING_CONDITION          1  // JVET-O0452: brick_split_flag signaled as RowHeight > 1 and uniform_brick_spacing_flag signaled as RowHeight > 2
+
 #define FLATTEN_BUFFERS                                                                                                \
   (1 && JVET_O0502_ISP_CLEANUP && JVET_O0364_PADDING && JVET_O0426_MRL_REF_SAMPLES_DC_MODE                             \
    && JVET_O0925_MIP_SIMPLIFICATIONS && JVET_O0364_PDPC_DC)

@@ -1457,7 +1457,49 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
   }
 #endif
-
+#if JVET_N0867_TEMP_SCAL_HRD
+  m_bpDeltasGOPStructure = false;
+  if(m_iGOPSize == 16)
+  {
+    if ((m_GOPList[0].m_POC == 16 && m_GOPList[0].m_temporalId == 0 )
+        && (m_GOPList[1].m_POC == 8 && m_GOPList[1].m_temporalId == 1 )
+        && (m_GOPList[2].m_POC == 4 && m_GOPList[2].m_temporalId == 2 )
+        && (m_GOPList[3].m_POC == 2 && m_GOPList[3].m_temporalId == 3 )
+        && (m_GOPList[4].m_POC == 1 && m_GOPList[4].m_temporalId == 4 )
+        && (m_GOPList[5].m_POC == 3 && m_GOPList[5].m_temporalId == 4 )
+        && (m_GOPList[6].m_POC == 6 && m_GOPList[6].m_temporalId == 3 )
+        && (m_GOPList[7].m_POC == 5 && m_GOPList[7].m_temporalId == 4 )
+        && (m_GOPList[8].m_POC == 7 && m_GOPList[8].m_temporalId == 4 )
+        && (m_GOPList[9].m_POC == 12 && m_GOPList[9].m_temporalId == 2 )
+        && (m_GOPList[10].m_POC == 10 && m_GOPList[10].m_temporalId == 3 )
+        && (m_GOPList[11].m_POC == 9 && m_GOPList[11].m_temporalId == 4 )
+        && (m_GOPList[12].m_POC == 11 && m_GOPList[12].m_temporalId == 4 )
+        && (m_GOPList[13].m_POC == 14 && m_GOPList[13].m_temporalId == 3 )
+        && (m_GOPList[14].m_POC == 13 && m_GOPList[14].m_temporalId == 4 )
+        && (m_GOPList[15].m_POC == 15 && m_GOPList[15].m_temporalId == 4 ))
+    {
+      m_bpDeltasGOPStructure = true;
+    }
+  }
+  else if(m_iGOPSize == 8)
+  {
+    if ((m_GOPList[0].m_POC == 8 && m_GOPList[0].m_temporalId == 0 )
+        && (m_GOPList[1].m_POC == 4 && m_GOPList[1].m_temporalId == 1 )
+        && (m_GOPList[2].m_POC == 2 && m_GOPList[2].m_temporalId == 2 )
+        && (m_GOPList[3].m_POC == 1 && m_GOPList[3].m_temporalId == 3 )
+        && (m_GOPList[4].m_POC == 3 && m_GOPList[4].m_temporalId == 3 )
+        && (m_GOPList[5].m_POC == 6 && m_GOPList[5].m_temporalId == 2 )
+        && (m_GOPList[6].m_POC == 5 && m_GOPList[6].m_temporalId == 3 )
+        && (m_GOPList[7].m_POC == 7 && m_GOPList[7].m_temporalId == 3 ))
+    {
+      m_bpDeltasGOPStructure = true;
+    }
+  }
+  else
+  {
+    m_bpDeltasGOPStructure = false;
+  }
+#endif
   for (int i = 0; m_GOPList[i].m_POC != -1 && i < MAX_GOP + 1; i++)
   {
     m_RPLList0[i].m_POC = m_RPLList1[i].m_POC = m_GOPList[i].m_POC;

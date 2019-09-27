@@ -282,6 +282,7 @@
 #define FIX_HRD_O0189                                     1
 #endif
 #define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
+#define JVET_N0867_TEMP_SCAL_HRD                          1 // JVET-N0867 temporal scalability support for HRD in buffering period and picture timing SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -378,7 +379,7 @@ typedef std::pair<int, int>  TrCost;
 // ====================================================================================================================
 
 #ifndef ENABLE_TRACING
-#define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
+#define ENABLE_TRACING                                    1 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
 #endif
 
 #if ENABLE_TRACING

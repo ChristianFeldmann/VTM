@@ -44,7 +44,11 @@
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps)
 #else
+#if !JVET_N0867_TEMP_SCAL_HRD
 void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd)
+#else
+void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId)
+#endif
 #endif
 {
   switch (sei.payloadType())
@@ -89,7 +93,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
       const SEIBufferingPeriod *bp = hrd.getBufferingPeriodSEI();
       CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Picture Timing SEI");
 #if JVET_O0189_DU
+#if !JVET_N0867_TEMP_SCAL_HRD
       xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps, *bp);
+#else
+      xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps, *bp, temporalId);
+#endif
 #else
       xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), *bp);
 #endif
@@ -175,7 +183,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
  * marshal all SEI messages in provided list into one bitstream bs
  */
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
+#if !JVET_N0867_TEMP_SCAL_HRD
 void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested)
+#else
+void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested, const uint32_t temporalId)
+#endif
 #else
 void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, bool isNested)
 #endif
@@ -199,7 +211,11 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
     g_HLSTraceEnable = false;
 #endif
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
+#if !JVET_N0867_TEMP_SCAL_HRD
     xWriteSEIpayloadData(bs_count, **sei, sps, hrd);
+#else
+    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
+#endif
 #else
     xWriteSEIpayloadData(bs_count, **sei, sps);
 #endif
@@ -233,7 +249,11 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
     xWriteSEIpayloadData(bs, **sei, sps);
 #else
-    xWriteSEIpayloadData(bs, **sei, sps, hrd);
+#if !JVET_N0867_TEMP_SCAL_HRD
+    xWriteSEIpayloadData(bs_count, **sei, sps, hrd);
+#else
+    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
+#endif
 #endif
   }
   if (!isNested)
@@ -344,7 +364,6 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
 {
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   int i, nalOrVcl;
-
   const HRDParameters *hrd = sps->getHrdParameters();
 
   WRITE_UVLC( sei.m_bpSeqParameterSetId, "bp_seq_parameter_set_id" );
@@ -404,9 +423,24 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
   CHECK (sei.m_auCpbRemovalDelayDelta < 1, "sei.m_auCpbRemovalDelayDelta must be > 0");
   WRITE_CODE( sei.m_auCpbRemovalDelayDelta - 1, sei.m_cpbRemovalDelayLength, "au_cpb_removal_delay_delta_minus1" );
 
+#if !JVET_N0867_TEMP_SCAL_HRD
   CHECK (sei.m_bpCpbCnt < 1, "sei.m_bpCpbCnt must be > 0");
   WRITE_UVLC( sei.m_bpCpbCnt - 1, "bp_cpb_cnt_minus1");
-
+#else
+  WRITE_FLAG( sei.m_cpbRemovalDelayDeltasPresentFlag, "cpb_removal_delay_deltas_present_flag");
+  if (sei.m_cpbRemovalDelayDeltasPresentFlag)
+  {
+    CHECK (sei.m_numCpbRemovalDelayDeltas < 1, "m_numCpbRemovalDelayDeltas must be > 0");
+    WRITE_UVLC( sei.m_numCpbRemovalDelayDeltas - 1, "num_cpb_removal_delay_deltas_minus1" );
+    for( int i = 0; i < sei.m_numCpbRemovalDelayDeltas; i ++ )
+    {
+      WRITE_CODE( sei.m_cpbRemovalDelayDelta[i],        sei.m_cpbRemovalDelayLength, "cpb_removal_delay_delta[i]" );
+    }
+    CHECK (sei.m_bpMaxSubLayers < 1, "bp_max_sub_layers_minus1 must be > 0");
+    WRITE_CODE( sei.m_bpMaxSubLayers - 1,        3, "bp_max_sub_layers_minus1" );
+  }
+#endif
+#if !JVET_N0867_TEMP_SCAL_HRD
   for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
   {
     if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
@@ -421,14 +455,36 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
       }
     }
   }
-
+#else
+  for( int i = 0; i < sei.m_bpMaxSubLayers; i ++ )
+  {
+    CHECK (sei.m_bpCpbCnt[i] < 1, "sei.m_bpCpbCnt[i] must be > 0");
+    WRITE_UVLC( sei.m_bpCpbCnt[i] - 1, "bp_cpb_cnt_minus1[i]");
+    for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
+    {
+      if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
+         ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
+      {
+        for( int j = 0; j < sei.m_bpCpbCnt[i]; j ++ )
+        {
+          WRITE_CODE( sei.m_initialCpbRemovalDelay[j][i][nalOrVcl],  sei.m_initialCpbRemovalDelayLength,           "initial_cpb_removal_delay[j][i][nalOrVcl]" );
+          WRITE_CODE( sei.m_initialCpbRemovalOffset[j][i][nalOrVcl], sei.m_initialCpbRemovalDelayLength,           "initial_cpb_removal_delay_offset[j][i][nalOrVcl]" );
+        }
+      }
+    }
+  }
+#endif
 #endif
 }
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps)
 #else
 #if JVET_O0189_DU
+#if !JVET_N0867_TEMP_SCAL_HRD
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod &bp)
+#else
+void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod &bp, const uint32_t temporalId)
+#endif
 #else
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod &bp)
 #endif
@@ -474,7 +530,29 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
     }
   }
 #else
+#if !JVET_N0867_TEMP_SCAL_HRD
   WRITE_CODE( sei.m_auCpbRemovalDelay - 1, bp.m_cpbRemovalDelayLength,                                         "cpb_removal_delay_minus1" );
+#else
+  CHECK (sei.m_ptMaxSubLayers < 1, "pt_max_sub_layers_minus1 must be > 0");
+  WRITE_CODE( sei.m_ptMaxSubLayers - 1,        3, "pt_max_sub_layers_minus1" );
+  WRITE_CODE( sei.m_auCpbRemovalDelay[sei.m_ptMaxSubLayers - 1] - 1, bp.m_cpbRemovalDelayLength,               "cpb_removal_delay_minus1[pt_max_sub_layers_minus1]" );
+  for( int i = temporalId; i < sei.m_ptMaxSubLayers - 1; i ++ )
+  {
+    WRITE_FLAG( sei.m_subLayerDelaysPresentFlag[i], "sub_layer_delays_present_flag[i]" );
+    if( sei.m_subLayerDelaysPresentFlag[i] )
+    {
+      WRITE_FLAG( sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]" );
+      if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
+      {
+        WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
+      }
+      else
+      {
+        WRITE_CODE( sei.m_auCpbRemovalDelay[i] - 1, bp.m_cpbRemovalDelayLength,                                "cpb_removal_delay_minus1[i]" );
+      }
+    }
+  }
+#endif
   WRITE_CODE( sei.m_picDpbOutputDelay,     bp.m_dpbOutputDelayLength,                                          "dpb_output_delay" );
 #endif
 #if JVET_O0189_DU

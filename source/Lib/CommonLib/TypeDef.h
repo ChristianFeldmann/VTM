@@ -91,6 +91,8 @@
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
+#define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
+
 #define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
 
 #define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping

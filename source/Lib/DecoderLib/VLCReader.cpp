@@ -626,9 +626,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #if JVET_O0173_O0176_O0338_NUMBRICK_M2
             READ_UVLC(uiCode, "num_brick_rows_minus2 [i]");
             numBrickRowsMinus2[i] = uiCode;
-            for (int j = 0; j <= numBrickRowsMinus2[i]; j++)
+            for (int j = 0; j < numBrickRowsMinus2[i] + 1; j++)
             {
-              brickRowHeightMinus1[i].resize(numBrickRowsMinus2[i]);
+              brickRowHeightMinus1[i].resize(numBrickRowsMinus2[i] + 1);
               READ_UVLC(uiCode, "brick_row_height_minus1 [i][j]");
               brickRowHeightMinus1[i][j] = uiCode;
             }

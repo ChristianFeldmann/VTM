@@ -1220,10 +1220,22 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if !JVET_O0189_DU
     WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),              "hrd_parameters_present_flag");
 #endif
+#if JVET_O0177_PROPOSAL1
+    WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sub_layer_cpb_parameters_present_flag");
+    if (pcSPS->getSubLayerParametersPresentFlag())
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), 0, pcSPS->getMaxTLayers() - 1);
+    }
+    else
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
+    }
+#else
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       codeHrdParameters(pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
     }
+#endif
   }
 
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );

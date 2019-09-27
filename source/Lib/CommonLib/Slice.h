@@ -899,6 +899,9 @@ private:
 #if JVET_N0865_SYNTAX
   bool m_GDREnabledFlag;
 #endif
+#if JVET_O0177_PROPOSAL1
+  bool              m_SubLayerCbpParametersPresentFlag;
+#endif
 
 public:
 
@@ -1191,6 +1194,10 @@ public:
 #if JVET_N0865_SYNTAX
   void setGDREnabledFlag(bool flag) { m_GDREnabledFlag = flag; }
   bool getGDREnabledFlag() const { return m_GDREnabledFlag; }
+#endif
+#if JVET_O0177_PROPOSAL1
+  void      setSubLayerParametersPresentFlag(bool flag)                             { m_SubLayerCbpParametersPresentFlag = flag; }
+  bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
 #endif
 };
 

@@ -319,6 +319,8 @@
 
 #define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
 
+#define JVET_O0177_PROPOSAL1                              1 // JVET_O0177 proposal 1: Allow signaling of HRD parameters for temporal sub-layers optionally controlled by a flag
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;

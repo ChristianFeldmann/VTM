@@ -1685,6 +1685,9 @@ SPS::SPS()
 #if JVET_N0865_SYNTAX
     ,m_GDREnabledFlag         (1)
 #endif
+#if JVET_O0177_PROPOSAL1
+, m_SubLayerCbpParametersPresentFlag (1)
+#endif
 
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)

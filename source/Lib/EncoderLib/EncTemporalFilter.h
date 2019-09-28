@@ -148,10 +148,6 @@ private:
   Area m_area;
   bool m_gopBasedTemporalFilterFutureReference;
 
-  int m_maxCUWidth;
-  int m_maxCUHeight;
-  int m_maxTotalCUDepth;
-
   // Private functions
   void subsampleLuma(const PelStorage &input, PelStorage &output, const int factor = 2) const;
   int motionErrorLuma(const PelStorage &orig, const PelStorage &buffer, const int x, const int y, int dx, int dy, const int bs, const int besterror) const;

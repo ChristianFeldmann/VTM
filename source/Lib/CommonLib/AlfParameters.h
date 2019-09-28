@@ -232,7 +232,7 @@ struct AlfParam
   }
 
 #if JVET_O0245_VPS_DPS_APS
-  bool AlfParam::operator==( const AlfParam& other )
+  bool operator==( const AlfParam& other )
   {
     if( memcmp( enabledFlag, other.enabledFlag, sizeof( enabledFlag ) ) )
     {
@@ -286,7 +286,7 @@ struct AlfParam
     return true;
   }
 
-  bool AlfParam::operator!=( const AlfParam& other )
+  bool operator!=( const AlfParam& other )
   {
     return !( *this == other );
   }

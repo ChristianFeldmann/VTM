@@ -173,7 +173,7 @@ public:
   bool       isNotDefaultScalingList();
 
 #if JVET_O0245_VPS_DPS_APS
-  bool ScalingList::operator==( const ScalingList& other )
+  bool operator==( const ScalingList& other )
   {
     if( memcmp( m_scalingListPredModeFlagIsDPCM, other.m_scalingListPredModeFlagIsDPCM, sizeof( m_scalingListPredModeFlagIsDPCM ) ) )
     {
@@ -195,7 +195,7 @@ public:
     return true;
   }
 
-  bool ScalingList::operator!=( const ScalingList& other )
+  bool operator!=( const ScalingList& other )
   {
     return !( *this == other );
   }
@@ -447,7 +447,7 @@ public:
   unsigned  getSliceReshapeChromaAdj() const                           { return enableChromaAdj;                 }
 
 #if JVET_O0245_VPS_DPS_APS
-  bool SliceReshapeInfo::operator==( const SliceReshapeInfo& other )
+  bool operator==( const SliceReshapeInfo& other )
   {
     if( sliceReshaperEnableFlag != other.sliceReshaperEnableFlag )
     {
@@ -481,7 +481,7 @@ public:
     return true;
   }
 
-  bool SliceReshapeInfo::operator!=( const SliceReshapeInfo& other )
+  bool operator!=( const SliceReshapeInfo& other )
   {
     return !( *this == other );
   }

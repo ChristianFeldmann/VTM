@@ -899,7 +899,11 @@ void HLSyntaxReader::parseAPS( APS* aps )
   aps->setAPSId(code);
 
   READ_CODE(3, code, "aps_params_type");
+#if JVET_O0245_VPS_DPS_APS
+  aps->setAPSType( ApsType(code) );
+#else
   aps->setAPSType(code);
+#endif
 #if JVET_O0299_APS_SCALINGLIST
   if( code == ALF_APS )
   {

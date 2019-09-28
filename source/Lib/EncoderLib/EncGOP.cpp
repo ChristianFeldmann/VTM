@@ -313,11 +313,9 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
 {
   OutputNALUnit nalu(NAL_UNIT_VPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-
 #if JVET_O0245_VPS_DPS_APS
   CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
 #endif
-
   m_HLSWriter->codeVPS( vps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -329,11 +327,9 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
   {
     OutputNALUnit nalu(NAL_UNIT_DPS);
     m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-
 #if JVET_O0245_VPS_DPS_APS
     CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
 #endif
-
     m_HLSWriter->codeDPS( dps );
     accessUnit.push_back(new NALUnitEBSP(nalu));
     return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -349,6 +345,9 @@ int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+#if JVET_O0245_VPS_DPS_APS
+  CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+#endif
   m_HLSWriter->codeSPS( sps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -356,13 +355,21 @@ int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 }
 
 #if JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O0245_VPS_DPS_APS
+int EncGOP::xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId )
+#else
 int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps, const SPS *sps)
+#endif
 #else
 int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps)
 #endif
 {
   OutputNALUnit nalu(NAL_UNIT_PPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+#if JVET_O0245_VPS_DPS_APS
+  nalu.m_nuhLayerId = layerId;
+  CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
+#endif
 #if JVET_O1136_TS_BDPCM_SIGNALLING
   m_HLSWriter->codePPS( pps, sps );
 #else
@@ -372,10 +379,19 @@ int EncGOP::xWritePPS (AccessUnit &accessUnit, const PPS *pps)
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
+#if JVET_O0245_VPS_DPS_APS
+int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId )
+#else
 int EncGOP::xWriteAPS(AccessUnit &accessUnit, APS *aps)
+#endif
 {
   OutputNALUnit nalu(NAL_UNIT_APS);
   m_HLSWriter->setBitstream(&nalu.m_Bitstream);
+#if JVET_O0245_VPS_DPS_APS
+  nalu.m_nuhLayerId = layerId;
+  nalu.m_temporalId = aps->getTemporalId();
+  CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
+#endif
   m_HLSWriter->codeAPS(aps);
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -415,7 +431,10 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
 {
   AUDWriter audWriter;
   OutputNALUnit nalu(NAL_UNIT_ACCESS_UNIT_DELIMITER);
-
+#if JVET_O0245_VPS_DPS_APS
+  nalu.m_temporalId = slice->getTLayer();
+  CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
+#endif
   int picType = slice->isIntra() ? 0 : (slice->isInterP() ? 1 : 2);
 
   audWriter.codeAUD(nalu.m_Bitstream, picType);
@@ -1983,6 +2002,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     // start a new access unit: create an entry in the list of output access units
     AccessUnit accessUnit;
+#if JVET_O0245_VPS_DPS_APS
+    accessUnit.temporalId = m_pcCfg->getGOPEntry( iGOPid ).m_temporalId;
+#endif
     xGetBuffer( rcListPic, rcListPicYuvRecOut,
                 iNumPicRcvd, iTimeOffset, pcPic, pocCurr, isField );
 

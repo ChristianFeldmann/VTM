@@ -135,6 +135,12 @@ private:
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
   int                     m_debugPOC;
   int                     m_debugCTU;
+
+#if JVET_O0245_VPS_DPS_APS
+  std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  std::vector<int> m_accessUnitApsNals;
+#endif
+
 public:
   DecLib();
   virtual ~DecLib();

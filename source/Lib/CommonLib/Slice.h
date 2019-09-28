@@ -172,11 +172,40 @@ public:
   void       setDefaultScalingList();
   bool       isNotDefaultScalingList();
 
+#if JVET_O0245_VPS_DPS_APS
+  bool ScalingList::operator==( const ScalingList& other )
+  {
+    if( memcmp( m_scalingListPredModeFlagIsDPCM, other.m_scalingListPredModeFlagIsDPCM, sizeof( m_scalingListPredModeFlagIsDPCM ) ) )
+    {
+      return false;
+    }
+    if( memcmp( m_scalingListDC, other.m_scalingListDC, sizeof( m_scalingListDC ) ) )
+    {
+      return false;
+    }
+    if( memcmp( m_refMatrixId, other.m_refMatrixId, sizeof( m_refMatrixId ) ) )
+    {
+      return false;
+    }
+    if( memcmp( m_scalingListCoef, other.m_scalingListCoef, sizeof( m_scalingListCoef ) ) )
+    {
+      return false;
+    }     
+
+    return true;
+  }
+
+  bool ScalingList::operator!=( const ScalingList& other )
+  {
+    return !( *this == other );
+  }
+#endif
+
 private:
-  void       outputScalingLists(std::ostream &os) const;
+  void             outputScalingLists(std::ostream &os) const;
   bool             m_scalingListPredModeFlagIsDPCM [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< reference list index
   int              m_scalingListDC                 [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< the DC value of the matrix coefficient for 16x16
-  uint32_t             m_refMatrixId                   [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< RefMatrixID
+  uint32_t         m_refMatrixId                   [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< RefMatrixID
   std::vector<int> m_scalingListCoef               [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< quantization matrix
 };
 
@@ -416,6 +445,47 @@ public:
   bool      getSliceReshapeModelPresentFlag() const                    { return   sliceReshaperModelPresentFlag; }
   void      setSliceReshapeChromaAdj(unsigned adj)                     { enableChromaAdj = adj;                  }
   unsigned  getSliceReshapeChromaAdj() const                           { return enableChromaAdj;                 }
+
+#if JVET_O0245_VPS_DPS_APS
+  bool SliceReshapeInfo::operator==( const SliceReshapeInfo& other )
+  {
+    if( sliceReshaperEnableFlag != other.sliceReshaperEnableFlag )
+    {
+      return false;
+    }
+    if( sliceReshaperModelPresentFlag != other.sliceReshaperModelPresentFlag )
+    {
+      return false;
+    }
+    if( enableChromaAdj != other.enableChromaAdj )
+    {
+      return false;
+    }
+    if( reshaperModelMinBinIdx != other.reshaperModelMinBinIdx )
+    {
+      return false;
+    }
+    if( reshaperModelMaxBinIdx != other.reshaperModelMaxBinIdx )
+    {
+      return false;
+    }
+    if( maxNbitsNeededDeltaCW != other.maxNbitsNeededDeltaCW )
+    {
+      return false;
+    }
+    if( memcmp( reshaperModelBinCWDelta, other.reshaperModelBinCWDelta, sizeof( reshaperModelBinCWDelta ) ) )
+    {
+      return false;
+    }        
+
+    return true;
+  }
+
+  bool SliceReshapeInfo::operator!=( const SliceReshapeInfo& other )
+  {
+    return !( *this == other );
+  }
+#endif
 };
 
 struct ReshapeCW
@@ -1237,6 +1307,11 @@ private:
   bool             m_bConstrainedIntraPred;    // constrained_intra_pred_flag
   bool             m_bSliceChromaQpFlag;       // slicelevel_chroma_qp_flag
 
+#if JVET_O0245_VPS_DPS_APS
+  int              m_layerId;
+  int              m_temporalId;
+#endif
+
   // access channel
   uint32_t         m_cuQpDeltaSubdiv;           // cu_qp_delta_subdiv
 
@@ -1354,6 +1429,13 @@ public:
   void                   setPPSId(int i)                                                  { m_PPSId = i;                                  }
   int                    getSPSId() const                                                 { return m_SPSId;                               }
   void                   setSPSId(int i)                                                  { m_SPSId = i;                                  }
+
+#if JVET_O0245_VPS_DPS_APS
+  void                   setTemporalId( int i )                                           { m_temporalId = i;                             }
+  int                    getTemporalId()                                            const { return m_temporalId;                          }
+  void                   setLayerId( int i )                                              { m_layerId = i;                                }
+  int                    getLayerId()                                               const { return m_layerId;                             }
+#endif
 
   int                    getPicInitQPMinus26() const                                      { return  m_picInitQPMinus26;                   }
   void                   setPicInitQPMinus26( int i )                                     { m_picInitQPMinus26 = i;                       }
@@ -1591,7 +1673,13 @@ class APS
 {
 private:
   int                    m_APSId;                    // adaptation_parameter_set_id
+#if JVET_O0245_VPS_DPS_APS
+  int                    m_temporalId;
+  int                    m_layerId;
+  ApsType                m_APSType;                  // aps_params_type
+#else
   int                    m_APSType;                  // aps_params_type
+#endif
   AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
 #if JVET_O0299_APS_SCALINGLIST
@@ -1605,12 +1693,24 @@ public:
   int                    getAPSId() const                                                 { return m_APSId;                               }
   void                   setAPSId(int i)                                                  { m_APSId = i;                                  }
 
+#if JVET_O0245_VPS_DPS_APS
+  ApsType                getAPSType() const                                               { return m_APSType;                             }
+  void                   setAPSType( ApsType type )                                       { m_APSType = type;                             }
+#else
   int                    getAPSType() const                                               { return m_APSType;                             }
   void                   setAPSType(int type)                                             { m_APSType = type;                             }
+#endif
 
   void                   setAlfAPSParam(AlfParam& alfAPSParam)                            { m_alfAPSParam = alfAPSParam;                  }
+#if JVET_O0245_VPS_DPS_APS
+  void                   setTemporalId( int i )                                           { m_temporalId = i;                             }
+  int                    getTemporalId()                                            const { return m_temporalId;                          }
+  void                   setLayerId( int i )                                              { m_layerId = i;                                }
+  int                    getLayerId()                                               const { return m_layerId;                             }
+#else
   void                   setTemporalId(int i) { m_alfAPSParam.tLayer = i; }
   int                    getTemporalId() { return m_alfAPSParam.tLayer; }
+#endif
   AlfParam&              getAlfAPSParam()  { return m_alfAPSParam; }
 
   void                   setReshaperAPSInfo(SliceReshapeInfo& reshapeAPSInfo)             { m_reshapeAPSInfo = reshapeAPSInfo;            }
@@ -2254,6 +2354,41 @@ public:
     }
   }
 
+#if JVET_O0245_VPS_DPS_APS
+  void checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals )
+  {
+    int apsId = ( aps->getAPSId() << NUM_APS_TYPE_LEN ) + (int)aps->getAPSType();
+    
+    if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
+    {
+      CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exists" );
+      APS* existedAPS = m_paramsetMap[apsId].parameterSet;
+
+      if( aps->getAPSType() == LMCS_APS )
+      {
+        CHECK( aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
+      }
+      else if( aps->getAPSType() == ALF_APS )
+      {
+        CHECK( aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
+      }
+      else if( aps->getAPSType() == SCALING_LIST_APS )
+      {
+        CHECK( aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
+      }
+      else
+      {
+        CHECK( true, "Wrong APS type" );
+      }
+    }
+    else
+    {
+      accessUnitApsNals.push_back( apsId );
+    }
+  }
+#endif
+
+
   void setChangedFlag(int psId, bool bChanged=true)
   {
     if ( m_paramsetMap.find(psId) != m_paramsetMap.end() )
@@ -2354,6 +2489,10 @@ public:
   bool           activateAPS(int apsId, int apsType);
   const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };
   const DPS*     getActiveDPS()const                                         { return m_dpsMap.getPS(m_activeDPSId); };
+
+#if JVET_O0245_VPS_DPS_APS
+  void           checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals ) { m_apsMap.checkAuApsContent( aps, accessUnitApsNals ); }
+#endif
 
 protected:
   ParameterSetMap<SPS> m_spsMap;

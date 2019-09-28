@@ -163,6 +163,9 @@ struct NALUnitEBSP : public NALUnit
 class AccessUnit : public std::list<NALUnitEBSP*> // NOTE: Should not inherit from STL.
 {
 public:
+#if JVET_O0245_VPS_DPS_APS
+  int temporalId;
+#endif
   ~AccessUnit()
   {
     for (AccessUnit::iterator it = this->begin(); it != this->end(); it++)

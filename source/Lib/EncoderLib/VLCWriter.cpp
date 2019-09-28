@@ -555,8 +555,11 @@ void HLSWriter::codeAPS( APS* pcAPS )
 #endif
 
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
+#if JVET_O0245_VPS_DPS_APS
+  WRITE_CODE( (int)pcAPS->getAPSType(), 3, "aps_params_type" );
+#else
   WRITE_CODE(pcAPS->getAPSType(), 3, "aps_params_type");
-
+#endif
 
   if (pcAPS->getAPSType() == ALF_APS)
   {

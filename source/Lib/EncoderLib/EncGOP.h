@@ -337,11 +337,19 @@ protected:
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
 #if JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O0245_VPS_DPS_APS
+  int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
+#else
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps, const SPS *sps);
+#endif
 #else
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
 #endif
+#if JVET_O0245_VPS_DPS_APS
+  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId = 0 );
+#else
   int xWriteAPS(AccessUnit &accessUnit, APS *aps);
+#endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

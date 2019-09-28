@@ -3374,7 +3374,9 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
   }
   else
   {
+#if !JVET_O0245_VPS_DPS_APS
     alfParamNewFiltersBest.tLayer = cs.slice->getTLayer();
+#endif
     cs.slice->setTileGroupAlfEnabledFlag(COMPONENT_Y, true);
     cs.slice->setTileGroupNumAps((int)bestApsIds.size());
     cs.slice->setAlfAPSs(bestApsIds);
@@ -3393,6 +3395,9 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
         newAPS->setAPSType(ALF_APS);
       }
       newAPS->setAlfAPSParam(alfParamNewFiltersBest);
+#if JVET_O0245_VPS_DPS_APS
+      newAPS->setTemporalId( cs.slice->getTLayer() );
+#endif
       newAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] = false;
       m_apsMap->setChangedFlag((newApsId << NUM_APS_TYPE_LEN) + ALF_APS);
       m_apsIdStart = newApsId;
@@ -3635,7 +3640,11 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
 #else
       newAPS->getAlfAPSParam().nonLinearFlag[CHANNEL_TYPE_CHROMA] = alfParamNewFilters.nonLinearFlag[CHANNEL_TYPE_CHROMA];
 #endif
+#if JVET_O0245_VPS_DPS_APS
+      newAPS->setTemporalId( cs.slice->getTLayer() );
+#else
       newAPS->getAlfAPSParam().tLayer = cs.slice->getTLayer();
+#endif
 #if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
       for (int altIdx = 0; altIdx  < MAX_NUM_ALF_ALTERNATIVES_CHROMA; ++altIdx )
       for (int i = 0; i < MAX_NUM_ALF_CHROMA_COEFF; i++)

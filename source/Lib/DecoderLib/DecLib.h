@@ -179,6 +179,9 @@ protected:
 
   Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
   void  xCreateLostPicture (int iLostPOC);
+#if JVET_O0241
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
+#endif
 
   void      xActivateParameterSets();
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

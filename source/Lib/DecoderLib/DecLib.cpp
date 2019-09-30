@@ -774,6 +774,38 @@ void DecLib::xCreateLostPicture(int iLostPoc)
 
 }
 
+#if JVET_O0241
+void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag)
+{
+  msg(INFO, "\ninserting unavailable poc : %d\n", iUnavailablePoc);
+  Picture* cFillPic = xGetNewPicBuffer(*(m_parameterSetManager.getFirstSPS()), *(m_parameterSetManager.getFirstPPS()), 0);
+
+  CHECK(!cFillPic->slices.size(), "No slices in picture");
+
+  cFillPic->slices[0]->initSlice();
+
+  uint32_t yFill = 1 << (m_parameterSetManager.getFirstSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
+  uint32_t cFill = 1 << (m_parameterSetManager.getFirstSPS()->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+  cFillPic->getRecoBuf().Y().fill(yFill);
+  cFillPic->getRecoBuf().Cb().fill(cFill);
+  cFillPic->getRecoBuf().Cr().fill(cFill);
+   
+  //  for(int ctuRsAddr=0; ctuRsAddr<cFillPic->getNumberOfCtusInFrame(); ctuRsAddr++)  { cFillPic->getCtu(ctuRsAddr)->initCtu(cFillPic, ctuRsAddr); }
+  cFillPic->referenced = true;
+  cFillPic->longTerm = longTermFlag;
+  cFillPic->slices[0]->setPOC(iUnavailablePoc);
+  cFillPic->slices[0]->setPicOutputFlag(false);
+  xUpdatePreviousTid0POC(cFillPic->slices[0]);
+  cFillPic->reconstructed = true;
+  cFillPic->neededForOutput = true;
+  if (m_pocRandomAccess == MAX_INT)
+  {
+    m_pocRandomAccess = iUnavailablePoc;
+  }
+
+}
+#endif
+
 #if JVET_O0299_APS_SCALINGLIST
 void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
 #else
@@ -1372,10 +1404,46 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //detect lost reference picture and insert copy of earlier frame.
   {
     int lostPoc;
+  #if JVET_O0241
+    int refPicIndex;
+    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex)) > 0)
+    {
+#if JVET_N0865_GRA2GDR
+      if ( ( (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) ) && m_apcSlicePilot->getNoIncorrectPicOutputFlag() )
+#else
+      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+#endif
+      {
+
+        xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex));
+      }
+      else
+      {
+        xCreateLostPicture(lostPoc - 1);
+      }
+    }
+    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex)) > 0)
+    {
+#if JVET_N0865_GRA2GDR
+      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+#else
+      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+#endif
+      {
+
+        xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex));
+      }
+      else
+      {
+        xCreateLostPicture(lostPoc - 1);
+      }
+    }
+#else
     while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true)) > 0)
       xCreateLostPicture(lostPoc - 1);
     while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 1, true)) > 0)
       xCreateLostPicture(lostPoc - 1);
+#endif
   }
 
     m_prevPOC = m_apcSlicePilot->getPOC();

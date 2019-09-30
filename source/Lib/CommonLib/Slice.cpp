@@ -1136,6 +1136,102 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
   return 0;
 }
 
+#if JVET_O0241
+int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors, int *refPicIndex) const
+{
+  Picture* rpcPic;
+  int isAvailable = 0;
+  int notPresentPoc = 0;
+  *refPicIndex = 0;
+
+  if (this->isIDRorBLA()) return 0; //Assume that all pic in the DPB will be flushed anyway so no need to check.
+
+  int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures();
+  //Check long term ref pics
+  for (int ii = 0; pRPL->getNumberOfLongtermPictures() > 0 && ii < numberOfPictures; ii++)
+  {
+    if (!pRPL->isRefPicLongterm(ii))
+      continue;
+
+    notPresentPoc = pRPL->getRefPicIdentifier(ii);
+    isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+      int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+      int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+      if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    // if there was no such long-term check the short terms
+    if (!isAvailable)
+    {
+      iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        rpcPic = *(iterPic++);
+        int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+        int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+        int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+        if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+        {
+          isAvailable = 1;
+          rpcPic->longTerm = true;
+          break;
+        }
+      }
+    }
+    if (!isAvailable)
+    {
+      if (printErrors)
+      {
+        msg(ERROR, "\nCurrent picture: %d Long-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC(), notPresentPoc);
+      }
+      *refPicIndex = ii;
+      return notPresentPoc;
+    }
+  }
+  //report that a picture is lost if it is in the Reference Picture List but not in the DPB
+
+  isAvailable = 0;
+  //Check short term ref pics
+  for (int ii = 0; ii < numberOfPictures; ii++)
+  {
+    if (pRPL->isRefPicLongterm(ii))
+      continue;
+
+    notPresentPoc = this->getPOC() - pRPL->getRefPicIdentifier(ii);
+    isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      if (!rpcPic->longTerm && rpcPic->getPOC() == this->getPOC() - pRPL->getRefPicIdentifier(ii) && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    //report that a picture is lost if it is in the Reference Picture List but not in the DPB
+    if (isAvailable == 0 && pRPL->getNumberOfShorttermPictures() > 0)
+    {
+      if (printErrors)
+      {
+        msg(ERROR, "\nCurrent picture: %d Short-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC(), notPresentPoc);
+      }
+      *refPicIndex = ii;
+      return notPresentPoc;
+    }
+  }
+  return 0;
+}
+#endif
+
 #if JVET_N0494_DRAP
 bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
 {

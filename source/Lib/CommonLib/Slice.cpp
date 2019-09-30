@@ -1977,6 +1977,9 @@ PPS::~PPS()
 
 APS::APS()
 : m_APSId(0)
+#if JVET_O0245_VPS_DPS_APS
+, m_temporalId( 0 )
+#endif
 {
 }
 

@@ -825,6 +825,11 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
       {
         THROW("APS activation failed!");
       }
+
+#if JVET_O0245_VPS_DPS_APS
+      CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+#endif
     }
   }
 
@@ -838,6 +843,11 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
     {
       THROW("APS activation failed!");
     }
+
+#if JVET_O0245_VPS_DPS_APS
+    CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+    //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+#endif
   }
 
   if (pSlice->getLmcsEnabledFlag() && lmcsAPS == nullptr)
@@ -851,6 +861,11 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
       {
         THROW("LMCS APS activation failed!");
       }
+
+#if JVET_O0245_VPS_DPS_APS
+      CHECK( lmcsAPS->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+#endif
     }
   }
   pSlice->setLmcsAPS(lmcsAPS);
@@ -867,6 +882,11 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
       {
         THROW( "SCALING LIST APS activation failed!" );
       }
+
+#if JVET_O0245_VPS_DPS_APS
+      CHECK( scalingListAPS->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+#endif
     }
   }
   pSlice->setscalingListAPS(scalingListAPS);
@@ -1214,6 +1234,20 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setSliceCurEndBrickIdx(0);
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
+
+#if JVET_O0245_VPS_DPS_APS
+  for( auto& naluTemporalId : m_accessUnitNals )
+  {
+    if( naluTemporalId.first != NAL_UNIT_DPS
+      && naluTemporalId.first != NAL_UNIT_VPS
+      && naluTemporalId.first != NAL_UNIT_SPS
+      && naluTemporalId.first != NAL_UNIT_EOS
+      && naluTemporalId.first != NAL_UNIT_EOB )
+    {
+      CHECK( naluTemporalId.second < nalu.m_temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
+    }
+  }
+#endif
 
 #if JVET_N0865_NONSYNTAX
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
@@ -1823,6 +1857,11 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
 {
   SPS* sps = new SPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+
+#if JVET_O0245_VPS_DPS_APS
+  CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
+#endif
+
   m_HLSReader.parseSPS( sps );
   m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
 
@@ -1834,6 +1873,10 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
   PPS* pps = new PPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.parsePPS( pps, &m_parameterSetManager );
+#if JVET_O0245_VPS_DPS_APS
+  pps->setLayerId( nalu.m_nuhLayerId );
+  pps->setTemporalId( nalu.m_temporalId );
+#endif
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
 }
 
@@ -1843,6 +1886,10 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   m_HLSReader.setBitstream(&nalu.getBitstream());
   m_HLSReader.parseAPS(aps);
   aps->setTemporalId(nalu.m_temporalId);
+#if JVET_O0245_VPS_DPS_APS
+  aps->setLayerId( nalu.m_nuhLayerId );
+  m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );  
+#endif
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
@@ -1854,6 +1901,10 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     msg( WARNING, "Warning: found NAL unit with nuh_layer_id equal to %d. Ignoring.\n", nalu.m_nuhLayerId);
     return false;
   }
+
+#if JVET_O0245_VPS_DPS_APS
+  m_accessUnitNals.push_back( std::pair<NalUnitType, int>( nalu.m_nalUnitType, nalu.m_temporalId ) );
+#endif
 
   switch (nalu.m_nalUnitType)
   {
@@ -1931,6 +1982,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         AUDReader audReader;
         uint32_t picType;
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
+#if JVET_O0245_VPS_DPS_APS
+        // vectors clearing shall be moved to the right place if mandatory AUD starting an AU is removed
+        m_accessUnitNals.clear();
+        m_accessUnitApsNals.clear();
+        m_accessUnitNals.push_back( std::pair<NalUnitType, int>( NAL_UNIT_ACCESS_UNIT_DELIMITER, nalu.m_temporalId ) );
+#endif
 #if JVET_O0610_DETECT_AUD
         return !m_bFirstSliceInPicture;
 #else

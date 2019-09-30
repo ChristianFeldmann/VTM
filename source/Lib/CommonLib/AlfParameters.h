@@ -156,7 +156,9 @@ struct AlfParam
   bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
 #endif
   std::vector<AlfFilterShape>* filterShapes;
+#if !JVET_O0245_VPS_DPS_APS
   int                          tLayer;
+#endif
   bool                         newFilterFlag[MAX_NUM_CHANNEL_TYPE];
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
   int                          fixedFilterPattern;
@@ -187,7 +189,9 @@ struct AlfParam
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     alfLumaCoeffDeltaPredictionFlag = false;
 #endif
+#if !JVET_O0245_VPS_DPS_APS
     tLayer = 0;
+#endif
     memset(newFilterFlag, 0, sizeof(newFilterFlag));
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     fixedFilterPattern = 0;
@@ -215,7 +219,9 @@ struct AlfParam
     alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
 #endif
     filterShapes = src.filterShapes;
+#if !JVET_O0245_VPS_DPS_APS
     tLayer = src.tLayer;
+#endif
     std::memcpy(newFilterFlag, src.newFilterFlag, sizeof(newFilterFlag));
 #if !JVET_O0669_REMOVE_ALF_COEFF_PRED
     fixedFilterPattern = src.fixedFilterPattern;
@@ -224,6 +230,67 @@ struct AlfParam
 #endif
     return *this;
   }
+
+#if JVET_O0245_VPS_DPS_APS
+  bool operator==( const AlfParam& other )
+  {
+    if( memcmp( enabledFlag, other.enabledFlag, sizeof( enabledFlag ) ) )
+    {
+      return false;
+    }
+    if( memcmp( nonLinearFlag, other.nonLinearFlag, sizeof( nonLinearFlag ) ) )
+    {
+      return false;
+    }
+    if( memcmp( lumaCoeff, other.lumaCoeff, sizeof( lumaCoeff ) ) )
+    {
+      return false;
+    }
+    if( memcmp( lumaClipp, other.lumaClipp, sizeof( lumaClipp ) ) )
+    {
+      return false;
+    }
+    if( memcmp( chromaCoeff, other.chromaCoeff, sizeof( chromaCoeff ) ) )
+    {
+      return false;
+    }
+    if( memcmp( chromaClipp, other.chromaClipp, sizeof( chromaClipp ) ) )
+    {
+      return false;
+    }
+    if( memcmp( filterCoeffDeltaIdx, other.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) ) )
+    {
+      return false;
+    }
+    if( memcmp( alfLumaCoeffFlag, other.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) ) )
+    {
+      return false;
+    }
+    if( memcmp( newFilterFlag, other.newFilterFlag, sizeof( newFilterFlag ) ) )
+    {
+      return false;
+    }    
+    if( numAlternativesChroma != other.numAlternativesChroma )
+    {
+      return false;
+    }
+    if( numLumaFilters != other.numLumaFilters )
+    {
+      return false;
+    }
+    if( alfLumaCoeffDeltaFlag != other.alfLumaCoeffDeltaFlag )
+    {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool operator!=( const AlfParam& other )
+  {
+    return !( *this == other );
+  }
+#endif
 };
 
 //! \}

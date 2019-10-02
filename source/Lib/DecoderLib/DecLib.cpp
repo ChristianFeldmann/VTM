@@ -1863,9 +1863,8 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
 #endif
 
   m_HLSReader.parseSPS( sps );
-  m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
-
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
+  m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
 }
 
 void DecLib::xDecodePPS( InputNALUnit& nalu )

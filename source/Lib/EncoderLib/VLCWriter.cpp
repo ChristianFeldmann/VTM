@@ -1416,7 +1416,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   }
 
 #if JVET_O0181
-    WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 0 : 1, "non_reference_picture_flag");
+    WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 1 : 0, "non_reference_picture_flag");
 #endif
 
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )

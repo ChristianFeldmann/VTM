@@ -813,11 +813,33 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
 #endif
 {
   //luma APSs
-  for (int i = 0; i < pSlice->getTileGroupApsIdLuma().size(); i++)
+  if (pSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
   {
-    int apsId = pSlice->getTileGroupApsIdLuma()[i];
-    APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
+    for (int i = 0; i < pSlice->getTileGroupApsIdLuma().size(); i++)
+    {
+      int apsId = pSlice->getTileGroupApsIdLuma()[i];
+      APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
 
+      if (aps)
+      {
+        apss[apsId] = aps;
+        if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+        {
+          THROW("APS activation failed!");
+        }
+
+#if JVET_O0245_VPS_DPS_APS
+        CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+        //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+#endif
+      }
+    }
+  }
+  if (pSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb)||pSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) )
+  {
+    //chroma APS
+    int apsId = pSlice->getTileGroupApsIdChroma();
+    APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
     if (aps)
     {
       apss[apsId] = aps;
@@ -831,23 +853,6 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
       //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
 #endif
     }
-  }
-
-  //chroma APS
-  int apsId = pSlice->getTileGroupApsIdChroma();
-  APS* aps = parameterSetManager.getAPS(apsId, ALF_APS);
-  if (aps)
-  {
-    apss[apsId] = aps;
-    if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
-    {
-      THROW("APS activation failed!");
-    }
-
-#if JVET_O0245_VPS_DPS_APS
-    CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
-    //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
-#endif
   }
 
   if (pSlice->getLmcsEnabledFlag() && lmcsAPS == nullptr)
@@ -1863,9 +1868,8 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
 #endif
 
   m_HLSReader.parseSPS( sps );
-  m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
-
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
+  m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
 }
 
 void DecLib::xDecodePPS( InputNALUnit& nalu )

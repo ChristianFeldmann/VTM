@@ -521,6 +521,69 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
   }
 }
 
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+void Slice::checkSTSA(PicList& rcListPic)
+{
+  int ii;
+  Picture* pcRefPic = NULL;
+  int numOfActiveRef = getNumRefIdx(REF_PIC_LIST_0);
+
+  for (ii = 0; ii < numOfActiveRef; ii++)
+  {
+    pcRefPic = m_apcRefPicList[REF_PIC_LIST_0][ii];
+
+    // Checking this: "When the current picture is an STSA picture, there shall be no active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that has TemporalId equal to that of the current picture"
+    if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+    {
+      CHECK(pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture");
+    }
+
+    // Checking this: "When the current picture is a picture that follows, in decoding order, an STSA picture that has TemporalId equal to that of the current picture, there shall be no
+    // picture that has TemporalId equal to that of the current picture included as an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the STSA picture in decoding order."
+    CHECK(pcRefPic->subLayerNonReferencePictureDueToSTSA, "The RPL of the current picture contains a picture that is not allowed in this temporal layer due to an earlier STSA picture");
+  }
+
+  numOfActiveRef = getNumRefIdx(REF_PIC_LIST_1);
+  for (ii = 0; ii < numOfActiveRef; ii++)
+  {
+    pcRefPic = m_apcRefPicList[REF_PIC_LIST_1][ii];
+
+    // Checking this: "When the current picture is an STSA picture, there shall be no active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that has TemporalId equal to that of the current picture"
+    if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+    {
+      CHECK(pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture");
+    }
+
+    // Checking this: "When the current picture is a picture that follows, in decoding order, an STSA picture that has TemporalId equal to that of the current picture, there shall be no
+    // picture that has TemporalId equal to that of the current picture included as an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the STSA picture in decoding order."
+    CHECK(pcRefPic->subLayerNonReferencePictureDueToSTSA, "The active RPL part of the current picture contains a picture that is not allowed in this temporal layer due to an earlier STSA picture");
+  }
+
+  // If the current picture is an STSA picture, make all reference pictures in the DPB with temporal
+  // id equal to the temproal id of the current picture sub-layer non-reference pictures. The flag
+  // subLayerNonReferencePictureDueToSTSA equal to true means that the picture may not be used for
+  // reference by a picture that follows the current STSA picture in decoding order
+  if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+  {
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      pcRefPic = *(iterPic++);
+      if (!pcRefPic->referenced || pcRefPic->getPOC() == m_iPOC)
+      {
+        continue;
+      }
+
+      if (pcRefPic->layer == m_uiTLayer)
+      {
+        pcRefPic->subLayerNonReferencePictureDueToSTSA = true;
+      }
+    }
+  }
+}
+#endif
+
+
 /** Function for marking the reference pictures when an IDR/CRA/CRANT/BLA/BLANT is encountered.
  * \param pocCRA POC of the CRA/CRANT/BLA/BLANT picture
  * \param bRefreshPending flag indicating if a deferred decoding refresh is pending

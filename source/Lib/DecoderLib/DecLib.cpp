@@ -1230,6 +1230,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
   else
   {
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+      CHECK(nalu.m_nalUnitType != m_pcPic->slices[m_uiSliceSegmentIdx - 1]->getNalUnitType(), "The value of NAL unit type shall be the same for all coded slice NAL units of a picture");
+#endif
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
 
@@ -1505,6 +1508,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->layer       = pcSlice->getTLayer();
   m_pcPic->referenced  = true;
   m_pcPic->layer       = nalu.m_temporalId;
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+  m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
+#endif
 
 #if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
   if (pcSlice->getPPS()->getRectSliceFlag())
@@ -1549,6 +1555,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
   pcSlice->constructRefPicList(m_cListPic);
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+  pcSlice->checkSTSA(m_cListPic);
+#endif
 
 #if JVET_O1164_RPR
 #if JVET_O0299_APS_SCALINGLIST

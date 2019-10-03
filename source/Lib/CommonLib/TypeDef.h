@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS              1 // JVET-O0235: NAL unit type constraints
+
 #define JVET_O0245_VPS_DPS_APS                            1 // JVET-O0245: constraints for VPS, DPS, and APS
 
 #define JVET_O0044_MULTI_SUB_PROFILE                      1 // JVET-O0044: Zero or more sub profile fields

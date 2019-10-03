@@ -169,8 +169,13 @@ void readNalUnitHeader(InputNALUnit& nalu)
     }
     else
     {
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0"); 
+#else
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
          , "Invalid NAL type");
+#endif
     }
   }
 }

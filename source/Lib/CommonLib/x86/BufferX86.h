@@ -277,12 +277,20 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
 
   for (int y = 0; y < 6; y++)
   {
-    __m128i shiftSrcY0Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY0Tmp)), shift4);
-    __m128i shiftSrcY1Tmp = _mm_srai_epi16(_mm_loadu_si128((__m128i*)(srcY1Tmp)), shift4);
-    __m128i loadGradX0 = _mm_loadu_si128((__m128i*)(gradX0));
-    __m128i loadGradX1 = _mm_loadu_si128((__m128i*)(gradX1));
-    __m128i loadGradY0 = _mm_loadu_si128((__m128i*)(gradY0));
-    __m128i loadGradY1 = _mm_loadu_si128((__m128i*)(gradY1));
+    // Note: loading 8 values also works, but valgrind doesn't like it
+    auto load6values = [](const Pel *ptr) {
+      __m128i a = _mm_loadl_epi64((const __m128i *) ptr);
+      __m128i b = _mm_cvtsi32_si128(*(uint32_t *) (ptr + 4));
+      return _mm_unpacklo_epi64(a, b);
+    };
+
+    __m128i shiftSrcY0Tmp = _mm_srai_epi16(load6values(srcY0Tmp), shift4);
+    __m128i shiftSrcY1Tmp = _mm_srai_epi16(load6values(srcY1Tmp), shift4);
+    __m128i loadGradX0    = load6values(gradX0);
+    __m128i loadGradX1    = load6values(gradX1);
+    __m128i loadGradY0    = load6values(gradY0);
+    __m128i loadGradY1    = load6values(gradY1);
+
     __m128i subTemp1 = _mm_sub_epi16(shiftSrcY1Tmp, shiftSrcY0Tmp);
     __m128i packTempX = _mm_srai_epi16(_mm_add_epi16(loadGradX0, loadGradX1), shift5);
     __m128i packTempY = _mm_srai_epi16(_mm_add_epi16(loadGradY0, loadGradY1), shift5);

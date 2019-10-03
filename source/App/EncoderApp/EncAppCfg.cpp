@@ -2257,6 +2257,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+  #if HEVC_SEI
   if( m_masteringDisplay.colourVolumeSEIEnabled )
   {
     for(uint32_t idx=0; idx<6; idx++)
@@ -2269,7 +2270,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if HEVC_SEI
   if( m_toneMappingInfoSEIEnabled && !m_toneMapCancelFlag )
   {
     if( m_toneMapModelId == 2 && !cfg_startOfCodedInterval.values.empty() )

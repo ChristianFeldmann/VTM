@@ -267,7 +267,7 @@ private:
     int getNumCompletedSubParts(ISPType splitType, int iModeIdx)
     {
       const unsigned st = splitType - 1;
-      CHECK(st < 0 || st > 1, "The split type is invalid!");
+      //      CHECK(st < 0 || st > 1, "The split type is invalid!");
       CHECK(iModeIdx < 0 || iModeIdx >(NUM_LUMA_MODE - 1), "The modeIdx is invalid");
       return modeHasBeenTested[iModeIdx][st] ? intraMode[iModeIdx][st].numCompSubParts : -1;
     }

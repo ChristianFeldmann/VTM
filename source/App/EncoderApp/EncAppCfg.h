@@ -255,7 +255,7 @@ protected:
 #if HEVC_SEI
   SEIMasteringDisplay m_masteringDisplay;
 #endif
-  
+
   bool      m_bUseAdaptiveQP;                                 ///< Flag for enabling QP adaptation based on a psycho-visual model
   int       m_iQPAdaptationRange;                             ///< dQP range by QP adaptation
 #if ENABLE_QPA
@@ -309,7 +309,7 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING  
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_RdpcmMode;
 #endif
 #if JVET_O0119_BASE_PALETTE_444
@@ -639,7 +639,7 @@ protected:
 #if HEVC_SEI
   std::string m_colourRemapSEIFileRoot;
 #endif
-  
+
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.
   uint32_t        m_summaryVerboseness;                           ///< Specifies the level of the verboseness of the text output.

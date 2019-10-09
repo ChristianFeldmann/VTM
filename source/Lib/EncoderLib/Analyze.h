@@ -541,18 +541,18 @@ public:
               for (int i = 0; i < 1; i++)
               {
                 dDeltaE[i] = getDeltaE() / (double)getNumPic();
-                
+
                 copy(reinterpret_cast<uint8_t *>(&dDeltaE[i]),
                      reinterpret_cast<uint8_t *>(&dDeltaE[i]) + sizeof(dDeltaE[i]),
                      reinterpret_cast<uint8_t *>(&xDeltaE[i]));
               }
-              
+
               double dPsnrL[MAX_NUM_COMPONENT];
               uint64_t xPsnrL[MAX_NUM_COMPONENT];
               for (int i = 0; i < 1; i++)
               {
                 dPsnrL[i] = getPsnrL() / (double)getNumPic();
-                
+
                 copy(reinterpret_cast<uint8_t *>(&dPsnrL[i]),
                      reinterpret_cast<uint8_t *>(&dPsnrL[i]) + sizeof(dPsnrL[i]),
                      reinterpret_cast<uint8_t *>(&xPsnrL[i]));

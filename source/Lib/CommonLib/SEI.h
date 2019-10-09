@@ -386,7 +386,7 @@ public:
     , m_duplicateFlag(false)
   {}
   virtual ~SEIFrameFieldInfo() {}
-  
+
   bool m_fieldPicFlag;
   bool m_bottomFieldFlag;
   bool m_pairingIndicatedFlag;

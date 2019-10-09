@@ -269,7 +269,7 @@ struct AlfParam
     if( memcmp( newFilterFlag, other.newFilterFlag, sizeof( newFilterFlag ) ) )
     {
       return false;
-    }    
+    }
     if( numAlternativesChroma != other.numAlternativesChroma )
     {
       return false;

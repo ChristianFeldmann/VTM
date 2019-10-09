@@ -173,7 +173,7 @@ uint32_t DecApp::decode()
         {
 #if JVET_O0610_DETECT_AUD
           // check if new picture was detected at an access unit delimiter NALU
-          if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER) 
+          if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER)
           {
             msg( ERROR, "Error: New picture detected without access unit delimiter. VVC requires the presence of access unit delimiters.\n");
           }
@@ -683,7 +683,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
         }
 #endif
-                                         
+
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 

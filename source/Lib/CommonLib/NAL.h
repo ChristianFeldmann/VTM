@@ -69,7 +69,7 @@ struct NALUnit
     NalUnitType nalUnitType,
     int         temporalId = 0,
 #if JVET_O0179
-    uint32_t nuhReservedZeroBit = 0, 
+    uint32_t nuhReservedZeroBit = 0,
     uint32_t forbiddenZeroBit = 0,
 #endif
     int         nuhLayerId = 0)

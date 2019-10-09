@@ -190,7 +190,7 @@ public:
     if( memcmp( m_scalingListCoef, other.m_scalingListCoef, sizeof( m_scalingListCoef ) ) )
     {
       return false;
-    }     
+    }
 
     return true;
   }
@@ -488,7 +488,7 @@ public:
     if( memcmp( reshaperModelBinCWDelta, other.reshaperModelBinCWDelta, sizeof( reshaperModelBinCWDelta ) ) )
     {
       return false;
-    }        
+    }
 
     return true;
   }
@@ -1380,7 +1380,7 @@ private:
   std::vector<int> m_numBrickRowsMinus2;
 #else
   std::vector<int> m_numBrickRowsMinus1;
-#endif 
+#endif
   std::vector<std::vector<int>> m_brickRowHeightMinus1;
   bool             m_singleBrickPerSliceFlag;
   bool             m_rectSliceFlag;
@@ -1635,7 +1635,7 @@ public:
   uint32_t                getPPSSixMinusMaxNumMergeCandPlus1() const                      { return m_PPSSixMinusMaxNumMergeCandPlus1;     }
   void                    setPPSSixMinusMaxNumMergeCandPlus1(uint32_t u)                  { m_PPSSixMinusMaxNumMergeCandPlus1 = u;        }
   uint32_t                getPPSFiveMinusMaxNumSubblockMergeCandPlus1() const             { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }
-  void                    setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uint32_t u)         { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }  
+  void                    setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uint32_t u)         { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }
   uint32_t                getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() const       { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
   void                    setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uint32_t u)   { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
 #endif
@@ -2068,7 +2068,7 @@ public:
   void                        setLatestDRAPPOC ( int i )                             { m_latestDRAPPOC = i;                                          }
   int                         getLatestDRAPPOC () const                              { return m_latestDRAPPOC;                                       }
   bool                        cvsHasPreviousDRAP() const                             { return m_latestDRAPPOC != MAX_INT;                            }
-  bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder ); 
+  bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder );
   bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
   void                        checkConformanceForDRAP( uint32_t temporalId );
 #endif
@@ -2387,7 +2387,7 @@ public:
   void checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals )
   {
     int apsId = ( aps->getAPSId() << NUM_APS_TYPE_LEN ) + (int)aps->getAPSType();
-    
+
     if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
     {
       CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exists" );

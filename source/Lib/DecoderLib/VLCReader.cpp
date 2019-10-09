@@ -426,19 +426,19 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
     READ_UVLC( uiCode, "pps_five_minus_max_num_subblock_merge_cand_plus1"); pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uiCode);
-    READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode); 
-  } 
+    READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode);
+  }
   else
   {
-    pcPPS->setPPSDepQuantEnabledIdc(0); 
+    pcPPS->setPPSDepQuantEnabledIdc(0);
     pcPPS->setPPSRefPicListSPSIdc0(0);
     pcPPS->setPPSRefPicListSPSIdc1(0);
     pcPPS->setPPSTemporalMVPEnabledIdc(0);
-    pcPPS->setPPSMvdL1ZeroIdc(0); 
-    pcPPS->setPPSCollocatedFromL0Idc(0); 
-    pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0); 
-    pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(0); 
-    pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0); 
+    pcPPS->setPPSMvdL1ZeroIdc(0);
+    pcPPS->setPPSCollocatedFromL0Idc(0);
+    pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
+    pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(0);
+    pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0);
   }
 #endif
 
@@ -605,7 +605,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       std::vector<int> numBrickRowsMinus2(numTilesInPic);
 #else
       std::vector<int>  numBrickRowsMinus1 (numTilesInPic);
-#endif 
+#endif
       std::vector<std::vector<int>>  brickRowHeightMinus1 (numTilesInPic);
 #if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
       int m_maxCUHeight = parameterSetManager->getSPS(pcPPS->getSPSId())->getMaxCUHeight();
@@ -728,7 +728,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       pcPPS->setNumBrickRowsMinus2(numBrickRowsMinus2);
 #else
       pcPPS->setNumBrickRowsMinus1(numBrickRowsMinus1);
-#endif 
+#endif
       pcPPS->setBrickRowHeightMinus1(brickRowHeightMinus1);
     }
     READ_FLAG (uiCode, "single_brick_per_slice_flag" );         pcPPS->setSingleBrickPerSliceFlag(uiCode == 1);
@@ -2272,7 +2272,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           uiCode = pps->getPPSRefPicListSPSIdc0() - 1;
         }
-#else   
+#else
         READ_FLAG(uiCode, "ref_pic_list_sps_flag[0]");
 #endif
       }
@@ -2586,9 +2586,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         uiCode = pps->getPPSMvdL1ZeroIdc() - 1;
       }
-#else   
+#else
       READ_FLAG( uiCode, "mvd_l1_zero_flag" );
-#endif      
+#endif
 
       pcSlice->setMvdL1ZeroFlag( (uiCode ? true : false) );
     }
@@ -2709,7 +2709,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           uiCode = pps->getPPSFiveMinusMaxNumSubblockMergeCandPlus1() - 1;
         }
-#else        
+#else
         READ_UVLC( uiCode, "five_minus_max_num_affine_merge_cand" );
 #endif
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
@@ -3525,14 +3525,14 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 #endif
   }
 
-  int symbol = ( ( 1 << numLeadingBits ) - 1 ) << k; 
+  int symbol = ( ( 1 << numLeadingBits ) - 1 ) << k;
   if ( numLeadingBits + k > 0)
   {
     uint32_t bins;
     READ_CODE( numLeadingBits + k, bins, "alf_coeff_abs_suffix" );
     symbol += bins;
   }
-  
+
   if ( signed_val && symbol != 0 )
   {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS

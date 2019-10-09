@@ -682,7 +682,7 @@ static bool writePlane(ostream& fd, const Pel* src,
     }
 
 #if JVET_O1164_RPR
-    // here height444 and orgHeight are luma heights 
+    // here height444 and orgHeight are luma heights
     for( uint32_t y444 = height444; y444 < orgHeight; y444++ )
     {
       if( ( y444 & mask_y_file ) == 0 ) // if this is chroma, determine whether to skip every other row

@@ -2799,7 +2799,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
 }
 
 #if JVET_O0625_ALF_PADDING
-void EncAdaptiveLoopFilter::getBlkStats( AlfCovariance* alfCovariance, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, 
+void EncAdaptiveLoopFilter::getBlkStats( AlfCovariance* alfCovariance, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride,
   Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos, const int alfBryList[4] )
 #else
 void EncAdaptiveLoopFilter::getBlkStats(AlfCovariance* alfCovariance, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos)
@@ -2827,7 +2827,7 @@ void EncAdaptiveLoopFilter::getBlkStats(AlfCovariance* alfCovariance, const AlfF
     alfBryDist[1] = alfBryList[1] != ALF_NONE_BOUNDARY ? ( i + areaDst.y - alfBryList[1] ) : ALF_NONE_BOUNDARY;
 
     if ( vbDistance >= 0 && vbDistance < vbHeight && alfBryDist[1] >= -vbHeight && alfBryDist[1] < 0 )
-    { 
+    {
       /* between bottom boundary and ALF virtual boundary */
       if ( alfBryDist[1] < -vbHalfHeight )
       {
@@ -2932,7 +2932,7 @@ void EncAdaptiveLoopFilter::getBlkStats(AlfCovariance* alfCovariance, const AlfF
 }
 
 #if JVET_O0625_ALF_PADDING
-void EncAdaptiveLoopFilter::calcCovariance( int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, 
+void EncAdaptiveLoopFilter::calcCovariance( int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride,
   const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance, const int alfBryDist[4] )
 #else
 void EncAdaptiveLoopFilter::calcCovariance(int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance)

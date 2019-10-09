@@ -168,7 +168,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );
   m_cEncLib.setDecodingRefreshType                               ( m_iDecodingRefreshType );
   m_cEncLib.setGOPSize                                           ( m_iGOPSize );
-#if JVET_N0494_DRAP  
+#if JVET_N0494_DRAP
   m_cEncLib.setDrapPeriod                                        ( m_drapPeriod );
 #endif
   m_cEncLib.setReWriteParamSets                                  ( m_rewriteParamSets );
@@ -323,9 +323,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setDMVR                                              ( m_DMVR );
   m_cEncLib.setMMVD                                              ( m_MMVD );
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
-#if !JVET_O1136_TS_BDPCM_SIGNALLING 
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   m_cEncLib.setRDPCM                                             ( m_RdpcmMode );
-#endif  
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   m_cEncLib.setPLTMode                                           ( m_PLTMode );
 #endif

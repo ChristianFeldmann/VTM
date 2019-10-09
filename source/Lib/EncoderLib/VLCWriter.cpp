@@ -383,11 +383,11 @@ void HLSWriter::codePPS( const PPS* pcPPS )
           WRITE_UVLC(pcPPS->getNumBrickRowsMinus2(i), "num_brick_rows_minus2 [i]");
           for (int j = 0; j <= pcPPS->getNumBrickRowsMinus2(i); j++)
             WRITE_UVLC(pcPPS->getBrickRowHeightMinus1(i, j), "brick_row_height_minus1 [i][j]");
-#else                    
+#else
           WRITE_UVLC( pcPPS->getNumBrickRowsMinus1(i), "num_brick_rows_minus1 [i]" );
           for(int j = 0; j < pcPPS->getNumBrickRowsMinus1(i); j++ )
             WRITE_UVLC( pcPPS->getBrickRowHeightMinus1(i,j), "brick_row_height_minus1 [i][j]" );
-#endif 
+#endif
         }
       }
     }
@@ -925,7 +925,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
 #if JVET_O1164_PS
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
-  WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );  
+  WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
 #else
   WRITE_UVLC( pcSPS->getPicWidthInLumaSamples (),   "pic_width_in_luma_samples" );
   WRITE_UVLC( pcSPS->getPicHeightInLumaSamples(),   "pic_height_in_luma_samples" );
@@ -1469,7 +1469,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc0())
         {
           WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
-        } 
+        }
 #else
         WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
 #endif
@@ -1538,7 +1538,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
         {
           WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
-        } 
+        }
 #else
           WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
 #endif
@@ -1729,7 +1729,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
-#if JVET_O0238_PPS_OR_SLICE      
+#if JVET_O0238_PPS_OR_SLICE
       if (!pcSlice->getPPS()->getPPSSixMinusMaxNumMergeCandPlus1())
       {
         WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
@@ -1784,7 +1784,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       {
         CHECK(pcSlice->getMaxNumMergeCand() < pcSlice->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");
 #if JVET_O0238_PPS_OR_SLICE
-        if (!pcSlice->getPPS()->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1()) 
+        if (!pcSlice->getPPS()->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
         {
           WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");
         }

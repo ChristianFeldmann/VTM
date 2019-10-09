@@ -845,7 +845,7 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     sei.m_numDecodingUnitsMinus1 = symbol;
     sei.m_numNalusInDuMinus1.resize(sei.m_numDecodingUnitsMinus1 + 1 );
     sei.m_duCpbRemovalDelayMinus1.resize( sei.m_numDecodingUnitsMinus1 + 1 );
-    
+
     sei_read_flag( pDecodedMessageOutputStream, symbol, "du_common_cpb_removal_delay_flag" );
     sei.m_duCommonCpbRemovalDelayFlag = symbol;
     if( sei.m_duCommonCpbRemovalDelayFlag )

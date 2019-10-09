@@ -128,12 +128,12 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
       __m128i hv  = _mm_hadd_epi16(ver, hor);
       __m128i di  = _mm_hadd_epi16(di0, di1);
       int leftPos = blkDst.pos().x + j;
-      if ( ( leftPos > 0 ) && ( leftPos == alfBryList[2] ) ) //left: cut the left one value 
+      if ( ( leftPos > 0 ) && ( leftPos == alfBryList[2] ) ) //left: cut the left one value
       {
         hv = _mm_blend_epi16(hv, mmZero, 0x11);
         di = _mm_blend_epi16(di, mmZero, 0x11);
       }
-      else if ( ( leftPos > 0 ) && ( leftPos == alfBryList[3] ) ) //right: cut the right values 
+      else if ( ( leftPos > 0 ) && ( leftPos == alfBryList[3] ) ) //right: cut the right values
       {
         hv = _mm_blend_epi16(hv, mmZero, 0xEE);
         di = _mm_blend_epi16(di, mmZero, 0xEE);
@@ -158,7 +158,7 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
 
 #if JVET_O0625_ALF_PADDING
       uint32_t horBlkStride = 8, horBlkStride2 = 8, verBlkStride = 8, verBlkStride2 = 8;
-      
+
       //left
       if ((alfBryList[2] != ALF_NONE_BOUNDARY) && (j + blkDst.pos().x == alfBryList[2]))
       {
@@ -201,7 +201,7 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
         x7 = _mm_setzero_si128();
         if (((alfBryList[1] - 4) & (vbCTUHeight - 1)) == vbPos)  //between vb and bottom boundary
         {
-          x4 = _mm_setzero_si128();          
+          x4 = _mm_setzero_si128();
           verBlkStride2 = 4;
         }
         else
@@ -595,7 +595,7 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           __m128i xmm41Tmp = _mm_shuffle_epi8(cur, mmMask);
           xmm41 = _mm_blend_epi16(xmm41, xmm41Tmp, 0xC0);
           xmm51 = _mm_blend_epi16(xmm51, cur, 0x80);
-        }        
+        }
 #endif
         __m128i accumA = mmOffset;
         __m128i accumB = mmOffset;

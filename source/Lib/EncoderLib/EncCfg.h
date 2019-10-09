@@ -333,9 +333,9 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING  
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_RdpcmMode;
-#endif  
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
 #endif
@@ -735,7 +735,7 @@ protected:
   int                          m_cropOffsetRight;
   int                          m_cropOffsetBottom;
   bool                         m_calculateHdrMetrics;
-#endif  
+#endif
 #if JVET_O1164_RPR
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
@@ -1003,10 +1003,10 @@ public:
   bool      getMMVD                         ()         const { return m_MMVD; }
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
- #if !JVET_O1136_TS_BDPCM_SIGNALLING 
+ #if !JVET_O1136_TS_BDPCM_SIGNALLING
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
- #endif 
+ #endif
 #if JVET_O0119_BASE_PALETTE_444
   void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
   unsigned  getPLTMode                   ()         const { return m_PLTMode; }

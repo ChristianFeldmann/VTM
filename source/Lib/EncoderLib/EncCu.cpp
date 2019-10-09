@@ -1603,7 +1603,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   if( chromaNotSplit )
   {
 #if JVET_O0050_LOCAL_DUAL_TREE
-    //Note: In local dual tree region, the chroma CU refers to the central luma CU's QP. 
+    //Note: In local dual tree region, the chroma CU refers to the central luma CU's QP.
     //If the luma CU QP shall be predQP (no residual in it and before it in the QG), it must be revised to predQP before encoding the chroma CU
     //Otherwise, the chroma CU uses predQP+deltaQP in encoding but is decoded as using predQP, thus causing encoder-decoded mismatch on chroma qp.
     if( tempCS->pps->getUseDQP() )
@@ -1638,7 +1638,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
           parentCS = parentCS->parent;
         }
       }
-      
+
       //revise luma CU qp before the first luma CU with residual in the SCIPU to predQP
       if( !deltaQpCodedBeforeThisNode )
       {
@@ -1646,7 +1646,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
         const CodingUnit* cuFirst = qgCS->getCU( CHANNEL_TYPE_LUMA );
         CHECK( cuFirst->lumaPos() != partitioner.currQgPos, "First cu of the Qg is wrong" );
         int predQp = CU::predictQP( *cuFirst, qgCS->prevQP[CHANNEL_TYPE_LUMA] );
-        
+
         //revise to predQP
         int firstCuHasResidual = (int)tempCS->cus.size();
         for( int i = 0; i < tempCS->cus.size(); i++ )

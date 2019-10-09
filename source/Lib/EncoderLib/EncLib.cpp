@@ -448,7 +448,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ER_CHROMA_QP_WCG_PPS
   if( m_wcgChromaQpControl.isEnabled() )
   {
-#if JVET_O0299_APS_SCALINGLIST  
+#if JVET_O0299_APS_SCALINGLIST
     xInitScalingLists( sps0, *m_apsMap.getPS( 1 ) );
     xInitScalingLists( sps0, aps0 );
 #else
@@ -561,7 +561,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
   }
   else if(getUseScalingListId() == SCALING_LIST_FILE_READ)
   {
-#if JVET_O0299_APS_SCALINGLIST 
+#if JVET_O0299_APS_SCALINGLIST
     aps.getScalingList().setDefaultScalingList();
     CHECK( aps.getScalingList().xParseScalingList( getScalingListFileName() ), "Error Parsing Scaling List Input File" );
     aps.getScalingList().checkDcOfMatrix();
@@ -595,7 +595,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     THROW("error : ScalingList == " << getUseScalingListId() << " not supported\n");
   }
 
-#if JVET_O0299_APS_SCALINGLIST 
+#if JVET_O0299_APS_SCALINGLIST
   if( getUseScalingListId() == SCALING_LIST_FILE_READ )
 #else
   if (getUseScalingListId() == SCALING_LIST_FILE_READ && sps.getScalingListPresentFlag())
@@ -611,7 +611,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
         {
           continue;
         }
-#if JVET_O0299_APS_SCALINGLIST 
+#if JVET_O0299_APS_SCALINGLIST
         aps.getScalingList().checkPredMode( sizeId, listId );
 #else
         sps.getScalingList().checkPredMode( sizeId, listId );
@@ -1864,7 +1864,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
         numBrickRowsMinus2[tileIdx] = brickSplit.second.m_numSplits - 1;
 #else
         numBrickRowsMinus1[tileIdx]=brickSplit.second.m_numSplits;
-#endif 
+#endif
         brickRowHeightMinus1[tileIdx].resize(brickSplit.second.m_numSplits);
         for (int i=0; i<brickSplit.second.m_numSplits; i++)
         {
@@ -1879,7 +1879,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setNumBrickRowsMinus2(numBrickRowsMinus2);
 #else
     pps.setNumBrickRowsMinus1(numBrickRowsMinus1);
-#endif 
+#endif
     pps.setBrickRowHeightMinus1(brickRowHeightMinus1);
 
     // check brick dimensions
@@ -1944,9 +1944,9 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
           int cumulativeHeight=0;
 #if JVET_O0173_O0176_O0338_NUMBRICK_M2
           for (int i = 0; i <= pps.getNumBrickRowsMinus2(tileIdx); i++)
-#else 
+#else
           for (int i = 0; i < pps.getNumBrickRowsMinus1(tileIdx); i++)
-#endif 
+#endif
           {
             cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
           }

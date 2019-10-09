@@ -2127,14 +2127,14 @@ void InterPrediction::xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicLis
 #if JVET_O1164_PS
     if( pu.cs->sps->getWrapAroundEnabledFlag() )
     {
-      wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps );   
+      wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps );
     }
     else
     {
       clipMv( cMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
     }
 #else
-    if( pu.cs->sps->getWrapAroundEnabledFlag() ) 
+    if( pu.cs->sps->getWrapAroundEnabledFlag() )
     {
       wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps);
     }

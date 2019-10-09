@@ -321,7 +321,7 @@
 
 #define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
 
-#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
+#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag
 
 #define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
 
@@ -1076,7 +1076,7 @@ enum NalUnitType
   NAL_UNIT_CODED_SLICE_RASL,        // 2
   NAL_UNIT_CODED_SLICE_RADL,        // 3
 
-  NAL_UNIT_RESERVED_VCL_4, 
+  NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
   NAL_UNIT_RESERVED_VCL_7,

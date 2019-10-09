@@ -789,7 +789,7 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag)
   cFillPic->getRecoBuf().Y().fill(yFill);
   cFillPic->getRecoBuf().Cb().fill(cFill);
   cFillPic->getRecoBuf().Cr().fill(cFill);
-   
+
   //  for(int ctuRsAddr=0; ctuRsAddr<cFillPic->getNumberOfCtusInFrame(); ctuRsAddr++)  { cFillPic->getCtu(ctuRsAddr)->initCtu(cFillPic, ctuRsAddr); }
   cFillPic->referenced = true;
   cFillPic->longTerm = longTermFlag;
@@ -1180,7 +1180,7 @@ void DecLib::xActivateParameterSets()
 #endif
 
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
-  {    
+  {
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
   }
 #endif
@@ -1313,7 +1313,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
 #if JVET_N0865_NONSYNTAX
     if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
-        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) || 
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence))
     {
       m_apcSlicePilot->setNoIncorrectPicOutputFlag(true);
@@ -1892,7 +1892,7 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setTemporalId(nalu.m_temporalId);
 #if JVET_O0245_VPS_DPS_APS
   aps->setLayerId( nalu.m_nuhLayerId );
-  m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );  
+  m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
 #endif
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }

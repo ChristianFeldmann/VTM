@@ -117,7 +117,7 @@ protected:
 #endif
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
 #endif
-  
+
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps);
 #else

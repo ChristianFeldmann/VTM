@@ -78,7 +78,7 @@ Slice::Slice()
 , m_noOutputPriorPicsFlag         ( false )
 #if JVET_N0865_NONSYNTAX
 , m_noIncorrectPicOutputFlag      ( false )
-#else 
+#else
 , m_noRaslOutputFlag              ( false )
 #endif
 , m_handleCraAsCvsStartFlag            ( false )
@@ -905,7 +905,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
 #if JVET_OO147_LEADING_PIC_CHECKING
-    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) && 
+    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) &&
         (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL)  )
     {
       if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
@@ -1255,14 +1255,14 @@ bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
   return false;
 }
 
-bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )  
-{ 
+bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )
+{
   if (!getEnableDRAPSEI())
   {
     return false;
   }
-  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) || 
-         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) ); 
+  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) ||
+         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) );
 }
 
 void Slice::checkConformanceForDRAP( uint32_t temporalId )
@@ -1271,9 +1271,9 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
   {
     return;
   }
- 
+
   if (isDRAP())
-  {    
+  {
     if (!(getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_TRAIL ||
           getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_STSA))
     {
@@ -1285,7 +1285,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
     {
-      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC()) 
+      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC())
       {
         msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
                       "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
@@ -1293,7 +1293,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_1); i++)
     {
-      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC()) 
+      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC())
       {
         msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
                       "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
@@ -1301,7 +1301,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
   }
 
-  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC()) 
+  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC())
   {
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
     {
@@ -1350,7 +1350,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while (iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
-#if JVET_N0494_DRAP 
+#if JVET_N0494_DRAP
       if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
 #else
       if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii))
@@ -2656,7 +2656,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
   }
 
   freeScaledRefPicList( scaledRefPic );
-  
+
   for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
   {
     if( refList == 1 && m_eSliceType != B_SLICE )
@@ -2680,7 +2680,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
       else
       {
         int poc = m_apcRefPicList[refList][rIdx]->getPOC();
-        // check whether the reference picture has already been scaled 
+        // check whether the reference picture has already been scaled
         for( i = 0; i < MAX_NUM_REF; i++ )
         {
           if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc )

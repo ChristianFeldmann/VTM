@@ -2956,7 +2956,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
         pu.mhIntraFlag = true;
         pu.regularMergeFlag = false;
         pu.intraDir[0] = PLANAR_IDX;
-        //        CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
+        CHECK(pu.intraDir[0]<0 || pu.intraDir[0]>(NUM_LUMA_MODE - 1), "out of intra mode");
         pu.intraDir[1] = DM_CHROMA_IDX;
       }
       else if (RdModeList[uiMrgHADIdx].isMMVD)

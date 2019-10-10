@@ -897,14 +897,14 @@ void TrQuant::xT( const TransformUnit &tu, const ComponentID &compID, const CPel
   {
     const int      shift              = ((floorLog2(width )) + bitDepth + TRANSFORM_MATRIX_SHIFT) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
-    //    CHECKD( ( transformWidthIndex < 0 ), "There is a problem with the width." );
+    CHECKD( ( transformWidthIndex < 0 ), "There is a problem with the width." );
     fastFwdTrans[trTypeHor][transformWidthIndex]( block, dstCoeff.buf, shift, 1, 0, skipWidth );
   }
   else //if (iWidth == 1) //1-D vertical transform
   {
     int shift = ( ( floorLog2(height) ) + bitDepth + TRANSFORM_MATRIX_SHIFT ) - maxLog2TrDynamicRange + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
-    //    CHECKD( ( transformHeightIndex < 0 ), "There is a problem with the height." );
+    CHECKD( ( transformHeightIndex < 0 ), "There is a problem with the height." );
     fastFwdTrans[trTypeVer][transformHeightIndex]( block, dstCoeff.buf, shift, 1, 0, skipHeight );
   }
 }
@@ -963,14 +963,14 @@ void TrQuant::xIT( const TransformUnit &tu, const ComponentID &compID, const CCo
   {
     int shift = ( TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1 ) - bitDepth + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
-    //    CHECK( ( transformHeightIndex < 0 ), "There is a problem with the height." );
+    CHECK( ( transformHeightIndex < 0 ), "There is a problem with the height." );
     fastInvTrans[trTypeVer][transformHeightIndex]( pCoeff.buf, block, shift + 1, 1, 0, skipHeight, clipMinimum, clipMaximum );
   }
   else //if(iHeight == 1) //1-D horizontal transform
   {
     const int      shift              = ( TRANSFORM_MATRIX_SHIFT + maxLog2TrDynamicRange - 1 ) - bitDepth + COM16_C806_TRANS_PREC;
     CHECK( shift < 0, "Negative shift" );
-    //    CHECK( ( transformWidthIndex < 0 ), "There is a problem with the width." );
+    CHECK( ( transformWidthIndex < 0 ), "There is a problem with the width." );
     fastInvTrans[trTypeHor][transformWidthIndex]( pCoeff.buf, block, shift + 1, 1, 0, skipWidth, clipMinimum, clipMaximum );
   }
 

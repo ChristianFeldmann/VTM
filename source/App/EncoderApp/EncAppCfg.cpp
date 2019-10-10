@@ -35,7 +35,6 @@
     \brief    Handle encoder configuration parameters
 */
 
-
 #include "EncAppCfg.h"
 
 #include <stdio.h>
@@ -3941,13 +3940,13 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "RPR:%d", 0 );
   }
 #endif
-
-#if EXTENSION_360_VIDEO
-  m_ext360.outputConfigurationSummary();
-#endif
 #if JVET_O0549_ENCODER_ONLY_FILTER
   msg(VERBOSE, "TemporalFilter:%d ", m_gopBasedTemporalFilterEnabled);
 #endif
+#if EXTENSION_360_VIDEO
+  m_ext360.outputConfigurationSummary();
+#endif
+
   msg( VERBOSE, "\n\n");
 
   msg( NOTICE, "\n");

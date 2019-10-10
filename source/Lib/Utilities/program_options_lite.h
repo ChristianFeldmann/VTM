@@ -114,7 +114,7 @@ namespace df
     template<typename T>
     struct Option : public OptionBase
     {
-      Option(const std::string& name, T& storage, T default_val, const std::string& desc) // qqqqq
+      Option(const std::string& name, T& storage, T default_val, const std::string& desc)
       : OptionBase(name, desc), opt_storage(storage), opt_default_val(default_val)
       {}
 

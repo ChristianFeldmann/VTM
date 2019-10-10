@@ -35,7 +35,6 @@
     \brief    Handle encoder configuration parameters
 */
 
-
 #include "EncAppCfg.h"
 
 #include <stdio.h>

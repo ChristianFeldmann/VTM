@@ -1366,6 +1366,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   m_pcInterSearch->resetAffineMVList();
 #if JVET_O0592_ENC_ME_IMP
   m_pcInterSearch->resetUniMvList();
+  ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
 #endif
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
 #if JVET_O0119_BASE_PALETTE_444

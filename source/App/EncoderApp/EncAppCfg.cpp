@@ -180,7 +180,7 @@ EncAppCfg::~EncAppCfg()
     m_targetPivotValue = NULL;
   }
 #endif
-  
+
 #if ENABLE_TRACING
   tracing_uninit(g_trace_ctx);
 #endif
@@ -510,6 +510,18 @@ uint32_t SMultiValueInput<uint32_t>::readValue(const char *&pStr, bool &bSuccess
   return val;
 }
 
+#if JVET_O0044_MULTI_SUB_PROFILE
+template<>
+uint8_t SMultiValueInput<uint8_t>::readValue(const char *&pStr, bool &bSuccess)
+{
+  char *eptr;
+  uint32_t val = strtoul(pStr, &eptr, 0);
+  pStr = eptr;
+  bSuccess = !(*eptr != 0 && !isspace(*eptr) && *eptr != ',') && !(val<minValIncl || val>maxValIncl);
+  return val;
+}
+#endif
+
 template<>
 int SMultiValueInput<int>::readValue(const char *&pStr, bool &bSuccess)
 {
@@ -767,6 +779,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosX       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosY       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  SMultiValueInput<uint8_t> cfg_SubProfile(0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+#endif
+
   int warnUnknowParameter = 0;
 
 #if ENABLE_TRACING
@@ -872,7 +889,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
-  ("SubProfile",                                      m_subProfile,                                        0u, "Sub-profile idc")
+#if JVET_O0044_MULTI_SUB_PROFILE
+  ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
+#else
+    ("SubProfile", m_subProfile, 0u, "Sub-profile idc")
+#endif
   ("EnableDecodingParameterSet",                      m_decodingParameterSetEnabled,                    false, "Enables writing of Decoding Parameter Set")
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
@@ -944,9 +965,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
-#if !JVET_O1136_TS_BDPCM_SIGNALLING    
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   ( "RDPCM",                                          m_RdpcmMode,                                       false, "RDPCM")
-#endif    
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
 #endif
@@ -1180,6 +1201,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TileUniformSpacing",                              m_tileUniformSpacingFlag,                         false,      "Indicates that tile columns and rows are distributed uniformly")
   ("NumTileColumnsMinus1",                            m_numTileColumnsMinus1,                               0,          "Number of tile columns in a picture minus 1")
   ("NumTileRowsMinus1",                               m_numTileRowsMinus1,                                  0,          "Number of rows in a picture minus 1")
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  ("UniformTileColsWidthMinus1",                      m_uniformTileColsWidthMinus1,                        -1, "Tile width to use for uniform tiles minus 1")
+  ("UniformTileRowHeightMinus1",                      m_uniformTileRowHeightMinus1,                        -1, "Tile height to use for uniform tiles minus 1")
+#endif
   ("TileColumnWidthArray",                            cfg_ColumnWidth,                        cfg_ColumnWidth, "Array containing tile column width values in units of CTU")
   ("TileRowHeightArray",                              cfg_RowHeight,                            cfg_RowHeight, "Array containing tile row height values in units of CTU")
   ("LFCrossTileBoundaryFlag",                         m_bLFCrossTileBoundaryFlag,                        true, "1: cross-tile-boundary loop filtering. 0:non-cross-tile-boundary loop filtering")
@@ -1440,7 +1465,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
-   
+
 #if JVET_O1164_RPR
   m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
   if( m_fractionOfFrames != 1.0 )
@@ -1453,7 +1478,49 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
   }
 #endif
-
+#if JVET_N0867_TEMP_SCAL_HRD
+  m_bpDeltasGOPStructure = false;
+  if(m_iGOPSize == 16)
+  {
+    if ((m_GOPList[0].m_POC == 16 && m_GOPList[0].m_temporalId == 0 )
+        && (m_GOPList[1].m_POC == 8 && m_GOPList[1].m_temporalId == 1 )
+        && (m_GOPList[2].m_POC == 4 && m_GOPList[2].m_temporalId == 2 )
+        && (m_GOPList[3].m_POC == 2 && m_GOPList[3].m_temporalId == 3 )
+        && (m_GOPList[4].m_POC == 1 && m_GOPList[4].m_temporalId == 4 )
+        && (m_GOPList[5].m_POC == 3 && m_GOPList[5].m_temporalId == 4 )
+        && (m_GOPList[6].m_POC == 6 && m_GOPList[6].m_temporalId == 3 )
+        && (m_GOPList[7].m_POC == 5 && m_GOPList[7].m_temporalId == 4 )
+        && (m_GOPList[8].m_POC == 7 && m_GOPList[8].m_temporalId == 4 )
+        && (m_GOPList[9].m_POC == 12 && m_GOPList[9].m_temporalId == 2 )
+        && (m_GOPList[10].m_POC == 10 && m_GOPList[10].m_temporalId == 3 )
+        && (m_GOPList[11].m_POC == 9 && m_GOPList[11].m_temporalId == 4 )
+        && (m_GOPList[12].m_POC == 11 && m_GOPList[12].m_temporalId == 4 )
+        && (m_GOPList[13].m_POC == 14 && m_GOPList[13].m_temporalId == 3 )
+        && (m_GOPList[14].m_POC == 13 && m_GOPList[14].m_temporalId == 4 )
+        && (m_GOPList[15].m_POC == 15 && m_GOPList[15].m_temporalId == 4 ))
+    {
+      m_bpDeltasGOPStructure = true;
+    }
+  }
+  else if(m_iGOPSize == 8)
+  {
+    if ((m_GOPList[0].m_POC == 8 && m_GOPList[0].m_temporalId == 0 )
+        && (m_GOPList[1].m_POC == 4 && m_GOPList[1].m_temporalId == 1 )
+        && (m_GOPList[2].m_POC == 2 && m_GOPList[2].m_temporalId == 2 )
+        && (m_GOPList[3].m_POC == 1 && m_GOPList[3].m_temporalId == 3 )
+        && (m_GOPList[4].m_POC == 3 && m_GOPList[4].m_temporalId == 3 )
+        && (m_GOPList[5].m_POC == 6 && m_GOPList[5].m_temporalId == 2 )
+        && (m_GOPList[6].m_POC == 5 && m_GOPList[6].m_temporalId == 3 )
+        && (m_GOPList[7].m_POC == 7 && m_GOPList[7].m_temporalId == 3 ))
+    {
+      m_bpDeltasGOPStructure = true;
+    }
+  }
+  else
+  {
+    m_bpDeltasGOPStructure = false;
+  }
+#endif
   for (int i = 0; m_GOPList[i].m_POC != -1 && i < MAX_GOP + 1; i++)
   {
     m_RPLList0[i].m_POC = m_RPLList1[i].m_POC = m_GOPList[i].m_POC;
@@ -1597,7 +1664,24 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_tileRowHeight.clear();
   }
+ #if JVET_O0044_MULTI_SUB_PROFILE
+  m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
+  m_subProfile.resize(m_numSubProfile);
+  for (uint8_t i = 0; i < m_numSubProfile; ++i)
+  {
+    m_subProfile[i] = cfg_SubProfile.values[i];
+  }
+#endif
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (m_tileUniformSpacingFlag)
+  {
+    int uniformTileHeight = ((m_uniformTileRowHeightMinus1 + 1) * m_uiCTUSize);
+    int uniformTileWidth = ((m_uniformTileColsWidthMinus1 + 1) * m_uiCTUSize);
+    m_numTileRowsMinus1 = ((m_iSourceHeight + uniformTileHeight - 1) / uniformTileHeight) - 1;
+    m_numTileColumnsMinus1 = ((m_iSourceWidth + uniformTileWidth - 1) / uniformTileWidth) - 1;
+  }
+#endif
   /* rules for input, output and internal bitdepths as per help text */
   if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
   {
@@ -2173,6 +2257,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+  #if HEVC_SEI
   if( m_masteringDisplay.colourVolumeSEIEnabled )
   {
     for(uint32_t idx=0; idx<6; idx++)
@@ -2185,7 +2270,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if HEVC_SEI
   if( m_toneMappingInfoSEIEnabled && !m_toneMapCancelFlag )
   {
     if( m_toneMapModelId == 2 && !cfg_startOfCodedInterval.values.empty() )
@@ -2255,7 +2339,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
-  
+
   m_reshapeCW.binCW.resize(3);
   m_reshapeCW.rspFps = m_iFrameRate;
 #if !JVET_O0432_LMCS_ENCODER
@@ -2403,9 +2487,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
-#if !JVET_O1136_TS_BDPCM_SIGNALLING    
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
     xConfirmPara(m_RdpcmMode, "RDPCM only allowed with NEXT profile");
-#endif    
+#endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
     xConfirmPara(m_JointCbCrMode, "JointCbCr only allowed with NEXT profile");
 #endif
@@ -2590,7 +2674,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( !m_recoveryPointSEIEnabled,                                               "When using RecoveryPointSEI messages as RA points, recoveryPointSEI must be enabled" );
   }
 #endif
-  
+
   if (m_isField)
   {
 #if JVET_O0041_FRAME_FIELD_SEI
@@ -3351,8 +3435,8 @@ bool EncAppCfg::xCheckParameter()
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1; 
-    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1; 
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   default:
@@ -3398,7 +3482,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_vuiParametersPresentFlag && m_chromaLocInfoPresentFlag && (m_chromaSampleLocTypeTopField != m_chromaSampleLocTypeBottomField ), "When chromaResamplingFilterSEI is enabled, ChromaSampleLocTypeTopField has to be equal to ChromaSampleLocTypeBottomField" );
   }
 #endif
-  
+
   if ( m_RCEnableRateControl )
   {
     if ( m_RCForceIntraQP )
@@ -3452,7 +3536,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_timeCodeSEINumTs > MAX_TIMECODE_SEI_SETS, "Number of time sets cannot exceed 3");
   }
 #endif
-  
+
 #if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
@@ -3551,7 +3635,7 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );
   msg( DETAILS, "Decoding refresh type                  : %d\n", m_iDecodingRefreshType );
-#if JVET_N0494_DRAP 
+#if JVET_N0494_DRAP
   msg( DETAILS, "DRAP period                            : %d\n", m_drapPeriod );
 #endif
 #if QP_SWITCHING_FOR_PARALLEL
@@ -3734,9 +3818,9 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
-#if !JVET_O1136_TS_BDPCM_SIGNALLING    
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
     msg(VERBOSE, "RDPCM:%d ", m_RdpcmMode );
-#endif    
+#endif
 #if JVET_O0376_SPS_JOINTCBCR_FLAG
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
 #endif

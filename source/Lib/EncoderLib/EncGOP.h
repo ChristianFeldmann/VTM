@@ -171,8 +171,14 @@ private:
   int                     m_associatedIRAPPOC;
 
   std::vector<int>        m_vRVM_RP;
+#if !JVET_N0867_TEMP_SCAL_HRD
   uint32_t                    m_lastBPSEI;
   uint32_t                    m_totalCoded;
+#else
+  uint32_t                    m_lastBPSEI[MAX_TLAYER];
+  uint32_t                    m_totalCoded[MAX_TLAYER];
+  bool                        m_rapWithLeading;
+#endif
   bool                    m_bufferingPeriodSEIPresentInAU;
   SEIEncoder              m_seiEncoder;
 #if W0038_DB_OPT
@@ -337,11 +343,19 @@ protected:
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
 #if JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O0245_VPS_DPS_APS
+  int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
+#else
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps, const SPS *sps);
+#endif
 #else
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
 #endif
+#if JVET_O0245_VPS_DPS_APS
+  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId = 0 );
+#else
   int xWriteAPS(AccessUnit &accessUnit, APS *aps);
+#endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

@@ -78,7 +78,7 @@ Slice::Slice()
 , m_noOutputPriorPicsFlag         ( false )
 #if JVET_N0865_NONSYNTAX
 , m_noIncorrectPicOutputFlag      ( false )
-#else 
+#else
 , m_noRaslOutputFlag              ( false )
 #endif
 , m_handleCraAsCvsStartFlag            ( false )
@@ -133,6 +133,9 @@ Slice::Slice()
 , m_scalingListApsId             ( -1 )
 , m_scalingListAps               ( nullptr )
 , m_tileGroupscalingListPresentFlag ( false )
+#endif
+#if JVET_O0181
+, m_nonReferencePicFlag          ( 0 )
 #endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
@@ -902,7 +905,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
 #if JVET_OO147_LEADING_PIC_CHECKING
-    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) && 
+    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) &&
         (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL)  )
     {
       if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
@@ -1133,6 +1136,102 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
   return 0;
 }
 
+#if JVET_O0241
+int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors, int *refPicIndex) const
+{
+  Picture* rpcPic;
+  int isAvailable = 0;
+  int notPresentPoc = 0;
+  *refPicIndex = 0;
+
+  if (this->isIDRorBLA()) return 0; //Assume that all pic in the DPB will be flushed anyway so no need to check.
+
+  int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures();
+  //Check long term ref pics
+  for (int ii = 0; pRPL->getNumberOfLongtermPictures() > 0 && ii < numberOfPictures; ii++)
+  {
+    if (!pRPL->isRefPicLongterm(ii))
+      continue;
+
+    notPresentPoc = pRPL->getRefPicIdentifier(ii);
+    isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+      int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+      int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+      if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    // if there was no such long-term check the short terms
+    if (!isAvailable)
+    {
+      iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        rpcPic = *(iterPic++);
+        int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+        int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+        int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+        if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+        {
+          isAvailable = 1;
+          rpcPic->longTerm = true;
+          break;
+        }
+      }
+    }
+    if (!isAvailable)
+    {
+      if (printErrors)
+      {
+        msg(ERROR, "\nCurrent picture: %d Long-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC(), notPresentPoc);
+      }
+      *refPicIndex = ii;
+      return notPresentPoc;
+    }
+  }
+  //report that a picture is lost if it is in the Reference Picture List but not in the DPB
+
+  isAvailable = 0;
+  //Check short term ref pics
+  for (int ii = 0; ii < numberOfPictures; ii++)
+  {
+    if (pRPL->isRefPicLongterm(ii))
+      continue;
+
+    notPresentPoc = this->getPOC() - pRPL->getRefPicIdentifier(ii);
+    isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      rpcPic = *(iterPic++);
+      if (!rpcPic->longTerm && rpcPic->getPOC() == this->getPOC() - pRPL->getRefPicIdentifier(ii) && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    //report that a picture is lost if it is in the Reference Picture List but not in the DPB
+    if (isAvailable == 0 && pRPL->getNumberOfShorttermPictures() > 0)
+    {
+      if (printErrors)
+      {
+        msg(ERROR, "\nCurrent picture: %d Short-term reference picture with POC = %3d seems to have been removed or not correctly decoded.", this->getPOC(), notPresentPoc);
+      }
+      *refPicIndex = ii;
+      return notPresentPoc;
+    }
+  }
+  return 0;
+}
+#endif
+
 #if JVET_N0494_DRAP
 bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
 {
@@ -1156,14 +1255,14 @@ bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
   return false;
 }
 
-bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )  
-{ 
+bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )
+{
   if (!getEnableDRAPSEI())
   {
     return false;
   }
-  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) || 
-         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) ); 
+  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) ||
+         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) );
 }
 
 void Slice::checkConformanceForDRAP( uint32_t temporalId )
@@ -1172,9 +1271,9 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
   {
     return;
   }
- 
+
   if (isDRAP())
-  {    
+  {
     if (!(getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_TRAIL ||
           getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_STSA))
     {
@@ -1186,7 +1285,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
     {
-      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC()) 
+      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC())
       {
         msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
                       "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
@@ -1194,7 +1293,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_1); i++)
     {
-      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC()) 
+      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC())
       {
         msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
                       "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
@@ -1202,7 +1301,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
   }
 
-  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC()) 
+  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC())
   {
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
     {
@@ -1251,7 +1350,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while (iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
-#if JVET_N0494_DRAP 
+#if JVET_N0494_DRAP
       if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
 #else
       if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii))
@@ -1682,6 +1781,9 @@ SPS::SPS()
 #if JVET_N0865_SYNTAX
     ,m_GDREnabledFlag         (1)
 #endif
+#if JVET_O0177_PROPOSAL1
+, m_SubLayerCbpParametersPresentFlag (1)
+#endif
 
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
@@ -1769,7 +1871,7 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
     }
     for (int j = 0; j < numPtsInCQPTableMinus1; j++)
     {
-      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1 + 1) >> 1;
+      int sh = (getDeltaQpInValMinus1(i, j + 1) + 1) >> 1;
       for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
       {
         m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
@@ -1875,6 +1977,9 @@ PPS::~PPS()
 
 APS::APS()
 : m_APSId(0)
+#if JVET_O0245_VPS_DPS_APS
+, m_temporalId( 0 )
+#endif
 {
 }
 
@@ -2012,11 +2117,21 @@ bool ScalingList::isNotDefaultScalingList()
       {
         continue;
       }
-      if( !( !::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId])) // check value of matrix
-         && ((sizeId < SCALING_LIST_16x16) || (getScalingListDC(sizeId,listId) == 16))) ) // check DC value
+      if (sizeId < SCALING_LIST_16x16)
       {
-        isAllDefault = false;
-        break;
+        if (::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * (int)g_scalingListSize[sizeId]))
+        {
+          isAllDefault = false;
+          break;
+        }
+      }
+      else
+      {
+        if ((::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * MAX_MATRIX_COEF_NUM)) || (getScalingListDC(sizeId, listId) != 16))
+        {
+          isAllDefault = false;
+          break;
+        }
       }
     }
     if (!isAllDefault) break;
@@ -2400,10 +2515,10 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 
 bool ParameterSetManager::activateAPS(int apsId, int apsType)
 {
-  APS *aps = m_apsMap.getPS((apsId << NUM_APS_TYPE_LEN) + apsType);
+  APS *aps = m_apsMap.getPS(apsId + (MAX_NUM_APS * apsType));
   if (aps)
   {
-    m_apsMap.setActive((apsId << NUM_APS_TYPE_LEN) + apsType);
+    m_apsMap.setActive(apsId + (MAX_NUM_APS * apsType));
     return true;
   }
   else
@@ -2433,7 +2548,12 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
-  , m_subProfileIdc   (0)
+#if JVET_O0044_MULTI_SUB_PROFILE
+  , m_numSubProfile(0)
+  , m_subProfileIdc(0)
+#else
+  , m_subProfileIdc(0)
+#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
@@ -2536,7 +2656,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
   }
 
   freeScaledRefPicList( scaledRefPic );
-  
+
   for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
   {
     if( refList == 1 && m_eSliceType != B_SLICE )
@@ -2560,7 +2680,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
       else
       {
         int poc = m_apcRefPicList[refList][rIdx]->getPOC();
-        // check whether the reference picture has already been scaled 
+        // check whether the reference picture has already been scaled
         for( i = 0; i < MAX_NUM_REF; i++ )
         {
           if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc )

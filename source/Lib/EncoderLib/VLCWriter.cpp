@@ -343,14 +343,38 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     }
 #endif
 
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+    int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#else
     int numTilesInPic = pcPPS->getUniformTileSpacingFlag() ? 0 : (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
+#if JVET_O0236_PPS_PARSING_DEPENDENCY
+    if (pcPPS->getUniformTileSpacingFlag() && pcPPS->getBrickSplittingPresentFlag())
+    {
+      WRITE_UVLC(numTilesInPic - 1, "num_tiles_in_pic_minus1");
+    }
+#endif
 
     for( int i = 0; pcPPS->getBrickSplittingPresentFlag()  &&  i < numTilesInPic; i++ )
     {
-      WRITE_FLAG( pcPPS->getBrickSplitFlag(i) ? 1 : 0, "brick_split_flag [i]" );
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+      if (pcPPS->getTileHeight(i) > 1)
+      {
+#endif
+        WRITE_FLAG(pcPPS->getBrickSplitFlag(i) ? 1 : 0, "brick_split_flag [i]");
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+      }
+#endif
       if( pcPPS->getBrickSplitFlag(i) )
       {
-        WRITE_FLAG( pcPPS->getUniformBrickSpacingFlag(i) ? 1 : 0, "uniform_brick_spacing_flag [i]" );
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        if (pcPPS->getTileHeight(i) > 2)
+        {
+#endif
+          WRITE_FLAG(pcPPS->getUniformBrickSpacingFlag(i) ? 1 : 0, "uniform_brick_spacing_flag [i]");
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        }
+#endif
         if( pcPPS->getUniformBrickSpacingFlag(i) )
           WRITE_UVLC( pcPPS->getBrickHeightMinus1(i), "brick_height_minus1" );
         else
@@ -359,11 +383,11 @@ void HLSWriter::codePPS( const PPS* pcPPS )
           WRITE_UVLC(pcPPS->getNumBrickRowsMinus2(i), "num_brick_rows_minus2 [i]");
           for (int j = 0; j <= pcPPS->getNumBrickRowsMinus2(i); j++)
             WRITE_UVLC(pcPPS->getBrickRowHeightMinus1(i, j), "brick_row_height_minus1 [i][j]");
-#else                    
+#else
           WRITE_UVLC( pcPPS->getNumBrickRowsMinus1(i), "num_brick_rows_minus1 [i]" );
           for(int j = 0; j < pcPPS->getNumBrickRowsMinus1(i); j++ )
             WRITE_UVLC( pcPPS->getBrickRowHeightMinus1(i,j), "brick_row_height_minus1 [i][j]" );
-#endif 
+#endif
         }
       }
     }
@@ -383,17 +407,30 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     {
       WRITE_UVLC( pcPPS->getNumSlicesInPicMinus1(), "num_slices_in_pic_minus1" );
       int numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
+#if !JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
       int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
+#endif
       int codeLength = ceilLog2(numTilesInPic);
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+      WRITE_UVLC(codeLength, "bottom_right_brick_idx_length_minus1 ");
+#else
       int codeLength2 = codeLength;
+#endif
       for (int i = 0; i < numSlicesInPic; ++i)
       {
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+        int delta = (i == 0) ? pcPPS->getBottomRightBrickIdx(i) : pcPPS->getBottomRightBrickIdx(i) - pcPPS->getBottomRightBrickIdx(i - 1);
+        int sign = (delta > 0) ? 1 : 0;
+        WRITE_CODE(delta, codeLength, "bottom_right_brick_idx_delta");
+        WRITE_FLAG(sign, "brick_idx_delta_sign_flag");
+#else
         if (i > 0)
         {
           WRITE_CODE(pcPPS->getTopLeftBrickIdx(i), codeLength, "top_left_brick_idx ");
           codeLength2 = ceilLog2((numTilesInPic - pcPPS->getTopLeftBrickIdx(i) < 2) ? 2 : numTilesInPic - pcPPS->getTopLeftBrickIdx(i));
         }
         WRITE_CODE(pcPPS->getBottomRightBrickIdx(i) - pcPPS->getTopLeftBrickIdx(i), codeLength2, "bottom_right_brick_idx_delta");
+#endif
       }
     }
 
@@ -532,8 +569,11 @@ void HLSWriter::codeAPS( APS* pcAPS )
 #endif
 
   WRITE_CODE(pcAPS->getAPSId(), 5, "adaptation_parameter_set_id");
+#if JVET_O0245_VPS_DPS_APS
+  WRITE_CODE( (int)pcAPS->getAPSType(), 3, "aps_params_type" );
+#else
   WRITE_CODE(pcAPS->getAPSType(), 3, "aps_params_type");
-
+#endif
 
   if (pcAPS->getAPSType() == ALF_APS)
   {
@@ -885,7 +925,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
 #if JVET_O1164_PS
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
-  WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );  
+  WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
 #else
   WRITE_UVLC( pcSPS->getPicWidthInLumaSamples (),   "pic_width_in_luma_samples" );
   WRITE_UVLC( pcSPS->getPicHeightInLumaSamples(),   "pic_height_in_luma_samples" );
@@ -1197,10 +1237,22 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if !JVET_O0189_DU
     WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),              "hrd_parameters_present_flag");
 #endif
+#if JVET_O0177_PROPOSAL1
+    WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sub_layer_cpb_parameters_present_flag");
+    if (pcSPS->getSubLayerParametersPresentFlag())
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), 0, pcSPS->getMaxTLayers() - 1);
+    }
+    else
+    {
+      codeHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
+    }
+#else
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       codeHrdParameters(pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
     }
+#endif
   }
 
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );
@@ -1363,6 +1415,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
   }
 
+#if JVET_O0181
+    WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 1 : 0, "non_reference_picture_flag");
+#endif
+
     for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
     {
       WRITE_FLAG( 0, "slice_reserved_flag[]" );
@@ -1413,7 +1469,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc0())
         {
           WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
-        } 
+        }
 #else
         WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
 #endif
@@ -1482,7 +1538,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
         {
           WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
-        } 
+        }
 #else
           WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
 #endif
@@ -1673,7 +1729,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
-#if JVET_O0238_PPS_OR_SLICE      
+#if JVET_O0238_PPS_OR_SLICE
       if (!pcSlice->getPPS()->getPPSSixMinusMaxNumMergeCandPlus1())
       {
         WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSlice->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
@@ -1728,7 +1784,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       {
         CHECK(pcSlice->getMaxNumMergeCand() < pcSlice->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");
 #if JVET_O0238_PPS_OR_SLICE
-        if (!pcSlice->getPPS()->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1()) 
+        if (!pcSlice->getPPS()->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
         {
           WRITE_UVLC(pcSlice->getMaxNumMergeCand() - pcSlice->getMaxNumTriangleCand(), "max_num_merge_cand_minus_max_num_triangle_cand");
         }
@@ -2012,7 +2068,16 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 {
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
-  WRITE_CODE( ptl->getSubProfileIdc(), 24,      "general_sub_profile_idc"                );
+
+#if JVET_O0044_MULTI_SUB_PROFILE
+  WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
+  for (int i = 0; i < ptl->getNumSubProfile(); i++)
+  {
+    WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
+  }
+#else
+  WRITE_CODE(ptl->getSubProfileIdc(), 24, "general_sub_profile_idc");
+#endif
 
   codeConstraintInfo(ptl->getConstraintInfo());
 

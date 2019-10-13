@@ -234,7 +234,12 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+#if JVET_O0044_MULTI_SUB_PROFILE
+  std::vector<uint32_t>      m_subProfile;
+  uint8_t       m_numSubProfile;
+#else
   uint32_t      m_subProfile;
+#endif
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
   bool m_nonPackedConstraintFlag;
@@ -328,9 +333,9 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING  
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_RdpcmMode;
-#endif  
+#endif
 #if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
 #endif
@@ -503,6 +508,10 @@ protected:
   bool      m_tileUniformSpacingFlag;
   int       m_iNumColumnsMinus1;
   int       m_iNumRowsMinus1;
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int       m_uniformTileColsWidthMinus1;
+  int       m_uniformTileRowHeightMinus1;
+#endif
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
 
@@ -569,6 +578,9 @@ protected:
   bool      m_temporalLevel0IndexSEIEnabled;
   bool      m_gradualDecodingRefreshInfoEnabled;
   int       m_noDisplaySEITLayer;
+#endif
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
 #endif
   bool      m_decodingUnitInfoSEIEnabled;
 #if HEVC_SEI
@@ -723,7 +735,7 @@ protected:
   int                          m_cropOffsetRight;
   int                          m_cropOffsetBottom;
   bool                         m_calculateHdrMetrics;
-#endif  
+#endif
 #if JVET_O1164_RPR
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
@@ -748,8 +760,12 @@ public:
 
   void setProfile(Profile::Name profile) { m_profile = profile; }
   void setLevel(Level::Tier tier, Level::Name level) { m_levelTier = tier; m_level = level; }
+#if JVET_O0044_MULTI_SUB_PROFILE
+  void setNumSubProfile( uint8_t numSubProfile) { m_numSubProfile = numSubProfile; m_subProfile.resize(m_numSubProfile); }
+  void setSubProfile( int i, uint32_t subProfile) { m_subProfile[i] = subProfile; }
+#else
   void setSubProfile(uint32_t subProfile) { m_subProfile = subProfile; }
-
+#endif
   bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
   void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }
   uint32_t  getMaxBitDepthConstraintIdc() const { return m_maxBitDepthConstraintIdc; }
@@ -987,10 +1003,10 @@ public:
   bool      getMMVD                         ()         const { return m_MMVD; }
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
- #if !JVET_O1136_TS_BDPCM_SIGNALLING 
+ #if !JVET_O1136_TS_BDPCM_SIGNALLING
   void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
   bool      getRDPCM                     ()         const { return m_RdpcmMode; }
- #endif 
+ #endif
 #if JVET_O0119_BASE_PALETTE_444
   void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
   unsigned  getPLTMode                   ()         const { return m_PLTMode; }
@@ -1362,6 +1378,12 @@ public:
   bool  getTileUniformSpacingFlag      ()                            { return m_tileUniformSpacingFlag; }
   void  setNumColumnsMinus1            ( int i )                     { m_iNumColumnsMinus1 = i; }
   int   getNumColumnsMinus1            ()                            { return m_iNumColumnsMinus1; }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  void  setUniformTileColsWidthMinus1  (int i)                       { m_uniformTileColsWidthMinus1 = i; }
+  int   getUniformTileColsWidthMinus1  ()                            { return m_uniformTileColsWidthMinus1; }
+  void  setUniformTileRowHeightMinus1  (int i)                       { m_uniformTileRowHeightMinus1 = i; }
+  int   getUniformTileRowHeightMinus1  ()                            { return m_uniformTileRowHeightMinus1; }
+#endif
   void  setColumnWidth ( const std::vector<int>& columnWidth )       { m_tileColumnWidth = columnWidth; }
   uint32_t  getColumnWidth                 ( uint32_t columnIdx )            { return m_tileColumnWidth[columnIdx]; }
   void  setNumRowsMinus1               ( int i )                     { m_iNumRowsMinus1 = i; }
@@ -1488,6 +1510,10 @@ public:
   bool  getGradualDecodingRefreshInfoEnabled() const                 { return m_gradualDecodingRefreshInfoEnabled; }
   void  setNoDisplaySEITLayer(int b)                                 { m_noDisplaySEITLayer = b;    }
   int   getNoDisplaySEITLayer()                                      { return m_noDisplaySEITLayer; }
+#endif
+#if JVET_N0867_TEMP_SCAL_HRD
+  void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
+  bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
 #endif
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }

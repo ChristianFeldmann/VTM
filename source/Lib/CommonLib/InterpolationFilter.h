@@ -61,9 +61,9 @@ public:
 #endif
   static const TFilterCoeff m_lumaFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA]; ///< Luma filter taps
   static const TFilterCoeff m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA]; ///< Chroma filter taps
-#if JVET_O1164_RPR  
+#if JVET_O1164_RPR
 private:
-#endif  
+#endif
 #if JVET_O0057_ALTHPELIF
   static const TFilterCoeff m_lumaAltHpelIFilter[NTAPS_LUMA]; ///< Luma filter taps
 #endif

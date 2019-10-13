@@ -153,6 +153,15 @@ uint32_t DecApp::decode()
     {
       read(nalu);
 
+#if JVET_O0610_DETECT_AUD
+      if(m_cDecLib.getFirstSliceInPicture() &&
+          (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
+           nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
+      {
+        xFlushOutput(pcListPic);
+      }
+#endif
+
       if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
       {
         bNewPicture = false;
@@ -164,7 +173,7 @@ uint32_t DecApp::decode()
         {
 #if JVET_O0610_DETECT_AUD
           // check if new picture was detected at an access unit delimiter NALU
-          if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER) 
+          if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER)
           {
             msg( ERROR, "Error: New picture detected without access unit delimiter. VVC requires the presence of access unit delimiters.\n");
           }
@@ -237,6 +246,7 @@ uint32_t DecApp::decode()
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
+#if! JVET_O0610_DETECT_AUD
 #if JVET_N0865_NONSYNTAX
       if ((bNewPicture || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR) && m_cDecLib.getNoOutputPriorPicsFlag())
 #else
@@ -252,6 +262,7 @@ uint32_t DecApp::decode()
       {
         xFlushOutput( pcListPic );
       }
+#endif
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
@@ -672,7 +683,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
         }
 #endif
-                                         
+
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 

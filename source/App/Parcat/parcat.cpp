@@ -112,6 +112,11 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   {
     READ_UVLC(uiCode, "num_bricks_in_slice_minus1");
   }
+
+#if JVET_O0181
+  READ_FLAG(uiCode, "non_reference_picture_flag");
+#endif
+
   //set uiCode to equal slice start address (or dependent slice start address)
   for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
   {
@@ -193,7 +198,7 @@ const char * NALU_TYPE[] =
 {
 #if JVET_O0179
     "NAL_UNIT_CODED_SLICE_TRAIL",
-    "NAL_UNIT_CODED_SLICE_STSA", 
+    "NAL_UNIT_CODED_SLICE_STSA",
     "NAL_UNIT_CODED_SLICE_RASL",
     "NAL_UNIT_CODED_SLICE_RADL",
     "NAL_UNIT_RESERVED_VCL_4",
@@ -212,7 +217,7 @@ const char * NALU_TYPE[] =
     "NAL_UNIT_RESERVED_IRAP_VCL13",
     "NAL_UNIT_RESERVED_VCL14",
     "NAL_UNIT_RESERVED_VCL15",
-    "NAL_UNIT_SPS", 
+    "NAL_UNIT_SPS",
     "NAL_UNIT_PPS",
     "NAL_UNIT_APS",
     "NAL_UNIT_ACCESS_UNIT_DELIMITER",
@@ -321,10 +326,17 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     p += nal_start;
 
     std::vector<uint8_t> nalu(p, p + nal_end - nal_start);
+#if JVET_O0179
+    int nalu_type = nalu[1] >> 3;
+#else
     int nalu_header = nalu[0];
     bool zeroTidRequiredFlag = (nalu_header & ( 1 << 7 )) >> 7;
     int nalUnitTypeLsb = (((1 << 4) - 1) & nalu_header);
     int nalu_type = ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
+#endif
+#if ENABLE_TRACING
+    printf ("NALU Type: %d (%s)\n", nalu_type, NALU_TYPE[nalu_type]);
+#endif
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
@@ -358,7 +370,11 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       poc = 0;
       new_poc = *poc_base + poc;
     }
-      if((nalu_type > 7 && nalu_type < 15) || nalu_type == NAL_UNIT_CODED_SLICE_CRA)
+#if JVET_O0179
+    if((nalu_type < 7) || (nalu_type > 9 && nalu_type < 15) )
+#else
+    if((nalu_type > 7 && nalu_type < 15) || nalu_type == NAL_UNIT_CODED_SLICE_CRA)
+#endif
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
       bool isRapPic =

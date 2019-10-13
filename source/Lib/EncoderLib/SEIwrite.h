@@ -50,7 +50,11 @@ public:
   virtual ~SEIWriter() {};
 
 #if JVET_N0353_INDEP_BUFF_TIME_SEI
+#if !JVET_N0867_TEMP_SCAL_HRD
   void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested);
+#else
+  void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested, const uint32_t temporalId);
+#endif
 #else
   void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, bool isNested);
 #endif
@@ -76,7 +80,11 @@ protected:
   void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei);
 #endif
 #if JVET_O0189_DU
+#if !JVET_N0867_TEMP_SCAL_HRD
   void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod& bp);
+#else
+  void xWriteSEIPictureTiming(const SEIPictureTiming& sei,const SPS *sps, const SEIBufferingPeriod& bp, const uint32_t temporalId);
+#endif
 #else
   void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod& bp);
 #endif
@@ -109,11 +117,15 @@ protected:
 #endif
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
 #endif
-  
+
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps);
 #else
+#if !JVET_N0867_TEMP_SCAL_HRD
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd);
+#else
+  void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
+#endif
 #endif
   void xWriteByteAlign();
 };

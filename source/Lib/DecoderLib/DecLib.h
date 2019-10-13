@@ -135,6 +135,12 @@ private:
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
   int                     m_debugPOC;
   int                     m_debugCTU;
+
+#if JVET_O0245_VPS_DPS_APS
+  std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  std::vector<int> m_accessUnitApsNals;
+#endif
+
 public:
   DecLib();
   virtual ~DecLib();
@@ -163,6 +169,7 @@ public:
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
+  bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
@@ -172,11 +179,15 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+
 protected:
   void  xUpdateRasInit(Slice* slice);
 
   Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
   void  xCreateLostPicture (int iLostPOC);
+#if JVET_O0241
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
+#endif
 
   void      xActivateParameterSets();
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

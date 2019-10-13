@@ -107,7 +107,9 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_initialCpbRemovalDelayLength = m_initialCpbRemovalDelayLength;
   target.m_cpbRemovalDelayLength = m_cpbRemovalDelayLength;
   target.m_dpbOutputDelayLength = m_dpbOutputDelayLength;
+#if !JVET_N0867_TEMP_SCAL_HRD
   target.m_bpCpbCnt = m_bpCpbCnt;
+#endif
 #endif
 #if !FIX_SEI_O0189
   target.m_cpbDelayOffset = m_cpbDelayOffset;
@@ -119,16 +121,28 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 #endif
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_auCpbRemovalDelayDelta = m_auCpbRemovalDelayDelta;
+#if JVET_N0867_TEMP_SCAL_HRD
+  target.m_cpbRemovalDelayDeltasPresentFlag =  m_cpbRemovalDelayDeltasPresentFlag;
+  target.m_numCpbRemovalDelayDeltas = m_numCpbRemovalDelayDeltas;
+  target.m_bpMaxSubLayers = m_bpMaxSubLayers;
+#endif
 #if !JVET_N0353_INDEP_BUFF_TIME_SEI
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
   ::memcpy(target.m_initialCpbRemovalDelayOffset, m_initialCpbRemovalDelayOffset, sizeof(m_initialCpbRemovalDelayOffset));
   ::memcpy(target.m_initialAltCpbRemovalDelay, m_initialAltCpbRemovalDelay, sizeof(m_initialAltCpbRemovalDelay));
   ::memcpy(target.m_initialAltCpbRemovalDelayOffset, m_initialAltCpbRemovalDelayOffset, sizeof(m_initialAltCpbRemovalDelayOffset));
 #else
+#if !JVET_N0867_TEMP_SCAL_HRD
   target.m_initialCpbRemovalDelay[0] = m_initialCpbRemovalDelay [0];
   target.m_initialCpbRemovalDelay[1] = m_initialCpbRemovalDelay [1];
   target.m_initialCpbRemovalOffset[0] = m_initialCpbRemovalOffset [0];
   target.m_initialCpbRemovalOffset[1] = m_initialCpbRemovalOffset [1];
+#else
+  ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
+  ::memcpy(target.m_initialCpbRemovalOffset, m_initialCpbRemovalOffset, sizeof(m_initialCpbRemovalOffset));
+  ::memcpy(target.m_cpbRemovalDelayDelta, m_cpbRemovalDelayDelta, sizeof(m_cpbRemovalDelayDelta));
+  ::memcpy(target.m_bpCpbCnt, m_bpCpbCnt, sizeof(m_bpCpbCnt));
+#endif
 #endif
 }
 
@@ -139,8 +153,15 @@ void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
   target.m_sourceScanType = m_sourceScanType;
   target.m_duplicateFlag = m_duplicateFlag;
 #endif
-
+#if !JVET_N0867_TEMP_SCAL_HRD
   target.m_auCpbRemovalDelay = m_auCpbRemovalDelay;
+#else
+  ::memcpy(target.m_auCpbRemovalDelay, m_auCpbRemovalDelay, sizeof(m_auCpbRemovalDelay));
+  ::memcpy(target.m_subLayerDelaysPresentFlag, m_subLayerDelaysPresentFlag, sizeof(m_subLayerDelaysPresentFlag));
+  ::memcpy(target.m_cpbRemovalDelayDeltaEnabledFlag, m_cpbRemovalDelayDeltaEnabledFlag, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
+  ::memcpy(target.m_cpbRemovalDelayDeltaIdx, m_cpbRemovalDelayDeltaIdx, sizeof(m_cpbRemovalDelayDeltaIdx));
+  target.m_ptMaxSubLayers = m_ptMaxSubLayers;
+#endif
   target.m_picDpbOutputDelay = m_picDpbOutputDelay;
   target.m_picDpbOutputDuDelay = m_picDpbOutputDuDelay;
   target.m_numDecodingUnitsMinus1 = m_numDecodingUnitsMinus1;

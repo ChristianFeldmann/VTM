@@ -448,7 +448,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if ER_CHROMA_QP_WCG_PPS
   if( m_wcgChromaQpControl.isEnabled() )
   {
-#if JVET_O0299_APS_SCALINGLIST  
+#if JVET_O0299_APS_SCALINGLIST
     xInitScalingLists( sps0, *m_apsMap.getPS( 1 ) );
     xInitScalingLists( sps0, aps0 );
 #else
@@ -561,7 +561,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
   }
   else if(getUseScalingListId() == SCALING_LIST_FILE_READ)
   {
-#if JVET_O0299_APS_SCALINGLIST 
+#if JVET_O0299_APS_SCALINGLIST
     aps.getScalingList().setDefaultScalingList();
     CHECK( aps.getScalingList().xParseScalingList( getScalingListFileName() ), "Error Parsing Scaling List Input File" );
     aps.getScalingList().checkDcOfMatrix();
@@ -595,7 +595,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
     THROW("error : ScalingList == " << getUseScalingListId() << " not supported\n");
   }
 
-#if JVET_O0299_APS_SCALINGLIST 
+#if JVET_O0299_APS_SCALINGLIST
   if( getUseScalingListId() == SCALING_LIST_FILE_READ )
 #else
   if (getUseScalingListId() == SCALING_LIST_FILE_READ && sps.getScalingListPresentFlag())
@@ -611,7 +611,7 @@ void EncLib::xInitScalingLists(SPS &sps, PPS &pps)
         {
           continue;
         }
-#if JVET_O0299_APS_SCALINGLIST 
+#if JVET_O0299_APS_SCALINGLIST
         aps.getScalingList().checkPredMode( sizeId, listId );
 #else
         sps.getScalingList().checkPredMode( sizeId, listId );
@@ -1087,8 +1087,15 @@ void EncLib::xInitSPS(SPS &sps)
   profileTierLevel->setLevelIdc                    (m_level);
   profileTierLevel->setTierFlag                    (m_levelTier);
   profileTierLevel->setProfileIdc                  (m_profile);
-  profileTierLevel->setSubProfileIdc               (m_subProfile);
-
+#if JVET_O0044_MULTI_SUB_PROFILE
+  profileTierLevel->setNumSubProfile(m_numSubProfile);
+  for (int k = 0; k < m_numSubProfile; k++)
+  {
+    profileTierLevel->setSubProfileIdc(k, m_subProfile[k]);
+  }
+#else
+  profileTierLevel->setSubProfileIdc(m_subProfile);
+#endif
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */
@@ -1783,12 +1790,31 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setTileColumnWidth( m_tileColumnWidth );
     pps.setTileRowHeight( m_tileRowHeight );
   }
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  else
+  {
+    pps.setTileColsWidthMinus1(m_uniformTileColsWidthMinus1);
+    pps.setTileRowsHeightMinus1(m_uniformTileRowHeightMinus1);
+  }
+#endif
   pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
 
   //pps.setRectSliceFlag( m_rectSliceFlag );
   pps.setNumSlicesInPicMinus1( m_numSlicesInPicMinus1 );
   pps.setTopLeftBrickIdx(m_topLeftBrickIdx);
   pps.setBottomRightBrickIdx(m_bottomRightBrickIdx);
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (m_numSlicesInPicMinus1 > 0)
+  {
+    std::vector<int> bottomrightdelta(m_numSlicesInPicMinus1 + 1);
+    for (int i = 0; i < m_numSlicesInPicMinus1 + 1; i++)
+    {
+      bottomrightdelta[i] = (i == 0) ? m_bottomRightBrickIdx[i] : m_bottomRightBrickIdx[i] - m_bottomRightBrickIdx[i - 1];
+    }
+    pps.setBottomRightBrickIdxDelta(bottomrightdelta);
+  }
+#endif
+
   pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_loopFilterAcrossSlicesEnabledFlag );
   pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
@@ -1799,6 +1825,9 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
 
   int numTiles= (m_iNumColumnsMinus1 + 1) * (m_iNumRowsMinus1 + 1);
   pps.setNumTilesInPic(numTiles);
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+  std::vector<int> tileHeight(numTiles);
+#endif
 
   if (m_brickSplitMap.empty())
   {
@@ -1835,7 +1864,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
         numBrickRowsMinus2[tileIdx] = brickSplit.second.m_numSplits - 1;
 #else
         numBrickRowsMinus1[tileIdx]=brickSplit.second.m_numSplits;
-#endif 
+#endif
         brickRowHeightMinus1[tileIdx].resize(brickSplit.second.m_numSplits);
         for (int i=0; i<brickSplit.second.m_numSplits; i++)
         {
@@ -1850,7 +1879,7 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     pps.setNumBrickRowsMinus2(numBrickRowsMinus2);
 #else
     pps.setNumBrickRowsMinus1(numBrickRowsMinus1);
-#endif 
+#endif
     pps.setBrickRowHeightMinus1(brickRowHeightMinus1);
 
     // check brick dimensions
@@ -1879,33 +1908,60 @@ void  EncLib::xInitPPSforTiles(PPS &pps)
     // check brick splits for each tile
     for (int tileIdx=0; tileIdx < numTiles; tileIdx++)
     {
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+      const int tileY = tileIdx / (m_iNumColumnsMinus1 + 1);
+
+      tileHeight[tileIdx] = tileRowHeight[tileY];
+
+      if (tileHeight[tileIdx] <= 1)
+      {
+        CHECK(pps.getBrickSplitFlag(tileIdx) != 0, "The value of brick_split_flag[ i ] shall be 0 if tileHeight <= 1");
+      }
+#endif
       if (pps.getBrickSplitFlag(tileIdx))
       {
+#if !JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
         const int tileY = tileIdx / (m_iNumColumnsMinus1+1);
 
         int tileHeight = tileRowHeight [tileY];
-
+#endif
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+        if (tileHeight[tileIdx] <= 2)
+        {
+          CHECK(pps.getUniformBrickSpacingFlag(tileIdx) != 1, "The value of uniform_brick_spacing_flag[ i ] shall be 1 if tileHeight <= 2");
+        }
+#endif
         if (pps.getUniformBrickSpacingFlag(tileIdx))
         {
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+          CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight[tileIdx], "Brick height larger than or equal to tile height");
+#else
           CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight, "Brick height larger than or equal to tile height");
+#endif
         }
         else
         {
           int cumulativeHeight=0;
 #if JVET_O0173_O0176_O0338_NUMBRICK_M2
           for (int i = 0; i <= pps.getNumBrickRowsMinus2(tileIdx); i++)
-#else 
+#else
           for (int i = 0; i < pps.getNumBrickRowsMinus1(tileIdx); i++)
-#endif 
+#endif
           {
             cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
           }
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+          CHECK(cumulativeHeight >= tileHeight[tileIdx], "Cumulative brick height larger than or equal to tile height");
+#else
           CHECK(cumulativeHeight >= tileHeight, "Cumulative brick height larger than or equal to tile height");
+#endif
         }
       }
     }
   }
-
+#if JVET_O0452_PPS_BRICK_SIGNALING_CONDITION
+  pps.setTileHeight(tileHeight);
+#endif
 }
 
 void  EncCfg::xCheckGSParameters()
@@ -1914,6 +1970,25 @@ void  EncCfg::xCheckGSParameters()
   int   iHeightInCU = ( m_iSourceHeight%m_maxCUHeight ) ? m_iSourceHeight/m_maxCUHeight + 1 : m_iSourceHeight/m_maxCUHeight;
   uint32_t  uiCummulativeColumnWidth = 0;
   uint32_t  uiCummulativeRowHeight = 0;
+
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  if (m_tileUniformSpacingFlag && m_uniformTileColsWidthMinus1 == -1)
+  {
+    EXIT("Uniform tiles specified with unspecified or invalid UniformTileColsWidthMinus1 value");
+  }
+  if (m_tileUniformSpacingFlag && m_uniformTileRowHeightMinus1 == -1)
+  {
+    EXIT("Uniform tiles specified with unspecified or invalid UniformTileRowHeightMinus1 value");
+  }
+  if (m_tileUniformSpacingFlag && m_uniformTileColsWidthMinus1 >= iWidthInCU)
+  {
+    EXIT("UniformTileColsWidthMinus1 too large");
+  }
+  if (m_tileUniformSpacingFlag && m_uniformTileRowHeightMinus1 >= iHeightInCU)
+  {
+    EXIT("UniformTileRowHeightMinus1 too large");
+  }
+#endif
 
   //check the column relative parameters
   if( m_iNumColumnsMinus1 >= (1<<(LOG2_MAX_NUM_COLUMNS_MINUS1+1)) )

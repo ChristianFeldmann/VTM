@@ -164,7 +164,12 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+#if JVET_O0044_MULTI_SUB_PROFILE
+  std::vector<uint32_t>  m_subProfile;
+  uint8_t      m_numSubProfile;
+#else
   uint32_t      m_subProfile;
+#endif
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
@@ -247,7 +252,9 @@ protected:
 #if SHARP_LUMA_DELTA_QP
   LumaLevelToDeltaQPMapping m_lumaLevelToDeltaQPMapping;      ///< mapping from luma level to Delta QP.
 #endif
+#if HEVC_SEI
   SEIMasteringDisplay m_masteringDisplay;
+#endif
 
   bool      m_bUseAdaptiveQP;                                 ///< Flag for enabling QP adaptation based on a psycho-visual model
   int       m_iQPAdaptationRange;                             ///< dQP range by QP adaptation
@@ -302,7 +309,7 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING  
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_RdpcmMode;
 #endif
 #if JVET_O0119_BASE_PALETTE_444
@@ -445,6 +452,10 @@ protected:
   bool      m_tileUniformSpacingFlag;
   int       m_numTileColumnsMinus1;
   int       m_numTileRowsMinus1;
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int       m_uniformTileColsWidthMinus1;
+  int       m_uniformTileRowHeightMinus1;
+#endif
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;
@@ -469,6 +480,9 @@ protected:
 #endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
+#endif
 #if JVET_O0189_DU
   bool      m_decodingUnitInfoSEIEnabled;
 #endif
@@ -625,7 +639,7 @@ protected:
 #if HEVC_SEI
   std::string m_colourRemapSEIFileRoot;
 #endif
-  
+
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.
   uint32_t        m_summaryVerboseness;                           ///< Specifies the level of the verboseness of the text output.

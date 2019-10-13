@@ -50,9 +50,17 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_O0245_VPS_DPS_APS                            1 // JVET-O0245: constraints for VPS, DPS, and APS
+
+#define JVET_O0044_MULTI_SUB_PROFILE                      1 // JVET-O0044: Zero or more sub profile fields
+
+#define JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA           1 // JVET-O0143: Remove signaling of top_right_brick_idx
+
+#define JVET_O0236_PPS_PARSING_DEPENDENCY                 1 // JVET-O0236: Resolves a PPS parsing dependency
+
 #define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
 
-#define JVET_O0145_ENTRYPOINT_SIGNALLING                  1 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+#define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
 
@@ -72,8 +80,12 @@
 #define RPR_CONF_WINDOW                                   1
 #endif
 
+#define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+
 #define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
 #define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
+
+#define JVET_O0452_PPS_BRICK_SIGNALING_CONDITION          1  // JVET-O0452: brick_split_flag signaled as RowHeight > 1 and uniform_brick_spacing_flag signaled as RowHeight > 2
 
 #define FLATTEN_BUFFERS                                                                                                \
   (1 && JVET_O0502_ISP_CLEANUP && JVET_O0364_PADDING && JVET_O0426_MRL_REF_SAMPLES_DC_MODE                             \
@@ -278,6 +290,7 @@
 #define FIX_HRD_O0189                                     1
 #endif
 #define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
+#define JVET_N0867_TEMP_SCAL_HRD                          1 // JVET-N0867 temporal scalability support for HRD in buffering period and picture timing SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1
 
@@ -308,7 +321,13 @@
 
 #define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
 
-#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
+#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag
+
+#define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
+
+#define JVET_O0177_PROPOSAL1                              1 // JVET_O0177 proposal 1: Allow signaling of HRD parameters for temporal sub-layers optionally controlled by a flag
+
+#define JVET_O0241                                        1 // JVET_O0241 : decoding process for generating unavailable reference pictures
 
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
@@ -534,7 +553,11 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
+#if JVET_O0245_VPS_DPS_APS
+enum ApsType
+#else
 enum ApsTypeValues
+#endif
 {
   ALF_APS = 0,
   LMCS_APS = 1,
@@ -1053,7 +1076,7 @@ enum NalUnitType
   NAL_UNIT_CODED_SLICE_RASL,        // 2
   NAL_UNIT_CODED_SLICE_RADL,        // 3
 
-  NAL_UNIT_RESERVED_VCL_4, 
+  NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
   NAL_UNIT_RESERVED_VCL_7,

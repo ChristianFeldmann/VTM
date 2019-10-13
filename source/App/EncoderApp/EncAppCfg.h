@@ -469,6 +469,9 @@ protected:
 #endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if JVET_O0189_DU
+  bool      m_decodingUnitInfoSEIEnabled;
+#endif
 #if JVET_O0041_FRAME_FIELD_SEI
   bool      m_frameFieldInfoSEIEnabled;
 #endif
@@ -597,6 +600,9 @@ protected:
 #endif
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
+#if FIX_HRD_O0189
+  bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
+#endif
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc

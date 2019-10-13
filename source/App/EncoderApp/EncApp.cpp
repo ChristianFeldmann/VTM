@@ -470,6 +470,12 @@ void EncApp::xInitLibCfg()
 #if JVET_O0041_FRAME_FIELD_SEI
   m_cEncLib.setFrameFieldInfoSEIEnabled                          ( m_frameFieldInfoSEIEnabled );
 #endif
+#if JVET_O0189_DU
+  m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
+#endif
+#if FIX_HRD_O0189
+  m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
+#endif
 #if HEVC_SEI
   m_cEncLib.setToneMappingInfoSEIEnabled                         ( m_toneMappingInfoSEIEnabled );
   m_cEncLib.setTMISEIToneMapId                                   ( m_toneMapId );

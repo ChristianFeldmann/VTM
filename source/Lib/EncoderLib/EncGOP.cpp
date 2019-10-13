@@ -569,7 +569,11 @@ void EncGOP::xWriteDuSEIMessages (SEIMessages& duInfoSeiMessages, AccessUnit &ac
 {
   const HRDParameters *hrd = sps->getHrdParameters();
 
+#if JVET_O0189_DU
+  if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() )
+#else
   if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getSubPicCpbParamsPresentFlag() )
+#endif
   {
     int naluIdx = 0;
     AccessUnit::iterator nalu = accessUnit.begin();
@@ -697,15 +701,25 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
 {
 #if JVET_OO152_BP_SEI_GDR
+#if JVET_O0189_DU
+  if ((m_pcCfg->getBufferingPeriodSEIEnabled()) && (slice->isIRAP() || slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+    ( slice->getSPS()->getHrdParametersPresentFlag() ) )
+#else
   if ((m_pcCfg->getBufferingPeriodSEIEnabled()) && (slice->isIRAP() || slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
     (slice->getSPS()->getVuiParametersPresentFlag()) &&
     ((slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag())
       || (slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag())))
+#endif
+#else
+#if JVET_O0189_DU
+  if( ( m_pcCfg->getBufferingPeriodSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) &&
+    ( slice->getSPS()->getHrdParametersPresentFlag() ) )
 #else
   if( ( m_pcCfg->getBufferingPeriodSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) &&
     ( slice->getSPS()->getVuiParametersPresentFlag() ) &&
     ( ( slice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
     || ( slice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) )
+#endif
 #endif
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
@@ -839,15 +853,23 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
   const HRDParameters *hrd = slice->getSPS()->getHrdParameters();
 
   // update decoding unit parameters
+#if JVET_O0189_DU
+  if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) )
+#else
   if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
     ( slice->getSPS()->getVuiParametersPresentFlag() ) &&
     (  hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() ) )
+#endif
   {
     int picSptDpbOutputDuDelay = 0;
     SEIPictureTiming *pictureTimingSEI = new SEIPictureTiming();
 
     // DU parameters
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+#else
     if( hrd->getSubPicCpbParamsPresentFlag() )
+#endif
     {
       uint32_t numDU = (uint32_t) duData.size();
       pictureTimingSEI->m_numDecodingUnitsMinus1     = ( numDU - 1 );
@@ -896,7 +918,11 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
 #endif
     }
 
+#if JVET_O0189_DU
+    if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getDecodingUnitHrdParamsPresentFlag() )
+#else
     if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getSubPicCpbParamsPresentFlag() )
+#endif
     {
       for( int i = 0; i < ( pictureTimingSEI->m_numDecodingUnitsMinus1 + 1 ); i ++ )
       {
@@ -961,7 +987,11 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
     return;
   }
   const HRDParameters *hrd = sps->getHrdParameters();
+#if JVET_O0189_DU
+  if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+#else
   if( hrd->getSubPicCpbParamsPresentFlag() )
+#endif
   {
     int i;
     uint64_t ui64Tmp;
@@ -3089,11 +3119,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           accessUnit.push_back(new NALUnitEBSP(nalu));
         }
 
+#if JVET_O0189_DU
+        if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
+            ( ( pcSlice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
+           || ( pcSlice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) &&
+            ( pcSlice->getSPS()->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() ) )
+#else
         if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
             ( pcSlice->getSPS()->getVuiParametersPresentFlag() ) &&
             ( ( pcSlice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
            || ( pcSlice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) &&
             ( pcSlice->getSPS()->getHrdParameters()->getSubPicCpbParamsPresentFlag() ) )
+#endif
         {
             uint32_t numNalus = 0;
           uint32_t numRBSPBytes = 0;

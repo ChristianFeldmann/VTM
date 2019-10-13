@@ -654,6 +654,9 @@ protected:
 #if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
 #endif
+#if FIX_HRD_O0189
+  bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
+#endif
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
 #if HEVC_SEI
@@ -1645,6 +1648,10 @@ public:
 
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
+#if FIX_HRD_O0189
+  bool         getHrdParametersPresentFlag()                         { return m_hrdParametersPresentFlag; }
+  void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
+#endif
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
   void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
   bool         getAspectRatioInfoPresentFlag()                       { return m_aspectRatioInfoPresentFlag; }

@@ -52,6 +52,8 @@
 
 #define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
 
+#define JVET_O0145_ENTRYPOINT_SIGNALLING                  1 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+
 #define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
 
 #define JVET_O0173_O0176_O0338_NUMBRICK_M2                1 // JVET-O0173, O0176, O0338 : Replacing num_brick_rows_minus1 with num_brick_rows_minus2
@@ -270,6 +272,11 @@
 #define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
 #define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
 
+#define JVET_O0189_DU                                     1
+#if JVET_O0189_DU
+#define FIX_SEI_O0189                                     1
+#define FIX_HRD_O0189                                     1
+#endif
 #define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
 
 #define FIX_DB_MAX_TRANSFORM_SIZE                         1

@@ -1165,14 +1165,32 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
   READ_FLAG( symbol, "general_vcl_hrd_parameters_present_flag" );           hrd->setVclHrdParametersPresentFlag( symbol == 1 ? true : false );
   if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
   {
+#if JVET_O0189_DU
+    READ_FLAG( symbol, "decoding_unit_hrd_params_present_flag" );           hrd->setDecodingUnitHrdParamsPresentFlag( symbol == 1 ? true : false );
+#else
     READ_FLAG( symbol, "decoding_unit_hrd_params_present_flag" );           hrd->setSubPicCpbParamsPresentFlag( symbol == 1 ? true : false );
+#endif
 
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      READ_CODE( 8, symbol, "tick_divisor_minus2" );                        hrd->setTickDivisorMinus2( symbol );
+      READ_FLAG( symbol, "decoding_unit_cpb_params_in_pic_timing_sei_flag" ); hrd->setDecodingUnitCpbParamsInPicTimingSeiFlag( symbol == 1 ? true : false );
+    }
+#endif
     READ_CODE( 4, symbol, "bit_rate_scale" );                       hrd->setBitRateScale( symbol );
     READ_CODE( 4, symbol, "cpb_size_scale" );                       hrd->setCpbSizeScale( symbol );
+#if JVET_O0189_DU
+    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      READ_CODE( 4, symbol, "cpb_size_du_scale" );                  hrd->setCpbSizeDuScale( symbol );
+    }
+#else
     if( hrd->getSubPicCpbParamsPresentFlag() )
     {
       READ_CODE( 4, symbol, "cpb_size_du_scale" );                  hrd->setDuCpbSizeScale( symbol );
     }
+#endif
   }
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
@@ -1649,13 +1667,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
   TimingInfo *timingInfo = pcSPS->getTimingInfo();
+#if JVET_O0189_DU
+  READ_FLAG(     uiCode, "general_hrd_parameters_present_flag");        pcSPS->setHrdParametersPresentFlag(uiCode);
+  if( pcSPS->getHrdParametersPresentFlag() )
+#else
   READ_FLAG(       uiCode, "timing_info_present_flag");         timingInfo->setTimingInfoPresentFlag      (uiCode ? true : false);
   if(timingInfo->getTimingInfoPresentFlag())
+#endif
   {
     READ_CODE( 32, uiCode, "num_units_in_tick");                timingInfo->setNumUnitsInTick             (uiCode);
     READ_CODE( 32, uiCode, "time_scale");                       timingInfo->setTimeScale                  (uiCode);
 
+#if !JVET_O0189_DU
     READ_FLAG(     uiCode, "hrd_parameters_present_flag");        pcSPS->setHrdParametersPresentFlag(uiCode);
+#endif
     if( pcSPS->getHrdParametersPresentFlag() )
     {
       parseHrdParameters( pcSPS->getHrdParameters(), 1, pcSPS->getMaxTLayers() - 1 );
@@ -2868,13 +2893,31 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
   }
 
-
   std::vector<uint32_t> entryPointOffset;
   if( !pps->getSingleTileInPicFlag() || pps->getEntropyCodingSyncEnabledFlag() )
   {
     uint32_t numEntryPointOffsets;
     uint32_t offsetLenMinus1;
+#if JVET_O0145_ENTRYPOINT_SIGNALLING
+    if (pps->getEntropyCodingSyncEnabledFlag() == 0)
+    {
+      numEntryPointOffsets = pcSlice->getSliceNumBricks() - 1;
+    }
+    else
+    {
+      int numBrickSpecificCtuRowsInSlice = 0;
+      for (int i = 0; i < pcSlice->getSliceNumBricks(); i++)
+      {
+        //TODO: Update this when JVET-O0143 is implemented to handle the case when current slice is rectangular slice.
+        //      Need to access the variable SliceBrickIdx[] which has dependency to BricksToSliceMap[]
+        int numberOfCTURow = (int)ceil(pps->getPicHeightInLumaSamples() / sps->getCTUSize());
+        numBrickSpecificCtuRowsInSlice += numberOfCTURow;
+      }
+      numEntryPointOffsets = numBrickSpecificCtuRowsInSlice - 1;
+    }
+#else
     READ_UVLC( numEntryPointOffsets, "num_entry_point_offsets" );
+#endif
     if( numEntryPointOffsets > 0 )
     {
       READ_UVLC( offsetLenMinus1, "offset_len_minus1" );

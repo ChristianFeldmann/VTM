@@ -159,7 +159,11 @@ public:
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
+#if !JVET_N0353_INDEP_BUFF_TIME_SEI
   void  parseHrdParameters  ( HRDParameters *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
+#else
+  void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
+#endif
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );

@@ -137,7 +137,6 @@ public:
   void        mvp_flag                  ( const PredictionUnit&         pu,       RefPicList        eRefList );
 
   void        MHIntra_flag              ( const PredictionUnit&         pu );
-  void        MHIntra_luma_pred_modes   ( const CodingUnit&             cu );
   void        smvd_mode              ( const PredictionUnit&         pu );
 
 #if !JVET_O0525_REMOVE_PCM

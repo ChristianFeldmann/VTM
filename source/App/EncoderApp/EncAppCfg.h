@@ -164,7 +164,12 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+#if JVET_O0044_MULTI_SUB_PROFILE
+  std::vector<uint32_t>  m_subProfile;
+  uint8_t      m_numSubProfile;
+#else
   uint32_t      m_subProfile;
+#endif
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
@@ -179,6 +184,9 @@ protected:
   int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
+#if JVET_N0494_DRAP
+  int       m_drapPeriod;                                     ///< period of dependent RAP pictures
+#endif
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
   RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
@@ -244,7 +252,9 @@ protected:
 #if SHARP_LUMA_DELTA_QP
   LumaLevelToDeltaQPMapping m_lumaLevelToDeltaQPMapping;      ///< mapping from luma level to Delta QP.
 #endif
+#if HEVC_SEI
   SEIMasteringDisplay m_masteringDisplay;
+#endif
 
   bool      m_bUseAdaptiveQP;                                 ///< Flag for enabling QP adaptation based on a psycho-visual model
   int       m_iQPAdaptationRange;                             ///< dQP range by QP adaptation
@@ -258,9 +268,9 @@ protected:
   unsigned  m_uiCTUSize;
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned  m_uiMaxBTDepth;
-  unsigned  m_uiMaxBTDepthI;
-  unsigned  m_uiMaxBTDepthIChroma;
+  unsigned  m_uiMaxMTTHierarchyDepth;
+  unsigned  m_uiMaxMTTHierarchyDepthI;
+  unsigned  m_uiMaxMTTHierarchyDepthIChroma;
   bool      m_dualTree;
   bool      m_LFNST;
   bool      m_useFastLFNST;
@@ -299,7 +309,7 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING  
+#if !JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_RdpcmMode;
 #endif
 #if JVET_O0119_BASE_PALETTE_444
@@ -442,6 +452,10 @@ protected:
   bool      m_tileUniformSpacingFlag;
   int       m_numTileColumnsMinus1;
   int       m_numTileRowsMinus1;
+#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+  int       m_uniformTileColsWidthMinus1;
+  int       m_uniformTileRowHeightMinus1;
+#endif
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;
@@ -461,9 +475,21 @@ protected:
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
 
   HashType  m_decodedPictureHashSEIType;                      ///< Checksum mode for decoded picture hash SEI message
+#if HEVC_SEI
   bool      m_recoveryPointSEIEnabled;
+#endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
+#if JVET_N0867_TEMP_SCAL_HRD
+  bool      m_bpDeltasGOPStructure;
+#endif
+#if JVET_O0189_DU
+  bool      m_decodingUnitInfoSEIEnabled;
+#endif
+#if JVET_O0041_FRAME_FIELD_SEI
+  bool      m_frameFieldInfoSEIEnabled;
+#endif
+#if HEVC_SEI
   bool      m_toneMappingInfoSEIEnabled;
   bool      m_chromaResamplingFilterSEIenabled;
   int       m_chromaResamplingHorFilterIdc;
@@ -530,6 +556,8 @@ protected:
 #endif
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
+#endif
+
 
   bool      m_MCTSEncConstraint;
 
@@ -581,10 +609,14 @@ protected:
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
+#if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;
-
+#endif
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
+#if FIX_HRD_O0189
+  bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
+#endif
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
@@ -604,7 +636,9 @@ protected:
   bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
+#if HEVC_SEI
   std::string m_colourRemapSEIFileRoot;
+#endif
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.

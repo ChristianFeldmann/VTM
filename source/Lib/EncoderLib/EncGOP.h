@@ -60,6 +60,9 @@
 #include "Analyze.h"
 #include "RateCtrl.h"
 #include <vector>
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+#include "EncHRD.h"
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/ConvertColorFormat.H"
@@ -126,6 +129,9 @@ private:
   int                     m_iNumPicCoded;
   bool                    m_bFirst;
   int                     m_iLastRecoveryPicPOC;
+#if JVET_N0494_DRAP
+  int                     m_latestDRAPPOC;
+#endif
   int                     m_lastRasPoc;
 
   //  Access channel
@@ -154,6 +160,10 @@ private:
   // indicate sequence first
   bool                    m_bSeqFirst;
 
+#if JVET_N0353_INDEP_BUFF_TIME_SEI
+  EncHRD*                 m_HRD;
+#endif
+
   // clean decoding refresh
   bool                    m_bRefreshPending;
   int                     m_pocCRA;
@@ -161,8 +171,14 @@ private:
   int                     m_associatedIRAPPOC;
 
   std::vector<int>        m_vRVM_RP;
+#if !JVET_N0867_TEMP_SCAL_HRD
   uint32_t                    m_lastBPSEI;
   uint32_t                    m_totalCoded;
+#else
+  uint32_t                    m_lastBPSEI[MAX_TLAYER];
+  uint32_t                    m_totalCoded[MAX_TLAYER];
+  bool                        m_rapWithLeading;
+#endif
   bool                    m_bufferingPeriodSEIPresentInAU;
   SEIEncoder              m_seiEncoder;
 #if W0038_DB_OPT
@@ -304,12 +320,17 @@ protected:
 
   void xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS *sps, const PPS *pps);
   void xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice);
+#if JVET_O0041_FRAME_FIELD_SEI
+  void xCreateFrameFieldInfoSEI (SEIMessages& seiMessages, Slice *slice, bool isField);
+#endif
   void xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData);
   void xUpdateDuData(AccessUnit &testAU, std::deque<DUData> &duData);
   void xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUData> &duData, const SPS *sps);
   void xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI);
 
+#if HEVC_SEI
   void xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& nestedSeiMessages);
+#endif
   void xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xClearSEIs(SEIMessages& seiMessages, bool deleteMessages);
@@ -322,11 +343,19 @@ protected:
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
 #if JVET_O1136_TS_BDPCM_SIGNALLING
+#if JVET_O0245_VPS_DPS_APS
+  int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
+#else
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps, const SPS *sps);
+#endif
 #else
   int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
 #endif
+#if JVET_O0245_VPS_DPS_APS
+  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId = 0 );
+#else
   int xWriteAPS(AccessUnit &accessUnit, APS *aps);
+#endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

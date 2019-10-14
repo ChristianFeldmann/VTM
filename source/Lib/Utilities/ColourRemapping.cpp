@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 
+#if HEVC_SEI
+
 #include "ColourRemapping.h"
 #include "DecoderLib/AnnexBread.h"
 #include "DecoderLib/NALread.h"
@@ -413,3 +415,5 @@ void applyColourRemapping(const PelUnitBuf& pic, SEIColourRemappingInfo& criSEI,
 }
 
 //! \}
+#endif
+

@@ -682,7 +682,7 @@ static bool writePlane(ostream& fd, const Pel* src,
     }
 
 #if JVET_O1164_RPR
-    // here height444 and orgHeight are luma heights 
+    // here height444 and orgHeight are luma heights
     for( uint32_t y444 = height444; y444 < orgHeight; y444++ )
     {
       if( ( y444 & mask_y_file ) == 0 ) // if this is chroma, determine whether to skip every other row
@@ -1146,9 +1146,9 @@ bool VideoIOYuv::write( const CPelUnitBuf& picTop, const CPelUnitBuf& picBottom,
     const uint32_t    width444   = areaTopY.width  - (confLeft + confRight);
     const uint32_t    height444  = areaTopY.height - (confTop + confBottom);
 
-    CHECK(areaTop.width  == areaBottom.width , "Incompatible formats");
-    CHECK(areaTop.height == areaBottom.height, "Incompatible formats");
-    CHECK(areaTop.stride == areaBottom.stride, "Incompatible formats");
+    CHECK(areaTop.width  != areaBottom.width , "Incompatible formats");
+    CHECK(areaTop.height != areaBottom.height, "Incompatible formats");
+    CHECK(areaTop.stride != areaBottom.stride, "Incompatible formats");
 
     if ((width444 == 0) || (height444 == 0))
     {

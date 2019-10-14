@@ -118,7 +118,6 @@ public:
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        MHIntra_flag              ( PredictionUnit&               pu );
-  void        MHIntra_luma_pred_modes   ( CodingUnit&                   cu );
   void        smvd_mode              ( PredictionUnit&               pu );
 
 #if !JVET_O0525_REMOVE_PCM

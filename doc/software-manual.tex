@@ -1082,6 +1082,13 @@ picture.
 \end{tabular}
 \\
 
+\Option{DRAPPeriod} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the DRAP period in frames.  
+Dependent RAP indication SEI messages are disabled if DRAPPeriod is 0.
+\\
+
 \Option{GOPSize (-g)} &
 %\ShortOption{-g} &
 \Default{1} &
@@ -1752,6 +1759,13 @@ Controls the mode used to determine per row and column tile sizes.
      by TileColumnWidthArray and TileRowHeightArray respectively \\
  1 & Tile columns and tile rows are uniformly spaced. \\
 \end{tabular}
+\\
+
+\Option{UniformTileColsWidthMinus1}%
+\Option{UniformTileRowHeightMinus1} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies the tile width and height to use if TileUniformSpacing is set to 1.
 \\
 
 \Option{NumTileColumnsMinus1}%

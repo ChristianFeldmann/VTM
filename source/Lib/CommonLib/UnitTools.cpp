@@ -170,6 +170,18 @@ bool CU::isSameTile(const CodingUnit& cu, const CodingUnit& cu2)
   return cu.tileIdx == cu2.tileIdx;
 }
 
+#if JVET_O0625_ALF_PADDING
+bool CU::isSameBrick( const CodingUnit& cu, const CodingUnit& cu2 )
+{
+  const Picture&  pcPic    = *( cu.cs->picture );
+  const BrickMap& tileMap  = *( pcPic.brickMap );
+  const uint32_t brickIdx  = tileMap.getBrickIdxRsMap( cu.lumaPos() );
+  const uint32_t brickIdx2 = tileMap.getBrickIdxRsMap( cu2.lumaPos() );
+
+  return brickIdx == brickIdx2;
+}
+#endif
+
 bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)
 {
   return ( cu.slice->getIndependentSliceIdx() == cu2.slice->getIndependentSliceIdx() ) && ( cu.tileIdx == cu2.tileIdx );
@@ -646,6 +658,7 @@ bool PU::isMIP(const PredictionUnit &pu, const ChannelType &chType)
   return (chType == CHANNEL_TYPE_LUMA && pu.cu->mipFlag);
 }
 
+#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int PU::getMipSizeId(const PredictionUnit &pu)
 {
   if ((pu.lwidth() == 4) && (pu.lheight() == 4))
@@ -662,7 +675,6 @@ int PU::getMipSizeId(const PredictionUnit &pu)
   }
 }
 
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
 int PU::getMipMPMs(const PredictionUnit &pu, unsigned *mpm)
 {
   const CompArea &area = pu.block( getFirstComponentOfChannel( CHANNEL_TYPE_LUMA ) );

@@ -71,7 +71,11 @@ public:
 public:
   unsigned          decodeBinEP         ();
   unsigned          decodeBinsEP        ( unsigned numBins  );
+#if JVET_P0090_32BIT_MVD
+  unsigned          decodeRemAbsEP      ( unsigned goRicePar, unsigned cutoff, int maxLog2TrDynamicRange );
+#else
   unsigned          decodeRemAbsEP      ( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange );
+#endif
   unsigned          decodeBinTrm        ();
   void              align               ();
   unsigned          getNumBitsRead      () { return m_Bitstream->getNumBitsRead() + m_bitsNeeded; }

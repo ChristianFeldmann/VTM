@@ -65,51 +65,31 @@ struct TrQuantParams
 };
 
 /// QP struct
-#if JVET_O0919_TS_MIN_QP
 class QpParam
-#else
-struct QpParam
-#endif
 {
-#if JVET_O0919_TS_MIN_QP
   int Qps[2];
   int pers[2];
   int rems[2];
-#else
-  int Qp;
-  int per;
-  int rem;
-#endif
 
 private:
 
   QpParam(const int           qpy,
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
           const ComponentID   compID,
-#else
-          const ChannelType   chType,
-#endif
           const int           qpBdOffset,
-#if JVET_O0919_TS_MIN_QP
           const int           minQpPrimeTsMinus4,
-#endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
           const int           dqp
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
         , const SPS           *sps
-#endif
   );
 
 public:
 
   QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT);
 
-#if JVET_O0919_TS_MIN_QP
   int Qp ( const bool ts ) const { return Qps [ts?1:0]; }
   int per( const bool ts ) const { return pers[ts?1:0]; }
   int rem( const bool ts ) const { return rems[ts?1:0]; }
-#endif
 
 }; // END STRUCT DEFINITION QpParam
 
@@ -151,8 +131,6 @@ public:
   void processScalingListEnc     ( int *coeff, int *quantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
   void processScalingListDec     ( const int *coeff, int *dequantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
 
-  void  processRecScalingListEnc ( int *coeff, int *quantcoeff, int quantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
-  void  processRecScalingListDec ( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
   virtual void setFlatScalingList( const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
   virtual void setScalingList    ( ScalingList *scalingList, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
 

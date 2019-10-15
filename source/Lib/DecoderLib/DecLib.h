@@ -97,6 +97,7 @@ private:
   SampleAdaptiveOffset    m_cSAO;
   AdaptiveLoopFilter      m_cALF;
   Reshape                 m_cReshaper;                        ///< reshaper class
+  HRD                     m_HRD;
   // decoder side RD cost computation
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
@@ -114,7 +115,8 @@ private:
   bool                    m_bFirstSliceInBitstream;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-  bool                    m_craNoRaslOutputFlag;    //value of variable NoRaslOutputFlag of the last CRA pic
+  bool                    m_lastNoIncorrectPicOutputFlag;    //value of variable NoIncorrectPicOutputFlag of the last CRA / GDR pic
+  int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
   int                     m_decodedPictureHashSEIEnabled;  ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
@@ -125,6 +127,10 @@ private:
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
   int                     m_debugPOC;
   int                     m_debugCTU;
+
+  std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  std::vector<int> m_accessUnitApsNals;
+
 public:
   DecLib();
   virtual ~DecLib();
@@ -153,6 +159,7 @@ public:
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
+  bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
@@ -162,11 +169,13 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+
 protected:
   void  xUpdateRasInit(Slice* slice);
 
   Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
   void  xCreateLostPicture (int iLostPOC);
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
 
   void      xActivateParameterSets();
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

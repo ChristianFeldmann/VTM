@@ -96,27 +96,33 @@ void deleteSEIs (SEIMessages &seiList)
   seiList.clear();
 }
 
-void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target)
+void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 {
-  target.m_bpSeqParameterSetId = m_bpSeqParameterSetId;
-  target.m_rapCpbParamsPresentFlag = m_rapCpbParamsPresentFlag;
-  target.m_cpbDelayOffset = m_cpbDelayOffset;
-  target.m_dpbDelayOffset = m_dpbDelayOffset;
+  target.m_bpNalCpbParamsPresentFlag = m_bpNalCpbParamsPresentFlag;
+  target.m_bpVclCpbParamsPresentFlag = m_bpVclCpbParamsPresentFlag;
+  target.m_initialCpbRemovalDelayLength = m_initialCpbRemovalDelayLength;
+  target.m_cpbRemovalDelayLength = m_cpbRemovalDelayLength;
+  target.m_dpbOutputDelayLength = m_dpbOutputDelayLength;
+  target.m_duCpbRemovalDelayIncrementLength = m_duCpbRemovalDelayIncrementLength;
+  target.m_dpbOutputDelayDuLength = m_dpbOutputDelayDuLength;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_auCpbRemovalDelayDelta = m_auCpbRemovalDelayDelta;
+  target.m_cpbRemovalDelayDeltasPresentFlag =  m_cpbRemovalDelayDeltasPresentFlag;
+  target.m_numCpbRemovalDelayDeltas = m_numCpbRemovalDelayDeltas;
+  target.m_bpMaxSubLayers = m_bpMaxSubLayers;
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
-  ::memcpy(target.m_initialCpbRemovalDelayOffset, m_initialCpbRemovalDelayOffset, sizeof(m_initialCpbRemovalDelayOffset));
-  ::memcpy(target.m_initialAltCpbRemovalDelay, m_initialAltCpbRemovalDelay, sizeof(m_initialAltCpbRemovalDelay));
-  ::memcpy(target.m_initialAltCpbRemovalDelayOffset, m_initialAltCpbRemovalDelayOffset, sizeof(m_initialAltCpbRemovalDelayOffset));
+  ::memcpy(target.m_initialCpbRemovalOffset, m_initialCpbRemovalOffset, sizeof(m_initialCpbRemovalOffset));
+  ::memcpy(target.m_cpbRemovalDelayDelta, m_cpbRemovalDelayDelta, sizeof(m_cpbRemovalDelayDelta));
+  ::memcpy(target.m_bpCpbCnt, m_bpCpbCnt, sizeof(m_bpCpbCnt));
 }
 
-void SEIPictureTiming::copyTo (SEIPictureTiming& target)
+void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 {
-  target.m_picStruct = m_picStruct;
-  target.m_sourceScanType = m_sourceScanType;
-  target.m_duplicateFlag = m_duplicateFlag;
-
-  target.m_auCpbRemovalDelay = m_auCpbRemovalDelay;
+  ::memcpy(target.m_auCpbRemovalDelay, m_auCpbRemovalDelay, sizeof(m_auCpbRemovalDelay));
+  ::memcpy(target.m_subLayerDelaysPresentFlag, m_subLayerDelaysPresentFlag, sizeof(m_subLayerDelaysPresentFlag));
+  ::memcpy(target.m_cpbRemovalDelayDeltaEnabledFlag, m_cpbRemovalDelayDeltaEnabledFlag, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
+  ::memcpy(target.m_cpbRemovalDelayDeltaIdx, m_cpbRemovalDelayDeltaIdx, sizeof(m_cpbRemovalDelayDeltaIdx));
+  target.m_ptMaxSubLayers = m_ptMaxSubLayers;
   target.m_picDpbOutputDelay = m_picDpbOutputDelay;
   target.m_picDpbOutputDuDelay = m_picDpbOutputDuDelay;
   target.m_numDecodingUnitsMinus1 = m_numDecodingUnitsMinus1;
@@ -134,8 +140,11 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
   {
     case SEI::BUFFERING_PERIOD:                     return "Buffering period";
     case SEI::PICTURE_TIMING:                       return "Picture timing";
+#if HEVC_SEI
     case SEI::PAN_SCAN_RECT:                        return "Pan-scan rectangle";                   // not currently decoded
+#endif
     case SEI::FILLER_PAYLOAD:                       return "Filler payload";                       // not currently decoded
+#if HEVC_SEI
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";                 // not currently decoded
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
     case SEI::RECOVERY_POINT:                       return "Recovery point";
@@ -152,9 +161,14 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::GREEN_METADATA:                       return "Green metadata information";
     case SEI::SOP_DESCRIPTION:                      return "Structure of pictures information";
     case SEI::ACTIVE_PARAMETER_SETS:                return "Active parameter sets";
+#endif
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
+#if HEVC_SEI
     case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
+#endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
+    case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
+#if HEVC_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";
     case SEI::NO_DISPLAY:                           return "No display";
@@ -166,6 +180,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::COLOUR_REMAPPING_INFO:                return "Colour remapping info";
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
+#endif
 #endif
     default:                                        return "Unknown";
   }

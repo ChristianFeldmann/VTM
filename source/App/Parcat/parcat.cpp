@@ -59,11 +59,7 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   SPS* sps = NULL;
 
   uint32_t firstSliceSegmentInPic;
-  if( isRapPic )
-  {
-    READ_FLAG( uiCode, "no_output_of_prior_pics_flag" );  //ignored -- updated already
-  }
-  READ_UVLC (    uiCode, "slice_pic_parameter_set_id" );
+  READ_UVLC(uiCode, "slice_pic_parameter_set_id");
   pps = parameterSetManager->getPPS(uiCode);
   //!KS: need to add error handling code here, if PPS is not available
   CHECK(pps==0, "Invalid PPS");
@@ -110,6 +106,9 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   {
     READ_UVLC(uiCode, "num_bricks_in_slice_minus1");
   }
+
+  READ_FLAG(uiCode, "non_reference_picture_flag");
+
   //set uiCode to equal slice start address (or dependent slice start address)
   for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
   {
@@ -117,10 +116,6 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
   }
 
   READ_UVLC (    uiCode, "slice_type" );
-  if( pps->getOutputFlagPresentFlag() )
-  {
-    READ_FLAG( uiCode, "pic_output_flag" );
-  }
 
 
   return firstSliceSegmentInPic;
@@ -187,34 +182,34 @@ const bool verbose = false;
 
 const char * NALU_TYPE[] =
 {
-    "NAL_UNIT_PPS",
-    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
-    "NAL_UNIT_PREFIX_SEI",
-    "NAL_UNIT_SUFFIX_SEI",
-    "NAL_UNIT_APS",
-    "NAL_UNIT_RESERVED_NVCL_5",
-    "NAL_UNIT_RESERVED_NVCL_6",
-    "NAL_UNIT_RESERVED_NVCL_7",
     "NAL_UNIT_CODED_SLICE_TRAIL",
     "NAL_UNIT_CODED_SLICE_STSA",
-    "NAL_UNIT_CODED_SLICE_RADL",
     "NAL_UNIT_CODED_SLICE_RASL",
-    "NAL_UNIT_RESERVED_VCL_12",
-    "NAL_UNIT_RESERVED_VCL_13",
-    "NAL_UNIT_RESERVED_VCL_14",
-    "NAL_UNIT_RESERVED_VCL_15",
-    "NAL_UNIT_DPS",
-    "NAL_UNIT_SPS",
-    "NAL_UNIT_EOS",
-    "NAL_UNIT_EOB",
-    "NAL_UNIT_VPS",
-    "NAL_UNIT_RESERVED_NVCL_21",
-    "NAL_UNIT_RESERVED_NVCL_22",
-    "NAL_UNIT_RESERVED_NVCL_23",
+    "NAL_UNIT_CODED_SLICE_RADL",
+    "NAL_UNIT_RESERVED_VCL_4",
+    "NAL_UNIT_RESERVED_VCL_5",
+    "NAL_UNIT_RESERVED_VCL_6",
+    "NAL_UNIT_RESERVED_VCL_7",
     "NAL_UNIT_CODED_SLICE_IDR_W_RADL",
     "NAL_UNIT_CODED_SLICE_IDR_N_LP",
     "NAL_UNIT_CODED_SLICE_CRA",
-    "NAL_UNIT_CODED_SLICE_GRA",
+     "NAL_UNIT_CODED_SLICE_GDR",
+    "NAL_UNIT_RESERVED_IRAP_VCL12",
+    "NAL_UNIT_RESERVED_IRAP_VCL13",
+    "NAL_UNIT_RESERVED_VCL14",
+    "NAL_UNIT_RESERVED_VCL15",
+    "NAL_UNIT_SPS",
+    "NAL_UNIT_PPS",
+    "NAL_UNIT_APS",
+    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
+    "NAL_UNIT_EOS",
+    "NAL_UNIT_EOB",
+    "NAL_UNIT_PREFIX_SEI",
+    "NAL_UNIT_SUFFIX_SEI",
+    "NAL_UNIT_DBS",
+    "NAL_UNIT_RESERVED_NVCL25",
+    "NAL_UNIT_RESERVED_NVCL26",
+    "NAL_UNIT_RESERVED_NVCL27",
     "NAL_UNIT_UNSPECIFIED_28",
     "NAL_UNIT_UNSPECIFIED_29",
     "NAL_UNIT_UNSPECIFIED_30",
@@ -274,10 +269,10 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     p += nal_start;
 
     std::vector<uint8_t> nalu(p, p + nal_end - nal_start);
-    int nalu_header = nalu[0];
-    bool zeroTidRequiredFlag = (nalu_header & ( 1 << 7 )) >> 7;
-    int nalUnitTypeLsb = (((1 << 4) - 1) & nalu_header);
-    int nalu_type = ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
+    int nalu_type = nalu[1] >> 3;
+#if ENABLE_TRACING
+    printf ("NALU Type: %d (%s)\n", nalu_type, NALU_TYPE[nalu_type]);
+#endif
     int poc = -1;
     int poc_lsb = -1;
     int new_poc = -1;
@@ -311,7 +306,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       poc = 0;
       new_poc = *poc_base + poc;
     }
-      if((nalu_type > 7 && nalu_type < 15) || nalu_type == NAL_UNIT_CODED_SLICE_CRA)
+    if((nalu_type < 7) || (nalu_type > 9 && nalu_type < 15) )
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
       bool isRapPic =

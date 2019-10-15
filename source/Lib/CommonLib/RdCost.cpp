@@ -232,7 +232,7 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
     }
     else if( isPowerOf2( org.width ) )
     {
-      rcDP.distFunc = m_afpDistortFunc[ DF_SAD + DFOffset + g_aucLog2[ org.width ] ];
+      rcDP.distFunc = m_afpDistortFunc[ DF_SAD + DFOffset + floorLog2( org.width ) ];
     }
     else
     {
@@ -241,7 +241,7 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
   }
   else if( isPowerOf2( org.width ) )
   {
-    rcDP.distFunc = m_afpDistortFunc[ DF_HAD + DFOffset + g_aucLog2[ org.width ] ];
+    rcDP.distFunc = m_afpDistortFunc[ DF_HAD + DFOffset + floorLog2( org.width ) ];
   }
   else
   {
@@ -306,7 +306,7 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &c
     }
     else if( isPowerOf2( org.width) )
     {
-      rcDP.distFunc = m_afpDistortFunc[ DF_SAD + DFOffset + g_aucLog2[ org.width ] ];
+      rcDP.distFunc = m_afpDistortFunc[ DF_SAD + DFOffset + floorLog2( org.width ) ];
     }
     else
     {
@@ -315,7 +315,7 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &c
   }
   else
   {
-    rcDP.distFunc = m_afpDistortFunc[ DF_HAD + DFOffset + g_aucLog2[ org.width ] ];
+    rcDP.distFunc = m_afpDistortFunc[ DF_HAD + DFOffset + floorLog2( org.width ) ];
   }
 
   rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
@@ -359,7 +359,7 @@ void RdCost::setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, 
   }
   else
   {
-    rcDP.distFunc = m_afpDistortFunc[ DF_SAD + g_aucLog2[ width ] ];
+    rcDP.distFunc = m_afpDistortFunc[ DF_SAD + floorLog2( width ) ];
   }
 }
 
@@ -395,7 +395,7 @@ Distortion RdCost::getDistPart( const CPelBuf &org, const CPelBuf &cur, int bitD
 
   if( isPowerOf2( org.width ) )
   {
-    cDtParam.distFunc = m_afpDistortFunc[eDFunc + g_aucLog2[org.width]];
+    cDtParam.distFunc = m_afpDistortFunc[eDFunc + floorLog2(org.width)];
   }
   else
   {
@@ -2938,11 +2938,7 @@ void RdCost::restoreReshapeLumaLevelToWeightTable()
 
 void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt)
 {
-#if JVET_O0432_LMCS_ENCODER
   if (m_signalType == RESHAPE_SIGNAL_SDR || m_signalType == RESHAPE_SIGNAL_HLG)
-#else
-  if (m_signalType == RESHAPE_SIGNAL_SDR)
-#endif
   {
     if (sliceReshape.getSliceReshapeModelPresentFlag())
     {
@@ -2995,11 +2991,7 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   }
   // use luma to get weight
   double weight = 1.0;
-#if JVET_O0432_LMCS_ENCODER
   if (m_signalType == RESHAPE_SIGNAL_SDR || m_signalType == RESHAPE_SIGNAL_HLG)
-#else
-  if (m_signalType == RESHAPE_SIGNAL_SDR)
-#endif
   {
     if (compIdx == COMPONENT_Y)
     {

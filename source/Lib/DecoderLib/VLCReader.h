@@ -153,10 +153,11 @@ public:
   void  parseAPS            ( APS* pcAPS );
   void  parseAlfAps         ( APS* pcAPS );
   void  parseLmcsAps        ( APS* pcAPS );
+  void  parseScalingListAps ( APS* pcAPS );
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
-  void  parseHrdParameters  ( HRDParameters *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
+  void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
@@ -165,17 +166,9 @@ public:
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
-#else
-  void alfFilter( AlfParam& alfParam, const bool isChroma );
-#endif
 
 private:
-#if !JVET_O0491_HLS_CLEANUP
-  int truncatedUnaryEqProb( const int maxSymbol );
-  void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
-#endif
   int  alfGolombDecode( const int k, const bool signed_val=true );
 
 protected:

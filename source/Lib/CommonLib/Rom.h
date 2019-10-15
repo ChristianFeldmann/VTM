@@ -79,20 +79,6 @@ extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIS
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
 
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
-extern const uint8_t g_intraMode65to33AngMapping[NUM_INTRA_MODE];
-extern const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE];
-extern const uint8_t g_mapAngular33ToMip[3][35];
-extern const int     g_sortedMipMpms    [3][NUM_MPM_MIP];
-#endif
-#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-// ====================================================================================================================
-// Luma QP to Chroma QP mapping
-// ====================================================================================================================
-static const int chromaQPMappingTableSize = (MAX_QP + 7);
-
-extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize];
-#endif
 
 // ====================================================================================================================
 // Scanning order & context mapping table
@@ -145,32 +131,27 @@ extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
 // Misc.
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
-extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
-extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
-extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
 
-#if JVET_O0105_ICT
 extern const int       g_ictModes[2][4];
-#endif
 
 inline bool is34( const SizeType& size )
 {
-  return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 1 ) ) );
+  return ( size & ( ( int64_t ) 1 << ( floorLog2(size) - 1 ) ) );
 }
 
 inline bool is58( const SizeType& size )
 {
-  return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 2 ) ) );
+  return ( size & ( ( int64_t ) 1 << ( floorLog2(size) - 2 ) ) );
 }
 
 inline bool isNonLog2BlockSize( const Size& size )
 {
-  return ( ( 1 << g_aucLog2[size.width] ) != size.width ) || ( ( 1 << g_aucLog2[size.height] ) != size.height );
+  return ( ( 1 << floorLog2(size.width) ) != size.width ) || ( ( 1 << floorLog2(size.height) ) != size.height );
 }
 
 inline bool isNonLog2Size( const SizeType& size )
 {
-  return ( ( 1 << g_aucLog2[size] ) != size );
+  return ( ( 1 << floorLog2(size) ) != size );
 }
 
 extern UnitScale     g_miScaling; // scaling object for motion scaling
@@ -222,24 +203,18 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 //! \}
 
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 // 7-tap/3-tap, direction, 2/4/8/16/32/64/128
 extern int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-#endif
 
 extern bool g_mctsDecCheckEnabled;
 
-#if JVET_O0592_ENC_ME_IMP
 class  Mv;
 extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
 extern bool g_isReusedUniMVsFilled[32][32][8][8];
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
 extern const uint8_t g_paletteQuant[52];
 extern uint8_t g_paletteRunTopLut[5];
 extern uint8_t g_paletteRunLeftLut[5];
-#endif
 
 #endif  //__TCOMROM__
 

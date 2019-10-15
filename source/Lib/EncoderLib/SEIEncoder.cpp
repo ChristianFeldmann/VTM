@@ -44,6 +44,7 @@ std::string hashToString(const PictureHash &digest, int numChar);
 //! \ingroup EncoderLib
 //! \{
 
+#if HEVC_SEI
 void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const SPS *sps)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -197,33 +198,111 @@ void SEIEncoder::initSEIToneMappingInfo(SEIToneMappingInfo *seiToneMappingInfo)
 void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Slice *slice, int picInGOP, int lastIdr, int currGOPSize)
 {
 }
-
-void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, Slice *slice)
+#endif
+void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, bool noLeadingPictures)
 {
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(bufferingPeriodSEI != NULL), "Unspecified error");
-  CHECK(!(slice != NULL), "Unspecified error");
+  CHECK(!(m_isInitialized), "bufferingPeriodSEI already initialized");
+  CHECK(!(bufferingPeriodSEI != nullptr), "Need a bufferingPeriodSEI for initialization (got nullptr)");
 
   uint32_t uiInitialCpbRemovalDelay = (90000/2);                      // 0.5 sec
-  bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][1]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][1]     = uiInitialCpbRemovalDelay;
+  bufferingPeriodSEI->m_bpNalCpbParamsPresentFlag = true;
+  bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;
+  bufferingPeriodSEI->m_bpMaxSubLayers = m_pcCfg->getMaxTempLayer() ;
+  for(int i=0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
+  {
+    bufferingPeriodSEI->m_bpCpbCnt[i] = 1;
+    for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt[i]; j++)
+    {
+      bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][0] = uiInitialCpbRemovalDelay;
+      bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][1] = uiInitialCpbRemovalDelay;
+      bufferingPeriodSEI->m_initialCpbRemovalOffset[j][i][0] = uiInitialCpbRemovalDelay;
+      bufferingPeriodSEI->m_initialCpbRemovalOffset[j][i][1] = uiInitialCpbRemovalDelay;
+    }
+  }
 
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][0]  = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][0]  = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][1]  = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][1]  = uiInitialCpbRemovalDelay;
-
-  bufferingPeriodSEI->m_rapCpbParamsPresentFlag = 0;
+  bufferingPeriodSEI->m_initialCpbRemovalDelayLength = 16;                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
+  // Note: The following parameters require some knowledge about the GOP structure.
+  //       Using getIntraPeriod() should be avoided though, because it assumes certain GOP
+  //       properties, which are only valid in CTC.
+  //       Still copying this setting from HM for consistency, improvements welcome
+  bool isRandomAccess  = m_pcCfg->getIntraPeriod() > 0;
+  if( isRandomAccess )
+  {
+    bufferingPeriodSEI->m_cpbRemovalDelayLength = 6;                        // 32 = 2^5 (plus 1)
+    bufferingPeriodSEI->m_dpbOutputDelayLength =  6;                        // 32 + 3 = 2^6
+  }
+  else
+  {
+    bufferingPeriodSEI->m_cpbRemovalDelayLength = 9;                        // max. 2^10
+    bufferingPeriodSEI->m_dpbOutputDelayLength =  9;                        // max. 2^10
+  }
+  bufferingPeriodSEI->m_duCpbRemovalDelayIncrementLength = 7;               // ceil( log2( tick_divisor_minus2 + 2 ) )
+  bufferingPeriodSEI->m_dpbOutputDelayDuLength = bufferingPeriodSEI->m_dpbOutputDelayLength + bufferingPeriodSEI->m_duCpbRemovalDelayIncrementLength;
   //for the concatenation, it can be set to one during splicing.
   bufferingPeriodSEI->m_concatenationFlag = 0;
   //since the temporal layer HRDParameters is not ready, we assumed it is fixed
   bufferingPeriodSEI->m_auCpbRemovalDelayDelta = 1;
-  bufferingPeriodSEI->m_cpbDelayOffset = 0;
-  bufferingPeriodSEI->m_dpbDelayOffset = 0;
+  bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag = m_pcCfg->getBpDeltasGOPStructure() ;
+  if (bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag)
+  {
+    switch (m_pcCfg->getGOPSize())
+    {
+      case 8:
+      {
+        if (noLeadingPictures)
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 5;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[3]          = 6;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[4]          = 7;
+        }
+        else
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+        }
+      }
+        break;
+      case 16:
+      {
+        if (noLeadingPictures)
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 9;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[3]          = 4;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[4]          = 6;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[5]          = 7;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[6]          = 9;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[7]          = 14;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[8]          = 15;
+        }
+        else
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 5;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[3]          = 6;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[4]          = 7;
+        }
+      }
+        break;
+      default:
+      {
+        THROW("m_cpbRemovalDelayDelta not applicable for the GOP size");
+      }
+        break;
+    }
+  }
 }
 
+#if HEVC_SEI
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
@@ -257,7 +336,7 @@ void SEIEncoder::initSEIRecoveryPoint(SEIRecoveryPoint *recoveryPointSEI, Slice 
   recoveryPointSEI->m_exactMatchingFlag = ( slice->getPOC() == 0 ) ? (true) : (false);
   recoveryPointSEI->m_brokenLinkFlag    = false;
 }
-
+#endif
 
 //! calculate hashes for entire reconstructed picture
 void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPictureHashSEI, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths)
@@ -290,6 +369,13 @@ void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPicture
   }
 }
 
+void SEIEncoder::initSEIDependentRAPIndication(SEIDependentRAPIndication *seiDependentRAPIndication)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiDependentRAPIndication!=NULL), "Unspecified error");
+}
+
+#if HEVC_SEI
 void SEIEncoder::initTemporalLevel0IndexSEI(SEITemporalLevel0Index *temporalLevel0IndexSEI, Slice *slice)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -384,6 +470,7 @@ void SEIEncoder::initSEIKneeFunctionInfo(SEIKneeFunctionInfo *seiKneeFunctionInf
     }
   }
 }
+#endif
 
 template <typename T>
 static void readTokenValue(T            &returnedValue, /// value returned
@@ -453,6 +540,7 @@ static void readTokenValueAndValidate(T            &returnedValue, /// value ret
   }
 }
 
+#if HEVC_SEI
 // bool version does not have maximum and minimum values.
 static void readTokenValueAndValidate(bool         &returnedValue, /// value returned
                                       bool         &failed,        /// used and updated
@@ -652,6 +740,6 @@ void SEIEncoder::initSEIGreenMetadataInfo(SEIGreenMetadataInfo *seiGreenMetadata
     seiGreenMetadataInfo->m_xsdMetricType = m_pcCfg->getSEIXSDMetricType();
     seiGreenMetadataInfo->m_xsdMetricValue = u;
 }
-
+#endif
 
 //! \}

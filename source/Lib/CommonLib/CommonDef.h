@@ -58,6 +58,8 @@
 #if _MSC_VER < 1900
 #error "MS Visual Studio version not supported. Please upgrade to Visual Studio 2015 or higher (or use other compilers)"
 #endif
+
+#include <intrin.h>
 #endif
 
 //! \ingroup CommonLib
@@ -151,9 +153,7 @@ static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                6; ///< MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
-#if JVET_O0455_IBC_MAX_MERGE_NUM
 static const int IBC_MRG_MAX_NUM_CANDS =                            6; ///< IBC MERGE
-#endif
 
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
@@ -176,17 +176,10 @@ static const int MAX_VPS_LAYERS =                                 256;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
-#if JVET_O0925_MIP_SIMPLIFICATIONS
 static const int MIP_MAX_WIDTH =                                   MAX_TB_SIZEY;
 static const int MIP_MAX_HEIGHT =                                  MAX_TB_SIZEY;
-#else
-static const int MIP_MAX_WIDTH =                                   64;
-static const int MIP_MAX_HEIGHT =                                  64;
-#endif
 
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
 static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
-#endif
 static const int MAX_NUM_ALF_CLASSES         =                     25;
 static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
 static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
@@ -195,13 +188,13 @@ static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTE
 static const int MAX_ALF_PADDING_SIZE        =                      4;
 
 static const int ALF_FIXED_FILTER_NUM        =                     64;
-#if JVET_O_MAX_NUM_ALF_APS_8
 static const int ALF_CTB_MAX_NUM_APS         =                      8;
-#else
-static const int ALF_CTB_MAX_NUM_APS         =                      6;
-#endif
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
+
+#if JVET_O0625_ALF_PADDING
+static const int ALF_NONE_BOUNDARY           =                     -128;
+#endif
 
 static const int MAX_BDOF_APPLICATION_REGION =                     16;
 
@@ -212,9 +205,6 @@ static const int CU_DQP_TU_CMAX =                                   5; ///< max 
 static const int CU_DQP_EG_k =                                      0; ///< expgolomb order
 
 static const int SBH_THRESHOLD =                                    4; ///< value of the fixed SBH controlling threshold
-
-static const int C1FLAG_NUMBER =                                    8; ///< maximum number of largerThan1 flag coded in one chunk: 16 in HM5
-static const int C2FLAG_NUMBER =                                    1; ///< maximum number of largerThan2 flag coded in one chunk: 16 in HM5
 
 static const int MAX_NUM_VPS =                                     16;
 static const int MAX_NUM_DPS =                                     16;
@@ -235,9 +225,7 @@ static const int MAX_REF_LINE_IDX =                                 3; //highest
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
 
-#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
 static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
-#endif
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
@@ -261,15 +249,10 @@ static const int MDLM_L_IDX =                          LM_CHROMA_IDX + 1; ///< M
 static const int MDLM_T_IDX =                          LM_CHROMA_IDX + 2; ///< MDLM_T
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
-static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
-
 static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const int NUM_MOST_PROBABLE_MODES = 6;
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
-static const int NUM_MPM_MIP =                                      3; ///< number of most probable modes for MIP
-#endif
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
 static const int MAX_NUM_MIP_MODE =                                35; ///< maximum number of MIP modes
@@ -277,21 +260,10 @@ static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); /
 
 static const int MAX_LFNST_COEF_NUM =                              16;
 
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
 static const int LFNST_LAST_SIG_LUMA =                              1;
 static const int LFNST_LAST_SIG_CHROMA =                            1;
-#else
-static const int LFNST_SIG_NZ_LUMA =                                1;
-static const int LFNST_SIG_NZ_CHROMA =                              1;
-#endif
 
 static const int NUM_LFNST_NUM_PER_SET =                            3;
-
-static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...
-
-static const int MDCS_MAXIMUM_WIDTH =                               8; ///< (measured in pixels) TUs with width greater than this can only use diagonal scan
-static const int MDCS_MAXIMUM_HEIGHT =                              8; ///< (measured in pixels) TUs with height greater than this can only use diagonal scan
-
 
 static const int LOG2_MAX_NUM_COLUMNS_MINUS1 =                      7;
 static const int LOG2_MAX_NUM_ROWS_MINUS1 =                         7;
@@ -310,17 +282,13 @@ static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
 
 static const int MAX_QP_OFFSET_LIST_SIZE =                          6; ///< Maximum size of QP offset list is 6 entries
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 static const int MAX_NUM_CQP_MAPPING_TABLES =                       3; ///< Maximum number of chroma QP mapping tables (Cb, Cr and joint Cb-Cr)
 static const int MIN_QP_VALUE_FOR_16_BIT   =                      -48; ////< Minimum value for QP (-6*(bitdepth - 8) ) for bit depth 16 ; actual minimum QP value is bit depth dependent
 static const int MAX_NUM_QP_VALUES =    MAX_QP + 1 - MIN_QP_VALUE_FOR_16_BIT; ////< Maximum number of QP values possible - bit depth dependent
-#endif
 
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME =4; ///< QP' to use for mixed_lossy_lossless coding.
-
-static const int CR_FROM_CB_REG_COST_SHIFT                        = 9;
 
 static const int RExt__GOLOMB_RICE_ADAPTATION_STATISTICS_SETS =     4;
 
@@ -333,12 +301,8 @@ static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
-#if JVET_O0545_MAX_TB_SIGNALLING
 static const int MAX_NUM_TUS =                                     16; ///< Maximum number of TUs within one CU. When max TB size is 32x32, up to 16 TUs within one CU (128x128) is supported
 static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         3;
-#else
-static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
-#endif
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
@@ -362,9 +326,7 @@ static const int SCALING_LIST_BITS =                                8; ///< bit 
 static const int LOG2_SCALING_LIST_NEUTRAL_VALUE =                  4; ///< log2 of the value that, when used in a scaling list, has no effect on quantisation
 static const int SCALING_LIST_DC =                                 16; ///< default DC value
 
-static const int CONTEXT_STATE_BITS =                               6;
 static const int LAST_SIGNIFICANT_GROUPS =                         14;
-static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
 
@@ -375,23 +337,14 @@ static const int MMVD_ADD_NUM =                                     (MMVD_MAX_RE
 static const int MMVD_MRG_MAX_RD_NUM =                              MRG_MAX_NUM_CANDS;
 static const int MMVD_MRG_MAX_RD_BUF_NUM =                          (MMVD_MRG_MAX_RD_NUM + 1);///< increase buffer size by 1
 
-#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
 static const int MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA =      28;
 static const int MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA =    28;
-#else
-static const int MAX_NUM_REG_BINS_4x4SUBBLOCK =                    32; ///< max number of context-coded bins (incl. gt2 bins) per 4x4 subblock
-static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max number of gt2 bins per 4x4 subblock
-static const int MAX_NUM_REG_BINS_2x2SUBBLOCK =                     8; ///< max number of context-coded bins (incl. gt2 bins) per 2x2 subblock (chroma)
-static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max number of gt2 bins per 2x2 subblock (chroma)
-#endif
 
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
 
-#if JVET_O0070_PROF
 static const int PROF_BORDER_EXT_W            =                     1;
 static const int PROF_BORDER_EXT_H            =                     1;
-#endif
 static const int GBI_NUM =                                          5; ///< the number of weight options
 static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
 static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
@@ -415,9 +368,6 @@ static const int DMVR_SUBCU_WIDTH_LOG2 = 4;
 static const int DMVR_SUBCU_HEIGHT_LOG2 = 4;
 static const int MAX_NUM_SUBCU_DMVR = ((MAX_CU_SIZE * MAX_CU_SIZE) >> (DMVR_SUBCU_WIDTH_LOG2 + DMVR_SUBCU_HEIGHT_LOG2));
 static const int DMVR_NUM_ITERATION = 2;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
-static const int BDPCM_MAX_CU_SIZE = 32;      ///<  maximum CU size for RDPCM mode
-#endif
 
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
@@ -459,11 +409,6 @@ static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///<
 
 static const int COM16_C806_TRANS_PREC =                            0;
 
-static const int NUM_MERGE_IDX_EXT_CTX =                            5;
-static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code
-static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
-
-
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -483,12 +428,10 @@ static const int SBT_MAX_SIZE =                                    64; ///< maxi
 static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
 static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU
 
-#if JVET_O0050_LOCAL_DUAL_TREE
 static const int NUM_INTER_CU_INFO_SAVE =                           8; ///< maximum number of inter cu information saved for fast algorithm
 static const int LDT_MODE_TYPE_INHERIT =                            0; ///< No need to signal mode_constraint_flag, and the modeType of the region is inherited from its parent node
 static const int LDT_MODE_TYPE_INFER =                              1; ///< No need to signal mode_constraint_flag, and the modeType of the region is inferred as MODE_TYPE_INTRA
 static const int LDT_MODE_TYPE_SIGNAL =                             2; ///< Need to signal mode_constraint_flag, and the modeType of the region is determined by the flag
-#endif
 
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
 static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
@@ -506,23 +449,16 @@ static constexpr int MV_BITS =                                   18;
 static constexpr int MV_MAX =              (1 << (MV_BITS - 1)) - 1;
 static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
 
-#if JVET_O0567_MVDRange_Constraint
 static const int MVD_MAX =                            (1 << 17) - 1;
 static const int MVD_MIN =                               -(1 << 17);
-#endif
 
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
-#if JVET_O0272_LMCS_SIMP_INVERSE_MAPPING
 static const int LMCS_SEG_SIZE =            (PIC_CODE_CW_BINS << 1);
-#endif
 static const int FP_PREC =                                       11;
 static const int CSCALE_FP_PREC =                                11;
-#if JVET_O1109_UNFIY_CRS
 static const int  NEIG_NUM_LOG  =                                 6;
 static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
-#endif
-#if JVET_O0119_BASE_PALETTE_444
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
 static const int PLT_ENCBITDEPTH = 8;
@@ -530,13 +466,13 @@ static const int PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE = 4;
 static const int PLT_RUN_MSB_IDX_CTX_T1 = 1;
 static const int PLT_RUN_MSB_IDX_CTX_T2 = 3;
 static const int PLT_FAST_RATIO = 100;
-#endif
 #if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 static const int  EPBIN_WEIGHT_FACTOR =                           4;
 #endif
-#if JVET_O1164_RPR
 static const int ENC_PPS_ID_RPR =                                 3;
-#endif
+static const int SCALE_RATIO_BITS =                              14;
+static const int MAX_SCALING_RATIO =                              8;  // max scaling ratio allowed in the software, it is used to allocated an internla buffer in the rescaling
+static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
 
 // ====================================================================================================================
 // Macro functions
@@ -683,10 +619,16 @@ static inline int floorLog2(uint32_t x)
 {
   if (x == 0)
   {
+    // note: ceilLog2() expects -1 as return value
     return -1;
   }
 #ifdef __GNUC__
   return 31 - __builtin_clz(x);
+#else
+#ifdef _MSC_VER
+  unsigned long r = 0;
+  _BitScanReverse(&r, x);
+  return r;
 #else
   int result = 0;
   if (x & 0xffff0000)
@@ -716,7 +658,14 @@ static inline int floorLog2(uint32_t x)
   }
   return result;
 #endif
+#endif
 }
+
+static inline int ceilLog2(uint32_t x)
+{
+  return (x==0) ? -1 : floorLog2(x - 1) + 1;
+}
+
 
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )

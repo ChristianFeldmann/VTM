@@ -1082,6 +1082,13 @@ picture.
 \end{tabular}
 \\
 
+\Option{DRAPPeriod} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the DRAP period in frames.  
+Dependent RAP indication SEI messages are disabled if DRAPPeriod is 0.
+\\
+
 \Option{GOPSize (-g)} &
 %\ShortOption{-g} &
 \Default{1} &
@@ -1754,6 +1761,13 @@ Controls the mode used to determine per row and column tile sizes.
 \end{tabular}
 \\
 
+\Option{UniformTileColsWidthMinus1}%
+\Option{UniformTileRowHeightMinus1} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies the tile width and height to use if TileUniformSpacing is set to 1.
+\\
+
 \Option{NumTileColumnsMinus1}%
 \Option{NumTileRowsMinus1} &
 %\ShortOption{\None} &
@@ -2126,6 +2140,34 @@ Controls the temporal motion vector prediction mode.
   0 & Disabled for all slices. \\
   1 & Enabled for all slices. \\
   2 & Disabled only for the first picture of each GOPSize. \\
+\end{tabular}
+\\
+
+\Option{PPSorSliceMode} &
+%\ShortOption{\None} &
+\Default{0} &
+Enables signaling the below parameters either in PPS or for each slice according to the following preset modes:
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+  0 & Always signaled per slice. \\
+  1 & RA settings. \\
+  2 & LDB settings. \\
+  3 & LDP settings. \\ 
+\end{tabular}
+\par
+\begin{tabular}{p{5cm}llll}
+  & & & & \\
+  Parameter & \multicolumn{3}{l}{Mode} \\
+  & 0 & 1 & 2 & 3 \\
+  dep_quant_enabled_flag & s & p & p & p \\
+  ref_pic_list_sps_flag0 & s & s & p & p \\
+  ref_pic_list_sps_flag1 & s & s & p & p \\
+  temporal_mvp_enabled_flag & s & s & p & p \\
+  mvd_l1_zero_flag & s & s & p & s \\
+  collocated_from_l0_flag & s & s & p & s \\
+  six_minus_max_num_merge_cand & s & p & p & p \\
+  five_minus_max_num_subblock_merge_cand & s & p & p & p \\
+  max_num_merge_cand_minus_max_num_triangle_cand & s & p & p & s \\
 \end{tabular}
 \\
 

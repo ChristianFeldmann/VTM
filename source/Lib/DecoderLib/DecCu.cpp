@@ -109,13 +109,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
   }
   bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra()) || cs.slice->getSPS()->getIBCFlag()));
 
-#if JVET_O1170_CHECK_BV_AT_DECODER
   if (cs.resetIBCBuffer)
   {
     m_pcInterPred->resetIBCBuffer(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight());
     cs.resetIBCBuffer = false;
   }
-#endif
   for( int ch = 0; ch < maxNumChannelType; ch++ )
   {
     const ChannelType chType = ChannelType( ch );
@@ -124,7 +122,6 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 
     for( auto &currCU : cs.traverseCUs( CS::getArea( cs, ctuArea, chType ), chType ) )
     {
-#if JVET_O1170_CHECK_BV_AT_DECODER
       if(currCU.Y().valid())
       {
         const int vSize = cs.slice->getSPS()->getMaxCUHeight() > 64 ? 64 : cs.slice->getSPS()->getMaxCUHeight();
@@ -133,15 +130,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
           m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x, currCU.Y().y);
         }
       }
-#endif
       if(sharePrepareCondition)
       {
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
         {
           m_shareStateDec = GEN_ON_SHARED_BOUND;
-#if !JVET_O0078_SINGLE_HMVPLUT
-          cs.motionLut.lutShareIbc = cs.motionLut.lutIbc;
-#endif
         }
 
         if (currCU.shareParentPos.x < 0)
@@ -150,11 +143,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         }
         prevTmpPos = currCU.shareParentPos;
       }
-#if JVET_O0119_BASE_PALETTE_444
       if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
-#else
-      if (currCU.predMode != MODE_INTRA && currCU.Y().valid())
-#endif
       {
         xDeriveCUMV(currCU);
       }
@@ -164,9 +153,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       case MODE_IBC:
         xReconInter( currCU );
         break;
-#if JVET_O0119_BASE_PALETTE_444
       case MODE_PLT:
-#endif
       case MODE_INTRA:
         xReconIntraQT( currCU );
         break;
@@ -175,17 +162,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         break;
       }
 
-#if !JVET_O0525_REMOVE_PCM
-      if( CU::isLosslessCoded( currCU ) && !currCU.ipcm )
-#else
       if( CU::isLosslessCoded( currCU ) )
-#endif
       {
         xFillPCMBuffer( currCU );
       }
-#if JVET_O1170_IBC_VIRTUAL_BUFFER
       m_pcInterPred->xFillIBCBuffer(currCU);
-#endif
 
       DTRACE_BLOCK_REC( cs.picture->getRecoBuf( currCU ), currCU, currCU.predMode );
     }
@@ -215,20 +196,14 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const PredictionUnit &pu  = *tu.cs->getPU( area.pos(), chType );
   const uint32_t uiChFinalMode  = PU::getFinalIntraMode( pu, chType );
-#if JVET_O0502_ISP_CLEANUP
   PelBuf pReco              = cs.getRecoBuf(area);
-#endif
 
   //===== init availability pattern =====
-#if JVET_O0502_ISP_CLEANUP
-#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
   bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
   bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
   CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
-#endif
   if (tu.cu->ispMode && isLuma(compID))
   {
-#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
     if (predRegDiffFromTB)
     {
       if (firstTBInPredReg)
@@ -238,7 +213,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
       }
     }
     else
-#endif
     {
       m_pcIntraPred->initIntraPatternChTypeISP(*tu.cu, area, pReco);
     }
@@ -247,23 +221,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
   }
-#else
-#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
-  bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
-  bool firstTBInPredReg  = CU::isFirstTBInPredReg (*tu.cu, compID, area);
-  CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
-  if (predRegDiffFromTB)
-  {
-    if (firstTBInPredReg)
-    {
-      CU::adjustPredArea(areaPredReg);
-      m_pcIntraPred->initIntraPatternChType(*tu.cu, areaPredReg);
-    }
-  }
-  else
-#endif
-    m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
-#endif
 
   //===== get prediction signal =====
   if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
@@ -281,7 +238,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     }
     else
     {
-#if JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN
       if (predRegDiffFromTB)
       {
         if (firstTBInPredReg)
@@ -291,7 +247,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
         }
       }
       else
-#endif
         m_pcIntraPred->predIntraAng(compID, piPred, pu);
     }
   }
@@ -301,14 +256,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
     const CompArea &areaY = CompArea(COMPONENT_Y, tu.chromaFormat, area);
-#if JVET_O1109_UNFIY_CRS
     int adj = m_pcReshape->calculateChromaAdjVpduNei(tu, areaY);
-#else
-    PelBuf piPredY;
-    piPredY = cs.picture->getPredBuf(areaY);
-    const Pel avgLuma = piPredY.computeAvg();
-    int adj = m_pcReshape->calculateChromaAdj(avgLuma);
-#endif
     tu.setChromaAdj(adj);
   }
   //===== inverse transform =====
@@ -316,7 +264,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   const QpParam cQP( tu, compID );
 
-#if JVET_O0105_ICT
   if( tu.jointCbCr && isChroma(compID) )
   {
     if( compID == COMPONENT_Cb )
@@ -335,12 +282,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     }
   }
   else
-#else
-  // Joint chroma residual mode: Cr uses negative of the signalled Cb residual
-  if ( tu.jointCbCr && compID == COMPONENT_Cr )
-    piResi.copyAndNegate( cs.getResiBuf( tu.blocks[COMPONENT_Cb] ) );
-  else
-#endif
   if( TU::getCbf( tu, compID ) )
   {
     m_pcTrQuant->invTransformNxN( tu, compID, piResi, cQP );
@@ -352,14 +293,8 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
   //===== reconstruction =====
   flag = flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
-#if JVET_O0105_ICT
   if (flag && (TU::getCbf(tu, compID) || tu.jointCbCr) && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
   {
-#else
-  if (flag && TU::getCbf(tu, compID) && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag())
-  {
-    if ( !(tu.jointCbCr && compID == COMPONENT_Cr) ) // // Joint chroma residual mode: chroma scaling took place already when doing Cb
-#endif
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
   if( isChroma(compID) && tu.compAlpha[compID] != 0 )
@@ -367,9 +302,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     CrossComponentPrediction::crossComponentPrediction( tu, compID, cs.getResiBuf( tu.Y() ), piResi, piResi, true );
   }
 
-#if !JVET_O0502_ISP_CLEANUP
-  PelBuf pReco = cs.getRecoBuf( area );
-#endif
 
   if( !tu.cu->ispMode || !isLuma( compID ) )
   {
@@ -420,22 +352,10 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 
 void DecCu::xReconIntraQT( CodingUnit &cu )
 {
-#if !JVET_O0525_REMOVE_PCM
-  if( cu.ipcm )
-  {
-    xReconPCM( *cu.firstTU );
-    return;
-  }
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
   if (CU::isPLT(cu))
   {
-#if JVET_O0050_LOCAL_DUAL_TREE
     if (cu.isSepTree())
-#else
-    if (CS::isDualITree(*cu.cs))
-#endif
     {
       if (cu.chType == CHANNEL_TYPE_LUMA)
       {
@@ -452,7 +372,6 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
     }
     return;
   }
-#endif
   const uint32_t numChType = ::getNumberValidChannels( cu.chromaFormat );
 
   for( uint32_t chType = CHANNEL_TYPE_LUMA; chType < numChType; chType++ )
@@ -464,7 +383,6 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
   }
 }
 
-#if JVET_O0119_BASE_PALETTE_444
 void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
 {
   const SPS&       sps = *(cu.cs->sps);
@@ -493,11 +411,7 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
           Pel value;
           QpParam cQP(tu, (ComponentID)compID);
 
-#if JVET_O0919_TS_MIN_QP
           int qp = cQP.Qp(false);
-#else
-          int qp = cQP.Qp;
-#endif
           int qpRem = qp % 6;
           int qpPer = qp / 6;
           if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
@@ -545,65 +459,6 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
     cu.cs->setDecomp(area);
   }
 }
-#endif
-#if !JVET_O0525_REMOVE_PCM
-/** Function for deriving reconstructed luma/chroma samples of a PCM mode CU.
-* \param pcCU pointer to current CU
-* \param uiPartIdx part index
-* \param piPCM pointer to PCM code arrays
-* \param piReco pointer to reconstructed sample arrays
-* \param uiStride stride of reconstructed sample arrays
-* \param uiWidth CU width
-* \param uiHeight CU height
-* \param compID colour component ID
-* \returns void
-*/
-void DecCu::xDecodePCMTexture(TransformUnit &tu, const ComponentID compID)
-{
-  const CompArea &area         = tu.blocks[compID];
-        PelBuf piPicReco       = tu.cs->getRecoBuf( area );
-  const CPelBuf piPicPcm       = tu.getPcmbuf(compID);
-  const SPS &sps               = *tu.cs->sps;
-  const uint32_t uiPcmLeftShiftBit = sps.getBitDepth(toChannelType(compID)) - sps.getPCMBitDepth(toChannelType(compID));
-
-  for (uint32_t uiY = 0; uiY < area.height; uiY++)
-  {
-    for (uint32_t uiX = 0; uiX < area.width; uiX++)
-    {
-      piPicReco.at(uiX, uiY) = (piPicPcm.at(uiX, uiY) << uiPcmLeftShiftBit);
-    }
-  }
-
-  tu.cs->picture->getRecoBuf( area ).copyFrom( piPicReco );
-  tu.cs->setDecomp( area );
-}
-
-/** Function for reconstructing a PCM mode CU.
-* \param pcCU pointer to current CU
-* \param uiDepth CU Depth
-* \returns void
-*/
-void DecCu::xReconPCM(TransformUnit &tu)
-{
-#if !JVET_O0050_LOCAL_DUAL_TREE
-  const CodingStructure *cs = tu.cs;
-#endif
-  const ChannelType chType = tu.chType;
-
-#if JVET_O0050_LOCAL_DUAL_TREE
-  ComponentID compStr = (tu.cu->isSepTree() && !isLuma( chType )) ? COMPONENT_Cb : COMPONENT_Y;
-  ComponentID compEnd = (tu.cu->isSepTree() && isLuma( chType )) ? COMPONENT_Y : COMPONENT_Cr;
-#else
-  ComponentID compStr = (CS::isDualITree(*cs) && !isLuma(chType)) ? COMPONENT_Cb: COMPONENT_Y;
-  ComponentID compEnd = (CS::isDualITree(*cs) && isLuma(chType)) ? COMPONENT_Y : COMPONENT_Cr;
-#endif
-  for( ComponentID compID = compStr; compID <= compEnd; compID = ComponentID(compID+1) )
-  {
-
-    xDecodePCMTexture(tu, compID);
-  }
-}
-#endif
 
 /** Function for deriving reconstructed PU/CU chroma samples with QTree structure
 * \param pcRecoYuv pointer to reconstructed sample arrays
@@ -691,12 +546,8 @@ void DecCu::xReconInter(CodingUnit &cu)
   if (cu.Y().valid())
   {
     const PredictionUnit &pu = *cu.firstPU;
-#if JVET_O0078_SINGLE_HMVPLUT
     bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
     if (!cu.affine && !cu.triangle && !isShare)
-#else
-    if (!cu.affine && !cu.triangle)
-#endif
     {
       MotionInfo mi = pu.getMotionInfo();
       mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
@@ -787,7 +638,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   const QpParam cQP(currTU, compID);
 
-#if JVET_O0105_ICT
   if( currTU.jointCbCr && isChroma(compID) )
   {
     if( compID == COMPONENT_Cb )
@@ -806,12 +656,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
     }
   }
   else
-#else
-  // Joint chroma residual mode: Cr uses negative of the signalled Cb residual
-  if ( currTU.jointCbCr && compID == COMPONENT_Cr )
-    resiBuf.copyAndNegate( cs.getResiBuf( currTU.blocks[COMPONENT_Cb] ) );
-  else
-#endif
   if( TU::getCbf( currTU, compID ) )
   {
     m_pcTrQuant->invTransformNxN( currTU, compID, resiBuf, cQP );
@@ -823,15 +667,9 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   //===== reconstruction =====
   const Slice           &slice = *cs.slice;
-#if JVET_O0105_ICT
-  if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && (TU::getCbf(currTU, compID) || currTU.jointCbCr)
+  if (slice.getLmcsEnabledFlag() && isChroma(compID) && (TU::getCbf(currTU, compID) || currTU.jointCbCr)
    && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width * currTU.blocks[compID].height > 4)
   {
-#else
-  if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && isChroma(compID) && TU::getCbf(currTU, compID) && slice.getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width*currTU.blocks[compID].height > 4)
-  {
-    if ( !(currTU.jointCbCr && compID == COMPONENT_Cr) ) // Joint chroma residual mode: chroma scaling took place already when doing Cb
-#endif
     resiBuf.scaleSignal(currTU.getChromaAdj(), 0, currTU.cu->cs->slice->clpRng(compID));
   }
   if( isChroma( compID ) && currTU.compAlpha[compID] != 0 )
@@ -857,21 +695,10 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
     {
       CodingStructure  &cs = *cu.cs;
       const Slice &slice = *cs.slice;
-      if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && slice.getLmcsChromaResidualScaleFlag() && (compID == COMPONENT_Y) && (currTU.cbf[COMPONENT_Cb] || currTU.cbf[COMPONENT_Cr]))
+      if (slice.getLmcsEnabledFlag() && slice.getLmcsChromaResidualScaleFlag() && (compID == COMPONENT_Y) && (currTU.cbf[COMPONENT_Cb] || currTU.cbf[COMPONENT_Cr]))
       {
         const CompArea &areaY = currTU.blocks[COMPONENT_Y];
-#if JVET_O1109_UNFIY_CRS
         int adj = m_pcReshape->calculateChromaAdjVpduNei(currTU, areaY);
-#else
-        PelBuf predY = cs.getPredBuf(areaY);
-        CompArea tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
-        PelBuf tmpPred = m_tmpStorageLCU->getBuf(tmpArea);
-        tmpPred.copyFrom(predY);
-      if (!cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
-          tmpPred.rspSignal(m_pcReshape->getFwdLUT());
-        const Pel avgLuma = tmpPred.computeAvg();
-        int adj = m_pcReshape->calculateChromaAdj(avgLuma);
-#endif
         currTU.setChromaAdj(adj);
     }
       xDecodeInterTU( currTU, compID );
@@ -1041,16 +868,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           {
             mvd.changeIbcPrecAmvr2Internal(pu.cu->imv);
           }
-#if JVET_O0162_IBC_MVP_FLAG
-#if JVET_O0455_IBC_MAX_MERGE_NUM
           if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
-#else
-          if ( pu.cu->slice->getMaxNumMergeCand() == 1 )
-#endif
           {
             CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
           }
-#endif
           pu.mv[REF_PIC_LIST_0] = amvpInfo.mvCand[pu.mvpIdx[REF_PIC_LIST_0]] + mvd;
           pu.mv[REF_PIC_LIST_0].mvCliptoStorageBitDepth();
         }
@@ -1089,25 +910,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       const int cuPelY = pu.Y().y;
       int roiWidth = pu.lwidth();
       int roiHeight = pu.lheight();
-#if !JVET_O1170_CHECK_BV_AT_DECODER
-#if JVET_O1164_PS
-      const int picWidth = pu.cs->slice->getPPS()->getPicWidthInLumaSamples();
-      const int picHeight = pu.cs->slice->getPPS()->getPicHeightInLumaSamples();
-#else
-      const int picWidth = pu.cs->slice->getSPS()->getPicWidthInLumaSamples();
-      const int picHeight = pu.cs->slice->getSPS()->getPicHeightInLumaSamples();
-#endif
-#endif
       const unsigned int  lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
       int xPred = pu.mv[0].getHor() >> MV_FRACTIONAL_BITS_INTERNAL;
       int yPred = pu.mv[0].getVer() >> MV_FRACTIONAL_BITS_INTERNAL;
-#if JVET_O1170_CHECK_BV_AT_DECODER
       CHECK(!m_pcInterPred->isLumaBvValid(lcuWidth, cuPelX, cuPelY, roiWidth, roiHeight, xPred, yPred), "invalid block vector for IBC detected.");
-#else
-#if !JVET_O1170_IBC_VIRTUAL_BUFFER
-      CHECK(!PU::isBlockVectorValid(pu, cuPelX, cuPelY, roiWidth, roiHeight, picWidth, picHeight, 0, 0, xPred, yPred, lcuWidth), "invalid block vector for IBC detected.");
-#endif
-#endif
     }
   }
 }

@@ -65,14 +65,11 @@ static const uint32_t MAX_INTRA_FILTER_DEPTHS=8;
 
 class IntraPrediction
 {
-private:
+protected:
+  Pel      m_refBuffer[MAX_NUM_COMPONENT][NUM_PRED_BUF][(MAX_CU_SIZE * 2 + 1 + MAX_REF_LINE_IDX) * 2];
+  uint32_t m_refBufferStride[MAX_NUM_COMPONENT];
 
-  Pel* m_piYuvExt[MAX_NUM_COMPONENT][NUM_PRED_BUF];
-#if JVET_O0502_ISP_CLEANUP
-  PelBuf m_pelBufISPBase[2];
-  PelBuf m_pelBufISP[2];
-#endif
-  int  m_iYuvExtSize;
+private:
 
   Pel* m_yuvExt2[MAX_NUM_COMPONENT][4];
   int  m_yuvExtSize2;
@@ -85,16 +82,10 @@ private:
     bool applyPDPC;
     bool isModeVer;
     int  multiRefIndex;
-#if !JVET_O0364_PADDING
-    int  whRatio;
-    int  hwRatio;
-#endif
     int  intraPredAngle;
     int  invAngle;
     bool interpolationFlag;
-#if JVET_O0364_PDPC_ANGULAR
     int  angularScale;
-#endif
 
     // clang-format off
     IntraPredParam()
@@ -102,16 +93,10 @@ private:
       , applyPDPC(false)
       , isModeVer(false)
       , multiRefIndex(-1)
-#if !JVET_O0364_PADDING
-      , whRatio(0)
-      , hwRatio(0)
-#endif
       , intraPredAngle(std::numeric_limits<int>::max())
       , invAngle(std::numeric_limits<int>::max())
       , interpolationFlag(false)
-#if JVET_O0364_PDPC_ANGULAR
       , angularScale(-1)
-#endif
     // clang-format on
     {
     }
@@ -130,7 +115,6 @@ protected:
 
   int m_topRefLength;
   int m_leftRefLength;
-#if JVET_O0119_BASE_PALETTE_444
   ScanElement* m_scanOrder;
   bool         m_bestScanRotationMode;
   Ctx          m_storeCtxRun;
@@ -139,7 +123,6 @@ protected:
   Ctx          m_orgCtxRD;
   bool         *m_runTypeRD;
   Pel          *m_runLengthRD;
-#endif
   // prediction
   void xPredIntraPlanar           ( const CPelBuf &pSrc, PelBuf &pDst );
   void xPredIntraDc               ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter = true );
@@ -153,11 +136,8 @@ protected:
   Pel  xGetPredValDc              ( const CPelBuf &pSrc, const Size &dstSize );
 
   void xFillReferenceSamples      ( const CPelBuf &recoBuf,      Pel* refBufUnfiltered, const CompArea &area, const CodingUnit &cu );
-  void xFilterReferenceSamples    ( const Pel* refBufUnfiltered, Pel* refBufFiltered, const CompArea &area, const SPS &sps
-    , int multiRefIdx
-#if JVET_O0502_ISP_CLEANUP
-    , int predStride = 0
-#endif
+  void xFilterReferenceSamples(const Pel *refBufUnfiltered, Pel *refBufFiltered, const CompArea &area, const SPS &sps,
+                               int multiRefIdx
   );
 
   static int getWideAngle         ( int width, int height, int predMode );
@@ -174,17 +154,17 @@ public:
 
   // Angular Intra
   void predIntraAng               ( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
-  Pel* getPredictorPtr            ( const ComponentID compId ) { return m_piYuvExt[compId][m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED]; }
+  Pel *getPredictorPtr(const ComponentID compId)
+  {
+    return m_refBuffer[compId][m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED];
+  }
 
   // Cross-component Chroma
   void predIntraChromaLM(const ComponentID compID, PelBuf &piPred, const PredictionUnit &pu, const CompArea& chromaArea, int intraDir);
   void xGetLumaRecPixels(const PredictionUnit &pu, CompArea chromaArea);
   /// set parameters from CU data for accessing intra data
   void initIntraPatternChType     (const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
-#if JVET_O0502_ISP_CLEANUP
   void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
-  const PelBuf& getISPBuffer      () { return m_pelBufISP[m_ipaParam.refFilterFlag ? PRED_BUF_FILTERED : PRED_BUF_UNFILTERED]; }
-#endif
 
   // Matrix-based intra prediction
   void initIntraMip               (const PredictionUnit &pu);
@@ -196,11 +176,9 @@ public:
   Pel* getPredictorPtr2           (const ComponentID compID, uint32_t idx) { return m_yuvExt2[compID][idx]; }
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);
   void geneIntrainterPred         (const CodingUnit &cu);
-#if JVET_O0119_BASE_PALETTE_444
   void reorderPLT                 (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
   bool calCopyRun                 (CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
   bool calIndexRun                (CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
-#endif
 };
 
 //! \}

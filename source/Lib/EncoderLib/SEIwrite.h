@@ -49,15 +49,20 @@ public:
   SEIWriter() {};
   virtual ~SEIWriter() {};
 
-  void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, bool isNested);
+  void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested, const uint32_t temporalId);
 
 protected:
+#if HEVC_SEI
   void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
   void xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei);
-  void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps);
+#endif
+  void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps, HRD &hrd);
   void xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei);
   void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps);
-  void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps);
+  void xWriteSEIPictureTiming(const SEIPictureTiming& sei,const SPS *sps, const SEIBufferingPeriod& bp, const uint32_t temporalId);
+  void xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei);
+  void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
+#if HEVC_SEI
   void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
   void xWriteSEIFramePacking(const SEIFramePacking& sei);
   void xWriteSEISegmentedRectFramePacking(const SEISegmentedRectFramePacking& sei);
@@ -78,8 +83,9 @@ protected:
   void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);
 #endif
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
+#endif
 
-  void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps);
+  void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();
 };
 

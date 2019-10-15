@@ -59,13 +59,12 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 {
   bool useSubCpbParams = (encCfg->getSliceMode() > 0) || (encCfg->getSliceSegmentMode() > 0);
   int  bitRate         = encCfg->getTargetBitrate();
-  bool isRandomAccess  = encCfg->getIntraPeriod() > 0;
 # if U0132_TARGET_BITS_SATURATION
   int cpbSize          = encCfg->getCpbSize();
   CHECK(!(cpbSize!=0), "Unspecified error");  // CPB size may not be equal to zero. ToDo: have a better default and check for level constraints
-  if( !encCfg->getVuiParametersPresentFlag() && !encCfg->getCpbSaturationEnabled() )
+  if( !encCfg->getHrdParametersPresentFlag() && !encCfg->getCpbSaturationEnabled() )
 #else
-  if( !encCfg.getVuiParametersPresentFlag() )
+  if( !encCfg->getHrdParametersPresentFlag() )
 #endif
   {
     return;
@@ -106,22 +105,20 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
       m_timingInfo.setNumUnitsInTick( m_timingInfo.getNumUnitsInTick() * temporalSubsampleRatio );
     }
   }
-
   bool rateCnt = ( bitRate > 0 );
   m_hrdParams.setNalHrdParametersPresentFlag( rateCnt );
   m_hrdParams.setVclHrdParametersPresentFlag( rateCnt );
-  m_hrdParams.setSubPicCpbParamsPresentFlag( useSubCpbParams );
+  useSubCpbParams &= ( m_hrdParams.getNalHrdParametersPresentFlag() || m_hrdParams.getVclHrdParametersPresentFlag() );
+  m_hrdParams.setDecodingUnitHrdParamsPresentFlag( useSubCpbParams );
 
-  if( m_hrdParams.getSubPicCpbParamsPresentFlag() )
+  if( m_hrdParams.getDecodingUnitHrdParamsPresentFlag() )
   {
     m_hrdParams.setTickDivisorMinus2( 100 - 2 );                          //
-    m_hrdParams.setDuCpbRemovalDelayLengthMinus1( 7 );                    // 8-bit precision ( plus 1 for last DU in AU )
-    m_hrdParams.setSubPicCpbParamsInPicTimingSEIFlag( true );
-    m_hrdParams.setDpbOutputDelayDuLengthMinus1( 5 + 7 );                 // With sub-clock tick factor of 100, at least 7 bits to have the same value as AU dpb delay
+    m_hrdParams.setDecodingUnitCpbParamsInPicTimingSeiFlag( !encCfg->getDecodingUnitInfoSEIEnabled() );
   }
   else
   {
-    m_hrdParams.setSubPicCpbParamsInPicTimingSEIFlag( false );
+    m_hrdParams.setDecodingUnitCpbParamsInPicTimingSeiFlag( false );
   }
 
 #if U0132_TARGET_BITS_SATURATION
@@ -147,19 +144,8 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
   m_hrdParams.setCpbSizeScale( 6 );                                       // in units of 2^( 4 + 6 ) = 1,024 bit
 #endif
 
-  m_hrdParams.setDuCpbSizeScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
+  m_hrdParams.setCpbSizeDuScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
 
-  m_hrdParams.setInitialCpbRemovalDelayLengthMinus1(15);                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
-  if( isRandomAccess )
-  {
-    m_hrdParams.setCpbRemovalDelayLengthMinus1(5);                        // 32 = 2^5 (plus 1)
-    m_hrdParams.setDpbOutputDelayLengthMinus1 (5);                        // 32 + 3 = 2^6
-  }
-  else
-  {
-    m_hrdParams.setCpbRemovalDelayLengthMinus1(9);                        // max. 2^10
-    m_hrdParams.setDpbOutputDelayLengthMinus1 (9);                        // max. 2^10
-  }
 
   // Note: parameters for all temporal layers are initialized with the same values
   int i, j;

@@ -56,8 +56,11 @@ public:
   {
     BUFFERING_PERIOD                     = 0,
     PICTURE_TIMING                       = 1,
+#if HEVC_SEI
     PAN_SCAN_RECT                        = 2,
+#endif
     FILLER_PAYLOAD                       = 3,
+#if HEVC_SEI
     USER_DATA_REGISTERED_ITU_T_T35       = 4,
     USER_DATA_UNREGISTERED               = 5,
     RECOVERY_POINT                       = 6,
@@ -73,9 +76,13 @@ public:
     GREEN_METADATA                       = 56,
     SOP_DESCRIPTION                      = 128,
     ACTIVE_PARAMETER_SETS                = 129,
+#endif
     DECODING_UNIT_INFO                   = 130,
+#if HEVC_SEI
     TEMPORAL_LEVEL0_INDEX                = 131,
+#endif
     DECODED_PICTURE_HASH                 = 132,
+#if HEVC_SEI
     SCALABLE_NESTING                     = 133,
     REGION_REFRESH_INFO                  = 134,
     NO_DISPLAY                           = 135,
@@ -86,9 +93,14 @@ public:
     CHROMA_RESAMPLING_FILTER_HINT        = 140,
     KNEE_FUNCTION_INFO                   = 141,
     COLOUR_REMAPPING_INFO                = 142,
+#endif
+    DEPENDENT_RAP_INDICATION             = 145,
+#if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
 #endif
+#endif
+    FRAME_FIELD_INFO                     = 168,
   };
 
   SEI() {}
@@ -99,6 +111,7 @@ public:
   virtual PayloadType payloadType() const = 0;
 };
 
+#if HEVC_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;
 
 class SEIuserDataUnregistered : public SEI
@@ -119,6 +132,7 @@ public:
   uint32_t  userDataLength;
   uint8_t *userData;
 };
+#endif
 
 class SEIDecodedPictureHash : public SEI
 {
@@ -133,6 +147,16 @@ public:
   PictureHash m_pictureHash;
 };
 
+class SEIDependentRAPIndication : public SEI
+{
+public:
+  PayloadType payloadType() const { return DEPENDENT_RAP_INDICATION; }
+  SEIDependentRAPIndication() { }
+
+  virtual ~SEIDependentRAPIndication() { }
+};
+
+#if HEVC_SEI
 class SEIActiveParameterSets : public SEI
 {
 public:
@@ -150,58 +174,84 @@ public:
   int numSpsIdsMinus1;
   std::vector<int> activeSeqParameterSetId;
 };
+#endif
 
 class SEIBufferingPeriod : public SEI
 {
 public:
   PayloadType payloadType() const { return BUFFERING_PERIOD; }
-  void copyTo (SEIBufferingPeriod& target);
+  void copyTo (SEIBufferingPeriod& target) const;
 
   SEIBufferingPeriod()
-  : m_bpSeqParameterSetId (0)
-  , m_rapCpbParamsPresentFlag (false)
-  , m_cpbDelayOffset      (0)
-  , m_dpbDelayOffset      (0)
+  : m_bpNalCpbParamsPresentFlag (false)
+  , m_bpVclCpbParamsPresentFlag (false)
+  , m_initialCpbRemovalDelayLength (0)
+  , m_cpbRemovalDelayLength (0)
+  , m_dpbOutputDelayLength (0)
+  , m_duCpbRemovalDelayIncrementLength (0)
+  , m_dpbOutputDelayDuLength (0)
+  , m_cpbRemovalDelayDeltasPresentFlag (false)
+  , m_numCpbRemovalDelayDeltas (0)
+  , m_bpMaxSubLayers (0)
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
-    ::memset(m_initialCpbRemovalDelayOffset, 0, sizeof(m_initialCpbRemovalDelayOffset));
-    ::memset(m_initialAltCpbRemovalDelay, 0, sizeof(m_initialAltCpbRemovalDelay));
-    ::memset(m_initialAltCpbRemovalDelayOffset, 0, sizeof(m_initialAltCpbRemovalDelayOffset));
+    ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
+    ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
+    ::memset(m_bpCpbCnt, 0, sizeof(m_bpCpbCnt));
   }
   virtual ~SEIBufferingPeriod() {}
 
-  uint32_t m_bpSeqParameterSetId;
-  bool m_rapCpbParamsPresentFlag;
-  uint32_t m_cpbDelayOffset;
-  uint32_t m_dpbDelayOffset;
-  uint32_t m_initialCpbRemovalDelay         [MAX_CPB_CNT][2];
-  uint32_t m_initialCpbRemovalDelayOffset   [MAX_CPB_CNT][2];
-  uint32_t m_initialAltCpbRemovalDelay      [MAX_CPB_CNT][2];
-  uint32_t m_initialAltCpbRemovalDelayOffset[MAX_CPB_CNT][2];
+  void      setDuCpbRemovalDelayIncrementLength( uint32_t value )        { m_duCpbRemovalDelayIncrementLength = value;        }
+  uint32_t  getDuCpbRemovalDelayIncrementLength( ) const                 { return m_duCpbRemovalDelayIncrementLength;         }
+  void      setDpbOutputDelayDuLength( uint32_t value )                  { m_dpbOutputDelayDuLength = value;                  }
+  uint32_t  getDpbOutputDelayDuLength( ) const                           { return m_dpbOutputDelayDuLength;                   }
+  bool m_bpNalCpbParamsPresentFlag;
+  bool m_bpVclCpbParamsPresentFlag;
+  uint32_t m_initialCpbRemovalDelayLength;
+  uint32_t m_cpbRemovalDelayLength;
+  uint32_t m_dpbOutputDelayLength;
+  int      m_bpCpbCnt[MAX_TLAYER];
+  uint32_t m_duCpbRemovalDelayIncrementLength;
+  uint32_t m_dpbOutputDelayDuLength;
+  uint32_t m_initialCpbRemovalDelay         [MAX_TLAYER][MAX_CPB_CNT][2];
+  uint32_t m_initialCpbRemovalOffset        [MAX_TLAYER][MAX_CPB_CNT][2];
   bool m_concatenationFlag;
   uint32_t m_auCpbRemovalDelayDelta;
+  bool m_cpbRemovalDelayDeltasPresentFlag;
+  int  m_numCpbRemovalDelayDeltas;
+  int  m_bpMaxSubLayers;
+  uint32_t m_cpbRemovalDelayDelta    [15];
 };
+
 class SEIPictureTiming : public SEI
 {
 public:
   PayloadType payloadType() const { return PICTURE_TIMING; }
-  void copyTo (SEIPictureTiming& target);
+  void copyTo (SEIPictureTiming& target) const;
 
   SEIPictureTiming()
-  : m_picStruct               (0)
-  , m_sourceScanType          (0)
-  , m_duplicateFlag           (false)
-  , m_picDpbOutputDuDelay     (0)
-  {}
+  : m_ptMaxSubLayers (0)
+  , m_picDpbOutputDelay (0)
+  , m_picDpbOutputDuDelay (0)
+  , m_numDecodingUnitsMinus1 (0)
+  , m_duCommonCpbRemovalDelayFlag (false)
+  , m_duCommonCpbRemovalDelayMinus1 (0)
+  {
+    ::memset(m_subLayerDelaysPresentFlag, 0, sizeof(m_subLayerDelaysPresentFlag));
+    ::memset(m_cpbRemovalDelayDeltaEnabledFlag, 0, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
+    ::memset(m_cpbRemovalDelayDeltaIdx, 0, sizeof(m_cpbRemovalDelayDeltaIdx));
+    ::memset(m_auCpbRemovalDelay, 0, sizeof(m_auCpbRemovalDelay));
+  }
   virtual ~SEIPictureTiming()
   {
   }
 
-  uint32_t  m_picStruct;
-  uint32_t  m_sourceScanType;
-  bool  m_duplicateFlag;
 
-  uint32_t  m_auCpbRemovalDelay;
+  int  m_ptMaxSubLayers;
+  bool  m_subLayerDelaysPresentFlag[MAX_TLAYER];
+  bool  m_cpbRemovalDelayDeltaEnabledFlag[MAX_TLAYER];
+  uint32_t  m_cpbRemovalDelayDeltaIdx[MAX_TLAYER];
+  uint32_t  m_auCpbRemovalDelay[MAX_TLAYER];
   uint32_t  m_picDpbOutputDelay;
   uint32_t  m_picDpbOutputDuDelay;
   uint32_t  m_numDecodingUnitsMinus1;
@@ -229,6 +279,37 @@ public:
   int m_picSptDpbOutputDuDelay;
 };
 
+
+class SEIFrameFieldInfo : public SEI
+{
+public:
+  PayloadType payloadType() const { return FRAME_FIELD_INFO; }
+
+  SEIFrameFieldInfo()
+    : m_fieldPicFlag(false)
+    , m_bottomFieldFlag (false)
+    , m_pairingIndicatedFlag (false)
+    , m_pairedWithNextFieldFlag(false)
+    , m_displayFieldsFromFrameFlag(false)
+    , m_topFieldFirstFlag(false)
+    , m_displayElementalPeriodsMinus1(0)
+    , m_sourceScanType(0)
+    , m_duplicateFlag(false)
+  {}
+  virtual ~SEIFrameFieldInfo() {}
+
+  bool m_fieldPicFlag;
+  bool m_bottomFieldFlag;
+  bool m_pairingIndicatedFlag;
+  bool m_pairedWithNextFieldFlag;
+  bool m_displayFieldsFromFrameFlag;
+  bool m_topFieldFirstFlag;
+  int  m_displayElementalPeriodsMinus1;
+  int  m_sourceScanType;
+  bool m_duplicateFlag;
+};
+
+#if HEVC_SEI
 class SEIRecoveryPoint : public SEI
 {
 public:
@@ -483,6 +564,7 @@ public:
 
     SEIMasteringDisplay values;
 };
+#endif
 
 typedef std::list<SEI*> SEIMessages;
 
@@ -495,6 +577,7 @@ SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
 /// delete list of SEI messages (freeing the referenced objects)
 void deleteSEIs (SEIMessages &seiList);
 
+#if HEVC_SEI
 class SEIScalableNesting : public SEI
 {
 public:
@@ -589,12 +672,14 @@ public:
   const TileSetData &tileSetData (const int index) const { return m_tile_set_data[index]; }
 
 };
+#endif
 
 #if ENABLE_TRACING
 void xTraceSEIHeader();
 void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
+#if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 class SEIAlternativeTransferCharacteristics : public SEI
 {
@@ -622,6 +707,7 @@ public:
     uint32_t m_xsdMetricType;
     uint32_t m_xsdMetricValue;
 };
+#endif
 
 #endif
 

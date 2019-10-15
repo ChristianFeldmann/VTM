@@ -88,23 +88,20 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   memcpy(cs.alfApss, slice->getAlfAPSs(), sizeof(cs.alfApss));
 
   cs.lmcsAps = slice->getLmcsAPS();
+  cs.scalinglistAps   = slice->getscalingListAPS();
 
   cs.pcv              = slice->getPPS()->pcv;
   cs.chromaQpAdj      = 0;
 
   cs.picture->resizeSAO(cs.pcv->sizeInCtus, 0);
 
-#if JVET_O0119_BASE_PALETTE_444
   cs.resetPrevPLT(cs.prevPLT);
-#endif
 
   if (slice->getSliceCurStartCtuTsAddr() == 0)
   {
     cs.picture->resizeAlfCtuEnableFlag( cs.pcv->sizeInCtus );
     cs.picture->resizeAlfCtbFilterIndex(cs.pcv->sizeInCtus);
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
     cs.picture->resizeAlfCtuAlternative( cs.pcv->sizeInCtus );
-#endif
   }
 
   const unsigned numSubstreams = slice->getNumberOfSubstreamSizes() + 1;
@@ -167,25 +164,21 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       if( ctuTsAddr != startCtuTsAddr ) // if it is the first CTU, then the entropy coder has already been reset
       {
         cabacReader.initCtxModels( *slice );
-#if JVET_O0119_BASE_PALETTE_444
         cs.resetPrevPLT(cs.prevPLT);
-#endif
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
     }
     else if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
     {
-      // Synchronize cabac probabilities with upper-right CTU if it's available and at the start of a line.
+      // Synchronize cabac probabilities with top CTU if it's available and at the start of a line.
       if( ctuTsAddr != startCtuTsAddr ) // if it is the first CTU, then the entropy coder has already been reset
       {
         cabacReader.initCtxModels( *slice );
-#if JVET_O0119_BASE_PALETTE_444
         cs.resetPrevPLT(cs.prevPLT);
-#endif
       }
       if( cs.getCURestricted( pos.offset(0, -1), pos, slice->getIndependentSliceIdx(), tileMap.getBrickIdxRsMap( pos ), CH_L ) )
       {
-        // Top-right is available, so use it.
+        // Top is available, so use it.
         cabacReader.getCtx() = m_entropyCodingSyncContextState;
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
@@ -201,12 +194,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
-#if JVET_O1170_CHECK_BV_AT_DECODER
       cs.resetIBCBuffer = true;
-#endif
-#if !JVET_O0078_SINGLE_HMVPLUT
-      cs.motionLut.lutShareIbc.resize(0);
-#endif
     }
 
     if( !cs.slice->isIntra() )

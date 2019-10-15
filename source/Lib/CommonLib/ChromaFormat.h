@@ -110,17 +110,11 @@ static inline uint64_t getTotalFracBits(const uint32_t width, const uint32_t hei
 
 static inline int getTransformShift(const int channelBitDepth, const Size size, const int maxLog2TrDynamicRange)
 {
-  return maxLog2TrDynamicRange - channelBitDepth - ( ( g_aucLog2[size.width] + g_aucLog2[size.height] ) >> 1 );
+  return maxLog2TrDynamicRange - channelBitDepth - ( ( floorLog2(size.width) + floorLog2(size.height) ) >> 1 );
 }
 
 
 //------------------------------------------------
-#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chFmt)
-{
-  return g_aucChromaScale[chFmt][Clip3(0, (chromaQPMappingTableSize - 1), unscaledChromaQP)];
-}
-#endif
 
 //======================================================================================================================
 //Scaling lists  =======================================================================================================
@@ -128,11 +122,7 @@ static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chF
 
 static inline int getScalingListType(const PredMode predMode, const ComponentID compID)
 {
-#if JVET_O0267_IBC_SCALING_LIST
   return ((predMode == MODE_INTRA) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
-#else
-  return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
-#endif
 }
 
 #endif

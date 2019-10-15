@@ -76,14 +76,8 @@ public:
   void initSEIToneMappingInfo(SEIToneMappingInfo *sei);
   void initSEISOPDescription(SEISOPDescription *sei, Slice *slice, int picInGOP, int lastIdr, int currGOPSize);
 #endif
-#if JVET_N0494_DRAP
   void initSEIDependentRAPIndication(SEIDependentRAPIndication *sei);
-#endif
-#if !JVET_N0867_TEMP_SCAL_HRD
-  void initSEIBufferingPeriod(SEIBufferingPeriod *sei);
-#else
   void initSEIBufferingPeriod(SEIBufferingPeriod *sei, bool noLeadingPictures);
-#endif
 #if HEVC_SEI
   void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
   void initSEIRecoveryPoint(SEIRecoveryPoint *sei, Slice *slice);

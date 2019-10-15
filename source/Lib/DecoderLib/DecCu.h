@@ -87,16 +87,10 @@ protected:
   void xFillPCMBuffer     ( CodingUnit&      cu );
 
   void xIntraRecBlk       ( TransformUnit&   tu, const ComponentID compID );
-#if !JVET_O0525_REMOVE_PCM
-  void xReconPCM          ( TransformUnit&   tu);
-  void xDecodePCMTexture  ( TransformUnit&   tu, const ComponentID compID );
-#endif
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );
-#if JVET_O0119_BASE_PALETTE_444
   void xReconPLT          ( CodingUnit&      cu,       ComponentID compBegin, uint32_t numComp );
-#endif
   PelStorage        *m_tmpStorageLCU;
 private:
   TrQuant*          m_pcTrQuant;

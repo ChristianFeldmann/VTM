@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0562_TS_RESIDUAL_CODING_SIMP                1 // JVET-P0562: Fix the Rice parameter equal to 1 for the remainder of TS residual coding
+
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF

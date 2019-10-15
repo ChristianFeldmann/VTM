@@ -261,7 +261,6 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
   }
 }
 
-#if JVET_O0304_SIMPLIFIED_BDOF
 template< X86_VEXT vext >
 void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
 
@@ -339,9 +338,7 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   sumSignGyGxTmp = _mm_add_epi32(sumSignGyGxTmp, _mm_shuffle_epi32(sumSignGyGxTmp, 0xb1));   // 10110001
   *sumSignGY_GX  = _mm_cvtsi128_si32(sumSignGyGxTmp);
 }
-#endif
 
-#if JVET_O0070_PROF
 template< X86_VEXT vext >
 void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
 {
@@ -545,18 +542,10 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
     }
   }
 }
-#endif
 
-#if JVET_O0070_PROF
 template< X86_VEXT vext, bool PAD = true>
-#else
-template< X86_VEXT vext >
-#endif
 void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth)
 {
-#if !JVET_O0570_GRAD_SIMP
-  __m128i vzero = _mm_setzero_si128();
-#endif
   Pel* srcTmp = src + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
@@ -564,19 +553,14 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
   int shift1 = std::max<int>(6, bitDepth - 6);
-#if JVET_O0570_GRAD_SIMP
   __m128i mmShift1 = _mm_cvtsi32_si128( shift1 );
-#endif
   assert((widthInside & 3) == 0);
 
-#if JVET_O0570_GRAD_SIMP
   if ( ( widthInside & 7 ) == 0 )
   {
-#endif
     for (int y = 0; y < heightInside; y++)
     {
       int x = 0;
-#if JVET_O0570_GRAD_SIMP
       for ( ; x < widthInside; x += 8 )
       {
         __m128i mmPixTop    = _mm_sra_epi16( _mm_loadu_si128( ( __m128i* ) ( srcTmp + x - srcStride ) ), mmShift1 );
@@ -590,28 +574,10 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
         _mm_storeu_si128( ( __m128i * ) ( gradYTmp + x ), mmGradVer );
         _mm_storeu_si128( ( __m128i * ) ( gradXTmp + x ), mmGradHor );
       }
-#else
-      for (; x < widthInside; x += 4)
-      {
-        __m128i mmPixTop = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - srcStride)));
-        __m128i mmPixBottom = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + srcStride)));
-        __m128i mmPixLeft = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x - 1)));
-        __m128i mmPixRight = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(srcTmp + x + 1)));
-
-        __m128i mmGradVer = _mm_sra_epi32(_mm_sub_epi32(mmPixBottom, mmPixTop), _mm_cvtsi32_si128(shift1));
-        __m128i mmGradHor = _mm_sra_epi32(_mm_sub_epi32(mmPixRight, mmPixLeft), _mm_cvtsi32_si128(shift1));
-        mmGradVer = _mm_packs_epi32(mmGradVer, vzero);
-        mmGradHor = _mm_packs_epi32(mmGradHor, vzero);
-
-        _mm_storel_epi64((__m128i *)(gradYTmp + x), mmGradVer);
-        _mm_storel_epi64((__m128i *)(gradXTmp + x), mmGradHor);
-      }
-#endif
       gradXTmp += gradStride;
       gradYTmp += gradStride;
       srcTmp += srcStride;
     }
-#if JVET_O0570_GRAD_SIMP
   }
   else
   {
@@ -636,12 +602,9 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
       srcTmp   += srcStride << 1;
     }
   }
-#endif
 
-#if JVET_O0070_PROF
   if (PAD)
   {
-#endif
   gradXTmp = gradX + gradStride + 1;
   gradYTmp = gradY + gradStride + 1;
   for (int y = 0; y < heightInside; y++)
@@ -661,9 +624,7 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
   ::memcpy(gradXTmp + heightInside*gradStride, gradXTmp + (heightInside - 1)*gradStride, sizeof(Pel)*(width));
   ::memcpy(gradYTmp - gradStride, gradYTmp, sizeof(Pel)*(width));
   ::memcpy(gradYTmp + heightInside*gradStride, gradYTmp + (heightInside - 1)*gradStride, sizeof(Pel)*(width));
-#if JVET_O0070_PROF
   }
-#endif
 }
 
 template< X86_VEXT vext >
@@ -1247,12 +1208,7 @@ void PelBufferOps::_initPelBufOpsX86()
 
   addBIOAvg4      = addBIOAvg4_SSE<vext>;
   bioGradFilter   = gradFilter_SSE<vext>;
-#if !JVET_O0304_SIMPLIFIED_BDOF
-  calcBIOPar = calcBIOPar_SSE<vext>;
-  calcBlkGradient = calcBlkGradient_SSE<vext>;
-#else
   calcBIOSums = calcBIOSums_SSE<vext>;
-#endif
 
   copyBuffer = copyBufferSimd<vext>;
   padding    = paddingSimd<vext>;
@@ -1267,13 +1223,11 @@ void PelBufferOps::_initPelBufOpsX86()
   removeHighFreq8 = removeHighFreq_SSE<vext, 8>;
   removeHighFreq4 = removeHighFreq_SSE<vext, 4>;
 #endif
-#if JVET_O0070_PROF
   profGradFilter = gradFilter_SSE<vext, false>;
   applyPROF      = applyPROF_SSE<vext>;
   applyBiPROF[1] = applyBiPROF_SSE<vext>;
   applyBiPROF[0] = applyBiPROF_SSE<vext, false>;
   roundIntVector = roundIntVector_SIMD<vext>;
-#endif
 }
 
 template void PelBufferOps::_initPelBufOpsX86<SIMDX86>();

@@ -661,27 +661,13 @@ void SampleAdaptiveOffset::SAOProcess( CodingStructure& cs, SAOBlkParam* saoBlkP
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
-#if !JVET_O0525_REMOVE_PCM
-  xPCMLFDisableProcess(cs);
-#else
   xLosslessDisableProcess(cs);
-#endif
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
-#else
 void SampleAdaptiveOffset::xLosslessDisableProcess(CodingStructure& cs)
-#endif
 {
   const PreCalcValues& pcv = *cs.pcv;
-#if !JVET_O0525_REMOVE_PCM
-  const bool bPCMFilter = (cs.sps->getPCMEnabledFlag() && cs.sps->getPCMFilterDisableFlag()) ? true : false;
-
-  if( bPCMFilter || cs.pps->getTransquantBypassEnabledFlag() )
-#else
   if( cs.pps->getTransquantBypassEnabledFlag() )
-#endif
   {
     for( uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
     {
@@ -689,37 +675,20 @@ void SampleAdaptiveOffset::xLosslessDisableProcess(CodingStructure& cs)
       {
         UnitArea ctuArea( cs.area.chromaFormat, Area( xPos, yPos, pcv.maxCUWidth, pcv.maxCUHeight ) );
 
-#if !JVET_O0525_REMOVE_PCM
-        // CU-based deblocking
-        xPCMCURestoration(cs, ctuArea);
-#else
         xLosslessCURestoration(cs, ctuArea);
-#endif
       }
     }
   }
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
-#else
 void SampleAdaptiveOffset::xLosslessCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
-#endif
 {
-#if !JVET_O0525_REMOVE_PCM
-  const SPS& sps = *cs.sps;
-#endif
   uint32_t numComponents;
   bool anyDualTree = false;
   for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
   {
-#if !JVET_O0525_REMOVE_PCM
-    // restore PCM samples
-    if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
-#else
     // restore lossless samples
     if( CU::isLosslessCoded( cu ) )
-#endif
     {
 
       cs.slice = cu.slice;
@@ -727,11 +696,7 @@ void SampleAdaptiveOffset::xLosslessCURestoration(CodingStructure& cs, const Uni
       numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
       for( uint32_t comp = 0; comp < numComponents; comp++ )
       {
-#if !JVET_O0525_REMOVE_PCM
-        xPCMSampleRestoration( cu, ComponentID( comp ) );
-#else
         xLosslessSampleRestoration( cu, ComponentID( comp ) );
-#endif
       }
     }
   }
@@ -745,39 +710,21 @@ void SampleAdaptiveOffset::xLosslessCURestoration(CodingStructure& cs, const Uni
         continue;
       }
 
-#if !JVET_O0525_REMOVE_PCM
-      // restore PCM samples
-      if ((cu.ipcm && sps.getPCMFilterDisableFlag()) || CU::isLosslessCoded(cu))
-#else
       // restore lossless samples
       if (CU::isLosslessCoded(cu))
-#endif
       {
         for (uint32_t comp = 1; comp < numComponents; comp++)
         {
-#if !JVET_O0525_REMOVE_PCM
-          xPCMSampleRestoration(cu, ComponentID(comp));
-#else
           xLosslessSampleRestoration(cu, ComponentID(comp));
-#endif
         }
       }
     }
   }
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)
-#else
 void SampleAdaptiveOffset::xLosslessSampleRestoration(CodingUnit& cu, const ComponentID compID)
-#endif
 {
-#if !JVET_O0525_REMOVE_PCM
-  const CompArea& ca = cu.block(compID);
-  if( CU::isLosslessCoded( cu ) && !cu.ipcm )
-#else
   if( CU::isLosslessCoded( cu ) )
-#endif
   {
     for( auto &currTU : CU::traverseTUs( cu ) )
     {
@@ -794,25 +741,6 @@ void SampleAdaptiveOffset::xLosslessSampleRestoration(CodingUnit& cu, const Comp
     return;
   }
 
-#if !JVET_O0525_REMOVE_PCM
-  const TransformUnit& tu = *cu.firstTU; CHECK( cu.firstTU != cu.lastTU, "Multiple TUs present in a PCM CU" );
-  const CPelBuf& pcmBuf   = tu.getPcmbuf( compID );
-         PelBuf dstBuf    = cu.cs->getRecoBuf( ca );
-  const SPS &sps = *cu.cs->sps;
-  const uint32_t uiPcmLeftShiftBit = sps.getBitDepth(toChannelType(compID)) - sps.getPCMBitDepth(toChannelType(compID));
-
-  for (uint32_t y = 0; y < ca.height; y++)
-  {
-    for (uint32_t x = 0; x < ca.width; x++)
-    {
-      dstBuf.at(x,y) = (pcmBuf.at(x,y) << uiPcmLeftShiftBit);
-    }
-  }
-  if (cu.slice->getLmcsEnabledFlag()&& isLuma(compID))
-  {
-    dstBuf.rspSignal(m_pcReshape->getInvLUT());
-  }
-#endif
 }
 
 void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos,

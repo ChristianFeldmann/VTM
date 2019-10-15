@@ -91,15 +91,9 @@ protected:
   void reconstructBlkSAOParam(SAOBlkParam& recParam, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   int  getMergeList(CodingStructure& cs, int ctuRsAddr, SAOBlkParam* blkParams, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   void offsetCTU(const UnitArea& area, const CPelUnitBuf& src, PelUnitBuf& res, SAOBlkParam& saoblkParam, CodingStructure& cs);
-#if !JVET_O0525_REMOVE_PCM
-  void xPCMLFDisableProcess(CodingStructure& cs);
-  void xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
-  void xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID);
-#else
   void xLosslessDisableProcess(CodingStructure& cs);
   void xLosslessCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
   void xLosslessSampleRestoration(CodingUnit& cu, const ComponentID compID);
-#endif
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
   bool isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps);
   inline bool isProcessDisabled(int xPos, int yPos, int numVerVirBndry, int numHorVirBndry, int verVirBndryPos[], int horVirBndryPos[])

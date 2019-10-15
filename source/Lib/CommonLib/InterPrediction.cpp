@@ -477,7 +477,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
       const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
       if (biocheck0
         && biocheck1
+#if JVET_P1023_DMVR_BDOF_RP_CONDITION
+        && PU::isBiPredFromDifferentDirEqDistPoc(pu)
+#else
         && PU::isBiPredFromDifferentDir(pu)
+#endif
         && (pu.Y().height >= 8)
         && (pu.Y().width >= 8)
         && ((pu.Y().height * pu.Y().width) >= 128)
@@ -1511,7 +1515,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
         if (biocheck0
           && biocheck1
+#if JVET_P1023_DMVR_BDOF_RP_CONDITION
+          && PU::isBiPredFromDifferentDirEqDistPoc(pu)
+#else
           && PU::isBiPredFromDifferentDir(pu)
+#endif
           && (pu.Y().height >= 8)
           && (pu.Y().width >= 8)
           && ((pu.Y().height * pu.Y().width) >= 128)

@@ -994,8 +994,13 @@ void removeWeightHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1
     {
       for (int col = 0; col < width; col += 8)
       {
+#if JVET_P0092_SMVD_SPEED_UP
+        __m128i vsrc0 = _mm_loadu_si128( (const __m128i *)&src0[col] );
+        __m128i vsrc1 = _mm_loadu_si128( (const __m128i *)&src1[col] );
+#else
         __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
         __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
+#endif
 
         __m128i vtmp, vdst, vsrc;
         vdst = _mm_cvtepi16_epi32(vsrc0);
@@ -1064,8 +1069,13 @@ void removeHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1, int 
       {
         for (int col = 0; col < width; col += 8)
         {
+#if JVET_P0092_SMVD_SPEED_UP
+          __m128i vsrc0 = _mm_loadu_si128( (const __m128i *)&src0[col] );
+          __m128i vsrc1 = _mm_loadu_si128( (const __m128i *)&src1[col] );
+#else
           __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
           __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
+#endif
 
           vsrc0 = _mm_sub_epi16(_mm_slli_epi16(vsrc0, 1), vsrc1);
           _mm_store_si128((__m128i *)&src0[col], vsrc0);

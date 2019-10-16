@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
+
 #define JVET_P0516_PLT_BINARIZATION                       1 // JVET-P0516: PLT is always signaled when pred mode is euqal to 1 (intra mode) 
 
 #define JVET_P0562_TS_RESIDUAL_CODING_SIMP                1 // JVET-P0562: Fix the Rice parameter equal to 1 for the remainder of TS residual coding

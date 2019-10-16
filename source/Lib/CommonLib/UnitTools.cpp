@@ -2843,7 +2843,9 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   ///////////////////////////////////////////////////////////////////////
   ////////          GET Initial Temporal Vector                  ////////
   ///////////////////////////////////////////////////////////////////////
+#if !JVET_P0385_UNIFIED_MV_ROUNDING
   int mvPrec = MV_FRACTIONAL_BITS_INTERNAL;
+#endif
 
   Mv cTempVector = cTMv;
   bool  tempLICFlag = false;
@@ -2865,8 +2867,15 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 
   bool found = false;
   cTempVector = cTMv;
+
+#if JVET_P0385_UNIFIED_MV_ROUNDING
+  cTempVector.changePrecision(MV_PRECISION_SIXTEENTH, MV_PRECISION_INT);
+  int tempX = cTempVector.getHor();
+  int tempY = cTempVector.getVer();
+#else
   int tempX = cTempVector.getHor() >> mvPrec;
   int tempY = cTempVector.getVer() >> mvPrec;
+#endif
 
   centerPos.x = puPos.x + (puSize.width >> 1) + tempX;
   centerPos.y = puPos.y + (puSize.height >> 1) + tempY;

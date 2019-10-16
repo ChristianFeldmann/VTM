@@ -223,7 +223,11 @@ static const int RVM_VCEGAM10_M =                                   4;
 
 static const int MAX_REF_LINE_IDX =                                 3; //highest refLine offset in the list
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
+#if JVET_P0418_ALIGN_MLRP_CCLM
+static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 2, 0 };
+#else
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
+#endif
 
 static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
 

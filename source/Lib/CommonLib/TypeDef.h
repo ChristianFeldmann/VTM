@@ -50,6 +50,10 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0243_SINGLE_BIT_DEPTH                       1 // JVET-P0243: Single bitdepth for luma and chroma
+
+#define JVET_P0244_SPS_CLEAN_UP                           1 // JVET-P0244/P0429: SPS cleanup changes
+
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF

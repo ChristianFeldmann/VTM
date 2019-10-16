@@ -364,8 +364,12 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   CHECK(uiCode > 63, "PPS id exceeds boundary (63)");
   pcPPS->setPPSId (uiCode);
 
+#if JVET_P0244_SPS_CLEAN_UP
+  READ_CODE(4, uiCode, "pps_seq_parameter_set_id");
+#else
   READ_UVLC( uiCode, "pps_seq_parameter_set_id");
   CHECK(uiCode > 15, "SPS id exceeds boundary (15)");
+#endif
   pcPPS->setSPSId (uiCode);
 
   READ_UVLC( uiCode, "pic_width_in_luma_samples" );          pcPPS->setPicWidthInLumaSamples( uiCode );
@@ -1141,10 +1145,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "gdr_enabled_flag");
   pcSPS->setGDREnabledFlag(uiCode);
 
+#if JVET_P0244_SPS_CLEAN_UP
+  READ_CODE(4, uiCode, "sps_seq_parameter_set_id");              pcSPS->setSPSId(uiCode);
+#else
   READ_UVLC(uiCode, "sps_seq_parameter_set_id");           pcSPS->setSPSId(uiCode);
+#endif
 
+#if JVET_P0244_SPS_CLEAN_UP
+  READ_CODE(2, uiCode, "chroma_format_idc");                     pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
+#else
   READ_UVLC(     uiCode, "chroma_format_idc" );                  pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
   CHECK(uiCode > 3, "Invalid chroma format signalled");
+#endif
 
 
 
@@ -1156,6 +1168,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
 
+#if JVET_P0243_SINGLE_BIT_DEPTH
+  READ_UVLC(     uiCode, "bit_depth_minus8" );
+  CHECK(uiCode > 8, "Invalid bit depth signalled");
+  pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
+  pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
+  pcSPS->setQpBDOffset(CHANNEL_TYPE_LUMA, (int) (6*uiCode) );
+  pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA, (int) (6*uiCode) );
+#else
   READ_UVLC(     uiCode, "bit_depth_luma_minus8" );
   CHECK(uiCode > 8, "Invalid luma bit depth signalled");
   pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
@@ -1166,11 +1186,19 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode > 8, "Invalid chroma bit depth signalled");
   pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
   pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA,  (int) (6*uiCode) );
+#endif
 
   READ_UVLC(     uiCode, "min_qp_prime_ts_minus4" );
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
+#if JVET_P0244_SPS_CLEAN_UP
+  CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
+#endif
 
+#if JVET_P0244_SPS_CLEAN_UP
+  READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
+#else
   READ_UVLC( uiCode,    "log2_max_pic_order_cnt_lsb_minus4" );   pcSPS->setBitsForPOC( 4 + uiCode );
+#endif
   CHECK(uiCode > 12, "Invalid code");
   READ_FLAG( uiCode, "sps_idr_rpl_present_flag" ); pcSPS->setIDRRefParamListPresent( (bool) uiCode);
   // KJS: Marakech decision: sub-layers added back
@@ -1262,6 +1290,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(uiCode, "log2_min_luma_coding_block_size_minus2");
   int log2MinCUSize = uiCode + 2;
   pcSPS->setLog2MinCodingBlockSize(log2MinCUSize);
+#if JVET_P0244_SPS_CLEAN_UP
+  CHECK(uiCode > ctbLog2SizeY - 2, "Invalid log2_min_luma_coding_block_size_minus2 signalled");
+#endif
 
   CHECK( ( pcSPS->getMaxPicWidthInLumaSamples() % ( std::max( 8, int( pcSPS->getMaxCUWidth() >> ( pcSPS->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pcSPS->getMaxPicHeightInLumaSamples() % ( std::max( 8, int( pcSPS->getMaxCUHeight() >> ( pcSPS->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );

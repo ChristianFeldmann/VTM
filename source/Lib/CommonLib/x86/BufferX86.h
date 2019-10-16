@@ -351,6 +351,12 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
   __m128i vibdimax  = _mm_set1_epi32(clpRng.max);
   __m128i vzero     = _mm_setzero_si128();
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING 
+  const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
+  __m128i vdImin = _mm_set1_epi32(-dILimit);
+  __m128i vdImax = _mm_set1_epi32(dILimit - 1);
+#endif
+
   for (int h = 0; h < height; h++)
   {
     const int* vX = dMvX;
@@ -370,6 +376,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 
       mm_dI = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
       mm_dI = _mm_srai_epi32(_mm_add_epi32(mm_dI, mm_dIoffset), 1);
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+      mm_dI = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI));
+#endif
       mm_dI = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mm_dI, mm_src), mm_offset), shiftNum);
       mm_dI = _mm_packs_epi32(_mm_min_epi32(vibdimax, _mm_max_epi32(vibdimin, mm_dI)), vzero);
       _mm_storel_epi64((__m128i *)dst, mm_dI);
@@ -399,6 +408,12 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
   __m128i vibdimin = _mm_set1_epi32(clpRng.min);
   __m128i vibdimax = _mm_set1_epi32(clpRng.max);
   __m128i vzero = _mm_setzero_si128();
+
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
+  __m128i vdImin = _mm_set1_epi32(-dILimit);
+  __m128i vdImax = _mm_set1_epi32(dILimit - 1);
+#endif
 
   __m128i mm_dmvx0, mm_dmvy0, mm_dmvx1, mm_dmvy1, mm_gradx0, mm_grady0, mm_gradx1, mm_grady1, mm_src0, mm_src1;
   __m128i mm_dI0, mm_dI1, mm_dI;
@@ -444,6 +459,9 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
       mm_grady0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0));
       mm_dI0 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx0, mm_gradx0), _mm_mullo_epi32(mm_dmvy0, mm_grady0));
       mm_dI0 = _mm_srai_epi32(_mm_add_epi32(mm_dI0, mm_dIoffset), 1);
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+      mm_dI0 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI0));
+#endif
       mm_dI0 = _mm_mullo_epi32(_mm_add_epi32(mm_src0, mm_dI0), mm_w0);
       gX0 += 4; gY0 += 4;
 
@@ -453,6 +471,9 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
         mm_grady1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY1));
         mm_dI1 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx1, mm_gradx1), _mm_mullo_epi32(mm_dmvy1, mm_grady1));
         mm_dI1 = _mm_srai_epi32(_mm_add_epi32(mm_dI1, mm_dIoffset), 1);
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+        mm_dI1 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI1));
+#endif
         mm_dI1 = _mm_mullo_epi32(_mm_add_epi32(mm_src1, mm_dI1), mm_w1);
         gX1 += 4; gY1 += 4;
       }

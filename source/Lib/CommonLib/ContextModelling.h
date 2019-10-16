@@ -99,6 +99,12 @@ public:
   void            setNumCtxBins   ( int n )                       {          m_remainingContextBins  = n; }
   unsigned        sigGroupCtxId   ( bool ts = false     )   const { return ts ? m_sigGroupCtxIdTS : m_sigGroupCtxId; }
   bool            bdpcm           ()                        const { return m_bdpcm; }
+
+#if JVET_P0072_SIMPLIFIED_TSRC
+  void            decimateNumCtxBins(int n) { m_remainingContextBins -= n; }
+  void            increaseNumCtxBins(int n) { m_remainingContextBins += n; }
+#endif
+
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t posY      = m_scan[scanPos].y;
@@ -295,6 +301,11 @@ public:
 
   int deriveModCoeff(int rightPixel, int belowPixel, int absCoeff, int bdpcm = 0)
   {
+    
+#if   JVET_P0072_SIMPLIFIED_TSRC
+    if (absCoeff == 0)
+      return 0;
+#endif
     int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
 
     int absCoeffMod = absCoeff;
@@ -318,6 +329,12 @@ public:
 
   int decDeriveModCoeff(int rightPixel, int belowPixel, int absCoeff)
   {
+    
+#if   JVET_P0072_SIMPLIFIED_TSRC
+    if (absCoeff == 0)
+      return 0;
+#endif
+
     int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
     pred1 = std::max(absBelow, absRight);
 

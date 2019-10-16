@@ -336,6 +336,9 @@ public:
 
   unsigned templateAbsSumTS( int scanPos, const TCoeff* coeff )
   {
+#if JVET_P0562_TS_RESIDUAL_CODING_SIMP
+    return 1;
+#else
     const uint32_t  posY  = m_scan[scanPos].y;
     const uint32_t  posX  = m_scan[scanPos].x;
     const TCoeff*   posC  = coeff + posX + posY * m_width;
@@ -358,6 +361,7 @@ public:
     };
 
     return auiGoRicePars[ std::min(sum, 31) ];
+#endif
   }
 
   int                       regBinLimit;

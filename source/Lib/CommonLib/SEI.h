@@ -94,17 +94,13 @@ public:
     KNEE_FUNCTION_INFO                   = 141,
     COLOUR_REMAPPING_INFO                = 142,
 #endif
-#if JVET_N0494_DRAP
     DEPENDENT_RAP_INDICATION             = 145,
-#endif
 #if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
 #endif
 #endif
-#if JVET_O0041_FRAME_FIELD_SEI
     FRAME_FIELD_INFO                     = 168,
-#endif
   };
 
   SEI() {}
@@ -151,7 +147,6 @@ public:
   PictureHash m_pictureHash;
 };
 
-#if JVET_N0494_DRAP
 class SEIDependentRAPIndication : public SEI
 {
 public:
@@ -160,7 +155,6 @@ public:
 
   virtual ~SEIDependentRAPIndication() { }
 };
-#endif
 
 #if HEVC_SEI
 class SEIActiveParameterSets : public SEI
@@ -189,99 +183,44 @@ public:
   void copyTo (SEIBufferingPeriod& target) const;
 
   SEIBufferingPeriod()
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  : m_bpSeqParameterSetId (0)
-  , m_rapCpbParamsPresentFlag (false)
-#else
   : m_bpNalCpbParamsPresentFlag (false)
   , m_bpVclCpbParamsPresentFlag (false)
   , m_initialCpbRemovalDelayLength (0)
   , m_cpbRemovalDelayLength (0)
   , m_dpbOutputDelayLength (0)
-#if !JVET_N0867_TEMP_SCAL_HRD
-  , m_bpCpbCnt (0)
-#endif
-#endif
-#if JVET_O0189_DU
   , m_duCpbRemovalDelayIncrementLength (0)
   , m_dpbOutputDelayDuLength (0)
-#endif
-#if !FIX_SEI_O0189
-  , m_cpbDelayOffset      (0)
-  , m_dpbDelayOffset      (0)
-#endif
-#if JVET_N0867_TEMP_SCAL_HRD
   , m_cpbRemovalDelayDeltasPresentFlag (false)
   , m_numCpbRemovalDelayDeltas (0)
   , m_bpMaxSubLayers (0)
-#endif
   {
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-    ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
-    ::memset(m_initialCpbRemovalDelayOffset, 0, sizeof(m_initialCpbRemovalDelayOffset));
-    ::memset(m_initialAltCpbRemovalDelay, 0, sizeof(m_initialAltCpbRemovalDelay));
-    ::memset(m_initialAltCpbRemovalDelayOffset, 0, sizeof(m_initialAltCpbRemovalDelayOffset));
-#endif
-#if JVET_N0867_TEMP_SCAL_HRD
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
     ::memset(m_bpCpbCnt, 0, sizeof(m_bpCpbCnt));
-#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
-#if JVET_O0189_DU
   void      setDuCpbRemovalDelayIncrementLength( uint32_t value )        { m_duCpbRemovalDelayIncrementLength = value;        }
   uint32_t  getDuCpbRemovalDelayIncrementLength( ) const                 { return m_duCpbRemovalDelayIncrementLength;         }
   void      setDpbOutputDelayDuLength( uint32_t value )                  { m_dpbOutputDelayDuLength = value;                  }
   uint32_t  getDpbOutputDelayDuLength( ) const                           { return m_dpbOutputDelayDuLength;                   }
-#endif
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  uint32_t m_bpSeqParameterSetId;
-  bool m_rapCpbParamsPresentFlag;
-#else
   bool m_bpNalCpbParamsPresentFlag;
   bool m_bpVclCpbParamsPresentFlag;
   uint32_t m_initialCpbRemovalDelayLength;
   uint32_t m_cpbRemovalDelayLength;
   uint32_t m_dpbOutputDelayLength;
-#if !JVET_N0867_TEMP_SCAL_HRD
-  int      m_bpCpbCnt;
-#else
   int      m_bpCpbCnt[MAX_TLAYER];
-#endif
-#endif
-#if JVET_O0189_DU
   uint32_t m_duCpbRemovalDelayIncrementLength;
   uint32_t m_dpbOutputDelayDuLength;
-#endif
-#if !FIX_SEI_O0189
-  uint32_t m_cpbDelayOffset;
-  uint32_t m_dpbDelayOffset;
-#endif
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  uint32_t m_initialCpbRemovalDelay         [MAX_CPB_CNT][2];
-  uint32_t m_initialCpbRemovalDelayOffset   [MAX_CPB_CNT][2];
-  uint32_t m_initialAltCpbRemovalDelay      [MAX_CPB_CNT][2];
-  uint32_t m_initialAltCpbRemovalDelayOffset[MAX_CPB_CNT][2];
-#else
-#if !JVET_N0867_TEMP_SCAL_HRD
-  std::vector<uint32_t> m_initialCpbRemovalDelay  [2];
-  std::vector<uint32_t> m_initialCpbRemovalOffset [2];
-#else
   uint32_t m_initialCpbRemovalDelay         [MAX_TLAYER][MAX_CPB_CNT][2];
   uint32_t m_initialCpbRemovalOffset        [MAX_TLAYER][MAX_CPB_CNT][2];
-#endif
-#endif
   bool m_concatenationFlag;
   uint32_t m_auCpbRemovalDelayDelta;
-#if JVET_N0867_TEMP_SCAL_HRD
   bool m_cpbRemovalDelayDeltasPresentFlag;
   int  m_numCpbRemovalDelayDeltas;
   int  m_bpMaxSubLayers;
   uint32_t m_cpbRemovalDelayDelta    [15];
-#endif
 };
 
 class SEIPictureTiming : public SEI
@@ -291,55 +230,28 @@ public:
   void copyTo (SEIPictureTiming& target) const;
 
   SEIPictureTiming()
-#if !JVET_O0041_FRAME_FIELD_SEI
-  : m_picStruct               (0)
-  , m_sourceScanType          (0)
-  , m_duplicateFlag           (false)
-  , m_picDpbOutputDuDelay     (0)
-#else
-#if JVET_N0867_TEMP_SCAL_HRD
   : m_ptMaxSubLayers (0)
   , m_picDpbOutputDelay (0)
   , m_picDpbOutputDuDelay (0)
   , m_numDecodingUnitsMinus1 (0)
   , m_duCommonCpbRemovalDelayFlag (false)
   , m_duCommonCpbRemovalDelayMinus1 (0)
-#else
-  : m_auCpbRemovalDelay (0)
-  , m_picDpbOutputDelay (0)
-  , m_picDpbOutputDuDelay (0)
-  , m_numDecodingUnitsMinus1 (0)
-  , m_duCommonCpbRemovalDelayFlag (false)
-  , m_duCommonCpbRemovalDelayMinus1 (0)
-#endif
-#endif
   {
-#if JVET_N0867_TEMP_SCAL_HRD
     ::memset(m_subLayerDelaysPresentFlag, 0, sizeof(m_subLayerDelaysPresentFlag));
     ::memset(m_cpbRemovalDelayDeltaEnabledFlag, 0, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
     ::memset(m_cpbRemovalDelayDeltaIdx, 0, sizeof(m_cpbRemovalDelayDeltaIdx));
     ::memset(m_auCpbRemovalDelay, 0, sizeof(m_auCpbRemovalDelay));
-#endif
   }
   virtual ~SEIPictureTiming()
   {
   }
 
-#if !JVET_O0041_FRAME_FIELD_SEI
-  uint32_t  m_picStruct;
-  uint32_t  m_sourceScanType;
-  bool  m_duplicateFlag;
-#endif
 
-#if JVET_N0867_TEMP_SCAL_HRD
   int  m_ptMaxSubLayers;
   bool  m_subLayerDelaysPresentFlag[MAX_TLAYER];
   bool  m_cpbRemovalDelayDeltaEnabledFlag[MAX_TLAYER];
   uint32_t  m_cpbRemovalDelayDeltaIdx[MAX_TLAYER];
   uint32_t  m_auCpbRemovalDelay[MAX_TLAYER];
-#else
-  uint32_t  m_auCpbRemovalDelay;
-#endif
   uint32_t  m_picDpbOutputDelay;
   uint32_t  m_picDpbOutputDuDelay;
   uint32_t  m_numDecodingUnitsMinus1;
@@ -368,7 +280,6 @@ public:
 };
 
 
-#if JVET_O0041_FRAME_FIELD_SEI
 class SEIFrameFieldInfo : public SEI
 {
 public:
@@ -386,7 +297,7 @@ public:
     , m_duplicateFlag(false)
   {}
   virtual ~SEIFrameFieldInfo() {}
-  
+
   bool m_fieldPicFlag;
   bool m_bottomFieldFlag;
   bool m_pairingIndicatedFlag;
@@ -397,7 +308,6 @@ public:
   int  m_sourceScanType;
   bool m_duplicateFlag;
 };
-#endif
 
 #if HEVC_SEI
 class SEIRecoveryPoint : public SEI

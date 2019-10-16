@@ -116,9 +116,6 @@ EncAppCfg::EncAppCfg()
 , m_noPartitionConstraintsOverrideConstraintFlag(false)
 , m_bNoSaoConstraintFlag(false)
 , m_bNoAlfConstraintFlag(false)
-#if !JVET_O0525_REMOVE_PCM
-, m_bNoPcmConstraintFlag(false)
-#endif
 , m_bNoRefWraparoundConstraintFlag(false)
 , m_bNoTemporalMvpConstraintFlag(false)
 , m_bNoSbtmvpConstraintFlag(false)
@@ -136,12 +133,8 @@ EncAppCfg::EncAppCfg()
 , m_bNoTriangleConstraintFlag(false)
 , m_bNoLadfConstraintFlag(false)
 , m_noTransformSkipConstraintFlag(false)
-#if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_noBDPCMConstraintFlag(false)
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
 , m_noJointCbCrConstraintFlag(false)
-#endif
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
@@ -180,7 +173,7 @@ EncAppCfg::~EncAppCfg()
     m_targetPivotValue = NULL;
   }
 #endif
-  
+
 #if ENABLE_TRACING
   tracing_uninit(g_trace_ctx);
 #endif
@@ -510,7 +503,6 @@ uint32_t SMultiValueInput<uint32_t>::readValue(const char *&pStr, bool &bSuccess
   return val;
 }
 
-#if JVET_O0044_MULTI_SUB_PROFILE
 template<>
 uint8_t SMultiValueInput<uint8_t>::readValue(const char *&pStr, bool &bSuccess)
 {
@@ -520,7 +512,6 @@ uint8_t SMultiValueInput<uint8_t>::readValue(const char *&pStr, bool &bSuccess)
   bSuccess = !(*eptr != 0 && !isspace(*eptr) && *eptr != ',') && !(val<minValIncl || val>maxValIncl);
   return val;
 }
-#endif
 
 template<>
 int SMultiValueInput<int>::readValue(const char *&pStr, bool &bSuccess)
@@ -736,7 +727,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<int>  cfg_lumaLeveltoDQPMappingLuma       (0, std::numeric_limits<int>::max(), 0, LUMA_LEVEL_TO_DQP_LUT_MAXSIZE, defaultLumaLevelTodQp_LumaChangePoints, sizeof(defaultLumaLevelTodQp_LumaChangePoints)/sizeof(int));
   uint32_t lumaLevelToDeltaQPMode;
 #endif
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   const int qpInVals[] = { 25, 33, 43 };                // qpInVal values used to derive the chroma QP mapping table used in VTM-5.0
   const int qpOutVals[] = { 25, 32, 37 };               // qpOutVal values used to derive the chroma QP mapping table used in VTM-5.0
   SMultiValueInput<int> cfg_qpInValCb                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpInVals, sizeof(qpInVals)/sizeof(int));
@@ -746,7 +736,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<int> cfg_qpOutValCr                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
   SMultiValueInput<int> cfg_qpInValCbCr                 (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
   SMultiValueInput<int> cfg_qpOutValCbCr                (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
-#endif
   const uint32_t defaultInputKneeCodes[3]  = { 600, 800, 900 };
   const uint32_t defaultOutputKneeCodes[3] = { 100, 250, 450 };
   SMultiValueInput<uint32_t> cfg_kneeSEIInputKneePointValue      (1,  999, 0, 999, defaultInputKneeCodes,  sizeof(defaultInputKneeCodes )/sizeof(uint32_t));
@@ -780,9 +769,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosX       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosY       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
 
-#if JVET_O0044_MULTI_SUB_PROFILE
   SMultiValueInput<uint8_t> cfg_SubProfile(0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
-#endif
 
   int warnUnknowParameter = 0;
 
@@ -845,11 +832,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ConfWinRight",                                    m_confWinRight,                                       0, "Right offset for window conformance mode 3")
   ("ConfWinTop",                                      m_confWinTop,                                         0, "Top offset for window conformance mode 3")
   ("ConfWinBottom",                                   m_confWinBottom,                                      0, "Bottom offset for window conformance mode 3")
-#if JVET_O0610_CFG
   ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                             true, "Enable Access Unit Delimiter NALUs")
-#else
-  ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                            false, "Enable Access Unit Delimiter NALUs")
-#endif
   ("FrameRate,-fr",                                   m_iFrameRate,                                         0, "Frame rate")
   ("FrameSkip,-fs",                                   m_FrameSkip,                                         0u, "Number of frames to skip at start of input YUV")
   ("TemporalSubsampleRatio,-ts",                      m_temporalSubsampleRatio,                            1u, "Temporal sub-sample ratio when reading input YUV")
@@ -889,11 +872,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
-#if JVET_O0044_MULTI_SUB_PROFILE
   ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
-#else
-    ("SubProfile", m_subProfile, 0u, "Sub-profile idc")
-#endif
   ("EnableDecodingParameterSet",                      m_decodingParameterSetEnabled,                    false, "Enables writing of Decoding Parameter Set")
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
@@ -922,9 +901,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
   ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
   ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-#if JVET_O0070_PROF
   ("PROF",                                           m_PROF,                                           false, "Enable Prediction refinement with optical flow for affine mode (0:off, 1:on)  [default: off]")
-#endif
   ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
   ("IMV",                                             m_ImvMode,                                            1, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled\n"
@@ -965,15 +942,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
-#if !JVET_O1136_TS_BDPCM_SIGNALLING    
-  ( "RDPCM",                                          m_RdpcmMode,                                       false, "RDPCM")
-#endif    
-#if JVET_O0119_BASE_PALETTE_444
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
-#endif
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ( "IBCLocalSearchRangeX",                           m_IBCLocalSearchRangeX,                            128u, "Search range of IBC local search in x direction")
   ( "IBCLocalSearchRangeY",                           m_IBCLocalSearchRangeY,                            128u, "Search range of IBC local search in y direction")
@@ -992,7 +962,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("VirtualBoundariesPosX",                           cfg_virtualBoundariesPosX,    cfg_virtualBoundariesPosX, "Locations of the vertical virtual boundaries in units of luma samples")
   ("VirtualBoundariesPosY",                           cfg_virtualBoundariesPosY,    cfg_virtualBoundariesPosY, "Locations of the horizontal virtual boundaries in units of luma samples")
   ("EncDbOpt",                                        m_encDbOpt,                                       false, "Encoder optimization with deblocking filter")
-#if JVET_O0432_LMCS_ENCODER
   ("LMCSEnable",                                      m_lumaReshapeEnable,                              false, "Enable LMCS (luma mapping with chroma scaling")
   ("LMCSSignalType",                                  m_reshapeSignalType,                                 0u, "Input signal type: 0:SDR, 1:HDR-PQ, 2:HDR-HLG")
   ("LMCSUpdateCtrl",                                  m_updateCtrl,                                         0, "LMCS model update control: 0:RA, 1:AI, 2:LDB/LDP")
@@ -1000,10 +969,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "1: rsp both (CW66 for QP<=22), 2: rsp TID0 (for all QP),"
                                                                                                                "3: rsp inter(CW66 for QP<=22), 4: rsp inter(for all QP).")
   ("LMCSInitialCW",                                   m_initialCW,                                         0u, "LMCS initial total codeword (0~1023) when LMCSAdpOption > 0")
-#else
-  ("LumaReshapeEnable",                               m_lumaReshapeEnable,                              false, "Enable Reshaping for Luma Channel")
-  ("ReshapeSignalType",                               m_reshapeSignalType,                                 0u, "Input signal type: 0: SDR, 1:PQ, 2:HLG")
-#endif
   ("IntraCMD",                                        m_intraCMD,                                          0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
@@ -1013,15 +978,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ContentBasedFastQtbt",                            m_contentBasedFastQtbt,                           false, "Signal based QTBT speed-up")
   ("UseNonLinearAlfLuma",                             m_useNonLinearAlfLuma,                             true, "Non-linear adaptive loop filters for Luma Channel")
   ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   ("MaxNumAlfAlternativesChroma",                     m_maxNumAlfAlternativesChroma,
                                                                     (unsigned)MAX_NUM_ALF_ALTERNATIVES_CHROMA, std::string("Maximum number of alternative Chroma filters (1-") + std::to_string(MAX_NUM_ALF_ALTERNATIVES_CHROMA) + std::string (", inclusive)") )
-#endif
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
-#if JVET_O0050_LOCAL_DUAL_TREE
   ("FastLocalDualTreeMode",                           m_fastLocalDualTreeMode,                              0,  "Fast intra pass coding for local dual-tree in intra coding region, 0: off, 1: use threshold, 2: one intra mode only")
-#endif
   // Unit definition parameters
   ("MaxCUWidth",                                      m_uiMaxCUWidth,                                     64u)
   ("MaxCUHeight",                                     m_uiMaxCUHeight,                                    64u)
@@ -1030,17 +991,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxCUSize,s",                                     m_uiMaxCUHeight,                                    64u, "Maximum CU size")
   ("MaxPartitionDepth,h",                             m_uiMaxCUDepth,                                      4u, "CU depth")
 
-#if MAX_TB_SIZE_SIGNALLING
   ("Log2MaxTbSize",                                   m_log2MaxTbSize,                                      6, "Maximum transform block size in logarithm base 2 (Default: 6)")
-#endif
 
   // Coding structure paramters
   ("IntraPeriod,-ip",                                 m_iIntraPeriod,                                      -1, "Intra period in frames, (-1: only first frame)")
   ("DecodingRefreshType,-dr",                         m_iDecodingRefreshType,                               0, "Intra refresh type (0:none 1:CRA 2:IDR 3:RecPointSEI)")
   ("GOPSize,g",                                       m_iGOPSize,                                           1, "GOP size of temporal structure")
-#if JVET_N0494_DRAP
   ("DRAPPeriod",                                      m_drapPeriod,                                         0, "DRAP period in frames (0: disable Dependent RAP indication SEI messages)")
-#endif
   ("ReWriteParamSets",                                m_rewriteParamSets,                           false, "Enable rewriting of Parameter sets before every (intra) random access point")
   //Alias with same name as in HM
   ("ReWriteParamSetsFlag",                            m_rewriteParamSets,                           false, "Alias for ReWriteParamSets")
@@ -1094,7 +1051,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LumaLevelToDeltaQPMappingLuma",                   cfg_lumaLeveltoDQPMappingLuma,  cfg_lumaLeveltoDQPMappingLuma, "Luma to Delta QP Mapping - luma thresholds")
   ("LumaLevelToDeltaQPMappingDQP",                    cfg_lumaLeveltoDQPMappingQP,  cfg_lumaLeveltoDQPMappingQP, "Luma to Delta QP Mapping - DQP values")
 #endif
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   ("UseIdentityTableForNon420Chroma",                 m_useIdentityTableForNon420Chroma,                 true, "True: Indicates that 422/444 chroma uses identity chroma QP mapping tables; False: explicit Qp table may be specified in config")
   ("SameCQPTablesForAllChroma",                       m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag,                        true, "0: Different tables for Cb, Cr and joint Cb-Cr components, 1 (default): Same tables for all three chroma components")
   ("QpInValCb",                                       cfg_qpInValCb,                            cfg_qpInValCb, "Input coordinates for the QP table for Cb component")
@@ -1103,7 +1059,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("QpOutValCr",                                      cfg_qpOutValCr,                          cfg_qpOutValCr, "Output coordinates for the QP table for Cr component")
   ("QpInValCbCr",                                     cfg_qpInValCbCr,                        cfg_qpInValCbCr, "Input coordinates for the QP table for joint Cb-Cr component")
   ("QpOutValCbCr",                                    cfg_qpOutValCbCr,                      cfg_qpOutValCbCr, "Output coordinates for the QP table for joint Cb-Cr component")
-#endif
   ("CbQpOffset,-cbqpofs",                             m_cbQpOffset,                                         0, "Chroma Cb QP Offset")
   ("CrQpOffset,-crqpofs",                             m_crQpOffset,                                         0, "Chroma Cr QP Offset")
   ("CbQpOffsetDualTree",                              m_cbQpOffsetDualTree,                                 0, "Chroma Cb QP Offset for dual tree")
@@ -1155,9 +1110,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
-#endif
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
@@ -1183,14 +1136,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
-#if !JVET_O0525_REMOVE_PCM
-  ("PCMEnabledFlag",                                  m_usePCM,                                         false)
-  ("PCMLog2MaxSize",                                  m_pcmLog2MaxSize,                                    5u)
-  ("PCMLog2MinSize",                                  m_uiPCMLog2MinSize,                                  3u)
-
-  ("PCMInputBitDepthFlag",                            m_bPCMInputBitDepthFlag,                           true)
-  ("PCMFilterDisableFlag",                            m_bPCMFilterDisableFlag,                          false)
-#endif
   ("IntraReferenceSmoothing",                         m_enableIntraReferenceSmoothing,                   true, "0: Disable use of intra reference smoothing (not valid in V1 profiles). 1: Enable use of intra reference smoothing (same as V1)")
   ("WeightedPredP,-wpP",                              m_useWeightedPred,                                false, "Use weighted prediction in P slices")
   ("WeightedPredB,-wpB",                              m_useWeightedBiPred,                              false, "Use weighted (bidirectional) prediction in B slices")
@@ -1201,10 +1146,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TileUniformSpacing",                              m_tileUniformSpacingFlag,                         false,      "Indicates that tile columns and rows are distributed uniformly")
   ("NumTileColumnsMinus1",                            m_numTileColumnsMinus1,                               0,          "Number of tile columns in a picture minus 1")
   ("NumTileRowsMinus1",                               m_numTileRowsMinus1,                                  0,          "Number of rows in a picture minus 1")
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
   ("UniformTileColsWidthMinus1",                      m_uniformTileColsWidthMinus1,                        -1, "Tile width to use for uniform tiles minus 1")
   ("UniformTileRowHeightMinus1",                      m_uniformTileRowHeightMinus1,                        -1, "Tile height to use for uniform tiles minus 1")
-#endif
   ("TileColumnWidthArray",                            cfg_ColumnWidth,                        cfg_ColumnWidth, "Array containing tile column width values in units of CTU")
   ("TileRowHeightArray",                              cfg_RowHeight,                            cfg_RowHeight, "Array containing tile row height values in units of CTU")
   ("LFCrossTileBoundaryFlag",                         m_bLFCrossTileBoundaryFlag,                        true, "1: cross-tile-boundary loop filtering. 0:non-cross-tile-boundary loop filtering")
@@ -1225,9 +1168,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
   ("MaxNumAffineMergeCand",                           m_maxNumAffineMergeCand,                             5u, "Maximum number of affine merge candidates")
   ("MaxNumTriangleCand",                              m_maxNumTriangleCand,                                5u, "Maximum number of triangle candidates")
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   ("MaxNumIBCMergeCand",                              m_maxNumIBCMergeCand,                                6u, "Maximum number of IBC merge candidates")
-#endif
     /* Misc. */
   ("SEIDecodedPictureHash,-dph",                      tmpDecodedPictureHashSEIMappedType,                   0, "Control generation of decode picture hash SEI messages\n"
                                                                                                                "\t3: checksum\n"
@@ -1235,10 +1176,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1: use MD5\n"
                                                                                                                "\t0: disable")
   ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
-#if JVET_O0238_PPS_OR_SLICE
   ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
                                                                                                                 "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
-#endif
   ("FEN",                                             tmpFastInterSearchMode,   int(FASTINTERSEARCH_DISABLED), "fast encoder setting")
   ("ECU",                                             m_bUseEarlyCU,                                    false, "Early CU setting")
   ("FDM",                                             m_useFastDecisionForMerge,                         true, "Fast decision for Merge RD Cost")
@@ -1265,9 +1204,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIActiveParameterSets",                          m_activeParameterSetsSEIEnabled,                      0, "Enable generation of active parameter sets SEI messages");
   opts.addOptions()
 #endif
-#if FIX_HRD_O0189
   ("HrdParametersPresent,-hrd",                       m_hrdParametersPresentFlag,                       false, "Enable generation of hrd_parameters()")
-#endif
   ("VuiParametersPresent,-vui",                       m_vuiParametersPresentFlag,                       false, "Enable generation of vui_parameters()")
   ("AspectRatioInfoPresent",                          m_aspectRatioInfoPresentFlag,                     false, "Signals whether aspect_ratio_idc is present")
   ("AspectRatioIdc",                                  m_aspectRatioIdc,                                     0, "aspect_ratio_idc")
@@ -1292,12 +1229,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("SEIBufferingPeriod",                              m_bufferingPeriodSEIEnabled,                      false, "Control generation of buffering period SEI messages")
   ("SEIPictureTiming",                                m_pictureTimingSEIEnabled,                        false, "Control generation of picture timing SEI messages")
-#if JVET_O0189_DU
   ("SEIDecodingUnitInfo",                             m_decodingUnitInfoSEIEnabled,                     false, "Control generation of decoding unit information SEI message.")
-#endif
-#if JVET_O0041_FRAME_FIELD_SEI
   ("SEIFrameFieldInfo",                               m_frameFieldInfoSEIEnabled,                       false, "Control generation of frame field information SEI messages")
-#endif
 #if HEVC_SEI
   ("SEIToneMappingInfo",                              m_toneMappingInfoSEIEnabled,                      false, "Control generation of Tone Mapping SEI messages")
   ("SEIToneMapId",                                    m_toneMapId,                                          0, "Specifies Id of Tone Mapping SEI message for a given session")
@@ -1434,13 +1367,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
 #endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
-#if JVET_O1164_RPR
   ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
   ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
-#endif
     ;
 
 #if EXTENSION_360_VIDEO
@@ -1465,8 +1396,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
-   
-#if JVET_O1164_RPR
+
   m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
   if( m_fractionOfFrames != 1.0 )
   {
@@ -1477,8 +1407,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
   }
-#endif
-#if JVET_N0867_TEMP_SCAL_HRD
   m_bpDeltasGOPStructure = false;
   if(m_iGOPSize == 16)
   {
@@ -1520,7 +1448,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_bpDeltasGOPStructure = false;
   }
-#endif
   for (int i = 0; m_GOPList[i].m_POC != -1 && i < MAX_GOP + 1; i++)
   {
     m_RPLList0[i].m_POC = m_RPLList1[i].m_POC = m_GOPList[i].m_POC;
@@ -1533,10 +1460,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_RPLList1[i].m_numRefPicsActive = m_GOPList[i].m_numRefPicsActive1;
     m_RPLList0[i].m_numRefPics = m_GOPList[i].m_numRefPics0;
     m_RPLList1[i].m_numRefPics = m_GOPList[i].m_numRefPics1;
-#if JVET_N0100_PROPOSAL1
     m_RPLList0[i].m_ltrp_in_slice_header_flag = m_GOPList[i].m_ltrp_in_slice_header_flag;
     m_RPLList1[i].m_ltrp_in_slice_header_flag = m_GOPList[i].m_ltrp_in_slice_header_flag;
-#endif
     for (int j = 0; j < m_GOPList[i].m_numRefPics0; j++)
       m_RPLList0[i].m_deltaRefPics[j] = m_GOPList[i].m_deltaRefPics0[j];
     for (int j = 0; j < m_GOPList[i].m_numRefPics1; j++)
@@ -1664,16 +1589,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_tileRowHeight.clear();
   }
- #if JVET_O0044_MULTI_SUB_PROFILE
   m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
   m_subProfile.resize(m_numSubProfile);
   for (uint8_t i = 0; i < m_numSubProfile; ++i)
   {
     m_subProfile[i] = cfg_SubProfile.values[i];
   }
-#endif 
-  
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
+
   if (m_tileUniformSpacingFlag)
   {
     int uniformTileHeight = ((m_uniformTileRowHeightMinus1 + 1) * m_uiCTUSize);
@@ -1681,7 +1603,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_numTileRowsMinus1 = ((m_iSourceHeight + uniformTileHeight - 1) / uniformTileHeight) - 1;
     m_numTileColumnsMinus1 = ((m_iSourceWidth + uniformTileWidth - 1) / uniformTileWidth) - 1;
   }
-#endif
   /* rules for input, output and internal bitdepths as per help text */
   if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
   {
@@ -1898,12 +1819,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   if (!singleTileInPicFlag)
   {
     //if (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
-#if SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES
     if ( (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag) ||
          (m_numSlicesInPicMinus1 != 0 && m_rectSliceFlag) )
-#else
-    if (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag)
-#endif
     {
       int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
 
@@ -2113,7 +2030,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 
   CHECK(cfg_qpInValCb.values.size() != cfg_qpOutValCb.values.size(), "Chroma QP table for Cb is incomplete.");
   CHECK(cfg_qpInValCr.values.size() != cfg_qpOutValCr.values.size(), "Chroma QP table for Cr is incomplete.");
@@ -2162,7 +2078,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] + qpBdOffsetC : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
     }
   }
-#endif
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   if ( m_LadfEnabed )
@@ -2178,12 +2093,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
-#if JVET_O0610_CFG
   if (m_AccessUnitDelimiter == false)
   {
     printf ("Warning: Access unit delimiters are disabled. VVC requires the presence of access unit delimiters\n");
   }
-#endif
 
 #if JVET_O0756_CONFIG_HDRMETRICS && !JVET_O0756_CALCULATE_HDRMETRICS
   if ( m_calculateHdrMetrics == true)
@@ -2229,13 +2142,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   if ( m_alf )
   {
     CHECK( m_maxNumAlfAlternativesChroma < 1 || m_maxNumAlfAlternativesChroma > MAX_NUM_ALF_ALTERNATIVES_CHROMA, std::string("The maximum number of ALF Chroma filter alternatives must be in the range (1-") + std::to_string(MAX_NUM_ALF_ALTERNATIVES_CHROMA) + std::string (", inclusive)") );
   }
 
-#endif
   // reading external dQP description from file
   if ( !m_dQPFileName.empty() )
   {
@@ -2339,20 +2250,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
-  
+
   m_reshapeCW.binCW.resize(3);
   m_reshapeCW.rspFps = m_iFrameRate;
-#if !JVET_O0432_LMCS_ENCODER
-  m_reshapeCW.rspIntraPeriod = m_iIntraPeriod;
-#endif
   m_reshapeCW.rspPicSize = m_iSourceWidth*m_iSourceHeight;
   m_reshapeCW.rspFpsToIp = std::max(16, 16 * (int)(round((double)m_iFrameRate /16.0)));
   m_reshapeCW.rspBaseQP = m_iQP;
-#if JVET_O0432_LMCS_ENCODER
   m_reshapeCW.updateCtrl = m_updateCtrl;
   m_reshapeCW.adpOption = m_adpOption;
   m_reshapeCW.initialCW = m_initialCW;
-#endif
 #if ENABLE_TRACING
   g_trace_ctx = tracing_init(sTracingFile, sTracingRule);
   if( bTracingChannelsList && g_trace_ctx )
@@ -2380,11 +2286,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
  #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
       && (!m_wcgChromaQpControl.enabled)
  #endif
-#if MAX_TB_SIZE_SIGNALLING
       && ((1 << (m_log2MaxTbSize + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
-#else
-    && ((1 << (MAX_TB_LOG2_SIZEY + 1)) == m_uiCTUSize) && (m_iSourceWidth > 512 || m_iSourceHeight > 320))
-#endif
   {
     m_cuQpDeltaSubdiv = 2;
   }
@@ -2400,9 +2302,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     msg( WARNING, "*************************************************************************\n" );
 
     m_uiCTUSize = m_uiMaxCUWidth;
-#if MAX_TB_SIZE_SIGNALLING
     if( ( 1u << m_log2MaxTbSize         ) > m_uiCTUSize ) m_log2MaxTbSize--;
-#endif
   }
 #endif
 #endif // ENABLE_QPA
@@ -2471,9 +2371,7 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-#if JVET_O0119_BASE_PALETTE_444
     xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
-#endif
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
     xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
@@ -2487,12 +2385,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
-#if !JVET_O1136_TS_BDPCM_SIGNALLING    
-    xConfirmPara(m_RdpcmMode, "RDPCM only allowed with NEXT profile");
-#endif    
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
     xConfirmPara(m_JointCbCrMode, "JointCbCr only allowed with NEXT profile");
-#endif
     // ADD_NEW_TOOL : (parameter check) add a check for next tools here
   }
   else
@@ -2664,9 +2557,7 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_iGOPSize < 1 ,                                                            "GOP Size must be greater or equal to 1" );
   xConfirmPara( m_iGOPSize > 1 &&  m_iGOPSize % 2,                                          "GOP Size must be a multiple of 2, if GOP Size is greater than 1" );
   xConfirmPara( (m_iIntraPeriod > 0 && m_iIntraPeriod < m_iGOPSize) || m_iIntraPeriod == 0, "Intra period must be more than GOP size, or -1 , not 0" );
-#if JVET_N0494_DRAP
   xConfirmPara( m_drapPeriod < 0,                                                           "DRAP period must be greater or equal to 0" );
-#endif
   xConfirmPara( m_iDecodingRefreshType < 0 || m_iDecodingRefreshType > 3,                   "Decoding Refresh Type must be comprised between 0 and 3 included" );
 #if HEVC_SEI
   if(m_iDecodingRefreshType == 3)
@@ -2674,26 +2565,16 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( !m_recoveryPointSEIEnabled,                                               "When using RecoveryPointSEI messages as RA points, recoveryPointSEI must be enabled" );
   }
 #endif
-  
+
   if (m_isField)
   {
-#if JVET_O0041_FRAME_FIELD_SEI
     if (!m_frameFieldInfoSEIEnabled)
     {
       msg( WARNING, "*************************************************************************************\n");
       msg( WARNING, "** WARNING: Frame field information SEI should be enabled for field coding!        **\n");
       msg( WARNING, "*************************************************************************************\n");
     }
-#else
-    if (!m_pictureTimingSEIEnabled)
-    {
-      msg( WARNING, "****************************************************************************\n");
-      msg( WARNING, "** WARNING: Picture Timing SEI should be enabled for field coding!        **\n");
-      msg( WARNING, "****************************************************************************\n");
-    }
-#endif
   }
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   if ( m_pictureTimingSEIEnabled && (!m_bufferingPeriodSEIEnabled))
   {
     msg( WARNING, "****************************************************************************\n");
@@ -2701,7 +2582,6 @@ bool EncAppCfg::xCheckParameter()
     msg( WARNING, "****************************************************************************\n");
     m_pictureTimingSEIEnabled = false;
   }
-#endif
 
   if(m_crossComponentPredictionEnabledFlag && (m_chromaFormatIDC != CHROMA_444))
   {
@@ -2773,11 +2653,7 @@ bool EncAppCfg::xCheckParameter()
   {
     m_intraCMD = 1;
   }
-#if JVET_O0432_LMCS_ENCODER
   else if (m_lumaReshapeEnable && (m_reshapeSignalType == RESHAPE_SIGNAL_SDR || m_reshapeSignalType == RESHAPE_SIGNAL_HLG))
-#else
-  else if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_SDR)
-#endif
   {
     m_intraCMD = 0;
   }
@@ -2785,7 +2661,6 @@ bool EncAppCfg::xCheckParameter()
   {
     m_lumaReshapeEnable = false;
   }
-#if JVET_O0432_LMCS_ENCODER
   if (m_lumaReshapeEnable)
   {
     xConfirmPara(m_updateCtrl < 0, "Min. LMCS Update Control is 0");
@@ -2796,7 +2671,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_initialCW > 1023, "Max. Initial Total Codeword is 1023");
     if (m_updateCtrl > 0 && m_adpOption > 2) { m_adpOption -= 2; }
   }
-#endif
 
   xConfirmPara( m_cbQpOffset < -12,   "Min. Chroma Cb QP Offset is -12" );
   xConfirmPara( m_cbQpOffset >  12,   "Max. Chroma Cb QP Offset is  12" );
@@ -2806,7 +2680,6 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_cbQpOffsetDualTree >  12,   "Max. Chroma Cb QP Offset for dual tree is  12" );
   xConfirmPara( m_crQpOffsetDualTree < -12,   "Min. Chroma Cr QP Offset for dual tree is -12" );
   xConfirmPara( m_crQpOffsetDualTree >  12,   "Max. Chroma Cr QP Offset for dual tree is  12" );
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   if (m_JointCbCrMode && (m_chromaFormatIDC == CHROMA_400))
   {
     msg( WARNING, "****************************************************************************\n");
@@ -2821,12 +2694,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
     xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
   }
-#else
-  xConfirmPara( m_cbCrQpOffset < -12, "Min. Joint Cb-Cr QP Offset is -12");
-  xConfirmPara( m_cbCrQpOffset >  12, "Max. Joint Cb-Cr QP Offset is  12");
-  xConfirmPara( m_cbCrQpOffsetDualTree < -12, "Min. Joint Cb-Cr QP Offset for dual tree is -12");
-  xConfirmPara( m_cbCrQpOffsetDualTree >  12, "Max. Joint Cb-Cr QP Offset for dual tree is  12");
-#endif
   xConfirmPara( m_iQPAdaptationRange <= 0,                                                  "QP Adaptation Range must be more than 0" );
   if (m_iDecodingRefreshType == 2)
   {
@@ -2837,77 +2704,38 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara( m_uiMinQT[0] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
   xConfirmPara( m_uiMinQT[1] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
-#if JVET_O0526_MIN_CTU_SIZE
   xConfirmPara( m_uiCTUSize < 32,                                                           "CTUSize must be greater than or equal to 32");
   xConfirmPara( m_uiCTUSize > 128,                                                          "CTUSize must be less than or equal to 128");
   xConfirmPara( m_uiCTUSize != 32 && m_uiCTUSize != 64 && m_uiCTUSize != 128,               "CTUSize must be a power of 2 (32, 64, or 128)");
-#else
-  xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition width size should be larger than or equal to 16");
-  xConfirmPara( m_uiCTUSize < 16,                                                           "Maximum partition height size should be larger than or equal to 16");
-#endif
-#if !JVET_O0640_PICTURE_SIZE_CONSTRAINT
-  xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
-  xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
-  xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
-  xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
-  xConfirmPara( (m_iSourceWidth  % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame width must be a multiple of the minimum unit size");
-  xConfirmPara( (m_iSourceHeight % (1<<MIN_CU_LOG2))!=0,                                    "Resulting coded frame height must be a multiple of the minimum unit size");
-#endif
   xConfirmPara( m_uiMaxCUDepth < 1,                                                         "MaxPartitionDepth must be greater than zero");
   xConfirmPara( (m_uiMaxCUWidth  >> m_uiMaxCUDepth) < 4,                                    "Minimum partition width size should be larger than or equal to 8");
   xConfirmPara( (m_uiMaxCUHeight >> m_uiMaxCUDepth) < 4,                                    "Minimum partition height size should be larger than or equal to 8");
   xConfirmPara( m_uiMaxCUWidth < 16,                                                        "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiMaxCUHeight < 16,                                                       "Maximum partition height size should be larger than or equal to 16");
-#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
   xConfirmPara( (m_iSourceWidth  % (std::max(8, int(m_uiMaxCUWidth  >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
   xConfirmPara( (m_iSourceHeight % (std::max(8, int(m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
-#else
-  xConfirmPara( (m_iSourceWidth  % (m_uiMaxCUWidth  >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame width must be a multiple of the minimum CU size");
-  xConfirmPara( (m_iSourceHeight % (m_uiMaxCUHeight >> (m_uiMaxCUDepth-1)))!=0,             "Resulting coded frame height must be a multiple of the minimum CU size");
-#endif
-#if MAX_TB_SIZE_SIGNALLING
   xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
-#endif
-#if JVET_O0545_MAX_TB_SIGNALLING
   xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
-#endif
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
   xConfirmPara( m_maxNumTriangleCand > TRIANGLE_MAX_NUM_UNI_CANDS, "MaxNumTriangleCand must be no more than TRIANGLE_MAX_NUM_UNI_CANDS." );
   xConfirmPara( m_maxNumTriangleCand > m_maxNumMergeCand, "MaxNumTriangleCand must be no more than MaxNumMergeCand." );
   xConfirmPara( 0 < m_maxNumTriangleCand && m_maxNumTriangleCand < 2, "MaxNumTriangleCand must be no less than 2 unless MaxNumTriangleCand is 0." );
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   xConfirmPara( m_maxNumIBCMergeCand < 1, "MaxNumIBCMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumIBCMergeCand > IBC_MRG_MAX_NUM_CANDS, "MaxNumIBCMergeCand must be no more than IBC_MRG_MAX_NUM_CANDS." );
-#endif
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumAffineMergeCand > AFFINE_MRG_MAX_NUM_CANDS, "MaxNumAffineMergeCand must be no more than AFFINE_MRG_MAX_NUM_CANDS." );
   if ( m_Affine == 0 )
   {
     m_maxNumAffineMergeCand = m_SubPuMvpMode;
-#if JVET_O0070_PROF
     if (m_PROF) msg(WARNING, "PROF is forcefully disabled when Affine is off \n");
     m_PROF = false;
-#endif
   }
 
   xConfirmPara( m_MTS < 0 || m_MTS > 3, "MTS must be greater than 0 smaller than 4" );
   xConfirmPara( m_MTSIntraMaxCand < 0 || m_MTSIntraMaxCand > 5, "m_MTSIntraMaxCand must be greater than 0 and smaller than 6" );
   xConfirmPara( m_MTSInterMaxCand < 0 || m_MTSInterMaxCand > 5, "m_MTSInterMaxCand must be greater than 0 and smaller than 6" );
   xConfirmPara( m_MTS != 0 && m_MTSImplicit != 0, "Both explicit and implicit MTS cannot be enabled at the same time" );
-#if !JVET_O0525_REMOVE_PCM
-  if( m_usePCM)
-  {
-    for (uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++)
-    {
-      xConfirmPara(((m_MSBExtendedBitDepth[channelType] > m_internalBitDepth[channelType]) && m_bPCMInputBitDepthFlag), "PCM bit depth cannot be greater than internal bit depth (PCMInputBitDepthFlag cannot be used when InputBitDepth or MSBExtendedBitDepth > InternalBitDepth)");
-    }
-    xConfirmPara(  m_uiPCMLog2MinSize < 3,                                      "PCMLog2MinSize must be 3 or greater.");
-    xConfirmPara(  m_uiPCMLog2MinSize > 5,                                      "PCMLog2MinSize must be 5 or smaller.");
-    xConfirmPara(  m_pcmLog2MaxSize > 5,                                        "PCMLog2MaxSize must be 5 or smaller.");
-    xConfirmPara(  m_pcmLog2MaxSize < m_uiPCMLog2MinSize,                       "PCMLog2MaxSize must be equal to or greater than m_uiPCMLog2MinSize.");
-  }
-#endif
 
   if (m_useBDPCM)
   {
@@ -3027,9 +2855,7 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( abs(m_sliceChromaQpOffsetIntraOrPeriodic[1]  + m_crQpOffset ) > 12, "Intra/periodic Cr QP Offset, when combined with the PPS Cr offset, exceeds supported range (-12 to 12)" );
 #endif
 
-#if JVET_O0050_LOCAL_DUAL_TREE
   xConfirmPara( m_fastLocalDualTreeMode < 0 || m_fastLocalDualTreeMode > 2, "FastLocalDualTreeMode must be in range [0..2]" );
-#endif
 
   int extraRPLs = 0;
   //start looping through frames in coding order until we can verify that the GOP structure is correct.
@@ -3385,7 +3211,6 @@ bool EncAppCfg::xCheckParameter()
     m_BIO = false;
   }
 
-  #if JVET_O0238_PPS_OR_SLICE
   // If m_PPSorSliceFlag is equal to 1, for each PPS parameter below,
   //     0:  value is signaled in slice header
   //     >0: value is derived from PPS parameter as value - 1
@@ -3435,18 +3260,15 @@ bool EncAppCfg::xCheckParameter()
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1; 
-    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1; 
+    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+    m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   default:
     THROW("Invalid value for PPSorSliceMode");
   }
-#endif
-#if JVET_N0494_DRAP
   xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc0 > 0, "PPSRefPicListSPSIdc0 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
   xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc1 > 0, "PPSRefPicListSPSIdc1 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
-#endif
 
 #if HEVC_SEI
   if (m_toneMappingInfoSEIEnabled)
@@ -3482,7 +3304,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_vuiParametersPresentFlag && m_chromaLocInfoPresentFlag && (m_chromaSampleLocTypeTopField != m_chromaSampleLocTypeBottomField ), "When chromaResamplingFilterSEI is enabled, ChromaSampleLocTypeTopField has to be equal to ChromaSampleLocTypeBottomField" );
   }
 #endif
-  
+
   if ( m_RCEnableRateControl )
   {
     if ( m_RCForceIntraQP )
@@ -3536,7 +3358,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_timeCodeSEINumTs > MAX_TIMECODE_SEI_SETS, "Number of time sets cannot exceed 3");
   }
 #endif
-  
+
 #if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
@@ -3626,18 +3448,11 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
   msg( DETAILS, "CU size / depth / total-depth          : %d / %d / %d\n", m_uiMaxCUWidth, m_uiMaxCUDepth, m_uiMaxCodingDepth );
-#if MAX_TB_SIZE_SIGNALLING
   msg( DETAILS, "Max TB size                            : %d \n", 1 << m_log2MaxTbSize );
-#endif
-#if !JVET_O0525_REMOVE_PCM
-  msg( DETAILS, "Min PCM size                           : %d\n", 1 << m_uiPCMLog2MinSize);
-#endif
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );
   msg( DETAILS, "Decoding refresh type                  : %d\n", m_iDecodingRefreshType );
-#if JVET_N0494_DRAP 
   msg( DETAILS, "DRAP period                            : %d\n", m_drapPeriod );
-#endif
 #if QP_SWITCHING_FOR_PARALLEL
   if (m_qpIncrementAtSourceFrame.bPresent)
   {
@@ -3659,10 +3474,6 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Input bit depth                        : (Y:%d, C:%d)\n", m_inputBitDepth[CHANNEL_TYPE_LUMA], m_inputBitDepth[CHANNEL_TYPE_CHROMA] );
   msg( DETAILS, "MSB-extended bit depth                 : (Y:%d, C:%d)\n", m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA], m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] );
   msg( DETAILS, "Internal bit depth                     : (Y:%d, C:%d)\n", m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA] );
-#if !JVET_O0525_REMOVE_PCM
-  msg( DETAILS, "PCM sample bit depth                   : (Y:%d, C:%d)\n", m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA] : m_internalBitDepth[CHANNEL_TYPE_LUMA],
-                                                                    m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] : m_internalBitDepth[CHANNEL_TYPE_CHROMA] );
-#endif
   msg( DETAILS, "Intra reference smoothing              : %s\n", (m_enableIntraReferenceSmoothing           ? "Enabled" : "Disabled") );
   msg( DETAILS, "cu_chroma_qp_offset_subdiv             : %d\n", m_cuChromaQpOffsetSubdiv);
   msg( DETAILS, "extended_precision_processing_flag     : %s\n", (m_extendedPrecisionProcessingFlag         ? "Enabled" : "Disabled") );
@@ -3713,9 +3524,7 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "Max Num Merge Candidates               : %d\n", m_maxNumMergeCand );
   msg( DETAILS, "Max Num Affine Merge Candidates        : %d\n", m_maxNumAffineMergeCand );
   msg( DETAILS, "Max Num Triangle Merge Candidates      : %d\n", m_maxNumTriangleCand );
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   msg( DETAILS, "Max Num IBC Merge Candidates           : %d\n", m_maxNumIBCMergeCand );
-#endif
   msg( DETAILS, "\n");
 
   msg( VERBOSE, "TOOL CFG: ");
@@ -3739,9 +3548,7 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
-#endif
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)
   {
@@ -3752,9 +3559,6 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
-#if !JVET_O0525_REMOVE_PCM
-  msg( VERBOSE, "PCM:%d ", (m_usePCM && (1<<m_uiPCMLog2MinSize) <= m_uiMaxCUWidth)? 1 : 0);
-#endif
 
   if (m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce)
   {
@@ -3786,9 +3590,7 @@ void EncAppCfg::xPrintParameter()
     {
       msg( VERBOSE, "AffineType:%d ", m_AffineType );
     }
-#if JVET_O0070_PROF
     msg(VERBOSE, "PROF:%d ", m_PROF);
-#endif
     msg(VERBOSE, "SubPuMvp:%d+%d ", m_SubPuMvpMode & 1, (m_SubPuMvpMode & 2) == 2);
     msg( VERBOSE, "DualITree:%d ", m_dualTree );
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
@@ -3818,17 +3620,10 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "AffineAmvrEncOpt:%d ", m_AffineAmvrEncOpt );
     msg(VERBOSE, "DMVR:%d ", m_DMVR);
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
-#if !JVET_O1136_TS_BDPCM_SIGNALLING    
-    msg(VERBOSE, "RDPCM:%d ", m_RdpcmMode );
-#endif    
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
-#endif
   }
-#if JVET_O0119_BASE_PALETTE_444
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
-#endif
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );
   msg( VERBOSE, "WrapAround:%d ", m_wrapAround);
@@ -3855,13 +3650,9 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "Reshape:%d ", m_lumaReshapeEnable);
     if (m_lumaReshapeEnable)
     {
-#if JVET_O0432_LMCS_ENCODER
       msg(VERBOSE, "(Signal:%s ", m_reshapeSignalType == 0 ? "SDR" : (m_reshapeSignalType == 2 ? "HDR-HLG" : "HDR-PQ"));
       msg(VERBOSE, "Opt:%d", m_adpOption);
       if (m_adpOption > 0) { msg(VERBOSE, " CW:%d", m_initialCW); }
-#else
-      msg(VERBOSE, "(Sigal:%s ", m_reshapeSignalType==0? "SDR" : "HDR-PQ");
-#endif
       msg(VERBOSE, ") ");
     }
     msg(VERBOSE, "MIP:%d ", m_MIP);
@@ -3879,13 +3670,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "ContentBasedFastQtbt:%d ", m_contentBasedFastQtbt );
   msg( VERBOSE, "UseNonLinearAlfLuma:%d ", m_useNonLinearAlfLuma );
   msg( VERBOSE, "UseNonLinearAlfChroma:%d ", m_useNonLinearAlfChroma );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   msg( VERBOSE, "MaxNumAlfAlternativesChroma:%d ", m_maxNumAlfAlternativesChroma );
-#endif
   if( m_MIP ) msg(VERBOSE, "FastMIP:%d ", m_useFastMIP);
-#if JVET_O0050_LOCAL_DUAL_TREE
   msg( VERBOSE, "FastLocalDualTree:%d ", m_fastLocalDualTreeMode );
-#endif
 
   msg( VERBOSE, "NumSplitThreads:%d ", m_numSplitThreads );
   if( m_numSplitThreads > 1 )
@@ -3895,7 +3682,6 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "NumWppThreads:%d+%d ", m_numWppThreads, m_numWppExtraLines );
   msg( VERBOSE, "EnsureWppBitEqual:%d ", m_ensureWppBitEqual );
 
-#if JVET_O1164_RPR
   if( m_rprEnabled )
   {
     msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
@@ -3904,7 +3690,6 @@ void EncAppCfg::xPrintParameter()
   {
     msg( VERBOSE, "RPR:%d", 0 );
   }
-#endif
 
 #if EXTENSION_360_VIDEO
   m_ext360.outputConfigurationSummary();

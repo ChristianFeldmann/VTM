@@ -257,17 +257,6 @@ unsigned BinDecoderBase::decodeBinTrm()
 }
 
 
-#if !JVET_O0525_REMOVE_PCM
-unsigned BinDecoderBase::decodeBinsPCM( unsigned numBins )
-{
-  unsigned bins = 0;
-  m_Bitstream->read( numBins, bins );
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-  CodingStatistics::IncrementStatisticEP( STATS__CABAC_PCM_CODE_BITS, numBins, int(bins) );
-#endif
-  return bins;
-}
-#endif
 
 
 void BinDecoderBase::align()

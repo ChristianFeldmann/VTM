@@ -2200,8 +2200,13 @@ void CABACWriter::inter_pred_idc( const PredictionUnit& pu )
       m_BinEncoder.encodeBin( 0, Ctx::InterDir(ctxId) );
     }
   }
+#if JVET_P0042_FIX_INTER_DIR_CTX
+  m_BinEncoder.encodeBin( ( pu.interDir == 2 ), Ctx::InterDir( 5 ) );
+  DTRACE( g_trace_ctx, D_SYNTAX, "inter_pred_idc() ctx=5 value=%d pos=(%d,%d)\n", pu.interDir, pu.lumaPos().x, pu.lumaPos().y );
+#else
   m_BinEncoder.encodeBin( ( pu.interDir == 2 ), Ctx::InterDir( 4 ) );
   DTRACE( g_trace_ctx, D_SYNTAX, "inter_pred_idc() ctx=4 value=%d pos=(%d,%d)\n", pu.interDir, pu.lumaPos().x, pu.lumaPos().y );
+#endif
 }
 
 

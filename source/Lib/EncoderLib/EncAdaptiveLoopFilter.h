@@ -313,7 +313,11 @@ private:
                                   const int numClasses, const int numCoeff, double& distUnfilter );
   void   roundFiltCoeff( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
 
+#if JVET_P0164_ALF_SYNTAX_SIMP
+  double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, int zeroBitsVarBin, const int numFilters);
+#else
   double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, const int numFilters );
+#endif
   int    lengthUvlc( int uiCode );
   int    getNonFilterCoeffRate( AlfParam& alfParam );
 

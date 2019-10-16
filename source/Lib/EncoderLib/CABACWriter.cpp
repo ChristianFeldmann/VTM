@@ -3465,6 +3465,23 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
   unsigned numAvailableFiltSets = numAps + NUM_FIXED_FILTER_SETS;
   if (numAvailableFiltSets > NUM_FIXED_FILTER_SETS)
   {
+#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
+    int useTemporalFilt = (filterSetIdx >= NUM_FIXED_FILTER_SETS) ? 1 : 0;
+    m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
+    if (useTemporalFilt)
+    {
+      CHECK((filterSetIdx - NUM_FIXED_FILTER_SETS) >= (numAvailableFiltSets - NUM_FIXED_FILTER_SETS), "temporal non-latest set");
+      if (numAps > 1)
+      {
+        xWriteTruncBinCode(filterSetIdx - NUM_FIXED_FILTER_SETS, numAvailableFiltSets - NUM_FIXED_FILTER_SETS);
+      }
+    }
+    else
+    {
+      CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set larger than temporal");
+      xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
+    }
+#else
     int useLatestFilt = (filterSetIdx == NUM_FIXED_FILTER_SETS) ? 1 : 0;
     m_BinEncoder.encodeBin(useLatestFilt, Ctx::AlfUseLatestFilt());
     if (!useLatestFilt)
@@ -3495,6 +3512,7 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
         }
       }
     }
+#endif
   }
   else
   {

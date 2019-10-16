@@ -50,6 +50,22 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
+
+#define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
+
+#define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping
+
+#define JVET_P0329_PLANAR_SIMPLIFICATION                  1 // JVET-P0329: simplify planar prediction by comparison removal
+
+#define JVET_P0516_PLT_BINARIZATION                       1 // JVET-P0516: PLT is always signaled when pred mode is euqal to 1 (intra mode) 
+
+#define JVET_P0562_TS_RESIDUAL_CODING_SIMP                1 // JVET-P0562: Fix the Rice parameter equal to 1 for the remainder of TS residual coding
+
+#define JVET_P0385_UNIFIED_MV_ROUNDING                    1
+
+#define JVET_P0418_ALIGN_MLRP_CCLM                        1 // JVET-P0418: Align MLRP with CCLM in terms of reference lines/columns
+
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF

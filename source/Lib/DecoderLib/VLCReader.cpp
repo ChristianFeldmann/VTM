@@ -2885,6 +2885,7 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx )
 {
   uint32_t code;
+#if !JVET_P0164_ALF_SYNTAX_SIMP
   if( !isChroma )
   {
     READ_FLAG( code, "alf_luma_coeff_delta_flag" );
@@ -2895,6 +2896,7 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
       std::memset( alfParam.alfLumaCoeffFlag, true, sizeof( alfParam.alfLumaCoeffFlag ) );
     }
   }
+#endif
 
   // derive maxGolombIdx
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
@@ -2902,6 +2904,7 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
   short* coeff = isChroma ? alfParam.chromaCoeff[altIdx] : alfParam.lumaCoeff;
   short* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
 
+#if !JVET_P0164_ALF_SYNTAX_SIMP
   if( !isChroma )
   {
     if( alfParam.alfLumaCoeffDeltaFlag )
@@ -2913,15 +2916,18 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
       }
     }
   }
+#endif
 
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
+#if !JVET_P0164_ALF_SYNTAX_SIMP
     if( !isChroma && !alfParam.alfLumaCoeffFlag[ind] && alfParam.alfLumaCoeffDeltaFlag )
     {
       memset( coeff + ind * MAX_NUM_ALF_LUMA_COEFF, 0, sizeof( *coeff ) * alfShape.numCoeff );
       continue;
     }
+#endif
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {

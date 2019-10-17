@@ -260,7 +260,9 @@ public:
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   ctbAlfAlternative;
+#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
   static const CtxSet   AlfUseLatestFilt;
+#endif
   static const CtxSet   AlfUseTemporalFilt;
   static const CtxSet   MHIntraFlag;
   static const CtxSet   SmvdFlag;

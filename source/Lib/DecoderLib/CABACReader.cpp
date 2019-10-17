@@ -1127,7 +1127,11 @@ void CABACReader::pred_mode( CodingUnit& cu )
     else
     {
       cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
+#if JVET_P0516_PLT_BINARIZATION
+      if (CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#else
       if (!CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif
       {
         if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
         {
@@ -2407,13 +2411,25 @@ void CABACReader::inter_pred_idc( PredictionUnit& pu )
       return;
     }
   }
+#if JVET_P0042_FIX_INTER_DIR_CTX
+  if( m_BinDecoder.decodeBin( Ctx::InterDir(5) ) )
+#else
   if( m_BinDecoder.decodeBin( Ctx::InterDir(4) ) )
+#endif
   {
+#if JVET_P0042_FIX_INTER_DIR_CTX
+    DTRACE( g_trace_ctx, D_SYNTAX, "inter_pred_idc() ctx=5 value=%d pos=(%d,%d)\n", 2, pu.lumaPos().x, pu.lumaPos().y );
+#else
     DTRACE( g_trace_ctx, D_SYNTAX, "inter_pred_idc() ctx=4 value=%d pos=(%d,%d)\n", 2, pu.lumaPos().x, pu.lumaPos().y );
+#endif
     pu.interDir = 2;
     return;
   }
+#if JVET_P0042_FIX_INTER_DIR_CTX
+  DTRACE( g_trace_ctx, D_SYNTAX, "inter_pred_idc() ctx=5 value=%d pos=(%d,%d)\n", 1, pu.lumaPos().x, pu.lumaPos().y );
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "inter_pred_idc() ctx=4 value=%d pos=(%d,%d)\n", 1, pu.lumaPos().x, pu.lumaPos().y );
+#endif
   pu.interDir = 1;
   return;
 }

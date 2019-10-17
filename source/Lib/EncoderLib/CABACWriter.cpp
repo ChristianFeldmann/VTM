@@ -2553,11 +2553,25 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
       cuCtx.isDQPCoded = true;
     }
   }
+#if JVET_P0436_CQP_OFFSET_SIGNALLING
+  if (!cu.isSepTree() || isChroma(tu.chType))   // !DUAL_TREE_LUMA
+  {
+    SizeType channelWidth = !cu.isSepTree() ? cu.lwidth() : cu.chromaSize().width;
+    SizeType channelHeight = !cu.isSepTree() ? cu.lheight() : cu.chromaSize().height;
+
+    if (cu.cs->slice->getUseChromaQpAdj() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
+    {
+      cu_chroma_qp_offset(cu);
+      cuCtx.isChromaQpAdjCoded = true;
+    }
+  }
+#else
     if (cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cuCtx.isChromaQpAdjCoded)
     {
       cu_chroma_qp_offset( cu );
       cuCtx.isChromaQpAdjCoded = true;
     }
+#endif
 
   if( !lumaOnly )
   {

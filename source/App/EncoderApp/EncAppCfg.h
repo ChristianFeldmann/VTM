@@ -130,9 +130,6 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
-#if !JVET_O0525_REMOVE_PCM
-  bool      m_bNoPcmConstraintFlag;
-#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -150,12 +147,8 @@ protected:
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_noBDPCMConstraintFlag;
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool      m_noJointCbCrConstraintFlag;
-#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -164,12 +157,8 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
-#if JVET_O0044_MULTI_SUB_PROFILE
   std::vector<uint32_t>  m_subProfile;
   uint8_t      m_numSubProfile;
-#else
-  uint32_t      m_subProfile;
-#endif
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
@@ -184,9 +173,7 @@ protected:
   int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
-#if JVET_N0494_DRAP
   int       m_drapPeriod;                                     ///< period of dependent RAP pictures
-#endif
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
   RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
@@ -201,9 +188,7 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_useBDPCM;
-#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
@@ -220,10 +205,8 @@ protected:
   double    m_fQP;                                            ///< QP value of key-picture (floating point)
 #endif
   int       m_iQP;                                            ///< QP value of key-picture (integer)
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   bool      m_useIdentityTableForNon420Chroma;
   ChromaQpMappingTableParams m_chromaQpMappingTableParams;
-#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)
   bool      m_lambdaFromQPEnable;                             ///< enable flag for QP:lambda fix
@@ -277,9 +260,7 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
-#if JVET_O0070_PROF
   bool      m_PROF;
-#endif
   bool      m_BIO;
   int       m_LMChroma;
   bool      m_cclmCollocatedChromaFlag;
@@ -309,15 +290,8 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
-  bool      m_RdpcmMode;
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool      m_JointCbCrMode;
-#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -339,11 +313,9 @@ protected:
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
-#if JVET_O0432_LMCS_ENCODER
   int       m_updateCtrl;
   int       m_adpOption;
   uint32_t  m_initialCW;
-#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
@@ -359,14 +331,10 @@ protected:
   bool      m_contentBasedFastQtbt;
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   unsigned  m_maxNumAlfAlternativesChroma;
-#endif
   bool      m_MIP;
   bool      m_useFastMIP;
-#if JVET_O0050_LOCAL_DUAL_TREE
   int       m_fastLocalDualTreeMode;
-#endif
 
 
   int       m_numSplitThreads;
@@ -375,9 +343,7 @@ protected:
   int       m_numWppExtraLines;
   bool      m_ensureWppBitEqual;
 
-#if MAX_TB_SIZE_SIGNALLING
   int       m_log2MaxTbSize;
-#endif
   // coding tools (bit-depth)
   int       m_inputBitDepth   [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of input file
   int       m_outputBitDepth  [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of output file
@@ -389,10 +355,6 @@ protected:
   //coding tools (chroma format)
   ChromaFormat m_chromaFormatIDC;
 
-#if !JVET_O0525_REMOVE_PCM
-  // coding tools (PCM bit-depth)
-  bool      m_bPCMInputBitDepthFlag;                          ///< 0: PCM bit-depth is internal bit-depth. 1: PCM bit-depth is input bit-depth.
-#endif
 
   // coding tool (SAO)
   bool      m_bUseSAO;
@@ -411,13 +373,6 @@ protected:
   int       m_deblockingFilterMetric;                         ///< blockiness metric in encoder
 #else
   bool      m_DeblockingFilterMetric;                         ///< blockiness metric in encoder
-#endif
-#if !JVET_O0525_REMOVE_PCM
-  // coding tools (PCM)
-  bool      m_usePCM;                                         ///< flag for using IPCM
-  uint32_t      m_pcmLog2MaxSize;                                 ///< log2 of maximum PCM block size
-  uint32_t      m_uiPCMLog2MinSize;                               ///< log2 of minimum PCM block size
-  bool      m_bPCMFilterDisableFlag;                          ///< PCM filter disable flag
 #endif
   bool      m_enableIntraReferenceSmoothing;                  ///< flag for enabling(default)/disabling intra reference smoothing/filtering
 
@@ -452,10 +407,8 @@ protected:
   bool      m_tileUniformSpacingFlag;
   int       m_numTileColumnsMinus1;
   int       m_numTileRowsMinus1;
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
   int       m_uniformTileColsWidthMinus1;
   int       m_uniformTileRowHeightMinus1;
-#endif
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
   bool      m_entropyCodingSyncEnabledFlag;
@@ -480,15 +433,9 @@ protected:
 #endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
-#if JVET_N0867_TEMP_SCAL_HRD
   bool      m_bpDeltasGOPStructure;
-#endif
-#if JVET_O0189_DU
   bool      m_decodingUnitInfoSEIEnabled;
-#endif
-#if JVET_O0041_FRAME_FIELD_SEI
   bool      m_frameFieldInfoSEIEnabled;
-#endif
 #if HEVC_SEI
   bool      m_toneMappingInfoSEIEnabled;
   bool      m_chromaResamplingFilterSEIenabled;
@@ -570,12 +517,9 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
-#endif
 
   int       m_TMVPModeId;
-#if JVET_O0238_PPS_OR_SLICE
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
@@ -587,7 +531,6 @@ protected:
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;                ///< enable rate control or not
@@ -614,9 +557,7 @@ protected:
 #endif
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
-#if FIX_HRD_O0189
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
-#endif
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
@@ -657,14 +598,12 @@ protected:
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
 
-#if JVET_O1164_RPR
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
   bool        m_rprEnabled;
   double      m_fractionOfFrames;                             ///< encode a fraction of the frames as specified in FramesToBeEncoded
   int         m_switchPocPeriod;
   int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
-#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

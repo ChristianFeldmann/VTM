@@ -138,31 +138,21 @@ private:
   CacheModel                m_cacheModel;
 #endif
 
-#if JVET_O_MAX_NUM_ALF_APS_8
   APS*                      m_apss[ALF_CTB_MAX_NUM_APS];
-#else
-  APS*                      m_apss[MAX_NUM_APS];
-#endif
 
   APS*                      m_lmcsAPS;
-#if JVET_O0299_APS_SCALINGLIST
   APS*                      m_scalinglistAPS;
-#endif
 
   EncHRD                    m_encHRD;
 
-#if JVET_O0119_BASE_PALETTE_444
   bool                      m_doPlt;
-#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 
 public:
-#if JVET_O1164_RPR
   SPS*                      getSPS( int spsId ) { return m_spsMap.getPS( spsId ); };
   APS**                     getApss() { return m_apss; }
-#endif
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
 #if ENABLE_WPP_PARALLELISM
   std::vector<Ctx>          m_entropyCodingSyncContextStateVec;   ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
@@ -175,11 +165,7 @@ protected:
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
-#if JVET_O0299_APS_SCALINGLIST
   void  xInitScalingLists ( SPS &sps, APS &aps );     ///< initialize scaling lists
-#else
-  void  xInitScalingLists (SPS &sps, PPS &pps);   ///< initialize scaling lists
-#endif
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
@@ -217,9 +203,7 @@ public:
   EncAdaptiveLoopFilter*  getALF                ()              { return  &m_cEncALF;              }
   EncGOP*                 getGOPEncoder         ()              { return  &m_cGOPEncoder;          }
   EncSlice*               getSliceEncoder       ()              { return  &m_cSliceEncoder;        }
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   EncHRD*                 getHRD                ()              { return  &m_encHRD;               }
-#endif
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   EncCu*                  getCuEncoder          ( int jId = 0 ) { return  &m_cCuEncoder[jId];      }
 #else
@@ -263,10 +247,8 @@ public:
 
   ParameterSetMap<APS>*  getApsMap() { return &m_apsMap; }
 
-#if JVET_O0119_BASE_PALETTE_444
   bool                   getPltEnc()                      const { return   m_doPlt; }
   void                   checkPltStats( Picture* pic );
-#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
@@ -289,11 +271,7 @@ public:
                int& iNumEncoded, bool isTff );
 
 
-#if RPR_CTC_PRINT
   void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }
-#else
-  void printSummary(bool isField) { m_cGOPEncoder.printOutSummary (m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_spsMap.getFirstPS()->getBitDepths()); }
-#endif
 
 };
 

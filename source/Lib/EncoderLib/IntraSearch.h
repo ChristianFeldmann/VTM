@@ -58,7 +58,6 @@
 // ====================================================================================================================
 class EncModeCtrl;
 
-#if JVET_O0119_BASE_PALETTE_444
 enum PLTScanMode
 {
   PLT_SCAN_HORTRAV = 0,
@@ -162,7 +161,6 @@ private:
   uint32_t cnt;
   int shift, lastCnt, data[3], sumData[3];
 };
-#endif
 /// encoder search class
 class IntraSearch : public IntraPrediction, CrossComponentPrediction
 {
@@ -180,12 +178,10 @@ private:
 
   CodingStructure **m_pSaveCS;
 
-#if JVET_O0050_LOCAL_DUAL_TREE
   bool            m_saveCuCostInSCIPU;
   uint8_t         m_numCuInSCIPU;
   Area            m_cuAreaInSCIPU[NUM_INTER_CU_INFO_SAVE];
   double          m_cuCostInSCIPU[NUM_INTER_CU_INFO_SAVE];
-#endif
 
   struct ModeInfo
   {
@@ -198,7 +194,6 @@ private:
     ModeInfo(const bool mipf, const int mrid, const uint8_t ispm, const uint32_t mode) : mipFlg(mipf), mRefId(mrid), ispMod(ispm), modeId(mode) {}
     bool operator==(const ModeInfo cmp) const { return (mipFlg == cmp.mipFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId); }
   };
-#if JVET_O0502_ISP_CLEANUP
   struct ModeInfoWithCost : public ModeInfo
   {
     double rdCost;
@@ -318,11 +313,6 @@ private:
   static_vector<ModeInfoWithCost, FAST_UDI_MAX_RDMODE_NUM> m_regIntraRDListWithCosts;
 
   ISPTestedModesInfo m_ispTestedModes;
-#else
-  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrl;
-  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlHor;
-  static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_rdModeListWithoutMrlVer;
-#endif
 
   //cost variables for the EMT algorithm and new modes list
   double     m_bestModeCostStore[ NUM_LFNST_NUM_PER_SET ];                                    // RD cost of the best mode for each PU using DCT2
@@ -331,11 +321,6 @@ private:
   ModeInfo   m_savedRdModeList[ NUM_LFNST_NUM_PER_SET ][ NUM_LUMA_MODE ];
   int32_t    m_savedNumRdModes[ NUM_LFNST_NUM_PER_SET ];
 
-#if !JVET_O0502_ISP_CLEANUP
-  static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeDiagRatio;
-  static_vector<double, FAST_UDI_MAX_RDMODE_NUM> m_intraModeHorVerRatio;
-  static_vector<int,    FAST_UDI_MAX_RDMODE_NUM> m_intraModeTestedNormalIntra;
-#endif
 
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_uiSavedRdModeListLFNST;
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_uiSavedHadModeListLFNST;
@@ -383,26 +368,19 @@ public:
 
   void setModeCtrl                ( EncModeCtrl *modeCtrl ) { m_modeCtrl = modeCtrl; }
 
-#if JVET_O0050_LOCAL_DUAL_TREE
   bool getSaveCuCostInSCIPU       ()               { return m_saveCuCostInSCIPU; }
   void setSaveCuCostInSCIPU       ( bool b )       { m_saveCuCostInSCIPU = b;  }
   void setNumCuInSCIPU            ( uint8_t i )    { m_numCuInSCIPU = i; }
   void saveCuAreaCostInSCIPU      ( Area area, double cost );
   void initCuAreaCostInSCIPU      ();
   double findInterCUCost          ( CodingUnit &cu );
-#endif
 
 public:
 
   bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
-#if !JVET_O0525_REMOVE_PCM
-  void IPCMSearch                 (CodingStructure &cs, Partitioner& partitioner);
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   void PLTSearch                  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
   void deriveRunAndCalcBits       ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& bits);
-#endif
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
   void invalidateBestModeCost     () { for( int i = 0; i < NUM_LFNST_NUM_PER_SET; i++ ) m_bestModeCostValid[ i ] = false; };
 
@@ -412,9 +390,6 @@ protected:
   // T & Q & Q-1 & T-1
   // -------------------------------------------------------------------------------------------------------------------
 
-#if !JVET_O0525_REMOVE_PCM
-  void xEncPCM                    (CodingStructure &cs, Partitioner& partitioner, const ComponentID &compID);
-#endif
 
   // -------------------------------------------------------------------------------------------------------------------
   // Intra search
@@ -433,33 +408,21 @@ protected:
 
   ChromaCbfs xRecurIntraChromaCodingQT( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE,                          const PartSplit ispType = TU_NO_ISP );
   bool       xRecurIntraCodingLumaQT  ( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, const bool ispIsCurrentWinner = false, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
-#if JVET_O0502_ISP_CLEANUP
   bool       xIntraCodingLumaISP      ( CodingStructure& cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE );
-#endif
 
   void encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode );
   static bool useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode );
 
   template<typename T, size_t N>
-#if JVET_O0925_MIP_SIMPLIFICATIONS
   void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip);
-#else
-  void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double thresholdHadCostConv);
-
-  double m_bestCostNonMip;
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   void   deriveRun       (      CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
   double getRunBits      (const CodingUnit&      cu, uint32_t     run,         uint32_t    strPos,    PLTRunMode paletteRunMode, uint64_t*   indexBits, uint64_t* runBits, ComponentID compBegin);
   void   derivePLTLossy  (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
   void   calcPixelPred   (      CodingStructure& cs, Partitioner& partitioner, uint32_t    yPos,      uint32_t xPos,             ComponentID compBegin, uint32_t  numComp);
   void   preCalcPLTIndex (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
-#endif
-#if JVET_O0502_ISP_CLEANUP
   void xGetNextISPMode                    ( ModeInfo& modeInfo, const ModeInfo* lastMode, const Size cuSize );
   void xFindAlreadyTestedNearbyIntraModes ( int currentIntraMode, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize );
   void xSortISPCandList                   ( double bestCostSoFar, double bestNonISPCost );
-#endif
 };// END CLASS DEFINITION EncSearch
 
 //! \}

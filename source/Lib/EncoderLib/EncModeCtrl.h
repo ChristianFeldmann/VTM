@@ -43,9 +43,7 @@
 
 #include "CommonLib/CommonDef.h"
 #include "CommonLib/CodingStructure.h"
-#if JVET_O0592_ENC_ME_IMP
 #include "InterSearch.h"
-#endif
 
 #include <typeinfo>
 #include <vector>
@@ -63,12 +61,7 @@ enum EncTestModeType
   ETM_AFFINE,
   ETM_MERGE_TRIANGLE,
   ETM_INTRA,
-#if !JVET_O0525_REMOVE_PCM
-  ETM_IPCM,
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   ETM_PALETTE,
-#endif
   ETM_SPLIT_QT,
   ETM_SPLIT_BT_H,
   ETM_SPLIT_BT_V,
@@ -117,9 +110,7 @@ struct EncTestMode
   EncTestModeOpts opts;
   int             qp;
   bool            lossless;
-#if JVET_O0502_ISP_CLEANUP
   double          maxCostAllowed;
-#endif
 };
 
 
@@ -269,13 +260,9 @@ protected:
 #if ENABLE_SPLIT_PARALLELISM
   int                   m_runNextInParallel;
 #endif
-#if JVET_O0592_ENC_ME_IMP
   InterSearch*          m_pcInterSearch;
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
   bool                  m_doPlt;
-#endif
 
 public:
 
@@ -333,13 +320,9 @@ public:
   void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
   double getMtsFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp;         }
   void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
-#if JVET_O0592_ENC_ME_IMP
   void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   void   setPltEnc                    ( bool b )                { m_doPlt = b; }
   bool   getPltEnc()                                      const { return m_doPlt; }
-#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -481,10 +464,8 @@ private:
   BestEncodingInfo ***m_bestEncInfo[MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
-#if JVET_O0119_BASE_PALETTE_444
   bool               *m_runType;
   Pel                *m_runLength;
-#endif
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
 #if ENABLE_SPLIT_PARALLELISM

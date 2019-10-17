@@ -403,12 +403,6 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
   CHECK(!isChroma(compId), "ALF 5x5 filter is for chroma only");
 
-#if !JVET_O0525_REMOVE_PCM
-  const SPS*     sps = cs.slice->getSPS();
-  bool isDualTree = CS::isDualITree(cs);
-  bool isPCMFilterDisabled = sps->getPCMFilterDisableFlag();
-  ChromaFormat nChromaFormat = sps->getChromaFormatIdc();
-#endif
 
   const CPelBuf srcBuffer = recSrc.get(compId);
   PelBuf        dstBuffer = recDst.get(compId);
@@ -448,10 +442,6 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   int botBryLines = ((((alfBotBryPos - (4 >> chromaScaleY)) & (vbCTUHeight - 1)) == vbPos) && alfBotBryPos != ALF_NONE_BOUNDARY) ? 1 : 2;
 #endif
 
-#if !JVET_O0525_REMOVE_PCM
-  bool pcmFlags2x2[8] = {0,0,0,0,0,0,0,0};
-  Pel  pcmRec2x2[32];
-#endif
 
   const __m128i mmOffset = _mm_set1_epi32(ROUND);
   const __m128i mmMin = _mm_set1_epi16( clpRng.min );
@@ -471,49 +461,6 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   {
     for (size_t j = 0; j < width; j += STEP_X)
     {
-#if !JVET_O0525_REMOVE_PCM
-      if (isPCMFilterDisabled)
-      {
-        size_t blkX, blkY;
-        bool *flags  = pcmFlags2x2;
-        Pel  *pcmRec = pcmRec2x2;
-
-        // check which chroma 2x2 blocks use PCM
-        // chroma PCM may not be aligned with 4x4 ALF processing grid
-        for (blkY = 0; blkY < STEP_Y; blkY += 2)
-        {
-          for (blkX = 0; blkX < STEP_X; blkX += 2)
-          {
-            Position pos((PosType)(j + blkDst.x + blkX), (PosType)(i + blkDst.y + blkY));
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB && !JVET_O0050_LOCAL_DUAL_TREE
-            const CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
-#else
-            CodingUnit* cu = isDualTree ? cs.getCU(pos, CH_C) : cs.getCU(recalcPosition(nChromaFormat, CH_C, CH_L, pos), CH_L);
-#endif
-#if JVET_O0050_LOCAL_DUAL_TREE
-            cu = cu != NULL && cu->isSepTree() ? cs.getCU( pos, CH_C ) : cu;
-#endif
-            if(cu != NULL)
-            {
-              *flags++ = cu->ipcm ? 1 : 0;
-            }
-            else
-            {
-              *flags++ = 0;
-            }
-
-            // save original samples from 2x2 PCM blocks
-            if( cu != NULL && cu->ipcm )
-            {
-              *pcmRec++ = dst[(blkY + 0) * dstStride + (blkX + 0) + j];
-              *pcmRec++ = dst[(blkY + 0) * dstStride + (blkX + 1) + j];
-              *pcmRec++ = dst[(blkY + 1) * dstStride + (blkX + 0) + j];
-              *pcmRec++ = dst[(blkY + 1) * dstStride + (blkX + 1) + j];
-            }
-          }
-        }
-      }
-#endif
 
       for (size_t ii = 0; ii < STEP_Y; ii++)
       {
@@ -665,28 +612,6 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
           _mm_storel_epi64((__m128i *) (dst + ii * dstStride + j), accumA);
         }
       }
-#if !JVET_O0525_REMOVE_PCM
-      // restore 2x2 PCM chroma blocks
-      if (isPCMFilterDisabled)
-      {
-        size_t blkX, blkY;
-        bool *flags  = pcmFlags2x2;
-        Pel  *pcmRec = pcmRec2x2;
-        for (blkY = 0; blkY < STEP_Y; blkY += 2)
-        {
-          for (blkX = 0; blkX < STEP_X; blkX += 2)
-          {
-            if( *flags++ )
-            {
-              dst[(blkY + 0) * dstStride + (blkX + 0) + j] = *pcmRec++;
-              dst[(blkY + 0) * dstStride + (blkX + 1) + j] = *pcmRec++;
-              dst[(blkY + 1) * dstStride + (blkX + 0) + j] = *pcmRec++;
-              dst[(blkY + 1) * dstStride + (blkX + 1) + j] = *pcmRec++;
-            }
-          }
-        }
-      }
-#endif
 
     }
 
@@ -735,11 +660,6 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");
   CHECK(isChroma(compId), "7x7 ALF filter is meant for luma only");
 
-#if !JVET_O0525_REMOVE_PCM
-  const SPS *sps = cs.slice->getSPS();
-
-  bool isPCMFilterDisabled = sps->getPCMFilterDisableFlag();
-#endif
 
   const CPelBuf srcBuffer = recSrc.get(compId);
   PelBuf        dstBuffer = recDst.get(compId);
@@ -802,26 +722,11 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         __m128i rawCoeff0, rawCoeff1;
         __m128i rawClip0, rawClip1;
 
-#if !JVET_O0525_REMOVE_PCM
-        if (isPCMFilterDisabled && classIdx == AdaptiveLoopFilter::m_ALF_UNUSED_CLASSIDX
-            && transposeIdx == AdaptiveLoopFilter::m_ALF_UNUSED_TRANSPOSIDX)
-        {
-          rawCoeff0 = _mm_setzero_si128();
-          rawCoeff1 = _mm_setzero_si128();
-          rawClip0  = _mm_setzero_si128();
-          rawClip1  = _mm_setzero_si128();
-        }
-        else
-        {
-#endif
           rawCoeff0 = _mm_loadu_si128((const __m128i *) (filterSet + classIdx * MAX_NUM_ALF_LUMA_COEFF));
           rawCoeff1 = _mm_loadl_epi64((const __m128i *) (filterSet + classIdx * MAX_NUM_ALF_LUMA_COEFF + 8));
 
           rawClip0 = _mm_loadu_si128((const __m128i *) (fClipSet + classIdx * MAX_NUM_ALF_LUMA_COEFF));
           rawClip1 = _mm_loadl_epi64((const __m128i *) (fClipSet + classIdx * MAX_NUM_ALF_LUMA_COEFF + 8));
-#if !JVET_O0525_REMOVE_PCM
-        }
-#endif
 
         const __m128i s0 = _mm_loadu_si128((const __m128i *) shuffleTab[transposeIdx][0]);
         const __m128i s1 = _mm_xor_si128(s0, _mm_set1_epi8((char) 0x80));

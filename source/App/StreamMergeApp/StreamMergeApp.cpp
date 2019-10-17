@@ -76,28 +76,11 @@ void read2(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-#if JVET_O0179
   nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
   nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
   nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
   nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
   nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
-#else
-  bool zeroTidRequiredFlag = bs.read(1);              // zero_tid_required_flag
-  nalu.m_temporalId = bs.read(3) - 1;                 // nuh_temporal_id_plus1
-  CHECK(nalu.m_temporalId < 0, "Temporal ID is negative.");
-  //When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
-  CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
-  uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
-  nalu.m_nalUnitType = (NalUnitType)((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
-  nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id
-  CHECK(nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
-  nalu.m_nuhLayerId--;
-  CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
-  CHECK((nalu.m_nuhLayerId < 0) || (nalu.m_nuhLayerId > 126), "Layer ID out of range");
-  uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
-  CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
-#endif
 }
 
 static void
@@ -247,7 +230,6 @@ void StreamMergeApp::writeNewVPS(ostream& out, int nLayerId, int nTemporalId)
   OutputBitstream bsNALUHeader;
   static const uint8_t start_code_prefix[] = { 0,0,0,1 };
 
-#if JVET_O0179
   int forbiddenZero = 0;
   bsNALUHeader.write(forbiddenZero, 1);   // forbidden_zero_bit
   int nuhReservedZeroBit = 0;
@@ -255,14 +237,6 @@ void StreamMergeApp::writeNewVPS(ostream& out, int nLayerId, int nTemporalId)
   bsNALUHeader.write(nLayerId, 6);             // nuh_layer_id
   bsNALUHeader.write(NAL_UNIT_VPS, 5);         // nal_unit_type
   bsNALUHeader.write(nTemporalId + 1, 3);      // nuh_temporal_id_plus1
-#else
-  bsNALUHeader.write(1, 1);                // zero_tid_required_flag
-  bsNALUHeader.write(nTemporalId + 1, 3);                // nuh_temporal_id_plus1
-  uint32_t nalUnitTypeLsb = NAL_UNIT_VPS - (1 << 4);
-  bsNALUHeader.write(nalUnitTypeLsb, 4);   // nal_unit_type_lsb
-  bsNALUHeader.write(nLayerId + 1, 7);     // nuh_layer_id
-  bsNALUHeader.write(0, 1);                // nuh_reserved_zero_bit
-#endif
 
   out.write(reinterpret_cast<const char*>(start_code_prefix), 4);
   out.write(reinterpret_cast<const char*>(bsNALUHeader.getByteStream()), bsNALUHeader.getByteStreamLength());

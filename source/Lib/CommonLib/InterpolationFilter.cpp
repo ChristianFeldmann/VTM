@@ -94,9 +94,7 @@ const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_S
   {  0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
 
-#if JVET_O0057_ALTHPELIF
 const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
-#endif
 const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
 {
   {  0, 64,  0,  0 },
@@ -213,9 +211,7 @@ InterpolationFilter::InterpolationFilter()
   m_filterCopy[1][0]   = filterCopy<true, false>;
   m_filterCopy[1][1]   = filterCopy<true, true>;
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
   m_weightedTriangleBlk = xWeightedTriangleBlk;
-#endif
 }
 
 
@@ -580,11 +576,7 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-#if JVET_O0057_ALTHPELIF
 void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR, bool useAltHpelIf)
-#else
-void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
-#endif
 {
   if( frac == 0 )
   {
@@ -597,21 +589,17 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
     {
       filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
     }
-#if JVET_O1164_RPR
     else if( nFilterIdx == 2 )
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
     }
-#endif
     else
     {
-#if JVET_O0057_ALTHPELIF
       if (frac == 8 && useAltHpelIf)
       {
         filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR);
       }
       else
-#endif
       {
       if ((width == 4 && height == 4) || (width == 4 && height == (4 + NTAPS_LUMA - 1)))
       {
@@ -649,11 +637,7 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-#if JVET_O0057_ALTHPELIF
 void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR, bool useAltHpelIf)
-#else
-void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
-#endif
 {
   if( frac == 0 )
   {
@@ -666,21 +650,17 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
     {
       filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
     }
-#if JVET_O1164_RPR
     else if( nFilterIdx == 2 )
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
     }
-#endif
     else
     {
-#if JVET_O0057_ALTHPELIF
       if (frac == 8 && useAltHpelIf)
       {
         filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR);
       }
       else
-#endif
       {
       if (width == 4 && height == 4)
       {
@@ -701,7 +681,6 @@ void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, i
   }
 }
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
 {
   Pel*    dst        = predDst .get(compIdx).buf;
@@ -781,7 +760,6 @@ void InterpolationFilter::weightedTriangleBlk(const PredictionUnit &pu, const ui
 {
   m_weightedTriangleBlk(pu, width, height, compIdx, splitDir, predDst, predSrc0, predSrc1);
 }
-#endif
 
 /**
  * \brief turn on SIMD fuc

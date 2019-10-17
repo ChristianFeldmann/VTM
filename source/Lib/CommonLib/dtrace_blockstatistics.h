@@ -77,9 +77,6 @@ enum class BlockStatistic {
   RDPCM_Cr,
 
   // intra
-#if !JVET_O0525_REMOVE_PCM
-  IPCM,
-#endif
   Luma_IntraMode,
   Chroma_IntraMode,
   MultiRefIdx,
@@ -135,9 +132,6 @@ enum class BlockStatistic {
   TransQuantBypassFlag_Chroma,
 
   // intra
-#if !JVET_O0525_REMOVE_PCM
-  IPCM_Chroma,
-#endif
 
   NumBlockStatistics,
 };
@@ -162,9 +156,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::RegularMergeFlag,       std::tuple<std::string, BlockStatisticType, std::string>{"RegularMergeFlag",            BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::MVL0,                   std::tuple<std::string, BlockStatisticType, std::string>{"MVL0",                        BlockStatisticType::Vector,                 "Scale: 4"}},
   { BlockStatistic::MVL1,                   std::tuple<std::string, BlockStatisticType, std::string>{"MVL1",                        BlockStatisticType::Vector,                 "Scale: 4"}},
-#if !JVET_O0525_REMOVE_PCM
-  { BlockStatistic::IPCM,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM",                        BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::Luma_IntraMode,         std::tuple<std::string, BlockStatisticType, std::string>{"Luma_IntraMode",              BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::Chroma_IntraMode,       std::tuple<std::string, BlockStatisticType, std::string>{"Chroma_IntraMode",            BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::SkipFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SkipFlag",                    BlockStatisticType::Flag,                   ""}},
@@ -231,9 +222,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::QP_Chroma,                     std::tuple<std::string, BlockStatisticType, std::string>{"QP_Chroma",                          BlockStatisticType::Integer,                "[0, 51]"}},
   { BlockStatistic::SplitSeries_Chroma,            std::tuple<std::string, BlockStatisticType, std::string>{"SplitSeries_Chroma",                 BlockStatisticType::Integer,                "[0, " + std::to_string(std::numeric_limits<SplitSeries>::max()) + "]"}},
   { BlockStatistic::TransQuantBypassFlag_Chroma,   std::tuple<std::string, BlockStatisticType, std::string>{"TransQuantBypassFlag_Chroma",        BlockStatisticType::Flag,                   ""}},
-#if !JVET_O0525_REMOVE_PCM
-  { BlockStatistic::IPCM_Chroma,                   std::tuple<std::string, BlockStatisticType, std::string>{"IPCM_Chroma",                        BlockStatisticType::Flag,                   ""}},
-#endif
 
 };
 

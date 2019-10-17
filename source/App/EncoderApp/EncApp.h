@@ -88,6 +88,16 @@ private:
   void printRateSummary ();
   void printChromaFormat();
 
+#if JVET_N0278_FIXES
+  std::list<PelUnitBuf*> m_recBufList;
+  int                    m_numEncoded;
+  PelStorage*            m_trueOrgPic;
+  PelStorage*            m_orgPic;
+#if EXTENSION_360_VIDEO
+  TExt360AppEncTop*      m_ext360;
+#endif
+#endif
+
 public:
   EncApp();
   virtual ~EncApp();
@@ -96,7 +106,7 @@ public:
   int   getMaxLayers() const { return m_maxLayers; }
   void  createLib();                               ///< main encoding function
   void  destroyLib();                               ///< main encoding function
-  void  encode();                               ///< main encoding function
+  bool  encode();                               ///< main encoding function
 #else
   void  encode();                               ///< main encoding function
 #endif

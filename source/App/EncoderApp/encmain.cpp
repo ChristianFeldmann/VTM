@@ -185,26 +185,31 @@ int main(int argc, char* argv[])
 
   // call encoding function
 #if JVET_N0278_FIXES
-  for( auto & encApp : pcEncApp )
+  bool eos = false;
+
+  while( !eos )
   {
+    for( auto & encApp : pcEncApp )
+    {
 #ifndef _DEBUG
-    try
-    {
+      try
+      {
 #endif
-      encApp->encode();
+        eos = encApp->encode();
 #ifndef _DEBUG
-    }
-    catch( Exception &e )
-    {
-      std::cerr << e.what() << std::endl;
-      return EXIT_FAILURE;
-    }
-    catch( const std::bad_alloc &e )
-    {
-      std::cout << "Memory allocation failed: " << e.what() << std::endl;
-      return EXIT_FAILURE;
-    }
+      }
+      catch( Exception &e )
+      {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+      }
+      catch( const std::bad_alloc &e )
+      {
+        std::cout << "Memory allocation failed: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+      }
 #endif
+    }
   }
 #else
 #ifndef _DEBUG
@@ -252,6 +257,8 @@ int main(int argc, char* argv[])
 
   // destroy ROM
   destroyROM();
+
+  pcEncApp.clear();
 #else
   // destroy application encoder class
   pcEncApp->destroy();

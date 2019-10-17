@@ -116,6 +116,43 @@ int main(int argc, char* argv[])
 #endif
   fprintf( stdout, "\n" );
 
+#if JVET_N0278_FIXES
+  std::vector<EncApp*> pcEncApp(1);
+  bool resized = false;
+  int i = 0;
+
+  do
+  {
+    pcEncApp[i] = new EncApp;
+    // create application encoder class
+    pcEncApp[i]->create();
+
+    // parse configuration
+    try
+    {
+      if( !pcEncApp[i]->parseCfg( argc, argv ) )
+      {
+        pcEncApp[i]->destroy();
+        return 1;
+      }
+    }
+    catch( df::program_options_lite::ParseFailure &e )
+    {
+      std::cerr << "Error parsing option \"" << e.arg << "\" with argument \"" << e.val << "\"." << std::endl;
+      return 1;
+    }
+
+    pcEncApp[i]->createLib();
+
+    if( !resized )
+    {
+      pcEncApp.resize( pcEncApp[i]->getMaxLayers() );
+      resized = true;
+    }
+
+    i++;
+  } while( i < pcEncApp.size() );
+#else
   EncApp* pcEncApp = new EncApp;
   // create application encoder class
   pcEncApp->create();
@@ -134,6 +171,7 @@ int main(int argc, char* argv[])
     std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
     return 1;
   }
+#endif
 
 #if PRINT_MACRO_VALUES
   printMacroSettings();
@@ -146,6 +184,29 @@ int main(int argc, char* argv[])
   clock_t startClock = clock();
 
   // call encoding function
+#if JVET_N0278_FIXES
+  for( auto & encApp : pcEncApp )
+  {
+#ifndef _DEBUG
+    try
+    {
+#endif
+      encApp->encode();
+#ifndef _DEBUG
+    }
+    catch( Exception &e )
+    {
+      std::cerr << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+    catch( const std::bad_alloc &e )
+    {
+      std::cout << "Memory allocation failed: " << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+#endif
+  }
+#else
 #ifndef _DEBUG
   try
   {
@@ -164,6 +225,7 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
   }
 #endif
+#endif
   // ending time
   clock_t endClock = clock();
   auto endTime = std::chrono::steady_clock::now();
@@ -176,10 +238,26 @@ int main(int argc, char* argv[])
 #else
   auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime).count();
 #endif
+
+#if JVET_N0278_FIXES
+  for( auto & encApp : pcEncApp )
+  {
+    encApp->destroyLib();
+
+    // destroy application encoder class
+    encApp->destroy();
+
+    delete encApp;
+  }
+
+  // destroy ROM
+  destroyROM();
+#else
   // destroy application encoder class
   pcEncApp->destroy();
 
   delete pcEncApp;
+#endif
 
   printf( "\n finished @ %s", std::ctime(&endTime2) );
 

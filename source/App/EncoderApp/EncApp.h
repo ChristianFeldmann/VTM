@@ -92,7 +92,14 @@ public:
   EncApp();
   virtual ~EncApp();
 
+#if JVET_N0278_FIXES
+  int   getMaxLayers() const { return m_maxLayers; }
+  void  createLib();                               ///< main encoding function
+  void  destroyLib();                               ///< main encoding function
   void  encode();                               ///< main encoding function
+#else
+  void  encode();                               ///< main encoding function
+#endif
 
   void  outputAU( const AccessUnit& au );
 

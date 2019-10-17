@@ -75,7 +75,11 @@ void EncApp::xInitLibCfg()
 {
   VPS vps;
 
+#if JVET_N0278_FIXES
+  vps.setMaxLayers                                               ( m_maxLayers );
+#else
   vps.setMaxLayers                                               ( 1 );
+#endif
   for(int i = 0; i < MAX_TLAYER; i++)
   {
     vps.setVPSIncludedLayerId                                    ( 0, i );
@@ -696,6 +700,133 @@ void EncApp::xInitLib(bool isFieldCoding)
 // Public member functions
 // ====================================================================================================================
 
+#if JVET_N0278_FIXES
+std::list<PelUnitBuf*> recBufList;
+
+void EncApp::createLib()
+{
+  m_bitstream.open( m_bitstreamFileName.c_str(), fstream::binary | fstream::out );
+  if( !m_bitstream )
+  {
+    EXIT( "Failed to open bitstream file " << m_bitstreamFileName.c_str() << " for writing\n" );
+  }
+
+  // initialize internal class & member variables
+  xInitLibCfg();
+  xCreateLib( recBufList
+  );
+  xInitLib( m_isField );
+
+  printChromaFormat();
+}
+
+void EncApp::destroyLib()
+{
+  m_cEncLib.printSummary( m_isField );
+
+  // delete used buffers in encoder class
+  m_cEncLib.deletePicBuffer();
+
+  for( auto &p : recBufList )
+  {
+    delete p;
+  }
+  recBufList.clear();
+
+  xDestroyLib();
+
+  m_bitstream.close();
+
+  printRateSummary();
+}
+
+void EncApp::encode()
+{
+  // main encoder loop
+  int   iNumEncoded = 0;
+  bool  bEos = false;
+
+  const InputColourSpaceConversion ipCSC = m_inputColourSpaceConvert;
+  const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
+
+  PelStorage trueOrgPic;
+  PelStorage orgPic;
+  const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
+  UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
+
+  orgPic.create( unitArea );
+  trueOrgPic.create( unitArea );
+#if EXTENSION_360_VIDEO
+  TExt360AppEncTop           ext360( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), orgPic );
+#endif
+
+  while( !bEos )
+  {
+    // read input YUV file
+#if EXTENSION_360_VIDEO
+    if( ext360.isEnabled() )
+    {
+      ext360.read( m_cVideoIOYuvInputFile, orgPic, trueOrgPic, ipCSC );
+    }
+    else
+    {
+      m_cVideoIOYuvInputFile.read( orgPic, trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+    }
+#else
+    m_cVideoIOYuvInputFile.read( orgPic, trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+#endif
+
+    // increase number of received frames
+    m_iFrameRcvd++;
+
+    bEos = ( m_isField && ( m_iFrameRcvd == ( m_framesToBeEncoded >> 1 ) ) ) || ( !m_isField && ( m_iFrameRcvd == m_framesToBeEncoded ) );
+
+    bool flush = 0;
+    // if end of file (which is only detected on a read failure) flush the encoder of any queued pictures
+    if( m_cVideoIOYuvInputFile.isEof() )
+    {
+      flush = true;
+      bEos = true;
+      m_iFrameRcvd--;
+      m_cEncLib.setFramesToBeEncoded( m_iFrameRcvd );
+    }
+
+    // call encoding function for one frame
+    if( m_isField )
+    {
+      m_cEncLib.encode( bEos, flush ? 0 : &orgPic, flush ? 0 : &trueOrgPic, snrCSC, recBufList,
+        iNumEncoded, m_isTopFieldFirst );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      m_metricTime = m_cEncLib.getMetricTime();
+#endif
+    }
+    else
+    {
+      m_cEncLib.encode( bEos, flush ? 0 : &orgPic, flush ? 0 : &trueOrgPic, snrCSC, recBufList,
+        iNumEncoded );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+      m_metricTime = m_cEncLib.getMetricTime();
+#endif
+    }
+
+    // write bistream to file if necessary
+    if( iNumEncoded > 0 )
+    {
+      xWriteOutput( iNumEncoded, recBufList
+      );
+    }
+    // temporally skip frames
+    if( m_temporalSubsampleRatio > 1 )
+    {
+#if EXTENSION_360_VIDEO
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
+#else
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+#endif
+    }
+  }
+}
+#else
 /**
  - create internal class
  - initialize internal variable
@@ -825,6 +956,7 @@ void EncApp::encode()
 
   return;
 }
+#endif
 
 // ====================================================================================================================
 // Protected member functions

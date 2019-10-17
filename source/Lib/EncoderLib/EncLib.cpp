@@ -201,11 +201,10 @@ void EncLib::destroy ()
   delete[] m_CtxCache;
 #endif
 
-
-
-
+#if !JVET_N0278_FIXES
   // destroy ROM
   destroyROM();
+#endif
   return;
 }
 
@@ -867,7 +866,9 @@ void EncLib::xInitVPS(VPS &vps)
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
+#if !JVET_N0278_FIXES  
   vps.setMaxLayers(1);
+#endif
   for (uint32_t i = 0; i < vps.getMaxLayers(); i++)
   {
     vps.setVPSIncludedLayerId(0, i);

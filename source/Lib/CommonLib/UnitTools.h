@@ -165,7 +165,9 @@ namespace PU
     , int mmvdList
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
+#if !JVET_P1023_DMVR_BDOF_RP_CONDITION
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
+#endif
   bool isBiPredFromDifferentDirEqDistPoc(const PredictionUnit &pu);
   void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
 

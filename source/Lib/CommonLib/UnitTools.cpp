@@ -3114,6 +3114,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
   PU::spanMotionInfo( pu, mrgCtx );
 }
 
+#if !JVET_P1023_DMVR_BDOF_RP_CONDITION
 bool PU::isBiPredFromDifferentDir( const PredictionUnit& pu )
 {
   if ( pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0 )
@@ -3129,11 +3130,19 @@ bool PU::isBiPredFromDifferentDir( const PredictionUnit& pu )
 
   return false;
 }
+#endif
 
 bool PU::isBiPredFromDifferentDirEqDistPoc(const PredictionUnit& pu)
 {
   if (pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0)
   {
+#if JVET_P1023_DMVR_BDOF_RP_CONDITION
+    if (pu.cu->slice->getRefPic(REF_PIC_LIST_0, pu.refIdx[0])->longTerm
+      || pu.cu->slice->getRefPic(REF_PIC_LIST_1, pu.refIdx[1])->longTerm)
+    {
+      return false;
+    }
+#endif
     const int poc0 = pu.cu->slice->getRefPOC(REF_PIC_LIST_0, pu.refIdx[0]);
     const int poc1 = pu.cu->slice->getRefPOC(REF_PIC_LIST_1, pu.refIdx[1]);
     const int poc = pu.cu->slice->getPOC();

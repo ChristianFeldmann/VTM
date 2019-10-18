@@ -94,8 +94,7 @@ public:
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
-#if JVET_P0072_SIMPLIFIED_TSRC
-#else
+#if !JVET_P0072_SIMPLIFIED_TSRC
   bool            isContextCoded  ()                              { return --m_remainingContextBins >= 0; }
 #endif
   int             numCtxBins      ()                        const { return   m_remainingContextBins;      }

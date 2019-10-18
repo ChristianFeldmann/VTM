@@ -50,7 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_P0057_BDOF_PROF_HARMONIZATION                1 // JVET-P0057: harmonization of BDOF and PROF on motion refinement precis
+#define JVET_P0653_BDOF_PROF_PARA_DEV                     1 // JVET-P0653/P0281: fixed shift operations for BDOF and PROF parameter derivation
+
+#define JVET_P0057_BDOF_PROF_HARMONIZATION                1 // JVET-P0057: harmonization of BDOF and PROF on motion refinement precision
 
 #define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list
 

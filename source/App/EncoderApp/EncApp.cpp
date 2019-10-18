@@ -57,6 +57,10 @@ using namespace std;
 // Constructor / destructor / initialization / destroy
 // ====================================================================================================================
 
+#if JVET_N0278_FIXES
+fstream EncApp::m_bitstream;
+#endif
+
 EncApp::EncApp()
 {
   m_iFrameRcvd = 0;
@@ -717,10 +721,13 @@ void EncApp::createLib()
   m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), orgPic );
 #endif
 
-  m_bitstream.open( m_bitstreamFileName.c_str(), fstream::binary | fstream::out );
-  if( !m_bitstream )
+  if( !m_bitstream.is_open() )
   {
-    EXIT( "Failed to open bitstream file " << m_bitstreamFileName.c_str() << " for writing\n" );
+    m_bitstream.open( m_bitstreamFileName.c_str(), fstream::binary | fstream::out );
+    if( !m_bitstream )
+    {
+      EXIT( "Failed to open bitstream file " << m_bitstreamFileName.c_str() << " for writing\n" );
+    }
   }
 
   // initialize internal class & member variables
@@ -746,7 +753,10 @@ void EncApp::destroyLib()
 
   xDestroyLib();
 
-  m_bitstream.close();
+  if( m_bitstream.is_open() )
+  {
+    m_bitstream.close();
+  }
 
   m_orgPic->destroy();
   m_trueOrgPic->destroy();

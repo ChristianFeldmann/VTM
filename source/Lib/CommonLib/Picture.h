@@ -198,7 +198,7 @@ struct Picture : public UnitArea
   Picture();
 
 #if JVET_N0278_FIXES
-  void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerIdx );
+  void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerId );
 #else
   void create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder);
 #endif
@@ -277,7 +277,7 @@ public:
   uint32_t layer;
   uint32_t depth;
 #if JVET_N0278_FIXES
-  int      layerIdx;
+  int      layerId;
 #endif
 
   int* m_spliceIdx;

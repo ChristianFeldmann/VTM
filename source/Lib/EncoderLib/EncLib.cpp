@@ -57,13 +57,20 @@
 
 #if JVET_N0278_FIXES
 PicList EncLib::m_cListPic;
+ParameterSetMap<SPS> EncLib::m_spsMap( MAX_NUM_SPS );
+ParameterSetMap<PPS> EncLib::m_ppsMap( MAX_NUM_PPS );
+ParameterSetMap<APS> EncLib::m_apsMap( MAX_NUM_APS * MAX_NUM_APS_TYPE );
 #endif
 
 EncLib::EncLib()
+#if JVET_N0278_FIXES
+  : m_AUWriterIf( nullptr )
+#else
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
   , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
   , m_AUWriterIf( nullptr )
+#endif
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
 #endif
@@ -88,7 +95,7 @@ EncLib::EncLib()
   memset(m_apss, 0, sizeof(m_apss));
 
 #if JVET_N0278_FIXES
-  m_layerIdx = NOT_VALID;
+  m_layerId = NOT_VALID;
 #endif
 }
 
@@ -97,13 +104,13 @@ EncLib::~EncLib()
 }
 
 #if JVET_N0278_FIXES
-void EncLib::create( const int layerIdx )
+void EncLib::create( const int layerId )
 #else
 void EncLib::create ()
 #endif
 {
 #if JVET_N0278_FIXES
-  m_layerIdx = layerIdx;
+  m_layerId = layerId;
 #endif
   // initialize global variables
   initROM();
@@ -424,7 +431,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   {
     Picture *picBg = new Picture;
 #if JVET_N0278_FIXES
-    picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerIdx );
+    picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
 #else
     picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
 #endif
@@ -436,7 +443,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     m_cGOPEncoder.setPicBg(picBg);
     Picture *picOrig = new Picture;
 #if JVET_N0278_FIXES
-    picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerIdx );
+    picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
 #else
     picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
 #endif
@@ -859,7 +866,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   {
     rpcPic = new Picture;
 #if JVET_N0278_FIXES
-    rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerIdx );
+    rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerId );
 #else
     rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false );
 #endif

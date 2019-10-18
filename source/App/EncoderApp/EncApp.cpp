@@ -653,7 +653,7 @@ void EncApp::xInitLibCfg()
 }
 
 #if JVET_N0278_FIXES
-void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerIdx )
+void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId )
 #else
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
 #endif
@@ -683,7 +683,7 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
 
   // create the encoder
 #if JVET_N0278_FIXES
-  m_cEncLib.create( layerIdx );
+  m_cEncLib.create( layerId );
 #else
   m_cEncLib.create();
 #endif
@@ -715,7 +715,7 @@ void EncApp::xInitLib(bool isFieldCoding)
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-void EncApp::createLib( const int layerIdx )
+void EncApp::createLib( const int layerId )
 {
   const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
   UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
@@ -739,7 +739,7 @@ void EncApp::createLib( const int layerIdx )
 
   // initialize internal class & member variables
   xInitLibCfg();
-  xCreateLib( m_recBufList, layerIdx );
+  xCreateLib( m_recBufList, layerId );
   xInitLib( m_isField );
 
   printChromaFormat();

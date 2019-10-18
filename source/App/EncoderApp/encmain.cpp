@@ -142,7 +142,8 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    pcEncApp[i]->createLib( i );
+    int layerId = i; //VS: layerIdx i should be converted to layerId after VPS is implemented
+    pcEncApp[i]->createLib( layerId );
 
     if( !resized )
     {

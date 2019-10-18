@@ -157,7 +157,11 @@ uint32_t DecApp::decode()
           (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
            nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
       {
+#if JVET_N0278_FIXES
+        xFlushOutput( pcListPic, nalu.m_nuhLayerId );
+#else
         xFlushOutput(pcListPic);
+#endif
       }
 
       if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
@@ -499,7 +503,11 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 
 /** \param pcListPic list of pictures to be written to file
  */
+#if JVET_N0278_FIXES
+void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
+#else
 void DecApp::xFlushOutput( PicList* pcListPic )
+#endif
 {
   if(!pcListPic || pcListPic->empty())
   {
@@ -520,6 +528,13 @@ void DecApp::xFlushOutput( PicList* pcListPic )
       pcPicTop = *(iterPic);
       iterPic++;
       pcPicBottom = *(iterPic);
+
+#if JVET_N0278_FIXES
+      if( pcPicTop->layerId != layerId && layerId != NOT_VALID )
+      {
+        continue;
+      }
+#endif
 
       if ( pcPicTop->neededForOutput && pcPicBottom->neededForOutput && !(pcPicTop->getPOC()%2) && (pcPicBottom->getPOC() == pcPicTop->getPOC()+1) )
       {
@@ -575,6 +590,14 @@ void DecApp::xFlushOutput( PicList* pcListPic )
     {
       pcPic = *(iterPic);
 
+#if JVET_N0278_FIXES
+      if( pcPic->layerId != layerId && layerId != NOT_VALID )
+      {
+        iterPic++;
+        continue;
+      }
+#endif
+
       if (pcPic->neededForOutput)
       {
         // write to file
@@ -625,6 +648,20 @@ void DecApp::xFlushOutput( PicList* pcListPic )
       iterPic++;
     }
   }
+
+#if JVET_N0278_FIXES
+  if( layerId != NOT_VALID )
+  {
+    for( iterPic = pcListPic->begin(); iterPic != pcListPic->end(); iterPic++ )
+    {
+      if( *iterPic == nullptr )
+      {
+        pcListPic->erase( iterPic );
+      }
+    }
+  }
+  else
+#endif
   pcListPic->clear();
   m_iPOCLastDisplay = -MAX_INT;
 }

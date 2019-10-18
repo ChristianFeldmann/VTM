@@ -338,7 +338,7 @@ int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-  CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+  CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
   m_HLSWriter->codeSPS( sps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -388,7 +388,11 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
   }
   if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
+#if JVET_N0278_FIXES
+    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
+#else
     actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
+#endif
   }
 
   return actualTotalBits;
@@ -2882,7 +2886,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool writeAPS = aps && apsMap->getChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
         if (writeAPS)
         {
+#if JVET_N0278_FIXES
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#else
           actualTotalBits += xWriteAPS(accessUnit, aps);
+#endif
           apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
           CHECK(aps != pcSlice->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
         }
@@ -2897,7 +2905,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool writeAPS = aps && apsMap->getChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
         if( writeAPS )
         {
+#if JVET_N0278_FIXES
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#else
           actualTotalBits += xWriteAPS( accessUnit, aps );
+#endif
           apsMap->clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
           CHECK( aps != pcSlice->getscalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
         }
@@ -2921,7 +2933,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           if (writeAPS )
           {
+#if JVET_N0278_FIXES
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#else
             actualTotalBits += xWriteAPS(accessUnit, aps);
+#endif
             apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
             CHECK(aps != pcSlice->getAlfAPSs()[apsId], "Wrong APS pointer in compressGOP");
           }
@@ -2957,7 +2973,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
 
         /* start slice NALunit */
+#if JVET_N0278_FIXES
+        OutputNALUnit nalu( pcSlice->getNalUnitType(), m_pcEncLib->getLayerId(), pcSlice->getTLayer() );
+#else
         OutputNALUnit nalu( pcSlice->getNalUnitType(), pcSlice->getTLayer() );
+#endif
         m_HLSWriter->setBitstream( &nalu.m_Bitstream );
 
         pcSlice->setNoIncorrectPicOutputFlag(false);
@@ -3059,9 +3079,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       m_pcCfg->setEncodedFlag(iGOPid, true);
 
       double PSNR_Y;
-      xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y
-                       , isEncodeLtRef
-      );
+      xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y, isEncodeLtRef );
 
 #if HEVC_SEI
       // Only produce the Green Metadata SEI message with the last picture.
@@ -3339,7 +3357,7 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
   {
     rpcPic = *(iterPic);
 #if JVET_N0278_FIXES
-    if( rpcPic->getPOC() == pocCurr && rpcPic->layerIdx == m_pcEncLib->getLayerIdx() )
+    if( rpcPic->getPOC() == pocCurr && rpcPic->layerId == m_pcEncLib->getLayerId() )
 #else
     if (rpcPic->getPOC() == pocCurr)
 #endif
@@ -3882,8 +3900,14 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( g_verbosity >= NOTICE )
   {
+#if JVET_N0278_FIXES
+    msg( NOTICE, "POC %4d LId: %2d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
+         pcSlice->getPOC(),
+         pcSlice->getPic()->layerId,
+#else
     msg( NOTICE, "POC %4d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
          pcSlice->getPOC(),
+#endif
          pcSlice->getTLayer(),
          c,
          pcSlice->getSliceQp(),

@@ -270,7 +270,7 @@ void  Slice::sortPicList        (PicList& rcListPic)
 }
 
 #if JVET_N0278_FIXES
-Picture* Slice::xGetRefPic( PicList& rcListPic, int poc, const int layerIdx )
+Picture* Slice::xGetRefPic( PicList& rcListPic, int poc, const int layerId )
 #else
 Picture* Slice::xGetRefPic (PicList& rcListPic, int poc)
 #endif
@@ -281,7 +281,7 @@ Picture* Slice::xGetRefPic (PicList& rcListPic, int poc)
   while ( iterPic != rcListPic.end() )
   {
 #if JVET_N0278_FIXES
-    if( pcPic->getPOC() == poc && pcPic->layerIdx == layerIdx )
+    if( pcPic->getPOC() == poc && pcPic->layerId == layerId )
 #else
     if(pcPic->getPOC() == poc)
 #endif
@@ -295,7 +295,7 @@ Picture* Slice::xGetRefPic (PicList& rcListPic, int poc)
 }
 
 #if JVET_N0278_FIXES
-Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerIdx )
+Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId )
 #else
 Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb)
 #endif
@@ -314,7 +314,7 @@ Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb)
   {
     pcPic = *(iterPic);
 #if JVET_N0278_FIXES
-    if( pcPic && pcPic->getPOC() != this->getPOC() && pcPic->referenced && pcPic->layerIdx == layerIdx )
+    if( pcPic && pcPic->getPOC() != this->getPOC() && pcPic->referenced && pcPic->layerId == layerId )
 #else
     if (pcPic && pcPic->getPOC()!=this->getPOC() && pcPic->referenced)
 #endif
@@ -393,7 +393,7 @@ void Slice::constructRefPicList(PicList& rcListPic)
     if (!m_pRPL0->isRefPicLongterm(ii))
     {
 #if JVET_N0278_FIXES
-      pcRefPic = xGetRefPic( rcListPic, getPOC() - m_pRPL0->getRefPicIdentifier( ii ), m_pcPic->layerIdx );
+      pcRefPic = xGetRefPic( rcListPic, getPOC() - m_pRPL0->getRefPicIdentifier( ii ), m_pcPic->layerId );
 #else
       pcRefPic = xGetRefPic(rcListPic, getPOC() - m_pRPL0->getRefPicIdentifier(ii));
 #endif
@@ -406,7 +406,7 @@ void Slice::constructRefPicList(PicList& rcListPic)
       int ltrpPoc = m_pRPL0->getRefPicIdentifier(ii) & pocMask;
       ltrpPoc += m_localRPL0.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL0.getDeltaPocMSBCycleLT(ii) : 0;
 #if JVET_N0278_FIXES
-      pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerIdx );
+      pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
 #else
       pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag(ii));
 #endif
@@ -424,7 +424,7 @@ void Slice::constructRefPicList(PicList& rcListPic)
     if (!m_pRPL1->isRefPicLongterm(ii))
     {
 #if JVET_N0278_FIXES
-      pcRefPic = xGetRefPic( rcListPic, getPOC() - m_pRPL1->getRefPicIdentifier( ii ), m_pcPic->layerIdx );
+      pcRefPic = xGetRefPic( rcListPic, getPOC() - m_pRPL1->getRefPicIdentifier( ii ), m_pcPic->layerId );
 #else
       pcRefPic = xGetRefPic(rcListPic, getPOC() - m_pRPL1->getRefPicIdentifier(ii));
 #endif
@@ -437,7 +437,7 @@ void Slice::constructRefPicList(PicList& rcListPic)
       int ltrpPoc = m_pRPL1->getRefPicIdentifier(ii) & pocMask;
       ltrpPoc += m_localRPL1.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL1.getDeltaPocMSBCycleLT(ii) : 0;
 #if JVET_N0278_FIXES
-      pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerIdx );
+      pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
 #else
       pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag(ii));
 #endif
@@ -501,7 +501,7 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       else
       {
 #if JVET_N0278_FIXES
-        CHECK( xGetLongTermRefPic( rcListPic, pRPL0->getRefPicIdentifier( i ), pRPL0->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerIdx )->getPOC() < pocCRA, "Invalid state" );
+        CHECK( xGetLongTermRefPic( rcListPic, pRPL0->getRefPicIdentifier( i ), pRPL0->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
 #else
         CHECK(xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i))->getPOC() < pocCRA, "Invalid state");
 #endif
@@ -517,7 +517,7 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       else
       {
 #if JVET_N0278_FIXES
-        CHECK( xGetLongTermRefPic( rcListPic, pRPL1->getRefPicIdentifier( i ), pRPL1->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerIdx )->getPOC() < pocCRA, "Invalid state" );
+        CHECK( xGetLongTermRefPic( rcListPic, pRPL1->getRefPicIdentifier( i ), pRPL1->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
 #else
         CHECK(xGetLongTermRefPic(rcListPic, pRPL1->getRefPicIdentifier(i), pRPL1->getDeltaPocMSBPresentFlag(i))->getPOC() < pocCRA, "Invalid state");
 #endif
@@ -2617,7 +2617,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
             scaledRefPic[j]->poc = -1;
 
 #if JVET_N0278_FIXES
-            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder, m_pcPic->layerIdx );
+            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder, m_pcPic->layerId );
 #else
             scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder );
 #endif

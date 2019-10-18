@@ -75,7 +75,7 @@ private:
   uint32_t                      m_uiNumAllPicCoded;                   ///< number of coded pictures
 #if JVET_N0278_FIXES
   static PicList            m_cListPic;                           ///< dynamic list of pictures
-  int                       m_layerIdx;
+  int                       m_layerId;
 #else
   PicList                   m_cListPic;                           ///< dynamic list of pictures
 #endif
@@ -119,9 +119,15 @@ private:
   EncCu                     m_cCuEncoder;                         ///< CU encoder
 #endif
   // SPS
+#if JVET_N0278_FIXES
+  static ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
+  static ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
+  static ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
+#else
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
   ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
+#endif
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -182,7 +188,7 @@ public:
   virtual ~EncLib();
 
 #if JVET_N0278_FIXES
-  void      create          ( const int layerIdx );
+  void      create          ( const int layerId );
 #else
   void      create          ();
 #endif
@@ -283,7 +289,7 @@ public:
   void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }
 
 #if JVET_N0278_FIXES
-  int getLayerIdx() const { return m_layerIdx;  }
+  int getLayerId() const { return m_layerId; }
 #endif
 };
 

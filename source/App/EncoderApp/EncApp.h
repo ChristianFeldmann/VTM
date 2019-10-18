@@ -80,7 +80,7 @@ private:
 private:
   // initialization
 #if JVET_N0278_FIXES
-  void xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerIdx );         ///< create files & encoder class
+  void xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId );         ///< create files & encoder class
 #else
   void xCreateLib  ( std::list<PelUnitBuf*>& recBufList );                           ///< create files & encoder class
 #endif
@@ -111,7 +111,7 @@ public:
 
 #if JVET_N0278_FIXES
   int   getMaxLayers() const { return m_maxLayers; }
-  void  createLib( int layerIdx );              ///< main encoding function
+  void  createLib( int layerId );              ///< main encoding function
   void  destroyLib();                           ///< main encoding function
   bool  encode();                               ///< main encoding function
 #else

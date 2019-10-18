@@ -2008,8 +2008,8 @@ public:
 
 protected:
 #if JVET_N0278_FIXES
-  Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerIdx );
-  Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerIdx );
+  Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );
+  Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId );
 #else
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);

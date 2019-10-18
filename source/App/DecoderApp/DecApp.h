@@ -80,7 +80,11 @@ private:
   void  xCreateDecLib     (); ///< create internal classes
   void  xDestroyDecLib    (); ///< destroy internal classes
   void  xWriteOutput      ( PicList* pcListPic , uint32_t tId); ///< write YUV to file
+#if JVET_N0278_FIXES
+  void  xFlushOutput( PicList* pcListPic, const int layerId = NOT_VALID ); ///< flush all remaining decoded pictures to file
+#else
   void  xFlushOutput      ( PicList* pcListPic ); ///< flush all remaining decoded pictures to file
+#endif
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
   bool  isNaluTheTargetLayer(InputNALUnit* nalu); ///< check whether given Nalu is within targetDecLayerIdSet
 };

@@ -79,8 +79,11 @@ private:
 
 private:
   // initialization
-  void xCreateLib  ( std::list<PelUnitBuf*>& recBufList
-                    );                           ///< create files & encoder class
+#if JVET_N0278_FIXES
+  void xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerIdx );         ///< create files & encoder class
+#else
+  void xCreateLib  ( std::list<PelUnitBuf*>& recBufList );                           ///< create files & encoder class
+#endif
   void xInitLibCfg ();                           ///< initialize internal variables
   void xInitLib    (bool isFieldCoding);         ///< initialize encoder class
   void xDestroyLib ();                           ///< destroy encoder class
@@ -108,8 +111,8 @@ public:
 
 #if JVET_N0278_FIXES
   int   getMaxLayers() const { return m_maxLayers; }
-  void  createLib();                               ///< main encoding function
-  void  destroyLib();                               ///< main encoding function
+  void  createLib( int layerIdx );              ///< main encoding function
+  void  destroyLib();                           ///< main encoding function
   bool  encode();                               ///< main encoding function
 #else
   void  encode();                               ///< main encoding function

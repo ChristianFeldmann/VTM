@@ -55,7 +55,9 @@
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
 
-
+#if JVET_N0278_FIXES
+PicList EncLib::m_cListPic;
+#endif
 
 EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
@@ -84,14 +86,25 @@ EncLib::EncLib()
 #endif
 
   memset(m_apss, 0, sizeof(m_apss));
+
+#if JVET_N0278_FIXES
+  m_layerIdx = NOT_VALID;
+#endif
 }
 
 EncLib::~EncLib()
 {
 }
 
+#if JVET_N0278_FIXES
+void EncLib::create( const int layerIdx )
+#else
 void EncLib::create ()
+#endif
 {
+#if JVET_N0278_FIXES
+  m_layerIdx = layerIdx;
+#endif
   // initialize global variables
   initROM();
   TComHash::initBlockSizeToIndex();
@@ -410,7 +423,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   if (getUseCompositeRef())
   {
     Picture *picBg = new Picture;
+#if JVET_N0278_FIXES
+    picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerIdx );
+#else
     picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
+#endif
     picBg->getRecoBuf().fill(0);
     picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
     pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
@@ -418,7 +435,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
     Picture *picOrig = new Picture;
+#if JVET_N0278_FIXES
+    picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerIdx );
+#else
     picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
+#endif
     picOrig->getOrigBuf().fill(0);
     m_cGOPEncoder.setPicOrig(picOrig);
   }
@@ -532,6 +553,10 @@ void EncLib::deletePicBuffer()
     delete pcPic;
     pcPic = NULL;
   }
+
+#if JVET_N0278_FIXES
+  m_cListPic.clear();
+#endif
 }
 
 /**
@@ -833,7 +858,11 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   if (rpcPic==0)
   {
     rpcPic = new Picture;
+#if JVET_N0278_FIXES
+    rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerIdx );
+#else
     rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false );
+#endif
     if( m_rprEnabled )
     {
       rpcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );

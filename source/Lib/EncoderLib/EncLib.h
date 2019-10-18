@@ -73,7 +73,12 @@ private:
   int                       m_iPOCLast;                           ///< time index (POC)
   int                       m_iNumPicRcvd;                        ///< number of received pictures
   uint32_t                      m_uiNumAllPicCoded;                   ///< number of coded pictures
+#if JVET_N0278_FIXES
+  static PicList            m_cListPic;                           ///< dynamic list of pictures
+  int                       m_layerIdx;
+#else
   PicList                   m_cListPic;                           ///< dynamic list of pictures
+#endif
 
   // encoder search
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -176,7 +181,11 @@ public:
   EncLib();
   virtual ~EncLib();
 
+#if JVET_N0278_FIXES
+  void      create          ( const int layerIdx );
+#else
   void      create          ();
+#endif
   void      destroy         ();
   void      init            ( bool isFieldCoding, AUWriterIf* auWriterIf );
   void      deletePicBuffer ();
@@ -273,6 +282,9 @@ public:
 
   void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }
 
+#if JVET_N0278_FIXES
+  int getLayerIdx() const { return m_layerIdx;  }
+#endif
 };
 
 //! \}

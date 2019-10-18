@@ -652,8 +652,11 @@ void EncApp::xInitLibCfg()
 #endif
 }
 
-void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList
-                        )
+#if JVET_N0278_FIXES
+void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerIdx )
+#else
+void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
+#endif
 {
   // Video I/O
   m_cVideoIOYuvInputFile.open( m_inputFileName,     false, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth );  // read  mode
@@ -679,7 +682,11 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList
   }
 
   // create the encoder
+#if JVET_N0278_FIXES
+  m_cEncLib.create( layerIdx );
+#else
   m_cEncLib.create();
+#endif
 
   // create the output buffer
   for( int i = 0; i < (m_iGOPSize + 1 + (m_isField ? 1 : 0)); i++ )
@@ -708,7 +715,7 @@ void EncApp::xInitLib(bool isFieldCoding)
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-void EncApp::createLib()
+void EncApp::createLib( const int layerIdx )
 {
   const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
   UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
@@ -732,7 +739,7 @@ void EncApp::createLib()
 
   // initialize internal class & member variables
   xInitLibCfg();
-  xCreateLib( m_recBufList );
+  xCreateLib( m_recBufList, layerIdx );
   xInitLib( m_isField );
 
   printChromaFormat();

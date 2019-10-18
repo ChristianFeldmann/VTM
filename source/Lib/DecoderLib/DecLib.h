@@ -173,11 +173,18 @@ public:
 protected:
   void  xUpdateRasInit(Slice* slice);
 
+#if JVET_N0278_FIXES
+  Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerIdx );
+  void  xCreateLostPicture( int iLostPOC, const int layerIdx );
+  void  xCreateUnavailablePicture( int iUnavailablePoc, bool longTermFlag, const int layerIdx );
+  void      xActivateParameterSets( const int layerIdx );
+#else
   Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
   void  xCreateLostPicture (int iLostPOC);
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
-
   void      xActivateParameterSets();
+#endif
+
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
   void      xDecodeDPS( InputNALUnit& nalu );

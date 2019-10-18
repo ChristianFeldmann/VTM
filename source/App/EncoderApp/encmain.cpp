@@ -124,10 +124,10 @@ int main(int argc, char* argv[])
   do
   {
     pcEncApp[i] = new EncApp;
-    // create application encoder class
+    // create application encoder class per layer
     pcEncApp[i]->create();
 
-    // parse configuration
+    // parse configuration per layer
     try
     {
       if( !pcEncApp[i]->parseCfg( argc, argv ) )
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    pcEncApp[i]->createLib();
+    pcEncApp[i]->createLib( i );
 
     if( !resized )
     {
@@ -183,8 +183,8 @@ int main(int argc, char* argv[])
   fprintf(stdout, " started @ %s", std::ctime(&startTime2) );
   clock_t startClock = clock();
 
-  // call encoding function
 #if JVET_N0278_FIXES
+  // call encoding function per layer
   bool eos = false;
 
   while( !eos )
@@ -212,6 +212,7 @@ int main(int argc, char* argv[])
     }
   }
 #else
+  // call encoding function
 #ifndef _DEBUG
   try
   {
@@ -249,7 +250,7 @@ int main(int argc, char* argv[])
   {
     encApp->destroyLib();
 
-    // destroy application encoder class
+    // destroy application encoder class per layer
     encApp->destroy();
 
     delete encApp;

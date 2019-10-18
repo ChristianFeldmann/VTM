@@ -3338,7 +3338,11 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
   while (iterPic != rcListPic.end())
   {
     rpcPic = *(iterPic);
+#if JVET_N0278_FIXES
+    if( rpcPic->getPOC() == pocCurr && rpcPic->layerIdx == m_pcEncLib->getLayerIdx() )
+#else
     if (rpcPic->getPOC() == pocCurr)
+#endif
     {
       break;
     }

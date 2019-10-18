@@ -2007,8 +2007,13 @@ public:
   bool                        getNonRefPictFlag() const { return m_nonReferencePicFlag;  }
 
 protected:
+#if JVET_N0278_FIXES
+  Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerIdx );
+  Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerIdx );
+#else
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
+#endif
 public:
   std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
 private:

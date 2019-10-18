@@ -264,7 +264,6 @@ protected:
   void  xPicInitHashME( Picture *pic, const PPS *pps, PicList &rcListPic );
   void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
   void  xPicInitLMCS       (Picture *pic, Slice *slice);
-
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
 

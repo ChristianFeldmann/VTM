@@ -472,7 +472,9 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
   }
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   int startShareThisLevel = 0;
+#endif
 
   const PartSplit splitMode = split_cu_mode( cs, partitioner );
 
@@ -480,6 +482,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 
   if( splitMode != CU_DONT_SPLIT )
   {
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
       const PartSplit split = splitMode;
       int splitRatio = 1;
       CHECK(!(split == CU_QUAD_SPLIT || split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT
@@ -505,6 +508,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
           shareParentSize.height = partitioner.currArea().lheight();
         }
       }
+#endif
       if (CS::isDualITree(cs) && pPartitionerChroma != nullptr && (partitioner.currArea().lwidth() >= 64 || partitioner.currArea().lheight() >= 64))
       {
         partitioner.splitCurrArea(CU_QUAD_SPLIT, cs);
@@ -622,8 +626,10 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       //recover ModeType
       cs.modeType = partitioner.modeType = modeTypeParent;
       }
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
       if (startShareThisLevel == 1)
         shareStateDec = NO_SHARE;
+#endif
       return lastSegment;
   }
 
@@ -659,8 +665,10 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   cu.chromaQpAdj = cs.chromaQpAdj;  //NOTE: CU chroma QP adjustment can be changed by adjustment signaling at TU level
 
   // coding unit
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     cu.shareParentPos = (shareStateDec == SHARING) ? shareParentPos : partitioner.currArea().lumaPos();
     cu.shareParentSize = (shareStateDec == SHARING) ? shareParentSize : partitioner.currArea().lumaSize();
+#endif
 
   bool isLastCtu = coding_unit( cu, partitioner, cuCtx );
   //recover cuCtx.qp to luma qp after decoding the chroma CU
@@ -703,8 +711,10 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   {
   DTRACE( g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
   }
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   if (startShareThisLevel == 1)
     shareStateDec = NO_SHARE;
+#endif
   return isLastCtu;
 }
 
@@ -836,8 +846,10 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   if( cu.skip )
   {
     cs.addTU         ( cu, partitioner.chType );
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     pu.shareParentPos = cu.shareParentPos;
     pu.shareParentSize = cu.shareParentSize;
+#endif
     MergeCtx           mrgCtx;
     prediction_unit  ( pu, mrgCtx );
     return end_of_ctu( cu, cuCtx );
@@ -1177,8 +1189,10 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 
   for( auto &pu : CU::traversePUs( cu ) )
   {
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     pu.shareParentPos = cu.shareParentPos;
     pu.shareParentSize = cu.shareParentSize;
+#endif
     prediction_unit( pu, mrgCtx );
   }
 

@@ -117,11 +117,13 @@ private:
   RateCtrl*             m_pcRateCtrl;
   IbcHashMap            m_ibcHashMap;
   EncModeCtrl          *m_modeCtrl;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   int                  m_shareState;
   uint32_t             m_shareBndPosX;
   uint32_t             m_shareBndPosY;
   SizeType             m_shareBndSizeW;
   SizeType             m_shareBndSizeH;
+#endif
 
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];

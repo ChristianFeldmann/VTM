@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list
+
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 
 #define JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING            1 // JVET-P0154/P0094/P0172/P0413/P0518/P0281: Clip the PROF sample offset to 14-bit
@@ -78,7 +80,9 @@
 
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
 
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
 #define MRG_SHARELIST_SHARSIZE                            32
+#endif
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
@@ -865,12 +869,14 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
 enum SharedMrgState
 {
   NO_SHARE            = 0,
   GEN_ON_SHARED_BOUND = 1,
   SHARING             = 2
 };
+#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////

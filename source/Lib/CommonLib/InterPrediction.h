@@ -63,7 +63,9 @@ class Mv;
 class InterPrediction : public WeightPrediction
 {
 private:
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   int m_shareState;
+#endif
 
 
 
@@ -189,9 +191,11 @@ public:
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );
 #endif
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   void    setShareState(int shareStateIn) {m_shareState = shareStateIn;}
 #if ENABLE_SPLIT_PARALLELISM
   int     getShareState() const { return m_shareState; }
+#endif
 #endif
   static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
   void xFillIBCBuffer(CodingUnit &cu);

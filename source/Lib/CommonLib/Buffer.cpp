@@ -45,8 +45,10 @@
 void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
 {
   int idx = 0;
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
   const int dIshift = 1;
   const int dIoffset = 1 << (dIshift - 1);
+#endif
 
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
@@ -56,7 +58,9 @@ void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int w
     for (int w = 0; w < width; w++)
     {
       int32_t dI = dMvX[idx] * gradX[w] + dMvY[idx] * gradY[w];
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
       dI = (dI + dIoffset) >> dIshift;
+#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       dI = Clip3(-dILimit, dILimit - 1, dI);
 #endif
@@ -79,8 +83,10 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
   int idx = 16;
   int32_t dI0 = 0;
   int32_t dI1 = 0;
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
   const int dIshift = 1;
   const int dIoffset = 1 << (dIshift - 1);
+#endif
 
   const int clipbd = clpRng.bd;
   const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + g_GbiLog2WeightBase;
@@ -101,14 +107,18 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
     {
       if (!(w & 3)) idx -= 4;
       dI0 = dMvX0[idx] * gradX0[w] + dMvY0[idx] * gradY0[w];
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION
       dI0 = (dI0 + dIoffset) >> dIshift;
+#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       dI0 = Clip3(-dILimit, dILimit - 1, dI0);
 #endif
       if (l1PROFEnabled)
       {
         dI1 = dMvX1[idx] * gradX1[w] + dMvY1[idx] * gradY1[w];
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
         dI1 = (dI1 + dIoffset) >> dIshift;
+#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
         dI1 = Clip3(-dILimit, dILimit - 1, dI1);
 #endif

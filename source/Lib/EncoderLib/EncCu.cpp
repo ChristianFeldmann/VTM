@@ -1724,7 +1724,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   int        startLfnstIdx       = 0;
   int        endLfnstIdx         = sps.getUseLFNST() ? maxLfnstIdx : 0;
 
+#if JVET_P0273_MTSIntraMaxCand
+  int grpNumMax = sps.getUseLFNST() ? m_pcEncCfg->getMTSIntraMaxCand() : 1;
+#else
   int grpNumMax = sps.getUseLFNST() ? 4 : 1;
+#endif
   m_pcIntraSearch->invalidateBestModeCost();
   for( int trGrpIdx = 0; trGrpIdx < grpNumMax; trGrpIdx++ )
   {

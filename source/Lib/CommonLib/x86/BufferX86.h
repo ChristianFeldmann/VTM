@@ -345,7 +345,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
   CHECKD((width & 3), "block width error!");
 
   __m128i mm_dmvx, mm_dmvy, mm_gradx, mm_grady, mm_dI, mm_src;
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION
   __m128i mm_dIoffset = _mm_set1_epi32(1);
+#endif
   __m128i mm_offset = _mm_set1_epi32(offset);
   __m128i vibdimin  = _mm_set1_epi32(clpRng.min);
   __m128i vibdimax  = _mm_set1_epi32(clpRng.max);
@@ -375,7 +377,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_src = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)src));
 
       mm_dI = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
       mm_dI = _mm_srai_epi32(_mm_add_epi32(mm_dI, mm_dIoffset), 1);
+#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       mm_dI = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI));
 #endif
@@ -417,7 +421,9 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
 
   __m128i mm_dmvx0, mm_dmvy0, mm_dmvx1, mm_dmvy1, mm_gradx0, mm_grady0, mm_gradx1, mm_grady1, mm_src0, mm_src1;
   __m128i mm_dI0, mm_dI1, mm_dI;
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
   __m128i mm_dIoffset = _mm_set1_epi32(1);
+#endif
   const int *mmMvX0, *mmMvY0, *mmMvX1, *mmMvY1;
   const Pel *gX0, *gY0, *gX1, *gY1;
 
@@ -458,7 +464,9 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
       mm_gradx0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX0));
       mm_grady0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0));
       mm_dI0 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx0, mm_gradx0), _mm_mullo_epi32(mm_dmvy0, mm_grady0));
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
       mm_dI0 = _mm_srai_epi32(_mm_add_epi32(mm_dI0, mm_dIoffset), 1);
+#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       mm_dI0 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI0));
 #endif
@@ -470,7 +478,9 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
         mm_gradx1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX1));
         mm_grady1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY1));
         mm_dI1 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx1, mm_gradx1), _mm_mullo_epi32(mm_dmvy1, mm_grady1));
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
         mm_dI1 = _mm_srai_epi32(_mm_add_epi32(mm_dI1, mm_dIoffset), 1);
+#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
         mm_dI1 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI1));
 #endif

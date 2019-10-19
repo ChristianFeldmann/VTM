@@ -45,15 +45,25 @@
 void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
 {
   int idx = 0;
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
   const int dIshift = 1;
   const int dIoffset = 1 << (dIshift - 1);
+#endif
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
+#endif
   for (int h = 0; h < height; h++)
   {
     for (int w = 0; w < width; w++)
     {
       int32_t dI = dMvX[idx] * gradX[w] + dMvY[idx] * gradY[w];
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
       dI = (dI + dIoffset) >> dIshift;
+#endif
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+      dI = Clip3(-dILimit, dILimit - 1, dI);
+#endif
 
       dI = (src[w] + dI + offset) >> shiftNum;
       dst[w] = (Pel)ClipPel(dI, clpRng);
@@ -73,12 +83,18 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
   int idx = 16;
   int32_t dI0 = 0;
   int32_t dI1 = 0;
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
   const int dIshift = 1;
   const int dIoffset = 1 << (dIshift - 1);
+#endif
 
   const int clipbd = clpRng.bd;
   const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + g_GbiLog2WeightBase;
   const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_GbiLog2WeightBase);
+
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
+#endif
 
   const int8_t w1 = g_GbiWeightBase - w0;
 
@@ -91,11 +107,21 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
     {
       if (!(w & 3)) idx -= 4;
       dI0 = dMvX0[idx] * gradX0[w] + dMvY0[idx] * gradY0[w];
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION
       dI0 = (dI0 + dIoffset) >> dIshift;
+#endif
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+      dI0 = Clip3(-dILimit, dILimit - 1, dI0);
+#endif
       if (l1PROFEnabled)
       {
         dI1 = dMvX1[idx] * gradX1[w] + dMvY1[idx] * gradY1[w];
+#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
         dI1 = (dI1 + dIoffset) >> dIshift;
+#endif
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+        dI1 = Clip3(-dILimit, dILimit - 1, dI1);
+#endif
         dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + (src1[w] + dI1) * w1 + offset), shiftNum), clpRng);
       }
       else
@@ -167,7 +193,11 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   Pel* srcTmp = pSrc + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
+#if JVET_P0653_BDOF_PROF_PARA_DEV
+  int  shift1 = 6;
+#else
   int  shift1 = std::max<int>(6, (bitDepth - 6));
+#endif
 
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
@@ -207,8 +237,13 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
 
 void calcBIOSumsCore(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
 {
+#if JVET_P0653_BDOF_PROF_PARA_DEV
+  int shift4 = 4;
+  int shift5 = 1;
+#else
   int shift4 = std::max<int>(4, (bitDepth - 8));
   int shift5 = std::max<int>(1, (bitDepth - 11));
+#endif
 
   for (int y = 0; y < 6; y++)
   {
@@ -233,6 +268,7 @@ void calcBIOSumsCore(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   }
 }
 
+#if !JVET_P0653_BDOF_PROF_PARA_DEV
 void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
   int shift4 = std::max<int>(4, (bitDepth - 8));
@@ -263,6 +299,7 @@ void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX
     dotProductTemp6 += widthG;
   }
 }
+#endif
 
 void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)
 {

@@ -346,6 +346,15 @@ const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
   { DWS, DWS, },
 });
 
+#if JVET_P0042_FIX_INTER_DIR_CTX 
+const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
+({
+  {   6,  13,   5,   4,  25,  48, },
+  {   7,   6,   5,   4,  33,  34, },
+  { CNU, CNU, CNU, CNU, CNU, CNU, },
+  {   0,   0,   1,   4,   0,   0, },
+});
+#else
 const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
 ({
   {   6,  13,   5,   4,  25, },
@@ -353,6 +362,7 @@ const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU, CNU, CNU, },
   {   0,   0,   1,   4,   0, },
 });
+#endif
 
 const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
 ({
@@ -801,6 +811,7 @@ const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
   {   0,   0, },
 });
 
+#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
 const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
 ({
   {  58, },
@@ -808,6 +819,7 @@ const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
   {  31, },
   {   0, },
 });
+#endif
 
 const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 ({
@@ -897,7 +909,11 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 const CtxSet ContextSetCfg::Palette = { ContextSetCfg::RotationFlag, ContextSetCfg::RunTypeFlag, ContextSetCfg::IdxRunModel, ContextSetCfg::CopyRunModel };
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
+#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
+const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseTemporalFilt };
+#else
 const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

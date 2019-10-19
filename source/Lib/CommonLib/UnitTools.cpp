@@ -665,7 +665,12 @@ bool PU::xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const 
 
 bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
   , bool ibcFlag
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   , bool isShared
+#endif
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+  , bool isGt4x4
+#endif
 )
 {
   const Slice& slice = *cs.slice;
@@ -689,7 +694,11 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool canF
     {
       mrgCtx.mvFieldNeighbours[(cnt << 1) + 1].setMvField(miNeighbor.mv[1], miNeighbor.refIdx[1]);
     }
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+    if (mrgIdx > 2 || ((mrgIdx > 1 || !isGt4x4) && ibcFlag) || !xCheckSimilarMotion(cnt, prevCnt, mrgCtx, hasPruned))
+#else
     if (mrgIdx > 2 || (mrgIdx > 1 && ibcFlag) || !xCheckSimilarMotion(cnt, prevCnt, mrgCtx, hasPruned))
+#endif
     {
       mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? miNeighbor.GBiIdx : GBI_DEFAULT;
       if (mrgCandIdx == cnt && canFastExit)
@@ -732,15 +741,27 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   int cnt = 0;
 
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+  const Position posRT = pu.Y().topRight();
+  const Position posLB = pu.Y().bottomLeft();
+#else
   const Position posRT = pu.shareParentPos.offset(pu.shareParentSize.width - 1, 0);
   const Position posLB = pu.shareParentPos.offset(0, pu.shareParentSize.height - 1);
+#endif
 
   MotionInfo miAbove, miLeft, miAboveLeft, miAboveRight, miBelowLeft;
 
   //left
   const PredictionUnit* puLeft = cs.getPURestricted(posLB.offset(-1, 0), pu, pu.chType);
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+  bool isGt4x4 = pu.lwidth() * pu.lheight() > 16;
+#endif
   const bool isAvailableA1 = puLeft && isDiffMER(pu, *puLeft) && pu.cu != puLeft->cu && CU::isIBC(*puLeft->cu);
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+  if (isGt4x4 && isAvailableA1)
+#else
   if (isAvailableA1)
+#endif
   {
     miLeft = puLeft->getMotionInfo(posLB.offset(-1, 0));
 
@@ -765,7 +786,11 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
   // above
   const PredictionUnit *puAbove = cs.getPURestricted(posRT.offset(0, -1), pu, pu.chType);
   bool isAvailableB1 = puAbove && isDiffMER(pu, *puAbove) && pu.cu != puAbove->cu && CU::isIBC(*puAbove->cu);
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+  if (isGt4x4 && isAvailableB1)
+#else
   if (isAvailableB1)
+#endif
   {
     miAbove = puAbove->getMotionInfo(posRT.offset(0, -1));
 
@@ -799,7 +824,9 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     bool isAvailableSubPu = false;
     unsigned subPuMvpPos = 0;
 
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
+#endif
 
     bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit
       , mrgCandIdx
@@ -807,7 +834,12 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
       , spatialCandPos
       , isAvailableSubPu, subPuMvpPos
       , true
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
       , isShared
+#endif
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+      , isGt4x4
+#endif
     );
     if (bFound)
     {
@@ -1127,14 +1159,24 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   {
     bool isAvailableSubPu = false;
     unsigned subPuMvpPos = 0;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isShared = false;
+#endif
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+    bool isGt4x4 = true;
+#endif
     bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit
       , mrgCandIdx
       , maxNumMergeCandMin1, cnt
       , spatialCandPos
       , isAvailableSubPu, subPuMvpPos
       , CU::isIBC(*pu.cu)
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
       , isShared
+#endif
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+      , isGt4x4
+#endif
     );
     if (bFound)
     {
@@ -2843,7 +2885,9 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
   ///////////////////////////////////////////////////////////////////////
   ////////          GET Initial Temporal Vector                  ////////
   ///////////////////////////////////////////////////////////////////////
+#if !JVET_P0385_UNIFIED_MV_ROUNDING
   int mvPrec = MV_FRACTIONAL_BITS_INTERNAL;
+#endif
 
   Mv cTempVector = cTMv;
   bool  tempLICFlag = false;
@@ -2865,8 +2909,15 @@ bool PU::getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx& mrgCtx, b
 
   bool found = false;
   cTempVector = cTMv;
+
+#if JVET_P0385_UNIFIED_MV_ROUNDING
+  cTempVector.changePrecision(MV_PRECISION_SIXTEENTH, MV_PRECISION_INT);
+  int tempX = cTempVector.getHor();
+  int tempY = cTempVector.getVer();
+#else
   int tempX = cTempVector.getHor() >> mvPrec;
   int tempY = cTempVector.getVer() >> mvPrec;
+#endif
 
   centerPos.x = puPos.x + (puSize.width >> 1) + tempX;
   centerPos.y = puPos.y + (puSize.height >> 1) + tempY;
@@ -3105,6 +3156,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
   PU::spanMotionInfo( pu, mrgCtx );
 }
 
+#if !JVET_P1023_DMVR_BDOF_RP_CONDITION
 bool PU::isBiPredFromDifferentDir( const PredictionUnit& pu )
 {
   if ( pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0 )
@@ -3120,11 +3172,19 @@ bool PU::isBiPredFromDifferentDir( const PredictionUnit& pu )
 
   return false;
 }
+#endif
 
 bool PU::isBiPredFromDifferentDirEqDistPoc(const PredictionUnit& pu)
 {
   if (pu.refIdx[0] >= 0 && pu.refIdx[1] >= 0)
   {
+#if JVET_P1023_DMVR_BDOF_RP_CONDITION
+    if (pu.cu->slice->getRefPic(REF_PIC_LIST_0, pu.refIdx[0])->longTerm
+      || pu.cu->slice->getRefPic(REF_PIC_LIST_1, pu.refIdx[1])->longTerm)
+    {
+      return false;
+    }
+#endif
     const int poc0 = pu.cu->slice->getRefPOC(REF_PIC_LIST_0, pu.refIdx[0]);
     const int poc1 = pu.cu->slice->getRefPOC(REF_PIC_LIST_1, pu.refIdx[1]);
     const int poc = pu.cu->slice->getPOC();

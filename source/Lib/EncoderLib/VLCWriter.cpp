@@ -1856,16 +1856,19 @@ void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
 
 void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx )
 {
+#if !JVET_P0164_ALF_SYNTAX_SIMP
   if( !isChroma )
   {
     WRITE_FLAG( alfParam.alfLumaCoeffDeltaFlag, "alf_luma_coeff_delta_flag" );
   }
+#endif
   AlfFilterShape alfShape(isChroma ? 5 : 7);
   const short* coeff = isChroma ? alfParam.chromaCoeff[altIdx] : alfParam.lumaCoeff;
   const short* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
 
   // vlc for all
+#if !JVET_P0164_ALF_SYNTAX_SIMP
   if( !isChroma )
   {
     if( alfParam.alfLumaCoeffDeltaFlag )
@@ -1876,14 +1879,17 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
       }
     }
   }
+#endif
 
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
+#if !JVET_P0164_ALF_SYNTAX_SIMP
     if( !isChroma && !alfParam.alfLumaCoeffFlag[ind] && alfParam.alfLumaCoeffDeltaFlag )
     {
       continue;
     }
+#endif
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {

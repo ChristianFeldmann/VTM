@@ -732,7 +732,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
         {
           unsigned  sumAbs = cctx.templateAbsSum( iScanPos, piDstCoeff, 0 );
           goRiceParam             = g_auiGoRiceParsCoeff   [ sumAbs ];
+#if JVET_P0170_ZERO_POS_SIMPLIFICATION
+          goRiceZero              = g_auiGoRicePosCoeff0(0, goRiceParam);
+#else
           goRiceZero              = g_auiGoRicePosCoeff0[0][ sumAbs ];
+#endif
         }
 
         const BinFracBits fracBitsPar = fracBits.getFracBitsArray( uiParCtx );

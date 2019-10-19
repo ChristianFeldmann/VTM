@@ -57,6 +57,9 @@ struct coeffGroupRDStats
   double d64UncodedDist;    // all zero coded block distortion
   double d64SigCost;
   double d64SigCost_0;
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int   iNumSbbCtxBins;
+#endif
 };
 
 
@@ -1241,6 +1244,11 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
 
   bool anySigCG = false;
 
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int maxCtxBins = (cctx.maxNumCoeff() * 7) >> 2;
+  cctx.setNumCtxBins(maxCtxBins);
+#endif
+
   for( int sbId = 0; sbId < sbNum; sbId++ )
   {
     cctx.initSubblock( sbId );
@@ -1248,6 +1256,10 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
     int noCoeffCoded = 0;
     baseCost = 0.0;
     memset( &rdStats, 0, sizeof (coeffGroupRDStats));
+
+#if JVET_P0072_SIMPLIFIED_TSRC
+    rdStats.iNumSbbCtxBins = 0;
+#endif
 
     for( int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++ )
     {
@@ -1308,8 +1320,18 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
       {
         lastCoeff = true;
       }
+#if JVET_P0072_SIMPLIFIED_TSRC
+      int numUsedCtxBins = 0;
+      cLevel = xGetCodedLevelTSPred(costCoeff[scanPos], costCoeff0[scanPos], costSig[scanPos], levelDouble, qBits, errorScale, coeffLevels, coeffLevelError,
+                                    &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, fracBitsGr1, sign, rightPixel, belowPixel, goRiceParam, lastCoeff, extendedPrecision, maxLog2TrDynamicRange, numUsedCtxBins);
+
+      cctx.decimateNumCtxBins(numUsedCtxBins);
+      rdStats.iNumSbbCtxBins += numUsedCtxBins;
+
+#else
       cLevel = xGetCodedLevelTSPred( costCoeff[ scanPos ], costCoeff0[ scanPos ], costSig[ scanPos ], levelDouble, qBits, errorScale, coeffLevels, coeffLevelError,
                                     &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, fracBitsGr1, sign, rightPixel, belowPixel, goRiceParam, lastCoeff, extendedPrecision, maxLog2TrDynamicRange);
+#endif
 
       if (cLevel > 0)
       {
@@ -1334,6 +1356,9 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
       const BinFracBits fracBitsSigGroup = fracBits.getFracBitsArray( cctx.sigGroupCtxId( true ) );
       baseCost += xGetRateSigCoeffGroup( fracBitsSigGroup, 0 ) - rdStats.d64SigCost;
       costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
+#if JVET_P0072_SIMPLIFIED_TSRC
+      cctx.increaseNumCtxBins(rdStats.iNumSbbCtxBins); // skip sub-block
+#endif
     }
     else if( sbId != sbNum - 1 || anySigCG )
     {
@@ -1355,7 +1380,9 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
         cctx.resetSigGroup();
         baseCost = costZeroSB;
         costSigSubBlock[ cctx.subSetId() ] = xGetRateSigCoeffGroup( fracBitsSigGroup, 0 );
-
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.increaseNumCtxBins(rdStats.iNumSbbCtxBins); // skip sub-block
+#endif
         for( int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++ )
         {
           scanPos = cctx.minSubPos() + scanPosInSB;
@@ -1457,6 +1484,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
 
   bool anySigCG = false;
 
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int maxCtxBins = (cctx.maxNumCoeff() * 7) >> 2;
+  cctx.setNumCtxBins(maxCtxBins);
+#endif
+
   for (int sbId = 0; sbId < sbNum; sbId++)
   {
     cctx.initSubblock(sbId);
@@ -1464,6 +1496,9 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
     int noCoeffCoded = 0;
     baseCost = 0.0;
     memset(&rdStats, 0, sizeof(coeffGroupRDStats));
+#if JVET_P0072_SIMPLIFIED_TSRC
+    rdStats.iNumSbbCtxBins = 0;
+#endif
 
     for (int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++)
     {
@@ -1519,9 +1554,16 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
       }
       int rightPixel, belowPixel;
       cctx.neighTS(rightPixel, belowPixel, scanPos, dstCoeff);
+#if JVET_P0072_SIMPLIFIED_TSRC
+      int numUsedCtxBins = 0;
+      cLevel = xGetCodedLevelTSPred(costCoeff[scanPos], costCoeff0[scanPos], costSig[scanPos], levelDouble, qBits, errorScale, coeffLevels, coeffLevelError,
+        &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, fracBitsGr1, sign, rightPixel, belowPixel, goRiceParam, lastCoeff, extendedPrecision, maxLog2TrDynamicRange, numUsedCtxBins);
+      cctx.decimateNumCtxBins(numUsedCtxBins);
+      rdStats.iNumSbbCtxBins += numUsedCtxBins;
+#else
       cLevel = xGetCodedLevelTSPred(costCoeff[scanPos], costCoeff0[scanPos], costSig[scanPos], levelDouble, qBits, errorScale, coeffLevels, coeffLevelError,
         &fracBitsSig, fracBitsPar, cctx, fracBits, fracBitsSign, fracBitsGr1, sign, rightPixel, belowPixel, goRiceParam, lastCoeff, extendedPrecision, maxLog2TrDynamicRange);
-
+#endif
       if (cLevel > 0)
       {
         noCoeffCoded++;
@@ -1551,6 +1593,9 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
       const BinFracBits fracBitsSigGroup = fracBits.getFracBitsArray(cctx.sigGroupCtxId(true));
       baseCost += xGetRateSigCoeffGroup(fracBitsSigGroup, 0) - rdStats.d64SigCost;
       costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
+#if JVET_P0072_SIMPLIFIED_TSRC
+      cctx.increaseNumCtxBins(rdStats.iNumSbbCtxBins); // skip sub-block
+#endif
     }
     else if (sbId != sbNum - 1 || anySigCG)
     {
@@ -1572,6 +1617,9 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
         cctx.resetSigGroup();
         baseCost = costZeroSB;
         costSigSubBlock[cctx.subSetId()] = xGetRateSigCoeffGroup(fracBitsSigGroup, 0);
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.increaseNumCtxBins(rdStats.iNumSbbCtxBins); // skip sub-block
+#endif
 
         for (int scanPosInSB = 0; scanPosInSB <= sbSizeM1; scanPosInSB++)
         {
@@ -1643,14 +1691,32 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
   bool               isLast,
   bool               useLimitedPrefixLength,
   const int          maxLog2TrDynamicRange
+#if JVET_P0072_SIMPLIFIED_TSRC
+  , int&               numUsedCtxBins
+#endif
 ) const
 {
   double currCostSig = 0;
   uint32_t   bestAbsLevel = 0;
+#if JVET_P0072_SIMPLIFIED_TSRC
+  numUsedCtxBins = 0;
+  int numBestCtxBin = 0;
+#endif
   if (!isLast && coeffLevels[0] < 3)
   {
+#if JVET_P0072_SIMPLIFIED_TSRC
+    if (cctx.numCtxBins() >= 4)
+      rd64CodedCostSig = xGetRateSigCoef(*fracBitsSig, 0);
+    else
+      rd64CodedCostSig = xGetICost(1 << SCALE_BITS);
+#else
     rd64CodedCostSig = xGetRateSigCoef(*fracBitsSig, 0);
+#endif
     rd64CodedCost = rd64CodedCost0 + rd64CodedCostSig;
+#if JVET_P0072_SIMPLIFIED_TSRC
+    if (cctx.numCtxBins() >= 4)
+      numUsedCtxBins++;
+#endif
     if (coeffLevels[0] == 0)
     {
       return bestAbsLevel;
@@ -1663,7 +1729,18 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
 
   if (!isLast)
   {
+#if JVET_P0072_SIMPLIFIED_TSRC
+    if (cctx.numCtxBins() >= 4)
+      currCostSig = xGetRateSigCoef(*fracBitsSig, 1);
+    else
+      currCostSig = xGetICost(1 << SCALE_BITS);
+#else
     currCostSig = xGetRateSigCoef(*fracBitsSig, 1);
+#endif
+#if JVET_P0072_SIMPLIFIED_TSRC
+    if (coeffLevels[0] >= 3 && cctx.numCtxBins() >= 4)
+      numUsedCtxBins++;
+#endif
   }
 
   for (int errorInd = 1; errorInd <= m_testedLevels; errorInd++)
@@ -1673,17 +1750,33 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
     dErr = double(levelDouble - (Intermediate_Int(absLevel) << qBits));
     coeffLevelError[errorInd] = dErr * dErr * errorScale;
     int modAbsLevel = cctx.deriveModCoeff(rightPixel, belowPixel, absLevel, m_bdpcm);
+#if JVET_P0072_SIMPLIFIED_TSRC
+    int numCtxBins = 0;
+    double dCurrCost = coeffLevelError[errorInd] + xGetICost(xGetICRateTS(modAbsLevel, fracBitsPar, cctx, fracBitsAccess, fracBitsSign, fracBitsGt1, numCtxBins, sign, ricePar, useLimitedPrefixLength, maxLog2TrDynamicRange));
+#else
     double dCurrCost = coeffLevelError[errorInd] + xGetICost(xGetICRateTS(modAbsLevel, fracBitsPar, cctx, fracBitsAccess, fracBitsSign, fracBitsGt1, sign, ricePar, useLimitedPrefixLength, maxLog2TrDynamicRange));
+#endif
+
+#if JVET_P0072_SIMPLIFIED_TSRC
+    if (cctx.numCtxBins() >= 4)
+      dCurrCost += currCostSig; // if cctx.numCtxBins < 4, xGetICRateTS return rate including sign cost. dont need to add any more
+#else
     dCurrCost += currCostSig;
+#endif
 
     if (dCurrCost < rd64CodedCost)
     {
       bestAbsLevel = absLevel;
       rd64CodedCost = dCurrCost;
       rd64CodedCostSig = currCostSig;
+#if JVET_P0072_SIMPLIFIED_TSRC
+      numBestCtxBin = numCtxBins;
+#endif
     }
   }
-
+#if JVET_P0072_SIMPLIFIED_TSRC
+  numUsedCtxBins += numBestCtxBin;
+#endif
   return bestAbsLevel;
 }
 
@@ -1693,18 +1786,143 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
                                     const FracBitsAccess&     fracBitsAccess,
                                     const BinFracBits&        fracBitsSign,
                                     const BinFracBits&        fracBitsGt1,
+#if JVET_P0072_SIMPLIFIED_TSRC
+                                    int&                      numCtxBins,
+#endif
                                     const uint8_t             sign,
                                     const uint16_t            ricePar,
                                     const bool                useLimitedPrefixLength,
                                     const int                 maxLog2TrDynamicRange  ) const
 {
+ 
+  
+#if JVET_P0072_SIMPLIFIED_TSRC
+  if (cctx.numCtxBins() < 4) // Full by-pass coding 
+  {
+    int rate = absLevel ? (1 << SCALE_BITS) : 0; // 1 bit to signal sign of non-zero 
+
+    uint32_t symbol = absLevel;
+
+    uint32_t length;
+    const int threshold = COEF_REMAIN_BIN_REDUCTION;
+    if (symbol < (threshold << ricePar))
+    {
+      length = symbol >> ricePar;
+      rate += (length + 1 + ricePar) << SCALE_BITS;
+    }
+    else if (useLimitedPrefixLength)
+    {
+      const uint32_t maximumPrefixLength = (32 - (COEF_REMAIN_BIN_REDUCTION + maxLog2TrDynamicRange));
+
+      uint32_t prefixLength = 0;
+      uint32_t suffix = (symbol >> ricePar) - COEF_REMAIN_BIN_REDUCTION;
+
+      while ((prefixLength < maximumPrefixLength) && (suffix > ((2 << prefixLength) - 2)))
+      {
+        prefixLength++;
+      }
+
+      const uint32_t suffixLength = (prefixLength == maximumPrefixLength) ? (maxLog2TrDynamicRange - ricePar) : (prefixLength + 1/*separator*/);
+
+      rate += (COEF_REMAIN_BIN_REDUCTION + prefixLength + suffixLength + ricePar) << SCALE_BITS;
+    }
+    else
+    {
+      length = ricePar;
+      symbol = symbol - (threshold << ricePar);
+      while (symbol >= (1 << length))
+      {
+        symbol -= (1 << (length++));
+      }
+      rate += (threshold + length + 1 - ricePar + length) << SCALE_BITS;
+    }
+
+    return rate;
+  }
+
+  else if (cctx.numCtxBins() >= 4 && cctx.numCtxBins() < 8) // First pass context coding and all by-pass coding ( Sign flag is not counted here)
+  {
+    int rate = fracBitsSign.intBits[sign]; // sign bits
+    if (absLevel)
+      numCtxBins++;
+
+    if (absLevel > 1)
+    {
+      rate += fracBitsGt1.intBits[1];
+      rate += fracBitsPar.intBits[(absLevel - 2) & 1];
+
+      numCtxBins += 2;
+
+      int cutoffVal = 2;
+
+      if (absLevel >= cutoffVal)
+      {
+        uint32_t symbol = (absLevel - cutoffVal) >> 1;
+        uint32_t length;
+        const int threshold = COEF_REMAIN_BIN_REDUCTION;
+        if (symbol < (threshold << ricePar))
+        {
+          length = symbol >> ricePar;
+          rate += (length + 1 + ricePar) << SCALE_BITS;
+        }
+        else if (useLimitedPrefixLength)
+        {
+          const uint32_t maximumPrefixLength = (32 - (COEF_REMAIN_BIN_REDUCTION + maxLog2TrDynamicRange));
+
+          uint32_t prefixLength = 0;
+          uint32_t suffix = (symbol >> ricePar) - COEF_REMAIN_BIN_REDUCTION;
+
+          while ((prefixLength < maximumPrefixLength) && (suffix > ((2 << prefixLength) - 2)))
+          {
+            prefixLength++;
+          }
+
+          const uint32_t suffixLength = (prefixLength == maximumPrefixLength) ? (maxLog2TrDynamicRange - ricePar) : (prefixLength + 1/*separator*/);
+
+          rate += (COEF_REMAIN_BIN_REDUCTION + prefixLength + suffixLength + ricePar) << SCALE_BITS;
+        }
+        else
+        {
+          length = ricePar;
+          symbol = symbol - (threshold << ricePar);
+          while (symbol >= (1 << length))
+          {
+            symbol -= (1 << (length++));
+          }
+          rate += (threshold + length + 1 - ricePar + length) << SCALE_BITS;
+        }
+      }
+    }
+    else if (absLevel == 1)
+    {
+      rate += fracBitsGt1.intBits[0];
+      numCtxBins++;
+    }
+    else
+    {
+      rate = 0;
+    }
+    return rate;
+
+  }
+
+#endif
+  
+  
   int rate = fracBitsSign.intBits[sign];
 
+#if JVET_P0072_SIMPLIFIED_TSRC
+  if (absLevel)
+    numCtxBins++;
+#endif
 
   if( absLevel > 1 )
   {
     rate += fracBitsGt1.intBits[1];
     rate += fracBitsPar.intBits[( absLevel - 2 ) & 1];
+#if JVET_P0072_SIMPLIFIED_TSRC
+    numCtxBins += 2;
+#endif
 
           int cutoffVal = 2;
     const int numGtBins = 4;
@@ -1716,6 +1934,9 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
         const BinFracBits &fracBitsGtX = fracBitsAccess.getFracBitsArray( ctxGtX );
         unsigned gtX = ( absLevel >= ( cutoffVal + 2 ) );
         rate += fracBitsGtX.intBits[gtX];
+#if JVET_P0072_SIMPLIFIED_TSRC
+        numCtxBins++;
+#endif
       }
       cutoffVal += 2;
     }
@@ -1761,6 +1982,9 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
   else if( absLevel == 1 )
   {
     rate += fracBitsGt1.intBits[0];
+#if JVET_P0072_SIMPLIFIED_TSRC
+    numCtxBins++;
+#endif
   }
   else
   {

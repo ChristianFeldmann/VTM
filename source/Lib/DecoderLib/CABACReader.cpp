@@ -3340,8 +3340,12 @@ void CABACReader::residual_codingTS( TransformUnit& tu, ComponentID compID )
   // init coeff coding context
   CoeffCodingContext  cctx    ( tu, compID, false, tu.cu->bdpcmMode );
   TCoeff*             coeff   = tu.getCoeffs( compID ).buf;
-
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int maxCtxBins = (cctx.maxNumCoeff() * 7) >> 2;
+  cctx.setNumCtxBins(maxCtxBins);
+#else
   cctx.setNumCtxBins( 2 * tu.lwidth()*tu.lheight() );
+#endif
 
   for( int subSetId = 0; subSetId <= ( cctx.maxNumCoeff() - 1 ) >> cctx.log2CGSize(); subSetId++ )
   {
@@ -3399,24 +3403,36 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   int       numNonZero    =  0;
   int       sigBlkPos[ 1 << MLS_CG_SIZE ];
 
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int lastScanPosPass1 = -1;
+  int lastScanPosPass2 = -1;
+  for (; nextSigPos <= minSubPos && cctx.numCtxBins() >= 4; nextSigPos++)
+#else
   for( ; nextSigPos <= minSubPos; nextSigPos++ )
+#endif
   {
     int      blkPos     = cctx.blockPos( nextSigPos );
     unsigned sigFlag    = ( !numNonZero && nextSigPos == inferSigPos );
     if( !sigFlag )
     {
       RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_map );
+#if !JVET_P0072_SIMPLIFIED_TSRC
       if( cctx.isContextCoded() )
       {
+#endif
         const unsigned sigCtxId = cctx.sigCtxIdAbsTS( nextSigPos, coeff );
         sigFlag = m_BinDecoder.decodeBin( sigCtxId );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sig_bin() bin=%d ctx=%d\n", sigFlag, sigCtxId );
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.decimateNumCtxBins(1);
+#else
       }
       else
       {
         sigFlag = m_BinDecoder.decodeBinEP( );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sig_bin() EPbin=%d\n", sigFlag );
       }
+#endif
     }
 
     if( sigFlag )
@@ -3428,15 +3444,21 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
       RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__SIGN_BIT, Size( cctx.width(), cctx.height() ), cctx.compID() );
 #endif
       int sign;
+#if !JVET_P0072_SIMPLIFIED_TSRC
       if( cctx.isContextCoded() )
       {
+#endif
         const unsigned signCtxId = cctx.signCtxIdAbsTS(nextSigPos, coeff, cctx.bdpcm());
         sign = m_BinDecoder.decodeBin(signCtxId);
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.decimateNumCtxBins(1);
+#else
       }
       else
       {
         sign = m_BinDecoder.decodeBinEP( );
       }
+#endif
 
       signPattern += ( sign << numNonZero );
 
@@ -3445,41 +3467,60 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
       RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_gt1 );
       unsigned gt1Flag;
       const unsigned gt1CtxId = cctx.lrg1CtxIdAbsTS(nextSigPos, coeff, cctx.bdpcm());
+#if !JVET_P0072_SIMPLIFIED_TSRC
       if( cctx.isContextCoded() )
       {
+#endif
         gt1Flag = m_BinDecoder.decodeBin(gt1CtxId);
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() bin=%d ctx=%d\n", gt1Flag, gt1CtxId );
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.decimateNumCtxBins(1);
+#else
       }
       else
       {
         gt1Flag = m_BinDecoder.decodeBinEP( );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() EPbin=%d\n", gt1Flag );
       }
+#endif
 
       unsigned parFlag = 0;
       if( gt1Flag )
       {
         RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_par );
+#if !JVET_P0072_SIMPLIFIED_TSRC
         if( cctx.isContextCoded() )
         {
+#endif
           parFlag = m_BinDecoder.decodeBin( cctx.parityCtxIdAbsTS() );
           DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_par_flag() bin=%d ctx=%d\n", parFlag, cctx.parityCtxIdAbsTS() );
+#if JVET_P0072_SIMPLIFIED_TSRC
+          cctx.decimateNumCtxBins(1);
+#else
         }
         else
         {
           parFlag = m_BinDecoder.decodeBinEP( );
           DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_par_flag() EPbin=%d\n", parFlag );
         }
+#endif
       }
       coeff[ blkPos ] = (sign ? -1 : 1 ) * (1 + parFlag + gt1Flag);
     }
+#if JVET_P0072_SIMPLIFIED_TSRC
+    lastScanPosPass1 = nextSigPos;
+#endif
   }
 
   int cutoffVal = 2;
   const int numGtBins = 4;
 
   //===== 2nd PASS: gt2 =====
+#if JVET_P0072_SIMPLIFIED_TSRC
+  for (int scanPos = firstSigPos; scanPos <= minSubPos && cctx.numCtxBins() >= 4; scanPos++)
+#else
   for (int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++)
+#endif
   {
     TCoeff& tcoeff = coeff[cctx.blockPos(scanPos)];
     cutoffVal = 2;
@@ -3493,11 +3534,16 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
        {
           RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_gt2);
           unsigned gt2Flag;
+#if !JVET_P0072_SIMPLIFIED_TSRC
           if (cctx.isContextCoded())
           {
+#endif
             gt2Flag = m_BinDecoder.decodeBin(cctx.greaterXCtxIdAbsTS(cutoffVal >> 1));
             tcoeff += (gt2Flag << 1);
             DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() bin=%d ctx=%d sp=%d coeff=%d\n", i, gt2Flag, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1), scanPos, tcoeff);
+#if JVET_P0072_SIMPLIFIED_TSRC
+            cctx.decimateNumCtxBins(1);
+#else
           }
           else
           {
@@ -3505,21 +3551,44 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
             tcoeff += (gt2Flag << 1);
             DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() EPbin=%d sp=%d coeff=%d\n", i, gt2Flag, scanPos, tcoeff);
           }
+#endif
        }
        cutoffVal += 2;
     }
+#if JVET_P0072_SIMPLIFIED_TSRC
+    lastScanPosPass2 = scanPos;
+#endif
   }
   //===== 3rd PASS: Go-rice codes =====
   for( int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++ )
   {
     TCoeff& tcoeff = coeff[ cctx.blockPos( scanPos ) ];
     RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_escs );
+
+#if JVET_P0072_SIMPLIFIED_TSRC
+    cutoffVal = (scanPos <= lastScanPosPass2 ? 10 : (scanPos <= lastScanPosPass1 ? 2 : 0));
+    if (tcoeff < 0)
+    {
+      tcoeff = -tcoeff;
+    }
+#endif
     if( tcoeff >= cutoffVal )
     {
       int       rice = cctx.templateAbsSumTS( scanPos, coeff );
       int       rem  = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_rem_val() bin=%d ctx=%d sp=%d\n", rem, rice, scanPos );
+#if JVET_P0072_SIMPLIFIED_TSRC
+      tcoeff += (scanPos <= lastScanPosPass1) ? (rem << 1) : rem;
+      if (tcoeff && scanPos > lastScanPosPass1)
+      {
+        int      blkPos = cctx.blockPos(scanPos);
+        int sign = m_BinDecoder.decodeBinEP();
+        signPattern += (sign << numNonZero);
+        sigBlkPos[numNonZero++] = blkPos;
+      }
+#else
       tcoeff += ( rem << 1 );
+#endif
     }
     if (!cctx.bdpcm())
     {

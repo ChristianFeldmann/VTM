@@ -233,7 +233,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   m_AUWriterIf = auWriterIf;
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
+#if JVET_N0278_FIXES
+  PPS &pps0 = *( m_ppsMap.allocatePS( m_layerId ) );
+#else
   PPS &pps0=*(m_ppsMap.allocatePS(0));
+#endif
   APS &aps0 = *( m_apsMap.allocatePS( SCALING_LIST_APS ) );
   aps0.setAPSId( 0 );
   aps0.setAPSType( SCALING_LIST_APS );
@@ -643,39 +647,44 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
         ppsID = 0;
       }
     }
-    xGetNewPicBuffer( rcListPicYuvRecOut,
-                      pcPicCurr, ppsID );
 
+#if JVET_N0278_FIXES
+    if( m_cVPS.getMaxLayers() > 1 )
     {
-      const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
-      const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-
-      if( m_rprEnabled )
-      {
-        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
-        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
-        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cr ) );
-
-        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Y ) );
-        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cb ) );
-        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cr ) );
-
-        const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
-
-        const PPS *refPPS = m_ppsMap.getPS(0);
-        Picture::rescalePicture( *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-        Picture::rescalePicture( *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-      }
-      else
-      {
-        pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
-        pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
-      }
-
-      pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
-      PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
-      ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
+      ppsID = m_layerId;
     }
+#endif
+
+    xGetNewPicBuffer( rcListPicYuvRecOut, pcPicCurr, ppsID );
+
+    const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
+    const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
+
+    if( m_rprEnabled )
+    {
+      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
+      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
+      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cr ) );
+
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Y ) );
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cb ) );
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cr ) );
+
+      const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
+
+      const PPS *refPPS = m_ppsMap.getPS( 0 );
+      Picture::rescalePicture( *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
+      Picture::rescalePicture( *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
+    }
+    else
+    {
+      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
+      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
+    }
+
+    pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
+    PPS *ptrPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
+    ptrPPS->setNumBricksInPic( (int)pcPicCurr->brickMap->bricks.size() );
 
     pcPicCurr->poc = m_iPOCLast;
 
@@ -836,23 +845,38 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   Slice::sortPicList(m_cListPic);
 
   // use an entry in the buffered list if the maximum number that need buffering has been reached:
-  if (m_cListPic.size() >= (uint32_t)(m_iGOPSize + getMaxDecPicBuffering(MAX_TLAYER-1) + 2) )
+  if( m_cListPic.size() >= (uint32_t)( m_iGOPSize + getMaxDecPicBuffering( MAX_TLAYER - 1 ) + 2 ) )
   {
-    PicList::iterator iterPic  = m_cListPic.begin();
+    PicList::iterator iterPic = m_cListPic.begin();
     int iSize = int( m_cListPic.size() );
-    for ( int i = 0; i < iSize; i++ )
+    for( int i = 0; i < iSize; i++ )
     {
       rpcPic = *iterPic;
-      if( ! rpcPic->referenced )
+#if JVET_N0278_FIXES
+      if( !rpcPic->referenced && rpcPic->layerId == m_layerId )
       {
         break;
       }
+      else
+      {
+        rpcPic = nullptr;
+      }
+#else
+      if( !rpcPic->referenced )
+      {
+        break;
+      }
+#endif
       iterPic++;
     }
 
     // If PPS ID is the same, we will assume that it has not changed since it was last used
     // and return the old object.
+#if JVET_N0278_FIXES
+    if( pps.getPPSId() != rpcPic->cs->pps->getPPSId() && rpcPic )
+#else
     if (pps.getPPSId() != rpcPic->cs->pps->getPPSId())
+#endif
     {
       // the IDs differ - free up an entry in the list, and then create a new one, as with the case where the max buffering state has not been reached.
       rpcPic->destroy();

@@ -80,6 +80,9 @@ int getLSB(int poc, int maxLSB)
   }
 }
 
+#if JVET_N0278_FIXES
+bool EncGOP::m_bSeqFirst = true;
+#endif
 
 EncGOP::EncGOP()
 {
@@ -95,7 +98,9 @@ EncGOP::EncGOP()
   m_pcSliceEncoder      = NULL;
   m_pcListPic           = NULL;
   m_HLSWriter           = NULL;
+#if !JVET_N0278_FIXES
   m_bSeqFirst           = true;
+#endif
 
   m_bRefreshPending     = 0;
   m_pocCRA              = 0;
@@ -418,7 +423,11 @@ void EncGOP::xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUn
   {
     return;
   }
+#if JVET_N0278_FIXES
+  OutputNALUnit nalu( naluType, m_pcEncLib->getLayerId(), temporalId );
+#else
   OutputNALUnit nalu(naluType, temporalId);
+#endif
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false, temporalId);
   auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
   auPos++;
@@ -435,7 +444,11 @@ void EncGOP::xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages
   {
     SEIMessages tmpMessages;
     tmpMessages.push_back(*sei);
+#if JVET_N0278_FIXES
+    OutputNALUnit nalu( naluType, m_pcEncLib->getLayerId(), temporalId );
+#else
     OutputNALUnit nalu(naluType, temporalId);
+#endif
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false, temporalId);
     auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
     auPos++;

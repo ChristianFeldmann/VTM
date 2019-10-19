@@ -61,7 +61,11 @@ class DecApp : public DecAppCfg
 private:
   // class interface
   DecLib          m_cDecLib;                     ///< decoder class
+#if JVET_N0278_FIXES
+  std::unordered_map<int, VideoIOYuv>      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
+#else
   VideoIOYuv      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
+#endif
 
   // for output control
   int             m_iPOCLastDisplay;              ///< last POC in display order

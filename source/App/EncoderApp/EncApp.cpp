@@ -678,7 +678,13 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
       EXIT ("Invalid chroma output bit-depth or image width for packed YUV output, aborting\n");
     }
 
+#if JVET_N0278_FIXES
+    std::string reconFileName = m_reconFileName;
+    reconFileName.insert( reconFileName.size() - 4, std::to_string( layerId ) );
+    m_cVideoIOYuvReconFile.open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth );  // write mode
+#else
     m_cVideoIOYuvReconFile.open(m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth);  // write mode
+#endif
   }
 
   // create the encoder
@@ -988,8 +994,7 @@ void EncApp::encode()
   \param iNumEncoded    number of encoded frames
   \param accessUnits    list of access units to be written
  */
-void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList
-                          )
+void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList )
 {
   const InputColourSpaceConversion ipCSC = (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
   std::list<PelUnitBuf*>::iterator iterPicYuvRec = recBufList.end();

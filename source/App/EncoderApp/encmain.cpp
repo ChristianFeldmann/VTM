@@ -119,20 +119,42 @@ int main(int argc, char* argv[])
 #if JVET_N0278_FIXES
   std::vector<EncApp*> pcEncApp(1);
   bool resized = false;
-  int i = 0;
+  int layerIdx = 0;
+
+  char** layerArgv = new char*[argc];
 
   do
   {
-    pcEncApp[i] = new EncApp;
+    pcEncApp[layerIdx] = new EncApp;
     // create application encoder class per layer
-    pcEncApp[i]->create();
+    pcEncApp[layerIdx]->create();
 
     // parse configuration per layer
     try
     {
-      if( !pcEncApp[i]->parseCfg( argc, argv ) )
+      int j = 0;
+      for( int i = 0; i < argc; i++ )
       {
-        pcEncApp[i]->destroy();
+        if( argv[i][0] == '-' && argv[i][1] == 'l' )
+        {
+          if( argv[i][2] == std::to_string( layerIdx ).c_str()[0] )
+          {
+            layerArgv[j] = argv[i + 1];
+            layerArgv[j + 1] = argv[i + 2];
+            j += 2;
+          }
+          i += 2;
+        }
+        else
+        {
+          layerArgv[j] = argv[i];
+          j++;
+        }
+      }
+
+      if( !pcEncApp[layerIdx]->parseCfg( j, layerArgv ) )
+      {
+        pcEncApp[layerIdx]->destroy();
         return 1;
       }
     }
@@ -142,17 +164,19 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    int layerId = i; //VS: layerIdx i should be converted to layerId after VPS is implemented
-    pcEncApp[i]->createLib( layerId );
+    int layerId = layerIdx; //VS: layerIdx should be converted to layerId after VPS is implemented
+    pcEncApp[layerIdx]->createLib( layerId );
 
     if( !resized )
     {
-      pcEncApp.resize( pcEncApp[i]->getMaxLayers() );
+      pcEncApp.resize( pcEncApp[layerIdx]->getMaxLayers() );
       resized = true;
     }
 
-    i++;
-  } while( i < pcEncApp.size() );
+    layerIdx++;
+  } while( layerIdx < pcEncApp.size() );
+
+  delete[] layerArgv;
 #else
   EncApp* pcEncApp = new EncApp;
   // create application encoder class

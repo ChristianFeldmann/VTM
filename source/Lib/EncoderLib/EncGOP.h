@@ -154,7 +154,11 @@ private:
   EncReshape*               m_pcReshaper;
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
+#if JVET_N0278_FIXES
+  static bool             m_bSeqFirst;
+#else
   bool                    m_bSeqFirst;
+#endif
 
   EncHRD*                 m_HRD;
 

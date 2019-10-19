@@ -1169,6 +1169,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC(     uiCode, "min_qp_prime_ts_minus4" );
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
+#if JVET_P0460_PLT_TS_MIN_QP
+  pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
+#endif
 
   READ_UVLC( uiCode,    "log2_max_pic_order_cnt_lsb_minus4" );   pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");

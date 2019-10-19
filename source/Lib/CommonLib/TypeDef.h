@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0460_PLT_TS_MIN_QP                          1 // JVET-P0460: Use TS min QP for Palette Escape mode
+
 #define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
 
 #define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode
+
 #define JVET_P0273_MTSIntraMaxCand                        1 // JVET-P0273: Use MTSIntraMaxCand if LFNST is used
 
 #define JVET_P0057_BDOF_PROF_HARMONIZATION                1 // JVET-P0057: harmonization of BDOF and PROF on motion refinement precision

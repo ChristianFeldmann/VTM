@@ -660,10 +660,8 @@ Note: This option has no effect on the decoding process.
 
 \Option{InputBitDepthC}%
 \Option{MSBExtendedBitDepthC}%
-\Option{InternalBitDepthC}%
 \Option{OutputBitDepthC} &
 %\ShortOption{\None} &
-\Default{0}%
 \Default{0}%
 \Default{0}%
 \Default{0} &
@@ -946,7 +944,7 @@ Enables writing of a decoding parameter set. If disabled, no parameter set will 
 \Option{MaxBitDepthConstraint} &
 %\ShortOption{\None} &
 \Default{0} &
-For --profile=main-RExt, specifies the value to use to derive the general_max_bit_depth constraint flags for RExt profiles; when 0, use $\max(InternalBitDepth, InternalBitDepthC)$
+For --profile=main-RExt, specifies the value to use to derive the general_max_bit_depth constraint flags for RExt profiles; when 0, use InternalBitDepth.
 \\
 
 \Option{MaxChromaFormatConstraint} &

@@ -56,6 +56,8 @@
 
 #define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list
 
+#define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
+
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 
 #define JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING            1 // JVET-P0154/P0094/P0172/P0413/P0518/P0281: Clip the PROF sample offset to 14-bit

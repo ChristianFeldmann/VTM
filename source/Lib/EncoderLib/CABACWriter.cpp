@@ -3052,7 +3052,11 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
     unsigned  absLevel  = abs( Coeff );
     int       sumAll = cctx.templateAbsSum(scanPos, coeff, 0);
     int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
+#if JVET_P0170_ZERO_POS_SIMPLIFICATION
+    int       pos0      = g_auiGoRicePosCoeff0(state, rice);
+#else
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
+#endif
     unsigned  rem       = ( absLevel == 0 ? pos0 : absLevel <= pos0 ? absLevel-1 : absLevel );
     m_BinEncoder.encodeRemAbsEP( rem, rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
     DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );

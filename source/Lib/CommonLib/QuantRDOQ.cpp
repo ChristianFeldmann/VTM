@@ -1842,9 +1842,6 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
     if (absLevel)
       numCtxBins++;
 
-    const uint16_t     ctxGt1 = cctx.greaterXCtxIdAbsTS(0);
-    const BinFracBits &fracBitsGt1 = fracBitsAccess.getFracBitsArray(ctxGt1);
-
     if (absLevel > 1)
     {
       rate += fracBitsGt1.intBits[1];

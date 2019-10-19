@@ -265,8 +265,13 @@ template< X86_VEXT vext >
 void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
 
 {
+#if JVET_P0653_BDOF_PROF_PARA_DEV
+  int shift4 = 4;
+  int shift5 = 1;
+#else
   int shift4 = std::max<int>(4, (bitDepth - 8));
   int shift5 = std::max<int>(1, (bitDepth - 11));
+#endif
 
   __m128i sumAbsGXTmp = _mm_setzero_si128();
   __m128i sumDIXTmp = _mm_setzero_si128();
@@ -583,7 +588,11 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
+#if JVET_P0653_BDOF_PROF_PARA_DEV
+  int shift1 = 6;
+#else
   int shift1 = std::max<int>(6, bitDepth - 6);
+#endif
   __m128i mmShift1 = _mm_cvtsi32_si128( shift1 );
   assert((widthInside & 3) == 0);
 
@@ -658,6 +667,7 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
   }
 }
 
+#if !JVET_P0653_BDOF_PROF_PARA_DEV
 template< X86_VEXT vext >
 void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
 {
@@ -804,6 +814,7 @@ void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX
     dotProductTemp6 += widthG;
   }
 }
+#endif
 
 template< X86_VEXT vext >
 void calcBlkGradient_SSE(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)

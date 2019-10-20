@@ -529,7 +529,11 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
   if (vext >= AVX512 && size >= 16)
   {
     __m512i dMvMin = _mm256_set1_epi32(-dmvLimit);
+#if JVET_P0491_BDOFPROF_MVD_RANGE
+    __m512i dMvMax = _mm256_set1_epi32( dmvLimit );
+#else
     __m512i dMvMax = _mm256_set1_epi32(dmvLimit - 1 );
+#endif
     __m512i nOffset = _mm512_set1_epi32((1 << (nShift - 1)));
     __m512i vones = _mm512_set1_epi32(1);
     __m512i vzero = _mm512_setzero_si512();
@@ -549,7 +553,11 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
   if (vext >= AVX2 && size >= 8)
   {
     __m256i dMvMin = _mm256_set1_epi32(-dmvLimit);
+#if JVET_P0491_BDOFPROF_MVD_RANGE
+    __m256i dMvMax = _mm256_set1_epi32( dmvLimit );
+#else
     __m256i dMvMax = _mm256_set1_epi32(dmvLimit - 1);
+#endif
     __m256i nOffset = _mm256_set1_epi32(1 << (nShift - 1));
     __m256i vzero = _mm256_setzero_si256();
     for (int i = 0; i < size; i += 8, v += 8)
@@ -565,7 +573,11 @@ void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLim
 #endif
   {
     __m128i dMvMin = _mm_set1_epi32(-dmvLimit);
+#if JVET_P0491_BDOFPROF_MVD_RANGE
+    __m128i dMvMax = _mm_set1_epi32( dmvLimit );
+#else
     __m128i dMvMax = _mm_set1_epi32(dmvLimit - 1);
+#endif
     __m128i nOffset = _mm_set1_epi32((1 << (nShift - 1)));
     __m128i vzero = _mm_setzero_si128();
     for (int i = 0; i < size; i += 4, v += 4)

@@ -80,10 +80,6 @@ int getLSB(int poc, int maxLSB)
   }
 }
 
-#if JVET_N0278_FIXES
-bool EncGOP::m_bSeqFirst = true;
-#endif
-
 EncGOP::EncGOP()
 {
   m_iLastIDR            = 0;
@@ -98,9 +94,7 @@ EncGOP::EncGOP()
   m_pcSliceEncoder      = NULL;
   m_pcListPic           = NULL;
   m_HLSWriter           = NULL;
-#if !JVET_N0278_FIXES
   m_bSeqFirst           = true;
-#endif
 
   m_bRefreshPending     = 0;
   m_pocCRA              = 0;
@@ -367,6 +361,9 @@ int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId )
   m_HLSWriter->setBitstream(&nalu.m_Bitstream);
   nalu.m_nuhLayerId = layerId;
   nalu.m_temporalId = aps->getTemporalId();
+#if JVET_N0278_FIXES
+  aps->setLayerId( layerId );
+#endif
   CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
   m_HLSWriter->codeAPS(aps);
   accessUnit.push_back(new NALUnitEBSP(nalu));
@@ -1849,7 +1846,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     slice->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
     if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
     {
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
       slice->setLmcsAPSId(apsId);
       APS* lmcsAPS = slice->getLmcsAPS();
       if (lmcsAPS == nullptr)
@@ -1877,7 +1878,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
 
     if (slice->getLmcsEnabledFlag())
     {
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
       slice->setLmcsAPSId(apsId);
     }
   }
@@ -2625,7 +2630,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
     {
       pcSlice->setscalingListPresentFlag( true );
+
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 7, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
       pcSlice->setscalingListAPSId( apsId );
 
       ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
@@ -2692,7 +2702,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
         pcSlice->setLmcsEnabledFlag(true);
+
+#if JVET_N0278_FIXES
+        int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
         int apsId = 0;
+#endif
+
         pcSlice->setLmcsAPSId(apsId);
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
@@ -2876,7 +2892,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       /////////////////////////////////////////////////////////////////////////////////////////////////// File writing
 
       // write various parameter sets
+#if JVET_N0278_FIXES
+      int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
+
+      // it is assumed that layerIdx equal to 0 is always present
+      bool writePS = !layerIdx && ( m_bSeqFirst || ( m_pcCfg->getReWriteParamSets() && ( pcSlice->isIRAP() ) ) );
+#else
       bool writePS = m_bSeqFirst || (m_pcCfg->getReWriteParamSets() && (pcSlice->isIRAP()));
+#endif
       if (writePS)
       {
         m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
@@ -2892,7 +2915,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_bSeqFirst = false;
       }
 
+#if JVET_N0278_FIXES
+      // it is assumed that layerIdx equal to 0 is always present
+      if( m_pcCfg->getAccessUnitDelimiter() && !layerIdx )
+#else
       if (m_pcCfg->getAccessUnitDelimiter())
+#endif
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }

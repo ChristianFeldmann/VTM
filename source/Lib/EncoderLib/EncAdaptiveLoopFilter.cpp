@@ -42,6 +42,10 @@
 #define AlfCtx(c) SubCtx( Ctx::Alf, c)
 std::vector<double> EncAdaptiveLoopFilter::m_lumaLevelToWeightPLUT;
 
+#if JVET_N0278_FIXES
+int EncAdaptiveLoopFilter::m_apsIdStart = ALF_CTB_MAX_NUM_APS;
+#endif
+
 void AlfCovariance::getClipMax(const AlfFilterShape& alfShape, int *clip_max) const
 {
   for( int k = 0; k < numCoeff-1; ++k )
@@ -402,7 +406,9 @@ int AlfCovariance::gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) c
 
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
   : m_CABACEstimator( nullptr )
+#if !JVET_N0278_FIXES
   , m_apsIdStart( ALF_CTB_MAX_NUM_APS )
+#endif
 {
   for( int i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
@@ -640,10 +646,18 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #endif
                                       )
 {
+#if JVET_N0278_FIXES
+  int layerIdx = cs.slice->getPic()->layerId; //VS: layerId should be converted to layerIdx
+
+   // IRAP AU is assumed
+  if( !layerIdx && ( cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA() ) )
+#else
   if (cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA())
+#endif
   {
     memset(cs.slice->getAlfAPSs(), 0, sizeof(*cs.slice->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
     m_apsIdStart = ALF_CTB_MAX_NUM_APS;
+
     m_apsMap->clear();
     for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
     {
@@ -2365,7 +2379,12 @@ std::vector<int> EncAdaptiveLoopFilter::getAvaiApsIdsLuma(CodingStructure& cs, i
     while (apsIdChecked < ALF_CTB_MAX_NUM_APS && !cs.slice->isIntra() && result.size() < ALF_CTB_MAX_NUM_APS && !cs.slice->getPendingRasInit() && !cs.slice->isIDRorBLA())
     {
       APS* curAPS = cs.slice->getAlfAPSs()[curApsId];
+
+#if JVET_N0278_FIXES
+      if( curAPS && curAPS->getLayerId() == cs.slice->getPic()->layerId && curAPS->getTemporalId() <= cs.slice->getTLayer() && curAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] )
+#else
       if (curAPS && curAPS->getTemporalId() <= cs.slice->getTLayer() && curAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA])
+#endif
       {
         result.push_back(curApsId);
       }
@@ -2720,6 +2739,14 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
       continue;
     }
     APS* curAPS = m_apsMap->getPS((curApsId << NUM_APS_TYPE_LEN) + ALF_APS);
+
+#if JVET_N0278_FIXES
+    if( curAPS && curAPS->getLayerId() != cs.slice->getPic()->layerId )
+    {
+      continue;
+    }
+#endif
+
     double curCost = m_lambda[CHANNEL_TYPE_CHROMA] * 3;
     if (curApsId == newApsIdChroma)
     {

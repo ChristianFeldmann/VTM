@@ -246,7 +246,11 @@ private:
   int**                  m_diffFilterCoeff;
   short                  m_filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES];
   unsigned               m_bitsNewFilter[MAX_NUM_CHANNEL_TYPE];
+#if JVET_N0278_FIXES
+  static int             m_apsIdStart;
+#else
   int                    m_apsIdStart;
+#endif
   double                 *m_ctbDistortionFixedFilter;
   double                 *m_ctbDistortionUnfilter[MAX_NUM_COMPONENT];
   std::vector<short>     m_alfCtbFilterSetIndexTmp;

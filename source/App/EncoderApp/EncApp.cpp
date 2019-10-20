@@ -754,6 +754,8 @@ void EncApp::createLib( const int layerId )
 
 void EncApp::destroyLib()
 {
+  printf( "\nLayerId %2d", m_cEncLib.getLayerId() );
+
   m_cEncLib.printSummary( m_isField );
 
   // delete used buffers in encoder class

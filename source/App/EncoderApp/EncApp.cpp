@@ -681,7 +681,10 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
 
 #if JVET_N0278_FIXES
     std::string reconFileName = m_reconFileName;
-    reconFileName.insert( reconFileName.size() - 4, std::to_string( layerId ) );
+    if( m_reconFileName.compare( "/dev/null" ) )
+    {
+      reconFileName.insert( reconFileName.size() - 4, std::to_string( layerId ) );
+    }
     m_cVideoIOYuvReconFile.open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth );  // write mode
 #else
     m_cVideoIOYuvReconFile.open(m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth);  // write mode

@@ -246,7 +246,10 @@ uint32_t DecApp::decode()
 
 #if JVET_N0278_FIXES
         std::string reconFileName = m_reconFileName;
-        reconFileName.insert( reconFileName.size() - 4, std::to_string( nalu.m_nuhLayerId ) );
+        if( m_reconFileName.compare( "/dev/null" ) )
+        {
+          reconFileName.insert( reconFileName.size() - 4, std::to_string( nalu.m_nuhLayerId ) );
+        }
         m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
 #else
         m_cVideoIOYuvReconFile.open( m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode

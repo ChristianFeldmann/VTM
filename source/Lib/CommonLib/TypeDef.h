@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP             1 // JVET-P0445: encoder speed up for sub-block based merge candidate search
+
 #define JVET_P0057_BDOF_PROF_HARMONIZATION                1 // JVET-P0057: harmonization of BDOF and PROF on motion refinement precis
 
 #define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list

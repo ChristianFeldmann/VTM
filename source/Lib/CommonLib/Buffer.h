@@ -686,9 +686,17 @@ struct UnitBuf
   const AreaBuf<T>& Cr() const { return bufs[2]; }
 
   void fill                 ( const T &val );
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  void copyFrom             ( const UnitBuf<const T> &other, const bool lumaOnly = false, const bool chromaOnly = false );
+#else
   void copyFrom             ( const UnitBuf<const T> &other );
+#endif
   void reconstruct          ( const UnitBuf<const T> &pred, const UnitBuf<const T> &resi, const ClpRngs& clpRngs );
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs, const bool lumaOnly = false, const bool chromaOnly = false );
+#else
   void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs );
+#endif
   void subtract             ( const UnitBuf<const T> &other );
   void addWeightedAvg       ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx = GBI_DEFAULT, const bool chromaOnly = false, const bool lumaOnly = false);
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
@@ -718,11 +726,22 @@ void UnitBuf<T>::fill( const T &val )
 }
 
 template<typename T>
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+void UnitBuf<T>::copyFrom(const UnitBuf<const T> &other, const bool lumaOnly, const bool chromaOnly )
+#else
 void UnitBuf<T>::copyFrom( const UnitBuf<const T> &other )
+#endif
 {
   CHECK( chromaFormat != other.chromaFormat, "Incompatible formats" );
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  CHECK( lumaOnly && chromaOnly, "Not allowed to have both lumaOnly and chromaOnly selected" );
+  const size_t compStart = chromaOnly ? 1 : 0;
+  const size_t compEnd   = lumaOnly ? 1 : (unsigned) bufs.size();
+  for( size_t i = compStart; i < compEnd; i++ )
+#else
   for( unsigned i = 0; i < bufs.size(); i++ )
+#endif
   {
     bufs[i].copyFrom( other.bufs[i] );
   }
@@ -742,11 +761,22 @@ void UnitBuf<T>::subtract( const UnitBuf<const T> &other )
 }
 
 template<typename T>
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+void UnitBuf<T>::copyClip(const UnitBuf<const T> &src, const ClpRngs &clpRngs, const bool lumaOnly, const bool chromaOnly )
+#else
 void UnitBuf<T>::copyClip(const UnitBuf<const T> &src, const ClpRngs& clpRngs)
+#endif
 {
   CHECK( chromaFormat != src.chromaFormat, "Incompatible formats" );
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  CHECK( lumaOnly && chromaOnly, "Not allowed to have both lumaOnly and chromaOnly selected" );
+  const size_t compStart = chromaOnly ? 1 : 0;
+  const size_t compEnd   = lumaOnly ? 1 : bufs.size();
+  for( size_t i = compStart; i < compEnd; i++ )
+#else
   for( unsigned i = 0; i < bufs.size(); i++ )
+#endif
   {
     bufs[i].copyClip( src.bufs[i], clpRngs.comp[i] );
   }

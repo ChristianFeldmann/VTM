@@ -103,6 +103,7 @@ private:
 #if EXTENSION_360_VIDEO
   TExt360AppEncTop*      m_ext360;
 #endif
+  bool m_flush;
 #endif
 
 public:
@@ -111,8 +112,9 @@ public:
 
 #if JVET_N0278_FIXES
   int   getMaxLayers() const { return m_maxLayers; }
-  void  createLib( int layerId );              ///< main encoding function
-  void  destroyLib();                           ///< main encoding function
+  void  createLib( int layerId );
+  void  destroyLib();
+  bool  encodePrep( bool& eos );
   bool  encode();                               ///< main encoding function
 #else
   void  encode();                               ///< main encoding function

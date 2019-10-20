@@ -1894,6 +1894,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                           std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                           bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                         , bool isEncodeLtRef
+#if JVET_N0278_FIXES
+                        , const int picIdInGOP
+#endif
 )
 {
   // TODO: Split this function up.
@@ -1905,9 +1908,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   AccessUnit::iterator  itLocationToPushSliceHeaderNALU; // used to store location where NALU containing slice header is to be inserted
   Picture* scaledRefPic[MAX_NUM_REF] = {};
 
-  xInitGOP(iPOCLast, iNumPicRcvd, isField
-         , isEncodeLtRef
-  );
+  xInitGOP( iPOCLast, iNumPicRcvd, isField, isEncodeLtRef );
 
   m_iNumPicCoded = 0;
   SEIMessages leadingSeiMessages;
@@ -1922,6 +1923,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     effFieldIRAPMap.initialize(isField, m_iGopSize, iPOCLast, iNumPicRcvd, m_iLastIDR, this, m_pcCfg);
   }
 
+#if JVET_N0278_FIXES
+  for( int iGOPid = picIdInGOP; iGOPid <= picIdInGOP; iGOPid++ )
+  {
+    // reset flag indicating whether pictures have been encoded
+    m_pcCfg->setEncodedFlag( iGOPid, false );
+#else
   // reset flag indicating whether pictures have been encoded
   for ( int iGOPid=0; iGOPid < m_iGopSize; iGOPid++ )
   {
@@ -1930,6 +1937,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
   for ( int iGOPid=0; iGOPid < m_iGopSize; iGOPid++ )
   {
+#endif
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
     {
       iGOPid=effFieldIRAPMap.adjustGOPid(iGOPid);
@@ -2883,6 +2891,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         m_bSeqFirst = false;
       }
+
       if (m_pcCfg->getAccessUnitDelimiter())
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
@@ -3181,8 +3190,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
   delete pcBitstreamRedirect;
 
+#if JVET_N0278_FIXES
+  CHECK( m_iNumPicCoded > 1, "Unspecified error" );
+#else
   CHECK(!( (m_iNumPicCoded == iNumPicRcvd) ), "Unspecified error");
-
+#endif
 }
 
 void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths )

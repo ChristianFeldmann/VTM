@@ -214,26 +214,58 @@ int main(int argc, char* argv[])
 
   while( !eos )
   {
-    for( auto & encApp : pcEncApp )
+    // read GOP
+    bool keepLoop = true;
+    while( keepLoop )
     {
+      for( auto & encApp : pcEncApp )
+      {
 #ifndef _DEBUG
-      try
-      {
+        try
+        {
 #endif
-        eos = encApp->encode();
+          keepLoop = encApp->encodePrep( eos );
 #ifndef _DEBUG
-      }
-      catch( Exception &e )
-      {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-      }
-      catch( const std::bad_alloc &e )
-      {
-        std::cout << "Memory allocation failed: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-      }
+        }
+        catch( Exception &e )
+        {
+          std::cerr << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+        catch( const std::bad_alloc &e )
+        {
+          std::cout << "Memory allocation failed: " << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
 #endif
+      }
+    }
+
+    // encode GOP
+    keepLoop = true;
+    while( keepLoop )
+    {
+      for( auto & encApp : pcEncApp )
+      {
+#ifndef _DEBUG
+        try
+        {
+#endif
+          keepLoop = encApp->encode();
+#ifndef _DEBUG
+        }
+        catch( Exception &e )
+        {
+          std::cerr << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+        catch( const std::bad_alloc &e )
+        {
+          std::cout << "Memory allocation failed: " << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+#endif
+      }
     }
   }
 #else

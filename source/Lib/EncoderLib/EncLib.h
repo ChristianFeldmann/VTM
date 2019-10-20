@@ -160,6 +160,10 @@ private:
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
+#if JVET_N0278_FIXES
+  bool m_isGopEncoding;
+  int  m_picIdInGOP;
+#endif
 
 public:
   SPS*                      getSPS( int spsId ) { return m_spsMap.getPS( spsId ); };
@@ -272,6 +276,27 @@ public:
   // -------------------------------------------------------------------------------------------------------------------
 
   /// encode several number of pictures until end-of-sequence
+#if JVET_N0278_FIXES
+  bool encodePrep( bool bEos,
+               PelStorage* pcPicYuvOrg,
+               PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded );
+
+  bool encode( const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded );
+
+  bool encodePrep( bool bEos,
+               PelStorage* pcPicYuvOrg,
+               PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded, bool isTff );
+
+  bool encode( const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded, bool isTff );
+#else
   void encode( bool bEos,
                PelStorage* pcPicYuvOrg,
                PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
@@ -284,6 +309,7 @@ public:
                PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
                std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                int& iNumEncoded, bool isTff );
+#endif
 
 
   void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }

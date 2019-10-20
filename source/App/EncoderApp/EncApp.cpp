@@ -70,7 +70,8 @@ EncApp::EncApp()
   m_metricTime = std::chrono::milliseconds(0);
 #endif
 #if JVET_N0278_FIXES
-  m_numEncoded = 0;  
+  m_numEncoded = 0;
+  m_flush = false;
 #endif
 }
 
@@ -783,10 +784,9 @@ void EncApp::destroyLib()
   printRateSummary();
 }
 
-bool EncApp::encode()
+bool EncApp::encodePrep( bool& eos )
 {
   // main encoder loop
-  bool  bEos = false;
   const InputColourSpaceConversion ipCSC = m_inputColourSpaceConvert;
   const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
 
@@ -807,33 +807,50 @@ bool EncApp::encode()
   // increase number of received frames
   m_iFrameRcvd++;
 
-  bEos = ( m_isField && ( m_iFrameRcvd == ( m_framesToBeEncoded >> 1 ) ) ) || ( !m_isField && ( m_iFrameRcvd == m_framesToBeEncoded ) );
+  eos = ( m_isField && ( m_iFrameRcvd == ( m_framesToBeEncoded >> 1 ) ) ) || ( !m_isField && ( m_iFrameRcvd == m_framesToBeEncoded ) );
 
-  bool flush = 0;
   // if end of file (which is only detected on a read failure) flush the encoder of any queued pictures
   if( m_cVideoIOYuvInputFile.isEof() )
   {
-    flush = true;
-    bEos = true;
+    m_flush = true;
+    eos = true;
     m_iFrameRcvd--;
     m_cEncLib.setFramesToBeEncoded( m_iFrameRcvd );
   }
 
+  bool keepDoing = false;
+
   // call encoding function for one frame
   if( m_isField )
   {
-    m_cEncLib.encode( bEos, flush ? 0 : m_orgPic, flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded, m_isTopFieldFirst );
-#if JVET_O0756_CALCULATE_HDRMETRICS
-    m_metricTime = m_cEncLib.getMetricTime();
-#endif
+    keepDoing = m_cEncLib.encodePrep( eos, m_flush ? 0 : m_orgPic, m_flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded, m_isTopFieldFirst );
   }
   else
   {
-    m_cEncLib.encode( bEos, flush ? 0 : m_orgPic, flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded );
+    keepDoing = m_cEncLib.encodePrep( eos, m_flush ? 0 : m_orgPic, m_flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded );
+  }
+
+  return keepDoing;
+}
+
+bool EncApp::encode()
+{
+  const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
+  bool keepDoing = false;
+
+  // call encoding function for one frame
+  if( m_isField )
+  {
+    keepDoing = m_cEncLib.encode( snrCSC, m_recBufList, m_numEncoded, m_isTopFieldFirst );
+  }
+  else
+  {
+    keepDoing = m_cEncLib.encode( snrCSC, m_recBufList, m_numEncoded );
+  }
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
     m_metricTime = m_cEncLib.getMetricTime();
 #endif
-  }
 
   // write bistream to file if necessary
   if( m_numEncoded > 0 )
@@ -850,7 +867,7 @@ bool EncApp::encode()
 #endif
   }
 
-  return bEos;
+  return keepDoing;
 }
 #else
 /**

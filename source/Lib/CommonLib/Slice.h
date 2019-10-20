@@ -2115,7 +2115,7 @@ public:
 
     if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
     {
-      CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exists" );
+      CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exist" );
       APS* existedAPS = m_paramsetMap[apsId].parameterSet;
 
       if( aps->getAPSType() == LMCS_APS )

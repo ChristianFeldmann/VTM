@@ -58,6 +58,8 @@
 
 #define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
 
+#define JVET_P0092_SMVD_SPEED_UP                          1 // JVET-P0092: SMVD speed-up
+
 #define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode
 
 #define JVET_P0273_MTSIntraMaxCand                        1 // JVET-P0273: Use MTSIntraMaxCand if LFNST is used

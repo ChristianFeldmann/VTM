@@ -76,9 +76,7 @@ struct GOPEntry
   int m_numRefPics1;
   int m_deltaRefPics1[MAX_NUM_REF_PICS];
   bool m_isEncoded;
-#if JVET_N0100_PROPOSAL1
   bool m_ltrp_in_slice_header_flag;
-#endif
   GOPEntry()
   : m_POC(-1)
   , m_QPOffset(0)
@@ -101,9 +99,7 @@ struct GOPEntry
     , m_numRefPicsActive1(0)
     , m_numRefPics1(0)
     , m_isEncoded(false)
-#if JVET_N0100_PROPOSAL1
     , m_ltrp_in_slice_header_flag(false)
-#endif
   {
     ::memset(m_deltaRefPics0, 0, sizeof(m_deltaRefPics0));
     ::memset(m_deltaRefPics1, 0, sizeof(m_deltaRefPics1));
@@ -120,9 +116,7 @@ struct RPLEntry
   int m_numRefPics;
   int m_deltaRefPics[MAX_NUM_REF_PICS];
   bool m_isEncoded;
-#if JVET_N0100_PROPOSAL1
   bool m_ltrp_in_slice_header_flag;
-#endif
   RPLEntry()
     : m_POC(-1)
     , m_temporalId(0)
@@ -131,9 +125,7 @@ struct RPLEntry
     , m_sliceType('P')
     , m_numRefPics(0)
     , m_isEncoded(false)
-#if JVET_N0100_PROPOSAL1
     , m_ltrp_in_slice_header_flag(false)
-#endif
   {
     ::memset(m_deltaRefPics, 0, sizeof(m_deltaRefPics));
   }
@@ -200,9 +192,6 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
-#if !JVET_O0525_REMOVE_PCM
-  bool      m_bNoPcmConstraintFlag;
-#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -220,12 +209,8 @@ protected:
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_noBDPCMConstraintFlag;
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool      m_noJointCbCrConstraintFlag;
-#endif
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
@@ -234,12 +219,8 @@ protected:
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
-#if JVET_O0044_MULTI_SUB_PROFILE
   std::vector<uint32_t>      m_subProfile;
   uint8_t       m_numSubProfile;
-#else
-  uint32_t      m_subProfile;
-#endif
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
   bool m_nonPackedConstraintFlag;
@@ -263,14 +244,10 @@ protected:
   GOPEntry  m_GOPList[MAX_GOP];
   int       m_maxDecPicBuffering[MAX_TLAYER];
   int       m_numReorderPics[MAX_TLAYER];
-#if JVET_N0494_DRAP
   int       m_drapPeriod;
-#endif
 
   int       m_iQP;                              //  if (AdaptiveQP == OFF)
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   ChromaQpMappingTableParams m_chromaQpMappingTableParams;
-#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                    ///< QP offset for intra slice (integer)
   int       m_lambdaFromQPEnable;               ///< enable lambda derivation from QP
@@ -299,8 +276,13 @@ protected:
   bool      m_cclmCollocatedChromaFlag;
   int       m_IntraMTS;
   int       m_InterMTS;
+#if JVET_P0273_MTSIntraMaxCand
+  int       m_MTSIntraMaxCand;
+  int       m_MTSInterMaxCand;
+#else
   int       m_IntraMTSMaxCand;
   int       m_InterMTSMaxCand;
+#endif
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
   bool      m_LFNST;
@@ -308,9 +290,7 @@ protected:
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
-#if JVET_O0070_PROF
   bool      m_PROF;
-#endif
   bool      m_BIO;
 
   bool      m_SMVD;
@@ -333,15 +313,8 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if !JVET_O1136_TS_BDPCM_SIGNALLING
-  bool      m_RdpcmMode;
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   unsigned  m_PLTMode;
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool      m_JointCbCrMode;
-#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -372,17 +345,11 @@ protected:
   bool      m_contentBasedFastQtbt;
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   unsigned  m_maxNumAlfAlternativesChroma;
-#endif
   bool      m_MIP;
   bool      m_useFastMIP;
-#if JVET_O0050_LOCAL_DUAL_TREE
   int       m_fastLocalDualTreeMode;
-#endif
-#if MAX_TB_SIZE_SIGNALLING
   uint32_t  m_log2MaxTbSize;
-#endif
 
   //====== Loop/Deblock Filter ========
   bool      m_bLoopFilterDisable;
@@ -463,9 +430,7 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      m_useBDPCM;
-#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;
   bool      m_transformSkipRotationEnabledFlag;
   bool      m_transformSkipContextEnabledFlag;
@@ -485,12 +450,6 @@ protected:
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
-#if !JVET_O0525_REMOVE_PCM
-  bool      m_usePCM;
-  int       m_PCMBitDepth[MAX_NUM_CHANNEL_TYPE];
-  uint32_t      m_pcmLog2MaxSize;
-  uint32_t      m_uiPCMLog2MinSize;
-#endif
   //====== Slice ========
   SliceConstraint m_sliceMode;
   int       m_sliceArgument;
@@ -499,19 +458,13 @@ protected:
   int       m_sliceSegmentArgument;
   bool      m_bLFCrossSliceBoundaryFlag;
 
-#if !JVET_O0525_REMOVE_PCM
-  bool      m_bPCMInputBitDepthFlag;
-  bool      m_bPCMFilterDisableFlag;
-#endif
   bool      m_intraSmoothingDisabledFlag;
   bool      m_loopFilterAcrossBricksEnabledFlag;
   bool      m_tileUniformSpacingFlag;
   int       m_iNumColumnsMinus1;
   int       m_iNumRowsMinus1;
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
   int       m_uniformTileColsWidthMinus1;
   int       m_uniformTileRowHeightMinus1;
-#endif
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
 
@@ -530,12 +483,8 @@ protected:
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
-#if JVET_O0041_FRAME_FIELD_SEI
   bool      m_frameFieldInfoSEIEnabled;
-#endif
-#if JVET_N0494_DRAP
   bool      m_dependentRAPIndicationSEIEnabled;
-#endif
 #if HEVC_SEI
   bool      m_recoveryPointSEIEnabled;
   bool      m_toneMappingInfoSEIEnabled;
@@ -579,9 +528,7 @@ protected:
   bool      m_gradualDecodingRefreshInfoEnabled;
   int       m_noDisplaySEITLayer;
 #endif
-#if JVET_N0867_TEMP_SCAL_HRD
   bool      m_bpDeltasGOPStructure;
-#endif
   bool      m_decodingUnitInfoSEIEnabled;
 #if HEVC_SEI
   bool      m_SOPDescriptionSEIEnabled;
@@ -622,13 +569,10 @@ protected:
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
-#endif
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
   int       m_TMVPModeId;
-#if JVET_O0238_PPS_OR_SLICE
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
   int       m_PPSRefPicListSPSIdc0;
@@ -639,7 +583,6 @@ protected:
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#endif
   bool      m_DepQuantEnabledFlag;
   bool      m_SignDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;
@@ -666,9 +609,7 @@ protected:
 #if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
 #endif
-#if FIX_HRD_O0189
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
-#endif
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
 #if HEVC_SEI
@@ -736,23 +677,17 @@ protected:
   int                          m_cropOffsetBottom;
   bool                         m_calculateHdrMetrics;
 #endif
-#if JVET_O1164_RPR
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
   bool        m_rprEnabled;
   int         m_switchPocPeriod;
   int         m_upscaledOutput;
-#endif
 
 public:
   EncCfg()
   : m_tileColumnWidth()
   , m_tileRowHeight()
   {
-#if !JVET_O0525_REMOVE_PCM
-    m_PCMBitDepth[CHANNEL_TYPE_LUMA]=8;
-    m_PCMBitDepth[CHANNEL_TYPE_CHROMA]=8;
-#endif
   }
 
   virtual ~EncCfg()
@@ -760,12 +695,8 @@ public:
 
   void setProfile(Profile::Name profile) { m_profile = profile; }
   void setLevel(Level::Tier tier, Level::Name level) { m_levelTier = tier; m_level = level; }
-#if JVET_O0044_MULTI_SUB_PROFILE
   void setNumSubProfile( uint8_t numSubProfile) { m_numSubProfile = numSubProfile; m_subProfile.resize(m_numSubProfile); }
   void setSubProfile( int i, uint32_t subProfile) { m_subProfile[i] = subProfile; }
-#else
-  void setSubProfile(uint32_t subProfile) { m_subProfile = subProfile; }
-#endif
   bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
   void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }
   uint32_t  getMaxBitDepthConstraintIdc() const { return m_maxBitDepthConstraintIdc; }
@@ -782,10 +713,6 @@ public:
   void      setNoSaoConstraintFlag(bool bVal) { m_bNoSaoConstraintFlag = bVal; }
   bool      getNoAlfConstraintFlag() const { return m_bNoAlfConstraintFlag; }
   void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
-#if !JVET_O0525_REMOVE_PCM
-  bool      getNoPcmConstraintFlag() const { return m_bNoPcmConstraintFlag; }
-  void      setNoPcmConstraintFlag(bool bVal) { m_bNoPcmConstraintFlag = bVal; }
-#endif
   bool      getNoRefWraparoundConstraintFlag() const { return m_bNoRefWraparoundConstraintFlag; }
   void      setNoRefWraparoundConstraintFlag(bool bVal) { m_bNoRefWraparoundConstraintFlag = bVal; }
   bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
@@ -820,14 +747,10 @@ public:
   void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }
   bool      getNoTransformSkipConstraintFlag() const { return m_noTransformSkipConstraintFlag; }
   void      setNoTransformSkipConstraintFlag(bool bVal) { m_noTransformSkipConstraintFlag = bVal; }
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   bool      getNoBDPCMConstraintFlag() const { return m_noBDPCMConstraintFlag; }
   void      setNoBDPCMConstraintFlag(bool bVal) { m_noBDPCMConstraintFlag = bVal; }
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool      getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
   void      setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
-#endif
   bool      getNoQpDeltaConstraintFlag() const { return m_bNoQpDeltaConstraintFlag; }
   void      setNoQpDeltaConstraintFlag(bool bVal) { m_bNoQpDeltaConstraintFlag = bVal; }
   bool      getNoDepQuantConstraintFlag() const { return m_bNoDepQuantConstraintFlag; }
@@ -893,18 +816,14 @@ public:
   void      setEncodedFlag(uint32_t  i, bool value) { m_RPLList0[i].m_isEncoded = value; m_RPLList1[i].m_isEncoded = value; }
   void      setMaxDecPicBuffering           ( uint32_t u, uint32_t tlayer ) { m_maxDecPicBuffering[tlayer] = u;    }
   void      setNumReorderPics               ( int  i, uint32_t tlayer ) { m_numReorderPics[tlayer] = i;    }
-#if JVET_N0494_DRAP
   void      setDrapPeriod                   (int drapPeriod) { m_drapPeriod = drapPeriod; }
-#endif
 
   void      setBaseQP                       ( int   i )      { m_iQP = i; }
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   void      setIntraQPOffset                ( int   i )         { m_intraQPOffset = i; }
   void      setLambdaFromQPEnable           ( bool  b )         { m_lambdaFromQPEnable = b; }
 #endif
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
   void      setChromaQpMappingTableParams   (const ChromaQpMappingTableParams &params) { m_chromaQpMappingTableParams = params; }
-#endif
 
   void      setPad                          ( int*  iPad                   )      { for ( int i = 0; i < 2; i++ ) m_aiPad[i] = iPad[i]; }
 
@@ -944,17 +863,22 @@ public:
   bool      getAffine                       ()         const { return m_Affine; }
   void      setAffineType( bool b )                          { m_AffineType = b; }
   bool      getAffineType()                            const { return m_AffineType; }
-#if JVET_O0070_PROF
   void      setPROF                         (bool b)         { m_PROF = b; }
   bool      getPROF                         ()         const { return m_PROF; }
-#endif
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
 
+#if JVET_P0273_MTSIntraMaxCand
+  void      setMTSIntraMaxCand              ( unsigned u )   { m_MTSIntraMaxCand = u; }
+  unsigned  getMTSIntraMaxCand              ()         const { return m_MTSIntraMaxCand; }
+  void      setMTSInterMaxCand              ( unsigned u )   { m_MTSInterMaxCand = u; }
+  unsigned  getMTSInterMaxCand              ()         const { return m_MTSInterMaxCand; }
+#else
   void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
   unsigned  getIntraMTSMaxCand              ()         const { return m_IntraMTSMaxCand; }
   void      setInterMTSMaxCand              ( unsigned u )   { m_InterMTSMaxCand = u; }
   unsigned  getInterMTSMaxCand              ()         const { return m_InterMTSMaxCand; }
+#endif
   void      setIntraMTS                     ( bool b )       { m_IntraMTS = b; }
   bool      getIntraMTS                     ()         const { return m_IntraMTS; }
   void      setInterMTS                     ( bool b )       { m_InterMTS = b; }
@@ -1003,18 +927,10 @@ public:
   bool      getMMVD                         ()         const { return m_MMVD; }
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
- #if !JVET_O1136_TS_BDPCM_SIGNALLING
-  void      setRDPCM                     ( bool b )       { m_RdpcmMode = b; }
-  bool      getRDPCM                     ()         const { return m_RdpcmMode; }
- #endif
-#if JVET_O0119_BASE_PALETTE_444
   void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
   unsigned  getPLTMode                   ()         const { return m_PLTMode; }
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   void      setJointCbCr                    ( bool b )       { m_JointCbCrMode = b; }
   bool      getJointCbCr                    ()         const { return m_JointCbCrMode; }
-#endif
   void      setIBCMode                      (unsigned n)     { m_IBCMode = n; }
   unsigned  getIBCMode                      ()         const { return m_IBCMode; }
   void      setIBCLocalSearchRangeX         (unsigned n)     { m_IBCLocalSearchRangeX = n; }
@@ -1083,22 +999,16 @@ public:
   bool      getUseNonLinearAlfLuma          () const         { return m_useNonLinearAlfLuma; }
   void      setUseNonLinearAlfChroma        ( bool b )       { m_useNonLinearAlfChroma = b; }
   bool      getUseNonLinearAlfChroma        () const         { return m_useNonLinearAlfChroma; }
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   void      setMaxNumAlfAlternativesChroma  ( uint32_t u )   { m_maxNumAlfAlternativesChroma = u; }
   uint32_t  getMaxNumAlfAlternativesChroma  () const         { return m_maxNumAlfAlternativesChroma; }
-#endif
   void      setUseMIP                       ( bool b )       { m_MIP = b; }
   bool      getUseMIP                       () const         { return m_MIP; }
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }
   bool      getUseFastMIP                   () const         { return m_useFastMIP; }
-#if JVET_O0050_LOCAL_DUAL_TREE
   void     setFastLocalDualTreeMode         ( int i )        { m_fastLocalDualTreeMode = i; }
   int      getFastLocalDualTreeMode         () const         { return m_fastLocalDualTreeMode; }
-#endif
 
-#if MAX_TB_SIZE_SIGNALLING
   void      setLog2MaxTbSize                ( uint32_t  u )   { m_log2MaxTbSize = u; }
-#endif
 
   //====== Loop/Deblock Filter ========
   void      setLoopFilterDisable            ( bool  b )      { m_bLoopFilterDisable       = b; }
@@ -1193,9 +1103,7 @@ public:
   int       getGOPSize                      () const     { return  m_iGOPSize; }
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }
   int       getNumReorderPics               (uint32_t tlayer) { return m_numReorderPics[tlayer]; }
-#if JVET_N0494_DRAP
   int       getDrapPeriod                   ()     { return m_drapPeriod; }
-#endif
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       getIntraQPOffset                () const    { return  m_intraQPOffset; }
   int       getLambdaFromQPEnable           () const    { return  m_lambdaFromQPEnable; }
@@ -1243,9 +1151,7 @@ public:
   //==== Tool list ========
   void      setBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_bitDepth[chType] = internalBitDepthForChannel; }
   void      setInputBitDepth( const ChannelType chType, int internalBitDepthForChannel ) { m_inputBitDepth[chType] = internalBitDepthForChannel; }
-#if JVET_O1164_PS
   int*      getInputBitDepth()                              { return m_inputBitDepth; }
-#endif
   void      setUseASR                       ( bool  b )     { m_bUseASR     = b; }
   void      setUseHADME                     ( bool  b )     { m_bUseHADME   = b; }
   void      setUseRDOQ                      ( bool  b )     { m_useRDOQ    = b; }
@@ -1264,21 +1170,11 @@ public:
   void      setFastMEForGenBLowDelayEnabled ( bool  b )     { m_bFastMEForGenBLowDelayEnabled = b; }
   void      setUseBLambdaForNonKeyLowDelayPictures ( bool b ) { m_bUseBLambdaForNonKeyLowDelayPictures = b; }
 
-#if !JVET_O0525_REMOVE_PCM
-  void      setPCMInputBitDepthFlag         ( bool  b )     { m_bPCMInputBitDepthFlag = b; }
-  void      setPCMFilterDisableFlag         ( bool  b )     {  m_bPCMFilterDisableFlag = b; }
-  void      setUsePCM                       ( bool  b )     {  m_usePCM = b;               }
-  void      setPCMBitDepth( const ChannelType chType, int pcmBitDepthForChannel ) { m_PCMBitDepth[chType] = pcmBitDepthForChannel; }
-  void      setPCMLog2MaxSize               ( uint32_t u )      { m_pcmLog2MaxSize = u;      }
-  void      setPCMLog2MinSize               ( uint32_t u )     { m_uiPCMLog2MinSize = u;      }
-#endif
   void      setdQPs                         ( int*  p )     { m_aidQP       = p; }
   void      setDeltaQpRD                    ( uint32_t  u )     {m_uiDeltaQpRD  = u; }
   void      setFastDeltaQp                  ( bool  b )     {m_bFastDeltaQP = b; }
   int       getBitDepth                     (const ChannelType chType) const { return m_bitDepth[chType]; }
-#if JVET_O1164_PS
   int*      getBitDepth                     ()      { return m_bitDepth; }
-#endif
   bool      getUseASR                       ()      { return m_bUseASR;     }
   bool      getUseHADME                     ()      { return m_bUseHADME;   }
   bool      getUseRDOQ                      ()      { return m_useRDOQ;    }
@@ -1296,13 +1192,6 @@ public:
   bool      getFastUDIUseMPMEnabled         ()      { return m_bFastUDIUseMPMEnabled; }
   bool      getFastMEForGenBLowDelayEnabled ()      { return m_bFastMEForGenBLowDelayEnabled; }
   bool      getUseBLambdaForNonKeyLowDelayPictures () { return m_bUseBLambdaForNonKeyLowDelayPictures; }
-#if !JVET_O0525_REMOVE_PCM
-  bool      getPCMInputBitDepthFlag         ()      { return m_bPCMInputBitDepthFlag;   }
-  bool      getPCMFilterDisableFlag         ()      { return m_bPCMFilterDisableFlag;   }
-  bool      getUsePCM                       ()      { return m_usePCM;                 }
-  uint32_t      getPCMLog2MaxSize               ()      { return m_pcmLog2MaxSize;  }
-  uint32_t      getPCMLog2MinSize               ()      { return  m_uiPCMLog2MinSize;  }
-#endif
 
   bool      getCrossComponentPredictionEnabledFlag     ()                const { return m_crossComponentPredictionEnabledFlag;   }
   void      setCrossComponentPredictionEnabledFlag     (const bool value)      { m_crossComponentPredictionEnabledFlag = value;  }
@@ -1316,14 +1205,10 @@ public:
   void setTransformSkipRotationEnabledFlag             (const bool value)  { m_transformSkipRotationEnabledFlag = value; }
   bool getTransformSkipContextEnabledFlag              ()            const { return m_transformSkipContextEnabledFlag;  }
   void setTransformSkipContextEnabledFlag              (const bool value)  { m_transformSkipContextEnabledFlag = value; }
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   bool getUseBDPCM                                     ()         { return m_useBDPCM; }
   void setUseBDPCM                                     ( bool b ) { m_useBDPCM  = b;   }
-#endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
   bool getUseJointCbCr                                 ()         { return m_JointCbCrMode; }
   void setUseJointCbCr                                 (bool b)   { m_JointCbCrMode = b; }
-#endif
   bool getPersistentRiceAdaptationEnabledFlag          ()                 const { return m_persistentRiceAdaptationEnabledFlag;  }
   void setPersistentRiceAdaptationEnabledFlag          (const bool value)       { m_persistentRiceAdaptationEnabledFlag = value; }
   bool getCabacBypassAlignmentEnabledFlag              ()       const      { return m_cabacBypassAlignmentEnabledFlag;  }
@@ -1378,12 +1263,10 @@ public:
   bool  getTileUniformSpacingFlag      ()                            { return m_tileUniformSpacingFlag; }
   void  setNumColumnsMinus1            ( int i )                     { m_iNumColumnsMinus1 = i; }
   int   getNumColumnsMinus1            ()                            { return m_iNumColumnsMinus1; }
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
   void  setUniformTileColsWidthMinus1  (int i)                       { m_uniformTileColsWidthMinus1 = i; }
   int   getUniformTileColsWidthMinus1  ()                            { return m_uniformTileColsWidthMinus1; }
   void  setUniformTileRowHeightMinus1  (int i)                       { m_uniformTileRowHeightMinus1 = i; }
   int   getUniformTileRowHeightMinus1  ()                            { return m_uniformTileRowHeightMinus1; }
-#endif
   void  setColumnWidth ( const std::vector<int>& columnWidth )       { m_tileColumnWidth = columnWidth; }
   uint32_t  getColumnWidth                 ( uint32_t columnIdx )            { return m_tileColumnWidth[columnIdx]; }
   void  setNumRowsMinus1               ( int i )                     { m_iNumRowsMinus1 = i; }
@@ -1419,14 +1302,10 @@ public:
   bool  getBufferingPeriodSEIEnabled() const                         { return m_bufferingPeriodSEIEnabled; }
   void  setPictureTimingSEIEnabled(bool b)                           { m_pictureTimingSEIEnabled = b; }
   bool  getPictureTimingSEIEnabled() const                           { return m_pictureTimingSEIEnabled; }
-#if JVET_O0041_FRAME_FIELD_SEI
   void  setFrameFieldInfoSEIEnabled(bool b)                           { m_frameFieldInfoSEIEnabled = b; }
   bool  getFrameFieldInfoSEIEnabled() const                           { return m_frameFieldInfoSEIEnabled; }
-#endif
-#if JVET_N0494_DRAP
   void  setDependentRAPIndicationSEIEnabled(bool b)                  { m_dependentRAPIndicationSEIEnabled = b; }
   int   getDependentRAPIndicationSEIEnabled() const                  { return m_dependentRAPIndicationSEIEnabled; }
-#endif
 #if HEVC_SEI
   void  setRecoveryPointSEIEnabled(bool b)                           { m_recoveryPointSEIEnabled = b; }
   bool  getRecoveryPointSEIEnabled() const                           { return m_recoveryPointSEIEnabled; }
@@ -1511,10 +1390,8 @@ public:
   void  setNoDisplaySEITLayer(int b)                                 { m_noDisplaySEITLayer = b;    }
   int   getNoDisplaySEITLayer()                                      { return m_noDisplaySEITLayer; }
 #endif
-#if JVET_N0867_TEMP_SCAL_HRD
   void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
-#endif
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }
 #if HEVC_SEI
@@ -1587,17 +1464,14 @@ public:
   uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
   void         setMaxNumTriangleCand             ( uint32_t u )      { m_maxNumTriangleCand = u;    }
   uint32_t     getMaxNumTriangleCand             ()                  { return m_maxNumTriangleCand; }
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   void         setMaxNumIBCMergeCand             ( uint32_t u )      { m_maxNumIBCMergeCand = u; }
   uint32_t     getMaxNumIBCMergeCand             ()                  { return m_maxNumIBCMergeCand; }
-#endif
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
-#if JVET_O0238_PPS_OR_SLICE
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }
   bool         getConstantSliceHeaderParamsEnabledFlag ()            { return m_constantSliceHeaderParamsEnabledFlag; }
   void         setPPSDepQuantEnabledIdc ( int u )                    { m_PPSDepQuantEnabledIdc = u; }
@@ -1618,7 +1492,6 @@ public:
   uint32_t     getPPSFiveMinusMaxNumSubblockMergeCandPlus1 ()        { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }
   void         setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ( uint32_t u ) { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
   uint32_t     getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 ()  { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
-#endif
   WeightedPredictionMethod getWeightedPredictionMethod() const       { return m_weightedPredictionMethod; }
   void         setWeightedPredictionMethod( WeightedPredictionMethod m ) { m_weightedPredictionMethod = m; }
   void         setDepQuantEnabledFlag( bool b )                      { m_DepQuantEnabledFlag = b;    }
@@ -1674,10 +1547,8 @@ public:
 
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
-#if FIX_HRD_O0189
   bool         getHrdParametersPresentFlag()                         { return m_hrdParametersPresentFlag; }
   void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
-#endif
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
   void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
   bool         getAspectRatioInfoPresentFlag()                       { return m_aspectRatioInfoPresentFlag; }
@@ -1822,14 +1693,12 @@ public:
   bool        getCalcluateHdrMetrics()                          const { return m_calculateHdrMetrics;}
 #endif
 
-#if JVET_O1164_RPR
   void        setScalingRatio( double hor, double ver )              { m_scalingRatioHor = hor, m_scalingRatioVer = ver;  }
   void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
   bool        isRPREnabled()                                   const { return m_rprEnabled; }
   void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
   void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
   int         getUpscaledOutput()                              const { return m_upscaledOutput; }
-#endif
 };
 
 //! \}

@@ -73,9 +73,6 @@ public:
   unsigned          decodeBinsEP        ( unsigned numBins  );
   unsigned          decodeRemAbsEP      ( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange );
   unsigned          decodeBinTrm        ();
-#if !JVET_O0525_REMOVE_PCM
-  unsigned          decodeBinsPCM       ( unsigned numBins  );
-#endif
   void              align               ();
   unsigned          getNumBitsRead      () { return m_Bitstream->getNumBitsRead() + m_bitsNeeded; }
 private:

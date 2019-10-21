@@ -78,13 +78,11 @@ struct AffineMVInfo
   int x, y, w, h;
 };
 
-#if JVET_O0592_ENC_ME_IMP
 struct BlkUniMvInfo
 {
   Mv uniMvs[2][33];
   int x, y, w, h;
 };
-#endif
 
 typedef struct
 {
@@ -124,12 +122,10 @@ private:
   int             m_affMVListIdx;
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
-#if JVET_O0592_ENC_ME_IMP
   BlkUniMvInfo*   m_uniMvList;
   int             m_uniMvListIdx;
   int             m_uniMvListSize;
   int             m_uniMvListMaxSize;
-#endif
   Distortion      m_hevcCost;
   EncAffineMotion m_affineMotion;
   PatentBvCand    m_defaultCachedBvs;
@@ -246,7 +242,6 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
-#if JVET_O0592_ENC_ME_IMP
   void resetUniMvList() { m_uniMvListIdx = 0; m_uniMvListSize = 0; }
   void insertUniMvCands(CompArea blkArea, Mv cMvTemp[2][33])
   {
@@ -319,12 +314,9 @@ public:
       m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
     }
   }
-#endif
   void resetSavedAffineMotion();
   void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
-#if JVET_O1170_IBC_VIRTUAL_BUFFER
   bool searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize);
-#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -352,9 +344,7 @@ protected:
     uint8_t       ucPointNr;
     int         subShiftMode;
     unsigned    imvShift;
-#if JVET_O0057_ALTHPELIF
     bool        useAltHpelIf;
-#endif
     bool        inCtuSearch;
     bool        zeroMV;
   } IntTZSearchStruct;
@@ -458,10 +448,8 @@ protected:
                                   );
 
   void xTZSearch                  ( const PredictionUnit& pu,
-#if JVET_O0592_ENC_ME_IMP
                                     RefPicList            eRefPicList,
                                     int                   iRefIdxPred,
-#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -471,10 +459,8 @@ protected:
                                   );
 
   void xTZSearchSelective         ( const PredictionUnit& pu,
-#if JVET_O0592_ENC_ME_IMP
                                     RefPicList            eRefPicList,
                                     int                   iRefIdxPred,
-#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -489,10 +475,8 @@ protected:
                                   );
 
   void xPatternSearchFast         ( const PredictionUnit& pu,
-#if JVET_O0592_ENC_ME_IMP
                                     RefPicList            eRefPicList,
                                     int                   iRefIdxPred,
-#endif
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -578,11 +562,7 @@ protected:
   double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 
-#if JVET_O1164_PS
   void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
-#else
-  void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps );
-#endif
 
 public:
   void resetBufferedUniMotions    () { m_uniMotions.reset(); }
@@ -602,11 +582,7 @@ public:
     );
 protected:
 
-#if JVET_O0057_ALTHPELIF
   void xExtDIFUpSamplingH(CPelBuf* pcPattern, bool useAltHpelIf);
-#else
-  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern);
-#endif
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
   uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
   // -------------------------------------------------------------------------------------------------------------------

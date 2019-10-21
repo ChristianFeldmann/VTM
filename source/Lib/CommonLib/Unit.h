@@ -48,12 +48,10 @@
 // ---------------------------------------------------------------------------
 // tools
 // ---------------------------------------------------------------------------
-#if JVET_O0119_BASE_PALETTE_444
 struct PLTBuf {
   uint32_t       curPLTSize[MAX_NUM_COMPONENT];
   Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
 };
-#endif
 inline Position recalcPosition(const ChromaFormat _cf, const ComponentID srcCId, const ComponentID dstCId, const Position &pos)
 {
   if( toChannelType( srcCId ) == toChannelType( dstCId ) )
@@ -303,11 +301,9 @@ struct CodingUnit : public UnitArea
   int8_t          chromaQpAdj;
   int8_t          qp;
   SplitSeries    splitSeries;
-#if JVET_O0050_LOCAL_DUAL_TREE
   TreeType       treeType;
   ModeType       modeType;
   ModeTypeSeries modeTypeSeries;
-#endif
   bool           skip;
   bool           mmvdSkip;
   bool           affine;
@@ -315,9 +311,6 @@ struct CodingUnit : public UnitArea
   bool           triangle;
   bool           transQuantBypass;
   int            bdpcmMode;
-#if !JVET_O0525_REMOVE_PCM
-  bool           ipcm;
-#endif
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;
@@ -330,11 +323,12 @@ struct CodingUnit : public UnitArea
 
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position       shareParentPos;
   Size           shareParentSize;
+#endif
   uint8_t          smvdMode;
   uint8_t        ispMode;
-#if JVET_O0119_BASE_PALETTE_444
   bool           useEscape[MAX_NUM_COMPONENT];
   bool           useRotation[MAX_NUM_COMPONENT];
   bool           reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
@@ -342,7 +336,6 @@ struct CodingUnit : public UnitArea
   uint32_t       reusePLTSize[MAX_NUM_COMPONENT];
   uint32_t       curPLTSize[MAX_NUM_COMPONENT];
   Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE];
-#endif
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -371,14 +364,10 @@ struct CodingUnit : public UnitArea
   void              setSbtPos( uint8_t pos ) { CHECK( pos >= 4, "sbt_pos wrong" ); sbtInfo = ( pos << 4 ) + ( sbtInfo & 0xcf ); }
   uint8_t           getSbtTuSplit() const;
   const uint8_t     checkAllowedSbt() const;
-#if JVET_O1124_ALLOW_CCLM_COND
   const bool        checkCCLMAllowed() const;
-#endif
-#if JVET_O0050_LOCAL_DUAL_TREE
   const bool        isSepTree() const;
   const bool        isConsInter() const { return modeType == MODE_TYPE_INTER; }
   const bool        isConsIntra() const { return modeType == MODE_TYPE_INTRA; }
-#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -414,8 +403,10 @@ struct InterPredictionData
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
   bool      mhIntraFlag;
 
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position  shareParentPos;
   Size      shareParentSize;
+#endif
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
   uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
@@ -440,8 +431,10 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   PredictionUnit& operator=(const MotionInfo& mi);
 
   unsigned        idx;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position shareParentPos;
   Size     shareParentSize;
+#endif
 
   PredictionUnit *next;
 
@@ -487,18 +480,12 @@ struct TransformUnit : public UnitArea
   TransformUnit *next;
   TransformUnit *prev;
 
-#if JVET_O0119_BASE_PALETTE_444
   void init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType);
-#else
-  void init(TCoeff **coeffs, Pel **pcmbuf);
-#endif
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
   void checkTuNoResidual( unsigned idx );
-#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
   int  getTbAreaAfterCoefZeroOut(ComponentID compID) const;
-#endif
 
          CoeffBuf getCoeffs(const ComponentID id);
   const CCoeffBuf getCoeffs(const ComponentID id) const;
@@ -506,7 +493,6 @@ struct TransformUnit : public UnitArea
   const CPelBuf   getPcmbuf(const ComponentID id) const;
         int       getChromaAdj( )                 const;
         void      setChromaAdj(int i);
-#if JVET_O0119_BASE_PALETTE_444
          PelBuf   getcurPLTIdx(const ComponentID id);
   const CPelBuf   getcurPLTIdx(const ComponentID id) const;
          PelBuf   getrunLength(const ComponentID id);
@@ -518,7 +504,6 @@ struct TransformUnit : public UnitArea
         Pel*      getPLTIndex(const ComponentID id);
         Pel*      getRunLens(const ComponentID id);
         bool*     getRunTypes(const ComponentID id);
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   int64_t cacheId;
@@ -528,10 +513,8 @@ struct TransformUnit : public UnitArea
 private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
-#if JVET_O0119_BASE_PALETTE_444
   bool   *m_runType[MAX_NUM_TBLOCKS];
   Pel    *m_runLength[MAX_NUM_TBLOCKS];
-#endif
 };
 
 // ---------------------------------------------------------------------------

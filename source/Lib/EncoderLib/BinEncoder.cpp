@@ -285,26 +285,12 @@ void BinEncoderBase::encodeBinTrm( unsigned bin )
   }
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void BinEncoderBase::encodeBinsPCM( unsigned bins, unsigned numBins )
-{
-  m_Bitstream->write( bins, numBins );
-}
-#endif
 
 void BinEncoderBase::align()
 {
   m_Range = 256;
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void BinEncoderBase::pcmAlignBits()
-{
-  finish();
-  m_Bitstream->write( 1, 1 );
-  m_Bitstream->writeAlignZero(); // pcm align zero
-}
-#endif
 
 void BinEncoderBase::encodeAlignedBinsEP( unsigned bins, unsigned numBins )
 {
@@ -492,15 +478,6 @@ void BitEstimatorBase::align()
   m_EstFracBits &= mask;
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void BitEstimatorBase::pcmAlignBits()
-{
-  uint64_t  numCurrBits = ( m_EstFracBits >> SCALE_BITS );
-  uint64_t  filledBytes = ( numCurrBits + 8 ) >> 3; // including aligned_one_bit and aligned_zero_bits
-  unsigned  bitsToAdd   = unsigned( ( filledBytes << 3 ) - numCurrBits );
-  m_EstFracBits        += BinProbModelBase::estFracBitsEP( bitsToAdd );
-}
-#endif
 
 
 

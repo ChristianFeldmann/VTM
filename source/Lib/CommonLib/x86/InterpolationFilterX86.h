@@ -1217,7 +1217,6 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
   }
 }
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 template< X86_VEXT vext >
 void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1)
 {
@@ -1321,7 +1320,6 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
     }
   }
 }
-#endif
 
 template <X86_VEXT vext>
 void InterpolationFilter::_initInterpolationFilterX86()
@@ -1362,9 +1360,7 @@ void InterpolationFilter::_initInterpolationFilterX86()
   m_filterCopy[1][0]   = simdFilterCopy<vext, true, false>;
   m_filterCopy[1][1]   = simdFilterCopy<vext, true, true>;
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
   m_weightedTriangleBlk = xWeightedTriangleBlk_SSE<vext>;
-#endif
 }
 
 template void InterpolationFilter::_initInterpolationFilterX86<SIMDX86>();

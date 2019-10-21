@@ -161,7 +161,6 @@ private:
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 #if JVET_N0278_FIXES
-  bool m_isGopEncoding;
   int  m_picIdInGOP;
 #endif
 

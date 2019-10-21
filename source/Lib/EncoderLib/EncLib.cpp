@@ -96,7 +96,6 @@ EncLib::EncLib()
 
 #if JVET_N0278_FIXES
   m_layerId = NOT_VALID;
-  m_isGopEncoding = false;
   m_picIdInGOP = NOT_VALID;
 #endif
 }

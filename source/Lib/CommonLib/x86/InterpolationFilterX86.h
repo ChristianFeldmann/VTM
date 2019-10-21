@@ -1233,10 +1233,15 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
   const ClpRng  clpRng = pu.cu->slice->clpRngs().comp[compIdx];
   const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;
   const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+  int wIdx = (compIdx == COMPONENT_Y) ? 0 : pu.cs->sps->getChromaFormatIdc();
+  int16_t *weight = g_triangleWeights[wIdx][splitDir][log2Height][log2Width];
+#else
   const bool    longWeight = (compIdx == COMPONENT_Y);
   const bool    shortWeight = !longWeight;
 
   int16_t *weight = g_triangleWeights[shortWeight][splitDir][log2Height][log2Width];
+#endif
 
   const __m128i mmEight = _mm_set1_epi16(8);
   const __m128i mmOffset = _mm_set1_epi32(offsetWeighted);

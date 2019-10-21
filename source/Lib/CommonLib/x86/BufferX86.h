@@ -248,9 +248,14 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
 
       a   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (src0 + x)),
                              _mm_loadl_epi64((const __m128i *) (src1 + x)));
+#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
+      sum = _mm_add_epi32(sum, _mm_set1_epi32(2 * offset));
+      sum = _mm_sra_epi32(sum, _mm_cvtsi32_si128(shift));
+#else
       sum = _mm_add_epi32(sum, _mm_madd_epi16(a, _mm_set1_epi16(2)));
       sum = _mm_add_epi32(sum, _mm_set1_epi32(2 * offset + 1));
       sum = _mm_sra_epi32(sum, _mm_cvtsi32_si128(shift + 1));
+#endif
       sum = _mm_packs_epi32(sum, sum);
       sum = _mm_max_epi16(sum, vibdimin);
       sum = _mm_min_epi16(sum, vibdimax);

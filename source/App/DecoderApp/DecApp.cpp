@@ -176,10 +176,12 @@ uint32_t DecApp::decode()
         if (bNewPicture)
         {
           // check if new picture was detected at an access unit delimiter NALU
+#if !JVET_N0278_FIXES
           if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER)
           {
             msg( ERROR, "Error: New picture detected without access unit delimiter. VVC requires the presence of access unit delimiters.\n");
           }
+#endif
           bitstreamFile.clear();
           /* location points to the current nalunit payload[1] due to the
            * need for the annexB parser to read three extra bytes.

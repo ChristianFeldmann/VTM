@@ -595,12 +595,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       m_cRateCtrl.initRCGOP( m_iNumPicRcvd );
     }
 
-    m_cGOPEncoder.compressGOP( m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
-#if JVET_N0278_FIXES
-      false, false, snrCSC, m_printFrameMSE, true, 0 );
-#else
-      false, false, snrCSC, m_printFrameMSE, true);
-#endif
+    m_cGOPEncoder.compressGOP( m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, false, false, snrCSC, m_printFrameMSE, true, 0 );
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
     m_metricTime = m_cGOPEncoder.getMetricTime();

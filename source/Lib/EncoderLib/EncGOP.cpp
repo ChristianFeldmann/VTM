@@ -2892,19 +2892,20 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       /////////////////////////////////////////////////////////////////////////////////////////////////// File writing
 
       // write various parameter sets
-#if JVET_N0278_FIXES
-      int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
-
-      // it is assumed that layerIdx equal to 0 is always present
-      bool writePS = !layerIdx && ( m_bSeqFirst || ( m_pcCfg->getReWriteParamSets() && ( pcSlice->isIRAP() ) ) );
-#else
       bool writePS = m_bSeqFirst || (m_pcCfg->getReWriteParamSets() && (pcSlice->isIRAP()));
-#endif
       if (writePS)
       {
         m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
       }
+
+#if JVET_N0278_FIXES
+      int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
+
+      // it is assumed that layerIdx equal to 0 is always present
+      actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, writePS && !layerIdx );
+#else
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS);
+#endif
 
       if (writePS)
       {

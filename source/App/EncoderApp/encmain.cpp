@@ -121,6 +121,9 @@ int main(int argc, char* argv[])
   bool resized = false;
   int layerIdx = 0;
 
+  initROM();
+  TComHash::initBlockSizeToIndex();
+
   char** layerArgv = new char*[argc];
 
   do

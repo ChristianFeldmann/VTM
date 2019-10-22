@@ -1887,6 +1887,9 @@ PPS::~PPS()
 APS::APS()
 : m_APSId(0)
 , m_temporalId( 0 )
+#if JVET_N0278_FIXES
+, m_layerId( 0 )
+#endif
 {
 }
 

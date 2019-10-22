@@ -112,10 +112,11 @@ void EncLib::create ()
 {
 #if JVET_N0278_FIXES
   m_layerId = layerId;
-#endif
+#else
   // initialize global variables
   initROM();
   TComHash::initBlockSizeToIndex();
+#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );

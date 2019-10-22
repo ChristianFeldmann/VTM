@@ -370,10 +370,28 @@ int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId )
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
-int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst)
+int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst )
 {
   int actualTotalBits = 0;
 
+#if JVET_N0278_FIXES
+  if( bSeqFirst )
+  {
+    actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
+    actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
+
+    if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+    {
+      CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
+      actualTotalBits += xWriteSPS( accessUnit, slice->getSPS() );
+    }
+  }
+
+  if( m_pcEncLib->PPSNeedsWriting( slice->getPPS()->getPPSId() ) ) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  {
+    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
+  }
+#else
   if (bSeqFirst)
   {
     actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -390,12 +408,9 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
   }
   if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
-#if JVET_N0278_FIXES
-    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
-#else
     actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
-#endif
   }
+#endif
 
   return actualTotalBits;
 }

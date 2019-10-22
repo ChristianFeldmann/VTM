@@ -50,11 +50,15 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0512_SIMD_HIGH_BITDEPTH                     1 // JVET-P0512: MC SIMD support for high internal bit-depthf
+
 #define JVET_P0491_BDOFPROF_MVD_RANGE                     1 // JVET-P0491: clip the MVD in BDOF/PROF to [-31 31]
 
 #define JVET_P0460_PLT_TS_MIN_QP                          1 // JVET-P0460: Use TS min QP for Palette Escape mode
 
 #define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
+
+#define JVET_P0092_SMVD_SPEED_UP                          1 // JVET-P0092: SMVD speed-up
 
 #define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode
 
@@ -93,6 +97,8 @@
 #define JVET_P0385_UNIFIED_MV_ROUNDING                    1
 
 #define JVET_P0418_ALIGN_MLRP_CCLM                        1 // JVET-P0418: Align MLRP with CCLM in terms of reference lines/columns
+
+#define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
 
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 

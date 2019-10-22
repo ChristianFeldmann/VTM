@@ -1345,6 +1345,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcInterSearch->resetAffineMVList();
   m_pcInterSearch->resetUniMvList();
+  ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
   if (checkPLTRatio) m_pcLib->checkPltStats( pcPic );
 }

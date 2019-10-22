@@ -85,8 +85,10 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position    sharedBndPos;
   Size        sharedBndSize;
+#endif
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;

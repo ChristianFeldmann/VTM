@@ -2988,7 +2988,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
               m_filter7x7Blk(m_classifier, recBuf, buf, blkDst, blkSrc, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
                 , m_alfVBLumaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+                , m_alfVBLumaPos, alfBryList
+#else
                 , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#endif
 #else
                 , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -3008,7 +3012,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
                 m_filter5x5Blk(m_classifier, recBuf, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
                   , m_alfVBChmaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+                  , m_alfVBChmaPos, alfBryList
+#else
                   , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList
+#endif
 #else
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
 #endif
@@ -3045,7 +3053,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
         m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+          , m_alfVBLumaPos, alfBryList
+#else
           , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#endif
 #else
           , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -3064,7 +3076,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
           m_filter5x5Blk(m_classifier, recBuf, recExtBuf, blk, blk, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
             , m_alfVBChmaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+            , m_alfVBChmaPos, alfBryList
+#else
             , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList
+#endif
 #else
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
 #endif

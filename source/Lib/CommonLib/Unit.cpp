@@ -281,8 +281,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
 
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos    = other.shareParentPos;
   shareParentSize   = other.shareParentSize;
+#endif
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
   mipFlag           = other.mipFlag;
@@ -329,9 +331,11 @@ void CodingUnit::initData()
   GBiIdx            = GBI_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = Position(-1, -1);
   shareParentSize.width = -1;
   shareParentSize.height = -1;
+#endif
   smvdMode        = 0;
   ispMode           = 0;
   mipFlag           = false;
@@ -543,9 +547,11 @@ void PredictionUnit::initData()
     }
   }
   mhIntraFlag = false;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = Position(-1, -1);
   shareParentSize.width = -1;
   shareParentSize.height = -1;
+#endif
   mmvdEncOptMode = 0;
 }
 
@@ -596,8 +602,10 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     }
   }
   mhIntraFlag = predData.mhIntraFlag;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = predData.shareParentPos;
   shareParentSize = predData.shareParentSize;
+#endif
   return *this;
 }
 
@@ -643,8 +651,10 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     }
   }
   mhIntraFlag = other.mhIntraFlag;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = other.shareParentPos;
   shareParentSize = other.shareParentSize;
+#endif
   return *this;
 }
 

@@ -639,10 +639,21 @@ void LoopFilter::xSetEdgefilterMultiple( const CodingUnit&    cu,
   for( int ui = 0; ui < uiNumElem; ui++ )
   {
     m_aapbEdgeFilter[edgeDir][uiBsIdx] = bValue;
-    if( ! EdgeIdx )
+#if JVET_P0043_DEBLOCKING_CLEANUP 
+    if ( m_aapucBS[edgeDir][uiBsIdx] && bValue ) 
     {
-      m_aapucBS[edgeDir][uiBsIdx] = bValue;
+      m_aapucBS[edgeDir][uiBsIdx] = 3;  // both the TU and PU edge
     }
+    else 
+    {
+#endif 
+      if( ! EdgeIdx )
+      {
+        m_aapucBS[edgeDir][uiBsIdx] = bValue;
+      }
+#if JVET_P0043_DEBLOCKING_CLEANUP 
+    }
+#endif 
     uiBsIdx += uiAdd;
   }
 }
@@ -730,6 +741,9 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   }
 
   // and now the pred
+#if JVET_P0043_DEBLOCKING_CLEANUP 
+  if ( m_aapucBS[edgeDir][rasterIdx] != 0 && m_aapucBS[edgeDir][rasterIdx] != 3 ) return tmpBs;
+#endif
   const Position& lumaPosQ  = Position{ localPos.x,  localPos.y };
   const Position  lumaPosP  = ( edgeDir == EDGE_VER ) ? lumaPosQ.offset( -1, 0 ) : lumaPosQ.offset( 0, -1 );
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( lumaPosQ );
@@ -1218,11 +1232,31 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         if ((bS[chromaIdx] == 2) || (largeBoundary && (bS[chromaIdx] == 1)))
         {
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
+#if !JVET_P1001_DEBLOCKING_CHROMAQP_FIX
         const int chromaQPOffset = pps.getQpOffset( ComponentID( chromaIdx + 1 ) );
+#endif
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
+#if JVET_P1001_DEBLOCKING_CHROMAQP_FIX
+        int shiftHor = cu.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cu.firstPU->chromaFormat);
+        int shiftVer = cu.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cu.firstPU->chromaFormat);
+        const Position& posQ = Position{ pos.x >> shiftHor,  pos.y >> shiftVer };
+        const Position  posP = (edgeDir == EDGE_VER) ? posQ.offset(-1, 0) : posQ.offset(0, -1);
+
+        const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
+        const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
+
+        const QpParam cQP(tuP, ComponentID(chromaIdx + 1));
+        const QpParam cQQ(tuQ, ComponentID(chromaIdx + 1));
+        const int qpBdOffset = tuP.cs->sps->getQpBDOffset(toChannelType(ComponentID(chromaIdx + 1)));
+        int baseQp_P = cQP.Qp(0) - qpBdOffset;
+        int baseQp_Q = cQQ.Qp(0) - qpBdOffset;
+        int iQP = ((baseQp_Q + baseQp_P + 1) >> 1);
+#else
         int iQP = sps.getMappedChromaQpValue(ComponentID(chromaIdx + 1), ((cuP.qp + cuQ.qp + 1) >> 1));
         iQP = Clip3(0, MAX_QP, iQP + chromaQPOffset);
+#endif
+
 
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
         const int iTc = sps.getBitDepth(CHANNEL_TYPE_CHROMA) < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - sps.getBitDepth(CHANNEL_TYPE_CHROMA))) : ((sm_tcTable[iIndexTC]) << (sps.getBitDepth(CHANNEL_TYPE_CHROMA) - 10));

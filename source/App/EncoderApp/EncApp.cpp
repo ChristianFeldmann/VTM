@@ -283,9 +283,14 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
-  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
   m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
+#if JVET_P0273_MTSIntraMaxCand
+  m_cEncLib.setMTSIntraMaxCand                                   ( m_MTSIntraMaxCand );
+  m_cEncLib.setMTSInterMaxCand                                   ( m_MTSInterMaxCand );
+#else
+  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
   m_cEncLib.setInterMTSMaxCand                                   ( m_MTSInterMaxCand );
+#endif
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );

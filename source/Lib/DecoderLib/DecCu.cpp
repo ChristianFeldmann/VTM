@@ -103,11 +103,13 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 {
 
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree( cs ) ? 2 : 1;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   if (!cs.pcv->isEncoder)
   {
     m_shareStateDec = NO_SHARE;
   }
   bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra()) || cs.slice->getSPS()->getIBCFlag()));
+#endif
 
   if (cs.resetIBCBuffer)
   {
@@ -130,6 +132,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
           m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x, currCU.Y().y);
         }
       }
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
       if(sharePrepareCondition)
       {
         if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
@@ -143,6 +146,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         }
         prevTmpPos = currCU.shareParentPos;
       }
+#endif
       if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
       {
         xDeriveCUMV(currCU);
@@ -410,8 +414,11 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
         {
           Pel value;
           QpParam cQP(tu, (ComponentID)compID);
-
+#if  JVET_P0460_PLT_TS_MIN_QP
+          int qp = cQP.Qp(true);
+#else
           int qp = cQP.Qp(false);
+#endif
           int qpRem = qp % 6;
           int qpPer = qp / 6;
           if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
@@ -546,8 +553,13 @@ void DecCu::xReconInter(CodingUnit &cu)
   if (cu.Y().valid())
   {
     const PredictionUnit &pu = *cu.firstPU;
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+    bool isIbcSmallBlk = CU::isIBC(cu) && (cu.lwidth() * cu.lheight() <= 16);
+    if (!cu.affine && !cu.triangle && !isIbcSmallBlk)
+#else
     bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
     if (!cu.affine && !cu.triangle && !isShare)
+#endif
     {
       MotionInfo mi = pu.getMotionInfo();
       mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
@@ -732,8 +744,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
 
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
           pu.shareParentPos = cu.shareParentPos;
           pu.shareParentSize = cu.shareParentSize;
+#endif
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
@@ -788,8 +802,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
         else
         {
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
           pu.shareParentPos = cu.shareParentPos;
           pu.shareParentSize = cu.shareParentSize;
+#endif
           if (CU::isIBC(*pu.cu))
             PU::getIBCMergeCandidates(pu, mrgCtx, pu.mergeIdx);
           else
@@ -804,8 +820,10 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
     else
     {
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
       pu.shareParentPos = cu.shareParentPos;
       pu.shareParentSize = cu.shareParentSize;
+#endif
 #if REUSE_CU_RESULTS
       if ( cu.imv && !pu.cu->affine && !cu.cs->pcv->isEncoder )
 #else

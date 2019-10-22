@@ -2553,11 +2553,25 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
       cuCtx.isDQPCoded = true;
     }
   }
+#if JVET_P0436_CQP_OFFSET_SIGNALLING
+  if (!cu.isSepTree() || isChroma(tu.chType))   // !DUAL_TREE_LUMA
+  {
+    SizeType channelWidth = !cu.isSepTree() ? cu.lwidth() : cu.chromaSize().width;
+    SizeType channelHeight = !cu.isSepTree() ? cu.lheight() : cu.chromaSize().height;
+
+    if (cu.cs->slice->getUseChromaQpAdj() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
+    {
+      cu_chroma_qp_offset(cu);
+      cuCtx.isChromaQpAdjCoded = true;
+    }
+  }
+#else
     if (cu.cs->slice->getUseChromaQpAdj() && cbfChroma && !cuCtx.isChromaQpAdjCoded)
     {
       cu_chroma_qp_offset( cu );
       cuCtx.isChromaQpAdjCoded = true;
     }
+#endif
 
   if( !lumaOnly )
   {
@@ -3038,7 +3052,11 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
     unsigned  absLevel  = abs( Coeff );
     int       sumAll = cctx.templateAbsSum(scanPos, coeff, 0);
     int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
+#if JVET_P0170_ZERO_POS_SIMPLIFICATION
+    int       pos0      = g_auiGoRicePosCoeff0(state, rice);
+#else
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
+#endif
     unsigned  rem       = ( absLevel == 0 ? pos0 : absLevel <= pos0 ? absLevel-1 : absLevel );
     m_BinEncoder.encodeRemAbsEP( rem, rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
     DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );
@@ -3070,8 +3088,12 @@ void CABACWriter::residual_codingTS( const TransformUnit& tu, ComponentID compID
   // init coeff coding context
   CoeffCodingContext  cctx    ( tu, compID, false, tu.cu->bdpcmMode );
   const TCoeff*       coeff   = tu.getCoeffs( compID ).buf;
-
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int maxCtxBins = (cctx.maxNumCoeff() * 7) >> 2;
+  cctx.setNumCtxBins(maxCtxBins);
+#else
   cctx.setNumCtxBins( 2 * tu.lwidth()*tu.lheight() );
+#endif
 
   // determine and set last coeff position and sig group flags
   std::bitset<MLS_GRP_NUM> sigGroupFlags;
@@ -3122,38 +3144,56 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 
   int rightPixel, belowPixel, modAbsCoeff;
 
+#if JVET_P0072_SIMPLIFIED_TSRC
+  int lastScanPosPass1 = -1;
+  int lastScanPosPass2 = -1;
+  for (; nextSigPos <= minSubPos && cctx.numCtxBins() >= 4; nextSigPos++)
+#else
   for( ; nextSigPos <= minSubPos; nextSigPos++ )
+#endif
   {
     TCoeff    Coeff      = coeff[ cctx.blockPos( nextSigPos ) ];
     unsigned  sigFlag    = ( Coeff != 0 );
     if( numNonZero || nextSigPos != inferSigPos )
     {
+#if !JVET_P0072_SIMPLIFIED_TSRC
       if( cctx.isContextCoded() )
       {
+#endif
         const unsigned sigCtxId = cctx.sigCtxIdAbsTS( nextSigPos, coeff );
         m_BinEncoder.encodeBin( sigFlag, sigCtxId );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sig_bin() bin=%d ctx=%d\n", sigFlag, sigCtxId );
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.decimateNumCtxBins(1);
+#else
       }
       else
       {
         m_BinEncoder.encodeBinEP( sigFlag );
         DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_sig_bin() EPbin=%d\n", sigFlag );
       }
+#endif
     }
 
     if( sigFlag )
     {
       //===== encode sign's =====
       int sign = Coeff < 0;
+#if !JVET_P0072_SIMPLIFIED_TSRC
       if( cctx.isContextCoded() )
       {
+#endif
         const unsigned signCtxId = cctx.signCtxIdAbsTS(nextSigPos, coeff, cctx.bdpcm());
         m_BinEncoder.encodeBin(sign, signCtxId);
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.decimateNumCtxBins(1);
+#else
       }
       else
       {
         m_BinEncoder.encodeBinEP( sign );
       }
+#endif
       numNonZero++;
       cctx.neighTS(rightPixel, belowPixel, nextSigPos, coeff);
       modAbsCoeff = cctx.deriveModCoeff(rightPixel, belowPixel, abs(Coeff), cctx.bdpcm());
@@ -3161,38 +3201,56 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 
       unsigned gt1 = !!remAbsLevel;
       const unsigned gt1CtxId = cctx.lrg1CtxIdAbsTS(nextSigPos, coeff, cctx.bdpcm());
+#if !JVET_P0072_SIMPLIFIED_TSRC
       if (cctx.isContextCoded())
       {
+#endif
         m_BinEncoder.encodeBin(gt1, gt1CtxId);
         DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() bin=%d ctx=%d\n", gt1, gt1CtxId);
+#if JVET_P0072_SIMPLIFIED_TSRC
+        cctx.decimateNumCtxBins(1);
+#else
       }
       else
       {
         m_BinEncoder.encodeBinEP(gt1);
         DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt1_flag() EPbin=%d\n", gt1);
       }
+#endif
 
       if( gt1 )
       {
         remAbsLevel  -= 1;
+#if !JVET_P0072_SIMPLIFIED_TSRC
         if( cctx.isContextCoded() )
         {
+#endif
           m_BinEncoder.encodeBin( remAbsLevel&1, cctx.parityCtxIdAbsTS() );
           DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_par_flag() bin=%d ctx=%d\n", remAbsLevel&1, cctx.parityCtxIdAbsTS() );
+#if JVET_P0072_SIMPLIFIED_TSRC
+          cctx.decimateNumCtxBins(1);
+#else
         }
         else
         {
           m_BinEncoder.encodeBinEP( remAbsLevel&1 );
           DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_par_flag() EPbin=%d\n", remAbsLevel&1 );
         }
+#endif
       }
     }
+#if JVET_P0072_SIMPLIFIED_TSRC
+    lastScanPosPass1 = nextSigPos;
+#endif
   }
 
   int cutoffVal = 2;
   int numGtBins = 4;
-
+#if JVET_P0072_SIMPLIFIED_TSRC
+  for (int scanPos = firstSigPos; scanPos <= minSubPos && cctx.numCtxBins() >= 4; scanPos++)
+#else
   for (int scanPos = firstSigPos; scanPos <= minSubPos; scanPos++)
+#endif
   {
     unsigned absLevel;
     cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
@@ -3203,19 +3261,28 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
       if (absLevel >= cutoffVal)
       {
         unsigned gt2 = (absLevel >= (cutoffVal + 2));
+#if !JVET_P0072_SIMPLIFIED_TSRC
         if (cctx.isContextCoded())
         {
+#endif
           m_BinEncoder.encodeBin(gt2, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1));
           DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() bin=%d ctx=%d sp=%d coeff=%d\n", i, gt2, cctx.greaterXCtxIdAbsTS(cutoffVal >> 1), scanPos, min<int>(absLevel, cutoffVal + 2));
+#if JVET_P0072_SIMPLIFIED_TSRC
+          cctx.decimateNumCtxBins(1);
+#else
         }
         else
         {
           m_BinEncoder.encodeBinEP(gt2);
           DTRACE(g_trace_ctx, D_SYNTAX_RESI, "ts_gt%d_flag() EPbin=%d sp=%d coeff=%d\n", i, gt2, scanPos, min<int>(absLevel, cutoffVal + 2));
         }
+#endif
       }
       cutoffVal += 2;
     }
+#if JVET_P0072_SIMPLIFIED_TSRC
+    lastScanPosPass2 = scanPos;
+#endif
   }
 
   //===== coeff bypass ====
@@ -3224,12 +3291,27 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
     unsigned absLevel;
     cctx.neighTS(rightPixel, belowPixel, scanPos, coeff);
     absLevel = cctx.deriveModCoeff(rightPixel, belowPixel, abs(coeff[cctx.blockPos(scanPos)]), cctx.bdpcm());
+#if JVET_P0072_SIMPLIFIED_TSRC
+    cutoffVal = (scanPos <= lastScanPosPass2 ? 10 : (scanPos <= lastScanPosPass1 ? 2 : 0));
+#endif
     if( absLevel >= cutoffVal )
     {
       int       rice = cctx.templateAbsSumTS( scanPos, coeff );
+#if JVET_P0072_SIMPLIFIED_TSRC
+      unsigned  rem = scanPos <= lastScanPosPass1 ? (absLevel - cutoffVal) >> 1 : absLevel;
+#else
       unsigned  rem  = ( absLevel - cutoffVal ) >> 1;
+#endif
       m_BinEncoder.encodeRemAbsEP( rem, rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_rem_val() bin=%d ctx=%d sp=%d\n", rem, rice, scanPos );
+
+#if JVET_P0072_SIMPLIFIED_TSRC
+      if (absLevel && scanPos > lastScanPosPass1)
+      {
+        int sign = coeff[cctx.blockPos(scanPos)] < 0;
+        m_BinEncoder.encodeBinEP(sign);
+      }
+#endif
     }
   }
 }
@@ -3475,6 +3557,23 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
   unsigned numAvailableFiltSets = numAps + NUM_FIXED_FILTER_SETS;
   if (numAvailableFiltSets > NUM_FIXED_FILTER_SETS)
   {
+#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
+    int useTemporalFilt = (filterSetIdx >= NUM_FIXED_FILTER_SETS) ? 1 : 0;
+    m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
+    if (useTemporalFilt)
+    {
+      CHECK((filterSetIdx - NUM_FIXED_FILTER_SETS) >= (numAvailableFiltSets - NUM_FIXED_FILTER_SETS), "temporal non-latest set");
+      if (numAps > 1)
+      {
+        xWriteTruncBinCode(filterSetIdx - NUM_FIXED_FILTER_SETS, numAvailableFiltSets - NUM_FIXED_FILTER_SETS);
+      }
+    }
+    else
+    {
+      CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set larger than temporal");
+      xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
+    }
+#else
     int useLatestFilt = (filterSetIdx == NUM_FIXED_FILTER_SETS) ? 1 : 0;
     m_BinEncoder.encodeBin(useLatestFilt, Ctx::AlfUseLatestFilt());
     if (!useLatestFilt)
@@ -3505,6 +3604,7 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
         }
       }
     }
+#endif
   }
   else
   {

@@ -603,8 +603,8 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
                            CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[1][0], pcYuvPred.Y())) :
                            CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[1][0], pcYuvPred.Y()), PelBuf(m_acYuvPred[1][1], pcYuvPred.Cb()), PelBuf(m_acYuvPred[1][2], pcYuvPred.Cr())) );
 #if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
-  bool lumaOnly   = luma && !chroma;
-  bool chromaOnly = !luma && chroma;
+  const bool lumaOnly   = luma && !chroma;
+  const bool chromaOnly = !luma && chroma;
 #endif
   if( !pu.cu->triangle && (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->GBiIdx==GBI_DEFAULT)
   {
@@ -1377,7 +1377,11 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
 
   if( iRefIdx0 >= 0 && iRefIdx1 >= 0 )
   {
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+    if (!chromaOnly && pu.cu->affine && (m_applyPROF[0] || m_applyPROF[1]))
+#else
     if (pu.cu->affine && (m_applyPROF[0] || m_applyPROF[1]))
+#endif
     {
       xApplyBiPROF(pu, pcYuvSrc0.bufs[COMPONENT_Y], pcYuvSrc1.bufs[COMPONENT_Y], pcYuvDst.bufs[COMPONENT_Y], clpRngs.comp[COMPONENT_Y]);
       pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx, true);
@@ -1790,7 +1794,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
 #endif
       );
       if (predBufWOBIO)
-#if 0//JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
         predBufWOBIO->copyFrom(predBuf, (luma && !chroma), (chroma && !luma));
 #else
         predBufWOBIO->copyFrom(predBuf);

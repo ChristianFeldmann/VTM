@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around 
+
 #define JVET_P0512_SIMD_HIGH_BITDEPTH                     1 // JVET-P0512: MC SIMD support for high internal bit-depthf
 
 #define JVET_P0491_BDOFPROF_MVD_RANGE                     1 // JVET-P0491: clip the MVD in BDOF/PROF to [-31 31]

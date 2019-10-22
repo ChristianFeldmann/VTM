@@ -2349,6 +2349,33 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
     int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
 
+#if JVET_P0088_P0353_RPR_FILTERS
+    int xFilter = filterIndex;
+    int yFilter = filterIndex;
+    const int rprThreshold1 = ( 1 << SCALE_RATIO_BITS ) * 5 / 4; 
+    const int rprThreshold2 = ( 1 << SCALE_RATIO_BITS ) * 7 / 4;
+    if( filterIndex == 0 )
+    {
+      if( scalingRatio.first > rprThreshold2 )
+      {
+        xFilter = 4;
+      }
+      else if( scalingRatio.first > rprThreshold1 )
+      {
+        xFilter = 3;
+      }
+
+      if( scalingRatio.second > rprThreshold2 )
+      {
+        yFilter = 4;
+      }
+      else if( scalingRatio.second > rprThreshold1 )
+      {
+        yFilter = 3;
+      }
+    }
+#endif
+
     const int posShift = SCALE_RATIO_BITS - 4;
     int stepX = ( scalingRatio.first + 8 ) >> 4;
     int stepY = ( scalingRatio.second + 8 ) >> 4;
@@ -2397,7 +2424,11 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
       refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ), wrapRef );
       Pel* tempBuf = buffer + col;
 
+#if JVET_P0088_P0353_RPR_FILTERS
+      m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng, xFilter, false, useAltHpelIf );
+#else
       m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng, filterIndex, false, useAltHpelIf );
+#endif
     }
 
     for( row = 0; row < height; row++ )
@@ -2412,7 +2443,11 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
       Pel* tempBuf = buffer + ( yInt - yInt0 ) * tmpStride;
 
       JVET_J0090_SET_CACHE_ENABLE( false );
+#if JVET_P0088_P0353_RPR_FILTERS
+      m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dst + row * dstStride, dstStride, width, 1, yFrac, false, rndRes, chFmt, clpRng, yFilter, false, useAltHpelIf );
+#else
       m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dst + row * dstStride, dstStride, width, 1, yFrac, false, rndRes, chFmt, clpRng, filterIndex, false, useAltHpelIf );
+#endif
       JVET_J0090_SET_CACHE_ENABLE( true );
     }
 

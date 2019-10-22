@@ -2224,10 +2224,11 @@ void InterPrediction::xFillIBCBuffer(CodingUnit &cu)
         continue;
 
       const unsigned int lcuWidth = cu.cs->slice->getSPS()->getMaxCUWidth();
-      const int shiftSample = ::getComponentScaleX(area.compID, cu.chromaFormat);
-      const int ctuSizeLog2 = floorLog2(lcuWidth) - shiftSample;
-      const int pux = area.x & ((m_IBCBufferWidth >> shiftSample) - 1);
-      const int puy = area.y & (( 1 << ctuSizeLog2 ) - 1);
+      const int shiftSampleHor = ::getComponentScaleX(area.compID, cu.chromaFormat);
+      const int shiftSampleVer = ::getComponentScaleY(area.compID, cu.chromaFormat);
+      const int ctuSizeLog2Ver = floorLog2(lcuWidth) - shiftSampleVer;
+      const int pux = area.x & ((m_IBCBufferWidth >> shiftSampleHor) - 1);
+      const int puy = area.y & (( 1 << ctuSizeLog2Ver ) - 1);
       const CompArea dstArea = CompArea(area.compID, cu.chromaFormat, Position(pux, puy), Size(area.width, area.height));
       CPelBuf srcBuf = cu.cs->getRecoBuf(area);
       PelBuf dstBuf = m_IBCBuffer.getBuf(dstArea);
@@ -2240,8 +2241,9 @@ void InterPrediction::xFillIBCBuffer(CodingUnit &cu)
 void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, const ComponentID compID)
 {
   const unsigned int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
-  int shiftSample = ::getComponentScaleX(compID, pu.chromaFormat);
-  const int ctuSizeLog2 = floorLog2(lcuWidth) - shiftSample;
+  const int shiftSampleHor = ::getComponentScaleX(compID, pu.chromaFormat);
+  const int shiftSampleVer = ::getComponentScaleY(compID, pu.chromaFormat);
+  const int ctuSizeLog2Ver = floorLog2(lcuWidth) - shiftSampleVer;
   pu.bv = pu.mv[REF_PIC_LIST_0];
   pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT);
   int refx, refy;
@@ -2252,13 +2254,13 @@ void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, c
   }
   else
   {//Cb or Cr
-    refx = pu.Cb().x + (pu.bv.hor >> shiftSample);
-    refy = pu.Cb().y + (pu.bv.ver >> shiftSample);
+    refx = pu.Cb().x + (pu.bv.hor >> shiftSampleHor);
+    refy = pu.Cb().y + (pu.bv.ver >> shiftSampleVer);
   }
-  refx &= ((m_IBCBufferWidth >> shiftSample) - 1);
-  refy &= ((1 << ctuSizeLog2) - 1);
+  refx &= ((m_IBCBufferWidth >> shiftSampleHor) - 1);
+  refy &= ((1 << ctuSizeLog2Ver) - 1);
 
-  if (refx + predBuf.bufs[compID].width <= (m_IBCBufferWidth >> shiftSample))
+  if (refx + predBuf.bufs[compID].width <= (m_IBCBufferWidth >> shiftSampleHor))
   {
     const CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(predBuf.bufs[compID].width, predBuf.bufs[compID].height));
     const CPelBuf refBuf = m_IBCBuffer.getBuf(srcArea);
@@ -2266,16 +2268,16 @@ void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, c
   }
   else
   {//wrap around
-    int width = (m_IBCBufferWidth >> shiftSample) - refx;
+    int width = (m_IBCBufferWidth >> shiftSampleHor) - refx;
     CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(width, predBuf.bufs[compID].height));
     CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
     PelBuf dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position(0, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
     dstBuf.copyFrom(srcBuf);
 
-    width = refx + predBuf.bufs[compID].width - (m_IBCBufferWidth >> shiftSample);
+    width = refx + predBuf.bufs[compID].width - (m_IBCBufferWidth >> shiftSampleHor);
     srcArea = CompArea(compID, pu.chromaFormat, Position(0, refy), Size(width, predBuf.bufs[compID].height));
     srcBuf = m_IBCBuffer.getBuf(srcArea);
-    dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position((m_IBCBufferWidth >> shiftSample) - refx, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
+    dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position((m_IBCBufferWidth >> shiftSampleHor) - refx, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
     dstBuf.copyFrom(srcBuf);
   }
 }

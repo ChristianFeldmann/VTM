@@ -1427,7 +1427,11 @@ bool CABACReader::intra_chroma_lmc_mode(PredictionUnit& pu)
   int lmModeList[10];
   PU::getLMSymbolList(pu, lmModeList);
 
+#if JVET_P0615_CHROMAMODE_CLEANUP
+  int symbol = m_BinDecoder.decodeBin(Ctx::CclmModeIdx(0));
+#else
   int symbol = m_BinDecoder.decodeBin(Ctx::IntraChromaPredMode(0));
+#endif
 
   if (symbol == 0)
   {

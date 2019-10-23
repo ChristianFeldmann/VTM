@@ -297,6 +297,9 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   int  fstStep = (!verMC ? puHeight : puWidth);
   int  secStep = (!verMC ? puWidth : puHeight);
 
+  pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
+  bool scaled = !PU::isRefPicSameSize( pu );
+
   m_subPuMC = true;
 
   for (int fstDim = fstStart; fstDim < fstEnd; fstDim += fstStep)
@@ -313,7 +316,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
       while (later < secEnd)
       {
         const MotionInfo &laterMi = !verMC ? pu.getMotionInfo(Position{ later, fstDim }) : pu.getMotionInfo(Position{ fstDim, later });
-        if (laterMi == curMi)
+        if (!scaled && laterMi == curMi)
         {
           length += secStep;
         }

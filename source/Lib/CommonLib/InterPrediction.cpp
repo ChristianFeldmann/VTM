@@ -2415,7 +2415,7 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     {
       int posX = (int32_t)x0Int + col * stepX;
       xInt = ( posX + offX ) >> posShift;
-      xInt = std::min( std::max( 0, xInt ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
+      xInt = std::min( std::max( -4, xInt ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) + 4 );
       int xFrac = ( ( posX + offX ) >> ( posShift - shiftHor ) ) & ( ( 1 << shiftHor ) - 1 );
 
       CHECK( xInt0 > xInt, "Wrong horizontal starting point" );
@@ -2435,7 +2435,7 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     {
       int posY = (int32_t)y0Int + row * stepY;
       yInt = ( posY + offY ) >> posShift;
-      yInt = std::min( std::max( 0, yInt ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
+      yInt = std::min( std::max( -4, yInt ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) + 4 );
       int yFrac = ( ( posY + offY ) >> ( posShift - shiftVer ) ) & ( ( 1 << shiftVer ) - 1 );
 
       CHECK( yInt0 > yInt, "Wrong vertical starting point" );

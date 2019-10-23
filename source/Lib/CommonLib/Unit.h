@@ -308,6 +308,9 @@ struct CodingUnit : public UnitArea
   bool           mmvdSkip;
   bool           affine;
   int            affineType;
+#if ADAPTIVE_COLOR_TRANSFORM
+  bool           colorTransform;
+#endif
   bool           triangle;
   bool           transQuantBypass;
   int            bdpcmMode;

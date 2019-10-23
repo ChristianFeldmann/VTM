@@ -600,6 +600,9 @@ public:
   void xEncodeInterResidualQT     (CodingStructure &cs, Partitioner &partitioner, const ComponentID &compID);
   void xEstimateInterResidualQT   (CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist = NULL
     , const bool luma = true, const bool chroma = true
+#if ADAPTIVE_COLOR_TRANSFORM
+    , PelUnitBuf* orgResi = NULL
+#endif
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
   uint64_t xCalcPuMeBits            (PredictionUnit& pu);

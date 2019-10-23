@@ -67,6 +67,9 @@ struct TrQuantParams
 /// QP struct
 class QpParam
 {
+#if ADAPTIVE_COLOR_TRANSFORM
+public:
+#endif
   int Qps[2];
   int pers[2];
   int rems[2];
@@ -121,6 +124,10 @@ public:
 #endif
   void   setLambda               ( const double dLambda )                      { m_dLambda = dLambda; }
   double getLambda               () const                                      { return m_dLambda; }
+#if ADAPTIVE_COLOR_TRANSFORM
+  void   lambdaAdjustColorTrans(bool forward);
+  void   resetStore() { m_resetStore = true; }
+#endif
 
   int* getQuantCoeff             ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_quantCoef            [sizeX][sizeY][list][qp]; };  //!< get Quant Coefficent
   int* getDequantCoeff           ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_dequantCoef          [sizeX][sizeY][list][qp]; };  //!< get DeQuant Coefficent
@@ -170,6 +177,10 @@ private:
 private:
 #if RDOQ_CHROMA_LAMBDA
   double   m_lambdas[MAX_NUM_COMPONENT];
+#endif
+#if ADAPTIVE_COLOR_TRANSFORM
+  double   m_lambdasStore[2][MAX_NUM_COMPONENT];  // 0-org; 1-act
+  bool     m_resetStore;
 #endif
   bool     m_scalingListEnabledFlag;
   bool     m_isScalingListOwner;

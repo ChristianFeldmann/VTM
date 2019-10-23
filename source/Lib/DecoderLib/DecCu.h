@@ -82,6 +82,9 @@ public:
   /// reconstruct Ctu information
 protected:
   void xIntraRecQT        ( CodingUnit&      cu, const ChannelType chType );
+#if ADAPTIVE_COLOR_TRANSFORM
+  void xIntraRecACTQT(CodingUnit&      cu);
+#endif
 
   void xReconInter        ( CodingUnit&      cu );
   void xDecodeInterTexture( CodingUnit&      cu );
@@ -89,6 +92,9 @@ protected:
   void xFillPCMBuffer     ( CodingUnit&      cu );
 
   void xIntraRecBlk       ( TransformUnit&   tu, const ComponentID compID );
+#if ADAPTIVE_COLOR_TRANSFORM
+  void xIntraRecACTBlk(TransformUnit&   tu);
+#endif
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );

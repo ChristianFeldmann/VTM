@@ -436,6 +436,16 @@ const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
   {   4, },
 });
 
+#if ADAPTIVE_COLOR_TRANSFORM
+const CtxSet ContextSetCfg::ACTFlag = ContextSetCfg::addCtxSet
+({
+  {  CNU, },
+  {  CNU, },
+  {  CNU, },
+  {  DWS, },
+  });
+#endif
+
 const CtxSet ContextSetCfg::QtCbf[] =
 {
   ContextSetCfg::addCtxSet

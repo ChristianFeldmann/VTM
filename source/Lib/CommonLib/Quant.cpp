@@ -496,6 +496,9 @@ void Quant::init( uint32_t uiMaxTrSize,
 #if T0196_SELECTIVE_RDOQ
   m_useSelectiveRDOQ     = useSelectiveRDOQ;
 #endif
+#if ADAPTIVE_COLOR_TRANSFORM
+  m_resetStore = true;
+#endif 
 }
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -1213,5 +1216,39 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   }
 }
 
+#if ADAPTIVE_COLOR_TRANSFORM
+void Quant::lambdaAdjustColorTrans(bool forward)
+{
+  if (m_resetStore)
+  {
+    for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
+    {
+      ComponentID compID = (ComponentID)component;
+      int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
+      double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
 
+      m_lambdasStore[0][component] = m_lambdas[component];
+      m_lambdasStore[1][component] = m_lambdas[component] * lamdbaAdjustRate;
+    }
+    m_resetStore = false;
+  }
+
+  static int pairCheck = 0;
+  if (forward)
+  {
+    CHECK(pairCheck == 1, "lambda has been already adjusted");
+    pairCheck = 1;
+  }
+  else
+  {
+    CHECK(pairCheck == 0, "lambda has not been adjusted");
+    pairCheck = 0;
+  }
+
+  for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
+  {
+    m_lambdas[component] = m_lambdasStore[pairCheck][component];
+  }
+}
+#endif
 //! \}

@@ -265,6 +265,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mmvdSkip = other.mmvdSkip;
   affine            = other.affine;
   affineType        = other.affineType;
+#if ADAPTIVE_COLOR_TRANSFORM
+  colorTransform = other.colorTransform;
+#endif 
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
   bdpcmMode         = other.bdpcmMode;
@@ -316,6 +319,9 @@ void CodingUnit::initData()
   mmvdSkip = false;
   affine            = false;
   affineType        = 0;
+#if ADAPTIVE_COLOR_TRANSFORM
+  colorTransform = false;
+#endif 
   triangle          = false;
   transQuantBypass  = false;
   bdpcmMode         = 0;

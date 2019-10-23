@@ -223,6 +223,9 @@ public:
   static const CtxSet   Mvd;
   static const CtxSet   BDPCMMode;
   static const CtxSet   QtRootCbf;
+#if ADAPTIVE_COLOR_TRANSFORM
+  static const CtxSet   ACTFlag;
+#endif
   static const CtxSet   QtCbf           [3];    // [ channel ]
   static const CtxSet   SigCoeffGroup   [2];    // [ ChannelType ]
   static const CtxSet   LastX           [2];    // [ ChannelType ]

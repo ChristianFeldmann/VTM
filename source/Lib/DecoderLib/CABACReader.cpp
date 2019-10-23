@@ -845,6 +845,9 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   // skip data
   if( cu.skip )
   {
+#if ADAPTIVE_COLOR_TRANSFORM
+    cu.colorTransform = false;
+#endif 
     cs.addTU         ( cu, partitioner.chType );
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     pu.shareParentPos = cu.shareParentPos;
@@ -857,8 +860,17 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 
   // prediction mode and partitioning data
   pred_mode ( cu );
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (CU::isIntra(cu))
+  {
+    adaptive_color_transform(cu);
+  }
+#endif
   if (CU::isPLT(cu))
   {
+#if ADAPTIVE_COLOR_TRANSFORM
+    cu.colorTransform = false;
+#endif 
     cs.addTU(cu, partitioner.chType);
     if (cu.isSepTree())
     {
@@ -1330,7 +1342,18 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     return;
   }
   extend_ref_line( cu );
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (cu.colorTransform)
+  {
+    cu.ispMode = NOT_INTRA_SUBPARTITIONS;
+  }
+  else
+  {
+#endif
   isp_mode( cu );
+#if ADAPTIVE_COLOR_TRANSFORM
+  }
+#endif
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA );
 
@@ -1445,6 +1468,14 @@ bool CABACReader::intra_chroma_lmc_mode(PredictionUnit& pu)
 void CABACReader::intra_chroma_pred_mode(PredictionUnit& pu)
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, pu.cu->blocks[pu.chType].lumaSize(), CHANNEL_TYPE_CHROMA);
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (pu.cu->colorTransform)
+  {
+    pu.intraDir[CHANNEL_TYPE_CHROMA] = DM_CHROMA_IDX;
+    return;
+  }
+#endif
+
   // LM chroma mode
   if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
   {
@@ -1492,6 +1523,9 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
     }
     if( !cu.rootCbf )
     {
+#if ADAPTIVE_COLOR_TRANSFORM
+      cu.colorTransform = false;
+#endif 
       TransformUnit& tu = cu.cs->addTU(cu, partitioner.chType);
       tu.depth = 0;
       for( unsigned c = 0; c < tu.blocks.size(); c++ )
@@ -1504,6 +1538,14 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
       return;
     }
   }
+
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (CU::isInter(cu) || CU::isIBC(cu))
+  {
+    adaptive_color_transform(cu);
+  }
+#endif
+
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
   cuCtx.lfnstLastScanPos = false;
@@ -1529,6 +1571,26 @@ void CABACReader::rqt_root_cbf( CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "rqt_root_cbf() ctx=0 root_cbf=%d pos=(%d,%d)\n", cu.rootCbf ? 1 : 0, cu.lumaPos().x, cu.lumaPos().y );
 }
+
+#if ADAPTIVE_COLOR_TRANSFORM
+void CABACReader::adaptive_color_transform(CodingUnit& cu)
+{
+  if (!cu.slice->getSPS()->getUseColorTrans())
+  {
+    return;
+  }
+
+  if (cu.isSepTree())
+  {
+    return;
+  }
+
+  if (CU::isInter(cu) || CU::isIBC(cu) || CU::isIntra(cu))
+  {
+    cu.colorTransform = (m_BinDecoder.decodeBin(Ctx::ACTFlag()));
+  }
+}
+#endif
 
 void CABACReader::sbt_mode( CodingUnit& cu )
 {
@@ -2740,7 +2802,10 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
     {
       bool previousCbf = false;
       bool rootCbfSoFar = false;
-      bool lastCbfIsInferred = false;
+      bool lastCbfIsInferred = false; 
+#if ADAPTIVE_COLOR_TRANSFORM
+      bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
+#endif 
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -2762,7 +2827,23 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
           previousCbf = TU::getPrevTuCbfAtDepth(tu, COMPONENT_Y, trDepth);
         }
       }
+#if ADAPTIVE_COLOR_TRANSFORM
+      bool cbfY = false;
+      if (lastCbfIsInferred)
+      {
+        cbfY = true;
+      }
+      else if (lumaCbfIsInferredACT)
+      {
+        cbfY = true;
+      }
+      else
+      {
+        cbfY = cbf_comp(cs, tu.Y(), trDepth, previousCbf, cu.ispMode);
+      }
+#else
       bool cbfY = lastCbfIsInferred ? true : cbf_comp(cs, tu.Y(), trDepth, previousCbf, cu.ispMode);
+#endif
       TU::setCbfAtDepth(tu, COMPONENT_Y, trDepth, (cbfY ? 1 : 0));
     }
   }

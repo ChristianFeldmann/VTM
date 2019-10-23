@@ -50,6 +50,12 @@
 #include <assert.h>
 #include <cassert>
 
+#define ADAPTIVE_COLOR_TRANSFORM                          1
+#if ADAPTIVE_COLOR_TRANSFORM
+#define DELTA_QP_FOR_Y_Cg                                -5
+#define DELTA_QP_FOR_Co                                  -3
+#endif
+
 #define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
 
 #define JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT               1 // JVET-P0091: Align sample offset calculation of BDOF and PROF

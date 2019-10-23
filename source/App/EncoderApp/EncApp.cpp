@@ -307,6 +307,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setDMVR                                              ( m_DMVR );
   m_cEncLib.setMMVD                                              ( m_MMVD );
   m_cEncLib.setMmvdDisNum                                        (m_MmvdDisNum);
+#if ADAPTIVE_COLOR_TRANSFORM
+  m_cEncLib.setRGBFormatFlag(m_rgbFormat);
+  m_cEncLib.setUseColorTrans(m_useColorTrans);
+#endif
   m_cEncLib.setPLTMode                                           ( m_PLTMode );
   m_cEncLib.setJointCbCr                                         ( m_JointCbCrMode );
   m_cEncLib.setIBCMode                                           ( m_IBCMode );

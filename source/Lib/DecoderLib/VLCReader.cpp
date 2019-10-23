@@ -1398,6 +1398,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );           pcSPS->setAffineAmvrEnabledFlag  ( uiCode != 0 );
   }
   READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+  {
+    READ_FLAG(uiCode, "act_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);
+  }
+  else
+  {
+    pcSPS->setUseColorTrans(false);
+  }
+#endif 
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     READ_FLAG( uiCode,  "plt_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );

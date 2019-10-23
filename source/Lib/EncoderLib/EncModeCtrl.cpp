@@ -436,6 +436,16 @@ bool CacheBlkInfoCtrl::isSkip( const UnitArea& area )
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isSkip;
 }
 
+#if ADAPTIVE_COLOR_TRANSFORM
+char CacheBlkInfoCtrl::getSelectColorSpaceOption(const UnitArea& area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->selectColorSpaceOption;
+}
+#endif
+
 bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -1869,11 +1879,65 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isSkip   |= bestCU->skip;
           relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
           relatedCU.GBiIdx    = bestCU->GBiIdx;
+#if ADAPTIVE_COLOR_TRANSFORM
+          if (bestCU->slice->getSPS()->getUseColorTrans())
+          {
+            if (m_pcEncCfg->getRGBFormatFlag())
+            {
+              if (bestCU->colorTransform && bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+            else
+            {
+              if (!bestCU->colorTransform || !bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+          }
+#endif
         }
         else if (CU::isIBC(*bestCU))
         {
           relatedCU.isIBC = true;
           relatedCU.isSkip |= bestCU->skip;
+#if ADAPTIVE_COLOR_TRANSFORM
+          if (bestCU->slice->getSPS()->getUseColorTrans())
+          {
+            if (m_pcEncCfg->getRGBFormatFlag())
+            {
+              if (bestCU->colorTransform && bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+            else
+            {
+              if (!bestCU->colorTransform || !bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+          }
+#endif
         }
         else if( CU::isIntra( *bestCU ) )
         {

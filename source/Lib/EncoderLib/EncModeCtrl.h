@@ -382,6 +382,9 @@ struct CodedCUInfo
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
   uint8_t GBiIdx;
+#if ADAPTIVE_COLOR_TRANSFORM
+  char    selectColorSpaceOption;
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 
@@ -433,6 +436,10 @@ public:
   bool  getInter( const UnitArea& area );
   void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
   uint8_t getGbiIdx( const UnitArea& area );
+
+#if ADAPTIVE_COLOR_TRANSFORM
+  char  getSelectColorSpaceOption(const UnitArea& area);
+#endif
 };
 
 #if REUSE_CU_RESULTS

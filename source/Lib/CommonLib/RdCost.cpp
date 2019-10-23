@@ -87,6 +87,46 @@ void RdCost::setLambda( double dLambda, const BitDepths &bitDepths )
   m_dLambdaMotionSAD[1] = sqrt(dLambda);
 }
 
+#if ADAPTIVE_COLOR_TRANSFORM
+void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
+{
+  if (m_resetStore)
+  {
+    for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
+    {
+      ComponentID compID = (ComponentID)component;
+      int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
+      double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
+
+      m_dLambdaStore[0][component] = m_dLambda;
+      m_DistScaleStore[0][component] = m_DistScale;
+
+      m_dLambdaStore[1][component] = m_dLambda * lamdbaAdjustRate;
+      m_DistScaleStore[1][component] = double(1 << SCALE_BITS) / m_dLambdaStore[1][component];
+    }
+    m_resetStore = false;
+  }
+
+  static int pairCheck = 0;
+  if (forward)
+  {
+    CHECK(pairCheck == 1, "lambda has been already adjusted");
+    pairCheck = 1;
+  }
+  else
+  {
+    CHECK(pairCheck == 0, "lambda has not been adjusted");
+    pairCheck = 0;
+  }
+
+  m_dLambda = m_dLambdaStore[pairCheck][componentID];
+  m_DistScale = m_DistScaleStore[pairCheck][componentID];
+  if (pairCheck == 0)
+  {
+    CHECK(m_DistScale != m_DistScaleUnadjusted, "lambda should be adjusted to the original value");
+  }
+}
+#endif
 
 // Initialize Function Pointer by [eDFunc]
 void RdCost::init()
@@ -176,6 +216,9 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
+#if ADAPTIVE_COLOR_TRANSFORM
+  m_resetStore = true;
+#endif 
 }
 
 

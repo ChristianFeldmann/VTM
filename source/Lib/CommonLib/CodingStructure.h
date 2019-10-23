@@ -238,6 +238,12 @@ private:
 
 public:
   CodingStructure *bestParent;
+#if ADAPTIVE_COLOR_TRANSFORM
+  double        tmpColorSpaceCost;
+  bool          firstColorSpaceSelected;
+  double        tmpColorSpaceIntraCost[2];
+  bool          firstColorSpaceTestOnly;
+#endif
   bool resetIBCBuffer;
 
   MotionBuf getMotionBuf( const     Area& _area );

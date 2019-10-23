@@ -642,6 +642,9 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   if( cu.skip )
   {
     CHECK( !cu.firstPU->mergeFlag, "Merge flag has to be on!" );
+#if ADAPTIVE_COLOR_TRANSFORM
+    CHECK(cu.colorTransform, "ACT should not be enabled for skip mode");
+#endif
     PredictionUnit&   pu = *cu.firstPU;
     prediction_unit ( pu );
     end_of_ctu      ( cu, cuCtx );
@@ -651,8 +654,17 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
   // prediction mode and partitioning data
   pred_mode ( cu );
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (CU::isIntra(cu))
+  {
+    adaptive_color_transform(cu);
+  }
+#endif
   if (CU::isPLT(cu))
   {
+#if ADAPTIVE_COLOR_TRANSFORM
+    CHECK(cu.colorTransform, "ACT should not be enabled for PLT mode");
+#endif
     if (cu.isSepTree())
     {
       if (isLuma(partitioner.chType))
@@ -990,8 +1002,18 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
     return;
   }
   extend_ref_line( cu );
-
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (cu.colorTransform)
+  {
+    CHECK(cu.ispMode != NOT_INTRA_SUBPARTITIONS, "adaptive color transform cannot be applied to ISP mode");
+  }
+  else
+  {
+#endif
   isp_mode( cu );
+#if ADAPTIVE_COLOR_TRANSFORM
+  }
+#endif
 
   const int numMPMs   = NUM_MOST_PROBABLE_MODES;
   const int numBlocks = CU::getNumPUs( cu );
@@ -1101,7 +1123,18 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
   }
   extend_ref_line( pu );
 
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (pu.cu->colorTransform)
+  {
+    CHECK(pu.cu->ispMode != NOT_INTRA_SUBPARTITIONS, "adaptive color transform cannot be applied to ISP mode");
+  }
+  else
+  {
+#endif
   isp_mode( *pu.cu );
+#if ADAPTIVE_COLOR_TRANSFORM
+  }
+#endif
 
   // prev_intra_luma_pred_flag
   const int numMPMs  = NUM_MOST_PROBABLE_MODES;
@@ -1212,6 +1245,13 @@ void CABACWriter::intra_chroma_lmc_mode(const PredictionUnit& pu)
 void CABACWriter::intra_chroma_pred_mode(const PredictionUnit& pu)
 {
   const unsigned intraDir = pu.intraDir[1];
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (pu.cu->colorTransform)
+  {
+    CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "chroma should use DM for adaptive color transform");
+    return;
+  }
+#endif
   if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
   {
     m_BinEncoder.encodeBin(PU::isLMCMode(intraDir) ? 1 : 0, Ctx::CclmModeFlag(0));
@@ -1265,9 +1305,19 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
 
     if( !cu.rootCbf )
     {
+#if ADAPTIVE_COLOR_TRANSFORM
+      CHECK(cu.colorTransform, "ACT should not be enabled for root_cbf = 0");
+#endif
       return;
     }
   }
+
+#if ADAPTIVE_COLOR_TRANSFORM
+  if (CU::isInter(cu) || CU::isIBC(cu))
+  {
+    adaptive_color_transform(cu);
+  }
+#endif
 
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
@@ -1292,6 +1342,27 @@ void CABACWriter::rqt_root_cbf( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "rqt_root_cbf() ctx=0 root_cbf=%d pos=(%d,%d)\n", cu.rootCbf ? 1 : 0, cu.lumaPos().x, cu.lumaPos().y );
 }
+
+#if ADAPTIVE_COLOR_TRANSFORM
+void CABACWriter::adaptive_color_transform(const CodingUnit& cu)
+{
+  if (!cu.slice->getSPS()->getUseColorTrans())
+  {
+    return;
+  }
+
+  if (cu.isSepTree())
+  {
+    CHECK(cu.colorTransform, "adaptive color transform should be disabled when dualtree and localtree are enabled");
+    return;
+  }
+
+  if (CU::isInter(cu) || CU::isIBC(cu) || CU::isIntra(cu))
+  {
+    m_BinEncoder.encodeBin(cu.colorTransform, Ctx::ACTFlag());
+  }
+}
+#endif
 
 void CABACWriter::sbt_mode( const CodingUnit& cu )
 {
@@ -2501,6 +2572,9 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
       bool previousCbf = false;
       bool rootCbfSoFar = false;
       bool lastCbfIsInferred = false;
+#if ADAPTIVE_COLOR_TRANSFORM
+      bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
+#endif 
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -2524,7 +2598,18 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
       }
       if (!lastCbfIsInferred)
       {
+#if ADAPTIVE_COLOR_TRANSFORM
+        if (!lumaCbfIsInferredACT)
+        {
+#endif
         cbf_comp(cs, TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), tu.Y(), trDepth, previousCbf, cu.ispMode);
+#if ADAPTIVE_COLOR_TRANSFORM
+        }
+        else
+        {
+          CHECK(!TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "adaptive color transform cannot have all zero coefficients");
+        }
+#endif
       }
     }
   }

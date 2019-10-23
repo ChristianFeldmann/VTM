@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+
 #define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
 
 #define JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT               1 // JVET-P0091: Align sample offset calculation of BDOF and PROF
@@ -97,6 +98,8 @@
 #define JVET_P0063_LDT_SPLIT_FIX                          1 // JVET-P0063: Fix local dual tree on BT/TT split conditions in inter coding region
 
 #define JVET_P0329_PLANAR_SIMPLIFICATION                  1 // JVET-P0329: simplify planar prediction by comparison removal
+
+#define JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX             1 // JVET-P0081: Apply asymmetric long tap deblocking (1 + 3) filter at horizontal CTB boundaries for Chroma
 
 #define JVET_P0516_PLT_BINARIZATION                       1 // JVET-P0516: PLT is always signaled when pred mode is euqal to 1 (intra mode) 
 

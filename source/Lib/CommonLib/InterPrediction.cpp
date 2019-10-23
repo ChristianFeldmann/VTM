@@ -221,7 +221,7 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC, cons
   if (m_IBCBuffer.bufs.empty())
   {
 #if JVET_P1018_IBC_NO_WRAPAROUND
-    m_IBCBufferWidth = 256 * 128 / ctuSize;
+    m_IBCBufferWidth = g_IBCBufferrSize / ctuSize;
 #else
     m_IBCBufferWidth = 128 * 128 / ctuSize;
 #endif

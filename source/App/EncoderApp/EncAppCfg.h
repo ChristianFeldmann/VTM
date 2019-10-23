@@ -39,6 +39,14 @@
 #define __ENCAPPCFG__
 
 #include "CommonLib/CommonDef.h"
+#if JVET_O0549_ENCODER_ONLY_FILTER
+
+#include <map>
+template <class T1, class T2>
+static inline std::istream& operator >> (std::istream &in, std::map<T1, T2> &map);
+
+#include "Utilities/program_options_lite.h"
+#endif
 
 #if JVET_O0549_ENCODER_ONLY_FILTER
 #include <map>

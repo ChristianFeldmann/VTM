@@ -297,7 +297,16 @@ int main(int argc, char* argv[])
   auto endTime = std::chrono::steady_clock::now();
   std::time_t endTime2 = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 #if JVET_O0756_CALCULATE_HDRMETRICS
+#if JVET_N0278_FIXES
+  auto metricTime = pcEncApp[0]->getMetricTime();
+
+  for( int layerIdx = 1; layerIdx < pcEncApp.size(); layerIdx++ )
+  {
+    metricTime += pcEncApp[layerIdx]->getMetricTime();
+  }
+#else
   auto metricTime     = pcEncApp->getMetricTime();
+#endif
   auto totalTime      = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime ).count();
   auto encTime        = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime - metricTime ).count();
   auto metricTimeuser = std::chrono::duration_cast<std::chrono::milliseconds>( metricTime ).count();

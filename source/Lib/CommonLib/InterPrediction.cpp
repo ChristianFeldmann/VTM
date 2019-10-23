@@ -2394,7 +2394,14 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
 
     int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
 
-    int refHeight = height * scalingRatio.second >> SCALE_RATIO_BITS;
+    int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
+    yInt0 = std::min( std::max( -4, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) + 4 );
+
+    int xInt0 = ( (int32_t)x0Int + offX ) >> posShift;
+    xInt0 = std::min( std::max( -4, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) + 4 );
+        
+    int refHeight = ((((int32_t)y0Int + (height-1) * stepY) + offY ) >> posShift) - ((((int32_t)y0Int + 0 * stepY) + offY ) >> posShift) + 1;
+
     refHeight = std::max<int>( 1, refHeight );
 
     CHECK( MAX_CU_SIZE * MAX_SCALING_RATIO < refHeight + vFilterSize - 1 + extSize, "Buffer size is not enough, increase MAX_SCALING_RATIO" );
@@ -2402,12 +2409,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     Pel buffer[( MAX_CU_SIZE + 16 ) * ( MAX_CU_SIZE * MAX_SCALING_RATIO + 16 )];
 
     int tmpStride = width;
-
-    int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
-    yInt0 = std::min( std::max( 0, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
-
-    int xInt0 = ( (int32_t)x0Int + offX ) >> posShift;
-    xInt0 = std::min( std::max( 0, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
 
     int xInt = 0, yInt = 0;
 

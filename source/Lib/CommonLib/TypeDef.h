@@ -52,6 +52,10 @@
 
 #define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around 
 
+#define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
+
+#define JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT               1 // JVET-P0091: Align sample offset calculation of BDOF and PROF
+
 #define JVET_P0512_SIMD_HIGH_BITDEPTH                     1 // JVET-P0512: MC SIMD support for high internal bit-depthf
 
 #define JVET_P0491_BDOFPROF_MVD_RANGE                     1 // JVET-P0491: clip the MVD in BDOF/PROF to [-31 31]
@@ -75,6 +79,8 @@
 #define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
 
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
+
+#define JVET_P0505_ALF_CLIP_VALUE                         1 // JVET-P0505: Modified non-linear ALF clipping value derivations
 
 #define JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING            1 // JVET-P0154/P0094/P0172/P0413/P0518/P0281: Clip the PROF sample offset to 14-bit
 
@@ -105,6 +111,8 @@
 #define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
 
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+
+#define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
 

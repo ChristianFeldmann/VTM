@@ -53,7 +53,7 @@ struct MotionVector
   int x, y;
   int error;
   MotionVector() : x(0), y(0), error(INT_LEAST32_MAX) {}
-  void set(int nx, int ny, int ne) { x = nx; y = ny; error = ne; }
+  void set(int vectorX, int vectorY, int errorValue) { x = vectorX; y = vectorY; error = errorValue; }
 };
 
 template <class T>
@@ -106,11 +106,12 @@ public:
 
   void init(const int frameSkip,
     const int inputBitDepth[MAX_NUM_CHANNEL_TYPE],
-    const int MSBExtendedBitDepth[MAX_NUM_CHANNEL_TYPE], const int InternalBitDepth[MAX_NUM_CHANNEL_TYPE],
+    const int msbExtendedBitDepth[MAX_NUM_CHANNEL_TYPE],
+    const int internalBitDepth[MAX_NUM_CHANNEL_TYPE],
     const int width,
     const int height,
     const int *pad,
-    const bool Rec709,
+    const bool rec709,
     const std::string &filename,
     const ChromaFormat inputChroma,
     const InputColourSpaceConversion colorSpaceConv,
@@ -122,14 +123,14 @@ public:
 
 private:
   // Private static member variables
-  static const int s_range;
-  static const double s_chromaFactor;
-  static const double s_sigmaMultiplier;
-  static const double s_sigmaZeroPoint;
-  static const int s_motionVectorFactor;
-  static const int s_padding;
-  static const int s_interpolationFilter[16][8];
-  static const double s_refStrengths[3][2];
+  static const int m_range;
+  static const double m_chromaFactor;
+  static const double m_sigmaMultiplier;
+  static const double m_sigmaZeroPoint;
+  static const int m_motionVectorFactor;
+  static const int m_padding;
+  static const int m_interpolationFilter[16][8];
+  static const double m_refStrengths[3][2];
 
   // Private member variables
   int m_FrameSkip;

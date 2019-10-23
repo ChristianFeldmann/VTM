@@ -190,11 +190,11 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
 
 const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
 {
-  if( CS::isDualITree( *this ) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 
 #if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
-    || partitioner.currArea().chromaFormat == CHROMA_400
-#endif 
-    )
+  if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 || partitioner.currArea().chromaFormat == CHROMA_400 )
+#else
+  if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
+#endif
     return LDT_MODE_TYPE_INHERIT;
 #if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
   int minLumaArea = partitioner.currArea().lumaSize().area();

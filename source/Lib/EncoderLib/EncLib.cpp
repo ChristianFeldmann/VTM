@@ -1347,7 +1347,9 @@ void EncLib::xInitSPS(SPS &sps)
   }
 
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
-
+#if JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT
+  CHECK(log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+#endif
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
   sps.setBDPCMEnabledFlag(m_useBDPCM);

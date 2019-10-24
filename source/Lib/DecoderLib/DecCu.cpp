@@ -552,19 +552,13 @@ void DecCu::xReconInter(CodingUnit &cu)
   }
   if (cu.Y().valid())
   {
-    const PredictionUnit &pu = *cu.firstPU;
 #if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isIbcSmallBlk = CU::isIBC(cu) && (cu.lwidth() * cu.lheight() <= 16);
-    if (!cu.affine && !cu.triangle && !isIbcSmallBlk)
+    CU::saveMotionInHMVP( cu, isIbcSmallBlk );
 #else
     bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
-    if (!cu.affine && !cu.triangle && !isShare)
+    CU::saveMotionInHMVP( cu, isShare );
 #endif
-    {
-      MotionInfo mi = pu.getMotionInfo();
-      mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
-      cu.cs->addMiToLut(CU::isIBC(cu) ? cu.cs->motionLut.lutIbc : cu.cs->motionLut.lut, mi );
-    }
   }
 
   if (cu.firstPU->mhIntraFlag)

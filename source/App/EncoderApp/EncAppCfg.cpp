@@ -2274,7 +2274,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 
 #if ENABLE_QPA
-  if (m_bUsePerceptQPA && !m_bUseAdaptiveQP && m_dualTree && (m_cbQpOffsetDualTree != 0 || m_crQpOffsetDualTree != 0))
+  if (m_bUsePerceptQPA && !m_bUseAdaptiveQP && m_dualTree && (m_cbQpOffsetDualTree != 0 || m_crQpOffsetDualTree != 0 || m_cbCrQpOffsetDualTree != 0))
   {
     msg( WARNING, "*************************************************************************\n" );
     msg( WARNING, "* WARNING: chroma QPA on, ignoring nonzero dual-tree chroma QP offsets! *\n" );

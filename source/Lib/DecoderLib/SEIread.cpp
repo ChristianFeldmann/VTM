@@ -104,23 +104,15 @@ static inline void output_sei_message_header(SEI &sei, std::ostream *pDecodedMes
 /**
  * unmarshal a single SEI message from bitstream bs
  */
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const NalUnitType nalUnitType, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
-#else
  // note: for independent parsing no parameter set should not be required here
-void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const NalUnitType nalUnitType, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
-#endif
+void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t temporalId, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
 {
   setBitstream(bs);
 
   CHECK(m_pcBitstream->getNumBitsUntilByteAligned(), "Bitstream not aligned");
   do
   {
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
-    xReadSEImessage(seis, nalUnitType, sps, hrd, pDecodedMessageOutputStream);
-#else
-    xReadSEImessage(seis, nalUnitType, sps, pDecodedMessageOutputStream);
-#endif
+    xReadSEImessage(seis, nalUnitType, temporalId, sps, hrd, pDecodedMessageOutputStream);
 
     /* SEI messages are an integer number of bytes, something has failed
     * in the parsing if bitstream not byte-aligned */
@@ -131,11 +123,7 @@ void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const Nal
   xReadRbspTrailingBits();
 }
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
-#else
-void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
-#endif
+void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t temporalId, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
 {
 #if ENABLE_TRACING
   xTraceSEIHeader();
@@ -193,38 +181,15 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       else
       {
         sei = new SEIDecodingUnitInfo;
-        xParseSEIDecodingUnitInfo((SEIDecodingUnitInfo&) *sei, payloadSize, sps, pDecodedMessageOutputStream);
+        xParseSEIDecodingUnitInfo((SEIDecodingUnitInfo&) *sei, payloadSize, sps, hrd, pDecodedMessageOutputStream);
       }
       break;
     case SEI::BUFFERING_PERIOD:
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-      if (!sps)
-      {
-        msg( WARNING, "Warning: Found Buffering period SEI message, but no active SPS is available. Ignoring.");
-      }
-      else
-      {
-        sei = new SEIBufferingPeriod;
-        xParseSEIBufferingPeriod((SEIBufferingPeriod&) *sei, payloadSize, sps, pDecodedMessageOutputStream);
-      }
-#else
       sei = new SEIBufferingPeriod;
-      xParseSEIBufferingPeriod((SEIBufferingPeriod&) *sei, payloadSize, pDecodedMessageOutputStream);
+      xParseSEIBufferingPeriod((SEIBufferingPeriod&) *sei, payloadSize, sps, pDecodedMessageOutputStream);
       hrd.setBufferingPeriodSEI((SEIBufferingPeriod*) sei);
-#endif
       break;
     case SEI::PICTURE_TIMING:
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-      if (!sps)
-      {
-        msg( WARNING, "Warning: Found Picture timing SEI message, but no active SPS is available. Ignoring.");
-      }
-      else
-      {
-        sei = new SEIPictureTiming;
-        xParseSEIPictureTiming((SEIPictureTiming&)*sei, payloadSize, sps, pDecodedMessageOutputStream);
-      }
-#else
       {
         const SEIBufferingPeriod *bp= hrd.getBufferingPeriodSEI();
         if (!bp)
@@ -234,23 +199,18 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
         else
         {
           sei = new SEIPictureTiming;
-          xParseSEIPictureTiming((SEIPictureTiming&)*sei, payloadSize, *bp, pDecodedMessageOutputStream);
+          xParseSEIPictureTiming((SEIPictureTiming&)*sei, payloadSize, sps, temporalId, *bp, pDecodedMessageOutputStream);
         }
       }
-#endif
       break;
-#if JVET_O0041_FRAME_FIELD_SEI
     case SEI::FRAME_FIELD_INFO:
       sei = new SEIFrameFieldInfo;
       xParseSEIFrameFieldinfo((SEIFrameFieldInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#endif
-#if JVET_N0494_DRAP
     case SEI::DEPENDENT_RAP_INDICATION:
       sei = new SEIDependentRAPIndication;
       xParseSEIDependentRAPIndication((SEIDependentRAPIndication&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#endif
 #if HEVC_SEI
     case SEI::RECOVERY_POINT:
       sei = new SEIRecoveryPoint;
@@ -522,20 +482,16 @@ void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32
 }
 #endif
 
-void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
+void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t payloadSize, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
   sei_read_uvlc( pDecodedMessageOutputStream, val, "decoding_unit_idx");
   sei.m_decodingUnitIdx = val;
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  if(sps->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
-#else
   if(sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag())
-#endif
   {
-    sei_read_code( pDecodedMessageOutputStream, ( sps->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1 ), val, "du_spt_cpb_removal_delay_increment");
+    sei_read_code( pDecodedMessageOutputStream, hrd.getBufferingPeriodSEI()->getDuCpbRemovalDelayIncrementLength(), val, "du_spt_cpb_removal_delay_increment");
     sei.m_duSptCpbRemovalDelay = val;
   }
   else
@@ -545,66 +501,19 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
   sei_read_flag( pDecodedMessageOutputStream, val, "dpb_output_du_delay_present_flag"); sei.m_dpbOutputDuDelayPresentFlag = (val != 0);
   if(sei.m_dpbOutputDuDelayPresentFlag)
   {
-    sei_read_code( pDecodedMessageOutputStream, sps->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, val, "pic_spt_dpb_output_du_delay");
+    sei_read_code( pDecodedMessageOutputStream, hrd.getBufferingPeriodSEI()->getDpbOutputDelayDuLength(), val, "pic_spt_dpb_output_du_delay");
     sei.m_picSptDpbOutputDuDelay = val;
   }
 }
 
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
-#else
 void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
-#endif
 {
   int i, nalOrVcl;
   uint32_t code;
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  const HRDParameters *pHRD = sps->getHrdParameters();
-#endif
 
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_seq_parameter_set_id" );                         sei.m_bpSeqParameterSetId     = code;
-  if( !pHRD->getSubPicCpbParamsPresentFlag() )
-  {
-    sei_read_flag( pDecodedMessageOutputStream, code, "irap_cpb_params_present_flag" );                   sei.m_rapCpbParamsPresentFlag = code;
-  }
-  if( sei.m_rapCpbParamsPresentFlag )
-  {
-    sei_read_code( pDecodedMessageOutputStream, pHRD->getCpbRemovalDelayLengthMinus1() + 1, code, "cpb_delay_offset" );      sei.m_cpbDelayOffset = code;
-    sei_read_code( pDecodedMessageOutputStream, pHRD->getDpbOutputDelayLengthMinus1()  + 1, code, "dpb_delay_offset" );      sei.m_dpbDelayOffset = code;
-  }
-
-  //read splicing flag and cpb_removal_delay_delta
-  sei_read_flag( pDecodedMessageOutputStream, code, "concatenation_flag");
-  sei.m_concatenationFlag = code;
-  sei_read_code( pDecodedMessageOutputStream, ( pHRD->getCpbRemovalDelayLengthMinus1() + 1 ), code, "au_cpb_removal_delay_delta_minus1" );
-  sei.m_auCpbRemovalDelayDelta = code + 1;
-
-  for( nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
-  {
-    if( ( ( nalOrVcl == 0 ) && ( pHRD->getNalHrdParametersPresentFlag() ) ) ||
-        ( ( nalOrVcl == 1 ) && ( pHRD->getVclHrdParametersPresentFlag() ) ) )
-    {
-      for( i = 0; i < ( pHRD->getCpbCntMinus1( 0 ) + 1 ); i ++ )
-      {
-        sei_read_code( pDecodedMessageOutputStream, ( pHRD->getInitialCpbRemovalDelayLengthMinus1() + 1 ) , code, nalOrVcl?"vcl_initial_cpb_removal_delay":"nal_initial_cpb_removal_delay" );
-        sei.m_initialCpbRemovalDelay[i][nalOrVcl] = code;
-        sei_read_code( pDecodedMessageOutputStream, ( pHRD->getInitialCpbRemovalDelayLengthMinus1() + 1 ) , code, nalOrVcl?"vcl_initial_cpb_removal_offset":"nal_initial_cpb_removal_offset" );
-        sei.m_initialCpbRemovalDelayOffset[i][nalOrVcl] = code;
-        if( pHRD->getSubPicCpbParamsPresentFlag() || sei.m_rapCpbParamsPresentFlag )
-        {
-          sei_read_code( pDecodedMessageOutputStream, ( pHRD->getInitialCpbRemovalDelayLengthMinus1() + 1 ) , code, nalOrVcl?"vcl_initial_alt_cpb_removal_delay":"nal_initial_alt_cpb_removal_delay" );
-          sei.m_initialAltCpbRemovalDelay[i][nalOrVcl] = code;
-          sei_read_code( pDecodedMessageOutputStream, ( pHRD->getInitialCpbRemovalDelayLengthMinus1() + 1 ) , code, nalOrVcl?"vcl_initial_alt_cpb_removal_offset":"nal_initial_alt_cpb_removal_offset" );
-          sei.m_initialAltCpbRemovalDelayOffset[i][nalOrVcl] = code;
-        }
-      }
-    }
-  }
-#else
   sei_read_flag( pDecodedMessageOutputStream, code, "bp_nal_hrd_parameters_present_flag" );               sei.m_bpNalCpbParamsPresentFlag = code;
   sei_read_flag( pDecodedMessageOutputStream, code, "bp_vcl_hrd_parameters_present_flag" );               sei.m_bpVclCpbParamsPresentFlag = code;
 
@@ -613,109 +522,111 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
     sei_read_code( pDecodedMessageOutputStream, 5, code, "initial_cpb_removal_delay_length_minus1" );     sei.m_initialCpbRemovalDelayLength = code + 1;
     sei_read_code( pDecodedMessageOutputStream, 5, code, "cpb_removal_delay_length_minus1" );             sei.m_cpbRemovalDelayLength        = code + 1;
     sei_read_code( pDecodedMessageOutputStream, 5, code, "dpb_output_delay_length_minus1" );              sei.m_dpbOutputDelayLength         = code + 1;
+    if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      sei_read_code( pDecodedMessageOutputStream, 5, code, "du_cpb_removal_delay_increment_length_minus1" );  sei.m_duCpbRemovalDelayIncrementLength = code + 1;
+      sei_read_code( pDecodedMessageOutputStream, 5, code, "dpb_output_delay_du_length_minus1" );             sei.m_dpbOutputDelayDuLength = code + 1;
+    }
   }
 
   sei_read_flag( pDecodedMessageOutputStream, code, "concatenation_flag");
   sei.m_concatenationFlag = code;
   sei_read_code( pDecodedMessageOutputStream, ( sei.m_cpbRemovalDelayLength ), code, "au_cpb_removal_delay_delta_minus1" );
   sei.m_auCpbRemovalDelayDelta = code + 1;
-
-  sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_cpb_cnt_minus1" ); sei.m_bpCpbCnt = code + 1;
-  
-  for( nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
+  sei_read_flag( pDecodedMessageOutputStream, code, "cpb_removal_delay_deltas_present_flag" );               sei.m_cpbRemovalDelayDeltasPresentFlag = code;
+  if (sei.m_cpbRemovalDelayDeltasPresentFlag)
   {
-    if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
-        ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
+    sei_read_uvlc( pDecodedMessageOutputStream, code, "num_cpb_removal_delay_deltas_minus1" );               sei.m_numCpbRemovalDelayDeltas = code + 1;
+    for( i = 0; i < sei.m_numCpbRemovalDelayDeltas; i ++ )
     {
-      sei.m_initialCpbRemovalDelay[nalOrVcl].resize(sei.m_bpCpbCnt);
-      sei.m_initialCpbRemovalDelay[nalOrVcl].resize(sei.m_bpCpbCnt);
-      for( i = 0; i < ( sei.m_bpCpbCnt ); i ++ )
-      {
-        sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, nalOrVcl ? "vcl_initial_cpb_removal_delay" : "nal_initial_cpb_removal_delay" );
-        sei.m_initialCpbRemovalDelay[nalOrVcl][i] = code;
-        sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, nalOrVcl ? "vcl_initial_cpb_removal_offset" : "nal_initial_cpb_removal_offset" );
-        sei.m_initialCpbRemovalDelay[nalOrVcl][i] = code;
-      }
+      sei_read_code( pDecodedMessageOutputStream, ( sei.m_cpbRemovalDelayLength ), code, "cpb_removal_delay_delta[i]" );
+      sei.m_cpbRemovalDelayDelta[ i ] = code;
     }
   }
-#endif
-}
-
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
-#else
-void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSize, const SEIBufferingPeriod& bp, std::ostream *pDecodedMessageOutputStream)
-#endif
-{
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  int i;
-#endif
-#if !JVET_O0041_FRAME_FIELD_SEI
-  uint32_t code;
-#endif
-
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  const HRDParameters *hrd = sps->getHrdParameters();
-#endif
-  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-#if !JVET_O0041_FRAME_FIELD_SEI
+  sei_read_code( pDecodedMessageOutputStream, 3, code, "bp_max_sub_layers_minus1" );     sei.m_bpMaxSubLayers = code + 1;
+  for( i = 0; i < sei.m_bpMaxSubLayers; i ++ )
   {
-    sei_read_code( pDecodedMessageOutputStream, 4, code, "pic_struct" );             sei.m_picStruct            = code;
-    sei_read_code( pDecodedMessageOutputStream, 2, code, "source_scan_type" );       sei.m_sourceScanType       = code;
-    sei_read_flag( pDecodedMessageOutputStream,    code, "duplicate_flag" );         sei.m_duplicateFlag        = (code == 1);
-  }
-#endif
-
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  if( hrd->getCpbDpbDelaysPresentFlag())
-  {
-    sei_read_code( pDecodedMessageOutputStream, ( hrd->getCpbRemovalDelayLengthMinus1() + 1 ), code, "au_cpb_removal_delay_minus1" );
-    sei.m_auCpbRemovalDelay = code + 1;
-    sei_read_code( pDecodedMessageOutputStream, ( hrd->getDpbOutputDelayLengthMinus1() + 1 ), code, "pic_dpb_output_delay" );
-    sei.m_picDpbOutputDelay = code;
-
-    if(hrd->getSubPicCpbParamsPresentFlag())
+    sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_cpb_cnt_minus1[i]" ); sei.m_bpCpbCnt[i] = code + 1;
+    for( nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
-      sei_read_code( pDecodedMessageOutputStream, hrd->getDpbOutputDelayDuLengthMinus1()+1, code, "pic_dpb_output_du_delay" );
-      sei.m_picDpbOutputDuDelay = code;
-    }
-
-    if( hrd->getSubPicCpbParamsPresentFlag() && hrd->getSubPicCpbParamsInPicTimingSEIFlag() )
-    {
-      sei_read_uvlc( pDecodedMessageOutputStream, code, "num_decoding_units_minus1");
-      sei.m_numDecodingUnitsMinus1 = code;
-      sei_read_flag( pDecodedMessageOutputStream, code, "du_common_cpb_removal_delay_flag" );
-      sei.m_duCommonCpbRemovalDelayFlag = code;
-      if( sei.m_duCommonCpbRemovalDelayFlag )
+      if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
+         ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
       {
-        sei_read_code( pDecodedMessageOutputStream, ( hrd->getDuCpbRemovalDelayLengthMinus1() + 1 ), code, "du_common_cpb_removal_delay_increment_minus1" );
-        sei.m_duCommonCpbRemovalDelayMinus1 = code;
-      }
-      sei.m_numNalusInDuMinus1.resize(sei.m_numDecodingUnitsMinus1 + 1 );
-      sei.m_duCpbRemovalDelayMinus1.resize( sei.m_numDecodingUnitsMinus1 + 1 );
-
-      for( i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
-      {
-        sei_read_uvlc( pDecodedMessageOutputStream, code, "num_nalus_in_du_minus1[i]");
-        sei.m_numNalusInDuMinus1[ i ] = code;
-        if( ( !sei.m_duCommonCpbRemovalDelayFlag ) && ( i < sei.m_numDecodingUnitsMinus1 ) )
+        for( int j = 0; j < ( sei.m_bpCpbCnt[i] ); j ++ )
         {
-          sei_read_code( pDecodedMessageOutputStream, ( hrd->getDuCpbRemovalDelayLengthMinus1() + 1 ), code, "du_cpb_removal_delay_minus1[i]" );
-          sei.m_duCpbRemovalDelayMinus1[ i ] = code;
+          sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, nalOrVcl ? "vcl_initial_cpb_removal_delay[i][j]" : "nal_initial_cpb_removal_delay[i][j]" );
+          sei.m_initialCpbRemovalDelay[i][j][nalOrVcl] = code;
+          sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, nalOrVcl ? "vcl_initial_cpb_removal_offset[i][j]" : "nal_initial_cpb_removal_offset[i][j]" );
+          sei.m_initialCpbRemovalDelay[i][j][nalOrVcl] = code;
         }
       }
     }
   }
-#else
-  uint32_t symbol;
-  sei_read_code( pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, symbol, "cpb_removal_delay_minus1" );
-  sei.m_auCpbRemovalDelay = symbol + 1;
-  sei_read_code( pDecodedMessageOutputStream, bp.m_dpbOutputDelayLength,  symbol, "dpb_output_delay" );
-  sei.m_picDpbOutputDelay = symbol;
-#endif
 }
 
-#if JVET_O0041_FRAME_FIELD_SEI
+void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSize, const SPS *sps, const uint32_t temporalId, const SEIBufferingPeriod& bp, std::ostream *pDecodedMessageOutputStream)
+{
+
+  const HRDParameters *hrd = sps->getHrdParameters();
+  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
+
+  uint32_t symbol;
+  sei_read_code( pDecodedMessageOutputStream, 3, symbol, "pt_max_sub_layers_minus1" );
+  sei.m_ptMaxSubLayers = symbol + 1;
+  sei_read_code( pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, symbol, "cpb_removal_delay_minus1[pt_max_sub_layers_minus1]" );
+  sei.m_auCpbRemovalDelay[sei.m_ptMaxSubLayers - 1] = symbol + 1;
+  for( int i = temporalId; i < sei.m_ptMaxSubLayers - 1; i ++ )
+  {
+    sei_read_flag( pDecodedMessageOutputStream,    symbol, "sub_layer_delays_present_flag[i]" );         sei.m_subLayerDelaysPresentFlag[i]        = (symbol == 1);
+    if( sei.m_subLayerDelaysPresentFlag[ i ] )
+    {
+      sei_read_flag( pDecodedMessageOutputStream,    symbol, "cpb_removal_delay_delta_enabled_flag[i]" );         sei.m_cpbRemovalDelayDeltaEnabledFlag[i]        = (symbol == 1);
+      if( sei.m_cpbRemovalDelayDeltaEnabledFlag[ i ] )
+      {
+        sei_read_code( pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]" );
+        sei.m_cpbRemovalDelayDeltaIdx[ i ] = symbol;
+      }
+      else
+      {
+        sei_read_code( pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, symbol, "cpb_removal_delay_minus1[i]" );
+        sei.m_auCpbRemovalDelay[ i ] = symbol + 1;
+      }
+    }
+  }
+  sei_read_code( pDecodedMessageOutputStream, bp.m_dpbOutputDelayLength,  symbol, "dpb_output_delay" );
+  sei.m_picDpbOutputDelay = symbol;
+  if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+  {
+    sei_read_code( pDecodedMessageOutputStream, bp.getDpbOutputDelayDuLength(), symbol, "pic_dpb_output_du_delay" );
+    sei.m_picDpbOutputDuDelay = symbol;
+  }
+  if( hrd->getDecodingUnitHrdParamsPresentFlag() && hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() )
+  {
+    sei_read_uvlc( pDecodedMessageOutputStream, symbol, "num_decoding_units_minus1" );
+    sei.m_numDecodingUnitsMinus1 = symbol;
+    sei.m_numNalusInDuMinus1.resize(sei.m_numDecodingUnitsMinus1 + 1 );
+    sei.m_duCpbRemovalDelayMinus1.resize( sei.m_numDecodingUnitsMinus1 + 1 );
+
+    sei_read_flag( pDecodedMessageOutputStream, symbol, "du_common_cpb_removal_delay_flag" );
+    sei.m_duCommonCpbRemovalDelayFlag = symbol;
+    if( sei.m_duCommonCpbRemovalDelayFlag )
+    {
+      sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), symbol, "du_common_cpb_removal_delay_inrement_minus1" );
+      sei.m_duCommonCpbRemovalDelayMinus1 = symbol;
+    }
+    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+    {
+      sei_read_uvlc( pDecodedMessageOutputStream, symbol, "num_nalus_in_du_minus1[i]" );
+      sei.m_numNalusInDuMinus1[i] = symbol;
+      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+      {
+        sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), symbol, "du_cpb_removal_delay_increment_minus1[i]" );
+        sei.m_duCpbRemovalDelayMinus1[i] = symbol;
+      }
+    }
+  }
+}
+
 void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
@@ -752,14 +663,11 @@ void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, uint32_t payload
   sei_read_flag( pDecodedMessageOutputStream, symbol,      "duplicate_flag" );
   sei.m_duplicateFlag = symbol;
 }
-#endif
 
-#if JVET_N0494_DRAP
 void SEIReader::xParseSEIDependentRAPIndication( SEIDependentRAPIndication& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream )
 {
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 }
-#endif
 
 
 #if HEVC_SEI

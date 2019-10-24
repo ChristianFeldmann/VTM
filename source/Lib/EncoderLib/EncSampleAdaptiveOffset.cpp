@@ -80,9 +80,7 @@ EncSampleAdaptiveOffset::EncSampleAdaptiveOffset()
 {
   m_CABACEstimator = NULL;
 
-#if JVET_O1164_PS
   ::memset( m_saoDisabledRate, 0, sizeof( m_saoDisabledRate ) );
-#endif
 }
 
 EncSampleAdaptiveOffset::~EncSampleAdaptiveOffset()
@@ -117,9 +115,6 @@ void EncSampleAdaptiveOffset::createEncData(bool isPreDBFSamplesUsed, uint32_t n
 
   }
 
-#if !JVET_O1164_PS
-  ::memset(m_saoDisabledRate, 0, sizeof(m_saoDisabledRate));
-#endif
 
   for(int typeIdc=0; typeIdc < NUM_SAO_NEW_TYPES; typeIdc++)
   {
@@ -251,11 +246,7 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
-#if !JVET_O0525_REMOVE_PCM
-  xPCMLFDisableProcess(cs);
-#else
   xLosslessDisableProcess(cs);
-#endif
 }
 
 

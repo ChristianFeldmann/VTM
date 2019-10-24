@@ -199,37 +199,26 @@ void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Sli
 {
 }
 #endif
-
-void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI)
+void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, bool noLeadingPictures)
 {
   CHECK(!(m_isInitialized), "bufferingPeriodSEI already initialized");
   CHECK(!(bufferingPeriodSEI != nullptr), "Need a bufferingPeriodSEI for initialization (got nullptr)");
 
   uint32_t uiInitialCpbRemovalDelay = (90000/2);                      // 0.5 sec
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelay      [0][1]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelayOffset[0][1]     = uiInitialCpbRemovalDelay;
-
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][0]  = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][0]  = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelay      [0][1]  = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialAltCpbRemovalDelayOffset[0][1]  = uiInitialCpbRemovalDelay;
-
-  bufferingPeriodSEI->m_rapCpbParamsPresentFlag = 0;
-#else
-  bufferingPeriodSEI->m_initialCpbRemovalDelay  [0].resize(1);
-  bufferingPeriodSEI->m_initialCpbRemovalOffset [0].resize(1);
-  bufferingPeriodSEI->m_initialCpbRemovalDelay  [1].resize(1);
-  bufferingPeriodSEI->m_initialCpbRemovalOffset [1].resize(1);
-  bufferingPeriodSEI->m_initialCpbRemovalDelay [0][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalOffset[0][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalDelay [1][0]     = uiInitialCpbRemovalDelay;
-  bufferingPeriodSEI->m_initialCpbRemovalOffset[1][0]     = uiInitialCpbRemovalDelay;
   bufferingPeriodSEI->m_bpNalCpbParamsPresentFlag = true;
-  bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;  
-  bufferingPeriodSEI->m_bpCpbCnt = 1;
+  bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;
+  bufferingPeriodSEI->m_bpMaxSubLayers = m_pcCfg->getMaxTempLayer() ;
+  for(int i=0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
+  {
+    bufferingPeriodSEI->m_bpCpbCnt[i] = 1;
+    for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt[i]; j++)
+    {
+      bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][0] = uiInitialCpbRemovalDelay;
+      bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][1] = uiInitialCpbRemovalDelay;
+      bufferingPeriodSEI->m_initialCpbRemovalOffset[j][i][0] = uiInitialCpbRemovalDelay;
+      bufferingPeriodSEI->m_initialCpbRemovalOffset[j][i][1] = uiInitialCpbRemovalDelay;
+    }
+  }
 
   bufferingPeriodSEI->m_initialCpbRemovalDelayLength = 16;                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
   // Note: The following parameters require some knowledge about the GOP structure.
@@ -247,14 +236,70 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI)
     bufferingPeriodSEI->m_cpbRemovalDelayLength = 9;                        // max. 2^10
     bufferingPeriodSEI->m_dpbOutputDelayLength =  9;                        // max. 2^10
   }
-
-#endif
+  bufferingPeriodSEI->m_duCpbRemovalDelayIncrementLength = 7;               // ceil( log2( tick_divisor_minus2 + 2 ) )
+  bufferingPeriodSEI->m_dpbOutputDelayDuLength = bufferingPeriodSEI->m_dpbOutputDelayLength + bufferingPeriodSEI->m_duCpbRemovalDelayIncrementLength;
   //for the concatenation, it can be set to one during splicing.
   bufferingPeriodSEI->m_concatenationFlag = 0;
   //since the temporal layer HRDParameters is not ready, we assumed it is fixed
   bufferingPeriodSEI->m_auCpbRemovalDelayDelta = 1;
-  bufferingPeriodSEI->m_cpbDelayOffset = 0;
-  bufferingPeriodSEI->m_dpbDelayOffset = 0;
+  bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag = m_pcCfg->getBpDeltasGOPStructure() ;
+  if (bufferingPeriodSEI->m_cpbRemovalDelayDeltasPresentFlag)
+  {
+    switch (m_pcCfg->getGOPSize())
+    {
+      case 8:
+      {
+        if (noLeadingPictures)
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 5;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[3]          = 6;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[4]          = 7;
+        }
+        else
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+        }
+      }
+        break;
+      case 16:
+      {
+        if (noLeadingPictures)
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 9;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[3]          = 4;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[4]          = 6;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[5]          = 7;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[6]          = 9;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[7]          = 14;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[8]          = 15;
+        }
+        else
+        {
+          bufferingPeriodSEI->m_numCpbRemovalDelayDeltas         = 5;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[0]          = 1;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[1]          = 2;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[2]          = 3;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[3]          = 6;
+          bufferingPeriodSEI->m_cpbRemovalDelayDelta[4]          = 7;
+        }
+      }
+        break;
+      default:
+      {
+        THROW("m_cpbRemovalDelayDelta not applicable for the GOP size");
+      }
+        break;
+    }
+  }
 }
 
 #if HEVC_SEI
@@ -324,13 +369,11 @@ void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPicture
   }
 }
 
-#if JVET_N0494_DRAP
 void SEIEncoder::initSEIDependentRAPIndication(SEIDependentRAPIndication *seiDependentRAPIndication)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(seiDependentRAPIndication!=NULL), "Unspecified error");
 }
-#endif
 
 #if HEVC_SEI
 void SEIEncoder::initTemporalLevel0IndexSEI(SEITemporalLevel0Index *temporalLevel0IndexSEI, Slice *slice)

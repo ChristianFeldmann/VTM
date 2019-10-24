@@ -50,28 +50,22 @@ struct NALUnit
   NalUnitType m_nalUnitType; ///< nal_unit_type
   uint32_t        m_temporalId;  ///< temporal_id
   uint32_t        m_nuhLayerId;  ///< nuh_layer_id
-#if JVET_O0179
   uint32_t        m_forbiddenZeroBit;
   uint32_t        m_nuhReservedZeroBit;
-#endif
 
   NALUnit(const NALUnit &src)
   :m_nalUnitType (src.m_nalUnitType)
   ,m_temporalId  (src.m_temporalId)
   ,m_nuhLayerId  (src.m_nuhLayerId)
-#if JVET_O0179
   , m_forbiddenZeroBit(src.m_forbiddenZeroBit)
   , m_nuhReservedZeroBit(src.m_nuhReservedZeroBit)
-#endif
   { }
   /** construct an NALunit structure with given header values. */
   NALUnit(
     NalUnitType nalUnitType,
     int         temporalId = 0,
-#if JVET_O0179
-    uint32_t nuhReservedZeroBit = 0, 
+    uint32_t nuhReservedZeroBit = 0,
     uint32_t forbiddenZeroBit = 0,
-#endif
     int         nuhLayerId = 0)
     :m_nalUnitType (nalUnitType)
     ,m_temporalId  (temporalId)
@@ -97,11 +91,7 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-#if JVET_N0865_GRA2GDR
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR
-#else
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA
-#endif
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL;
   }
@@ -120,11 +110,7 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-#if JVET_N0865_GRA2GDR
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR;
-#else
-        || m_nalUnitType == NAL_UNIT_CODED_SLICE_GRA;
-#endif
   }
 };
 
@@ -163,6 +149,7 @@ struct NALUnitEBSP : public NALUnit
 class AccessUnit : public std::list<NALUnitEBSP*> // NOTE: Should not inherit from STL.
 {
 public:
+  int temporalId;
   ~AccessUnit()
   {
     for (AccessUnit::iterator it = this->begin(); it != this->end(); it++)

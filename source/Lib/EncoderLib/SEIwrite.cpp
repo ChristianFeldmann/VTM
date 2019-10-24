@@ -41,11 +41,7 @@
 //! \ingroup EncoderLib
 //! \{
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps)
-#else
-void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd)
-#endif
+void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId)
 {
   switch (sei.payloadType())
   {
@@ -57,41 +53,29 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIActiveParameterSets(*static_cast<const SEIActiveParameterSets*>(& sei));
     break;
 #endif
-    case SEI::DECODING_UNIT_INFO:
-    xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), sps);
+  case SEI::DECODING_UNIT_INFO:
+    xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), sps, hrd);
     break;
   case SEI::DECODED_PICTURE_HASH:
     xWriteSEIDecodedPictureHash(*static_cast<const SEIDecodedPictureHash*>(&sei));
     break;
   case SEI::BUFFERING_PERIOD:
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
     xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei), sps);
-#else
-    xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei));
     hrd.setBufferingPeriodSEI(static_cast<const SEIBufferingPeriod*>(&sei));
-#endif
     break;
   case SEI::PICTURE_TIMING:
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-    xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps);
-#else
     {
       const SEIBufferingPeriod *bp = hrd.getBufferingPeriodSEI();
       CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Picture Timing SEI");
-      xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), *bp);
+      xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps, *bp, temporalId);
     }
-#endif
     break;
-#if JVET_O0041_FRAME_FIELD_SEI
   case SEI::FRAME_FIELD_INFO:
     xWriteSEIFrameFieldInfo(*static_cast<const SEIFrameFieldInfo*>(&sei));
     break;
-#endif
-#if JVET_N0494_DRAP
   case SEI::DEPENDENT_RAP_INDICATION:
     xWriteSEIDependentRAPIndication(*static_cast<const SEIDependentRAPIndication*>(&sei));
     break;
-#endif
 #if HEVC_SEI
   case SEI::RECOVERY_POINT:
     xWriteSEIRecoveryPoint(*static_cast<const SEIRecoveryPoint*>(&sei));
@@ -160,11 +144,7 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
 /**
  * marshal all SEI messages in provided list into one bitstream bs
  */
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested)
-#else
-void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, bool isNested)
-#endif
+void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested, const uint32_t temporalId)
 {
 #if ENABLE_TRACING
   if (g_HLSTraceEnable)
@@ -184,11 +164,7 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
     bool traceEnable = g_HLSTraceEnable;
     g_HLSTraceEnable = false;
 #endif
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
-    xWriteSEIpayloadData(bs_count, **sei, sps, hrd);
-#else
-    xWriteSEIpayloadData(bs_count, **sei, sps);
-#endif
+    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
 #if ENABLE_TRACING
     g_HLSTraceEnable = traceEnable;
 #endif
@@ -216,11 +192,7 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
       xTraceSEIMessageType((*sei)->payloadType());
 #endif
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-    xWriteSEIpayloadData(bs, **sei, sps);
-#else
-    xWriteSEIpayloadData(bs, **sei, sps, hrd);
-#endif
+    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
   }
   if (!isNested)
   {
@@ -288,65 +260,22 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 }
 #endif
 
-void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps)
+void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps, HRD &hrd)
 {
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  if(sps->getHrdParameters()->getSubPicCpbParamsInPicTimingSEIFlag())
-#else
   if(sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag())
-#endif
   {
-    WRITE_CODE( sei.m_duSptCpbRemovalDelay, (sps->getHrdParameters()->getDuCpbRemovalDelayLengthMinus1() + 1), "du_spt_cpb_removal_delay_increment");
+    WRITE_CODE( sei.m_duSptCpbRemovalDelay, hrd.getBufferingPeriodSEI()->getDuCpbRemovalDelayIncrementLength(), "du_spt_cpb_removal_delay_increment");
   }
   WRITE_FLAG( sei.m_dpbOutputDuDelayPresentFlag, "dpb_output_du_delay_present_flag");
   if(sei.m_dpbOutputDuDelayPresentFlag)
   {
-    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, sps->getHrdParameters()->getDpbOutputDelayDuLengthMinus1() + 1, "pic_spt_dpb_output_du_delay");
+    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, hrd.getBufferingPeriodSEI()->getDpbOutputDelayDuLength(), "pic_spt_dpb_output_du_delay");
   }
 }
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
 void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps)
-#else
-void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
-#endif
 {
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  int i, nalOrVcl;
-
-  const HRDParameters *hrd = sps->getHrdParameters();
-
-  WRITE_UVLC( sei.m_bpSeqParameterSetId, "bp_seq_parameter_set_id" );
-  if( !hrd->getSubPicCpbParamsPresentFlag() )
-  {
-    WRITE_FLAG( sei.m_rapCpbParamsPresentFlag, "irap_cpb_params_present_flag" );
-  }
-  if( sei.m_rapCpbParamsPresentFlag )
-  {
-    WRITE_CODE( sei.m_cpbDelayOffset, hrd->getCpbRemovalDelayLengthMinus1() + 1, "cpb_delay_offset" );
-    WRITE_CODE( sei.m_dpbDelayOffset, hrd->getDpbOutputDelayLengthMinus1()  + 1, "dpb_delay_offset" );
-  }
-  WRITE_FLAG( sei.m_concatenationFlag, "concatenation_flag");
-  WRITE_CODE( sei.m_auCpbRemovalDelayDelta - 1, ( hrd->getCpbRemovalDelayLengthMinus1() + 1 ), "au_cpb_removal_delay_delta_minus1" );
-  for( nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
-  {
-    if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
-        ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
-    {
-      for( i = 0; i < ( hrd->getCpbCntMinus1( 0 ) + 1 ); i ++ )
-      {
-        WRITE_CODE( sei.m_initialCpbRemovalDelay[i][nalOrVcl],( hrd->getInitialCpbRemovalDelayLengthMinus1() + 1 ) ,           "initial_cpb_removal_delay" );
-        WRITE_CODE( sei.m_initialCpbRemovalDelayOffset[i][nalOrVcl],( hrd->getInitialCpbRemovalDelayLengthMinus1() + 1 ),      "initial_cpb_removal_delay_offset" );
-        if( hrd->getSubPicCpbParamsPresentFlag() || sei.m_rapCpbParamsPresentFlag )
-        {
-          WRITE_CODE( sei.m_initialAltCpbRemovalDelay[i][nalOrVcl], ( hrd->getInitialCpbRemovalDelayLengthMinus1() + 1 ) ,     "initial_alt_cpb_removal_delay" );
-          WRITE_CODE( sei.m_initialAltCpbRemovalDelayOffset[i][nalOrVcl], ( hrd->getInitialCpbRemovalDelayLengthMinus1() + 1 ),"initial_alt_cpb_removal_delay_offset" );
-        }
-      }
-    }
-  }
-#else
   WRITE_FLAG( sei.m_bpNalCpbParamsPresentFlag, "bp_nal_hrd_parameters_present_flag");
   WRITE_FLAG( sei.m_bpVclCpbParamsPresentFlag, "bp_vcl_hrd_parameters_present_flag");
 
@@ -358,6 +287,13 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
     WRITE_CODE( sei.m_cpbRemovalDelayLength - 1,        5, "cpb_removal_delay_length_minus1" );
     CHECK (sei.m_dpbOutputDelayLength < 1, "sei.m_dpbOutputDelayLength must be > 0");
     WRITE_CODE( sei.m_dpbOutputDelayLength - 1,         5, "dpb_output_delay_length_minus1" );
+    if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() )
+    {
+      CHECK (sei.m_duCpbRemovalDelayIncrementLength < 1, "sei.m_duCpbRemovalDelayIncrementLength must be > 0");
+      WRITE_CODE( sei.m_duCpbRemovalDelayIncrementLength - 1, 5, "du_cpb_removal_delay_increment_length_minus1" );
+      CHECK (sei.m_dpbOutputDelayDuLength < 1, "sei.m_dpbOutputDelayDuLength must be > 0");
+      WRITE_CODE( sei.m_dpbOutputDelayDuLength - 1, 5, "dpb_output_delay_du_length_minus1" );
+    }
   }
 
   WRITE_FLAG( sei.m_concatenationFlag, "concatenation_flag");
@@ -365,78 +301,82 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
   CHECK (sei.m_auCpbRemovalDelayDelta < 1, "sei.m_auCpbRemovalDelayDelta must be > 0");
   WRITE_CODE( sei.m_auCpbRemovalDelayDelta - 1, sei.m_cpbRemovalDelayLength, "au_cpb_removal_delay_delta_minus1" );
 
-  CHECK (sei.m_bpCpbCnt < 1, "sei.m_bpCpbCnt must be > 0");
-  WRITE_UVLC( sei.m_bpCpbCnt - 1, "bp_cpb_cnt_minus1");
-
-  for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
+  WRITE_FLAG( sei.m_cpbRemovalDelayDeltasPresentFlag, "cpb_removal_delay_deltas_present_flag");
+  if (sei.m_cpbRemovalDelayDeltasPresentFlag)
   {
-    if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
-        ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
+    CHECK (sei.m_numCpbRemovalDelayDeltas < 1, "m_numCpbRemovalDelayDeltas must be > 0");
+    WRITE_UVLC( sei.m_numCpbRemovalDelayDeltas - 1, "num_cpb_removal_delay_deltas_minus1" );
+    for( int i = 0; i < sei.m_numCpbRemovalDelayDeltas; i ++ )
     {
-      CHECK (sei.m_initialCpbRemovalDelay[nalOrVcl].size() != sei.m_bpCpbCnt, "wrong number of values in m_initialCpbRemovalDelay");
-      CHECK (sei.m_initialCpbRemovalOffset[nalOrVcl].size() != sei.m_bpCpbCnt, "wrong number of values in m_initialCpbRemovalOffset");
-      for( int i = 0; i < sei.m_bpCpbCnt; i ++ )
-      {
-        WRITE_CODE( sei.m_initialCpbRemovalDelay[nalOrVcl][i],  sei.m_initialCpbRemovalDelayLength, nalOrVcl ? "vcl_initial_cpb_removal_delay"  : "nal_initial_cpb_removal_delay"  );
-        WRITE_CODE( sei.m_initialCpbRemovalOffset[nalOrVcl][i], sei.m_initialCpbRemovalDelayLength, nalOrVcl ? "vcl_initial_cpb_removal_offset" : "nal_initial_cpb_removal_offset" );
-      }
+      WRITE_CODE( sei.m_cpbRemovalDelayDelta[i],        sei.m_cpbRemovalDelayLength, "cpb_removal_delay_delta[i]" );
     }
+    CHECK (sei.m_bpMaxSubLayers < 1, "bp_max_sub_layers_minus1 must be > 0");
+    WRITE_CODE( sei.m_bpMaxSubLayers - 1,        3, "bp_max_sub_layers_minus1" );
   }
-
-#endif
-}
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps)
-#else
-void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod &bp)
-#endif
-{
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  int i;
-  const HRDParameters *hrd = sps->getHrdParameters();
-#endif
-#if !JVET_O0041_FRAME_FIELD_SEI
+  for( int i = 0; i < sei.m_bpMaxSubLayers; i ++ )
   {
-    WRITE_CODE( sei.m_picStruct, 4,              "pic_struct" );
-    WRITE_CODE( sei.m_sourceScanType, 2,         "source_scan_type" );
-    WRITE_FLAG( sei.m_duplicateFlag ? 1 : 0,     "duplicate_flag" );
-  }
-#endif
-
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  if( hrd->getCpbDpbDelaysPresentFlag() )
-  {
-    WRITE_CODE( sei.m_auCpbRemovalDelay - 1, ( hrd->getCpbRemovalDelayLengthMinus1() + 1 ),                                         "au_cpb_removal_delay_minus1" );
-    WRITE_CODE( sei.m_picDpbOutputDelay, ( hrd->getDpbOutputDelayLengthMinus1() + 1 ),                                          "pic_dpb_output_delay" );
-    if(hrd->getSubPicCpbParamsPresentFlag())
+    CHECK (sei.m_bpCpbCnt[i] < 1, "sei.m_bpCpbCnt[i] must be > 0");
+    WRITE_UVLC( sei.m_bpCpbCnt[i] - 1, "bp_cpb_cnt_minus1[i]");
+    for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
-      WRITE_CODE(sei.m_picDpbOutputDuDelay, hrd->getDpbOutputDelayDuLengthMinus1()+1, "pic_dpb_output_du_delay" );
-    }
-    if( hrd->getSubPicCpbParamsPresentFlag() && hrd->getSubPicCpbParamsInPicTimingSEIFlag() )
-    {
-      WRITE_UVLC( sei.m_numDecodingUnitsMinus1,     "num_decoding_units_minus1" );
-      WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_common_cpb_removal_delay_flag" );
-      if( sei.m_duCommonCpbRemovalDelayFlag )
+      if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
+         ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
       {
-        WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1, ( hrd->getDuCpbRemovalDelayLengthMinus1() + 1 ),                       "du_common_cpb_removal_delay_minus1" );
-      }
-      for( i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
-      {
-        WRITE_UVLC( sei.m_numNalusInDuMinus1[ i ],  "num_nalus_in_du_minus1");
-        if( ( !sei.m_duCommonCpbRemovalDelayFlag ) && ( i < sei.m_numDecodingUnitsMinus1 ) )
+        for( int j = 0; j < sei.m_bpCpbCnt[i]; j ++ )
         {
-          WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[ i ], ( hrd->getDuCpbRemovalDelayLengthMinus1() + 1 ),                        "du_cpb_removal_delay_minus1" );
+          WRITE_CODE( sei.m_initialCpbRemovalDelay[j][i][nalOrVcl],  sei.m_initialCpbRemovalDelayLength,           "initial_cpb_removal_delay[j][i][nalOrVcl]" );
+          WRITE_CODE( sei.m_initialCpbRemovalOffset[j][i][nalOrVcl], sei.m_initialCpbRemovalDelayLength,           "initial_cpb_removal_delay_offset[j][i][nalOrVcl]" );
         }
       }
     }
   }
-#else
-  WRITE_CODE( sei.m_auCpbRemovalDelay - 1, bp.m_cpbRemovalDelayLength,                                         "cpb_removal_delay_minus1" );
+}
+void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod &bp, const uint32_t temporalId)
+{
+
+  CHECK (sei.m_ptMaxSubLayers < 1, "pt_max_sub_layers_minus1 must be > 0");
+  WRITE_CODE( sei.m_ptMaxSubLayers - 1,        3, "pt_max_sub_layers_minus1" );
+  WRITE_CODE( sei.m_auCpbRemovalDelay[sei.m_ptMaxSubLayers - 1] - 1, bp.m_cpbRemovalDelayLength,               "cpb_removal_delay_minus1[pt_max_sub_layers_minus1]" );
+  for( int i = temporalId; i < sei.m_ptMaxSubLayers - 1; i ++ )
+  {
+    WRITE_FLAG( sei.m_subLayerDelaysPresentFlag[i], "sub_layer_delays_present_flag[i]" );
+    if( sei.m_subLayerDelaysPresentFlag[i] )
+    {
+      WRITE_FLAG( sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]" );
+      if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
+      {
+        WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
+      }
+      else
+      {
+        WRITE_CODE( sei.m_auCpbRemovalDelay[i] - 1, bp.m_cpbRemovalDelayLength,                                "cpb_removal_delay_minus1[i]" );
+      }
+    }
+  }
   WRITE_CODE( sei.m_picDpbOutputDelay,     bp.m_dpbOutputDelayLength,                                          "dpb_output_delay" );
-#endif
+  if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() )
+  {
+    WRITE_CODE( sei.m_picDpbOutputDuDelay, bp.m_dpbOutputDelayDuLength, "pic_dpb_output_du_delay" );
+  }
+  if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() && sps->getHrdParameters()->getDecodingUnitCpbParamsInPicTimingSeiFlag() )
+  {
+    WRITE_UVLC( sei.m_numDecodingUnitsMinus1, "num_decoding_units_minus1" );
+    WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
+    if( sei.m_duCommonCpbRemovalDelayFlag )
+    {
+      WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1, bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1" );
+    }
+    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+    {
+      WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
+      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+      {
+        WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i]" );
+      }
+    }
+  }
 }
 
-#if JVET_O0041_FRAME_FIELD_SEI
 void SEIWriter::xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei)
 {
   WRITE_FLAG( sei.m_fieldPicFlag ? 1 : 0,                    "field_pic_flag" );
@@ -461,14 +401,11 @@ void SEIWriter::xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei)
   WRITE_CODE( sei.m_sourceScanType, 2,                        "source_scan_type" );
   WRITE_FLAG( sei.m_duplicateFlag ? 1 : 0,                    "duplicate_flag" );
 }
-#endif
 
-#if JVET_N0494_DRAP
 void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& /*sei*/)
 {
   // intentionally empty
 }
-#endif
 
 #if HEVC_SEI
 void SEIWriter::xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei)
@@ -677,12 +614,8 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   }
 
   // write nested SEI messages
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   HRD hrd;
   writeSEImessages(bs, sei.m_nestedSEIs, sps, hrd, true);
-#else
-  writeSEImessages(bs, sei.m_nestedSEIs, sps, true);
-#endif
 }
 
 void SEIWriter::xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstrainedTileSets& sei)

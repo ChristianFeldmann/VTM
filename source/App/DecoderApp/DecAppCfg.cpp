@@ -114,9 +114,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
   ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
-#if JVET_O1164_RPR
   ( "UpscaledOutput",          m_upscaledOutput,                          0,       "Upscaled output for RPR" )
-#endif
   ;
 
   po::setDefaults(opts);

@@ -98,43 +98,31 @@ void deleteSEIs (SEIMessages &seiList)
 
 void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 {
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  target.m_bpSeqParameterSetId = m_bpSeqParameterSetId;
-  target.m_rapCpbParamsPresentFlag = m_rapCpbParamsPresentFlag;
-#else
   target.m_bpNalCpbParamsPresentFlag = m_bpNalCpbParamsPresentFlag;
   target.m_bpVclCpbParamsPresentFlag = m_bpVclCpbParamsPresentFlag;
   target.m_initialCpbRemovalDelayLength = m_initialCpbRemovalDelayLength;
   target.m_cpbRemovalDelayLength = m_cpbRemovalDelayLength;
   target.m_dpbOutputDelayLength = m_dpbOutputDelayLength;
-  target.m_bpCpbCnt = m_bpCpbCnt;
-#endif
-  target.m_cpbDelayOffset = m_cpbDelayOffset;
-  target.m_dpbDelayOffset = m_dpbDelayOffset;
+  target.m_duCpbRemovalDelayIncrementLength = m_duCpbRemovalDelayIncrementLength;
+  target.m_dpbOutputDelayDuLength = m_dpbOutputDelayDuLength;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_auCpbRemovalDelayDelta = m_auCpbRemovalDelayDelta;
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
+  target.m_cpbRemovalDelayDeltasPresentFlag =  m_cpbRemovalDelayDeltasPresentFlag;
+  target.m_numCpbRemovalDelayDeltas = m_numCpbRemovalDelayDeltas;
+  target.m_bpMaxSubLayers = m_bpMaxSubLayers;
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
-  ::memcpy(target.m_initialCpbRemovalDelayOffset, m_initialCpbRemovalDelayOffset, sizeof(m_initialCpbRemovalDelayOffset));
-  ::memcpy(target.m_initialAltCpbRemovalDelay, m_initialAltCpbRemovalDelay, sizeof(m_initialAltCpbRemovalDelay));
-  ::memcpy(target.m_initialAltCpbRemovalDelayOffset, m_initialAltCpbRemovalDelayOffset, sizeof(m_initialAltCpbRemovalDelayOffset));
-#else
-  target.m_initialCpbRemovalDelay[0] = m_initialCpbRemovalDelay [0];
-  target.m_initialCpbRemovalDelay[1] = m_initialCpbRemovalDelay [1];
-  target.m_initialCpbRemovalOffset[0] = m_initialCpbRemovalOffset [0];
-  target.m_initialCpbRemovalOffset[1] = m_initialCpbRemovalOffset [1];
-#endif
+  ::memcpy(target.m_initialCpbRemovalOffset, m_initialCpbRemovalOffset, sizeof(m_initialCpbRemovalOffset));
+  ::memcpy(target.m_cpbRemovalDelayDelta, m_cpbRemovalDelayDelta, sizeof(m_cpbRemovalDelayDelta));
+  ::memcpy(target.m_bpCpbCnt, m_bpCpbCnt, sizeof(m_bpCpbCnt));
 }
 
 void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 {
-#if !JVET_O0041_FRAME_FIELD_SEI
-  target.m_picStruct = m_picStruct;
-  target.m_sourceScanType = m_sourceScanType;
-  target.m_duplicateFlag = m_duplicateFlag;
-#endif
-
-  target.m_auCpbRemovalDelay = m_auCpbRemovalDelay;
+  ::memcpy(target.m_auCpbRemovalDelay, m_auCpbRemovalDelay, sizeof(m_auCpbRemovalDelay));
+  ::memcpy(target.m_subLayerDelaysPresentFlag, m_subLayerDelaysPresentFlag, sizeof(m_subLayerDelaysPresentFlag));
+  ::memcpy(target.m_cpbRemovalDelayDeltaEnabledFlag, m_cpbRemovalDelayDeltaEnabledFlag, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
+  ::memcpy(target.m_cpbRemovalDelayDeltaIdx, m_cpbRemovalDelayDeltaIdx, sizeof(m_cpbRemovalDelayDeltaIdx));
+  target.m_ptMaxSubLayers = m_ptMaxSubLayers;
   target.m_picDpbOutputDelay = m_picDpbOutputDelay;
   target.m_picDpbOutputDuDelay = m_picDpbOutputDuDelay;
   target.m_numDecodingUnitsMinus1 = m_numDecodingUnitsMinus1;
@@ -179,9 +167,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
 #endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
-#if JVET_N0494_DRAP
     case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
-#endif
 #if HEVC_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";

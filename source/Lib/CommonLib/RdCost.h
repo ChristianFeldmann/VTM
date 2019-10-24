@@ -147,7 +147,7 @@ public:
 #endif
   double        getChromaWeight()     { return ((m_distortionWeight[COMPONENT_Cb] + m_distortionWeight[COMPONENT_Cr]) / 2.0); }
 #if RDOQ_CHROMA_LAMBDA
-  double        getDistortionWeight   ( const ComponentID compID ) const { return m_distortionWeight[compID % 3]; }
+  double        getDistortionWeight   ( const ComponentID compID ) const { return m_distortionWeight[compID % MAX_NUM_COMPONENT]; }
 #endif
 
   void          setCostMode(CostMode m) { m_costMode = m; }

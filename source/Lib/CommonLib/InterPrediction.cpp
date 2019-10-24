@@ -419,7 +419,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
 
   if( !pu.cu->affine )
   {
-    clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+    if( pu.cu->slice->getScalingRatio( eRefPicList, iRefIdx ) == SCALE_1X )
+    {
+      clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+    }
   }
 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
@@ -998,8 +1001,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         {
           wrapRef = false;
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
-          iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
-          iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+          if( scalingRatio == SCALE_1X ) 
+          {
+            iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
+            iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+          }
         }
       }
       else
@@ -1014,8 +1020,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         else
         {
           wrapRef = false;
-          curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
-          curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+          if( scalingRatio == SCALE_1X ) 
+          {
+            curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
+            curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+          }
         }
         iMvScaleTmpHor = curMv.hor;
         iMvScaleTmpVer = curMv.ver;

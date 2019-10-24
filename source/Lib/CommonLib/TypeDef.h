@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
 
 #define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
 

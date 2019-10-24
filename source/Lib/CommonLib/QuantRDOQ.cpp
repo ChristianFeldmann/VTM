@@ -1751,7 +1751,8 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
     coeffLevelError[errorInd] = dErr * dErr * errorScale;
 #if JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS
     int modAbsLevel = absLevel;
-    if (cctx.numCtxBins() >= 4) {
+    if (cctx.numCtxBins() >= 4) 
+    {
       modAbsLevel = cctx.deriveModCoeff(rightPixel, belowPixel, absLevel, m_bdpcm);
     }
 #else

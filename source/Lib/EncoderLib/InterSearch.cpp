@@ -6750,7 +6750,14 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             else
 #endif
 #if ADAPTIVE_COLOR_TRANSFORM
-            nonCoeffCost = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist, false);
+              if (cs.slice->getSPS()->getUseColorTrans())
+              {
+                nonCoeffCost = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist, false);
+              }
+              else
+              {
+                nonCoeffCost = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist);
+              }
 #else
             nonCoeffCost     = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist);
 #endif
@@ -6959,6 +6966,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         if (colorTransFlag)
         {
           m_pcTrQuant->lambdaAdjustColorTrans(true);
+          m_pcTrQuant->selectLambda(codeCompId);
+        }
+        else
+        {
           m_pcTrQuant->selectLambda(codeCompId);
         }
 #else

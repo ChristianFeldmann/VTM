@@ -45,8 +45,13 @@
 #include "Utilities/VideoIOYuv.h"
 #include "CommonLib/NAL.h"
 #include "EncAppCfg.h"
-#if EXTENSION_360_VIDEO && JVET_N0278_FIXES
+#if JVET_N0278_FIXES
+#if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncTop.h"
+#endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+#include "EncoderLib/EncTemporalFilter.h"
+#endif
 #endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
@@ -105,6 +110,9 @@ private:
   PelStorage*            m_orgPic;
 #if EXTENSION_360_VIDEO
   TExt360AppEncTop*      m_ext360;
+#endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  EncTemporalFilter      m_temporalFilter;
 #endif
   bool m_flush;
 #endif

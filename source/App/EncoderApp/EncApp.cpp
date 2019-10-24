@@ -44,12 +44,13 @@
 
 #include "EncApp.h"
 #include "EncoderLib/AnnexBwrite.h"
-#if EXTENSION_360_VIDEO && !JVET_N0278_FIXES
+#if !JVET_N0278_FIXES
+#if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncTop.h"
 #endif
-
 #if JVET_O0549_ENCODER_ONLY_FILTER
 #include "EncoderLib/EncTemporalFilter.h"
+#endif
 #endif
 
 using namespace std;
@@ -746,9 +747,6 @@ void EncApp::createLib( const int layerId )
   m_trueOrgPic = new PelStorage;
   m_orgPic->create( unitArea );
   m_trueOrgPic->create( unitArea );
-#if EXTENSION_360_VIDEO
-  m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), *m_orgPic );
-#endif
 
   if( !m_bitstream.is_open() )
   {
@@ -765,6 +763,20 @@ void EncApp::createLib( const int layerId )
   xInitLib( m_isField );
 
   printChromaFormat();
+
+#if EXTENSION_360_VIDEO
+  m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), *m_orgPic );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  if( m_gopBasedTemporalFilterEnabled )
+  {
+    m_temporalFilter.init( m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
+      m_aiPad, m_bClipInputVideoToRec709Range, m_inputFileName, m_chromaFormatIDC,
+      m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
+      m_gopBasedTemporalFilterFutureReference );
+  }
+#endif
 }
 
 void EncApp::destroyLib()
@@ -818,6 +830,13 @@ bool EncApp::encodePrep( bool& eos )
   }
 #else
   m_cVideoIOYuvInputFile.read( *m_orgPic, *m_trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  if( m_gopBasedTemporalFilterEnabled )
+  {
+    m_temporalFilter.filter( m_orgPic, m_iFrameRcvd );
+  }
 #endif
 
   // increase number of received frames

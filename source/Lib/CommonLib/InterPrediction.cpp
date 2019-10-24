@@ -307,6 +307,9 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   int  fstStep = (!verMC ? puHeight : puWidth);
   int  secStep = (!verMC ? puWidth : puHeight);
 
+  pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
+  bool scaled = !PU::isRefPicSameSize( pu );
+
   m_subPuMC = true;
 
   for (int fstDim = fstStart; fstDim < fstEnd; fstDim += fstStep)
@@ -323,7 +326,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
       while (later < secEnd)
       {
         const MotionInfo &laterMi = !verMC ? pu.getMotionInfo(Position{ later, fstDim }) : pu.getMotionInfo(Position{ fstDim, later });
-        if (laterMi == curMi)
+        if (!scaled && laterMi == curMi)
         {
           length += secStep;
         }
@@ -429,7 +432,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
 
   if( !pu.cu->affine )
   {
-    clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+    if( pu.cu->slice->getScalingRatio( eRefPicList, iRefIdx ) == SCALE_1X )
+    {
+      clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+    }
   }
 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
@@ -1008,8 +1014,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         {
           wrapRef = false;
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
-          iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
-          iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+          if( scalingRatio == SCALE_1X ) 
+          {
+            iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
+            iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+          }
         }
       }
       else
@@ -1024,8 +1033,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         else
         {
           wrapRef = false;
-          curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
-          curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+          if( scalingRatio == SCALE_1X ) 
+          {
+            curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
+            curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+          }
         }
         iMvScaleTmpHor = curMv.hor;
         iMvScaleTmpVer = curMv.ver;
@@ -2394,17 +2406,24 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int offX = 1 << ( posShift - shiftHor - 1 );
     int offY = 1 << ( posShift - shiftVer - 1 );
 
-    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* scalingRatio.first;
+    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* (int64_t)scalingRatio.first;
     x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
 
-    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* scalingRatio.second;
+    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* (int64_t)scalingRatio.second;
     y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
 
     const int extSize = isLuma( compID ) ? 1 : 2;
 
     int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
 
-    int refHeight = height * scalingRatio.second >> SCALE_RATIO_BITS;
+    int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
+    yInt0 = std::min( std::max( -4, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) + 4 );
+
+    int xInt0 = ( (int32_t)x0Int + offX ) >> posShift;
+    xInt0 = std::min( std::max( -4, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) + 4 );
+        
+    int refHeight = ((((int32_t)y0Int + (height-1) * stepY) + offY ) >> posShift) - ((((int32_t)y0Int + 0 * stepY) + offY ) >> posShift) + 1;
+
     refHeight = std::max<int>( 1, refHeight );
 
     CHECK( MAX_CU_SIZE * MAX_SCALING_RATIO < refHeight + vFilterSize - 1 + extSize, "Buffer size is not enough, increase MAX_SCALING_RATIO" );
@@ -2412,12 +2431,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     Pel buffer[( MAX_CU_SIZE + 16 ) * ( MAX_CU_SIZE * MAX_SCALING_RATIO + 16 )];
 
     int tmpStride = width;
-
-    int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
-    yInt0 = std::min( std::max( 0, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
-
-    int xInt0 = ( (int32_t)x0Int + offX ) >> posShift;
-    xInt0 = std::min( std::max( 0, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
 
     int xInt = 0, yInt = 0;
 

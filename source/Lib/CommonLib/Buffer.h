@@ -118,6 +118,9 @@ struct AreaBuf : public Size
   void subtract             ( const AreaBuf<const T> &other );
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  void extendBorderPel(unsigned marginX, unsigned marginY);
+#endif
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t gbiIdx);
   void removeWeightHighFreq ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t iGbiWeight);
   void addAvg               ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng );
@@ -526,6 +529,46 @@ void AreaBuf<T>::updateHistogram( std::vector<int32_t>& hist ) const
   }
 }
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+template<typename T>
+void AreaBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
+{
+  T* p = buf;
+  int h = height;
+  int w = width;
+  int s = stride;
+
+  CHECK((w + 2 * marginX) > s, "Size of buffer too small to extend");
+  // do left and right margins
+  for (int y = 0; y < h; y++)
+  {
+    for (int x = 0; x < marginX; x++)
+    {
+      *(p - marginX + x) = p[0];
+      p[w + x] = p[w - 1];
+    }
+    p += s;
+  }
+
+  // p is now the (0,height) (bottom left of image within bigger picture
+  p -= (s + marginX);
+  // p is now the (-margin, height-1)
+  for (int y = 0; y < marginY; y++)
+  {
+    ::memcpy(p + (y + 1) * s, p, sizeof(T) * (w + (marginX << 1)));
+  }
+
+  // p is still (-marginX, height-1)
+  p -= ((h - 1) * s);
+  // p is now (-marginX, 0)
+  for (int y = 0; y < marginY; y++)
+  {
+    ::memcpy(p - (y + 1) * s, p, sizeof(T) * (w + (marginX << 1)));
+  }
+}
+#endif
+
+
 template<typename T>
 void AreaBuf<T>::extendBorderPel( unsigned margin )
 {
@@ -693,6 +736,9 @@ struct UnitBuf
   void addWeightedAvg       ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx = GBI_DEFAULT, const bool chromaOnly = false, const bool lumaOnly = false);
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
   void extendSingleBorderPel();
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  void extendBorderPel(unsigned marginX, unsigned marginY);
+#endif
   void extendBorderPel      ( unsigned margin );
   void removeHighFreq       ( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
                             , const int8_t gbiWeight = g_GbiWeights[GBI_DEFAULT]
@@ -815,6 +861,17 @@ void UnitBuf<T>::extendSingleBorderPel()
     bufs[i].extendSingleBorderPel();
   }
 }
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+template<typename T>
+void UnitBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
+{
+  for (unsigned i = 0; i < bufs.size(); i++)
+  {
+    bufs[i].extendBorderPel(marginX >> getComponentScaleX(ComponentID(i), chromaFormat), marginY >> getComponentScaleY(ComponentID(i), chromaFormat));
+  }
+}
+#endif
 
 template<typename T>
 void UnitBuf<T>::extendBorderPel( unsigned margin )

@@ -608,6 +608,27 @@ static inline istream& operator >> (std::istream &in, EncAppCfg::OptionalValue<T
 }
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+template <class T1, class T2>
+static inline istream& operator >> (std::istream& in, std::map<T1, T2>& map)
+{
+  T1 key;
+  T2 value;
+  try
+  {
+    in >> key;
+    in >> value;
+  }
+  catch (...)
+  {
+    in.setstate(ios::failbit);
+  }
+
+  map[key] = value;
+  return in;
+}
+#endif
+
 static void
 automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
                                const bool bUsingChromaQPAdjustment,
@@ -1376,6 +1397,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
     ;
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  opts.addOptions()
+    ("TemporalFilter",                                m_gopBasedTemporalFilterEnabled,          false,            "Enable GOP based temporal filter. Disabled per default")
+    ("TemporalFilterFutureReference",                 m_gopBasedTemporalFilterFutureReference,   true,            "Enable referencing of future frames in the GOP based temporal filter. This is typically disabled for Low Delay configurations.")
+    ("TemporalFilterStrengthFrame*",                  m_gopBasedTemporalFilterStrengths, std::map<int, double>(), "Strength for every * frame in GOP based temporal filter, where * is an integer."
+                                                                                                                  " E.g. --TemporalFilterStrengthFrame8 0.95 will enable GOP based temporal filter at every 8th frame with strength 0.95");
+#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg::TExt360AppEncCfgContext ext360CfgContext;
@@ -3377,6 +3406,12 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  if (m_gopBasedTemporalFilterEnabled)
+  {
+    xConfirmPara(m_temporalSubsampleRatio != 1, "GOP Based Temporal Filter only support Temporal sub-sample ratio 1");
+  }
+#endif
 #if EXTENSION_360_VIDEO
   check_failed |= m_ext360.verifyParameters();
 #endif
@@ -3703,7 +3738,9 @@ void EncAppCfg::xPrintParameter()
   {
     msg( VERBOSE, "RPR:%d", 0 );
   }
-
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  msg(VERBOSE, "TemporalFilter:%d ", m_gopBasedTemporalFilterEnabled);
+#endif
 #if EXTENSION_360_VIDEO
   m_ext360.outputConfigurationSummary();
 #endif

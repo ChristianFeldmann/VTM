@@ -44,7 +44,7 @@
 
 #include "EncApp.h"
 #include "EncoderLib/AnnexBwrite.h"
-#if EXTENSION_360_VIDEO
+#if EXTENSION_360_VIDEO && !JVET_N0278_FIXES
 #include "AppEncHelper360/TExt360AppEncTop.h"
 #endif
 
@@ -740,7 +740,7 @@ void EncApp::createLib( const int layerId )
   m_orgPic->create( unitArea );
   m_trueOrgPic->create( unitArea );
 #if EXTENSION_360_VIDEO
-  m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), orgPic );
+  m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), *m_orgPic );
 #endif
 
   if( !m_bitstream.is_open() )
@@ -787,7 +787,6 @@ void EncApp::destroyLib()
   delete m_trueOrgPic;
   delete m_orgPic;
 #if EXTENSION_360_VIDEO
-  m_ext360->destroy();
   delete m_ext360;
 #endif
 
@@ -804,7 +803,7 @@ bool EncApp::encodePrep( bool& eos )
 #if EXTENSION_360_VIDEO
   if( m_ext360->isEnabled() )
   {
-    m_ext360->read( m_cVideoIOYuvInputFile, orgPic, trueOrgPic, ipCSC );
+    m_ext360->read( m_cVideoIOYuvInputFile, *m_orgPic, *m_trueOrgPic, ipCSC );
   }
   else
   {

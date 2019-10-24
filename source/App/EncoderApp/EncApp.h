@@ -45,6 +45,9 @@
 #include "Utilities/VideoIOYuv.h"
 #include "CommonLib/NAL.h"
 #include "EncAppCfg.h"
+#if EXTENSION_360_VIDEO && JVET_N0278_FIXES
+#include "AppEncHelper360/TExt360AppEncTop.h"
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include <chrono>

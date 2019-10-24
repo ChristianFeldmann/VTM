@@ -3590,7 +3590,11 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
       tcoeff += ( rem << 1 );
 #endif
     }
+#if JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS
+    if (!cctx.bdpcm() && cutoffVal)
+#else
     if (!cctx.bdpcm())
+#endif
     {
       if (tcoeff > 0)
       {

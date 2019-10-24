@@ -1226,6 +1226,17 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
   }
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  if (sps.getJointCbCrEnabledFlag() == false || getChromaFormatIdc() == CHROMA_400)
+  {
+    pps.setJointCbCrQpOffsetPresentFlag(false);
+  }
+  else
+  {
+    pps.setJointCbCrQpOffsetPresentFlag(true);
+  }
+#endif
+
 #if ER_CHROMA_QP_WCG_PPS
   if (getWCGChromaQPControl().isEnabled())
   {
@@ -1237,14 +1248,28 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     const int crQP =(int)(dcrQP + ( dcrQP < 0 ? -0.5 : 0.5) );
     pps.setQpOffset(COMPONENT_Cb, Clip3( -12, 12, min(0, cbQP) + m_chromaCbQpOffset ));
     pps.setQpOffset(COMPONENT_Cr, Clip3( -12, 12, min(0, crQP) + m_chromaCrQpOffset));
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    if(pps.getJointCbCrQpOffsetPresentFlag())
+      pps.setQpOffset(JOINT_CbCr, Clip3(-12, 12, (min(0, cbQP) + min(0, crQP)) / 2 + m_chromaCbCrQpOffset));
+    else
+      pps.setQpOffset(JOINT_CbCr, 0);
+#else
     pps.setQpOffset(JOINT_CbCr,   Clip3( -12, 12, ( min(0, cbQP) + min(0, crQP) ) / 2 + m_chromaCbCrQpOffset));
+#endif
   }
   else
   {
 #endif
   pps.setQpOffset(COMPONENT_Cb, m_chromaCbQpOffset );
   pps.setQpOffset(COMPONENT_Cr, m_chromaCrQpOffset );
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  if (pps.getJointCbCrQpOffsetPresentFlag())
+    pps.setQpOffset(JOINT_CbCr, m_chromaCbCrQpOffset);
+  else
+    pps.setQpOffset(JOINT_CbCr, 0);
+#else
   pps.setQpOffset(JOINT_CbCr, m_chromaCbCrQpOffset );
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   }
 #endif

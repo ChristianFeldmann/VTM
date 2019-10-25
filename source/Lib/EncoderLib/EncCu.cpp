@@ -1923,7 +1923,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               if( bestCS->cus.size() == 1 )
               {
                 CodingUnit &cu = *bestCS->cus.front();
+#if JVET_P0058_CHROMA_TS
+                if (cu.firstTU->mtsIdx[COMPONENT_Y] == MTS_SKIP)
+#else
                 if( cu.firstTU->mtsIdx == MTS_SKIP )
+#endif
                 {
                   if( ( floorLog2( cu.firstTU->blocks[ COMPONENT_Y ].width ) + floorLog2( cu.firstTU->blocks[ COMPONENT_Y ].height ) ) >= 6 )
                   {
@@ -4345,8 +4349,13 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
     sbtOffCost = tempCS->cost;
     sbtOffDist = tempCS->dist;
     sbtOffRootCbf = cu->rootCbf;
+#if JVET_P0058_CHROMA_TS
+    currBestSbt = CU::getSbtInfo(cu->firstTU->mtsIdx[COMPONENT_Y] > MTS_SKIP ? SBT_OFF_MTS : SBT_OFF_DCT, 0);
+    currBestTrs = cu->firstTU->mtsIdx[COMPONENT_Y];
+#else
     currBestSbt = CU::getSbtInfo( cu->firstTU->mtsIdx > MTS_SKIP ? SBT_OFF_MTS : SBT_OFF_DCT, 0 );
     currBestTrs = cu->firstTU->mtsIdx;
+#endif
 
 #if WCG_EXT
     DTRACE_MODE_COST( *tempCS, m_pcRdCost->getLambda( true ) );
@@ -4477,7 +4486,11 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
       if( tempCS->cost < currBestCost )
       {
         currBestSbt = cu->sbtInfo;
+#if JVET_P0058_CHROMA_TS
+        currBestTrs = tempCS->tus[cu->sbtInfo ? cu->getSbtPos() : 0]->mtsIdx[COMPONENT_Y];
+#else
         currBestTrs = tempCS->tus[cu->sbtInfo ? cu->getSbtPos() : 0]->mtsIdx;
+#endif
         assert( currBestTrs == 0 || currBestTrs == 1 );
         currBestCost = tempCS->cost;
       }

@@ -91,6 +91,11 @@
 
 #define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
 
+#define JVET_P0058_CHROMA_TS                              1 // JVET-P0058: Enable Transform skip for chroma
+#if JVET_P0058_CHROMA_TS
+#define JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD        1 // Modified cost criterion for chroma intra encoder search
+#endif
+
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 
 #define JVET_P0505_ALF_CLIP_VALUE                         1 // JVET-P0505: Modified non-linear ALF clipping value derivations

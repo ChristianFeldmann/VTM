@@ -64,7 +64,13 @@ enum class BlockStatistic {
   QP,
   SplitSeries,
   TransQuantBypassFlag,
+#if JVET_P0058_CHROMA_TS
+  MTSIdx_Y,
+  MTSIdx_Cb,
+  MTSIdx_Cr,
+#else
   MTSIdx,
+#endif
   BDPCM,
   TileIdx,
   IndependentSliceIdx,
@@ -159,7 +165,13 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::Luma_IntraMode,         std::tuple<std::string, BlockStatisticType, std::string>{"Luma_IntraMode",              BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::Chroma_IntraMode,       std::tuple<std::string, BlockStatisticType, std::string>{"Chroma_IntraMode",            BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::SkipFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SkipFlag",                    BlockStatisticType::Flag,                   ""}},
+#if JVET_P0058_CHROMA_TS
+  { BlockStatistic::MTSIdx_Y,               std::tuple<std::string, BlockStatisticType, std::string> {"MTS_Y",                      BlockStatisticType::Integer,                ""} },
+  { BlockStatistic::MTSIdx_Cb,               std::tuple<std::string, BlockStatisticType, std::string>{"MTS_Cb",                     BlockStatisticType::Integer,                ""} },
+  { BlockStatistic::MTSIdx_Cr,               std::tuple<std::string, BlockStatisticType, std::string>{"MTS_Cr",                     BlockStatisticType::Integer,                ""} },
+#else
   { BlockStatistic::MTSIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Integer,                ""}},
+#endif
   { BlockStatistic::BDPCM,                  std::tuple<std::string, BlockStatisticType, std::string>{"BDPCM",                       BlockStatisticType::Flag,                   ""}},    // called bdpcmMode, but used like a flag in the software? related to intra, but signalled always?
   { BlockStatistic::TileIdx,                std::tuple<std::string, BlockStatisticType, std::string>{"TileIdx",                     BlockStatisticType::Integer,                ""}},
   { BlockStatistic::IndependentSliceIdx,    std::tuple<std::string, BlockStatisticType, std::string>{"IndependentSliceIdx",         BlockStatisticType::Integer,                ""}},

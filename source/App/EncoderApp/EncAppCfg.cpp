@@ -1134,6 +1134,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
+#if JVET_P0058_CHROMA_TS
+  ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
+#endif
   ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
@@ -3586,6 +3589,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
+#if JVET_P0058_CHROMA_TS
+  msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
+#endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)

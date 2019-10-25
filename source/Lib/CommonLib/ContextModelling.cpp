@@ -68,7 +68,11 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
   , m_lastShiftY                (0)
+#if JVET_P0058_CHROMA_TS
+  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() && (tu.cu->transQuantBypass || tu.mtsIdx[m_compID] == MTS_SKIP))
+#else
   , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==MTS_SKIP))
+#endif
   , m_scanPosLast               (-1)
   , m_subSetId                  (-1)
   , m_subSetPos                 (-1)

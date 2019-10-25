@@ -822,7 +822,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
 #endif
-    bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit, mrgCandIdx, maxNumMergeCandMin1, cnt
+    bool bFound = addMergeHMVPCand(cs, mrgCtx, canFastExit, mrgCandIdx, maxNumMergeCand, cnt
       , isAvailableA1, miLeft, isAvailableB1, miAbove
       , true
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST

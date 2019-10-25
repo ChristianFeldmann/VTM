@@ -248,9 +248,14 @@ void addBIOAvg4_SSE(const Pel* src0, int src0Stride, const Pel* src1, int src1St
 
       a   = _mm_unpacklo_epi16(_mm_loadl_epi64((const __m128i *) (src0 + x)),
                              _mm_loadl_epi64((const __m128i *) (src1 + x)));
+#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
+      sum = _mm_add_epi32(sum, _mm_set1_epi32(2 * offset));
+      sum = _mm_sra_epi32(sum, _mm_cvtsi32_si128(shift));
+#else
       sum = _mm_add_epi32(sum, _mm_madd_epi16(a, _mm_set1_epi16(2)));
       sum = _mm_add_epi32(sum, _mm_set1_epi32(2 * offset + 1));
       sum = _mm_sra_epi32(sum, _mm_cvtsi32_si128(shift + 1));
+#endif
       sum = _mm_packs_epi32(sum, sum);
       sum = _mm_max_epi16(sum, vibdimin);
       sum = _mm_min_epi16(sum, vibdimax);
@@ -994,8 +999,13 @@ void removeWeightHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1
     {
       for (int col = 0; col < width; col += 8)
       {
+#if JVET_P0092_SMVD_SPEED_UP
+        __m128i vsrc0 = _mm_loadu_si128( (const __m128i *)&src0[col] );
+        __m128i vsrc1 = _mm_loadu_si128( (const __m128i *)&src1[col] );
+#else
         __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
         __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
+#endif
 
         __m128i vtmp, vdst, vsrc;
         vdst = _mm_cvtepi16_epi32(vsrc0);
@@ -1064,8 +1074,13 @@ void removeHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1, int 
       {
         for (int col = 0; col < width; col += 8)
         {
+#if JVET_P0092_SMVD_SPEED_UP
+          __m128i vsrc0 = _mm_loadu_si128( (const __m128i *)&src0[col] );
+          __m128i vsrc1 = _mm_loadu_si128( (const __m128i *)&src1[col] );
+#else
           __m128i vsrc0 = _mm_load_si128((const __m128i *)&src0[col]);
           __m128i vsrc1 = _mm_load_si128((const __m128i *)&src1[col]);
+#endif
 
           vsrc0 = _mm_sub_epi16(_mm_slli_epi16(vsrc0, 1), vsrc1);
           _mm_store_si128((__m128i *)&src0[col], vsrc0);

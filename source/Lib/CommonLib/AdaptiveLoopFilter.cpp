@@ -447,7 +447,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
               m_filter7x7Blk(m_classifier, recYuv, buf, blkDst, blkSrc, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
                 , m_alfVBLumaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+                , m_alfVBLumaPos, alfBryList
+#else
                 , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#endif
 #else
                 , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -468,7 +472,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                 m_filter5x5Blk(m_classifier, recYuv, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
                   , m_alfVBChmaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+                  , m_alfVBChmaPos, alfBryList);
+#else
                   , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
+#endif
 #else
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
 #endif
@@ -508,7 +516,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+          , m_alfVBLumaPos, alfBryList
+#else
           , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#endif
 #else
           , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -528,7 +540,11 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
           m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, blk, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
             , m_alfVBChmaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+            , m_alfVBChmaPos, alfBryList);
+#else
             , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
+#endif
 #else
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
 #endif
@@ -649,17 +665,24 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_LUMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_LUMA] must be at least one" );
   for( int i = 0; i < AlfNumClippingValues[CHANNEL_TYPE_LUMA]; ++i )
   {
+# if JVET_P0505_ALF_CLIP_VALUE
+    m_alfClippingValues[CHANNEL_TYPE_LUMA][i] = (Pel)std::round( std::pow(2., double(m_inputBitDepth[CHANNEL_TYPE_LUMA] - 2.35*i)) );
+#else
     m_alfClippingValues[CHANNEL_TYPE_LUMA][i] =
       (Pel) std::round(
         std::pow(
           2.,
           double( m_inputBitDepth[CHANNEL_TYPE_LUMA] * ( AlfNumClippingValues[CHANNEL_TYPE_LUMA] - i ) ) / AlfNumClippingValues[CHANNEL_TYPE_LUMA]
           ) );
+#endif
   }
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_CHROMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_CHROMA] must be at least one" );
   m_alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_CHROMA];
   for( int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_CHROMA]; ++i )
   {
+# if JVET_P0505_ALF_CLIP_VALUE
+    m_alfClippingValues[CHANNEL_TYPE_CHROMA][i] = (Pel)std::round( std::pow(2., double(m_inputBitDepth[CHANNEL_TYPE_CHROMA] - 2.35*i)) );
+#else
     m_alfClippingValues[CHANNEL_TYPE_CHROMA][i] =
       (Pel) std::round(
         std::pow(
@@ -667,6 +690,7 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
           m_inputBitDepth[CHANNEL_TYPE_CHROMA] - 8
             + 8. * ( AlfNumClippingValues[CHANNEL_TYPE_CHROMA] - i - 1 ) / ( AlfNumClippingValues[CHANNEL_TYPE_CHROMA] - 1 )
           ) );
+#endif
   }
 
   if (m_created)

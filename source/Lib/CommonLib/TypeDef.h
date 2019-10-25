@@ -52,11 +52,23 @@
 
 #define JVET_P0530_TPM_WEIGHT_ALIGN                       1 // JVET-P0530: align chroma weights with luma weights for TPM blending
 
+#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
+
+#define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
+
+#define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
+
+#define JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT               1 // JVET-P0091: Align sample offset calculation of BDOF and PROF
+
+#define JVET_P0512_SIMD_HIGH_BITDEPTH                     1 // JVET-P0512: MC SIMD support for high internal bit-depthf
+
 #define JVET_P0491_BDOFPROF_MVD_RANGE                     1 // JVET-P0491: clip the MVD in BDOF/PROF to [-31 31]
 
 #define JVET_P0460_PLT_TS_MIN_QP                          1 // JVET-P0460: Use TS min QP for Palette Escape mode
 
 #define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
+
+#define JVET_P0092_SMVD_SPEED_UP                          1 // JVET-P0092: SMVD speed-up
 
 #define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode
 
@@ -72,6 +84,8 @@
 
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 
+#define JVET_P0505_ALF_CLIP_VALUE                         1 // JVET-P0505: Modified non-linear ALF clipping value derivations
+
 #define JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING            1 // JVET-P0154/P0094/P0172/P0413/P0518/P0281: Clip the PROF sample offset to 14-bit
 
 #define JVET_P1023_DMVR_BDOF_RP_CONDITION                 1 // JVET_P1023: Reference picture conditions in DMVR and BDOF
@@ -82,11 +96,17 @@
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
+#define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
+
 #define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
 
 #define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping
 
+#define JVET_P0063_LDT_SPLIT_FIX                          1 // JVET-P0063: Fix local dual tree on BT/TT split conditions in inter coding region
+
 #define JVET_P0329_PLANAR_SIMPLIFICATION                  1 // JVET-P0329: simplify planar prediction by comparison removal
+
+#define JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX             1 // JVET-P0081: Apply asymmetric long tap deblocking (1 + 3) filter at horizontal CTB boundaries for Chroma
 
 #define JVET_P0516_PLT_BINARIZATION                       1 // JVET-P0516: PLT is always signaled when pred mode is euqal to 1 (intra mode) 
 
@@ -96,7 +116,11 @@
 
 #define JVET_P0418_ALIGN_MLRP_CCLM                        1 // JVET-P0418: Align MLRP with CCLM in terms of reference lines/columns
 
+#define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
+
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+
+#define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
 

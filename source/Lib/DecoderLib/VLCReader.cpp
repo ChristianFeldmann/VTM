@@ -1282,7 +1282,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   unsigned minQtLog2SizeInterY = uiCode + pcSPS->getLog2MinCodingBlockSize();
   minQT[1] = 1 << minQtLog2SizeInterY;
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slice");     maxBTD[1] = uiCode;
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+  CHECK(uiCode > 2*(ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_luma");     maxBTD[0] = uiCode;
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+  CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
 
   maxTTSize[0] = maxBTSize[0] = minQT[0];
   if (maxBTD[0] != 0)
@@ -1304,6 +1310,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
     READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_chroma"); maxBTD[2] = uiCode;
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+    CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
     maxTTSize[2] = maxBTSize[2] = minQT[2];
     if (maxBTD[2] != 0)
     {
@@ -2004,6 +2013,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
         READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_luma");                 pcSlice->setMaxMTTHierarchyDepth(uiCode);
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+        CHECK(uiCode > 2 * (floorLog2(sps->getCTUSize()) - sps->getLog2MinCodingBlockSize()), "slice_max_mtt_hierarchy_depth_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
         if (pcSlice->getMaxMTTHierarchyDepth() != 0)
         {
           READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
@@ -2020,6 +2032,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
           READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxMTTHierarchyDepthIChroma(uiCode);
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+          CHECK(uiCode > 2 * (floorLog2(sps->getCTUSize()) - sps->getLog2MinCodingBlockSize()), "slice_max_mtt_hierarchy_depth_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
           if (pcSlice->getMaxMTTHierarchyDepthIChroma() != 0)
           {
             READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);

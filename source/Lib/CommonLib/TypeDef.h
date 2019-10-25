@@ -52,7 +52,33 @@
 
 #define JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP             1 // JVET-P0445: encoder speed up for sub-block based merge candidate search
 
-#define JVET_P0057_BDOF_PROF_HARMONIZATION                1 // JVET-P0057: harmonization of BDOF and PROF on motion refinement precis
+#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
+
+#define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
+
+#define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
+
+#define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
+
+#define JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT               1 // JVET-P0091: Align sample offset calculation of BDOF and PROF
+
+#define JVET_P0512_SIMD_HIGH_BITDEPTH                     1 // JVET-P0512: MC SIMD support for high internal bit-depthf
+
+#define JVET_P0491_BDOFPROF_MVD_RANGE                     1 // JVET-P0491: clip the MVD in BDOF/PROF to [-31 31]
+
+#define JVET_P0460_PLT_TS_MIN_QP                          1 // JVET-P0460: Use TS min QP for Palette Escape mode
+
+#define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
+
+#define JVET_P0092_SMVD_SPEED_UP                          1 // JVET-P0092: SMVD speed-up
+
+#define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode
+
+#define JVET_P0273_MTSIntraMaxCand                        1 // JVET-P0273: Use MTSIntraMaxCand if LFNST is used
+
+#define JVET_P0057_BDOF_PROF_HARMONIZATION                1 // JVET-P0057: harmonization of BDOF and PROF on motion refinement precision
+
+#define JVET_P0653_BDOF_PROF_PARA_DEV                     1 // JVET-P0653/P0281: fixed shift operations for BDOF and PROF parameter derivation
 
 #define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list
 

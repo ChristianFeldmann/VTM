@@ -276,8 +276,13 @@ protected:
   bool      m_cclmCollocatedChromaFlag;
   int       m_IntraMTS;
   int       m_InterMTS;
+#if JVET_P0273_MTSIntraMaxCand
+  int       m_MTSIntraMaxCand;
+  int       m_MTSInterMaxCand;
+#else
   int       m_IntraMTSMaxCand;
   int       m_InterMTSMaxCand;
+#endif
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
   bool      m_LFNST;
@@ -445,6 +450,9 @@ protected:
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  bool      m_gopBasedTemporalFilterEnabled;
+#endif
   //====== Slice ========
   SliceConstraint m_sliceMode;
   int       m_sliceArgument;
@@ -863,10 +871,17 @@ public:
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
 
+#if JVET_P0273_MTSIntraMaxCand
+  void      setMTSIntraMaxCand              ( unsigned u )   { m_MTSIntraMaxCand = u; }
+  unsigned  getMTSIntraMaxCand              ()         const { return m_MTSIntraMaxCand; }
+  void      setMTSInterMaxCand              ( unsigned u )   { m_MTSInterMaxCand = u; }
+  unsigned  getMTSInterMaxCand              ()         const { return m_MTSInterMaxCand; }
+#else
   void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
   unsigned  getIntraMTSMaxCand              ()         const { return m_IntraMTSMaxCand; }
   void      setInterMTSMaxCand              ( unsigned u )   { m_InterMTSMaxCand = u; }
   unsigned  getInterMTSMaxCand              ()         const { return m_InterMTSMaxCand; }
+#endif
   void      setIntraMTS                     ( bool b )       { m_IntraMTS = b; }
   bool      getIntraMTS                     ()         const { return m_IntraMTS; }
   void      setInterMTS                     ( bool b )       { m_InterMTS = b; }
@@ -1180,6 +1195,10 @@ public:
   bool      getFastUDIUseMPMEnabled         ()      { return m_bFastUDIUseMPMEnabled; }
   bool      getFastMEForGenBLowDelayEnabled ()      { return m_bFastMEForGenBLowDelayEnabled; }
   bool      getUseBLambdaForNonKeyLowDelayPictures () { return m_bUseBLambdaForNonKeyLowDelayPictures; }
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  void  setGopBasedTemporalFilterEnabled(bool flag) { m_gopBasedTemporalFilterEnabled = flag; }
+  bool  getGopBasedTemporalFilterEnabled()          { return m_gopBasedTemporalFilterEnabled; }
+#endif
 
   bool      getCrossComponentPredictionEnabledFlag     ()                const { return m_crossComponentPredictionEnabledFlag;   }
   void      setCrossComponentPredictionEnabledFlag     (const bool value)      { m_crossComponentPredictionEnabledFlag = value;  }

@@ -1016,8 +1016,6 @@ void EncReshape::constructReshaperLMCS()
     }
   }
 
-  adjustLmcsPivot();
-
   if (bdShift != 0)
   {
     for (int i = 0; i < PIC_ANALYZE_CW_BINS; i++)
@@ -1025,6 +1023,8 @@ void EncReshape::constructReshaperLMCS()
       m_binCW[i] = bdShift > 0 ? m_binCW[i] * (1 << bdShift) : m_binCW[i] / (1 << (-bdShift));
     }
   }
+
+  adjustLmcsPivot();
 
   int maxAbsDeltaCW = 0, absDeltaCW = 0, deltaCW = 0;
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
@@ -1080,7 +1080,7 @@ void EncReshape::adjustLmcsPivot()
   int bdShift = m_lumaBD - 10;
   int totCW = bdShift != 0 ? (bdShift > 0 ? m_reshapeLUTSize / (1 << bdShift) : m_reshapeLUTSize * (1 << (-bdShift))) : m_reshapeLUTSize;
   int orgCW = totCW / PIC_CODE_CW_BINS;
-  int log2SegSize = floorLog2(LMCS_SEG_SIZE);
+  int log2SegSize = m_lumaBD - floorLog2(LMCS_SEG_NUM);
 
   m_reshapePivot[0] = 0;
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)

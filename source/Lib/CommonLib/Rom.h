@@ -87,7 +87,14 @@ static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 
 extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
+#if JVET_P0170_ZERO_POS_SIMPLIFICATION
+inline uint32_t g_auiGoRicePosCoeff0(int st, uint32_t ricePar)
+{
+  return (st < 2 ? 1 : 2) << ricePar;
+}
+#else
 extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
+#endif
 
 // ====================================================================================================================
 // Intra prediction table

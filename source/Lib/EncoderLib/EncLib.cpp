@@ -558,6 +558,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const PPS *pps = m_ppsMap.getPS(2);
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
+    Window confWin = pps->getConformanceWindow( );
+    picCurr->setPicWidthInLumaSamples( pps->getPicWidthInLumaSamples() );
+    picCurr->setPicHeightInLumaSamples( pps->getPicHeightInLumaSamples() );
+    picCurr->setConformanceWindow( confWin );
+
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
     picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
     picCurr->poc = m_iPOCLast - 1;
@@ -618,6 +623,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     {
       const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
+
+      Window confWin = pPPS->getConformanceWindow( );
+      pcPicCurr->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
+      pcPicCurr->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
+      pcPicCurr->setConformanceWindow( confWin );
 
       if( m_rprEnabled )
       {
@@ -740,6 +750,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
+        Window confWin = pPPS->getConformanceWindow( );
+        pcField->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
+        pcField->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
+        pcField->setConformanceWindow( confWin );
+
         pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
       }
 
@@ -1025,7 +1040,14 @@ void EncLib::xInitSPS(SPS &sps)
   }
 
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
-
+#if JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT
+  CHECK(log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+#endif
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+  CHECK(m_uiMaxMTTHierarchyDepth > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+  CHECK(m_uiMaxMTTHierarchyDepthI > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+  CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
   sps.setBDPCMEnabledFlag(m_useBDPCM);

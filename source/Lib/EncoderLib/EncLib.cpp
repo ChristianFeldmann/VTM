@@ -996,10 +996,12 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseIntraMTS           ( m_IntraMTS );
   sps.setUseInterMTS           ( m_InterMTS );
   sps.setUseSBT                             ( m_SBT );
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( sps.getUseSBT() )
   {
     sps.setMaxSbtSize                       ( std::min((int)(1 << m_log2MaxTbSize), m_iSourceWidth >= 1920 ? 64 : 32) );
   }
+#endif
   sps.setUseSMVD                ( m_SMVD );
   sps.setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET

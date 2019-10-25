@@ -1469,10 +1469,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( pcSPS->getUseSBT() )
   {
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(std::min((int)(1 << pcSPS->getLog2MaxTbSize()), uiCode != 0 ? 64 : 32));
   }
+#endif
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
   READ_FLAG(uiCode, "isp_enable_flag");                            pcSPS->setUseISP(uiCode != 0);

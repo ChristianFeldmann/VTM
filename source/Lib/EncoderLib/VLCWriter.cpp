@@ -910,10 +910,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
   // KJS: not in draft yet
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                             "sbt_enable_flag");
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( pcSPS->getUseSBT() )
   {
     WRITE_FLAG(pcSPS->getMaxSbtSize() == 64 ? 1 : 0,                                  "max_sbt_size_64_flag");
   }
+#endif
   // KJS: not in draft yet
   WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "isp_enable_flag");

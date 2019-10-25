@@ -665,7 +665,11 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
   if( partitioner.currQtDepth == 0 && partitioner.currMtDepth == 0 && !tempCS->slice->isIntra() && ( sps.getUseSBT() || sps.getUseInterMTS() ) )
   {
     auto slsSbt = dynamic_cast<SaveLoadEncInfoSbt*>( m_modeCtrl );
+#if  JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+    int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxTbSize() : MTS_INTER_MAX_CU_SIZE;
+#else
     int maxSLSize = sps.getUseSBT() ? tempCS->slice->getSPS()->getMaxSbtSize() : MTS_INTER_MAX_CU_SIZE;
+#endif
     slsSbt->resetSaveloadSbt( maxSLSize );
 #if ENABLE_SPLIT_PARALLELISM
     CHECK( tempCS->picture->scheduler.getSplitJobId() != 0, "The SBT search reset need to happen in sequential region." );
@@ -4232,6 +4236,9 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
   }
   const bool mtsAllowed = tempCS->sps->getUseInterMTS() && CU::isInter( *cu ) && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
   uint8_t sbtAllowed = cu->checkAllowedSbt();
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  sbtAllowed = ((cu->lwidth() > 32 || cu->lheight() > 32) && !(m_pcEncCfg->getUse64SBTRDOCheck())) ? 0 : sbtAllowed;
+#endif
   uint8_t numRDOTried = 0;
   Distortion sbtOffDist = 0;
   bool    sbtOffRootCbf = 0;

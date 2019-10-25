@@ -3794,15 +3794,29 @@ void TU::setCbfAtDepth(TransformUnit &tu, const ComponentID &compID, const unsig
 
 bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
 {
+#if !JVET_P0058_CHROMA_TS
   bool    tsAllowed = compID == COMPONENT_Y;
+#endif
   const int maxSize = tu.cs->pps->getLog2MaxTransformSkipBlockSize();
 
+#if JVET_P0058_CHROMA_TS
+  bool tsAllowed = tu.cs->sps->getTransformSkipEnabledFlag();
+#else
   tsAllowed &= tu.cs->sps->getTransformSkipEnabledFlag();
+#endif
   tsAllowed &= !tu.cu->transQuantBypass;
   tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );
   SizeType transformSkipMaxSize = 1 << maxSize;
+#if JVET_P0058_CHROMA_TS
+  tsAllowed &= !(tu.cu->bdpcmMode && isLuma(compID));
+#else
   tsAllowed &= !(tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
+#endif
+#if JVET_P0058_CHROMA_TS
+  tsAllowed &= tu.blocks[compID].width <= transformSkipMaxSize && tu.blocks[compID].height <= transformSkipMaxSize;
+#else
   tsAllowed &= tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize;
+#endif
   tsAllowed &= !tu.cu->sbtInfo;
 
   return tsAllowed;
@@ -3841,7 +3855,11 @@ bool TU::hasCrossCompPredInfo( const TransformUnit &tu, const ComponentID &compI
 bool TU::needsSqrt2Scale( const TransformUnit &tu, const ComponentID &compID )
 {
   const Size &size=tu.blocks[compID];
+#if JVET_P0058_CHROMA_TS
+  const bool isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
   return (!isTransformSkip) && (((floorLog2(size.width) + floorLog2(size.height)) & 1) == 1);
 }
 

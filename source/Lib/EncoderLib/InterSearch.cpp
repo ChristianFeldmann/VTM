@@ -6504,7 +6504,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   {
     TransformUnit &tu = csFull->addTU(CS::getArea(cs, currArea, partitioner.chType), partitioner.chType);
     tu.depth          = currDepth;
+#if JVET_P0058_CHROMA_TS
+    for (int i = 0; i<MAX_NUM_TBLOCKS; i++) tu.mtsIdx[i] = MTS_DCT2_DCT2;
+#else
     tu.mtsIdx         = MTS_DCT2_DCT2;
+#endif
     tu.checkTuNoResidual( partitioner.currPartIdx() );
 
     const Slice           &slice = *cs.slice;
@@ -6560,7 +6564,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         preCalcAlpha = xCalcCrossComponentPredictionAlpha( tu, compID, m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate() );
       }
 
+#if JVET_P0058_CHROMA_TS
+      const bool tsAllowed  = TU::isTSAllowed(tu, compID) && (isLuma(compID) || (isChroma(compID) && m_pcEncCfg->getUseChromaTS()));
+#else
       const bool tsAllowed  = TU::isTSAllowed ( tu, compID );
+#endif
       const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
       uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
       std::vector<TrMode> trModes;
@@ -6613,9 +6621,16 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           m_CABACEstimator->getCtx() = ctxStart;
           m_CABACEstimator->resetBits();
 
+#if JVET_P0058_CHROMA_TS
+#else
           if( isLuma( compID ) )
+#endif
           {
+#if JVET_P0058_CHROMA_TS
+            if (bestTU.mtsIdx[compID] == MTS_SKIP && m_pcEncCfg->getUseTransformSkipFast())
+#else
             if( bestTU.mtsIdx == MTS_SKIP && m_pcEncCfg->getUseTransformSkipFast() )
+#endif
             {
               continue;
             }
@@ -6623,7 +6638,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             {
               continue;
             }
+#if JVET_P0058_CHROMA_TS
+            tu.mtsIdx[compID] = trModes[transformMode].first;
+#else
             tu.mtsIdx = trModes[transformMode].first;
+#endif
           }
           tu.compAlpha[compID]      = bUseCrossCPrediction ? preCalcAlpha : 0;
 
@@ -6669,7 +6688,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #else
               m_pcTrQuant->transformNxN( tu, compID, cQP, &trModes, CU::isIntra( *tu.cu ) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand() );
 #endif
+#if JVET_P0058_CHROMA_TS
+              tu.mtsIdx[compID] = trModes[0].first;
+#else
               tu.mtsIdx = trModes[0].first;
+#endif
             }
             m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
           }
@@ -6876,7 +6899,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
         tu.jointCbCr = (uint8_t) cbfMask;
         tu.compAlpha[COMPONENT_Cb] = tu.compAlpha[COMPONENT_Cr] = 0;
-
+#if JVET_P0058_CHROMA_TS
+        // encoder bugfix: initialize mtsIdx for chroma under JointCbCrMode.
+        tu.mtsIdx[COMPONENT_Cb] = tu.mtsIdx[COMPONENT_Cr] = MTS_DCT2_DCT2;
+#endif
         const QpParam cQP(tu, COMPONENT_Cb);  // note: uses tu.transformSkip[compID]
 
 #if RDOQ_CHROMA_LAMBDA

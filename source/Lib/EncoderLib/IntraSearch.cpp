@@ -1156,9 +1156,16 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
       {
         modeIsEnable[i] = 1;
       }
-
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+      DistParam distParamSad;
+      DistParam distParamSatd;
+#else
       DistParam distParam;
+#endif
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+#else
       const bool useHadamard = !cu.transQuantBypass;
+#endif
       pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
 
       initIntraPatternChType(cu, pu.Cb());
@@ -1179,16 +1186,32 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         }
         pu.intraDir[1] = mode; // temporary assigned, for SATD checking.
 
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         int64_t sad = 0;
+        int64_t sadCb = 0;
+        int64_t satdCb = 0;
+        int64_t sadCr = 0;
+        int64_t satdCr = 0;
+#else
+        int64_t sad = 0;
+#endif
         CodingStructure& cs = *(pu.cs);
 
         CompArea areaCb = pu.Cb();
         PelBuf orgCb = cs.getOrgBuf(areaCb);
         PelBuf predCb = cs.getPredBuf(areaCb);
-
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+        m_pcRdCost->setDistParam(distParamSad, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, false);
+        m_pcRdCost->setDistParam(distParamSatd, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, true);
+#else
         m_pcRdCost->setDistParam(distParam, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, useHadamard);
+#endif
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+        distParamSad.applyWeight = false;
+        distParamSatd.applyWeight = false;
+#else
         distParam.applyWeight = false;
-
+#endif
         if (PU::isLMCMode(mode))
         {
           predIntraChromaLM(COMPONENT_Cb, predCb, pu, areaCb, mode);
@@ -1198,16 +1221,28 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           initPredIntraParams(pu, pu.Cb(), *pu.cs->sps);
           predIntraAng(COMPONENT_Cb, predCb, pu);
         }
-
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+        sadCb = distParamSad.distFunc(distParamSad) * 2;
+        satdCb = distParamSatd.distFunc(distParamSatd);
+        sad += std::min(sadCb, satdCb);
+#else
         sad += distParam.distFunc(distParam);
-
+#endif
         CompArea areaCr = pu.Cr();
         PelBuf orgCr = cs.getOrgBuf(areaCr);
         PelBuf predCr = cs.getPredBuf(areaCr);
-
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+        m_pcRdCost->setDistParam(distParamSad, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, false);
+        m_pcRdCost->setDistParam(distParamSatd, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, true);
+#else
         m_pcRdCost->setDistParam(distParam, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, useHadamard);
+#endif
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+        distParamSad.applyWeight = false;
+        distParamSatd.applyWeight = false;
+#else
         distParam.applyWeight = false;
-
+#endif
         if (PU::isLMCMode(mode))
         {
           predIntraChromaLM(COMPONENT_Cr, predCr, pu, areaCr, mode);
@@ -1217,7 +1252,13 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           initPredIntraParams(pu, pu.Cr(), *pu.cs->sps);
           predIntraAng(COMPONENT_Cr, predCr, pu);
         }
+#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
+        sadCr = distParamSad.distFunc(distParamSad) * 2;
+        satdCr = distParamSatd.distFunc(distParamSatd);
+        sad += std::min(sadCr, satdCr);
+#else
         sad += distParam.distFunc(distParam);
+#endif
         satdSortedCost[idx] = sad;
       }
       // sort the mode based on the cost from small to large.
@@ -2427,7 +2468,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #else
       m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, CU::isIntra(*tu.cu) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand());
 #endif
+#if JVET_P0058_CHROMA_TS
+      tu.mtsIdx[compID] = trModes->at(0).first;
+#else
       tu.mtsIdx = trModes->at(0).first;
+#endif
     }
     m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
 
@@ -2466,7 +2511,24 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
     PelBuf& codeResi = ( codeCompId == COMPONENT_Cr ? crResi : piResi );
     uiAbsSum = 0;
+
+#if JVET_P0058_CHROMA_TS
+    if (trModes)
+    {
+#if JVET_P0273_MTSIntraMaxCand
+        m_pcTrQuant->transformNxN(tu, compID, qpCbCr, trModes, m_pcEncCfg->getMTSIntraMaxCand());
+#else
+        m_pcTrQuant->transformNxN(tu, compID, qpCbCr, trModes, CU::isIntra(*tu.cu) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand());
+#endif
+        tu.mtsIdx[compID] = trModes->at(0).first;
+    }
+#endif
+#if JVET_P0058_CHROMA_TS
+    // encoder bugfix: Set loadTr to aovid redundant transform process
+    m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+#else
     m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx());
+#endif
     DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
     if( uiAbsSum > 0 )
     {
@@ -2810,7 +2872,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       }
       else
       {
+#if JVET_P0058_CHROMA_TS
+        if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[ COMPONENT_Y ] == MTS_SKIP))
+#else
         if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[ COMPONENT_Y ] == 1 ) )
+#endif
         {
           break;
         }
@@ -2819,11 +2885,19 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
           continue;
         }
         //we compare the DCT-II cost against the best ISP cost so far (except for TS)
+#if JVET_P0058_CHROMA_TS
+        if (m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinner && trModes[modeId].first != MTS_DCT2_DCT2 && (trModes[modeId].first != MTS_SKIP || !tsAllowed) && bestDCT2cost > bestCostSoFar * threshold)
+#else
         if( m_pcEncCfg->getUseFastISP() && !cu.ispMode && ispIsCurrentWinner && trModes[ modeId ].first != 0 && ( trModes[ modeId ].first != 1 || !tsAllowed ) && bestDCT2cost > bestCostSoFar * threshold )
+#endif
         {
           continue;
         }
+#if JVET_P0058_CHROMA_TS
+        tu.mtsIdx[COMPONENT_Y] = trModes[modeId].first;
+#else
         tu.mtsIdx = trModes[ modeId ].first;
+#endif
       }
 
 
@@ -2867,25 +2941,45 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
             if( transformIndex == 1 )
             {
+#if JVET_P0058_CHROMA_TS
+              tu.mtsIdx[COMPONENT_Y] = (uiIntraMode < 34) ? MTS_DST7_DCT8 : MTS_DCT8_DST7;
+#else
               tu.mtsIdx = ( uiIntraMode < 34 ) ? MTS_DST7_DCT8 : MTS_DCT8_DST7;
+#endif
             }
             else if( transformIndex == 2 )
             {
+#if JVET_P0058_CHROMA_TS
+              tu.mtsIdx[COMPONENT_Y] = (uiIntraMode < 34) ? MTS_DCT8_DST7 : MTS_DST7_DCT8;
+#else
               tu.mtsIdx = ( uiIntraMode < 34 ) ? MTS_DCT8_DST7 : MTS_DST7_DCT8;
+#endif
             }
             else
             {
+#if JVET_P0058_CHROMA_TS
+              tu.mtsIdx[COMPONENT_Y] = MTS_DST7_DST7 + transformIndex;
+#else
               tu.mtsIdx = MTS_DST7_DST7 + transformIndex;
+#endif
             }
           }
           else
           {
+#if JVET_P0058_CHROMA_TS
+            tu.mtsIdx[COMPONENT_Y] = MTS_DST7_DST7 + transformIndex;
+#else
             tu.mtsIdx = MTS_DST7_DST7 + transformIndex;
+#endif
           }
         }
         else
         {
+#if JVET_P0058_CHROMA_TS
+          tu.mtsIdx[COMPONENT_Y] = transformIndex;
+#else
           tu.mtsIdx = transformIndex;
+#endif
         }
 
         if( !cu.mtsFlag && checkTransformSkip )
@@ -3299,9 +3393,26 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       int        bestModeId     = 0;
       Distortion singleDistCTmp = 0;
       double     singleCostTmp  = 0;
-
       const int  crossCPredictionModesToTest = checkCrossComponentPrediction ? 2 : 1;
+#if JVET_P0058_CHROMA_TS
+      const bool tsAllowed = TU::isTSAllowed(currTU, compID) && (m_pcEncCfg->getUseChromaTS());
+      uint8_t nNumTransformCands = 1 + (tsAllowed ? 1 : 0); // DCT + TS = 2 tests
+      std::vector<TrMode> trModes;
+      trModes.push_back(TrMode(0, true)); // DCT2
+
+      if (tsAllowed)
+      {
+          trModes.push_back(TrMode(1, true));//TS
+      }
+      CHECK(!currTU.Cb().valid(), "Invalid TU");
+#endif
+
+#if JVET_P0058_CHROMA_TS
+      const int  totalModesToTest            = crossCPredictionModesToTest * nNumTransformCands;
+      bool cbfDCT2 = true;
+#else
       const int  totalModesToTest            = crossCPredictionModesToTest;
+#endif
       const bool isOneMode                   = false;
       maxModesTested                         = totalModesToTest > maxModesTested ? totalModesToTest : maxModesTested;
 
@@ -3314,6 +3425,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
         ctxStart = m_CABACEstimator->getCtx();
       }
 
+#if JVET_P0058_CHROMA_TS
+      for (int modeId = 0; modeId < nNumTransformCands; modeId++)
+#endif
       {
         for (int crossCPredictionModeId = 0; crossCPredictionModeId < crossCPredictionModesToTest; crossCPredictionModeId++)
         {
@@ -3322,10 +3436,26 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
           currTU.compAlpha    [compID] = ( crossCPredictionModeId ? compAlpha[compID] : 0 );
 
+#if JVET_P0058_CHROMA_TS
+          currTU.mtsIdx[compID] = trModes[modeId].first;
+#endif
+
           currModeId++;
 
           const bool isFirstMode = (currModeId == 1);
           const bool isLastMode  = false; // Always store output to saveCS and tmpTU
+
+#if JVET_P0058_CHROMA_TS
+           //if DCT2's cbf==0, skip ts search
+          if (!cbfDCT2 && trModes[modeId].first == MTS_SKIP)
+          {
+              break;
+          }
+          if (!trModes[modeId].second)
+          {
+              continue;
+          }
+#endif
 
           if (!isFirstMode) // if not first mode to be tested
           {
@@ -3334,9 +3464,24 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
           singleDistCTmp = 0;
 
+#if JVET_P0058_CHROMA_TS
+          if (nNumTransformCands > 1)
+          {
+              xIntraCodingTUBlock(currTU, compID, crossCPredictionModeId != 0, singleDistCTmp, default0Save1Load2, nullptr, modeId == 0 ? &trModes : nullptr, true);
+          }
+          else
+          {
+              xIntraCodingTUBlock(currTU, compID, crossCPredictionModeId != 0, singleDistCTmp, default0Save1Load2);
+          }
+#else
           xIntraCodingTUBlock( currTU, compID, crossCPredictionModeId != 0, singleDistCTmp, default0Save1Load2 );
+#endif
 
+#if JVET_P0058_CHROMA_TS
+          if (((crossCPredictionModeId == 1) && (currTU.compAlpha[compID] == 0)) || ((currTU.mtsIdx[compID] == MTS_SKIP) && !TU::getCbf(currTU, compID))) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#else
           if( ( ( crossCPredictionModeId == 1 ) && ( currTU.compAlpha[compID] == 0 ) ) ) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#endif
           {
             singleCostTmp = MAX_DOUBLE;
           }
@@ -3370,6 +3515,13 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
               bestCostCr = singleCostTmp;
               bestDistCr = singleDistCTmp;
             }
+
+#if JVET_P0058_CHROMA_TS
+            if (currTU.mtsIdx[compID] == MTS_DCT2_DCT2)
+            {
+                cbfDCT2 = TU::getCbfAtDepth(currTU, compID, currDepth);
+            }
+#endif
 
             if( !isLastMode )
             {
@@ -3430,7 +3582,10 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
         currTU.jointCbCr               = (uint8_t)cbfMask;
         currTU.compAlpha[COMPONENT_Cb] = 0;
         currTU.compAlpha[COMPONENT_Cr] = 0;
-
+#if JVET_P0058_CHROMA_TS
+        // encoder bugfix: initialize mtsIdx for chroma under JointCbCrMode.
+        currTU.mtsIdx[COMPONENT_Cb] = currTU.mtsIdx[COMPONENT_Cr]  = MTS_DCT2_DCT2;
+#endif
         m_CABACEstimator->getCtx() = ctxStartTU;
 
         resiCb.copyFrom( orgResiCb[cbfMask] );

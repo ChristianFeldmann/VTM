@@ -704,15 +704,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
     if (pcPPS->getRectSliceFlag() && pcPPS->getSingleBrickPerSliceFlag())
     {
-      std::vector<int> topLeft(numTilesInPic);  //TODO: this should be numBricksInPic. Fix it when the bricks codes have been updated
-      std::vector<int> bottomRight(numTilesInPic);
+      std::vector<int> bottomRightBrickIdxDelta(numTilesInPic);  //TODO: this should be numBricksInPic. Fix it when the bricks codes have been updated
       for (uint32_t i = 0; i < numTilesInPic; i++)
       {
-        topLeft[i] = i;
-        bottomRight[i] = i;
+        bottomRightBrickIdxDelta[i] = i == 0 ? 0 : 1;
       }
-      pcPPS->setTopLeftBrickIdx(topLeft);
-      pcPPS->setBottomRightBrickIdx(bottomRight);
+      pcPPS->setBottomRightBrickIdxDelta(bottomRightBrickIdxDelta);
+      pcPPS->setNumSlicesInPicMinus1(numTilesInPic - 1);
     }
 
     READ_FLAG( uiCode, "loop_filter_across_bricks_enabled_flag ");        pcPPS->setLoopFilterAcrossBricksEnabledFlag(uiCode ? true : false);

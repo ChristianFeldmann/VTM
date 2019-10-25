@@ -860,7 +860,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   enablePROF &= !subblkMVSpreadOverLimit;
   const int profThres = 1 << (iBit + (m_isBi ? 1 : 0));
   enablePROF &= !m_encOnly || pu.cu->slice->getCheckLDC() || iDMvHorX > profThres || iDMvHorY > profThres || iDMvVerX > profThres || iDMvVerY > profThres || iDMvHorX < -profThres || iDMvHorY < -profThres || iDMvVerX < -profThres || iDMvVerY < -profThres;
-  enablePROF &= pu.cs->pps->getPicWidthInLumaSamples() == refPic->cs->pps->getPicWidthInLumaSamples() && pu.cs->pps->getPicHeightInLumaSamples() == refPic->cs->pps->getPicHeightInLumaSamples();
+  enablePROF &= pu.cs->pps->getPicWidthInLumaSamples() == refPic->getPicWidthInLumaSamples() && pu.cs->pps->getPicHeightInLumaSamples() == refPic->getPicHeightInLumaSamples();
 
   if (compID == COMPONENT_Y)
   {
@@ -1643,6 +1643,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         bioApplied = false;
       }
     }
+    bioApplied = PU::isRefPicSameSize( pu ) ? bioApplied : false;
     bool dmvrApplied = false;
     dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
     if ((pu.lumaSize().width > MAX_BDOF_APPLICATION_REGION || pu.lumaSize().height > MAX_BDOF_APPLICATION_REGION) && pu.mergeType != MRG_TYPE_SUBPU_ATMVP && (bioApplied && !dmvrApplied))
@@ -2358,8 +2359,8 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
   if( scaled )
   {
     int row, col;
-    int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
-    int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
+    int refPicWidth = refPic->getPicWidthInLumaSamples();
+    int refPicHeight = refPic->getPicHeightInLumaSamples();
 
 #if JVET_P0088_P0353_RPR_FILTERS
     int xFilter = filterIndex;

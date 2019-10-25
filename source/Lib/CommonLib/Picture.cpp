@@ -808,8 +808,8 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
   UnitArea::operator=( UnitArea( _chromaFormat, Area( Position{ 0, 0 }, size ) ) );
   margin            =  MAX_SCALING_RATIO*_margin;
   const Area a      = Area( Position(), size );
-  M_BUFS( 0, PIC_RECONSTRUCTION ).create( _chromaFormat, a, _maxCUSize, MAX_SCALING_RATIO*_margin, MEMORY_ALIGN_DEF_SIZE );
-  M_BUFS( 0, PIC_RECON_WRAP ).create( _chromaFormat, a, _maxCUSize, MAX_SCALING_RATIO*_margin, MEMORY_ALIGN_DEF_SIZE );
+  M_BUFS( 0, PIC_RECONSTRUCTION ).create( _chromaFormat, a, _maxCUSize, margin, MEMORY_ALIGN_DEF_SIZE );
+  M_BUFS( 0, PIC_RECON_WRAP ).create( _chromaFormat, a, _maxCUSize, margin, MEMORY_ALIGN_DEF_SIZE );
 
   if( !_decoder )
   {

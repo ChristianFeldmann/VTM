@@ -1239,7 +1239,9 @@ private:
   int               m_PPSDepQuantEnabledIdc;
   int               m_PPSRefPicListSPSIdc0;
   int               m_PPSRefPicListSPSIdc1;
+#if !JVET_P0206_TMVP_flags
   int               m_PPSTemporalMVPEnabledIdc;
+#endif
   int               m_PPSMvdL1ZeroIdc;
   int               m_PPSCollocatedFromL0Idc;
   uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
@@ -1439,8 +1441,10 @@ public:
   void                    setPPSRefPicListSPSIdc0(int u)                                  { m_PPSRefPicListSPSIdc0 = u;                   }
   int                     getPPSRefPicListSPSIdc1() const                                 { return m_PPSRefPicListSPSIdc1;                }
   void                    setPPSRefPicListSPSIdc1(int u)                                  { m_PPSRefPicListSPSIdc1 = u;                   }
+#if !JVET_P0206_TMVP_flags
   int                     getPPSTemporalMVPEnabledIdc() const                             { return m_PPSTemporalMVPEnabledIdc;            }
   void                    setPPSTemporalMVPEnabledIdc(int u)                              { m_PPSTemporalMVPEnabledIdc = u;               }
+#endif
   int                     getPPSMvdL1ZeroIdc() const                                      { return m_PPSMvdL1ZeroIdc;                     }
   void                    setPPSMvdL1ZeroIdc(int u)                                       { m_PPSMvdL1ZeroIdc = u;                        }
   int                     getPPSCollocatedFromL0Idc() const                               { return m_PPSCollocatedFromL0Idc;              }

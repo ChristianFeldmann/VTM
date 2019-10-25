@@ -258,7 +258,19 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cb), "pps_cb_qp_offset" );
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cr), "pps_cr_qp_offset" );
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  if (pcSPS->getJointCbCrEnabledFlag() == false || pcSPS->getChromaFormatIdc() == CHROMA_400)
+  {
+    CHECK(pcPPS->getJointCbCrQpOffsetPresentFlag(), "pps_jcbcr_qp_offset_present_flag should be false");
+  }
+  WRITE_FLAG(pcPPS->getJointCbCrQpOffsetPresentFlag() ? 1 : 0, "pps_joint_cbcr_qp_offset_present_flag");
+  if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+  {
+    WRITE_SVLC(pcPPS->getQpOffset(JOINT_CbCr), "pps_joint_cbcr_qp_offset");
+  }
+#else
   WRITE_SVLC( pcPPS->getQpOffset(JOINT_CbCr),   "pps_joint_cbcr_qp_offset" );
+#endif
 
   WRITE_FLAG( pcPPS->getSliceChromaQpFlag() ? 1 : 0,          "pps_slice_chroma_qp_offsets_present_flag" );
 
@@ -272,7 +284,14 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     {
       WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1).u.comp.CbOffset,     "cb_qp_offset_list[i]");
       WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1).u.comp.CrOffset,     "cr_qp_offset_list[i]");
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+      if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+      {
+        WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1).u.comp.JointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+      }
+#else
       WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1).u.comp.JointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+#endif
     }
   }
 
@@ -787,11 +806,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  WRITE_FLAG(pcSPS->getJointCbCrEnabledFlag(), "sps_joint_cbcr_enabled_flag");
+#endif
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     const ChromaQpMappingTable& chromaQpMappingTable = pcSPS->getChromaQpMappingTable();
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    int numQPTables = chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    for (int i = 0; i < numQPTables; i++)
+#else
     for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+#endif
     {
       WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1");
 
@@ -815,7 +842,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
   }
+#if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
+#endif
 
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )

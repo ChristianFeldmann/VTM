@@ -1180,6 +1180,9 @@ private:
 
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  bool             m_chromaJointCbCrQpOffsetPresentFlag;
+#endif
   int              m_chromaCbCrQpOffset;
 
   // Chroma QP Adjustments
@@ -1292,6 +1295,11 @@ public:
 
   void                   setCuQpDeltaSubdiv( uint32_t u )                                 { m_cuQpDeltaSubdiv = u;                         }
   uint32_t               getCuQpDeltaSubdiv() const                                       { return m_cuQpDeltaSubdiv;                      }
+
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  bool                   getJointCbCrQpOffsetPresentFlag() const                          { return m_chromaJointCbCrQpOffsetPresentFlag;   }
+  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      } 
+#endif
 
   void                   setQpOffset(ComponentID compID, int i )
   {

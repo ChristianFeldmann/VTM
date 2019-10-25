@@ -1348,34 +1348,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
-
+#endif
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
     int numQPTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
     for (int i = 0; i < numQPTables; i++)
-    {
-      READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); chromaQpMappingTableParams.setNumPtsInCQPTableMinus1(i, uiCode);
-      std::vector<int> deltaQpInValMinus1(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
-      std::vector<int> deltaQpOutVal(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
-      for (int j = 0; j <= chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i); j++)
-      {
-        READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode;
-        READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode;
-      }
-      chromaQpMappingTableParams.setDeltaQpInValMinus1(i, deltaQpInValMinus1);
-      chromaQpMappingTableParams.setDeltaQpOutVal(i, deltaQpOutVal);
-    }
-    pcSPS->setChromaQpMappingTableFromParams(chromaQpMappingTableParams, pcSPS->getQpBDOffset(CHANNEL_TYPE_CHROMA));
-    pcSPS->derivedChromaQPMappingTables();
-  }
 #else
-  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
-  {
-    ChromaQpMappingTableParams chromaQpMappingTableParams;
-    READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
     for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+#endif
     {
       READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); chromaQpMappingTableParams.setNumPtsInCQPTableMinus1(i,uiCode);
       std::vector<int> deltaQpInValMinus1(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
@@ -1391,7 +1374,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setChromaQpMappingTableFromParams(chromaQpMappingTableParams, pcSPS->getQpBDOffset(CHANNEL_TYPE_CHROMA));
     pcSPS->derivedChromaQPMappingTables();
   }
-#endif
+
 
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );

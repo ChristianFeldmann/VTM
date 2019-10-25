@@ -466,7 +466,11 @@ struct TransformUnit : public UnitArea
   int              m_chromaResScaleInv;
 
   uint8_t        depth;
+#if JVET_P0058_CHROMA_TS
+  uint8_t        mtsIdx     [ MAX_NUM_TBLOCKS ];
+#else
   uint8_t        mtsIdx;
+#endif
   bool           noResidual;
   uint8_t        jointCbCr;
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];

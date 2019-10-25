@@ -285,6 +285,10 @@ protected:
 #endif
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  bool     m_SBT64RDOCheck; // Enable more than 32 SBT in encoder RDO check
+#endif
+
   bool      m_LFNST;
   bool      m_useFastLFNST;
   int       m_SubPuMvpMode;
@@ -434,6 +438,9 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
+#if JVET_P0058_CHROMA_TS
+  bool      m_useChromaTS;
+#endif
   bool      m_useBDPCM;
   uint32_t      m_log2MaxTransformSkipBlockSize;
   bool      m_transformSkipRotationEnabledFlag;
@@ -895,6 +902,11 @@ public:
   void      setUseSBT                       ( bool b )       { m_SBT = b; }
   bool      getUseSBT                       ()         const { return m_SBT; }
 
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  void      setUse64SBTRDOCheck(bool b)                     { m_SBT64RDOCheck = b; }
+  bool      getUse64SBTRDOCheck             ()        const { return m_SBT64RDOCheck; }
+#endif
+
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
   void      setUseSMVD                      ( bool b )       { m_SMVD = b; }
@@ -1222,6 +1234,10 @@ public:
   void setTransformSkipRotationEnabledFlag             (const bool value)  { m_transformSkipRotationEnabledFlag = value; }
   bool getTransformSkipContextEnabledFlag              ()            const { return m_transformSkipContextEnabledFlag;  }
   void setTransformSkipContextEnabledFlag              (const bool value)  { m_transformSkipContextEnabledFlag = value; }
+#if JVET_P0058_CHROMA_TS
+  bool getUseChromaTS                                  ()       { return m_useChromaTS; }
+  void setUseChromaTS                                  (bool b) { m_useChromaTS = b; }
+#endif
   bool getUseBDPCM                                     ()         { return m_useBDPCM; }
   void setUseBDPCM                                     ( bool b ) { m_useBDPCM  = b;   }
   bool getUseJointCbCr                                 ()         { return m_JointCbCrMode; }

@@ -199,9 +199,25 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
 
 const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
 {
-  if( CS::isDualITree( *this ) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
+#if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
+  if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 || partitioner.currArea().chromaFormat == CHROMA_400 )
+#else
+  if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
+#endif
     return LDT_MODE_TYPE_INHERIT;
-
+#if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
+  int minLumaArea = partitioner.currArea().lumaSize().area();
+  if (split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT) // the area is split into 3 or 4 parts
+  {
+    minLumaArea = minLumaArea >> 2;
+  }
+  else if (split == CU_VERT_SPLIT || split == CU_HORZ_SPLIT) // the area is split into 2 parts
+  {
+    minLumaArea = minLumaArea >> 1;
+  }
+  int minChromaBlock = minLumaArea >> (getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat) + getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat));
+  return minChromaBlock >= 16 ? LDT_MODE_TYPE_INHERIT : ((minLumaArea < 32) || slice->isIntra()) ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+#else
   int width = partitioner.currArea().lwidth();
   int height = partitioner.currArea().lheight();
 
@@ -223,6 +239,7 @@ const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &p
   {
     return LDT_MODE_TYPE_INHERIT;
   }
+#endif
 }
 
 void CodingStructure::clearCuPuTuIdxMap( const UnitArea &_area, uint32_t numCu, uint32_t numPu, uint32_t numTu, uint32_t* pOffset )

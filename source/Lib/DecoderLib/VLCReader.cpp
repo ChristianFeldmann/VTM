@@ -453,8 +453,23 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) < -12, "Invalid Cr QP offset" );
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) >  12, "Invalid Cr QP offset" );
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  READ_FLAG(uiCode, "pps_joint_cbcr_qp_offset_present_flag");
+  pcPPS->setJointCbCrQpOffsetPresentFlag(uiCode ? true : false);
+
+  if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+  {
+    READ_SVLC(iCode, "pps_joint_cbcr_qp_offset");
+  }
+  else
+  {
+    iCode = 0;
+  }
+#else
   READ_SVLC( iCode, "pps_joint_cbcr_qp_offset");
+#endif
   pcPPS->setQpOffset(JOINT_CbCr, iCode);
+
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) >  12, "Invalid CbCr QP offset" );
 
@@ -485,7 +500,18 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
       READ_SVLC(crOffset, "cr_qp_offset_list[i]");
       CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+      if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+      {
+        READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+      }
+      else
+      {
+        jointCbCrOffset = 0;
+      }
+#else
       READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+#endif
       CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
       // table uses +1 for index (see comment inside the function)
       pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
@@ -1329,11 +1355,19 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
+#endif
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    int numQPTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    for (int i = 0; i < numQPTables; i++)
+#else
     for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+#endif
     {
       READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); chromaQpMappingTableParams.setNumPtsInCQPTableMinus1(i,uiCode);
       std::vector<int> deltaQpInValMinus1(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
@@ -1350,6 +1384,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->derivedChromaQPMappingTables();
   }
 
+
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 
@@ -1358,7 +1393,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
   }
+#if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   READ_FLAG( uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag (uiCode ? true : false);
+#endif
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
 
@@ -1442,10 +1479,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( pcSPS->getUseSBT() )
   {
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(std::min((int)(1 << pcSPS->getLog2MaxTbSize()), uiCode != 0 ? 64 : 32));
   }
+#endif
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
   READ_FLAG(uiCode, "isp_enable_flag");                            pcSPS->setUseISP(uiCode != 0);

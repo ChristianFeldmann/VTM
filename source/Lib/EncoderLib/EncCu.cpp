@@ -956,7 +956,6 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
     )
   {
     const CodingUnit&     cu = *bestCS->cus.front();
-    const PredictionUnit& pu = *cu.firstPU;
 
 #if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isIbcSmallBlk = CU::isIBC(cu) && (cu.lwidth() * cu.lheight() <= 16);

@@ -285,6 +285,10 @@ protected:
 #endif
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  bool     m_SBT64RDOCheck; // Enable more than 32 SBT in encoder RDO check
+#endif
+
   bool      m_LFNST;
   bool      m_useFastLFNST;
   int       m_SubPuMvpMode;
@@ -890,6 +894,11 @@ public:
   bool      getImplicitMTS                  ()         const { return m_ImplicitMTS; }
   void      setUseSBT                       ( bool b )       { m_SBT = b; }
   bool      getUseSBT                       ()         const { return m_SBT; }
+
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  void      setUse64SBTRDOCheck(bool b)                     { m_SBT64RDOCheck = b; }
+  bool      getUse64SBTRDOCheck             ()        const { return m_SBT64RDOCheck; }
+#endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }

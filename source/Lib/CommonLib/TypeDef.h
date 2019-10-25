@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0530_TPM_WEIGHT_ALIGN                       1 // JVET-P0530: align chroma weights with luma weights for TPM blending
+
 #define JVET_P0615_CHROMAMODE_CLEANUP                     1 // JVET-P0615: intra chroma mode coding cleanup
 
 #define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 

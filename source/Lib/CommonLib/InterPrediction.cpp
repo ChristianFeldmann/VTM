@@ -1000,8 +1000,8 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     }
   }
 #if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
-  int iScaleXLuma = ::getComponentScaleX(COMPONENT_Y, chFmt);
-  int iScaleYLuma = ::getComponentScaleY(COMPONENT_Y, chFmt);
+  int scaleXLuma = ::getComponentScaleX(COMPONENT_Y, chFmt);
+  int scaleYLuma = ::getComponentScaleY(COMPONENT_Y, chFmt);
 
   if (genChromaMv && pu.chromaFormat != CHROMA_444)
   {
@@ -1009,54 +1009,54 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
     int lumaBlockWidth  = AFFINE_MIN_BLOCK_SIZE;
     int lumaBlockHeight = AFFINE_MIN_BLOCK_SIZE;
 
-    CHECK(lumaBlockWidth > (width >> iScaleXLuma), "Sub Block width  > Block width");
-    CHECK(lumaBlockHeight > (height >> iScaleYLuma), "Sub Block height > Block height");
+    CHECK(lumaBlockWidth > (width >> scaleXLuma), "Sub Block width  > Block width");
+    CHECK(lumaBlockHeight > (height >> scaleYLuma), "Sub Block height > Block height");
 
-    const int cxWidthLuma  = width >> iScaleXLuma;
-    const int cxHeightLuma = height >> iScaleYLuma;
-    const int iHalfBWLuma  = lumaBlockWidth >> 1;
-    const int iHalfBHLuma  = lumaBlockHeight >> 1;
+    const int cxWidthLuma  = width >> scaleXLuma;
+    const int cxHeightLuma = height >> scaleYLuma;
+    const int halfBWLuma  = lumaBlockWidth >> 1;
+    const int halfBHLuma  = lumaBlockHeight >> 1;
 
-    int iDMvHorXLuma, iDMvHorYLuma, iDMvVerXLuma, iDMvVerYLuma;
-    iDMvHorXLuma = (mvRT - mvLT).getHor() << (iBit - floorLog2(cxWidthLuma));
-    iDMvHorYLuma = (mvRT - mvLT).getVer() << (iBit - floorLog2(cxWidthLuma));
+    int dMvHorXLuma, dMvHorYLuma, dMvVerXLuma, dMvVerYLuma;
+    dMvHorXLuma = (mvRT - mvLT).getHor() << (iBit - floorLog2(cxWidthLuma));
+    dMvHorYLuma = (mvRT - mvLT).getVer() << (iBit - floorLog2(cxWidthLuma));
     if (pu.cu->affineType == AFFINEMODEL_6PARAM)
     {
-      iDMvVerXLuma = (mvLB - mvLT).getHor() << (iBit - floorLog2(cxHeightLuma));
-      iDMvVerYLuma = (mvLB - mvLT).getVer() << (iBit - floorLog2(cxHeightLuma));
+      dMvVerXLuma = (mvLB - mvLT).getHor() << (iBit - floorLog2(cxHeightLuma));
+      dMvVerYLuma = (mvLB - mvLT).getVer() << (iBit - floorLog2(cxHeightLuma));
     }
     else
     {
-      iDMvVerXLuma = -iDMvHorYLuma;
-      iDMvVerYLuma = iDMvHorXLuma;
+      dMvVerXLuma = -dMvHorYLuma;
+      dMvVerYLuma = dMvHorXLuma;
     }
 
-    const bool subblkMVSpreadOverLimitLuma = isSubblockVectorSpreadOverLimit(iDMvHorXLuma, iDMvHorYLuma, iDMvVerXLuma, iDMvVerYLuma, pu.interDir);
+    const bool subblkMVSpreadOverLimitLuma = isSubblockVectorSpreadOverLimit(dMvHorXLuma, dMvHorYLuma, dMvVerXLuma, dMvVerYLuma, pu.interDir);
 
-    // get prediction block by block
+    // get luma MV block by block
     for (int h = 0; h < cxHeightLuma; h += lumaBlockHeight)
     {
       for (int w = 0; w < cxWidthLuma; w += lumaBlockWidth)
       {
-        int iMvScaleTmpHor, iMvScaleTmpVer;
+        int mvScaleTmpHor, mvScaleTmpVer;
         if (!subblkMVSpreadOverLimitLuma)
         {
-          iMvScaleTmpHor = iMvScaleHor + iDMvHorXLuma * (iHalfBWLuma + w) + iDMvVerXLuma * (iHalfBHLuma + h);
-          iMvScaleTmpVer = iMvScaleVer + iDMvHorYLuma * (iHalfBWLuma + w) + iDMvVerYLuma * (iHalfBHLuma + h);
+          mvScaleTmpHor = iMvScaleHor + dMvHorXLuma * (halfBWLuma + w) + dMvVerXLuma * (halfBHLuma + h);
+          mvScaleTmpVer = iMvScaleVer + dMvHorYLuma * (halfBWLuma + w) + dMvVerYLuma * (halfBHLuma + h);
         }
         else
         {
-          iMvScaleTmpHor = iMvScaleHor + iDMvHorXLuma * (cxWidthLuma >> 1) + iDMvVerXLuma * (cxHeightLuma >> 1);
-          iMvScaleTmpVer = iMvScaleVer + iDMvHorYLuma * (cxWidthLuma >> 1) + iDMvVerYLuma * (cxHeightLuma >> 1);
+          mvScaleTmpHor = iMvScaleHor + dMvHorXLuma * (cxWidthLuma >> 1) + dMvVerXLuma * (cxHeightLuma >> 1);
+          mvScaleTmpVer = iMvScaleVer + dMvHorYLuma * (cxWidthLuma >> 1) + dMvVerYLuma * (cxHeightLuma >> 1);
         }
 
-        roundAffineMv(iMvScaleTmpHor, iMvScaleTmpVer, shift);
-        Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
+        roundAffineMv(mvScaleTmpHor, mvScaleTmpVer, shift);
+        Mv tmpMv(mvScaleTmpHor, mvScaleTmpVer);
         tmpMv.clipToStorageBitDepth();
-        iMvScaleTmpHor = tmpMv.getHor();
-        iMvScaleTmpVer = tmpMv.getVer();
+        mvScaleTmpHor = tmpMv.getHor();
+        mvScaleTmpVer = tmpMv.getVer();
 
-        m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
+        m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(mvScaleTmpHor, mvScaleTmpVer);
       }
     }
   }

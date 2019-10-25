@@ -58,6 +58,8 @@
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
+#define JVET_P0406_YUV_FMT_GENERALIZATION_LDT             1 // JVET-P0406: Generalization of local dual tree (LDT) for different YUV formats
+
 #define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
 
 #define JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT               1 // JVET-P0091: Align sample offset calculation of BDOF and PROF

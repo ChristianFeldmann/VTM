@@ -1227,15 +1227,22 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
   int32_t strideSrc0 = predSrc0.get(compIdx).stride;
   int32_t strideSrc1 = predSrc1.get(compIdx).stride;
 
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+  int32_t chromaScaleX = getComponentScaleX(compIdx, pu.chromaFormat);
+  int32_t chromaScaleY = getComponentScaleY(compIdx, pu.chromaFormat);
+  int8_t log2WidthY = floorLog2(width << chromaScaleX) - 1;
+  int8_t log2HeightY = floorLog2(height << chromaScaleY) - 1;
+#else
   int8_t log2Width = floorLog2(width) - 1;
   int8_t log2Height = floorLog2(height) - 1;
+#endif
   const char    log2WeightBase = 3;
   const ClpRng  clpRng = pu.cu->slice->clpRngs().comp[compIdx];
   const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;
   const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
 #if JVET_P0530_TPM_WEIGHT_ALIGN
-  int wIdx = (compIdx == COMPONENT_Y) ? 0 : pu.cs->sps->getChromaFormatIdc();
-  int16_t *weight = g_triangleWeights[wIdx][splitDir][log2Height][log2Width];
+  int16_t *weight = g_triangleWeights[splitDir][log2HeightY][log2WidthY];
+  int16_t stepY = width << (chromaScaleX + chromaScaleY);
 #else
   const bool    longWeight = (compIdx == COMPONENT_Y);
   const bool    shortWeight = !longWeight;
@@ -1251,13 +1258,23 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
 
   if (width == 2)
   {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+    const __m128i mask = _mm_set_epi16( (short) 0x8080, (short) 0x8080, (short) 0x8080, (short) 0x8080, (short) 0x8080, (short) 0x8080, 0x0504, 0x0100 );
+#endif
     for (int y = 0; y < height; y++)
     {
       __m128i s0 = _mm_cvtsi32_si128(*(uint32_t *) src0);
       __m128i s1 = _mm_cvtsi32_si128(*(uint32_t *) src1);
-      __m128i w0 = _mm_cvtsi32_si128(*(uint32_t *) weight);
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      __m128i w0 = _mm_loadl_epi64((__m128i *) (weight));
+      if (chromaScaleX == 1)
+      {
+        w0 = _mm_shuffle_epi8(w0, mask);
+      }
+#else
+      __m128i w0 = _mm_cvtsi32_si128(*(uint32_t *)weight);
+#endif
       __m128i w1 = _mm_sub_epi16(mmEight, w0);
-
       s0 = _mm_unpacklo_epi16(s0, s1);
       w0 = _mm_unpacklo_epi16(w0, w1);
       s0 = _mm_add_epi32(_mm_madd_epi16(s0, w0), mmOffset);
@@ -1269,16 +1286,31 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
       dst += strideDst;
       src0 += strideSrc0;
       src1 += strideSrc1;
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      weight += stepY;
+#else
       weight += 2;
+#endif
     }
   }
   else if(width == 4)
   {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+    const __m128i mask = _mm_set_epi16( (short) 0x8080, (short) 0x8080, (short) 0x8080, (short) 0x8080, 0x0D0C, 0x0908, 0x0504, 0x0100 );
+#endif
     for (int y = 0; y < height; y++)
     {
       __m128i s0 = _mm_loadl_epi64((__m128i *) (src0));
       __m128i s1 = _mm_loadl_epi64((__m128i *) (src1));
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      __m128i w0 = _mm_loadu_si128((__m128i *) (weight));
+      if (chromaScaleX == 1)
+      {
+        w0 = _mm_shuffle_epi8(w0, mask);
+      }
+#else
       __m128i w0 = _mm_loadl_epi64((__m128i *) (weight));
+#endif
       __m128i w1 = _mm_sub_epi16(mmEight, w0);
       s0 = _mm_unpacklo_epi16(s0, s1);
       w0 = _mm_unpacklo_epi16(w0, w1);
@@ -1290,18 +1322,38 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
       dst += strideDst;
       src0 += strideSrc0;
       src1 += strideSrc1;
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      weight += stepY;
+#else
       weight += 4;
+#endif
     }
   }
   else
   {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+    const __m128i mask1 = _mm_set_epi16( 0x0D0C, 0x0908, 0x0504, 0x0100, (short) 0x8080, (short) 0x8080, (short) 0x8080, (short) 0x8080 );
+    const __m128i mask2 = _mm_set_epi16( (short) 0x8080, (short) 0x8080, (short) 0x8080, (short) 0x8080, 0x0D0C, 0x0908, 0x0504, 0x0100 );
+#endif
     for (int y = 0; y < height; y++)
     {
       for (int x = 0; x < width; x += 8)
       {
         __m128i s0 = _mm_loadu_si128((__m128i *) (src0 + x));
         __m128i s1 = _mm_loadu_si128((__m128i *) (src1 + x));
+        
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+        __m128i w0 = _mm_loadu_si128((__m128i *) (weight + (x << chromaScaleX)));
+        if (chromaScaleX == 1)
+        {
+          __m128i w01 = _mm_loadu_si128((__m128i *) (weight + (x << chromaScaleX) + 8));
+          w0 = _mm_shuffle_epi8(w0, mask1);
+          w01 = _mm_shuffle_epi8(w01, mask2);
+          w0 = _mm_alignr_epi8(w01, w0, 8);
+        }
+#else
         __m128i w0 = _mm_loadu_si128((__m128i *) (weight + x));
+#endif
         __m128i w1 = _mm_sub_epi16(mmEight, w0);
 
         __m128i s0tmp = _mm_unpacklo_epi16(s0, s1);
@@ -1321,7 +1373,11 @@ void xWeightedTriangleBlk_SSE(const PredictionUnit &pu, const uint32_t width, co
       dst += strideDst;
       src0 += strideSrc0;
       src1 += strideSrc1;
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      weight += stepY;
+#else
       weight += width;
+#endif
     }
   }
 }

@@ -698,14 +698,11 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
   const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
   const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
 #if JVET_P0530_TPM_WEIGHT_ALIGN
-  int32_t logSubWidthC = getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pu.chromaFormat);
-  int32_t logSubHeightC = getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, pu.chromaFormat);
+  int32_t stepX = 1 << getComponentScaleX(compIdx, pu.chromaFormat);
+  int32_t stepY = 1 << getComponentScaleY(compIdx, pu.chromaFormat);
 
-  int32_t stepX = (compIdx == 0) ? 1 : (1 << logSubWidthC);
-  int32_t stepY = (compIdx == 0) ? 1 : (1 << logSubHeightC);
-
-  int32_t widthY = (compIdx == 0) ? width : (width << logSubWidthC);
-  int32_t heightY = (compIdx == 0) ? height : (height << logSubHeightC);
+  int32_t widthY = width << getComponentScaleX(compIdx, pu.chromaFormat);
+  int32_t heightY = height << getComponentScaleY(compIdx, pu.chromaFormat);
 
   int32_t ratioWH = (widthY > heightY) ? (widthY / heightY) : 1;
   int32_t ratioHW = (widthY > heightY) ? 1 : (heightY / widthY);
@@ -737,10 +734,8 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
     }
     for (tmpY = ratioHW; tmpY > 0; tmpY -= stepY)
     {
-      for (x = 0; x < weightedStartPos; x++)
+      for (x = 0; x < weightedStartPos; x += stepX)
       {
-        if (x % stepX != 0)
-          continue;
 #else
   for( y = 0; y < height; y+= ratioHW )
   {
@@ -789,10 +784,9 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
       }
 
 #if JVET_P0530_TPM_WEIGHT_ALIGN
-      for (x = weightedEndPos + 1; x < widthY; x++)
+      int32_t start = ((weightedEndPos + 1) % stepX != 0) ? (weightedEndPos + 2) : (weightedEndPos + 1);
+      for (x = start; x < widthY; x += stepX)
       {
-        if (x % stepX != 0)
-          continue;
 #else
       for( x = weightedEndPos + 1; x < width; x++ )
       {

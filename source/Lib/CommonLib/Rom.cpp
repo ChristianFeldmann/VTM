@@ -430,33 +430,25 @@ void initROM()
       const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
 
       // let SIMD can read at least 64-bit when at last row
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      g_triangleWeights[0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+#else
       g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-#if JVET_P0530_TPM_WEIGHT_ALIGN
-      g_triangleWeights[2][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[2][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[3][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[3][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      int nCbR_422 = (nCbW * 2 > nCbH) ? (nCbW * 2) / nCbH : nCbH / (nCbW * 2);
 #endif
       for (int y = 0; y < nCbH; y++)
       {
         for (int x = 0; x < nCbW; x++)
         {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+          g_triangleWeights[0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
+          g_triangleWeights[1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
+#else
           g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
           g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
-#if JVET_P0530_TPM_WEIGHT_ALIGN
-          g_triangleWeights[CHROMA_420][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, (x * 2) / nCbR - (y * 2) + 4) : Clip3(0, 8, (x * 2) - (y * 2) / nCbR + 4);
-          g_triangleWeights[CHROMA_420][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH * 2 - 1 - (x * 2) / nCbR - (y * 2) + 4) : Clip3(0, 8, nCbW * 2 - 1 - (x * 2) - (y * 2) / nCbR + 4);
-
-          g_triangleWeights[CHROMA_422][0][idxH][idxW][y*nCbW + x] = (nCbW * 2 > nCbH) ? Clip3(0, 8, (x * 2) / nCbR_422 - y + 4) : Clip3(0, 8, (x * 2) - y / nCbR_422 + 4);
-          g_triangleWeights[CHROMA_422][1][idxH][idxW][y*nCbW + x] = (nCbW * 2 > nCbH) ? Clip3(0, 8, nCbH - 1 - (x * 2) / nCbR_422 - y + 4) : Clip3(0, 8, nCbW * 2 - 1 - (x * 2) - y / nCbR_422 + 4);
-
-          g_triangleWeights[CHROMA_444][0][idxH][idxW][y*nCbW + x] = g_triangleWeights[0][0][idxH][idxW][y*nCbW + x];
-          g_triangleWeights[CHROMA_444][1][idxH][idxW][y*nCbW + x] = g_triangleWeights[0][1][idxH][idxW][y*nCbW + x];
-#else
           g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
           g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
 #endif
@@ -495,6 +487,12 @@ void destroyROM()
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
     {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      delete[] g_triangleWeights[0][idxH][idxW];
+      delete[] g_triangleWeights[1][idxH][idxW];
+      g_triangleWeights[0][idxH][idxW] = nullptr;
+      g_triangleWeights[1][idxH][idxW] = nullptr;
+#else
       delete[] g_triangleWeights[0][0][idxH][idxW];
       delete[] g_triangleWeights[0][1][idxH][idxW];
       delete[] g_triangleWeights[1][0][idxH][idxW];
@@ -503,15 +501,6 @@ void destroyROM()
       g_triangleWeights[0][1][idxH][idxW] = nullptr;
       g_triangleWeights[1][0][idxH][idxW] = nullptr;
       g_triangleWeights[1][1][idxH][idxW] = nullptr;
-#if JVET_P0530_TPM_WEIGHT_ALIGN
-      delete[] g_triangleWeights[2][0][idxH][idxW];
-      delete[] g_triangleWeights[2][1][idxH][idxW];
-      delete[] g_triangleWeights[3][0][idxH][idxW];
-      delete[] g_triangleWeights[3][1][idxH][idxW];
-      g_triangleWeights[2][0][idxH][idxW] = nullptr;
-      g_triangleWeights[2][1][idxH][idxW] = nullptr;
-      g_triangleWeights[3][0][idxH][idxW] = nullptr;
-      g_triangleWeights[3][1][idxH][idxW] = nullptr;
 #endif
     }
   }
@@ -756,7 +745,7 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 #if JVET_P0530_TPM_WEIGHT_ALIGN
-int16_t *g_triangleWeights[4][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
 #else
 int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
 #endif

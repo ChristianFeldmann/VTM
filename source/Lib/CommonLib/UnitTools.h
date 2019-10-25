@@ -119,7 +119,7 @@ namespace CU
   uint8_t numSbtModeRdo               (uint8_t sbtAllowed);
   bool    isSbtMode                   (const uint8_t sbtInfo);
   bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
-  bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale );
+  bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, Picture* refPic, int& xScale, int& yScale );
 }
 // PU tools
 namespace PU

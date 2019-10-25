@@ -1700,7 +1700,11 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
   for (uint32_t ch = compBegin; ch < (compBegin + numComp); ch++)
   {
     QpParam cQP(tu, ComponentID(ch));
+#if JVET_P0460_PLT_TS_MIN_QP
+    qp[ch] = cQP.Qp(true);
+#else
     qp[ch] = cQP.Qp(false);
+#endif
     qpRem[ch] = qp[ch] % 6;
     qpPer[ch] = qp[ch] / 6;
     quantiserScale[ch] = g_quantScales[0][qpRem[ch]];
@@ -2418,7 +2422,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     if (trModes)
     {
+#if JVET_P0273_MTSIntraMaxCand
+      m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, m_pcEncCfg->getMTSIntraMaxCand());
+#else
       m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, CU::isIntra(*tu.cu) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand());
+#endif
       tu.mtsIdx = trModes->at(0).first;
     }
     m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);

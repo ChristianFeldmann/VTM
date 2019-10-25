@@ -321,6 +321,23 @@ const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
   {   4, },
 });
 
+#if JVET_P0615_CHROMAMODE_CLEANUP
+const CtxSet ContextSetCfg::CclmModeIdx = ContextSetCfg::addCtxSet
+({
+  {  27, },
+  {  27, },
+  {  27, },
+  {   9, },
+  });
+
+const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
+({
+  {  25, },
+  {  18, },
+  {  34, },
+  {   5, },
+  });
+#else
 const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
 ({
   {  25, },
@@ -328,6 +345,7 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   {  19, },
   {   6, },
 });
+#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({

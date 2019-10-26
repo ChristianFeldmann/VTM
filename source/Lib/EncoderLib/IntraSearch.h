@@ -233,8 +233,7 @@ private:
     double                                      bestCost[2];
     int                                         numTestedModes[2];
     int                                         candIndexInList[2];
-    bool                                        stopTestingHorSplit;
-    bool                                        stopTestingVerSplit;
+    bool                                        splitIsFinished[2];
     int                                         numOrigModesToTest;
 
     // set a tested mode results
@@ -267,13 +266,11 @@ private:
       return modeHasBeenTested[iModeIdx][st] ? intraMode[iModeIdx][st].numCompSubParts : -1;
     }
 
-    double getRDCost(ISPType splitType, int iModeIdx, int maxNumSubParts)
+    double getRDCost(ISPType splitType, int iModeIdx)
     {
       const unsigned st = splitType - 1;
       CHECKD(st > 1, "The split type is invalid!");
-      return modeHasBeenTested[iModeIdx][st] && intraMode[iModeIdx][st].numCompSubParts == maxNumSubParts
-        ? intraMode[iModeIdx][st].rdCost
-        : -1;
+      return modeHasBeenTested[iModeIdx][st] ? intraMode[iModeIdx][st].rdCost : MAX_DOUBLE;
     }
 
     // get a tested intra mode index
@@ -287,16 +284,16 @@ private:
     // set everything to default values
     void clear()
     {
-      numTestedModes[0] = numTestedModes[1] = 0;
-      candIndexInList[0] = candIndexInList[1] = 0;
-      stopTestingHorSplit = false;
-      stopTestingVerSplit = false;
-      testedModes[0].clear();
-      testedModes[1].clear();
-      bestCost[0] = MAX_DOUBLE;
-      bestCost[1] = MAX_DOUBLE;
-      bestMode[0] = -1;
-      bestMode[1] = -1;
+      for (int splitIdx = 0; splitIdx < NUM_INTRA_SUBPARTITIONS_MODES - 1; splitIdx++)
+      {
+        numTestedModes [splitIdx] = 0;
+        candIndexInList[splitIdx] = 0;
+        numTotalParts  [splitIdx] = 0;
+        splitIsFinished[splitIdx] = false;
+        testedModes    [splitIdx].clear();
+        bestCost       [splitIdx] = MAX_DOUBLE;
+        bestMode       [splitIdx] = -1;
+      }
       bestModeSoFar = -1;
       bestSplitSoFar = NOT_INTRA_SUBPARTITIONS;
       numOrigModesToTest = -1;
@@ -306,6 +303,15 @@ private:
     {
       intraMode[idx][0].clear();
       intraMode[idx][1].clear();
+    }
+    void init(const int numTotalPartsHor, const int numTotalPartsVer)
+    {
+      clear();
+      const int horSplit = HOR_INTRA_SUBPARTITIONS - 1, verSplit = VER_INTRA_SUBPARTITIONS - 1;
+      numTotalParts  [horSplit] = numTotalPartsHor;
+      numTotalParts  [verSplit] = numTotalPartsVer;
+      splitIsFinished[horSplit] = (numTotalParts[horSplit] == 0);
+      splitIsFinished[verSplit] = (numTotalParts[verSplit] == 0);
     }
   };
 

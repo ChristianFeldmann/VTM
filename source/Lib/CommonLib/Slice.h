@@ -775,7 +775,9 @@ private:
   bool              m_DMVR;
   bool              m_MMVD;
   bool              m_SBT;
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   uint8_t           m_MaxSbtSize;
+#endif
   bool              m_ISP;
   ChromaFormat      m_chromaFormatIdc;
 
@@ -1069,8 +1071,10 @@ public:
   bool                    getUseSBT() const                                                               { return m_SBT; }
   void                    setUseISP( bool b )                                                             { m_ISP = b; }
   bool                    getUseISP() const                                                               { return m_ISP; }
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
+#endif
 
   void      setAMVREnabledFlag    ( bool b )                                        { m_AMVREnabledFlag = b; }
   bool      getAMVREnabledFlag    ()                                      const     { return m_AMVREnabledFlag; }
@@ -1180,6 +1184,9 @@ private:
 
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  bool             m_chromaJointCbCrQpOffsetPresentFlag;
+#endif
   int              m_chromaCbCrQpOffset;
 
   // Chroma QP Adjustments
@@ -1292,6 +1299,11 @@ public:
 
   void                   setCuQpDeltaSubdiv( uint32_t u )                                 { m_cuQpDeltaSubdiv = u;                         }
   uint32_t               getCuQpDeltaSubdiv() const                                       { return m_cuQpDeltaSubdiv;                      }
+
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  bool                   getJointCbCrQpOffsetPresentFlag() const                          { return m_chromaJointCbCrQpOffsetPresentFlag;   }
+  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      } 
+#endif
 
   void                   setQpOffset(ComponentID compID, int i )
   {

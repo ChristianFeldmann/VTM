@@ -303,6 +303,19 @@ public:
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
 
+  uint32_t           m_picWidthInLumaSamples;
+  uint32_t           m_picHeightInLumaSamples;
+  Window             m_conformanceWindow;
+
+  void               setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
+  uint32_t           getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
+  void               setPicHeightInLumaSamples( uint32_t u )                         { m_picHeightInLumaSamples = u; }
+  uint32_t           getPicHeightInLumaSamples() const                               { return  m_picHeightInLumaSamples; }
+
+  Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
+  const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
+  void               setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
+
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();

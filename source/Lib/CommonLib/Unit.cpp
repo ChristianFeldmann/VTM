@@ -459,7 +459,11 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
 
   //parameter
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  int maxSbtCUSize = cs->sps->getMaxTbSize();
+#else
   int maxSbtCUSize = cs->sps->getMaxSbtSize();
+#endif
   int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
 
   //check on size
@@ -730,9 +734,14 @@ void TransformUnit::initData()
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
     compAlpha[i]     = 0;
+#if JVET_P0058_CHROMA_TS
+    mtsIdx[i]        = MTS_DCT2_DCT2;
+#endif
   }
   depth              = 0;
+#if !JVET_P0058_CHROMA_TS
   mtsIdx             = MTS_DCT2_DCT2;
+#endif
   noResidual         = false;
   jointCbCr          = 0;
   m_chromaResScaleInv = 0;
@@ -770,9 +779,14 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
     compAlpha[i]     = other.compAlpha[i];
+#if JVET_P0058_CHROMA_TS
+    mtsIdx[i] = other.mtsIdx[i];
+#endif
   }
   depth              = other.depth;
+#if !JVET_P0058_CHROMA_TS
   mtsIdx             = other.mtsIdx;
+#endif
   noResidual         = other.noResidual;
   jointCbCr          = other.jointCbCr;
   return *this;
@@ -796,7 +810,11 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   compAlpha[i]     = other.compAlpha[i];
 
   depth            = other.depth;
+#if JVET_P0058_CHROMA_TS
+  mtsIdx[i]        = other.mtsIdx[i];
+#else
   mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
+#endif
   noResidual       = other.noResidual;
   jointCbCr        = isChroma( i ) ? other.jointCbCr : jointCbCr;
 }
@@ -841,7 +859,11 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   int tbArea = blocks[compID].width * blocks[compID].height;
   int tbZeroOutWidth = blocks[compID].width;
   int tbZeroOutHeight = blocks[compID].height;
+#if JVET_P0058_CHROMA_TS
+  if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#else
   if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#endif
   {
     tbZeroOutWidth = (blocks[compID].width == 32) ? 16 : tbZeroOutWidth;
     tbZeroOutHeight = (blocks[compID].height == 32) ? 16 : tbZeroOutHeight;

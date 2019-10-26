@@ -520,7 +520,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
+#if JVET_P0058_CHROMA_TS
+  const bool useTransformSkip      = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
 
   bool useRDOQ = useTransformSkip ? m_useRDOQTS : m_useRDOQ;
 
@@ -536,7 +540,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
     if (!m_useSelectiveRDOQ || xNeedRDOQ(tu, compID, piCoef, cQP))
     {
 #endif
+#if JVET_P0058_CHROMA_TS
+      if( useTransformSkip )
+#else
       if( isLuma( compID ) && useTransformSkip )
+#endif
       {
         if( tu.cu->bdpcmMode && isLuma(compID) )
         {
@@ -592,7 +600,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   // Represents scaling through forward transform
   int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
 
+#if JVET_P0058_CHROMA_TS
+  if (tu.mtsIdx[compID] == MTS_SKIP && extendedPrecision)
+#else
   if (tu.mtsIdx==MTS_SKIP && extendedPrecision)
+#endif
   {
     iTransformShift = std::max<int>(0, iTransformShift);
   }
@@ -629,7 +641,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
 
   const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
+#if JVET_P0058_CHROMA_TS
+  const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
@@ -1220,7 +1236,11 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   m_bdpcm = 0;
 
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale( tu, compID );  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+#if JVET_P0058_CHROMA_TS
+  const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
   const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + transformShift + ( needsSqrt2Scale ? -1 : 0 );  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale?1:0][qp.rem(isTransformSkip)];
   const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth );
@@ -1456,7 +1476,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   m_bdpcm = dirMode;
 
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale(tu, compID);  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+#if JVET_P0058_CHROMA_TS
+  const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
   const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + transformShift + ( needsSqrt2Scale ? -1 : 0 );  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale ? 1 : 0][qp.rem(isTransformSkip)];
   const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth);
@@ -1749,7 +1773,15 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
     double dErr = 0.0;
     dErr = double(levelDouble - (Intermediate_Int(absLevel) << qBits));
     coeffLevelError[errorInd] = dErr * dErr * errorScale;
+#if JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS
+    int modAbsLevel = absLevel;
+    if (cctx.numCtxBins() >= 4) 
+    {
+      modAbsLevel = cctx.deriveModCoeff(rightPixel, belowPixel, absLevel, m_bdpcm);
+    }
+#else
     int modAbsLevel = cctx.deriveModCoeff(rightPixel, belowPixel, absLevel, m_bdpcm);
+#endif
 #if JVET_P0072_SIMPLIFIED_TSRC
     int numCtxBins = 0;
     double dCurrCost = coeffLevelError[errorInd] + xGetICost(xGetICRateTS(modAbsLevel, fracBitsPar, cctx, fracBitsAccess, fracBitsSign, fracBitsGt1, numCtxBins, sign, ricePar, useLimitedPrefixLength, maxLog2TrDynamicRange));

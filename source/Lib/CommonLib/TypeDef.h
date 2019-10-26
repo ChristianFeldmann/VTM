@@ -49,10 +49,23 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+#define JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG           1 // JVET-P0983/JVET-P0391: Remove sps_sbt_max_size_64_flag
+
+#define JVET_P0530_TPM_WEIGHT_ALIGN                       1 // JVET-P0530: align chroma weights with luma weights for TPM blending
+
+#define JVET_P0615_CHROMAMODE_CLEANUP                     1 // JVET-P0615: intra chroma mode coding cleanup
+
+#define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
+
+#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
+
+#define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
 #define JVET_N0278_FIXES                                  1
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
+
+#define JVET_P0406_YUV_FMT_GENERALIZATION_LDT             1 // JVET-P0406: Generalization of local dual tree (LDT) for different YUV formats
 
 #define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
 
@@ -79,6 +92,11 @@
 #define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list
 
 #define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
+
+#define JVET_P0058_CHROMA_TS                              1 // JVET-P0058: Enable Transform skip for chroma
+#if JVET_P0058_CHROMA_TS
+#define JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD        1 // Modified cost criterion for chroma intra encoder search
+#endif
 
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 

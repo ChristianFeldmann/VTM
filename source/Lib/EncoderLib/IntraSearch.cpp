@@ -3922,7 +3922,7 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
 
     if (!stopThisSplit)
     {
-      // 2) Try to prohibit split type through comparison of 2 modes of both splits (best angle modes)
+      // 2) One split type may be discarded by comparing the number of sub-partitions of the best angle modes of both splits 
       ISPType otherSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
       int  numSubPartsBestMode2OtherSplit = mode2 != -1 ? ispTestedModes.getNumCompletedSubParts(otherSplit, mode2) : -1;
       if (numSubPartsBestMode2OtherSplit != -1 && numSubPartsBestMode2 != -1)

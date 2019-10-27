@@ -862,19 +862,28 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   enablePROF &= !m_encOnly || pu.cu->slice->getCheckLDC() || iDMvHorX > profThres || iDMvHorY > profThres || iDMvVerX > profThres || iDMvVerY > profThres || iDMvHorX < -profThres || iDMvHorY < -profThres || iDMvVerX < -profThres || iDMvVerY < -profThres;
   enablePROF &= pu.cs->pps->getPicWidthInLumaSamples() == refPic->getPicWidthInLumaSamples() && pu.cs->pps->getPicHeightInLumaSamples() == refPic->getPicHeightInLumaSamples();
 
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   if (compID == COMPONENT_Y)
   {
     m_applyPROF[m_iRefListIdx] = enablePROF;
   }
+#endif
 
   bool isLast = enablePROF ? false : !bi;
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  const int cuExtW = AFFINE_MIN_BLOCK_SIZE + PROF_BORDER_EXT_W * 2;
+  const int cuExtH = AFFINE_MIN_BLOCK_SIZE + PROF_BORDER_EXT_H * 2;
+
+  PelBuf gradXExt(m_gradBuf[0], cuExtW, cuExtH);
+  PelBuf gradYExt(m_gradBuf[1], cuExtW, cuExtH);
+#else
   const int cuExtW = pu.blocks[compID].width + PROF_BORDER_EXT_W * 2;
   const int cuExtH = pu.blocks[compID].height + PROF_BORDER_EXT_H * 2;
 
   PelBuf gradXExt(m_gradBuf[m_iRefListIdx][0], cuExtW, cuExtH);
   PelBuf gradYExt(m_gradBuf[m_iRefListIdx][1], cuExtW, cuExtH);
-
+#endif
   const int MAX_FILTER_SIZE = std::max<int>(NTAPS_LUMA, NTAPS_CHROMA);
   const int dstExtW = ((blockWidth + PROF_BORDER_EXT_W * 2 + 7) >> 3) << 3;
   const int dstExtH = blockHeight + PROF_BORDER_EXT_H * 2;
@@ -888,7 +897,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   int *dMvScaleHor = m_dMvBuf[m_iRefListIdx];
   int *dMvScaleVer = m_dMvBuf[m_iRefListIdx] + 16;
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  if (enablePROF)
+#else
   if (enablePROF && !bi)
+#endif
   {
     int* dMvH = dMvScaleHor;
     int* dMvV = dMvScaleVer;
@@ -1120,8 +1133,13 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
           dstPel[blockWidth] = leftShift_round(refPel[blockWidth], shift) - (Pel)IF_INTERNAL_OFFS;
         }
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+        PelBuf gradXBuf = gradXExt.subBuf(0, 0, blockWidth + 2, blockHeight + 2);
+        PelBuf gradYBuf = gradYExt.subBuf(0, 0, blockWidth + 2, blockHeight + 2);
+#else
         PelBuf gradXBuf = gradXExt.subBuf(w, h, blockWidth + 2, blockHeight + 2);
         PelBuf gradYBuf = gradYExt.subBuf(w, h, blockWidth + 2, blockHeight + 2);
+#endif
         g_pelBufOP.profGradFilter(dstExtBuf.buf, dstExtBuf.stride, blockWidth + 2, blockHeight + 2, gradXBuf.stride, gradXBuf.buf, gradYBuf.buf, clpRng.bd);
 
         const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
@@ -1132,6 +1150,9 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
 
         Pel * dstY = dstBuf.bufAt(w, h);
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+        g_pelBufOP.applyPROF(dstY, dstBuf.stride, src, dstExtBuf.stride, blockWidth, blockHeight, gX, gY, gradXBuf.stride, dMvScaleHor, dMvScaleVer, blockWidth, bi, shiftNum, offset, clpRng);
+#else
         if (!bi)
         {
           g_pelBufOP.applyPROF(dstY, dstBuf.stride, src, dstExtBuf.stride, blockWidth, blockHeight, gX, gY, gradXBuf.stride, dMvScaleHor, dMvScaleVer, blockWidth, shiftNum, offset, clpRng);
@@ -1142,6 +1163,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
           PelBuf destBuf(dstY, dstBuf.stride, Size(blockWidth, blockHeight));
           destBuf.copyFrom(srcExtBuf);
         }
+#endif
       }
       }
     }
@@ -1300,6 +1322,7 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
 
   if( iRefIdx0 >= 0 && iRefIdx1 >= 0 )
   {
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
     if (pu.cu->affine && (m_applyPROF[0] || m_applyPROF[1]))
     {
       xApplyBiPROF(pu, pcYuvSrc0.bufs[COMPONENT_Y], pcYuvSrc1.bufs[COMPONENT_Y], pcYuvDst.bufs[COMPONENT_Y], clpRngs.comp[COMPONENT_Y]);
@@ -1307,6 +1330,7 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
       CHECK(yuvDstTmp, "yuvDstTmp is disallowed with PROF");
       return;
     }
+#endif
     if( pu.cu->GBiIdx != GBI_DEFAULT && (yuvDstTmp || !pu.mhIntraFlag) )
     {
       CHECK(bioApplied, "GBi is disallowed with BIO");
@@ -1389,6 +1413,7 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
   }
 }
 
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
 void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng)
 {
   int blockWidth = AFFINE_MIN_BLOCK_SIZE;
@@ -1532,6 +1557,7 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   else
     g_pelBufOP.applyBiPROF[0](dstY, pcYuvDst.stride, srcY1, srcY0, pcYuvSrc0.stride, width, height, gX1, gY1, gX0, gY0, gradXExt0.stride, dMvX1, dMvY1, dMvX0, dMvY0, blockWidth, getGbiWeight(pu.cu->GBiIdx, REF_PIC_LIST_1), clpRng);
 }
+#endif
 
 void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBuf, const RefPicList &eRefPicList
   , const bool luma, const bool chroma

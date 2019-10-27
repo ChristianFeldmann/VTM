@@ -301,6 +301,9 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   int  fstStep = (!verMC ? puHeight : puWidth);
   int  secStep = (!verMC ? puWidth : puHeight);
 
+  pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
+  bool scaled = !PU::isRefPicSameSize( pu );
+
   m_subPuMC = true;
 
   for (int fstDim = fstStart; fstDim < fstEnd; fstDim += fstStep)
@@ -317,7 +320,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
       while (later < secEnd)
       {
         const MotionInfo &laterMi = !verMC ? pu.getMotionInfo(Position{ later, fstDim }) : pu.getMotionInfo(Position{ fstDim, later });
-        if (laterMi == curMi)
+        if (!scaled && laterMi == curMi)
         {
           length += secStep;
         }
@@ -423,7 +426,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
 
   if( !pu.cu->affine )
   {
-    clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+    if( pu.cu->slice->getScalingRatio( eRefPicList, iRefIdx ) == SCALE_1X )
+    {
+      clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+    }
   }
 
   for( uint32_t comp = COMPONENT_Y; comp < pcYuvPred.bufs.size() && comp <= m_maxCompIDToPred; comp++ )
@@ -1002,8 +1008,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         {
           wrapRef = false;
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
-          iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
-          iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+          if( scalingRatio == SCALE_1X ) 
+          {
+            iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
+            iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+          }
         }
       }
       else
@@ -1018,8 +1027,11 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
         else
         {
           wrapRef = false;
-          curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
-          curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+          if( scalingRatio == SCALE_1X ) 
+          {
+            curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
+            curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+          }
         }
         iMvScaleTmpHor = curMv.hor;
         iMvScaleTmpVer = curMv.ver;
@@ -1190,7 +1202,11 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
 #if JVET_P0653_BDOF_PROF_PARA_DEV
 #if JVET_P0491_BDOFPROF_MVD_RANGE
+#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
+  const int   limit = ( 1 << 4 ) - 1;
+#else
   const int   limit = ( 1 << 5 ) - 1;
+#endif
 #else
   const int   limit = (1 << 5);
 #endif
@@ -1221,7 +1237,11 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
       const Pel* SrcY0Tmp = srcY0 + (xu << 2) + (yu << 2) * src0Stride;
 
       g_pelBufOP.calcBIOSums(SrcY0Tmp, SrcY1Tmp, pGradX0Tmp, pGradX1Tmp, pGradY0Tmp, pGradY1Tmp, xu, yu, src0Stride, src1Stride, widthG, bitDepth, &sumAbsGX, &sumAbsGY, &sumDIX, &sumDIY, &sumSignGY_GX);
+#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
+      tmpx = (sumAbsGX == 0 ? 0 : rightShiftMSB(sumDIX << 2, sumAbsGX));
+#else
       tmpx = (sumAbsGX == 0 ? 0 : rightShiftMSB(sumDIX << 3, sumAbsGX));
+#endif
 #if JVET_P0057_BDOF_PROF_HARMONIZATION && !JVET_P0491_BDOFPROF_MVD_RANGE
       tmpx = Clip3(-limit, limit - 1, tmpx);
 #else
@@ -1232,7 +1252,11 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
       int     secsGxGy = sumSignGY_GX & ((1 << 12) - 1);
       int     tmpData = tmpx * mainsGxGy;
       tmpData = ((tmpData << 12) + tmpx*secsGxGy) >> 1;
+#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
+      tmpy = (sumAbsGY == 0 ? 0 : rightShiftMSB(((sumDIY << 2) - tmpData), sumAbsGY));
+#else
       tmpy = (sumAbsGY == 0 ? 0 : rightShiftMSB(((sumDIY << 3) - tmpData), sumAbsGY));
+#endif
 #if JVET_P0057_BDOF_PROF_HARMONIZATION && !JVET_P0491_BDOFPROF_MVD_RANGE
       tmpy = Clip3(-limit, limit - 1, tmpy);
 #else
@@ -2228,10 +2252,11 @@ void InterPrediction::xFillIBCBuffer(CodingUnit &cu)
         continue;
 
       const unsigned int lcuWidth = cu.cs->slice->getSPS()->getMaxCUWidth();
-      const int shiftSample = ::getComponentScaleX(area.compID, cu.chromaFormat);
-      const int ctuSizeLog2 = floorLog2(lcuWidth) - shiftSample;
-      const int pux = area.x & ((m_IBCBufferWidth >> shiftSample) - 1);
-      const int puy = area.y & (( 1 << ctuSizeLog2 ) - 1);
+      const int shiftSampleHor = ::getComponentScaleX(area.compID, cu.chromaFormat);
+      const int shiftSampleVer = ::getComponentScaleY(area.compID, cu.chromaFormat);
+      const int ctuSizeLog2Ver = floorLog2(lcuWidth) - shiftSampleVer;
+      const int pux = area.x & ((m_IBCBufferWidth >> shiftSampleHor) - 1);
+      const int puy = area.y & (( 1 << ctuSizeLog2Ver ) - 1);
       const CompArea dstArea = CompArea(area.compID, cu.chromaFormat, Position(pux, puy), Size(area.width, area.height));
       CPelBuf srcBuf = cu.cs->getRecoBuf(area);
       PelBuf dstBuf = m_IBCBuffer.getBuf(dstArea);
@@ -2244,8 +2269,9 @@ void InterPrediction::xFillIBCBuffer(CodingUnit &cu)
 void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, const ComponentID compID)
 {
   const unsigned int lcuWidth = pu.cs->slice->getSPS()->getMaxCUWidth();
-  int shiftSample = ::getComponentScaleX(compID, pu.chromaFormat);
-  const int ctuSizeLog2 = floorLog2(lcuWidth) - shiftSample;
+  const int shiftSampleHor = ::getComponentScaleX(compID, pu.chromaFormat);
+  const int shiftSampleVer = ::getComponentScaleY(compID, pu.chromaFormat);
+  const int ctuSizeLog2Ver = floorLog2(lcuWidth) - shiftSampleVer;
   pu.bv = pu.mv[REF_PIC_LIST_0];
   pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT);
   int refx, refy;
@@ -2256,13 +2282,13 @@ void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, c
   }
   else
   {//Cb or Cr
-    refx = pu.Cb().x + (pu.bv.hor >> shiftSample);
-    refy = pu.Cb().y + (pu.bv.ver >> shiftSample);
+    refx = pu.Cb().x + (pu.bv.hor >> shiftSampleHor);
+    refy = pu.Cb().y + (pu.bv.ver >> shiftSampleVer);
   }
-  refx &= ((m_IBCBufferWidth >> shiftSample) - 1);
-  refy &= ((1 << ctuSizeLog2) - 1);
+  refx &= ((m_IBCBufferWidth >> shiftSampleHor) - 1);
+  refy &= ((1 << ctuSizeLog2Ver) - 1);
 
-  if (refx + predBuf.bufs[compID].width <= (m_IBCBufferWidth >> shiftSample))
+  if (refx + predBuf.bufs[compID].width <= (m_IBCBufferWidth >> shiftSampleHor))
   {
     const CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(predBuf.bufs[compID].width, predBuf.bufs[compID].height));
     const CPelBuf refBuf = m_IBCBuffer.getBuf(srcArea);
@@ -2270,16 +2296,16 @@ void InterPrediction::xIntraBlockCopy(PredictionUnit &pu, PelUnitBuf &predBuf, c
   }
   else
   {//wrap around
-    int width = (m_IBCBufferWidth >> shiftSample) - refx;
+    int width = (m_IBCBufferWidth >> shiftSampleHor) - refx;
     CompArea srcArea = CompArea(compID, pu.chromaFormat, Position(refx, refy), Size(width, predBuf.bufs[compID].height));
     CPelBuf srcBuf = m_IBCBuffer.getBuf(srcArea);
     PelBuf dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position(0, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
     dstBuf.copyFrom(srcBuf);
 
-    width = refx + predBuf.bufs[compID].width - (m_IBCBufferWidth >> shiftSample);
+    width = refx + predBuf.bufs[compID].width - (m_IBCBufferWidth >> shiftSampleHor);
     srcArea = CompArea(compID, pu.chromaFormat, Position(0, refy), Size(width, predBuf.bufs[compID].height));
     srcBuf = m_IBCBuffer.getBuf(srcArea);
-    dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position((m_IBCBufferWidth >> shiftSample) - refx, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
+    dstBuf = PelBuf(predBuf.bufs[compID].bufAt(Position((m_IBCBufferWidth >> shiftSampleHor) - refx, 0)), predBuf.bufs[compID].stride, Size(width, predBuf.bufs[compID].height));
     dstBuf.copyFrom(srcBuf);
   }
 }
@@ -2339,6 +2365,33 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int refPicWidth = refPic->cs->pps->getPicWidthInLumaSamples();
     int refPicHeight = refPic->cs->pps->getPicHeightInLumaSamples();
 
+#if JVET_P0088_P0353_RPR_FILTERS
+    int xFilter = filterIndex;
+    int yFilter = filterIndex;
+    const int rprThreshold1 = ( 1 << SCALE_RATIO_BITS ) * 5 / 4; 
+    const int rprThreshold2 = ( 1 << SCALE_RATIO_BITS ) * 7 / 4;
+    if( filterIndex == 0 )
+    {
+      if( scalingRatio.first > rprThreshold2 )
+      {
+        xFilter = 4;
+      }
+      else if( scalingRatio.first > rprThreshold1 )
+      {
+        xFilter = 3;
+      }
+
+      if( scalingRatio.second > rprThreshold2 )
+      {
+        yFilter = 4;
+      }
+      else if( scalingRatio.second > rprThreshold1 )
+      {
+        yFilter = 3;
+      }
+    }
+#endif
+
     const int posShift = SCALE_RATIO_BITS - 4;
     int stepX = ( scalingRatio.first + 8 ) >> 4;
     int stepY = ( scalingRatio.second + 8 ) >> 4;
@@ -2347,17 +2400,24 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int offX = 1 << ( posShift - shiftHor - 1 );
     int offY = 1 << ( posShift - shiftVer - 1 );
 
-    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* scalingRatio.first;
+    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* (int64_t)scalingRatio.first;
     x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
 
-    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* scalingRatio.second;
+    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* (int64_t)scalingRatio.second;
     y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
 
     const int extSize = isLuma( compID ) ? 1 : 2;
 
     int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
 
-    int refHeight = height * scalingRatio.second >> SCALE_RATIO_BITS;
+    int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
+    yInt0 = std::min( std::max( -4, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) + 4 );
+
+    int xInt0 = ( (int32_t)x0Int + offX ) >> posShift;
+    xInt0 = std::min( std::max( -4, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) + 4 );
+        
+    int refHeight = ((((int32_t)y0Int + (height-1) * stepY) + offY ) >> posShift) - ((((int32_t)y0Int + 0 * stepY) + offY ) >> posShift) + 1;
+
     refHeight = std::max<int>( 1, refHeight );
 
     CHECK( MAX_CU_SIZE * MAX_SCALING_RATIO < refHeight + vFilterSize - 1 + extSize, "Buffer size is not enough, increase MAX_SCALING_RATIO" );
@@ -2365,12 +2425,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     Pel buffer[( MAX_CU_SIZE + 16 ) * ( MAX_CU_SIZE * MAX_SCALING_RATIO + 16 )];
 
     int tmpStride = width;
-
-    int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
-    yInt0 = std::min( std::max( 0, yInt0 ), ( refPicHeight >> ::getComponentScaleY( compID, chFmt ) ) );
-
-    int xInt0 = ( (int32_t)x0Int + offX ) >> posShift;
-    xInt0 = std::min( std::max( 0, xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) );
 
     int xInt = 0, yInt = 0;
 
@@ -2387,7 +2441,11 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
       refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ), wrapRef );
       Pel* tempBuf = buffer + col;
 
+#if JVET_P0088_P0353_RPR_FILTERS
+      m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng, xFilter, false, useAltHpelIf );
+#else
       m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng, filterIndex, false, useAltHpelIf );
+#endif
     }
 
     for( row = 0; row < height; row++ )
@@ -2402,7 +2460,11 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
       Pel* tempBuf = buffer + ( yInt - yInt0 ) * tmpStride;
 
       JVET_J0090_SET_CACHE_ENABLE( false );
+#if JVET_P0088_P0353_RPR_FILTERS
+      m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dst + row * dstStride, dstStride, width, 1, yFrac, false, rndRes, chFmt, clpRng, yFilter, false, useAltHpelIf );
+#else
       m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dst + row * dstStride, dstStride, width, 1, yFrac, false, rndRes, chFmt, clpRng, filterIndex, false, useAltHpelIf );
+#endif
       JVET_J0090_SET_CACHE_ENABLE( true );
     }
 

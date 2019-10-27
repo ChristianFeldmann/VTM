@@ -922,6 +922,12 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+
+    Window confWin = pps->getConformanceWindow( );
+    m_pcPic->setPicWidthInLumaSamples( pps->getPicWidthInLumaSamples() );
+    m_pcPic->setPicHeightInLumaSamples( pps->getPicHeightInLumaSamples() );
+    m_pcPic->setConformanceWindow( confWin );
+
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
     m_pcPic->cs->scalinglistAps = scalinglistAPS;

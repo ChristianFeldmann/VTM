@@ -1198,7 +1198,11 @@ void CABACWriter::intra_chroma_lmc_mode(const PredictionUnit& pu)
   }
   CHECK(symbol < 0, "invalid symbol found");
 
+#if JVET_P0615_CHROMAMODE_CLEANUP
+  m_BinEncoder.encodeBin(symbol == 0 ? 0 : 1, Ctx::CclmModeIdx(0));
+#else
   m_BinEncoder.encodeBin(symbol == 0 ? 0 : 1, Ctx::IntraChromaPredMode(0));
+#endif
 
   if (symbol > 0)
   {
@@ -2680,7 +2684,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   mts_coding         ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
+#if JVET_P0058_CHROMA_TS
+  if (tu.mtsIdx[compID] == MTS_SKIP || (tu.cu->bdpcmMode && isLuma(compID)))
+#else
   if( isLuma( compID ) && ( tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode ) )
+#endif
   {
     residual_codingTS( tu, compID );
     return;
@@ -2688,7 +2696,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
 
   // determine sign hiding
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
+#if JVET_P0058_CHROMA_TS
+  if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx[compID] == MTS_SKIP)
+#else
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx==MTS_SKIP )
+#endif
   {
     const ChannelType chType    = toChannelType( compID );
     const unsigned    intraMode = PU::getFinalIntraMode( *cu.cs->getPU( tu.blocks[compID].pos(), chType ), chType );
@@ -2717,12 +2729,20 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   CHECK( scanPosLast < 0, "Coefficient coding called for empty TU" );
   cctx.setScanPosLast(scanPosLast);
 
+#if JVET_P0058_CHROMA_TS
+  if (cuCtx && tu.mtsIdx[compID] != MTS_SKIP && tu.blocks[compID].height >= 4 && tu.blocks[compID].width >= 4)
+#else
   if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
+#endif
   {
     const int maxLfnstPos = ((tu.blocks[compID].height == 4 && tu.blocks[compID].width == 4) || (tu.blocks[compID].height == 8 && tu.blocks[compID].width == 8)) ? 7 : 15;
     cuCtx->violatesLfnstConstrained[ toChannelType(compID) ] |= cctx.scanPosLast() > maxLfnstPos;
   }
+#if JVET_P0058_CHROMA_TS
+  if (cuCtx && tu.mtsIdx[compID] != MTS_SKIP && tu.blocks[compID].height >= 4 && tu.blocks[compID].width >= 4)
+#else
   if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
+#endif
   {
     const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
     cuCtx->lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
@@ -2740,7 +2760,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
   {
     cctx.initSubblock       ( subSetId, sigGroupFlags[subSetId] );
+#if JVET_P0058_CHROMA_TS
+    if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].height <= 32 && tu.blocks[compID].width <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
+#else
     if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif    
     {
       if( ( tu.blocks[ compID ].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) )
        || ( tu.blocks[ compID ].width  == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth()  ) ) )
@@ -2749,10 +2773,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
       }
     }
     residual_coding_subblock( cctx, coeff, stateTab, state );
-
   }
-
-
 }
 
 void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
@@ -2767,16 +2788,33 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
   if( tsAllowed )
   {
+#if JVET_P0058_CHROMA_TS
+    symbol = (tu.mtsIdx[compID] == MTS_SKIP) ? 1 : 0;
+#else
     symbol = (tu.mtsIdx == MTS_SKIP) ? 1 : 0;
+#endif
+
+#if JVET_P0058_CHROMA_TS
+    ctxIdx = isLuma(compID) ? 6 : 11;
+#else
     ctxIdx = 6;
+#endif
     m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
   }
 
+#if JVET_P0058_CHROMA_TS
+  if( tu.mtsIdx[compID] != MTS_SKIP )
+#else
   if( tu.mtsIdx != MTS_SKIP )
+#endif
   {
     if( mtsAllowed )
     {
+#if JVET_P0058_CHROMA_TS
+      symbol = tu.mtsIdx[compID] != MTS_DCT2_DCT2 ? 1 : 0;
+#else
       symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
+#endif
       ctxIdx = 0;
       m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
@@ -2785,7 +2823,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
         ctxIdx = 7;
         for( int i = 0; i < 3; i++, ctxIdx++ )
         {
+#if JVET_P0058_CHROMA_TS
+          symbol = tu.mtsIdx[compID] > i + MTS_DST7_DST7 ? 1 : 0;
+#else
           symbol = tu.mtsIdx > i + MTS_DST7_DST7 ? 1 : 0;
+#endif
           m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
 
           if( !symbol )
@@ -2796,7 +2838,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       }
     }
   }
+#if JVET_P0058_CHROMA_TS
+  DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", compID, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx[compID]);
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
+#endif
 }
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
@@ -2821,7 +2867,11 @@ void CABACWriter::isp_mode( const CodingUnit& cu )
 void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
+#if JVET_P0058_CHROMA_TS
+  if (!CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && (tu.mtsIdx[compID] == MTS_SKIP || cu.transQuantBypass))
+#else
   if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP || cu.transQuantBypass ) )
+#endif
   {
     ChannelType chType = toChannelType( compID );
     switch( tu.rdpcm[compID] )
@@ -2857,7 +2907,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     const bool lumaFlag                   = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag                 = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
           bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
+#if JVET_P0058_CHROMA_TS
+    const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx[COMPONENT_Y] != MTS_DCT2_DCT2);
+#else
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
+#endif
     if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
     {
       return;
@@ -2900,7 +2954,11 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx, const TransformUnit&
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
+#if JVET_P0058_CHROMA_TS
+  if ((tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].width <= 32 && tu.blocks[compID].height <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
+#else
   if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
   {
     maxLastPosX = ( tu.blocks[compID].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;
     maxLastPosY = ( tu.blocks[compID].height == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosY;

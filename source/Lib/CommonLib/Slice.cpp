@@ -1602,7 +1602,9 @@ SPS::SPS()
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )
 , m_SBT                       ( false )
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
 , m_MaxSbtSize                ( 32 )
+#endif
 , m_ISP                       ( false )
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
@@ -2527,7 +2529,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
       // reference resampling for the whole picture is not applied at decoder
 
       int xScale, yScale;
-      CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx]->slices[0]->getPPS(), xScale, yScale );
+      CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx], xScale, yScale );
       m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
 
       if( m_scalingRatio[refList][rIdx] == SCALE_1X || isDecoder )

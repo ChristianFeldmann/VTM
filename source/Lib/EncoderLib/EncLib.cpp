@@ -558,6 +558,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const PPS *pps = m_ppsMap.getPS(2);
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
+    Window confWin = pps->getConformanceWindow( );
+    picCurr->setPicWidthInLumaSamples( pps->getPicWidthInLumaSamples() );
+    picCurr->setPicHeightInLumaSamples( pps->getPicHeightInLumaSamples() );
+    picCurr->setConformanceWindow( confWin );
+
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
     picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
     picCurr->poc = m_iPOCLast - 1;
@@ -618,6 +623,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     {
       const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
+
+      Window confWin = pPPS->getConformanceWindow( );
+      pcPicCurr->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
+      pcPicCurr->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
+      pcPicCurr->setConformanceWindow( confWin );
 
       if( m_rprEnabled )
       {
@@ -740,6 +750,11 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
+        Window confWin = pPPS->getConformanceWindow( );
+        pcField->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
+        pcField->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
+        pcField->setConformanceWindow( confWin );
+
         pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
       }
 
@@ -981,10 +996,12 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseIntraMTS           ( m_IntraMTS );
   sps.setUseInterMTS           ( m_InterMTS );
   sps.setUseSBT                             ( m_SBT );
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( sps.getUseSBT() )
   {
     sps.setMaxSbtSize                       ( std::min((int)(1 << m_log2MaxTbSize), m_iSourceWidth >= 1920 ? 64 : 32) );
   }
+#endif
   sps.setUseSMVD                ( m_SMVD );
   sps.setUseGBi                ( m_GBi );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -1027,6 +1044,11 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
 #if JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT
   CHECK(log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+#endif
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+  CHECK(m_uiMaxMTTHierarchyDepth > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+  CHECK(m_uiMaxMTTHierarchyDepthI > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+  CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 #endif
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
@@ -1226,6 +1248,17 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
   }
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  if (sps.getJointCbCrEnabledFlag() == false || getChromaFormatIdc() == CHROMA_400)
+  {
+    pps.setJointCbCrQpOffsetPresentFlag(false);
+  }
+  else
+  {
+    pps.setJointCbCrQpOffsetPresentFlag(true);
+  }
+#endif
+
 #if ER_CHROMA_QP_WCG_PPS
   if (getWCGChromaQPControl().isEnabled())
   {
@@ -1237,14 +1270,28 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     const int crQP =(int)(dcrQP + ( dcrQP < 0 ? -0.5 : 0.5) );
     pps.setQpOffset(COMPONENT_Cb, Clip3( -12, 12, min(0, cbQP) + m_chromaCbQpOffset ));
     pps.setQpOffset(COMPONENT_Cr, Clip3( -12, 12, min(0, crQP) + m_chromaCrQpOffset));
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    if(pps.getJointCbCrQpOffsetPresentFlag())
+      pps.setQpOffset(JOINT_CbCr, Clip3(-12, 12, (min(0, cbQP) + min(0, crQP)) / 2 + m_chromaCbCrQpOffset));
+    else
+      pps.setQpOffset(JOINT_CbCr, 0);
+#else
     pps.setQpOffset(JOINT_CbCr,   Clip3( -12, 12, ( min(0, cbQP) + min(0, crQP) ) / 2 + m_chromaCbCrQpOffset));
+#endif
   }
   else
   {
 #endif
   pps.setQpOffset(COMPONENT_Cb, m_chromaCbQpOffset );
   pps.setQpOffset(COMPONENT_Cr, m_chromaCrQpOffset );
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  if (pps.getJointCbCrQpOffsetPresentFlag())
+    pps.setQpOffset(JOINT_CbCr, m_chromaCbCrQpOffset);
+  else
+    pps.setQpOffset(JOINT_CbCr, 0);
+#else
   pps.setQpOffset(JOINT_CbCr, m_chromaCbCrQpOffset );
+#endif
 #if ER_CHROMA_QP_WCG_PPS
   }
 #endif

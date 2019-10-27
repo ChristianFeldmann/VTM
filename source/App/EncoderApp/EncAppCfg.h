@@ -280,7 +280,9 @@ protected:
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
-
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  bool      m_SBT64RDOCheck;                                            
+#endif
   bool      m_SMVD;
   bool      m_compositeRefEnabled;
   bool      m_GBi;
@@ -303,6 +305,9 @@ protected:
   int       m_MmvdDisNum;
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
+#if JVET_P0058_CHROMA_TS
+  bool      m_useChromaTS;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;

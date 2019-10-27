@@ -285,6 +285,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  m_cEncLib.setUse64SBTRDOCheck                                  (m_SBT64RDOCheck);
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );
   m_cEncLib.setUseGBi                                            ( m_GBi );
@@ -367,6 +370,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] );
   m_cEncLib.setUseTransformSkip                                  ( m_useTransformSkip      );
   m_cEncLib.setUseTransformSkipFast                              ( m_useTransformSkipFast  );
+#if JVET_P0058_CHROMA_TS
+  m_cEncLib.setUseChromaTS                                       ( m_useChromaTS && m_useTransformSkip);
+#endif
   m_cEncLib.setUseBDPCM                                          ( m_useBDPCM );
   m_cEncLib.setTransformSkipRotationEnabledFlag                  ( m_transformSkipRotationEnabledFlag );
   m_cEncLib.setTransformSkipContextEnabledFlag                   ( m_transformSkipContextEnabledFlag   );

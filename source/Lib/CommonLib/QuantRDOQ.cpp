@@ -372,10 +372,17 @@ void QuantRDOQ::setScalingList(ScalingList *scalingList, const int maxLog2TrDyna
 }
 
 
-
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+double QuantRDOQ::xGetErrScaleCoeff(const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth, bool bTransformSkip=false)
+#else
 double QuantRDOQ::xGetErrScaleCoeff(const bool needsSqrt2, SizeType width, SizeType height, int qp, const int maxLog2TrDynamicRange, const int channelBitDepth)
+#endif
 {
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  const int iTransformShift = bTransformSkip ? 0 : getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
+#else
   const int iTransformShift = getTransformShift(channelBitDepth, Size(width, height), maxLog2TrDynamicRange);
+#endif
   double    dErrScale = (double)(1 << SCALE_BITS);                                // Compensate for scaling of bitcount in Lagrange cost function
   double    dTransShift = (double)iTransformShift + (needsSqrt2 ? -0.5 : 0.0);
   dErrScale = dErrScale * pow(2.0, (-2.0*dTransShift));                     // Compensate for scaling through forward transform
@@ -520,7 +527,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
+#if JVET_P0058_CHROMA_TS
+  const bool useTransformSkip      = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
 
   bool useRDOQ = useTransformSkip ? m_useRDOQTS : m_useRDOQ;
 
@@ -536,7 +547,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
     if (!m_useSelectiveRDOQ || xNeedRDOQ(tu, compID, piCoef, cQP))
     {
 #endif
+#if JVET_P0058_CHROMA_TS
+      if( useTransformSkip )
+#else
       if( isLuma( compID ) && useTransformSkip )
+#endif
       {
         if( tu.cu->bdpcmMode && isLuma(compID) )
         {
@@ -592,7 +607,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   // Represents scaling through forward transform
   int iTransformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
 
+#if JVET_P0058_CHROMA_TS
+  if (tu.mtsIdx[compID] == MTS_SKIP && extendedPrecision)
+#else
   if (tu.mtsIdx==MTS_SKIP && extendedPrecision)
+#endif
   {
     iTransformShift = std::max<int>(0, iTransformShift);
   }
@@ -629,7 +648,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
 
   const bool needSqrtAdjustment= TU::needsBlockSizeTrafoScale( tu, compID );
+#if JVET_P0058_CHROMA_TS
+  const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
@@ -1220,10 +1243,22 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   m_bdpcm = 0;
 
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale( tu, compID );  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+#if JVET_P0058_CHROMA_TS
+  const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + (isTransformSkip ? 0 : transformShift) + (needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#else
   const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + transformShift + ( needsSqrt2Scale ? -1 : 0 );  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#endif
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale?1:0][qp.rem(isTransformSkip)];
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale(tu, compID), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth, isTransformSkip);
+#else
   const double errorScale              = xGetErrScaleCoeff( TU::needsSqrt2Scale( tu, compID ), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth );
+#endif
 
   const TCoeff entropyCodingMaximum = ( 1 << maxLog2TrDynamicRange ) - 1;
 
@@ -1456,13 +1491,28 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   m_bdpcm = dirMode;
 
   const bool   needsSqrt2Scale = TU::needsSqrt2Scale(tu, compID);  // should always be false - transform-skipped blocks don't require sqrt(2) compensation.
+#if JVET_P0058_CHROMA_TS
+  const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + (isTransformSkip? 0 : transformShift) + ( needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#else
   const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + transformShift + ( needsSqrt2Scale ? -1 : 0 );  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
+#endif
   const int    quantisationCoefficient = g_quantScales[needsSqrt2Scale ? 1 : 0][qp.rem(isTransformSkip)];
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth, isTransformSkip);
+#else
   const double errorScale = xGetErrScaleCoeff(TU::needsSqrt2Scale(tu, compID), width, height, qp.rem(isTransformSkip), maxLog2TrDynamicRange, channelBitDepth);
-
+#endif
   TrQuantParams trQuantParams;
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  trQuantParams.rightShift = (IQUANT_SHIFT - ((isTransformSkip ? 0 : transformShift) + qp.per(isTransformSkip)));
+#else
   trQuantParams.rightShift = (IQUANT_SHIFT - (transformShift + qp.per(isTransformSkip)));
+#endif
   trQuantParams.qScale = g_invQuantScales[needsSqrt2Scale ? 1 : 0][qp.rem(isTransformSkip)];
 
   const TCoeff entropyCodingMaximum = (1 << maxLog2TrDynamicRange) - 1;

@@ -49,6 +49,9 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+
+#define JVET_P1026_MTS_SIGNALLING                         1 // JVET-P1026: CU level MTS signalling
+
 #define JVET_P0571_FIX_BS_BDPCM_CHROMA                    1 // JVET-P0571: align boundary strength for Chroma BDPCM
 
 #define JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG           1 // JVET-P0983/JVET-P0391: Remove sps_sbt_max_size_64_flag

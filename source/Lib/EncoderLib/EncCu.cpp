@@ -2575,6 +2575,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           {
             pu.intraDir[0] = PLANAR_IDX;
             pu.intraDir[1] = DM_CHROMA_IDX;
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+            if (pu.chromaSize().width == 2)
+              continue;
+#endif
             uint32_t bufIdx = 0;
             m_pcIntraSearch->initIntraPatternChType(*pu.cu, pu.Cb());
             m_pcIntraSearch->predIntraAng(COMPONENT_Cb, pu.cs->getPredBuf(pu).Cb(), pu);
@@ -2713,12 +2717,26 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
           }
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, bufIdx));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+          if (pu.chromaSize().width > 2)
+          {
+#endif
           tmpBuf = tempCS->getPredBuf(pu).Cb();
           tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cb());
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Cb, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cb, bufIdx));
           tmpBuf = tempCS->getPredBuf(pu).Cr();
           tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cr());
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Cr, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Cr, bufIdx));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+          }
+          else
+          {
+            tmpBuf = tempCS->getPredBuf(pu).Cb();
+            tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cb());
+            tmpBuf = tempCS->getPredBuf(pu).Cr();
+            tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cr());
+          }
+#endif
         }
         else
         {

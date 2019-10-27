@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
+
 #define JVET_P1026_MTS_SIGNALLING                         1 // JVET-P1026: CU level MTS signalling
 
 #define JVET_P0571_FIX_BS_BDPCM_CHROMA                    1 // JVET-P0571: align boundary strength for Chroma BDPCM

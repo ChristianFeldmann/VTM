@@ -207,7 +207,12 @@ const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &p
     minLumaArea = minLumaArea >> 1;
   }
   int minChromaBlock = minLumaArea >> (getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat) + getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  bool is2xNChroma = (partitioner.currArea().chromaSize().width == 4 && split == CU_VERT_SPLIT) || (partitioner.currArea().chromaSize().width == 8 && split == CU_TRIV_SPLIT);
+  return minChromaBlock >= 16 && !is2xNChroma ? LDT_MODE_TYPE_INHERIT : ((minLumaArea < 32) || slice->isIntra()) ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+#else
   return minChromaBlock >= 16 ? LDT_MODE_TYPE_INHERIT : ((minLumaArea < 32) || slice->isIntra()) ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+#endif
 #else
   int width = partitioner.currArea().lwidth();
   int height = partitioner.currArea().lheight();
@@ -219,13 +224,20 @@ const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &p
     else // bt
       return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
   }
-  else if( width * height == 128 )
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  else if (((width * height == 128) && (split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT)) || (width == 8 && split == CU_VERT_SPLIT) || (width == 16 && split == CU_TRIV_SPLIT))
   {
-    if( split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // tt
+    return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
+  }
+#else
+  else if (width * height == 128)
+  {
+    if (split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT) // tt
       return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
     else // bt
       return LDT_MODE_TYPE_INHERIT;
   }
+#endif
   else
   {
     return LDT_MODE_TYPE_INHERIT;

@@ -42,7 +42,11 @@
 #include "Buffer.h"
 #include "InterpolationFilter.h"
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, const bool& bi, int shiftNum, Pel offset, const ClpRng& clpRng)
+#else
 void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
+#endif
 {
   int idx = 0;
 #if !JVET_P0057_BDOF_PROF_HARMONIZATION 
@@ -63,10 +67,16 @@ void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int w
 #endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       dI = Clip3(-dILimit, dILimit - 1, dI);
-#endif
-
+      dst[w] = src[w] + dI;
+      if (!bi)
+      {
+        dst[w] = (dst[w] + offset) >> shiftNum;
+        dst[w] = ClipPel(dst[w], clpRng);
+      }
+#else
       dI = (src[w] + dI + offset) >> shiftNum;
       dst[w] = (Pel)ClipPel(dI, clpRng);
+#endif
 
       idx++;
     }
@@ -77,6 +87,7 @@ void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int w
   }
 }
 
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
 template<bool l1PROFEnabled = true>
 void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t w0, const ClpRng& clpRng)
 {
@@ -142,6 +153,7 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
     src1 += srcStride;
   }
 }
+#endif
 
 template< typename T >
 void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T* dest, int dstStride, int width, int height, int rshift, int offset, const ClpRng& clpRng )
@@ -433,8 +445,10 @@ PelBufferOps::PelBufferOps()
 
   profGradFilter = gradFilterCore <false>;
   applyPROF      = applyPROFCore;
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   applyBiPROF[1] = applyBiPROFCore;
   applyBiPROF[0] = applyBiPROFCore <false>;
+#endif
   roundIntVector = nullptr;
 }
 

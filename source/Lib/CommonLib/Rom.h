@@ -224,7 +224,7 @@ extern uint8_t g_paletteRunTopLut[5];
 extern uint8_t g_paletteRunLeftLut[5];
 
 #if JVET_P1018_IBC_NO_WRAPAROUND
-const int g_IBCBufferrSize = 256 * 128;
+const int g_IBCBufferSize = 256 * 128;
 #endif
 
 #endif  //__TCOMROM__

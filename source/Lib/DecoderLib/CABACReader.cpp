@@ -1510,7 +1510,10 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
   }
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
-  cuCtx.lfnstLastScanPos = false;
+  cuCtx.lfnstLastScanPos                              = false;
+#if JVET_P1026_MTS_SIGNALLING
+  cuCtx.violatesMtsCoeffConstraint                    = false;
+#endif
 
   ChromaCbfs chromaCbfs;
   if( cu.ispMode && isLuma( partitioner.chType ) )
@@ -1522,7 +1525,11 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
   {
     transform_tree( *cu.cs, partitioner, cuCtx             );
   }
+
   residual_lfnst_mode( cu, cuCtx );
+#if JVET_P1026_MTS_SIGNALLING
+  mts_idx            ( cu, cuCtx );
+#endif
 }
 
 void CABACReader::rqt_root_cbf( CodingUnit& cu )
@@ -2911,7 +2918,11 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
     return;
 
   // parse transform skip and explicit rdpcm mode
+#if JVET_P1026_MTS_SIGNALLING
+  ts_flag            ( tu, compID );
+#else
   mts_coding         ( tu, compID );
+#endif
   explicit_rdpcm_mode( tu, compID );
 
 #if JVET_P0058_CHROMA_TS
@@ -2964,6 +2975,13 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
     const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
     cuCtx.lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
   }
+#if JVET_P1026_MTS_SIGNALLING
+  if( isLuma(compID) && ( cctx.posX(cctx.scanPosLast()) >= 16 || cctx.posY(cctx.scanPosLast()) >= 16 ) )
+  {
+    cuCtx.violatesMtsCoeffConstraint = true;
+  }
+#endif
+
   // parse subblocks
   const int stateTransTab = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
   int       state         = 0;
@@ -2974,10 +2992,15 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
     for( int subSetId = ( cctx.scanPosLast() >> cctx.log2CGSize() ); subSetId >= 0; subSetId--)
     {
       cctx.initSubblock       ( subSetId );
+
+#if JVET_P1026_MTS_SIGNALLING
+      if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
 #if JVET_P0058_CHROMA_TS
       if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].height <= 32 && tu.blocks[compID].width <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
 #else
       if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
       {
         if( ( tu.blocks[ compID ].height == 32 && cctx.cgPosY() >= ( 16 >> cctx.log2CGHeight() ) ) || ( tu.blocks[ compID ].width == 32 && cctx.cgPosX() >= ( 16 >> cctx.log2CGWidth() ) ) )
@@ -2990,6 +3013,74 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
 
 }
 
+#if JVET_P1026_MTS_SIGNALLING
+void CABACReader::ts_flag( TransformUnit& tu, ComponentID compID )
+{
+#if JVET_P0058_CHROMA_TS
+  int tsFlag = tu.cu->bdpcmMode && isLuma(compID) ? 1 : tu.mtsIdx[compID] == MTS_SKIP ? 1 : 0;
+  int ctxIdx = isLuma(compID) ? 6 : 11;
+#else
+  int tsFlag = tu.cu->bdpcmMode ? 1 : tu.mtsIdx == MTS_SKIP ? 1 : 0;
+  int ctxIdx = 6;
+#endif
+
+  if( TU::isTSAllowed ( tu, compID ) )
+  {
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
+    tsFlag = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+  }
+  
+#if JVET_P0058_CHROMA_TS
+  tu.mtsIdx[compID] = tsFlag ? MTS_SKIP : MTS_DCT2_DCT2;
+#else
+  tu.mtsIdx = tsFlag ? MTS_SKIP : MTS_DCT2_DCT2;
+#endif
+  
+  DTRACE(g_trace_ctx, D_SYNTAX, "ts_flag() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tsFlag);
+}
+
+void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
+{
+  TransformUnit &tu = *cu.firstTU;
+#if JVET_P0058_CHROMA_TS
+  int        mtsIdx = tu.mtsIdx[COMPONENT_Y]; // Transform skip flag has already been decoded
+#else
+  int        mtsIdx = tu.mtsIdx;              // Transform skip flag has already been decoded
+#endif
+  
+  if( CU::isMTSAllowed( cu, COMPONENT_Y ) && !cuCtx.violatesMtsCoeffConstraint &&
+      cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
+  {
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[COMPONENT_Y], COMPONENT_Y );
+    int ctxIdx = 0;
+    int symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+    
+    if( symbol )
+    {
+      ctxIdx = 7;
+      mtsIdx = MTS_DST7_DST7; // mtsIdx = 2 -- 4
+      for( int i = 0; i < 3; i++, ctxIdx++ )
+      {
+        symbol  = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+        mtsIdx += symbol;
+        
+        if( !symbol )
+        {
+          break;
+        }
+      }
+    }
+  }
+  
+#if JVET_P0058_CHROMA_TS
+  tu.mtsIdx[COMPONENT_Y] = mtsIdx;
+#else
+  tu.mtsIdx = mtsIdx;
+#endif
+  
+  DTRACE(g_trace_ctx, D_SYNTAX, "mts_idx() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), mtsIdx);
+}
+#else
 void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 {
   const bool  tsAllowed = TU::isTSAllowed ( tu, compID );
@@ -3063,7 +3154,8 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   DTRACE(g_trace_ctx, D_SYNTAX, "mts_coding() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tu.mtsIdx);
 #endif
 }
-
+#endif
+  
 void CABACReader::isp_mode( CodingUnit& cu )
 {
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
@@ -3132,12 +3224,21 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
     const bool lumaFlag              = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag            = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
     bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
+#if JVET_P1026_MTS_SIGNALLING
+#if JVET_P0058_CHROMA_TS
+    const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx[COMPONENT_Y] == MTS_SKIP;
+#else
+    const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx == MTS_SKIP;
+#endif
+    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
+#else
 #if JVET_P0058_CHROMA_TS
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx[COMPONENT_Y] != MTS_DCT2_DCT2);
 #else
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #endif
     if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+#endif
     {
       cu.lfnstIdx = 0;
       return;
@@ -3171,10 +3272,14 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, Co
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
+#if JVET_P1026_MTS_SIGNALLING
+  if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#else
 #if JVET_P0058_CHROMA_TS
   if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].width <= 32 && tu.blocks[compID].height <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
 #else
   if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
   {
     maxLastPosX = ( tu.blocks[ compID ].width  == 32 ) ? g_uiGroupIdx[ 15 ] : maxLastPosX;

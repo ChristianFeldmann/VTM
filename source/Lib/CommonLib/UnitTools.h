@@ -90,6 +90,9 @@ namespace CU
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
   bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
+#if JVET_P1026_MTS_SIGNALLING
+  bool isMTSAllowed                   (const CodingUnit& cu, const ComponentID compID);
+#endif
 
 
   bool      divideTuInRows            ( const CodingUnit &cu );
@@ -199,7 +202,9 @@ namespace TU
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
   bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
+#if !JVET_P1026_MTS_SIGNALLING
   bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
+#endif
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
 

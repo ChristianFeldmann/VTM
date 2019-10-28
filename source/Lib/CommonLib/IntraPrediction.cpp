@@ -67,6 +67,7 @@ const uint8_t IntraPrediction::m_aucIntraFilter[MAX_INTRA_FILTER_DEPTHS] =
   0   // 128xn
 };
 
+#if !JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 16, 32, 16, 0 },
   { 15, 29, 17, 3 },
@@ -101,6 +102,7 @@ const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 3, 17, 29, 15 },
   { 3, 17, 29, 15 }
 };
+#endif //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
 // ====================================================================================================================
 // Constructor / destructor / initialize
@@ -618,8 +620,13 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         {
           const bool useCubicFilter = !m_ipaParam.interpolationFlag;
 
+#if JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
+          const TFilterCoeff        intraSmoothingFilter[4] = {TFilterCoeff(16 - (deltaFract >> 1)), TFilterCoeff(32 - (deltaFract >> 1)), TFilterCoeff(16 + (deltaFract >> 1)), TFilterCoeff(deltaFract >> 1)};
+          const TFilterCoeff* const f                       = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : intraSmoothingFilter;
+#else //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
           const TFilterCoeff *const f =
             (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
+#endif //JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
           for (int x = 0; x < width; x++)
           {

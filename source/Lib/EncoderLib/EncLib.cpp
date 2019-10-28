@@ -1574,7 +1574,11 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   int extraNum = fullListNum;
   if (m_uiIntraPeriod < 0)
   {
+#if JVET_P0345_LD_GOP_8
+    if (POCCurr < 18)
+#else
     if (POCCurr < 10)
+#endif
     {
       slice->setRPL0idx(POCCurr + m_iGOPSize - 1);
       slice->setRPL1idx(POCCurr + m_iGOPSize - 1);

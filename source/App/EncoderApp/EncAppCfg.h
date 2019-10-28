@@ -262,7 +262,7 @@ protected:
 #if SHARP_LUMA_DELTA_QP
   LumaLevelToDeltaQPMapping m_lumaLevelToDeltaQPMapping;      ///< mapping from luma level to Delta QP.
 #endif
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   SEIMasteringDisplay m_masteringDisplay;
 #endif
 
@@ -533,11 +533,13 @@ protected:
   int*      m_startOfCodedInterval;
   int*      m_codedPivotValue;
   int*      m_targetPivotValue;
+#if !JVET_P0337_PORTING_SEI
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
+#endif
   bool      m_segmentedRectFramePackingSEIEnabled;
   bool      m_segmentedRectFramePackingSEICancel;
   int       m_segmentedRectFramePackingSEIType;
@@ -564,11 +566,54 @@ protected:
   int       m_kneeSEINumKneePointsMinus1;
   int*      m_kneeSEIInputKneePoint;
   int*      m_kneeSEIOutputKneePoint;
+#if !JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   int       m_preferredTransferCharacteristics;
 #endif
+#endif
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
+#endif
+#if JVET_P0337_PORTING_SEI
+  // film grain characterstics sei
+  bool      m_fgcSEIEnabled;
+  bool      m_fgcSEICancelFlag;
+  bool      m_fgcSEIPersistenceFlag;
+  uint32_t   m_fgcSEIModelID;
+  bool      m_fgcSEISepColourDescPresentFlag;
+  uint32_t   m_fgcSEIBlendingModeID;
+  uint32_t   m_fgcSEILog2ScaleFactor;
+  bool      m_fgcSEICompModelPresent[MAX_NUM_COMPONENT];
+  // frame packing sei
+  bool      m_framePackingSEIEnabled;
+  int       m_framePackingSEIType;
+  int       m_framePackingSEIId;
+  int       m_framePackingSEIQuincunx;
+  int       m_framePackingSEIInterpretation;
+  // cll SEI
+  bool      m_cllSEIEnabled;
+  uint32_t  m_cllSEIMaxContentLevel;
+  uint32_t  m_cllSEIMaxPicAvgLevel;
+  // atc sei
+  int       m_preferredTransferCharacteristics;
+  // ave sei
+  bool      m_aveSEIEnabled;
+  uint32_t  m_aveSEIAmbientIlluminance;
+  uint32_t  m_aveSEIAmbientLightX;
+  uint32_t  m_aveSEIAmbientLightY;
+  // ccv sei
+  bool      m_ccvSEIEnabled;
+  bool      m_ccvSEICancelFlag;
+  bool      m_ccvSEIPersistenceFlag;
+  bool      m_ccvSEIPrimariesPresentFlag;
+  bool      m_ccvSEIMinLuminanceValuePresentFlag;
+  bool      m_ccvSEIMaxLuminanceValuePresentFlag;
+  bool      m_ccvSEIAvgLuminanceValuePresentFlag;
+  double    m_ccvSEIPrimariesX[MAX_NUM_COMPONENT];
+  double    m_ccvSEIPrimariesY[MAX_NUM_COMPONENT];
+  double    m_ccvSEIMinLuminanceValue;
+  double    m_ccvSEIMaxLuminanceValue;
+  double    m_ccvSEIAvgLuminanceValue;
 #endif
 
 #if JVET_P0462_SEI360

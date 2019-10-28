@@ -71,7 +71,9 @@ public:
   // leading SEIs
 #if HEVC_SEI
   void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const SPS *sps);
+#if !JVET_P0337_PORTING_SEI
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
+#endif
   void initSEIDisplayOrientation(SEIDisplayOrientation *sei);
   void initSEIToneMappingInfo(SEIToneMappingInfo *sei);
   void initSEISOPDescription(SEISOPDescription *sei, Slice *slice, int picInGOP, int lastIdr, int currGOPSize);
@@ -87,8 +89,10 @@ public:
   void initSEIChromaResamplingFilterHint(SEIChromaResamplingFilterHint *sei, int iHorFilterIndex, int iVerFilterIndex);
   void initSEITimeCode(SEITimeCode *sei);
   bool initSEIColourRemappingInfo(SEIColourRemappingInfo *sei, int currPOC); // returns true on success, false on failure.
+#if !JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
+#endif
 #endif
 #endif
   // trailing SEIs
@@ -107,6 +111,15 @@ public:
   void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
 #endif
 
+#if JVET_P0337_PORTING_SEI
+  void initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *sei);
+  void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
+  void initSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume *sei);
+  void initSEIContentLightLevel(SEIContentLightLevelInfo *sei);
+  void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
+  void initSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment *sei);
+  void initSEIContentColourVolume(SEIContentColourVolume *sei);
+#endif
 private:
   EncCfg* m_pcCfg;
   EncLib* m_pcEncLib;

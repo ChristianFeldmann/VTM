@@ -535,6 +535,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setChromaResamplingFilterHintEnabled                 ( m_chromaResamplingFilterSEIenabled );
   m_cEncLib.setChromaResamplingHorFilterIdc                      ( m_chromaResamplingHorFilterIdc );
   m_cEncLib.setChromaResamplingVerFilterIdc                      ( m_chromaResamplingVerFilterIdc );
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );
   m_cEncLib.setFramePackingArrangementSEIId                      ( m_framePackingSEIId );
@@ -544,6 +545,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSegmentedRectFramePackingArrangementSEICancel     ( m_segmentedRectFramePackingSEICancel );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIType       ( m_segmentedRectFramePackingSEIType );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIPersistence( m_segmentedRectFramePackingSEIPersistence );
+#endif
   m_cEncLib.setDisplayOrientationSEIAngle                        ( m_displayOrientationSEIAngle );
   m_cEncLib.setTemporalLevel0IndexSEIEnabled                     ( m_temporalLevel0IndexSEIEnabled );
   m_cEncLib.setGradualDecodingRefreshInfoEnabled                 ( m_gradualDecodingRefreshInfoEnabled );
@@ -631,16 +633,68 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setKneeSEIInputKneePoint                             ( m_kneeSEIInputKneePoint );
   m_cEncLib.setKneeSEIOutputKneePoint                            ( m_kneeSEIOutputKneePoint );
   m_cEncLib.setColourRemapInfoSEIFileRoot                        ( m_colourRemapSEIFileRoot );
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setMasteringDisplaySEI                               ( m_masteringDisplay );
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    ( m_preferredTransferCharacteristics>=0     );
   m_cEncLib.setSEIPreferredTransferCharacteristics               ( uint8_t(m_preferredTransferCharacteristics) );
 #endif
+#endif
   m_cEncLib.setSEIGreenMetadataInfoSEIEnable                     ( m_greenMetadataType > 0 );
   m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
   m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
 #endif
-
+#if JVET_P0337_PORTING_SEI
+  // film grain charcteristics
+  m_cEncLib.setFilmGrainCharactersticsSEIEnabled                 (m_fgcSEIEnabled);
+  m_cEncLib.setFilmGrainCharactersticsSEICancelFlag              (m_fgcSEICancelFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIPersistenceFlag         (m_fgcSEIPersistenceFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIModelID                 ((uint8_t)m_fgcSEIModelID);
+  m_cEncLib.setFilmGrainCharactersticsSEISepColourDescPresent    (m_fgcSEISepColourDescPresentFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIBlendingModeID          ((uint8_t)m_fgcSEIBlendingModeID);
+  m_cEncLib.setFilmGrainCharactersticsSEILog2ScaleFactor         ((uint8_t)m_fgcSEILog2ScaleFactor);
+  for (int i = 0; i < MAX_NUM_COMPONENT; i++) {
+    m_cEncLib.setFGCSEICompModelPresent                          (m_fgcSEICompModelPresent[i], i);
+  }
+  // frame packing SEI
+  m_cEncLib.setFramePackingArrangementSEIEnabled                 (m_framePackingSEIEnabled);
+  m_cEncLib.setFramePackingArrangementSEIType                    (m_framePackingSEIType);
+  m_cEncLib.setFramePackingArrangementSEIId                      (m_framePackingSEIId);
+  m_cEncLib.setFramePackingArrangementSEIQuincunx                (m_framePackingSEIQuincunx);
+  m_cEncLib.setFramePackingArrangementSEIInterpretation          (m_framePackingSEIInterpretation);
+  // mastering display colour volume SEI
+  m_cEncLib.setMasteringDisplaySEI                               (m_masteringDisplay);
+  // content light level
+  m_cEncLib.setCLLSEIEnabled                                     (m_cllSEIEnabled);
+  m_cEncLib.setCLLSEIMaxContentLightLevel                        ((uint16_t)m_cllSEIMaxContentLevel);
+  m_cEncLib.setCLLSEIMaxPicAvgLightLevel                         ((uint16_t)m_cllSEIMaxPicAvgLevel);
+  // alternative transfer charactersitics info SEI
+  m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    (m_preferredTransferCharacteristics >= 0);
+  m_cEncLib.setSEIPreferredTransferCharacteristics               (uint8_t(m_preferredTransferCharacteristics));
+  // ambient viewing enviornment
+  m_cEncLib.setAmbientViewingEnvironmentSEIEnabled               (m_aveSEIEnabled);
+  m_cEncLib.setAmbientViewingEnvironmentSEIIlluminance           (m_aveSEIAmbientIlluminance);
+  m_cEncLib.setAmbientViewingEnvironmentSEIAmbientLightX         ((uint16_t)m_aveSEIAmbientLightX);
+  m_cEncLib.setAmbientViewingEnvironmentSEIAmbientLightY         ((uint16_t)m_aveSEIAmbientLightY);
+  // content colour volume SEI
+  m_cEncLib.setCcvSEIEnabled                                     (m_ccvSEIEnabled);
+  m_cEncLib.setCcvSEICancelFlag                                  (m_ccvSEICancelFlag);
+  m_cEncLib.setCcvSEIPersistenceFlag                             (m_ccvSEIPersistenceFlag);
+  m_cEncLib.setCcvSEIEnabled                                     (m_ccvSEIEnabled);
+  m_cEncLib.setCcvSEICancelFlag                                  (m_ccvSEICancelFlag);
+  m_cEncLib.setCcvSEIPersistenceFlag                             (m_ccvSEIPersistenceFlag);
+  m_cEncLib.setCcvSEIPrimariesPresentFlag                        (m_ccvSEIPrimariesPresentFlag);
+  m_cEncLib.setCcvSEIMinLuminanceValuePresentFlag                (m_ccvSEIMinLuminanceValuePresentFlag);
+  m_cEncLib.setCcvSEIMaxLuminanceValuePresentFlag                (m_ccvSEIMaxLuminanceValuePresentFlag);
+  m_cEncLib.setCcvSEIAvgLuminanceValuePresentFlag                (m_ccvSEIAvgLuminanceValuePresentFlag);
+  for(int i = 0; i < MAX_NUM_COMPONENT; i++) {
+    m_cEncLib.setCcvSEIPrimariesX                                (m_ccvSEIPrimariesX[i], i);
+    m_cEncLib.setCcvSEIPrimariesY                                (m_ccvSEIPrimariesY[i], i);
+  }
+  m_cEncLib.setCcvSEIMinLuminanceValue                           (m_ccvSEIMinLuminanceValue);
+  m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
+  m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
+#endif
 #if !JVET_P1004_REMOVE_BRICKS
   m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
   if (m_tileUniformSpacingFlag)

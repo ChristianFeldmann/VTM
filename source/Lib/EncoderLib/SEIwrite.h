@@ -53,7 +53,9 @@ public:
 
 protected:
 #if HEVC_SEI
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
+#endif
   void xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei);
 #endif
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
@@ -73,7 +75,9 @@ protected:
   void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
 #if HEVC_SEI
   void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEIFramePacking(const SEIFramePacking& sei);
+#endif
   void xWriteSEISegmentedRectFramePacking(const SEISegmentedRectFramePacking& sei);
   void xWriteSEIDisplayOrientation(const SEIDisplayOrientation &sei);
   void xWriteSEITemporalLevel0Index(const SEITemporalLevel0Index &sei);
@@ -87,9 +91,11 @@ protected:
   void xWriteSEIChromaResamplingFilterHint(const SEIChromaResamplingFilterHint& sei);
   void xWriteSEIKneeFunctionInfo(const SEIKneeFunctionInfo &sei);
   void xWriteSEIColourRemappingInfo(const SEIColourRemappingInfo& sei);
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEIMasteringDisplayColourVolume( const SEIMasteringDisplayColourVolume& sei);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);
+#endif
 #endif
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
 #endif
@@ -103,6 +109,17 @@ protected:
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 #endif
 
+#if JVET_P0337_PORTING_SEI
+  void xWriteSEIUserDataRegistered(const SEIUserDataRegistered& sei);
+  void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
+  void xWriteSEIFilmGrainCharacteristics(const SEIFilmGrainCharacteristics& sei);
+  void xWriteSEIFramePacking(const SEIFramePacking& sei);
+  void xWriteSEIMasteringDisplayColourVolume(const SEIMasteringDisplayColourVolume& sei);
+  void xWriteSEIContentLightLevelInfo(const SEIContentLightLevelInfo& sei);
+  void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);
+  void xWriteSEIAmbientViewingEnvironment(const SEIAmbientViewingEnvironment& sei);
+  void xWriteSEIContentColourVolume(const SEIContentColourVolume &sei);
+#endif
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();
 };

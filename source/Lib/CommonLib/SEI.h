@@ -61,17 +61,23 @@ public:
 #endif
     FILLER_PAYLOAD                       = 3,
 #if HEVC_SEI
+#if !JVET_P0337_PORTING_SEI
     USER_DATA_REGISTERED_ITU_T_T35       = 4,
     USER_DATA_UNREGISTERED               = 5,
+#endif
     RECOVERY_POINT                       = 6,
     SCENE_INFO                           = 9,
     FULL_FRAME_SNAPSHOT                  = 15,
     PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
     PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
+#if !JVET_P0337_PORTING_SEI
     FILM_GRAIN_CHARACTERISTICS           = 19,
+#endif
     POST_FILTER_HINT                     = 22,
     TONE_MAPPING_INFO                    = 23,
+#if !JVET_P0337_PORTING_SEI
     FRAME_PACKING                        = 45,
+#endif
     DISPLAY_ORIENTATION                  = 47,
     GREEN_METADATA                       = 56,
     SOP_DESCRIPTION                      = 128,
@@ -87,7 +93,9 @@ public:
     REGION_REFRESH_INFO                  = 134,
     NO_DISPLAY                           = 135,
     TIME_CODE                            = 136,
+#if !JVET_P0337_PORTING_SEI
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
+#endif
     SEGM_RECT_FRAME_PACKING              = 138,
     TEMP_MOTION_CONSTRAINED_TILE_SETS    = 139,
     CHROMA_RESAMPLING_FILTER_HINT        = 140,
@@ -102,6 +110,7 @@ public:
     OMNI_VIEWPORT                        = 156,
 #endif
 #if HEVC_SEI
+#if HEVC_SEI && !JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
 #endif
@@ -109,6 +118,17 @@ public:
     FRAME_FIELD_INFO                     = 168,
 #if JVET_P0450_SEI_SARI
     SAMPLE_ASPECT_RATIO_INFO             = 204,
+#endif
+#if JVET_P0337_PORTING_SEI
+    USER_DATA_REGISTERED_ITU_T_T35       = 4,
+    USER_DATA_UNREGISTERED               = 5,
+    FILM_GRAIN_CHARACTERISTICS           = 19,
+    FRAME_PACKING                        = 45,
+    MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
+    CONTENT_LIGHT_LEVEL_INFO             = 144,
+    ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
+    AMBIENT_VIEWING_ENVIRONMENT          = 148, 
+    CONTENT_COLOUR_VOLUME                = 149,
 #endif
   };
 
@@ -226,6 +246,7 @@ public:
 #endif
 
 #if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;
 
 class SEIuserDataUnregistered : public SEI
@@ -496,6 +517,7 @@ public:
   bool m_brokenLinkFlag;
 };
 
+#if !JVET_P0337_PORTING_SEI
 class SEIFramePacking : public SEI
 {
 public:
@@ -523,7 +545,7 @@ public:
   bool m_arrangementPersistenceFlag;
   bool m_upsampledAspectRatio;
 };
-
+#endif
 class SEISegmentedRectFramePacking : public SEI
 {
 public:
@@ -727,7 +749,7 @@ public:
   std::vector<std::vector<int> > m_verFilterCoeff;
   std::vector<std::vector<int> > m_horFilterCoeff;
 };
-
+#if !JVET_P0337_PORTING_SEI
 class SEIMasteringDisplayColourVolume : public SEI
 {
 public:
@@ -737,6 +759,7 @@ public:
 
     SEIMasteringDisplay values;
 };
+#endif
 #endif
 
 typedef std::list<SEI*> SEIMessages;
@@ -853,7 +876,7 @@ void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
 #if HEVC_SEI
-#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
+#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI && !JVET_P0337_PORTING_SEI
 class SEIAlternativeTransferCharacteristics : public SEI
 {
 public:
@@ -881,7 +904,155 @@ public:
     uint32_t m_xsdMetricValue;
 };
 #endif
+#if JVET_P0337_PORTING_SEI
+class SEIUserDataRegistered : public SEI
+{
+public:
+  PayloadType payloadType() const { return USER_DATA_REGISTERED_ITU_T_T35; }
 
+  SEIUserDataRegistered() {}
+  virtual ~SEIUserDataRegistered() {}
+
+  uint16_t m_ituCountryCode;
+  std::vector<uint8_t> m_userData;
+};
+
+class SEIFilmGrainCharacteristics : public SEI
+{
+public:
+  PayloadType payloadType() const { return FILM_GRAIN_CHARACTERISTICS; }
+
+  SEIFilmGrainCharacteristics() {}
+  virtual ~SEIFilmGrainCharacteristics() {}
+
+  bool        m_filmGrainCharacteristicsCancelFlag;
+  uint8_t     m_filmGrainModelId;
+  bool        m_separateColourDescriptionPresentFlag;
+  uint8_t     m_filmGrainBitDepthLumaMinus8;
+  uint8_t     m_filmGrainBitDepthChromaMinus8;
+  bool        m_filmGrainFullRangeFlag;
+  uint8_t     m_filmGrainColourPrimaries;
+  uint8_t     m_filmGrainTransferCharacteristics;
+  uint8_t     m_filmGrainMatrixCoeffs;
+  uint8_t     m_blendingModeId;
+  uint8_t     m_log2ScaleFactor;
+
+  struct CompModelIntensityValues
+  {
+    uint8_t intensityIntervalLowerBound;
+    uint8_t intensityIntervalUpperBound;
+    std::vector<int> compModelValue;
+  };
+
+  struct CompModel
+  {
+    bool  presentFlag;
+    uint8_t numModelValues; // this must be the same as intensityValues[*].compModelValue.size()
+    std::vector<CompModelIntensityValues> intensityValues;
+  };
+
+  CompModel m_compModel[MAX_NUM_COMPONENT];
+  bool      m_filmGrainCharacteristicsPersistenceFlag;
+};
+
+class SEIFramePacking : public SEI
+{
+public:
+  PayloadType payloadType() const { return FRAME_PACKING; }
+
+  SEIFramePacking() {}
+  virtual ~SEIFramePacking() {}
+
+  int  m_arrangementId;
+  bool m_arrangementCancelFlag;
+  int  m_arrangementType;
+  bool m_quincunxSamplingFlag;
+  int  m_contentInterpretationType;
+  bool m_spatialFlippingFlag;
+  bool m_frame0FlippedFlag;
+  bool m_fieldViewsFlag;
+  bool m_currentFrameIsFrame0Flag;
+  bool m_frame0SelfContainedFlag;
+  bool m_frame1SelfContainedFlag;
+  int  m_frame0GridPositionX;
+  int  m_frame0GridPositionY;
+  int  m_frame1GridPositionX;
+  int  m_frame1GridPositionY;
+  int  m_arrangementReservedByte;
+  bool m_arrangementPersistenceFlag;
+  bool m_upsampledAspectRatio;
+};
+
+
+class SEIMasteringDisplayColourVolume : public SEI
+{
+public:
+  PayloadType payloadType() const { return MASTERING_DISPLAY_COLOUR_VOLUME; }
+  SEIMasteringDisplayColourVolume() {}
+  virtual ~SEIMasteringDisplayColourVolume() {}
+
+  SEIMasteringDisplay values;
+};
+
+class SEIContentLightLevelInfo : public SEI
+{
+public:
+  PayloadType payloadType() const { return CONTENT_LIGHT_LEVEL_INFO; }
+  SEIContentLightLevelInfo() { }
+
+  virtual ~SEIContentLightLevelInfo() { }
+
+  uint32_t m_maxContentLightLevel;
+  uint32_t m_maxPicAverageLightLevel;
+};
+
+class SEIAlternativeTransferCharacteristics : public SEI
+{
+public:
+  PayloadType payloadType() const { return ALTERNATIVE_TRANSFER_CHARACTERISTICS; }
+
+  SEIAlternativeTransferCharacteristics() : m_preferredTransferCharacteristics(18)
+  { }
+
+  virtual ~SEIAlternativeTransferCharacteristics() {}
+
+  uint32_t m_preferredTransferCharacteristics;
+};
+
+class SEIAmbientViewingEnvironment : public SEI
+{
+public:
+  PayloadType payloadType() const { return AMBIENT_VIEWING_ENVIRONMENT; }
+  SEIAmbientViewingEnvironment() { }
+
+  virtual ~SEIAmbientViewingEnvironment() { }
+
+  uint32_t m_ambientIlluminance;
+  uint16_t m_ambientLightX;
+  uint16_t m_ambientLightY;
+};
+
+class SEIContentColourVolume : public SEI
+{
+public:
+  PayloadType payloadType() const { return CONTENT_COLOUR_VOLUME; }
+  SEIContentColourVolume() {}
+  virtual ~SEIContentColourVolume() {}
+
+  bool      m_ccvCancelFlag;
+  bool      m_ccvPersistenceFlag;
+  bool      m_ccvPrimariesPresentFlag;
+  bool      m_ccvMinLuminanceValuePresentFlag;
+  bool      m_ccvMaxLuminanceValuePresentFlag;
+  bool      m_ccvAvgLuminanceValuePresentFlag;
+  int       m_ccvPrimariesX[MAX_NUM_COMPONENT];
+  int       m_ccvPrimariesY[MAX_NUM_COMPONENT];
+  uint32_t  m_ccvMinLuminanceValue;
+  uint32_t  m_ccvMaxLuminanceValue;
+  uint32_t  m_ccvAvgLuminanceValue;
+};
+
+#endif
 #endif
 
 //! \}

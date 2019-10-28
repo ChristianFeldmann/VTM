@@ -57,7 +57,7 @@ void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActivePa
   seiActiveParameterSets->activeSeqParameterSetId.resize(seiActiveParameterSets->numSpsIdsMinus1 + 1);
   seiActiveParameterSets->activeSeqParameterSetId[0] = sps->getSPSId();
 }
-
+#if !JVET_P0337_PORTING_SEI
 void SEIEncoder::initSEIFramePacking(SEIFramePacking *seiFramePacking, int currPicNum)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -83,6 +83,7 @@ void SEIEncoder::initSEIFramePacking(SEIFramePacking *seiFramePacking, int currP
   seiFramePacking->m_arrangementPersistenceFlag = true;
   seiFramePacking->m_upsampledAspectRatio = 0;
 }
+#endif
 
 void SEIEncoder::initSEISegmentedRectFramePacking(SEISegmentedRectFramePacking *seiSegmentedRectFramePacking)
 {
@@ -872,7 +873,7 @@ void SEIEncoder::initSEITimeCode(SEITimeCode *seiTimeCode)
     seiTimeCode->timeSetArray[i] = m_pcCfg->getTimeSet(i);
   }
 }
-
+#if !JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 void SEIEncoder::initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *seiAltTransCharacteristics)
 {
@@ -882,7 +883,7 @@ void SEIEncoder::initSEIAlternativeTransferCharacteristics(SEIAlternativeTransfe
   seiAltTransCharacteristics->m_preferredTransferCharacteristics = m_pcCfg->getSEIPreferredTransferCharacteristics();
 }
 #endif
-
+#endif
 void SEIEncoder::initSEIGreenMetadataInfo(SEIGreenMetadataInfo *seiGreenMetadataInfo, uint32_t u)
 {
     CHECK(!(m_isInitialized), "Unspecified error");
@@ -893,5 +894,140 @@ void SEIEncoder::initSEIGreenMetadataInfo(SEIGreenMetadataInfo *seiGreenMetadata
     seiGreenMetadataInfo->m_xsdMetricValue = u;
 }
 #endif
+#if JVET_P0337_PORTING_SEI
+void SEIEncoder::initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *seiFilmGrain)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiFilmGrain != NULL), "Unspecified error");
+  //  Set SEI message parameters read from command line options
+  seiFilmGrain->m_filmGrainCharacteristicsCancelFlag      = m_pcCfg->getFilmGrainCharactersticsSEICancelFlag();
+  seiFilmGrain->m_filmGrainCharacteristicsPersistenceFlag = m_pcCfg->getFilmGrainCharactersticsSEIPersistenceFlag();
+  seiFilmGrain->m_filmGrainModelId                        = m_pcCfg->getFilmGrainCharactersticsSEIModelID();
+  seiFilmGrain->m_separateColourDescriptionPresentFlag    = m_pcCfg->getFilmGrainCharactersticsSEISepColourDescPresent();
+  seiFilmGrain->m_blendingModeId                          = m_pcCfg->getFilmGrainCharactersticsSEIBlendingModeID();
+  seiFilmGrain->m_log2ScaleFactor                         = m_pcCfg->getFilmGrainCharactersticsSEILog2ScaleFactor();
+  for (int i = 0; i < MAX_NUM_COMPONENT; i++)
+  {
+    seiFilmGrain->m_compModel[i].presentFlag = m_pcCfg->getFGCSEICompModelPresent(i);
+  }
+}
 
+void SEIEncoder::initSEIFramePacking(SEIFramePacking *seiFramePacking, int currPicNum)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiFramePacking != NULL), "Unspecified error");
+
+  seiFramePacking->m_arrangementId = m_pcCfg->getFramePackingArrangementSEIId();
+  seiFramePacking->m_arrangementCancelFlag = 0;
+  seiFramePacking->m_arrangementType = m_pcCfg->getFramePackingArrangementSEIType();
+  CHECK(!((seiFramePacking->m_arrangementType > 2) && (seiFramePacking->m_arrangementType < 6)), "Unspecified error");
+  seiFramePacking->m_quincunxSamplingFlag = m_pcCfg->getFramePackingArrangementSEIQuincunx();
+  seiFramePacking->m_contentInterpretationType = m_pcCfg->getFramePackingArrangementSEIInterpretation();
+  seiFramePacking->m_spatialFlippingFlag = 0;
+  seiFramePacking->m_frame0FlippedFlag = 0;
+  seiFramePacking->m_fieldViewsFlag = (seiFramePacking->m_arrangementType == 2);
+  seiFramePacking->m_currentFrameIsFrame0Flag = ((seiFramePacking->m_arrangementType == 5) && (currPicNum & 1));
+  seiFramePacking->m_frame0SelfContainedFlag = 0;
+  seiFramePacking->m_frame1SelfContainedFlag = 0;
+  seiFramePacking->m_frame0GridPositionX = 0;
+  seiFramePacking->m_frame0GridPositionY = 0;
+  seiFramePacking->m_frame1GridPositionX = 0;
+  seiFramePacking->m_frame1GridPositionY = 0;
+  seiFramePacking->m_arrangementReservedByte = 0;
+  seiFramePacking->m_arrangementPersistenceFlag = true;
+  seiFramePacking->m_upsampledAspectRatio = 0;
+}
+
+void SEIEncoder::initSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume *seiMDCV)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiMDCV != NULL), "Unspecified error");
+  //  Set SEI message parameters read from command line options
+  for (int j = 0; j <= 1; j++)
+  {
+    for (int i = 0; i <= 2; i++)
+    {
+       seiMDCV->values.primaries[i][j] = m_pcCfg->getMasteringDisplaySEI().primaries[i][j];
+    }
+    seiMDCV->values.whitePoint[j] = m_pcCfg->getMasteringDisplaySEI().whitePoint[j];
+  }
+  seiMDCV->values.maxLuminance = m_pcCfg->getMasteringDisplaySEI().maxLuminance;
+  seiMDCV->values.minLuminance = m_pcCfg->getMasteringDisplaySEI().minLuminance;
+#if DEBUG_SEI
+  printf("Init Mastering display colour volume SEI--------------------------------\n");
+  printf("\tdisplay_primaries_x[0]: %d \n", seiMDCV->values.primaries[0][0]);
+  printf("\tdisplay_primaries_y[0]: %d \n", seiMDCV->values.primaries[0][1]);
+  printf("\tdisplay_primaries_x[1]: %d \n", seiMDCV->values.primaries[1][0]);
+  printf("\tdisplay_primaries_y[1]: %d \n", seiMDCV->values.primaries[1][1]);
+  printf("\tdisplay_primaries_x[2]: %d \n", seiMDCV->values.primaries[2][0]);
+  printf("\tdisplay_primaries_y[2]: %d \n", seiMDCV->values.primaries[2][1]);
+  printf("\twhite_point_x: %d \n", seiMDCV->values.whitePoint[0]);
+  printf("\twhite_point_y: %d \n", seiMDCV->values.whitePoint[1]);
+#endif
+}
+
+void SEIEncoder::initSEIContentLightLevel(SEIContentLightLevelInfo *seiCLL)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiCLL != NULL), "Unspecified error");
+  //  Set SEI message parameters read from command line options
+  seiCLL->m_maxContentLightLevel    = m_pcCfg->getCLLSEIMaxContentLightLevel();
+  seiCLL->m_maxPicAverageLightLevel = m_pcCfg->getCLLSEIMaxPicAvgLightLevel();
+}
+
+void SEIEncoder::initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *seiAltTransCharacteristics)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiAltTransCharacteristics != NULL), "Unspecified error");
+  //  Set SEI message parameters read from command line options
+  seiAltTransCharacteristics->m_preferredTransferCharacteristics = m_pcCfg->getSEIPreferredTransferCharacteristics();
+}
+
+void SEIEncoder::initSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment *seiAmbViewEnvironment)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiAmbViewEnvironment != NULL), "Unspecified error");
+  //  Set SEI message parameters read from command line options
+  seiAmbViewEnvironment->m_ambientIlluminance = m_pcCfg->getAmbientViewingEnvironmentSEIIlluminance();
+  seiAmbViewEnvironment->m_ambientLightX      = m_pcCfg->getAmbientViewingEnvironmentSEIAmbientLightX();
+  seiAmbViewEnvironment->m_ambientLightY      = m_pcCfg->getAmbientViewingEnvironmentSEIAmbientLightY();
+}
+
+void SEIEncoder::initSEIContentColourVolume(SEIContentColourVolume *seiContentColourVolume)
+{
+  assert(m_isInitialized);
+  assert(seiContentColourVolume != NULL);
+  seiContentColourVolume->m_ccvCancelFlag = m_pcCfg->getCcvSEICancelFlag();
+  seiContentColourVolume->m_ccvPersistenceFlag = m_pcCfg->getCcvSEIPersistenceFlag();
+
+  seiContentColourVolume->m_ccvPrimariesPresentFlag = m_pcCfg->getCcvSEIPrimariesPresentFlag();
+  seiContentColourVolume->m_ccvMinLuminanceValuePresentFlag = m_pcCfg->getCcvSEIMinLuminanceValuePresentFlag();
+  seiContentColourVolume->m_ccvMaxLuminanceValuePresentFlag = m_pcCfg->getCcvSEIMaxLuminanceValuePresentFlag();
+  seiContentColourVolume->m_ccvAvgLuminanceValuePresentFlag = m_pcCfg->getCcvSEIAvgLuminanceValuePresentFlag();
+
+  // Currently we are using a floor operation for setting up the "integer" values for this SEI.
+  // This applies to both primaries and luminance limits.
+  if (seiContentColourVolume->m_ccvPrimariesPresentFlag == true)
+  {
+    for (int i = 0; i < MAX_NUM_COMPONENT; i++)
+    {
+      seiContentColourVolume->m_ccvPrimariesX[i] = (int32_t)(50000.0 * m_pcCfg->getCcvSEIPrimariesX(i));
+      seiContentColourVolume->m_ccvPrimariesY[i] = (int32_t)(50000.0 * m_pcCfg->getCcvSEIPrimariesY(i));
+    }
+  }
+
+  if (seiContentColourVolume->m_ccvMinLuminanceValuePresentFlag == true)
+  {
+    seiContentColourVolume->m_ccvMinLuminanceValue = (uint32_t)(10000000 * m_pcCfg->getCcvSEIMinLuminanceValue());
+  }
+  if (seiContentColourVolume->m_ccvMaxLuminanceValuePresentFlag == true)
+  {
+    seiContentColourVolume->m_ccvMaxLuminanceValue = (uint32_t)(10000000 * m_pcCfg->getCcvSEIMaxLuminanceValue());
+  }
+  if (seiContentColourVolume->m_ccvAvgLuminanceValuePresentFlag == true)
+  {
+    seiContentColourVolume->m_ccvAvgLuminanceValue = (uint32_t)(10000000 * m_pcCfg->getCcvSEIAvgLuminanceValue());
+  }
+}
+#endif
 //! \}

@@ -135,7 +135,12 @@ public:
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID, CUCtx& cuCtx );
+#if JVET_P1026_MTS_SIGNALLING
+  void        ts_flag                   ( TransformUnit&                tu,     ComponentID     compID );
+  void        mts_idx                   ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
+#else
   void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
+#endif
   void        residual_lfnst_mode       ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
   void        isp_mode                  ( CodingUnit&                   cu );
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );

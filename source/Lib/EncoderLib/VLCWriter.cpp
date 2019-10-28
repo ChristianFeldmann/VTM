@@ -236,7 +236,9 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_CODE( pcPPS->getPPSDepQuantEnabledIdc(), 2,                        "pps_dep_quant_enabled_idc");
     WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc0(), 2,                         "pps_ref_pic_list_sps_idc[0]");
     WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc1(), 2,                         "pps_ref_pic_list_sps_idc[1]");
+#if !JVET_P0206_TMVP_flags
     WRITE_CODE( pcPPS->getPPSTemporalMVPEnabledIdc(), 2,                     "pps_temporal_mvp_enabled_idc");
+#endif
     WRITE_CODE( pcPPS->getPPSMvdL1ZeroIdc(), 2,                              "pps_mvd_l1_zero_idc");
     WRITE_CODE( pcPPS->getPPSCollocatedFromL0Idc(), 2,                       "pps_collocated_from_l0_idc");
     WRITE_UVLC( pcPPS->getPPSSixMinusMaxNumMergeCandPlus1(),                 "pps_six_minus_max_num_merge_cand_plus1");
@@ -1324,7 +1326,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if(!pcSlice->isIntra())
     {
+#if JVET_P0206_TMVP_flags
+      if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag())
+#else
       if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() && !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
+#endif
       {
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
       }

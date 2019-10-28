@@ -49,6 +49,15 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+
+#define JVET_P0206_TMVP_flags                             1 // JVET-P0206: Signalling TMVP usage (remove pps TMVP idc and constraint when RPR is used)
+
+#define JVET_P0599_INTRA_SMOOTHING_INTERP_FILT            1 // JVET-P0599: Cleanup of interpolation filtering for intra prediction
+
+#define JVET_P1026_MTS_SIGNALLING                         1 // JVET-P1026: CU level MTS signalling
+
+#define JVET_P0571_FIX_BS_BDPCM_CHROMA                    1 // JVET-P0571: align boundary strength for Chroma BDPCM
+
 #define JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG           1 // JVET-P0983/JVET-P0391: Remove sps_sbt_max_size_64_flag
 
 #define JVET_P0530_TPM_WEIGHT_ALIGN                       1 // JVET-P0530: align chroma weights with luma weights for TPM blending
@@ -63,7 +72,7 @@
 #define DELTA_QP_FOR_Co                                  -3
 #endif
 
-#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
+#define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates

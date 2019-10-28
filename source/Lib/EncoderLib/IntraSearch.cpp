@@ -362,10 +362,9 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_ispCandListHor.clear();
     m_ispCandListVer.clear();
     m_regIntraRDListWithCosts.clear();
-    m_ispTestedModes.clear();
-    //save the number of subpartitions
-    m_ispTestedModes.numTotalParts[0] = (int)height >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_HORZ_SPLIT));
-    m_ispTestedModes.numTotalParts[1] = (int)width >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_VERT_SPLIT));
+    int numTotalPartsHor = (int)width  >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_VERT_SPLIT));
+    int numTotalPartsVer = (int)height >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_HORZ_SPLIT));
+    m_ispTestedModes.init(numTotalPartsHor, numTotalPartsVer);
   }
 
 #if ADAPTIVE_COLOR_TRANSFORM 
@@ -2328,6 +2327,15 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
     }
     if( TU::getCbf( currTU, compID ) )
     {
+#if JVET_P1026_MTS_SIGNALLING
+      if( isLuma(compID) )
+      {
+        CUCtx cuCtx;
+        m_CABACEstimator->residual_coding( currTU, compID, &cuCtx );
+        m_CABACEstimator->mts_idx( *currTU.cu, cuCtx );
+      }
+      else
+#endif
       m_CABACEstimator->residual_coding( currTU, compID );
     }
   }
@@ -3103,7 +3111,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     tu.depth = currDepth;
 
     const bool tsAllowed  = TU::isTSAllowed( tu, COMPONENT_Y );
+#if JVET_P1026_MTS_SIGNALLING
+    const bool mtsAllowed = CU::isMTSAllowed( cu, COMPONENT_Y );
+#else
     const bool mtsAllowed = TU::isMTSAllowed( tu, COMPONENT_Y );
+#endif
     std::vector<TrMode> trModes;
 
     if( sps.getUseLFNST() )
@@ -4874,15 +4886,18 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM>* rdModeLists[2] = { &m_ispCandListHor, &m_ispCandListVer };
 
   ISPType nextISPcandSplitType;
-  if (!m_ispTestedModes.stopTestingHorSplit && !m_ispTestedModes.stopTestingVerSplit)
+  auto& ispTestedModes = m_ispTestedModes;
+  const bool horSplitIsTerminated = ispTestedModes.splitIsFinished[HOR_INTRA_SUBPARTITIONS - 1];
+  const bool verSplitIsTerminated = ispTestedModes.splitIsFinished[VER_INTRA_SUBPARTITIONS - 1];
+  if (!horSplitIsTerminated && !verSplitIsTerminated)
   {
     nextISPcandSplitType = !lastMode ? HOR_INTRA_SUBPARTITIONS : lastMode->ispMod == HOR_INTRA_SUBPARTITIONS ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
   }
-  else if (!m_ispTestedModes.stopTestingHorSplit && m_ispTestedModes.stopTestingVerSplit)
+  else if (!horSplitIsTerminated && verSplitIsTerminated)
   {
     nextISPcandSplitType = HOR_INTRA_SUBPARTITIONS;
   }
-  else if (m_ispTestedModes.stopTestingHorSplit && !m_ispTestedModes.stopTestingVerSplit)
+  else if (horSplitIsTerminated && !verSplitIsTerminated)
   {
     nextISPcandSplitType = VER_INTRA_SUBPARTITIONS;
   }
@@ -4891,70 +4906,70 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
     return;   // no more modes will be tested
   }
 
-  int maxNumSubPartitions = m_ispTestedModes.numTotalParts[nextISPcandSplitType - 1];
+  int maxNumSubPartitions = ispTestedModes.numTotalParts[nextISPcandSplitType - 1];
 
-  if (m_ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)
+  if (ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)
   {
     // Split stop criteria after checking the performance of previously tested intra modes
     const int thresholdSplit1 = maxNumSubPartitions;
+    bool stopThisSplit = false;
 
-    int mode1 = m_ispTestedModes.getTestedIntraMode((ISPType)nextISPcandSplitType, 0);
+    int mode1 = ispTestedModes.getTestedIntraMode((ISPType)nextISPcandSplitType, 0);
     mode1 = mode1 == DC_IDX ? -1 : mode1;
-    int numSubPartsBestMode1 = mode1 != -1 ? m_ispTestedModes.getNumCompletedSubParts((ISPType)nextISPcandSplitType, mode1) : -1;
-    int mode2 = m_ispTestedModes.getTestedIntraMode((ISPType)nextISPcandSplitType, 1);
+    int numSubPartsBestMode1 = mode1 != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)nextISPcandSplitType, mode1) : -1;
+    int mode2 = ispTestedModes.getTestedIntraMode((ISPType)nextISPcandSplitType, 1);
     mode2 = mode2 == DC_IDX ? -1 : mode2;
-    int numSubPartsBestMode2 = mode2 != -1 ? m_ispTestedModes.getNumCompletedSubParts((ISPType)nextISPcandSplitType, mode2) : -1;
+    int numSubPartsBestMode2 = mode2 != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)nextISPcandSplitType, mode2) : -1;
 
     // 1) The 2 most promising modes do not reach a certain number of sub-partitions
     if (numSubPartsBestMode1 != -1 && numSubPartsBestMode2 != -1)
     {
       if (numSubPartsBestMode1 < thresholdSplit1 && numSubPartsBestMode2 < thresholdSplit1)
       {
-        m_ispTestedModes.stopTestingVerSplit = nextISPcandSplitType == VER_INTRA_SUBPARTITIONS ? true : m_ispTestedModes.stopTestingVerSplit;
-        m_ispTestedModes.stopTestingHorSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? true : m_ispTestedModes.stopTestingHorSplit;
-        return;
+        stopThisSplit = true;
       }
     }
 
-    // 2) One split is better than the other after PLANAR and one angle have been tested
-    ISPType otherSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
-    int  numSubPartsBestAngleOtherSplit = mode2 != -1 ? m_ispTestedModes.getNumCompletedSubParts(otherSplit, mode2) : -1;
-    bool stopThisSplit = false;
-    if (numSubPartsBestAngleOtherSplit != -1 && numSubPartsBestMode2 != -1)
+    if (!stopThisSplit)
     {
-      if (numSubPartsBestAngleOtherSplit > numSubPartsBestMode2)
+      // 2) One split type may be discarded by comparing the number of sub-partitions of the best angle modes of both splits 
+      ISPType otherSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
+      int  numSubPartsBestMode2OtherSplit = mode2 != -1 ? ispTestedModes.getNumCompletedSubParts(otherSplit, mode2) : -1;
+      if (numSubPartsBestMode2OtherSplit != -1 && numSubPartsBestMode2 != -1)
       {
-        stopThisSplit = true;
-      }
-      else if (numSubPartsBestAngleOtherSplit == numSubPartsBestMode2 && numSubPartsBestAngleOtherSplit == maxNumSubPartitions)
-      {
-        double rdCostBestAngleThisSplit = m_ispTestedModes.getRDCost(nextISPcandSplitType, mode2, maxNumSubPartitions);
-        double rdCostBestAngleOtherSplit = m_ispTestedModes.getRDCost(otherSplit, mode2, maxNumSubPartitions);
-
-        if (rdCostBestAngleThisSplit == MAX_DOUBLE || rdCostBestAngleOtherSplit < rdCostBestAngleThisSplit * 1.3)
+        if (numSubPartsBestMode2OtherSplit > numSubPartsBestMode2)
         {
           stopThisSplit = true;
+        }
+        else if (numSubPartsBestMode2OtherSplit == numSubPartsBestMode2 && numSubPartsBestMode2OtherSplit == maxNumSubPartitions)
+        {
+          double rdCostBestMode2ThisSplit = ispTestedModes.getRDCost(nextISPcandSplitType, mode2);
+          double rdCostBestMode2OtherSplit = ispTestedModes.getRDCost(otherSplit, mode2);
+          double threshold = 1.3;
+          if (rdCostBestMode2ThisSplit == MAX_DOUBLE || rdCostBestMode2OtherSplit < rdCostBestMode2ThisSplit * threshold)
+          {
+            stopThisSplit = true;
+          }
         }
       }
     }
     if (stopThisSplit)
     {
-      m_ispTestedModes.stopTestingVerSplit = nextISPcandSplitType == VER_INTRA_SUBPARTITIONS ? true : m_ispTestedModes.stopTestingVerSplit;
-      m_ispTestedModes.stopTestingHorSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? true : m_ispTestedModes.stopTestingHorSplit;
+      ispTestedModes.splitIsFinished[nextISPcandSplitType - 1] = true;
       return;
     }
   }
 
   // Now a new mode is retrieved from the list and it has to be decided whether it should be tested or not
-  if (m_ispTestedModes.candIndexInList[nextISPcandSplitType - 1] < rdModeLists[nextISPcandSplitType - 1]->size())
+  if (ispTestedModes.candIndexInList[nextISPcandSplitType - 1] < rdModeLists[nextISPcandSplitType - 1]->size())
   {
-    ModeInfo candidate = rdModeLists[nextISPcandSplitType - 1]->at(m_ispTestedModes.candIndexInList[nextISPcandSplitType - 1]);
-    m_ispTestedModes.candIndexInList[nextISPcandSplitType - 1]++;
+    ModeInfo candidate = rdModeLists[nextISPcandSplitType - 1]->at(ispTestedModes.candIndexInList[nextISPcandSplitType - 1]);
+    ispTestedModes.candIndexInList[nextISPcandSplitType - 1]++;
 
     // extra modes are only tested if ISP has won so far
-    if (m_ispTestedModes.candIndexInList[nextISPcandSplitType - 1] > m_ispTestedModes.numOrigModesToTest)
+    if (ispTestedModes.candIndexInList[nextISPcandSplitType - 1] > ispTestedModes.numOrigModesToTest)
     {
-      if (m_ispTestedModes.bestSplitSoFar != candidate.ispMod || m_ispTestedModes.bestModeSoFar == PLANAR_IDX)
+      if (ispTestedModes.bestSplitSoFar != candidate.ispMod || ispTestedModes.bestModeSoFar == PLANAR_IDX)
       {
         return;
       }
@@ -4963,7 +4978,7 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
     bool testCandidate = true;
 
     // we look for a reference mode that has already been tested within the window and decide to test the new one according to the reference mode costs
-    if (candidate.modeId >= DC_IDX && maxNumSubPartitions > 2 && m_ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)
+    if (candidate.modeId >= DC_IDX && maxNumSubPartitions > 2 && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)
     {
       const int angWindowSize = 5;
       int       numSubPartsLeftMode, numSubPartsRightMode, numSubPartsRefMode, leftIntraMode = -1, rightIntraMode = -1;
@@ -4973,8 +4988,8 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
 
       xFindAlreadyTestedNearbyIntraModes((int)candidate.modeId, &leftIntraMode, &rightIntraMode, (ISPType)candidate.ispMod, windowSize);
 
-      numSubPartsLeftMode = leftIntraMode != -1 ? m_ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, leftIntraMode) : -1;
-      numSubPartsRightMode = rightIntraMode != -1 ? m_ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, rightIntraMode) : -1;
+      numSubPartsLeftMode = leftIntraMode != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, leftIntraMode) : -1;
+      numSubPartsRightMode = rightIntraMode != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, rightIntraMode) : -1;
 
       numSubPartsRefMode = std::max(numSubPartsLeftMode, numSubPartsRightMode);
 
@@ -5023,8 +5038,10 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
     double thSkipISP = 1.4;
     if (bestNonISPCost > bestCostSoFar * thSkipISP)
     {
-      m_ispTestedModes.stopTestingHorSplit = true;
-      m_ispTestedModes.stopTestingVerSplit = true;
+      for (int splitIdx = 0; splitIdx < NUM_INTRA_SUBPARTITIONS_MODES - 1; splitIdx++)
+      {
+        m_ispTestedModes.splitIsFinished[splitIdx] = true;
+      }
       return;
     }
   }

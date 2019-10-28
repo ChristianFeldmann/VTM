@@ -405,7 +405,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_dep_quant_enabled_idc");        pcPPS->setPPSDepQuantEnabledIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[0]");      pcPPS->setPPSRefPicListSPSIdc0(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[1]");      pcPPS->setPPSRefPicListSPSIdc1(uiCode);
+#if !JVET_P0206_TMVP_flags
     READ_CODE( 2, uiCode, "pps_temporal_mvp_enabled_idc");     pcPPS->setPPSTemporalMVPEnabledIdc(uiCode);
+#endif
     READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
@@ -417,7 +419,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSDepQuantEnabledIdc(0);
     pcPPS->setPPSRefPicListSPSIdc0(0);
     pcPPS->setPPSRefPicListSPSIdc1(0);
+#if !JVET_P0206_TMVP_flags
     pcPPS->setPPSTemporalMVPEnabledIdc(0);
+#endif
     pcPPS->setPPSMvdL1ZeroIdc(0);
     pcPPS->setPPSCollocatedFromL0Idc(0);
     pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
@@ -2090,13 +2094,20 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if(!pcSlice->isIntra())
     {
+#if JVET_P0206_TMVP_flags
+      if (sps->getSPSTemporalMVPEnabledFlag())
+#else
       if (sps->getSPSTemporalMVPEnabledFlag() && !pps->getPPSTemporalMVPEnabledIdc())
+#endif
       {
         READ_FLAG( uiCode, "slice_temporal_mvp_enabled_flag" );
         pcSlice->setEnableTMVPFlag( uiCode == 1 ? true : false );
       }
       else
       {
+#if JVET_P0206_TMVP_flags
+        pcSlice->setEnableTMVPFlag(false);
+#else
         if (!sps->getSPSTemporalMVPEnabledFlag())
         {
           pcSlice->setEnableTMVPFlag(false);
@@ -2105,6 +2116,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           pcSlice->setEnableTMVPFlag((pps->getPPSTemporalMVPEnabledIdc() - 1) == 1 ? true: false);
         }
+#endif
       }
     }
 

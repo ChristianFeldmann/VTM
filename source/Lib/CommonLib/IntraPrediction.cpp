@@ -67,6 +67,7 @@ const uint8_t IntraPrediction::m_aucIntraFilter[MAX_INTRA_FILTER_DEPTHS] =
   0   // 128xn
 };
 
+#if !JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 16, 32, 16, 0 },
   { 15, 29, 17, 3 },
@@ -101,6 +102,7 @@ const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 3, 17, 29, 15 },
   { 3, 17, 29, 15 }
 };
+#endif //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
 // ====================================================================================================================
 // Constructor / destructor / initialize
@@ -556,7 +558,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     // Extend main reference to right using replication
     const int log2Ratio = floorLog2(width) - floorLog2(height);
     const int s         = std::max<int>(0, bIsModeVer ? log2Ratio : -log2Ratio);
-    const int maxIndex  = (multiRefIdx << s) + 2;
+    const int maxIndex  = (multiRefIdx << s) + 1;
     const int refLength = bIsModeVer ? m_topRefLength : m_leftRefLength;
     const Pel val       = refMain[refLength + multiRefIdx];
     for (int z = 1; z <= maxIndex; z++)
@@ -618,8 +620,13 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         {
           const bool useCubicFilter = !m_ipaParam.interpolationFlag;
 
+#if JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
+          const TFilterCoeff        intraSmoothingFilter[4] = {TFilterCoeff(16 - (deltaFract >> 1)), TFilterCoeff(32 - (deltaFract >> 1)), TFilterCoeff(16 + (deltaFract >> 1)), TFilterCoeff(deltaFract >> 1)};
+          const TFilterCoeff* const f                       = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : intraSmoothingFilter;
+#else //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
           const TFilterCoeff *const f =
             (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
+#endif //JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
           for (int x = 0; x < width; x++)
           {

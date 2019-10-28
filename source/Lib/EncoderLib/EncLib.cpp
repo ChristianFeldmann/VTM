@@ -1165,7 +1165,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
   pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
   pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
+#if !JVET_P0206_TMVP_flags
   pps.setPPSTemporalMVPEnabledIdc(getPPSTemporalMVPEnabledIdc());
+#endif
   pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
   pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
   pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());

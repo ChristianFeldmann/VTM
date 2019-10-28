@@ -237,7 +237,11 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     if( PU::isMIP( pu, chType ) )
     {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+      m_pcIntraPred->initIntraMip( pu, area );
+#else
       m_pcIntraPred->initIntraMip( pu );
+#endif
       m_pcIntraPred->predIntraMip( compID, piPred, pu );
     }
     else

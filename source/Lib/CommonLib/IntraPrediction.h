@@ -167,7 +167,11 @@ public:
   void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
 
   // Matrix-based intra prediction
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  void initIntraMip               (const PredictionUnit &pu, const CompArea &area);
+#else
   void initIntraMip               (const PredictionUnit &pu);
+#endif
   void predIntraMip               (const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
 
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);

@@ -217,7 +217,12 @@ namespace TU
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 int  getNumModesMip   (const Size& block);
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+int getMipSizeId      (const Size& block);
+#endif
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
 bool mipModesAvailable(const Size& block);
+#endif
 bool allowLfnstWithMip(const Size& block);
 
 template<typename T, size_t N>

@@ -514,6 +514,9 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  mipTransposedFlag = false;
+#endif
   multiRefIdx = 0;
 
   // inter data
@@ -565,6 +568,9 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  mipTransposedFlag = predData.mipTransposedFlag;
+#endif
   multiRefIdx = predData.multiRefIdx;
 
   return *this;
@@ -619,6 +625,9 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  mipTransposedFlag = other.mipTransposedFlag;
+#endif
   multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;

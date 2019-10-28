@@ -102,9 +102,15 @@ protected:
                              Mv(-2, 2), Mv(-1, 2), Mv(0, 2), Mv(1, 2), Mv(2, 2) };
   uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  Pel                  m_gradBuf[2][(AFFINE_MIN_BLOCK_SIZE + 2) * (AFFINE_MIN_BLOCK_SIZE + 2)];
+#else
   Pel                  m_gradBuf[2][2][(MAX_CU_SIZE + 2) * (MAX_CU_SIZE + 2)];
+#endif
   int                  m_dMvBuf[2][16 * 2];
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   bool                 m_applyPROF[2];
+#endif
   bool                 m_skipPROF;
   bool                 m_encOnly;
   bool                 m_isBi;
@@ -149,7 +155,9 @@ protected:
 #else
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied, PelUnitBuf* yuvDstTmp = NULL );
 #endif
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   void xApplyBiPROF             (const PredictionUnit& pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng);
+#endif
 #if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
   void xPredAffineBlk           ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng, const bool genChromaMv = false, const std::pair<int, int> scalingRatio = SCALE_1X );
 #else

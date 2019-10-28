@@ -775,7 +775,9 @@ private:
   bool              m_DMVR;
   bool              m_MMVD;
   bool              m_SBT;
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   uint8_t           m_MaxSbtSize;
+#endif
   bool              m_ISP;
   ChromaFormat      m_chromaFormatIdc;
 
@@ -1069,8 +1071,10 @@ public:
   bool                    getUseSBT() const                                                               { return m_SBT; }
   void                    setUseISP( bool b )                                                             { m_ISP = b; }
   bool                    getUseISP() const                                                               { return m_ISP; }
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
   uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
+#endif
 
   void      setAMVREnabledFlag    ( bool b )                                        { m_AMVREnabledFlag = b; }
   bool      getAMVREnabledFlag    ()                                      const     { return m_AMVREnabledFlag; }
@@ -1180,6 +1184,9 @@ private:
 
   int              m_chromaCbQpOffset;
   int              m_chromaCrQpOffset;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  bool             m_chromaJointCbCrQpOffsetPresentFlag;
+#endif
   int              m_chromaCbCrQpOffset;
 
   // Chroma QP Adjustments
@@ -1232,7 +1239,9 @@ private:
   int               m_PPSDepQuantEnabledIdc;
   int               m_PPSRefPicListSPSIdc0;
   int               m_PPSRefPicListSPSIdc1;
+#if !JVET_P0206_TMVP_flags
   int               m_PPSTemporalMVPEnabledIdc;
+#endif
   int               m_PPSMvdL1ZeroIdc;
   int               m_PPSCollocatedFromL0Idc;
   uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
@@ -1292,6 +1301,11 @@ public:
 
   void                   setCuQpDeltaSubdiv( uint32_t u )                                 { m_cuQpDeltaSubdiv = u;                         }
   uint32_t               getCuQpDeltaSubdiv() const                                       { return m_cuQpDeltaSubdiv;                      }
+
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  bool                   getJointCbCrQpOffsetPresentFlag() const                          { return m_chromaJointCbCrQpOffsetPresentFlag;   }
+  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      } 
+#endif
 
   void                   setQpOffset(ComponentID compID, int i )
   {
@@ -1427,8 +1441,10 @@ public:
   void                    setPPSRefPicListSPSIdc0(int u)                                  { m_PPSRefPicListSPSIdc0 = u;                   }
   int                     getPPSRefPicListSPSIdc1() const                                 { return m_PPSRefPicListSPSIdc1;                }
   void                    setPPSRefPicListSPSIdc1(int u)                                  { m_PPSRefPicListSPSIdc1 = u;                   }
+#if !JVET_P0206_TMVP_flags
   int                     getPPSTemporalMVPEnabledIdc() const                             { return m_PPSTemporalMVPEnabledIdc;            }
   void                    setPPSTemporalMVPEnabledIdc(int u)                              { m_PPSTemporalMVPEnabledIdc = u;               }
+#endif
   int                     getPPSMvdL1ZeroIdc() const                                      { return m_PPSMvdL1ZeroIdc;                     }
   void                    setPPSMvdL1ZeroIdc(int u)                                       { m_PPSMvdL1ZeroIdc = u;                        }
   int                     getPPSCollocatedFromL0Idc() const                               { return m_PPSCollocatedFromL0Idc;              }

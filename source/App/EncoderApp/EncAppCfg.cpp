@@ -943,6 +943,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  ("SBT64RDO",                                        m_SBT64RDOCheck,             (m_iSourceWidth >= 1920 ? true : false ), "Enable more than 32 SBT in encoder RDO check \n")
+#endif
   ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
@@ -1131,6 +1134,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
+#if JVET_P0058_CHROMA_TS
+  ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
+#endif
   ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
@@ -3250,7 +3256,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 0;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = 0;
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
@@ -3262,7 +3270,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = 0;
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
@@ -3274,7 +3284,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+#if !JVET_P0206_TMVP_flags
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1); 
+#endif
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
@@ -3286,7 +3298,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
@@ -3583,6 +3597,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
+#if JVET_P0058_CHROMA_TS
+  msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
+#endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)

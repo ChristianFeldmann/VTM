@@ -3659,7 +3659,11 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
     uint8_t    numTransformIndexCands = nNumTransformCands;
 
     const bool tsAllowed = TU::isTSAllowed(tu, COMPONENT_Y);
+#if JVET_P1026_MTS_SIGNALLING
+    const bool mtsAllowed = CU::isMTSAllowed(tu, COMPONENT_Y);
+#else
     const bool mtsAllowed = TU::isMTSAllowed(tu, COMPONENT_Y);
+#endif
     std::vector<TrMode> trModes;
 
     if (sps.getUseLFNST())

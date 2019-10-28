@@ -925,6 +925,10 @@ void Quant::xInitScalingList( const Quant* other )
       }
     }
   }
+
+#if ADAPTIVE_COLOR_TRANSFORM
+  pairCheck = 0;
+#endif
 }
 
 /** destroy quantization matrix array
@@ -1279,8 +1283,7 @@ void Quant::lambdaAdjustColorTrans(bool forward)
     }
     m_resetStore = false;
   }
-
-  static int pairCheck = 0;
+  
   if (forward)
   {
     CHECK(pairCheck == 1, "lambda has been already adjusted");

@@ -187,6 +187,10 @@ private:
 
   int      *m_quantCoef            [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
   int      *m_dequantCoef          [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of dequantization matrix coefficient 4x4
+
+#if ADAPTIVE_COLOR_TRANSFORM
+  int      pairCheck;
+#endif
 };// END CLASS DEFINITION Quant
 
 

@@ -98,16 +98,15 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
       int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
       double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
 
-      m_dLambdaStore[0][component] = m_dLambda;
+      m_lambdaStore[0][component] = m_dLambda;
       m_DistScaleStore[0][component] = m_DistScale;
 
-      m_dLambdaStore[1][component] = m_dLambda * lamdbaAdjustRate;
-      m_DistScaleStore[1][component] = double(1 << SCALE_BITS) / m_dLambdaStore[1][component];
+      m_lambdaStore[1][component] = m_dLambda * lamdbaAdjustRate;
+      m_DistScaleStore[1][component] = double(1 << SCALE_BITS) / m_lambdaStore[1][component];
     }
     m_resetStore = false;
   }
-
-  static int pairCheck = 0;
+  
   if (forward)
   {
     CHECK(pairCheck == 1, "lambda has been already adjusted");
@@ -119,7 +118,7 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
     pairCheck = 0;
   }
 
-  m_dLambda = m_dLambdaStore[pairCheck][componentID];
+  m_dLambda = m_lambdaStore[pairCheck][componentID];
   m_DistScale = m_DistScaleStore[pairCheck][componentID];
   if (pairCheck == 0)
   {
@@ -218,6 +217,7 @@ void RdCost::init()
   m_iCostScale                 = 0;
 #if ADAPTIVE_COLOR_TRANSFORM
   m_resetStore = true;
+  pairCheck    = 0;
 #endif 
 }
 

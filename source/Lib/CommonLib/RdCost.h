@@ -118,9 +118,10 @@ private:
   double                  m_DistScale;
   double                  m_dLambdaMotionSAD[2 /* 0=standard, 1=for transquant bypass when mixed-lossless cost evaluation enabled*/];
 #if ADAPTIVE_COLOR_TRANSFORM
-  double                  m_dLambdaStore[2][3];   // 0-org; 1-act
+  double                  m_lambdaStore[2][3];   // 0-org; 1-act
   double                  m_DistScaleStore[2][3]; // 0-org; 1-act
   bool                    m_resetStore;
+  int                     pairCheck;
 #endif
 
   // for motion cost

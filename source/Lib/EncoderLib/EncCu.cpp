@@ -842,14 +842,10 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 #if ADAPTIVE_COLOR_TRANSFORM 
       if (slice.getSPS()->getUseColorTrans() && !CS::isDualITree(*tempCS))
       {
-        bool bSkipSecColorSpace = false;
-        bSkipSecColorSpace = xCheckRDCostIntra(tempCS, bestCS, partitioner, currTestMode, (m_pcEncCfg->getRGBFormatFlag() ? true : false));
-        if (!m_pcEncCfg->getRGBFormatFlag() && (m_pcEncCfg->getIntraPeriod() != 1))
-        {
-          bSkipSecColorSpace = true;
-        }
-
-        if (!bSkipSecColorSpace && !tempCS->firstColorSpaceTestOnly)
+        bool skipSecColorSpace = false;
+        skipSecColorSpace = xCheckRDCostIntra(tempCS, bestCS, partitioner, currTestMode, (m_pcEncCfg->getRGBFormatFlag() ? true : false));
+        
+        if (!skipSecColorSpace && !tempCS->firstColorSpaceTestOnly)
         {
           xCheckRDCostIntra(tempCS, bestCS, partitioner, currTestMode, (m_pcEncCfg->getRGBFormatFlag() ? false : true));
         }
@@ -1884,7 +1880,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               && tempCS->interHad == 0)
             {
               interHad = 0;
-              // JEM assumes only perfect reconstructions can from now on beat the inter mode
+              // it is assumed that only perfect reconstructions can from now on beat the inter mode
               m_modeCtrl->enforceInterHad(0);
               continue;
             }

@@ -383,7 +383,7 @@ struct CodedCUInfo
 
   uint8_t GBiIdx;
 #if ADAPTIVE_COLOR_TRANSFORM
-  char    selectColorSpaceOption;
+  char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
 #endif
 
 #if ENABLE_SPLIT_PARALLELISM

@@ -556,7 +556,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     // Extend main reference to right using replication
     const int log2Ratio = floorLog2(width) - floorLog2(height);
     const int s         = std::max<int>(0, bIsModeVer ? log2Ratio : -log2Ratio);
-    const int maxIndex  = (multiRefIdx << s) + 2;
+    const int maxIndex  = (multiRefIdx << s) + 1;
     const int refLength = bIsModeVer ? m_topRefLength : m_leftRefLength;
     const Pel val       = refMain[refLength + multiRefIdx];
     for (int z = 1; z <= maxIndex; z++)

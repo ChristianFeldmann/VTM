@@ -383,6 +383,9 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
 #if JVET_N0278_FIXES
   if( bSeqFirst )
   {
+#if JVET_P0205_VPS_ID_0
+    if (slice->getSPS()->getVPSId() != 0)
+#endif
     actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 
@@ -397,8 +400,12 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   {
     actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
   }
+#if JVET_P0205_VPS_ID_0
+  // No VPS in the bitstream if the SPS refers to VPS ID zero
+  if (bSeqFirst && slice->getSPS()->getVPSId() != 0)
 #else
   if (bSeqFirst)
+#endif
   {
     actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
   }

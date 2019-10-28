@@ -2437,7 +2437,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
     if( horAbs > 1 )
     {
 #if JVET_P0090_32BIT_MVD
-      m_BinEncoder.encodeRemAbsEP(horAbs - 2, 1, 0, 17);
+      m_BinEncoder.encodeRemAbsEP(horAbs - 2, 1, 0, MV_BITS - 1);
 #else
       exp_golomb_eqprob( horAbs - 2, 1 );
 #endif
@@ -2449,7 +2449,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
     if( verAbs > 1 )
     {
 #if JVET_P0090_32BIT_MVD
-      m_BinEncoder.encodeRemAbsEP(verAbs - 2, 1, 0, 17);
+      m_BinEncoder.encodeRemAbsEP(verAbs - 2, 1, 0, MV_BITS - 1);
 #else
       exp_golomb_eqprob( verAbs - 2, 1 );
 #endif

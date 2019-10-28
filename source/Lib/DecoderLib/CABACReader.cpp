@@ -2678,7 +2678,7 @@ void CABACReader::mvd_coding( Mv &rMvd )
     if (horAbs > 1)
     {
 #if JVET_P0090_32BIT_MVD
-      horAbs += m_BinDecoder.decodeRemAbsEP(1, 0, 17);
+      horAbs += m_BinDecoder.decodeRemAbsEP(1, 0, MV_BITS - 1);
 #else
       horAbs += exp_golomb_eqprob(1 );
 #endif
@@ -2693,7 +2693,7 @@ void CABACReader::mvd_coding( Mv &rMvd )
     if (verAbs > 1)
     {
 #if JVET_P0090_32BIT_MVD
-      verAbs += m_BinDecoder.decodeRemAbsEP(1, 0, 17);
+      verAbs += m_BinDecoder.decodeRemAbsEP(1, 0, MV_BITS - 1);
 #else
       verAbs += exp_golomb_eqprob(1 );
 #endif

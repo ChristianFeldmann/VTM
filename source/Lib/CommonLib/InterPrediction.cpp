@@ -1803,11 +1803,12 @@ void InterPrediction::xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicLis
     width = pcPad.bufs[compID].width;
     height = pcPad.bufs[compID].height;
     offset = (DMVR_NUM_ITERATION) * (pcPad.bufs[compID].stride + 1);
-    int mvshiftTemp = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+    int mvshiftTempHor = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+    int mvshiftTempVer = mvShift + getComponentScaleY((ComponentID)compID, pu.chromaFormat);
     width += (filtersize - 1);
     height += (filtersize - 1);
-    cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp),
-      -(((filtersize >> 1) - 1) << mvshiftTemp));
+    cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTempHor),
+      -(((filtersize >> 1) - 1) << mvshiftTempVer));
     bool wrapRef = false;
     if( pu.cs->sps->getWrapAroundEnabledFlag() )
     {
@@ -1820,7 +1821,7 @@ void InterPrediction::xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicLis
     /* Pre-fetch similar to HEVC*/
     {
       CPelBuf refBuf;
-      Position Rec_offset = pu.blocks[compID].pos().offset(cMv.getHor() >> mvshiftTemp, cMv.getVer() >> mvshiftTemp);
+      Position Rec_offset = pu.blocks[compID].pos().offset(cMv.getHor() >> mvshiftTempHor, cMv.getVer() >> mvshiftTempVer);
       refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, Rec_offset, pu.blocks[compID].size()), wrapRef);
       PelBuf &dstBuf = pcPad.bufs[compID];
       g_pelBufOP.copyBuffer((Pel *)refBuf.buf, refBuf.stride, ((Pel *)dstBuf.buf) + offset, dstBuf.stride, width, height);
@@ -1838,7 +1839,8 @@ void InterPrediction::xPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList ref
     width = pcPad.bufs[compID].width;
     height = pcPad.bufs[compID].height;
     offset = (DMVR_NUM_ITERATION) * (pcPad.bufs[compID].stride + 1);
-    padsize = (DMVR_NUM_ITERATION) >> getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+    /*using the larger padsize for 422*/
+    padsize = (DMVR_NUM_ITERATION) >> getComponentScaleY((ComponentID)compID, pu.chromaFormat);
     width += (filtersize - 1);
     height += (filtersize - 1);
     /*padding on all side of size DMVR_PAD_LENGTH*/
@@ -1998,7 +2000,8 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
       if (blockMoved || (compID == 0))
       {
         pcPadstride = pcPadTemp.bufs[compID].stride;
-        int mvshiftTemp = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+        int mvshiftTempHor = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+        int mvshiftTempVer = mvShift + getComponentScaleY((ComponentID)compID, pu.chromaFormat);
         int leftPixelExtra;
         if (compID == COMPONENT_Y)
         {
@@ -2009,10 +2012,10 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
           leftPixelExtra = (NTAPS_CHROMA >> 1) - 1;
         }
         PelBuf &srcBuf = pcPadTemp.bufs[compID];
-        deltaIntMvX = (cMv.getHor() >> mvshiftTemp) -
-          (startMv.getHor() >> mvshiftTemp);
-        deltaIntMvY = (cMv.getVer() >> mvshiftTemp) -
-          (startMv.getVer() >> mvshiftTemp);
+        deltaIntMvX = (cMv.getHor() >> mvshiftTempHor) -
+          (startMv.getHor() >> mvshiftTempHor);
+        deltaIntMvY = (cMv.getVer() >> mvshiftTempVer) -
+          (startMv.getVer() >> mvshiftTempVer);
 
         CHECK((abs(deltaIntMvX) > DMVR_NUM_ITERATION) || (abs(deltaIntMvY) > DMVR_NUM_ITERATION), "not expected DMVR movement");
 

@@ -1665,7 +1665,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   const int baseUnitSize = 1 << MIN_CU_LOG2;
   const int unitWidth    = baseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
-  const int unitHeight   = baseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
+  const int unitHeight   = baseUnitSize >> getComponentScaleY(chromaArea.compID, nChromaFormat);
 
   const int tuWidthInUnits  = tuWidth / unitWidth;
   const int tuHeightInUnits = tuHeight / unitHeight;

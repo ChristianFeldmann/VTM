@@ -2212,8 +2212,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
-    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
-
+    
     xPicInitHashME( pcPic, pcSlice->getPPS(), rcListPic );
 
     if( m_pcCfg->getUseAMaxBT() )
@@ -2419,6 +2418,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setEnableTMVPFlag( 0 );
       }
     }
+
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
 
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())

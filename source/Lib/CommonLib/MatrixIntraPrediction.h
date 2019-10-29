@@ -51,7 +51,11 @@ public:
   MatrixIntraPrediction();
 
   void prepareInputForPred(const CPelBuf &pSrc, const Area& block, const int bitDepth);
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  void predBlock(int* const result, const int modeIdx, const bool transpose, const int bitDepth);
+#else
   void predBlock(int* const result, const int modeIdx, const int bitDepth);
+#endif
 
   private:
     static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundary;           // downsampled             boundary of a block
@@ -62,18 +66,33 @@ public:
     static_vector<int, MIP_MAX_HEIGHT>     m_refSamplesLeft;            // left reference samples for upsampling
 
     Size m_blockSize;
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    int  m_sizeId;
+    int  m_reducedBdrySize;
+#else
     int  m_numModes;
     Size m_reducedBoundarySize;
+#endif
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    int  m_reducedPredSize;
+#else
     Size m_reducedPredictionSize;
+#endif
     unsigned int m_upsmpFactorHor;
     unsigned int m_upsmpFactorVer;
 
     void initPredBlockParams(const Size& block);
 
     static void boundaryDownsampling1D(int* reducedDst, const int* const fullSrc, const SizeType srcLen, const SizeType dstLen);
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
     static void doDownsampling( int* dst, const int* src, const SizeType srcLen, const SizeType dstLen );
+#endif
 
+#if JVET_P0803_COMBINED_MIP_CLEANUP && JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    void predictionUpsampling( int* const dst, const int* const src ) const;
+#else
     void predictionUpsampling( int* const dst, const int* const src, const bool transpose ) const;
+#endif
     static void predictionUpsampling1D( int* const dst, const int* const src, const int* const bndry,
                                         const SizeType srcSizeUpsmpDim, const SizeType srcSizeOrthDim,
                                         const SizeType srcStep, const SizeType srcStride,
@@ -83,13 +102,25 @@ public:
 
     void getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const;
 
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
     bool isTransposed( const int modeIdx ) const;
     int  getWeightIdx( const int modeIdx ) const;
+#endif
 
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    void computeReducedPred( int*const result, const int* const input, 
+                             const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
+                             const bool transpose, const int bitDepth );
+#else
     void computeReducedPred( int*const result, const int* const input, const uint8_t*matrix,
                              const bool leaveHorOut, const bool leaveVerOut,
                              const int shiftMatrix, const int offsetMatrix,
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+                             const bool transpose, const int bitDepth );
+#else
                              const bool transpose, const bool needUpsampling, const int bitDepth );
+#endif
+#endif
   };
 
 #endif //__MATRIXINTRAPPREDICTION__

@@ -122,9 +122,10 @@ IntraPrediction::IntraPrediction()
 
   m_piTemp = nullptr;
   m_pMdlmTemp = nullptr;
-
+#if !JVET_P0077_LINE_CG_PALETTE
   m_runTypeRD   = nullptr;
   m_runLengthRD = nullptr;
+#endif
 }
 
 IntraPrediction::~IntraPrediction()
@@ -147,8 +148,10 @@ void IntraPrediction::destroy()
   m_piTemp = nullptr;
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runTypeRD)   { xFree( m_runTypeRD  );   m_runTypeRD = NULL; }
   if (m_runLengthRD) { xFree( m_runLengthRD); m_runLengthRD = NULL; }
+#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -183,6 +186,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runTypeRD == nullptr)
   {
     m_runTypeRD = (bool *) xMalloc(bool, MAX_CU_SIZE * MAX_CU_SIZE);
@@ -191,6 +195,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_runLengthRD = (Pel *) xMalloc(Pel, MAX_CU_SIZE * MAX_CU_SIZE);
   }
+#endif
 }
 
 // ====================================================================================================================
@@ -1886,6 +1891,20 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   }
 }
 
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+void IntraPrediction::initIntraMip( const PredictionUnit &pu, const CompArea &area )
+{
+  CHECK( area.width > MIP_MAX_WIDTH || area.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+
+  // prepare input (boundary) data for prediction
+  CHECK( m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP" );
+  Pel *ptrSrc = getPredictorPtr( COMPONENT_Y );
+  const int srcStride  = m_refBufferStride[COMPONENT_Y];
+  const int srcHStride = 2;
+
+  m_matrixIntraPred.prepareInputForPred( CPelBuf( ptrSrc, srcStride, srcHStride ), area, pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) );
+}
+#else
 void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 {
   CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
@@ -1898,10 +1917,29 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 
   m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA));
 }
+#endif
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  CHECK( piPred.width > MIP_MAX_WIDTH || piPred.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+  CHECK( piPred.width != (1 << floorLog2(piPred.width)) || piPred.height != (1 << floorLog2(piPred.height)), "Error: expecting blocks of size 2^M x 2^N" );
+
+  // generate mode-specific prediction
+  const int bitDepth = pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA );
+
+  static_vector<int, MIP_MAX_WIDTH* MIP_MAX_HEIGHT> predMip( piPred.width * piPred.height );
+  m_matrixIntraPred.predBlock( predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag, bitDepth );
+
+  for( int y = 0; y < piPred.height; y++ )
+  {
+    for( int x = 0; x < piPred.width; x++ )
+    {
+      piPred.at( x, y ) = Pel(predMip[y * piPred.width + x]);
+    }
+  }
+#else
   CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
   CHECK( pu.lwidth() != (1 << floorLog2(pu.lwidth())) || pu.lheight() != (1 << floorLog2(pu.lheight())), "Error: expecting blocks of size 2^M x 2^N" );
 
@@ -1917,8 +1955,9 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
       piPred.at(x, y) = Pel(predMip[y * pu.lwidth() + x]);
     }
   }
+#endif
 }
-
+#if !JVET_P0077_LINE_CG_PALETTE
 bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
 {
   CodingUnit    &cu = *cs.getCU(partitioner.chType);
@@ -1991,6 +2030,7 @@ bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner,
   }
   return true;
 }
+#endif
 void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -2062,5 +2102,4 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     }
   }
 }
-
 //! \}

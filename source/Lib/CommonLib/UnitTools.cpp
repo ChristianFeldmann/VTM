@@ -3931,6 +3931,15 @@ uint32_t getCtuAddr( const Position& pos, const PreCalcValues& pcv )
 
 int getNumModesMip(const Size& block)
 {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  switch( getMipSizeId(block) )
+  {
+  case 0: return 16;
+  case 1: return  8;
+  case 2: return  6;
+  default: THROW( "Invalid mipSizeId" );
+  }
+#else
   if (block.width > (4 * block.height) || block.height > (4 * block.width))
   {
     return 0;
@@ -3940,7 +3949,11 @@ int getNumModesMip(const Size& block)
   {
     return 35;
   }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
   else if (block.width <= 8 && block.height <= 8)
+#endif
   {
     return 19;
   }
@@ -3948,13 +3961,38 @@ int getNumModesMip(const Size& block)
   {
     return 11;
   }
+#endif
 }
 
 
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+int getMipSizeId(const Size& block)
+{
+  if( block.width == 4 && block.height == 4 )
+  {
+    return 0;
+  }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
+  else if( block.width <= 8 && block.height <= 8 )
+#endif
+  {
+    return 1;
+  }
+  else
+  {
+    return 2;
+  }
+
+}
+#endif
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
 bool mipModesAvailable(const Size& block)
 {
   return (getNumModesMip(block));
 }
+#endif
 
 bool allowLfnstWithMip(const Size& block)
 {

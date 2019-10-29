@@ -832,8 +832,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     const ChromaQpMappingTable& chromaQpMappingTable = pcSPS->getChromaQpMappingTable();
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
-    int numQPTables = chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
-    for (int i = 0; i < numQPTables; i++)
+    int numQpTables = chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    CHECK(numQpTables != chromaQpMappingTable.getNumQpTables(), " numQpTables does not match at encoder side ");
+    for (int i = 0; i < numQpTables; i++)
 #else
     for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
 #endif

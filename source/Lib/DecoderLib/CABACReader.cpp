@@ -1657,7 +1657,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
     }
   }
-  cu.useEscape[compBegin] = true; // JC
+  cu.useEscape[compBegin] = true;
   if (cu.curPLTSize[compBegin] > 0)
   {
     uint32_t escCode = 0;
@@ -1666,12 +1666,47 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   }
   uint32_t    indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
   //encode index map
+#if !JVET_P0077_LINE_CG_PALETTE
   PLTtypeBuf  runType = tu.getrunType(compBegin);
   PelBuf      runLength = tu.getrunLength(compBegin);
   PelBuf      curPLTIdx = tu.getcurPLTIdx(compBegin);
+#endif
   uint32_t    height = cu.block(compBegin).height;
   uint32_t    width = cu.block(compBegin).width;
 
+#if JVET_P0077_LINE_CG_PALETTE
+  uint32_t total = height * width;
+  if (indexMaxSize > 1)
+    parseScanRotationModeFlag(cu, compBegin);
+  else
+    cu.useRotation[compBegin] = false;
+
+  if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
+  {
+    if (!cu.isSepTree() || isLuma(tu.chType))
+    {
+      cu_qp_delta(cu, cuCtx.qp, cu.qp);
+      cuCtx.qp = cu.qp;
+      cuCtx.isDQPCoded = true;
+    }
+  }
+  if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
+  {
+    if (!cu.isSepTree() || isChroma(tu.chType))
+    {
+      cu_chroma_qp_offset(cu);
+      cuCtx.isChromaQpAdjCoded = true;
+    }
+  }
+
+  m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
+  uint32_t prevRunPos = 0;
+  unsigned prevRunType = 0;
+  for (int subSetId = 0; subSetId <= (total - 1) >> LOG2_PALETTE_CG_SIZE; subSetId++)
+  {
+    cuPaletteSubblockInfo(cu, compBegin, numComp, subSetId, prevRunPos, prevRunType);
+  }
+#else
   int       numCopyIndexRuns = -1;
   bool      lastRunType = 0;
   uint32_t  numIndices = 0;
@@ -1681,7 +1716,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   if (indexMaxSize > 1)
   {
     uint32_t currParam = 3 + ((indexMaxSize) >> 3);
+#if JVET_P0090_32BIT_MVD
+    numIndices = m_BinDecoder.decodeRemAbsEP(currParam, COEF_REMAIN_BIN_REDUCTION, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
+#else
     numIndices = m_BinDecoder.decodeRemAbsEP(currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
+#endif
     numIndices++;
     numCopyIndexRuns = numIndices;
     while (numIndices--)
@@ -1860,8 +1899,157 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       }
     }
   }
-
+#endif
 }
+#if JVET_P0077_LINE_CG_PALETTE
+void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType)
+{
+  const SPS&      sps = *(cu.cs->sps);
+  TransformUnit&  tu = *cu.firstTU;
+  PLTtypeBuf      runType = tu.getrunType(compBegin);
+  PelBuf          curPLTIdx = tu.getcurPLTIdx(compBegin);
+  uint32_t        indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
+  uint32_t        totalPel = cu.block(compBegin).height*cu.block(compBegin).width;
+
+  int minSubPos = subSetId << LOG2_PALETTE_CG_SIZE;
+  int maxSubPos = minSubPos + (1 << LOG2_PALETTE_CG_SIZE);
+  maxSubPos = (maxSubPos > totalPel) ? totalPel : maxSubPos; // if last position is out of the current CU size
+
+  unsigned runCopyFlag[(1 << LOG2_PALETTE_CG_SIZE)];
+  for (int i = 0; i < (1 << LOG2_PALETTE_CG_SIZE); i++)
+    runCopyFlag[i] = MAX_INT;
+  if (minSubPos == 0)
+    runCopyFlag[0] = 0;
+
+// PLT runCopy flag and runType - context coded
+  int curPos = minSubPos;
+  for (; curPos < maxSubPos && indexMaxSize > 1; curPos++)
+  {
+    uint32_t posy = m_scanOrder[curPos].y;
+    uint32_t posx = m_scanOrder[curPos].x;
+    uint32_t posyprev = (curPos == 0) ? 0 : m_scanOrder[curPos - 1].y;
+    uint32_t posxprev = (curPos == 0) ? 0 : m_scanOrder[curPos - 1].x;
+    unsigned identityFlag = 1;
+
+    const CtxSet&   ctxSet = (prevRunType == PLT_RUN_INDEX) ? Ctx::IdxRunModel : Ctx::CopyRunModel;
+    if (curPos > 0)
+    {
+      int dist = curPos - prevRunPos - 1;
+      const unsigned  ctxId = DeriveCtx::CtxPltCopyFlag(prevRunType, dist);
+      identityFlag = m_BinDecoder.decodeBin( ctxSet( ctxId ) );
+      DTRACE(g_trace_ctx, D_SYNTAX, "plt_copy_flag() bin=%d ctx=%d\n", identityFlag, ctxId);
+      runCopyFlag[curPos - minSubPos] = identityFlag;
+    }
+
+    if ( identityFlag == 0 || curPos == 0 )
+    {
+      if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
+      {
+        runType.at(posx, posy) = PLT_RUN_INDEX;
+      }
+      else if (curPos != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
+      {
+        runType.at(posx, posy) = PLT_RUN_INDEX;
+      }
+      else
+      {
+        runType.at(posx, posy) = (m_BinDecoder.decodeBin(Ctx::RunTypeFlag()));
+      }
+      DTRACE(g_trace_ctx, D_SYNTAX, "plt_type_flag() bin=%d sp=%d\n", runType.at(posx, posy), curPos);
+      prevRunType = runType.at(posx, posy);
+      prevRunPos  = curPos;
+    }
+    else //assign run information
+    {
+      runType.at(posx, posy) = runType.at(posxprev, posyprev);
+    }
+  }
+
+// PLT index values - bypass coded
+  uint32_t adjust;
+  uint32_t symbol = 0;
+  curPos = minSubPos;
+  if (indexMaxSize > 1)
+  {
+    for (; curPos < maxSubPos; curPos++)
+    {
+      if (curPos > 0)
+        adjust = 1;
+      else
+        adjust = 0;
+
+      uint32_t posy = m_scanOrder[curPos].y;
+      uint32_t posx = m_scanOrder[curPos].x;
+      uint32_t posyprev = (curPos == 0) ? 0 : m_scanOrder[curPos - 1].y;
+      uint32_t posxprev = (curPos == 0) ? 0 : m_scanOrder[curPos - 1].x;
+      if ( runCopyFlag[curPos - minSubPos] == 0 && runType.at(posx, posy) == PLT_RUN_INDEX )
+      {
+        xReadTruncBinCode(symbol, indexMaxSize - adjust);
+        xAdjustPLTIndex(cu, symbol, curPos, curPLTIdx, runType, indexMaxSize, compBegin);
+        DTRACE(g_trace_ctx, D_SYNTAX, "plt_idx_idc() value=%d sp=%d\n", curPLTIdx.at(posx, posy), curPos);
+      }
+      else if (runType.at(posx, posy) == PLT_RUN_INDEX)
+      {
+        curPLTIdx.at(posx, posy) = curPLTIdx.at(posxprev, posyprev);
+      }
+      else
+      {
+        curPLTIdx.at(posx, posy) = (cu.useRotation[compBegin]) ? curPLTIdx.at(posx - 1, posy) : curPLTIdx.at(posx, posy - 1);
+      }
+    }
+  }
+  else
+  {
+    for (; curPos < maxSubPos; curPos++)
+    {
+      uint32_t posy = m_scanOrder[curPos].y;
+      uint32_t posx = m_scanOrder[curPos].x;
+      uint32_t posyprev = (curPos == 0) ? 0 : m_scanOrder[curPos - 1].y;
+      uint32_t posxprev = (curPos == 0) ? 0 : m_scanOrder[curPos - 1].x;
+      runType.at(posx, posy) = PLT_RUN_INDEX;
+      if (runCopyFlag[curPos - minSubPos] == 0 && runType.at(posx, posy) == PLT_RUN_INDEX)
+      {
+        curPLTIdx.at(posx, posy) = 0;
+      }
+      else
+      {
+        curPLTIdx.at(posx, posy) = curPLTIdx.at(posxprev, posyprev);
+      }
+    }
+  }
+
+// Quantized escape colors - bypass coded
+  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
+  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
+  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+  {
+    ComponentID compID = (ComponentID)comp;
+    for (curPos = minSubPos; curPos < maxSubPos; curPos++)
+    {
+      uint32_t posy = m_scanOrder[curPos].y;
+      uint32_t posx = m_scanOrder[curPos].x;
+      if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
+      {
+          PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
+          if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
+          {
+            escapeValue.at(posx, posy) = exp_golomb_eqprob(3);
+            assert(escapeValue.at(posx, posy) < (1 << (cu.cs->sps->getBitDepth(toChannelType((ComponentID)comp)) + 1)));
+            DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
+          }
+          if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
+          {
+            uint32_t posxC = posx >> scaleX;
+            uint32_t posyC = posy >> scaleY;
+            escapeValue.at(posxC, posyC) = exp_golomb_eqprob(3);
+            assert(escapeValue.at(posxC, posyC) < (1 << (cu.cs->sps->getBitDepth(toChannelType(compID)) + 1)));
+            DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
+          }
+      }
+    }
+  }
+}
+#endif
 void CABACReader::parseScanRotationModeFlag(CodingUnit& cu, ComponentID compBegin)
 {
   cu.useRotation[compBegin] = m_BinDecoder.decodeBin(Ctx::RotationFlag());
@@ -1943,6 +2131,7 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel curLevel, uint32_t idx, Pe
   }
   paletteIdx.at(posx, posy) = symbol;
 }
+#if !JVET_P0077_LINE_CG_PALETTE
 uint32_t  CABACReader::cu_run_val(PLTRunMode runtype, const uint32_t paletteIdx, const uint32_t maxRun)
 {
   uint32_t symbol = 0;
@@ -2010,6 +2199,7 @@ uint32_t CABACReader::xReadTruncMsbP1RefinementBits(PLTRunMode runtype, uint32_t
 
   return symbol;
 }
+#endif
 
 //================================================================================
 //  clause 7.3.8.6
@@ -2673,7 +2863,11 @@ void CABACReader::mvd_coding( Mv &rMvd )
   {
     if (horAbs > 1)
     {
+#if JVET_P0090_32BIT_MVD
+      horAbs += m_BinDecoder.decodeRemAbsEP(1, 0, MV_BITS - 1);
+#else
       horAbs += exp_golomb_eqprob(1 );
+#endif
     }
     if (m_BinDecoder.decodeBinEP())
     {
@@ -2684,7 +2878,11 @@ void CABACReader::mvd_coding( Mv &rMvd )
   {
     if (verAbs > 1)
     {
+#if JVET_P0090_32BIT_MVD
+      verAbs += m_BinDecoder.decodeRemAbsEP(1, 0, MV_BITS - 1);
+#else
       verAbs += exp_golomb_eqprob(1 );
+#endif
     }
     if (m_BinDecoder.decodeBinEP())
     {
@@ -3257,7 +3455,11 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
   uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( cctx ) );
   if( idxLFNST )
   {
+#if JVET_P0350_LFNST_IDX_CTX
+    idxLFNST += m_BinDecoder.decodeBin(Ctx::LFNSTIdx(2));
+#else
     idxLFNST += m_BinDecoder.decodeBinEP();
+#endif
   }
   cu.lfnstIdx = idxLFNST;
 
@@ -3447,7 +3649,11 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     if( tcoeff >= 4 )
     {
       RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_escs );
+#if JVET_P0090_32BIT_MVD
+      int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
+#else
       int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
+#endif
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
       tcoeff += (rem<<1);
     }
@@ -3464,7 +3670,11 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
 #endif
     RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_escs);
+#if JVET_P0090_32BIT_MVD
+    int       rem       = m_BinDecoder.decodeRemAbsEP( rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
+#else
     int       rem       = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
+#endif
     DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );
     TCoeff    tcoeff  = ( rem == pos0 ? 0 : rem < pos0 ? rem+1 : rem );
     state = ( stateTransTable >> ((state<<2)+((tcoeff&1)<<1)) ) & 3;
@@ -3743,7 +3953,11 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     if( tcoeff >= cutoffVal )
     {
       int       rice = cctx.templateAbsSumTS( scanPos, coeff );
+#if JVET_P0090_32BIT_MVD
+      int       rem  = m_BinDecoder.decodeRemAbsEP( rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
+#else
       int       rem  = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
+#endif
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_rem_val() bin=%d ctx=%d sp=%d\n", rem, rice, scanPos );
 #if JVET_P0072_SIMPLIFIED_TSRC
       tcoeff += (scanPos <= lastScanPosPass1) ? (rem << 1) : rem;
@@ -3894,6 +4108,9 @@ void CABACReader::mip_flag( CodingUnit& cu )
     cu.mipFlag = false;
     return;
   }
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  CHECK( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+#else
   if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
   {
     cu.mipFlag = false;
@@ -3904,6 +4121,7 @@ void CABACReader::mip_flag( CodingUnit& cu )
     cu.mipFlag = false;
     return;
   }
+#endif
 
   unsigned ctxId = DeriveCtx::CtxMipFlag( cu );
   cu.mipFlag = m_BinDecoder.decodeBin( Ctx::MipFlag( ctxId ) );
@@ -3926,6 +4144,19 @@ void CABACReader::mip_pred_modes( CodingUnit &cu )
 
 void CABACReader::mip_pred_mode( PredictionUnit &pu )
 {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported" );
+
+  pu.mipTransposedFlag = bool(m_BinDecoder.decodeBinEP());
+
+  uint32_t mipMode;
+  const int numModes = getNumModesMip( pu.Y() );
+  xReadTruncBinCode( mipMode, numModes );
+  pu.intraDir[CHANNEL_TYPE_LUMA] = mipMode;
+  CHECKD( pu.intraDir[CHANNEL_TYPE_LUMA] < 0 || pu.intraDir[CHANNEL_TYPE_LUMA] >= numModes, "Invalid MIP mode" );
+
+  DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d transposed=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag ? 1 : 0 );
+#else
   CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported" );
 
   const int numModes   = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
@@ -3936,4 +4167,5 @@ void CABACReader::mip_pred_mode( PredictionUnit &pu )
   CHECKD(pu.intraDir[CHANNEL_TYPE_LUMA] < 0 || pu.intraDir[CHANNEL_TYPE_LUMA] >= numModes, "Invalid MIP mode");
 
   DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
+#endif
 }

@@ -944,7 +944,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  ("SBT64RDO",                                        m_SBT64RDOCheck,             (m_iSourceWidth >= 1920 ? true : false ), "Enable more than 32 SBT in encoder RDO check \n")
+  ("SBT64RDO",                                        m_SBT64RDOCheck,             true, "Enable more than 32 SBT in encoder RDO check \n")
 #endif
   ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")

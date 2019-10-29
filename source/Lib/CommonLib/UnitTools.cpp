@@ -3935,7 +3935,11 @@ int getNumModesMip(const Size& block)
   {
     return 35;
   }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
   else if (block.width <= 8 && block.height <= 8)
+#endif
   {
     return 19;
   }
@@ -3947,14 +3951,18 @@ int getNumModesMip(const Size& block)
 }
 
 
-#if JVET_P0803_COMBINED_MIP_CLEANUP
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
 int getMipSizeId(const Size& block)
 {
   if( block.width == 4 && block.height == 4 )
   {
     return 0;
   }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
   else if( block.width <= 8 && block.height <= 8 )
+#endif
   {
     return 1;
   }

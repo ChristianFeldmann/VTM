@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
+
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
 #define JVET_P0206_TMVP_flags                             1 // JVET-P0206: Signalling TMVP usage (remove pps TMVP idc and constraint when RPR is used)
@@ -105,6 +107,9 @@
 #define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
 
 #define JVET_P0058_CHROMA_TS                              1 // JVET-P0058: Enable Transform skip for chroma
+#if JVET_AHG14_LOSSLESS && !JVET_P0058_CHROMA_TS
+#define JVET_P0058_CHROMA_TS                              1
+#endif
 #if JVET_P0058_CHROMA_TS
 #define JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD        1 // Modified cost criterion for chroma intra encoder search
 #endif

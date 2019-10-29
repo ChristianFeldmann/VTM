@@ -488,6 +488,9 @@ struct ChromaQpAdj
 struct ChromaQpMappingTableParams {
   int               m_qpBdOffset;
   bool              m_sameCQPTableForAllChromaFlag;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  int               m_numQpTables;
+#endif
   int               m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaQpInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaQpOutVal[MAX_NUM_CQP_MAPPING_TABLES];
@@ -496,6 +499,9 @@ struct ChromaQpMappingTableParams {
   {
     m_qpBdOffset = 12;
     m_sameCQPTableForAllChromaFlag = true;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    m_numQpTables = 1;
+#endif
     m_numPtsInCQPTableMinus1[0] = 0;
     m_deltaQpInValMinus1[0] = { 0 };
     m_deltaQpOutVal[0] = { 0 };
@@ -503,6 +509,10 @@ struct ChromaQpMappingTableParams {
 
   void      setSameCQPTableForAllChromaFlag(bool b)                             { m_sameCQPTableForAllChromaFlag = b; }
   bool      getSameCQPTableForAllChromaFlag()                             const { return m_sameCQPTableForAllChromaFlag; }
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  void      setNumQpTables(int n)                                     { m_numQpTables = n; }
+  int       getNumQpTables()                                     const { return m_numQpTables; }
+#endif
   void      setNumPtsInCQPTableMinus1(int tableIdx, int n)                      { m_numPtsInCQPTableMinus1[tableIdx] = n; }
   int       getNumPtsInCQPTableMinus1(int tableIdx)                       const { return m_numPtsInCQPTableMinus1[tableIdx]; }
   void      setDeltaQpInValMinus1(int tableIdx, std::vector<int> &inVals)       { m_deltaQpInValMinus1[tableIdx] = inVals; }

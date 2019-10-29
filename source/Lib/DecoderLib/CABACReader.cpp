@@ -1681,7 +1681,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   if (indexMaxSize > 1)
   {
     uint32_t currParam = 3 + ((indexMaxSize) >> 3);
+#if JVET_P0090_32BIT_MVD
+    numIndices = m_BinDecoder.decodeRemAbsEP(currParam, COEF_REMAIN_BIN_REDUCTION, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
+#else
     numIndices = m_BinDecoder.decodeRemAbsEP(currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
+#endif
     numIndices++;
     numCopyIndexRuns = numIndices;
     while (numIndices--)
@@ -2673,7 +2677,11 @@ void CABACReader::mvd_coding( Mv &rMvd )
   {
     if (horAbs > 1)
     {
+#if JVET_P0090_32BIT_MVD
+      horAbs += m_BinDecoder.decodeRemAbsEP(1, 0, MV_BITS - 1);
+#else
       horAbs += exp_golomb_eqprob(1 );
+#endif
     }
     if (m_BinDecoder.decodeBinEP())
     {
@@ -2684,7 +2692,11 @@ void CABACReader::mvd_coding( Mv &rMvd )
   {
     if (verAbs > 1)
     {
+#if JVET_P0090_32BIT_MVD
+      verAbs += m_BinDecoder.decodeRemAbsEP(1, 0, MV_BITS - 1);
+#else
       verAbs += exp_golomb_eqprob(1 );
+#endif
     }
     if (m_BinDecoder.decodeBinEP())
     {
@@ -3447,7 +3459,11 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     if( tcoeff >= 4 )
     {
       RExt__DECODER_DEBUG_BIT_STATISTICS_SET( ctype_escs );
+#if JVET_P0090_32BIT_MVD
+      int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
+#else
       int       rem     = m_BinDecoder.decodeRemAbsEP( ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
+#endif
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
       tcoeff += (rem<<1);
     }
@@ -3464,7 +3480,11 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
 #endif
     RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_escs);
+#if JVET_P0090_32BIT_MVD
+    int       rem       = m_BinDecoder.decodeRemAbsEP( rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
+#else
     int       rem       = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
+#endif
     DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );
     TCoeff    tcoeff  = ( rem == pos0 ? 0 : rem < pos0 ? rem+1 : rem );
     state = ( stateTransTable >> ((state<<2)+((tcoeff&1)<<1)) ) & 3;
@@ -3743,7 +3763,11 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     if( tcoeff >= cutoffVal )
     {
       int       rice = cctx.templateAbsSumTS( scanPos, coeff );
+#if JVET_P0090_32BIT_MVD
+      int       rem  = m_BinDecoder.decodeRemAbsEP( rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
+#else
       int       rem  = m_BinDecoder.decodeRemAbsEP( rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
+#endif
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_rem_val() bin=%d ctx=%d sp=%d\n", rem, rice, scanPos );
 #if JVET_P0072_SIMPLIFIED_TSRC
       tcoeff += (scanPos <= lastScanPosPass1) ? (rem << 1) : rem;

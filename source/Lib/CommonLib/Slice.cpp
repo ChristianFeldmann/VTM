@@ -1732,7 +1732,6 @@ void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, c
 void ChromaQpMappingTable::derivedChromaQPMappingTables()
 {
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
-  std::cout << " numQpTables: " << getNumQpTables() << std::endl;
   for (int i = 0; i < getNumQpTables(); i++)
 #else
   for (int i = 0; i < (getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)

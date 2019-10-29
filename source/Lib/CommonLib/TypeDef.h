@@ -152,6 +152,8 @@
 
 #define JVET_P0418_ALIGN_MLRP_CCLM                        1 // JVET-P0418: Align MLRP with CCLM in terms of reference lines/columns
 
+#define JVET_P0335_HDRCTC_CHANGE                          1 // JVET-P0335: change of HDR PQ CTC: enable LMCS and use QPc table in P0335, and disable lumaDQP and WCGPPSOffset
+
 #define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
 
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder

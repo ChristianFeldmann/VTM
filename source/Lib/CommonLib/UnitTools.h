@@ -217,7 +217,7 @@ namespace TU
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 int  getNumModesMip   (const Size& block);
-#if JVET_P0803_COMBINED_MIP_CLEANUP
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
 int getMipSizeId      (const Size& block);
 #endif
 #if !JVET_P0803_COMBINED_MIP_CLEANUP

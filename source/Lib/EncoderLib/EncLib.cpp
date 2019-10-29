@@ -1112,6 +1112,10 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setLtRefPicPocLsbSps(k, 0);
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  int numQpTables = m_chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (sps.getJointCbCrEnabledFlag() ? 3 : 2);
+  m_chromaQpMappingTableParams.setNumQpTables(numQpTables);
+#endif
   sps.setChromaQpMappingTableFromParams(m_chromaQpMappingTableParams, sps.getQpBDOffset(CHANNEL_TYPE_CHROMA));
   sps.derivedChromaQPMappingTables();
 

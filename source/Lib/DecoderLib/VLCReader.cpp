@@ -1367,8 +1367,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
-    int numQPTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
-    for (int i = 0; i < numQPTables; i++)
+    int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    chromaQpMappingTableParams.setNumQpTables(numQpTables);
+    for (int i = 0; i < numQpTables; i++)
 #else
     for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
 #endif

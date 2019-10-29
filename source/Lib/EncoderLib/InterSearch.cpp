@@ -117,6 +117,7 @@ InterSearch::InterSearch()
   m_uniMvListIdx = 0;
   m_histBestSbt    = MAX_UCHAR;
   m_histBestMtsIdx = MAX_UCHAR;
+
 }
 
 

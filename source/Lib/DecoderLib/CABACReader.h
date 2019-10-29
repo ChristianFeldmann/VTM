@@ -100,7 +100,9 @@ public:
   void        mip_pred_modes            ( CodingUnit&                   cu );
   void        mip_pred_mode             ( PredictionUnit&               pu );
   void        cu_palette_info           ( CodingUnit&                   cu,     ComponentID     compBegin, uint32_t numComp, CUCtx& cuCtx );
-
+#if JVET_P0077_LINE_CG_PALETTE
+  void        cuPaletteSubblockInfo     ( CodingUnit&                   cu,     ComponentID     compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType );
+#endif
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( PredictionUnit&               pu,     MergeCtx&       mrgCtx );
   void        merge_flag                ( PredictionUnit&               pu );
@@ -161,9 +163,11 @@ private:
   void        parseScanRotationModeFlag ( CodingUnit& cu,           ComponentID compBegin );
   void        xDecodePLTPredIndicator   ( CodingUnit& cu,           uint32_t maxPLTSize,   ComponentID compBegin );
   void        xAdjustPLTIndex           ( CodingUnit& cu,           Pel curLevel,          uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin );
+#if !JVET_P0077_LINE_CG_PALETTE
   uint32_t    cu_run_val                ( PLTRunMode runtype, const uint32_t pltIdx, const uint32_t maxRun );
   uint32_t    xReadTruncUnarySymbol     ( PLTRunMode runtype,       uint32_t maxVal,       uint32_t ctxT );
   uint32_t    xReadTruncMsbP1RefinementBits( PLTRunMode runtype,    uint32_t maxVal,       uint32_t ctxT );
+#endif
 public:
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   int         shareStateDec;

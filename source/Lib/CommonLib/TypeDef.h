@@ -128,6 +128,8 @@
 
 #define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
 
+#define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
+
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes

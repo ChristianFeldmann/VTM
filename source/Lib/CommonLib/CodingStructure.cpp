@@ -75,8 +75,9 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
     m_coeffs[ i ] = nullptr;
     m_pcmbuf[ i ] = nullptr;
     m_runType[i]   = nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
-
+#endif
     m_offsets[ i ] = 0;
   }
 
@@ -639,7 +640,9 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
+#endif
 
   uint32_t numCh = ::getNumberValidComponents( area.chromaFormat );
 
@@ -677,13 +680,17 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
     coeffs[i] = m_coeffs[i] + m_offsets[i];
     pcmbuf[i] = m_pcmbuf[i] + m_offsets[i];
     runType[i]   = m_runType[i]   + m_offsets[i];
+#if !JVET_P0077_LINE_CG_PALETTE
     runLength[i] = m_runLength[i] + m_offsets[i];
-
+#endif
     unsigned areaSize = tu->blocks[i].area();
     m_offsets[i] += areaSize;
   }
-
+#if JVET_P0077_LINE_CG_PALETTE
+  tu->init(coeffs, pcmbuf, runType);
+#else
   tu->init( coeffs, pcmbuf, runLength, runType);
+#endif
 
   return *tu;
 }
@@ -963,7 +970,9 @@ void CodingStructure::createCoeffs()
     m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
     m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
     m_runType[i]   = _area > 0 ? ( bool*  ) xMalloc( bool, _area ) : nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = _area > 0 ? ( Pel*   ) xMalloc( Pel,  _area ) : nullptr;
+#endif
   }
 }
 
@@ -974,7 +983,9 @@ void CodingStructure::destroyCoeffs()
     if( m_coeffs[i] ) { xFree( m_coeffs[i] ); m_coeffs[i] = nullptr; }
     if( m_pcmbuf[i] ) { xFree( m_pcmbuf[i] ); m_pcmbuf[i] = nullptr; }
     if (m_runType[i])   { xFree(m_runType[i]);   m_runType[i]   = nullptr; }
+#if !JVET_P0077_LINE_CG_PALETTE
     if (m_runLength[i]) { xFree(m_runLength[i]); m_runLength[i] = nullptr; }
+#endif
   }
 }
 

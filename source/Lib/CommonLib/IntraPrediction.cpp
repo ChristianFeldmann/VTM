@@ -122,9 +122,10 @@ IntraPrediction::IntraPrediction()
 
   m_piTemp = nullptr;
   m_pMdlmTemp = nullptr;
-
+#if !JVET_P0077_LINE_CG_PALETTE
   m_runTypeRD   = nullptr;
   m_runLengthRD = nullptr;
+#endif
 }
 
 IntraPrediction::~IntraPrediction()
@@ -147,8 +148,10 @@ void IntraPrediction::destroy()
   m_piTemp = nullptr;
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runTypeRD)   { xFree( m_runTypeRD  );   m_runTypeRD = NULL; }
   if (m_runLengthRD) { xFree( m_runLengthRD); m_runLengthRD = NULL; }
+#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -183,6 +186,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runTypeRD == nullptr)
   {
     m_runTypeRD = (bool *) xMalloc(bool, MAX_CU_SIZE * MAX_CU_SIZE);
@@ -191,6 +195,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_runLengthRD = (Pel *) xMalloc(Pel, MAX_CU_SIZE * MAX_CU_SIZE);
   }
+#endif
 }
 
 // ====================================================================================================================
@@ -1952,7 +1957,7 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
   }
 #endif
 }
-
+#if !JVET_P0077_LINE_CG_PALETTE
 bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
 {
   CodingUnit    &cu = *cs.getCU(partitioner.chType);
@@ -2025,6 +2030,7 @@ bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner,
   }
   return true;
 }
+#endif
 void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -2096,5 +2102,4 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     }
   }
 }
-
 //! \}

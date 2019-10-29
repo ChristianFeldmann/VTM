@@ -363,7 +363,20 @@ protected:
   CtxCache*       m_CtxCache;
 
   bool            m_isInitialized;
-
+#if JVET_P0077_LINE_CG_PALETTE
+  uint32_t        m_symbolSize;
+  uint16_t**      m_truncBinBits;
+  uint16_t*       m_escapeNumBins;
+  bool            m_bestEscape;
+  double*         m_indexError[MAXPLTSIZE + 1];
+  uint8_t*        m_minErrorIndexMap; // store the best index in terms of distortion for each pixel 
+  uint8_t         m_indexMapRDOQ   [2][NUM_TRELLIS_STATE][2 * MAX_CU_BLKSIZE_PLT];
+  bool            m_runMapRDOQ     [2][NUM_TRELLIS_STATE][2 * MAX_CU_BLKSIZE_PLT];
+  uint8_t*        m_statePtRDOQ    [NUM_TRELLIS_STATE];
+  bool            m_prevRunTypeRDOQ[2][NUM_TRELLIS_STATE];
+  int             m_prevRunPosRDOQ [2][NUM_TRELLIS_STATE];
+  double          m_stateCostRDOQ  [2][NUM_TRELLIS_STATE];
+#endif
 public:
 
   IntraSearch();
@@ -378,6 +391,9 @@ public:
                                     const uint32_t     maxCUHeight,
                                     const uint32_t     maxTotalCUDepth
                                   , EncReshape*   m_pcReshape
+#if JVET_P0077_LINE_CG_PALETTE
+                                  , const unsigned bitDepthY
+#endif
                                   );
 
   void destroy                    ();
@@ -400,7 +416,9 @@ public:
   bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void PLTSearch                  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+#if !JVET_P0077_LINE_CG_PALETTE
   void deriveRunAndCalcBits       ( CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& bits);
+#endif
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
   void invalidateBestModeCost     () { for( int i = 0; i < NUM_LFNST_NUM_PER_SET; i++ ) m_bestModeCostValid[ i ] = false; };
 
@@ -435,11 +453,24 @@ protected:
 
   template<typename T, size_t N>
   void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip);
+#if !JVET_P0077_LINE_CG_PALETTE
   void   deriveRun       (      CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin);
   double getRunBits      (const CodingUnit&      cu, uint32_t     run,         uint32_t    strPos,    PLTRunMode paletteRunMode, uint64_t*   indexBits, uint64_t* runBits, ComponentID compBegin);
+#endif
   void   derivePLTLossy  (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
   void   calcPixelPred   (      CodingStructure& cs, Partitioner& partitioner, uint32_t    yPos,      uint32_t xPos,             ComponentID compBegin, uint32_t  numComp);
+#if JVET_P0077_LINE_CG_PALETTE
+  void     preCalcPLTIndexRD      (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+  void     calcPixelPredRD        (CodingStructure& cs, Partitioner& partitioner, Pel* orgBuf, Pel* pixelValue, Pel* recoValue, ComponentID compBegin, uint32_t numComp);
+  void     deriveIndexMap         (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, double& dCost);
+  bool     deriveSubblockIndexMap(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, PLTScanMode pltScanMode, int minSubPos, int maxSubPos, const BinFracBits& fracBitsPltRunType, const BinFracBits* fracBitsPltIndexINDEX, const BinFracBits* fracBitsPltIndexCOPY, const double minCost, bool useRotate);
+  double   rateDistOptPLT         (bool RunType, uint8_t RunIndex, bool prevRunType, uint8_t prevRunIndex, uint8_t aboveRunIndex, bool& prevCodedRunType, int& prevCodedRunPos, int scanPos, uint32_t width, int dist, int indexMaxValue, const BinFracBits* IndexfracBits, const BinFracBits& TypefracBits);
+  void     initTBCTable           (int bitDepth);
+  uint32_t getTruncBinBits        (uint32_t symbol, uint32_t maxSymbol);
+  uint32_t getEpExGolombNumBins   (uint32_t symbol, uint32_t count);
+#else
   void   preCalcPLTIndex (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+#endif
   void xGetNextISPMode                    ( ModeInfo& modeInfo, const ModeInfo* lastMode, const Size cuSize );
   void xFindAlreadyTestedNearbyIntraModes ( int currentIntraMode, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize );
   void xSortISPCandList                   ( double bestCostSoFar, double bestNonISPCost );

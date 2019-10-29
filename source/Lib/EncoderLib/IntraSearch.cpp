@@ -3187,7 +3187,14 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       tu.mtsIdx = trModes->at(0).first;
 #endif
     }
+#if JVET_AHG14_LOSSLESS
+    if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) )
+    {
     m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+    }
+#else
+    m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+#endif
 
 
   DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), compID, uiAbsSum );
@@ -3199,6 +3206,14 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     return;
   }
 
+#if JVET_AHG14_LOSSLESS
+  if( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 )
+  {
+    uiAbsSum = 0;
+    tu.getCoeffs( compID ).fill( 0 );
+    TU::setCbfAtDepth( tu, compID, tu.depth, 0 );
+  }
+#endif
 
   //--- inverse transform ---
   if (uiAbsSum > 0)
@@ -3589,6 +3604,10 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       }
       else
       {
+#if JVET_AHG14_LOSSLESS
+        if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING ) )
+        {
+#endif
 #if JVET_P0058_CHROMA_TS
         if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[ COMPONENT_Y ] == MTS_SKIP))
 #else
@@ -3610,6 +3629,9 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         {
           continue;
         }
+#if JVET_AHG14_LOSSLESS
+        }
+#endif
 #if JVET_P0058_CHROMA_TS
         tu.mtsIdx[COMPONENT_Y] = trModes[modeId].first;
 #else
@@ -4162,6 +4184,10 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
           const bool isFirstMode = (currModeId == 1);
           const bool isLastMode  = false; // Always store output to saveCS and tmpTU
 
+#if JVET_AHG14_LOSSLESS
+          if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING ) )
+          {
+#endif
 #if JVET_P0058_CHROMA_TS
            //if DCT2's cbf==0, skip ts search
           if (!cbfDCT2 && trModes[modeId].first == MTS_SKIP)
@@ -4171,6 +4197,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
           if (!trModes[modeId].second)
           {
               continue;
+          }
+#endif
+#if JVET_AHG14_LOSSLESS
           }
 #endif
 

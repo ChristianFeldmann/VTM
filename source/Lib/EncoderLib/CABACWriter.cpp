@@ -3030,7 +3030,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 
   if( idxLFNST )
   {
+#if JVET_P0350_LFNST_IDX_CTX
+    m_BinEncoder.encodeBin( (idxLFNST - 1) ? 1 : 0, Ctx::LFNSTIdx(2));
+#else
     m_BinEncoder.encodeBinEP( ( idxLFNST - 1 ) ? 1 : 0 );
+#endif
   }
 
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_lfnst_mode() etype=%d pos=(%d,%d) mode=%d\n", COMPONENT_Y, cu.lx(), cu.ly(), ( int ) cu.lfnstIdx );

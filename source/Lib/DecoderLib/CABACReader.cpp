@@ -3269,7 +3269,11 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
   uint32_t idxLFNST = m_BinDecoder.decodeBin( Ctx::LFNSTIdx( cctx ) );
   if( idxLFNST )
   {
+#if JVET_P0350_LFNST_IDX_CTX
+    idxLFNST += m_BinDecoder.decodeBin(Ctx::LFNSTIdx(2));
+#else
     idxLFNST += m_BinDecoder.decodeBinEP();
+#endif
   }
   cu.lfnstIdx = idxLFNST;
 

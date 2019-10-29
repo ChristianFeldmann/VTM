@@ -3190,7 +3190,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if JVET_AHG14_LOSSLESS
     if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) )
     {
-    m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+      m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
     }
 #else
     m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);

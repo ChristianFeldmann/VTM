@@ -6710,8 +6710,8 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if JVET_AHG14_LOSSLESS
             if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) )
             {
-            m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
-          }
+              m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
+            }
 #else
             m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
 #endif

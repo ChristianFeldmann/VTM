@@ -2679,8 +2679,13 @@ bool EncAppCfg::xCheckParameter()
 #endif
   if (m_lumaLevelToDeltaQPMapping.mode && m_lumaReshapeEnable)
   {
+#if !JVET_P0335_HDRCTC_CHANGE
     msg(WARNING, "For HDR-PQ, reshaper should be used mutual-exclusively with Luma-level-based Delta QP. If use luma DQP, turn reshaper off.\n");
     m_lumaReshapeEnable = false;
+#else
+    msg(WARNING, "For HDR-PQ, LMCS should be used mutual-exclusively with Luma-level-based Delta QP. If use LMCS, turn lumaDQP off.\n");
+    m_lumaLevelToDeltaQPMapping.mode = LUMALVL_TO_DQP_DISABLED;
+#endif
   }
   if (!m_lumaReshapeEnable)
   {
@@ -3259,7 +3264,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 0;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = 0;
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
@@ -3271,7 +3278,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = 0;
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
@@ -3283,7 +3292,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+#if !JVET_P0206_TMVP_flags
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1); 
+#endif
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
@@ -3295,7 +3306,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;

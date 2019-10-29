@@ -67,6 +67,7 @@ const uint8_t IntraPrediction::m_aucIntraFilter[MAX_INTRA_FILTER_DEPTHS] =
   0   // 128xn
 };
 
+#if !JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 16, 32, 16, 0 },
   { 15, 29, 17, 3 },
@@ -101,6 +102,7 @@ const TFilterCoeff g_intraGaussFilter[32][4] = {
   { 3, 17, 29, 15 },
   { 3, 17, 29, 15 }
 };
+#endif //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
 // ====================================================================================================================
 // Constructor / destructor / initialize
@@ -120,9 +122,10 @@ IntraPrediction::IntraPrediction()
 
   m_piTemp = nullptr;
   m_pMdlmTemp = nullptr;
-
+#if !JVET_P0077_LINE_CG_PALETTE
   m_runTypeRD   = nullptr;
   m_runLengthRD = nullptr;
+#endif
 }
 
 IntraPrediction::~IntraPrediction()
@@ -145,8 +148,10 @@ void IntraPrediction::destroy()
   m_piTemp = nullptr;
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runTypeRD)   { xFree( m_runTypeRD  );   m_runTypeRD = NULL; }
   if (m_runLengthRD) { xFree( m_runLengthRD); m_runLengthRD = NULL; }
+#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -181,6 +186,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runTypeRD == nullptr)
   {
     m_runTypeRD = (bool *) xMalloc(bool, MAX_CU_SIZE * MAX_CU_SIZE);
@@ -189,6 +195,7 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_runLengthRD = (Pel *) xMalloc(Pel, MAX_CU_SIZE * MAX_CU_SIZE);
   }
+#endif
 }
 
 // ====================================================================================================================
@@ -263,6 +270,9 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const ChannelType    channelType  = toChannelType( compID );
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  CHECK(iWidth == 2, "Width of 2 is not supported");
+#endif
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : PU::getFinalIntraMode( pu, channelType );
 
   CHECK( floorLog2(iWidth) < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
@@ -556,7 +566,7 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
     // Extend main reference to right using replication
     const int log2Ratio = floorLog2(width) - floorLog2(height);
     const int s         = std::max<int>(0, bIsModeVer ? log2Ratio : -log2Ratio);
-    const int maxIndex  = (multiRefIdx << s) + 2;
+    const int maxIndex  = (multiRefIdx << s) + 1;
     const int refLength = bIsModeVer ? m_topRefLength : m_leftRefLength;
     const Pel val       = refMain[refLength + multiRefIdx];
     for (int z = 1; z <= maxIndex; z++)
@@ -618,8 +628,13 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         {
           const bool useCubicFilter = !m_ipaParam.interpolationFlag;
 
+#if JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
+          const TFilterCoeff        intraSmoothingFilter[4] = {TFilterCoeff(16 - (deltaFract >> 1)), TFilterCoeff(32 - (deltaFract >> 1)), TFilterCoeff(16 + (deltaFract >> 1)), TFilterCoeff(deltaFract >> 1)};
+          const TFilterCoeff* const f                       = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : intraSmoothingFilter;
+#else //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
           const TFilterCoeff *const f =
             (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
+#endif //JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
           for (int x = 0; x < width; x++)
           {
@@ -733,6 +748,9 @@ bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &p
 void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
 {
   const int            width = pred.width;
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  CHECK(width == 2, "Width of 2 is not supported");
+#endif
   const int            height = pred.height;
   const int            srcStride = width;
   const int            dstStride = pred.stride;
@@ -794,15 +812,24 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  if (pu->chromaSize().width > 2)
+  {
+#endif
+    initIntraPatternChType(cu, pu->Cb());
+    predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu);
 
-  initIntraPatternChType(cu, pu->Cb());
-  predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu);
-
-  initIntraPatternChType(cu, pu->Cr());
-  predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
-
+    initIntraPatternChType(cu, pu->Cr());
+    predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  }
+#endif
   for (int currCompID = 0; currCompID < 3; currCompID++)
   {
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+    if (pu->chromaSize().width <= 2 && currCompID > 0)
+      continue;
+#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
@@ -817,6 +844,9 @@ inline int  isBelowLeftAvailable  ( const CodingUnit &cu, const ChannelType &chT
 
 void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag)
 {
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+  CHECK(area.width == 2, "Width of 2 is not supported");
+#endif
   const CodingStructure& cs   = *cu.cs;
 
   if (!forceRefFilterFlag)
@@ -1665,7 +1695,7 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
 
   const int baseUnitSize = 1 << MIN_CU_LOG2;
   const int unitWidth    = baseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
-  const int unitHeight   = baseUnitSize >> getComponentScaleX(chromaArea.compID, nChromaFormat);
+  const int unitHeight   = baseUnitSize >> getComponentScaleY(chromaArea.compID, nChromaFormat);
 
   const int tuWidthInUnits  = tuWidth / unitWidth;
   const int tuHeightInUnits = tuHeight / unitHeight;
@@ -1861,6 +1891,20 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   }
 }
 
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+void IntraPrediction::initIntraMip( const PredictionUnit &pu, const CompArea &area )
+{
+  CHECK( area.width > MIP_MAX_WIDTH || area.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+
+  // prepare input (boundary) data for prediction
+  CHECK( m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP" );
+  Pel *ptrSrc = getPredictorPtr( COMPONENT_Y );
+  const int srcStride  = m_refBufferStride[COMPONENT_Y];
+  const int srcHStride = 2;
+
+  m_matrixIntraPred.prepareInputForPred( CPelBuf( ptrSrc, srcStride, srcHStride ), area, pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) );
+}
+#else
 void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 {
   CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
@@ -1873,10 +1917,29 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu )
 
   m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA));
 }
+#endif
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  CHECK( piPred.width > MIP_MAX_WIDTH || piPred.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
+  CHECK( piPred.width != (1 << floorLog2(piPred.width)) || piPred.height != (1 << floorLog2(piPred.height)), "Error: expecting blocks of size 2^M x 2^N" );
+
+  // generate mode-specific prediction
+  const int bitDepth = pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA );
+
+  static_vector<int, MIP_MAX_WIDTH* MIP_MAX_HEIGHT> predMip( piPred.width * piPred.height );
+  m_matrixIntraPred.predBlock( predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag, bitDepth );
+
+  for( int y = 0; y < piPred.height; y++ )
+  {
+    for( int x = 0; x < piPred.width; x++ )
+    {
+      piPred.at( x, y ) = Pel(predMip[y * piPred.width + x]);
+    }
+  }
+#else
   CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
   CHECK( pu.lwidth() != (1 << floorLog2(pu.lwidth())) || pu.lheight() != (1 << floorLog2(pu.lheight())), "Error: expecting blocks of size 2^M x 2^N" );
 
@@ -1892,8 +1955,9 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
       piPred.at(x, y) = Pel(predMip[y * pu.lwidth() + x]);
     }
   }
+#endif
 }
-
+#if !JVET_P0077_LINE_CG_PALETTE
 bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
 {
   CodingUnit    &cu = *cs.getCU(partitioner.chType);
@@ -1966,6 +2030,7 @@ bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner,
   }
   return true;
 }
+#endif
 void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -2037,5 +2102,4 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     }
   }
 }
-
 //! \}

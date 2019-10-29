@@ -377,6 +377,9 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  bool      mipTransposedFlag;
+#endif
   int       multiRefIdx;
 };
 
@@ -483,8 +486,11 @@ struct TransformUnit : public UnitArea
   unsigned       idx;
   TransformUnit *next;
   TransformUnit *prev;
-
+#if JVET_P0077_LINE_CG_PALETTE
+  void init(TCoeff **coeffs, Pel **pcmbuf, bool **runType);
+#else
   void init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType);
+#endif
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
@@ -499,14 +505,18 @@ struct TransformUnit : public UnitArea
         void      setChromaAdj(int i);
          PelBuf   getcurPLTIdx(const ComponentID id);
   const CPelBuf   getcurPLTIdx(const ComponentID id) const;
+#if !JVET_P0077_LINE_CG_PALETTE
          PelBuf   getrunLength(const ComponentID id);
   const CPelBuf   getrunLength(const ComponentID id) const;
+#endif
          PLTtypeBuf   getrunType(const ComponentID id);
   const CPLTtypeBuf   getrunType(const ComponentID id) const;
          PLTescapeBuf getescapeValue(const ComponentID id);
   const CPLTescapeBuf getescapeValue(const ComponentID id) const;
         Pel*      getPLTIndex(const ComponentID id);
+#if !JVET_P0077_LINE_CG_PALETTE
         Pel*      getRunLens(const ComponentID id);
+#endif
         bool*     getRunTypes(const ComponentID id);
 
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -518,7 +528,9 @@ private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
   bool   *m_runType[MAX_NUM_TBLOCKS];
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel    *m_runLength[MAX_NUM_TBLOCKS];
+#endif
 };
 
 // ---------------------------------------------------------------------------

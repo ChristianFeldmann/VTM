@@ -488,6 +488,9 @@ struct ChromaQpAdj
 struct ChromaQpMappingTableParams {
   int               m_qpBdOffset;
   bool              m_sameCQPTableForAllChromaFlag;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  int               m_numQpTables;
+#endif
   int               m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaQpInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaQpOutVal[MAX_NUM_CQP_MAPPING_TABLES];
@@ -496,6 +499,9 @@ struct ChromaQpMappingTableParams {
   {
     m_qpBdOffset = 12;
     m_sameCQPTableForAllChromaFlag = true;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    m_numQpTables = 1;
+#endif
     m_numPtsInCQPTableMinus1[0] = 0;
     m_deltaQpInValMinus1[0] = { 0 };
     m_deltaQpOutVal[0] = { 0 };
@@ -503,6 +509,10 @@ struct ChromaQpMappingTableParams {
 
   void      setSameCQPTableForAllChromaFlag(bool b)                             { m_sameCQPTableForAllChromaFlag = b; }
   bool      getSameCQPTableForAllChromaFlag()                             const { return m_sameCQPTableForAllChromaFlag; }
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  void      setNumQpTables(int n)                                     { m_numQpTables = n; }
+  int       getNumQpTables()                                     const { return m_numQpTables; }
+#endif
   void      setNumPtsInCQPTableMinus1(int tableIdx, int n)                      { m_numPtsInCQPTableMinus1[tableIdx] = n; }
   int       getNumPtsInCQPTableMinus1(int tableIdx)                       const { return m_numPtsInCQPTableMinus1[tableIdx]; }
   void      setDeltaQpInValMinus1(int tableIdx, std::vector<int> &inVals)       { m_deltaQpInValMinus1[tableIdx] = inVals; }
@@ -1239,7 +1249,9 @@ private:
   int               m_PPSDepQuantEnabledIdc;
   int               m_PPSRefPicListSPSIdc0;
   int               m_PPSRefPicListSPSIdc1;
+#if !JVET_P0206_TMVP_flags
   int               m_PPSTemporalMVPEnabledIdc;
+#endif
   int               m_PPSMvdL1ZeroIdc;
   int               m_PPSCollocatedFromL0Idc;
   uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
@@ -1439,8 +1451,10 @@ public:
   void                    setPPSRefPicListSPSIdc0(int u)                                  { m_PPSRefPicListSPSIdc0 = u;                   }
   int                     getPPSRefPicListSPSIdc1() const                                 { return m_PPSRefPicListSPSIdc1;                }
   void                    setPPSRefPicListSPSIdc1(int u)                                  { m_PPSRefPicListSPSIdc1 = u;                   }
+#if !JVET_P0206_TMVP_flags
   int                     getPPSTemporalMVPEnabledIdc() const                             { return m_PPSTemporalMVPEnabledIdc;            }
   void                    setPPSTemporalMVPEnabledIdc(int u)                              { m_PPSTemporalMVPEnabledIdc = u;               }
+#endif
   int                     getPPSMvdL1ZeroIdc() const                                      { return m_PPSMvdL1ZeroIdc;                     }
   void                    setPPSMvdL1ZeroIdc(int u)                                       { m_PPSMvdL1ZeroIdc = u;                        }
   int                     getPPSCollocatedFromL0Idc() const                               { return m_PPSCollocatedFromL0Idc;              }

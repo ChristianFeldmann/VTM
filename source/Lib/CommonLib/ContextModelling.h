@@ -448,7 +448,10 @@ public:
                          {
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
-                           lfnstLastScanPos = false;
+                           lfnstLastScanPos                              = false;
+#if JVET_P1026_MTS_SIGNALLING
+                           violatesMtsCoeffConstraint                    = false;
+#endif
                          }
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
@@ -456,7 +459,10 @@ public:
                          {
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
-                           lfnstLastScanPos = false;
+                           lfnstLastScanPos                              = false;
+#if JVET_P1026_MTS_SIGNALLING
+                           violatesMtsCoeffConstraint                    = false;
+#endif
                          }
   ~CUCtx() {}
 public:
@@ -466,6 +472,9 @@ public:
   bool      lfnstLastScanPos;
   int8_t    qp;                   // used as a previous(last) QP and for QP prediction
   bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
+#if JVET_P1026_MTS_SIGNALLING
+  bool      violatesMtsCoeffConstraint;
+#endif
 };
 
 class MergeCtx
@@ -519,6 +528,9 @@ unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
 unsigned CtxMipFlag   ( const CodingUnit& cu );
+#if JVET_P0077_LINE_CG_PALETTE
+unsigned CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist );
+#endif
 }
 
 #endif // __CONTEXTMODELLING__

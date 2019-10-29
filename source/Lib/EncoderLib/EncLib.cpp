@@ -362,6 +362,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               cabacEstimator,
                               getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
                             , &m_cReshaper[jId]
+#if JVET_P0077_LINE_CG_PALETTE
+                            , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
+#endif
     );
     m_cInterSearch[jId].init( this,
                               &m_cTrQuant[jId],
@@ -398,6 +401,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        cabacEstimator,
                        getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
                      , &m_cReshaper
+#if JVET_P0077_LINE_CG_PALETTE
+                     , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
+#endif
   );
   m_cInterSearch.init( this,
                        &m_cTrQuant,
@@ -1433,6 +1439,10 @@ void EncLib::xInitSPS(SPS &sps)
     sps.setLtRefPicPocLsbSps(k, 0);
     sps.setUsedByCurrPicLtSPSFlag(k, 0);
   }
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  int numQpTables = m_chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (sps.getJointCbCrEnabledFlag() ? 3 : 2);
+  m_chromaQpMappingTableParams.setNumQpTables(numQpTables);
+#endif
   sps.setChromaQpMappingTableFromParams(m_chromaQpMappingTableParams, sps.getQpBDOffset(CHANNEL_TYPE_CHROMA));
   sps.derivedChromaQPMappingTables();
 
@@ -1486,7 +1496,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
   pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
   pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
+#if !JVET_P0206_TMVP_flags
   pps.setPPSTemporalMVPEnabledIdc(getPPSTemporalMVPEnabledIdc());
+#endif
   pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
   pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
   pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());

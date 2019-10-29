@@ -3765,6 +3765,25 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 
   return bdpcmAllowed;
 }
+
+#if JVET_P1026_MTS_SIGNALLING
+bool CU::isMTSAllowed(const CodingUnit &cu, const ComponentID compID)
+{
+  SizeType tsMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
+  const int maxSize  = CU::isIntra( cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
+  const int cuWidth  = cu.blocks[0].lumaSize().width;
+  const int cuHeight = cu.blocks[0].lumaSize().height;
+  bool mtsAllowed    = cu.chType == CHANNEL_TYPE_LUMA && compID == COMPONENT_Y;
+
+  mtsAllowed &= CU::isIntra( cu ) ? cu.cs->sps->getUseIntraMTS() : cu.cs->sps->getUseInterMTS() && CU::isInter( cu );
+  mtsAllowed &= cuWidth <= maxSize && cuHeight <= maxSize;
+  mtsAllowed &= !cu.ispMode;
+  mtsAllowed &= !cu.sbtInfo;
+  mtsAllowed &= !(cu.bdpcmMode && cuWidth <= tsMaxSize && cuHeight <= tsMaxSize);
+  return mtsAllowed;
+}
+#endif
+
 // TU tools
 
 bool TU::isNonTransformedResidualRotated(const TransformUnit &tu, const ComponentID &compID)
@@ -3822,6 +3841,7 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   return tsAllowed;
 }
 
+#if !JVET_P1026_MTS_SIGNALLING
 bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
 {
   bool   mtsAllowed = compID == COMPONENT_Y;
@@ -3835,6 +3855,7 @@ bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
   mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
   return mtsAllowed;
 }
+#endif
 
 int TU::getICTMode( const TransformUnit& tu, int jointCbCr )
 {
@@ -3896,6 +3917,15 @@ uint32_t getCtuAddr( const Position& pos, const PreCalcValues& pcv )
 
 int getNumModesMip(const Size& block)
 {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  switch( getMipSizeId(block) )
+  {
+  case 0: return 16;
+  case 1: return  8;
+  case 2: return  6;
+  default: THROW( "Invalid mipSizeId" );
+  }
+#else
   if (block.width > (4 * block.height) || block.height > (4 * block.width))
   {
     return 0;
@@ -3905,7 +3935,11 @@ int getNumModesMip(const Size& block)
   {
     return 35;
   }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
   else if (block.width <= 8 && block.height <= 8)
+#endif
   {
     return 19;
   }
@@ -3913,13 +3947,38 @@ int getNumModesMip(const Size& block)
   {
     return 11;
   }
+#endif
 }
 
 
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+int getMipSizeId(const Size& block)
+{
+  if( block.width == 4 && block.height == 4 )
+  {
+    return 0;
+  }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
+  else if( block.width <= 8 && block.height <= 8 )
+#endif
+  {
+    return 1;
+  }
+  else
+  {
+    return 2;
+  }
+
+}
+#endif
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
 bool mipModesAvailable(const Size& block)
 {
   return (getNumModesMip(block));
 }
+#endif
 
 bool allowLfnstWithMip(const Size& block)
 {

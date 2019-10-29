@@ -289,7 +289,7 @@ protected:
 
   uint64_t xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift
 #if ENABLE_QPA
-                            , const uint32_t chromaShift = 0
+                            , const uint32_t chromaShiftHor = 0, const uint32_t chromaShiftVer = 0
 #endif
                              );
 #if WCG_WPSNR

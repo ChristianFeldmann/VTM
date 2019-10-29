@@ -940,6 +940,16 @@ void TrQuant::xITransformSkip(const CCoeffBuf     &pCoeff,
   const CompArea &area      = tu.blocks[compID];
   const int width           = area.width;
   const int height          = area.height;
+
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  for (uint32_t y = 0; y < height; y++)
+  {
+      for (uint32_t x = 0; x < width; x++)
+      {
+          pResidual.at(x, y) = Pel(pCoeff.at(x, y));
+      }
+  }
+#else
   const int maxLog2TrDynamicRange = tu.cs->sps->getMaxLog2TrDynamicRange(toChannelType(compID));
   const int channelBitDepth = tu.cs->sps->getBitDepth(toChannelType(compID));
 
@@ -981,6 +991,7 @@ void TrQuant::xITransformSkip(const CCoeffBuf     &pCoeff,
       }
     }
   }
+#endif
 }
 
 void TrQuant::xQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx)
@@ -1051,6 +1062,18 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
     {
       scaleSAD=1.0/1.414213562; // compensate for not scaling transform skip coefficients by 1/sqrt(2)
     }
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+#if JVET_P0058_CHROMA_TS
+    if (tu.mtsIdx[compID] == MTS_SKIP)
+#else
+    if (isLuma(compID) && tu.mtsIdx == MTS_SKIP)
+#endif
+    {
+        int trShift = getTransformShift(tu.cu->slice->getSPS()->getBitDepth(toChannelType(compID)), rect.size(), tu.cu->slice->getSPS()->getMaxLog2TrDynamicRange(toChannelType(compID)));
+        scaleSAD *= pow(2, trShift);
+    }
+#endif
+
     trCosts.push_back( TrCost( int(sumAbs*scaleSAD), pos++ ) );
     it++;
   }
@@ -1306,11 +1329,24 @@ void TrQuant::rdpcmNxN(TransformUnit &tu, const ComponentID &compID, const QpPar
 
 void TrQuant::xTransformSkip(const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, TCoeff* psCoeff)
 {
-  const SPS &sps            = *tu.cs->sps;
-  const CompArea &rect      = tu.blocks[compID];
-  const uint32_t width          = rect.width;
-  const uint32_t height         = rect.height;
-  const ChannelType chType  = toChannelType(compID);
+#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
+  const CompArea &rect = tu.blocks[compID];
+  const uint32_t width = rect.width;
+  const uint32_t height = rect.height;
+
+  for (uint32_t y = 0, coefficientIndex = 0; y < height; y++)
+  {
+      for (uint32_t x = 0; x < width; x++, coefficientIndex++)
+      {
+          psCoeff[ coefficientIndex ] = TCoeff(resi.at(x, y));
+      }
+  }
+#else
+    const SPS &sps = *tu.cs->sps;
+    const CompArea &rect = tu.blocks[compID];
+    const uint32_t width = rect.width;
+    const uint32_t height = rect.height;
+    const ChannelType chType = toChannelType(compID);
   const int channelBitDepth = sps.getBitDepth(chType);
   const int maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
   int iTransformShift       = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
@@ -1348,6 +1384,7 @@ void TrQuant::xTransformSkip(const TransformUnit &tu, const ComponentID &compID,
       }
     }
   }
+#endif
 }
 
 //! \}

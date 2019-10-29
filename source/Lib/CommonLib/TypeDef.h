@@ -50,6 +50,22 @@
 #include <assert.h>
 #include <cassert>
 
+
+#define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
+#define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
+
+#define JVET_P0350_LFNST_IDX_CTX                          1 // JVET-P0350: Add one context for LFNST idx coding
+
+#define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
+
+#define JVET_P0206_TMVP_flags                             1 // JVET-P0206: Signalling TMVP usage (remove pps TMVP idc and constraint when RPR is used)
+
+#define JVET_P0599_INTRA_SMOOTHING_INTERP_FILT            1 // JVET-P0599: Cleanup of interpolation filtering for intra prediction
+
+#define JVET_P1026_MTS_SIGNALLING                         1 // JVET-P1026: CU level MTS signalling
+
+#define JVET_P0571_FIX_BS_BDPCM_CHROMA                    1 // JVET-P0571: align boundary strength for Chroma BDPCM
+
 #define JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG           1 // JVET-P0983/JVET-P0391: Remove sps_sbt_max_size_64_flag
 
 #define JVET_P0530_TPM_WEIGHT_ALIGN                       1 // JVET-P0530: align chroma weights with luma weights for TPM blending
@@ -58,6 +74,10 @@
 
 #define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
 
+#define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode
+
+#define JVET_P0090_32BIT_MVD                              1 // JVET-P0090: Limitation of abs_mvd_min2 binarization within 32-bit
+
 #define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
 
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
@@ -65,6 +85,8 @@
 #define JVET_N0278_FIXES                                  1
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
+
+#define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around
 
 #define JVET_P0406_YUV_FMT_GENERALIZATION_LDT             1 // JVET-P0406: Generalization of local dual tree (LDT) for different YUV formats
 
@@ -111,6 +133,8 @@
 
 #define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
 
+#define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
+
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
@@ -132,6 +156,8 @@
 #define JVET_P0385_UNIFIED_MV_ROUNDING                    1
 
 #define JVET_P0418_ALIGN_MLRP_CCLM                        1 // JVET-P0418: Align MLRP with CCLM in terms of reference lines/columns
+
+#define JVET_P0335_HDRCTC_CHANGE                          1 // JVET-P0335: change of HDR PQ CTC: enable LMCS and use QPc table in P0335, and disable lumaDQP and WCGPPSOffset
 
 #define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
 

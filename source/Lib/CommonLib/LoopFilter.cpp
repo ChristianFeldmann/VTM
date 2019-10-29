@@ -689,15 +689,23 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const CodingUnit& cuQ = cu;
   const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
 
+#if !JVET_P0571_FIX_BS_BDPCM_CHROMA
   if( ( MODE_INTRA == cuP.predMode && cuP.bdpcmMode ) && ( MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode ) )
   {
     return 0;
   }
+#endif
 
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
+#if JVET_P0571_FIX_BS_BDPCM_CHROMA
+    int bsY = (MODE_INTRA == cuP.predMode && cuP.bdpcmMode) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode) ? 0 : 2;
+    int bsC = 2;
+    return (BsSet(bsY, COMPONENT_Y) + BsSet(bsC, COMPONENT_Cb) + BsSet(bsC, COMPONENT_Cr));
+#else
     return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
+#endif
   }
 
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);

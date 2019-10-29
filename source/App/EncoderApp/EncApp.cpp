@@ -273,7 +273,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPROF                                              ( m_PROF );
   m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
+#if JVET_P0592_CHROMA_PHASE
+  m_cEncLib.setHorCollocatedChromaFlag                           ( m_horCollocatedChromaFlag );
+  m_cEncLib.setVerCollocatedChromaFlag                           ( m_verCollocatedChromaFlag );
+#else
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
+#endif
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
   m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
 #if JVET_P0273_MTSIntraMaxCand

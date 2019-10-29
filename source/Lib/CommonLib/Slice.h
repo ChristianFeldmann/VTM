@@ -867,7 +867,12 @@ private:
   bool              m_lumaReshapeEnable;
   bool              m_AMVREnabledFlag;
   bool              m_LMChroma;
+#if JVET_P0592_CHROMA_PHASE
+  bool              m_horCollocatedChromaFlag;
+  bool              m_verCollocatedChromaFlag;
+#else
   bool              m_cclmCollocatedChromaFlag;
+#endif
   bool              m_MTS;
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
@@ -889,6 +894,10 @@ private:
   ChromaQpMappingTable m_chromaQpMappingTable;
   bool m_GDREnabledFlag;
   bool              m_SubLayerCbpParametersPresentFlag;
+
+#if JVET_P0590_SCALING_WINDOW
+  bool              m_rprEnabledFlag;
+#endif
 
 public:
 
@@ -1086,8 +1095,16 @@ public:
   bool      getUsePROF            ()                                      const     { return m_PROF; }
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
+#if JVET_P0592_CHROMA_PHASE
+  void      setHorCollocatedChromaFlag( bool b )                                    { m_horCollocatedChromaFlag = b;    }
+  bool      getHorCollocatedChromaFlag()                                  const     { return m_horCollocatedChromaFlag; }
+  void      setVerCollocatedChromaFlag( bool b )                                    { m_verCollocatedChromaFlag = b;    }
+  bool      getVerCollocatedChromaFlag()                                  const     { return m_verCollocatedChromaFlag; }
+  bool      getCclmCollocatedChromaFlag()                                 const     { return m_verCollocatedChromaFlag; }
+#else
   void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
   bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
+#endif
   void      setUseMTS             ( bool b )                                        { m_MTS = b; }
   bool      getUseMTS             ()                                      const     { return m_MTS; }
   bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS; }
@@ -1131,6 +1148,11 @@ public:
   bool getGDREnabledFlag() const { return m_GDREnabledFlag; }
   void      setSubLayerParametersPresentFlag(bool flag)                             { m_SubLayerCbpParametersPresentFlag = flag; }
   bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
+
+#if JVET_P0590_SCALING_WINDOW
+  bool      getRprEnabledFlag()                                           const    { return m_rprEnabledFlag; }
+  void      setRprEnabledFlag( bool flag )                                         { m_rprEnabledFlag = flag; }
+#endif
 };
 
 
@@ -1270,6 +1292,9 @@ private:
   uint32_t         m_picWidthInLumaSamples;
   uint32_t         m_picHeightInLumaSamples;
   Window           m_conformanceWindow;
+#if JVET_P0590_SCALING_WINDOW
+  Window           m_scalingWindow;
+#endif
 
   PPSRExt          m_ppsRangeExtension;
 
@@ -1501,6 +1526,12 @@ public:
   Window&                 getConformanceWindow()                                          { return  m_conformanceWindow; }
   const Window&           getConformanceWindow() const                                    { return  m_conformanceWindow; }
   void                    setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
+
+#if JVET_P0590_SCALING_WINDOW
+  Window&                 getScalingWindow()                                              { return  m_scalingWindow; }
+  const Window&           getScalingWindow()                                        const { return  m_scalingWindow; }
+  void                    setScalingWindow( Window& scalingWindow )                       { m_scalingWindow = scalingWindow; }
+#endif
 };
 
 class APS

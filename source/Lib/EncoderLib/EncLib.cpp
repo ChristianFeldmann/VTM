@@ -493,6 +493,12 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
   if( getUseScalingListId() == SCALING_LIST_FILE_READ )
   {
     // Prepare delta's:
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+    {
+        aps.getScalingList().checkPredMode(scalingListId);
+    }
+#else
     for (uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
     {
       for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
@@ -505,6 +511,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
         aps.getScalingList().checkPredMode( sizeId, listId );
       }
     }
+#endif
   }
 }
 

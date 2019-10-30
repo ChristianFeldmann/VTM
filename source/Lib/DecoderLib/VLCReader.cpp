@@ -2825,6 +2825,47 @@ void HLSyntaxReader::parsePredWeightTable( Slice* pcSlice, const SPS *sps )
 */
 void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  uint32_t  code;
+  bool scalingListCopyModeFlag;
+
+  for (int scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    READ_FLAG(code, "scaling_list_copy_mode_flag");
+    scalingListCopyModeFlag = (code) ? true : false;
+    scalingList->setScalingListCopyModeFlag(scalingListId, scalingListCopyModeFlag);
+
+    scalingList->setScalingListPreditorModeFlag(scalingListId, false);
+    if (!scalingListCopyModeFlag)
+    {
+      READ_FLAG(code, "scaling_list_predictor_mode_flag");
+      scalingList->setScalingListPreditorModeFlag(scalingListId, code);
+    }
+
+    if ((scalingListCopyModeFlag || scalingList->getScalingListPreditorModeFlag(scalingListId)) && scalingListId!= SCALING_LIST_1D_START_2x2 && scalingListId!= SCALING_LIST_1D_START_4x4 && scalingListId!= SCALING_LIST_1D_START_8x8) //Copy Mode
+    {
+      READ_UVLC(code, "scaling_list_pred_matrix_id_delta");
+      scalingList->setRefMatrixId(scalingListId, (uint32_t)((int)(scalingListId)-(code)));
+    }    
+    else if (scalingListCopyModeFlag || scalingList->getScalingListPreditorModeFlag(scalingListId))
+    {
+      scalingList->setRefMatrixId(scalingListId, (uint32_t)((int)(scalingListId)));
+    }
+    if (scalingListCopyModeFlag)//copy
+    {
+      if (scalingListId >= SCALING_LIST_1D_START_16x16)
+      {
+        scalingList->setScalingListDC(scalingListId,
+          ((scalingListId == scalingList->getRefMatrixId(scalingListId)) ? 16
+            : (scalingList->getRefMatrixId(scalingListId) < SCALING_LIST_1D_START_16x16) ? scalingList->getScalingListAddress(scalingList->getRefMatrixId(scalingListId))[0] : scalingList->getScalingListDC(scalingList->getRefMatrixId(scalingListId))));
+      }
+      scalingList->processRefMatrix(scalingListId, scalingList->getRefMatrixId(scalingListId));
+    }
+    else
+    {
+      decodeScalingList(scalingList, scalingListId, scalingList->getScalingListPreditorModeFlag(scalingListId));
+    }
+#else
   uint32_t  code, sizeId, listId;
   bool scalingListPredModeFlag;
   //for each size
@@ -2860,6 +2901,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
         }
       }
     }
+#endif
   }
 
   return;
@@ -2870,11 +2912,40 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 * \param sizeId size index
 * \param listId list index
 */
+#if JVET_P01034_PRED_1D_SCALING_LIST
+void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t scalingListId, bool isPredictor)
+#else
 void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId, uint32_t listId)
+#endif
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  int i, coefNum = matrixSize * matrixSize;
+#else
   int i,coefNum = std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]);
+#endif
   int data;
   int scalingListDcCoefMinus8 = 0;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int nextCoef = (isPredictor) ? 0 : SCALING_LIST_START_VALUE;
+  ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(matrixSize)][gp_sizeIdxInfo->idxFrom(matrixSize)];
+  int *dst = scalingList->getScalingListAddress(scalingListId);
+
+  int PredListId = scalingList->getRefMatrixId(scalingListId);
+  if (PredListId > scalingListId) printf("Scaling List error predictor! \n");
+  const int *srcPred = (isPredictor) ? ((scalingListId == PredListId) ? scalingList->getScalingListDefaultAddress(scalingListId) : scalingList->getScalingListAddress(PredListId)) : NULL;
+  int predCoef = 0;
+
+  if (scalingListId >= SCALING_LIST_1D_START_16x16)
+  {
+    READ_SVLC(scalingListDcCoefMinus8, "scaling_list_dc_coef_minus8");
+    nextCoef += scalingListDcCoefMinus8;
+    if (isPredictor)
+    {
+      predCoef = (PredListId >= SCALING_LIST_1D_START_16x16) ? scalingList->getScalingListDC(PredListId) : srcPred[0];
+    }
+    scalingList->setScalingListDC(scalingListId, (nextCoef + predCoef + 256) % 256);
+#else
   int nextCoef = SCALING_LIST_START_VALUE;
   ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))];
   int *dst = scalingList->getScalingListAddress(sizeId, listId);
@@ -2884,18 +2955,29 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
     READ_SVLC( scalingListDcCoefMinus8, "scaling_list_dc_coef_minus8");
     scalingList->setScalingListDC(sizeId,listId,scalingListDcCoefMinus8 + 8);
     nextCoef = scalingList->getScalingListDC(sizeId,listId);
+#endif
   }
 
   for(i = 0; i < coefNum; i++)
   {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    if (scalingListId >= SCALING_LIST_1D_START_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#else
     if (sizeId == SCALING_LIST_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#endif
     {
       dst[scan[i].idx] = 0;
       continue;
     }
     READ_SVLC( data, "scaling_list_delta_coef");
-    nextCoef = (nextCoef + data + 256 ) % 256;
-    dst[scan[i].idx] = nextCoef;//[scan[scanIdx].idx]
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    nextCoef += data;  
+    predCoef = (isPredictor) ? srcPred[scan[i].idx] : 0;
+    dst[scan[i].idx] = (nextCoef + predCoef + 256) % 256;
+#else
+    nextCoef = (nextCoef + data + 256) % 256;
+    dst[scan[i].idx] = nextCoef;
+#endif
   }
 }
 

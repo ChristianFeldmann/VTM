@@ -49,6 +49,7 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode 
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 
@@ -737,6 +738,17 @@ enum ScalingListSize
   SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
 };
 
+#if JVET_P01034_PRED_1D_SCALING_LIST
+enum ScalingList1dStartIdx
+{
+  SCALING_LIST_1D_START_2x2    = 0,
+  SCALING_LIST_1D_START_4x4    = 2,
+  SCALING_LIST_1D_START_8x8    = 8,
+  SCALING_LIST_1D_START_16x16  = 14,
+  SCALING_LIST_1D_START_32x32  = 20,
+  SCALING_LIST_1D_START_64x64  = 26,
+};
+#endif
 // Slice / Slice segment encoding modes
 enum SliceConstraint
 {

@@ -38,6 +38,8 @@
 #ifndef __LIBVTMENC__
 #define __LIBVTMENC__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,6 +61,28 @@ typedef enum
   LIBVTMENC_ERROR              ///< There was an unspecified error
 } libVTMEnc_error;
 
+typedef struct vtm_nal_t
+{
+  int payloadSizeBytes;
+  uint8_t *payload;
+} vtm_nal_t;
+
+typedef struct vtm_image_t
+{
+  int     i_csp;       /* Colorspace */
+  int     i_plane;     /* Number of image planes */
+  int     i_stride[4]; /* Strides for each plane */
+  uint8_t *plane[4];   /* Pointers to each plane */
+} vtm_image_t;
+
+typedef struct vtm_pic_t
+{
+  int i_type;
+  int64_t i_pts;
+  int64_t i_dts;
+  vtm_image_t img;
+} vtm_pic_t;
+
 /** Get info about the VTM encoder version (e.g. "VTM-6.0")
  */
 VTM_ENC_API const char *libVTMEncoder_get_version(void);
@@ -79,6 +103,8 @@ VTM_ENC_API libVTMEncoder_context* libVTMEncoder_new_encoder(void);
  * \return Return an error code or LIBVTMENC_OK if no error occured.
  */
 VTM_ENC_API libVTMEnc_error libVTMEncoder_free_encoder(libVTMEncoder_context* encCtx);
+
+VTM_ENC_API libVTMEnc_error libVTMEncoder_encode(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_in, vtm_pic_t *pic_out);
 
 //! \}
 

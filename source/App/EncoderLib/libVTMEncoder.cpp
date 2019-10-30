@@ -57,7 +57,7 @@ public:
   }
 
 private:
-  EncLib            m_cEncLib;                    ///< encoder class
+  EncLib m_cEncLib;
 
   std::vector<AccessUnit> m_lOutputAUList;
 };

@@ -561,7 +561,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPPSMvdL1ZeroIdc                                   ( m_PPSMvdL1ZeroIdc );
   m_cEncLib.setPPSCollocatedFromL0Idc                            ( m_PPSCollocatedFromL0Idc );
   m_cEncLib.setPPSSixMinusMaxNumMergeCandPlus1                   ( m_PPSSixMinusMaxNumMergeCandPlus1 );
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   m_cEncLib.setPPSFiveMinusMaxNumSubblockMergeCandPlus1          ( m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 );
+#endif
   m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );

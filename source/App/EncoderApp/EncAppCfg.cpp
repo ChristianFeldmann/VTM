@@ -3267,7 +3267,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 0;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   case 1: // RA setting
@@ -3281,7 +3283,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
     break;
   case 2: // LDB setting
@@ -3295,7 +3299,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
     break;
   case 3: // LDP setting
@@ -3309,7 +3315,9 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   default:

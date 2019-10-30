@@ -583,7 +583,11 @@ void EncGOP::xWriteLeadingSEIMessages (SEIMessages& seiMessages, SEIMessages& du
   // update Timing and DU info SEI
   xUpdateDuData(testAU, duData);
   xUpdateTimingSEI(picTiming, duData, sps);
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  xUpdateDuInfoSEI(duInfoSeiMessages, picTiming, sps->getMaxTLayers());
+#else
   xUpdateDuInfoSEI(duInfoSeiMessages, picTiming);
+#endif
   // actual writing
   xWriteLeadingSEIOrdered(seiMessages, duInfoSeiMessages, accessUnit, temporalId, sps, false);
 
@@ -600,9 +604,12 @@ void EncGOP::xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &ac
 
 void EncGOP::xWriteDuSEIMessages (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData)
 {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && m_HRD->getBufferingPeriodSEI()->m_decodingUnitCpbParamsInPicTimingSeiFlag )
+#else
   const HRDParameters *hrd = sps->getHrdParameters();
-
   if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() )
+#endif
   {
     int naluIdx = 0;
     AccessUnit::iterator nalu = accessUnit.begin();
@@ -862,24 +869,39 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     SEIPictureTiming *pictureTimingSEI = new SEIPictureTiming();
 
     // DU parameters
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+#else
     if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+#endif
     {
       uint32_t numDU = (uint32_t) duData.size();
       pictureTimingSEI->m_numDecodingUnitsMinus1     = ( numDU - 1 );
       pictureTimingSEI->m_duCommonCpbRemovalDelayFlag = false;
       pictureTimingSEI->m_numNalusInDuMinus1.resize( numDU );
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      const uint32_t maxNumSubLayers = slice->getSPS()->getMaxTLayers();
+      pictureTimingSEI->m_duCpbRemovalDelayMinus1.resize( numDU * maxNumSubLayers );
+#else
       pictureTimingSEI->m_duCpbRemovalDelayMinus1.resize( numDU );
+#endif
     }
     const uint32_t cpbRemovalDelayLegth = m_HRD->getBufferingPeriodSEI()->m_cpbRemovalDelayLength;
     const uint32_t maxNumSubLayers = slice->getSPS()->getMaxTLayers();
+#if !JVET_P0202_P0203_FIX_HRD_RELATED_SEI
     pictureTimingSEI->m_ptMaxSubLayers = maxNumSubLayers;
+#endif
     pictureTimingSEI->m_auCpbRemovalDelay[maxNumSubLayers-1] = std::min<int>(std::max<int>(1, m_totalCoded[maxNumSubLayers-1] - m_lastBPSEI[maxNumSubLayers-1]), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
     CHECK( (m_totalCoded[maxNumSubLayers-1] - m_lastBPSEI[maxNumSubLayers-1]) > pow(2, static_cast<double>(cpbRemovalDelayLegth)), " cpbRemovalDelayLegth too small for m_auCpbRemovalDelay[pt_max_sub_layers_minus1] at picture timing SEI " );
     const uint32_t temporalId = slice->getTLayer();
     for( int i = temporalId ; i < maxNumSubLayers - 1 ; i ++ )
     {
       int indexWithinGOP = (m_totalCoded[maxNumSubLayers - 1] - m_lastBPSEI[maxNumSubLayers - 1]) % m_pcCfg->getGOPSize();
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      pictureTimingSEI->m_ptSubLayerDelaysPresentFlag[i] = true;
+#else
       pictureTimingSEI->m_subLayerDelaysPresentFlag[i] = true;
+#endif
       if( ((m_rapWithLeading == true) && (indexWithinGOP == 0)) || (m_totalCoded[maxNumSubLayers - 1] == 0) || m_bufferingPeriodSEIPresentInAU)
       {
         pictureTimingSEI->m_cpbRemovalDelayDeltaEnabledFlag[i] = false;
@@ -1079,13 +1101,22 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
 #endif
     }
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+#else
     if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getDecodingUnitHrdParamsPresentFlag() )
+#endif
     {
       for( int i = 0; i < ( pictureTimingSEI->m_numDecodingUnitsMinus1 + 1 ); i ++ )
       {
         SEIDecodingUnitInfo *duInfoSEI = new SEIDecodingUnitInfo();
         duInfoSEI->m_decodingUnitIdx = i;
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+	for( int j = temporalId; j <= maxNumSubLayers; j++ )
+          duInfoSEI->m_duSptCpbRemovalDelayIncrement[j] = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i*maxNumSubLayers+j] + 1;
+#else
         duInfoSEI->m_duSptCpbRemovalDelay = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i] + 1;
+#endif
         duInfoSEI->m_dpbOutputDuDelayPresentFlag = false;
         duInfoSEI->m_picSptDpbOutputDuDelay = picSptDpbOutputDuDelay;
 
@@ -1144,7 +1175,11 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
     return;
   }
   const HRDParameters *hrd = sps->getHrdParameters();
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+#else
   if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+#endif
   {
     int i;
     uint64_t ui64Tmp;
@@ -1153,6 +1188,12 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
     std::vector<uint32_t> &rDuCpbRemovalDelayMinus1 = pictureTimingSEI->m_duCpbRemovalDelayMinus1;
     uint32_t maxDiff = ( hrd->getTickDivisorMinus2() + 2 ) - 1;
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    int maxNumSubLayers = sps->getMaxTLayers();
+    for( int j = 0; j < maxNumSubLayers - 1; j++ )
+      pictureTimingSEI->m_ptSubLayerDelaysPresentFlag[j] = false;
+#endif
+
     for( i = 0; i < numDU; i ++ )
     {
       pictureTimingSEI->m_numNalusInDuMinus1[ i ]       = ( i == 0 ) ? ( duData[i].accumNalsDU - 1 ) : ( duData[i].accumNalsDU- duData[i-1].accumNalsDU - 1 );
@@ -1160,11 +1201,19 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
 
     if( numDU == 1 )
     {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      rDuCpbRemovalDelayMinus1[ 0 + maxNumSubLayers - 1 ] = 0; /* don't care */
+#else
       rDuCpbRemovalDelayMinus1[ 0 ] = 0; /* don't care */
+#endif
     }
     else
     {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      rDuCpbRemovalDelayMinus1[ (numDU - 1) * maxNumSubLayers + maxNumSubLayers - 1 ] = 0;/* by definition */
+#else
       rDuCpbRemovalDelayMinus1[ numDU - 1 ] = 0;/* by definition */
+#endif
       uint32_t tmp = 0;
       uint32_t accum = 0;
 
@@ -1193,6 +1242,18 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
           }
           else                            ui64Tmp = maxDiff - tmp + 1;
         }
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+        rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] = (uint32_t)ui64Tmp - uiPrev - 1;
+        if( (int)rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] < 0 )
+        {
+          rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] = 0;
+        }
+        else if (tmp > 0 && flag == 1)
+        {
+          tmp --;
+        }
+        accum += rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] + 1;
+#else
         rDuCpbRemovalDelayMinus1[ i ] = (uint32_t)ui64Tmp - uiPrev - 1;
         if( (int)rDuCpbRemovalDelayMinus1[ i ] < 0 )
         {
@@ -1203,12 +1264,17 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
           tmp --;
         }
         accum += rDuCpbRemovalDelayMinus1[ i ] + 1;
+#endif
         uiPrev = accum;
       }
     }
   }
 }
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI, int maxSubLayers)
+#else
 void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI)
+#endif
 {
   if (duInfoSeiMessages.empty() || (pictureTimingSEI == NULL))
   {
@@ -1221,7 +1287,15 @@ void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *
   {
     SEIDecodingUnitInfo *duInfoSEI = (SEIDecodingUnitInfo*) (*du);
     duInfoSEI->m_decodingUnitIdx = i;
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    for ( int j = 0; j < maxSubLayers; j++ )
+    {
+      duInfoSEI->m_duiSubLayerDelaysPresentFlag[j] = pictureTimingSEI->m_ptSubLayerDelaysPresentFlag[j];
+      duInfoSEI->m_duSptCpbRemovalDelayIncrement[j] = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i*maxSubLayers+j] + 1;
+    }
+#else
     duInfoSEI->m_duSptCpbRemovalDelay = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i] + 1;
+#endif
     duInfoSEI->m_dpbOutputDuDelayPresentFlag = false;
     i++;
   }
@@ -3419,7 +3493,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
             ( ( pcSlice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
            || ( pcSlice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) &&
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+            ( pcSlice->getSPS()->getHrdParameters()->getGeneralDecodingUnitHrdParamsPresentFlag() ) )
+#else
             ( pcSlice->getSPS()->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() ) )
+#endif
         {
             uint32_t numNalus = 0;
           uint32_t numRBSPBytes = 0;

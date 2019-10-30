@@ -579,6 +579,16 @@ void HLSWriter::codeLmcsAps( APS* pcAPS )
       WRITE_FLAG(signCW, "lmcs_delta_sign_cw_flag[ i ]");
     }
   }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int deltaCRS = param.chrResScalingOffset;
+  int signCRS = (deltaCRS < 0) ? 1 : 0;
+  int absCRS = (deltaCRS < 0) ? (-deltaCRS) : deltaCRS;
+  WRITE_CODE(absCRS, 3, "lmcs_delta_crs_val");
+  if (absCRS > 0)
+  {
+    WRITE_FLAG(signCRS, "lmcs_delta_crs_val_flag");
+  }
+#endif
 }
 
 void HLSWriter::codeScalingListAps( APS* pcAPS )

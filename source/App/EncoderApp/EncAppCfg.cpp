@@ -993,6 +993,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "1: rsp both (CW66 for QP<=22), 2: rsp TID0 (for all QP),"
                                                                                                                "3: rsp inter(CW66 for QP<=22), 4: rsp inter(for all QP).")
   ("LMCSInitialCW",                                   m_initialCW,                                         0u, "LMCS initial total codeword (0~1023) when LMCSAdpOption > 0")
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  ("LMCSOffset",                                      m_CSoffset,                                           0, "LMCS chroma residual scaling offset")
+#endif
   ("IntraCMD",                                        m_intraCMD,                                          0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
@@ -2709,6 +2712,10 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_adpOption > 4, "Max. LMCS Adaptation Option is 4");
     xConfirmPara(m_initialCW < 0, "Min. Initial Total Codeword is 0");
     xConfirmPara(m_initialCW > 1023, "Max. Initial Total Codeword is 1023");
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+    xConfirmPara(m_CSoffset < -7, "Min. LMCS Offset value is -7");
+    xConfirmPara(m_CSoffset > 7, "Max. LMCS Offset value is 7");
+#endif
     if (m_updateCtrl > 0 && m_adpOption > 2) { m_adpOption -= 2; }
   }
 
@@ -3718,6 +3725,9 @@ void EncAppCfg::xPrintParameter()
       msg(VERBOSE, "(Signal:%s ", m_reshapeSignalType == 0 ? "SDR" : (m_reshapeSignalType == 2 ? "HDR-HLG" : "HDR-PQ"));
       msg(VERBOSE, "Opt:%d", m_adpOption);
       if (m_adpOption > 0) { msg(VERBOSE, " CW:%d", m_initialCW); }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      msg(VERBOSE, " CSoffset:%d", m_CSoffset);
+#endif
       msg(VERBOSE, ") ");
     }
     msg(VERBOSE, "MIP:%d ", m_MIP);

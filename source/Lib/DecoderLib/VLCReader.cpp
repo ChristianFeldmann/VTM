@@ -1004,6 +1004,17 @@ void HLSyntaxReader::parseLmcsAps( APS* aps )
     int signCW = code;
     info.reshaperModelBinCWDelta[i] = (1 - 2 * signCW) * absCW;
   }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  READ_CODE(3, code, "lmcs_delta_abs_crs");
+  int absCW = code;
+  if (absCW > 0)
+  {
+    READ_CODE(1, code, "lmcs_delta_sign_crs_flag");
+  }
+  int signCW = code;
+  info.chrResScalingOffset = (1 - 2 * signCW) * absCW;
+#endif
+
   aps->setReshaperAPSInfo(info);
 }
 

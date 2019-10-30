@@ -451,6 +451,9 @@ public:
   uint32_t  reshaperModelMaxBinIdx;
   int       reshaperModelBinCWDelta[PIC_CODE_CW_BINS];
   int       maxNbitsNeededDeltaCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int       chrResScalingOffset;
+#endif
   void      setUseSliceReshaper(bool b)                                { sliceReshaperEnableFlag = b;            }
   bool      getUseSliceReshaper() const                                { return sliceReshaperEnableFlag;         }
   void      setSliceReshapeModelPresentFlag(bool b)                    { sliceReshaperModelPresentFlag = b;      }
@@ -484,6 +487,12 @@ public:
     {
       return false;
     }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+    if (chrResScalingOffset != other.chrResScalingOffset)
+    {
+      return false;
+    }
+#endif
     if( memcmp( reshaperModelBinCWDelta, other.reshaperModelBinCWDelta, sizeof( reshaperModelBinCWDelta ) ) )
     {
       return false;

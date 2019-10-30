@@ -165,7 +165,7 @@ protected:
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel      *m_cacheModel;
 #endif
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   PelStorage       m_colorTransResiBuf[3];  // 0-org; 1-act; 2-tmp
 #endif 
 

@@ -82,7 +82,7 @@ public:
   /// reconstruct Ctu information
 protected:
   void xIntraRecQT        ( CodingUnit&      cu, const ChannelType chType );
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void xIntraRecACTQT(CodingUnit&      cu);
 #endif
 
@@ -92,7 +92,7 @@ protected:
   void xFillPCMBuffer     ( CodingUnit&      cu );
 
   void xIntraRecBlk       ( TransformUnit&   tu, const ComponentID compID );
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void xIntraRecACTBlk(TransformUnit&   tu);
 #endif
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );

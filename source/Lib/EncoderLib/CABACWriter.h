@@ -103,7 +103,7 @@ public:
   void        intra_chroma_pred_mode    ( const PredictionUnit&         pu );
   void        cu_residual               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );
   void        rqt_root_cbf              ( const CodingUnit&             cu );
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void        adaptive_color_transform(const CodingUnit&             cu);
 #endif
   void        sbt_mode                  ( const CodingUnit&             cu );
@@ -112,8 +112,12 @@ public:
   void        mip_pred_modes            ( const CodingUnit&             cu );
   void        mip_pred_mode             ( const PredictionUnit&         pu );
   void        cu_palette_info           ( const CodingUnit&             cu,       ComponentID       compBegin,     uint32_t numComp,          CUCtx&       cuCtx);
+#if JVET_P0077_LINE_CG_PALETTE
+  void        cuPaletteSubblockInfo     ( const CodingUnit&             cu,       ComponentID       compBegin,     uint32_t numComp,          int subSetId,               uint32_t& prevRunPos,        unsigned& prevRunType );
+#else
   void        cu_run_val                (       uint32_t                run,      PLTRunMode        runtype, const uint32_t paletteIdx, const uint32_t     maxRun);
   void        encodeRunType             ( const CodingUnit&             cu,       PLTtypeBuf&       runType,       uint32_t idx,              ScanElement *refScanOrder,   ComponentID compBegin);
+#endif
   Pel         writePLTIndex             ( const CodingUnit&             cu,       uint32_t          idx,           PelBuf&  paletteIdx,       PLTtypeBuf&  paletteRunType, int         maxSymbol,   ComponentID compBegin );
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
@@ -185,8 +189,10 @@ private:
   void  xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol);
   void        codeScanRotationModeFlag   ( const CodingUnit& cu,     ComponentID compBegin);
   void        xEncodePLTPredIndicator    ( const CodingUnit& cu,     uint32_t    maxPltSize, ComponentID compBegin);
+#if !JVET_P0077_LINE_CG_PALETTE
   uint32_t    xWriteTruncMsbP1           (       uint32_t    symbol, PLTRunMode  runtype,    uint32_t    maxVal,   uint32_t ctxT);
   void        xWriteTruncMsbP1RefinementBits(    uint32_t    symbol, PLTRunMode  runtype,    uint32_t    maxVal,   uint32_t ctxT);
+#endif
 private:
   BinEncIf&         m_BinEncoder;
   OutputBitstream*  m_Bitstream;

@@ -226,7 +226,7 @@ public:
   static const CtxSet   Mvd;
   static const CtxSet   BDPCMMode;
   static const CtxSet   QtRootCbf;
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   static const CtxSet   ACTFlag;
 #endif
   static const CtxSet   QtCbf           [3];    // [ channel ]

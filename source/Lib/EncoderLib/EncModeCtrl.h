@@ -382,7 +382,7 @@ struct CodedCUInfo
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
   uint8_t GBiIdx;
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
 #endif
 
@@ -437,7 +437,7 @@ public:
   void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
   uint8_t getGbiIdx( const UnitArea& area );
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char  getSelectColorSpaceOption(const UnitArea& area);
 #endif
 };
@@ -472,7 +472,9 @@ private:
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
   bool               *m_runType;
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel                *m_runLength;
+#endif
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
 #if ENABLE_SPLIT_PARALLELISM

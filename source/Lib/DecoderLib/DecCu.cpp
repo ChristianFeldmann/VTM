@@ -237,7 +237,11 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     if( PU::isMIP( pu, chType ) )
     {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+      m_pcIntraPred->initIntraMip( pu, area );
+#else
       m_pcIntraPred->initIntraMip( pu );
+#endif
       m_pcIntraPred->predIntraMip( compID, piPred, pu );
     }
     else
@@ -354,7 +358,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #endif
 }
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void DecCu::xIntraRecACTBlk(TransformUnit& tu)
 {
   CodingStructure      &cs = *tu.cs;
@@ -385,7 +389,11 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
     m_pcIntraPred->initIntraPatternChType(*tu.cu, area);
     if (PU::isMIP(pu, chType))
     {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+      m_pcIntraPred->initIntraMip(pu, area);
+#else
       m_pcIntraPred->initIntraMip(pu);
+#endif
       m_pcIntraPred->predIntraMip(compID, piPred, pu);
     }
     else
@@ -507,7 +515,7 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
     return;
   }
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (cu.colorTransform)
   {
     xIntraRecACTQT(cu);
@@ -524,7 +532,7 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
       xIntraRecQT( cu, ChannelType( chType ) );
     }
   }
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   }
 #endif
 }
@@ -640,7 +648,7 @@ DecCu::xIntraRecQT(CodingUnit &cu, const ChannelType chType)
   }
 }
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void DecCu::xIntraRecACTQT(CodingUnit &cu)
 {
   for (auto &currTU : CU::traverseTUs(cu))
@@ -726,8 +734,15 @@ void DecCu::xReconInter(CodingUnit &cu)
       cu.cs->getPredBuf(*cu.firstPU).Y().rspSignal(m_pcReshape->getFwdLUT());
     }
     m_pcIntraPred->geneWeightedPred(COMPONENT_Y, cu.cs->getPredBuf(*cu.firstPU).Y(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Y, 0));
-    m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
-    m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+    if (cu.chromaSize().width > 2)
+    {
+#endif
+      m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
+      m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+    }
+#endif
   }
 
   DTRACE    ( g_trace_ctx, D_TMP, "pred " );
@@ -741,7 +756,7 @@ void DecCu::xReconInter(CodingUnit &cu)
 
   if (cu.rootCbf)
   {
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     if (cu.colorTransform)
     {
       cs.getResiBuf(cu).colorSpaceConvert(cs.getResiBuf(cu), false);
@@ -806,7 +821,7 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
   //===== inverse transform =====
   PelBuf resiBuf  = cs.getResiBuf(area);
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   QpParam cQP(currTU, compID);
   if (currTU.cu->colorTransform)
   {
@@ -832,7 +847,7 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
       }
       else
       {
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         QpParam qpCr(currTU, COMPONENT_Cr);
         if (currTU.cu->colorTransform)
         {

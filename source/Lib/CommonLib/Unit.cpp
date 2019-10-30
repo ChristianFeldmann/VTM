@@ -265,7 +265,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mmvdSkip = other.mmvdSkip;
   affine            = other.affine;
   affineType        = other.affineType;
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   colorTransform = other.colorTransform;
 #endif 
   triangle          = other.triangle;
@@ -319,7 +319,7 @@ void CodingUnit::initData()
   mmvdSkip = false;
   affine            = false;
   affineType        = 0;
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   colorTransform = false;
 #endif 
   triangle          = false;
@@ -520,6 +520,9 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  mipTransposedFlag = false;
+#endif
   multiRefIdx = 0;
 
   // inter data
@@ -571,6 +574,9 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  mipTransposedFlag = predData.mipTransposedFlag;
+#endif
   multiRefIdx = predData.multiRefIdx;
 
   return *this;
@@ -625,6 +631,9 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  mipTransposedFlag = other.mipTransposedFlag;
+#endif
   multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
@@ -714,7 +723,9 @@ TransformUnit::TransformUnit(const UnitArea& unit) : UnitArea(unit), cu(nullptr)
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
     m_runType[i]   = nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
+#endif
   }
 
   initData();
@@ -727,7 +738,9 @@ TransformUnit::TransformUnit(const ChromaFormat _chromaFormat, const Area &_area
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
     m_runType[i]   = nullptr;
+#if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
+#endif
   }
 
   initData();
@@ -752,8 +765,11 @@ void TransformUnit::initData()
   jointCbCr          = 0;
   m_chromaResScaleInv = 0;
 }
-
+#if JVET_P0077_LINE_CG_PALETTE
+void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, bool **runType)
+#else
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType)
+#endif
 {
   uint32_t numBlocks = getNumberValidTBlocks(*cs->pcv);
 
@@ -762,7 +778,9 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **
     m_coeffs[i] = coeffs[i];
     m_pcmbuf[i] = pcmbuf[i];
     m_runType[i]   = runType[i];
+#if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = runLength[i];
+#endif
   }
 }
 
@@ -780,8 +798,9 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
     if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
     if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
+#if !JVET_P0077_LINE_CG_PALETTE
     if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
-
+#endif
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
     compAlpha[i]     = other.compAlpha[i];
@@ -809,8 +828,9 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
   if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
   if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i])   memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
-
+#endif
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
   compAlpha[i]     = other.compAlpha[i];
@@ -834,9 +854,10 @@ const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CP
        PelBuf       TransformUnit::getcurPLTIdx(const ComponentID id)         { return        PelBuf(m_pcmbuf[id], blocks[id]); }
 const CPelBuf       TransformUnit::getcurPLTIdx(const ComponentID id)   const { return       CPelBuf(m_pcmbuf[id], blocks[id]); }
 
+#if !JVET_P0077_LINE_CG_PALETTE
        PelBuf       TransformUnit::getrunLength(const ComponentID id)         { return     PelBuf(m_runLength[id], blocks[id]); }
 const CPelBuf       TransformUnit::getrunLength(const ComponentID id)   const { return    CPelBuf(m_runLength[id], blocks[id]); }
-
+#endif
        PLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)         { return   PLTtypeBuf(m_runType[id], blocks[id]); }
 const CPLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)   const { return  CPLTtypeBuf(m_runType[id], blocks[id]); }
 
@@ -844,7 +865,9 @@ const CPLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)   const { 
 const CPLTescapeBuf TransformUnit::getescapeValue(const ComponentID id) const { return CPLTescapeBuf(m_coeffs[id], blocks[id]); }
 
       Pel*          TransformUnit::getPLTIndex   (const ComponentID id)       { return  m_pcmbuf[id];    }
+#if !JVET_P0077_LINE_CG_PALETTE
       Pel*          TransformUnit::getRunLens    (const ComponentID id)       { return  m_runLength[id]; }
+#endif
       bool*         TransformUnit::getRunTypes   (const ComponentID id)       { return  m_runType[id];   }
 
 void TransformUnit::checkTuNoResidual( unsigned idx )

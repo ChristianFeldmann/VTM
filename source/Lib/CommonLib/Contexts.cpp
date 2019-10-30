@@ -454,7 +454,7 @@ const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
   {   4, },
 });
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 const CtxSet ContextSetCfg::ACTFlag = ContextSetCfg::addCtxSet
 ({
   {  CNU, },
@@ -681,10 +681,17 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_P0350_LFNST_IDX_CTX
+  {  45,  37, 32, },
+  {  38,  45, 32, },
+  { CNU,  45, 32, },
+  {   8,   8, 1, },
+#else
   {  45,  37, },
   {  38,  45, },
   { CNU,  45, },
   {   8,   8, },
+#endif
 });
 
 const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet

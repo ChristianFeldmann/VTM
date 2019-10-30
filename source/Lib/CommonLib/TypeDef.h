@@ -50,6 +50,13 @@
 #include <assert.h>
 #include <cassert>
 
+
+#define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
+
+#define JVET_P0350_LFNST_IDX_CTX                          1 // JVET-P0350: Add one context for LFNST idx coding
+
+#define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
+
 #define JVET_P0206_TMVP_flags                             1 // JVET-P0206: Signalling TMVP usage (remove pps TMVP idc and constraint when RPR is used)
 
 #define JVET_P0599_INTRA_SMOOTHING_INTERP_FILT            1 // JVET-P0599: Cleanup of interpolation filtering for intra prediction
@@ -66,10 +73,11 @@
 
 #define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
 
-#define ADAPTIVE_COLOR_TRANSFORM                          1 // JVET-P0517: adaptive color transform
+#define JVET_P0517_ADAPTIVE_COLOR_TRANSFORM               1 // JVET-P0517: adaptive color transform
 
-#define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
-#define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
+#define JVET_P0090_32BIT_MVD                              1 // JVET-P0090: Limitation of abs_mvd_min2 binarization within 32-bit
+
+#define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode#define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
@@ -117,6 +125,8 @@
 #define JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG      1 // JVET-P0162: Removal of alf_ctb_use_first_aps_flag
 
 #define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
+
+#define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 

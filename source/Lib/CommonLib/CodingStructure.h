@@ -231,14 +231,16 @@ private:
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
   bool   *m_runType  [MAX_NUM_COMPONENT];
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel    *m_runLength[MAX_NUM_COMPONENT];
+#endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;
 
 public:
   CodingStructure *bestParent;
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   double        tmpColorSpaceCost;
   bool          firstColorSpaceSelected;
   double        tmpColorSpaceIntraCost[2];

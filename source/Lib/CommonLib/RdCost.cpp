@@ -87,7 +87,7 @@ void RdCost::setLambda( double dLambda, const BitDepths &bitDepths )
   m_dLambdaMotionSAD[1] = sqrt(dLambda);
 }
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
 {
   if (m_resetStore)
@@ -109,18 +109,18 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
   
   if (forward)
   {
-    CHECK(pairCheck == 1, "lambda has been already adjusted");
-    pairCheck = 1;
+    CHECK(m_pairCheck == 1, "lambda has been already adjusted");
+    m_pairCheck = 1;
   }
   else
   {
-    CHECK(pairCheck == 0, "lambda has not been adjusted");
-    pairCheck = 0;
+    CHECK(m_pairCheck == 0, "lambda has not been adjusted");
+    m_pairCheck = 0;
   }
 
-  m_dLambda = m_lambdaStore[pairCheck][componentID];
-  m_DistScale = m_DistScaleStore[pairCheck][componentID];
-  if (pairCheck == 0)
+  m_dLambda = m_lambdaStore[m_pairCheck][componentID];
+  m_DistScale = m_DistScaleStore[m_pairCheck][componentID];
+  if (m_pairCheck == 0)
   {
     CHECK(m_DistScale != m_DistScaleUnadjusted, "lambda should be adjusted to the original value");
   }
@@ -215,9 +215,9 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   m_resetStore = true;
-  pairCheck    = 0;
+  m_pairCheck    = 0;
 #endif 
 }
 

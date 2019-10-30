@@ -508,7 +508,7 @@ void Quant::init( uint32_t uiMaxTrSize,
 #if T0196_SELECTIVE_RDOQ
   m_useSelectiveRDOQ     = useSelectiveRDOQ;
 #endif
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   m_resetStore = true;
 #endif 
 }
@@ -926,8 +926,8 @@ void Quant::xInitScalingList( const Quant* other )
     }
   }
 
-#if ADAPTIVE_COLOR_TRANSFORM
-  pairCheck = 0;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_pairCheck = 0;
 #endif
 }
 
@@ -1267,7 +1267,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 #endif
 }
 
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void Quant::lambdaAdjustColorTrans(bool forward)
 {
   if (m_resetStore)
@@ -1286,18 +1286,18 @@ void Quant::lambdaAdjustColorTrans(bool forward)
   
   if (forward)
   {
-    CHECK(pairCheck == 1, "lambda has been already adjusted");
-    pairCheck = 1;
+    CHECK(m_pairCheck == 1, "lambda has been already adjusted");
+    m_pairCheck = 1;
   }
   else
   {
-    CHECK(pairCheck == 0, "lambda has not been adjusted");
-    pairCheck = 0;
+    CHECK(m_pairCheck == 0, "lambda has not been adjusted");
+    m_pairCheck = 0;
   }
 
   for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
   {
-    m_lambdas[component] = m_lambdasStore[pairCheck][component];
+    m_lambdas[component] = m_lambdasStore[m_pairCheck][component];
   }
 }
 #endif

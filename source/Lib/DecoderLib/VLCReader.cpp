@@ -1367,8 +1367,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
-    int numQPTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
-    for (int i = 0; i < numQPTables; i++)
+    int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    chromaQpMappingTableParams.setNumQpTables(numQpTables);
+    for (int i = 0; i < numQpTables; i++)
 #else
     for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
 #endif
@@ -1448,7 +1449,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,  "sps_affine_amvr_enabled_flag" );           pcSPS->setAffineAmvrEnabledFlag  ( uiCode != 0 );
   }
   READ_FLAG( uiCode,    "gbi_flag" );                               pcSPS->setUseGBi                 ( uiCode != 0 );
-#if ADAPTIVE_COLOR_TRANSFORM
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     READ_FLAG(uiCode, "act_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);

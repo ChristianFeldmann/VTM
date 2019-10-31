@@ -473,6 +473,22 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {   7, CNU,   5,   7, },
     {   5, DWS,   8,   8, },
   }),
+#if JVET_P0059_CHROMA_BDPCM
+  ContextSetCfg::addCtxSet
+  ({
+    { 25, CNU, },
+    { 25, CNU, },
+    { 12, CNU, },
+    {  5, DWS, },
+  }),
+ContextSetCfg::addCtxSet
+({
+    {  9,  44, CNU, },
+    { 25,  29, CNU, },
+    { 33,  21, CNU, },
+    {  2,   1, DWS, },
+})
+#else
   ContextSetCfg::addCtxSet
   ({
     {  25, },
@@ -487,6 +503,7 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {  33,  21, },
     {   2,   1, },
   })
+#endif
 };
 
 const CtxSet ContextSetCfg::SigCoeffGroup[] =

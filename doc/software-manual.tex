@@ -2256,8 +2256,14 @@ Enables or disables symmetric MVD mode.
 
 \Option{BDPCM} &
 %\ShortOption{\None} &
-\Default{false} &
+\Default{0} &
 Enables or disables the use of intra block differential pulse code modulation mode.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & Disable BDPCM for luma and chroma.\\
+	1 & Enable BDPCM for luma.\\
+	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is avaialble for 444. \\
+\end{tabular}
 \\
 
 \Option{LFNST} &

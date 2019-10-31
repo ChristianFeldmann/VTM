@@ -455,7 +455,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_ispTestedModes.init(numTotalPartsHor, numTotalPartsVer);
   }
 
+#if JVET_P0059_CHROMA_BDPCM
+  const bool testBDPCM = (sps.getBDPCMEnabled()!=0) && CU::bdpcmAllowed(cu, ComponentID(partitioner.chType)) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+#else
   const bool testBDPCM = sps.getBDPCMEnabledFlag() && CU::bdpcmAllowed( cu, ComponentID( partitioner.chType ) ) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+#endif
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
@@ -1430,12 +1434,19 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
     uint32_t       uiBestMode = 0;
     Distortion uiBestDist = 0;
     double     dBestCost = MAX_DOUBLE;
+#if JVET_P0059_CHROMA_BDPCM
+    int32_t bestBDPCMMode = 0;
+#endif
 
     //----- init mode list ----
     {
+#if JVET_P0059_CHROMA_BDPCM
+      int32_t  uiMinMode = 0;
+      int32_t  uiMaxMode = NUM_CHROMA_MODE;
+#else
       uint32_t  uiMinMode = 0;
       uint32_t  uiMaxMode = NUM_CHROMA_MODE;
-
+#endif
       //----- check chroma modes -----
       uint32_t chromaCandModes[ NUM_CHROMA_MODE ];
       PU::getIntraChromaCandModes( pu, chromaCandModes );
@@ -1641,10 +1652,30 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
 
       // save the dist
       Distortion baseDist = cs.dist;
-
+#if JVET_P0059_CHROMA_BDPCM
+      bool testBDPCM = true;
+      testBDPCM = testBDPCM && CU::bdpcmAllowed(cu, COMPONENT_Cb) && cu.ispMode == 0 && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
+      for (int32_t uiMode = uiMinMode - (2 * int(testBDPCM)); uiMode < uiMaxMode; uiMode++)
+#else
       for (uint32_t uiMode = uiMinMode; uiMode < uiMaxMode; uiMode++)
+#endif
       {
+#if JVET_P0059_CHROMA_BDPCM
+        int chromaIntraMode = chromaCandModes[uiMode];
+#else 
         const int chromaIntraMode = chromaCandModes[uiMode];
+#endif
+
+#if JVET_P0059_CHROMA_BDPCM
+        if (uiMode < 0)
+        {
+            cu.bdpcmModeChroma = -uiMode;
+            chromaIntraMode = chromaCandModes[0];
+        }
+        else
+        {
+            cu.bdpcmModeChroma = 0;
+#endif
         if( PU::isLMCMode( chromaIntraMode ) && ! PU::isLMCModeEnabled( pu, chromaIntraMode ) )
         {
           continue;
@@ -1653,6 +1684,9 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         {
           continue;
         }
+#if JVET_P0059_CHROMA_BDPCM
+        }
+#endif
         cs.setDecomp( pu.Cb(), false );
         cs.dist = baseDist;
         //----- restore context models -----
@@ -1705,6 +1739,9 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           dBestCost  = dCost;
           uiBestDist = uiDist;
           uiBestMode = chromaIntraMode;
+#if JVET_P0059_CHROMA_BDPCM
+          bestBDPCMMode = cu.bdpcmModeChroma;
+#endif
         }
       }
 
@@ -1731,6 +1768,9 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
 
     pu.intraDir[1] = uiBestMode;
     cs.dist        = uiBestDist;
+#if JVET_P0059_CHROMA_BDPCM
+    cu.bdpcmModeChroma = bestBDPCMMode;
+#endif
   }
 
   //----- restore context models -----
@@ -2896,6 +2936,10 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
         return;
       }
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
+#if JVET_P0059_CHROMA_BDPCM
+      if (!CS::isDualITree(cs) && isLuma(partitioner.chType))
+          m_CABACEstimator->bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
+#endif
     }
 
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);
@@ -3215,7 +3259,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   CHECK( tu.jointCbCr && compID == COMPONENT_Cr, "wrong combination of compID and jointCbCr" );
   bool jointCbCr = tu.jointCbCr && compID == COMPONENT_Cb;
 
+#if JVET_P0059_CHROMA_BDPCM
+  if (compID == COMPONENT_Y || (isChroma(compID) && tu.cu->bdpcmModeChroma))
+#else
   if ( compID == COMPONENT_Y )
+#endif
   {
   PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
   if( default0Save1Load2 != 2 )
@@ -3242,7 +3290,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
 
     //===== get prediction signal =====
+#if JVET_P0059_CHROMA_BDPCM
+    if(compID != COMPONENT_Y && !tu.cu->bdpcmModeChroma && PU::isLMCMode(uiChFinalMode))
+#else
     if( compID != COMPONENT_Y && PU::isLMCMode( uiChFinalMode ) )
+#endif
     {
       {
         xGetLumaRecPixels( pu, area );
@@ -5004,7 +5056,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     currTU.jointCbCr = 0;
 
     // Do predictions here to avoid repeating the "default0Save1Load2" stuff
+#if JVET_P0059_CHROMA_BDPCM
+    int  predMode   = pu.cu->bdpcmModeChroma ? BDPCM_IDX : PU::getFinalIntraMode(pu, CHANNEL_TYPE_CHROMA);
+#else
     int  predMode   = PU::getFinalIntraMode( pu, CHANNEL_TYPE_CHROMA );
+#endif
 
     PelBuf piPredCb = cs.getPredBuf(cbArea);
     PelBuf piPredCr = cs.getPredBuf(crArea);
@@ -5131,7 +5187,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
           currTU.compAlpha    [compID] = ( crossCPredictionModeId ? compAlpha[compID] : 0 );
 
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0059_CHROMA_BDPCM
+          currTU.mtsIdx[compID] = currTU.cu->bdpcmModeChroma ? MTS_SKIP : trModes[modeId].first;
+#else
           currTU.mtsIdx[compID] = trModes[modeId].first;
+#endif
 #endif
 
           currModeId++;
@@ -5172,7 +5232,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #endif
 
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0059_CHROMA_BDPCM
+          if (((crossCPredictionModeId == 1) && (currTU.compAlpha[compID] == 0)) || ((currTU.mtsIdx[compID] == MTS_SKIP && !currTU.cu->bdpcmModeChroma) && !TU::getCbf(currTU, compID))) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#else
           if (((crossCPredictionModeId == 1) && (currTU.compAlpha[compID] == 0)) || ((currTU.mtsIdx[compID] == MTS_SKIP) && !TU::getCbf(currTU, compID))) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#endif
 #else
           if( ( ( crossCPredictionModeId == 1 ) && ( currTU.compAlpha[compID] == 0 ) ) ) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
 #endif

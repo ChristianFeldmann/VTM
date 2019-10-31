@@ -541,7 +541,11 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
 #if JVET_P0058_CHROMA_TS
     if( tu.mtsIdx[compID] == MTS_SKIP )
 #else
+#if JVET_P0059_CHROMA_BDPCM
+    if( (isLuma(compID) && tu.mtsIdx == MTS_SKIP) || (isChroma(compID) && tu.cu->bdpcmModeChroma))
+#else
     if( isLuma(compID) && tu.mtsIdx == MTS_SKIP )
+#endif
 #endif
     {
       xITransformSkip( tempCoeff, pResi, tu, compID );
@@ -1037,7 +1041,11 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
 #if JVET_P0058_CHROMA_TS
     if ( tu.mtsIdx[compID] == MTS_SKIP )
 #else
+#if JVET_P0059_CHROMA_BDPCM
+    if ((isLuma(compID) && tu.mtsIdx == MTS_SKIP) || (isChroma(compID) && tu.cu->bdpcmModeChroma))
+#else
     if( isLuma(compID) && tu.mtsIdx == MTS_SKIP )
+#endif
 #endif
     {
       xTransformSkip( tu, compID, resiBuf, tempCoeff.buf );
@@ -1117,7 +1125,11 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
   RDPCMMode rdpcmMode = RDPCM_OFF;
   rdpcmNxN(tu, compID, cQP, uiAbsSum, rdpcmMode);
 
+#if JVET_P0058_CHROMA_TS && JVET_P0059_CHROMA_BDPCM
+  if ((tu.cu->bdpcmMode && isLuma(compID)) || (!isLuma(compID) && tu.cu->bdpcmModeChroma))
+#else
   if( tu.cu->bdpcmMode && isLuma(compID) )
+#endif
   {
 #if JVET_P0058_CHROMA_TS
     tu.mtsIdx[compID] = MTS_SKIP;

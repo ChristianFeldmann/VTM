@@ -66,14 +66,18 @@ public:
     static_vector<int, MIP_MAX_HEIGHT>     m_refSamplesLeft;            // left reference samples for upsampling
 
     Size m_blockSize;
-#if JVET_P0803_COMBINED_MIP_CLEANUP
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
     int  m_sizeId;
     int  m_reducedBdrySize;
 #else
     int  m_numModes;
     Size m_reducedBoundarySize;
 #endif
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    int  m_reducedPredSize;
+#else
     Size m_reducedPredictionSize;
+#endif
     unsigned int m_upsmpFactorHor;
     unsigned int m_upsmpFactorVer;
 
@@ -84,7 +88,11 @@ public:
     static void doDownsampling( int* dst, const int* src, const SizeType srcLen, const SizeType dstLen );
 #endif
 
+#if JVET_P0803_COMBINED_MIP_CLEANUP && JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    void predictionUpsampling( int* const dst, const int* const src ) const;
+#else
     void predictionUpsampling( int* const dst, const int* const src, const bool transpose ) const;
+#endif
     static void predictionUpsampling1D( int* const dst, const int* const src, const int* const bndry,
                                         const SizeType srcSizeUpsmpDim, const SizeType srcSizeOrthDim,
                                         const SizeType srcStep, const SizeType srcStride,
@@ -99,6 +107,11 @@ public:
     int  getWeightIdx( const int modeIdx ) const;
 #endif
 
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+    void computeReducedPred( int*const result, const int* const input, 
+                             const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
+                             const bool transpose, const int bitDepth );
+#else
     void computeReducedPred( int*const result, const int* const input, const uint8_t*matrix,
                              const bool leaveHorOut, const bool leaveVerOut,
                              const int shiftMatrix, const int offsetMatrix,
@@ -106,6 +119,7 @@ public:
                              const bool transpose, const int bitDepth );
 #else
                              const bool transpose, const bool needUpsampling, const int bitDepth );
+#endif
 #endif
   };
 

@@ -271,6 +271,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
   bdpcmMode         = other.bdpcmMode;
+#if JVET_P0059_CHROMA_BDPCM
+  bdpcmModeChroma   = other.bdpcmModeChroma;
+#endif
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
@@ -325,6 +328,9 @@ void CodingUnit::initData()
   triangle          = false;
   transQuantBypass  = false;
   bdpcmMode         = 0;
+#if JVET_P0059_CHROMA_BDPCM
+  bdpcmModeChroma   = 0;
+#endif
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;

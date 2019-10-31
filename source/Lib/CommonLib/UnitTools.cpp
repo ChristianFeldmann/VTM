@@ -566,7 +566,11 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *modeList)
 
 bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )
 {
+#if JVET_P0059_CHROMA_BDPCM
+  return !pu.cu->bdpcmModeChroma && pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
+#else
   return pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
+#endif
 }
 
 uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chType )
@@ -3759,10 +3763,21 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
   SizeType transformSkipMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
 
+#if JVET_P0059_CHROMA_BDPCM
+  bool bdpcmAllowed = cu.cs->sps->getBDPCMEnabled();
+       bdpcmAllowed &= (isLuma(compID) || cu.cs->sps->getBDPCMEnabled() == BDPCM_LUMACHROMA);
+#else
   bool bdpcmAllowed = compID == COMPONENT_Y;
+#endif
        bdpcmAllowed &= CU::isIntra( cu );
+#if JVET_P0059_CHROMA_BDPCM
+       if (isLuma(compID))
+           bdpcmAllowed &= (cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize);
+       else
+           bdpcmAllowed &= (cu.chromaSize().width <= transformSkipMaxSize && cu.chromaSize().height <= transformSkipMaxSize);
+#else
        bdpcmAllowed &= ( cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize );
-
+#endif
   return bdpcmAllowed;
 }
 
@@ -3828,8 +3843,16 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   SizeType transformSkipMaxSize = 1 << maxSize;
 #if JVET_P0058_CHROMA_TS
   tsAllowed &= !(tu.cu->bdpcmMode && isLuma(compID));
+#if JVET_P0059_CHROMA_BDPCM
+  tsAllowed &= !(tu.cu->bdpcmModeChroma && isChroma(compID));
+#endif
+#else
+#if JVET_P0059_CHROMA_BDPCM
+  tsAllowed &= !(tu.cu->bdpcmMode && isLuma(compID) );
+  tsAllowed &= !(tu.cu->bdpcmModeChroma && isChroma(compID) );
 #else
   tsAllowed &= !(tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
+#endif
 #endif
 #if JVET_P0058_CHROMA_TS
   tsAllowed &= tu.blocks[compID].width <= transformSkipMaxSize && tu.blocks[compID].height <= transformSkipMaxSize;
@@ -3935,7 +3958,11 @@ int getNumModesMip(const Size& block)
   {
     return 35;
   }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
   else if (block.width <= 8 && block.height <= 8)
+#endif
   {
     return 19;
   }
@@ -3947,14 +3974,18 @@ int getNumModesMip(const Size& block)
 }
 
 
-#if JVET_P0803_COMBINED_MIP_CLEANUP
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
 int getMipSizeId(const Size& block)
 {
   if( block.width == 4 && block.height == 4 )
   {
     return 0;
   }
+#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+  else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
+#else
   else if( block.width <= 8 && block.height <= 8 )
+#endif
   {
     return 1;
   }

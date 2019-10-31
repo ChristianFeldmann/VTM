@@ -2011,6 +2011,10 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #endif
           m_CABACEstimator->cu_pred_data   ( cu );
           m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
+#if JVET_P0059_CHROMA_BDPCM
+          if (!CS::isDualITree(*cu.cs) && isLuma(partitioner.chType))
+              m_CABACEstimator->bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
+#endif
 
           // Encode Coefficients
           CUCtx cuCtx;

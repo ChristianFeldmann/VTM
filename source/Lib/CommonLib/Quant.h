@@ -167,10 +167,17 @@ private:
   void xInitScalingList   ( const Quant* other );
   void xDestroyScalingList();
   void xSetFlatScalingList( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp );
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  void xSetScalingListEnc(ScalingList *scalingList, uint32_t list, uint32_t size, int qp, uint32_t scalingListId);
+  void xSetScalingListDec(const ScalingList &scalingList, uint32_t list, uint32_t size, int qp, uint32_t scalingListId);
+  void xSetRecScalingListEnc(ScalingList *scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp, uint32_t scalingListId);
+  void xSetRecScalingListDec(const ScalingList &scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp, uint32_t scalingListId);
+#else
   void xSetScalingListEnc ( ScalingList *scalingList, uint32_t list, uint32_t size, int qp );
   void xSetScalingListDec ( const ScalingList &scalingList, uint32_t list, uint32_t size, int qp );
   void xSetRecScalingListEnc( ScalingList *scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp );
   void xSetRecScalingListDec( const ScalingList &scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp );
+#endif
 private:
   void xSignBitHidingHDQ  (TCoeff* pQCoef, const TCoeff* pCoef, TCoeff* deltaU, const CoeffCodingContext& cctx, const int maxLog2TrDynamicRange);
 

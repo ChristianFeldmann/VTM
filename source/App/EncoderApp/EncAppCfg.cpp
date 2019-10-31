@@ -1140,7 +1140,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_P0058_CHROMA_TS
   ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
 #endif
+#if JVET_P0059_CHROMA_BDPCM
+  ("BDPCM",                                           m_useBDPCM,                                           0, "BDPCM (0:off, 1:lumaonly, 2:lumachroma")
+#else
   ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
+#endif
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
@@ -3439,6 +3443,10 @@ bool EncAppCfg::xCheckParameter()
 #endif
 #if EXTENSION_360_VIDEO
   check_failed |= m_ext360.verifyParameters();
+#endif
+
+#if JVET_P0059_CHROMA_BDPCM
+  xConfirmPara(m_useBDPCM < 0 || m_useBDPCM > 2, "BDPCM must be in range 0..2");
 #endif
 
 #undef xConfirmPara

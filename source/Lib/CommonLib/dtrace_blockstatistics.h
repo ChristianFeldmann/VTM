@@ -72,6 +72,9 @@ enum class BlockStatistic {
   MTSIdx,
 #endif
   BDPCM,
+#if JVET_P0059_CHROMA_BDPCM
+  BDPCMChroma,
+#endif
   TileIdx,
   IndependentSliceIdx,
   LFNSTIdx,
@@ -173,6 +176,9 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::MTSIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Integer,                ""}},
 #endif
   { BlockStatistic::BDPCM,                  std::tuple<std::string, BlockStatisticType, std::string>{"BDPCM",                       BlockStatisticType::Flag,                   ""}},    // called bdpcmMode, but used like a flag in the software? related to intra, but signalled always?
+#if JVET_P0059_CHROMA_BDPCM
+  { BlockStatistic::BDPCMChroma,            std::tuple<std::string, BlockStatisticType, std::string>{"BDPCMChroma",                 BlockStatisticType::Flag,                   ""}},
+#endif
   { BlockStatistic::TileIdx,                std::tuple<std::string, BlockStatisticType, std::string>{"TileIdx",                     BlockStatisticType::Integer,                ""}},
   { BlockStatistic::IndependentSliceIdx,    std::tuple<std::string, BlockStatisticType, std::string>{"IndependentSliceIdx",         BlockStatisticType::Integer,                ""}},
   { BlockStatistic::LFNSTIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"LFNSTIdx",                    BlockStatisticType::Integer,                "[0, 3]"}},

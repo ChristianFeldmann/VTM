@@ -670,8 +670,12 @@ namespace DQIntern
 #if JVET_P0058_CHROMA_TS
     const int         qpDQ                  = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
 #else
+#if JVET_P0059_CHROMA_BDPCM
+    const bool        isTransformSkip       = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID) );
+    const int         qpDQ                  = cQP.Qp(isTransformSkip) + 1;
+#else
     const int         qpDQ                  = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
-
+#endif
 #endif
     const int         qpPer                 = qpDQ / 6;
     const int         qpRem                 = qpDQ - 6 * qpPer;
@@ -744,7 +748,12 @@ namespace DQIntern
 #if JVET_P0058_CHROMA_TS
     const int         qpDQ                  = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
 #else
+#if JVET_P0059_CHROMA_BDPCM
+    const bool        isTransformSkip       = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID));
+    const int         qpDQ                  = cQP.Qp(isTransformSkip) + 1;
+#else
     const int         qpDQ                  = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#endif
 #endif
     const int         qpPer                 = qpDQ / 6;
     const int         qpRem                 = qpDQ - 6 * qpPer;
@@ -1611,14 +1620,24 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 #if JVET_P0058_CHROMA_TS
   if ( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP) )
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  if ((tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID))) && 
+      !((tu.cu->bdpcmMode && isLuma(compID)) || (tu.cu->bdpcmModeChroma && !isLuma(compID))) )
+#else
   if ( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
+#endif
 #endif
   {
     //===== scaling matrix ====
 #if JVET_P0058_CHROMA_TS
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
 #else
+#if JVET_P0059_CHROMA_BDPCM
+    const bool        isTransformSkip = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID) );
+    const int         qpDQ            = cQP.Qp(isTransformSkip) + 1;
+#else
     const int         qpDQ            = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#endif
 #endif
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;
@@ -1647,13 +1666,23 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
 #if JVET_P0058_CHROMA_TS
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP))
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  if ((tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID))) && 
+      !((tu.cu->bdpcmMode && isLuma(compID)) || (tu.cu->bdpcmModeChroma && !isLuma(compID))) )
+#else
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID)) )
+#endif
 #endif
   {
 #if JVET_P0058_CHROMA_TS
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
 #else
+#if JVET_P0059_CHROMA_BDPCM
+    const bool        isTransformSkip = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID) );
+    const int         qpDQ            = cQP.Qp(isTransformSkip) + 1;
+#else
     const int         qpDQ            = cQP.Qp(tu.mtsIdx==MTS_SKIP && isLuma(compID)) + 1;
+#endif
 #endif
     const int         qpPer           = qpDQ / 6;
     const int         qpRem           = qpDQ - 6 * qpPer;

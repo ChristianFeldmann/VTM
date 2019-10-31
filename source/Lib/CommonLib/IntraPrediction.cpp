@@ -273,7 +273,11 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
 #if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(iWidth == 2, "Width of 2 is not supported");
 #endif
+#if JVET_P0059_CHROMA_BDPCM
+  const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : !isLuma(compId) && pu.cu->bdpcmModeChroma ? BDPCM_IDX : PU::getFinalIntraMode(pu, channelType);
+#else
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : PU::getFinalIntraMode( pu, channelType );
+#endif
 
   CHECK( floorLog2(iWidth) < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
   CHECK( floorLog2(iWidth) > 7, "Size not allowed" );
@@ -288,7 +292,11 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   {
     case(PLANAR_IDX): xPredIntraPlanar(srcBuf, piPred); break;
     case(DC_IDX):     xPredIntraDc(srcBuf, piPred, channelType, false); break;
+#if JVET_P0059_CHROMA_BDPCM
+    case(BDPCM_IDX):  xPredIntraBDPCM(srcBuf, piPred, isLuma(compID) ? pu.cu->bdpcmMode : pu.cu->bdpcmModeChroma, clpRng); break;
+#else
     case(BDPCM_IDX):  xPredIntraBDPCM(srcBuf, piPred, pu.cu->bdpcmMode, clpRng); break;
+#endif
     default:          xPredIntraAng(srcBuf, piPred, channelType, clpRng); break;
   }
 
@@ -470,7 +478,11 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     )
   {
   }
+#if JVET_P0059_CHROMA_BDPCM
+  else if ((isLuma(chType) && pu.cu->bdpcmMode) || (!isLuma(chType) && pu.cu->bdpcmModeChroma)) // BDPCM
+#else
   else if (isLuma( chType ) && pu.cu->bdpcmMode) // BDPCM
+#endif
   {
     m_ipaParam.refFilterFlag = false;
   }

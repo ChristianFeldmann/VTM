@@ -1411,7 +1411,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
   if (pcSPS->getTransformSkipEnabledFlag())
   {
+#if JVET_P0059_CHROMA_BDPCM
+      READ_FLAG(uiCode, "sps_bdpcm_enabled_flag");
+      if (uiCode && pcSPS->getChromaFormatIdc() == CHROMA_444 )
+      {
+          READ_FLAG(uiCode, "sps_bdpcm_enabled_chroma_flag");
+          uiCode++;
+      }
+      pcSPS->setBDPCMEnabled(uiCode);
+#else
     READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
+#endif
   }
 #if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   READ_FLAG( uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag (uiCode ? true : false);

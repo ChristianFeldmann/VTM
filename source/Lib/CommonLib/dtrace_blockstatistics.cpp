@@ -438,6 +438,9 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
         }
 
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::BDPCM), cu.bdpcmMode);
+#if JVET_P0059_CHROMA_BDPCM
+        DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::BDPCMChroma), cu.bdpcmModeChroma);
+#endif
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TileIdx), cu.tileIdx);
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IndependentSliceIdx), cu.slice->getIndependentSliceIdx());
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::LFNSTIdx), cu.lfnstIdx);
@@ -457,7 +460,9 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
         {
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
         }
-
+#if JVET_P0059_CHROMA_BDPCM
+        DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::BDPCMChroma), cu.bdpcmModeChroma);
+#endif
       }
 
 

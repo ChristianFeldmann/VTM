@@ -874,7 +874,11 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
+#if JVET_P0059_CHROMA_BDPCM
+  int               m_BDPCMEnabled;
+#else
   bool              m_BDPCMEnabledFlag;
+#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
@@ -1024,8 +1028,13 @@ public:
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+#if JVET_P0059_CHROMA_BDPCM
+  int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
+  void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
+#else
   bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
   void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
+#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }

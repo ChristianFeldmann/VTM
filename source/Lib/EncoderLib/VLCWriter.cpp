@@ -859,7 +859,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       }
       else 
       {
-        CHECK(pcSPS->getChromaFormatIdc() != CHROMA_444, "BDPCM for chroma can be used for 444 only.")
+        CHECK(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA, "BDPCM for chroma can be used for 444 only.")
       }
 #else
     WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");

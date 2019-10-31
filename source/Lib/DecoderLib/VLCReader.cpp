@@ -1389,15 +1389,30 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
 #endif
     {
+#if JVET_P0410_CHROMA_QP_MAPPING
+      int32_t qpTableStart = 0;
+      READ_SVLC(qpTableStart, "qp_table_starts_minus26"); chromaQpMappingTableParams.setQpTableStartMinus26(i, qpTableStart);
+#endif
       READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); chromaQpMappingTableParams.setNumPtsInCQPTableMinus1(i,uiCode);
       std::vector<int> deltaQpInValMinus1(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
+#if JVET_P0410_CHROMA_QP_MAPPING
+      std::vector<int> deltaQpDiffVal(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
+#endif
       std::vector<int> deltaQpOutVal(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
       for (int j = 0; j <= chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i); j++)
       {
         READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode;
+#if JVET_P0410_CHROMA_QP_MAPPING
+        int32_t deltaQpDiff = 0;
+        READ_SVLC(deltaQpDiff, "delta_qp_diff_val");  deltaQpDiffVal[j] = deltaQpDiff;
+#else
         READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode;
+#endif
       }
       chromaQpMappingTableParams.setDeltaQpInValMinus1(i, deltaQpInValMinus1);
+#if JVET_P0410_CHROMA_QP_MAPPING
+      chromaQpMappingTableParams.setDeltaQpDiffVal(i, deltaQpDiffVal);
+#endif
       chromaQpMappingTableParams.setDeltaQpOutVal(i, deltaQpOutVal);
     }
     pcSPS->setChromaQpMappingTableFromParams(chromaQpMappingTableParams, pcSPS->getQpBDOffset(CHANNEL_TYPE_CHROMA));

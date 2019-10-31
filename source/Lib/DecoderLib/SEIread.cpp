@@ -1628,20 +1628,6 @@ void SEIReader::xParseSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics& s
     } // for c
     sei_read_flag(pDecodedMessageOutputStream, code, "film_grain_characteristics_persistence_flag"); sei.m_filmGrainCharacteristicsPersistenceFlag = code != 0;
   } // cancel flag
-#if DEBUG_SEI
-  printf("Film grain characteristics SEI--------------------------------\n");
-  printf("\tfilm_grain_characteristics_cancel_flag: %d \n", sei.m_filmGrainCharacteristicsCancelFlag);
-  printf("\tfilm_grain_characteristics_persistence_flag: %d \n", sei.m_filmGrainCharacteristicsPersistenceFlag);
-
-  printf("\tfilm_grain_model_id: %d \n", sei.m_filmGrainModelId);
-  printf("\tseparate_colour_description_present_flag: %d \n", sei.m_separateColourDescriptionPresentFlag);
-  printf("\tblending_mode_id: %d \n", sei.m_blendingModeId);
-  printf("\tlog2_scale_factor: %d \n", sei.m_log2ScaleFactor);
-  for (int c = 0; c<3; c++)
-  {
-    printf("\tcomp_model_present_flag[c]: %d \n", sei.m_compModel[c].presentFlag);
-  }
-#endif
 }
 
 void SEIReader::xParseSEIFramePacking(SEIFramePacking& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
@@ -1679,33 +1665,6 @@ void SEIReader::xParseSEIFramePacking(SEIFramePacking& sei, uint32_t payloadSize
     sei_read_flag(pDecodedMessageOutputStream, val, "frame_packing_arrangement_persistence_flag"); sei.m_arrangementPersistenceFlag = (val != 0);
   }
   sei_read_flag(pDecodedMessageOutputStream, val, "upsampled_aspect_ratio_flag");                  sei.m_upsampledAspectRatio = val;
-#if DEBUG_SEI
-  printf("Parse FramePacking SEI--------------------------------\n");
-  printf("\tframe_packing_arrangement_id: %d \n", sei.m_arrangementId);
-  printf("\tframe_packing_arrangement_cancel_flag: %d \n", sei.m_arrangementCancelFlag);
-  if (!sei.m_arrangementCancelFlag)
-  {
-    printf("\tframe_packing_arrangement_type: %d \n", sei.m_arrangementType);
-    printf("\tquincunx_sampling_flag: %d \n", sei.m_quincunxSamplingFlag);
-    printf("\tcontent_interpretation_type: %d \n", sei.m_contentInterpretationType);
-    printf("\tspatial_flipping_flag: %d \n", sei.m_spatialFlippingFlag);
-    printf("\tframe0_flipped_flag: %d \n", sei.m_frame0FlippedFlag);
-    printf("\tfield_views_flag: %d \n", sei.m_fieldViewsFlag);
-    printf("\tcurrent_frame_is_frame0_flag: %d \n", sei.m_currentFrameIsFrame0Flag);
-    printf("\tframe0_self_contained_flag: %d \n", sei.m_frame0SelfContainedFlag);
-    printf("\tframe1_self_contained_flag: %d \n", sei.m_frame1SelfContainedFlag);
-    if (sei.m_quincunxSamplingFlag == 0 && sei.m_arrangementType != 5)
-    {
-      printf("\tframe0_grid_position_x: %d \n", sei.m_frame0GridPositionX);
-      printf("\tframe0_grid_position_y: %d \n", sei.m_frame0GridPositionY);
-      printf("\tframe1_grid_position_x: %d \n", sei.m_frame1GridPositionX);
-      printf("\tframe1_grid_position_y: %d \n", sei.m_frame1GridPositionY);
-    }
-    printf("\tframe_packing_arrangement_reserved_byte: %d \n", sei.m_arrangementReservedByte);
-    printf("\tframe_packing_arrangement_persistence_flag: %d \n", sei.m_arrangementPersistenceFlag);
-  }
-  printf("\tupsampled_aspect_ratio_flag: %d \n", sei.m_upsampledAspectRatio);
-#endif
 }
 
 void SEIReader::xParseSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
@@ -1728,19 +1687,6 @@ void SEIReader::xParseSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourV
 
   sei_read_code(pDecodedMessageOutputStream, 32, code, "max_display_mastering_luminance"); sei.values.maxLuminance = code;
   sei_read_code(pDecodedMessageOutputStream, 32, code, "min_display_mastering_luminance"); sei.values.minLuminance = code;
-#if DEBUG_SEI
-  printf("Parse Mastering display colour volume SEI--------------------------------\n");
-  printf("\tdisplay_primaries_x[0]: %d \n", sei.values.primaries[0][0]);
-  printf("\tdisplay_primaries_y[0]: %d \n", sei.values.primaries[0][1]);
-  printf("\tdisplay_primaries_x[1]: %d \n", sei.values.primaries[1][0]);
-  printf("\tdisplay_primaries_y[1]: %d \n", sei.values.primaries[1][1]);
-  printf("\tdisplay_primaries_x[2]: %d \n", sei.values.primaries[2][0]);
-  printf("\tdisplay_primaries_y[2]: %d \n", sei.values.primaries[2][1]);
-  printf("\twhite_point_x: %d \n", sei.values.whitePoint[0]);
-  printf("\twhite_point_y: %d \n", sei.values.whitePoint[1]);
-  printf("\tmax_display_mastering_luminance: %d \n", sei.values.maxLuminance);
-  printf("\tmin_display_mastering_luminance: %d \n", sei.values.minLuminance);
-#endif
 }
 
 void SEIReader::xParseSEIContentLightLevelInfo(SEIContentLightLevelInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
@@ -1750,11 +1696,6 @@ void SEIReader::xParseSEIContentLightLevelInfo(SEIContentLightLevelInfo& sei, ui
 
   sei_read_code(pDecodedMessageOutputStream, 16, code, "max_content_light_level");     sei.m_maxContentLightLevel = code;
   sei_read_code(pDecodedMessageOutputStream, 16, code, "max_pic_average_light_level"); sei.m_maxPicAverageLightLevel = code;
-#if DEBUG_SEI
-  printf("Parse Content light level SEI--------------------------------\n");
-  printf("\tmax_content_light_level: %d \n", sei.m_maxContentLightLevel);
-  printf("\tmax_pic_average_light_level: %d \n", sei.m_maxPicAverageLightLevel);
-#endif
 }
 
 void SEIReader::xParseSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics& sei, uint32_t payloadSize, std::ostream* pDecodedMessageOutputStream)
@@ -1763,10 +1704,6 @@ void SEIReader::xParseSEIAlternativeTransferCharacteristics(SEIAlternativeTransf
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
   sei_read_code(pDecodedMessageOutputStream, 8, code, "preferred_transfer_characteristics"); sei.m_preferredTransferCharacteristics = code;
-#if DEBUG_SEI
-  printf("Parse Alternative transfer characteristics SEI--------------------------------\n");
-  printf("\tpreferred_transfer_characteristics: %d \n", sei.m_preferredTransferCharacteristics);
-#endif
 }
 
 void SEIReader::xParseSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
@@ -1777,12 +1714,6 @@ void SEIReader::xParseSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment&
   sei_read_code(pDecodedMessageOutputStream, 32, code, "ambient_illuminance"); sei.m_ambientIlluminance = code;
   sei_read_code(pDecodedMessageOutputStream, 16, code, "ambient_light_x");     sei.m_ambientLightX = (uint16_t)code;
   sei_read_code(pDecodedMessageOutputStream, 16, code, "ambient_light_y");     sei.m_ambientLightY = (uint16_t)code;
-#if DEBUG_SEI
-  printf("Parse Ambient viewing environment SEI--------------------------------\n");
-  printf("\tambient_illuminance: %d \n", sei.m_ambientIlluminance);
-  printf("\tambient_light_x: %d \n", sei.m_ambientLightX);
-  printf("\tambient_light_y: %d \n", sei.m_ambientLightY);
-#endif
 }
 
 void SEIReader::xParseSEIContentColourVolume(SEIContentColourVolume& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
@@ -1822,40 +1753,6 @@ void SEIReader::xParseSEIContentColourVolume(SEIContentColourVolume& sei, uint32
       sei_read_code(pDecodedMessageOutputStream, 32, val, "ccv_avg_luminance_value");   sei.m_ccvAvgLuminanceValue = val;
     }
   }
-#if DEBUG_SEI
-  printf("Parse Content colour volume SEI--------------------------------\n");
-  printf("\tccv_cancel_flag: %d \n", sei.m_ccvCancelFlag);
-  if (!sei.m_ccvCancelFlag)
-  {
-    printf("\tccv_persistence_flag: %d \n", sei.m_ccvPersistenceFlag);
-    printf("\tccv_primaries_present_flag: %d \n", sei.m_ccvPrimariesPresentFlag);
-
-    printf("\tccv_min_luminance_value_present_flag: %d \n", sei.m_ccvMinLuminanceValuePresentFlag);
-    printf("\tccv_max_luminance_value_present_flag: %d \n", sei.m_ccvMaxLuminanceValuePresentFlag);
-    printf("\tccv_avg_luminance_value_present_flag: %d \n", sei.m_ccvAvgLuminanceValuePresentFlag);
-
-    if (sei.m_ccvPrimariesPresentFlag)
-    {
-      for (i = 0; i < MAX_NUM_COMPONENT; i++)
-      {
-        printf("\tccv_primaries_x[i]: %d \n", sei.m_ccvPrimariesX[i]);
-        printf("\tccv_primaries_y[i]: %d \n", sei.m_ccvPrimariesY[i]);
-      }
-    }
-    if (sei.m_ccvMinLuminanceValuePresentFlag)
-    {
-      printf("\tccv_min_luminance_value: %d \n", sei.m_ccvMinLuminanceValue);
-    }
-    if (sei.m_ccvMaxLuminanceValuePresentFlag)
-    {
-      printf("\tccv_max_luminance_value: %d \n", sei.m_ccvMaxLuminanceValue);
-    }
-    if (sei.m_ccvAvgLuminanceValuePresentFlag)
-    {
-      printf("\tccv_avg_luminance_value: %d \n", sei.m_ccvAvgLuminanceValue);
-    }
-  }
-#endif
 }
 #endif
 #if JVET_P0462_SEI360

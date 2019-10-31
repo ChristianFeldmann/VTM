@@ -814,7 +814,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiAlternativeTransferCharacteristics);
   }
 
-  // content light level
+  // ambient viewing environment
   if (m_pcCfg->getAmbientViewingEnvironmentSEIEnabled())
   {
     SEIAmbientViewingEnvironment *seiAVE = new SEIAmbientViewingEnvironment;

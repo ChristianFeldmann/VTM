@@ -590,18 +590,18 @@ protected:
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
-  // cll SEI
+  // content light level SEI
   bool      m_cllSEIEnabled;
   uint32_t  m_cllSEIMaxContentLevel;
   uint32_t  m_cllSEIMaxPicAvgLevel;
-  // atc sei
+  // alternative transfer characteristics sei
   int       m_preferredTransferCharacteristics;
-  // ave sei
+  // ambient viewing environment sei
   bool      m_aveSEIEnabled;
   uint32_t  m_aveSEIAmbientIlluminance;
   uint32_t  m_aveSEIAmbientLightX;
   uint32_t  m_aveSEIAmbientLightY;
-  // ccv sei
+  // content colour volume sei
   bool      m_ccvSEIEnabled;
   bool      m_ccvSEICancelFlag;
   bool      m_ccvSEIPersistenceFlag;

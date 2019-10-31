@@ -953,17 +953,6 @@ void SEIEncoder::initSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVo
   }
   seiMDCV->values.maxLuminance = m_pcCfg->getMasteringDisplaySEI().maxLuminance;
   seiMDCV->values.minLuminance = m_pcCfg->getMasteringDisplaySEI().minLuminance;
-#if DEBUG_SEI
-  printf("Init Mastering display colour volume SEI--------------------------------\n");
-  printf("\tdisplay_primaries_x[0]: %d \n", seiMDCV->values.primaries[0][0]);
-  printf("\tdisplay_primaries_y[0]: %d \n", seiMDCV->values.primaries[0][1]);
-  printf("\tdisplay_primaries_x[1]: %d \n", seiMDCV->values.primaries[1][0]);
-  printf("\tdisplay_primaries_y[1]: %d \n", seiMDCV->values.primaries[1][1]);
-  printf("\tdisplay_primaries_x[2]: %d \n", seiMDCV->values.primaries[2][0]);
-  printf("\tdisplay_primaries_y[2]: %d \n", seiMDCV->values.primaries[2][1]);
-  printf("\twhite_point_x: %d \n", seiMDCV->values.whitePoint[0]);
-  printf("\twhite_point_y: %d \n", seiMDCV->values.whitePoint[1]);
-#endif
 }
 
 void SEIEncoder::initSEIContentLightLevel(SEIContentLightLevelInfo *seiCLL)

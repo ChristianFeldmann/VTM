@@ -851,11 +851,27 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getTransformSkipEnabledFlag() ? 1 : 0, "sps_transform_skip_enabled_flag");
   if (pcSPS->getTransformSkipEnabledFlag())
   {
+#if JVET_P0059_CHROMA_BDPCM
+      WRITE_FLAG(pcSPS->getBDPCMEnabled() ? 1 : 0, "sps_bdpcm_enabled_flag");
+      if (pcSPS->getBDPCMEnabled() && pcSPS->getChromaFormatIdc() == CHROMA_444)
+      {
+          WRITE_FLAG(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA ? 1 : 0, "sps_bdpcm_enabled_chroma_flag");
+      }
+      else 
+      {
+        CHECK(pcSPS->getChromaFormatIdc() != CHROMA_444, "BDPCM for chroma can be used for 444 only.")
+      }
+#else
     WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");
+#endif
   }
   else
   {
+#if JVET_P0059_CHROMA_BDPCM
+    CHECK(pcSPS->getBDPCMEnabled()!=0, "BDPCM cannot be used when transform skip is disabled");
+#else
     CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
+#endif
   }
 #if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");

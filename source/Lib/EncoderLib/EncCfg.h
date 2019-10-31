@@ -440,7 +440,11 @@ protected:
 #if JVET_P0058_CHROMA_TS
   bool      m_useChromaTS;
 #endif
+#if JVET_P0059_CHROMA_BDPCM
+  int       m_useBDPCM;
+#else
   bool      m_useBDPCM;
+#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;
   bool      m_transformSkipRotationEnabledFlag;
   bool      m_transformSkipContextEnabledFlag;
@@ -1239,8 +1243,13 @@ public:
   bool getUseChromaTS                                  ()       { return m_useChromaTS; }
   void setUseChromaTS                                  (bool b) { m_useChromaTS = b; }
 #endif
+#if JVET_P0059_CHROMA_BDPCM
+  int  getUseBDPCM                                     ()         { return m_useBDPCM; }
+  void setUseBDPCM                                     ( int b )  { m_useBDPCM = b;    }
+#else
   bool getUseBDPCM                                     ()         { return m_useBDPCM; }
   void setUseBDPCM                                     ( bool b ) { m_useBDPCM  = b;   }
+#endif
   bool getUseJointCbCr                                 ()         { return m_JointCbCrMode; }
   void setUseJointCbCr                                 (bool b)   { m_JointCbCrMode = b; }
   bool getPersistentRiceAdaptationEnabledFlag          ()                 const { return m_persistentRiceAdaptationEnabledFlag;  }

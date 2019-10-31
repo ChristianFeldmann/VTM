@@ -878,6 +878,10 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     return end_of_ctu(cu, cuCtx);
   }
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
+#if JVET_P0059_CHROMA_BDPCM
+  if (!CS::isDualITree(*cu.cs) && isLuma(partitioner.chType))
+      bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
+#endif
 
   // --> create PUs
 
@@ -1155,21 +1159,68 @@ void CABACReader::pred_mode( CodingUnit& cu )
 }
 void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
 {
+#if !JVET_P0059_CHROMA_BDPCM
   cu.bdpcmMode = 0;
 
   if( !cu.cs->sps->getBDPCMEnabledFlag() ) return;
+#endif
+
+#if JVET_P0059_CHROMA_BDPCM
+  if (!CU::bdpcmAllowed(cu, compID))
+  {
+     if (isLuma(compID))
+     {
+        cu.bdpcmMode = 0;
+         if (!CS::isDualITree(*cu.cs))
+             cu.bdpcmModeChroma = 0;
+     }
+     else
+     {
+         cu.bdpcmModeChroma = 0;
+     }
+     return;
+  }
+#else
   if( !CU::bdpcmAllowed( cu, compID ) ) return;
+#endif
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__BDPCM_MODE, cu.block(compID).lumaSize(), compID );
 
+#if JVET_P0059_CHROMA_BDPCM
+  int bdpcmMode;
+  bdpcmMode = m_BinDecoder.decodeBin(Ctx::BDPCMMode(0));
+  if (bdpcmMode)
+  {
+    bdpcmMode += m_BinDecoder.decodeBin(Ctx::BDPCMMode(1));
+  }
+  if (isLuma(compID))
+  {
+    cu.bdpcmMode = bdpcmMode;
+  }
+  else
+  {
+    cu.bdpcmModeChroma = bdpcmMode;
+  }
+#else
   cu.bdpcmMode = m_BinDecoder.decodeBin( Ctx::BDPCMMode( 0 ) );
 
   if( cu.bdpcmMode )
   {
     cu.bdpcmMode += m_BinDecoder.decodeBin( Ctx::BDPCMMode( 1 ) );
   }
-
+#endif
+#if JVET_P0059_CHROMA_BDPCM
+  if (isLuma(compID))
+  {
+    DTRACE(g_trace_ctx, D_SYNTAX, "bdpcm_mode(%d) x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", CHANNEL_TYPE_LUMA, cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode);
+  }
+  else
+  {
+    DTRACE(g_trace_ctx, D_SYNTAX, "bdpcm_mode(%d) x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", CHANNEL_TYPE_CHROMA, cu.chromaPos().x, cu.chromaPos().y, cu.chromaSize().width, cu.chromaSize().height, cu.bdpcmModeChroma);
+  }
+#else
   DTRACE( g_trace_ctx, D_SYNTAX, "bdpcm_mode() x=%d, y=%d, w=%d, h=%d, bdpcm=%d\n", cu.lumaPos().x, cu.lumaPos().y, cu.lwidth(), cu.lheight(), cu.bdpcmMode );
+#endif
 }
 
 void CABACReader::cu_pred_data( CodingUnit &cu )
@@ -1450,6 +1501,17 @@ void CABACReader::intra_chroma_pred_mode(PredictionUnit& pu)
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, pu.cu->blocks[pu.chType].lumaSize(), CHANNEL_TYPE_CHROMA);
   // LM chroma mode
+
+#if JVET_P0059_CHROMA_BDPCM
+  if (pu.cu->bdpcmModeChroma)
+  {
+    unsigned chromaCandModes[NUM_CHROMA_MODE];
+    PU::getIntraChromaCandModes(pu, chromaCandModes);
+    pu.intraDir[1] = chromaCandModes[0];
+    return;
+  }
+#endif
+
   if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
   {
     bool isLMCMode = m_BinDecoder.decodeBin(Ctx::CclmModeFlag(0)) ? true : false;
@@ -2808,15 +2870,34 @@ void CABACReader::transform_tree( CodingStructure &cs, Partitioner &partitioner,
 
 bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned depth, const bool prevCbf, const bool useISP )
 {
+#if JVET_P0059_CHROMA_BDPCM
+  unsigned  ctxId = DeriveCtx::CtxQtCbf(area.compID, prevCbf, useISP && isLuma(area.compID));
+#else
   const unsigned  ctxId = DeriveCtx::CtxQtCbf( area.compID, prevCbf, useISP && isLuma( area.compID ) );
+#endif
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
 
   unsigned  cbf = 0;
+#if JVET_P0059_CHROMA_BDPCM
+  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmMode)
+   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmModeChroma))
+#else
   if( area.compID == COMPONENT_Y && cs.getCU( area.pos(), ChannelType( area.compID ) )->bdpcmMode )
+#endif
   {
+#if JVET_P0059_CHROMA_BDPCM
+    if (area.compID == COMPONENT_Y)
+        ctxId = 1;
+    else if (area.compID == COMPONENT_Cb)
+        ctxId = 1;
+    else
+        ctxId = 2;
+    cbf = m_BinDecoder.decodeBin(ctxSet(ctxId));
+#else
     cbf = m_BinDecoder.decodeBin( ctxSet( 1 ) );
+#endif
   }
   else
   {
@@ -3124,9 +3205,17 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
   explicit_rdpcm_mode( tu, compID );
 
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0059_CHROMA_BDPCM
+  if (tu.mtsIdx[compID] == MTS_SKIP)
+#else
   if( tu.mtsIdx[compID] == MTS_SKIP || (tu.cu->bdpcmMode && isLuma(compID) ) )
+#endif
+#else
+#if JVET_P0059_CHROMA_BDPCM
+  if( (isLuma(compID) && (tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode)) || (isChroma(compID) && (tu.cu->bdpcmModeChroma)))
 #else
   if( isLuma( compID ) && ( tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode ) )
+#endif
 #endif
   {
     residual_codingTS( tu, compID );
@@ -3215,7 +3304,11 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
 void CABACReader::ts_flag( TransformUnit& tu, ComponentID compID )
 {
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0059_CHROMA_BDPCM
+  int tsFlag = ( (tu.cu->bdpcmMode && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID)) ) ? 1 : tu.mtsIdx[compID] == MTS_SKIP ? 1 : 0;
+#else
   int tsFlag = tu.cu->bdpcmMode && isLuma(compID) ? 1 : tu.mtsIdx[compID] == MTS_SKIP ? 1 : 0;
+#endif
   int ctxIdx = isLuma(compID) ? 6 : 11;
 #else
   int tsFlag = tu.cu->bdpcmMode ? 1 : tu.mtsIdx == MTS_SKIP ? 1 : 0;
@@ -3285,7 +3378,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
 
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0059_CHROMA_BDPCM
+  if ((tu.cu->bdpcmMode && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID))) tu.mtsIdx[compID] = MTS_SKIP;
+#else
   if ( tu.cu->bdpcmMode && isLuma(compID)) tu.mtsIdx[compID] = MTS_SKIP;
+#endif
 #else
   if( tu.cu->bdpcmMode ) tu.mtsIdx = MTS_SKIP;
 #endif
@@ -3716,7 +3813,11 @@ void CABACReader::residual_codingTS( TransformUnit& tu, ComponentID compID )
   DTRACE( g_trace_ctx, D_SYNTAX, "residual_codingTS() etype=%d pos=(%d,%d) size=%dx%d\n", tu.blocks[compID].compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.blocks[compID].width, tu.blocks[compID].height );
 
   // init coeff coding context
+#if JVET_P0059_CHROMA_BDPCM
+  CoeffCodingContext  cctx    ( tu, compID, false, isLuma(compID) ? tu.cu->bdpcmMode : tu.cu->bdpcmModeChroma);
+#else
   CoeffCodingContext  cctx    ( tu, compID, false, tu.cu->bdpcmMode );
+#endif
   TCoeff*             coeff   = tu.getCoeffs( compID ).buf;
 #if JVET_P0072_SIMPLIFIED_TSRC
   int maxCtxBins = (cctx.maxNumCoeff() * 7) >> 2;

@@ -155,7 +155,11 @@ void invResDPCM( const TransformUnit &tu, const ComponentID &compID, CoeffBuf &d
   const TCoeff* coef = &coeffs.buf[0];
   TCoeff* dst = &dstBuf.buf[0];
 
+#if JVET_P0059_CHROMA_BDPCM
+  if( isLuma(compID) ? tu.cu->bdpcmMode == 1 : tu.cu->bdpcmModeChroma == 1)
+#else
   if( tu.cu->bdpcmMode == 1 )
+#endif
   {
     for( int y = 0; y < hgt; y++ )
     {
@@ -195,7 +199,11 @@ void fwdResDPCM( TransformUnit &tu, const ComponentID &compID )
 
   TCoeff* coef = &coeffs.buf[0];
 
+#if JVET_P0059_CHROMA_BDPCM
+  if( isLuma(compID) ? tu.cu->bdpcmMode == 1 : tu.cu->bdpcmModeChroma == 1)
+#else
   if( tu.cu->bdpcmMode == 1 )
+#endif
   {
     for( int y = 0; y < hgt; y++ )
     {
@@ -379,7 +387,11 @@ void Quant::dequant(const TransformUnit &tu,
   const int             channelBitDepth    = sps->getBitDepth(toChannelType(compID));
 
   const TCoeff          *coef;
+#if JVET_P0059_CHROMA_BDPCM
+  if ((tu.cu->bdpcmMode && isLuma(compID)) || ( tu.cu->bdpcmModeChroma && isChroma(compID) ))
+#else
   if( tu.cu->bdpcmMode && isLuma(compID) )
+#endif
   {
     invResDPCM( tu, compID, dstCoeff );
     coef = piCoef;
@@ -1047,7 +1059,11 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 #if JVET_P0058_CHROMA_TS
   const bool useTransformSkip      = (tu.mtsIdx[compID] == MTS_SKIP);
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  const bool useTransformSkip      = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID) );
+#else
   const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
 #endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
@@ -1106,7 +1122,11 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
       piQCoef.buf[uiBlockPos] = Clip3<TCoeff>( entropyCodingMinimum, entropyCodingMaximum, quantisedCoefficient );
     } // for n
+#if JVET_P0059_CHROMA_BDPCM
+    if ((tu.cu->bdpcmMode && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID)) )
+#else
     if( tu.cu->bdpcmMode && isLuma(compID) )
+#endif
     {
       fwdResDPCM( tu, compID );
     }
@@ -1258,8 +1278,14 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   const int            QP_per                 = cQP.per(tu.mtsIdx[compID] == MTS_SKIP);
   const int            QP_rem                 = cQP.rem(tu.mtsIdx[compID] == MTS_SKIP);
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  const bool           isTransformSkip        = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID));
+  const int            QP_per                 = cQP.per(isTransformSkip);
+  const int            QP_rem                 = cQP.rem(isTransformSkip);
+#else
   const int            QP_per                 = cQP.per(tu.mtsIdx==MTS_SKIP && isLuma(compID));
   const int            QP_rem                 = cQP.rem(tu.mtsIdx==MTS_SKIP && isLuma(compID));
+#endif
 #endif
   const int            maxLog2TrDynamicRange  = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
   const int            channelBitDepth        = sps.getBitDepth(toChannelType(compID));

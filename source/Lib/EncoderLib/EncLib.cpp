@@ -1065,7 +1065,11 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+#if JVET_P0059_CHROMA_BDPCM
+  sps.setBDPCMEnabled(m_useBDPCM);
+#else
   sps.setBDPCMEnabledFlag(m_useBDPCM);
+#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 

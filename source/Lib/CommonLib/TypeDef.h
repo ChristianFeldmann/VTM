@@ -133,6 +133,8 @@
 
 #define JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG      1 // JVET-P0162: Removal of alf_ctb_use_first_aps_flag
 
+#define JVET_P0059_CHROMA_BDPCM                           1 // JVET-P0059: Enable BDPCM for chroma
+
 #define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
 
 #define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
@@ -395,6 +397,16 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
+
+#if JVET_P0059_CHROMA_BDPCM
+enum BDPCMControl
+{
+  BDPCM_INACTIVE = 0,
+  BDPCM_LUMAONLY = 1,
+  BDPCM_LUMACHROMA = 2,
+};
+#endif
+
 enum ApsType
 {
   ALF_APS = 0,

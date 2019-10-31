@@ -311,6 +311,9 @@ struct CodingUnit : public UnitArea
   bool           triangle;
   bool           transQuantBypass;
   int            bdpcmMode;
+#if JVET_P0059_CHROMA_BDPCM
+  int            bdpcmModeChroma;
+#endif
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;

@@ -74,6 +74,9 @@
 #define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
 
 #define JVET_P0517_ADAPTIVE_COLOR_TRANSFORM               1 // JVET-P0517: adaptive color transform
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+#define ENABLE_ISP_ENC_TEST_NON_ACT                       1
+#endif
 
 #define JVET_P0090_32BIT_MVD                              1 // JVET-P0090: Limitation of abs_mvd_min2 binarization within 32-bit
 

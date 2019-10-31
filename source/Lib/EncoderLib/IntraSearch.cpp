@@ -439,7 +439,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   double bestCurrentCost = bestCostSoFar;
   bool testISP = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP( width, height, cu.cs->sps->getMaxTbSize() );
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  if (cu.colorTransform || isSecondColorSpace)
+  if (cu.colorTransform)
   {
     testISP = false;
   }
@@ -455,11 +455,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_ispTestedModes.init(numTotalPartsHor, numTotalPartsVer);
   }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
-  const bool testBDPCM = sps.getBDPCMEnabledFlag() && CU::bdpcmAllowed(cu, ComponentID(partitioner.chType)) && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && !isSecondColorSpace;
-#else
   const bool testBDPCM = sps.getBDPCMEnabledFlag() && CU::bdpcmAllowed( cu, ComponentID( partitioner.chType ) ) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
-#endif
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
@@ -480,18 +476,10 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_P0803_COMBINED_MIP_CLEANUP
     CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-    const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth())) && !isSecondColorSpace;
-#else
     const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth()));
-#endif
 #else
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize() && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
-    const bool testMip = mipAllowed && mipModesAvailable(pu.Y()) && !isSecondColorSpace;
-#else
     const bool testMip    = mipAllowed && mipModesAvailable(pu.Y());
-#endif
 #endif
 
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeList;
@@ -513,6 +501,46 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         {
           uiRdModeList.push_back(m_savedRdModeFirstColorSpace[m_savedRdModeIdx][i]);
         }
+      }
+      else
+      {
+        return false;
+      }
+
+      if (testISP)
+      {
+        CHECK(m_savedRdModeIdx != 0, "incorrect saved RdModeIdx when ISP is enabled");
+        for (int candIdx = 0; candIdx < uiRdModeList.size(); candIdx++)
+        {
+          ModeInfo uiRdMode = uiRdModeList[candIdx];
+          CHECK(uiRdMode.ispMod != NOT_INTRA_SUBPARTITIONS, "ISP mode should not be in the candidate list of the first color space");
+          if (!uiRdMode.mipFlg && !uiRdMode.mipTrFlg && !uiRdMode.mRefId)
+          {
+            m_ispCandListHor.push_back(uiRdMode);
+          }
+        }
+
+        unsigned  uiPreds[NUM_MOST_PROBABLE_MODES];
+        pu.multiRefIdx = 0;
+        const int numCand = PU::getIntraMPMs(pu, uiPreds);
+        for (int j = 0; j < numCand; j++)
+        {
+          bool     mostProbableModeIncluded = false;
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+          ModeInfo mostProbableMode(false, false, 0, NOT_INTRA_SUBPARTITIONS, uiPreds[j]);
+#else
+          ModeInfo mostProbableMode(false, 0, NOT_INTRA_SUBPARTITIONS, uiPreds[j]);
+#endif
+
+          for (int i = 0; i < m_ispCandListHor.size(); i++)
+          {
+            mostProbableModeIncluded |= (mostProbableMode == m_ispCandListHor[i]);
+          }
+          if (!mostProbableModeIncluded)
+          {
+            m_ispCandListHor.push_back(mostProbableMode);
+          }
+        }        
       }
     }
     else
@@ -1123,7 +1151,16 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         }
         else
         {
-          CHECK(uiRdModeList[mode].ispMod != NOT_INTRA_SUBPARTITIONS, "best mode from the first color space is ISP mode");
+          if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
+          {
+            if (mode == numNonISPModes) // the list needs to be sorted only once
+            {
+              xSortISPCandList(bestCurrentCost, csBest->cost);
+            }
+            xGetNextISPMode(uiRdModeList[mode], (mode > 0 ? &uiRdModeList[mode - 1] : nullptr), Size(width, height));
+            if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
+              continue;
+          }
           cu.bdpcmMode = 0;
           uiOrgMode = uiRdModeList[mode];
           cu.mipFlag = uiOrgMode.mipFlg;

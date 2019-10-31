@@ -476,6 +476,9 @@ static const double ENC_CHROMA_WEIGHTING =                      0.8;
 #endif
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
+#if JVET_P0526_PLT_ENCODER
+static const double PLT_CHROMA_WEIGHTING =                      0.8;
+#endif
 static const int PLT_ENCBITDEPTH = 8;
 #if !JVET_P0077_LINE_CG_PALETTE
 static const int PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE = 4;

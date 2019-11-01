@@ -208,6 +208,9 @@ public:
   static const CtxSet   IntraLumaMpmFlag;
   static const CtxSet   IntraLumaPlanarFlag;
   static const CtxSet   CclmModeFlag;
+#if JVET_P0615_CHROMAMODE_CLEANUP
+  static const CtxSet   CclmModeIdx;
+#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
   static const CtxSet   DeltaQP;
@@ -260,7 +263,9 @@ public:
   static const CtxSet   GBiIdx;
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   ctbAlfAlternative;
+#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
   static const CtxSet   AlfUseLatestFilt;
+#endif
   static const CtxSet   AlfUseTemporalFilt;
   static const CtxSet   MHIntraFlag;
   static const CtxSet   SmvdFlag;

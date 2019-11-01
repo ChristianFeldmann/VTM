@@ -922,6 +922,12 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+
+    Window confWin = pps->getConformanceWindow( );
+    m_pcPic->setPicWidthInLumaSamples( pps->getPicWidthInLumaSamples() );
+    m_pcPic->setPicHeightInLumaSamples( pps->getPicHeightInLumaSamples() );
+    m_pcPic->setConformanceWindow( confWin );
+
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
     m_pcPic->cs->scalinglistAps = scalinglistAPS;
@@ -1537,6 +1543,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
       memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
       tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
+#endif
       tInfo.setUseSliceReshaper(pcSlice->getLmcsEnabledFlag());
       tInfo.setSliceReshapeChromaAdj(pcSlice->getLmcsChromaResidualScaleFlag());
       tInfo.setSliceReshapeModelPresentFlag(true);

@@ -85,8 +85,10 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position    sharedBndPos;
   Size        sharedBndSize;
+#endif
   bool        isLossless;
   const SPS *sps;
   const PPS *pps;
@@ -229,7 +231,9 @@ private:
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
   bool   *m_runType  [MAX_NUM_COMPONENT];
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel    *m_runLength[MAX_NUM_COMPONENT];
+#endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;

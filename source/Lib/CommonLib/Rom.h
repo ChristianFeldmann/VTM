@@ -87,7 +87,14 @@ static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 
 extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
+#if JVET_P0170_ZERO_POS_SIMPLIFICATION
+inline uint32_t g_auiGoRicePosCoeff0(int st, uint32_t ricePar)
+{
+  return (st < 2 ? 1 : 2) << ricePar;
+}
+#else
 extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
+#endif
 
 // ====================================================================================================================
 // Intra prediction table
@@ -204,8 +211,11 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 // 7-tap/3-tap, direction, 2/4/8/16/32/64/128
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+extern int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#else
 extern int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-
+#endif
 extern bool g_mctsDecCheckEnabled;
 
 class  Mv;
@@ -215,6 +225,10 @@ extern bool g_isReusedUniMVsFilled[32][32][8][8];
 extern const uint8_t g_paletteQuant[52];
 extern uint8_t g_paletteRunTopLut[5];
 extern uint8_t g_paletteRunLeftLut[5];
+
+#if JVET_P1018_IBC_NO_WRAPAROUND
+const int g_IBCBufferSize = 256 * 128;
+#endif
 
 #endif  //__TCOMROM__
 

@@ -1753,6 +1753,10 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     m_pcReshaper->setSrcReshaped(false);
     m_pcReshaper->setRecReshaped(true);
 
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+    m_pcReshaper->getSliceReshaperInfo().chrResScalingOffset = m_pcCfg->getReshapeCSoffset();
+#endif
+
     if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
     {
       m_pcReshaper->preAnalyzerHDR(pic, sliceType, m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
@@ -1854,6 +1858,9 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
       tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
       memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
       tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
+#endif
       m_pcEncLib->getApsMap()->setChangedFlag((lmcsAPS->getAPSId() << NUM_APS_TYPE_LEN) + LMCS_APS);
     }
 
@@ -2212,8 +2219,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
-    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
-
+    
     xPicInitHashME( pcPic, pcSlice->getPPS(), rcListPic );
 
     if( m_pcCfg->getUseAMaxBT() )
@@ -2319,7 +2325,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     if (m_pcEncLib->getTMVPModeId() == 2)
     {
+#if !JVET_P0206_TMVP_flags
       assert (m_pcEncLib->getPPSTemporalMVPEnabledIdc() == 0);
+#endif
       if (iGOPid == 0) // first picture in SOP (i.e. forward B)
       {
         pcSlice->setEnableTMVPFlag(0);
@@ -2330,7 +2338,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setEnableTMVPFlag(1);
       }
     }
+#if JVET_P0206_TMVP_flags
+    else if (m_pcEncLib->getTMVPModeId() == 1)
+#else
     else if (m_pcEncLib->getTMVPModeId() == 1 && m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
+#endif
     {
       pcSlice->setEnableTMVPFlag(1);
     }
@@ -2413,6 +2425,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setEnableTMVPFlag( 0 );
       }
     }
+
+    pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
 
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
@@ -3419,7 +3433,7 @@ static inline double calcWeightedSquaredError(const CPelBuf& org,        const C
 
 uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift
 #if ENABLE_QPA
-                                    , const uint32_t chromaShift /*= 0*/
+                                    , const uint32_t chromaShiftHor /*= 0*/, const uint32_t chromaShiftVer /*= 0*/
 #endif
                                       )
 {
@@ -3439,7 +3453,7 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
       const uint32_t   W = pic0.width;  // image width
       const uint32_t   H = pic0.height; // image height
       const double     R = double(W * H) / (1920.0 * 1080.0);
-      const uint32_t   B = Clip3<uint32_t>(0, 128 >> chromaShift, 4 * uint32_t(16.0 * sqrt(R) + 0.5)); // WPSNR block size in integer multiple of 4 (for SIMD, = 64 at full-HD)
+      const uint32_t   B = Clip3<uint32_t>(0, 128 >> chromaShiftVer, 4 * uint32_t(16.0 * sqrt(R) + 0.5)); // WPSNR block size in integer multiple of 4 (for SIMD, = 64 at full-HD)
 
       uint32_t x, y;
 
@@ -3474,7 +3488,7 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
       }
 
       // integer weighted distortion
-      sumAct = 16.0 * sqrt ((3840.0 * 2160.0) / double((W << chromaShift) * (H << chromaShift))) * double(1 << BD);
+      sumAct = 16.0 * sqrt ((3840.0 * 2160.0) / double((W << chromaShiftHor) * (H << chromaShiftVer))) * double(1 << BD);
 
       return (wmse <= 0.0) ? 0 : uint64_t(wmse * pow(sumAct, BETA) + 0.5);
     }
@@ -3645,7 +3659,11 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   const CPelUnitBuf& pic = cPicD;
   CHECK(!(conversion == IPCOLOURSPACE_UNCHANGED), "Unspecified error");
 //  const CPelUnitBuf& org = (conversion != IPCOLOURSPACE_UNCHANGED) ? pcPic->getPicYuvTrueOrg()->getBuf() : pcPic->getPicYuvOrg()->getBuf();
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  const CPelUnitBuf& org = (sps.getUseReshaper() || m_pcCfg->getGopBasedTemporalFilterEnabled()) ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
+#else
   const CPelUnitBuf& org = sps.getUseReshaper() ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
+#endif
 #if ENABLE_QPA
   const bool    useWPSNR = m_pcEncLib->getUseWPSNR();
 #endif
@@ -3721,7 +3739,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     const CPelBuf orgPB(o.bufAt(0, 0), o.stride, width, height);
     const uint32_t    bitDepth = sps.getBitDepth(toChannelType(compID));
 #if ENABLE_QPA
-    const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, useWPSNR ? bitDepth : 0, ::getComponentScaleX(compID, format));
+    const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, useWPSNR ? bitDepth : 0, ::getComponentScaleX(compID, format), ::getComponentScaleY(compID, format));
 #else
     const uint64_t uiSSDtemp = xFindDistortionPlane(recPB, orgPB, 0);
 #endif
@@ -3744,7 +3762,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
 #if ENABLE_QPA
-      const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ) );
+      const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ), ::getComponentScaleY( compID, format ) );
 #else
       const uint64_t scaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, 0 );
 #endif
@@ -4154,7 +4172,7 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
     {
       CHECK(!(conversion == IPCOLOURSPACE_UNCHANGED), "Unspecified error");
 #if ENABLE_QPA
-      uiSSDtemp += xFindDistortionPlane( acPicRecFields[fieldNum].get(ch), apcPicOrgFields[fieldNum]->getOrigBuf().get(ch), useWPSNR ? bitDepth : 0, ::getComponentScaleX(ch, format) );
+      uiSSDtemp += xFindDistortionPlane( acPicRecFields[fieldNum].get(ch), apcPicOrgFields[fieldNum]->getOrigBuf().get(ch), useWPSNR ? bitDepth : 0, ::getComponentScaleX(ch, format), ::getComponentScaleY(ch, format) );
 #else
       uiSSDtemp += xFindDistortionPlane( acPicRecFields[fieldNum].get(ch), apcPicOrgFields[fieldNum]->getOrigBuf().get(ch), 0 );
 #endif

@@ -321,6 +321,23 @@ const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
   {   4, },
 });
 
+#if JVET_P0615_CHROMAMODE_CLEANUP
+const CtxSet ContextSetCfg::CclmModeIdx = ContextSetCfg::addCtxSet
+({
+  {  27, },
+  {  27, },
+  {  27, },
+  {   9, },
+  });
+
+const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
+({
+  {  25, },
+  {  18, },
+  {  34, },
+  {   5, },
+  });
+#else
 const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
 ({
   {  25, },
@@ -328,6 +345,7 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   {  19, },
   {   6, },
 });
+#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({
@@ -445,6 +463,22 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {   7, CNU,   5,   7, },
     {   5, DWS,   8,   8, },
   }),
+#if JVET_P0059_CHROMA_BDPCM
+  ContextSetCfg::addCtxSet
+  ({
+    { 25, CNU, },
+    { 25, CNU, },
+    { 12, CNU, },
+    {  5, DWS, },
+  }),
+ContextSetCfg::addCtxSet
+({
+    {  9,  44, CNU, },
+    { 25,  29, CNU, },
+    { 33,  21, CNU, },
+    {  2,   1, DWS, },
+})
+#else
   ContextSetCfg::addCtxSet
   ({
     {  25, },
@@ -459,6 +493,7 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {  33,  21, },
     {   2,   1, },
   })
+#endif
 };
 
 const CtxSet ContextSetCfg::SigCoeffGroup[] =
@@ -653,10 +688,17 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_P0350_LFNST_IDX_CTX
+  {  45,  37, 32, },
+  {  38,  45, 32, },
+  { CNU,  45, 32, },
+  {   8,   8, 1, },
+#else
   {  45,  37, },
   {  38,  45, },
   { CNU,  45, },
   {   8,   8, },
+#endif
 });
 
 const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet
@@ -717,10 +759,17 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
 ({
+#if JVET_P0058_CHROMA_TS
+  { 29, CNU, CNU, CNU, CNU, CNU,  33,  18,  27,   0, CNU, CNU },
+  { 29, CNU, CNU, CNU, CNU, CNU,  18,  33,  27,   0, CNU, CNU },
+  { 20, CNU, CNU, CNU, CNU, CNU,  33,   0,  42,   0, CNU, CNU },
+  {  8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS,   1 },
+#else
   {  29, CNU, CNU, CNU, CNU, CNU,  33,  18,  27,   0, CNU, },
   {  29, CNU, CNU, CNU, CNU, CNU,  18,  33,  27,   0, CNU, },
   {  20, CNU, CNU, CNU, CNU, CNU,  33,   0,  42,   0, CNU, },
   {   8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS, },
+#endif
 });
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
@@ -811,6 +860,7 @@ const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
   {   0,   0, },
 });
 
+#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
 const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
 ({
   {  58, },
@@ -818,6 +868,7 @@ const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
   {  31, },
   {   0, },
 });
+#endif
 
 const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 ({
@@ -907,7 +958,11 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 const CtxSet ContextSetCfg::Palette = { ContextSetCfg::RotationFlag, ContextSetCfg::RunTypeFlag, ContextSetCfg::IdxRunModel, ContextSetCfg::CopyRunModel };
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
+#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
+const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseTemporalFilt };
+#else
 const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
+#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

@@ -90,6 +90,9 @@ namespace CU
   void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
   bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
+#if JVET_P1026_MTS_SIGNALLING
+  bool isMTSAllowed                   (const CodingUnit& cu, const ComponentID compID);
+#endif
 
 
   bool      divideTuInRows            ( const CodingUnit &cu );
@@ -119,7 +122,7 @@ namespace CU
   uint8_t numSbtModeRdo               (uint8_t sbtAllowed);
   bool    isSbtMode                   (const uint8_t sbtInfo);
   bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
-  bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, const PPS* refPPS, int& xScale, int& yScale );
+  bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, Picture* refPic, int& xScale, int& yScale );
 }
 // PU tools
 namespace PU
@@ -148,7 +151,12 @@ namespace PU
   bool xCheckSimilarMotion(const int mergeCandIndex, const int prevCnt, const MergeCtx mergeCandList, bool hasPruned[MRG_MAX_NUM_CANDS]);
   bool addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt, const int prevCnt, bool isAvailableSubPu, unsigned subPuMvpPos
     , bool ibcFlag
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     , bool isShared
+#endif
+#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
+    , bool isGt4x4
+#endif
   );
   void addAMVPHMVPCand(const PredictionUnit &pu, const RefPicList eRefPicList, const RefPicList eRefPicList2nd, const int currRefPOC, AMVPInfo &info, uint8_t imv);
   bool addAffineMVPCandUnscaled( const PredictionUnit &pu, const RefPicList &refPicList, const int &refIdx, const Position &pos, const MvpDir &dir, AffineAMVPInfo &affiAmvpInfo );
@@ -165,7 +173,9 @@ namespace PU
     , int mmvdList
   );
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
+#if !JVET_P1023_DMVR_BDOF_RP_CONDITION
   bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
+#endif
   bool isBiPredFromDifferentDirEqDistPoc(const PredictionUnit &pu);
   void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
 
@@ -192,7 +202,9 @@ namespace TU
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
   bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
+#if !JVET_P1026_MTS_SIGNALLING
   bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
+#endif
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
 
@@ -205,7 +217,12 @@ namespace TU
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 int  getNumModesMip   (const Size& block);
+#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
+int getMipSizeId      (const Size& block);
+#endif
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
 bool mipModesAvailable(const Size& block);
+#endif
 bool allowLfnstWithMip(const Size& block);
 
 template<typename T, size_t N>

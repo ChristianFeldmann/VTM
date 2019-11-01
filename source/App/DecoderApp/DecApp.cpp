@@ -457,7 +457,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 
         if (!m_reconFileName.empty())
         {
-          const Window &conf = pcPic->cs->pps->getConformanceWindow();
+          const Window &conf = pcPic->getConformanceWindow();
           const SPS* sps = pcPic->cs->sps;
           ChromaFormat chromaFormatIDC = sps->getChromaFormatIdc();
           if( m_upscaledOutput )
@@ -581,7 +581,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
 
         if (!m_reconFileName.empty())
         {
-          const Window &conf = pcPic->cs->pps->getConformanceWindow();
+          const Window &conf = pcPic->getConformanceWindow();
           const SPS* sps = pcPic->cs->sps;
           ChromaFormat chromaFormatIDC = sps->getChromaFormatIdc();
           if( m_upscaledOutput )

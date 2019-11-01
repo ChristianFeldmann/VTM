@@ -63,7 +63,9 @@ class Mv;
 class InterPrediction : public WeightPrediction
 {
 private:
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   int m_shareState;
+#endif
 
 
 
@@ -100,9 +102,15 @@ protected:
                              Mv(-2, 2), Mv(-1, 2), Mv(0, 2), Mv(1, 2), Mv(2, 2) };
   uint64_t m_SADsArray[((2 * DMVR_NUM_ITERATION) + 1) * ((2 * DMVR_NUM_ITERATION) + 1)];
 
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  Pel                  m_gradBuf[2][(AFFINE_MIN_BLOCK_SIZE + 2) * (AFFINE_MIN_BLOCK_SIZE + 2)];
+#else
   Pel                  m_gradBuf[2][2][(MAX_CU_SIZE + 2) * (MAX_CU_SIZE + 2)];
+#endif
   int                  m_dMvBuf[2][16 * 2];
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   bool                 m_applyPROF[2];
+#endif
   bool                 m_skipPROF;
   bool                 m_encOnly;
   bool                 m_isBi;
@@ -139,7 +147,9 @@ protected:
   void xCalcBIOPar              (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, int bitDepth);
   void xCalcBlkGradient         (int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied, PelUnitBuf* yuvDstTmp = NULL );
+#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   void xApplyBiPROF             (const PredictionUnit& pu, const CPelBuf& pcYuvSrc0, const CPelBuf& pcYuvSrc1, PelBuf& pcYuvDst, const ClpRng& clpRng);
+#endif
   void xPredAffineBlk           ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng, const std::pair<int, int> scalingRatio = SCALE_1X );
 
   void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
@@ -189,9 +199,11 @@ public:
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   void    cacheAssign( CacheModel *cache );
 #endif
+#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   void    setShareState(int shareStateIn) {m_shareState = shareStateIn;}
 #if ENABLE_SPLIT_PARALLELISM
   int     getShareState() const { return m_shareState; }
+#endif
 #endif
   static bool isSubblockVectorSpreadOverLimit( int a, int b, int c, int d, int predType );
   void xFillIBCBuffer(CodingUnit &cu);

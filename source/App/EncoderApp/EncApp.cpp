@@ -48,6 +48,10 @@
 #include "AppEncHelper360/TExt360AppEncTop.h"
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+#include "EncoderLib/EncTemporalFilter.h"
+#endif
+
 using namespace std;
 
 //! \ingroup EncoderApp
@@ -143,7 +147,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
+#if JVET_P0059_CHROMA_BDPCM
+  m_cEncLib.setNoBDPCMConstraintFlag                             ( m_useBDPCM == 0 );
+#else
   m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
+#endif
   m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
@@ -271,11 +279,19 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
-  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
   m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
+#if JVET_P0273_MTSIntraMaxCand
+  m_cEncLib.setMTSIntraMaxCand                                   ( m_MTSIntraMaxCand );
+  m_cEncLib.setMTSInterMaxCand                                   ( m_MTSInterMaxCand );
+#else
+  m_cEncLib.setIntraMTSMaxCand                                   ( m_MTSIntraMaxCand );
   m_cEncLib.setInterMTSMaxCand                                   ( m_MTSInterMaxCand );
+#endif
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  m_cEncLib.setUse64SBTRDOCheck                                  (m_SBT64RDOCheck);
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );
   m_cEncLib.setUseGBi                                            ( m_GBi );
@@ -358,6 +374,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] );
   m_cEncLib.setUseTransformSkip                                  ( m_useTransformSkip      );
   m_cEncLib.setUseTransformSkipFast                              ( m_useTransformSkipFast  );
+#if JVET_P0058_CHROMA_TS
+  m_cEncLib.setUseChromaTS                                       ( m_useChromaTS && m_useTransformSkip);
+#endif
   m_cEncLib.setUseBDPCM                                          ( m_useBDPCM );
   m_cEncLib.setTransformSkipRotationEnabledFlag                  ( m_transformSkipRotationEnabledFlag );
   m_cEncLib.setTransformSkipContextEnabledFlag                   ( m_transformSkipContextEnabledFlag   );
@@ -540,11 +559,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );
   m_cEncLib.setPPSRefPicListSPSIdc0                              ( m_PPSRefPicListSPSIdc0 );
   m_cEncLib.setPPSRefPicListSPSIdc1                              ( m_PPSRefPicListSPSIdc1 );
+#if !JVET_P0206_TMVP_flags
   m_cEncLib.setPPSTemporalMVPEnabledIdc                          ( m_PPSTemporalMVPEnabledIdc );
+#endif
   m_cEncLib.setPPSMvdL1ZeroIdc                                   ( m_PPSMvdL1ZeroIdc );
   m_cEncLib.setPPSCollocatedFromL0Idc                            ( m_PPSCollocatedFromL0Idc );
   m_cEncLib.setPPSSixMinusMaxNumMergeCandPlus1                   ( m_PPSSixMinusMaxNumMergeCandPlus1 );
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   m_cEncLib.setPPSFiveMinusMaxNumSubblockMergeCandPlus1          ( m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 );
+#endif
   m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
@@ -618,6 +641,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  m_cEncLib.setReshapeCSoffset                                   ( m_CSoffset );
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
   for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
@@ -638,6 +664,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCropOffsetRight                                   (m_cropOffsetRight);
   m_cEncLib.setCropOffsetBottom                                  (m_cropOffsetBottom);
   m_cEncLib.setCalculateHdrMetrics                               (m_calculateHdrMetrics);
+#endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
 #endif
 }
 
@@ -739,6 +768,17 @@ void EncApp::encode()
   TExt360AppEncTop           ext360(*this, m_cEncLib.getGOPEncoder()->getExt360Data(), *(m_cEncLib.getGOPEncoder()), orgPic);
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  EncTemporalFilter temporalFilter;
+  if (m_gopBasedTemporalFilterEnabled)
+  {
+    temporalFilter.init(m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
+      m_aiPad, m_bClipInputVideoToRec709Range, m_inputFileName, m_chromaFormatIDC,
+      m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
+      m_gopBasedTemporalFilterFutureReference);
+  }
+#endif
+
   while ( !bEos )
   {
     // read input YUV file
@@ -753,6 +793,13 @@ void EncApp::encode()
     }
 #else
     m_cVideoIOYuvInputFile.read( orgPic, trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+    if (m_gopBasedTemporalFilterEnabled)
+    {
+      temporalFilter.filter(&orgPic, m_iFrameRcvd);
+    }
 #endif
 
     // increase number of received frames

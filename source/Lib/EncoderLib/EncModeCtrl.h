@@ -465,7 +465,9 @@ private:
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
   bool               *m_runType;
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel                *m_runLength;
+#endif
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
 #if ENABLE_SPLIT_PARALLELISM

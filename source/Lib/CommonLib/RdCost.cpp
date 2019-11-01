@@ -68,7 +68,7 @@ double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion )
 #if JVET_AHG14_LOSSLESS
   if( m_costMode == COST_LOSSLESS_CODING && 0 != distortion )
   {
-    return MAX_DOUBLE / 8;
+    return MAX_DOUBLE;
   }
 #endif
 #if WCG_EXT

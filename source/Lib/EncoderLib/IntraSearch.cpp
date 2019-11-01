@@ -3188,7 +3188,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
     }
 #if JVET_AHG14_LOSSLESS
-    if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) )
+    if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) || tu.cu->bdpcmMode != 0 )
     {
       m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
     }
@@ -3207,7 +3207,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 
 #if JVET_AHG14_LOSSLESS
-  if( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 )
+  if( ( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) && 0 == tu.cu->bdpcmMode )
   {
     uiAbsSum = 0;
     tu.getCoeffs( compID ).fill( 0 );

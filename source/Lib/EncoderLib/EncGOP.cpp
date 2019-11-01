@@ -1753,6 +1753,10 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     m_pcReshaper->setSrcReshaped(false);
     m_pcReshaper->setRecReshaped(true);
 
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+    m_pcReshaper->getSliceReshaperInfo().chrResScalingOffset = m_pcCfg->getReshapeCSoffset();
+#endif
+
     if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
     {
       m_pcReshaper->preAnalyzerHDR(pic, sliceType, m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
@@ -1854,6 +1858,9 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
       tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
       memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
       tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
+#endif
       m_pcEncLib->getApsMap()->setChangedFlag((lmcsAPS->getAPSId() << NUM_APS_TYPE_LEN) + LMCS_APS);
     }
 

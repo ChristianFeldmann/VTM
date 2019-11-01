@@ -493,6 +493,12 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
   if( getUseScalingListId() == SCALING_LIST_FILE_READ )
   {
     // Prepare delta's:
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+    {
+        aps.getScalingList().checkPredMode(scalingListId);
+    }
+#else
     for (uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
     {
       for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
@@ -505,6 +511,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
         aps.getScalingList().checkPredMode( sizeId, listId );
       }
     }
+#endif
   }
 }
 
@@ -1058,7 +1065,11 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+#if JVET_P0059_CHROMA_BDPCM
+  sps.setBDPCMEnabled(m_useBDPCM);
+#else
   sps.setBDPCMEnabledFlag(m_useBDPCM);
+#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
@@ -1181,7 +1192,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
   pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
   pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());
+#endif
   pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );

@@ -199,7 +199,11 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
+#if JVET_P0059_CHROMA_BDPCM
+  int       m_useBDPCM;
+#else
   bool      m_useBDPCM;
+#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
@@ -332,6 +336,9 @@ protected:
   int       m_updateCtrl;
   int       m_adpOption;
   uint32_t  m_initialCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int       m_CSoffset;
+#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
@@ -547,7 +554,9 @@ protected:
   int       m_PPSMvdL1ZeroIdc;
   int       m_PPSCollocatedFromL0Idc;
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
+#endif
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;

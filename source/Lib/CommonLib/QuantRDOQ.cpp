@@ -550,10 +550,18 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
 #if JVET_P0058_CHROMA_TS
       if( useTransformSkip )
 #else
+#if JVET_P0059_CHROMA_BDPCM
+      if((isLuma(compID) && useTransformSkip) || (isChroma(compID) && tu.cu->bdpcmModeChroma))
+#else
       if( isLuma( compID ) && useTransformSkip )
 #endif
+#endif
       {
+#if JVET_P0059_CHROMA_BDPCM
+        if( (tu.cu->bdpcmMode && isLuma(compID)) || (isChroma(compID) && tu.cu->bdpcmModeChroma ) )
+#else
         if( tu.cu->bdpcmMode && isLuma(compID) )
+#endif
         {
           forwardRDPCM( tu, compID, pSrc, uiAbsSum, cQP, ctx );
         }
@@ -651,7 +659,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #if JVET_P0058_CHROMA_TS
   const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  const bool   isTransformSkip = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID));
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
 #endif
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
@@ -1246,7 +1258,11 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
 #if JVET_P0058_CHROMA_TS
   const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  const bool   isTransformSkip = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || ( tu.cu->bdpcmModeChroma && isChroma(compID) );
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
 #endif
 #if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
   const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + (isTransformSkip ? 0 : transformShift) + (needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
@@ -1460,8 +1476,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
 
   const bool extendedPrecision = sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
+#if JVET_P0059_CHROMA_BDPCM
+  const int  dirMode = isLuma(compID) ? tu.cu->bdpcmMode : tu.cu->bdpcmModeChroma;
+#else
   const int  dirMode = tu.cu->bdpcmMode;
-
+#endif
   int transformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
 
   if (extendedPrecision)
@@ -1494,7 +1513,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
 #if JVET_P0058_CHROMA_TS
   const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
 #else
+#if JVET_P0059_CHROMA_BDPCM
+  const bool   isTransformSkip = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID) );
+#else
   const bool   isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
+#endif
 #endif
 #if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
   const int    qBits = QUANT_SHIFT + qp.per(isTransformSkip) + (isTransformSkip? 0 : transformShift) + ( needsSqrt2Scale ? -1 : 0);  // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits

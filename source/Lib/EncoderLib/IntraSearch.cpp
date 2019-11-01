@@ -431,7 +431,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     m_regIntraRDListWithCosts.clear();
     int numTotalPartsHor = (int)width  >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_VERT_SPLIT));
     int numTotalPartsVer = (int)height >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_HORZ_SPLIT));
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    m_ispTestedModes[0].init( numTotalPartsHor, numTotalPartsVer );
+    //the total number of subpartitions is modified to take into account the cases where LFNST cannot be combined with ISP due to size restrictions
+    numTotalPartsHor = sps.getUseLFNST() && CU::canUseLfnstWithISP(cu.Y(), HOR_INTRA_SUBPARTITIONS) ? numTotalPartsHor : 0;
+    numTotalPartsVer = sps.getUseLFNST() && CU::canUseLfnstWithISP(cu.Y(), VER_INTRA_SUBPARTITIONS) ? numTotalPartsVer : 0;
+    for (int j = 1; j < NUM_LFNST_NUM_PER_SET; j++)
+    {
+      m_ispTestedModes[j].init(numTotalPartsHor, numTotalPartsVer);
+    }
+#else
     m_ispTestedModes.init(numTotalPartsHor, numTotalPartsVer);
+#endif
   }
 
 #if JVET_P0059_CHROMA_BDPCM
@@ -965,7 +976,12 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     if ( testISP )
     {
       // we reserve positions for ISP in the common full RD list
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      const int maxNumRDModesISP = sps.getUseLFNST() ? 16 * NUM_LFNST_NUM_PER_SET : 16;
+      m_curIspLfnstIdx = 0;
+#else
       const int maxNumRDModesISP = 16;
+#endif
       for (int i = 0; i < maxNumRDModesISP; i++)
 #if JVET_P0803_COMBINED_MIP_CLEANUP
         uiRdModeList.push_back( ModeInfo( false, false, 0, INTRA_SUBPARTITIONS_RESERVED, 0 ) );
@@ -1037,10 +1053,19 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     // just to be sure
     numModesForFullRD = ( int ) uiRdModeList.size();
     TUIntraSubPartitioner subTuPartitioner( partitioner );
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if ( testISP )
+    {
+      m_modeCtrl->setIspCost( MAX_DOUBLE );
+      m_modeCtrl->setMtsFirstPassNoIspCost( MAX_DOUBLE );
+    }
+    int bestLfnstIdx = cu.lfnstIdx;
+#else
     if( !cu.ispMode && !cu.mtsFlag )
     {
       m_modeCtrl->setMtsFirstPassNoIspCost( MAX_DOUBLE );
     }
+#endif
 
     for (int mode = -2 * int(testBDPCM); mode < (int)uiRdModeList.size(); mode++)
     {
@@ -1070,11 +1095,23 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         {
           if (mode == numNonISPModes) // the list needs to be sorted only once
           {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+            if (m_pcEncCfg->getUseFastISP())
+            {
+              m_modeCtrl->setBestPredModeDCT2( uiBestPUMode.modeId );
+            }
+            if (!xSortISPCandList(bestCurrentCost, csBest->cost, uiBestPUMode))
+              break;
+#else
             xSortISPCandList(bestCurrentCost, csBest->cost);
+#endif
           }
           xGetNextISPMode(uiRdModeList[mode], (mode > 0 ? &uiRdModeList[mode - 1] : nullptr), Size(width, height));
           if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
             continue;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          cu.lfnstIdx = m_curIspLfnstIdx;
+#endif
         }
         uiOrgMode = uiRdModeList[mode];
       cu.mipFlag                     = uiOrgMode.mipFlg;
@@ -1100,6 +1137,12 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       bool tmpValidReturn = false;
       if( cu.ispMode )
       {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        if ( m_pcEncCfg->getUseFastISP() )
+        {
+          m_modeCtrl->setISPWasTested(true);
+        }
+#endif
         tmpValidReturn = xIntraCodingLumaISP(*csTemp, subTuPartitioner, bestCurrentCost);
         if (csTemp->tus.size() == 0)
         {
@@ -1107,11 +1150,17 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           csTemp->cost = MAX_DOUBLE;
           continue;
         }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        // we save the data for future tests
+        m_ispTestedModes[m_curIspLfnstIdx].setModeResults((ISPType)cu.ispMode, (int)uiOrgMode.modeId, (int)csTemp->tus.size(), csTemp->cus[0]->firstTU->cbf[COMPONENT_Y] ? csTemp->cost : MAX_DOUBLE, csBest->cost);
+        csTemp->cost = !tmpValidReturn ? MAX_DOUBLE : csTemp->cost;
+#else
         if (!cu.mtsFlag && !cu.lfnstIdx)
         {
           // we save the data for future tests
           m_ispTestedModes.setModeResults((ISPType)cu.ispMode, (int)uiOrgMode.modeId, (int)csTemp->tus.size(), csTemp->cus[0]->firstTU->cbf[COMPONENT_Y] ? csTemp->cost : MAX_DOUBLE, csBest->cost);
         }
+#endif
       }
       else
       {
@@ -1168,10 +1217,22 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           {
             bestCurrentCost = csBest->cost;
           }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          if ( cu.ispMode )
+          {
+            m_modeCtrl->setIspCost(csBest->cost);
+            bestLfnstIdx = cu.lfnstIdx;
+          }
+          else if ( testISP )
+          {
+            m_modeCtrl->setMtsFirstPassNoIspCost(csBest->cost);
+          }
+#else
           if( !cu.ispMode && !cu.mtsFlag )
           {
             m_modeCtrl->setMtsFirstPassNoIspCost( csBest->cost );
           }
+#endif
         }
         if( !cu.ispMode && !cu.bdpcmMode && csBest->cost < bestCostNonBDPCM )
         {
@@ -1200,6 +1261,9 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
     } // Mode loop
     cu.ispMode = uiBestPUMode.ispMod;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    cu.lfnstIdx = bestLfnstIdx;
+#endif
 
     if( validReturn )
     {
@@ -2916,7 +2980,11 @@ void IntraSearch::xEncSubdivCbfQT( CodingStructure &cs, Partitioner &partitioner
   }
 }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, const ComponentID compID, const int subTuIdx, const PartSplit ispType, CUCtx* cuCtx )
+#else
 void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, const ComponentID compID, const int subTuIdx, const PartSplit ispType )
+#endif
 {
   const UnitArea &currArea  = partitioner.currArea();
 
@@ -2940,7 +3008,11 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
 
     do
     {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      xEncCoeffQT( cs, partitioner, compID, subTuCounter, ispType, cuCtx );
+#else
       xEncCoeffQT( cs, partitioner, compID, subTuCounter, ispType );
+#endif
       subTuCounter += subTuCounter != -1 ? 1 : 0;
     } while( partitioner.nextPart( cs ) );
 
@@ -2964,9 +3036,14 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
 #if JVET_P1026_MTS_SIGNALLING
       if( isLuma(compID) )
       {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        m_CABACEstimator->residual_coding( currTU, compID, cuCtx );
+        m_CABACEstimator->mts_idx( *currTU.cu, cuCtx );
+#else
         CUCtx cuCtx;
         m_CABACEstimator->residual_coding( currTU, compID, &cuCtx );
         m_CABACEstimator->mts_idx( *currTU.cu, cuCtx );
+#endif
       }
       else
 #endif
@@ -2975,7 +3052,11 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
   }
 }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+uint64_t IntraSearch::xGetIntraFracBitsQT( CodingStructure &cs, Partitioner &partitioner, const bool &bLuma, const bool &bChroma, const int subTuIdx, const PartSplit ispType, CUCtx* cuCtx )
+#else
 uint64_t IntraSearch::xGetIntraFracBitsQT( CodingStructure &cs, Partitioner &partitioner, const bool &bLuma, const bool &bChroma, const int subTuIdx, const PartSplit ispType )
+#endif
 {
   m_CABACEstimator->resetBits();
 
@@ -2985,13 +3066,25 @@ uint64_t IntraSearch::xGetIntraFracBitsQT( CodingStructure &cs, Partitioner &par
 
   if( bLuma )
   {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    xEncCoeffQT( cs, partitioner, COMPONENT_Y, subTuIdx, ispType, cuCtx );
+#else
     xEncCoeffQT( cs, partitioner, COMPONENT_Y, subTuIdx, ispType );
+#endif
   }
   if( bChroma )
   {
     xEncCoeffQT( cs, partitioner, COMPONENT_Cb, subTuIdx, ispType );
     xEncCoeffQT( cs, partitioner, COMPONENT_Cr, subTuIdx, ispType );
   }
+
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  CodingUnit& cu = *cs.getCU(partitioner.chType);
+  if ( cuCtx && bLuma && cu.isSepTree() && ( !cu.ispMode || ( cu.lfnstIdx && subTuIdx == 0 ) || ( !cu.lfnstIdx && subTuIdx == m_ispTestedModes[cu.lfnstIdx].numTotalParts[cu.ispMode - 1] - 1 ) ) )
+  {
+    m_CABACEstimator->residual_lfnst_mode(cu, *cuCtx);
+  }
+#endif
 
   uint64_t fracBits = m_CABACEstimator->getEstFracBits();
   return fracBits;
@@ -3443,6 +3536,12 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
 
   partitioner.splitCurrArea(ispType, cs);
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  CUCtx cuCtx;
+  cuCtx.isDQPCoded = true;
+  cuCtx.isChromaQpAdjCoded = true;
+#endif
+
   do   // subpartitions loop
   {
     uint32_t   numSig = 0;
@@ -3472,7 +3571,11 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
       }
       else
       {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        singleTmpFracBits = xGetIntraFracBitsQT(cs, partitioner, true, false, subTuCounter, ispType, &cuCtx);
+#else
         singleTmpFracBits = xGetIntraFracBitsQT(cs, partitioner, true, false, subTuCounter, ispType);
+#endif
       }
       singleCostTmp = m_pcRdCost->calcRdCost(singleTmpFracBits, singleDistTmpLuma);
     }
@@ -3484,7 +3587,11 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
     subTuCounter++;
 
     splitCbfLuma |= TU::getCbfAtDepth(*cs.getTU(partitioner.currArea().lumaPos(), partitioner.chType, subTuCounter - 1), COMPONENT_Y, partitioner.currTrDepth);
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    int nSubPartitions = m_ispTestedModes[cu.lfnstIdx].numTotalParts[cu.ispMode - 1];
+#else
     int nSubPartitions = m_ispTestedModes.numTotalParts[cu.ispMode - 1];
+#endif
     if (subTuCounter < nSubPartitions)
     {
       // exit condition if the accumulated cost is already larger than the best cost so far (no impact in RD performance)
@@ -3533,7 +3640,9 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
     }
     else
     {
+#if !JVET_P1026_ISP_LFNST_COMBINATION
       cs.cost = MAX_DOUBLE;
+#endif
       earlySkipISP = true;
     }
   }
@@ -3576,6 +3685,12 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
   CodingStructure *csSplit = nullptr;
   CodingStructure *csFull  = nullptr;
+
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  CUCtx cuCtx;
+  cuCtx.isDQPCoded = true;
+  cuCtx.isChromaQpAdjCoded = true;
+#endif
 
   if( bCheckSplit )
   {
@@ -3846,7 +3961,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         }
         else
         {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          singleTmpFracBits = xGetIntraFracBitsQT( *csFull, partitioner, true, false, subTuCounter, ispType, &cuCtx );
+#else
           singleTmpFracBits = xGetIntraFracBitsQT( *csFull, partitioner, true, false, subTuCounter, ispType );
+#endif
         }
         singleCostTmp     = m_pcRdCost->calcRdCost( singleTmpFracBits, singleDistTmpLuma );
       }
@@ -4021,8 +4140,21 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       //----- restore context states -----
       m_CABACEstimator->getCtx() = ctxStart;
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] = false;
+      cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+      cuCtx.lfnstLastScanPos = false;
+#if JVET_P1026_MTS_SIGNALLING
+      cuCtx.violatesMtsCoeffConstraint = false;
+#endif
+#endif
+
       //----- determine rate and r-d cost -----
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      csSplit->fracBits = xGetIntraFracBitsQT( *csSplit, partitioner, true, false, cu.ispMode ? 0 : -1, ispType, &cuCtx );
+#else
       csSplit->fracBits = xGetIntraFracBitsQT( *csSplit, partitioner, true, false, cu.ispMode ? 0 : -1, ispType );
+#endif
 
       //--- update cost ---
       csSplit->cost     = m_pcRdCost->calcRdCost(csSplit->fracBits, csSplit->dist);
@@ -4711,8 +4843,21 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
 {
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM>* rdModeLists[2] = { &m_ispCandListHor, &m_ispCandListVer };
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  const int curIspLfnstIdx = m_curIspLfnstIdx;
+  if (curIspLfnstIdx >= NUM_LFNST_NUM_PER_SET)
+  {
+    //All lfnst indices have been checked
+    return;
+  }
+#endif
+
   ISPType nextISPcandSplitType;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  auto& ispTestedModes = m_ispTestedModes[curIspLfnstIdx];
+#else
   auto& ispTestedModes = m_ispTestedModes;
+#endif
   const bool horSplitIsTerminated = ispTestedModes.splitIsFinished[HOR_INTRA_SUBPARTITIONS - 1];
   const bool verSplitIsTerminated = ispTestedModes.splitIsFinished[VER_INTRA_SUBPARTITIONS - 1];
   if (!horSplitIsTerminated && !verSplitIsTerminated)
@@ -4729,16 +4874,58 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
   }
   else
   {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    xFinishISPModes();
+#endif
     return;   // no more modes will be tested
   }
 
   int maxNumSubPartitions = ispTestedModes.numTotalParts[nextISPcandSplitType - 1];
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  // We try to break the split here for lfnst > 0 according to the first mode 
+  if (curIspLfnstIdx > 0 && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] == 1)
+  {
+    int firstModeThisSplit = ispTestedModes.getTestedIntraMode(nextISPcandSplitType, 0);
+    int numSubPartsFirstModeThisSplit = ispTestedModes.getNumCompletedSubParts(nextISPcandSplitType, firstModeThisSplit);
+    CHECK(numSubPartsFirstModeThisSplit < 0, "wrong number of subpartitions!");
+    bool stopThisSplit = false;
+    bool stopThisSplitAllLfnsts = false;
+    if (numSubPartsFirstModeThisSplit < maxNumSubPartitions)
+    {
+      stopThisSplit = true;
+      if (m_pcEncCfg->getUseFastISP() && curIspLfnstIdx == 1 && numSubPartsFirstModeThisSplit < maxNumSubPartitions - 1)
+      {
+        stopThisSplitAllLfnsts = true;
+      }
+    }
+
+    if (stopThisSplit)
+    {
+      ispTestedModes.splitIsFinished[nextISPcandSplitType - 1] = true;
+      if (curIspLfnstIdx == 1 && stopThisSplitAllLfnsts)
+      {
+        m_ispTestedModes[2].splitIsFinished[nextISPcandSplitType - 1] = true;
+      }
+      return;
+    }
+  }
+#endif
+
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  // We try to break the split here for lfnst = 0 or all lfnst indices according to the first two modes 
+  if (curIspLfnstIdx == 0 && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] == 2)
+#else
   if (ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)
+#endif
   {
     // Split stop criteria after checking the performance of previously tested intra modes
     const int thresholdSplit1 = maxNumSubPartitions;
     bool stopThisSplit = false;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    bool stopThisSplitForAllLFNSTs = false;
+    const int thresholdSplit1ForAllLFNSTs = maxNumSubPartitions - 1;
+#endif
 
     int mode1 = ispTestedModes.getTestedIntraMode((ISPType)nextISPcandSplitType, 0);
     mode1 = mode1 == DC_IDX ? -1 : mode1;
@@ -4753,7 +4940,25 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
       if (numSubPartsBestMode1 < thresholdSplit1 && numSubPartsBestMode2 < thresholdSplit1)
       {
         stopThisSplit = true;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        if (curIspLfnstIdx == 0 && numSubPartsBestMode1 < thresholdSplit1ForAllLFNSTs && numSubPartsBestMode2 < thresholdSplit1ForAllLFNSTs)
+        {
+          stopThisSplitForAllLFNSTs = true;
+        }
+#endif
       }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      else
+      {
+        //we stop also if the cost is MAX_DOUBLE for both modes
+        double mode1Cost = ispTestedModes.getRDCost(nextISPcandSplitType, mode1);
+        double mode2Cost = ispTestedModes.getRDCost(nextISPcandSplitType, mode2);
+        if (!(mode1Cost < MAX_DOUBLE || mode2Cost < MAX_DOUBLE))
+        {
+          stopThisSplit = true;
+        }
+      }
+#endif
     }
 
     if (!stopThisSplit)
@@ -4761,27 +4966,61 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
       // 2) One split type may be discarded by comparing the number of sub-partitions of the best angle modes of both splits 
       ISPType otherSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
       int  numSubPartsBestMode2OtherSplit = mode2 != -1 ? ispTestedModes.getNumCompletedSubParts(otherSplit, mode2) : -1;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      if (numSubPartsBestMode2OtherSplit != -1 && numSubPartsBestMode2 != -1 && ispTestedModes.bestSplitSoFar != nextISPcandSplitType)
+#else
       if (numSubPartsBestMode2OtherSplit != -1 && numSubPartsBestMode2 != -1)
+#endif
       {
         if (numSubPartsBestMode2OtherSplit > numSubPartsBestMode2)
         {
           stopThisSplit = true;
         }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        // both have the same number of subpartitions
+        else if (numSubPartsBestMode2OtherSplit == numSubPartsBestMode2)
+#else
         else if (numSubPartsBestMode2OtherSplit == numSubPartsBestMode2 && numSubPartsBestMode2OtherSplit == maxNumSubPartitions)
+#endif
         {
-          double rdCostBestMode2ThisSplit = ispTestedModes.getRDCost(nextISPcandSplitType, mode2);
-          double rdCostBestMode2OtherSplit = ispTestedModes.getRDCost(otherSplit, mode2);
-          double threshold = 1.3;
-          if (rdCostBestMode2ThisSplit == MAX_DOUBLE || rdCostBestMode2OtherSplit < rdCostBestMode2ThisSplit * threshold)
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          // both have the maximum number of subpartitions, so it compares RD costs to decide
+          if (numSubPartsBestMode2OtherSplit == maxNumSubPartitions)
           {
-            stopThisSplit = true;
+#endif
+            double rdCostBestMode2ThisSplit = ispTestedModes.getRDCost(nextISPcandSplitType, mode2);
+            double rdCostBestMode2OtherSplit = ispTestedModes.getRDCost(otherSplit, mode2);
+            double threshold = 1.3;
+            if (rdCostBestMode2ThisSplit == MAX_DOUBLE || rdCostBestMode2OtherSplit < rdCostBestMode2ThisSplit * threshold)
+            {
+              stopThisSplit = true;
+            }
+#if JVET_P1026_ISP_LFNST_COMBINATION
           }
+          else // none of them reached the maximum number of subpartitions with the best angle modes, so it compares the results with the the planar mode
+          {
+            int  numSubPartsBestMode1OtherSplit = mode1 != -1 ? ispTestedModes.getNumCompletedSubParts(otherSplit, mode1) : -1;
+            if (numSubPartsBestMode1OtherSplit != -1 && numSubPartsBestMode1 != -1 && numSubPartsBestMode1OtherSplit > numSubPartsBestMode1)
+            {
+              stopThisSplit = true;
+            }
+          }
+#endif
         }
       }
     }
     if (stopThisSplit)
     {
       ispTestedModes.splitIsFinished[nextISPcandSplitType - 1] = true;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      if (stopThisSplitForAllLFNSTs)
+      {
+        for (int lfnstIdx = 1; lfnstIdx < NUM_LFNST_NUM_PER_SET; lfnstIdx++)
+        {
+          m_ispTestedModes[lfnstIdx].splitIsFinished[nextISPcandSplitType - 1] = true;
+        }
+      }
+#endif
       return;
     }
   }
@@ -4797,6 +5036,9 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
     {
       if (ispTestedModes.bestSplitSoFar != candidate.ispMod || ispTestedModes.bestModeSoFar == PLANAR_IDX)
       {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+        ispTestedModes.splitIsFinished[nextISPcandSplitType - 1] = true;
+#endif
         return;
       }
     }
@@ -4804,20 +5046,45 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
     bool testCandidate = true;
 
     // we look for a reference mode that has already been tested within the window and decide to test the new one according to the reference mode costs
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if (maxNumSubPartitions > 2 && (curIspLfnstIdx > 0 || (candidate.modeId >= DC_IDX && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)))
+#else
     if (candidate.modeId >= DC_IDX && maxNumSubPartitions > 2 && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] >= 2)
+#endif
     {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      int       refLfnstIdx = -1;
+#endif
       const int angWindowSize = 5;
       int       numSubPartsLeftMode, numSubPartsRightMode, numSubPartsRefMode, leftIntraMode = -1, rightIntraMode = -1;
       int       windowSize = candidate.modeId > DC_IDX ? angWindowSize : 1;
       int       numSamples = cuSize.width << floorLog2(cuSize.height);
       int       numSubPartsLimit = numSamples >= 256 ? maxNumSubPartitions - 1 : 2;
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      xFindAlreadyTestedNearbyIntraModes(curIspLfnstIdx, (int)candidate.modeId, &refLfnstIdx, &leftIntraMode, &rightIntraMode, (ISPType)candidate.ispMod, windowSize);
+#else
       xFindAlreadyTestedNearbyIntraModes((int)candidate.modeId, &leftIntraMode, &rightIntraMode, (ISPType)candidate.ispMod, windowSize);
+#endif
 
-      numSubPartsLeftMode = leftIntraMode != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, leftIntraMode) : -1;
-      numSubPartsRightMode = rightIntraMode != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, rightIntraMode) : -1;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      if (refLfnstIdx != -1 && refLfnstIdx != curIspLfnstIdx)
+      {
+        CHECK(leftIntraMode != candidate.modeId || rightIntraMode != candidate.modeId, "wrong intra mode and lfnstIdx values!");
+        numSubPartsRefMode = m_ispTestedModes[refLfnstIdx].getNumCompletedSubParts((ISPType)candidate.ispMod, candidate.modeId);
+        CHECK(numSubPartsRefMode <= 0, "Wrong value of the number of subpartitions completed!");
 
-      numSubPartsRefMode = std::max(numSubPartsLeftMode, numSubPartsRightMode);
+      }
+      else
+      {
+#endif
+        numSubPartsLeftMode = leftIntraMode != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, leftIntraMode) : -1;
+        numSubPartsRightMode = rightIntraMode != -1 ? ispTestedModes.getNumCompletedSubParts((ISPType)candidate.ispMod, rightIntraMode) : -1;
+
+        numSubPartsRefMode = std::max(numSubPartsLeftMode, numSubPartsRightMode);
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      }
+#endif
 
       if (numSubPartsRefMode > 0)
       {
@@ -4831,34 +5098,112 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
       modeInfo = candidate;
     }
   }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  else
+  {
+    //the end of the list was reached, so the split is invalidated
+    ispTestedModes.splitIsFinished[nextISPcandSplitType - 1] = true;
+  }
+#endif
 }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+void IntraSearch::xFindAlreadyTestedNearbyIntraModes(int lfnstIdx, int currentIntraMode, int* refLfnstIdx, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize)
+#else
 void IntraSearch::xFindAlreadyTestedNearbyIntraModes(int currentIntraMode, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize)
+#endif
 {
   bool leftModeFound = false, rightModeFound = false;
   *leftIntraMode = -1;
   *rightIntraMode = -1;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  *refLfnstIdx = -1;
+#endif
   const unsigned st = ispOption - 1;
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  //first we check if the exact intra mode was already tested for another lfnstIdx value
+  if (lfnstIdx > 0)
+  {
+    bool sameIntraModeFound = false;
+    if (lfnstIdx == 2 && m_ispTestedModes[1].modeHasBeenTested[currentIntraMode][st])
+    {
+      sameIntraModeFound = true;
+      *refLfnstIdx = 1;
+    }
+    else if (m_ispTestedModes[0].modeHasBeenTested[currentIntraMode][st])
+    {
+      sameIntraModeFound = true;
+      *refLfnstIdx = 0;
+    }
+
+    if (sameIntraModeFound)
+    {
+      *leftIntraMode = currentIntraMode;
+      *rightIntraMode = currentIntraMode;
+      return;
+    }
+  }
+
+  //The mode has not been checked for another lfnstIdx value, so now we look for a similar mode within a window using the same lfnstIdx 
+#endif
   for (int k = 1; k <= windowSize; k++)
   {
     int off = currentIntraMode - 2 - k;
     int leftMode = (off < 0) ? NUM_LUMA_MODE + off : currentIntraMode - k;
     int rightMode = currentIntraMode > DC_IDX ? (((int)currentIntraMode - 2 + k) % 65) + 2 : PLANAR_IDX;
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    leftModeFound  = leftMode  != (int)currentIntraMode ? m_ispTestedModes[lfnstIdx].modeHasBeenTested[leftMode][st]  : false;
+    rightModeFound = rightMode != (int)currentIntraMode ? m_ispTestedModes[lfnstIdx].modeHasBeenTested[rightMode][st] : false;
+#else
     leftModeFound = leftMode != (int)currentIntraMode ? m_ispTestedModes.modeHasBeenTested[leftMode][st] : false;
     rightModeFound = rightMode != (int)currentIntraMode ? m_ispTestedModes.modeHasBeenTested[rightMode][st] : false;
+#endif
     if (leftModeFound || rightModeFound)
     {
       *leftIntraMode = leftModeFound ? leftMode : -1;
       *rightIntraMode = rightModeFound ? rightMode : -1;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+      *refLfnstIdx = lfnstIdx;
+#endif
       break;
     }
   }
 }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+//It prepares the list of potential intra modes candidates that will be tested using RD costs
+bool IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost, ModeInfo bestNonISPMode)
+#else
 void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
+#endif
 {
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  int bestISPModeInRelCU = -1;
+  m_modeCtrl->setStopNonDCT2Transforms(false);
+
+  if (m_pcEncCfg->getUseFastISP())
+  {
+    //we check if the ISP tests can be cancelled
+    double thSkipISP = 1.4;
+    if (bestNonISPCost > bestCostSoFar * thSkipISP)
+    {
+      for (int splitIdx = 0; splitIdx < NUM_INTRA_SUBPARTITIONS_MODES - 1; splitIdx++)
+      {
+        for (int j = 0; j < NUM_LFNST_NUM_PER_SET; j++)
+        {
+          m_ispTestedModes[j].splitIsFinished[splitIdx] = true;
+        }
+      }
+      return false;
+    }
+    if (!updateISPStatusFromRelCU(bestNonISPCost, bestNonISPMode, bestISPModeInRelCU))
+    {
+      return false;
+    }
+  }
+#else
   if (m_pcEncCfg->getUseFastISP())
   {
     double thSkipISP = 1.4;
@@ -4871,6 +5216,7 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
       return;
     }
   }
+#endif
 
   for (int k = 0; k < m_ispCandListHor.size(); k++)
   {
@@ -4902,6 +5248,79 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
 
   ModeInfo refMode = origHadList.at(0);
   auto* destListPtr = &m_ispCandListHor;
+  #if JVET_P1026_ISP_LFNST_COMBINATION
+  //List creation 
+
+  if (m_pcEncCfg->getUseFastISP() && bestISPModeInRelCU != -1) //RelCU intra mode
+  {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+   destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mipTrFlg, refMode.mRefId, refMode.ispMod, bestISPModeInRelCU));
+#else
+   destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mRefId, refMode.ispMod, bestISPModeInRelCU));
+#endif
+    modeIsInList[bestISPModeInRelCU] = true;
+  }
+
+  // Planar
+  if (!modeIsInList[mode1])
+  {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+    destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mipTrFlg, refMode.mRefId, refMode.ispMod, mode1));
+#else
+    destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mRefId, refMode.ispMod, mode1));
+#endif
+    modeIsInList[mode1] = true;
+  }
+  // Best angle in regular intra
+  if (mode2 != -1 && !modeIsInList[mode2])
+  {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+    destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mipTrFlg, refMode.mRefId, refMode.ispMod, mode2));
+#else
+    destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mRefId, refMode.ispMod, mode2));
+#endif
+    modeIsInList[mode2] = true;
+  }
+  // Remaining regular intra modes that were full RD tested (except DC, which is added after the angles from regular intra)
+  int dcModeIndex = -1;
+  for (int remModeIdx = 0; remModeIdx < m_regIntraRDListWithCosts.size(); remModeIdx++)
+  {
+    int currentMode = m_regIntraRDListWithCosts.at(remModeIdx).modeId;
+    if (currentMode != mode1 && currentMode != mode2 && !modeIsInList[currentMode])
+    {
+      if (currentMode > DC_IDX)
+      {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+        destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mipTrFlg, refMode.mRefId, refMode.ispMod, currentMode));
+#else
+        destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mRefId, refMode.ispMod, currentMode));
+#endif
+        modeIsInList[currentMode] = true;
+      }
+      else if (currentMode == DC_IDX)
+      {
+        dcModeIndex = remModeIdx;
+      }
+    }
+  }
+
+  // DC is added after the angles from regular intra
+  if (dcModeIndex != -1 && !modeIsInList[DC_IDX])
+  {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+    destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mipTrFlg, refMode.mRefId, refMode.ispMod, DC_IDX));
+#else
+    destListPtr->push_back(ModeInfo(refMode.mipFlg, refMode.mRefId, refMode.ispMod, DC_IDX));
+#endif
+    modeIsInList[DC_IDX] = true;
+  }
+
+  // We add extra candidates to the list that will only be tested if ISP is likely to win
+  for (int j = 0; j < NUM_LFNST_NUM_PER_SET; j++)
+  {
+    m_ispTestedModes[j].numOrigModesToTest = (int)destListPtr->size();
+  }
+#else
   // 1) Planar
 #if JVET_P0803_COMBINED_MIP_CLEANUP
   destListPtr->push_back( ModeInfo( refMode.mipFlg, refMode.mipTrFlg, refMode.mRefId, refMode.ispMod, mode1 ) );
@@ -4954,6 +5373,7 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
 
   // 5) We add extra candidates to the list that will only be tested if ISP is likely to win
   m_ispTestedModes.numOrigModesToTest = (int)destListPtr->size();
+#endif
   const int addedModesFromHadList = 3;
   int       newModesAdded = 0;
 
@@ -4974,6 +5394,13 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
     }
   }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  if (m_pcEncCfg->getUseFastISP() && bestISPModeInRelCU != -1)
+  {
+    destListPtr->resize(1);
+  }
+#endif
+
   // Copy modes to other split-type list
   m_ispCandListVer = m_ispCandListHor;
   for (int i = 0; i < m_ispCandListVer.size(); i++)
@@ -4982,9 +5409,162 @@ void IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost)
   }
 
   // Reset the tested modes information to 0
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  for (int j = 0; j < NUM_LFNST_NUM_PER_SET; j++)
+  {
+    for (int i = 0; i < m_ispCandListHor.size(); i++)
+    {
+      m_ispTestedModes[j].clearISPModeInfo(m_ispCandListHor[i].modeId);
+    }
+  }
+  return true;
+#else
   for (int i = 0; i < m_ispCandListHor.size(); i++)
   {
     m_ispTestedModes.clearISPModeInfo(m_ispCandListHor[i].modeId);
   }
+#endif
 }
+
+#if JVET_P1026_ISP_LFNST_COMBINATION
+void IntraSearch::xSortISPCandListLFNST()
+{
+  //It resorts the list of intra mode candidates for lfnstIdx > 0 by checking the RD costs for lfnstIdx = 0
+  ISPTestedModesInfo& ispTestedModesRef = m_ispTestedModes[0];
+  for (int splitIdx = 0; splitIdx < NUM_INTRA_SUBPARTITIONS_MODES - 1; splitIdx++)
+  {
+    ISPType ispMode = splitIdx ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
+    if (!m_ispTestedModes[m_curIspLfnstIdx].splitIsFinished[splitIdx] && ispTestedModesRef.testedModes[splitIdx].size() > 1)
+    {
+      auto& candList   = ispMode == HOR_INTRA_SUBPARTITIONS ? m_ispCandListHor : m_ispCandListVer;
+      int bestModeId   = candList[1].modeId > DC_IDX ? candList[1].modeId : -1;
+      int bestSubParts = candList[1].modeId > DC_IDX ? ispTestedModesRef.getNumCompletedSubParts(ispMode, bestModeId) : -1;
+      double bestCost  = candList[1].modeId > DC_IDX ? ispTestedModesRef.getRDCost(ispMode, bestModeId) : MAX_DOUBLE;
+      for (int i = 0; i < candList.size(); i++)
+      {
+        const int candSubParts = ispTestedModesRef.getNumCompletedSubParts(ispMode, candList[i].modeId);
+        const double candCost = ispTestedModesRef.getRDCost(ispMode, candList[i].modeId);
+        if (candSubParts > bestSubParts || candCost < bestCost)
+        {
+          bestModeId = candList[i].modeId;
+          bestCost = candCost;
+          bestSubParts = candSubParts;
+        }
+      }
+
+      if (bestModeId != -1)
+      {
+        if (bestModeId != candList[0].modeId)
+        {
+          auto prevMode = candList[0];
+          candList[0].modeId = bestModeId;
+          for (int i = 1; i < candList.size(); i++)
+          {
+            auto nextMode = candList[i];
+            candList[i] = prevMode;
+            if (nextMode.modeId == bestModeId)
+            {
+              break;
+            }
+            prevMode = nextMode;
+          }
+        }
+      }
+    }
+  }
+}
+
+bool IntraSearch::updateISPStatusFromRelCU( double bestNonISPCostCurrCu, ModeInfo bestNonISPModeCurrCu, int& bestISPModeInRelCU )
+{
+  //It compares the data of a related CU with the current CU to cancel or reduce the ISP tests
+  bestISPModeInRelCU = -1;
+  if (m_modeCtrl->getRelatedCuIsValid())
+  {
+    double bestNonISPCostRelCU = m_modeCtrl->getBestDCT2NonISPCostRelCU();
+    double costRatio           = bestNonISPCostCurrCu / bestNonISPCostRelCU;
+    bool   bestModeRelCuIsMip  = (m_modeCtrl->getIspPredModeValRelCU() >> 5) & 0x1;
+    bool   bestModeCurrCuIsMip = bestNonISPModeCurrCu.mipFlg;
+    int    relatedCuIntraMode  = m_modeCtrl->getIspPredModeValRelCU() >> 9;
+    bool   isSameTypeOfMode    = (bestModeRelCuIsMip && bestModeCurrCuIsMip) || (!bestModeRelCuIsMip && !bestModeCurrCuIsMip);
+    bool   bothModesAreAngular = bestNonISPModeCurrCu.modeId > DC_IDX && relatedCuIntraMode > DC_IDX;
+    bool   modesAreComparable  = isSameTypeOfMode && (bestModeCurrCuIsMip || bestNonISPModeCurrCu.modeId == relatedCuIntraMode || (bothModesAreAngular && abs(relatedCuIntraMode - (int)bestNonISPModeCurrCu.modeId) <= 5));
+    int    status              = m_modeCtrl->getIspPredModeValRelCU();
+
+    if ((status & 0x3) == 0x3) //ISP was not selected in the relCU
+    {
+      double bestNonDCT2Cost = m_modeCtrl->getBestNonDCT2Cost();
+      double ratioWithNonDCT2 = bestNonDCT2Cost / bestNonISPCostRelCU;
+      double margin = ratioWithNonDCT2 < 0.95 ? 0.2 : 0.1;
+
+      if (costRatio > 1 - margin && costRatio < 1 + margin && modesAreComparable)
+      {
+        for (int lfnstVal = 0; lfnstVal < NUM_LFNST_NUM_PER_SET; lfnstVal++)
+        {
+          m_ispTestedModes[lfnstVal].splitIsFinished[HOR_INTRA_SUBPARTITIONS - 1] = true;
+          m_ispTestedModes[lfnstVal].splitIsFinished[VER_INTRA_SUBPARTITIONS - 1] = true;
+        }
+        return false;
+      }
+    }
+    else if ((status & 0x3) == 0x1) //ISP was selected in the relCU
+    {
+      double margin = 0.05;
+
+      if (costRatio > 1 - margin && costRatio < 1 + margin && modesAreComparable)
+      {
+        int  ispSplitIdx = (m_modeCtrl->getIspPredModeValRelCU() >> 2) & 0x1;
+        bool lfnstIdxIsNot0 = (bool)((m_modeCtrl->getIspPredModeValRelCU() >> 3) & 0x1);
+        bool lfnstIdxIs2 = (bool)((m_modeCtrl->getIspPredModeValRelCU() >> 4) & 0x1);
+        int  lfnstIdx = !lfnstIdxIsNot0 ? 0 : lfnstIdxIs2 ? 2 : 1;
+        bestISPModeInRelCU = (int)m_modeCtrl->getBestISPIntraModeRelCU();
+
+        for (int splitIdx = 0; splitIdx < NUM_INTRA_SUBPARTITIONS_MODES - 1; splitIdx++)
+        {
+          for (int lfnstVal = 0; lfnstVal < NUM_LFNST_NUM_PER_SET; lfnstVal++)
+          {
+            if (lfnstVal == lfnstIdx && splitIdx == ispSplitIdx)
+            {
+              continue;
+            }
+            m_ispTestedModes[lfnstVal].splitIsFinished[splitIdx] = true;
+          }
+        }
+
+        bool stopNonDCT2Transforms = (bool)((m_modeCtrl->getIspPredModeValRelCU() >> 6) & 0x1);
+        m_modeCtrl->setStopNonDCT2Transforms(stopNonDCT2Transforms);
+      }
+    }
+    else
+    {
+      THROW("Wrong ISP relCU status");
+    }
+  }
+
+  return true;
+}
+
+void IntraSearch::xFinishISPModes()
+{
+  //Continue to the next lfnst index 
+  m_curIspLfnstIdx++;
+
+  if (m_curIspLfnstIdx < NUM_LFNST_NUM_PER_SET)
+  {
+    //Check if LFNST is applicable
+    if (m_curIspLfnstIdx == 1)
+    {
+      bool canTestLFNST = false;
+      for (int lfnstIdx = 1; lfnstIdx < NUM_LFNST_NUM_PER_SET; lfnstIdx++)
+      {
+        canTestLFNST |= !m_ispTestedModes[lfnstIdx].splitIsFinished[HOR_INTRA_SUBPARTITIONS - 1] || !m_ispTestedModes[lfnstIdx].splitIsFinished[VER_INTRA_SUBPARTITIONS - 1];
+      }
+      if (canTestLFNST)
+      {
+        //Construct the intra modes candidates list for the lfnst > 0 cases
+        xSortISPCandListLFNST();
+      }
+    }
+  }
+}
+#endif
 

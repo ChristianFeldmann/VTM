@@ -345,7 +345,12 @@ private:
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_ispCandListHor, m_ispCandListVer;
   static_vector<ModeInfoWithCost, FAST_UDI_MAX_RDMODE_NUM> m_regIntraRDListWithCosts;
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  ISPTestedModesInfo m_ispTestedModes[NUM_LFNST_NUM_PER_SET];
+  int m_curIspLfnstIdx;
+#else
   ISPTestedModesInfo m_ispTestedModes;
+#endif
 
   //cost variables for the EMT algorithm and new modes list
   double     m_bestModeCostStore[ NUM_LFNST_NUM_PER_SET ];                                    // RD cost of the best mode for each PU using DCT2
@@ -448,12 +453,19 @@ protected:
 
   void     xEncIntraHeader                         ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1 );
   void     xEncSubdivCbfQT                         ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP );
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  uint64_t xGetIntraFracBitsQT                     ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, CUCtx * cuCtx = nullptr  );
+#else
   uint64_t xGetIntraFracBitsQT                     ( CodingStructure &cs, Partitioner& pm, const bool &luma, const bool &chroma, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP );
+#endif
   uint64_t xGetIntraFracBitsQTSingleChromaComponent( CodingStructure &cs, Partitioner& pm, const ComponentID compID );
 
   uint64_t xGetIntraFracBitsQTChroma(TransformUnit& tu, const ComponentID &compID);
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  void xEncCoeffQT                                 ( CodingStructure &cs, Partitioner& pm, const ComponentID compID, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, CUCtx * cuCtx = nullptr );
+#else
   void xEncCoeffQT                                 ( CodingStructure &cs, Partitioner& pm, const ComponentID compID, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP );
-
+#endif
 
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
 
@@ -485,8 +497,16 @@ protected:
   void   preCalcPLTIndex (      CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
 #endif
   void xGetNextISPMode                    ( ModeInfo& modeInfo, const ModeInfo* lastMode, const Size cuSize );
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  bool xSortISPCandList                   ( double bestCostSoFar, double bestNonISPCost, ModeInfo bestNonISPMode );
+  void xSortISPCandListLFNST              ( );
+  void xFindAlreadyTestedNearbyIntraModes ( int currentLfnstIdx, int currentIntraMode, int* refLfnstIdx, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize );
+  bool updateISPStatusFromRelCU           ( double bestNonISPCostCurrCu, ModeInfo bestNonISPModeCurrCu, int& bestISPModeInRelCU );
+  void xFinishISPModes                    ( );
+#else
   void xFindAlreadyTestedNearbyIntraModes ( int currentIntraMode, int* leftIntraMode, int* rightIntraMode, ISPType ispOption, int windowSize );
   void xSortISPCandList                   ( double bestCostSoFar, double bestNonISPCost );
+#endif
 };// END CLASS DEFINITION EncSearch
 
 //! \}

@@ -101,6 +101,10 @@ namespace CU
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
   bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  bool      canUseLfnstWithISP        ( const CompArea& cuArea, const ISPType ispSplitType );
+  bool      canUseLfnstWithISP        ( const CodingUnit& cu, const ChannelType chType );
+#endif
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
   bool      allLumaCBFsAreZero        ( const CodingUnit& cu );
 

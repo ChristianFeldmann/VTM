@@ -144,8 +144,34 @@ class ScalingList
 public:
              ScalingList();
   virtual    ~ScalingList()                                                 { }
-  int*       getScalingListAddress(uint32_t sizeId, uint32_t listId)                    { return &(m_scalingListCoef[sizeId][listId][0]);            } //!< get matrix coefficient
-  const int* getScalingListAddress(uint32_t sizeId, uint32_t listId) const              { return &(m_scalingListCoef[sizeId][listId][0]);            } //!< get matrix coefficient
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int*       getScalingListAddress(uint32_t scalingListId)                    { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
+  const int* getScalingListAddress(uint32_t scalingListId) const              { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
+  void       checkPredMode(uint32_t scalingListId);
+
+  void       setRefMatrixId(uint32_t scalingListId, uint32_t u)               { m_refMatrixId[scalingListId] = u;                         } //!< set reference matrix ID
+  uint32_t       getRefMatrixId(uint32_t scalingListId) const                 { return m_refMatrixId[scalingListId];                      } //!< get reference matrix ID
+  
+  static const int* getScalingListDefaultAddress(uint32_t scalinListId);                                                                           //!< get default matrix coefficient
+  void       processDefaultMatrix(uint32_t scalinListId);
+
+  void       setScalingListDC(uint32_t scalinListId, uint32_t u)              { m_scalingListDC[scalinListId] = u;                        } //!< set DC value
+  int        getScalingListDC(uint32_t scalinListId) const                    { return m_scalingListDC[scalinListId];                     } //!< get DC value
+
+  void       setScalingListCopyModeFlag(uint32_t scalinListId, bool bIsCopy)  { m_scalingListPredModeFlagIsCopy[scalinListId] = bIsCopy;  }
+  bool       getScalingListCopyModeFlag(uint32_t scalinListId) const          { return m_scalingListPredModeFlagIsCopy[scalinListId];     } //getScalingListPredModeFlag
+  void       processRefMatrix(uint32_t scalingListId, uint32_t refListId);
+
+  int        lengthUvlc(int uiCode);
+  int        lengthSvlc(int uiCode);
+  void       CheckBestPredScalingList(int scalingListId, int predListIdx, int& BitsCount);
+  void       codePredScalingList(int* scalingList, const int* scalingListPred, int scalingListDC, int scalingListPredDC, int scalinListId, int& bitsCost);
+  void       codeScalingList(int* scalingList, int scalingListDC, int scalinListId, int& bitsCost);
+  void       setScalingListPreditorModeFlag(uint32_t scalingListId, bool bIsPred) { m_scalingListPreditorModeFlag[scalingListId] = bIsPred; }
+  bool       getScalingListPreditorModeFlag(uint32_t scalingListId) const { return m_scalingListPreditorModeFlag[scalingListId]; }
+#else
+  int*       getScalingListAddress(uint32_t sizeId, uint32_t listId)          { return &(m_scalingListCoef[sizeId][listId][0]);           } //!< get matrix coefficient
+  const int* getScalingListAddress(uint32_t sizeId, uint32_t listId) const    { return &(m_scalingListCoef[sizeId][listId][0]);           } //!< get matrix coefficient
   void       checkPredMode(uint32_t sizeId, uint32_t listId);
 
   void       setRefMatrixId(uint32_t sizeId, uint32_t listId, uint32_t u)                   { m_refMatrixId[sizeId][listId] = u;                         } //!< set reference matrix ID
@@ -159,16 +185,21 @@ public:
 
   void       setScalingListPredModeFlag(uint32_t sizeId, uint32_t listId, bool bIsDPCM) { m_scalingListPredModeFlagIsDPCM[sizeId][listId] = bIsDPCM; }
   bool       getScalingListPredModeFlag(uint32_t sizeId, uint32_t listId) const         { return m_scalingListPredModeFlagIsDPCM[sizeId][listId];    }
+  void       processRefMatrix(uint32_t sizeId, uint32_t listId , uint32_t refListId );
+#endif
 
   void       checkDcOfMatrix();
-  void       processRefMatrix(uint32_t sizeId, uint32_t listId , uint32_t refListId );
   bool       xParseScalingList(const std::string &fileName);
   void       setDefaultScalingList();
   bool       isNotDefaultScalingList();
 
   bool operator==( const ScalingList& other )
   {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    if (memcmp(m_scalingListPredModeFlagIsCopy, other.m_scalingListPredModeFlagIsCopy, sizeof(m_scalingListPredModeFlagIsCopy)))
+#else
     if( memcmp( m_scalingListPredModeFlagIsDPCM, other.m_scalingListPredModeFlagIsDPCM, sizeof( m_scalingListPredModeFlagIsDPCM ) ) )
+#endif
     {
       return false;
     }
@@ -195,10 +226,18 @@ public:
 
 private:
   void             outputScalingLists(std::ostream &os) const;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  bool             m_scalingListPredModeFlagIsCopy [30]; //!< reference list index
+  int              m_scalingListDC                 [30]; //!< the DC value of the matrix coefficient for 16x16
+  uint32_t         m_refMatrixId                   [30]; //!< RefMatrixID
+  bool             m_scalingListPreditorModeFlag   [30]; //!< reference list index
+  std::vector<int> m_scalingListCoef               [30]; //!< quantization matrix
+#else 
   bool             m_scalingListPredModeFlagIsDPCM [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< reference list index
   int              m_scalingListDC                 [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< the DC value of the matrix coefficient for 16x16
   uint32_t         m_refMatrixId                   [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< RefMatrixID
   std::vector<int> m_scalingListCoef               [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< quantization matrix
+#endif
 };
 
 class ConstraintInfo
@@ -412,6 +451,9 @@ public:
   uint32_t  reshaperModelMaxBinIdx;
   int       reshaperModelBinCWDelta[PIC_CODE_CW_BINS];
   int       maxNbitsNeededDeltaCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int       chrResScalingOffset;
+#endif
   void      setUseSliceReshaper(bool b)                                { sliceReshaperEnableFlag = b;            }
   bool      getUseSliceReshaper() const                                { return sliceReshaperEnableFlag;         }
   void      setSliceReshapeModelPresentFlag(bool b)                    { sliceReshaperModelPresentFlag = b;      }
@@ -445,6 +487,12 @@ public:
     {
       return false;
     }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+    if (chrResScalingOffset != other.chrResScalingOffset)
+    {
+      return false;
+    }
+#endif
     if( memcmp( reshaperModelBinCWDelta, other.reshaperModelBinCWDelta, sizeof( reshaperModelBinCWDelta ) ) )
     {
       return false;
@@ -826,7 +874,11 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
+#if JVET_P0059_CHROMA_BDPCM
+  int               m_BDPCMEnabled;
+#else
   bool              m_BDPCMEnabledFlag;
+#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
@@ -985,8 +1037,13 @@ public:
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+#if JVET_P0059_CHROMA_BDPCM
+  int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
+  void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
+#else
   bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
   void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
+#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
@@ -1277,7 +1334,9 @@ private:
   int               m_PPSMvdL1ZeroIdc;
   int               m_PPSCollocatedFromL0Idc;
   uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   uint32_t          m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
+#endif
   uint32_t          m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
 
   bool             m_cabacInitPresentFlag;
@@ -1486,8 +1545,10 @@ public:
   void                    setPPSCollocatedFromL0Idc(int u)                                { m_PPSCollocatedFromL0Idc = u;                 }
   uint32_t                getPPSSixMinusMaxNumMergeCandPlus1() const                      { return m_PPSSixMinusMaxNumMergeCandPlus1;     }
   void                    setPPSSixMinusMaxNumMergeCandPlus1(uint32_t u)                  { m_PPSSixMinusMaxNumMergeCandPlus1 = u;        }
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   uint32_t                getPPSFiveMinusMaxNumSubblockMergeCandPlus1() const             { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }
   void                    setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uint32_t u)         { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }
+#endif
   uint32_t                getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() const       { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
   void                    setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uint32_t u)   { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
 

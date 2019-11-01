@@ -49,6 +49,11 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode 
+
+#define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
+
+#define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling
 
 #define JVET_P0590_SCALING_WINDOW                         1 // JVET-P0590: scaling window for RPR
 #define JVET_P0592_CHROMA_PHASE                           1 // JVET-P0592: chroma phase for RPR
@@ -57,6 +62,8 @@
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
 #define JVET_P0350_LFNST_IDX_CTX                          1 // JVET-P0350: Add one context for LFNST idx coding
+
+#define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
 
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
@@ -131,6 +138,8 @@
 
 #define JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG      1 // JVET-P0162: Removal of alf_ctb_use_first_aps_flag
 
+#define JVET_P0059_CHROMA_BDPCM                           1 // JVET-P0059: Enable BDPCM for chroma
+
 #define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
 
 #define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
@@ -160,6 +169,8 @@
 #define JVET_P0335_HDRCTC_CHANGE                          1 // JVET-P0335: change of HDR PQ CTC: enable LMCS and use QPc table in P0335, and disable lumaDQP and WCGPPSOffset
 
 #define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
+
+#define JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND     1 // JVET-P0152: remove pps_five_minus_max_num_subblock_merge_cand_plus1
 
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
@@ -391,6 +402,16 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
+
+#if JVET_P0059_CHROMA_BDPCM
+enum BDPCMControl
+{
+  BDPCM_INACTIVE = 0,
+  BDPCM_LUMAONLY = 1,
+  BDPCM_LUMACHROMA = 2,
+};
+#endif
+
 enum ApsType
 {
   ALF_APS = 0,
@@ -735,6 +756,17 @@ enum ScalingListSize
   SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
 };
 
+#if JVET_P01034_PRED_1D_SCALING_LIST
+enum ScalingList1dStartIdx
+{
+  SCALING_LIST_1D_START_2x2    = 0,
+  SCALING_LIST_1D_START_4x4    = 2,
+  SCALING_LIST_1D_START_8x8    = 8,
+  SCALING_LIST_1D_START_16x16  = 14,
+  SCALING_LIST_1D_START_32x32  = 20,
+  SCALING_LIST_1D_START_64x64  = 26,
+};
+#endif
 // Slice / Slice segment encoding modes
 enum SliceConstraint
 {

@@ -254,7 +254,9 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_CODE( pcPPS->getPPSMvdL1ZeroIdc(), 2,                              "pps_mvd_l1_zero_idc");
     WRITE_CODE( pcPPS->getPPSCollocatedFromL0Idc(), 2,                       "pps_collocated_from_l0_idc");
     WRITE_UVLC( pcPPS->getPPSSixMinusMaxNumMergeCandPlus1(),                 "pps_six_minus_max_num_merge_cand_plus1");
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     WRITE_UVLC( pcPPS->getPPSFiveMinusMaxNumSubblockMergeCandPlus1(),        "pps_five_minus_max_num_subblock_merge_cand_plus1");
+#endif
     WRITE_UVLC( pcPPS->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(),  "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");
   }
 
@@ -589,6 +591,16 @@ void HLSWriter::codeLmcsAps( APS* pcAPS )
       WRITE_FLAG(signCW, "lmcs_delta_sign_cw_flag[ i ]");
     }
   }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int deltaCRS = param.chrResScalingOffset;
+  int signCRS = (deltaCRS < 0) ? 1 : 0;
+  int absCRS = (deltaCRS < 0) ? (-deltaCRS) : deltaCRS;
+  WRITE_CODE(absCRS, 3, "lmcs_delta_crs_val");
+  if (absCRS > 0)
+  {
+    WRITE_FLAG(signCRS, "lmcs_delta_crs_val_flag");
+  }
+#endif
 }
 
 void HLSWriter::codeScalingListAps( APS* pcAPS )
@@ -855,11 +867,27 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getTransformSkipEnabledFlag() ? 1 : 0, "sps_transform_skip_enabled_flag");
   if (pcSPS->getTransformSkipEnabledFlag())
   {
+#if JVET_P0059_CHROMA_BDPCM
+      WRITE_FLAG(pcSPS->getBDPCMEnabled() ? 1 : 0, "sps_bdpcm_enabled_flag");
+      if (pcSPS->getBDPCMEnabled() && pcSPS->getChromaFormatIdc() == CHROMA_444)
+      {
+          WRITE_FLAG(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA ? 1 : 0, "sps_bdpcm_enabled_chroma_flag");
+      }
+      else 
+      {
+        CHECK(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA, "BDPCM for chroma can be used for 444 only.")
+      }
+#else
     WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");
+#endif
   }
   else
   {
+#if JVET_P0059_CHROMA_BDPCM
+    CHECK(pcSPS->getBDPCMEnabled()!=0, "BDPCM cannot be used when transform skip is disabled");
+#else
     CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
+#endif
   }
 #if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
@@ -1422,10 +1450,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if ( pcSlice->getSPS()->getUseAffine() )
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
+#if JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
+        WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand" );
+#else
         if (!pcSlice->getPPS()->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
         {
           WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand" );
         }
+#endif
       }
       if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
       {
@@ -1794,6 +1826,25 @@ void HLSWriter::xCodePredWeightTable( Slice* pcSlice )
 void HLSWriter::codeScalingList( const ScalingList &scalingList )
 {
   //for each size
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    bool scalingListCopyModeFlag = scalingList.getScalingListCopyModeFlag(scalingListId);
+    WRITE_FLAG(scalingListCopyModeFlag, "scaling_list_copy_mode_flag"); //copy mode
+    if (!scalingListCopyModeFlag)// Copy Mode
+    {
+      WRITE_FLAG(scalingList.getScalingListPreditorModeFlag(scalingListId), "scaling_list_predictor_mode_flag");
+    }
+    if ((scalingListCopyModeFlag || scalingList.getScalingListPreditorModeFlag(scalingListId)) && scalingListId!= SCALING_LIST_1D_START_2x2 && scalingListId != SCALING_LIST_1D_START_4x4 && scalingListId != SCALING_LIST_1D_START_8x8)
+    {
+      WRITE_UVLC((int)scalingListId - (int)scalingList.getRefMatrixId(scalingListId), "scaling_list_pred_matrix_id_delta");
+    }
+    if (!scalingListCopyModeFlag)
+    {
+      //DPCM
+      xCodeScalingList(&scalingList, scalingListId, scalingList.getScalingListPreditorModeFlag(scalingListId));
+    }
+#else
   for(uint32_t sizeId = SCALING_LIST_FIRST_CODED; sizeId <= SCALING_LIST_LAST_CODED; sizeId++)
   {
     const int predListStep = (sizeId > SCALING_LIST_32x32 ? (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) : 1); // if 64x64, skip over chroma entries.
@@ -1823,6 +1874,7 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
         xCodeScalingList(&scalingList, sizeId, listId);
       }
     }
+#endif
   }
   return;
 }
@@ -1831,34 +1883,88 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
 * \param sizeId      size index
 * \param listId      list index
 */
+#if JVET_P01034_PRED_1D_SCALING_LIST
+void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t scalingListId, bool isPredictor)
+#else
 void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t sizeId, uint32_t listId)
+#endif
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : ((scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8);
+  int coefNum = matrixSize * matrixSize;
+  ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(matrixSize)][gp_sizeIdxInfo->idxFrom(matrixSize)];
+  int nextCoef = (isPredictor) ? 0 : SCALING_LIST_START_VALUE;
+#else
   int coefNum = std::min( MAX_MATRIX_COEF_NUM, ( int ) g_scalingListSize[sizeId] );
   ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))];
   int nextCoef = SCALING_LIST_START_VALUE;
+#endif
+
   int data;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  const int *src = scalingList->getScalingListAddress(scalingListId);
+  int PredListId = scalingList->getRefMatrixId(scalingListId);
+  const int *srcPred = (isPredictor) ? ((scalingListId==PredListId) ? scalingList->getScalingListDefaultAddress(scalingListId) : scalingList->getScalingListAddress(PredListId)) : NULL;
+  int deltasrc[65] = { 0 };
+
+  if (isPredictor)
+  {
+    if (scalingListId >= SCALING_LIST_1D_START_16x16)
+    {
+      deltasrc[64] = scalingList->getScalingListDC(scalingListId) - ((PredListId >= SCALING_LIST_1D_START_16x16) ? ((scalingListId == PredListId) ? 16 : scalingList->getScalingListDC(PredListId)) : srcPred[scan[0].idx]);
+    }
+    for (int i = 0; i < coefNum; i++)
+    {
+      deltasrc[i] = (src[scan[i].idx] - srcPred[scan[i].idx]);
+    }
+  }
+  if (scalingListId >= SCALING_LIST_1D_START_16x16)
+  {
+    if (isPredictor)
+    {
+      data = deltasrc[64];
+      nextCoef = deltasrc[64];
+    }
+    else
+    {
+      data = scalingList->getScalingListDC(scalingListId) - nextCoef;
+      nextCoef = scalingList->getScalingListDC(scalingListId);
+    }
+    WRITE_SVLC((int8_t)data, "scaling_list_dc_coef");
+#else
   const int *src = scalingList->getScalingListAddress(sizeId, listId);
   if( sizeId > SCALING_LIST_8x8 )
   {
     WRITE_SVLC( scalingList->getScalingListDC(sizeId,listId) - 8, "scaling_list_dc_coef_minus8");
     nextCoef = scalingList->getScalingListDC(sizeId,listId);
+#endif
   }
   for(int i=0;i<coefNum;i++)
   {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    if (scalingListId >= SCALING_LIST_1D_START_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#else
     if (sizeId == SCALING_LIST_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#endif
       continue;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    data = (isPredictor) ? (deltasrc[i] - nextCoef) : (src[scan[i].idx] - nextCoef);
+    nextCoef = (isPredictor) ? deltasrc[i] : src[scan[i].idx];
+    WRITE_SVLC((int8_t)data, "scaling_list_delta_coef");
+#else
     data = src[scan[i].idx] - nextCoef;
     nextCoef = src[scan[i].idx];
-    if(data > 127)
+    if (data > 127)
     {
       data = data - 256;
     }
-    if(data < -128)
+    if (data < -128)
     {
       data = data + 256;
     }
 
     WRITE_SVLC( data,  "scaling_list_delta_coef");
+#endif
   }
 }
 

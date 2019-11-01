@@ -89,9 +89,9 @@ extern "C" {
 #include <stdint.h>
 
 #if defined(_MSC_VER)
-#define HM_DEC_API __declspec(dllexport)
+#define VTM_DEC_API __declspec(dllexport)
 #else
-#define HM_DEC_API
+#define VTM_DEC_API
 #endif
 
 //! \ingroup libVTMDecoder
@@ -104,11 +104,11 @@ typedef enum
   LIBVTMDEC_OK = 0,            ///< No error occured
   LIBVTMDEC_ERROR,             ///< There was an unspecified error
   LIBVTMDEC_ERROR_READ_ERROR   ///< There was an error reading the provided data
-} LIBVTMDEC_error;
+} libVTMDec_error;
 
 /** Get info about the VTM decoder version (e.g. "5.0")
  */
-HM_DEC_API const char *LIBVTMDEC_get_version(void);
+VTM_DEC_API const char *libVTMDec_get_version(void);
 
 /** This private structure is the decoder. 
  * You can save a pointer to it and use all the following functions to access it 
@@ -119,27 +119,27 @@ typedef void libVTMDec_context;
 /** Allocate and initialize a new decoder.
   * \return Returns a pointer to the new decoder or NULL if an error occurred.
   */
-HM_DEC_API libVTMDec_context* libVTMDec_new_decoder(void);
+VTM_DEC_API libVTMDec_context* libVTMDec_new_decoder(void);
 
 /** Destroy an existing decoder.
  * \param decCtx The decoder context to destroy that was created with libVTMDec_new_decoder
  * \return Return an error code or LIBVTMDEC_OK if no error occured.
  */
-HM_DEC_API LIBVTMDEC_error LIBVTMDEC_free_decoder(libVTMDec_context* decCtx);
+VTM_DEC_API libVTMDec_error libVTMDec_free_decoder(libVTMDec_context* decCtx);
 
 /** Enable/disable checking the SEI hash (default enabled).
  * This should be set before the first NAL unit is pushed to the decoder.
  * \param decCtx The decoder context that was created with libVTMDec_new_decoder
  * \param check_hash If set, the hash in the bitstream (if present) will be checked against the reconstruction.
  */
-HM_DEC_API void LIBVTMDEC_set_SEI_Check(libVTMDec_context* decCtx, bool check_hash);
+VTM_DEC_API void libVTMDec_set_SEI_Check(libVTMDec_context* decCtx, bool check_hash);
 /** Set the maximum temporal layer to decode.
  * By default, this is set to -1 (no limit).
  * This should be set before the first NAL unit is pushed to the decoder.
  * \param decCtx The decoder context that was created with libVTMDec_new_decoder
  * \param max_layer Maximum layer id. -1 means no limit (all layers).
  */
-HM_DEC_API void LIBVTMDEC_set_max_temporal_layer(libVTMDec_context* decCtx, int max_layer);
+VTM_DEC_API void libVTMDec_set_max_temporal_layer(libVTMDec_context* decCtx, int max_layer);
 
 /** Push a single NAL unit into the decoder (excluding the start code but including the NAL unit header).
  * This will perform decoding of the NAL unit. It must be exactly one NAL unit and the data array must
@@ -152,7 +152,7 @@ HM_DEC_API void LIBVTMDEC_set_max_temporal_layer(libVTMDec_context* decCtx, int 
  * \param checkOutputPictures This bool is set by the function if pictures might be available (see libVTMDec_get_picture).
  * \return An error code or LIBVTMDEC_OK if no error occured
  */
-HM_DEC_API LIBVTMDEC_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
+VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
 
 /** This private structure represents a picture.
  * You can save a pointer to it and use all the following functions to access it 
@@ -167,7 +167,7 @@ typedef enum
   LIBVTMDEC_LUMA = 0,
   LIBVTMDEC_CHROMA_U,
   LIBVTMDEC_CHROMA_V
-} LIBVTMDEC_ColorComponent;
+} libVTMDec_ColorComponent;
 
 /** Get the next output picture from the decoder if one is read for output.
  * When the checkOutputPictures flag was set in the last call of libVTMDec_push_nal_unit, call this
@@ -175,7 +175,7 @@ typedef enum
  * \param decCtx The decoder context that was created with libVTMDec_new_decoder
  * \return Returns a pointer to a libVTMDec_picture or NULL if no picture is ready for output.
 */
-HM_DEC_API libVTMDec_picture *libVTMDec_get_picture(libVTMDec_context* decCtx);
+VTM_DEC_API libVTMDec_picture *libVTMDec_get_picture(libVTMDec_context* decCtx);
 
 /** Get the POC of the given picture.
  * By definition, the POC of pictures obtained from libVTMDec_get_picture must be strictly increasing.
@@ -183,7 +183,7 @@ HM_DEC_API libVTMDec_picture *libVTMDec_get_picture(libVTMDec_context* decCtx);
  * \param pic The libVTMDec_picture that was obtained using libVTMDec_get_picture
  * \return The picture order count (POC) of the picture.
  */
-HM_DEC_API int LIBVTMDEC_get_POC(libVTMDec_picture *pic);
+VTM_DEC_API int libVTMDec_get_POC(libVTMDec_picture *pic);
 
 /** Get the width/height in pixel of the given picture.
  * This is excluding internal padding. Also, the conformance window is not considered.
@@ -191,11 +191,11 @@ HM_DEC_API int LIBVTMDEC_get_POC(libVTMDec_picture *pic);
  * \param c The color component. Note: The width/height for the luma and chroma components can differ.
  * \return The width/height of the picture in pixel.
  */
-HM_DEC_API int libVTMDec_get_picture_width(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c);
+VTM_DEC_API int libVTMDec_get_picture_width(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
-/** @copydoc libVTMDec_get_picture_width(libVTMDec_picture *,LIBVTMDEC_ColorComponent)
+/** @copydoc libVTMDec_get_picture_width(libVTMDec_picture *,LIBVTMDec_ColorComponent)
  */
-HM_DEC_API int libVTMDec_get_picture_height(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c);
+VTM_DEC_API int libVTMDec_get_picture_height(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
 /** Get the picture stride (the number of values to reach the next Y-line).
  * Do not confuse the stride and the width of the picture. Internally, the picture buffer may be wider than the output width.
@@ -203,7 +203,7 @@ HM_DEC_API int libVTMDec_get_picture_height(libVTMDec_picture *pic, LIBVTMDEC_Co
  * \param c The color component. Note: The stride for the luma and chroma components can differ.
  * \return The picture stride
  */
-HM_DEC_API int libVTMDec_get_picture_stride(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c);
+VTM_DEC_API int libVTMDec_get_picture_stride(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
 /** Get access to the raw image plane.
  * The pointer will point to the top left pixel position. You can read "width" pixels from it. 
@@ -212,7 +212,7 @@ HM_DEC_API int libVTMDec_get_picture_stride(libVTMDec_picture *pic, LIBVTMDEC_Co
  * \param c The color component to access. Note that the width and stride may be different for the chroma components.
  * \return A pointer to the values as short. For 8-bit output, the upper 8 bit are zero and can be ignored.
  */
-HM_DEC_API short *LIBVTMDEC_get_image_plane(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c);
+VTM_DEC_API short *libVTMDec_get_image_plane(libVTMDec_picture *pic, libVTMDec_ColorComponent c);
 
 /** The YUV subsampling types
 */
@@ -223,19 +223,19 @@ typedef enum
   LIBVTMDEC_CHROMA_422,      ///< 4:2:2 - Chroma subsampled by a factor of 2 in horizontal direction
   LIBVTMDEC_CHROMA_444,      ///< 4:4:4 - No chroma subsampling
   LIBVTMDEC_CHROMA_UNKNOWN
-} LIBVTMDEC_ChromaFormat;
+} libVTMDec_ChromaFormat;
 
 /** Get the YUV subsampling type of the given picture.
  * \param pic The libVTMDec_picture that was obtained using libVTMDec_get_picture.
  * \return The pictures subsampling type
  */
-HM_DEC_API LIBVTMDEC_ChromaFormat LIBVTMDEC_get_chroma_format(libVTMDec_picture *pic);
+VTM_DEC_API libVTMDec_ChromaFormat libVTMDec_get_chroma_format(libVTMDec_picture *pic);
 
 /** Get the bit depth which is used internally for the given color component.
  * \param c The color component
  * \return The internal bit depth
  */
-HM_DEC_API int LIBVTMDEC_get_internal_bit_depth(LIBVTMDEC_ColorComponent c);
+VTM_DEC_API int libVTMDec_get_internal_bit_depth(libVTMDec_ColorComponent c);
 
 /** This struct is used to retrive internal coding data for a picture.
  * A block is defined by its position within an image (x,y) and its size (w,h).
@@ -247,7 +247,7 @@ typedef struct
   unsigned short x, y, w, h;
   int value;
   int value2;
-} LIBVTMDEC_BlockValue;
+} libVTMDec_BlockValue;
 
 // TODO: Internals -> How to handle data compression? (pred mode and motion information)?
 
@@ -255,7 +255,7 @@ typedef enum
 {
   LIBVTMDEC_CTU_SLICE_INDEX = 0,
   LIBVTMDEC_CU_PREDICTION_MODE      ///< Does the CU use inter (0) or intra(1) prediction?
-} LIBVTMDEC_info_type;
+} libVTMDec_info_type;
 
 /** Get the internal coding information from the picture.
  * The pointer to the returned vector is always valid. However, the vector is changed if LIBVTMDEC_get_internal_info
@@ -266,14 +266,14 @@ typedef enum
  * \param type The type of data that you would like to obtain
  * \return A pointer to the vector of block data
  */
-HM_DEC_API std::vector<LIBVTMDEC_BlockValue> *LIBVTMDEC_get_internal_info(libVTMDec_context *decCtx, libVTMDec_picture *pic, LIBVTMDEC_info_type type);
+VTM_DEC_API std::vector<libVTMDec_BlockValue> *libVTMDec_get_internal_info(libVTMDec_context *decCtx, libVTMDec_picture *pic, libVTMDec_info_type type);
 
 /** Clear the internal storage for the internal info (the pointer returned by LIBVTMDEC_get_internal_info).
  * If you no longer need the info in the internals vector, you can call this to free some space.
  * \param decCtx The decoder context that was created with libVTMDec_new_decoder
  * \return An error code or LIBVTMDEC_OK if no error occured
  */
-HM_DEC_API LIBVTMDEC_error LIBVTMDEC_clear_internal_info(libVTMDec_context *decCtx);
+VTM_DEC_API libVTMDec_error libVTMDec_clear_internal_info(libVTMDec_context *decCtx);
 
 #ifdef __cplusplus
 }

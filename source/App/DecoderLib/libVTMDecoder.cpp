@@ -2,6 +2,10 @@
 #include "libVTMDecoder.h"
 
 #include "DecoderLib/DecLib.h"
+#include "DecoderLib/NALread.h"
+#include "DecoderLib/AnnexBread.h"
+
+#include <fstream>
 
 class vtmDecoderWrapper
 {
@@ -44,19 +48,29 @@ public:
   // The vector that is filled when internals are returned.
   // The vector is defined, filled and cleared only in this library so that no chaos is created
   // between the heap of the shared library and the caller programm.
-  std::vector<LIBVTMDEC_BlockValue> internalsBlockData;
+  std::vector<libVTMDec_BlockValue> internalsBlockData;
 
   DecLib m_cDecLib;
 };
 
+class rawDataAccessStreamBuffer : public std::streambuf
+{
+public:
+  rawDataAccessStreamBuffer(uint8_t *data, size_t dataSize)
+  {
+    char *d = (char*)(data);
+    setg(d, d, d + dataSize);
+  }
+};
+
 extern "C" {
 
-  HM_DEC_API const char *LIBVTMDEC_get_version(void)
+  VTM_DEC_API const char *libVTMDec_get_version(void)
   {
     return VTM_VERSION;
   }
 
-  HM_DEC_API libVTMDec_context* libVTMDec_new_decoder(void)
+  VTM_DEC_API libVTMDec_context* libVTMDec_new_decoder(void)
   {
     vtmDecoderWrapper *decCtx = new vtmDecoderWrapper();
     if (!decCtx)
@@ -65,7 +79,7 @@ extern "C" {
     return (libVTMDec_context*)decCtx;
   }
 
-  HM_DEC_API LIBVTMDEC_error LIBVTMDEC_free_decoder(libVTMDec_context* decCtx)
+  VTM_DEC_API libVTMDec_error libVTMDec_free_decoder(libVTMDec_context* decCtx)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -75,7 +89,7 @@ extern "C" {
     return LIBVTMDEC_OK;
   }
 
-  HM_DEC_API void LIBVTMDEC_set_SEI_Check(libVTMDec_context* decCtx, bool check_hash)
+  VTM_DEC_API void libVTMDec_set_SEI_Check(libVTMDec_context* decCtx, bool check_hash)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -83,7 +97,7 @@ extern "C" {
 
     d->m_cDecLib.setDecodedPictureHashSEIEnabled(check_hash);
   }
-  HM_DEC_API void LIBVTMDEC_set_max_temporal_layer(libVTMDec_context* decCtx, int max_layer)
+  VTM_DEC_API void libVTMDec_set_max_temporal_layer(libVTMDec_context* decCtx, int max_layer)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -92,7 +106,7 @@ extern "C" {
     d->maxTemporalLayer = max_layer;
   }
 
-  HM_DEC_API LIBVTMDEC_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures)
+  VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -101,31 +115,40 @@ extern "C" {
     if (length <= 0)
       return LIBVTMDEC_ERROR_READ_ERROR;
 
-    //// Check the NAL unit header
-    //uint8_t *data = (uint8_t*)data8;
-    //if (length < 4 && !eof)
-    //  return LIBVTMDEC_ERROR_READ_ERROR;
+    // Check the NAL unit header
+    uint8_t *data = (uint8_t*)data8;
+    if (length < 4 && !eof)
+      return LIBVTMDEC_ERROR_READ_ERROR;
 
-    //// Do not copy the start code (if present)
-    //int copyStart = 0;
-    //if (data[0] == 0 && data[1] == 1 && data[2] == 1)
-    //  copyStart = 3;
-    //else if (data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
-    //  copyStart = 4;
+    // Do not copy the start code (if present)
+    int copyStart = 0;
+    if (data[0] == 0 && data[1] == 1 && data[2] == 1)
+      copyStart = 3;
+    else if (data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
+      copyStart = 4;
 
-    //// Recieve the NAL units data and put it into a vector so that we can parse it using the InputNALUnit.
-    //vector<uint8_t> nalUnit;
-    //for (int i = 0; i < copyStart; i++)
-    //  data++;
-    //for (int i = 0; i < length-copyStart; i++)
-    //{
-    //  nalUnit.push_back(*data);
-    //  data++;
-    //}
+    rawDataAccessStreamBuffer dataStreamBuffer(data, length - copyStart);
 
-    //// Read the NAL unit
-    //InputNALUnit nalu;
-    //read(nalu, nalUnit);
+    std::istream dataInputStream(&dataStreamBuffer);
+    InputByteStream bytestream(dataInputStream);
+
+    // Read the NAL unit
+    InputNALUnit nalu;
+    AnnexBStats stats = AnnexBStats();
+    byteStreamNALUnit(bytestream, nalu.getBitstream().getFifo(), stats);
+    if (nalu.getBitstream().getFifo().empty())
+    {
+      /* this can happen if the following occur:
+       *  - empty input file
+       *  - two back-to-back start_code_prefixes
+       *  - start_code_prefix immediately followed by EOF
+       */
+    }
+    else
+    {
+      read(nalu);
+
+    }
 
     //if( (d->maxTemporalLayer >= 0 && nalu.m_temporalId > d->maxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu)  )
     //{
@@ -235,7 +258,7 @@ extern "C" {
     return LIBVTMDEC_OK;
   }
 
-  HM_DEC_API libVTMDec_picture *libVTMDec_get_picture(libVTMDec_context* decCtx)
+  VTM_DEC_API libVTMDec_picture *libVTMDec_get_picture(libVTMDec_context* decCtx)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -321,7 +344,7 @@ extern "C" {
     return NULL;
   }
 
-  HM_DEC_API int LIBVTMDEC_get_POC(libVTMDec_picture *pic)
+  VTM_DEC_API int libVTMDec_get_POC(libVTMDec_picture *pic)
   {
     if (pic == NULL)
       return -1;
@@ -332,7 +355,7 @@ extern "C" {
     return pcPic->getPOC();
   }
 
-  HM_DEC_API int libVTMDec_get_picture_width(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c)
+  VTM_DEC_API int libVTMDec_get_picture_width(libVTMDec_picture *pic, libVTMDec_ColorComponent c)
   {
     if (pic == NULL)
       return -1;
@@ -348,7 +371,7 @@ extern "C" {
       return pcPic->getPicYuvRec()->getWidth(COMPONENT_Cr);*/
     return -1;
   }
-  HM_DEC_API int libVTMDec_get_picture_height(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c)
+  VTM_DEC_API int libVTMDec_get_picture_height(libVTMDec_picture *pic, libVTMDec_ColorComponent c)
   {
     if (pic == NULL)
       return -1;
@@ -365,7 +388,7 @@ extern "C" {
     return -1;
   }
 
-  HM_DEC_API int libVTMDec_get_picture_stride(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c)
+  VTM_DEC_API int libVTMDec_get_picture_stride(libVTMDec_picture *pic, libVTMDec_ColorComponent c)
   {
     if (pic == NULL)
       return -1;
@@ -382,7 +405,7 @@ extern "C" {
     return -1;
   }
 
-  HM_DEC_API short* LIBVTMDEC_get_image_plane(libVTMDec_picture *pic, LIBVTMDEC_ColorComponent c)
+  VTM_DEC_API short* libVTMDec_get_image_plane(libVTMDec_picture *pic, libVTMDec_ColorComponent c)
   {
     if (pic == NULL)
       return NULL;
@@ -399,7 +422,7 @@ extern "C" {
     return NULL;
   }
 
-  HM_DEC_API LIBVTMDEC_ChromaFormat LIBVTMDEC_get_chroma_format(libVTMDec_picture *pic)
+  VTM_DEC_API libVTMDec_ChromaFormat libVTMDec_get_chroma_format(libVTMDec_picture *pic)
   {
     if (pic == NULL)
       return LIBVTMDEC_CHROMA_UNKNOWN;
@@ -420,7 +443,7 @@ extern "C" {
   }
 
 
-  HM_DEC_API int LIBVTMDEC_get_internal_bit_depth(LIBVTMDEC_ColorComponent c)
+  VTM_DEC_API int libVTMDec_get_internal_bit_depth(libVTMDec_ColorComponent c)
   {
     /*if (c == LIBVTMDEC_LUMA)
       return g_bitDepth[COMPONENT_Y];
@@ -653,7 +676,7 @@ extern "C" {
   //    addValuesForTURecursive(d, pcLCU, uiAbsPartIdx, uiDepth, 0, type);
   //}
 
-  HM_DEC_API std::vector<LIBVTMDEC_BlockValue> *LIBVTMDEC_get_internal_info(libVTMDec_context *decCtx, libVTMDec_picture *pic, LIBVTMDEC_info_type type)
+  VTM_DEC_API std::vector<libVTMDec_BlockValue> *libVTMDec_get_internal_info(libVTMDec_context *decCtx, libVTMDec_picture *pic, libVTMDec_info_type type)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -697,7 +720,7 @@ extern "C" {
     return &d->internalsBlockData;
   }
 
-  HM_DEC_API LIBVTMDEC_error LIBVTMDEC_clear_internal_info(libVTMDec_context *decCtx)
+  VTM_DEC_API libVTMDec_error libVTMDec_clear_internal_info(libVTMDec_context *decCtx)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)

@@ -12,39 +12,28 @@ class vtmDecoderWrapper
 public:
   vtmDecoderWrapper()
   {
-    loopFiltered = false;
-    maxTemporalLayer = -1; ///< maximum temporal layer to be decoded
-    iPOCLastDisplay = -MAX_INT;
-    iSkipFrame = 0;
-    pcListPic_readIdx = 0;
-    numPicsNotYetDisplayed = 0;
-    dpbFullness = 0;
-    lastNALTemporalID = 0;
-    flushOutput = false;
-    sheduleFlushing = false;
-    
     // Initialize the decoder
     initROM();
     m_cDecLib.create();
     m_cDecLib.init();
     m_cDecLib.setDecodedPictureHashSEIEnabled(true);
-    iPOCLastDisplay += iSkipFrame; // set the last displayed POC correctly for skip forward.
   }
   ~vtmDecoderWrapper() { m_cDecLib.destroy(); };
 
-  bool loopFiltered;
-  int  maxTemporalLayer; ///< maximum temporal layer to be decoded
-  int iPOCLastDisplay;
-  int iSkipFrame;
-  int pcListPic_readIdx;
-  int numPicsNotYetDisplayed;
-  unsigned int numReorderPicsHighestTid;
-  unsigned int maxDecPicBufferingHighestTid;
-  int dpbFullness;
-  int lastNALTemporalID;
-  bool flushOutput;
-  bool sheduleFlushing; // After the normal output function is finished, we will perform flushing.
+  int m_iSkipFrame{ 0 };
+  int m_iMaxTemporalLayer{ -1 };
+  int m_iPOCLastDisplay{ -MAX_INT };
+  PicList *pcListPic{ nullptr };
 
+  bool loopFiltered{ false };
+  bool flushOutput{ false };
+  int numPicsNotYetDisplayed{ 0 };
+  int dpbFullness{ 0 };
+  uint32_t numReorderPicsHighestTid{ 0 };
+  uint32_t maxDecPicBufferingHighestTid{ 0 };
+  bool sheduleFlushing{ false };
+  int pcListPic_readIdx{ 0 };
+  
   // The vector that is filled when internals are returned.
   // The vector is defined, filled and cleared only in this library so that no chaos is created
   // between the heap of the shared library and the caller programm.
@@ -103,7 +92,7 @@ extern "C" {
     if (!d)
       return;
 
-    d->maxTemporalLayer = max_layer;
+    d->m_iMaxTemporalLayer = max_layer;
   }
 
   VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures)
@@ -120,14 +109,7 @@ extern "C" {
     if (length < 4 && !eof)
       return LIBVTMDEC_ERROR_READ_ERROR;
 
-    // Do not copy the start code (if present)
-    int copyStart = 0;
-    if (data[0] == 0 && data[1] == 1 && data[2] == 1)
-      copyStart = 3;
-    else if (data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
-      copyStart = 4;
-
-    rawDataAccessStreamBuffer dataStreamBuffer(data, length - copyStart);
+    rawDataAccessStreamBuffer dataStreamBuffer(data, length);
 
     std::istream dataInputStream(&dataStreamBuffer);
     InputByteStream bytestream(dataInputStream);
@@ -143,117 +125,117 @@ extern "C" {
        *  - two back-to-back start_code_prefixes
        *  - start_code_prefix immediately followed by EOF
        */
+      return LIBVTMDEC_ERROR_READ_ERROR;
     }
     else
     {
       read(nalu);
 
+      const int iTargetLayer = 0;
+      const bool isNaluTheTargetLayer = nalu.m_nuhLayerId == iTargetLayer || iTargetLayer < 0;
+      if ((d->m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > d->m_iMaxTemporalLayer) || !isNaluTheTargetLayer)
+      {
+        bNewPicture = false;
+      }
+      else
+      {
+        bNewPicture = d->m_cDecLib.decode(nalu, d->m_iSkipFrame, d->m_iPOCLastDisplay);
+        if (bNewPicture)
+        {
+          // We encountered a new picture in this NAL unit. This means: we will filter the now complete former
+          // picture. There might also be pictures to be output/read. After reading these pictures, this function
+          // must be called again with the same NAL unit.
+        }
+      }
     }
 
-    //if( (d->maxTemporalLayer >= 0 && nalu.m_temporalId > d->maxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu)  )
-    //{
-    //  bNewPicture = false;
-    //}
-    //else
-    //{
-    //  // Restore the global variable
-    //  g_md5_mismatch = d->md5_mismatch;
+    // Filter the picture if decoding is complete
+    if ((bNewPicture || eof || nalu.m_nalUnitType == NAL_UNIT_EOS) && !d->m_cDecLib.getFirstSliceInSequence())
+    {
 
-    //  bNewPicture = d->decTop.decode(nalu, d->iSkipFrame, d->iPOCLastDisplay);
-    //  if (bNewPicture)
-    //  {
-    //    // We encountered a new picture in this NAL unit. This means: we will filter the now complete former
-    //    // picture. There might also be pictures to be output/read. After reading these pictures, this function
-    //    // must be called again with the same NAL unit.
-    //  }
+      int poc;
+      if (!d->loopFiltered || !eof)
+      {
+        d->m_cDecLib.executeLoopFilters();
+        d->m_cDecLib.finishPicture(poc, d->pcListPic);
+      }
+      d->loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+    }
+    else if ((bNewPicture || eof || nalu.m_nalUnitType == NAL_UNIT_EOS) && d->m_cDecLib.getFirstSliceInSequence())
+    {
+      d->m_cDecLib.setFirstSliceInPicture(true);
+    }
 
-    //  // Save the global variable
-    //  d->md5_mismatch = g_md5_mismatch;
-    //}
+    // Check if we might be able to read pictures
+    checkOutputPictures = false;
+    d->flushOutput = false;
+    bool fixCheckOutput;
+    if ( bNewPicture &&
+       ( nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
+         nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP ))
+    {
+      checkOutputPictures = true;
+      d->flushOutput = true;
+    }
+    if (nalu.m_nalUnitType == NAL_UNIT_EOS)
+    {
+      checkOutputPictures = true;
+      fixCheckOutput = true;
+    }
 
-    //// Filter the picture if decoding is complete
-    //if (bNewPicture || eof || nalu.m_nalUnitType == NAL_UNIT_EOS)
-    //{
-    //  int poc;
-    //  if (!d->loopFiltered || !eof)
-    //    d->decTop.executeLoopFilters(poc, d->pcListPic);
-    //  d->loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
-    //}
+    // FIX_WRITING_OUTPUT
+    // fixCheckOutput = (!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL_N && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL31);
 
-    //// Check if we might be able to read pictures
-    //checkOutputPictures = false;
-    //d->flushOutput = false;
-    //bool fixCheckOutput;
-    //if ( bNewPicture &&
-    //  (   nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-    //    || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-    //    || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-    //    || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-    //    || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP ) )
-    //{
-    //  checkOutputPictures = true;
-    //  d->flushOutput = true;
-    //}
-    //if (nalu.m_nalUnitType == NAL_UNIT_EOS)
-    //{
-    //  checkOutputPictures = true;
-    //  fixCheckOutput = true;
-    //}
+    // next, try to get frames from the deocder
+    if ((bNewPicture || fixCheckOutput) && d->pcListPic != NULL)
+    {
+      checkOutputPictures = true;
 
-    //// FIX_WRITING_OUTPUT
-    //fixCheckOutput = (!bNewPicture && nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL_N && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL31);
+      // This is what xWriteOutput does before iterating over the pictures
+      d->numPicsNotYetDisplayed = 0;
+      d->dpbFullness = 0;
+      const SPS* activeSPS = (d->pcListPic->front()->cs->sps);
+      uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
 
-    //// next, try to get frames from the deocder
-    //if((bNewPicture || fixCheckOutput) && d->pcListPic != NULL)
-    //{
-    //  checkOutputPictures = true;
 
-    //  d->lastNALTemporalID = nalu.m_temporalId;
+      if (d->m_iMaxTemporalLayer == -1 || d->m_iMaxTemporalLayer >= maxNrSublayers)
+      {
+        d->numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers - 1);
+        d->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(maxNrSublayers - 1);
+      }
+      else
+      {
+        d->numReorderPicsHighestTid = activeSPS->getNumReorderPics(d->m_iMaxTemporalLayer);
+        d->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(d->m_iMaxTemporalLayer);
+      }
 
-    //  // This is what xWriteOutput does before iterating over the pictures
-    //  TComSPS* activeSPS = d->decTop.getActiveSPS();
-    //  unsigned int maxNrSublayers = activeSPS->getMaxTLayers();
-    //  d->numPicsNotYetDisplayed = 0;
-    //  d->dpbFullness = 0;
+      PicList::iterator iterPic = d->pcListPic->begin();
+      while (iterPic != d->pcListPic->end())
+      {
+        Picture* pcPic = *(iterPic);
+        if (pcPic->neededForOutput && pcPic->getPOC() > d->m_iPOCLastDisplay)
+        {
+          d->numPicsNotYetDisplayed++;
+          d->dpbFullness++;
+        }
+        else if (pcPic->referenced)
+        {
+          d->dpbFullness++;
+        }
+        iterPic++;
+      }
+    }
 
-    //  if(d->maxTemporalLayer == -1 || d->maxTemporalLayer >= maxNrSublayers)
-    //  {
-    //    d->numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
-    //    d->maxDecPicBufferingHighestTid =  activeSPS->getMaxDecPicBuffering(maxNrSublayers-1);
-    //  }
-    //  else
-    //  {
-    //    d->numReorderPicsHighestTid = activeSPS->getNumReorderPics(d->maxTemporalLayer);
-    //    d->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(d->maxTemporalLayer);
-    //  }
+    if (eof)
+    {
+      // At the end of the file we have to use the normal output function once and then the flushing
+      checkOutputPictures = true;
+      d->sheduleFlushing = true;
+    }
 
-    //  TComList<Picture*>::iterator iterPic = d->pcListPic->begin();
-    //  while (iterPic != d->pcListPic->end())
-    //  {
-    //    Picture* pcPic = *(iterPic);
-    //    if(pcPic->getOutputMark() && pcPic->getPOC() > d->iPOCLastDisplay)
-    //    {
-    //      d->numPicsNotYetDisplayed++;
-    //      d->dpbFullness++;
-    //    }
-    //    else if(pcPic->getSlice( 0 )->isReferenced())
-    //    {
-    //      d->dpbFullness++;
-    //    }
-    //    iterPic++;
-    //  }
-    //}
-
-    //if (eof)
-    //{
-    //  // At the end of the file we have to use the normal output function once and then the flushing
-    //  checkOutputPictures = true;
-    //  d->sheduleFlushing = true;
-    //}
-
-    //if (checkOutputPictures)
-    //  // Reset the iterator over the output images
-    //  d->pcListPic_readIdx = 0;
+    if (checkOutputPictures)
+      // Reset the iterator over the output images
+      d->pcListPic_readIdx = 0;
 
     return LIBVTMDEC_OK;
   }
@@ -264,82 +246,71 @@ extern "C" {
     if (!d)
       return NULL;
 
-//    if (d->pcListPic == NULL)
-//      return NULL;
-//    if (d->pcListPic->size() == 0)
-//      return NULL;
-//    if (d->pcListPic_readIdx < 0 || d->pcListPic_readIdx > d->pcListPic->size())
-//      return NULL;
-//
-//    // Get the pcListPic_readIdx-th picture from the list
-//    TComList<Picture*>::iterator iterPic = d->pcListPic->begin();
-//    for (int i = 0; i < d->pcListPic_readIdx; i++)
-//      iterPic++;
-//
-//    if ((*(iterPic))->isField())
-//      // TODO: Field output not supported (YET)
-//      return NULL;
-//
-//    // Go on in the list until we run out of frames or find one that we can output
-//    while (iterPic != d->pcListPic->end())
-//    {
-//      Picture* pcPic = *(iterPic);
-//
-//      if ((d->flushOutput && (pcPic->getOutputMark())) ||
-//        (pcPic->getOutputMark() && pcPic->getPOC() > d->iPOCLastDisplay && (d->numPicsNotYetDisplayed > d->numReorderPicsHighestTid || d->dpbFullness > d->maxDecPicBufferingHighestTid)))
-//      {
-//        if (!d->flushOutput)
-//          // Output picture found
-//          d->numPicsNotYetDisplayed--;
-//
-//        if(pcPic->getSlice(0)->isReferenced() == false)
-//          d->dpbFullness--;
-//
-//        // update POC of display order
-//        d->iPOCLastDisplay = pcPic->getPOC();
-//
-//        // erase non-referenced picture in the reference picture list after display
-//        if ( !pcPic->getSlice(0)->isReferenced() && pcPic->getReconMark() == true )
-//        {
-//#if !DYN_REF_FREE
-//          pcPic->setReconMark(false);
-//
-//          // mark it should be extended later
-//          pcPic->getPicYuvRec()->setBorderExtension( false );
-//
-//#else
-//          pcPic->destroy();
-//          pcListPic->erase( iterPic );
-//          iterPic = pcListPic->begin(); // to the beginning, non-efficient way, have to be revised!
-//          continue;
-//#endif
-//        }
-//        pcPic->setOutputMark(false);
-//
-//        // Return the picture
-//        return (libVTMDec_picture*)pcPic;
-//      }
-//
-//      iterPic++;
-//      d->pcListPic_readIdx++;
-//    }
-//
-//    // We reached the end of the list wothout finding an output picture
-//    if (d->flushOutput)
-//    {
-//      // Flushing over
-//      d->pcListPic->clear();
-//      d->iPOCLastDisplay = -MAX_INT;
-//      d->flushOutput = false;
-//    }
-//    if (d->sheduleFlushing)
-//    {
-//      // The normal output function is over, now let's flush
-//      d->flushOutput = true;
-//      d->sheduleFlushing = false;
-//      d->pcListPic_readIdx = 0;   // Iterate over all items again
-//      return libVTMDec_get_picture(decCtx);
-//    }
+    if (d->pcListPic == NULL)
+      return NULL;
+    if (d->pcListPic->size() == 0)
+      return NULL;
+    if (d->pcListPic_readIdx < 0 || d->pcListPic_readIdx > d->pcListPic->size())
+      return NULL;
+
+    // Get the pcListPic_readIdx-th picture from the list
+    PicList::iterator iterPic = d->pcListPic->begin();
+    for (int i = 0; i < d->pcListPic_readIdx; i++)
+      iterPic++;
+
+    if ((*(iterPic))->fieldPic)
+      // TODO: Field output not supported (YET?)
+      return NULL;
+
+    // Go on in the list until we run out of frames or find one that we can output
+    while (iterPic != d->pcListPic->end())
+    {
+      Picture* pcPic = *(iterPic);
+
+      if ((d->flushOutput && pcPic->neededForOutput) || (pcPic->neededForOutput && pcPic->getPOC() > d->m_iPOCLastDisplay &&
+        (d->numPicsNotYetDisplayed > d->numReorderPicsHighestTid || d->dpbFullness > d->maxDecPicBufferingHighestTid)))
+      {
+        if (!d->flushOutput)
+          // Output picture found
+          d->numPicsNotYetDisplayed--;
+
+        if(pcPic->referenced == false)
+          d->dpbFullness--;
+
+        // update POC of display order
+        d->m_iPOCLastDisplay = pcPic->getPOC();
+
+        // erase non-referenced picture in the reference picture list after display
+        if (!pcPic->referenced && pcPic->reconstructed)
+        {
+          pcPic->reconstructed = false;
+        }
+        pcPic->neededForOutput = false;
+
+        // Return the picture
+        return (libVTMDec_picture*)pcPic;
+      }
+
+      iterPic++;
+      d->pcListPic_readIdx++;
+    }
+
+    // We reached the end of the list wothout finding an output picture
+    if (d->flushOutput)
+    {
+      // Flushing over
+      d->pcListPic->clear();
+      d->m_iPOCLastDisplay = -MAX_INT;
+      d->flushOutput = false;
+    }
+    if (d->sheduleFlushing)
+    {
+      // The normal output function is over, now let's flush
+      d->flushOutput = true;
+      d->sheduleFlushing = false;
+      d->pcListPic_readIdx = 0;   // Iterate over all items again
+      return libVTMDec_get_picture(decCtx);
+    }
 
     return NULL;
   }
@@ -363,14 +334,13 @@ extern "C" {
     if (pcPic == NULL)
       return -1;
 
-    /*if (c == LIBVTMDEC_LUMA)
-      return pcPic->getPicYuvRec()->getWidth(COMPONENT_Y);
-    if (c == LIBVTMDEC_CHROMA_U)
-      return pcPic->getPicYuvRec()->getWidth(COMPONENT_Cb);
-    if (c == LIBVTMDEC_CHROMA_V)
-      return pcPic->getPicYuvRec()->getWidth(COMPONENT_Cr);*/
+    if (c == LIBVTMDEC_LUMA || pcPic->chromaFormat == CHROMA_444)
+      return pcPic->lwidth();
+    if (pcPic->chromaFormat == CHROMA_422 || pcPic->chromaFormat == CHROMA_420)
+      return pcPic->lwidth() / 2;
     return -1;
   }
+
   VTM_DEC_API int libVTMDec_get_picture_height(libVTMDec_picture *pic, libVTMDec_ColorComponent c)
   {
     if (pic == NULL)
@@ -379,12 +349,10 @@ extern "C" {
     if (pcPic == NULL)
       return -1;
 
-    /*if (c == LIBVTMDEC_LUMA)
-      return pcPic->getPicYuvRec()->getHeight(COMPONENT_Y);
-    if (c == LIBVTMDEC_CHROMA_U)
-      return pcPic->getPicYuvRec()->getHeight(COMPONENT_Cb);
-    if (c == LIBVTMDEC_CHROMA_V)
-      return pcPic->getPicYuvRec()->getHeight(COMPONENT_Cr);*/
+    if (c == LIBVTMDEC_LUMA || pcPic->chromaFormat == CHROMA_444 || pcPic->chromaFormat == CHROMA_422)
+      return pcPic->lheight();
+    if (pcPic->chromaFormat == CHROMA_420)
+      return pcPic->lheight() / 2;
     return -1;
   }
 
@@ -396,12 +364,12 @@ extern "C" {
     if (pcPic == NULL)
       return -1;
 
-    /*if (c == LIBVTMDEC_LUMA)
-      return pcPic->getPicYuvRec()->getStride(COMPONENT_Y);
+    if (c == LIBVTMDEC_LUMA)
+      return pcPic->getOrigBuf().get(COMPONENT_Y).stride;
     if (c == LIBVTMDEC_CHROMA_U)
-      return pcPic->getPicYuvRec()->getStride(COMPONENT_Cb);
+      return pcPic->getOrigBuf().get(COMPONENT_Cb).stride;
     if (c == LIBVTMDEC_CHROMA_V)
-      return pcPic->getPicYuvRec()->getStride(COMPONENT_Cr);*/
+      return pcPic->getOrigBuf().get(COMPONENT_Cr).stride;
     return -1;
   }
 
@@ -413,12 +381,12 @@ extern "C" {
     if (pcPic == NULL)
       return NULL;
 
-    /*if (c == LIBVTMDEC_LUMA)
-      return pcPic->getPicYuvRec()->getAddr(COMPONENT_Y);
+    if (c == LIBVTMDEC_LUMA)
+      return pcPic->getOrigBuf().get(COMPONENT_Y).buf;
     if (c == LIBVTMDEC_CHROMA_U)
-      return pcPic->getPicYuvRec()->getAddr(COMPONENT_Cb);
+      return pcPic->getOrigBuf().get(COMPONENT_Cb).buf;
     if (c == LIBVTMDEC_CHROMA_V)
-      return pcPic->getPicYuvRec()->getAddr(COMPONENT_Cr);*/
+      return pcPic->getOrigBuf().get(COMPONENT_Cr).buf;
     return NULL;
   }
 
@@ -430,25 +398,30 @@ extern "C" {
     if (pcPic == NULL)
       return LIBVTMDEC_CHROMA_UNKNOWN;
 
-    /*ChromaFormat f = pcPic->getChromaFormat();
-    if (f == CHROMA_400)
+    if (pcPic->chromaFormat == CHROMA_400)
       return LIBVTMDEC_CHROMA_400;
-    if (f == CHROMA_420)
+    if (pcPic->chromaFormat == CHROMA_420)
       return LIBVTMDEC_CHROMA_420;
-    if (f == CHROMA_422)
+    if (pcPic->chromaFormat == CHROMA_422)
       return LIBVTMDEC_CHROMA_422;
-    if (f == CHROMA_444)
-      return LIBVTMDEC_CHROMA_444;*/
+    if (pcPic->chromaFormat == CHROMA_444)
+      return LIBVTMDEC_CHROMA_444;
     return LIBVTMDEC_CHROMA_UNKNOWN;
   }
 
-
-  VTM_DEC_API int libVTMDec_get_internal_bit_depth(libVTMDec_ColorComponent c)
+  VTM_DEC_API int libVTMDec_get_internal_bit_depth(libVTMDec_picture *pic, libVTMDec_ColorComponent c)
   {
-    /*if (c == LIBVTMDEC_LUMA)
-      return g_bitDepth[COMPONENT_Y];
+    if (pic == NULL)
+      return -1;
+    Picture* pcPic = (Picture*)pic;
+    if (pcPic == NULL)
+      return -1;
+
+    const BitDepths &bitDepths = pcPic->cs->sps->getBitDepths();
+    if (c == LIBVTMDEC_LUMA)
+      return bitDepths.recon[CHANNEL_TYPE_LUMA];
     if (c == LIBVTMDEC_CHROMA_U || c == LIBVTMDEC_CHROMA_V)
-      return g_bitDepth[COMPONENT_Cb];*/
+      return bitDepths.recon[CHANNEL_TYPE_CHROMA];
     return -1;
   }
 

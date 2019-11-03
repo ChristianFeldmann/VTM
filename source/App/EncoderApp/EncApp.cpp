@@ -160,7 +160,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
+#if JVET_P0059_CHROMA_BDPCM
+  m_cEncLib.setNoBDPCMConstraintFlag                             ( m_useBDPCM == 0 );
+#else
   m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
+#endif
   m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
@@ -574,7 +578,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPPSMvdL1ZeroIdc                                   ( m_PPSMvdL1ZeroIdc );
   m_cEncLib.setPPSCollocatedFromL0Idc                            ( m_PPSCollocatedFromL0Idc );
   m_cEncLib.setPPSSixMinusMaxNumMergeCandPlus1                   ( m_PPSSixMinusMaxNumMergeCandPlus1 );
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   m_cEncLib.setPPSFiveMinusMaxNumSubblockMergeCandPlus1          ( m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 );
+#endif
   m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
@@ -648,6 +654,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  m_cEncLib.setReshapeCSoffset                                   ( m_CSoffset );
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
   for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)

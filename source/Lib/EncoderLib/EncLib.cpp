@@ -526,6 +526,12 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
   if( getUseScalingListId() == SCALING_LIST_FILE_READ )
   {
     // Prepare delta's:
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+    {
+        aps.getScalingList().checkPredMode(scalingListId);
+    }
+#else
     for (uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
     {
       for (uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
@@ -538,6 +544,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
         aps.getScalingList().checkPredMode( sizeId, listId );
       }
     }
+#endif
   }
 }
 
@@ -1379,7 +1386,11 @@ void EncLib::xInitSPS(SPS &sps)
 #endif
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+#if JVET_P0059_CHROMA_BDPCM
+  sps.setBDPCMEnabled(m_useBDPCM);
+#else
   sps.setBDPCMEnabledFlag(m_useBDPCM);
+#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
@@ -1502,7 +1513,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
   pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
   pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   pps.setPPSFiveMinusMaxNumSubblockMergeCandPlus1(getPPSFiveMinusMaxNumSubblockMergeCandPlus1());
+#endif
   pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
 
   pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
@@ -1845,7 +1858,11 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   int extraNum = fullListNum;
   if (m_uiIntraPeriod < 0)
   {
+#if JVET_P0345_LD_GOP_8
+    if (POCCurr < (2 * m_iGOPSize + 2))
+#else
     if (POCCurr < 10)
+#endif
     {
       rpl0Idx = POCCurr + m_iGOPSize - 1;
       rpl1Idx = POCCurr + m_iGOPSize - 1;
@@ -1895,7 +1912,11 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   int extraNum = fullListNum;
   if (m_uiIntraPeriod < 0)
   {
+#if JVET_P0345_LD_GOP_8
+    if (POCCurr < (2 * m_iGOPSize + 2))
+#else
     if (POCCurr < 10)
+#endif
     {
       slice->setRPL0idx(POCCurr + m_iGOPSize - 1);
       slice->setRPL1idx(POCCurr + m_iGOPSize - 1);
@@ -2225,7 +2246,11 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 
   if (getCostMode()==COST_LOSSLESS_CODING)
   {
+#if JVET_AHG14_LOSSLESS
+    qp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( pSlice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) - 8 ) * 6 );
+#else
     qp=LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP;
+#endif
   }
   else
   {

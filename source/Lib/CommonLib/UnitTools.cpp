@@ -318,6 +318,30 @@ bool CU::canUseISP( const int width, const int height, const int maxTrSize )
   return true;
 }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+bool CU::canUseLfnstWithISP( const CompArea& cuArea, const ISPType ispSplitType )
+{
+  if( ispSplitType == NOT_INTRA_SUBPARTITIONS )
+  {
+    return false;
+  }
+  Size tuSize = ( ispSplitType == HOR_INTRA_SUBPARTITIONS ) ? Size( cuArea.width, CU::getISPSplitDim( cuArea.width, cuArea.height, TU_1D_HORZ_SPLIT ) ) :
+    Size( CU::getISPSplitDim( cuArea.width, cuArea.height, TU_1D_VERT_SPLIT ), cuArea.height );
+
+  if( !( tuSize.width >= MIN_TB_SIZEY && tuSize.height >= MIN_TB_SIZEY ) )
+  {
+    return false;
+  }
+  return true;
+}
+
+bool CU::canUseLfnstWithISP( const CodingUnit& cu, const ChannelType chType )
+{
+  CHECK( !isLuma( chType ), "Wrong ISP mode!" );
+  return CU::canUseLfnstWithISP( cu.blocks[chType == CHANNEL_TYPE_LUMA ? 0 : 1], (ISPType)cu.ispMode );
+}
+#endif
+
 uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit ispType )
 {
   bool divideTuInRows = ispType == TU_1D_HORZ_SPLIT;
@@ -566,7 +590,11 @@ int PU::getLMSymbolList(const PredictionUnit &pu, int *modeList)
 
 bool PU::isChromaIntraModeCrossCheckMode( const PredictionUnit &pu )
 {
+#if JVET_P0059_CHROMA_BDPCM
+  return !pu.cu->bdpcmModeChroma && pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
+#else
   return pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX;
+#endif
 }
 
 uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chType )
@@ -3759,10 +3787,21 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
   SizeType transformSkipMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
 
+#if JVET_P0059_CHROMA_BDPCM
+  bool bdpcmAllowed = cu.cs->sps->getBDPCMEnabled();
+       bdpcmAllowed &= (isLuma(compID) || cu.cs->sps->getBDPCMEnabled() == BDPCM_LUMACHROMA);
+#else
   bool bdpcmAllowed = compID == COMPONENT_Y;
+#endif
        bdpcmAllowed &= CU::isIntra( cu );
+#if JVET_P0059_CHROMA_BDPCM
+       if (isLuma(compID))
+           bdpcmAllowed &= (cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize);
+       else
+           bdpcmAllowed &= (cu.chromaSize().width <= transformSkipMaxSize && cu.chromaSize().height <= transformSkipMaxSize);
+#else
        bdpcmAllowed &= ( cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize );
-
+#endif
   return bdpcmAllowed;
 }
 
@@ -3828,8 +3867,16 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   SizeType transformSkipMaxSize = 1 << maxSize;
 #if JVET_P0058_CHROMA_TS
   tsAllowed &= !(tu.cu->bdpcmMode && isLuma(compID));
+#if JVET_P0059_CHROMA_BDPCM
+  tsAllowed &= !(tu.cu->bdpcmModeChroma && isChroma(compID));
+#endif
+#else
+#if JVET_P0059_CHROMA_BDPCM
+  tsAllowed &= !(tu.cu->bdpcmMode && isLuma(compID) );
+  tsAllowed &= !(tu.cu->bdpcmModeChroma && isChroma(compID) );
 #else
   tsAllowed &= !(tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
+#endif
 #endif
 #if JVET_P0058_CHROMA_TS
   tsAllowed &= tu.blocks[compID].width <= transformSkipMaxSize && tu.blocks[compID].height <= transformSkipMaxSize;

@@ -161,13 +161,25 @@ void WeightPrediction::addWeightBi(const CPelUnitBuf          &pcYuvSrc0,
                                    const WPScalingParam *const wp1,
                                          PelUnitBuf           &rpcYuvDst,
                                    const bool                  bRoundLuma /*= true*/,
-                                   const ComponentID           maxNumComp)
+                                   const ComponentID           maxNumComp
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                  , bool                       lumaOnly
+                                  , bool                       chromaOnly
+#endif
+)
 {
   const bool enableRounding[MAX_NUM_COMPONENT] = { bRoundLuma, true, true };
 
   const uint32_t numValidComponent = (const uint32_t)pcYuvSrc0.bufs.size();
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  CHECK( lumaOnly && chromaOnly, "Not allowed to have both lumaOnly and chromaOnly selected" );
+  int firstComponent = chromaOnly ? 1 : 0;
+  int lastComponent = lumaOnly ? 0 : maxNumComp;
+  for (int componentIndex = firstComponent; componentIndex < numValidComponent && componentIndex <= lastComponent; componentIndex++)
+#else
   for (int componentIndex = 0; componentIndex < numValidComponent && componentIndex <= maxNumComp; componentIndex++)
+#endif
   {
     const ComponentID compID = ComponentID(componentIndex);
 
@@ -275,11 +287,24 @@ void  WeightPrediction::addWeightUni(const CPelUnitBuf          &pcYuvSrc0,
                                      const ClpRngs              &clpRngs,
                                      const WPScalingParam *const wp0,
                                            PelUnitBuf           &rpcYuvDst,
-                                     const ComponentID           maxNumComp)
+                                     const ComponentID           maxNumComp
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                    , bool                       lumaOnly
+                                    , bool                       chromaOnly
+#endif
+)
 {
   const uint32_t numValidComponent = (const uint32_t)pcYuvSrc0.bufs.size();
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  CHECK( lumaOnly && chromaOnly, "Not allowed to have both lumaOnly and chromaOnly selected" );
+  int firstComponent = chromaOnly ? 1 : 0;
+  int lastComponent  = lumaOnly ? 0 : maxNumComp;
+  for (int componentIndex = firstComponent; componentIndex < numValidComponent && componentIndex <= lastComponent;
+       componentIndex++)
+#else
   for (int componentIndex = 0; componentIndex < numValidComponent && componentIndex <= maxNumComp; componentIndex++)
+#endif
   {
     const ComponentID compID = ComponentID(componentIndex);
 
@@ -371,7 +396,12 @@ void  WeightPrediction::xWeightedPredictionUni(const PredictionUnit       &pu,
                                                const RefPicList           &eRefPicList,
                                                      PelUnitBuf           &pcYuvPred,
                                                const int                   iRefIdx_input/* = -1*/,
-                                               const ComponentID           maxNumComp)
+                                               const ComponentID           maxNumComp
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                              , bool                       lumaOnly
+                                              , bool                       chromaOnly
+#endif
+)
 {
   WPScalingParam  *pwp, *pwpTmp;
 
@@ -391,14 +421,23 @@ void  WeightPrediction::xWeightedPredictionUni(const PredictionUnit       &pu,
   {
     getWpScaling(pu.cs->slice, -1, iRefIdx, pwpTmp, pwp, maxNumComp);
   }
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  addWeightUni(pcYuvSrc, pu.cu->slice->clpRngs(), pwp, pcYuvPred, maxNumComp, lumaOnly, chromaOnly);
+#else
   addWeightUni(pcYuvSrc, pu.cu->slice->clpRngs(), pwp, pcYuvPred, maxNumComp);
+#endif
 }
 
 void  WeightPrediction::xWeightedPredictionBi(const PredictionUnit       &pu,
                                               const CPelUnitBuf          &pcYuvSrc0,
                                               const CPelUnitBuf          &pcYuvSrc1,
                                                     PelUnitBuf           &rpcYuvDst,
-                                              const ComponentID           maxNumComp)
+                                              const ComponentID           maxNumComp
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                              , bool                      lumaOnly
+                                              , bool                      chromaOnly
+#endif
+)
 {
   const int iRefIdx0 = pu.refIdx[0];
   const int iRefIdx1 = pu.refIdx[1];
@@ -413,15 +452,27 @@ void  WeightPrediction::xWeightedPredictionBi(const PredictionUnit       &pu,
 
   if (iRefIdx0 >= 0 && iRefIdx1 >= 0)
   {
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+    addWeightBi(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, rpcYuvDst, true, maxNumComp, lumaOnly, chromaOnly);
+#else
     addWeightBi(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, rpcYuvDst, true, maxNumComp);
+#endif
   }
   else if (iRefIdx0 >= 0 && iRefIdx1 < 0)
   {
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+    addWeightUni(pcYuvSrc0, pu.cu->slice->clpRngs(), pwp0, rpcYuvDst, maxNumComp, lumaOnly, chromaOnly);
+#else
     addWeightUni(pcYuvSrc0, pu.cu->slice->clpRngs(), pwp0, rpcYuvDst, maxNumComp);
+#endif
   }
   else if (iRefIdx0 < 0 && iRefIdx1 >= 0)
   {
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+    addWeightUni(pcYuvSrc1, pu.cu->slice->clpRngs(), pwp1, rpcYuvDst, maxNumComp, lumaOnly, chromaOnly);
+#else
     addWeightUni(pcYuvSrc1, pu.cu->slice->clpRngs(), pwp1, rpcYuvDst, maxNumComp);
+#endif
   }
   else
   {

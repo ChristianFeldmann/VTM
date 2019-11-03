@@ -856,7 +856,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       for (int j = 0; j <= chromaQpMappingTable.getNumPtsInCQPTableMinus1(i); j++)
       {
         WRITE_UVLC(chromaQpMappingTable.getDeltaQpInValMinus1(i,j),  "delta_qp_in_val_minus1");
+#if JVET_P0469_QP_OUT_VAL
+        WRITE_UVLC(chromaQpMappingTable.getDeltaQpOutVal(i, j) ^ chromaQpMappingTable.getDeltaQpInValMinus1(i, j),
+                   "delta_qp_diff_val");
+#else
         WRITE_UVLC(chromaQpMappingTable.getDeltaQpOutVal(i, j),       "delta_qp_out_val");
+#endif
       }
     }
   }

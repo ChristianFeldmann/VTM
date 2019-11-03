@@ -69,7 +69,12 @@ public:
                                 const WPScalingParam *const wp1,
                                       PelUnitBuf           &rpcYuvDst,
                                 const bool                  bRoundLuma = true,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT );
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+#endif
+                                );
 
   void addWeightBiComponent(    const CPelUnitBuf          &pcYuvSrc0,
                                 const CPelUnitBuf          &pcYuvSrc1,
@@ -84,20 +89,35 @@ public:
                                 const ClpRngs              &clpRngs,
                                 const WPScalingParam *const wp0,
                                       PelUnitBuf           &rpcYuvDst,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT);
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+#endif
+                                );
 
   void  xWeightedPredictionUni( const PredictionUnit       &pu,
                                 const CPelUnitBuf          &pcYuvSrc,
                                 const RefPicList           &eRefPicList,
                                       PelUnitBuf           &pcYuvPred,
                                 const int                   iRefIdx=-1,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT);
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+#endif
+                                );
 
   void  xWeightedPredictionBi(  const PredictionUnit       &pu,
                                 const CPelUnitBuf          &pcYuvSrc0,
                                 const CPelUnitBuf          &pcYuvSrc1,
                                       PelUnitBuf           &pcYuvDst,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT );
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+#endif
+                                );
 };
 
 #endif

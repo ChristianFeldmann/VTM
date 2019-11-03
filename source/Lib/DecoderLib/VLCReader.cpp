@@ -1408,7 +1408,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       for (int j = 0; j <= chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i); j++)
       {
         READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode;
+#if JVET_P0469_QP_OUT_VAL
+        READ_UVLC(uiCode, "delta_qp_diff_val");
+        deltaQpOutVal[j] = uiCode ^ deltaQpInValMinus1[j];
+#else
         READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode;
+#endif
       }
       chromaQpMappingTableParams.setDeltaQpInValMinus1(i, deltaQpInValMinus1);
       chromaQpMappingTableParams.setDeltaQpOutVal(i, deltaQpOutVal);

@@ -678,7 +678,7 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, const boo
   MotionInfo miNeighbor;
 
   auto &lut = ibcFlag ? cs.motionLut.lutIbc : cs.motionLut.lut;
-  int num_avai_candInLUT = (int) lut.size();
+  int num_avai_candInLUT = (int)lut.size();
 
   for (int mrgIdx = 1; mrgIdx <= num_avai_candInLUT; mrgIdx++)
   {
@@ -692,14 +692,14 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, const boo
       || ((!isAvailableA1 || (miLeft != miNeighbor)) && (!isAvailableB1 || (miAbove != miNeighbor))) )
     {
       mrgCtx.interDirNeighbours[cnt] = miNeighbor.interDir;
+      mrgCtx.useAltHpelIf      [cnt] = !ibcFlag && miNeighbor.useAltHpelIf;
+      mrgCtx.GBiIdx            [cnt] = (miNeighbor.interDir == 3) ? miNeighbor.GBiIdx : GBI_DEFAULT;
+
       mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miNeighbor.mv[0], miNeighbor.refIdx[0]);
-      mrgCtx.useAltHpelIf[cnt] = !ibcFlag && miNeighbor.useAltHpelIf;
       if (slice.isInterB())
       {
         mrgCtx.mvFieldNeighbours[(cnt << 1) + 1].setMvField(miNeighbor.mv[1], miNeighbor.refIdx[1]);
       }
-
-      mrgCtx.GBiIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? miNeighbor.GBiIdx : GBI_DEFAULT;
 
       if (mrgCandIdx == cnt && canFastExit)
       {

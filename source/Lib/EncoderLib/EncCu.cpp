@@ -4263,8 +4263,8 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
   const bool mtsAllowed = tempCS->sps->getUseInterMTS() && CU::isInter( *cu ) && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
   uint8_t sbtAllowed = cu->checkAllowedSbt();
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  //SBT resolution-dependent fast algorithm: not allow size 64 SBT for sequences with resolution below HD
-  if( m_pcEncCfg->getUseSBTFast64RDOCheck() && tempCS->pps->getPicWidthInLumaSamples() < 1920 )
+  //SBT resolution-dependent fast algorithm: not try size-64 SBT in RDO for low-resolution sequences (now resolution below HD)
+  if( tempCS->pps->getPicWidthInLumaSamples() < (uint32_t)m_pcEncCfg->getSBTFast64WidthTh() )
   {
     sbtAllowed = ((cu->lwidth() > 32 || cu->lheight() > 32)) ? 0 : sbtAllowed;
   }

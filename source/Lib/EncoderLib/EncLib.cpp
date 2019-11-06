@@ -584,15 +584,6 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const PPS *pps = m_ppsMap.getPS(2);
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
-    Window confWin = pps->getConformanceWindow( );
-    picCurr->setPicWidthInLumaSamples( pps->getPicWidthInLumaSamples() );
-    picCurr->setPicHeightInLumaSamples( pps->getPicHeightInLumaSamples() );
-    picCurr->setConformanceWindow( confWin );
-#if JVET_P0590_SCALING_WINDOW
-    Window scalingWindow = pps->getScalingWindow();
-    picCurr->setScalingWindow( scalingWindow );
-#endif
-
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
     picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
     picCurr->poc = m_iPOCLast - 1;
@@ -652,15 +643,6 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     {
       const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
       const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-
-      Window confWin = pPPS->getConformanceWindow( );
-      pcPicCurr->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
-      pcPicCurr->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
-      pcPicCurr->setConformanceWindow( confWin );
-#if JVET_P0590_SCALING_WINDOW
-      Window scalingWindow = pPPS->getScalingWindow();
-      pcPicCurr->setScalingWindow( scalingWindow );
-#endif
 
       if( m_rprEnabled )
       {
@@ -824,15 +806,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-        Window confWin = pPPS->getConformanceWindow( );
-        pcField->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
-        pcField->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
-        pcField->setConformanceWindow( confWin );
-#if JVET_P0590_SCALING_WINDOW
-        Window scalingWindow = pPPS->getScalingWindow();
-        pcField->setScalingWindow( scalingWindow );
-#endif
-
+       
         pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
       }
 

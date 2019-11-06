@@ -980,8 +980,11 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
   cs->lmcsAps = lmcsAps;
   cs->scalinglistAps = scalingListAps;
-
   cs->pcv     = pps.pcv;
+  m_conformanceWindow = pps.getConformanceWindow();
+#if JVET_P0590_SCALING_WINDOW
+  m_scalingWindow = pps.getScalingWindow();
+#endif
 
   brickMap = new BrickMap;
   brickMap->create( sps, pps );

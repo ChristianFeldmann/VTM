@@ -294,6 +294,12 @@ struct Picture : public UnitArea
   static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
 #endif
 
+private:
+  Window             m_conformanceWindow;
+#if JVET_P0590_SCALING_WINDOW
+  Window             m_scalingWindow;
+#endif
+
 public:
   bool m_bIsBorderExtended;
   bool referenced;
@@ -333,25 +339,13 @@ public:
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
 
-  uint32_t           m_picWidthInLumaSamples;
-  uint32_t           m_picHeightInLumaSamples;
-  Window             m_conformanceWindow;
-#if JVET_P0590_SCALING_WINDOW
-  Window             m_scalingWindow;
-#endif
-
-  void               setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
-  uint32_t           getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
-  void               setPicHeightInLumaSamples( uint32_t u )                         { m_picHeightInLumaSamples = u; }
-  uint32_t           getPicHeightInLumaSamples() const                               { return  m_picHeightInLumaSamples; }
-
+  uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
+  uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
   Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
   const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
-  void               setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
 #if JVET_P0590_SCALING_WINDOW
   Window&            getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
-  void               setScalingWindow( Window& scalingWindow )                       { m_scalingWindow = scalingWindow; }
 #endif
 
   void         allocateNewSlice();

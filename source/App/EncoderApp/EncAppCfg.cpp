@@ -3774,7 +3774,7 @@ void EncAppCfg::xPrintParameter()
   }
   else
   {
-    msg( VERBOSE, "RPR:%d", 0 );
+    msg( VERBOSE, "RPR:%d ", 0 );
   }
 #if JVET_O0549_ENCODER_ONLY_FILTER
   msg(VERBOSE, "TemporalFilter:%d ", m_gopBasedTemporalFilterEnabled);

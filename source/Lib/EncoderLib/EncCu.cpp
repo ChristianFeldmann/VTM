@@ -1774,6 +1774,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
   double dct2Cost                =   MAX_DOUBLE;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  double bestNonDCT2Cost         = MAX_DOUBLE;
+#endif
   double trGrpBestCost     [ 4 ] = { MAX_DOUBLE, MAX_DOUBLE, MAX_DOUBLE, MAX_DOUBLE };
   double globalBestCost          =   MAX_DOUBLE;
   bool   bestSelFlag       [ 4 ] = { false, false, false, false };
@@ -1795,6 +1798,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #else
   int grpNumMax = sps.getUseLFNST() ? 4 : 1;
 #endif
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  m_modeCtrl->setISPWasTested(false);
+#endif
   m_pcIntraSearch->invalidateBestModeCost();
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
   if (sps.getUseColorTrans() && !CS::isDualITree(*tempCS))
@@ -1810,6 +1816,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
   {
     CHECK(tempCS->treeType != TREE_D || partitioner.treeType != TREE_D, "localtree should not be applied when adaptive color transform is enabled");
     CHECK(tempCS->modeType != MODE_TYPE_ALL || partitioner.modeType != MODE_TYPE_ALL, "localtree should not be applied when adaptive color transform is enabled");
+    CHECK(adaptiveColorTrans && (CS::isDualITree(*tempCS) || partitioner.chType != CHANNEL_TYPE_LUMA), "adaptive color transform cannot be applied to dual-tree");
   }
 #endif
 
@@ -1867,31 +1874,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           m_bestModeUpdated = tempCS->useDbCost = bestCS->useDbCost = false;
 
           bool validCandRet = false;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-          if (cu.colorTransform)
-          {
-            CHECK(CS::isDualITree(*tempCS) || partitioner.chType != CHANNEL_TYPE_LUMA, "adaptive color transform cannot be applied to dual-tree");
-            validCandRet = m_pcIntraSearch->estIntraPredLumaQT(cu, partitioner, MAX_DOUBLE, mtsFlag, startMTSIdx[trGrpIdx], endMTSIdx[trGrpIdx], (trGrpIdx > 0));
-            if (!validCandRet)
-            {
-              continue;
-            }
-
-            if (m_pcEncCfg->getUsePbIntraFast() && tempCS->dist == std::numeric_limits<Distortion>::max()
-              && tempCS->interHad == 0)
-            {
-              interHad = 0;
-              // it is assumed that only perfect reconstructions can from now on beat the inter mode
-              m_modeCtrl->enforceInterHad(0);
-              continue;
-            }
-
-            cu.cs->picture->getRecoBuf(cu).copyFrom(cu.cs->getRecoBuf(cu));
-            cu.cs->picture->getPredBuf(cu).copyFrom(cu.cs->getPredBuf(cu));
-          }
-          else
-          {
-#endif
           if( isLuma( partitioner.chType ) )
           {
             //ISP uses the value of the best cost so far (luma if it is the fast version) to avoid test non-necessary subpartitions
@@ -1901,22 +1883,32 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               bestCostSoFar = encTestMode.maxCostAllowed;
             }
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
-            validCandRet = m_pcIntraSearch->estIntraPredLumaQT(cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[trGrpIdx], endMTSIdx[trGrpIdx], (trGrpIdx > 0), bestCS);
+            validCandRet = m_pcIntraSearch->estIntraPredLumaQT(cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[trGrpIdx], endMTSIdx[trGrpIdx], (trGrpIdx > 0), !cu.colorTransform ? bestCS : nullptr);
+            if ((!validCandRet || (cu.ispMode && cu.firstTU->cbf[COMPONENT_Y] == 0)))
 #else
             validCandRet = m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[ trGrpIdx ], endMTSIdx[ trGrpIdx ], ( trGrpIdx > 0 ) );
+            if (sps.getUseLFNST() && (!validCandRet || (cu.ispMode && cu.firstTU->cbf[COMPONENT_Y] == 0)))
 #endif
-            if( sps.getUseLFNST() && ( !validCandRet || ( cu.ispMode && cu.firstTU->cbf[ COMPONENT_Y ] == 0 ) ) )
             {
               continue;
             }
+#if JVET_P1026_ISP_LFNST_COMBINATION 
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+            if (m_pcEncCfg->getUseFastISP() && validCandRet && !mtsFlag && !lfnstIdx && !cu.colorTransform)
+#else
+            if (m_pcEncCfg->getUseFastISP() && validCandRet && !mtsFlag && !lfnstIdx)
+#endif
+            {
+              m_modeCtrl->setISPMode(cu.ispMode);
+              m_modeCtrl->setISPLfnstIdx(cu.lfnstIdx);
+              m_modeCtrl->setMIPFlagISPPass(cu.mipFlag);
+              m_modeCtrl->setBestISPIntraModeRelCU(cu.ispMode ? PU::getFinalIntraMode(*cu.firstPU, CHANNEL_TYPE_LUMA) : UINT8_MAX);
+              m_modeCtrl->setBestDCT2NonISPCostRelCU(m_modeCtrl->getMtsFirstPassNoIspCost());
+            }
+#endif
 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
-            if (sps.getUseColorTrans() && !validCandRet)
-            {
-              continue;
-            }
-
-            if (sps.getUseColorTrans() && m_pcEncCfg->getRGBFormatFlag() && !CS::isDualITree(*tempCS))
+            if (sps.getUseColorTrans() && m_pcEncCfg->getRGBFormatFlag() && !CS::isDualITree(*tempCS) && !cu.colorTransform)
             {
               double curLumaCost = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
               if (curLumaCost > bestCS->cost)
@@ -1934,12 +1926,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               {
                 //the difference between the best cost so far and the current luma cost is stored to avoid testing the Cr component if the cost of luma + Cb is larger than the best cost
                 maxCostAllowedForChroma = bestCS->cost < MAX_DOUBLE ? bestCS->cost - tempCS->lumaCost : MAX_DOUBLE;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-                if (maxCostAllowedForChroma < 0)
-                {
-                  continue;
-                }
-#endif
               }
             }
 
@@ -1954,12 +1940,29 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
             if( !partitioner.isSepTree( *tempCS ) )
             {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+              if (!cu.colorTransform)
+              {
+                cu.cs->picture->getRecoBuf(cu.Y()).copyFrom(cu.cs->getRecoBuf(COMPONENT_Y));
+                cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
+              }
+              else
+              {
+                cu.cs->picture->getRecoBuf(cu).copyFrom(cu.cs->getRecoBuf(cu));
+                cu.cs->picture->getPredBuf(cu).copyFrom(cu.cs->getPredBuf(cu));
+              }
+#else
               cu.cs->picture->getRecoBuf( cu.Y() ).copyFrom( cu.cs->getRecoBuf( COMPONENT_Y ) );
               cu.cs->picture->getPredBuf(cu.Y()).copyFrom(cu.cs->getPredBuf(COMPONENT_Y));
+#endif
             }
           }
 
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+          if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !cu.isSepTree() ) && !cu.colorTransform )
+#else
           if( tempCS->area.chromaFormat != CHROMA_400 && ( partitioner.chType == CHANNEL_TYPE_CHROMA || !cu.isSepTree() ) )
+#endif
           {
             TUIntraSubPartitioner subTuPartitioner( partitioner );
             m_pcIntraSearch->estIntraPredChromaQT( cu, ( !useIntraSubPartitions || ( cu.isSepTree() && !isLuma( CHANNEL_TYPE_CHROMA ) ) ) ? partitioner : subTuPartitioner, maxCostAllowedForChroma );
@@ -1969,9 +1972,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               continue;
             }
           }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-          }
-#endif
 
           cu.rootCbf = false;
 
@@ -2004,10 +2004,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           }
           m_CABACEstimator->pred_mode      ( cu );
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-          if (CU::isIntra(cu))
-          {
-            m_CABACEstimator->adaptive_color_transform(cu);
-          }
+          m_CABACEstimator->adaptive_color_transform(cu);
 #endif
           m_CABACEstimator->cu_pred_data   ( cu );
           m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
@@ -2025,7 +2022,9 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           tempCS->fracBits = m_CABACEstimator->getEstFracBits();
           tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
+#if !JVET_P1026_ISP_LFNST_COMBINATION
           double bestIspCost = cu.ispMode ? cu.isSepTree() ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
+#endif
 
           const double tmpCostWithoutSplitFlags = tempCS->cost;
           xEncodeDontSplit( *tempCS, partitioner );
@@ -2033,7 +2032,11 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           xCheckDQP( *tempCS, partitioner );
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          if( lfnstIdx && !cuCtx.lfnstLastScanPos && !cu.ispMode )
+#else
           if( lfnstIdx && !cuCtx.lfnstLastScanPos )
+#endif
           {
             bool cbfAtZeroDepth = cu.isSepTree() ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
             if( cbfAtZeroDepth )
@@ -2046,6 +2049,12 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           {
             dct2Cost = tempCS->cost;
           }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          else if (tmpCostWithoutSplitFlags < bestNonDCT2Cost)
+          {
+            bestNonDCT2Cost = tmpCostWithoutSplitFlags;
+          }
+#endif
 
           if( tempCS->cost < bestCS->cost )
           {
@@ -2109,19 +2118,34 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             }
 
             //we decide to skip the non-DCT-II transforms and LFNST according to the ISP results
+#if JVET_P1026_ISP_LFNST_COMBINATION
+            if ((endMtsFlag > 0 || endLfnstIdx > 0) && (cu.ispMode || (bestCS && bestCS->cus[0]->ispMode)) && tempCS->slice->isIntra() && m_pcEncCfg->getUseFastISP())
+#else
             if ((endMtsFlag > 0 || endLfnstIdx > 0) && cu.ispMode && !mtsFlag && !lfnstIdx && tempCS->slice->isIntra() && m_pcEncCfg->getUseFastISP())
+#endif
             {
               double bestCostDct2NoIsp = m_modeCtrl->getMtsFirstPassNoIspCost();
+#if JVET_P1026_ISP_LFNST_COMBINATION
+              double bestIspCost       = m_modeCtrl->getIspCost();
+#endif
               CHECKD( bestCostDct2NoIsp <= bestIspCost, "wrong cost!" );
               double threshold = 1.4;
 
               double lfnstThreshold = 1.01 * threshold;
+#if JVET_P1026_ISP_LFNST_COMBINATION 
+              if( m_modeCtrl->getStopNonDCT2Transforms() || bestCostDct2NoIsp > bestIspCost*lfnstThreshold )
+#else
               if( bestCostDct2NoIsp > bestIspCost*lfnstThreshold )
+#endif
               {
                 endLfnstIdx = lfnstIdx;
               }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION 
+              if ( m_modeCtrl->getStopNonDCT2Transforms() || bestCostDct2NoIsp > bestIspCost*threshold )
+#else
               if( bestCostDct2NoIsp > bestIspCost*threshold )
+#endif
               {
                 skipSecondMtsPass = true;
                 m_modeCtrl->setSkipSecondMTSPass( true );
@@ -2162,6 +2186,12 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       }
     }
   } //trGrpIdx
+#if JVET_P1026_ISP_LFNST_COMBINATION 
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if(!adaptiveColorTrans)
+#endif
+  m_modeCtrl->setBestNonDCT2Cost(bestNonDCT2Cost);
+#endif
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   return foundZeroRootCbf;
 #endif 
@@ -3353,7 +3383,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
         distParam.cur = acMergeBuffer[uiMergeCand].Y();
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+        m_pcInterSearch->motionCompensation( pu, acMergeBuffer[uiMergeCand], REF_PIC_LIST_X, true, false );
+#else
         m_pcInterSearch->motionCompensation( pu, acMergeBuffer[uiMergeCand] );
+#endif
 
         Distortion uiSad = distParam.distFunc( distParam );
         uint32_t   uiBitsCand = uiMergeCand + 1;
@@ -3452,7 +3486,12 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       }
       if ( mrgTempBufSet )
       {
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+        tempCS->getPredBuf().copyFrom(acMergeBuffer[uiMergeCand], true, false);   // Copy Luma Only
+        m_pcInterSearch->motionCompensation(pu, REF_PIC_LIST_X, false, true);
+#else
         tempCS->getPredBuf().copyFrom( acMergeBuffer[uiMergeCand] );
+#endif
       }
       else
       {

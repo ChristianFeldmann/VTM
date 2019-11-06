@@ -1028,18 +1028,7 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
     return;
   }
   extend_ref_line( cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  if (cu.colorTransform)
-  {
-    CHECK(cu.ispMode != NOT_INTRA_SUBPARTITIONS, "adaptive color transform cannot be applied to ISP mode");
-  }
-  else
-  {
-#endif
   isp_mode( cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  }
-#endif
 
   const int numMPMs   = NUM_MOST_PROBABLE_MODES;
   const int numBlocks = CU::getNumPUs( cu );
@@ -1148,19 +1137,7 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
     return;
   }
   extend_ref_line( pu );
-
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  if (pu.cu->colorTransform)
-  {
-    CHECK(pu.cu->ispMode != NOT_INTRA_SUBPARTITIONS, "adaptive color transform cannot be applied to ISP mode");
-  }
-  else
-  {
-#endif
   isp_mode( *pu.cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  }
-#endif
 
   // prev_intra_luma_pred_flag
   const int numMPMs  = NUM_MOST_PROBABLE_MODES;
@@ -1375,7 +1352,11 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
 
   residual_lfnst_mode( cu, cuCtx );
 #if JVET_P1026_MTS_SIGNALLING
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  mts_idx            ( cu, &cuCtx );
+#else
   mts_idx            ( cu, cuCtx );
+#endif
 #endif
 }
 
@@ -2786,12 +2767,17 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     }
     else
     {
-      bool previousCbf = false;
-      bool rootCbfSoFar = false;
-      bool lastCbfIsInferred = false;
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
-#endif 
+      CHECK(lumaCbfIsInferredACT && !TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "adaptive color transform cannot have all zero coefficients");
+      bool lastCbfIsInferred    = lumaCbfIsInferredACT; // ISP and ACT are mutually exclusive
+      bool previousCbf          = false;
+      bool rootCbfSoFar         = false;
+#else
+      bool previousCbf = false;
+      bool rootCbfSoFar = false;
+      bool lastCbfIsInferred = false;    
+#endif
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -2815,18 +2801,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
       }
       if (!lastCbfIsInferred)
       {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-        if (!lumaCbfIsInferredACT)
-        {
-#endif
         cbf_comp(cs, TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), tu.Y(), trDepth, previousCbf, cu.ispMode);
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-        }
-        else
-        {
-          CHECK(!TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "adaptive color transform cannot have all zero coefficients");
-        }
-#endif
       }
     }
   }
@@ -3116,7 +3091,11 @@ void CABACWriter::ts_flag( const TransformUnit& tu, ComponentID compID )
   DTRACE( g_trace_ctx, D_SYNTAX, "ts_flag() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tsFlag );
 }
 
+#if JVET_P1026_ISP_LFNST_COMBINATION
+void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx* cuCtx )
+#else
 void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
+#endif
 {
   TransformUnit &tu = *cu.firstTU;
 #if JVET_P0058_CHROMA_TS
@@ -3125,8 +3104,13 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
   int        mtsIdx = tu.mtsIdx;
 #endif
   
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  if( CU::isMTSAllowed( cu, COMPONENT_Y ) && cuCtx && !cuCtx->violatesMtsCoeffConstraint &&
+      cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
+#else
   if( CU::isMTSAllowed( cu, COMPONENT_Y ) && !cuCtx.violatesMtsCoeffConstraint &&
       cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
+#endif
   {
     int symbol = mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
     int ctxIdx = 0;
@@ -3223,7 +3207,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) || cu.colorTransform )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "cu.ispMode != 0" );
     return;
@@ -3269,7 +3257,11 @@ void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID comp
 void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 {
   int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  if( ( cu.ispMode && !CU::canUseLfnstWithISP( cu, cu.chType ) ) ||
+#else
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
+#endif
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
     ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
     || ( cu.blocks[ chIdx ].lumaSize().width > cu.cs->sps->getMaxTbSize() || cu.blocks[ chIdx ].lumaSize().height > cu.cs->sps->getMaxTbSize() )
@@ -3290,14 +3282,22 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #else
     const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx == MTS_SKIP;
 #endif
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if( (!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
+#else
     if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
+#endif
 #else
 #if JVET_P0058_CHROMA_TS
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx[COMPONENT_Y] != MTS_DCT2_DCT2);
 #else
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #endif
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if( (!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+#else
     if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+#endif
 #endif
     {
       return;
@@ -3977,9 +3977,7 @@ void CABACWriter::mip_flag( const CodingUnit& cu )
   {
     return;
   }
-#if JVET_P0803_COMBINED_MIP_CLEANUP
-  CHECK( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
-#else
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
   if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
   {
     return;

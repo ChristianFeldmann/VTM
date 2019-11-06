@@ -1393,18 +1393,7 @@ void CABACReader::intra_luma_pred_modes( CodingUnit &cu )
     return;
   }
   extend_ref_line( cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  if (cu.colorTransform)
-  {
-    cu.ispMode = NOT_INTRA_SUBPARTITIONS;
-  }
-  else
-  {
-#endif
   isp_mode( cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  }
-#endif
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__INTRA_DIR_ANG, cu.lumaSize(), CHANNEL_TYPE_LUMA );
 
@@ -3090,12 +3079,16 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
     }
     else
     {
-      bool previousCbf = false;
-      bool rootCbfSoFar = false;
-      bool lastCbfIsInferred = false; 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
-#endif 
+      bool lastCbfIsInferred    = lumaCbfIsInferredACT; // ISP and ACT are mutually exclusive
+      bool previousCbf          = false;
+      bool rootCbfSoFar         = false;
+#else
+      bool previousCbf = false;
+      bool rootCbfSoFar = false;
+      bool lastCbfIsInferred = false;    
+#endif
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -3117,23 +3110,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
           previousCbf = TU::getPrevTuCbfAtDepth(tu, COMPONENT_Y, trDepth);
         }
       }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-      bool cbfY = false;
-      if (lastCbfIsInferred)
-      {
-        cbfY = true;
-      }
-      else if (lumaCbfIsInferredACT)
-      {
-        cbfY = true;
-      }
-      else
-      {
-        cbfY = cbf_comp(cs, tu.Y(), trDepth, previousCbf, cu.ispMode);
-      }
-#else
       bool cbfY = lastCbfIsInferred ? true : cbf_comp(cs, tu.Y(), trDepth, previousCbf, cu.ispMode);
-#endif
       TU::setCbfAtDepth(tu, COMPONENT_Y, trDepth, (cbfY ? 1 : 0));
     }
   }
@@ -3534,7 +3511,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   
 void CABACReader::isp_mode( CodingUnit& cu )
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) || cu.colorTransform )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#endif
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
     return;
@@ -3584,7 +3565,11 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
 void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
 {
   int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  if ( (cu.ispMode && !CU::canUseLfnstWithISP( cu, cu.chType ) ) ||
+#else
   if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
+#endif
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
     ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
     || ( cu.blocks[ chIdx ].lumaSize().width > cu.cs->sps->getMaxTbSize() || cu.blocks[ chIdx ].lumaSize().height > cu.cs->sps->getMaxTbSize() )
@@ -3606,14 +3591,22 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
 #else
     const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx == MTS_SKIP;
 #endif
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if ((!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isTrSkip)
+#else
     if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
+#endif
 #else
 #if JVET_P0058_CHROMA_TS
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx[COMPONENT_Y] != MTS_DCT2_DCT2);
 #else
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #endif
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if ((!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isNonDCT2)
+#else
     if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
+#endif
 #endif
     {
       cu.lfnstIdx = 0;
@@ -4290,9 +4283,7 @@ void CABACReader::mip_flag( CodingUnit& cu )
     cu.mipFlag = false;
     return;
   }
-#if JVET_P0803_COMBINED_MIP_CLEANUP
-  CHECK( cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
-#else
+#if !JVET_P0803_COMBINED_MIP_CLEANUP
   if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
   {
     cu.mipFlag = false;

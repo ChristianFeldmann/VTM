@@ -1274,7 +1274,11 @@ public:
   void setLog2MaxTransformSkipBlockSize                ( uint32_t u )    { m_log2MaxTransformSkipBlockSize  = u;       }
   bool getIntraSmoothingDisabledFlag               ()      const { return m_intraSmoothingDisabledFlag; }
   void setIntraSmoothingDisabledFlag               (bool bValue) { m_intraSmoothingDisabledFlag=bValue; }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  bool getUseFastISP                                   () const   { return m_useFastISP;    }
+#else
   bool getUseFastISP                                   ()         { return m_useFastISP;    }
+#endif
   void setUseFastISP                                   ( bool b ) { m_useFastISP  = b;   }
 
   const int* getdQPs                        () const { return m_aidQP;       }

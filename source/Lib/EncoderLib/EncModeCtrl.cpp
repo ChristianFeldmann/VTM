@@ -1588,6 +1588,16 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if ( m_pcEncCfg->getUseFastISP() && relatedCU.relatedCuIsValid )
+    {
+      cuECtx.ispPredModeVal     = relatedCU.ispPredModeVal;
+      cuECtx.bestDCT2NonISPCost = relatedCU.bestDCT2NonISPCost;
+      cuECtx.relatedCuIsValid   = relatedCU.relatedCuIsValid;
+      cuECtx.bestNonDCT2Cost    = relatedCU.bestNonDCT2Cost;
+      cuECtx.bestISPIntraMode   = relatedCU.bestISPIntraMode;
+    }
+#endif
     return true;
   }
   else if (encTestmode.type == ETM_PALETTE)
@@ -1956,6 +1966,34 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         else if( CU::isIntra( *bestCU ) )
         {
           relatedCU.isIntra   = true;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          if ( m_pcEncCfg->getUseFastISP() && cuECtx.ispWasTested && ( !relatedCU.relatedCuIsValid || bestCS->cost < relatedCU.bestCost ) )
+          {
+            // Compact data
+            int bit0 = true;
+            int bit1 = cuECtx.ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0;
+            int bit2 = cuECtx.ispMode == VER_INTRA_SUBPARTITIONS;
+            int bit3 = cuECtx.ispLfnstIdx > 0;
+            int bit4 = cuECtx.ispLfnstIdx == 2;
+            int bit5 = cuECtx.mipFlag;
+            int bit6 = cuECtx.bestCostIsp < cuECtx.bestNonDCT2Cost * 0.95;
+            int val =
+              (bit0) |
+              (bit1 << 1) |
+              (bit2 << 2) |
+              (bit3 << 3) |
+              (bit4 << 4) |
+              (bit5 << 5) |
+              (bit6 << 6) |
+              ( cuECtx.bestPredModeDCT2 << 9 );
+            relatedCU.ispPredModeVal     = val;
+            relatedCU.bestDCT2NonISPCost = cuECtx.bestDCT2NonISPCost;
+            relatedCU.bestCost           = bestCS->cost;
+            relatedCU.bestNonDCT2Cost    = cuECtx.bestNonDCT2Cost;
+            relatedCU.bestISPIntraMode   = cuECtx.bestISPIntraMode;
+            relatedCU.relatedCuIsValid   = true;
+          }
+#endif
         }
 #if ENABLE_SPLIT_PARALLELISM
 #if REUSE_CU_RESULTS

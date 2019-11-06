@@ -152,7 +152,11 @@ public:
   void        residual_coding           ( const TransformUnit&          tu,       ComponentID       compID, CUCtx* cuCtx = nullptr );
 #if JVET_P1026_MTS_SIGNALLING
   void        ts_flag                   ( const TransformUnit&          tu,       ComponentID       compID );
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  void        mts_idx                   ( const CodingUnit&             cu,       CUCtx*            cuCtx  );
+#else
   void        mts_idx                   ( const CodingUnit&             cu,       CUCtx&            cuCtx  );
+#endif
 #else
   void        mts_coding                ( const TransformUnit&          tu,       ComponentID       compID );
 #endif

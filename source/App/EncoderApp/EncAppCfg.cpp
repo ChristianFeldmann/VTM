@@ -967,7 +967,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  ("ColorTransform", m_useColorTrans, false, "Enable the color transform")
+  ("ColorTransform",                                  m_useColorTrans,                                  false, "Enable the color transform")
 #endif
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
@@ -3712,7 +3712,7 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
   }
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444) ? m_useColorTrans : 0u;
+  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
   msg(VERBOSE, "ACT:%d ", m_useColorTrans);
 #endif
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;

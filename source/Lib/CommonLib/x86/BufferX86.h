@@ -367,7 +367,7 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 #if !JVET_P0057_BDOF_PROF_HARMONIZATION
   __m256i mm_dIoffset = _mm256_set1_epi32(1);
 #endif
-  __m256i mm_offset = _mm256_set1_epi16(offset);
+  __m256i mm_offset = _mm256_set1_epi32(offset);
   __m256i vibdimin = _mm256_set1_epi16(clpRng.min);
   __m256i vibdimax = _mm256_set1_epi16(clpRng.max);
   __m256i mm_dimin = _mm256_set1_epi32(-dILimit);
@@ -377,7 +377,7 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 #if !JVET_P0057_BDOF_PROF_HARMONIZATION
   __m128i mm_dIoffset = _mm_set1_epi32(1);
 #endif
-  __m128i mm_offset = _mm_set1_epi16(offset);
+  __m128i mm_offset = _mm_set1_epi32(offset);
   __m128i vibdimin = _mm_set1_epi16(clpRng.min);
   __m128i vibdimax = _mm_set1_epi16(clpRng.max);
   __m128i mm_dimin = _mm_set1_epi32(-dILimit);
@@ -458,7 +458,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_dI = _mm256_add_epi16(mm_dI, mm_src);
       if (!bi)
       {
-        mm_dI = _mm256_srai_epi16(_mm256_add_epi16(mm_dI, mm_offset), shiftNum);
+        __m256i tmp0 = _mm256_srai_epi32(_mm256_add_epi32(_mm256_srai_epi32(_mm256_unpacklo_epi16(mm_dI, mm_dI),16), mm_offset), shiftNum);
+        __m256i tmp1 = _mm256_srai_epi32(_mm256_add_epi32(_mm256_srai_epi32(_mm256_unpackhi_epi16(mm_dI, mm_dI),16), mm_offset), shiftNum);
+        mm_dI = _mm256_packs_epi32(tmp0, tmp1);
         mm_dI = _mm256_min_epi16(vibdimax, _mm256_max_epi16(vibdimin, mm_dI));
       }
 
@@ -497,7 +499,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_dI = _mm_add_epi16(_mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)src), _mm_loadl_epi64((const __m128i *)(src + srcStride))), mm_dI);
       if (!bi)
       {
-        mm_dI = _mm_srai_epi16(_mm_add_epi16(mm_dI, mm_offset), shiftNum);
+        __m128i tmp0 = _mm_srai_epi32(_mm_add_epi32(_mm_srai_epi32(_mm_unpacklo_epi16(mm_dI, mm_dI),16), mm_offset), shiftNum);
+        __m128i tmp1 = _mm_srai_epi32(_mm_add_epi32(_mm_srai_epi32(_mm_unpackhi_epi16(mm_dI, mm_dI),16), mm_offset), shiftNum);
+        mm_dI = _mm_packs_epi32(tmp0, tmp1);
         mm_dI = _mm_min_epi16(vibdimax, _mm_max_epi16(vibdimin, mm_dI));
       }
 

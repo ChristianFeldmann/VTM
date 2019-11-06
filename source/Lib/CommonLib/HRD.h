@@ -36,9 +36,7 @@
 #define __HRD__
 
 #include "Common.h"
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
 #include "SEI.h"
-#endif
 
 class TimingInfo
 {
@@ -92,68 +90,24 @@ class HRDParameters
 private:
   bool     m_nalHrdParametersPresentFlag;
   bool     m_vclHrdParametersPresentFlag;
-#if !JVET_O0189_DU
-  bool     m_subPicCpbParamsPresentFlag;
-#endif
   uint32_t m_tickDivisorMinus2;
-#if JVET_O0189_DU
   bool     m_decodingUnitCpbParamsInPicTimingSeiFlag;
-#else
-  uint32_t m_duCpbRemovalDelayLengthMinus1;
-#endif
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  bool     m_subPicCpbParamsInPicTimingSEIFlag;
-#else
   bool     m_decodingUnitHrdParamsPresentFlag;
-#endif
-#if !JVET_O0189_DU
-  uint32_t m_dpbOutputDelayDuLengthMinus1;
-#endif
   uint32_t m_bitRateScale;
   uint32_t m_cpbSizeScale;
-#if JVET_O0189_DU
   uint32_t m_cpbSizeDuScale;
-#else
-  uint32_t m_ducpbSizeScale;
-#endif
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  uint32_t m_initialCpbRemovalDelayLengthMinus1;
-  uint32_t m_cpbRemovalDelayLengthMinus1;
-  uint32_t m_dpbOutputDelayLengthMinus1;
-#endif
   HrdSubLayerInfo m_HRD[MAX_TLAYER];
 
 public:
   HRDParameters()
     :m_nalHrdParametersPresentFlag       (false)
     ,m_vclHrdParametersPresentFlag       (false)
-#if !JVET_O0189_DU
-    ,m_subPicCpbParamsPresentFlag        (false)
-#endif
     ,m_tickDivisorMinus2                 (0)
-#if JVET_O0189_DU
     ,m_decodingUnitCpbParamsInPicTimingSeiFlag (false)
-#else
-    ,m_duCpbRemovalDelayLengthMinus1     (0)
-#endif
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-    ,m_subPicCpbParamsInPicTimingSEIFlag (false)
-#else
     ,m_decodingUnitHrdParamsPresentFlag  (false)
-#endif
-#if !JVET_O0189_DU
-    ,m_dpbOutputDelayDuLengthMinus1      (0)
-#endif
     ,m_bitRateScale                      (0)
     ,m_cpbSizeScale                      (0)
-#if JVET_O0189_DU
     ,m_cpbSizeDuScale                    (0)
-#endif
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-    ,m_initialCpbRemovalDelayLengthMinus1(23)
-    ,m_cpbRemovalDelayLengthMinus1       (23)
-    ,m_dpbOutputDelayLengthMinus1        (23)
-#endif
   {}
 
   virtual ~HRDParameters() {}
@@ -164,59 +118,25 @@ public:
   void      setVclHrdParametersPresentFlag( bool flag )                                { m_vclHrdParametersPresentFlag = flag;                      }
   bool      getVclHrdParametersPresentFlag( ) const                                    { return m_vclHrdParametersPresentFlag;                      }
 
-#if !JVET_O0189_DU
-  void      setSubPicCpbParamsPresentFlag( bool flag )                                 { m_subPicCpbParamsPresentFlag = flag;                       }
-  bool      getSubPicCpbParamsPresentFlag( ) const                                     { return m_subPicCpbParamsPresentFlag;                       }
-#endif
 
   void      setTickDivisorMinus2( uint32_t value )                                     { m_tickDivisorMinus2 = value;                               }
   uint32_t  getTickDivisorMinus2( ) const                                              { return m_tickDivisorMinus2;                                }
 
-#if !JVET_O0189_DU
-  void      setDuCpbRemovalDelayLengthMinus1( uint32_t value )                         { m_duCpbRemovalDelayLengthMinus1 = value;                   }
-  uint32_t  getDuCpbRemovalDelayLengthMinus1( ) const                                  { return m_duCpbRemovalDelayLengthMinus1;                    }
-#endif
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  void      setSubPicCpbParamsInPicTimingSEIFlag( bool flag)                           { m_subPicCpbParamsInPicTimingSEIFlag = flag;                }
-  bool      getSubPicCpbParamsInPicTimingSEIFlag( ) const                              { return m_subPicCpbParamsInPicTimingSEIFlag;                }
-#else
   void      setDecodingUnitHrdParamsPresentFlag( bool flag)                            { m_decodingUnitHrdParamsPresentFlag = flag;                 }
   bool      getDecodingUnitHrdParamsPresentFlag( ) const                               { return m_decodingUnitHrdParamsPresentFlag;                 }
-#endif
 
-#if !JVET_O0189_DU
-  void      setDpbOutputDelayDuLengthMinus1(uint32_t value )                           { m_dpbOutputDelayDuLengthMinus1 = value;                    }
-  uint32_t  getDpbOutputDelayDuLengthMinus1( ) const                                   { return m_dpbOutputDelayDuLengthMinus1;                     }
-#endif
-#if JVET_O0189_DU
   void      setDecodingUnitCpbParamsInPicTimingSeiFlag( uint32_t value )               { m_decodingUnitCpbParamsInPicTimingSeiFlag = value;                                    }
   uint32_t  getDecodingUnitCpbParamsInPicTimingSeiFlag( ) const                        { return m_decodingUnitCpbParamsInPicTimingSeiFlag;                                     }
-#endif
 
   void      setBitRateScale( uint32_t value )                                          { m_bitRateScale = value;                                    }
   uint32_t  getBitRateScale( ) const                                                   { return m_bitRateScale;                                     }
 
   void      setCpbSizeScale( uint32_t value )                                          { m_cpbSizeScale = value;                                    }
   uint32_t  getCpbSizeScale( ) const                                                   { return m_cpbSizeScale;                                     }
-#if JVET_O0189_DU
   void      setCpbSizeDuScale( uint32_t value )                                        { m_cpbSizeDuScale = value;                                  }
   uint32_t  getCpbSizeDuScale( ) const                                                 { return m_cpbSizeDuScale;                                   }
-#else
-  void      setDuCpbSizeScale( uint32_t value )                                        { m_ducpbSizeScale = value;                                  }
-  uint32_t  getDuCpbSizeScale( ) const                                                 { return m_ducpbSizeScale;                                   }
-#endif
 
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  void      setInitialCpbRemovalDelayLengthMinus1( uint32_t value )                    { m_initialCpbRemovalDelayLengthMinus1 = value;              }
-  uint32_t  getInitialCpbRemovalDelayLengthMinus1( ) const                             { return m_initialCpbRemovalDelayLengthMinus1;               }
-
-  void      setCpbRemovalDelayLengthMinus1( uint32_t value )                           { m_cpbRemovalDelayLengthMinus1 = value;                     }
-  uint32_t  getCpbRemovalDelayLengthMinus1( ) const                                    { return m_cpbRemovalDelayLengthMinus1;                      }
-
-  void      setDpbOutputDelayLengthMinus1( uint32_t value )                            { m_dpbOutputDelayLengthMinus1 = value;                      }
-  uint32_t  getDpbOutputDelayLengthMinus1( ) const                                     { return m_dpbOutputDelayLengthMinus1;                       }
-#endif
 
   void      setFixedPicRateFlag( int layer, bool flag )                                { m_HRD[layer].fixedPicRateFlag = flag;                      }
   bool      getFixedPicRateFlag( int layer ) const                                     { return m_HRD[layer].fixedPicRateFlag;                      }
@@ -252,9 +172,7 @@ class HRD
 {
 public:
   HRD()
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   :m_bufferingPeriodInitialized (false)
-#endif
   {};
 
   virtual ~HRD()
@@ -268,18 +186,14 @@ public:
   TimingInfo           getTimingInfo() const                        { return m_timingInfo; }
   const TimingInfo&    getTimingInfo()                              { return m_timingInfo; }
 
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   void                       setBufferingPeriodSEI(const SEIBufferingPeriod* bp)  { bp->copyTo(m_bufferingPeriodSEI); m_bufferingPeriodInitialized = true; }
   const SEIBufferingPeriod*  getBufferingPeriodSEI() const                        { return m_bufferingPeriodInitialized ? &m_bufferingPeriodSEI : nullptr; }
-#endif
 
 protected:
   HRDParameters m_hrdParams;
   TimingInfo    m_timingInfo;
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   bool               m_bufferingPeriodInitialized;
   SEIBufferingPeriod m_bufferingPeriodSEI;
-#endif
 };
 
 #endif //__HRD__

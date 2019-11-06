@@ -76,23 +76,15 @@ Slice::Slice()
 , m_pcPic                         ( NULL )
 , m_colFromL0Flag                 ( true )
 , m_noOutputPriorPicsFlag         ( false )
-#if JVET_N0865_NONSYNTAX
 , m_noIncorrectPicOutputFlag      ( false )
-#else 
-, m_noRaslOutputFlag              ( false )
-#endif
 , m_handleCraAsCvsStartFlag            ( false )
 , m_colRefIdx                     ( 0 )
 , m_maxNumMergeCand               ( 0 )
 , m_maxNumAffineMergeCand         ( 0 )
 , m_maxNumTriangleCand            ( 0 )
-#if JVET_O0455_IBC_MAX_MERGE_NUM
 , m_maxNumIBCMergeCand            ( 0 )
-#endif
 , m_disFracMMVD                   ( false )
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
 , m_disBdofDmvrFlag               ( false )
-#endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
 , m_sliceMode                     ( NO_SLICES )
@@ -107,9 +99,7 @@ Slice::Slice()
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )
 , m_cabacInitFlag                 ( false )
-#if JVET_O0105_ICT
 , m_jointCbCrSignFlag             ( false )
-#endif
 , m_bLMvdL1Zero                   ( false )
 , m_LFCrossSliceBoundaryFlag      ( false )
 , m_enableTMVPFlag                ( true )
@@ -129,14 +119,10 @@ Slice::Slice()
 , m_lmcsAps                      (nullptr)
 , m_tileGroupLmcsEnabledFlag     (false)
 , m_tileGroupLmcsChromaResidualScaleFlag (false)
-#if JVET_O0299_APS_SCALINGLIST
 , m_scalingListApsId             ( -1 )
 , m_scalingListAps               ( nullptr )
 , m_tileGroupscalingListPresentFlag ( false )
-#endif
-#if JVET_O0181
 , m_nonReferencePicFlag          ( 0 )
-#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -207,31 +193,21 @@ void Slice::initSlice()
 
   m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   m_maxNumIBCMergeCand = IBC_MRG_MAX_NUM_CANDS;
-#endif
 
   m_bFinalized=false;
 
   m_disFracMMVD          = false;
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   m_disBdofDmvrFlag      = false;
-#endif
   m_substreamSizes.clear();
   m_cabacInitFlag        = false;
-#if JVET_O0105_ICT
   m_jointCbCrSignFlag    = false;
-#endif
   m_enableTMVPFlag       = true;
-#if JVET_N0494_DRAP
   m_enableDRAPSEI        = false;
   m_useLTforDRAP         = false;
   m_isDRAP               = false;
   m_latestDRAPPOC        = MAX_INT;
-#endif
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   resetTileGroupAlfEnabledFlag();
-#endif
 }
 
 void Slice::setDefaultClpRng( const SPS& sps )
@@ -711,9 +687,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   }
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
-#if JVET_O0105_ICT
   m_jointCbCrSignFlag             = pSrc->m_jointCbCrSignFlag;
-#endif
   memcpy(m_alfApss, pSrc->m_alfApss, sizeof(m_alfApss)); // this might be quite unsafe
   memcpy( m_tileGroupAlfEnabledFlag, pSrc->m_tileGroupAlfEnabledFlag, sizeof(m_tileGroupAlfEnabledFlag));
   m_tileGroupNumAps               = pSrc->m_tileGroupNumAps;
@@ -727,13 +701,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
   m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
   m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
-#if JVET_O0455_IBC_MAX_MERGE_NUM
   m_maxNumIBCMergeCand            = pSrc->m_maxNumIBCMergeCand;
-#endif
   m_disFracMMVD                   = pSrc->m_disFracMMVD;
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
   m_disBdofDmvrFlag               = pSrc->m_disBdofDmvrFlag;
-#endif
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
   m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
@@ -753,13 +723,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_lmcsAps = pSrc->m_lmcsAps;
   m_lmcsApsId = pSrc->m_lmcsApsId;
 
-#if JVET_O0299_APS_SCALINGLIST
   m_tileGroupscalingListPresentFlag = pSrc->m_tileGroupscalingListPresentFlag;
   m_scalingListAps                  = pSrc->m_scalingListAps;
   m_scalingListApsId                = pSrc->m_scalingListApsId;
-#endif
-#if JVET_O0189_DU
-#if JVET_O1164_RPR
   for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
   {
     for (int j = 0; j < MAX_NUM_REF_PICS; j ++ )
@@ -767,8 +733,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
       m_scalingRatio[i][j]          = pSrc->m_scalingRatio[i][j];
     }
   }
-#endif
-#endif
 }
 
 
@@ -854,9 +818,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
   // loop through all pictures in the reference picture buffer
   PicList::iterator iterPic = rcListPic.begin();
-#if JVET_OO147_LEADING_PIC_CHECKING
   int numLeadingPicsFound = 0;
-#endif
   while ( iterPic != rcListPic.end())
   {
     Picture* pcPic = *(iterPic++);
@@ -904,8 +866,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
     // When a picture is a leading picture, it shall precede, in decoding order,
     // all trailing pictures that are associated with the same IRAP picture.
-#if JVET_OO147_LEADING_PIC_CHECKING
-    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) && 
+    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) &&
         (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL)  )
     {
       if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
@@ -917,18 +878,6 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
         CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
       }
     }
-#else
-    if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
-        nalUnitType == NAL_UNIT_CODED_SLICE_RADL )
-      {
-        if(pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
-        {
-          // rpcPic is a picture that preceded the leading in decoding order since it exist in the DPB
-          // rpcPic would violate the constraint if it was a trailing picture
-          CHECK( pcPic->poc > this->getAssociatedIRAPPOC(), "Invalid POC");
-        }
-      }
-#endif
 
     // Any RASL picture associated with a CRA or BLA picture shall precede any
     // RADL picture associated with the CRA or BLA picture in output order
@@ -1136,7 +1085,6 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
   return 0;
 }
 
-#if JVET_O0241
 int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors, int *refPicIndex) const
 {
   Picture* rpcPic;
@@ -1230,9 +1178,7 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
   }
   return 0;
 }
-#endif
 
-#if JVET_N0494_DRAP
 bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
 {
   for (int i = 0; i < rpl->getNumberOfLongtermPictures() + rpl->getNumberOfShorttermPictures(); i++)
@@ -1255,14 +1201,14 @@ bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
   return false;
 }
 
-bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )  
-{ 
+bool Slice::isPocRestrictedByDRAP( int poc, bool precedingDRAPInDecodingOrder )
+{
   if (!getEnableDRAPSEI())
   {
     return false;
   }
-  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) || 
-         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) ); 
+  return ( isDRAP() && poc != getAssociatedIRAPPOC() ) ||
+         ( cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC() && (precedingDRAPInDecodingOrder || poc < getLatestDRAPPOC()) );
 }
 
 void Slice::checkConformanceForDRAP( uint32_t temporalId )
@@ -1271,9 +1217,9 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
   {
     return;
   }
- 
+
   if (isDRAP())
-  {    
+  {
     if (!(getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_TRAIL ||
           getNalUnitType() == NalUnitType::NAL_UNIT_CODED_SLICE_STSA))
     {
@@ -1285,7 +1231,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
     {
-      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC()) 
+      if (getRefPic(REF_PIC_LIST_0,i)->getPOC() != getAssociatedIRAPPOC())
       {
         msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
                       "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
@@ -1293,7 +1239,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_1); i++)
     {
-      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC()) 
+      if (getRefPic(REF_PIC_LIST_1,i)->getPOC() != getAssociatedIRAPPOC())
       {
         msg( WARNING, "Warning, non-conforming bitstream. The DRAP picture shall not include any pictures in the active "
                       "entries of its reference picture lists except the preceding IRAP picture in decoding order.\n");
@@ -1301,7 +1247,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
   }
 
-  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC()) 
+  if (cvsHasPreviousDRAP() && getPOC() > getLatestDRAPPOC())
   {
     for (int i = 0; i < getNumRefIdx(REF_PIC_LIST_0); i++)
     {
@@ -1325,7 +1271,6 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
     }
   }
 }
-#endif
 
 void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1)
 {
@@ -1350,20 +1295,12 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while (iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
-#if JVET_N0494_DRAP 
       if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
-#else
-      if (!pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL0->getRefPicIdentifier(ii))
-#endif
       {
         isAvailable = true;
         break;
       }
-#if JVET_N0494_DRAP
       else if (pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL0->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
-#else
-      else if (pRPL0->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL0->getRefPicIdentifier(ii))
-#endif
       {
         isAvailable = true;
         break;
@@ -1379,7 +1316,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     }
   }
 
-#if JVET_N0494_DRAP
   if (getEnableDRAPSEI())
   {
     pLocalRPL0->setNumberOfShorttermPictures(numOfSTRPL0);
@@ -1402,7 +1338,6 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       }
     }
   }
-#endif
 
   ReferencePictureList* pLocalRPL1 = this->getLocalRPL1();
   (*pLocalRPL1) = ReferencePictureList();
@@ -1420,20 +1355,12 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
     while (iterPic != rcListPic.end())
     {
       rpcPic = *(iterPic++);
-#if JVET_N0494_DRAP
       if (!pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL1->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
-#else
-      if (!pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && rpcPic->getPOC() == this->getPOC() - pRPL1->getRefPicIdentifier(ii))
-#endif
       {
         isAvailable = true;
         break;
       }
-#if JVET_N0494_DRAP
       else if (pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL1->getRefPicIdentifier(ii) && !isPocRestrictedByDRAP(rpcPic->getPOC(), rpcPic->precedingDRAP))
-#else
-      else if (pRPL1->isRefPicLongterm(ii) && rpcPic->referenced && (rpcPic->getPOC() & (pocCycle - 1)) == pRPL1->getRefPicIdentifier(ii))
-#endif
       {
         isAvailable = true;
         break;
@@ -1482,9 +1409,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   pLocalRPL0->setNumberOfLongtermPictures(numOfLTRPL0);
   pLocalRPL0->setNumberOfShorttermPictures(numOfSTRPL0);
   pLocalRPL0->setNumberOfActivePictures((numOfLTRPL0 + numOfSTRPL0 < pRPL0->getNumberOfActivePictures()) ? numOfLTRPL0 + numOfSTRPL0 : pRPL0->getNumberOfActivePictures());
-#if JVET_N0100_PROPOSAL1
   pLocalRPL0->setLtrpInSliceHeaderFlag(pRPL0->getLtrpInSliceHeaderFlag());
-#endif
   this->setRPL0idx(-1);
   this->setRPL0(pLocalRPL0);
 
@@ -1508,13 +1433,8 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
       {
         pLocalRPL1->setRefPicIdentifier(refPicIdxL1, pLocalRPL0->getRefPicIdentifier(ii), pLocalRPL0->isRefPicLongterm(ii));
         refPicIdxL1++;
-#if JVET_N0494_DRAP
         numOfSTRPL1 = numOfSTRPL1 + ((pLocalRPL0->isRefPicLongterm(ii)) ? 0 : 1);
         numOfLTRPL1 = numOfLTRPL1 + ((pLocalRPL0->isRefPicLongterm(ii)) ? 1 : 0);
-#else
-        numOfSTRPL1 = numOfSTRPL1 + ((pRPL0->isRefPicLongterm(ii)) ? 0 : 1);
-        numOfLTRPL1 = numOfLTRPL1 + ((pRPL0->isRefPicLongterm(ii)) ? 1 : 0);
-#endif
         numOfNeedToFill--;
       }
     }
@@ -1522,9 +1442,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   pLocalRPL1->setNumberOfLongtermPictures(numOfLTRPL1);
   pLocalRPL1->setNumberOfShorttermPictures(numOfSTRPL1);
   pLocalRPL1->setNumberOfActivePictures((isDisallowMixedRefPic) ? (numOfLTRPL1 + numOfSTRPL1) : (((numOfLTRPL1 + numOfSTRPL1) < pRPL1->getNumberOfActivePictures()) ? (numOfLTRPL1 + numOfSTRPL1) : pRPL1->getNumberOfActivePictures()));
-#if JVET_N0100_PROPOSAL1
   pLocalRPL1->setLtrpInSliceHeaderFlag(pRPL1->getLtrpInSliceHeaderFlag());
-#endif
   this->setRPL1idx(-1);
   this->setRPL1(pLocalRPL1);
 }
@@ -1684,18 +1602,15 @@ SPS::SPS()
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )
 , m_SBT                       ( false )
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
 , m_MaxSbtSize                ( 32 )
+#endif
 , m_ISP                       ( false )
 , m_chromaFormatIdc           (CHROMA_420)
 , m_uiMaxTLayers              (  1)
 // Structure
-#if JVET_O1164_PS
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
-#else
-, m_picWidthInLumaSamples     (352)
-, m_picHeightInLumaSamples    (288)
-#endif
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
 , m_CTUSize(0)
@@ -1713,50 +1628,32 @@ SPS::SPS()
 , m_allRplEntriesHasSameSignFlag ( true )
 , m_bLongTermRefsPresent      (false)
 // Tool list
-#if !JVET_O0525_REMOVE_PCM
-, m_pcmEnabledFlag            (false)
-, m_pcmLog2MaxSize            (  5)
-, m_uiPCMLog2MinSize          (  7)
-#endif
-#if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_transformSkipEnabledFlag  (false)
+#if JVET_P0059_CHROMA_BDPCM
+, m_BDPCMEnabled              (0)
+#else
 , m_BDPCMEnabledFlag          (false)
 #endif
-#if JVET_O0376_SPS_JOINTCBCR_FLAG
 , m_JointCbCrEnabledFlag      (false)
-#endif
-#if !JVET_O0525_REMOVE_PCM
-, m_bPCMFilterDisableFlag     (false)
-#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
-#if JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG
 , m_BdofDmvrSlicePresentFlag  ( false )
-#endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
-#if MAX_TB_SIZE_SIGNALLING
 , m_log2MaxTbSize             (  6)
-#endif
-#if JVET_O0244_DELTA_POC
 , m_useWeightPred             (false)
 , m_useWeightedBiPred         (false)
-#endif
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
-#if FIX_HRD_O0189
 , m_hrdParametersPresentFlag  (false)
-#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
 , m_wrapAroundOffset          (  0)
 , m_IBCFlag                   (  0)
-#if JVET_O0119_BASE_PALETTE_444
 , m_PLTMode                   (  0)
-#endif
 , m_lumaReshapeEnable         (false)
 , m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )
@@ -1766,9 +1663,7 @@ SPS::SPS()
 , m_LFNST                     ( false )
 , m_Affine                    ( false )
 , m_AffineType                ( false )
-#if JVET_O0070_PROF
 , m_PROF                      ( false )
-#endif
 , m_MHIntra                   ( false )
 , m_Triangle                  ( false )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -1778,20 +1673,13 @@ SPS::SPS()
 , m_LadfIntervalLowerBound    { 0 }
 #endif
 , m_MIP                       ( false )
-#if JVET_N0865_SYNTAX
     ,m_GDREnabledFlag         (1)
-#endif
-#if JVET_O0177_PROPOSAL1
 , m_SubLayerCbpParametersPresentFlag (1)
-#endif
 
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_bitDepths.recon[ch] = 8;
-#if !JVET_O0525_REMOVE_PCM
-    m_pcmBitDepths[ch] = 8;
-#endif
     m_qpBDOffset   [ch] = 0;
   }
 
@@ -1830,11 +1718,14 @@ void  SPS::createRPLList1(int numRPL)
 const int SPS::m_winUnitX[]={1,2,2,1};
 const int SPS::m_winUnitY[]={1,2,1,1};
 
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
 void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, const int qpBdOffset)
 {
   m_qpBdOffset = qpBdOffset;
   m_sameCQPTableForAllChromaFlag = params.m_sameCQPTableForAllChromaFlag;
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  m_numQpTables = params.m_numQpTables;
+#endif
+
   for (int i = 0; i < MAX_NUM_CQP_MAPPING_TABLES; i++)
   {
     m_numPtsInCQPTableMinus1[i] = params.m_numPtsInCQPTableMinus1[i];
@@ -1844,7 +1735,11 @@ void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, c
 }
 void ChromaQpMappingTable::derivedChromaQPMappingTables()
 {
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  for (int i = 0; i < getNumQpTables(); i++)
+#else
   for (int i = 0; i < (getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+#endif
   {
     const int qpBdOffsetC = m_qpBdOffset;
     const int numPtsInCQPTableMinus1 = getNumPtsInCQPTableMinus1(i);
@@ -1884,7 +1779,6 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
     }
   }
 }
-#endif
 
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
@@ -1913,11 +1807,7 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_TransquantBypassEnabledFlag      (false)
-#if JVET_O1136_TS_BDPCM_SIGNALLING
 , m_log2MaxTransformSkipBlockSize    (2)
-#else
-, m_useTransformSkip                 (false)
-#endif
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_loopFilterAcrossBricksEnabledFlag (true)
 , m_uniformTileSpacingFlag           (false)
@@ -1934,18 +1824,20 @@ PPS::PPS()
 , m_numBricksInPic                   (1)
 , m_signalledSliceIdFlag             (false)
 ,m_signalledSliceIdLengthMinus1      (0)
-#if JVET_O0238_PPS_OR_SLICE
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
 , m_PPSRefPicListSPSIdc0             (0)
 , m_PPSRefPicListSPSIdc1             (0)
+#if !JVET_P0206_TMVP_flags
 , m_PPSTemporalMVPEnabledIdc         (0)
+#endif
 , m_PPSMvdL1ZeroIdc                  (0)
 , m_PPSCollocatedFromL0Idc           (0)
 , m_PPSSixMinusMaxNumMergeCandPlus1  (0)
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
 , m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 (0)
-, m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
 #endif
+, m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
 , m_cabacInitPresentFlag             (false)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)
@@ -1954,18 +1846,14 @@ PPS::PPS()
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
 , m_numVerVirtualBoundaries          (0)
 , m_numHorVirtualBoundaries          (0)
-#if JVET_O1164_PS
 , m_picWidthInLumaSamples( 352 )
 , m_picHeightInLumaSamples( 288 )
-#endif
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CrOffset = 0;
-#if JVET_O1168_CU_CHROMA_QP_OFFSET
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.JointCbCrOffset = 0;
-#endif
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
 }
@@ -1977,9 +1865,7 @@ PPS::~PPS()
 
 APS::APS()
 : m_APSId(0)
-#if JVET_O0245_VPS_DPS_APS
 , m_temporalId( 0 )
-#endif
 {
 }
 
@@ -1992,9 +1878,7 @@ ReferencePictureList::ReferencePictureList()
   : m_numberOfShorttermPictures(0)
   , m_numberOfLongtermPictures(0)
   , m_numberOfActivePictures(MAX_INT)
-#if JVET_N0100_PROPOSAL1
   , m_ltrp_in_slice_header_flag(0)
-#endif
 {
   ::memset(m_isLongtermRefPic, 0, sizeof(m_isLongtermRefPic));
   ::memset(m_refPicIdentifier, 0, sizeof(m_refPicIdentifier));
@@ -2081,6 +1965,13 @@ void ReferencePictureList::printRefPicInfo() const
 
 ScalingList::ScalingList()
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+    m_scalingListCoef[scalingListId].resize(matrixSize*matrixSize);
+  }
+#else
   for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
   {
     for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
@@ -2088,12 +1979,19 @@ ScalingList::ScalingList()
       m_scalingListCoef[sizeId][listId].resize(std::min<int>(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]));
     }
   }
+#endif
 }
 
 /** set default quantization matrix to array
 */
 void ScalingList::setDefaultScalingList()
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    processDefaultMatrix(scalingListId);
+  }
+#else
   for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
   {
     for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
@@ -2101,6 +1999,7 @@ void ScalingList::setDefaultScalingList()
       processDefaultMatrix(sizeId, listId);
     }
   }
+#endif
 }
 /** check if use default quantization matrix
  * \returns true if the scaling list is not equal to the default quantization matrix
@@ -2108,6 +2007,29 @@ void ScalingList::setDefaultScalingList()
 bool ScalingList::isNotDefaultScalingList()
 {
   bool isAllDefault = true;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+    if (scalingListId < SCALING_LIST_1D_START_16x16)
+    {
+      if (::memcmp(getScalingListAddress(scalingListId), getScalingListDefaultAddress(scalingListId), sizeof(int) * matrixSize * matrixSize))
+      {
+        isAllDefault = false;
+        break;
+      }
+    }
+    else
+    {
+      if ((::memcmp(getScalingListAddress(scalingListId), getScalingListDefaultAddress(scalingListId), sizeof(int) * MAX_MATRIX_COEF_NUM)) || (getScalingListDC(scalingListId) != 16))
+      {
+        isAllDefault = false;
+        break;
+      }
+    }
+    if (!isAllDefault) break;
+  }
+#else
   for ( uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
   {
     for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
@@ -2136,6 +2058,7 @@ bool ScalingList::isNotDefaultScalingList()
     }
     if (!isAllDefault) break;
   }
+#endif
 
   return !isAllDefault;
 }
@@ -2145,11 +2068,174 @@ bool ScalingList::isNotDefaultScalingList()
  * \param listId    index of input matrix
  * \param refListId index of reference matrix
  */
-void ScalingList::processRefMatrix( uint32_t sizeId, uint32_t listId , uint32_t refListId )
+#if JVET_P01034_PRED_1D_SCALING_LIST
+int ScalingList::lengthUvlc(int uiCode)
 {
-  ::memcpy(getScalingListAddress(sizeId, listId),((listId == refListId)? getScalingListDefaultAddress(sizeId, refListId): getScalingListAddress(sizeId, refListId)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]));
-}
+  if (uiCode < 0) printf("Error UVLC! \n");
 
+  int uiLength = 1;
+  int uiTemp = ++uiCode;
+
+  CHECK(!uiTemp, "Integer overflow");
+
+  while (1 != uiTemp)
+  {
+    uiTemp >>= 1;
+    uiLength += 2;
+  }
+  return (uiLength >> 1) + ((uiLength + 1) >> 1);
+}
+int ScalingList::lengthSvlc(int uiCode)
+{
+  uint32_t uiCode2 = uint32_t(uiCode <= 0 ? (-uiCode) << 1 : (uiCode << 1) - 1);
+  int uiLength = 1;
+  int uiTemp = ++uiCode2;
+
+  CHECK(!uiTemp, "Integer overflow");
+
+  while (1 != uiTemp)
+  {
+    uiTemp >>= 1;
+    uiLength += 2;
+  }
+  return (uiLength >> 1) + ((uiLength + 1) >> 1);
+}
+void ScalingList::codePredScalingList(int* scalingList, const int* scalingListPred, int scalingListDC, int scalingListPredDC, int scalingListId, int& bitsCost) //sizeId, listId is current to-be-coded matrix idx
+{
+  int deltaValue = 0;
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  int coefNum = matrixSize*matrixSize;
+  ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(matrixSize)][gp_sizeIdxInfo->idxFrom(matrixSize)];
+  int nextCoef = 0;
+
+  int8_t data;
+  const int *src = scalingList;
+  const int *srcPred = scalingListPred;
+  if (scalingListDC!=-1 && scalingListPredDC!=-1)
+  {
+    bitsCost += lengthSvlc((int8_t)(scalingListDC - scalingListPredDC - nextCoef));
+    nextCoef =  scalingListDC - scalingListPredDC;
+  }
+  else if ((scalingListDC != -1 && scalingListPredDC == -1))
+  {
+    bitsCost += lengthSvlc((int8_t)(scalingListDC - srcPred[scan[0].idx] - nextCoef));
+    nextCoef =  scalingListDC - srcPred[scan[0].idx];
+  }
+  else if ((scalingListDC == -1 && scalingListPredDC == -1))
+  {
+  }
+  else
+  {
+    printf("Predictor DC mismatch! \n");
+  }
+  for (int i = 0; i < coefNum; i++)
+  {
+    if (scalingListId >= SCALING_LIST_1D_START_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+      continue;
+    deltaValue = (src[scan[i].idx] - srcPred[scan[i].idx]);
+    data = (int8_t)(deltaValue - nextCoef);
+    nextCoef = deltaValue;
+
+    bitsCost += lengthSvlc(data);
+  }
+}
+void ScalingList::codeScalingList(int* scalingList, int scalingListDC, int scalingListId, int& bitsCost) //sizeId, listId is current to-be-coded matrix idx
+{
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  int coefNum = matrixSize * matrixSize;
+  ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(matrixSize)][gp_sizeIdxInfo->idxFrom(matrixSize)];
+  int nextCoef = SCALING_LIST_START_VALUE;
+  int8_t data;
+  const int *src = scalingList;
+
+  if (scalingListId >= SCALING_LIST_1D_START_16x16)
+  {
+    bitsCost += lengthSvlc(int8_t(getScalingListDC(scalingListId) - nextCoef));
+    nextCoef = getScalingListDC(scalingListId);
+  }
+
+  for (int i = 0; i < coefNum; i++)
+  {
+    if (scalingListId >= SCALING_LIST_1D_START_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+      continue;
+    data = int8_t(src[scan[i].idx] - nextCoef);
+    nextCoef = src[scan[i].idx];
+
+    bitsCost += lengthSvlc(data);
+  }
+}
+void ScalingList::CheckBestPredScalingList(int scalingListId, int predListId, int& BitsCount)
+{
+  //check previously coded matrix as a predictor, code "lengthUvlc" function
+  int *scalingList = getScalingListAddress(scalingListId);
+  const int *scalingListPred = (scalingListId == predListId) ? ((predListId < SCALING_LIST_1D_START_8x8) ? g_quantTSDefault4x4 : g_quantIntraDefault8x8) : getScalingListAddress(predListId);
+  int scalingListDC = (scalingListId >= SCALING_LIST_1D_START_16x16) ? getScalingListDC(scalingListId) : -1;
+  int scalingListPredDC = (predListId >= SCALING_LIST_1D_START_16x16) ? ((scalingListId == predListId) ? 16 : getScalingListDC(predListId)) : -1;
+
+  int bitsCost = 0;
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  int predMatrixSize = (predListId < SCALING_LIST_1D_START_4x4) ? 2 : (predListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+
+  if (matrixSize != predMatrixSize) printf("Predictor size mismatch! \n");
+
+  bitsCost = 2 + lengthUvlc(scalingListId - predListId);
+  //copy-flag + predictor-mode-flag + deltaListId
+  codePredScalingList(scalingList, scalingListPred, scalingListDC, scalingListPredDC, scalingListId, bitsCost);
+  BitsCount = bitsCost;
+}
+void ScalingList::processRefMatrix(uint32_t scalinListId, uint32_t refListId)
+{
+  int matrixSize = (scalinListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalinListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  ::memcpy(getScalingListAddress(scalinListId), ((scalinListId == refListId) ? getScalingListDefaultAddress(refListId) : getScalingListAddress(refListId)), sizeof(int)*matrixSize*matrixSize);
+}
+void ScalingList::checkPredMode(uint32_t scalingListId)
+{
+  int bestBitsCount = MAX_INT;
+  int BitsCount = 2;
+  setScalingListPreditorModeFlag(scalingListId, false);
+  codeScalingList(getScalingListAddress(scalingListId), ((scalingListId >= SCALING_LIST_1D_START_16x16) ? getScalingListDC(scalingListId) : -1), scalingListId, BitsCount);
+  bestBitsCount = BitsCount;
+
+  for (int predListIdx = (int)scalingListId; predListIdx >= 0; predListIdx--)
+  {
+
+    int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+    int predMatrixSize = (predListIdx < SCALING_LIST_1D_START_4x4) ? 2 : (predListIdx < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+    if (((scalingListId == SCALING_LIST_1D_START_2x2 || scalingListId == SCALING_LIST_1D_START_4x4 || scalingListId == SCALING_LIST_1D_START_8x8) && predListIdx != (int)scalingListId) || matrixSize != predMatrixSize)
+      continue;
+    const int* refScalingList = (scalingListId == predListIdx) ? getScalingListDefaultAddress(predListIdx) : getScalingListAddress(predListIdx);
+    const int refDC = (predListIdx < SCALING_LIST_1D_START_16x16) ? refScalingList[0] : (scalingListId == predListIdx) ? 16 : getScalingListDC(predListIdx);
+    if (!::memcmp(getScalingListAddress(scalingListId), refScalingList, sizeof(int)*matrixSize*matrixSize) // check value of matrix
+      // check DC value
+      && (scalingListId < SCALING_LIST_1D_START_16x16 || getScalingListDC(scalingListId) == refDC))
+    {
+      //copy mode
+      setRefMatrixId(scalingListId, predListIdx);
+      setScalingListCopyModeFlag(scalingListId, true);
+      setScalingListPreditorModeFlag(scalingListId, false);
+      return;
+    }
+    else
+    {
+      //predictor mode
+      //use previously coded matrix as a predictor
+      CheckBestPredScalingList(scalingListId, predListIdx, BitsCount);
+      if (BitsCount < bestBitsCount)
+      {
+        bestBitsCount = BitsCount;
+        setScalingListCopyModeFlag(scalingListId, false);
+        setScalingListPreditorModeFlag(scalingListId, true);
+        setRefMatrixId(scalingListId, predListIdx);
+      }
+    }
+  }
+  setScalingListCopyModeFlag(scalingListId, false);
+}
+#else
+void ScalingList::processRefMatrix(uint32_t sizeId, uint32_t listId, uint32_t refListId)
+{
+  ::memcpy(getScalingListAddress(sizeId, listId), ((listId == refListId) ? getScalingListDefaultAddress(sizeId, refListId) : getScalingListAddress(sizeId, refListId)), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId]));
+}
 void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
 {
   for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
@@ -2167,6 +2253,7 @@ void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
   }
   setScalingListPredModeFlag(sizeId, listId, true);
 }
+#endif
 
 static void outputScalingListHelp(std::ostream &os)
 {
@@ -2200,14 +2287,25 @@ static void outputScalingListHelp(std::ostream &os)
 
 void ScalingList::outputScalingLists(std::ostream &os) const
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int scalingListId = 0;
+#endif
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)
   {
     const uint32_t size = (sizeIdc == 1) ? 2 : ((sizeIdc == 2) ? 4 : 8);
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+      if (!((sizeIdc== SCALING_LIST_64x64 && listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) || (sizeIdc == SCALING_LIST_2x2 && listIdc < 4)))
+#else
       if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0))))
+#endif
       {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+        const int *src = getScalingListAddress(scalingListId);
+#else
         const int *src = getScalingListAddress(sizeIdc, listIdc);
+#endif
         os << (MatrixType[sizeIdc][listIdc]) << " =\n  ";
         for(uint32_t y=0; y<size; y++)
         {
@@ -2219,9 +2317,16 @@ void ScalingList::outputScalingLists(std::ostream &os) const
         }
         if(sizeIdc > SCALING_LIST_8x8)
         {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+          os << MatrixType_DC[sizeIdc][listIdc] << " = \n  " << std::setw(3) << getScalingListDC(scalingListId) << "\n";
+#else
           os << MatrixType_DC[sizeIdc][listIdc] << " = \n  " << std::setw(3) << getScalingListDC(sizeIdc, listIdc) << "\n";
+#endif
         }
         os << "\n";
+#if JVET_P01034_PRED_1D_SCALING_LIST
+        scalingListId++;
+#endif
       }
     }
   }
@@ -2247,20 +2352,32 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
     return true;
   }
 
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int scalingListId = 0;
+#endif
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)//2x2-128x128
   {
     const uint32_t size = std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeIdc]);
 
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
+#if !JVET_P01034_PRED_1D_SCALING_LIST
       int * const src = getScalingListAddress(sizeIdc, listIdc);
+#endif
 
+#if JVET_P01034_PRED_1D_SCALING_LIST
+      if ((sizeIdc == SCALING_LIST_64x64 && listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) || (sizeIdc == SCALING_LIST_2x2 && listIdc < 4))
+#else
       if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
+#endif
       {
         continue;
       }
       else
       {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+        int * const src = getScalingListAddress(scalingListId);
+#endif
         {
           fseek(fp, 0, SEEK_SET);
           bool bFound=false;
@@ -2278,6 +2395,7 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
           {
             msg( ERROR, "Error: cannot find Matrix %s from scaling list file %s\n", MatrixType[sizeIdc][listIdc], fileName.c_str());
             return true;
+
           }
         }
         for (uint32_t i=0; i<size; i++)
@@ -2297,7 +2415,11 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
         }
 
         //set DC value for default matrix check
-        setScalingListDC(sizeIdc,listIdc,src[0]);
+#if JVET_P01034_PRED_1D_SCALING_LIST
+        setScalingListDC(scalingListId, src[0]);
+#else
+        setScalingListDC(sizeIdc, listIdc, src[0]);
+#endif
 
         if(sizeIdc > SCALING_LIST_8x8)
         {
@@ -2332,9 +2454,16 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
             return true;
           }
           //overwrite DC value when size of matrix is larger than 16x16
-          setScalingListDC(sizeIdc,listIdc,data);
+#if JVET_P01034_PRED_1D_SCALING_LIST
+          setScalingListDC(scalingListId, data);
+#else
+          setScalingListDC(sizeIdc, listIdc, data);
+#endif
         }
       }
+#if JVET_P01034_PRED_1D_SCALING_LIST
+      scalingListId++;
+#endif
     }
   }
 //  std::cout << "\n\nRead scaling lists of:\n\n";
@@ -2350,10 +2479,19 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
  * \param listId list index
  * \returns pointer of quantization matrix
  */
+#if JVET_P01034_PRED_1D_SCALING_LIST
+const int* ScalingList::getScalingListDefaultAddress(uint32_t scalingListId)
+#else
 const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t listId)
+#endif
 {
   const int *src = 0;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int sizeId = (scalingListId < SCALING_LIST_1D_START_8x8) ? 2 : 3;
+  switch (sizeId)
+#else
   switch(sizeId)
+#endif
   {
     case SCALING_LIST_1x1:
     case SCALING_LIST_2x2:
@@ -2365,7 +2503,11 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
     case SCALING_LIST_32x32:
     case SCALING_LIST_64x64:
     case SCALING_LIST_128x128:
+#if JVET_P01034_PRED_1D_SCALING_LIST
+      src = g_quantInterDefault8x8;
+#else
       src = (listId < (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES)) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
+#endif
       break;
     default:
       THROW( "Invalid scaling list" );
@@ -2379,6 +2521,28 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
  * \param sizeId size index
  * \param listId index of input matrix
  */
+#if JVET_P01034_PRED_1D_SCALING_LIST
+void ScalingList::processDefaultMatrix(uint32_t scalingListId)
+{
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  ::memcpy(getScalingListAddress(scalingListId), getScalingListDefaultAddress(scalingListId), sizeof(int)*matrixSize*matrixSize);
+  setScalingListDC(scalingListId, SCALING_LIST_DC);
+}
+
+/** check DC value of matrix for default matrix signaling
+ */
+void ScalingList::checkDcOfMatrix()
+{
+  for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    //check default matrix?
+    if (getScalingListDC(scalingListId) == 0)
+    {
+      processDefaultMatrix(scalingListId);
+    }
+  }
+}
+#else
 void ScalingList::processDefaultMatrix(uint32_t sizeId, uint32_t listId)
 {
   ::memcpy(getScalingListAddress(sizeId, listId),getScalingListDefaultAddress(sizeId,listId),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]));
@@ -2401,6 +2565,7 @@ void ScalingList::checkDcOfMatrix()
     }
   }
 }
+#endif
 
 ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
@@ -2548,12 +2713,8 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
-#if JVET_O0044_MULTI_SUB_PROFILE
   , m_numSubProfile(0)
   , m_subProfileIdc(0)
-#else
-  , m_subProfileIdc(0)
-#endif
   , m_levelIdc        (Level::NONE)
 {
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
@@ -2636,17 +2797,16 @@ uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chTy
   return minQtSize[getValIdx( slice, chType )];
 }
 
-#if JVET_O1164_RPR
-#if JVET_O0299_APS_SCALINGLIST
 void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder )
-#else
-void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, const bool isDecoder )
-#endif
 {
   int i;
   const SPS* sps = getSPS();
   const PPS* pps = getPPS();
 
+#if JVET_P0206_TMVP_flags
+  bool refPicIsSameRes = false;
+#endif
+   
   // this is needed for IBC
   m_pcPic->unscaledPic = m_pcPic;
 
@@ -2656,7 +2816,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
   }
 
   freeScaledRefPicList( scaledRefPic );
-  
+
   for( int refList = 0; refList < NUM_REF_PIC_LIST_01; refList++ )
   {
     if( refList == 1 && m_eSliceType != B_SLICE )
@@ -2670,8 +2830,15 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
       // reference resampling for the whole picture is not applied at decoder
 
       int xScale, yScale;
-      CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx]->slices[0]->getPPS(), xScale, yScale );
+      CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx], xScale, yScale );
       m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
+
+#if JVET_P0206_TMVP_flags
+      if( m_scalingRatio[refList][rIdx] == SCALE_1X )
+      {
+        refPicIsSameRes = true;
+      }
+#endif
 
       if( m_scalingRatio[refList][rIdx] == SCALE_1X || isDecoder )
       {
@@ -2680,7 +2847,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
       else
       {
         int poc = m_apcRefPicList[refList][rIdx]->getPOC();
-        // check whether the reference picture has already been scaled 
+        // check whether the reference picture has already been scaled
         for( i = 0; i < MAX_NUM_REF; i++ )
         {
           if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc )
@@ -2716,11 +2883,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
             scaledRefPic[j]->reconstructed = false;
             scaledRefPic[j]->referenced = true;
 
-#if JVET_O0299_APS_SCALINGLIST
             scaledRefPic[ j ]->finalInit( *sps, *pps, apss, lmcsAps, scalingListAps );
-#else
-            scaledRefPic[j]->finalInit( *sps, *pps, apss, lmcsAps );
-#endif
 
             scaledRefPic[j]->poc = -1;
 
@@ -2732,11 +2895,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
 
           // rescale the reference picture
           const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
-#if RPR_CONF_WINDOW
           Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getConformanceWindow(), scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
-#else
-          Picture::rescalePicture(m_apcRefPicList[refList][rIdx]->getRecoBuf(), scaledRefPic[j]->getRecoBuf(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling);
-#endif
           scaledRefPic[j]->extendPicBorder();
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];
@@ -2766,6 +2925,14 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[], APS** apss, APS* lmcsAps, 
       m_apcRefPicList[refList][rIdx]->unscaledPic = m_savedRefPicList[refList][rIdx];
     }
   }
+  
+#if JVET_P0206_TMVP_flags
+  //Make sure that TMVP is disabled when there are no reference pictures with the same resolution
+  if(!refPicIsSameRes)
+  {
+    CHECK(m_enableTMVPFlag != 0, "TMVP cannot be enabled in slices that have no reference pictures with the same resolution")
+  }
+#endif
 }
 
 void Slice::freeScaledRefPicList( Picture *scaledRefPic[] )
@@ -2807,7 +2974,6 @@ bool Slice::checkRPR()
 
   return false;
 }
-#endif
 
 #if ENABLE_TRACING
 void xTraceVPSHeader()

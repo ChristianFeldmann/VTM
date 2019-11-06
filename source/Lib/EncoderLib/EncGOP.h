@@ -60,9 +60,7 @@
 #include "Analyze.h"
 #include "RateCtrl.h"
 #include <vector>
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
 #include "EncHRD.h"
-#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/ConvertColorFormat.H"
@@ -129,9 +127,7 @@ private:
   int                     m_iNumPicCoded;
   bool                    m_bFirst;
   int                     m_iLastRecoveryPicPOC;
-#if JVET_N0494_DRAP
   int                     m_latestDRAPPOC;
-#endif
   int                     m_lastRasPoc;
 
   //  Access channel
@@ -160,9 +156,7 @@ private:
   // indicate sequence first
   bool                    m_bSeqFirst;
 
-#if JVET_N0353_INDEP_BUFF_TIME_SEI
   EncHRD*                 m_HRD;
-#endif
 
   // clean decoding refresh
   bool                    m_bRefreshPending;
@@ -171,14 +165,9 @@ private:
   int                     m_associatedIRAPPOC;
 
   std::vector<int>        m_vRVM_RP;
-#if !JVET_N0867_TEMP_SCAL_HRD
-  uint32_t                    m_lastBPSEI;
-  uint32_t                    m_totalCoded;
-#else
   uint32_t                    m_lastBPSEI[MAX_TLAYER];
   uint32_t                    m_totalCoded[MAX_TLAYER];
   bool                        m_rapWithLeading;
-#endif
   bool                    m_bufferingPeriodSEIPresentInAU;
   SEIEncoder              m_seiEncoder;
 #if W0038_DB_OPT
@@ -245,11 +234,7 @@ public:
   void      setLastLTRefPoc(int iLastLTRefPoc) { m_lastLTRefPoc = iLastLTRefPoc; }
   int       getLastLTRefPoc() const { return m_lastLTRefPoc; }
 
-#if RPR_CTC_PRINT
   void  printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths );
-#else
-  void  printOutSummary      ( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths );
-#endif
 #if W0038_DB_OPT
   uint64_t  preLoopFilterPicAndCalcDist( Picture* pcPic );
 #endif
@@ -276,11 +261,7 @@ protected:
   void  xInitGOP          ( int iPOCLast, int iNumPicRcvd, bool isField
     , bool isEncodeLtRef
   );
-#if JVET_O1164_PS
   void  xPicInitHashME( Picture *pic, const PPS *pps, PicList &rcListPic );
-#else
-  void  xPicInitHashME     (Picture *pic, const SPS *sps, PicList &rcListPic);
-#endif
   void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
   void  xPicInitLMCS       (Picture *pic, Slice *slice);
 
@@ -306,7 +287,7 @@ protected:
 
   uint64_t xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift
 #if ENABLE_QPA
-                            , const uint32_t chromaShift = 0
+                            , const uint32_t chromaShiftHor = 0, const uint32_t chromaShiftVer = 0
 #endif
                              );
 #if WCG_WPSNR
@@ -320,9 +301,7 @@ protected:
 
   void xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS *sps, const PPS *pps);
   void xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice);
-#if JVET_O0041_FRAME_FIELD_SEI
   void xCreateFrameFieldInfoSEI (SEIMessages& seiMessages, Slice *slice, bool isField);
-#endif
   void xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData);
   void xUpdateDuData(AccessUnit &testAU, std::deque<DUData> &duData);
   void xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUData> &duData, const SPS *sps);
@@ -342,20 +321,8 @@ protected:
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
-#if JVET_O1136_TS_BDPCM_SIGNALLING
-#if JVET_O0245_VPS_DPS_APS
   int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
-#else
-  int xWritePPS (AccessUnit &accessUnit, const PPS *pps, const SPS *sps);
-#endif
-#else
-  int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
-#endif
-#if JVET_O0245_VPS_DPS_APS
   int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId = 0 );
-#else
-  int xWriteAPS(AccessUnit &accessUnit, APS *aps);
-#endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

@@ -79,11 +79,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
   case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
   case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
-#if JVET_N0865_GRA2GDR
   case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
-#else
-  case NAL_UNIT_CODED_SLICE_GRA:        return "GRA";
-#endif
   default:                              return "UNK";
   }
 }
@@ -133,7 +129,6 @@ public:
         }
         break;
 
-#if JVET_O0119_BASE_PALETTE_444
       case SCAN_TRAV_HOR:
         if (m_line % 2 == 0)
         {
@@ -175,7 +170,6 @@ public:
           else m_line--;
         }
         break;
-#endif
       //------------------------------------------------
 
       default:
@@ -427,7 +421,6 @@ void initROM()
     }
   }
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
   for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
@@ -437,28 +430,34 @@ void initROM()
       const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
 
       // let SIMD can read at least 64-bit when at last row
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      g_triangleWeights[0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+#else
       g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-
+#endif
       for (int y = 0; y < nCbH; y++)
       {
         for (int x = 0; x < nCbW; x++)
         {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+          g_triangleWeights[0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
+          g_triangleWeights[1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
+#else
           g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
           g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
           g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
           g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
+#endif
         }
       }
     }
   }
-#endif
 
-#if JVET_O0592_ENC_ME_IMP
   ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
-#endif
 }
 
 void destroyROM()
@@ -484,11 +483,16 @@ void destroyROM()
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
   for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
     {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      delete[] g_triangleWeights[0][idxH][idxW];
+      delete[] g_triangleWeights[1][idxH][idxW];
+      g_triangleWeights[0][idxH][idxW] = nullptr;
+      g_triangleWeights[1][idxH][idxW] = nullptr;
+#else
       delete[] g_triangleWeights[0][0][idxH][idxW];
       delete[] g_triangleWeights[0][1][idxH][idxW];
       delete[] g_triangleWeights[1][0][idxH][idxW];
@@ -497,9 +501,9 @@ void destroyROM()
       g_triangleWeights[0][1][idxH][idxW] = nullptr;
       g_triangleWeights[1][0][idxH][idxW] = nullptr;
       g_triangleWeights[1][1][idxH][idxW] = nullptr;
+#endif
     }
   }
-#endif
 }
 
 // ====================================================================================================================
@@ -523,16 +527,6 @@ const int g_invQuantScales[2][SCALING_LIST_REM_NUM] = // can be represented as a
 //--------------------------------------------------------------------------------------------------
 //coefficients
 //--------------------------------------------------------------------------------------------------
-#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-const uint8_t g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize] =
-{
-  //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69
-  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,29,30,31,32,33,33,34,34,35,35,36,36,37,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63 },
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,63,63,63,63,63,63 },
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,63,63,63,63,63,63 }
-};
-#endif
 // ====================================================================================================================
 // Intra prediction
 // ====================================================================================================================
@@ -569,41 +563,14 @@ const uint8_t g_aucIntraModeNumFast_NotUseMPM[MAX_CU_DEPTH] =
 };
 
 const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
-#if JVET_O0655_422_CHROMA_DM_MAPPING_FIX
+#if JVET_P0111_CHROMA_422_FIX
+//                                    *                                H                              *                                D      *   *   *   *       *   *   *                   *        V       *                   *   *   *      *   *   *   *
+//0, 1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
+{ 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  5,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 41, 42, 43, 43, 44, 44, 45, 45, 46, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59, 60, DM_CHROMA_IDX };
+#else
 //                                                                     H                                                               D                                                               V
 //0, 1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
 { 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
-#else
-//                                                               H                                                               D                                                               V
-//0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
-{ 0, 1, 2, 2, 2, 2, 2, 2, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
-#endif
-
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
-extern const uint8_t  g_intraMode65to33AngMapping[NUM_INTRA_MODE] =
-//                                                               H                                                               D                                                               V
-//0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
-{ 0, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, DM_CHROMA_IDX };
-
-const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE] =
-{
-  {  0, 18, 18,  0, 18,  0, 12,  0, 18,  2, 18, 12, 18, 18,  1, 18, 18,  0,  0, 50,  0, 50,  0, 56,  0, 50, 66, 50, 56, 50, 50,  1, 50, 50, 50 },
-  {  0,  1,  0,  1,  0, 22, 18, 18,  1,  0,  1,  0,  1,  0, 44,  0, 50,  1,  0 },
-  {  1,  1,  1,  1, 18,  0,  1,  0,  1, 50,  0 },
-};
-const uint8_t g_mapAngular33ToMip[3][35] =
-{
-  { 17, 17, 17,  9,  9,  9,  9, 17, 17, 17, 17, 17, 17, 17,  5,  5,  5,  5, 34, 22, 22, 22, 22, 34, 34, 34, 34, 34, 34, 34, 26, 26, 26, 26, 26 },
-  {  0,  0, 10, 10, 10, 10, 10,  4,  6,  7,  7,  7,  5,  5,  0,  0,  3,  3, 12, 12, 12, 12, 14, 14, 14, 16, 16, 16, 15, 13,  1,  1,  1,  1,  1 },
-  {  5,  1,  3,  3,  3,  3,  0,  0,  0,  4,  4,  4,  5,  1,  1,  1,  1,  1,  6,  6,  6,  6,  6, 10, 10,  9,  9,  9,  9,  9,  8,  8,  8,  8,  8 },
-};
-
-const int g_sortedMipMpms[3][NUM_MPM_MIP] =
-{
-  { 17, 34,  5 },
-  {  0,  7, 16 },
-  {  1,  4,  6 },
-};
 #endif
 
 
@@ -613,9 +580,7 @@ const int g_sortedMipMpms[3][NUM_MPM_MIP] =
 // ====================================================================================================================
 SizeIndexInfo*           gp_sizeIdxInfo = NULL;
 
-#if JVET_O0105_ICT
 const int                 g_ictModes[2][4] = { { 0, 3, 1, 2 }, { 0, -3, -1, -2 } };
-#endif
 
 UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 
@@ -634,13 +599,14 @@ const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
 };
+#if !JVET_P0170_ZERO_POS_SIMPLIFICATION
 const uint32_t g_auiGoRicePosCoeff0[3][32] =
 {
   {0, 0, 0, 0, 0, 1, 2,    2, 2, 2, 2, 2, 4, 4,    4, 4, 4, 4,  4,  4,  4,  4,  4,  8,  8,  8,  8,  8,     8,  8,  8,  8},
   {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
   {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
 };
-
+#endif
 const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
 {
   {
@@ -693,11 +659,21 @@ const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTRA64X64_CHROMAU",
+    "INTRA64X64_CHROMAV",
+#else
     "INTRA64X64_CHROMAU_FROM16x16_CHROMAU",
     "INTRA64X64_CHROMAV_FROM16x16_CHROMAV",
+#endif
     "INTER64X64_LUMA",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTER64X64_CHROMAU",
+    "INTER64X64_CHROMAV"
+#else
     "INTER64X64_CHROMAU_FROM16x16_CHROMAU",
     "INTER64X64_CHROMAV_FROM16x16_CHROMAV"
+#endif
   },
   {
   },
@@ -731,11 +707,21 @@ const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA_DC",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTRA64X64_CHROMAU_DC",
+    "INTRA64X64_CHROMAV_DC",
+#else
     "INTRA64X64_CHROMAU_DC_FROM16x16_CHROMAU",
     "INTRA64X64_CHROMAV_DC_FROM16x16_CHROMAV",
+#endif
     "INTER64X64_LUMA_DC",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTER64X64_CHROMAU_DC",
+    "INTER64X64_CHROMAV_DC"
+#else
     "INTER64X64_CHROMAU_DC_FROM16x16_CHROMAU",
     "INTER64X64_CHROMAV_DC_FROM16x16_CHROMAV"
+#endif
   },
   {
   },
@@ -778,17 +764,19 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 
 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#else
 int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
 #endif
-#if JVET_O0592_ENC_ME_IMP
 Mv   g_reusedUniMVs[32][32][8][8][2][33];
 bool g_isReusedUniMVsFilled[32][32][8][8];
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
 const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
 uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
+#if JVET_P0077_LINE_CG_PALETTE
+uint8_t g_paletteRunLeftLut[5] = { 0, 1, 2, 3, 4 };
+#else
 uint8_t g_paletteRunLeftLut[5] = { 0, 3, 3, 4, 4 };
 #endif
 //! \}

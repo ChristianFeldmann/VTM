@@ -68,7 +68,11 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
   , m_lastShiftY                (0)
+#if JVET_P0058_CHROMA_TS
+  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() && (tu.cu->transQuantBypass || tu.mtsIdx[m_compID] == MTS_SKIP))
+#else
   , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==MTS_SKIP))
+#endif
   , m_scanPosLast               (-1)
   , m_subSetId                  (-1)
   , m_subSetPos                 (-1)
@@ -86,10 +90,8 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_tsSigFlagCtxSet           ( Ctx::TsSigFlag )
   , m_tsParFlagCtxSet           ( Ctx::TsParFlag )
   , m_tsGtxFlagCtxSet           ( Ctx::TsGtxFlag )
-#if JVET_O0122_TS_SIGN_LEVEL
   , m_tsLrg1FlagCtxSet          (Ctx::TsLrg1Flag)
   , m_tsSignFlagCtxSet          (Ctx::TsResidualSign)
-#endif
   , m_sigCoeffGroupFlag         ()
   , m_bdpcm                     (bdpcm)
 {
@@ -134,7 +136,6 @@ void CoeffCodingContext::initSubblock( int SubsetId, bool sigGroupFlag )
 }
 
 
-#if JVET_O0050_LOCAL_DUAL_TREE
 unsigned DeriveCtx::CtxModeConsFlag( const CodingStructure& cs, Partitioner& partitioner )
 {
   assert( partitioner.chType == CHANNEL_TYPE_LUMA );
@@ -148,7 +149,6 @@ unsigned DeriveCtx::CtxModeConsFlag( const CodingStructure& cs, Partitioner& par
   unsigned ctxId = ((cuAbove && cuAbove->predMode == MODE_INTRA) || (cuLeft && cuLeft->predMode == MODE_INTRA)) ? 1 : 0;
   return ctxId;
 }
-#endif
 
 
 void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* _canSplit /*= nullptr */ )
@@ -249,11 +249,7 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
   ctxVerBt = ( partitioner.currMtDepth <= 1 ? 3 : 2 );
 }
 
-#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
 unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const bool prevCbf, const int ispIdx )
-#else
-unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, const bool prevCbf, const int ispIdx )
-#endif
 {
   if( ispIdx && isLuma( compID ) )
   {
@@ -263,18 +259,7 @@ unsigned DeriveCtx::CtxQtCbf( const ComponentID compID, const unsigned trDepth, 
   {
     return ( prevCbf ? 1 : 0 );
   }
-#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
   return 0;
-#else
-  if( isChroma( compID ) )
-  {
-    return ( trDepth == 0 ? 0 : 1 );
-  }
-  else
-  {
-    return ( trDepth == 0 ? 1 : 0 );
-  }
-#endif
 }
 
 unsigned DeriveCtx::CtxInterDir( const PredictionUnit& pu )
@@ -343,9 +328,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   pu.mergeFlag               = true;
   pu.mmvdMergeFlag = false;
   pu.interDir                = interDirNeighbours[candIdx];
-#if JVET_O0057_ALTHPELIF
   pu.cu->imv = (!pu.cu->triangle && useAltHpelIf[candIdx]) ? IMV_HPEL : 0;
-#endif
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
   pu.mv     [REF_PIC_LIST_0] = mvFieldNeighbours[(candIdx << 1) + 0].mv;
@@ -362,9 +345,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
   {
     pu.bv = pu.mv[REF_PIC_LIST_0];
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
-#if JVET_O0057_ALTHPELIF
     pu.cu->imv = pu.cu->imv == IMV_HPEL ? 0 : pu.cu->imv;
-#endif
   }
   pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
 
@@ -521,11 +502,7 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mmvdMergeFlag = true;
   pu.mmvdMergeIdx = candIdx;
   pu.mergeFlag = true;
-#if JVET_O0249_MERGE_SYNTAX
   pu.regularMergeFlag = true;
-#else
-  pu.regularMergeFlag = false;
-#endif
   pu.mergeIdx = candIdx;
   pu.mergeType = MRG_TYPE_DEFAULT_N;
   pu.mvd[REF_PIC_LIST_0] = Mv();
@@ -534,9 +511,7 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpIdx[REF_PIC_LIST_1] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_0] = NOT_VALID;
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
-#if JVET_O0057_ALTHPELIF
   pu.cu->imv = mmvdUseAltHpelIf[fPosBaseIdx] ? IMV_HPEL : 0;
-#endif
 
   pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
 
@@ -567,3 +542,18 @@ unsigned DeriveCtx::CtxMipFlag( const CodingUnit& cu )
 
   return ctxId;
 }
+
+#if JVET_P0077_LINE_CG_PALETTE
+unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist )
+{
+  uint8_t *ucCtxLut = (prevRunType == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
+  if ( dist <= RUN_IDX_THRE )
+  {
+     return ucCtxLut[dist];
+  }
+  else
+  { 
+    return ucCtxLut[RUN_IDX_THRE];
+  }
+}
+#endif

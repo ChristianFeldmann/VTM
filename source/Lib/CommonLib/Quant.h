@@ -65,51 +65,31 @@ struct TrQuantParams
 };
 
 /// QP struct
-#if JVET_O0919_TS_MIN_QP
 class QpParam
-#else
-struct QpParam
-#endif
 {
-#if JVET_O0919_TS_MIN_QP
   int Qps[2];
   int pers[2];
   int rems[2];
-#else
-  int Qp;
-  int per;
-  int rem;
-#endif
 
 private:
 
   QpParam(const int           qpy,
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
           const ComponentID   compID,
-#else
-          const ChannelType   chType,
-#endif
           const int           qpBdOffset,
-#if JVET_O0919_TS_MIN_QP
           const int           minQpPrimeTsMinus4,
-#endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
           const int           dqp
-#if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
         , const SPS           *sps
-#endif
   );
 
 public:
 
   QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT);
 
-#if JVET_O0919_TS_MIN_QP
   int Qp ( const bool ts ) const { return Qps [ts?1:0]; }
   int per( const bool ts ) const { return pers[ts?1:0]; }
   int rem( const bool ts ) const { return rems[ts?1:0]; }
-#endif
 
 }; // END STRUCT DEFINITION QpParam
 
@@ -180,10 +160,17 @@ private:
   void xInitScalingList   ( const Quant* other );
   void xDestroyScalingList();
   void xSetFlatScalingList( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp );
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  void xSetScalingListEnc(ScalingList *scalingList, uint32_t list, uint32_t size, int qp, uint32_t scalingListId);
+  void xSetScalingListDec(const ScalingList &scalingList, uint32_t list, uint32_t size, int qp, uint32_t scalingListId);
+  void xSetRecScalingListEnc(ScalingList *scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp, uint32_t scalingListId);
+  void xSetRecScalingListDec(const ScalingList &scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp, uint32_t scalingListId);
+#else
   void xSetScalingListEnc ( ScalingList *scalingList, uint32_t list, uint32_t size, int qp );
   void xSetScalingListDec ( const ScalingList &scalingList, uint32_t list, uint32_t size, int qp );
   void xSetRecScalingListEnc( ScalingList *scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp );
   void xSetRecScalingListDec( const ScalingList &scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp );
+#endif
 private:
   void xSignBitHidingHDQ  (TCoeff* pQCoef, const TCoeff* pCoef, TCoeff* deltaU, const CoeffCodingContext& cctx, const int maxLog2TrDynamicRange);
 

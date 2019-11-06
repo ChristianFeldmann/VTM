@@ -91,21 +91,29 @@ private:
   inline void xBilinearFilter     ( Pel* srcP, Pel* srcQ, int offset, int refMiddle, int refP, int refQ, int numberPSide, int numberQSide, const int* dbCoeffsP, const int* dbCoeffsQ, int tc ) const;
   inline void xFilteringPandQ     ( Pel* src, int offset, int numberPSide, int numberQSide, int tc ) const;
   inline void xPelFilterLuma      ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const int iThrCut, const bool bFilterSecondP, const bool bFilterSecondQ, const ClpRng& clpRng, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7 ) const;
-  inline void xPelFilterChroma    ( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary ) const;
-  inline bool xUseStrongFiltering ( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7 ) const;//move the computation outside the function
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+  inline void xPelFilterChroma(Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary, const bool isChromaHorCTBBoundary) const;
+#else
+  inline void xPelFilterChroma(Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary) const;
+#endif
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+  inline bool xUseStrongFiltering(Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7, bool isChromaHorCTBBoundary = false) const;//move the computation outside the function
+#else
+  inline bool xUseStrongFiltering(Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge = false, bool sideQisLarge = false, int maxFilterLengthP = 7, int maxFilterLengthQ = 7) const;//move the computation outside the function
+#endif
   inline unsigned BsSet(unsigned val, const ComponentID compIdx) const;
   inline unsigned BsGet(unsigned val, const ComponentID compIdx) const;
 
   inline bool isCrossedByVirtualBoundaries ( const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps );
   inline void xDeriveEdgefilterParam       ( const int xPos, const int yPos, const int numVerVirBndry, const int numHorVirBndry, const int verVirBndryPos[], const int horVirBndryPos[], bool &verEdgeFilter, bool &horEdgeFilter );
 
-  inline int xCalcDP              ( Pel* piSrc, const int iOffset ) const;
-  inline int xCalcDQ              ( Pel* piSrc, const int iOffset ) const;
-#if JVET_O0159_10BITTCTABLE_DEBLOCKING
-  static const uint16_t sm_tcTable[MAX_QP + 3];
+#if  JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+  inline int xCalcDP(Pel* piSrc, const int iOffset, const bool isChromaHorCTBBoundary = false) const;
 #else
-  static const uint8_t sm_tcTable[MAX_QP + 3];
+  inline int xCalcDP(Pel* piSrc, const int iOffset) const;
 #endif
+  inline int xCalcDQ              ( Pel* piSrc, const int iOffset ) const;
+  static const uint16_t sm_tcTable[MAX_QP + 3];
   static const uint8_t sm_betaTable[MAX_QP + 1];
 
 public:

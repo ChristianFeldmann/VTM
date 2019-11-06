@@ -891,6 +891,32 @@ Picture output options: output upscaled (2), decoded but in full resolution buff
 \end{OptionTableNoShorthand}
 
 %%
+%% GOP based temporal filter parameters
+%%
+
+\begin{OptionTableNoShorthand}{GOP based temporal filter paramters}{tab:gop-based-temporal-filter}
+
+\Option{TemporalFilter} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables GOP based temporal filter.
+\\
+\Option{TemporalFilterFutureReference} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disable referencing future frames in the GOP based temporal filter. Can be used to disable future referencing for
+low delay configurations.
+\\
+\Option{TemporalFilterStrengthFrame*} &
+%\ShortOption{\None} &
+\Default{} &
+Strength for every * frame in GOP based temporal filter, where * is an integer. E.g. --TemporalFilterStrengthFrame8 0.95 will
+enable GOP based temporal filter at every 8th frame with strength 0.95. Longer intervals overrides shorter when there are
+multiple matches.
+\\
+\end{OptionTableNoShorthand}
+
+%%
 %% profile, level and conformance options
 %%
 \begin{OptionTableNoShorthand}{Profile and level parameters}{tab:profile}
@@ -1314,6 +1340,12 @@ Enables or disables the use of fast encoder decisions for 2Nx2N merge
 mode.  When enabled, the RD cost for the merge mode of the current
 candidate is not evaluated if the merge skip mode was the best merge
 mode for one of the previous candidates.
+\\
+
+\Option{SBT64RDO} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the use of more than 32 SBT in encoder RDO check.  When enabled, more than 32 size SBT is checked in the RDO.
 \\
 
 \Option{RDpenalty} &
@@ -1936,9 +1968,7 @@ Enables or disables the Intra Sub-Partitions coding mode.
 \Option{ISPFast} &
 %\ShortOption{\None} &
 \Default{false} &
-Enables or disables reduced testing of non-DCT-II transforms if ISP is likely to become the best mode for a given CU.
-\par
-This option has no effect if either ISP or MTS are disabled.
+Enables or disables fast encoder methods for ISP.
 \\
 
 \Option{JointCbCr} &
@@ -2010,31 +2040,31 @@ If enabled use a fast ME for generalised B Low Delay slices
 Enables use of B-Lambda for non-key low-delay pictures
 \\
 
-\Option{TransquantBypassEnable} &
-%\ShortOption{\None} &
-\Default{false} &
-Enables or disables the ability to bypass the transform,
-quantization and filtering stages at CU level.
-This option corresponds to the value of
-transquant_bypass_enabled_flag that is transmitted in the PPS.
-
-See CUTransquantBypassFlagForce for further details.
-\\
-
-\Option{CUTransquantBypassFlagForce} &
-%\ShortOption{\None} &
-\Default{0} &
-Controls the per CU transformation, quantization and filtering
-mode decision.
-This option controls the value of the per CU cu_transquant_bypass_flag.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
- 0 & Bypass is searched on a CU-by-CU basis and will be used if the cost is lower than not bypassing. \\
- 1 & Bypass is forced for all CUs. \\
-\end{tabular}
-
-This option has no effect if TransquantBypassEnable is disabled.
-\\
+%\Option{TransquantBypassEnable} &
+%%\ShortOption{\None} &
+%\Default{false} &
+%Enables or disables the ability to bypass the transform,
+%quantization and filtering stages at CU level.
+%This option corresponds to the value of
+%transquant_bypass_enabled_flag that is transmitted in the PPS.
+%
+%See CUTransquantBypassFlagForce for further details.
+%\\
+%
+%\Option{CUTransquantBypassFlagForce} &
+%%\ShortOption{\None} &
+%\Default{0} &
+%Controls the per CU transformation, quantization and filtering
+%mode decision.
+%This option controls the value of the per CU cu_transquant_bypass_flag.
+%\par
+%\begin{tabular}{cp{0.45\textwidth}}
+% 0 & Bypass is searched on a CU-by-CU basis and will be used if the cost is lower than not bypassing. \\
+% 1 & Bypass is forced for all CUs. \\
+%\end{tabular}
+%
+%This option has no effect if TransquantBypassEnable is disabled.
+%\\
 
 \Option{PCMEnabledFlag} &
 %\ShortOption{\None} &
@@ -2188,6 +2218,16 @@ luma TUs are also skipped.
 This option has no effect if TransformSkip is disabled.
 \\
 
+\Option{ChromaTS} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables reduced testing of the transform-skipping mode
+decision for chroma TUs.  When disabled, no RDO search is performed for
+chroma TUs.
+\par
+This option has no effect if TransformSkip is disabled.
+\\
+
 \Option{UseNonLinearAlfLuma} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2216,8 +2256,14 @@ Enables or disables symmetric MVD mode.
 
 \Option{BDPCM} &
 %\ShortOption{\None} &
-\Default{false} &
+\Default{0} &
 Enables or disables the use of intra block differential pulse code modulation mode.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & Disable BDPCM for luma and chroma.\\
+	1 & Enable BDPCM for luma.\\
+	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is avaialble for 444. \\
+\end{tabular}
 \\
 
 \Option{LFNST} &
@@ -2568,9 +2614,9 @@ Specifies the cost mode to use.
 \par
 \begin{tabular}{lp{0.3\textwidth}}
   lossy                   & $cost=distortion+\lambda \times bits$ \\
-  sequence_level_lossless & $cost=distortion / \lambda + bits$. \\
-  lossless                & As with sequence_level_lossless, but QP is also set to 0 (this will be deprecated in the future) \\
-  mixed_lossless_lossy    & As with sequence_level_lossless, but QP'=4 is used for pre-estimates of transquant-bypass blocks \\
+%  sequence_level_lossless & $cost=distortion / \lambda + bits$. \\
+  lossless                & $cost = bits$, QP'=0 is used for all transform blocks and the only allowed encoder result is either an empty transform block or an transform skipped block. \\
+%  mixed_lossless_lossy    & As with sequence_level_lossless, but QP'=4 is used for pre-estimates of transquant-bypass blocks \\
 \end{tabular}
 \\
 

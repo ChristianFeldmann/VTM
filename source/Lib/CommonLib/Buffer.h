@@ -70,9 +70,7 @@ struct PelBufferOps
   void(*addBIOAvg4)    (const Pel* src0, int src0Stride, const Pel* src1, int src1Stride, Pel *dst, int dstStride, const Pel *gradX0, const Pel *gradX1, const Pel *gradY0, const Pel*gradY1, int gradStride, int width, int height, int tmpx, int tmpy, int shift, int offset, const ClpRng& clpRng);
   void(*bioGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth);
   void(*calcBIOPar)    (const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth);
-#if JVET_O0304_SIMPLIFIED_BDOF
   void(*calcBIOSums)   (const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX);
-#endif
   void(*calcBlkGradient)(int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
   void(*copyBuffer)(Pel *src, int srcStride, Pel *dst, int dstStride, int width, int height);
   void(*padding)(Pel *dst, int stride, int width, int height, int padSize);
@@ -82,12 +80,14 @@ struct PelBufferOps
   void ( *removeHighFreq8)        ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height);
   void ( *removeHighFreq4)        ( Pel* src0, int src0Stride, const Pel* src1, int src1Stride, int width, int height);
 #endif
-#if JVET_O0070_PROF
   void (*profGradFilter) (Pel* pSrc, int srcStride, int width, int height, int gradStride, Pel* gradX, Pel* gradY, const int bitDepth);
+#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
+  void (*applyPROF)      (Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, const bool& bi, int shiftNum, Pel offset, const ClpRng& clpRng);
+#else
   void (*applyPROF)      (Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng);
   void (*applyBiPROF[2]) (Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t gbiWeightL0, const ClpRng& clpRng);
-  void (*roundIntVector) (int* v, int size, unsigned int nShift, const int dmvLimit);
 #endif
+  void (*roundIntVector) (int* v, int size, unsigned int nShift, const int dmvLimit);
 };
 
 extern PelBufferOps g_pelBufOP;
@@ -120,12 +120,11 @@ struct AreaBuf : public Size
   void copyClip             ( const AreaBuf<const T> &src, const ClpRng& clpRng);
 
   void subtract             ( const AreaBuf<const T> &other );
-#if !JVET_O0105_ICT
-  void copyAndNegate        ( const AreaBuf<const T> &other );
-  void subtractAndHalve     ( const AreaBuf<const T> &other );
-#endif
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  void extendBorderPel(unsigned marginX, unsigned marginY);
+#endif
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t gbiIdx);
   void removeWeightHighFreq ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t iGbiWeight);
   void addAvg               ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng );
@@ -173,13 +172,11 @@ typedef AreaBuf<const TCoeff> CCoeffBuf;
 typedef AreaBuf<      MotionInfo>  MotionBuf;
 typedef AreaBuf<const MotionInfo> CMotionBuf;
 
-#if JVET_O0119_BASE_PALETTE_444
 typedef AreaBuf<      TCoeff>  PLTescapeBuf;
 typedef AreaBuf<const TCoeff> CPLTescapeBuf;
 
 typedef AreaBuf<      bool>  PLTtypeBuf;
 typedef AreaBuf<const bool> CPLTtypeBuf;
-#endif
 
 #define SIZE_AWARE_PER_EL_OP( OP, INC )                     \
 if( ( width & 7 ) == 0 )                                    \
@@ -375,49 +372,6 @@ void AreaBuf<T>::subtract( const AreaBuf<const T> &other )
 #undef SUBS_INC
 }
 
-#if !JVET_O0105_ICT
-template<typename T>
-void AreaBuf<T>::copyAndNegate( const AreaBuf<const T> &other )
-{
-  CHECK( width  != other.width,  "Incompatible size" );
-  CHECK( height != other.height, "Incompatible size" );
-
-        T* dest =       buf;
-  const T* subs = other.buf;
-
-#define SUBS_INC        \
-  dest +=       stride; \
-  subs += other.stride; \
-
-#define SUBS_OP( ADDR ) dest[ADDR] = -subs[ADDR]
-
-  SIZE_AWARE_PER_EL_OP( SUBS_OP, SUBS_INC );
-
-#undef SUBS_OP
-#undef SUBS_INC
-}
-
-template<typename T>
-void AreaBuf<T>::subtractAndHalve( const AreaBuf<const T> &other )
-{
-  CHECK( width  != other.width,  "Incompatible size" );
-  CHECK( height != other.height, "Incompatible size" );
-
-        T* dest =       buf;
-  const T* subs = other.buf;
-
-#define SUBS_INC        \
-  dest +=       stride; \
-  subs += other.stride; \
-
-#define SUBS_OP( ADDR ) dest[ADDR] = ( dest[ADDR] - subs[ADDR] ) / 2
-
-  SIZE_AWARE_PER_EL_OP( SUBS_OP, SUBS_INC );
-
-#undef SUBS_OP
-#undef SUBS_INC
-}
-#endif
 
 template<typename T>
 void AreaBuf<T>::copyClip( const AreaBuf<const T> &src, const ClpRng& clpRng )
@@ -579,6 +533,46 @@ void AreaBuf<T>::updateHistogram( std::vector<int32_t>& hist ) const
   }
 }
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+template<typename T>
+void AreaBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
+{
+  T* p = buf;
+  int h = height;
+  int w = width;
+  int s = stride;
+
+  CHECK((w + 2 * marginX) > s, "Size of buffer too small to extend");
+  // do left and right margins
+  for (int y = 0; y < h; y++)
+  {
+    for (int x = 0; x < marginX; x++)
+    {
+      *(p - marginX + x) = p[0];
+      p[w + x] = p[w - 1];
+    }
+    p += s;
+  }
+
+  // p is now the (0,height) (bottom left of image within bigger picture
+  p -= (s + marginX);
+  // p is now the (-margin, height-1)
+  for (int y = 0; y < marginY; y++)
+  {
+    ::memcpy(p + (y + 1) * s, p, sizeof(T) * (w + (marginX << 1)));
+  }
+
+  // p is still (-marginX, height-1)
+  p -= ((h - 1) * s);
+  // p is now (-marginX, 0)
+  for (int y = 0; y < marginY; y++)
+  {
+    ::memcpy(p - (y + 1) * s, p, sizeof(T) * (w + (marginX << 1)));
+  }
+}
+#endif
+
+
 template<typename T>
 void AreaBuf<T>::extendBorderPel( unsigned margin )
 {
@@ -739,13 +733,24 @@ struct UnitBuf
   const AreaBuf<T>& Cr() const { return bufs[2]; }
 
   void fill                 ( const T &val );
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  void copyFrom             ( const UnitBuf<const T> &other, const bool lumaOnly = false, const bool chromaOnly = false );
+#else
   void copyFrom             ( const UnitBuf<const T> &other );
+#endif
   void reconstruct          ( const UnitBuf<const T> &pred, const UnitBuf<const T> &resi, const ClpRngs& clpRngs );
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs, const bool lumaOnly = false, const bool chromaOnly = false );
+#else
   void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs );
+#endif
   void subtract             ( const UnitBuf<const T> &other );
   void addWeightedAvg       ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t gbiIdx = GBI_DEFAULT, const bool chromaOnly = false, const bool lumaOnly = false);
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
   void extendSingleBorderPel();
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  void extendBorderPel(unsigned marginX, unsigned marginY);
+#endif
   void extendBorderPel      ( unsigned margin );
   void removeHighFreq       ( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
                             , const int8_t gbiWeight = g_GbiWeights[GBI_DEFAULT]
@@ -771,11 +776,22 @@ void UnitBuf<T>::fill( const T &val )
 }
 
 template<typename T>
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+void UnitBuf<T>::copyFrom(const UnitBuf<const T> &other, const bool lumaOnly, const bool chromaOnly )
+#else
 void UnitBuf<T>::copyFrom( const UnitBuf<const T> &other )
+#endif
 {
   CHECK( chromaFormat != other.chromaFormat, "Incompatible formats" );
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  CHECK( lumaOnly && chromaOnly, "Not allowed to have both lumaOnly and chromaOnly selected" );
+  const size_t compStart = chromaOnly ? 1 : 0;
+  const size_t compEnd   = lumaOnly ? 1 : (unsigned) bufs.size();
+  for( size_t i = compStart; i < compEnd; i++ )
+#else
   for( unsigned i = 0; i < bufs.size(); i++ )
+#endif
   {
     bufs[i].copyFrom( other.bufs[i] );
   }
@@ -795,11 +811,22 @@ void UnitBuf<T>::subtract( const UnitBuf<const T> &other )
 }
 
 template<typename T>
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+void UnitBuf<T>::copyClip(const UnitBuf<const T> &src, const ClpRngs &clpRngs, const bool lumaOnly, const bool chromaOnly )
+#else
 void UnitBuf<T>::copyClip(const UnitBuf<const T> &src, const ClpRngs& clpRngs)
+#endif
 {
   CHECK( chromaFormat != src.chromaFormat, "Incompatible formats" );
 
+#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
+  CHECK( lumaOnly && chromaOnly, "Not allowed to have both lumaOnly and chromaOnly selected" );
+  const size_t compStart = chromaOnly ? 1 : 0;
+  const size_t compEnd   = lumaOnly ? 1 : bufs.size();
+  for( size_t i = compStart; i < compEnd; i++ )
+#else
   for( unsigned i = 0; i < bufs.size(); i++ )
+#endif
   {
     bufs[i].copyClip( src.bufs[i], clpRngs.comp[i] );
   }
@@ -854,6 +881,17 @@ void UnitBuf<T>::extendSingleBorderPel()
     bufs[i].extendSingleBorderPel();
   }
 }
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+template<typename T>
+void UnitBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
+{
+  for (unsigned i = 0; i < bufs.size(); i++)
+  {
+    bufs[i].extendBorderPel(marginX >> getComponentScaleX(ComponentID(i), chromaFormat), marginY >> getComponentScaleY(ComponentID(i), chromaFormat));
+  }
+}
+#endif
 
 template<typename T>
 void UnitBuf<T>::extendBorderPel( unsigned margin )
@@ -944,7 +982,6 @@ private:
   Pel *m_origin[MAX_NUM_COMPONENT];
 };
 
-#if JVET_O0105_ICT
 struct CompStorage : public PelBuf
 {
   CompStorage () { m_memory = nullptr; }
@@ -965,6 +1002,5 @@ struct CompStorage : public PelBuf
 private:
   Pel* m_memory;
 };
-#endif
 
 #endif

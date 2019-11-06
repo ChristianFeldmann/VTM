@@ -111,56 +111,38 @@ public:
   virtual ~HLSWriter() {}
 
 private:
-#if JVET_O0244_DELTA_POC
   void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
-#else
-  void xCodeRefPicList(const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount);
-#endif
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
+#if  JVET_P01034_PRED_1D_SCALING_LIST
+  void xCodeScalingList         ( const ScalingList* scalingList, uint32_t scalinListId, bool isPredictor);
+#else
   void xCodeScalingList         ( const ScalingList* scalingList, uint32_t sizeId, uint32_t listId);
+#endif
 public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
   void  codeSPS                 ( const SPS* pcSPS );
-#if JVET_O1136_TS_BDPCM_SIGNALLING
   void  codePPS                 ( const PPS* pcPPS, const SPS* pcSPS );
-#else
-  void  codePPS                 ( const PPS* pcPPS );
-#endif
   void  codeAPS                 ( APS* pcAPS );
   void  codeAlfAps              ( APS* pcAPS );
   void  codeLmcsAps             ( APS* pcAPS );
-#if JVET_O0299_APS_SCALINGLIST
   void  codeScalingListAps      ( APS* pcAPS );
-#endif
   void  codeVPS                 ( const VPS* pcVPS );
   void  codeDPS                 ( const DPS* dps );
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
-#if !JVET_N0353_INDEP_BUFF_TIME_SEI
-  void  codeHrdParameters       ( const HRDParameters *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
-#else
   void  codeHrdParameters       ( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
-#endif
 
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
-#else
-  void alfFilter( const AlfParam& alfParam, const bool isChroma );
-#endif
 
 private:
   void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
-#if !JVET_O0491_HLS_CLEANUP
-  void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
-  void truncatedUnaryEqProb( int symbol, int maxSymbol );
-#endif
 };
 
 //! \}

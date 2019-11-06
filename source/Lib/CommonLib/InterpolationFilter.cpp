@@ -94,9 +94,51 @@ const TFilterCoeff InterpolationFilter::m_lumaFilter[LUMA_INTERPOLATION_FILTER_S
   {  0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
 
-#if JVET_O0057_ALTHPELIF
-const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
+#if JVET_P0088_P0353_RPR_FILTERS
+// 1.5x
+const TFilterCoeff InterpolationFilter::m_lumaFilterRPR1[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
+{
+  { -1, -5, 17, 42, 17, -5, -1,  0 },
+  {  0, -5, 15, 41, 19, -5, -1,  0 },
+  {  0, -5, 13, 40, 21, -4, -1,  0 },
+  {  0, -5, 11, 39, 24, -4, -2,  1 },
+  {  0, -5,  9, 38, 26, -3, -2,  1 },
+  {  0, -5,  7, 38, 28, -2, -3,  1 },
+  {  1, -5,  5, 36, 30, -1, -3,  1 },
+  {  1, -4,  3, 35, 32,  0, -4,  1 },
+  {  1, -4,  2, 33, 33,  2, -4,  1 },
+  {  1, -4,  0, 32, 35,  3, -4,  1 },
+  {  1, -3, -1, 30, 36,  5, -5,  1 },
+  {  1, -3, -2, 28, 38,  7, -5,  0 },
+  {  1, -2, -3, 26, 38,  9, -5,  0 },
+  {  1, -2, -4, 24, 39, 11, -5,  0 },
+  {  0, -1, -4, 21, 40, 13, -5,  0 },
+  {  0, -1, -5, 19, 41, 15, -5,  0 }
+};
+
+// 2x
+const TFilterCoeff InterpolationFilter::m_lumaFilterRPR2[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
+{
+  { -4,  2, 20, 28, 20,  2, -4,  0 },
+  { -4,  0, 19, 29, 21,  5, -4, -2 },
+  { -4, -1, 18, 29, 22,  6, -4, -2 },
+  { -4, -1, 16, 29, 23,  7, -4, -2 },
+  { -4, -1, 16, 28, 24,  7, -4, -2 },
+  { -4, -1, 14, 28, 25,  8, -4, -2 },
+  { -3, -3, 14, 27, 26,  9, -3, -3 },
+  { -3, -1, 12, 28, 25, 10, -4, -3 },
+  { -3, -3, 11, 27, 27, 11, -3, -3 },
+  { -3, -4, 10, 25, 28, 12, -1, -3 },
+  { -3, -3,  9, 26, 27, 14, -3, -3 },
+  { -2, -4,  8, 25, 28, 14, -1, -4 },
+  { -2, -4,  7, 24, 28, 16, -1, -4 },
+  { -2, -4,  7, 23, 29, 16, -1, -4 },
+  { -2, -4,  6, 22, 29, 18, -1, -4 },
+  { -2, -4,  5, 21, 29, 19,  0, -4 }
+};
 #endif
+
+const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
 const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
 {
   {  0, 64,  0,  0 },
@@ -132,6 +174,82 @@ const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILT
   {  0,  4, 62, -2 },
   {  0,  2, 63, -1 },
 };
+
+#if JVET_P0088_P0353_RPR_FILTERS
+//1.5x
+const TFilterCoeff InterpolationFilter::m_chromaFilterRPR1[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
+{
+  { 12, 40, 12,  0 },
+  { 11, 40, 13,  0 },
+  { 10, 40, 15, -1 },
+  {  9, 40, 16, -1 },
+  {  8, 40, 17, -1 },
+  {  8, 39, 18, -1 },
+  {  7, 39, 19, -1 },
+  {  6, 38, 21, -1 },
+  {  5, 38, 22, -1 },
+  {  4, 38, 23, -1 },
+  {  4, 37, 24, -1 },
+  {  3, 36, 25,  0 },
+  {  3, 35, 26,  0 },
+  {  2, 34, 28,  0 },
+  {  2, 33, 29,  0 },
+  {  1, 33, 30,  0 },
+  {  1, 31, 31,  1 },
+  {  0, 30, 33,  1 },
+  {  0, 29, 33,  2 },
+  {  0, 28, 34,  2 },
+  {  0, 26, 35,  3 },
+  {  0, 25, 36,  3 },
+  { -1, 24, 37,  4 },
+  { -1, 23, 38,  4 },
+  { -1, 22, 38,  5 },
+  { -1, 21, 38,  6 },
+  { -1, 19, 39,  7 },
+  { -1, 18, 39,  8 },
+  { -1, 17, 40,  8 },
+  { -1, 16, 40,  9 },
+  { -1, 15, 40, 10 },
+  {  0, 13, 40, 11 },
+};
+
+//2x
+const TFilterCoeff InterpolationFilter::m_chromaFilterRPR2[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
+{
+  { 17, 30, 17,  0 },
+  { 17, 30, 18, -1 },
+  { 16, 30, 18,  0 },
+  { 16, 30, 18,  0 },
+  { 15, 30, 18,  1 },
+  { 14, 30, 18,  2 },
+  { 13, 29, 19,  3 },
+  { 13, 29, 19,  3 },
+  { 12, 29, 20,  3 },
+  { 11, 28, 21,  4 },
+  { 10, 28, 22,  4 },
+  { 10, 27, 22,  5 },
+  {  9, 27, 23,  5 },
+  {  9, 26, 24,  5 },
+  {  8, 26, 24,  6 },
+  {  7, 26, 25,  6 },
+  {  7, 25, 25,  7 },
+  {  6, 25, 26,  7 },
+  {  6, 24, 26,  8 },
+  {  5, 24, 26,  9 },
+  {  5, 23, 27,  9 },
+  {  5, 22, 27, 10 },
+  {  4, 22, 28, 10 },
+  {  4, 21, 28, 11 },
+  {  3, 20, 29, 12 },
+  {  3, 19, 29, 13 },
+  {  3, 19, 29, 13 },
+  {  2, 18, 30, 14 },
+  {  1, 18, 30, 15 },
+  {  0, 18, 30, 16 },
+  {  0, 18, 30, 16 },
+  { -1, 18, 30, 17 }
+};
+#endif
 
 const TFilterCoeff InterpolationFilter::m_bilinearFilter[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_BILINEAR] =
 {
@@ -213,9 +331,7 @@ InterpolationFilter::InterpolationFilter()
   m_filterCopy[1][0]   = filterCopy<true, false>;
   m_filterCopy[1][1]   = filterCopy<true, true>;
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
   m_weightedTriangleBlk = xWeightedTriangleBlk;
-#endif
 }
 
 
@@ -580,55 +696,71 @@ void InterpolationFilter::filterVer(const ClpRng& clpRng, Pel const *src, int sr
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-#if JVET_O0057_ALTHPELIF
 void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR, bool useAltHpelIf)
-#else
-void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
-#endif
 {
+#if JVET_P0088_P0353_RPR_FILTERS
+  if( frac == 0 && nFilterIdx < 2 )
+#else
   if( frac == 0 )
+#endif
   {
-    m_filterCopy[true][isLast](clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
+    m_filterCopy[true][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR );
   }
   else if( isLuma( compID ) )
   {
     CHECK( frac < 0 || frac >= LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
     if( nFilterIdx == 1 )
     {
-      filterHor<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
+      filterHor<NTAPS_BILINEAR>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR );
     }
-#if JVET_O1164_RPR
     else if( nFilterIdx == 2 )
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
     }
+#if JVET_P0088_P0353_RPR_FILTERS
+    else if( nFilterIdx == 3 )
+    {
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilterRPR1[frac], biMCForDMVR );
+    }
+    else if( nFilterIdx == 4 )
+    {
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
+    }
 #endif
+    else if( frac == 8 && useAltHpelIf )
+    {
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR );
+    }
+    else if( ( width == 4 && height == 4 ) || ( width == 4 && height == ( 4 + NTAPS_LUMA - 1 ) ) )
+    {
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
+    }
     else
     {
-#if JVET_O0057_ALTHPELIF
-      if (frac == 8 && useAltHpelIf)
-      {
-        filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR);
-      }
-      else
-#endif
-      {
-      if ((width == 4 && height == 4) || (width == 4 && height == (4 + NTAPS_LUMA - 1)))
-      {
-        filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter4x4[frac], biMCForDMVR);
-      }
-      else
-      {
-      filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac], biMCForDMVR);
-      }
+      filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilter[frac], biMCForDMVR );
+
     }
-  }
   }
   else
   {
     const uint32_t csx = getComponentScaleX( compID, fmt );
     CHECK( frac < 0 || csx >= 2 || ( frac << ( 1 - csx ) ) >= CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
-    filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )], biMCForDMVR);
+#if JVET_P0088_P0353_RPR_FILTERS
+    if( nFilterIdx == 3 )
+    {
+      filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilterRPR1[frac << ( 1 - csx )], biMCForDMVR );
+    }
+    else if( nFilterIdx == 4 )
+    {
+      filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilterRPR2[frac << ( 1 - csx )], biMCForDMVR );
+    }
+    else
+    {
+      filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )], biMCForDMVR );
+    }
+#else
+    filterHor<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_chromaFilter[frac << ( 1 - csx )], biMCForDMVR );
+#endif
   }
 }
 
@@ -649,59 +781,73 @@ void InterpolationFilter::filterHor( const ComponentID compID, Pel const *src, i
  * \param  fmt        Chroma format
  * \param  bitDepth   Bit depth
  */
-#if JVET_O0057_ALTHPELIF
 void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR, bool useAltHpelIf)
-#else
-void InterpolationFilter::filterVer( const ComponentID compID, Pel const *src, int srcStride, Pel *dst, int dstStride, int width, int height, int frac, bool isFirst, bool isLast, const ChromaFormat fmt, const ClpRng& clpRng, int nFilterIdx, bool biMCForDMVR)
-#endif
 {
+#if JVET_P0088_P0353_RPR_FILTERS
+  if( frac == 0 && nFilterIdx < 2 )
+#else
   if( frac == 0 )
+#endif
   {
-    m_filterCopy[isFirst][isLast](clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR);
+    m_filterCopy[isFirst][isLast]( clpRng, src, srcStride, dst, dstStride, width, height, biMCForDMVR );
   }
   else if( isLuma( compID ) )
   {
     CHECK( frac < 0 || frac >= LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
-    if (nFilterIdx == 1)
+    if( nFilterIdx == 1 )
     {
-      filterVer<NTAPS_BILINEAR>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR);
+      filterVer<NTAPS_BILINEAR>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_bilinearFilterPrec4[frac], biMCForDMVR );
     }
-#if JVET_O1164_RPR
     else if( nFilterIdx == 2 )
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
     }
+#if JVET_P0088_P0353_RPR_FILTERS
+    else if( nFilterIdx == 3 )
+    {
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilterRPR1[frac], biMCForDMVR );
+    }
+    else if( nFilterIdx == 4 )
+    {
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
+    }
 #endif
+    else if( frac == 8 && useAltHpelIf )
+    {
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR );
+    }
+    else if( width == 4 && height == 4 )
+    {
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR );
+    }
     else
     {
-#if JVET_O0057_ALTHPELIF
-      if (frac == 8 && useAltHpelIf)
-      {
-        filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR);
-      }
-      else
-#endif
-      {
-      if (width == 4 && height == 4)
-      {
-        filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter4x4[frac], biMCForDMVR);
-      }
-      else
-      {
-      filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac], biMCForDMVR);
-      }
+      filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilter[frac], biMCForDMVR );
     }
-  }
   }
   else
   {
     const uint32_t csy = getComponentScaleY( compID, fmt );
     CHECK( frac < 0 || csy >= 2 || ( frac << ( 1 - csy ) ) >= CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS, "Invalid fraction" );
-    filterVer<NTAPS_CHROMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << (1 - csy)], biMCForDMVR);
+#if JVET_P0088_P0353_RPR_FILTERS
+    if( nFilterIdx == 3 )
+    {
+      filterVer<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilterRPR1[frac << ( 1 - csy )], biMCForDMVR );
+    }
+    else if( nFilterIdx == 4 )
+    {
+      filterVer<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilterRPR2[frac << ( 1 - csy )], biMCForDMVR );
+    }
+    else
+    {
+      filterVer<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << ( 1 - csy )], biMCForDMVR );
+    }
+#else
+    filterVer<NTAPS_CHROMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_chromaFilter[frac << ( 1 - csy )], biMCForDMVR );
+#endif
   }
 }
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
 {
   Pel*    dst        = predDst .get(compIdx).buf;
@@ -718,33 +864,64 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
   const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
   const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
   const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+  int32_t stepX = 1 << getComponentScaleX(compIdx, pu.chromaFormat);
+  int32_t stepY = 1 << getComponentScaleY(compIdx, pu.chromaFormat);
 
+  int32_t widthY = width << getComponentScaleX(compIdx, pu.chromaFormat);
+  int32_t heightY = height << getComponentScaleY(compIdx, pu.chromaFormat);
+
+  int32_t ratioWH = (widthY > heightY) ? (widthY / heightY) : 1;
+  int32_t ratioHW = (widthY > heightY) ? 1 : (heightY / widthY);
+
+  int32_t weightedLength = 7;
+  int32_t weightedStartPos = (splitDir == 0) ? (0 - (weightedLength >> 1) * ratioWH) : (widthY - ((weightedLength + 1) >> 1) * ratioWH);
+#else
   const int32_t ratioWH           = (width > height) ? (width / height) : 1;
   const int32_t ratioHW           = (width > height) ? 1 : (height / width);
 
   const bool    longWeight        = (compIdx == COMPONENT_Y);
   const int32_t weightedLength    = longWeight ? 7 : 3;
         int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
+#endif       
         int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
         int32_t weightedPosoffset = ( splitDir == 0 ) ? ratioWH : -ratioWH;
 
         Pel     tmpPelWeighted;
         int32_t weightIdx;
         int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
-
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+  for (y = 0; y < heightY; y += ratioHW)
+  {
+    if (y % stepY != 0)
+    {
+      weightedStartPos += weightedPosoffset;
+      weightedEndPos += weightedPosoffset;
+      continue;
+    }
+    for (tmpY = ratioHW; tmpY > 0; tmpY -= stepY)
+    {
+      for (x = 0; x < weightedStartPos; x += stepX)
+      {
+#else
   for( y = 0; y < height; y+= ratioHW )
   {
     for( tmpY = ratioHW; tmpY > 0; tmpY-- )
     {
       for( x = 0; x < weightedStartPos; x++ )
       {
+#endif
         *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src1 : *src0) + offsetDefault, shiftDefault), clipRng );
         src0++;
         src1++;
       }
 
       tmpWeightedStart = std::max((int32_t)0, weightedStartPos);
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      tmpWeightedEnd = std::min(weightedEndPos, (int32_t)(widthY - 1));
+#else
       tmpWeightedEnd   = std::min(weightedEndPos, (int32_t)(width - 1));
+#endif
       weightIdx        = 1;
       if( weightedStartPos < 0 )
       {
@@ -752,17 +929,35 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
       }
       for( x = tmpWeightedStart; x <= tmpWeightedEnd; x+= ratioWH )
       {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+        if (x % stepX != 0)
+        {
+          weightIdx++;
+          continue;
+        }
+
+        for (tmpX = ratioWH; tmpX > 0; tmpX -= stepX)
+        {
+          tmpPelWeighted = Clip3(1, 7, weightIdx);
+#else
         for( tmpX = ratioWH; tmpX > 0; tmpX-- )
         {
           tmpPelWeighted = Clip3( 1, 7, longWeight ? weightIdx : (weightIdx * 2));
+#endif
           tmpPelWeighted = splitDir ? ( 8 - tmpPelWeighted ) : tmpPelWeighted;
           *dst++         = ClipPel( rightShift( (tmpPelWeighted*(*src0++) + ((8 - tmpPelWeighted) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
         }
         weightIdx ++;
       }
 
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      int32_t start = ((weightedEndPos + 1) % stepX != 0) ? (weightedEndPos + 2) : (weightedEndPos + 1);
+      for (x = start; x < widthY; x += stepX)
+      {
+#else
       for( x = weightedEndPos + 1; x < width; x++ )
       {
+#endif
         *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src0 : *src1) + offsetDefault, shiftDefault ), clipRng );
         src0++;
         src1++;
@@ -781,7 +976,6 @@ void InterpolationFilter::weightedTriangleBlk(const PredictionUnit &pu, const ui
 {
   m_weightedTriangleBlk(pu, width, height, compIdx, splitDir, predDst, predSrc0, predSrc1);
 }
-#endif
 
 /**
  * \brief turn on SIMD fuc

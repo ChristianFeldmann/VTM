@@ -43,9 +43,7 @@
 
 #include "CommonLib/CommonDef.h"
 #include "CommonLib/CodingStructure.h"
-#if JVET_O0592_ENC_ME_IMP
 #include "InterSearch.h"
-#endif
 
 #include <typeinfo>
 #include <vector>
@@ -63,12 +61,7 @@ enum EncTestModeType
   ETM_AFFINE,
   ETM_MERGE_TRIANGLE,
   ETM_INTRA,
-#if !JVET_O0525_REMOVE_PCM
-  ETM_IPCM,
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   ETM_PALETTE,
-#endif
   ETM_SPLIT_QT,
   ETM_SPLIT_BT_H,
   ETM_SPLIT_BT_V,
@@ -117,9 +110,7 @@ struct EncTestMode
   EncTestModeOpts opts;
   int             qp;
   bool            lossless;
-#if JVET_O0502_ISP_CLEANUP
   double          maxCostAllowed;
-#endif
 };
 
 
@@ -210,6 +201,26 @@ struct ComprCUCtx
 #endif
     , bestCostWithoutSplitFlags( MAX_DOUBLE )
     , bestCostMtsFirstPassNoIsp( MAX_DOUBLE )
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    , bestCostIsp   ( MAX_DOUBLE )
+    , ispWasTested  ( false )
+    , bestPredModeDCT2
+                    ( UINT8_MAX )
+    , relatedCuIsValid
+                    ( false )
+    , ispPredModeVal( 0 )
+    , bestDCT2NonISPCost
+                    ( MAX_DOUBLE )
+    , bestNonDCT2Cost
+                    ( MAX_DOUBLE )
+    , bestISPIntraMode
+                    ( UINT8_MAX )
+    , mipFlag       ( false )
+    , ispMode       ( NOT_INTRA_SUBPARTITIONS )
+    , ispLfnstIdx   ( 0 )
+    , stopNonDCT2Transforms
+                    ( false )
+#endif
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
     partIdx = ( ( cuX << 8 ) | cuY );
@@ -242,6 +253,20 @@ struct ComprCUCtx
 #endif
   double                            bestCostWithoutSplitFlags;
   double                            bestCostMtsFirstPassNoIsp;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  double                            bestCostIsp;
+  bool                              ispWasTested;
+  uint16_t                          bestPredModeDCT2;
+  bool                              relatedCuIsValid;
+  uint16_t                          ispPredModeVal;
+  double                            bestDCT2NonISPCost;
+  double                            bestNonDCT2Cost;
+  uint8_t                           bestISPIntraMode;
+  bool                              mipFlag;
+  uint8_t                           ispMode;
+  uint8_t                           ispLfnstIdx;
+  bool                              stopNonDCT2Transforms;
+#endif
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
   template<typename T> void set( int ft, T val )      { extraFeatures [ft] = int64_t( val ); }
@@ -269,13 +294,9 @@ protected:
 #if ENABLE_SPLIT_PARALLELISM
   int                   m_runNextInParallel;
 #endif
-#if JVET_O0592_ENC_ME_IMP
   InterSearch*          m_pcInterSearch;
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
   bool                  m_doPlt;
-#endif
 
 public:
 
@@ -333,13 +354,32 @@ public:
   void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
   double getMtsFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp;         }
   void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
-#if JVET_O0592_ENC_ME_IMP
-  void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  double getIspCost                   ()                  const { return m_ComprCUCtxList.back().bestCostIsp; }
+  void   setIspCost                   ( double val )            { m_ComprCUCtxList.back().bestCostIsp = val; }
+  bool   getISPWasTested              ()                  const { return m_ComprCUCtxList.back().ispWasTested; }
+  void   setISPWasTested              ( bool val )              { m_ComprCUCtxList.back().ispWasTested = val; }
+  void   setBestPredModeDCT2          ( uint16_t val )          { m_ComprCUCtxList.back().bestPredModeDCT2 = val; }
+  uint16_t getBestPredModeDCT2        ()                  const { return m_ComprCUCtxList.back().bestPredModeDCT2; }
+  bool   getRelatedCuIsValid          ()                  const { return m_ComprCUCtxList.back().relatedCuIsValid; }
+  void   setRelatedCuIsValid          ( bool val )              { m_ComprCUCtxList.back().relatedCuIsValid = val; }
+  uint16_t getIspPredModeValRelCU     ()                  const { return m_ComprCUCtxList.back().ispPredModeVal; }
+  void   setIspPredModeValRelCU       ( uint16_t val )          { m_ComprCUCtxList.back().ispPredModeVal = val; }
+  double getBestDCT2NonISPCostRelCU   ()                  const { return m_ComprCUCtxList.back().bestDCT2NonISPCost; }
+  void   setBestDCT2NonISPCostRelCU   ( double val )            { m_ComprCUCtxList.back().bestDCT2NonISPCost = val; }
+  double getBestNonDCT2Cost           ()                  const { return m_ComprCUCtxList.back().bestNonDCT2Cost; }
+  void   setBestNonDCT2Cost           ( double val )            { m_ComprCUCtxList.back().bestNonDCT2Cost = val; }
+  uint8_t getBestISPIntraModeRelCU    ()                  const { return m_ComprCUCtxList.back().bestISPIntraMode; }
+  void   setBestISPIntraModeRelCU     ( uint8_t val )           { m_ComprCUCtxList.back().bestISPIntraMode = val; }
+  void   setMIPFlagISPPass            ( bool val )              { m_ComprCUCtxList.back().mipFlag = val; }
+  void   setISPMode                   ( uint8_t val )           { m_ComprCUCtxList.back().ispMode = val; }
+  void   setISPLfnstIdx               ( uint8_t val )           { m_ComprCUCtxList.back().ispLfnstIdx = val; }
+  bool   getStopNonDCT2Transforms     ()                  const { return m_ComprCUCtxList.back().stopNonDCT2Transforms; }
+  void   setStopNonDCT2Transforms     ( bool val )              { m_ComprCUCtxList.back().stopNonDCT2Transforms = val; }
 #endif
-#if JVET_O0119_BASE_PALETTE_444
+  void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
   void   setPltEnc                    ( bool b )                { m_doPlt = b; }
   bool   getPltEnc()                                      const { return m_doPlt; }
-#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -399,6 +439,14 @@ struct CodedCUInfo
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
   uint8_t GBiIdx;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  uint16_t ispPredModeVal;
+  double   bestDCT2NonISPCost;
+  double   bestCost;
+  double   bestNonDCT2Cost;
+  bool     relatedCuIsValid;
+  uint8_t  bestISPIntraMode;
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 
@@ -481,8 +529,8 @@ private:
   BestEncodingInfo ***m_bestEncInfo[MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
-#if JVET_O0119_BASE_PALETTE_444
   bool               *m_runType;
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel                *m_runLength;
 #endif
   CodingStructure     m_dummyCS;

@@ -3564,7 +3564,7 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
 
 void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
 {
-  int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+  int chIdx = cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
 #if JVET_P1026_ISP_LFNST_COMBINATION
   if ( (cu.ispMode && !CU::canUseLfnstWithISP( cu, cu.chType ) ) ||
 #else
@@ -4283,6 +4283,7 @@ void CABACReader::mip_flag( CodingUnit& cu )
     cu.mipFlag = false;
     return;
   }
+
 #if !JVET_P0803_COMBINED_MIP_CLEANUP
   if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
   {

@@ -1028,6 +1028,7 @@ void CABACWriter::intra_luma_pred_modes( const CodingUnit& cu )
     return;
   }
   extend_ref_line( cu );
+
   isp_mode( cu );
 
   const int numMPMs   = NUM_MOST_PROBABLE_MODES;
@@ -3256,7 +3257,7 @@ void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID comp
 
 void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 {
-  int chIdx = CS::isDualITree( *cu.cs ) && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
+  int chIdx = cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
 #if JVET_P1026_ISP_LFNST_COMBINATION
   if( ( cu.ispMode && !CU::canUseLfnstWithISP( cu, cu.chType ) ) ||
 #else

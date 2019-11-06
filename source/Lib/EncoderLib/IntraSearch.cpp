@@ -1113,7 +1113,9 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         uiRdModeList[i] = rdModeListTemp[i];
       }
     }
-#endif     // just to be sure
+#endif
+
+    // just to be sure
     numModesForFullRD = ( int ) uiRdModeList.size();
     TUIntraSubPartitioner subTuPartitioner( partitioner );
 #if JVET_P1026_ISP_LFNST_COMBINATION
@@ -6135,7 +6137,6 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
         CHECK(leftIntraMode != candidate.modeId || rightIntraMode != candidate.modeId, "wrong intra mode and lfnstIdx values!");
         numSubPartsRefMode = m_ispTestedModes[refLfnstIdx].getNumCompletedSubParts((ISPType)candidate.ispMod, candidate.modeId);
         CHECK(numSubPartsRefMode <= 0, "Wrong value of the number of subpartitions completed!");
-
       }
       else
       {

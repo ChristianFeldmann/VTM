@@ -1887,6 +1887,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             if ((!validCandRet || (cu.ispMode && cu.firstTU->cbf[COMPONENT_Y] == 0)))
 #else
             validCandRet = m_pcIntraSearch->estIntraPredLumaQT( cu, partitioner, bestCostSoFar, mtsFlag, startMTSIdx[ trGrpIdx ], endMTSIdx[ trGrpIdx ], ( trGrpIdx > 0 ) );
+            if (sps.getUseLFNST() && (!validCandRet || (cu.ispMode && cu.firstTU->cbf[COMPONENT_Y] == 0)))
 #endif
             {
               continue;

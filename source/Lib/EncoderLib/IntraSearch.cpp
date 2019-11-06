@@ -1145,68 +1145,21 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       {
         continue;
       }
-#endif
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+
       if (mode < 0 || (isSecondColorSpace && m_savedBDPCMModeFirstColorSpace[m_savedRdModeIdx][mode]))
       {
         cu.bdpcmMode = mode < 0 ? -mode : m_savedBDPCMModeFirstColorSpace[m_savedRdModeIdx][mode];
-#if JVET_P0803_COMBINED_MIP_CLEANUP
-        uiOrgMode = ModeInfo(false, false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX);
-#else
-        uiOrgMode = ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX);
-#endif
-      }
-      else
-      {
-        cu.bdpcmMode = 0;
-        uiOrgMode = uiRdModeList[mode];
-      }
-      if (!cu.bdpcmMode && uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
-      {
-        if (mode == numNonISPModes) // the list needs to be sorted only once
-        {
-#if JVET_P1026_ISP_LFNST_COMBINATION
-          if (m_pcEncCfg->getUseFastISP())
-          {
-            m_modeCtrl->setBestPredModeDCT2(uiBestPUMode.modeId);
-          }
-          if (!xSortISPCandList(bestCurrentCost, csBest->cost, uiBestPUMode))
-            break;
-#else
-          xSortISPCandList(bestCurrentCost, csBest->cost);
-#endif
-        }
-        xGetNextISPMode(uiRdModeList[mode], (mode > 0 ? &uiRdModeList[mode - 1] : nullptr), Size(width, height));
-        if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
-          continue;
-#if JVET_P1026_ISP_LFNST_COMBINATION
-        cu.lfnstIdx = m_curIspLfnstIdx;
-#endif
-        uiOrgMode = uiRdModeList[mode];
-      }
-      cu.mipFlag = uiOrgMode.mipFlg;
-#if JVET_P0803_COMBINED_MIP_CLEANUP
-      pu.mipTransposedFlag = uiOrgMode.mipTrFlg;
-#endif
-      cu.ispMode = uiOrgMode.ispMod;
-      pu.multiRefIdx = uiOrgMode.mRefId;
-      pu.intraDir[CHANNEL_TYPE_LUMA] = uiOrgMode.modeId;
-
-      CHECK(cu.mipFlag&& pu.multiRefIdx, "Error: combination of MIP and MRL not supported");
-      CHECK(pu.multiRefIdx && (pu.intraDir[0] == PLANAR_IDX), "Error: combination of MRL and Planar mode not supported");
-      CHECK(cu.ispMode&& cu.mipFlag, "Error: combination of ISP and MIP not supported");
-      CHECK(cu.ispMode&& pu.multiRefIdx, "Error: combination of ISP and MRL not supported");
-      CHECK(cu.ispMode&& cu.colorTransform, "Error: combination of ISP and ACT not supported");
 #else
       if ( mode < 0 )
       {
         cu.bdpcmMode = -mode;
-
+#endif
 #if JVET_P0803_COMBINED_MIP_CLEANUP
         uiOrgMode = ModeInfo( false, false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX );
 #else
         uiOrgMode = ModeInfo(false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX);
 #endif
+#if !JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         cu.mipFlag                     = uiOrgMode.mipFlg;
 #if JVET_P0803_COMBINED_MIP_CLEANUP
         pu.mipTransposedFlag           = uiOrgMode.mipTrFlg;
@@ -1214,18 +1167,25 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         cu.ispMode                     = uiOrgMode.ispMod;
         pu.multiRefIdx                 = uiOrgMode.mRefId;
         pu.intraDir[CHANNEL_TYPE_LUMA] = uiOrgMode.modeId;
+#endif
       }
       else
       {
         cu.bdpcmMode = 0;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+        uiOrgMode = uiRdModeList[mode];
+      }
+      if (!cu.bdpcmMode && uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
+#else      
         if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
+#endif
         {
           if (mode == numNonISPModes) // the list needs to be sorted only once
           {
 #if JVET_P1026_ISP_LFNST_COMBINATION
             if (m_pcEncCfg->getUseFastISP())
             {
-              m_modeCtrl->setBestPredModeDCT2( uiBestPUMode.modeId );
+              m_modeCtrl->setBestPredModeDCT2(uiBestPUMode.modeId);
             }
             if (!xSortISPCandList(bestCurrentCost, csBest->cost, uiBestPUMode))
               break;
@@ -1239,8 +1199,13 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 #if JVET_P1026_ISP_LFNST_COMBINATION
           cu.lfnstIdx = m_curIspLfnstIdx;
 #endif
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
+          uiOrgMode = uiRdModeList[mode];
+        }
+#else
         }
         uiOrgMode = uiRdModeList[mode];
+#endif
       cu.mipFlag                     = uiOrgMode.mipFlg;
 #if JVET_P0803_COMBINED_MIP_CLEANUP
       pu.mipTransposedFlag           = uiOrgMode.mipTrFlg;
@@ -1253,10 +1218,12 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       CHECK(pu.multiRefIdx && (pu.intraDir[0] == PLANAR_IDX), "Error: combination of MRL and Planar mode not supported");
       CHECK(cu.ispMode && cu.mipFlag, "Error: combination of ISP and MIP not supported");
       CHECK(cu.ispMode && pu.multiRefIdx, "Error: combination of ISP and MRL not supported");
-      }
-#endif
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+      CHECK(cu.ispMode&& cu.colorTransform, "Error: combination of ISP and ACT not supported");
+
       pu.intraDir[CHANNEL_TYPE_CHROMA] = cu.colorTransform ? DM_CHROMA_IDX : pu.intraDir[CHANNEL_TYPE_CHROMA];
+#else
+      }
 #endif
 
       // set context models

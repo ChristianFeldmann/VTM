@@ -322,6 +322,7 @@ const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
   {   4, },
 });
 
+#if JVET_P0615_CHROMAMODE_CLEANUP
 const CtxSet ContextSetCfg::CclmModeIdx = ContextSetCfg::addCtxSet
 ({
   {  27, },
@@ -337,6 +338,15 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   {  34, },
   {   5, },
 });
+#else
+const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
+({
+  {  25, },
+  {  33, },
+  {  19, },
+  {   6, },
+});
+#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({
@@ -356,10 +366,17 @@ const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
 ({
+#if JVET_P0042_FIX_INTER_DIR_CTX
   {  14,   6,   5,   4,   3,  40, },
   {   7,   6,   5,   4,  11,  40, },
   { CNU, CNU, CNU, CNU, CNU, CNU, },
   {   0,   0,   1,   4,   1,   0, },
+#else
+  {   6,  13,   5,   4,  25, },
+  {   7,   6,   5,   4,  33, },
+  { CNU, CNU, CNU, CNU, CNU, },
+  {   0,   0,   1,   4,   0, },
+#endif
 });
 
 const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
@@ -443,6 +460,7 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {   7,  19,   5,   7, },
     {   5,   1,   8,   9, },
   }),
+#if JVET_P0059_CHROMA_BDPCM
   ContextSetCfg::addCtxSet
   ({
     {  25, CNU, },
@@ -457,6 +475,22 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {  33,  28, CNU, },
     {   2,   1, DWS, },
   })
+#else
+  ContextSetCfg::addCtxSet
+  ({
+    {  25, },
+    {  25, },
+    {  12, },
+    {   5, },
+  }),
+  ContextSetCfg::addCtxSet
+  ({
+    {   9,  44, },
+    {  25,  29, },
+    {  33,  21, },
+    {   2,   1, },
+  })
+#endif
 };
 
 const CtxSet ContextSetCfg::SigCoeffGroup[] =
@@ -651,10 +685,17 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
+#if JVET_P0350_LFNST_IDX_CTX
   {  52,  37,  33, },
   {  45,  45,  18, },
   { CNU,  52,  33, },
   {   9,   9,   5, },
+#else
+  {  45,  37, },
+  {  38,  45, },
+  { CNU,  45, },
+  {   8,   8, },
+#endif
 });
 
 const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet
@@ -715,10 +756,17 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
 ({
+#if JVET_P0058_CHROMA_TS
   {  37, CNU, CNU, CNU, CNU, CNU,  25,  25,  27,   0, CNU,  17, },
   {  30, CNU, CNU, CNU, CNU, CNU,  25,  40,  27,   0, CNU,  17, },
   {  13, CNU, CNU, CNU, CNU, CNU,  25,   0,  35,   0, CNU,   1, },
   {   8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS,   1, },
+#else
+  {  29, CNU, CNU, CNU, CNU, CNU,  33,  18,  27,   0, CNU, },
+  {  29, CNU, CNU, CNU, CNU, CNU,  18,  33,  27,   0, CNU, },
+  {  20, CNU, CNU, CNU, CNU, CNU,  33,   0,  42,   0, CNU, },
+  {   8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS, },
+#endif
 });
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
@@ -808,6 +856,16 @@ const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
   {  28,  28, },
   {   0,   0, },
 });
+
+#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
+const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
+({
+  {  58, },
+  {  50, },
+  {  31, },
+  {   0, },
+});
+#endif
 
 const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 ({

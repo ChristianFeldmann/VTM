@@ -209,7 +209,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_HLSWriter            = pcEncLib->getHLSWriter();
   m_pcLoopFilter         = pcEncLib->getLoopFilter();
   m_pcSAO                = pcEncLib->getSAO();
-  m_pcALF = pcEncLib->getALF();
+  m_pcALF                = pcEncLib->getALF();
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
   ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
   ::memset(m_totalCoded, 0, sizeof(m_totalCoded));

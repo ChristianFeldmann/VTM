@@ -58,6 +58,10 @@
 #include <chrono>
 #endif
 
+#if JVET_N0278_FIXES
+class EncAppCommon;
+#endif
+
 //! \ingroup EncoderApp
 //! \{
 
@@ -74,10 +78,10 @@ private:
   VideoIOYuv        m_cVideoIOYuvInputFile;       ///< input YUV file
   VideoIOYuv        m_cVideoIOYuvReconFile;       ///< output reconstruction file
   int               m_iFrameRcvd;                 ///< number of received frames
-  uint32_t              m_essentialBytes;
-  uint32_t              m_totalBytes;
+  uint32_t          m_essentialBytes;
+  uint32_t          m_totalBytes;
 #if JVET_N0278_FIXES
-  static fstream    m_bitstream;
+  fstream&          m_bitstream;
 #else
   fstream           m_bitstream;
 #endif
@@ -118,7 +122,11 @@ private:
 #endif
 
 public:
+#if JVET_N0278_FIXES
+  EncApp( EncAppCommon* encAppCommon );
+#else
   EncApp();
+#endif
   virtual ~EncApp();
 
 #if JVET_N0278_FIXES

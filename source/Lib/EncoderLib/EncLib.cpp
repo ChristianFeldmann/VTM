@@ -34,7 +34,6 @@
 /** \file     EncLib.cpp
     \brief    encoder class
 */
-
 #include "EncLib.h"
 
 #include "EncModeCtrl.h"
@@ -47,6 +46,9 @@
 #if ENABLE_SPLIT_PARALLELISM
 #include <omp.h>
 #endif
+#if JVET_N0278_FIXES
+#include "../App/EncoderApp/EncAppCommon.h"
+#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -56,16 +58,15 @@
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-PicList EncLib::m_cListPic;
-ParameterSetMap<SPS> EncLib::m_spsMap( MAX_NUM_SPS );
-ParameterSetMap<PPS> EncLib::m_ppsMap( MAX_NUM_PPS );
-ParameterSetMap<APS> EncLib::m_apsMap( MAX_NUM_APS * MAX_NUM_APS_TYPE );
-#endif
-
-EncLib::EncLib()
-#if JVET_N0278_FIXES
-  : m_AUWriterIf( nullptr )
+EncLib::EncLib( EncAppCommon* encAppCommon )
+  : m_cListPic( encAppCommon->getPictureBuffer() )
+  , m_cEncALF( encAppCommon->getApsIdStart() )
+  , m_spsMap( encAppCommon->getSpsMap() )
+  , m_ppsMap( encAppCommon->getPpsMap() )
+  , m_apsMap( encAppCommon->getApsMap() )
+  , m_AUWriterIf( nullptr )
 #else
+EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
   , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)

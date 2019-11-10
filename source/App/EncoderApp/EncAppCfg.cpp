@@ -3770,7 +3770,7 @@ void EncAppCfg::xPrintParameter()
 
   if( m_rprEnabled )
   {
-    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
+    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d ", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
   }
   else
   {

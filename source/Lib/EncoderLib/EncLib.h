@@ -58,6 +58,10 @@
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
 
+#if JVET_N0278_FIXES
+class EncAppCommon;
+#endif
+
 //! \ingroup EncoderLib
 //! \{
 
@@ -72,9 +76,9 @@ private:
   // picture
   int                       m_iPOCLast;                           ///< time index (POC)
   int                       m_iNumPicRcvd;                        ///< number of received pictures
-  uint32_t                      m_uiNumAllPicCoded;                   ///< number of coded pictures
+  uint32_t                  m_uiNumAllPicCoded;                   ///< number of coded pictures
 #if JVET_N0278_FIXES
-  static PicList            m_cListPic;                           ///< dynamic list of pictures
+  PicList&                  m_cListPic;                           ///< dynamic list of pictures
   int                       m_layerId;
 #else
   PicList                   m_cListPic;                           ///< dynamic list of pictures
@@ -120,9 +124,9 @@ private:
 #endif
   // SPS
 #if JVET_N0278_FIXES
-  static ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
-  static ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
-  static ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
+  ParameterSetMap<SPS>&     m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
+  ParameterSetMap<PPS>&     m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
+  ParameterSetMap<APS>&     m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
 #else
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
@@ -161,7 +165,7 @@ private:
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 #if JVET_N0278_FIXES
-  int  m_picIdInGOP;
+  int                       m_picIdInGOP;
 #endif
 
 public:
@@ -187,7 +191,11 @@ protected:
   void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:
+#if JVET_N0278_FIXES
+  EncLib( EncAppCommon* encAppCommon );
+#else
   EncLib();
+#endif
   virtual ~EncLib();
 
 #if JVET_N0278_FIXES

@@ -38,6 +38,8 @@
 #include "Picture.h"
 #include "SEI.h"
 #include "ChromaFormat.h"
+#include "UnitTools.h"
+#include "PictureInternals.h"
 #if ENABLE_WPP_PARALLELISM
 #if ENABLE_WPP_STATIC_LINK
 #include <atomic>
@@ -1075,6 +1077,45 @@ void Picture::finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcs
     m_ctuNums = cs->pcv->sizeInCtus;
     m_spliceIdx = new int[m_ctuNums];
     memset(m_spliceIdx, 0, m_ctuNums * sizeof(int));
+  }
+}
+
+void Picture::saveInternals()
+{
+  internalsCUData.clear();
+  CodingStructure& codingStructure = *cs;
+  const PreCalcValues& pcv = *cs->pcv;
+  for (int y = 0; y < pcv.heightInCtus; y++)
+  {
+    for (int x = 0; x < pcv.widthInCtus; x++)
+    {
+      const UnitArea ctuArea(pcv.chrFormat, Area(x << pcv.maxCUWidthLog2, y << pcv.maxCUHeightLog2, pcv.maxCUWidth, pcv.maxCUWidth));
+      for (const CodingUnit &cu : cs->traverseCUs(CS::getArea(codingStructure, ctuArea, CH_L), CH_L))
+      {
+        InternalsCUData data;
+        const auto area = cu.Y();
+        data.x = int(area.x);
+        data.y = int(area.y);
+        data.width = uint8_t(area.width);
+        data.height = uint8_t(area.height);
+        switch (cu.predMode)
+        {
+        case MODE_INTER:
+          data.predMode = INTERNALS_MODE_INTER; break;
+        case MODE_INTRA:
+          data.predMode = INTERNALS_MODE_INTRA; break;
+        case MODE_IBC:
+          data.predMode = INTERNALS_MODE_IBC; break;
+        case MODE_PLT:
+          data.predMode = INTERNALS_MODE_PLT; break;
+        default:
+          data.predMode = INTERNALS_NUMBER_OF_PREDICTION_MODES;
+        }
+        data.depth = cu.depth;
+        data.qp = cu.qp;
+        internalsCUData.push_back(data);
+      }
+    }
   }
 }
 

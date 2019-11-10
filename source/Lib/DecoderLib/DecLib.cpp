@@ -692,6 +692,12 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
   rpcListPic          = &m_cListPic;
   m_bFirstSliceInPicture  = true; // TODO: immer true? hier ist irgendwas faul
 
+  const bool copyInternals = true; // TODO: Make this configuratble through the API
+  if (copyInternals)
+  {
+    m_pcPic->saveInternals();
+  }
+
   m_pcPic->destroyTempBuffers();
   m_pcPic->cs->destroyCoeffs();
   m_pcPic->cs->releaseIntermediateData();

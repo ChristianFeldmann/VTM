@@ -48,6 +48,7 @@
 #include "CodingStructure.h"
 #include "Hash.h"
 #include "MCTS.h"
+#include "../App/DecoderLib/libVTMDecoderInternals.h"
 #include <deque>
 
 #if JVET_O1164_RPR
@@ -315,6 +316,9 @@ public:
   CodingStructure*   cs;
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
+
+  void saveInternals();
+  std::vector<InternalsCUData> internalsCUData;
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

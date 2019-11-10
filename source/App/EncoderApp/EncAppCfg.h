@@ -285,7 +285,7 @@ protected:
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  bool      m_SBT64RDOCheck;                                            
+  int       m_SBTFast64WidthTh;
 #endif
   bool      m_SMVD;
   bool      m_compositeRefEnabled;

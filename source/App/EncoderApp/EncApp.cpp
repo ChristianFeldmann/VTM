@@ -307,7 +307,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  m_cEncLib.setUse64SBTRDOCheck                                  (m_SBT64RDOCheck);
+  m_cEncLib.setSBTFast64WidthTh                                  ( m_SBTFast64WidthTh );
 #endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );

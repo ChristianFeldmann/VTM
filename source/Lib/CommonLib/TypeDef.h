@@ -52,7 +52,9 @@
 
 #define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
 
-#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode 
+#define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
+
+#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 

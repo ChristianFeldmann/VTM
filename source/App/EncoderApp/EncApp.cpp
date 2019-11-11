@@ -44,7 +44,9 @@
 
 #include "EncApp.h"
 #include "EncoderLib/AnnexBwrite.h"
-#if !JVET_N0278_FIXES
+#if JVET_N0278_FIXES
+#include "EncAppCommon.h"
+#else
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncTop.h"
 #endif
@@ -63,10 +65,12 @@ using namespace std;
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-fstream EncApp::m_bitstream;
-#endif
-
+EncApp::EncApp( EncAppCommon* encAppCommon )
+  : m_cEncLib( encAppCommon )
+  , m_bitstream( encAppCommon->getBitStream() )
+#else
 EncApp::EncApp()
+#endif
 {
   m_iFrameRcvd = 0;
   m_totalBytes = 0;
@@ -303,7 +307,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  m_cEncLib.setUse64SBTRDOCheck                                  (m_SBT64RDOCheck);
+  m_cEncLib.setSBTFast64WidthTh                                  ( m_SBTFast64WidthTh );
 #endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );

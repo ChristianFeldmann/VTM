@@ -65,7 +65,12 @@ double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion, bool useUna
 double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion )
 #endif
 {
-
+#if JVET_AHG14_LOSSLESS
+  if( m_costMode == COST_LOSSLESS_CODING && 0 != distortion )
+  {
+    return MAX_DOUBLE;
+  }
+#endif
 #if WCG_EXT
   return ( useUnadjustedLambda ? m_DistScaleUnadjusted : m_DistScale ) * double( distortion ) + double( fracBits );
 #else

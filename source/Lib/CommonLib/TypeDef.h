@@ -49,24 +49,33 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
-#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode 
+
+#define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
+
+#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 
 #define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling
 
+#define JVET_P0469_QP_OUT_VAL                             1 // JVET-P0469: Coding delta_qp_diff_val instead of delta_qp_out_val
 #define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
 #define JVET_P0350_LFNST_IDX_CTX                          1 // JVET-P0350: Add one context for LFNST idx coding
+#define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
 
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
+#define JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP             1 // JVET-P0445: encoder speed up for sub-block based merge candidate search
+
 #define JVET_P0206_TMVP_flags                             1 // JVET-P0206: Signalling TMVP usage (remove pps TMVP idc and constraint when RPR is used)
 
 #define JVET_P0599_INTRA_SMOOTHING_INTERP_FILT            1 // JVET-P0599: Cleanup of interpolation filtering for intra prediction
+
+#define JVET_P1026_ISP_LFNST_COMBINATION                  1 // JVET-P1026: Combination of ISP and LFNST
 
 #define JVET_P1026_MTS_SIGNALLING                         1 // JVET-P1026: CU level MTS signalling
 
@@ -88,7 +97,7 @@
 
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
-#define JVET_N0278_FIXES                                  1
+#define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
@@ -123,6 +132,9 @@
 #define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
 
 #define JVET_P0058_CHROMA_TS                              1 // JVET-P0058: Enable Transform skip for chroma
+#if JVET_AHG14_LOSSLESS && !JVET_P0058_CHROMA_TS
+#define JVET_P0058_CHROMA_TS                              1
+#endif
 #if JVET_P0058_CHROMA_TS
 #define JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD        1 // Modified cost criterion for chroma intra encoder search
 #endif

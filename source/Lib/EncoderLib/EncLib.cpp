@@ -34,7 +34,6 @@
 /** \file     EncLib.cpp
     \brief    encoder class
 */
-
 #include "EncLib.h"
 
 #include "EncModeCtrl.h"
@@ -47,6 +46,9 @@
 #if ENABLE_SPLIT_PARALLELISM
 #include <omp.h>
 #endif
+#if JVET_N0278_FIXES
+#include "../App/EncoderApp/EncAppCommon.h"
+#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -56,16 +58,15 @@
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-PicList EncLib::m_cListPic;
-ParameterSetMap<SPS> EncLib::m_spsMap( MAX_NUM_SPS );
-ParameterSetMap<PPS> EncLib::m_ppsMap( MAX_NUM_PPS );
-ParameterSetMap<APS> EncLib::m_apsMap( MAX_NUM_APS * MAX_NUM_APS_TYPE );
-#endif
-
-EncLib::EncLib()
-#if JVET_N0278_FIXES
-  : m_AUWriterIf( nullptr )
+EncLib::EncLib( EncAppCommon* encAppCommon )
+  : m_cListPic( encAppCommon->getPictureBuffer() )
+  , m_cEncALF( encAppCommon->getApsIdStart() )
+  , m_spsMap( encAppCommon->getSpsMap() )
+  , m_ppsMap( encAppCommon->getPpsMap() )
+  , m_apsMap( encAppCommon->getApsMap() )
+  , m_AUWriterIf( nullptr )
 #else
+EncLib::EncLib()
   : m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
   , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
@@ -782,11 +783,6 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     const PPS *pps = m_ppsMap.getPS(2);
     const SPS *sps = m_spsMap.getPS(pps->getSPSId());
 
-    Window confWin = pps->getConformanceWindow( );
-    picCurr->setPicWidthInLumaSamples( pps->getPicWidthInLumaSamples() );
-    picCurr->setPicHeightInLumaSamples( pps->getPicHeightInLumaSamples() );
-    picCurr->setConformanceWindow( confWin );
-
     picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
     picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
     picCurr->poc = m_iPOCLast - 1;
@@ -848,10 +844,6 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
     const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
     const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
-    Window confWin = pPPS->getConformanceWindow( );
-    pcPicCurr->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
-    pcPicCurr->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
-    pcPicCurr->setConformanceWindow( confWin );
 
     if( m_rprEnabled )
     {
@@ -1064,10 +1056,6 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
         int ppsID=-1; // Use default PPS ID
         const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
         const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-        Window confWin = pPPS->getConformanceWindow( );
-        pcField->setPicWidthInLumaSamples( pPPS->getPicWidthInLumaSamples() );
-        pcField->setPicHeightInLumaSamples( pPPS->getPicHeightInLumaSamples() );
-        pcField->setConformanceWindow( confWin );
 
         pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
       }
@@ -2246,7 +2234,11 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 
   if (getCostMode()==COST_LOSSLESS_CODING)
   {
+#if JVET_AHG14_LOSSLESS
+    qp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( pSlice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) - 8 ) * 6 );
+#else
     qp=LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP;
+#endif
   }
   else
   {

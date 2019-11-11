@@ -42,10 +42,6 @@
 #define AlfCtx(c) SubCtx( Ctx::Alf, c)
 std::vector<double> EncAdaptiveLoopFilter::m_lumaLevelToWeightPLUT;
 
-#if JVET_N0278_FIXES
-int EncAdaptiveLoopFilter::m_apsIdStart = ALF_CTB_MAX_NUM_APS;
-#endif
-
 void AlfCovariance::getClipMax(const AlfFilterShape& alfShape, int *clip_max) const
 {
   for( int k = 0; k < numCoeff-1; ++k )
@@ -404,9 +400,15 @@ int AlfCovariance::gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) c
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 
+#if JVET_N0278_FIXES
+EncAdaptiveLoopFilter::EncAdaptiveLoopFilter( int& apsIdStart )
+#else
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
+#endif
   : m_CABACEstimator( nullptr )
-#if !JVET_N0278_FIXES
+#if JVET_N0278_FIXES
+  , m_apsIdStart( apsIdStart )
+#else
   , m_apsIdStart( ALF_CTB_MAX_NUM_APS )
 #endif
 {

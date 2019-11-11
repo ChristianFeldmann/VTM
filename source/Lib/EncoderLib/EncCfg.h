@@ -286,7 +286,7 @@ protected:
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  bool     m_SBT64RDOCheck; // Enable more than 32 SBT in encoder RDO check
+  int       m_SBTFast64WidthTh;                   ///< Enable size-64 SBT in encoder RDO check for HD and above sequences
 #endif
 
   bool      m_LFNST;
@@ -910,8 +910,8 @@ public:
   bool      getUseSBT                       ()         const { return m_SBT; }
 
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  void      setUse64SBTRDOCheck(bool b)                     { m_SBT64RDOCheck = b; }
-  bool      getUse64SBTRDOCheck             ()        const { return m_SBT64RDOCheck; }
+  void      setSBTFast64WidthTh             ( int  b )       { m_SBTFast64WidthTh = b; }
+  int       getSBTFast64WidthTh             ()         const { return m_SBTFast64WidthTh; }
 #endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
@@ -1264,7 +1264,11 @@ public:
   void setLog2MaxTransformSkipBlockSize                ( uint32_t u )    { m_log2MaxTransformSkipBlockSize  = u;       }
   bool getIntraSmoothingDisabledFlag               ()      const { return m_intraSmoothingDisabledFlag; }
   void setIntraSmoothingDisabledFlag               (bool bValue) { m_intraSmoothingDisabledFlag=bValue; }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+  bool getUseFastISP                                   () const   { return m_useFastISP;    }
+#else
   bool getUseFastISP                                   ()         { return m_useFastISP;    }
+#endif
   void setUseFastISP                                   ( bool b ) { m_useFastISP  = b;   }
 
   const int* getdQPs                        () const { return m_aidQP;       }

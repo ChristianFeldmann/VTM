@@ -32,7 +32,7 @@
  */
 
 /** \file     EncLibCommon.cpp
-    \brief    Common encoder application class
+    \brief    Common encoder library class
 */
 
 #include "CommonDef.h"

@@ -32,7 +32,7 @@
  */
 
 /** \file     EncLibCommon.h
-    \brief    Common encoder application class (header)
+    \brief    Common encoder library class (header)
 */
 
 #pragma once

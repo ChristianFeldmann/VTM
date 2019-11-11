@@ -380,7 +380,7 @@ pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchai
 \section{Using the encoder}
 
 \begin{minted}{bash}
-TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
+TAppEncoder 	[--help] [-li -c config.cfg] [-li --parameter=value]
 \end{minted}
 
 \begin{table}[ht]
@@ -392,6 +392,7 @@ TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
  \thead{Description} \\
 \hline
 \texttt{--help} & Prints parameter usage. \\
+\texttt{-li} & Applies to its next config file or command line parameter only to define  i-th layer encoding option. If empty, the configuration file applies to all layers\\
 \texttt{-c} & Defines configuration file to use.  Multiple configuration files
      may be used with repeated --c options. \\
 \texttt{--}\emph{parameter}\texttt{=}\emph{value}
@@ -1021,6 +1022,20 @@ Specifies the value of general_non_packed_constraint_flag
 %\ShortOption{\None} &
 \Default{false} &
 Specifies the value of general_frame_only_constraint_flag
+\\
+
+\end{OptionTableNoShorthand}
+
+
+%%
+%% Layer parameters
+%%
+
+\begin{OptionTableNoShorthand}{Layer parameters}{tab:unit}
+\Option{MaxLayers} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the value to use to derive the vps_max_layers_minus1 for layered coding
 \\
 
 \end{OptionTableNoShorthand}
@@ -3439,7 +3454,7 @@ Defines the input bit stream file name.
 \Option{ReconFile (-o)} &
 %\ShortOption{-o} &
 \Default{\NotSet} &
-Defines reconstructed YUV file name. If empty, no file is generated.
+Defines reconstructed YUV file name. If empty, no file is generated. For layered coding bitstream, each layer reconstructed YUV file name is formed by adding the layer index suffix to ReconFile.
 \\
 
 \Option{SkipFrames (-s)} &

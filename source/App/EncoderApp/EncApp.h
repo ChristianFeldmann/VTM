@@ -123,7 +123,7 @@ private:
 
 public:
 #if JVET_N0278_FIXES
-  EncApp( EncAppCommon* encAppCommon );
+  EncApp( fstream& bitStream, EncLibCommon* encLibCommon );
 #else
   EncApp();
 #endif

@@ -31,14 +31,14 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     EncAppCommon.cpp
+/** \file     EncLibCommon.cpp
     \brief    Common encoder application class
 */
 
 #include "CommonDef.h"
-#include "EncAppCommon.h"
+#include "EncLibCommon.h"
 
-EncAppCommon::EncAppCommon()
+EncLibCommon::EncLibCommon()
   : m_apsIdStart( ALF_CTB_MAX_NUM_APS )
   , m_spsMap( MAX_NUM_SPS )
   , m_ppsMap( MAX_NUM_PPS )
@@ -46,6 +46,6 @@ EncAppCommon::EncAppCommon()
 {
 }
 
-EncAppCommon::~EncAppCommon()
+EncLibCommon::~EncLibCommon()
 {
 }

@@ -40,7 +40,7 @@
 #include <chrono>
 #include <ctime>
 
-#include "EncAppCommon.h"
+#include "EncoderLib/EncLibCommon.h"
 #include "EncApp.h"
 #include "Utilities/program_options_lite.h"
 
@@ -118,7 +118,8 @@ int main(int argc, char* argv[])
   fprintf( stdout, "\n" );
 
 #if JVET_N0278_FIXES
-  EncAppCommon encAppCommon;
+  std::fstream bitstream;
+  EncLibCommon encLibCommon;
 
   std::vector<EncApp*> pcEncApp(1);
   bool resized = false;
@@ -131,7 +132,7 @@ int main(int argc, char* argv[])
 
   do
   {
-    pcEncApp[layerIdx] = new EncApp( &encAppCommon );
+    pcEncApp[layerIdx] = new EncApp( bitstream, &encLibCommon );
     // create application encoder class per layer
     pcEncApp[layerIdx]->create();
 

@@ -31,7 +31,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     EncAppCommon.h
+/** \file     EncLibCommon.h
     \brief    Common encoder application class (header)
 */
 
@@ -40,21 +40,19 @@
 #include <fstream>
 #include "CommonLib/Slice.h"
 
-class EncAppCommon
+class EncLibCommon
 {
 private:
   int                       m_apsIdStart;         ///< ALF APS id, APS id space is shared across all layers
   ParameterSetMap<SPS>      m_spsMap;             ///< SPS, it is shared across all layers
   ParameterSetMap<PPS>      m_ppsMap;             ///< PPS, it is shared across all layers
   ParameterSetMap<APS>      m_apsMap;             ///< APS, it is shared across all layers
-  std::fstream              m_bitstream;  
   PicList                   m_cListPic;           ///< DPB, it is shared across all layers
 
 public:
-  EncAppCommon();
-  virtual ~EncAppCommon();
+  EncLibCommon();
+  virtual ~EncLibCommon();
 
-  std::fstream&            getBitStream()          { return m_bitstream;  }
   int&                     getApsIdStart()         { return m_apsIdStart; }
   PicList&                 getPictureBuffer()      { return m_cListPic;   }
   ParameterSetMap<SPS>&    getSpsMap()             { return m_spsMap;     }

@@ -47,7 +47,7 @@
 #include <omp.h>
 #endif
 #if JVET_N0278_FIXES
-#include "../App/EncoderApp/EncAppCommon.h"
+#include "EncLibCommon.h"
 #endif
 
 //! \ingroup EncoderLib
@@ -58,12 +58,12 @@
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-EncLib::EncLib( EncAppCommon* encAppCommon )
-  : m_cListPic( encAppCommon->getPictureBuffer() )
-  , m_cEncALF( encAppCommon->getApsIdStart() )
-  , m_spsMap( encAppCommon->getSpsMap() )
-  , m_ppsMap( encAppCommon->getPpsMap() )
-  , m_apsMap( encAppCommon->getApsMap() )
+EncLib::EncLib( EncLibCommon* encLibCommon )
+  : m_cListPic( encLibCommon->getPictureBuffer() )
+  , m_cEncALF( encLibCommon->getApsIdStart() )
+  , m_spsMap( encLibCommon->getSpsMap() )
+  , m_ppsMap( encLibCommon->getPpsMap() )
+  , m_apsMap( encLibCommon->getApsMap() )
   , m_AUWriterIf( nullptr )
 #else
 EncLib::EncLib()

@@ -45,7 +45,7 @@
 #include "EncApp.h"
 #include "EncoderLib/AnnexBwrite.h"
 #if JVET_N0278_FIXES
-#include "EncAppCommon.h"
+#include "EncoderLib/EncLibCommon.h"
 #else
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncTop.h"
@@ -65,9 +65,9 @@ using namespace std;
 // ====================================================================================================================
 
 #if JVET_N0278_FIXES
-EncApp::EncApp( EncAppCommon* encAppCommon )
-  : m_cEncLib( encAppCommon )
-  , m_bitstream( encAppCommon->getBitStream() )
+EncApp::EncApp( fstream& bitStream, EncLibCommon* encLibCommon )
+  : m_cEncLib( encLibCommon )
+  , m_bitstream( bitStream )
 #else
 EncApp::EncApp()
 #endif

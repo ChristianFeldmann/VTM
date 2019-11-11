@@ -59,7 +59,7 @@
 #include "RateCtrl.h"
 
 #if JVET_N0278_FIXES
-class EncAppCommon;
+class EncLibCommon;
 #endif
 
 //! \ingroup EncoderLib
@@ -192,7 +192,7 @@ protected:
 
 public:
 #if JVET_N0278_FIXES
-  EncLib( EncAppCommon* encAppCommon );
+  EncLib( EncLibCommon* encLibCommon );
 #else
   EncLib();
 #endif

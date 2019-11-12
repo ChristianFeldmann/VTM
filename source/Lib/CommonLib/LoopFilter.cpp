@@ -938,11 +938,19 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-        CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+        if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
       else  // (iDir == EDGE_HOR)
       {
-        CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+        if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;

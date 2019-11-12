@@ -205,7 +205,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 6.2 of the software.
+for the VVC project. It applies to version 7.0 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -257,8 +257,8 @@ be available in older compilers.
  \thead{Compiler environment} &
  \thead{Versions} \\
 \hline
-MS Visual Studio  & 2015 and 2017 \\
-GCC               & 5.4 and 7.3 \\
+MS Visual Studio  & 2017 and 2019 \\
+GCC               & 5.4, 7.3 and 8.3\\
 Xcode/clang       & latest \\
 \hline
 \end{tabular}
@@ -1342,10 +1342,10 @@ candidate is not evaluated if the merge skip mode was the best merge
 mode for one of the previous candidates.
 \\
 
-\Option{SBT64RDO} &
+\Option{SBTFast64WidthTh} &
 %\ShortOption{\None} &
-\Default{true} &
-Enables or disables the use of more than 32 SBT in encoder RDO check.  When enabled, more than 32 size SBT is checked in the RDO.
+\Default{1920} &
+Picture width threshold for testing size-64 SBT in RDO (now for HD and above sequences).
 \\
 
 \Option{RDpenalty} &

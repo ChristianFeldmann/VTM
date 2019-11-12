@@ -992,6 +992,7 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 #endif
   if (bestCS->cus.size() == 1) // no partition
   {
+    CHECK(bestCS->cus[0]->tileIdx != bestCS->picture->brickMap->getBrickIdxRsMap(bestCS->area.lumaPos()), "Wrong tile index!");
     if (bestCS->cus[0]->predMode == MODE_PLT)
     {
       for (int i = compBegin; i < (compBegin + numComp); i++)
@@ -2244,6 +2245,7 @@ void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&b
 
   partitioner.setCUData(cu);
   cu.slice = tempCS->slice;
+  cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap(tempCS->area.lumaPos());
   cu.skip = false;
   cu.predMode = MODE_INTER;
   cu.transQuantBypass = encTestMode.lossless;
@@ -4318,7 +4320,11 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
   const bool mtsAllowed = tempCS->sps->getUseInterMTS() && CU::isInter( *cu ) && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
   uint8_t sbtAllowed = cu->checkAllowedSbt();
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  sbtAllowed = ((cu->lwidth() > 32 || cu->lheight() > 32) && !(m_pcEncCfg->getUse64SBTRDOCheck())) ? 0 : sbtAllowed;
+  //SBT resolution-dependent fast algorithm: not try size-64 SBT in RDO for low-resolution sequences (now resolution below HD)
+  if( tempCS->pps->getPicWidthInLumaSamples() < (uint32_t)m_pcEncCfg->getSBTFast64WidthTh() )
+  {
+    sbtAllowed = ((cu->lwidth() > 32 || cu->lheight() > 32)) ? 0 : sbtAllowed;
+  }
 #endif
   uint8_t numRDOTried = 0;
   Distortion sbtOffDist = 0;

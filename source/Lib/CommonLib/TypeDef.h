@@ -50,9 +50,11 @@
 #include <assert.h>
 #include <cassert>
 
+#define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
+
 #define JVET_P0363_CLEANUP_NUT_TABLE                      1 // JVET-P0363: Clean-up of NAL unit type table
 
-#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode 
+#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 

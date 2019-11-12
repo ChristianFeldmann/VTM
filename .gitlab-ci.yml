@@ -47,11 +47,6 @@ build_ubuntu1804-gcc8:
    tags:
       - ubuntu1804-gcc8
 
-build_vc1900:
-   extends: .build_template
-   tags:
-      - vc1900
-
 build_vc191x:
    extends: .build_template
    tags:

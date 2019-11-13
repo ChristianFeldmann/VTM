@@ -1067,6 +1067,9 @@ void EncCu::updateLambda (Slice* slice, const int dQP,
   if (updateRdCostLambda)
   {
     m_pcRdCost->setLambda (newLambda, slice->getSPS()->getBitDepths());
+#if WCG_EXT
+    m_pcRdCost->saveUnadjustedLambda();
+#endif
   }
 }
 #endif // SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU

@@ -205,7 +205,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 6.2 of the software.
+for the VVC project. It applies to version 7.0 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -257,8 +257,8 @@ be available in older compilers.
  \thead{Compiler environment} &
  \thead{Versions} \\
 \hline
-MS Visual Studio  & 2015 and 2017 \\
-GCC               & 5.4 and 7.3 \\
+MS Visual Studio  & 2017 and 2019 \\
+GCC               & 5.4, 7.3 and 8.3\\
 Xcode/clang       & latest \\
 \hline
 \end{tabular}
@@ -380,7 +380,7 @@ pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchai
 \section{Using the encoder}
 
 \begin{minted}{bash}
-TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
+TAppEncoder 	[--help] [-li -c config.cfg] [-li --parameter=value]
 \end{minted}
 
 \begin{table}[ht]
@@ -392,6 +392,7 @@ TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
  \thead{Description} \\
 \hline
 \texttt{--help} & Prints parameter usage. \\
+\texttt{-li} & Applies to its next config file or command line parameter only to define  i-th layer encoding option. If empty, the configuration file applies to all layers\\
 \texttt{-c} & Defines configuration file to use.  Multiple configuration files
      may be used with repeated --c options. \\
 \texttt{--}\emph{parameter}\texttt{=}\emph{value}
@@ -1027,6 +1028,20 @@ Specifies the value of general_frame_only_constraint_flag
 
 
 %%
+%% Layer parameters
+%%
+
+\begin{OptionTableNoShorthand}{Layer parameters}{tab:unit}
+\Option{MaxLayers} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the value to use to derive the vps_max_layers_minus1 for layered coding
+\\
+
+\end{OptionTableNoShorthand}
+
+
+%%
 %% Unit definition parameters
 %%
 
@@ -1342,10 +1357,10 @@ candidate is not evaluated if the merge skip mode was the best merge
 mode for one of the previous candidates.
 \\
 
-\Option{SBT64RDO} &
+\Option{SBTFast64WidthTh} &
 %\ShortOption{\None} &
-\Default{true} &
-Enables or disables the use of more than 32 SBT in encoder RDO check.  When enabled, more than 32 size SBT is checked in the RDO.
+\Default{1920} &
+Picture width threshold for testing size-64 SBT in RDO (now for HD and above sequences).
 \\
 
 \Option{RDpenalty} &
@@ -2320,6 +2335,28 @@ Adaptive LMCS mapping derivation options: Options 1 to 4 are for experimental te
 %\ShortOption{\None} &
 \Default{0} &
 LMCS initial total codeword (valid values [$0 - 1023$]) to be used in LMCS mapping derivation when LMCSAdpOption is not equal to 0.
+\\
+
+\Option{HorCollocatedChroma} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies location of a chroma sample relatively to the luma sample in horizontal direction in the reference picture resampling.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & horizontally shifted by 0.5 units of luma samples.\\
+	1 & collocated (default). \\
+\end{tabular}
+\\
+
+\Option{VerCollocatedChroma} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies location of a chroma sample relatively to the luma sample in vertical direction in the cross-component linear model intra prediction and the reference picture resampling.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+	0 & vertically shifted by 0.5 units of luma samples (default).\\
+	1 & collocated. \\
+\end{tabular}
 \\
 
 \end{OptionTableNoShorthand}
@@ -3439,7 +3476,7 @@ Defines the input bit stream file name.
 \Option{ReconFile (-o)} &
 %\ShortOption{-o} &
 \Default{\NotSet} &
-Defines reconstructed YUV file name. If empty, no file is generated.
+Defines reconstructed YUV file name. If empty, no file is generated. For layered coding bitstream, each layer reconstructed YUV file name is formed by adding the layer index suffix to ReconFile.
 \\
 
 \Option{SkipFrames (-s)} &

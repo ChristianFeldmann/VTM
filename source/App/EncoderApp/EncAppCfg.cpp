@@ -932,10 +932,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
 #if JVET_P0592_CHROMA_PHASE
-  ("HorCollocatedChroma",                             m_horCollocatedChromaFlag,                         true, "Specifies the location of the top-left downsampled luma sample in cross-component linear model intra prediction relative to the top-left luma sample\n"
-                                                                                                               "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
-                                                                                                               "\t1:  collocated\n")
-  ("VerCollocatedChroma",                             m_verCollocatedChromaFlag,                        false, "Specifies the location of the top-left downsampled luma sample in cross-component linear model intra prediction relative to the top-left luma sample\n"
+  ("HorCollocatedChroma",                             m_horCollocatedChromaFlag,                         true, "Specifies location of a chroma sample relatively to the luma sample in horizontal direction in the reference picture resampling\n"
+                                                                                                               "\t0:  horizontally shifted by 0.5 units of luma samples\n"
+                                                                                                               "\t1:  collocated (default)\n")
+  ("VerCollocatedChroma",                             m_verCollocatedChromaFlag,                        false, "Specifies location of a chroma sample relatively to the luma sample in vertical direction in the cross-component linear model intra prediction and the reference picture resampling\n"
                                                                                                                "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
                                                                                                                "\t1:  collocated\n")
 #else

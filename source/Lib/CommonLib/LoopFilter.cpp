@@ -689,15 +689,27 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const CodingUnit& cuQ = cu;
   const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
 
+#if !JVET_P0571_FIX_BS_BDPCM_CHROMA
   if( ( MODE_INTRA == cuP.predMode && cuP.bdpcmMode ) && ( MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode ) )
   {
     return 0;
   }
+#endif
 
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
+#if JVET_P0571_FIX_BS_BDPCM_CHROMA
+    int bsY = (MODE_INTRA == cuP.predMode && cuP.bdpcmMode) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode) ? 0 : 2;
+#if JVET_P0059_CHROMA_BDPCM
+    int bsC = (MODE_INTRA == cuP.predMode && cuP.bdpcmModeChroma) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmModeChroma) ? 0 : 2;
+#else
+    int bsC = 2;
+#endif
+    return (BsSet(bsY, COMPONENT_Y) + BsSet(bsC, COMPONENT_Cb) + BsSet(bsC, COMPONENT_Cr));
+#else
     return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
+#endif
   }
 
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
@@ -926,11 +938,19 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-        CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+        if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
       else  // (iDir == EDGE_HOR)
       {
-        CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+        if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;

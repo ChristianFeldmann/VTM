@@ -734,12 +734,13 @@ void BestEncInfoCache::destroy()
     delete[] m_runType;
     m_runType = nullptr;
   }
+#if !JVET_P0077_LINE_CG_PALETTE
   if (m_runLength != nullptr)
   {
     delete[] m_runLength;
     m_runLength = nullptr;
   }
-
+#endif
 }
 
 void BestEncInfoCache::init( const Slice &slice )
@@ -781,19 +782,24 @@ void BestEncInfoCache::init( const Slice &slice )
   m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
   m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
   m_runType   = new bool[numCoeff*MAX_NUM_TUS];
+#if !JVET_P0077_LINE_CG_PALETTE
   m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
+#endif
 #else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
   m_runType   = new bool[numCoeff];
+#if !JVET_P0077_LINE_CG_PALETTE
   m_runLength = new Pel [numCoeff];
+#endif
 #endif
 
   TCoeff *coeffPtr = m_pCoeff;
   Pel    *pcmPtr   = m_pPcmBuf;
   bool   *runTypePtr   = m_runType;
+#if !JVET_P0077_LINE_CG_PALETTE
   Pel    *runLengthPtr = m_runLength;
-
+#endif
   m_dummyCS.pcv = m_slice_bencinf->getPPS()->pcv;
 
   for( unsigned x = 0; x < numPos; x++ )
@@ -809,7 +815,9 @@ void BestEncInfoCache::init( const Slice &slice )
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
             bool   *runType[MAX_NUM_TBLOCKS]   = { 0, };
+#if !JVET_P0077_LINE_CG_PALETTE
             Pel    *runLength[MAX_NUM_TBLOCKS] = { 0, };
+#endif
 
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
             for( int i = 0; i < MAX_NUM_TUS; i++ )
@@ -822,11 +830,17 @@ void BestEncInfoCache::init( const Slice &slice )
                 coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
                 pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
                 runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
+#if !JVET_P0077_LINE_CG_PALETTE
                 runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
+#endif
               }
 
               tu.cs = &m_dummyCS;
+#if JVET_P0077_LINE_CG_PALETTE
+              tu.init(coeff, pcmbf, runType);
+#else
               tu.init(coeff, pcmbf, runLength, runType);
+#endif
             }
 #else
             const UnitArea &area = m_bestEncInfo[x][y][wIdx][hIdx]->tu;
@@ -1564,6 +1578,16 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
+#if JVET_P1026_ISP_LFNST_COMBINATION
+    if ( m_pcEncCfg->getUseFastISP() && relatedCU.relatedCuIsValid )
+    {
+      cuECtx.ispPredModeVal     = relatedCU.ispPredModeVal;
+      cuECtx.bestDCT2NonISPCost = relatedCU.bestDCT2NonISPCost;
+      cuECtx.relatedCuIsValid   = relatedCU.relatedCuIsValid;
+      cuECtx.bestNonDCT2Cost    = relatedCU.bestNonDCT2Cost;
+      cuECtx.bestISPIntraMode   = relatedCU.bestISPIntraMode;
+    }
+#endif
     return true;
   }
   else if (encTestmode.type == ETM_PALETTE)
@@ -1878,6 +1902,34 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         else if( CU::isIntra( *bestCU ) )
         {
           relatedCU.isIntra   = true;
+#if JVET_P1026_ISP_LFNST_COMBINATION
+          if ( m_pcEncCfg->getUseFastISP() && cuECtx.ispWasTested && ( !relatedCU.relatedCuIsValid || bestCS->cost < relatedCU.bestCost ) )
+          {
+            // Compact data
+            int bit0 = true;
+            int bit1 = cuECtx.ispMode == NOT_INTRA_SUBPARTITIONS ? 1 : 0;
+            int bit2 = cuECtx.ispMode == VER_INTRA_SUBPARTITIONS;
+            int bit3 = cuECtx.ispLfnstIdx > 0;
+            int bit4 = cuECtx.ispLfnstIdx == 2;
+            int bit5 = cuECtx.mipFlag;
+            int bit6 = cuECtx.bestCostIsp < cuECtx.bestNonDCT2Cost * 0.95;
+            int val =
+              (bit0) |
+              (bit1 << 1) |
+              (bit2 << 2) |
+              (bit3 << 3) |
+              (bit4 << 4) |
+              (bit5 << 5) |
+              (bit6 << 6) |
+              ( cuECtx.bestPredModeDCT2 << 9 );
+            relatedCU.ispPredModeVal     = val;
+            relatedCU.bestDCT2NonISPCost = cuECtx.bestDCT2NonISPCost;
+            relatedCU.bestCost           = bestCS->cost;
+            relatedCU.bestNonDCT2Cost    = cuECtx.bestNonDCT2Cost;
+            relatedCU.bestISPIntraMode   = cuECtx.bestISPIntraMode;
+            relatedCU.relatedCuIsValid   = true;
+          }
+#endif
         }
 #if ENABLE_SPLIT_PARALLELISM
 #if REUSE_CU_RESULTS

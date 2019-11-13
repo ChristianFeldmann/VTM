@@ -801,15 +801,25 @@ Picture::Picture()
   }
   m_spliceIdx = NULL;
   m_ctuNums = 0;
+#if JVET_N0278_FIXES
+  layerId = NOT_VALID;
+#endif
 }
 
+#if JVET_N0278_FIXES
+void Picture::create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned _margin, const bool _decoder, const int _layerId )
+#else
 void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned _margin, const bool _decoder)
+#endif
 {
+#if JVET_N0278_FIXES
+  layerId = _layerId;
+#endif
   UnitArea::operator=( UnitArea( _chromaFormat, Area( Position{ 0, 0 }, size ) ) );
-  margin            =  _margin;
+  margin            =  MAX_SCALING_RATIO*_margin;
   const Area a      = Area( Position(), size );
-  M_BUFS( 0, PIC_RECONSTRUCTION ).create( _chromaFormat, a, _maxCUSize, _margin, MEMORY_ALIGN_DEF_SIZE );
-  M_BUFS( 0, PIC_RECON_WRAP ).create( _chromaFormat, a, _maxCUSize, _margin, MEMORY_ALIGN_DEF_SIZE );
+  M_BUFS( 0, PIC_RECONSTRUCTION ).create( _chromaFormat, a, _maxCUSize, margin, MEMORY_ALIGN_DEF_SIZE );
+  M_BUFS( 0, PIC_RECON_WRAP ).create( _chromaFormat, a, _maxCUSize, margin, MEMORY_ALIGN_DEF_SIZE );
 
   if( !_decoder )
   {
@@ -980,8 +990,8 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
   cs->lmcsAps = lmcsAps;
   cs->scalinglistAps = scalingListAps;
-
   cs->pcv     = pps.pcv;
+  m_conformanceWindow = pps.getConformanceWindow();
 
   brickMap = new BrickMap;
   brickMap->create( sps, pps );

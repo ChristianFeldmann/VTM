@@ -93,6 +93,9 @@ void  EncReshape::createEnc(int picWidth, int picHeight, uint32_t maxCUWidth, ui
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
   m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
   memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, (PIC_CODE_CW_BINS) * sizeof(int));
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  m_sliceReshapeInfo.chrResScalingOffset = 0;
+#endif
 
   m_picWidth = picWidth;
   m_picHeight = picHeight;
@@ -962,7 +965,11 @@ void EncReshape::initLUTfromdQPModel()
     else
     {
       m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      m_chromaAdjHelpLUT[i] = (int32_t)(m_initCW * (1 << FP_PREC) / (m_binCW[i] + m_sliceReshapeInfo.chrResScalingOffset));
+#else
       m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+#endif
     }
   }
   for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
@@ -1054,7 +1061,11 @@ void EncReshape::constructReshaperLMCS()
     else
     {
       m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      m_chromaAdjHelpLUT[i] = (int32_t)(m_initCW * (1 << FP_PREC) / (m_binCW[i] + m_sliceReshapeInfo.chrResScalingOffset));
+#else
       m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+#endif
     }
   }
   for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)

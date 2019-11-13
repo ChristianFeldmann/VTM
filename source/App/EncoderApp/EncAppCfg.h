@@ -39,6 +39,14 @@
 #define __ENCAPPCFG__
 
 #include "CommonLib/CommonDef.h"
+#if JVET_O0549_ENCODER_ONLY_FILTER
+
+#include <map>
+template <class T1, class T2>
+static inline std::istream& operator >> (std::istream &in, std::map<T1, T2> &map);
+
+#include "Utilities/program_options_lite.h"
+#endif
 
 #include "EncoderLib/EncCfg.h"
 #if EXTENSION_360_VIDEO
@@ -47,6 +55,9 @@
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/DistortionMetric.H"
+#endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+namespace po = df::program_options_lite;
 #endif
 
 #include <sstream>
@@ -188,7 +199,11 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
+#if JVET_P0059_CHROMA_BDPCM
+  int       m_useBDPCM;
+#else
   bool      m_useBDPCM;
+#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
@@ -269,7 +284,9 @@ protected:
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
-
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  int       m_SBTFast64WidthTh;
+#endif
   bool      m_SMVD;
   bool      m_compositeRefEnabled;
   bool      m_GBi;
@@ -292,6 +309,9 @@ protected:
   int       m_MmvdDisNum;
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
+#if JVET_P0058_CHROMA_TS
+  bool      m_useChromaTS;
+#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -316,6 +336,9 @@ protected:
   int       m_updateCtrl;
   int       m_adpOption;
   uint32_t  m_initialCW;
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int       m_CSoffset;
+#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
@@ -525,11 +548,15 @@ protected:
   int       m_PPSDepQuantEnabledIdc;
   int       m_PPSRefPicListSPSIdc0;
   int       m_PPSRefPicListSPSIdc1;
+#if !JVET_P0206_TMVP_flags
   int       m_PPSTemporalMVPEnabledIdc;
+#endif
   int       m_PPSMvdL1ZeroIdc;
   int       m_PPSCollocatedFromL0Idc;
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
+#endif
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;
@@ -604,6 +631,16 @@ protected:
   double      m_fractionOfFrames;                             ///< encode a fraction of the frames as specified in FramesToBeEncoded
   int         m_switchPocPeriod;
   int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  bool                  m_gopBasedTemporalFilterEnabled;               ///< GOP-based Temporal Filter enable/disable
+  bool                  m_gopBasedTemporalFilterFutureReference;       ///< Enable/disable future frame references in the GOP-based Temporal Filter
+  std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
+#endif
+
+#if JVET_N0278_FIXES
+  int         m_maxLayers;
+#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

@@ -761,6 +761,9 @@ void EncSlice::resetQP( Picture* pic, int sliceQP, double lambda )
 
   // store lambda
   slice->setSliceQp( sliceQP );
+#if RDOQ_CHROMA_LAMBDA
+  m_pcRdCost->setDistortionWeight (COMPONENT_Y, 1.0); // no chroma weighting for luma
+#endif
   setUpLambda(slice, lambda, sliceQP);
 #if WCG_EXT
   m_pcRdCost->saveUnadjustedLambda();

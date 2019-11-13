@@ -638,6 +638,10 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 #endif
 
+#if JVET_N0278_FIXES
+  int         m_maxLayers;
+#endif
+
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;
   friend class TExt360AppEncCfg;

@@ -2097,8 +2097,13 @@ public:
   bool                        getNonRefPictFlag() const { return m_nonReferencePicFlag;  }
 
 protected:
+#if JVET_N0278_FIXES
+  Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );
+  Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId );
+#else
   Picture*              xGetRefPic        (PicList& rcListPic, int poc);
   Picture*              xGetLongTermRefPic(PicList& rcListPic, int poc, bool pocHasMsb);
+#endif
 public:
   std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
 private:
@@ -2200,7 +2205,7 @@ public:
 
     if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
     {
-      CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exists" );
+      CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exist" );
       APS* existedAPS = m_paramsetMap[apsId].parameterSet;
 
       if( aps->getAPSType() == LMCS_APS )

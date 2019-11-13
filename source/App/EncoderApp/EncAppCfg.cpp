@@ -1406,6 +1406,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
+#if JVET_N0278_FIXES
+  ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
+#endif
     ;
 
 #if JVET_O0549_ENCODER_ONLY_FILTER
@@ -3767,11 +3770,11 @@ void EncAppCfg::xPrintParameter()
 
   if( m_rprEnabled )
   {
-    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
+    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d ", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
   }
   else
   {
-    msg( VERBOSE, "RPR:%d", 0 );
+    msg( VERBOSE, "RPR:%d ", 0 );
   }
 #if JVET_O0549_ENCODER_ONLY_FILTER
   msg(VERBOSE, "TemporalFilter:%d ", m_gopBasedTemporalFilterEnabled);

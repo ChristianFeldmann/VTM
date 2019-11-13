@@ -659,6 +659,12 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
 
   msg( msgl, "\n");
 
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+    m_cacheModel.reportFrame();
+    m_cacheModel.accumulateFrame();
+    m_cacheModel.clear();
+#endif
+
   m_pcPic->neededForOutput = (pcSlice->getPicOutputFlag() ? true : false);
   m_pcPic->reconstructed = true;
 
@@ -1711,14 +1717,6 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
       ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);
-#if JVET_J0090_MEMORY_BANDWITH_MEASURE
-      if ( ret )
-      {
-        m_cacheModel.reportFrame( );
-        m_cacheModel.accumulateFrame( );
-        m_cacheModel.clear( );
-      }
-#endif
       return ret;
 
     case NAL_UNIT_EOS:

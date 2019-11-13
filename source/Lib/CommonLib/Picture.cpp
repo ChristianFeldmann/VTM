@@ -38,6 +38,7 @@
 #include "Picture.h"
 #include "SEI.h"
 #include "ChromaFormat.h"
+#include "CommonLib/InterpolationFilter.h"
 #if ENABLE_WPP_PARALLELISM
 #if ENABLE_WPP_STATIC_LINK
 #include <atomic>

@@ -31,64 +31,33 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/** \file     EncLibCommon.h
+    \brief    Common encoder library class (header)
+*/
+
 #pragma once
+#include <list>
+#include <fstream>
+#include "CommonLib/Slice.h"
 
-#ifndef __NALWRITE__
-#define __NALWRITE__
-
-#include <ostream>
-
-#include "CommonLib/CommonDef.h"
-#include "CommonLib/BitStream.h"
-#include "CommonLib/NAL.h"
-
-//! \ingroup EncoderLib
-//! \{
-
-/**
- * A convenience wrapper to NALUnit that also provides a
- * bitstream object.
- */
-struct OutputNALUnit : public NALUnit
+class EncLibCommon
 {
-  /**
-   * construct an OutputNALunit structure with given header values and
-   * storage for a bitstream.  Upon construction the NALunit header is
-   * written to the bitstream.
-   */
-  OutputNALUnit(
-    NalUnitType nalUnitType,
-#if JVET_N0278_FIXES
-    uint32_t layerId = 0,
-#endif
-    uint32_t temporalID = 0,
-    uint32_t reserved_zero_6bits = 0)
-#if JVET_N0278_FIXES
-  : NALUnit( nalUnitType, temporalID, reserved_zero_6bits, 0, layerId )
-#else
-  : NALUnit(nalUnitType, temporalID, reserved_zero_6bits)
-#endif
-  , m_Bitstream()
-  {}
+private:
+  int                       m_apsIdStart;         ///< ALF APS id, APS id space is shared across all layers
+  ParameterSetMap<SPS>      m_spsMap;             ///< SPS, it is shared across all layers
+  ParameterSetMap<PPS>      m_ppsMap;             ///< PPS, it is shared across all layers
+  ParameterSetMap<APS>      m_apsMap;             ///< APS, it is shared across all layers
+  PicList                   m_cListPic;           ///< DPB, it is shared across all layers
 
-  OutputNALUnit& operator=(const NALUnit& src)
-  {
-    m_Bitstream.clear();
-    static_cast<NALUnit*>(this)->operator=(src);
-    return *this;
-  }
+public:
+  EncLibCommon();
+  virtual ~EncLibCommon();
 
-  OutputBitstream m_Bitstream;
+  int&                     getApsIdStart()         { return m_apsIdStart; }
+  PicList&                 getPictureBuffer()      { return m_cListPic;   }
+  ParameterSetMap<SPS>&    getSpsMap()             { return m_spsMap;     }
+  ParameterSetMap<PPS>&    getPpsMap()             { return m_ppsMap;     }
+  ParameterSetMap<APS>&    getApsMap()             { return m_apsMap;     }
+
 };
 
-void write(std::ostream& out, OutputNALUnit& nalu);
-
-inline NALUnitEBSP::NALUnitEBSP(OutputNALUnit& nalu)
-  : NALUnit(nalu)
-{
-  write(m_nalUnitData, nalu);
-}
-
-//! \}
-
-#endif

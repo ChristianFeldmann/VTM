@@ -49,7 +49,14 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
-#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode 
+
+#define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
+
+#define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
+
+#define JVET_P0363_CLEANUP_NUT_TABLE                      1 // JVET-P0363: Clean-up of NAL unit type table
+
+#define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 
@@ -97,6 +104,8 @@
 #define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
 
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
+
+#define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
@@ -155,6 +164,8 @@
 #define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
+
+#define JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS              1 // JVET-O0235: NAL unit type constraints
 
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
 
@@ -930,6 +941,51 @@ enum PPSExtensionFlagIndex
 // TODO: Existing names used for the different NAL unit types can be altered to better reflect the names in the spec.
 //       However, the names in the spec are not yet stable at this point. Once the names are stable, a cleanup
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
+#if JVET_P0363_CLEANUP_NUT_TABLE
+enum NalUnitType
+{
+  NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
+  NAL_UNIT_CODED_SLICE_STSA,        // 1
+  NAL_UNIT_CODED_SLICE_RADL,        // 2
+  NAL_UNIT_CODED_SLICE_RASL,        // 3
+
+  NAL_UNIT_RESERVED_VCL_4,
+  NAL_UNIT_RESERVED_VCL_5,
+  NAL_UNIT_RESERVED_VCL_6,
+
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 7
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 8
+  NAL_UNIT_CODED_SLICE_CRA,         // 9
+  NAL_UNIT_CODED_SLICE_GDR,         // 10
+
+  NAL_UNIT_RESERVED_IRAP_VCL_11,
+  NAL_UNIT_RESERVED_IRAP_VCL_12,
+
+  NAL_UNIT_DPS,                     // 13
+  NAL_UNIT_VPS,                     // 14
+  NAL_UNIT_SPS,                     // 15
+  NAL_UNIT_PPS,                     // 16
+  NAL_UNIT_APS,                     // Todo: Remove this line after prefix and suffix APS have been implemented
+  //NAL_UNIT_PREFIX_APS,              // 17
+  //NAL_UNIT_SUFFIX_APS,              // 18
+  NAL_UNIT_PH,                      // 19
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
+  NAL_UNIT_EOS,                     // 21
+  NAL_UNIT_EOB,                     // 22
+  NAL_UNIT_PREFIX_SEI,              // 23
+  NAL_UNIT_SUFFIX_SEI,              // 24
+  NAL_UNIT_FD,                      // 25
+
+  NAL_UNIT_RESERVED_NVCL_26,
+  NAL_UNIT_RESERVED_NVCL_27,
+
+  NAL_UNIT_UNSPECIFIED_28,
+  NAL_UNIT_UNSPECIFIED_29,
+  NAL_UNIT_UNSPECIFIED_30,
+  NAL_UNIT_UNSPECIFIED_31,
+  NAL_UNIT_INVALID
+};
+#else
 enum NalUnitType
 {
   NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
@@ -973,6 +1029,7 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_31,
   NAL_UNIT_INVALID
 };
+#endif
 
 #if SHARP_LUMA_DELTA_QP
 enum LumaLevelToDQPMode

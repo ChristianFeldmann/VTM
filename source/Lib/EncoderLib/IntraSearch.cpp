@@ -3438,10 +3438,35 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
 #if JVET_P0058_CHROMA_TS
     // encoder bugfix: Set loadTr to aovid redundant transform process
+#if JVET_AHG14_LOSSLESS
+#if JVET_P0059_CHROMA_BDPCM
+    if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0) || tu.cu->bdpcmModeChroma != 0)
+#else
+    if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0))
+#endif
+    {
+        m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+    }
+#else
     m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+#endif
 #else
     m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx());
 #endif
+
+#if JVET_AHG14_LOSSLESS
+#if JVET_P0059_CHROMA_BDPCM
+    if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0) && 0 == tu.cu->bdpcmModeChroma)
+#else
+    if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0))
+#endif
+    {
+        uiAbsSum = 0;
+        tu.getCoeffs(compID).fill(0);
+        TU::setCbfAtDepth(tu, compID, tu.depth, 0);
+    }
+#endif
+
     DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
     if( uiAbsSum > 0 )
     {

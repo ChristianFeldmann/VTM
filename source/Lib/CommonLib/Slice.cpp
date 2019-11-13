@@ -95,6 +95,10 @@ Slice::Slice()
 , m_nextSlice                     ( false )
 , m_sliceBits                     ( 0 )
 , m_bFinalized                    ( false )
+, m_sliceCurStartBrickIdx         ( 0 )
+, m_sliceCurEndBrickIdx           ( 0 )
+, m_sliceNumBricks                ( 0 )
+, m_sliceIdx                      ( 0 )
 , m_bTestWeightPred               ( false )
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )
@@ -269,14 +273,22 @@ void  Slice::sortPicList        (PicList& rcListPic)
   }
 }
 
+#if JVET_N0278_FIXES
+Picture* Slice::xGetRefPic( PicList& rcListPic, int poc, const int layerId )
+#else
 Picture* Slice::xGetRefPic (PicList& rcListPic, int poc)
+#endif
 {
   PicList::iterator  iterPic = rcListPic.begin();
   Picture*           pcPic   = *(iterPic);
 
   while ( iterPic != rcListPic.end() )
   {
+#if JVET_N0278_FIXES
+    if( pcPic->getPOC() == poc && pcPic->layerId == layerId )
+#else
     if(pcPic->getPOC() == poc)
+#endif
     {
       break;
     }
@@ -286,8 +298,11 @@ Picture* Slice::xGetRefPic (PicList& rcListPic, int poc)
   return  pcPic;
 }
 
-
+#if JVET_N0278_FIXES
+Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId )
+#else
 Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb)
+#endif
 {
   PicList::iterator  iterPic = rcListPic.begin();
   Picture*           pcPic   = *(iterPic);
@@ -302,7 +317,11 @@ Picture* Slice::xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb)
   while ( iterPic != rcListPic.end() )
   {
     pcPic = *(iterPic);
+#if JVET_N0278_FIXES
+    if( pcPic && pcPic->getPOC() != this->getPOC() && pcPic->referenced && pcPic->layerId == layerId )
+#else
     if (pcPic && pcPic->getPOC()!=this->getPOC() && pcPic->referenced)
+#endif
     {
       int picPoc = pcPic->getPOC();
       if (!pocHasMsb)
@@ -377,7 +396,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
   {
     if (!m_pRPL0->isRefPicLongterm(ii))
     {
+#if JVET_N0278_FIXES
+      pcRefPic = xGetRefPic( rcListPic, getPOC() - m_pRPL0->getRefPicIdentifier( ii ), m_pcPic->layerId );
+#else
       pcRefPic = xGetRefPic(rcListPic, getPOC() - m_pRPL0->getRefPicIdentifier(ii));
+#endif
       pcRefPic->longTerm = false;
     }
     else
@@ -386,7 +409,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
       int pocMask = (1 << pocBits) - 1;
       int ltrpPoc = m_pRPL0->getRefPicIdentifier(ii) & pocMask;
       ltrpPoc += m_localRPL0.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL0.getDeltaPocMSBCycleLT(ii) : 0;
+#if JVET_N0278_FIXES
+      pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
+#else
       pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag(ii));
+#endif
       pcRefPic->longTerm = true;
     }
     pcRefPic->extendPicBorder();
@@ -400,7 +427,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
   {
     if (!m_pRPL1->isRefPicLongterm(ii))
     {
+#if JVET_N0278_FIXES
+      pcRefPic = xGetRefPic( rcListPic, getPOC() - m_pRPL1->getRefPicIdentifier( ii ), m_pcPic->layerId );
+#else
       pcRefPic = xGetRefPic(rcListPic, getPOC() - m_pRPL1->getRefPicIdentifier(ii));
+#endif
       pcRefPic->longTerm = false;
     }
     else
@@ -409,7 +440,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
       int pocMask = (1 << pocBits) - 1;
       int ltrpPoc = m_pRPL1->getRefPicIdentifier(ii) & pocMask;
       ltrpPoc += m_localRPL1.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL1.getDeltaPocMSBCycleLT(ii) : 0;
+#if JVET_N0278_FIXES
+      pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
+#else
       pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag(ii));
+#endif
       pcRefPic->longTerm = true;
     }
     pcRefPic->extendPicBorder();
@@ -469,7 +504,11 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       }
       else
       {
+#if JVET_N0278_FIXES
+        CHECK( xGetLongTermRefPic( rcListPic, pRPL0->getRefPicIdentifier( i ), pRPL0->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
+#else
         CHECK(xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i))->getPOC() < pocCRA, "Invalid state");
+#endif
       }
     }
     numRefPic = pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures();
@@ -481,7 +520,11 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       }
       else
       {
+#if JVET_N0278_FIXES
+        CHECK( xGetLongTermRefPic( rcListPic, pRPL1->getRefPicIdentifier( i ), pRPL1->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
+#else
         CHECK(xGetLongTermRefPic(rcListPic, pRPL1->getRefPicIdentifier(i), pRPL1->getDeltaPocMSBPresentFlag(i))->getPOC() < pocCRA, "Invalid state");
+#endif
       }
     }
   }
@@ -496,6 +539,69 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
     associatedIRAPType = getNalUnitType();
   }
 }
+
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+void Slice::checkSTSA(PicList& rcListPic)
+{
+  int ii;
+  Picture* pcRefPic = NULL;
+  int numOfActiveRef = getNumRefIdx(REF_PIC_LIST_0);
+
+  for (ii = 0; ii < numOfActiveRef; ii++)
+  {
+    pcRefPic = m_apcRefPicList[REF_PIC_LIST_0][ii];
+
+    // Checking this: "When the current picture is an STSA picture, there shall be no active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that has TemporalId equal to that of the current picture"
+    if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+    {
+      CHECK(pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture");
+    }
+
+    // Checking this: "When the current picture is a picture that follows, in decoding order, an STSA picture that has TemporalId equal to that of the current picture, there shall be no
+    // picture that has TemporalId equal to that of the current picture included as an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the STSA picture in decoding order."
+    CHECK(pcRefPic->subLayerNonReferencePictureDueToSTSA, "The RPL of the current picture contains a picture that is not allowed in this temporal layer due to an earlier STSA picture");
+  }
+
+  numOfActiveRef = getNumRefIdx(REF_PIC_LIST_1);
+  for (ii = 0; ii < numOfActiveRef; ii++)
+  {
+    pcRefPic = m_apcRefPicList[REF_PIC_LIST_1][ii];
+
+    // Checking this: "When the current picture is an STSA picture, there shall be no active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that has TemporalId equal to that of the current picture"
+    if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+    {
+      CHECK(pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture");
+    }
+
+    // Checking this: "When the current picture is a picture that follows, in decoding order, an STSA picture that has TemporalId equal to that of the current picture, there shall be no
+    // picture that has TemporalId equal to that of the current picture included as an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the STSA picture in decoding order."
+    CHECK(pcRefPic->subLayerNonReferencePictureDueToSTSA, "The active RPL part of the current picture contains a picture that is not allowed in this temporal layer due to an earlier STSA picture");
+  }
+
+  // If the current picture is an STSA picture, make all reference pictures in the DPB with temporal
+  // id equal to the temproal id of the current picture sub-layer non-reference pictures. The flag
+  // subLayerNonReferencePictureDueToSTSA equal to true means that the picture may not be used for
+  // reference by a picture that follows the current STSA picture in decoding order
+  if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+  {
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      pcRefPic = *(iterPic++);
+      if (!pcRefPic->referenced || pcRefPic->getPOC() == m_iPOC)
+      {
+        continue;
+      }
+
+      if (pcRefPic->layer == m_uiTLayer)
+      {
+        pcRefPic->subLayerNonReferencePictureDueToSTSA = true;
+      }
+    }
+  }
+}
+#endif
+
 
 /** Function for marking the reference pictures when an IDR/CRA/CRANT/BLA/BLANT is encountered.
  * \param pocCRA POC of the CRA/CRANT/BLA/BLANT picture
@@ -1874,6 +1980,9 @@ PPS::~PPS()
 APS::APS()
 : m_APSId(0)
 , m_temporalId( 0 )
+#if JVET_N0278_FIXES
+, m_layerId( 0 )
+#endif
 {
 }
 
@@ -2899,7 +3008,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
 
             scaledRefPic[j]->poc = -1;
 
+#if JVET_N0278_FIXES
+            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder, m_pcPic->layerId );
+#else
             scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder );
+#endif
           }
 
           scaledRefPic[j]->poc = poc;

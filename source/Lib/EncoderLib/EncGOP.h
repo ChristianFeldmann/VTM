@@ -212,6 +212,9 @@ public:
   void  compressGOP ( int iPOCLast, int iNumPicRcvd, PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRec,
                       bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                     , bool isEncodeLtRef
+#if JVET_N0278_FIXES
+                    , const int picIdInGOP
+#endif
   );
   void  xAttachSliceDataToNalUnit (OutputNALUnit& rNalu, OutputBitstream* pcBitstreamRedirect);
 
@@ -264,7 +267,6 @@ protected:
   void  xPicInitHashME( Picture *pic, const PPS *pps, PicList &rcListPic );
   void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
   void  xPicInitLMCS       (Picture *pic, Slice *slice);
-
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
 

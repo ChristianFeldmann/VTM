@@ -960,20 +960,14 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
     )
   {
     const CodingUnit&     cu = *bestCS->cus.front();
-    const PredictionUnit& pu = *cu.firstPU;
 
 #if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isIbcSmallBlk = CU::isIBC(cu) && (cu.lwidth() * cu.lheight() <= 16);
-    if (!cu.affine && !cu.triangle && !isIbcSmallBlk)
+    CU::saveMotionInHMVP( cu, isIbcSmallBlk );
 #else
     bool isShare = ((CU::isIBC(cu) && m_shareState == 2) ? true : false);
-    if (!cu.affine && !cu.triangle && !isShare)
+    CU::saveMotionInHMVP( cu, isShare );
 #endif
-    {
-      MotionInfo mi = pu.getMotionInfo();
-      mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
-      cu.cs->addMiToLut(CU::isIBC(cu) ? cu.cs->motionLut.lutIbc : cu.cs->motionLut.lut, mi);
-    }
   }
   bestCS->picture->getPredBuf(currCsArea).copyFrom(bestCS->getPredBuf(currCsArea));
   bestCS->picture->getRecoBuf( currCsArea ).copyFrom( bestCS->getRecoBuf( currCsArea ) );
@@ -992,6 +986,7 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 #endif
   if (bestCS->cus.size() == 1) // no partition
   {
+    CHECK(bestCS->cus[0]->tileIdx != bestCS->picture->brickMap->getBrickIdxRsMap(bestCS->area.lumaPos()), "Wrong tile index!");
     if (bestCS->cus[0]->predMode == MODE_PLT)
     {
       for (int i = compBegin; i < (compBegin + numComp); i++)
@@ -1066,6 +1061,9 @@ void EncCu::updateLambda (Slice* slice, const int dQP,
   if (updateRdCostLambda)
   {
     m_pcRdCost->setLambda (newLambda, slice->getSPS()->getBitDepths());
+#if WCG_EXT
+    m_pcRdCost->saveUnadjustedLambda();
+#endif
   }
 }
 #endif // SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
@@ -2244,6 +2242,7 @@ void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&b
 
   partitioner.setCUData(cu);
   cu.slice = tempCS->slice;
+  cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap(tempCS->area.lumaPos());
   cu.skip = false;
   cu.predMode = MODE_INTER;
   cu.transQuantBypass = encTestMode.lossless;
@@ -4318,7 +4317,11 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
   const bool mtsAllowed = tempCS->sps->getUseInterMTS() && CU::isInter( *cu ) && partitioner.currArea().lwidth() <= MTS_INTER_MAX_CU_SIZE && partitioner.currArea().lheight() <= MTS_INTER_MAX_CU_SIZE;
   uint8_t sbtAllowed = cu->checkAllowedSbt();
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  sbtAllowed = ((cu->lwidth() > 32 || cu->lheight() > 32) && !(m_pcEncCfg->getUse64SBTRDOCheck())) ? 0 : sbtAllowed;
+  //SBT resolution-dependent fast algorithm: not try size-64 SBT in RDO for low-resolution sequences (now resolution below HD)
+  if( tempCS->pps->getPicWidthInLumaSamples() < (uint32_t)m_pcEncCfg->getSBTFast64WidthTh() )
+  {
+    sbtAllowed = ((cu->lwidth() > 32 || cu->lheight() > 32)) ? 0 : sbtAllowed;
+  }
 #endif
   uint8_t numRDOTried = 0;
   Distortion sbtOffDist = 0;

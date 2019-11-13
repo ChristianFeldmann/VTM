@@ -290,7 +290,7 @@ protected:
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  bool      m_SBT64RDOCheck;                                            
+  int       m_SBTFast64WidthTh;
 #endif
   bool      m_SMVD;
   bool      m_compositeRefEnabled;
@@ -641,6 +641,10 @@ protected:
   bool                  m_gopBasedTemporalFilterEnabled;               ///< GOP-based Temporal Filter enable/disable
   bool                  m_gopBasedTemporalFilterFutureReference;       ///< Enable/disable future frame references in the GOP-based Temporal Filter
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
+#endif
+
+#if JVET_N0278_FIXES
+  int         m_maxLayers;
 #endif
 
 #if EXTENSION_360_VIDEO

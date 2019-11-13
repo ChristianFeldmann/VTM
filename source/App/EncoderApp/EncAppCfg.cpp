@@ -953,7 +953,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
 #if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  ("SBT64RDO",                                        m_SBT64RDOCheck,             true, "Enable more than 32 SBT in encoder RDO check \n")
+  ( "SBTFast64WidthTh",                               m_SBTFast64WidthTh,                                1920, "Picture width threshold for testing size-64 SBT in RDO (now for HD and above sequences)\n")
 #endif
   ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
@@ -1415,6 +1415,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
+#if JVET_N0278_FIXES
+  ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
+#endif
     ;
 
 #if JVET_O0549_ENCODER_ONLY_FILTER

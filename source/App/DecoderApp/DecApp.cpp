@@ -111,7 +111,9 @@ uint32_t DecApp::decode()
   }
 
   // main decoder loop
+#if !JVET_N0278_FIXES
   bool openedReconFile = false; // reconstruction file not yet opened. (must be performed after SPS is seen)
+#endif
   bool loopFiltered = false;
 
   while (!!bitstreamFile)
@@ -157,7 +159,11 @@ uint32_t DecApp::decode()
           (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
            nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
       {
+#if JVET_N0278_FIXES
+        xFlushOutput( pcListPic, nalu.m_nuhLayerId );
+#else
         xFlushOutput(pcListPic);
+#endif
       }
 
       if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
@@ -170,10 +176,12 @@ uint32_t DecApp::decode()
         if (bNewPicture)
         {
           // check if new picture was detected at an access unit delimiter NALU
+#if !JVET_N0278_FIXES
           if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER)
           {
             msg( ERROR, "Error: New picture detected without access unit delimiter. VVC requires the presence of access unit delimiters.\n");
           }
+#endif
           bitstreamFile.clear();
           /* location points to the current nalunit payload[1] due to the
            * need for the annexB parser to read three extra bytes.
@@ -218,7 +226,11 @@ uint32_t DecApp::decode()
 
     if( pcListPic )
     {
+#if JVET_N0278_FIXES
+      if( !m_reconFileName.empty() && !m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].isOpen() )
+#else
       if ( (!m_reconFileName.empty()) && (!openedReconFile) )
+#endif
       {
         const BitDepths &bitDepths=pcListPic->front()->cs->sps->getBitDepths(); // use bit depths of first reconstructed picture.
         for( uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++ )
@@ -234,8 +246,17 @@ uint32_t DecApp::decode()
           EXIT ("Invalid output bit-depth for packed YUV output, aborting\n");
         }
 
+#if JVET_N0278_FIXES
+        std::string reconFileName = m_reconFileName;
+        if( m_reconFileName.compare( "/dev/null" ) )
+        {
+          reconFileName.insert( reconFileName.size() - 4, std::to_string( nalu.m_nuhLayerId ) );
+        }
+        m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
+#else
         m_cVideoIOYuvReconFile.open( m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
         openedReconFile = true;
+#endif
       }
       // write reconstruction to file
       if( bNewPicture )
@@ -248,7 +269,11 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInPicture (false);
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
+#if JVET_P0363_CLEANUP_NUT_TABLE
+      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)
+#else
       if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL_15)
+#endif
         || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GDR)))
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
@@ -308,10 +333,20 @@ void DecApp::xCreateDecLib()
 
 void DecApp::xDestroyDecLib()
 {
+#if JVET_N0278_FIXES
+  if( !m_reconFileName.empty() )
+  {
+    for( auto & recFile : m_cVideoIOYuvReconFile )
+    {
+      recFile.second.close();
+    }
+  }
+#else
   if ( !m_reconFileName.empty() )
   {
     m_cVideoIOYuvReconFile.close();
   }
+#endif
 
   // destroy decoder class
   m_cDecLib.destroy();
@@ -408,7 +443,11 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 
           if (display)
           {
+#if JVET_N0278_FIXES
+            m_cVideoIOYuvReconFile[pcPicTop->layerId].write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
+#else
             m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
+#endif
                                           m_outputColourSpaceConvert,
                                           false, // TODO: m_packedYUVMode,
                                           conf.getWindowLeftOffset() * SPS::getWinUnitX( pcPicTop->cs->sps->getChromaFormatIdc() ),
@@ -462,10 +501,19 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           ChromaFormat chromaFormatIDC = sps->getChromaFormatIdc();
           if( m_upscaledOutput )
           {
+#if JVET_N0278_FIXES
+            m_cVideoIOYuvReconFile[pcPic->layerId].writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#else
             m_cVideoIOYuvReconFile.writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#endif
           }
           else
+          {
+#if JVET_N0278_FIXES
+            m_cVideoIOYuvReconFile[pcPic->layerId].write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
+#else
             m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
+#endif
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
                                         conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
@@ -473,6 +521,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
                                         conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
                                         conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+            }
         }
 
 #if HEVC_SEI
@@ -499,7 +548,11 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 
 /** \param pcListPic list of pictures to be written to file
  */
+#if JVET_N0278_FIXES
+void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
+#else
 void DecApp::xFlushOutput( PicList* pcListPic )
+#endif
 {
   if(!pcListPic || pcListPic->empty())
   {
@@ -521,6 +574,13 @@ void DecApp::xFlushOutput( PicList* pcListPic )
       iterPic++;
       pcPicBottom = *(iterPic);
 
+#if JVET_N0278_FIXES
+      if( pcPicTop->layerId != layerId && layerId != NOT_VALID )
+      {
+        continue;
+      }
+#endif
+
       if ( pcPicTop->neededForOutput && pcPicBottom->neededForOutput && !(pcPicTop->getPOC()%2) && (pcPicBottom->getPOC() == pcPicTop->getPOC()+1) )
       {
         // write to file
@@ -529,7 +589,11 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           const Window &conf = pcPicTop->cs->pps->getConformanceWindow();
           const bool    isTff   = pcPicTop->topField;
 
+#if JVET_N0278_FIXES
+          m_cVideoIOYuvReconFile[pcPicTop->layerId].write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
+#else
           m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
+#endif
                                         m_outputColourSpaceConvert,
                                         false, // TODO: m_packedYUVMode,
                                         conf.getWindowLeftOffset() * SPS::getWinUnitX( pcPicTop->cs->sps->getChromaFormatIdc() ),
@@ -575,6 +639,14 @@ void DecApp::xFlushOutput( PicList* pcListPic )
     {
       pcPic = *(iterPic);
 
+#if JVET_N0278_FIXES
+      if( pcPic->layerId != layerId && layerId != NOT_VALID )
+      {
+        iterPic++;
+        continue;
+      }
+#endif
+
       if (pcPic->neededForOutput)
       {
         // write to file
@@ -586,10 +658,19 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           ChromaFormat chromaFormatIDC = sps->getChromaFormatIdc();
           if( m_upscaledOutput )
           {
+#if JVET_N0278_FIXES
+            m_cVideoIOYuvReconFile[pcPic->layerId].writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#else
             m_cVideoIOYuvReconFile.writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+#endif
           }
           else
+          {
+#if JVET_N0278_FIXES
+            m_cVideoIOYuvReconFile[pcPic->layerId].write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
+#else
             m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
+#endif
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
                                         conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
@@ -597,6 +678,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
                                         conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
                                         conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
+            }
         }
 
 #if HEVC_SEI
@@ -625,6 +707,20 @@ void DecApp::xFlushOutput( PicList* pcListPic )
       iterPic++;
     }
   }
+
+#if JVET_N0278_FIXES
+  if( layerId != NOT_VALID )
+  {
+    for( iterPic = pcListPic->begin(); iterPic != pcListPic->end(); iterPic++ )
+    {
+      if( *iterPic == nullptr )
+      {
+        pcListPic->erase( iterPic );
+      }
+    }
+  }
+  else
+#endif
   pcListPic->clear();
   m_iPOCLastDisplay = -MAX_INT;
 }

@@ -80,7 +80,6 @@ int getLSB(int poc, int maxLSB)
   }
 }
 
-
 EncGOP::EncGOP()
 {
   m_iLastIDR            = 0;
@@ -210,7 +209,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_HLSWriter            = pcEncLib->getHLSWriter();
   m_pcLoopFilter         = pcEncLib->getLoopFilter();
   m_pcSAO                = pcEncLib->getSAO();
-  m_pcALF = pcEncLib->getALF();
+  m_pcALF                = pcEncLib->getALF();
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
   ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
   ::memset(m_totalCoded, 0, sizeof(m_totalCoded));
@@ -338,7 +337,7 @@ int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-  CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+  CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
   m_HLSWriter->codeSPS( sps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -362,16 +361,37 @@ int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId )
   m_HLSWriter->setBitstream(&nalu.m_Bitstream);
   nalu.m_nuhLayerId = layerId;
   nalu.m_temporalId = aps->getTemporalId();
+#if JVET_N0278_FIXES
+  aps->setLayerId( layerId );
+#endif
   CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
   m_HLSWriter->codeAPS(aps);
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
-int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst)
+int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst )
 {
   int actualTotalBits = 0;
 
+#if JVET_N0278_FIXES
+  if( bSeqFirst )
+  {
+    actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
+    actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
+
+    if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+    {
+      CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
+      actualTotalBits += xWriteSPS( accessUnit, slice->getSPS() );
+    }
+  }
+
+  if( m_pcEncLib->PPSNeedsWriting( slice->getPPS()->getPPSId() ) ) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  {
+    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
+  }
+#else
   if (bSeqFirst)
   {
     actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -390,6 +410,7 @@ int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const boo
   {
     actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
   }
+#endif
 
   return actualTotalBits;
 }
@@ -414,7 +435,11 @@ void EncGOP::xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUn
   {
     return;
   }
+#if JVET_N0278_FIXES
+  OutputNALUnit nalu( naluType, m_pcEncLib->getLayerId(), temporalId );
+#else
   OutputNALUnit nalu(naluType, temporalId);
+#endif
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false, temporalId);
   auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
   auPos++;
@@ -431,7 +456,11 @@ void EncGOP::xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages
   {
     SEIMessages tmpMessages;
     tmpMessages.push_back(*sei);
+#if JVET_N0278_FIXES
+    OutputNALUnit nalu( naluType, m_pcEncLib->getLayerId(), temporalId );
+#else
     OutputNALUnit nalu(naluType, temporalId);
+#endif
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false, temporalId);
     auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
     auPos++;
@@ -1836,7 +1865,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     slice->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
     if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
     {
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
       slice->setLmcsAPSId(apsId);
       APS* lmcsAPS = slice->getLmcsAPS();
       if (lmcsAPS == nullptr)
@@ -1867,7 +1900,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
 
     if (slice->getLmcsEnabledFlag())
     {
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
       slice->setLmcsAPSId(apsId);
     }
   }
@@ -1884,6 +1921,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                           std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                           bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                         , bool isEncodeLtRef
+#if JVET_N0278_FIXES
+                        , const int picIdInGOP
+#endif
 )
 {
   // TODO: Split this function up.
@@ -1895,9 +1935,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   AccessUnit::iterator  itLocationToPushSliceHeaderNALU; // used to store location where NALU containing slice header is to be inserted
   Picture* scaledRefPic[MAX_NUM_REF] = {};
 
-  xInitGOP(iPOCLast, iNumPicRcvd, isField
-         , isEncodeLtRef
-  );
+  xInitGOP( iPOCLast, iNumPicRcvd, isField, isEncodeLtRef );
 
   m_iNumPicCoded = 0;
   SEIMessages leadingSeiMessages;
@@ -1912,6 +1950,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     effFieldIRAPMap.initialize(isField, m_iGopSize, iPOCLast, iNumPicRcvd, m_iLastIDR, this, m_pcCfg);
   }
 
+#if JVET_N0278_FIXES
+  for( int iGOPid = picIdInGOP; iGOPid <= picIdInGOP; iGOPid++ )
+  {
+    // reset flag indicating whether pictures have been encoded
+    m_pcCfg->setEncodedFlag( iGOPid, false );
+#else
   // reset flag indicating whether pictures have been encoded
   for ( int iGOPid=0; iGOPid < m_iGopSize; iGOPid++ )
   {
@@ -1920,6 +1964,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
   for ( int iGOPid=0; iGOPid < m_iGopSize; iGOPid++ )
   {
+#endif
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
     {
       iGOPid=effFieldIRAPMap.adjustGOPid(iGOPid);
@@ -2614,7 +2659,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
     {
       pcSlice->setscalingListPresentFlag( true );
+
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 7, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
       pcSlice->setscalingListAPSId( apsId );
 
       ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
@@ -2681,7 +2731,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
         pcSlice->setLmcsEnabledFlag(true);
+
+#if JVET_N0278_FIXES
+        int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
         int apsId = 0;
+#endif
+
         pcSlice->setLmcsAPSId(apsId);
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
@@ -2870,7 +2926,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
       }
+
+#if JVET_N0278_FIXES
+      int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
+
+      // it is assumed that layerIdx equal to 0 is always present
+      actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, writePS && !layerIdx );
+#else
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS);
+#endif
 
       if (writePS)
       {
@@ -2880,7 +2944,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         m_bSeqFirst = false;
       }
+
+#if JVET_N0278_FIXES
+      // it is assumed that layerIdx equal to 0 is always present
+      if( m_pcCfg->getAccessUnitDelimiter() && !layerIdx )
+#else
       if (m_pcCfg->getAccessUnitDelimiter())
+#endif
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
@@ -2896,7 +2966,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool writeAPS = aps && apsMap->getChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
         if (writeAPS)
         {
+#if JVET_N0278_FIXES
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#else
           actualTotalBits += xWriteAPS(accessUnit, aps);
+#endif
           apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
           CHECK(aps != pcSlice->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
         }
@@ -2911,7 +2985,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool writeAPS = aps && apsMap->getChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
         if( writeAPS )
         {
+#if JVET_N0278_FIXES
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#else
           actualTotalBits += xWriteAPS( accessUnit, aps );
+#endif
           apsMap->clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
           CHECK( aps != pcSlice->getscalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
         }
@@ -2935,7 +3013,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           if (writeAPS )
           {
+#if JVET_N0278_FIXES
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#else
             actualTotalBits += xWriteAPS(accessUnit, aps);
+#endif
             apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
             CHECK(aps != pcSlice->getAlfAPSs()[apsId], "Wrong APS pointer in compressGOP");
           }
@@ -2971,7 +3053,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
 
         /* start slice NALunit */
+#if JVET_N0278_FIXES
+        OutputNALUnit nalu( pcSlice->getNalUnitType(), m_pcEncLib->getLayerId(), pcSlice->getTLayer() );
+#else
         OutputNALUnit nalu( pcSlice->getNalUnitType(), pcSlice->getTLayer() );
+#endif
         m_HLSWriter->setBitstream( &nalu.m_Bitstream );
 
         pcSlice->setNoIncorrectPicOutputFlag(false);
@@ -3073,9 +3159,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       m_pcCfg->setEncodedFlag(iGOPid, true);
 
       double PSNR_Y;
-      xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y
-                       , isEncodeLtRef
-      );
+      xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y, isEncodeLtRef );
 
 #if HEVC_SEI
       // Only produce the Green Metadata SEI message with the last picture.
@@ -3164,8 +3248,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
   delete pcBitstreamRedirect;
 
+#if JVET_N0278_FIXES
+  CHECK( m_iNumPicCoded > 1, "Unspecified error" );
+#else
   CHECK(!( (m_iNumPicCoded == iNumPicRcvd) ), "Unspecified error");
-
+#endif
 }
 
 void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths )
@@ -3352,7 +3439,11 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
   while (iterPic != rcListPic.end())
   {
     rpcPic = *(iterPic);
+#if JVET_N0278_FIXES
+    if( rpcPic->getPOC() == pocCurr && rpcPic->layerId == m_pcEncLib->getLayerId() )
+#else
     if (rpcPic->getPOC() == pocCurr)
+#endif
     {
       break;
     }
@@ -3953,8 +4044,14 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( g_verbosity >= NOTICE )
   {
+#if JVET_N0278_FIXES
+    msg( NOTICE, "POC %4d LId: %2d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
+         pcSlice->getPOC(),
+         pcSlice->getPic()->layerId,
+#else
     msg( NOTICE, "POC %4d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
          pcSlice->getPOC(),
+#endif
          pcSlice->getTLayer(),
          c,
          pcSlice->getSliceQp(),
@@ -4050,21 +4147,22 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       msg( NOTICE, " [L%d ", iRefList );
       for( int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx( RefPicList( iRefList ) ); iRefIndex++ )
       {
-        if( m_pcEncLib->isRPREnabled() )
+        const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
+        
+        if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
         {
-          const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
-
-          if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool( 1 - iRefList ) && pcSlice->getColRefIdx() == iRefIndex )
-          {
+          if ( scaleRatio.first != 1 << SCALE_RATIO_BITS || scaleRatio.second != 1 << SCALE_RATIO_BITS )
             msg( NOTICE, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
-          }
           else
-          {
-            msg( NOTICE, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
-          }
+            msg( NOTICE, "%dc ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
         }
         else
-        msg( NOTICE, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
+        {
+          if ( scaleRatio.first != 1 << SCALE_RATIO_BITS || scaleRatio.second != 1 << SCALE_RATIO_BITS )
+            msg( NOTICE, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
+          else
+            msg( NOTICE, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
+        }
       }
       msg( NOTICE, "]" );
     }

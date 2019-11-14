@@ -753,6 +753,9 @@ void EncSlice::resetQP( Picture* pic, int sliceQP, double lambda )
   // store lambda
   slice->setSliceQp( sliceQP );
   setUpLambda(slice, lambda, sliceQP);
+#if WCG_EXT
+  m_pcRdCost->saveUnadjustedLambda();
+#endif
 }
 
 #if ENABLE_QPA
@@ -1345,6 +1348,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
   m_pcInterSearch->resetAffineMVList();
   m_pcInterSearch->resetUniMvList();
+  ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
   encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
   if (checkPLTRatio) m_pcLib->checkPltStats( pcPic );
 }
@@ -1572,10 +1576,10 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 
         estQP     = Clip3( -pcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, estQP );
 
+        pRdCost->setLambda(estLambda, pcSlice->getSPS()->getBitDepths());
 #if WCG_EXT
         pRdCost->saveUnadjustedLambda();
 #endif
-        pRdCost->setLambda(estLambda, pcSlice->getSPS()->getBitDepths());
 
 #if RDOQ_CHROMA_LAMBDA
         // set lambda for RDOQ

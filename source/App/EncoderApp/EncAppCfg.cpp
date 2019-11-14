@@ -608,6 +608,27 @@ static inline istream& operator >> (std::istream &in, EncAppCfg::OptionalValue<T
 }
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+template <class T1, class T2>
+static inline istream& operator >> (std::istream& in, std::map<T1, T2>& map)
+{
+  T1 key;
+  T2 value;
+  try
+  {
+    in >> key;
+    in >> value;
+  }
+  catch (...)
+  {
+    in.setstate(ios::failbit);
+  }
+
+  map[key] = value;
+  return in;
+}
+#endif
+
 static void
 automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
                                const bool bUsingChromaQPAdjustment,
@@ -924,6 +945,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MTSInterMaxCand",                                 m_MTSInterMaxCand,                                    4, "Number of additional candidates to test in encoder search for MTS in inter slices\n")
   ("MTSImplicit",                                     m_MTSImplicit,                                        0, "Enable implicit MTS (when explicit MTS is off)\n")
   ( "SBT",                                            m_SBT,                                            false, "Enable Sub-Block Transform for inter blocks\n" )
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  ( "SBTFast64WidthTh",                               m_SBTFast64WidthTh,                                1920, "Picture width threshold for testing size-64 SBT in RDO (now for HD and above sequences)\n")
+#endif
   ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
@@ -971,6 +995,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "1: rsp both (CW66 for QP<=22), 2: rsp TID0 (for all QP),"
                                                                                                                "3: rsp inter(CW66 for QP<=22), 4: rsp inter(for all QP).")
   ("LMCSInitialCW",                                   m_initialCW,                                         0u, "LMCS initial total codeword (0~1023) when LMCSAdpOption > 0")
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  ("LMCSOffset",                                      m_CSoffset,                                           0, "LMCS chroma residual scaling offset")
+#endif
   ("IntraCMD",                                        m_intraCMD,                                          0u, "IntraChroma MD: 0: none, 1:fixed to default wPSNR weight")
   ("LCTUFast",                                        m_useFastLCTU,                                    false, "Fast methods for large CTU")
   ("FastMrg",                                         m_useFastMrg,                                     false, "Fast methods for inter merge")
@@ -1112,7 +1139,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
+#if JVET_P0058_CHROMA_TS
+  ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
+#endif
+#if JVET_P0059_CHROMA_BDPCM
+  ("BDPCM",                                           m_useBDPCM,                                           0, "BDPCM (0:off, 1:lumaonly, 2:lumachroma")
+#else
   ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
+#endif
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
@@ -1374,7 +1408,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
+#if JVET_N0278_FIXES
+  ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
+#endif
     ;
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  opts.addOptions()
+    ("TemporalFilter",                                m_gopBasedTemporalFilterEnabled,          false,            "Enable GOP based temporal filter. Disabled per default")
+    ("TemporalFilterFutureReference",                 m_gopBasedTemporalFilterFutureReference,   true,            "Enable referencing of future frames in the GOP based temporal filter. This is typically disabled for Low Delay configurations.")
+    ("TemporalFilterStrengthFrame*",                  m_gopBasedTemporalFilterStrengths, std::map<int, double>(), "Strength for every * frame in GOP based temporal filter, where * is an integer."
+                                                                                                                  " E.g. --TemporalFilterStrengthFrame8 0.95 will enable GOP based temporal filter at every 8th frame with strength 0.95");
+#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg::TExt360AppEncCfgContext ext360CfgContext;
@@ -2654,8 +2699,13 @@ bool EncAppCfg::xCheckParameter()
 #endif
   if (m_lumaLevelToDeltaQPMapping.mode && m_lumaReshapeEnable)
   {
+#if !JVET_P0335_HDRCTC_CHANGE
     msg(WARNING, "For HDR-PQ, reshaper should be used mutual-exclusively with Luma-level-based Delta QP. If use luma DQP, turn reshaper off.\n");
     m_lumaReshapeEnable = false;
+#else
+    msg(WARNING, "For HDR-PQ, LMCS should be used mutual-exclusively with Luma-level-based Delta QP. If use LMCS, turn lumaDQP off.\n");
+    m_lumaLevelToDeltaQPMapping.mode = LUMALVL_TO_DQP_DISABLED;
+#endif
   }
   if (!m_lumaReshapeEnable)
   {
@@ -2682,6 +2732,10 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_adpOption > 4, "Max. LMCS Adaptation Option is 4");
     xConfirmPara(m_initialCW < 0, "Min. Initial Total Codeword is 0");
     xConfirmPara(m_initialCW > 1023, "Max. Initial Total Codeword is 1023");
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+    xConfirmPara(m_CSoffset < -7, "Min. LMCS Offset value is -7");
+    xConfirmPara(m_CSoffset > 7, "Max. LMCS Offset value is 7");
+#endif
     if (m_updateCtrl > 0 && m_adpOption > 2) { m_adpOption -= 2; }
   }
 
@@ -3234,11 +3288,15 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = 0;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = 0;
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 0;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   case 1: // RA setting
@@ -3246,11 +3304,15 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 0;
     m_PPSRefPicListSPSIdc1 = 0;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = 0;
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
     break;
   case 2: // LDB setting
@@ -3258,11 +3320,15 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+#if !JVET_P0206_TMVP_flags
+    m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1); 
+#endif
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
     break;
   case 3: // LDP setting
@@ -3270,11 +3336,15 @@ bool EncAppCfg::xCheckParameter()
     m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
     m_PPSRefPicListSPSIdc0 = 2;
     m_PPSRefPicListSPSIdc1 = 2;
+#if !JVET_P0206_TMVP_flags
     m_PPSTemporalMVPEnabledIdc = m_TMVPModeId == 2 ? 0: ( int(m_TMVPModeId == 1 ? 1: 0) + 1);
+#endif
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = 5 - m_maxNumAffineMergeCand + 1;
+#endif
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
     break;
   default:
@@ -3381,8 +3451,18 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  if (m_gopBasedTemporalFilterEnabled)
+  {
+    xConfirmPara(m_temporalSubsampleRatio != 1, "GOP Based Temporal Filter only support Temporal sub-sample ratio 1");
+  }
+#endif
 #if EXTENSION_360_VIDEO
   check_failed |= m_ext360.verifyParameters();
+#endif
+
+#if JVET_P0059_CHROMA_BDPCM
+  xConfirmPara(m_useBDPCM < 0 || m_useBDPCM > 2, "BDPCM must be in range 0..2");
 #endif
 
 #undef xConfirmPara
@@ -3561,6 +3641,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
+#if JVET_P0058_CHROMA_TS
+  msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
+#endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)
@@ -3666,6 +3749,9 @@ void EncAppCfg::xPrintParameter()
       msg(VERBOSE, "(Signal:%s ", m_reshapeSignalType == 0 ? "SDR" : (m_reshapeSignalType == 2 ? "HDR-HLG" : "HDR-PQ"));
       msg(VERBOSE, "Opt:%d", m_adpOption);
       if (m_adpOption > 0) { msg(VERBOSE, " CW:%d", m_initialCW); }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      msg(VERBOSE, " CSoffset:%d", m_CSoffset);
+#endif
       msg(VERBOSE, ") ");
     }
     msg(VERBOSE, "MIP:%d ", m_MIP);
@@ -3697,13 +3783,15 @@ void EncAppCfg::xPrintParameter()
 
   if( m_rprEnabled )
   {
-    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
+    msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d ", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
   }
   else
   {
-    msg( VERBOSE, "RPR:%d", 0 );
+    msg( VERBOSE, "RPR:%d ", 0 );
   }
-
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  msg(VERBOSE, "TemporalFilter:%d ", m_gopBasedTemporalFilterEnabled);
+#endif
 #if EXTENSION_360_VIDEO
   m_ext360.outputConfigurationSummary();
 #endif

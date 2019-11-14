@@ -409,11 +409,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_dep_quant_enabled_idc");        pcPPS->setPPSDepQuantEnabledIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[0]");      pcPPS->setPPSRefPicListSPSIdc0(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[1]");      pcPPS->setPPSRefPicListSPSIdc1(uiCode);
+#if !JVET_P0206_TMVP_flags
     READ_CODE( 2, uiCode, "pps_temporal_mvp_enabled_idc");     pcPPS->setPPSTemporalMVPEnabledIdc(uiCode);
+#endif
     READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     READ_UVLC( uiCode, "pps_five_minus_max_num_subblock_merge_cand_plus1"); pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uiCode);
+#endif
     READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode);
   }
   else
@@ -421,11 +425,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSDepQuantEnabledIdc(0);
     pcPPS->setPPSRefPicListSPSIdc0(0);
     pcPPS->setPPSRefPicListSPSIdc1(0);
+#if !JVET_P0206_TMVP_flags
     pcPPS->setPPSTemporalMVPEnabledIdc(0);
+#endif
     pcPPS->setPPSMvdL1ZeroIdc(0);
     pcPPS->setPPSCollocatedFromL0Idc(0);
     pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(0);
+#endif
     pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0);
   }
 
@@ -457,8 +465,23 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) < -12, "Invalid Cr QP offset" );
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) >  12, "Invalid Cr QP offset" );
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  READ_FLAG(uiCode, "pps_joint_cbcr_qp_offset_present_flag");
+  pcPPS->setJointCbCrQpOffsetPresentFlag(uiCode ? true : false);
+
+  if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+  {
+    READ_SVLC(iCode, "pps_joint_cbcr_qp_offset");
+  }
+  else
+  {
+    iCode = 0;
+  }
+#else
   READ_SVLC( iCode, "pps_joint_cbcr_qp_offset");
+#endif
   pcPPS->setQpOffset(JOINT_CbCr, iCode);
+
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) >  12, "Invalid CbCr QP offset" );
 
@@ -489,7 +512,18 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
       READ_SVLC(crOffset, "cr_qp_offset_list[i]");
       CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+      if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+      {
+        READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+      }
+      else
+      {
+        jointCbCrOffset = 0;
+      }
+#else
       READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+#endif
       CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
       // table uses +1 for index (see comment inside the function)
       pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
@@ -708,15 +742,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
     if (pcPPS->getRectSliceFlag() && pcPPS->getSingleBrickPerSliceFlag())
     {
-      std::vector<int> topLeft(numTilesInPic);  //TODO: this should be numBricksInPic. Fix it when the bricks codes have been updated
-      std::vector<int> bottomRight(numTilesInPic);
+      std::vector<int> bottomRightBrickIdxDelta(numTilesInPic);  //TODO: this should be numBricksInPic. Fix it when the bricks codes have been updated
       for (uint32_t i = 0; i < numTilesInPic; i++)
       {
-        topLeft[i] = i;
-        bottomRight[i] = i;
+        bottomRightBrickIdxDelta[i] = i == 0 ? 0 : 1;
       }
-      pcPPS->setTopLeftBrickIdx(topLeft);
-      pcPPS->setBottomRightBrickIdx(bottomRight);
+      pcPPS->setBottomRightBrickIdxDelta(bottomRightBrickIdxDelta);
+      pcPPS->setNumSlicesInPicMinus1(numTilesInPic - 1);
     }
 
     READ_FLAG( uiCode, "loop_filter_across_bricks_enabled_flag ");        pcPPS->setLoopFilterAcrossBricksEnabledFlag(uiCode ? true : false);
@@ -974,6 +1006,17 @@ void HLSyntaxReader::parseLmcsAps( APS* aps )
     int signCW = code;
     info.reshaperModelBinCWDelta[i] = (1 - 2 * signCW) * absCW;
   }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  READ_CODE(3, code, "lmcs_delta_abs_crs");
+  int absCW = code;
+  if (absCW > 0)
+  {
+    READ_CODE(1, code, "lmcs_delta_sign_crs_flag");
+  }
+  int signCW = code;
+  info.chrResScalingOffset = (1 - 2 * signCW) * absCW;
+#endif
+
   aps->setReshaperAPSInfo(info);
 }
 
@@ -1193,6 +1236,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_P0244_SPS_CLEAN_UP
   CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
 #endif
+#if JVET_P0460_PLT_TS_MIN_QP
+  pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
+#endif  
+  READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
+  READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
 #if JVET_P0244_SPS_CLEAN_UP
   READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
@@ -1294,6 +1342,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode > ctbLog2SizeY - 2, "Invalid log2_min_luma_coding_block_size_minus2 signalled");
 #endif
 
+#if JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT
+  CHECK(log2MinCUSize > std::min(6, (int)(ctbLog2SizeY)), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+#endif
   CHECK( ( pcSPS->getMaxPicWidthInLumaSamples() % ( std::max( 8, int( pcSPS->getMaxCUWidth() >> ( pcSPS->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pcSPS->getMaxPicHeightInLumaSamples() % ( std::max( 8, int( pcSPS->getMaxCUHeight() >> ( pcSPS->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
 
@@ -1305,7 +1356,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   unsigned minQtLog2SizeInterY = uiCode + pcSPS->getLog2MinCodingBlockSize();
   minQT[1] = 1 << minQtLog2SizeInterY;
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slice");     maxBTD[1] = uiCode;
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+  CHECK(uiCode > 2*(ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_luma");     maxBTD[0] = uiCode;
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+  CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
 
   maxTTSize[0] = maxBTSize[0] = minQT[0];
   if (maxBTD[0] != 0)
@@ -1327,6 +1384,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
     READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_chroma"); maxBTD[2] = uiCode;
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+    CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
     maxTTSize[2] = maxBTSize[2] = minQT[2];
     if (maxBTD[2] != 0)
     {
@@ -1343,11 +1403,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
+#endif
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    chromaQpMappingTableParams.setNumQpTables(numQpTables);
+    for (int i = 0; i < numQpTables; i++)
+#else
     for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+#endif
     {
       READ_UVLC(uiCode, "num_points_in_qp_table_minus1"); chromaQpMappingTableParams.setNumPtsInCQPTableMinus1(i,uiCode);
       std::vector<int> deltaQpInValMinus1(chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i) + 1);
@@ -1355,7 +1424,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       for (int j = 0; j <= chromaQpMappingTableParams.getNumPtsInCQPTableMinus1(i); j++)
       {
         READ_UVLC(uiCode, "delta_qp_in_val_minus1");  deltaQpInValMinus1[j] = uiCode;
+#if JVET_P0469_QP_OUT_VAL
+        READ_UVLC(uiCode, "delta_qp_diff_val");
+        deltaQpOutVal[j] = uiCode ^ deltaQpInValMinus1[j];
+#else
         READ_UVLC(uiCode, "delta_qp_out_val");        deltaQpOutVal[j] = uiCode;
+#endif
       }
       chromaQpMappingTableParams.setDeltaQpInValMinus1(i, deltaQpInValMinus1);
       chromaQpMappingTableParams.setDeltaQpOutVal(i, deltaQpOutVal);
@@ -1364,19 +1438,28 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->derivedChromaQPMappingTables();
   }
 
-  READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
-  READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
 
-
   READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
   if (pcSPS->getTransformSkipEnabledFlag())
   {
+#if JVET_P0059_CHROMA_BDPCM
+      READ_FLAG(uiCode, "sps_bdpcm_enabled_flag");
+      if (uiCode && pcSPS->getChromaFormatIdc() == CHROMA_444 )
+      {
+          READ_FLAG(uiCode, "sps_bdpcm_enabled_chroma_flag");
+          uiCode++;
+      }
+      pcSPS->setBDPCMEnabled(uiCode);
+#else
     READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
+#endif
   }
+#if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   READ_FLAG( uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag (uiCode ? true : false);
+#endif
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
 
@@ -1450,10 +1533,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sbt_enable_flag");                             pcSPS->setUseSBT(uiCode != 0);
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( pcSPS->getUseSBT() )
   {
     READ_FLAG(uiCode, "max_sbt_size_64_flag");                      pcSPS->setMaxSbtSize(std::min((int)(1 << pcSPS->getLog2MaxTbSize()), uiCode != 0 ? 64 : 32));
   }
+#endif
   // KJS: not in draft yet
   READ_FLAG(uiCode, "sps_reshaper_enable_flag");                   pcSPS->setUseReshaper(uiCode == 1);
   READ_FLAG(uiCode, "isp_enable_flag");                            pcSPS->setUseISP(uiCode != 0);
@@ -2021,6 +2106,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
         READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb");                 pcSlice->setMinQTSize(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
         READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_luma");                 pcSlice->setMaxMTTHierarchyDepth(uiCode);
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+        CHECK(uiCode > 2 * (floorLog2(sps->getCTUSize()) - sps->getLog2MinCodingBlockSize()), "slice_max_mtt_hierarchy_depth_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
         if (pcSlice->getMaxMTTHierarchyDepth() != 0)
         {
           READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt");             pcSlice->setMaxBTSize(pcSlice->getMinQTSize() << uiCode);
@@ -2037,6 +2125,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           READ_UVLC(uiCode, "slice_log2_diff_min_qt_min_cb_chroma");                 pcSlice->setMinQTSizeIChroma(1 << (uiCode + sps->getLog2MinCodingBlockSize()));
           READ_UVLC(uiCode, "slice_max_mtt_hierarchy_depth_chroma");                            pcSlice->setMaxMTTHierarchyDepthIChroma(uiCode);
+#if JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT
+          CHECK(uiCode > 2 * (floorLog2(sps->getCTUSize()) - sps->getLog2MinCodingBlockSize()), "slice_max_mtt_hierarchy_depth_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
+#endif
           if (pcSlice->getMaxMTTHierarchyDepthIChroma() != 0)
           {
             READ_UVLC(uiCode, "slice_log2_diff_max_bt_min_qt_chroma");             pcSlice->setMaxBTSizeIChroma(pcSlice->getMinQTSizeIChroma() << uiCode);
@@ -2053,13 +2144,20 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
     if(!pcSlice->isIntra())
     {
+#if JVET_P0206_TMVP_flags
+      if (sps->getSPSTemporalMVPEnabledFlag())
+#else
       if (sps->getSPSTemporalMVPEnabledFlag() && !pps->getPPSTemporalMVPEnabledIdc())
+#endif
       {
         READ_FLAG( uiCode, "slice_temporal_mvp_enabled_flag" );
         pcSlice->setEnableTMVPFlag( uiCode == 1 ? true : false );
       }
       else
       {
+#if JVET_P0206_TMVP_flags
+        pcSlice->setEnableTMVPFlag(false);
+#else
         if (!sps->getSPSTemporalMVPEnabledFlag())
         {
           pcSlice->setEnableTMVPFlag(false);
@@ -2068,6 +2166,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           pcSlice->setEnableTMVPFlag((pps->getPPSTemporalMVPEnabledIdc() - 1) == 1 ? true: false);
         }
+#endif
       }
     }
 
@@ -2177,6 +2276,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       else
       if ( sps->getUseAffine() )
       {
+#if JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
+        READ_UVLC(uiCode, "five_minus_max_num_subblock_merge_cand");
+#else
         if (!pps->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
         {
           READ_UVLC(uiCode, "five_minus_max_num_subblock_merge_cand");
@@ -2185,6 +2287,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           uiCode = pps->getPPSFiveMinusMaxNumSubblockMergeCandPlus1() - 1;
         }
+#endif
         pcSlice->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
       }
       if ( sps->getFpelMmvdEnabledFlag() )
@@ -2777,6 +2880,47 @@ void HLSyntaxReader::parsePredWeightTable( Slice* pcSlice, const SPS *sps )
 */
 void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  uint32_t  code;
+  bool scalingListCopyModeFlag;
+
+  for (int scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    READ_FLAG(code, "scaling_list_copy_mode_flag");
+    scalingListCopyModeFlag = (code) ? true : false;
+    scalingList->setScalingListCopyModeFlag(scalingListId, scalingListCopyModeFlag);
+
+    scalingList->setScalingListPreditorModeFlag(scalingListId, false);
+    if (!scalingListCopyModeFlag)
+    {
+      READ_FLAG(code, "scaling_list_predictor_mode_flag");
+      scalingList->setScalingListPreditorModeFlag(scalingListId, code);
+    }
+
+    if ((scalingListCopyModeFlag || scalingList->getScalingListPreditorModeFlag(scalingListId)) && scalingListId!= SCALING_LIST_1D_START_2x2 && scalingListId!= SCALING_LIST_1D_START_4x4 && scalingListId!= SCALING_LIST_1D_START_8x8) //Copy Mode
+    {
+      READ_UVLC(code, "scaling_list_pred_matrix_id_delta");
+      scalingList->setRefMatrixId(scalingListId, (uint32_t)((int)(scalingListId)-(code)));
+    }    
+    else if (scalingListCopyModeFlag || scalingList->getScalingListPreditorModeFlag(scalingListId))
+    {
+      scalingList->setRefMatrixId(scalingListId, (uint32_t)((int)(scalingListId)));
+    }
+    if (scalingListCopyModeFlag)//copy
+    {
+      if (scalingListId >= SCALING_LIST_1D_START_16x16)
+      {
+        scalingList->setScalingListDC(scalingListId,
+          ((scalingListId == scalingList->getRefMatrixId(scalingListId)) ? 16
+            : (scalingList->getRefMatrixId(scalingListId) < SCALING_LIST_1D_START_16x16) ? scalingList->getScalingListAddress(scalingList->getRefMatrixId(scalingListId))[0] : scalingList->getScalingListDC(scalingList->getRefMatrixId(scalingListId))));
+      }
+      scalingList->processRefMatrix(scalingListId, scalingList->getRefMatrixId(scalingListId));
+    }
+    else
+    {
+      decodeScalingList(scalingList, scalingListId, scalingList->getScalingListPreditorModeFlag(scalingListId));
+    }
+#else
   uint32_t  code, sizeId, listId;
   bool scalingListPredModeFlag;
   //for each size
@@ -2812,6 +2956,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
         }
       }
     }
+#endif
   }
 
   return;
@@ -2822,11 +2967,40 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 * \param sizeId size index
 * \param listId list index
 */
+#if JVET_P01034_PRED_1D_SCALING_LIST
+void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t scalingListId, bool isPredictor)
+#else
 void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId, uint32_t listId)
+#endif
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
+  int i, coefNum = matrixSize * matrixSize;
+#else
   int i,coefNum = std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]);
+#endif
   int data;
   int scalingListDcCoefMinus8 = 0;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int nextCoef = (isPredictor) ? 0 : SCALING_LIST_START_VALUE;
+  ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(matrixSize)][gp_sizeIdxInfo->idxFrom(matrixSize)];
+  int *dst = scalingList->getScalingListAddress(scalingListId);
+
+  int PredListId = scalingList->getRefMatrixId(scalingListId);
+  if (PredListId > scalingListId) printf("Scaling List error predictor! \n");
+  const int *srcPred = (isPredictor) ? ((scalingListId == PredListId) ? scalingList->getScalingListDefaultAddress(scalingListId) : scalingList->getScalingListAddress(PredListId)) : NULL;
+  int predCoef = 0;
+
+  if (scalingListId >= SCALING_LIST_1D_START_16x16)
+  {
+    READ_SVLC(scalingListDcCoefMinus8, "scaling_list_dc_coef_minus8");
+    nextCoef += scalingListDcCoefMinus8;
+    if (isPredictor)
+    {
+      predCoef = (PredListId >= SCALING_LIST_1D_START_16x16) ? scalingList->getScalingListDC(PredListId) : srcPred[0];
+    }
+    scalingList->setScalingListDC(scalingListId, (nextCoef + predCoef + 256) % 256);
+#else
   int nextCoef = SCALING_LIST_START_VALUE;
   ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))];
   int *dst = scalingList->getScalingListAddress(sizeId, listId);
@@ -2836,18 +3010,29 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
     READ_SVLC( scalingListDcCoefMinus8, "scaling_list_dc_coef_minus8");
     scalingList->setScalingListDC(sizeId,listId,scalingListDcCoefMinus8 + 8);
     nextCoef = scalingList->getScalingListDC(sizeId,listId);
+#endif
   }
 
   for(i = 0; i < coefNum; i++)
   {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    if (scalingListId >= SCALING_LIST_1D_START_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#else
     if (sizeId == SCALING_LIST_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#endif
     {
       dst[scan[i].idx] = 0;
       continue;
     }
     READ_SVLC( data, "scaling_list_delta_coef");
-    nextCoef = (nextCoef + data + 256 ) % 256;
-    dst[scan[i].idx] = nextCoef;//[scan[scanIdx].idx]
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    nextCoef += data;  
+    predCoef = (isPredictor) ? srcPred[scan[i].idx] : 0;
+    dst[scan[i].idx] = (nextCoef + predCoef + 256) % 256;
+#else
+    nextCoef = (nextCoef + data + 256) % 256;
+    dst[scan[i].idx] = nextCoef;
+#endif
   }
 }
 

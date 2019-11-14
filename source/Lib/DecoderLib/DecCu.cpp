@@ -129,7 +129,11 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         const int vSize = cs.slice->getSPS()->getMaxCUHeight() > 64 ? 64 : cs.slice->getSPS()->getMaxCUHeight();
         if((currCU.Y().x % vSize) == 0 && (currCU.Y().y % vSize) == 0)
         {
+#if JVET_P1018_IBC_NO_WRAPAROUND
+          m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x  + g_IBCBufferSize / cs.slice->getSPS()->getMaxCUHeight() / 2, currCU.Y().y);
+#else
           m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x, currCU.Y().y);
+#endif
         }
       }
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
@@ -237,7 +241,11 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     if( PU::isMIP( pu, chType ) )
     {
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+      m_pcIntraPred->initIntraMip( pu, area );
+#else
       m_pcIntraPred->initIntraMip( pu );
+#endif
       m_pcIntraPred->predIntraMip( compID, piPred, pu );
     }
     else
@@ -414,8 +422,11 @@ void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
         {
           Pel value;
           QpParam cQP(tu, (ComponentID)compID);
-
+#if  JVET_P0460_PLT_TS_MIN_QP
+          int qp = cQP.Qp(true);
+#else
           int qp = cQP.Qp(false);
+#endif
           int qpRem = qp % 6;
           int qpPer = qp / 6;
           if (compBegin != COMPONENT_Y || compID == COMPONENT_Y)
@@ -549,19 +560,13 @@ void DecCu::xReconInter(CodingUnit &cu)
   }
   if (cu.Y().valid())
   {
-    const PredictionUnit &pu = *cu.firstPU;
 #if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isIbcSmallBlk = CU::isIBC(cu) && (cu.lwidth() * cu.lheight() <= 16);
-    if (!cu.affine && !cu.triangle && !isIbcSmallBlk)
+    CU::saveMotionInHMVP( cu, isIbcSmallBlk );
 #else
     bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
-    if (!cu.affine && !cu.triangle && !isShare)
+    CU::saveMotionInHMVP( cu, isShare );
 #endif
-    {
-      MotionInfo mi = pu.getMotionInfo();
-      mi.GBiIdx = (mi.interDir == 3) ? cu.GBiIdx : GBI_DEFAULT;
-      cu.cs->addMiToLut(CU::isIBC(cu) ? cu.cs->motionLut.lutIbc : cu.cs->motionLut.lut, mi );
-    }
   }
 
   if (cu.firstPU->mhIntraFlag)
@@ -571,8 +576,15 @@ void DecCu::xReconInter(CodingUnit &cu)
       cu.cs->getPredBuf(*cu.firstPU).Y().rspSignal(m_pcReshape->getFwdLUT());
     }
     m_pcIntraPred->geneWeightedPred(COMPONENT_Y, cu.cs->getPredBuf(*cu.firstPU).Y(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Y, 0));
-    m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
-    m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+    if (cu.chromaSize().width > 2)
+    {
+#endif
+      m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
+      m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));
+#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
+    }
+#endif
   }
 
   DTRACE    ( g_trace_ctx, D_TMP, "pred " );

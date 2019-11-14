@@ -400,9 +400,17 @@ int AlfCovariance::gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) c
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 
+#if JVET_N0278_FIXES
+EncAdaptiveLoopFilter::EncAdaptiveLoopFilter( int& apsIdStart )
+#else
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
+#endif
   : m_CABACEstimator( nullptr )
+#if JVET_N0278_FIXES
+  , m_apsIdStart( apsIdStart )
+#else
   , m_apsIdStart( ALF_CTB_MAX_NUM_APS )
+#endif
 {
   for( int i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
@@ -640,10 +648,18 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #endif
                                       )
 {
+#if JVET_N0278_FIXES
+  int layerIdx = cs.slice->getPic()->layerId; //VS: layerId should be converted to layerIdx
+
+   // IRAP AU is assumed
+  if( !layerIdx && ( cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA() ) )
+#else
   if (cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA())
+#endif
   {
     memset(cs.slice->getAlfAPSs(), 0, sizeof(*cs.slice->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
     m_apsIdStart = ALF_CTB_MAX_NUM_APS;
+
     m_apsMap->clear();
     for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
     {
@@ -2365,7 +2381,12 @@ std::vector<int> EncAdaptiveLoopFilter::getAvaiApsIdsLuma(CodingStructure& cs, i
     while (apsIdChecked < ALF_CTB_MAX_NUM_APS && !cs.slice->isIntra() && result.size() < ALF_CTB_MAX_NUM_APS && !cs.slice->getPendingRasInit() && !cs.slice->isIDRorBLA())
     {
       APS* curAPS = cs.slice->getAlfAPSs()[curApsId];
+
+#if JVET_N0278_FIXES
+      if( curAPS && curAPS->getLayerId() == cs.slice->getPic()->layerId && curAPS->getTemporalId() <= cs.slice->getTLayer() && curAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] )
+#else
       if (curAPS && curAPS->getTemporalId() <= cs.slice->getTLayer() && curAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA])
+#endif
       {
         result.push_back(curApsId);
       }
@@ -2720,6 +2741,14 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
       continue;
     }
     APS* curAPS = m_apsMap->getPS((curApsId << NUM_APS_TYPE_LEN) + ALF_APS);
+
+#if JVET_N0278_FIXES
+    if( curAPS && curAPS->getLayerId() != cs.slice->getPic()->layerId )
+    {
+      continue;
+    }
+#endif
+
     double curCost = m_lambda[CHANNEL_TYPE_CHROMA] * 3;
     if (curApsId == newApsIdChroma)
     {
@@ -2961,7 +2990,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
               m_filter7x7Blk(m_classifier, recBuf, buf, blkDst, blkSrc, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
                 , m_alfVBLumaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+                , m_alfVBLumaPos, alfBryList
+#else
                 , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#endif
 #else
                 , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -2981,7 +3014,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
                 m_filter5x5Blk(m_classifier, recBuf, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
                   , m_alfVBChmaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+                  , m_alfVBChmaPos, alfBryList
+#else
                   , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList
+#endif
 #else
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
 #endif
@@ -3018,7 +3055,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
         m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+          , m_alfVBLumaPos, alfBryList
+#else
           , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
+#endif
 #else
           , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -3037,7 +3078,11 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
           m_filter5x5Blk(m_classifier, recBuf, recExtBuf, blk, blk, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
             , m_alfVBChmaCTUHeight
 #if JVET_O0625_ALF_PADDING
+#if JVET_P0158_ALIGN_ALF_VB
+            , m_alfVBChmaPos, alfBryList
+#else
             , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList
+#endif
 #else
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
 #endif

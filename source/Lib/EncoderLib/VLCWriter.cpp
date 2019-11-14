@@ -240,11 +240,15 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_CODE( pcPPS->getPPSDepQuantEnabledIdc(), 2,                        "pps_dep_quant_enabled_idc");
     WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc0(), 2,                         "pps_ref_pic_list_sps_idc[0]");
     WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc1(), 2,                         "pps_ref_pic_list_sps_idc[1]");
+#if !JVET_P0206_TMVP_flags
     WRITE_CODE( pcPPS->getPPSTemporalMVPEnabledIdc(), 2,                     "pps_temporal_mvp_enabled_idc");
+#endif
     WRITE_CODE( pcPPS->getPPSMvdL1ZeroIdc(), 2,                              "pps_mvd_l1_zero_idc");
     WRITE_CODE( pcPPS->getPPSCollocatedFromL0Idc(), 2,                       "pps_collocated_from_l0_idc");
     WRITE_UVLC( pcPPS->getPPSSixMinusMaxNumMergeCandPlus1(),                 "pps_six_minus_max_num_merge_cand_plus1");
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     WRITE_UVLC( pcPPS->getPPSFiveMinusMaxNumSubblockMergeCandPlus1(),        "pps_five_minus_max_num_subblock_merge_cand_plus1");
+#endif
     WRITE_UVLC( pcPPS->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(),  "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");
   }
 
@@ -262,7 +266,19 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cb), "pps_cb_qp_offset" );
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cr), "pps_cr_qp_offset" );
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  if (pcSPS->getJointCbCrEnabledFlag() == false || pcSPS->getChromaFormatIdc() == CHROMA_400)
+  {
+    CHECK(pcPPS->getJointCbCrQpOffsetPresentFlag(), "pps_jcbcr_qp_offset_present_flag should be false");
+  }
+  WRITE_FLAG(pcPPS->getJointCbCrQpOffsetPresentFlag() ? 1 : 0, "pps_joint_cbcr_qp_offset_present_flag");
+  if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+  {
+    WRITE_SVLC(pcPPS->getQpOffset(JOINT_CbCr), "pps_joint_cbcr_qp_offset");
+  }
+#else
   WRITE_SVLC( pcPPS->getQpOffset(JOINT_CbCr),   "pps_joint_cbcr_qp_offset" );
+#endif
 
   WRITE_FLAG( pcPPS->getSliceChromaQpFlag() ? 1 : 0,          "pps_slice_chroma_qp_offsets_present_flag" );
 
@@ -276,7 +292,14 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     {
       WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1).u.comp.CbOffset,     "cb_qp_offset_list[i]");
       WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx+1).u.comp.CrOffset,     "cr_qp_offset_list[i]");
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+      if (pcPPS->getJointCbCrQpOffsetPresentFlag())
+      {
+        WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1).u.comp.JointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+      }
+#else
       WRITE_SVLC(pcPPS->getChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1).u.comp.JointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
+#endif
     }
   }
 
@@ -560,6 +583,16 @@ void HLSWriter::codeLmcsAps( APS* pcAPS )
       WRITE_FLAG(signCW, "lmcs_delta_sign_cw_flag[ i ]");
     }
   }
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  int deltaCRS = param.chrResScalingOffset;
+  int signCRS = (deltaCRS < 0) ? 1 : 0;
+  int absCRS = (deltaCRS < 0) ? (-deltaCRS) : deltaCRS;
+  WRITE_CODE(absCRS, 3, "lmcs_delta_crs_val");
+  if (absCRS > 0)
+  {
+    WRITE_FLAG(signCRS, "lmcs_delta_crs_val_flag");
+  }
+#endif
 }
 
 void HLSWriter::codeScalingListAps( APS* pcAPS )
@@ -723,6 +756,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
 
   WRITE_UVLC( pcSPS->getMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA),                      "min_qp_prime_ts_minus4" );
+  
+  WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
+  WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 
 #if JVET_P0244_SPS_CLEAN_UP
   WRITE_CODE(pcSPS->getBitsForPOC()-4, 4, "log2_max_pic_order_cnt_lsb_minus4");
@@ -804,39 +840,67 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+  WRITE_FLAG(pcSPS->getJointCbCrEnabledFlag(), "sps_joint_cbcr_enabled_flag");
+#endif
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     const ChromaQpMappingTable& chromaQpMappingTable = pcSPS->getChromaQpMappingTable();
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
+#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
+    int numQpTables = chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
+    CHECK(numQpTables != chromaQpMappingTable.getNumQpTables(), " numQpTables does not match at encoder side ");
+    for (int i = 0; i < numQpTables; i++)
+#else
     for (int i = 0; i < (chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
+#endif
     {
       WRITE_UVLC(chromaQpMappingTable.getNumPtsInCQPTableMinus1(i), "num_points_in_qp_table_minus1");
 
       for (int j = 0; j <= chromaQpMappingTable.getNumPtsInCQPTableMinus1(i); j++)
       {
         WRITE_UVLC(chromaQpMappingTable.getDeltaQpInValMinus1(i,j),  "delta_qp_in_val_minus1");
+#if JVET_P0469_QP_OUT_VAL
+        WRITE_UVLC(chromaQpMappingTable.getDeltaQpOutVal(i, j) ^ chromaQpMappingTable.getDeltaQpInValMinus1(i, j),
+                   "delta_qp_diff_val");
+#else
         WRITE_UVLC(chromaQpMappingTable.getDeltaQpOutVal(i, j),       "delta_qp_out_val");
+#endif
       }
     }
   }
 
-  WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
-  WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
-
   WRITE_FLAG( pcSPS->getSAOEnabledFlag(),                                            "sps_sao_enabled_flag");
   WRITE_FLAG( pcSPS->getALFEnabledFlag(),                                            "sps_alf_enabled_flag" );
-
 
   WRITE_FLAG(pcSPS->getTransformSkipEnabledFlag() ? 1 : 0, "sps_transform_skip_enabled_flag");
   if (pcSPS->getTransformSkipEnabledFlag())
   {
+#if JVET_P0059_CHROMA_BDPCM
+      WRITE_FLAG(pcSPS->getBDPCMEnabled() ? 1 : 0, "sps_bdpcm_enabled_flag");
+      if (pcSPS->getBDPCMEnabled() && pcSPS->getChromaFormatIdc() == CHROMA_444)
+      {
+          WRITE_FLAG(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA ? 1 : 0, "sps_bdpcm_enabled_chroma_flag");
+      }
+      else 
+      {
+        CHECK(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA, "BDPCM for chroma can be used for 444 only.")
+      }
+#else
     WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");
+#endif
   }
   else
   {
+#if JVET_P0059_CHROMA_BDPCM
+    CHECK(pcSPS->getBDPCMEnabled()!=0, "BDPCM cannot be used when transform skip is disabled");
+#else
     CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
+#endif
   }
+#if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   WRITE_FLAG( pcSPS->getJointCbCrEnabledFlag(),                                           "sps_joint_cbcr_enabled_flag");
+#endif
 
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )
@@ -902,10 +966,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
   // KJS: not in draft yet
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                             "sbt_enable_flag");
+#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   if( pcSPS->getUseSBT() )
   {
     WRITE_FLAG(pcSPS->getMaxSbtSize() == 64 ? 1 : 0,                                  "max_sbt_size_64_flag");
   }
+#endif
   // KJS: not in draft yet
   WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "isp_enable_flag");
@@ -1308,7 +1374,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if(!pcSlice->isIntra())
     {
+#if JVET_P0206_TMVP_flags
+      if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag())
+#else
       if( pcSlice->getSPS()->getSPSTemporalMVPEnabledFlag() && !pcSlice->getPPS()->getPPSTemporalMVPEnabledIdc() )
+#endif
       {
         WRITE_FLAG( pcSlice->getEnableTMVPFlag() ? 1 : 0, "slice_temporal_mvp_enabled_flag" );
       }
@@ -1351,6 +1421,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_UVLC( pcSlice->getColRefIdx(), "collocated_ref_idx" );
       }
     }
+
+    if( ( pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE ) || ( pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE ) )
+    {
+      xCodePredWeightTable( pcSlice );
+    }
+
     if (!cs.slice->isIntra())
     {
       CHECK(pcSlice->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
@@ -1374,10 +1450,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       if ( pcSlice->getSPS()->getUseAffine() )
       {
         CHECK( pcSlice->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
+#if JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
+        WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand" );
+#else
         if (!pcSlice->getPPS()->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
         {
           WRITE_UVLC( AFFINE_MRG_MAX_NUM_CANDS - pcSlice->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand" );
         }
+#endif
       }
       if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
       {
@@ -1434,10 +1514,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_FLAG(pcSlice->getUseChromaQpAdj(), "cu_chroma_qp_offset_enabled_flag");
     }
 
-    if( ( pcSlice->getPPS()->getUseWP() && pcSlice->getSliceType() == P_SLICE ) || ( pcSlice->getPPS()->getWPBiPred() && pcSlice->getSliceType() == B_SLICE ) )
-    {
-      xCodePredWeightTable( pcSlice );
-    }
     if( pcSlice->getSPS()->getSAOEnabledFlag() )
     {
       WRITE_FLAG( pcSlice->getSaoEnabledFlag( CHANNEL_TYPE_LUMA ), "slice_sao_luma_flag" );
@@ -1750,6 +1826,25 @@ void HLSWriter::xCodePredWeightTable( Slice* pcSlice )
 void HLSWriter::codeScalingList( const ScalingList &scalingList )
 {
   //for each size
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
+  {
+    bool scalingListCopyModeFlag = scalingList.getScalingListCopyModeFlag(scalingListId);
+    WRITE_FLAG(scalingListCopyModeFlag, "scaling_list_copy_mode_flag"); //copy mode
+    if (!scalingListCopyModeFlag)// Copy Mode
+    {
+      WRITE_FLAG(scalingList.getScalingListPreditorModeFlag(scalingListId), "scaling_list_predictor_mode_flag");
+    }
+    if ((scalingListCopyModeFlag || scalingList.getScalingListPreditorModeFlag(scalingListId)) && scalingListId!= SCALING_LIST_1D_START_2x2 && scalingListId != SCALING_LIST_1D_START_4x4 && scalingListId != SCALING_LIST_1D_START_8x8)
+    {
+      WRITE_UVLC((int)scalingListId - (int)scalingList.getRefMatrixId(scalingListId), "scaling_list_pred_matrix_id_delta");
+    }
+    if (!scalingListCopyModeFlag)
+    {
+      //DPCM
+      xCodeScalingList(&scalingList, scalingListId, scalingList.getScalingListPreditorModeFlag(scalingListId));
+    }
+#else
   for(uint32_t sizeId = SCALING_LIST_FIRST_CODED; sizeId <= SCALING_LIST_LAST_CODED; sizeId++)
   {
     const int predListStep = (sizeId > SCALING_LIST_32x32 ? (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) : 1); // if 64x64, skip over chroma entries.
@@ -1779,6 +1874,7 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
         xCodeScalingList(&scalingList, sizeId, listId);
       }
     }
+#endif
   }
   return;
 }
@@ -1787,34 +1883,88 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
 * \param sizeId      size index
 * \param listId      list index
 */
+#if JVET_P01034_PRED_1D_SCALING_LIST
+void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t scalingListId, bool isPredictor)
+#else
 void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t sizeId, uint32_t listId)
+#endif
 {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : ((scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8);
+  int coefNum = matrixSize * matrixSize;
+  ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(matrixSize)][gp_sizeIdxInfo->idxFrom(matrixSize)];
+  int nextCoef = (isPredictor) ? 0 : SCALING_LIST_START_VALUE;
+#else
   int coefNum = std::min( MAX_MATRIX_COEF_NUM, ( int ) g_scalingListSize[sizeId] );
   ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))];
   int nextCoef = SCALING_LIST_START_VALUE;
+#endif
+
   int data;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+  const int *src = scalingList->getScalingListAddress(scalingListId);
+  int PredListId = scalingList->getRefMatrixId(scalingListId);
+  const int *srcPred = (isPredictor) ? ((scalingListId==PredListId) ? scalingList->getScalingListDefaultAddress(scalingListId) : scalingList->getScalingListAddress(PredListId)) : NULL;
+  int deltasrc[65] = { 0 };
+
+  if (isPredictor)
+  {
+    if (scalingListId >= SCALING_LIST_1D_START_16x16)
+    {
+      deltasrc[64] = scalingList->getScalingListDC(scalingListId) - ((PredListId >= SCALING_LIST_1D_START_16x16) ? ((scalingListId == PredListId) ? 16 : scalingList->getScalingListDC(PredListId)) : srcPred[scan[0].idx]);
+    }
+    for (int i = 0; i < coefNum; i++)
+    {
+      deltasrc[i] = (src[scan[i].idx] - srcPred[scan[i].idx]);
+    }
+  }
+  if (scalingListId >= SCALING_LIST_1D_START_16x16)
+  {
+    if (isPredictor)
+    {
+      data = deltasrc[64];
+      nextCoef = deltasrc[64];
+    }
+    else
+    {
+      data = scalingList->getScalingListDC(scalingListId) - nextCoef;
+      nextCoef = scalingList->getScalingListDC(scalingListId);
+    }
+    WRITE_SVLC((int8_t)data, "scaling_list_dc_coef");
+#else
   const int *src = scalingList->getScalingListAddress(sizeId, listId);
   if( sizeId > SCALING_LIST_8x8 )
   {
     WRITE_SVLC( scalingList->getScalingListDC(sizeId,listId) - 8, "scaling_list_dc_coef_minus8");
     nextCoef = scalingList->getScalingListDC(sizeId,listId);
+#endif
   }
   for(int i=0;i<coefNum;i++)
   {
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    if (scalingListId >= SCALING_LIST_1D_START_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#else
     if (sizeId == SCALING_LIST_64x64 && scan[i].x >= 4 && scan[i].y >= 4)
+#endif
       continue;
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    data = (isPredictor) ? (deltasrc[i] - nextCoef) : (src[scan[i].idx] - nextCoef);
+    nextCoef = (isPredictor) ? deltasrc[i] : src[scan[i].idx];
+    WRITE_SVLC((int8_t)data, "scaling_list_delta_coef");
+#else
     data = src[scan[i].idx] - nextCoef;
     nextCoef = src[scan[i].idx];
-    if(data > 127)
+    if (data > 127)
     {
       data = data - 256;
     }
-    if(data < -128)
+    if (data < -128)
     {
       data = data + 256;
     }
 
     WRITE_SVLC( data,  "scaling_list_delta_coef");
+#endif
   }
 }
 

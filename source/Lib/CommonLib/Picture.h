@@ -197,7 +197,11 @@ struct Picture : public UnitArea
   uint32_t margin;
   Picture();
 
+#if JVET_N0278_FIXES
+  void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerId );
+#else
   void create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder);
+#endif
   void destroy();
 
   void createTempBuffers( const unsigned _maxCUSize );
@@ -257,6 +261,9 @@ struct Picture : public UnitArea
 
   static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
 
+private:
+  Window        m_conformanceWindow;
+
 public:
   bool m_bIsBorderExtended;
   bool referenced;
@@ -272,6 +279,13 @@ public:
   int  poc;
   uint32_t layer;
   uint32_t depth;
+#if JVET_N0278_FIXES
+  int      layerId;
+#endif
+
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+  bool subLayerNonReferencePictureDueToSTSA;
+#endif
 
   int* m_spliceIdx;
   int  m_ctuNums;
@@ -295,6 +309,12 @@ public:
   CodingStructure*   cs;
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
+
+  uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
+  uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
+
+  Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
+  const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

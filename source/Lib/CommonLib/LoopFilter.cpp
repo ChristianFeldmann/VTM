@@ -689,15 +689,27 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const CodingUnit& cuQ = cu;
   const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
 
+#if !JVET_P0571_FIX_BS_BDPCM_CHROMA
   if( ( MODE_INTRA == cuP.predMode && cuP.bdpcmMode ) && ( MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode ) )
   {
     return 0;
   }
+#endif
 
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
+#if JVET_P0571_FIX_BS_BDPCM_CHROMA
+    int bsY = (MODE_INTRA == cuP.predMode && cuP.bdpcmMode) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode) ? 0 : 2;
+#if JVET_P0059_CHROMA_BDPCM
+    int bsC = (MODE_INTRA == cuP.predMode && cuP.bdpcmModeChroma) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmModeChroma) ? 0 : 2;
+#else
+    int bsC = 2;
+#endif
+    return (BsSet(bsY, COMPONENT_Y) + BsSet(bsC, COMPONENT_Cb) + BsSet(bsC, COMPONENT_Cr));
+#else
     return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
+#endif
   }
 
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
@@ -926,11 +938,19 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-        CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+        if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
       else  // (iDir == EDGE_HOR)
       {
-        CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+        if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;
@@ -1217,6 +1237,9 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
       const int maxFilterLengthP = m_maxFilterLengthP[COMPONENT_Cb][(pos.x-m_ctuXLumaSamples)>>m_shiftHor][(pos.y-m_ctuYLumaSamples)>>m_shiftVer];
       const int maxFilterLengthQ = m_maxFilterLengthQ[COMPONENT_Cb][(pos.x-m_ctuXLumaSamples)>>m_shiftHor][(pos.y-m_ctuYLumaSamples)>>m_shiftVer];
       bool largeBoundary         = false;
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+      bool isChromaHorCTBBoundary = false;
+#endif
       if ( maxFilterLengthP >= 3 && maxFilterLengthQ >= 3 )
       {
         largeBoundary = true;
@@ -1224,7 +1247,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_HOR && pos.y % cuP.slice->getSPS()->getCTUSize() == 0)
       {
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+        isChromaHorCTBBoundary = true;
+#else
         largeBoundary = false;
+#endif 
       }
 
       for( int chromaIdx = 0; chromaIdx < 2; chromaIdx++ )
@@ -1266,10 +1293,18 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
         const int beta = sm_betaTable[indexB] * iBitdepthScale;
 
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+        const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, isChromaHorCTBBoundary);
+#else
         const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
+#endif 
         const int dq0 = xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset);
         const int subSamplingShift = ( edgeDir == EDGE_VER ) ? m_shiftVer : m_shiftHor;
-        const int dp3 = ( subSamplingShift == 1 ) ? xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset) : xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 3), iOffset);
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+        const int dp3 = (subSamplingShift == 1) ? xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset, isChromaHorCTBBoundary) : xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 3), iOffset, isChromaHorCTBBoundary);
+#else
+        const int dp3 = (subSamplingShift == 1) ? xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset) : xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 3), iOffset);
+#endif
         const int dq3 = ( subSamplingShift == 1 ) ? xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 1), iOffset) : xCalcDQ(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 3), iOffset);
 
         const int d0 = dp0 + dq0;
@@ -1279,12 +1314,24 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
           if (d < beta)
           {
             useLongFilter = true;
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+            const bool sw = xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, 2 * d0, beta, iTc, false, false, 7, 7, isChromaHorCTBBoundary)
+#else
             const bool sw = xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, 2 * d0, beta, iTc)
-                && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + ( ( subSamplingShift == 1 ) ? 1 : 3 ) ), iOffset, 2 * d3, beta, iTc);
+#endif
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+              && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + ((subSamplingShift == 1) ? 1 : 3)), iOffset, 2 * d3, beta, iTc, false, false, 7, 7, isChromaHorCTBBoundary);
+#else
+              && xUseStrongFiltering(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + ((subSamplingShift == 1) ? 1 : 3)), iOffset, 2 * d3, beta, iTc);
+#endif  
 
             for (unsigned step = 0; step < uiLoopLength; step++)
             {
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+              xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, sw, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary, isChromaHorCTBBoundary);
+#else
               xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, sw, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary);
+#endif 
             }
           }
         }
@@ -1292,7 +1339,11 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         {
           for (unsigned step = 0; step < uiLoopLength; step++)
           {
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+            xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, false, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary, isChromaHorCTBBoundary);
+#else
             xPelFilterChroma(piTmpSrcChroma + iSrcStep*(step + iIdx*uiLoopLength), iOffset, iTc, false, bPartPNoFilter, bPartQNoFilter, clpRng, largeBoundary);
+#endif
           }
         }
         }
@@ -1512,7 +1563,11 @@ inline void LoopFilter::xPelFilterLuma(Pel* piSrc, const int iOffset, const int 
  \param bPartQNoFilter  indicator to disable filtering on partQ
  \param bitDepthChroma  chroma bit depth
  */
-inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary ) const
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+inline void LoopFilter::xPelFilterChroma(Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary, const bool isChromaHorCTBBoundary) const
+#else
+inline void LoopFilter::xPelFilterChroma(Pel* piSrc, const int iOffset, const int tc, const bool sw, const bool bPartPNoFilter, const bool bPartQNoFilter, const ClpRng& clpRng, const bool largeBoundary) const
+#endif
 {
   int delta;
 
@@ -1527,12 +1582,31 @@ inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const i
 
   if (sw)
   {
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+    if (isChromaHorCTBBoundary)
+    {
+      piSrc[-iOffset * 1] = Clip3(m3 - tc, m3 + tc, ((3 * m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3)); // p0
+      piSrc[0] = Clip3(m4 - tc, m4 + tc, ((2 * m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3)); // q0
+      piSrc[iOffset * 1] = Clip3(m5 - tc, m5 + tc, ((m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));  // q1
+      piSrc[iOffset * 2] = Clip3(m6 - tc, m6 + tc, ((m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));       // q2
+    }
+    else
+    {
       piSrc[-iOffset * 3] = Clip3(m1 - tc, m1 + tc, ((3 * m0 + 2 * m1 + m2 + m3 + m4 + 4) >> 3));       // p2
       piSrc[-iOffset * 2] = Clip3(m2 - tc, m2 + tc, ((2 * m0 + m1 + 2 * m2 + m3 + m4 + m5 + 4) >> 3));  // p1
       piSrc[-iOffset * 1] = Clip3(m3 - tc, m3 + tc, ((m0 + m1 + m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3)); // p0
-      piSrc[0]            = Clip3(m4 - tc, m4 + tc, ((m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3)); // q0
-      piSrc[iOffset * 1]  = Clip3(m5 - tc, m5 + tc, ((m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));  // q1
-      piSrc[iOffset * 2]  = Clip3(m6 - tc, m6 + tc, ((m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));       // q2
+      piSrc[0] = Clip3(m4 - tc, m4 + tc, ((m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3)); // q0
+      piSrc[iOffset * 1] = Clip3(m5 - tc, m5 + tc, ((m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));  // q1
+      piSrc[iOffset * 2] = Clip3(m6 - tc, m6 + tc, ((m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));       // q2
+    }
+#else
+    piSrc[-iOffset * 3] = Clip3(m1 - tc, m1 + tc, ((3 * m0 + 2 * m1 + m2 + m3 + m4 + 4) >> 3));       // p2
+    piSrc[-iOffset * 2] = Clip3(m2 - tc, m2 + tc, ((2 * m0 + m1 + 2 * m2 + m3 + m4 + m5 + 4) >> 3));  // p1
+    piSrc[-iOffset * 1] = Clip3(m3 - tc, m3 + tc, ((m0 + m1 + m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3)); // p0
+    piSrc[0] = Clip3(m4 - tc, m4 + tc, ((m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3)); // q0
+    piSrc[iOffset * 1] = Clip3(m5 - tc, m5 + tc, ((m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));  // q1
+    piSrc[iOffset * 2] = Clip3(m6 - tc, m6 + tc, ((m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));       // q2
+#endif
   }
   else
   {
@@ -1571,13 +1645,26 @@ inline void LoopFilter::xPelFilterChroma( Pel* piSrc, const int iOffset, const i
  \param tc              tc value
  \param piSrc           pointer to picture data
  */
-inline bool LoopFilter::xUseStrongFiltering( Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ ) const
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+inline bool LoopFilter::xUseStrongFiltering(Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ, bool isChromaHorCTBBoundary) const
+#else
+inline bool LoopFilter::xUseStrongFiltering(Pel* piSrc, const int iOffset, const int d, const int beta, const int tc, bool sidePisLarge, bool sideQisLarge, int maxFilterLengthP, int maxFilterLengthQ) const
+#endif
 {
   const Pel m4 = piSrc[ 0          ];
   const Pel m3 = piSrc[-iOffset    ];
   const Pel m7 = piSrc[ iOffset * 3];
   const Pel m0 = piSrc[-iOffset * 4];
-  int       sp3      = abs(m0 - m3);
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+  const Pel m2 = piSrc[-iOffset * 2];
+  int       sp3 = abs(m0 - m3);
+  if (isChromaHorCTBBoundary)
+  {
+    sp3 = abs(m2 - m3);
+  }
+#else
+  int       sp3 = abs(m0 - m3);
+#endif
   int       sq3      = abs(m7 - m4);
   const int d_strong = sp3 + sq3;
 
@@ -1616,9 +1703,24 @@ inline bool LoopFilter::xUseStrongFiltering( Pel* piSrc, const int iOffset, cons
   return ( ( d_strong < ( beta >> 3 ) ) && ( d < ( beta >> 2 ) ) && ( abs( m3 - m4 ) < ( ( tc * 5 + 1 ) >> 1 ) ) );
 }
 
-inline int LoopFilter::xCalcDP( Pel* piSrc, const int iOffset ) const
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+inline int LoopFilter::xCalcDP(Pel* piSrc, const int iOffset, const bool isChromaHorCTBBoundary) const
+#else
+inline int LoopFilter::xCalcDP(Pel* piSrc, const int iOffset) const
+#endif
 {
-  return abs( piSrc[-iOffset * 3] - 2 * piSrc[-iOffset * 2] + piSrc[-iOffset] );
+#if JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX
+  if (isChromaHorCTBBoundary)
+  {
+    return abs(piSrc[-iOffset * 2] - 2 * piSrc[-iOffset * 2] + piSrc[-iOffset]);
+  }
+  else
+  {
+    return abs(piSrc[-iOffset * 3] - 2 * piSrc[-iOffset * 2] + piSrc[-iOffset]);
+  }
+#else
+  return abs(piSrc[-iOffset * 3] - 2 * piSrc[-iOffset * 2] + piSrc[-iOffset]);
+#endif 
 }
 
 inline int LoopFilter::xCalcDQ( Pel* piSrc, const int iOffset ) const

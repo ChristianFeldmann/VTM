@@ -44,8 +44,15 @@
 
 #include "EncApp.h"
 #include "EncoderLib/AnnexBwrite.h"
+#if JVET_N0278_FIXES
+#include "EncoderLib/EncLibCommon.h"
+#else
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncTop.h"
+#endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+#include "EncoderLib/EncTemporalFilter.h"
+#endif
 #endif
 
 using namespace std;
@@ -57,13 +64,23 @@ using namespace std;
 // Constructor / destructor / initialization / destroy
 // ====================================================================================================================
 
+#if JVET_N0278_FIXES
+EncApp::EncApp( fstream& bitStream, EncLibCommon* encLibCommon )
+  : m_cEncLib( encLibCommon )
+  , m_bitstream( bitStream )
+#else
 EncApp::EncApp()
+#endif
 {
   m_iFrameRcvd = 0;
   m_totalBytes = 0;
   m_essentialBytes = 0;
 #if JVET_O0756_CALCULATE_HDRMETRICS
   m_metricTime = std::chrono::milliseconds(0);
+#endif
+#if JVET_N0278_FIXES
+  m_numEncoded = 0;
+  m_flush = false;
 #endif
 }
 
@@ -75,7 +92,11 @@ void EncApp::xInitLibCfg()
 {
   VPS vps;
 
+#if JVET_N0278_FIXES
+  vps.setMaxLayers                                               ( m_maxLayers );
+#else
   vps.setMaxLayers                                               ( 1 );
+#endif
   for(int i = 0; i < MAX_TLAYER; i++)
   {
     vps.setVPSIncludedLayerId                                    ( 0, i );
@@ -143,7 +164,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
+#if JVET_P0059_CHROMA_BDPCM
+  m_cEncLib.setNoBDPCMConstraintFlag                             ( m_useBDPCM == 0 );
+#else
   m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
+#endif
   m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
@@ -281,6 +306,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setImplicitMTS                                       ( m_MTSImplicit );
   m_cEncLib.setUseSBT                                            ( m_SBT );
+#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
+  m_cEncLib.setSBTFast64WidthTh                                  ( m_SBTFast64WidthTh );
+#endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );
   m_cEncLib.setUseGBi                                            ( m_GBi );
@@ -363,6 +391,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] );
   m_cEncLib.setUseTransformSkip                                  ( m_useTransformSkip      );
   m_cEncLib.setUseTransformSkipFast                              ( m_useTransformSkipFast  );
+#if JVET_P0058_CHROMA_TS
+  m_cEncLib.setUseChromaTS                                       ( m_useChromaTS && m_useTransformSkip);
+#endif
   m_cEncLib.setUseBDPCM                                          ( m_useBDPCM );
   m_cEncLib.setTransformSkipRotationEnabledFlag                  ( m_transformSkipRotationEnabledFlag );
   m_cEncLib.setTransformSkipContextEnabledFlag                   ( m_transformSkipContextEnabledFlag   );
@@ -545,11 +576,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );
   m_cEncLib.setPPSRefPicListSPSIdc0                              ( m_PPSRefPicListSPSIdc0 );
   m_cEncLib.setPPSRefPicListSPSIdc1                              ( m_PPSRefPicListSPSIdc1 );
+#if !JVET_P0206_TMVP_flags
   m_cEncLib.setPPSTemporalMVPEnabledIdc                          ( m_PPSTemporalMVPEnabledIdc );
+#endif
   m_cEncLib.setPPSMvdL1ZeroIdc                                   ( m_PPSMvdL1ZeroIdc );
   m_cEncLib.setPPSCollocatedFromL0Idc                            ( m_PPSCollocatedFromL0Idc );
   m_cEncLib.setPPSSixMinusMaxNumMergeCandPlus1                   ( m_PPSSixMinusMaxNumMergeCandPlus1 );
+#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   m_cEncLib.setPPSFiveMinusMaxNumSubblockMergeCandPlus1          ( m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 );
+#endif
   m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
@@ -623,6 +658,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  m_cEncLib.setReshapeCSoffset                                   ( m_CSoffset );
+#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
   for (int i=0; i<hdrtoolslib::NB_REF_WHITE; i++)
@@ -644,10 +682,16 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCropOffsetBottom                                  (m_cropOffsetBottom);
   m_cEncLib.setCalculateHdrMetrics                               (m_calculateHdrMetrics);
 #endif
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
+#endif
 }
 
-void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList
-                        )
+#if JVET_N0278_FIXES
+void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId )
+#else
+void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
+#endif
 {
   // Video I/O
   m_cVideoIOYuvInputFile.open( m_inputFileName,     false, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth );  // read  mode
@@ -669,11 +713,24 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList
       EXIT ("Invalid chroma output bit-depth or image width for packed YUV output, aborting\n");
     }
 
+#if JVET_N0278_FIXES
+    std::string reconFileName = m_reconFileName;
+    if( m_reconFileName.compare( "/dev/null" ) )
+    {
+      reconFileName.insert( reconFileName.size() - 4, std::to_string( layerId ) );
+    }
+    m_cVideoIOYuvReconFile.open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth );  // write mode
+#else
     m_cVideoIOYuvReconFile.open(m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth);  // write mode
+#endif
   }
 
   // create the encoder
+#if JVET_N0278_FIXES
+  m_cEncLib.create( layerId );
+#else
   m_cEncLib.create();
+#endif
 
   // create the output buffer
   for( int i = 0; i < (m_iGOPSize + 1 + (m_isField ? 1 : 0)); i++ )
@@ -701,6 +758,174 @@ void EncApp::xInitLib(bool isFieldCoding)
 // Public member functions
 // ====================================================================================================================
 
+#if JVET_N0278_FIXES
+void EncApp::createLib( const int layerId )
+{
+  const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
+  UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
+
+  m_orgPic = new PelStorage;
+  m_trueOrgPic = new PelStorage;
+  m_orgPic->create( unitArea );
+  m_trueOrgPic->create( unitArea );
+
+  if( !m_bitstream.is_open() )
+  {
+    m_bitstream.open( m_bitstreamFileName.c_str(), fstream::binary | fstream::out );
+    if( !m_bitstream )
+    {
+      EXIT( "Failed to open bitstream file " << m_bitstreamFileName.c_str() << " for writing\n" );
+    }
+  }
+
+  // initialize internal class & member variables
+  xInitLibCfg();
+  xCreateLib( m_recBufList, layerId );
+  xInitLib( m_isField );
+
+  printChromaFormat();
+
+#if EXTENSION_360_VIDEO
+  m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), *m_orgPic );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  if( m_gopBasedTemporalFilterEnabled )
+  {
+    m_temporalFilter.init( m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
+      m_aiPad, m_bClipInputVideoToRec709Range, m_inputFileName, m_chromaFormatIDC,
+      m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
+      m_gopBasedTemporalFilterFutureReference );
+  }
+#endif
+}
+
+void EncApp::destroyLib()
+{
+  printf( "\nLayerId %2d", m_cEncLib.getLayerId() );
+
+  m_cEncLib.printSummary( m_isField );
+
+  // delete used buffers in encoder class
+  m_cEncLib.deletePicBuffer();
+
+  for( auto &p : m_recBufList )
+  {
+    delete p;
+  }
+  m_recBufList.clear();
+
+  xDestroyLib();
+
+  if( m_bitstream.is_open() )
+  {
+    m_bitstream.close();
+  }
+
+  m_orgPic->destroy();
+  m_trueOrgPic->destroy();
+  delete m_trueOrgPic;
+  delete m_orgPic;
+#if EXTENSION_360_VIDEO
+  delete m_ext360;
+#endif
+
+  printRateSummary();
+}
+
+bool EncApp::encodePrep( bool& eos )
+{
+  // main encoder loop
+  const InputColourSpaceConversion ipCSC = m_inputColourSpaceConvert;
+  const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
+
+  // read input YUV file
+#if EXTENSION_360_VIDEO
+  if( m_ext360->isEnabled() )
+  {
+    m_ext360->read( m_cVideoIOYuvInputFile, *m_orgPic, *m_trueOrgPic, ipCSC );
+  }
+  else
+  {
+    m_cVideoIOYuvInputFile.read( *m_orgPic, *m_trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+  }
+#else
+  m_cVideoIOYuvInputFile.read( *m_orgPic, *m_trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  if( m_gopBasedTemporalFilterEnabled )
+  {
+    m_temporalFilter.filter( m_orgPic, m_iFrameRcvd );
+  }
+#endif
+
+  // increase number of received frames
+  m_iFrameRcvd++;
+
+  eos = ( m_isField && ( m_iFrameRcvd == ( m_framesToBeEncoded >> 1 ) ) ) || ( !m_isField && ( m_iFrameRcvd == m_framesToBeEncoded ) );
+
+  // if end of file (which is only detected on a read failure) flush the encoder of any queued pictures
+  if( m_cVideoIOYuvInputFile.isEof() )
+  {
+    m_flush = true;
+    eos = true;
+    m_iFrameRcvd--;
+    m_cEncLib.setFramesToBeEncoded( m_iFrameRcvd );
+  }
+
+  bool keepDoing = false;
+
+  // call encoding function for one frame
+  if( m_isField )
+  {
+    keepDoing = m_cEncLib.encodePrep( eos, m_flush ? 0 : m_orgPic, m_flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded, m_isTopFieldFirst );
+  }
+  else
+  {
+    keepDoing = m_cEncLib.encodePrep( eos, m_flush ? 0 : m_orgPic, m_flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded );
+  }
+
+  return keepDoing;
+}
+
+bool EncApp::encode()
+{
+  const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
+  bool keepDoing = false;
+
+  // call encoding function for one frame
+  if( m_isField )
+  {
+    keepDoing = m_cEncLib.encode( snrCSC, m_recBufList, m_numEncoded, m_isTopFieldFirst );
+  }
+  else
+  {
+    keepDoing = m_cEncLib.encode( snrCSC, m_recBufList, m_numEncoded );
+  }
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    m_metricTime = m_cEncLib.getMetricTime();
+#endif
+
+  // write bistream to file if necessary
+  if( m_numEncoded > 0 )
+  {
+    xWriteOutput( m_numEncoded, m_recBufList );
+  }
+  // temporally skip frames
+  if( m_temporalSubsampleRatio > 1 )
+  {
+#if EXTENSION_360_VIDEO
+    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
+#else
+    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+#endif
+  }
+
+  return keepDoing;
+}
+#else
 /**
  - create internal class
  - initialize internal variable
@@ -744,6 +969,17 @@ void EncApp::encode()
   TExt360AppEncTop           ext360(*this, m_cEncLib.getGOPEncoder()->getExt360Data(), *(m_cEncLib.getGOPEncoder()), orgPic);
 #endif
 
+#if JVET_O0549_ENCODER_ONLY_FILTER
+  EncTemporalFilter temporalFilter;
+  if (m_gopBasedTemporalFilterEnabled)
+  {
+    temporalFilter.init(m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
+      m_aiPad, m_bClipInputVideoToRec709Range, m_inputFileName, m_chromaFormatIDC,
+      m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
+      m_gopBasedTemporalFilterFutureReference);
+  }
+#endif
+
   while ( !bEos )
   {
     // read input YUV file
@@ -758,6 +994,13 @@ void EncApp::encode()
     }
 #else
     m_cVideoIOYuvInputFile.read( orgPic, trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
+#endif
+
+#if JVET_O0549_ENCODER_ONLY_FILTER
+    if (m_gopBasedTemporalFilterEnabled)
+    {
+      temporalFilter.filter(&orgPic, m_iFrameRcvd);
+    }
 #endif
 
     // increase number of received frames
@@ -830,6 +1073,7 @@ void EncApp::encode()
 
   return;
 }
+#endif
 
 // ====================================================================================================================
 // Protected member functions
@@ -841,8 +1085,7 @@ void EncApp::encode()
   \param iNumEncoded    number of encoded frames
   \param accessUnits    list of access units to be written
  */
-void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList
-                          )
+void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList )
 {
   const InputColourSpaceConversion ipCSC = (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
   std::list<PelUnitBuf*>::iterator iterPicYuvRec = recBufList.end();

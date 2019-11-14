@@ -208,6 +208,9 @@ public:
   static const CtxSet   IntraLumaMpmFlag;
   static const CtxSet   IntraLumaPlanarFlag;
   static const CtxSet   CclmModeFlag;
+#if JVET_P0615_CHROMAMODE_CLEANUP
+  static const CtxSet   CclmModeIdx;
+#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
   static const CtxSet   DeltaQP;

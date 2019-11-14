@@ -117,12 +117,14 @@ protected:
   int m_leftRefLength;
   ScanElement* m_scanOrder;
   bool         m_bestScanRotationMode;
+#if !JVET_P0077_LINE_CG_PALETTE
   Ctx          m_storeCtxRun;
   Ctx          m_storeCtxRunIndex;
   Ctx          m_storeCtxRunCopy;
   Ctx          m_orgCtxRD;
   bool         *m_runTypeRD;
   Pel          *m_runLengthRD;
+#endif
   // prediction
   void xPredIntraPlanar           ( const CPelBuf &pSrc, PelBuf &pDst );
   void xPredIntraDc               ( const CPelBuf &pSrc, PelBuf &pDst, const ChannelType channelType, const bool enableBoundaryFilter = true );
@@ -167,7 +169,11 @@ public:
   void initIntraPatternChTypeISP  (const CodingUnit& cu, const CompArea& area, PelBuf& piReco, const bool forceRefFilterFlag = false); // use forceRefFilterFlag to get both filtered and unfiltered buffers
 
   // Matrix-based intra prediction
+#if JVET_P0803_COMBINED_MIP_CLEANUP
+  void initIntraMip               (const PredictionUnit &pu, const CompArea &area);
+#else
   void initIntraMip               (const PredictionUnit &pu);
+#endif
   void predIntraMip               (const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
 
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
@@ -177,8 +183,10 @@ public:
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);
   void geneIntrainterPred         (const CodingUnit &cu);
   void reorderPLT                 (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
+#if !JVET_P0077_LINE_CG_PALETTE
   bool calCopyRun                 (CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
   bool calIndexRun                (CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin);
+#endif
 };
 
 //! \}

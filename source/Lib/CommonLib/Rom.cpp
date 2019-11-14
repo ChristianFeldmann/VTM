@@ -62,6 +62,30 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
+#if JVET_P0363_CLEANUP_NUT_TABLE
+  case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
+  case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
+  case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
+  case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
+  case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
+  case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
+  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
+  case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
+  case NAL_UNIT_DPS:                    return "DPS";
+  case NAL_UNIT_VPS:                    return "VPS";
+  case NAL_UNIT_SPS:                    return "SPS";
+  case NAL_UNIT_PPS:                    return "PPS";
+  case NAL_UNIT_APS:                    return "APS";
+  case NAL_UNIT_PH:                     return "PH";
+  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
+  case NAL_UNIT_EOS:                    return "EOS";
+  case NAL_UNIT_EOB:                    return "EOB";
+  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
+  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
+  case NAL_UNIT_FD:                     return "FD";
+  default:                              return "UNK";
+
+#else
   case NAL_UNIT_PPS:                    return "PPS";
   case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
   case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
@@ -81,6 +105,7 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
   case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
   default:                              return "UNK";
+#endif
   }
 }
 
@@ -430,19 +455,28 @@ void initROM()
       const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
 
       // let SIMD can read at least 64-bit when at last row
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      g_triangleWeights[0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+#else
       g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-
+#endif
       for (int y = 0; y < nCbH; y++)
       {
         for (int x = 0; x < nCbW; x++)
         {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+          g_triangleWeights[0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
+          g_triangleWeights[1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
+#else
           g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
           g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
           g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
           g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
+#endif
         }
       }
     }
@@ -478,6 +512,12 @@ void destroyROM()
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
     {
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+      delete[] g_triangleWeights[0][idxH][idxW];
+      delete[] g_triangleWeights[1][idxH][idxW];
+      g_triangleWeights[0][idxH][idxW] = nullptr;
+      g_triangleWeights[1][idxH][idxW] = nullptr;
+#else
       delete[] g_triangleWeights[0][0][idxH][idxW];
       delete[] g_triangleWeights[0][1][idxH][idxW];
       delete[] g_triangleWeights[1][0][idxH][idxW];
@@ -486,6 +526,7 @@ void destroyROM()
       g_triangleWeights[0][1][idxH][idxW] = nullptr;
       g_triangleWeights[1][0][idxH][idxW] = nullptr;
       g_triangleWeights[1][1][idxH][idxW] = nullptr;
+#endif
     }
   }
 }
@@ -643,11 +684,21 @@ const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTRA64X64_CHROMAU",
+    "INTRA64X64_CHROMAV",
+#else
     "INTRA64X64_CHROMAU_FROM16x16_CHROMAU",
     "INTRA64X64_CHROMAV_FROM16x16_CHROMAV",
+#endif
     "INTER64X64_LUMA",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTER64X64_CHROMAU",
+    "INTER64X64_CHROMAV"
+#else
     "INTER64X64_CHROMAU_FROM16x16_CHROMAU",
     "INTER64X64_CHROMAV_FROM16x16_CHROMAV"
+#endif
   },
   {
   },
@@ -681,11 +732,21 @@ const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA_DC",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTRA64X64_CHROMAU_DC",
+    "INTRA64X64_CHROMAV_DC",
+#else
     "INTRA64X64_CHROMAU_DC_FROM16x16_CHROMAU",
     "INTRA64X64_CHROMAV_DC_FROM16x16_CHROMAV",
+#endif
     "INTER64X64_LUMA_DC",
+#if JVET_P01034_PRED_1D_SCALING_LIST
+    "INTER64X64_CHROMAU_DC",
+    "INTER64X64_CHROMAV_DC"
+#else
     "INTER64X64_CHROMAU_DC_FROM16x16_CHROMAU",
     "INTER64X64_CHROMAV_DC_FROM16x16_CHROMAV"
+#endif
   },
   {
   },
@@ -728,11 +789,19 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 
 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
+#if JVET_P0530_TPM_WEIGHT_ALIGN
+int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#else
 int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
 Mv   g_reusedUniMVs[32][32][8][8][2][33];
 bool g_isReusedUniMVsFilled[32][32][8][8];
 
 const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
 uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
+#if JVET_P0077_LINE_CG_PALETTE
+uint8_t g_paletteRunLeftLut[5] = { 0, 1, 2, 3, 4 };
+#else
 uint8_t g_paletteRunLeftLut[5] = { 0, 3, 3, 4, 4 };
+#endif
 //! \}

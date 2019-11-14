@@ -93,6 +93,9 @@ void  EncReshape::createEnc(int picWidth, int picHeight, uint32_t maxCUWidth, ui
   m_sliceReshapeInfo.reshaperModelMinBinIdx = 0;
   m_sliceReshapeInfo.reshaperModelMaxBinIdx = PIC_CODE_CW_BINS - 1;
   memset(m_sliceReshapeInfo.reshaperModelBinCWDelta, 0, (PIC_CODE_CW_BINS) * sizeof(int));
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+  m_sliceReshapeInfo.chrResScalingOffset = 0;
+#endif
 
   m_picWidth = picWidth;
   m_picHeight = picHeight;
@@ -962,7 +965,11 @@ void EncReshape::initLUTfromdQPModel()
     else
     {
       m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      m_chromaAdjHelpLUT[i] = (int32_t)(m_initCW * (1 << FP_PREC) / (m_binCW[i] + m_sliceReshapeInfo.chrResScalingOffset));
+#else
       m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+#endif
     }
   }
   for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
@@ -1016,8 +1023,6 @@ void EncReshape::constructReshaperLMCS()
     }
   }
 
-  adjustLmcsPivot();
-
   if (bdShift != 0)
   {
     for (int i = 0; i < PIC_ANALYZE_CW_BINS; i++)
@@ -1025,6 +1030,8 @@ void EncReshape::constructReshaperLMCS()
       m_binCW[i] = bdShift > 0 ? m_binCW[i] * (1 << bdShift) : m_binCW[i] / (1 << (-bdShift));
     }
   }
+
+  adjustLmcsPivot();
 
   int maxAbsDeltaCW = 0, absDeltaCW = 0, deltaCW = 0;
   for (int i = m_sliceReshapeInfo.reshaperModelMinBinIdx; i <= m_sliceReshapeInfo.reshaperModelMaxBinIdx; i++)
@@ -1054,7 +1061,11 @@ void EncReshape::constructReshaperLMCS()
     else
     {
       m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
+#if JVET_P0371_CHROMA_SCALING_OFFSET
+      m_chromaAdjHelpLUT[i] = (int32_t)(m_initCW * (1 << FP_PREC) / (m_binCW[i] + m_sliceReshapeInfo.chrResScalingOffset));
+#else
       m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
+#endif
     }
   }
   for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)
@@ -1080,7 +1091,7 @@ void EncReshape::adjustLmcsPivot()
   int bdShift = m_lumaBD - 10;
   int totCW = bdShift != 0 ? (bdShift > 0 ? m_reshapeLUTSize / (1 << bdShift) : m_reshapeLUTSize * (1 << (-bdShift))) : m_reshapeLUTSize;
   int orgCW = totCW / PIC_CODE_CW_BINS;
-  int log2SegSize = floorLog2(LMCS_SEG_SIZE);
+  int log2SegSize = m_lumaBD - floorLog2(LMCS_SEG_NUM);
 
   m_reshapePivot[0] = 0;
   for (int i = 0; i < PIC_CODE_CW_BINS; i++)

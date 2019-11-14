@@ -68,7 +68,11 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
   , m_lastShiftY                (0)
+#if JVET_P0058_CHROMA_TS
+  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() && (tu.cu->transQuantBypass || tu.mtsIdx[m_compID] == MTS_SKIP))
+#else
   , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==MTS_SKIP))
+#endif
   , m_scanPosLast               (-1)
   , m_subSetId                  (-1)
   , m_subSetPos                 (-1)
@@ -538,3 +542,18 @@ unsigned DeriveCtx::CtxMipFlag( const CodingUnit& cu )
 
   return ctxId;
 }
+
+#if JVET_P0077_LINE_CG_PALETTE
+unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist )
+{
+  uint8_t *ucCtxLut = (prevRunType == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
+  if ( dist <= RUN_IDX_THRE )
+  {
+     return ucCtxLut[dist];
+  }
+  else
+  { 
+    return ucCtxLut[RUN_IDX_THRE];
+  }
+}
+#endif

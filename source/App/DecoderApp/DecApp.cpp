@@ -880,6 +880,9 @@ void DecApp::xFlushOutput( PicList* pcListPic )
         pcPic->destroy();
         delete pcPic;
         pcPic = NULL;
+#if JVET_N0278_FIXES
+        *iterPic = nullptr;
+#endif
       }
       iterPic++;
     }
@@ -888,13 +891,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
 #if JVET_N0278_FIXES
   if( layerId != NOT_VALID )
   {
-    for( iterPic = pcListPic->begin(); iterPic != pcListPic->end(); iterPic++ )
-    {
-      if( *iterPic == nullptr )
-      {
-        pcListPic->erase( iterPic );
-      }
-    }
+    pcListPic->remove_if([](Picture* p) { return p == nullptr; });
   }
   else
 #endif

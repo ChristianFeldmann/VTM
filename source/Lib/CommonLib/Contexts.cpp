@@ -754,20 +754,31 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
   { DWS, DWS, },
 });
 
-const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
-({
+const CtxSet ContextSetCfg::MTSIndex[] = {
+    // transform_skip_flag
+    ContextSetCfg::addCtxSet
+    ({
 #if JVET_P0058_CHROMA_TS
-  {  37, CNU, CNU, CNU, CNU, CNU,  25,  25,  27,   0, CNU,  17, },
-  {  30, CNU, CNU, CNU, CNU, CNU,  25,  40,  27,   0, CNU,  17, },
-  {  13, CNU, CNU, CNU, CNU, CNU,  25,   0,  35,   0, CNU,   1, },
-  {   8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS,   1, },
+        { 25,  17, },
+        { 25,  17, },
+        { 25,   1, },
+        {  1,   1, },
 #else
-  {  29, CNU, CNU, CNU, CNU, CNU,  33,  18,  27,   0, CNU, },
-  {  29, CNU, CNU, CNU, CNU, CNU,  18,  33,  27,   0, CNU, },
-  {  20, CNU, CNU, CNU, CNU, CNU,  33,   0,  42,   0, CNU, },
-  {   8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS, },
+        { 25, },
+        { 25, },
+        { 25, },
+        {  1, },
 #endif
-});
+    }),
+    // mts_idx
+    ContextSetCfg::addCtxSet
+    ({
+        { 37,  25,  27,   0, CNU, },
+        { 30,  40,  27,   0, CNU, },
+        { 13,   0,  35,   0, CNU, },
+        {  8,   0,   9,   0, DWS, },
+    })
+};
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 ({
@@ -1519,20 +1530,30 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
   { DWS, DWS, },
 });
 
-const CtxSet ContextSetCfg::MTSIndex = ContextSetCfg::addCtxSet
-({
+const CtxSet ContextSetCfg::MTSIndex[] = {
+    // transform_skip_flag
+    ContextSetCfg::addCtxSet({
 #if JVET_P0058_CHROMA_TS
-  { 29, CNU, CNU, CNU, CNU, CNU,  33,  18,  27,   0, CNU, CNU },
-  { 29, CNU, CNU, CNU, CNU, CNU,  18,  33,  27,   0, CNU, CNU },
-  { 20, CNU, CNU, CNU, CNU, CNU,  33,   0,  42,   0, CNU, CNU },
-  {  8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS,   1 },
+        { 33, CNU },
+        { 18, CNU },
+        { 33, CNU },
+        {  1,   1 },
 #else
-  {  29, CNU, CNU, CNU, CNU, CNU,  33,  18,  27,   0, CNU, },
-  {  29, CNU, CNU, CNU, CNU, CNU,  18,  33,  27,   0, CNU, },
-  {  20, CNU, CNU, CNU, CNU, CNU,  33,   0,  42,   0, CNU, },
-  {   8, DWS, DWS, DWS, DWS, DWS,   1,   0,   9,   0, DWS, },
+        { 33, },
+        { 18, },
+        { 33, },
+        {  1, },
 #endif
-});
+    }),
+    // mts_idx
+    ContextSetCfg::addCtxSet
+    ({
+        { 29,  18,  27,   0, CNU },
+        { 29,  33,  27,   0, CNU },
+        { 20,   0,  42,   0, CNU },
+        {  8,   0,   9,   0, DWS },
+    })
+};
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 ({

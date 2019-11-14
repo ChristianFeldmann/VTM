@@ -3309,16 +3309,16 @@ void CABACReader::ts_flag( TransformUnit& tu, ComponentID compID )
 #else
   int tsFlag = tu.cu->bdpcmMode && isLuma(compID) ? 1 : tu.mtsIdx[compID] == MTS_SKIP ? 1 : 0;
 #endif
-  int ctxIdx = isLuma(compID) ? 6 : 11;
+  int ctxIdx = isLuma(compID) ? 0 : 1;
 #else
   int tsFlag = tu.cu->bdpcmMode ? 1 : tu.mtsIdx == MTS_SKIP ? 1 : 0;
-  int ctxIdx = 6;
+  int ctxIdx = 0;
 #endif
 
   if( TU::isTSAllowed ( tu, compID ) )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
-    tsFlag = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+    tsFlag = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 0 ]( ctxIdx ) );
   }
   
 #if JVET_P0058_CHROMA_TS
@@ -3344,15 +3344,15 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[COMPONENT_Y], COMPONENT_Y );
     int ctxIdx = 0;
-    int symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+    int symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
     
     if( symbol )
     {
-      ctxIdx = 7;
+      ctxIdx = 1;
       mtsIdx = MTS_DST7_DST7; // mtsIdx = 2 -- 4
       for( int i = 0; i < 3; i++, ctxIdx++ )
       {
-        symbol  = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+        symbol  = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
         mtsIdx += symbol;
         
         if( !symbol )
@@ -3396,11 +3396,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
   if( tsAllowed )
   {
 #if JVET_P0058_CHROMA_TS
-    ctxIdx = isLuma(compID) ? 6 : 11;
+      ctxIdx = isLuma(compID) ? 0 : 1;
 #else
-    ctxIdx = 6;
+      ctxIdx = 0;
 #endif
-    symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+      symbol = m_BinDecoder.decodeBin(Ctx::MTSIndex[ 0 ](ctxIdx));
 #if JVET_P0058_CHROMA_TS
     tu.mtsIdx[compID] = symbol ? MTS_SKIP : MTS_DCT2_DCT2;
 #else
@@ -3417,11 +3417,11 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
     if( mtsAllowed )
     {
       ctxIdx = 0;
-      symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+      symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
 
       if( symbol )
       {
-        ctxIdx    = 7;
+        ctxIdx    = 1;
 #if JVET_P0058_CHROMA_TS
         tu.mtsIdx[compID] = MTS_DST7_DST7; // mtsIdx = 2 -- 4
 #else
@@ -3429,7 +3429,7 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 #endif
         for( int i = 0; i < 3; i++, ctxIdx++ )
         {
-          symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex( ctxIdx ) );
+          symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
 #if JVET_P0058_CHROMA_TS
           tu.mtsIdx[compID] += symbol;
 #else

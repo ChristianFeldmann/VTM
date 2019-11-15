@@ -1279,13 +1279,14 @@ void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
   const TFilterCoeff* filterVer = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
   const int numFracPositions = useLumaFilter ? 15 : 31;
   const int numFracShift = useLumaFilter ? 4 : 5;
-  const int posShift = SCALE_RATIO_BITS - numFracShift;
+  const int posShiftX = SCALE_RATIO_BITS - numFracShift + compScale.first;
+  const int posShiftY = SCALE_RATIO_BITS - numFracShift + compScale.second;
 #if JVET_P0592_CHROMA_PHASE
-  int addX = ( 1 << ( posShift - 1 ) ) + ( beforeScaleLeftOffset << posShift ) + ( ( int( 1 - horCollocatedPositionFlag ) * 8 * ( scalingRatio.first - SCALE_1X.first ) + ( 1 << ( 3 + compScale.first ) ) ) >> ( 4 + compScale.first ) );
-  int addY = ( 1 << ( posShift - 1 ) ) + ( beforeScaleTopOffset << posShift ) + ( ( int( 1 - verCollocatedPositionFlag ) * 8 * ( scalingRatio.second - SCALE_1X.second ) + ( 1 << ( 3 + compScale.second ) ) ) >> ( 4 + compScale.second ) );
+  int addX = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << SCALE_RATIO_BITS ) + ( ( int( 1 - horCollocatedPositionFlag ) * 8 * ( scalingRatio.first - SCALE_1X.first ) + ( 1 << ( 2 + compScale.first ) ) ) >> ( 3 + compScale.first ) );
+  int addY = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << SCALE_RATIO_BITS ) + ( ( int( 1 - verCollocatedPositionFlag ) * 8 * ( scalingRatio.second - SCALE_1X.second ) + ( 1 << ( 2 + compScale.second ) ) ) >> ( 3 + compScale.second ) );
 #else
-  int addX = ( 1 << ( posShift - 1 ) ) + ( beforeScaleLeftOffset << posShift );
-  int addY = ( 1 << ( posShift - 1 ) ) + ( beforeScaleTopOffset << posShift );
+  int addX = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << SCALE_RATIO_BITS );
+  int addY = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << SCALE_RATIO_BITS );
 #endif
 
   if( downsampling )
@@ -1324,7 +1325,7 @@ void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
   for( int i = 0; i < scaledWidth; i++ )
   {
     const Pel* org = orgSrc;
-    int refPos = ( ( i - afterScaleLeftOffset ) * scalingRatio.first + addX ) >> posShift;
+    int refPos = ( ( ( i << compScale.first ) - afterScaleLeftOffset ) * scalingRatio.first + addX ) >> posShiftX;
     int integer = refPos >> numFracShift;
     int frac = refPos & numFracPositions;
     int* tmp = buf + i;
@@ -1351,7 +1352,7 @@ void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
 
   for( int j = 0; j < scaledHeight; j++ )
   {
-    int refPos = ( ( j - afterScaleTopOffset ) * scalingRatio.second + addY ) >> posShift;
+    int refPos = ( ( ( j << compScale.second ) - afterScaleTopOffset ) * scalingRatio.second + addY ) >> posShiftY;
     int integer = refPos >> numFracShift;
     int frac = refPos & numFracPositions;
 

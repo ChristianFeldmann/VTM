@@ -1836,6 +1836,9 @@ void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, c
   {
     m_numPtsInCQPTableMinus1[i] = params.m_numPtsInCQPTableMinus1[i];
     m_deltaQpInValMinus1[i] = params.m_deltaQpInValMinus1[i];
+#if JVET_P0410_CHROMA_QP_MAPPING
+    m_qpTableStartMinus26[i] = params.m_qpTableStartMinus26[i];
+#endif
     m_deltaQpOutVal[i] = params.m_deltaQpOutVal[i];
   }
 }
@@ -1849,6 +1852,17 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
   {
     const int qpBdOffsetC = m_qpBdOffset;
     const int numPtsInCQPTableMinus1 = getNumPtsInCQPTableMinus1(i);
+#if JVET_P0410_CHROMA_QP_MAPPING
+    std::vector<int> qpInVal(numPtsInCQPTableMinus1 + 2), qpOutVal(numPtsInCQPTableMinus1 + 2);
+
+    qpInVal[0] = getQpTableStartMinus26(i) + 26;
+    qpOutVal[0] = qpInVal[0];
+    for (int j = 0; j <= getNumPtsInCQPTableMinus1(i); j++)
+    {
+      qpInVal[j + 1] = qpInVal[j] + getDeltaQpInValMinus1(i, j) + 1;
+      qpOutVal[j + 1] = qpOutVal[j] + getDeltaQpOutVal(i, j);
+    }
+#else
     std::vector<int> qpInVal(numPtsInCQPTableMinus1 + 1), qpOutVal(numPtsInCQPTableMinus1 + 1);
 
     qpInVal[0] = -qpBdOffsetC + getDeltaQpInValMinus1(i, 0);
@@ -1858,6 +1872,7 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
       qpInVal[j] = qpInVal[j - 1] + getDeltaQpInValMinus1(i, j) + 1;
       qpOutVal[j] = qpOutVal[j - 1] + getDeltaQpOutVal(i, j);
     }
+#endif
 
     for (int j = 0; j <= getNumPtsInCQPTableMinus1(i); j++)
     {
@@ -1870,16 +1885,33 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
     {
       m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k + 1] - 1);
     }
+#if JVET_P0410_CHROMA_QP_MAPPING
+    for (int j = 0; j <= numPtsInCQPTableMinus1; j++)
+#else
     for (int j = 0; j < numPtsInCQPTableMinus1; j++)
+#endif
     {
+#if JVET_P0410_CHROMA_QP_MAPPING
+      int sh = (getDeltaQpInValMinus1(i, j) + 1) >> 1;
+#else
       int sh = (getDeltaQpInValMinus1(i, j + 1) + 1) >> 1;
+#endif
       for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
       {
+#if JVET_P0410_CHROMA_QP_MAPPING
+        m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
+          + ((qpOutVal[j + 1] - qpOutVal[j]) * m + sh) / (getDeltaQpInValMinus1(i, j) + 1);
+#else
         m_chromaQpMappingTables[i][k] = m_chromaQpMappingTables[i][qpInVal[j]]
           + (getDeltaQpOutVal(i, j + 1) * m + sh) / (getDeltaQpInValMinus1(i, j + 1) + 1);
+#endif
       }
     }
+#if JVET_P0410_CHROMA_QP_MAPPING
+    for (int k = qpInVal[numPtsInCQPTableMinus1 + 1] + 1; k <= MAX_QP; k++)
+#else
     for (int k = qpInVal[numPtsInCQPTableMinus1]+1; k <= MAX_QP; k++)
+#endif
     {
       m_chromaQpMappingTables[i][k] = Clip3(-qpBdOffsetC, MAX_QP, m_chromaQpMappingTables[i][k - 1] + 1);
     }

@@ -539,6 +539,9 @@ struct ChromaQpMappingTableParams {
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   int               m_numQpTables;
 #endif
+#if JVET_P0410_CHROMA_QP_MAPPING
+  int               m_qpTableStartMinus26[MAX_NUM_CQP_MAPPING_TABLES];
+#endif
   int               m_numPtsInCQPTableMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaQpInValMinus1[MAX_NUM_CQP_MAPPING_TABLES];
   std::vector<int>  m_deltaQpOutVal[MAX_NUM_CQP_MAPPING_TABLES];
@@ -551,6 +554,9 @@ struct ChromaQpMappingTableParams {
     m_numQpTables = 1;
 #endif
     m_numPtsInCQPTableMinus1[0] = 0;
+#if JVET_P0410_CHROMA_QP_MAPPING
+    m_qpTableStartMinus26[0] = 0;
+#endif
     m_deltaQpInValMinus1[0] = { 0 };
     m_deltaQpOutVal[0] = { 0 };
   }
@@ -560,6 +566,10 @@ struct ChromaQpMappingTableParams {
 #if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   void      setNumQpTables(int n)                                     { m_numQpTables = n; }
   int       getNumQpTables()                                     const { return m_numQpTables; }
+#endif
+#if JVET_P0410_CHROMA_QP_MAPPING
+  void      setQpTableStartMinus26(int tableIdx, int n)                         { m_qpTableStartMinus26[tableIdx] = n; }
+  int       getQpTableStartMinus26(int tableIdx)                          const { return m_qpTableStartMinus26[tableIdx]; }
 #endif
   void      setNumPtsInCQPTableMinus1(int tableIdx, int n)                      { m_numPtsInCQPTableMinus1[tableIdx] = n; }
   int       getNumPtsInCQPTableMinus1(int tableIdx)                       const { return m_numPtsInCQPTableMinus1[tableIdx]; }

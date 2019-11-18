@@ -248,9 +248,17 @@ uint32_t DecApp::decode()
 
 #if JVET_N0278_FIXES
         std::string reconFileName = m_reconFileName;
-        if( m_reconFileName.compare( "/dev/null" ) )
+        if( m_reconFileName.compare( "/dev/null" ) && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1)  && (m_iTargetLayer == -1) )
         {
-          reconFileName.insert( reconFileName.size() - 4, std::to_string( nalu.m_nuhLayerId ) );
+          size_t pos = reconFileName.find_last_of('.');
+          if (pos != string::npos)
+          {
+            reconFileName.insert( pos, std::to_string( nalu.m_nuhLayerId ) );
+          }
+          else
+          {
+            reconFileName.append( std::to_string( nalu.m_nuhLayerId ) );
+          }
         }
         m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
 #else

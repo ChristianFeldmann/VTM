@@ -603,7 +603,7 @@ Specifies the output coded bit stream file.
 \Option{ReconFile (-o)} &
 %\ShortOption{-o} &
 \Default{\NotSet} &
-Specifies the output locally reconstructed video file.
+Specifies the output locally reconstructed video file. If more than one layer is encoded (i.e. MaxLayers > 1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'reconst.yuv' becomes 'reconst0.yuv' for layer id 0, 'reconst' becomes 'reconst0'.
 \\
 
 \Option{SourceWidth (-wdt)}%
@@ -1029,7 +1029,7 @@ Specifies the value of general_frame_only_constraint_flag
 %% Layer parameters
 %%
 
-\begin{OptionTableNoShorthand}{Layer parameters}{tab:unit}
+\begin{OptionTableNoShorthand}{Layer parameters}{tab:layer}
 \Option{MaxLayers} &
 %\ShortOption{\None} &
 \Default{1} &
@@ -3452,7 +3452,7 @@ Defines the input bit stream file name.
 \Option{ReconFile (-o)} &
 %\ShortOption{-o} &
 \Default{\NotSet} &
-Defines reconstructed YUV file name. If empty, no file is generated. For layered coding bitstream, each layer reconstructed YUV file name is formed by adding the layer index suffix to ReconFile.
+Defines the reconstructed video file name. If empty, no file is generated. If the bitstream contains multiple layer and no single target layer is specified (i.e. TargetLayer=-1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'decoded.yuv' becomes 'decoded0.yuv' for layer id 0, 'decoded' becomes 'decoded0'.
 \\
 
 \Option{SkipFrames (-s)} &

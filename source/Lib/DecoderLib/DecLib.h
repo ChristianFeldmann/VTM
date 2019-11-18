@@ -131,6 +131,10 @@ private:
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
   std::vector<int> m_accessUnitApsNals;
 
+#if JVET_N0278_FIXES
+  VPS*                    m_vps;
+#endif
+
 public:
   DecLib();
   virtual ~DecLib();
@@ -169,6 +173,10 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+
+#if JVET_N0278_FIXES
+  const VPS* getVPS()                     { return m_vps; }
+#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);

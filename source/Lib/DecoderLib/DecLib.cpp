@@ -1773,7 +1773,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_PPS:
       xDecodePPS( nalu );
       return false;
+#if JVET_P0588_SUFFIX_APS
+    case NAL_UNIT_PREFIX_APS:
+    case NAL_UNIT_SUFFIX_APS:
+#else
     case NAL_UNIT_APS:
+#endif
       xDecodeAPS(nalu);
       return false;
 

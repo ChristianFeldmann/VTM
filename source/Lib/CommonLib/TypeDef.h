@@ -71,6 +71,9 @@
 #define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling
 
 #define JVET_P0469_QP_OUT_VAL                             1 // JVET-P0469: Coding delta_qp_diff_val instead of delta_qp_out_val
+
+#define JVET_P0588_SUFFIX_APS                             1 // JVET-P0588/P0452: suffix APS NUT
+
 #define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
@@ -969,9 +972,12 @@ enum NalUnitType
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16
-  NAL_UNIT_APS,                     // Todo: Remove this line after prefix and suffix APS have been implemented
-  //NAL_UNIT_PREFIX_APS,              // 17
-  //NAL_UNIT_SUFFIX_APS,              // 18
+#if JVET_P0588_SUFFIX_APS
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+#else
+  NAL_UNIT_APS,
+#endif
   NAL_UNIT_PH,                      // 19
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
   NAL_UNIT_EOS,                     // 21
@@ -1015,7 +1021,12 @@ enum NalUnitType
 
   NAL_UNIT_SPS,                     // 16
   NAL_UNIT_PPS,                     // 17
+#if JVET_P0588_SUFFIX_APS
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+#else
   NAL_UNIT_APS,                     // 18
+#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 19
   NAL_UNIT_EOS,                     // 20
   NAL_UNIT_EOB,                     // 21

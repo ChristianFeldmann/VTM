@@ -574,6 +574,9 @@ protected:
 #endif
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  bool      m_disableScalingMatrixForLfnstBlks;
+#endif
   bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
   bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
   CostMode  m_costMode;                                       ///< Cost mode to use

@@ -2106,6 +2106,9 @@ void ReferencePictureList::printRefPicInfo() const
 
 ScalingList::ScalingList()
 {
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  m_disableScalingMatrixForLfnstBlks = true;
+#endif
 #if JVET_P01034_PRED_1D_SCALING_LIST
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {

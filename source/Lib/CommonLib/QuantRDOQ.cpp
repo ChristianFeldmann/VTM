@@ -667,7 +667,12 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #endif
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  const bool   disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
+#endif
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem(isTransformSkip)];
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int iQBits = QUANT_SHIFT + cQP.per(isTransformSkip) + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits

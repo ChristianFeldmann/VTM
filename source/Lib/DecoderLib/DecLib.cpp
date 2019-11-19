@@ -413,6 +413,9 @@ DecLib::DecLib()
   , m_prefixSEINALUs()
   , m_debugPOC( -1 )
   , m_debugCTU( -1 )
+#if JVET_N0278_FIXES
+  , m_vps( nullptr )
+#endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -426,6 +429,13 @@ DecLib::~DecLib()
     delete m_prefixSEINALUs.front();
     m_prefixSEINALUs.pop_front();
   }
+
+#if JVET_N0278_FIXES
+  if( m_vps != nullptr )
+  {
+    delete m_vps;
+  }
+#endif
 }
 
 void DecLib::create()
@@ -1679,6 +1689,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {
+#if JVET_N0278_FIXES
+  if( m_vps == nullptr )
+  {
+    m_vps = new VPS();
+  }
+  m_HLSReader.setBitstream( &nalu.getBitstream() );
+
+  CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
+
+  m_HLSReader.parseVPS( m_vps );
+#else
   VPS* vps = new VPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 
@@ -1686,6 +1707,7 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
 
   m_HLSReader.parseVPS( vps );
   delete vps;
+#endif
 }
 
 void DecLib::xDecodeDPS( InputNALUnit& nalu )
@@ -1760,7 +1782,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_PPS:
       xDecodePPS( nalu );
       return false;
+#if JVET_P0588_SUFFIX_APS
+    case NAL_UNIT_PREFIX_APS:
+    case NAL_UNIT_SUFFIX_APS:
+#else
     case NAL_UNIT_APS:
+#endif
       xDecodeAPS(nalu);
       return false;
 

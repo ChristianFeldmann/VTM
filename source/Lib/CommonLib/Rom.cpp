@@ -75,7 +75,12 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_VPS:                    return "VPS";
   case NAL_UNIT_SPS:                    return "SPS";
   case NAL_UNIT_PPS:                    return "PPS";
+#if JVET_P0588_SUFFIX_APS
+  case NAL_UNIT_PREFIX_APS:             return "Prefix APS";
+  case NAL_UNIT_SUFFIX_APS:             return "Suffix APS";
+#else
   case NAL_UNIT_APS:                    return "APS";
+#endif
   case NAL_UNIT_PH:                     return "PH";
   case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
   case NAL_UNIT_EOS:                    return "EOS";
@@ -90,7 +95,12 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
   case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
   case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
+#if JVET_P0588_SUFFIX_APS
+  case NAL_UNIT_PREFIX_APS:             return "Prefix APS";
+  case NAL_UNIT_SUFFIX_APS:             return "Suffix APS";
+#else
   case NAL_UNIT_APS:                    return "APS";
+#endif
   case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
   case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
   case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";

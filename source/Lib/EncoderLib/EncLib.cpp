@@ -512,6 +512,9 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     {
       getTrQuant( jId )->getQuant()->setUseScalingList( true );
     }
+#if JVET_P0365_SCALING_MATRIX_LFNST
+    aps.getScalingList().setDisableScalingMatrixForLfnstBlks(getDisableScalingMatrixForLfnstBlks());
+#endif
 #endif
   }
   else if(getUseScalingListId() == SCALING_LIST_FILE_READ)
@@ -530,6 +533,9 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     {
       getTrQuant( jId )->getQuant()->setUseScalingList( true );
     }
+#endif
+#if JVET_P0365_SCALING_MATRIX_LFNST
+    aps.getScalingList().setDisableScalingMatrixForLfnstBlks(getDisableScalingMatrixForLfnstBlks());
 #endif
   }
   else

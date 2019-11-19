@@ -477,7 +477,11 @@ void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32
   sei.activeSeqParameterSetId.resize(sei.numSpsIdsMinus1 + 1);
   for (int i=0; i < (sei.numSpsIdsMinus1 + 1); i++)
   {
+#if JVET_P0244_SPS_CLEAN_UP
+    sei_read_code( pDecodedMessageOutputStream, 4, val, "active_seq_parameter_set_id[i]" ); sei.activeSeqParameterSetId[i] = val;
+#else
     sei_read_uvlc( pDecodedMessageOutputStream, val, "active_seq_parameter_set_id[i]");    sei.activeSeqParameterSetId[i] = val;
+#endif
   }
 }
 #endif
@@ -857,7 +861,11 @@ void SEIReader::xParseSEISOPDescription(SEISOPDescription &sei, uint32_t payload
   uint32_t uiCode;
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
+#if JVET_P0244_SPS_CLEAN_UP
+  sei_read_code( pDecodedMessageOutputStream, 4, uiCode,        "sop_seq_parameter_set_id"            ); sei.m_sopSeqParameterSetId = uiCode;
+#else
   sei_read_uvlc( pDecodedMessageOutputStream, uiCode,           "sop_seq_parameter_set_id"            ); sei.m_sopSeqParameterSetId = uiCode;
+#endif
   sei_read_uvlc( pDecodedMessageOutputStream, uiCode,           "num_pics_in_sop_minus1"              ); sei.m_numPicsInSopMinus1 = uiCode;
   for (uint32_t i = 0; i <= sei.m_numPicsInSopMinus1; i++)
   {

@@ -355,9 +355,15 @@ int EncGOP::xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, c
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
+#if JVET_P0588_SUFFIX_APS
+int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT )
+{
+  OutputNALUnit nalu( isPrefixNUT ? NAL_UNIT_PREFIX_APS : NAL_UNIT_SUFFIX_APS );
+#else
 int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId )
 {
   OutputNALUnit nalu(NAL_UNIT_APS);
+#endif
   m_HLSWriter->setBitstream(&nalu.m_Bitstream);
   nalu.m_nuhLayerId = layerId;
   nalu.m_temporalId = aps->getTemporalId();
@@ -2967,9 +2973,17 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         if (writeAPS)
         {
 #if JVET_N0278_FIXES
-          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), false );
 #else
-          actualTotalBits += xWriteAPS(accessUnit, aps);
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS(accessUnit, aps, 0, false );
+#else
+          actualTotalBits += xWriteAPS(accessUnit, aps, 0 );
+#endif
 #endif
           apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
           CHECK(aps != pcSlice->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
@@ -2986,9 +3000,17 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         if( writeAPS )
         {
 #if JVET_N0278_FIXES
-          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), false );
 #else
-          actualTotalBits += xWriteAPS( accessUnit, aps );
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS( accessUnit, aps, 0, false );
+#else
+          actualTotalBits += xWriteAPS( accessUnit, aps, 0 );
+#endif
 #endif
           apsMap->clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
           CHECK( aps != pcSlice->getscalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
@@ -3014,9 +3036,17 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           if (writeAPS )
           {
 #if JVET_N0278_FIXES
-            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#if JVET_P0588_SUFFIX_APS
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), false );
 #else
-            actualTotalBits += xWriteAPS(accessUnit, aps);
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+            actualTotalBits += xWriteAPS( accessUnit, aps, 0, false );
+#else
+            actualTotalBits += xWriteAPS(accessUnit, aps, 0);
+#endif
 #endif
             apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
             CHECK(aps != pcSlice->getAlfAPSs()[apsId], "Wrong APS pointer in compressGOP");

@@ -593,6 +593,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  m_cEncLib.setDisableScalingMatrixForLfnstBlks                  ( m_disableScalingMatrixForLfnstBlks);
+#endif
   m_cEncLib.setDepQuantEnabledFlag                               ( m_depQuantEnabledFlag);
   m_cEncLib.setSignDataHidingEnabledFlag                         ( m_signDataHidingEnabledFlag);
   m_cEncLib.setUseRateCtrl                                       ( m_RCEnableRateControl );
@@ -720,9 +723,17 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
 
 #if JVET_N0278_FIXES
     std::string reconFileName = m_reconFileName;
-    if( m_reconFileName.compare( "/dev/null" ) )
+    if( m_reconFileName.compare( "/dev/null" ) &&  (m_maxLayers > 1) )
     {
-      reconFileName.insert( reconFileName.size() - 4, std::to_string( layerId ) );
+      size_t pos = reconFileName.find_last_of('.');
+      if (pos != string::npos)
+      {
+        reconFileName.insert( pos, std::to_string( layerId ) );
+      }
+      else
+      {
+        reconFileName.append( std::to_string( layerId ) );
+      }
     }
     m_cVideoIOYuvReconFile.open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth );  // write mode
 #else
@@ -1175,7 +1186,12 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_VPS:
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:
+#if JVET_P0588_SUFFIX_APS
+    case NAL_UNIT_PREFIX_APS:
+    case NAL_UNIT_SUFFIX_APS:
+#else
     case NAL_UNIT_APS:
+#endif
       m_essentialBytes += *it_stats;
       break;
     default:

@@ -4256,8 +4256,6 @@ void CABACReader::mip_pred_modes( CodingUnit &cu )
 void CABACReader::mip_pred_mode( PredictionUnit &pu )
 {
 #if JVET_P0803_COMBINED_MIP_CLEANUP
-  CHECK( pu.lwidth() > MIP_MAX_WIDTH || pu.lheight() > MIP_MAX_HEIGHT, "Error: block size not supported" );
-
   pu.mipTransposedFlag = bool(m_BinDecoder.decodeBinEP());
 
   uint32_t mipMode;

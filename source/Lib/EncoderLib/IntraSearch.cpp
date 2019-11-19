@@ -469,7 +469,8 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     const bool fastMip    = sps.getUseMIP() && m_pcEncCfg->getUseFastMIP();
 #if JVET_P0803_COMBINED_MIP_CLEANUP
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
-    const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth())) && !(cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT);
+    const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth()));
+    const bool supportedMipBlkSize = pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT; 
 #else
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize() && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
     const bool testMip    = mipAllowed && mipModesAvailable(pu.Y());
@@ -521,7 +522,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         distParamSad.applyWeight = false;
         distParamHad.applyWeight = false;
 
-        if( testMip)
+        if( testMip && supportedMipBlkSize )
         {
           numModesForFullRD += fastMip? std::max(numModesForFullRD, floorLog2(std::min(pu.lwidth(), pu.lheight())) - 1) : numModesForFullRD;
         }
@@ -742,6 +743,22 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           LFNSTSaveFlag = false;
         }
           //*** Derive MIP candidates using Hadamard
+        if( testMip && ! supportedMipBlkSize )
+        {
+          // avoid estimation for unsupported blk sizes
+          const int transpOff    = getNumModesMip( pu.Y() );
+          const int numModesFull = (transpOff << 1);
+          for( uint32_t uiModeFull = 0; uiModeFull < numModesFull; uiModeFull++ )
+          {
+            const bool     isTransposed = (uiModeFull >= transpOff ? true : false);
+            const uint32_t uiMode       = (isTransposed ? uiModeFull - transpOff : uiModeFull);
+
+            numModesForFullRD++;
+            uiRdModeList.push_back( ModeInfo(true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode) );
+            CandCostList.push_back(0);
+          }
+        }
+        else
           if (testMip)
           {
             cu.mipFlag = true;

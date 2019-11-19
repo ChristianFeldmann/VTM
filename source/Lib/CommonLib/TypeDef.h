@@ -50,6 +50,10 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0243_SINGLE_BIT_DEPTH                       1 // JVET-P0243: Single bitdepth for luma and chroma
+
+#define JVET_P0244_SPS_CLEAN_UP                           1 // JVET-P0244/P0429: SPS cleanup changes
+
 #define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
 
 #define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
@@ -57,6 +61,8 @@
 #define JVET_P0363_CLEANUP_NUT_TABLE                      1 // JVET-P0363: Clean-up of NAL unit type table
 
 #define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
+
+#define JVET_P0410_CHROMA_QP_MAPPING                      1 // JVET-P0410: Chroma QP Mapping signalling
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 

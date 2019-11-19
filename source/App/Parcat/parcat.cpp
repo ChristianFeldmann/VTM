@@ -200,7 +200,12 @@ const char * NALU_TYPE[] =
     "NAL_UNIT_VPS",
     "NAL_UNIT_SPS",
     "NAL_UNIT_PPS",
+#if JVET_P0588_SUFFIX_APS
+    "NAL_UNIT_PREFIX_APS",
+    "NAL_UNIT_SUFFIX_APS",
+#else
     "NAL_UNIT_APS",
+#endif
     "NAL_UNIT_PH",
     "NAL_UNIT_ACCESS_UNIT_DELIMITER",
     "NAL_UNIT_EOS",
@@ -393,7 +398,11 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       idr_found = true;
     }
 
+#if JVET_P0588_SUFFIX_APS
+    if( ( idx > 1 && ( nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP ) ) || ( ( idx > 1 && !idr_found ) && ( nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_PREFIX_APS || nalu_type == NAL_UNIT_SUFFIX_APS || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER ) )
+#else
     if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS ||nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER))
+#endif
       || (nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei))
     {
     }

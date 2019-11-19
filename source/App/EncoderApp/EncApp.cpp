@@ -1181,7 +1181,12 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_VPS:
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:
+#if JVET_P0588_SUFFIX_APS
+    case NAL_UNIT_PREFIX_APS:
+    case NAL_UNIT_SUFFIX_APS:
+#else
     case NAL_UNIT_APS:
+#endif
       m_essentialBytes += *it_stats;
       break;
     default:

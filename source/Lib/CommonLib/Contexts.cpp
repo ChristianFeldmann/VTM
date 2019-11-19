@@ -754,31 +754,28 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
   { DWS, DWS, },
 });
 
-const CtxSet ContextSetCfg::MTSIndex[] = {
-    // transform_skip_flag
-    ContextSetCfg::addCtxSet
-    ({
+const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
+({
 #if JVET_P0058_CHROMA_TS
-        { 25,  17, },
-        { 25,  17, },
-        { 25,   1, },
-        {  1,   1, },
+    { 25,  17, },
+    { 25,  17, },
+    { 25,   1, },
+    {  1,   1, },
 #else
-        { 25, },
-        { 25, },
-        { 25, },
-        {  1, },
+    { 25, },
+    { 25, },
+    { 25, },
+    {  1, },
 #endif
-    }),
-    // mts_idx
-    ContextSetCfg::addCtxSet
-    ({
-        { 37,  25,  27,   0, CNU, },
-        { 30,  40,  27,   0, CNU, },
-        { 13,   0,  35,   0, CNU, },
-        {  8,   0,   9,   0, DWS, },
-    })
-};
+});
+
+const CtxSet ContextSetCfg::MTSIdx = ContextSetCfg::addCtxSet
+({
+    { 37,  25,  27,   0, CNU, },
+    { 30,  40,  27,   0, CNU, },
+    { 13,   0,  35,   0, CNU, },
+    {  8,   0,   9,   0, DWS, },
+});
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 ({
@@ -1530,30 +1527,28 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
   { DWS, DWS, },
 });
 
-const CtxSet ContextSetCfg::MTSIndex[] = {
-    // transform_skip_flag
-    ContextSetCfg::addCtxSet({
+const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
+({
 #if JVET_P0058_CHROMA_TS
-        { 33, CNU },
-        { 18, CNU },
-        { 33, CNU },
-        {  1,   1 },
+    { 33, CNU },
+    { 18, CNU },
+    { 33, CNU },
+    {  1,   1 },
 #else
-        { 33, },
-        { 18, },
-        { 33, },
-        {  1, },
+    { 33, },
+    { 18, },
+    { 33, },
+    {  1, },
 #endif
-    }),
-    // mts_idx
-    ContextSetCfg::addCtxSet
-    ({
-        { 29,  18,  27,   0, CNU },
-        { 29,  33,  27,   0, CNU },
-        { 20,   0,  42,   0, CNU },
-        {  8,   0,   9,   0, DWS },
-    })
-};
+});
+
+const CtxSet ContextSetCfg::MTSIdx = ContextSetCfg::addCtxSet
+({
+    { 29,  18,  27,   0, CNU },
+    { 29,  33,  27,   0, CNU },
+    { 20,   0,  42,   0, CNU },
+    {  8,   0,   9,   0, DWS },
+});
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
 ({

@@ -242,7 +242,8 @@ public:
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
-  static const CtxSet   MTSIndex        [2];    // 0: transform_skip_flag, 1: mts_idx
+  static const CtxSet   TransformSkipFlag;
+  static const CtxSet   MTSIdx;
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   LFNSTIdx;
   static const CtxSet   PLTFlag;

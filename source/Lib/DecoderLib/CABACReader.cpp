@@ -3318,7 +3318,7 @@ void CABACReader::ts_flag( TransformUnit& tu, ComponentID compID )
   if( TU::isTSAllowed ( tu, compID ) )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
-    tsFlag = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 0 ]( ctxIdx ) );
+    tsFlag = m_BinDecoder.decodeBin( Ctx::TransformSkipFlag( ctxIdx ) );
   }
   
 #if JVET_P0058_CHROMA_TS
@@ -3344,7 +3344,7 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[COMPONENT_Y], COMPONENT_Y );
     int ctxIdx = 0;
-    int symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
+    int symbol = m_BinDecoder.decodeBin( Ctx::MTSIdx(ctxIdx));
     
     if( symbol )
     {
@@ -3352,7 +3352,7 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
       mtsIdx = MTS_DST7_DST7; // mtsIdx = 2 -- 4
       for( int i = 0; i < 3; i++, ctxIdx++ )
       {
-        symbol  = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
+        symbol  = m_BinDecoder.decodeBin( Ctx::MTSIdx(ctxIdx));
         mtsIdx += symbol;
         
         if( !symbol )
@@ -3400,7 +3400,7 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 #else
       ctxIdx = 0;
 #endif
-      symbol = m_BinDecoder.decodeBin(Ctx::MTSIndex[ 0 ](ctxIdx));
+      symbol = m_BinDecoder.decodeBin(Ctx::TransformSkipFlag(ctxIdx));
 #if JVET_P0058_CHROMA_TS
     tu.mtsIdx[compID] = symbol ? MTS_SKIP : MTS_DCT2_DCT2;
 #else
@@ -3417,7 +3417,7 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
     if( mtsAllowed )
     {
       ctxIdx = 0;
-      symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
+      symbol = m_BinDecoder.decodeBin( Ctx::MTSIdx(ctxIdx));
 
       if( symbol )
       {
@@ -3429,7 +3429,7 @@ void CABACReader::mts_coding( TransformUnit& tu, ComponentID compID )
 #endif
         for( int i = 0; i < 3; i++, ctxIdx++ )
         {
-          symbol = m_BinDecoder.decodeBin( Ctx::MTSIndex[ 1 ](ctxIdx));
+          symbol = m_BinDecoder.decodeBin( Ctx::MTSIdx(ctxIdx));
 #if JVET_P0058_CHROMA_TS
           tu.mtsIdx[compID] += symbol;
 #else

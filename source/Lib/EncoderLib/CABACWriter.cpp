@@ -3030,7 +3030,7 @@ void CABACWriter::ts_flag( const TransformUnit& tu, ComponentID compID )
   
   if( TU::isTSAllowed ( tu, compID ) )
   {
-    m_BinEncoder.encodeBin( tsFlag, Ctx::MTSIndex[ 0 ](ctxIdx));
+    m_BinEncoder.encodeBin( tsFlag, Ctx::TransformSkipFlag(ctxIdx));
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "ts_flag() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tsFlag );
 }
@@ -3059,7 +3059,7 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
     int symbol = mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
     int ctxIdx = 0;
     
-    m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex[ 1 ](ctxIdx));
+    m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
     
     if( symbol )
     {
@@ -3067,7 +3067,7 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
       for( int i = 0; i < 3; i++, ctxIdx++ )
       {
         symbol = mtsIdx > i + MTS_DST7_DST7 ? 1 : 0;
-        m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex[ 1 ](ctxIdx));
+        m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
         
         if( !symbol )
         {
@@ -3102,7 +3102,7 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 #else
     ctxIdx = 0;
 #endif
-    m_BinEncoder.encodeBin(symbol, Ctx::MTSIndex[ 0 ](ctxIdx));
+    m_BinEncoder.encodeBin(symbol, Ctx::TransformSkipFlag(ctxIdx));
   }
 
 #if JVET_P0058_CHROMA_TS
@@ -3119,7 +3119,7 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
 #endif
       ctxIdx = 0;
-      m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex[ 1 ](ctxIdx));
+      m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
 
       if( symbol )
       {
@@ -3131,7 +3131,7 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 #else
           symbol = tu.mtsIdx > i + MTS_DST7_DST7 ? 1 : 0;
 #endif
-          m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex[ 1 ](ctxIdx));
+          m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
 
           if( !symbol )
           {

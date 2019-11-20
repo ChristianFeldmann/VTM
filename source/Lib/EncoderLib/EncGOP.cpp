@@ -2974,13 +2974,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         {
 #if JVET_N0278_FIXES
 #if JVET_P0588_SUFFIX_APS
-          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), false );
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
 #else
           actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
 #endif
 #else
 #if JVET_P0588_SUFFIX_APS
-          actualTotalBits += xWriteAPS(accessUnit, aps, 0, false );
+          actualTotalBits += xWriteAPS(accessUnit, aps, 0, true );
 #else
           actualTotalBits += xWriteAPS(accessUnit, aps, 0 );
 #endif
@@ -3001,13 +3001,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         {
 #if JVET_N0278_FIXES
 #if JVET_P0588_SUFFIX_APS
-          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), false );
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
 #else
           actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
 #endif
 #else
 #if JVET_P0588_SUFFIX_APS
-          actualTotalBits += xWriteAPS( accessUnit, aps, 0, false );
+          actualTotalBits += xWriteAPS( accessUnit, aps, 0, true );
 #else
           actualTotalBits += xWriteAPS( accessUnit, aps, 0 );
 #endif
@@ -3037,13 +3037,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
 #if JVET_N0278_FIXES
 #if JVET_P0588_SUFFIX_APS
-            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), false );
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
 #else
             actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
 #endif
 #else
 #if JVET_P0588_SUFFIX_APS
-            actualTotalBits += xWriteAPS( accessUnit, aps, 0, false );
+            actualTotalBits += xWriteAPS( accessUnit, aps, 0, true );
 #else
             actualTotalBits += xWriteAPS(accessUnit, aps, 0);
 #endif

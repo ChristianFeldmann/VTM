@@ -496,6 +496,10 @@ static const int ENC_PPS_ID_RPR =                                 3;
 static const int SCALE_RATIO_BITS =                              14;
 static const int MAX_SCALING_RATIO =                              8;  // max scaling ratio allowed in the software, it is used to allocated an internla buffer in the rescaling
 static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+static const int DELTA_QP_FOR_Y_Cg =                             -5;
+static const int DELTA_QP_FOR_Co =                               -3;
+#endif
 
 // ====================================================================================================================
 // Macro functions

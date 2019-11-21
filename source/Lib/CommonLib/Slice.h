@@ -999,6 +999,9 @@ private:
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
   unsigned          m_IBCFlag;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  bool              m_useColorTrans;
+#endif 
   unsigned          m_PLTMode;
 
   bool              m_lumaReshapeEnable;
@@ -1251,6 +1254,10 @@ public:
   bool                    getUseReshaper() const                                                          { return m_lumaReshapeEnable;                                                }
   void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  void                    setUseColorTrans(bool value) { m_useColorTrans = value; }
+  bool                    getUseColorTrans() const { return m_useColorTrans; }
+#endif
   void                    setPLTMode(unsigned PLTMode)                                                    { m_PLTMode = PLTMode; }
   unsigned                getPLTMode() const                                                              { return m_PLTMode; }
   void                    setUseSBT( bool b )                                                             { m_SBT = b; }

@@ -1397,6 +1397,9 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setBdofDmvrSlicePresentFlag(m_DMVR || m_BIO);
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  sps.setUseColorTrans(m_useColorTrans);
+#endif
   sps.setPLTMode                            ( m_PLTMode);
   sps.setIBCFlag                            ( m_IBCMode);
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );

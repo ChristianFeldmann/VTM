@@ -2131,13 +2131,15 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
       "Non-conforming bitstream. no_cra_constraint_flag is equal to 1 but bitstream contains NAL unit of type CRA_NUT.");
     CHECK(cInfo->getNoGdrConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_GDR,
       "Non-conforming bitstream. no_gdr_constraint_flag is equal to 1 but bitstream contains NAL unit of type GDR_NUT.");
+#if !JVET_P0588_SUFFIX_APS
     CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_APS,
       "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_NUT.");
-    // Todo: replace the two lines above with the following lines when prefix APS and suffix APS are implemented.
-    //CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_PREFIX_APS,
-    //  "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_PREFIX_NUT.");
-    //CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_SUFFIX_APS,
-    //  "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_SUFFIX_NUT.");
+#else
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_PREFIX_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_PREFIX_NUT.");
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_SUFFIX_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_SUFFIX_NUT.");
+#endif
   }
 }
 #endif

@@ -1214,6 +1214,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   xTraceSPSHeader ();
 #endif
   READ_CODE( 4,  uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId( uiCode );
+#if JVET_P0205_VPS_ID_0
+  READ_CODE( 4,  uiCode, "sps_video_parameter_set_id" );      pcSPS->setVPSId( uiCode );
+#endif
   READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
   READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
@@ -1779,7 +1782,14 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
   uint32_t  uiCode;
 
+#if JVET_P0205_VPS_ID_0
+  READ_CODE(4, uiCode, "vps_video_parameter_set_id");         
+  CHECK( uiCode == 0, "vps_video_parameter_set_id equal to zero is reserved and shall not be used in a bitstream" );
+  pcVPS->setVPSId(uiCode);
+#else
   READ_CODE(4, uiCode, "vps_video_parameter_set_id");         pcVPS->setVPSId(uiCode);
+#endif
+
   READ_CODE(8, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
   for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
   {

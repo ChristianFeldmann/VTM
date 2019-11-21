@@ -1024,6 +1024,9 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.sps       = sps;
   subStruct.vps       = vps;
   subStruct.pps       = pps;
+#if JVET_P1006_PICTURE_HEADER
+  subStruct.picHeader = picHeader;
+#endif
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 
   subStruct.lmcsAps = lmcsAps;

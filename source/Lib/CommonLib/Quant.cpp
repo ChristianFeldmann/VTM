@@ -382,7 +382,17 @@ void Quant::dequant(const TransformUnit &tu,
 #else
   const bool            isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
 #endif
+
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+  const bool            disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+  const bool            disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+  const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
   const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
+#endif
   const int             scalingListType    = getScalingListType(tu.cu->predMode, compID);
   const int             channelBitDepth    = sps->getBitDepth(toChannelType(compID));
 
@@ -1075,7 +1085,11 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
+#if JVET_P1006_PICTURE_HEADER
+    CoeffCodingContext cctx(tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag());
+#else
     CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
+#endif
 
     const TCoeff entropyCodingMinimum = -(1 << maxLog2TrDynamicRange);
     const TCoeff entropyCodingMaximum =  (1 << maxLog2TrDynamicRange) - 1;
@@ -1087,7 +1101,16 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
     int *piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
 
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+    const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, useTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
     const bool enableScalingLists             = getUseScalingList(uiWidth, uiHeight, useTransformSkip);
+#endif
 
     // for blocks that where width*height != 4^N, the effective scaling applied during transformation cannot be
     // compensated by a bit-shift (the quantised result will be sqrt(2) * larger than required).
@@ -1172,7 +1195,16 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
   int *piQuantCoeff         = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
 
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+  const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+  const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+  const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0), tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
   const bool enableScalingLists             = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0));
+#endif
 
   /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
     * implemented as a bit-shift (the quantised result will be sqrt(2) * larger than required). Alternatively, adjust the
@@ -1221,7 +1253,16 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
   const int            channelBitDepth                = sps.getBitDepth(toChannelType(compID));
   const int            iTransformShift                = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
   const int            scalingListType                = getScalingListType(tu.cu->predMode, compID);
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+  const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
   const bool           enableScalingLists             = getUseScalingList(uiWidth, uiHeight, true);
+#endif
 #if JVET_P0058_CHROMA_TS
   const bool           useTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
 #else
@@ -1298,7 +1339,16 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   const int            channelBitDepth        = sps.getBitDepth(toChannelType(compID));
   const int            iTransformShift        = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
   const int            scalingListType        = getScalingListType(tu.cu->predMode, compID);
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+  const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
   const bool           enableScalingLists     = getUseScalingList(uiWidth, uiHeight, true);
+#endif
 
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
 

@@ -458,7 +458,7 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_dI = _mm256_add_epi16(mm_dI, mm_src);
       if (!bi)
       {
-        mm_dI = _mm256_srai_epi16(_mm256_add_epi16(mm_dI, mm_offset), shiftNum);
+        mm_dI = _mm256_srai_epi16(_mm256_adds_epi16(mm_dI, mm_offset), shiftNum);
         mm_dI = _mm256_min_epi16(vibdimax, _mm256_max_epi16(vibdimin, mm_dI));
       }
 
@@ -497,7 +497,7 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_dI = _mm_add_epi16(_mm_unpacklo_epi64(_mm_loadl_epi64((const __m128i *)src), _mm_loadl_epi64((const __m128i *)(src + srcStride))), mm_dI);
       if (!bi)
       {
-        mm_dI = _mm_srai_epi16(_mm_add_epi16(mm_dI, mm_offset), shiftNum);
+        mm_dI = _mm_srai_epi16(_mm_adds_epi16(mm_dI, mm_offset), shiftNum);
         mm_dI = _mm_min_epi16(vibdimax, _mm_max_epi16(vibdimin, mm_dI));
       }
 

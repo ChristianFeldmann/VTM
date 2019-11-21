@@ -502,7 +502,8 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     const bool fastMip    = sps.getUseMIP() && m_pcEncCfg->getUseFastMIP();
 #if JVET_P0803_COMBINED_MIP_CLEANUP
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
-    const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth())) && !(cu.lwidth() > MIP_MAX_WIDTH || cu.lheight() > MIP_MAX_HEIGHT);
+    const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth()));
+    const bool supportedMipBlkSize = pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT; 
 #else
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && pu.lwidth() <= cu.cs->sps->getMaxTbSize() && pu.lheight() <= cu.cs->sps->getMaxTbSize() && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
     const bool testMip    = mipAllowed && mipModesAvailable(pu.Y());
@@ -555,7 +556,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
         DistParam distParamSad;
         DistParam distParamHad;
+#if JVET_P1006_PICTURE_HEADER
+        if (cu.slice->getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
         if (cu.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
         {
           CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
           PelBuf tmpOrg = m_tmpStorageLCU.getBuf(tmpArea);
@@ -573,7 +578,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         distParamSad.applyWeight = false;
         distParamHad.applyWeight = false;
 
-        if( testMip)
+        if( testMip && supportedMipBlkSize )
         {
           numModesForFullRD += fastMip? std::max(numModesForFullRD, floorLog2(std::min(pu.lwidth(), pu.lheight())) - 1) : numModesForFullRD;
         }
@@ -798,6 +803,22 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           LFNSTSaveFlag = false;
         }
           //*** Derive MIP candidates using Hadamard
+        if( testMip && ! supportedMipBlkSize )
+        {
+          // avoid estimation for unsupported blk sizes
+          const int transpOff    = getNumModesMip( pu.Y() );
+          const int numModesFull = (transpOff << 1);
+          for( uint32_t uiModeFull = 0; uiModeFull < numModesFull; uiModeFull++ )
+          {
+            const bool     isTransposed = (uiModeFull >= transpOff ? true : false);
+            const uint32_t uiMode       = (isTransposed ? uiModeFull - transpOff : uiModeFull);
+
+            numModesForFullRD++;
+            uiRdModeList.push_back( ModeInfo(true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode) );
+            CandCostList.push_back(0);
+          }
+        }
+        else
           if (testMip)
           {
             cu.mipFlag = true;
@@ -1825,7 +1846,11 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   m_orgCtxRD = PLTCtx(m_CABACEstimator->getCtx());
 #endif
 
+#if JVET_P1006_PICTURE_HEADER
+  if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#else
   if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#endif
   {
     cs.getPredBuf().copyFrom(cs.getOrgBuf());
     cs.getPredBuf().Y().rspSignal(m_pcReshape->getFwdLUT());
@@ -1916,7 +1941,11 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     CPelBuf org = cs.getOrgBuf(compID);
 #if WCG_EXT
     if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+#if JVET_P1006_PICTURE_HEADER
+      m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
       m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#endif
     {
       const CPelBuf orgLuma = cs.getOrgBuf(cs.area.blocks[COMPONENT_Y]);
 
@@ -1995,7 +2024,11 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
     CompArea  area = cu.blocks[comp];
+#if JVET_P1006_PICTURE_HEADER
+    if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#else
     if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#endif
     {
       orgBuf[comp] = cs.getPredBuf(area);
     }
@@ -2674,7 +2707,11 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
     CompArea  area = cu.blocks[comp];
+#if JVET_P1006_PICTURE_HEADER
+    if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#else
     if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#endif
     {
       orgBuf[comp] = cs.getPredBuf(area);
     }
@@ -2750,7 +2787,11 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
     CompArea  area = cu.blocks[comp];
+#if JVET_P1006_PICTURE_HEADER
+    if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#else
     if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#endif
     {
       orgBuf[comp] = cs.getPredBuf(area);
     }
@@ -3428,12 +3469,20 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   //DTRACE_PEL_BUF( D_PRED, piPred, tu, tu.cu->predMode, COMPONENT_Y );
 
   const Slice           &slice = *cs.slice;
+#if JVET_P1006_PICTURE_HEADER
+  bool flag = slice.getPicHeader()->getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#else
   bool flag = slice.getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
+#endif
   if (isLuma(compID))
   {
   //===== get residual signal =====
   piResi.copyFrom( piOrg  );
+#if JVET_P1006_PICTURE_HEADER
+  if (slice.getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#endif
   {
     CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
     PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
@@ -3471,7 +3520,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
 
   flag =flag && (tu.blocks[compID].width*tu.blocks[compID].height > 4);
+#if JVET_P1006_PICTURE_HEADER
+  if (flag && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() )
+#else
   if (flag && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() )
+#endif
   {
     int cResScaleInv = tu.getChromaAdj();
     double cResScale = (double)(1 << CSCALE_FP_PREC) / (double)cResScaleInv;
@@ -3577,10 +3630,35 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #endif
 #if JVET_P0058_CHROMA_TS
     // encoder bugfix: Set loadTr to aovid redundant transform process
+#if JVET_AHG14_LOSSLESS
+#if JVET_P0059_CHROMA_BDPCM
+    if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0) || tu.cu->bdpcmModeChroma != 0)
+#else
+    if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0))
+#endif
+    {
+        m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+    }
+#else
     m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
+#endif
 #else
     m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx());
 #endif
+
+#if JVET_AHG14_LOSSLESS
+#if JVET_P0059_CHROMA_BDPCM
+    if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0) && 0 == tu.cu->bdpcmModeChroma)
+#else
+    if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0))
+#endif
+    {
+        uiAbsSum = 0;
+        tu.getCoeffs(compID).fill(0);
+        TU::setCbfAtDepth(tu, compID, tu.depth, 0);
+    }
+#endif
+
     DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
     if( uiAbsSum > 0 )
     {
@@ -3610,7 +3688,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 
   //===== reconstruction =====
+#if JVET_P1006_PICTURE_HEADER
+  if ( flag && uiAbsSum > 0 && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() )
+#else
   if ( flag && uiAbsSum > 0 && isChroma(compID) && slice.getLmcsChromaResidualScaleFlag() )
+#endif
   {
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
     if( jointCbCr )
@@ -3627,7 +3709,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     }
   }
 
+#if JVET_P1006_PICTURE_HEADER
+  if (slice.getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
   if (slice.getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#endif
   {
     CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0,0), area.size());
     PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
@@ -3647,7 +3733,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   //===== update distortion =====
 #if WCG_EXT
   if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getReshaper()
+#if JVET_P1006_PICTURE_HEADER
+    && slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
+#else
     && slice.getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
+#endif
   {
     const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
     if (compID == COMPONENT_Y  && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))
@@ -5242,7 +5332,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     resiCr.subtract( piPredCr );
 
     //----- get reshape parameter ----
+#if JVET_P1006_PICTURE_HEADER
+    bool doReshaping = ( cs.picHeader->getLmcsEnabledFlag() && cs.picHeader->getLmcsChromaResidualScaleFlag()
+#else
     bool doReshaping = ( cs.slice->getLmcsEnabledFlag() && cs.slice->getLmcsChromaResidualScaleFlag()
+#endif
                          && (cs.slice->isIntra() || m_pcReshape->getCTUFlag()) && (cbArea.width * cbArea.height > 4) );
     if( doReshaping )
     {

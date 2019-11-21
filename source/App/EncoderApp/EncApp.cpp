@@ -173,6 +173,16 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  m_cEncLib.setNoTrailConstraintFlag                             ( m_iIntraPeriod == 1 );
+  m_cEncLib.setNoStsaConstraintFlag                              ( m_iIntraPeriod == 1 || !xHasNonZeroTemporalID() );
+  m_cEncLib.setNoRaslConstraintFlag                              ( m_iIntraPeriod == 1 || !xHasLeadingPicture() );
+  m_cEncLib.setNoRadlConstraintFlag                              ( m_iIntraPeriod == 1 || !xHasLeadingPicture() );
+  m_cEncLib.setNoIdrConstraintFlag                               ( false ); // Not yet possible to encode bitstream starting with a GDR picture
+  m_cEncLib.setNoCraConstraintFlag                               ( m_iDecodingRefreshType != 1 );
+  m_cEncLib.setNoGdrConstraintFlag                               ( false ); // Not yet possible to encode GDR using config parameters
+  m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lumaReshapeEnable && m_useScalingListId == SCALING_LIST_OFF);
+#endif
 
   //====== Coding Structure ========
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );
@@ -577,6 +587,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLFCrossTileBoundaryFlag                           ( m_bLFCrossTileBoundaryFlag );
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
+#if JVET_P1006_PICTURE_HEADER
+  m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );
+  m_cEncLib.setSliceLevelDblk                                    ( m_sliceLevelDblk );
+  m_cEncLib.setSliceLevelSao                                     ( m_sliceLevelSao  );
+  m_cEncLib.setSliceLevelAlf                                     ( m_sliceLevelAlf  );
+#endif
   m_cEncLib.setConstantSliceHeaderParamsEnabledFlag              ( m_constantSliceHeaderParamsEnabledFlag );
   m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );
   m_cEncLib.setPPSRefPicListSPSIdc0                              ( m_PPSRefPicListSPSIdc0 );
@@ -1186,6 +1202,9 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_VPS:
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:
+#if JVET_P1006_PICTURE_HEADER
+    case NAL_UNIT_PH:
+#endif
 #if JVET_P0588_SUFFIX_APS
     case NAL_UNIT_PREFIX_APS:
     case NAL_UNIT_SUFFIX_APS:

@@ -214,6 +214,16 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      m_noTrailConstraintFlag;
+  bool      m_noStsaConstraintFlag;
+  bool      m_noRaslConstraintFlag;
+  bool      m_noRadlConstraintFlag;
+  bool      m_noIdrConstraintFlag;
+  bool      m_noCraConstraintFlag;
+  bool      m_noGdrConstraintFlag;
+  bool      m_noApsConstraintFlag;
+#endif
 
   /* profile & level */
   Profile::Name m_profile;
@@ -594,6 +604,12 @@ protected:
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
+#if JVET_P1006_PICTURE_HEADER
+  bool      m_sliceLevelRpl;                      ///< code reference picture lists in slice headers rather than picture header
+  bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
+  bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
+  bool      m_sliceLevelAlf;                      ///< code ALF parameters in slice headers rather than picture header
+#endif
 #if JVET_P0365_SCALING_MATRIX_LFNST
   bool      m_disableScalingMatrixForLfnstBlks;
 #endif
@@ -786,6 +802,25 @@ public:
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
   void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
+  void      setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
+  bool      getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
+  void      setNoStsaConstraintFlag(bool bVal) { m_noStsaConstraintFlag = bVal; }
+  bool      getNoRaslConstraintFlag() const { return m_noRaslConstraintFlag; }
+  void      setNoRaslConstraintFlag(bool bVal) { m_noRaslConstraintFlag = bVal; }
+  bool      getNoRadlConstraintFlag() const { return m_noRadlConstraintFlag; }
+  void      setNoRadlConstraintFlag(bool bVal) { m_noRadlConstraintFlag = bVal; }
+  bool      getNoIdrConstraintFlag() const { return m_noIdrConstraintFlag; }
+  void      setNoIdrConstraintFlag(bool bVal) { m_noIdrConstraintFlag = bVal; }
+  bool      getNoCraConstraintFlag() const { return m_noCraConstraintFlag; }
+  void      setNoCraConstraintFlag(bool bVal) { m_noCraConstraintFlag = bVal; }
+  bool      getNoGdrConstraintFlag() const { return m_noGdrConstraintFlag; }
+  void      setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
+  bool      getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
+  void      setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+#endif
+
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }
   void      setFrameSkip                    ( uint32_t  i )      { m_FrameSkip = i; }
@@ -1532,6 +1567,16 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
+#if JVET_P1006_PICTURE_HEADER
+  void         setSliceLevelRpl  ( bool b )                          { m_sliceLevelRpl = b;     }
+  bool         getSliceLevelRpl  ()                                  { return m_sliceLevelRpl;  }
+  void         setSliceLevelDblk ( bool b )                          { m_sliceLevelDblk = b;    }
+  bool         getSliceLevelDblk ()                                  { return m_sliceLevelDblk; }
+  void         setSliceLevelSao  ( bool b )                          { m_sliceLevelSao = b;     }
+  bool         getSliceLevelSao  ()                                  { return m_sliceLevelSao;  }
+  void         setSliceLevelAlf  ( bool b )                          { m_sliceLevelAlf = b;     }
+  bool         getSliceLevelAlf  ()                                  { return m_sliceLevelAlf;  }
+#endif
 #if JVET_P0365_SCALING_MATRIX_LFNST
   void         setDisableScalingMatrixForLfnstBlks(bool u)          { m_disableScalingMatrixForLfnstBlks = u;   }
   bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }

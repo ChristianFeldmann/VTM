@@ -88,6 +88,8 @@
 
 #define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
 
+#define JVET_P0217_PTL_SYNTAX_CLEANUP                     1 // JVET-P0217: On Profile, tier, and level syntax structure
+
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
 #define JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP             1 // JVET-P0445: encoder speed up for sub-block based merge candidate search

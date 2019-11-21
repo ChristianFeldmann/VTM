@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P1006_PICTURE_HEADER                         1 // JVET-P1006: Add picture header and related syntax changes
+
 #define JVET_P0365_SCALING_MATRIX_LFNST                   1 // JVET-P0365: Signal flag to indicate whether scaling matrices are used for LFNST-coded blocks
 
 #define JVET_P0243_SINGLE_BIT_DEPTH                       1 // JVET-P0243: Single bitdepth for luma and chroma

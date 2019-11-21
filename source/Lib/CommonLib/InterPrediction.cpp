@@ -492,7 +492,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
   pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
 
   bool bioApplied = false;
+#if JVET_P1006_PICTURE_HEADER
+  if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
+#else
   if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#endif
   {
     if (pu.cu->affine || m_subPuMC)
     {
@@ -1812,7 +1816,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
     bool bioApplied = false;
     const Slice &slice = *pu.cs->slice;
+#if JVET_P1006_PICTURE_HEADER
+    if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
+#else
     if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#endif
     {
 
       if (pu.cu->affine || m_subPuMC)

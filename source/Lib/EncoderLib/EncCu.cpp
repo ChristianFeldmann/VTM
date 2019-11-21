@@ -689,11 +689,19 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 
   m_cuChromaQpOffsetIdxPlus1 = 0;
 
+#if JVET_P1006_PICTURE_HEADER
+  if( pps.getCuChromaQpOffsetEnabledFlag() )
+#else
   if( slice.getUseChromaQpAdj() )
+#endif
   {
     // TODO M0133 : double check encoder decisions with respect to chroma QG detection and actual encode
     int lgMinCuSize = sps.getLog2MinCodingBlockSize() +
+#if JVET_P1006_PICTURE_HEADER
+      std::max<int>( 0, sps.getLog2DiffMaxMinCodingBlockSize() - int( slice.getCuChromaQpOffsetSubdiv()/2 ) );
+#else
       std::max<int>( 0, sps.getLog2DiffMaxMinCodingBlockSize() - int( pps.getCuChromaQpOffsetSubdiv()/2 ) );
+#endif
     m_cuChromaQpOffsetIdxPlus1 = ( ( uiLPelX >> lgMinCuSize ) + ( uiTPelY >> lgMinCuSize ) ) % ( pps.getChromaQpOffsetListLen() + 1 );
   }
 
@@ -1290,7 +1298,11 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   m_CABACEstimator->getCtx() = SubCtx( Ctx::ModeConsFlag, ctxStartMC );
   if (cost > bestCS->cost + bestCS->costDbOffset
 #if ENABLE_QPA_SUB_CTU
+#if JVET_P1006_PICTURE_HEADER
+    || (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP() && (slice.getCuQpDeltaSubdiv() > 0) && (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) &&
+#else
     || (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && pps.getUseDQP() && (pps.getCuQpDeltaSubdiv() > 0) && (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) &&
+#endif
         (currDepth == 0)) // force quad-split or no split at CTU level
 #endif
     )
@@ -2218,7 +2230,11 @@ void EncCu::xFillPCMBuffer( CodingUnit &cu )
 
       const CPelBuf source      = tu.cs->getOrgBuf( compArea );
              PelBuf destination = tu.getPcmbuf( compID );
+#if JVET_P1006_PICTURE_HEADER
+      if (tu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#else
       if (tu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
+#endif
       {
         CompArea    tmpArea(COMPONENT_Y, compArea.chromaFormat, Position(0, 0), compArea.size());
         PelBuf tempOrgBuf = m_tmpStorageLCU->getBuf(tmpArea);
@@ -2530,20 +2546,32 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             m_pcIntraSearch->switchBuffer(pu, COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
           }
           pu.cs->getPredBuf(pu).copyFrom(acMergeTmpBuffer[mergeCand]);
+#if JVET_P1006_PICTURE_HEADER
+          if (pu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, pu.cs->getPredBuf(pu).Y(), pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, intraCnt));
 
           // calculate cost
+#if JVET_P1006_PICTURE_HEADER
+          if (pu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getInvLUT());
           }
           distParam.cur = pu.cs->getPredBuf(pu).Y();
           Distortion sadValue = distParam.distFunc(distParam);
+#if JVET_P1006_PICTURE_HEADER
+          if (pu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
           {
             pu.cs->getPredBuf(pu).Y().rspSignal(m_pcReshape->getFwdLUT());
           }
@@ -2761,7 +2789,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
           uint32_t bufIdx = 0;
           PelBuf tmpBuf = tempCS->getPredBuf(pu).Y();
           tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Y());
+#if JVET_P1006_PICTURE_HEADER
+          if (pu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
           if (pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
           {
             tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
           }
@@ -2867,7 +2899,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   const Slice &slice = *tempCS->slice;
   const SPS &sps = *tempCS->sps;
 
+#if JVET_P1006_PICTURE_HEADER
+  if (slice.getPicHeader()->getMaxNumTriangleCand() < 2)
+#else
   if (slice.getMaxNumTriangleCand() < 2)
+#endif
     return;
 
   CHECK( slice.getSliceType() != B_SLICE, "Triangle mode is only applied to B-slices" );
@@ -2887,7 +2923,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   PelUnitBuf                                      triangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS];
   static_vector<uint8_t, TRIANGLE_MAX_NUM_CANDS> triangleRdModeList;
   static_vector<double,  TRIANGLE_MAX_NUM_CANDS> tianglecandCostList;
+#if JVET_P1006_PICTURE_HEADER
+  uint8_t                                         numTriangleCandComb = slice.getPicHeader()->getMaxNumTriangleCand() * (slice.getPicHeader()->getMaxNumTriangleCand() - 1) * 2;
+#else
   uint8_t                                         numTriangleCandComb = slice.getMaxNumTriangleCand() * (slice.getMaxNumTriangleCand() - 1) * 2;
+#endif
 
 
   DistParam distParam;
@@ -2915,7 +2955,11 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     pu.regularMergeFlag = false;
 
     PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
+#if JVET_P1006_PICTURE_HEADER
+    const uint8_t maxNumTriangleCand = pu.cs->picHeader->getMaxNumTriangleCand();
+#else
     const uint8_t maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
+#endif
     for (uint8_t mergeCand = 0; mergeCand < maxNumTriangleCand; mergeCand++)
     {
       triangleBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
@@ -3236,7 +3280,11 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
         Distortion uiSad = distParam.distFunc( distParam );
         uint32_t   uiBitsCand = uiMergeCand + 1;
+#if JVET_P1006_PICTURE_HEADER
+        if ( uiMergeCand == tempCS->picHeader->getMaxNumAffineMergeCand() - 1 )
+#else
         if ( uiMergeCand == tempCS->slice->getMaxNumAffineMergeCand() - 1 )
+#endif
         {
           uiBitsCand--;
         }
@@ -3470,7 +3518,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
       Picture* refPic = pu.cu->slice->getPic();
       const CPelBuf refBuf = refPic->getRecoBuf(pu.blocks[COMPONENT_Y]);
       const Pel*        piRefSrch = refBuf.buf;
+#if JVET_P1006_PICTURE_HEADER
+      if (tempCS->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() )
+#else
       if (tempCS->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() )
+#endif
       {
         const CompArea &area = cu.blocks[COMPONENT_Y];
         CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
@@ -3508,7 +3560,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
         Distortion sad = distParam.distFunc(distParam);
         unsigned int bitsCand = mergeCand + 1;
+#if JVET_P1006_PICTURE_HEADER
+        if (mergeCand == tempCS->picHeader->getMaxNumMergeCand() - 1)
+#else
         if (mergeCand == tempCS->slice->getMaxNumMergeCand() - 1)
+#endif
         {
           bitsCand--;
         }
@@ -4093,7 +4149,11 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       //Copy current CU's reco to Deblock Pic Buffer
       const CompArea&  curCompArea = currCsArea.block( compId );
       picDbBuf.getBuf( curCompArea ).copyFrom( cs.getRecoBuf( curCompArea ) );
+#if JVET_P1006_PICTURE_HEADER
+      if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#else
       if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#endif
       {
         picDbBuf.getBuf( curCompArea ).rspSignal( m_pcReshape->getInvLUT() );
       }
@@ -4103,7 +4163,11 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       {
         const CompArea&  compArea = areaLeft.block(compId);
         picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
+#if JVET_P1006_PICTURE_HEADER
+        if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#else
         if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#endif
         {
           picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );
         }
@@ -4113,7 +4177,11 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
       {
         const CompArea&  compArea = areaTop.block( compId );
         picDbBuf.getBuf( compArea ).copyFrom( cs.picture->getRecoBuf( compArea ) );
+#if JVET_P1006_PICTURE_HEADER
+        if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#else
         if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getSliceReshaperInfo().getUseSliceReshaper() && isLuma(compId))
+#endif
         {
           picDbBuf.getBuf( compArea ).rspSignal( m_pcReshape->getInvLUT() );
         }
@@ -4183,7 +4251,11 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
   m_pcRdCost->setChromaFormat(cs.sps->getChromaFormatIdc());
   CPelBuf orgLuma = cs.picture->getOrigBuf( cs.area.blocks[COMPONENT_Y] );
   if ( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+#if JVET_P1006_PICTURE_HEADER
+    m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
     m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#endif
   {
     if ( compID == COMPONENT_Y && !afterDb && !m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled())
     {
@@ -4198,7 +4270,11 @@ Distortion EncCu::getDistortionDb( CodingStructure &cs, CPelBuf org, CPelBuf rec
       dist += m_pcRdCost->getDistPart( org, reco, cs.sps->getBitDepth( toChannelType( compID ) ), compID, DF_SSE_WTD, &orgLuma );
     }
   }
+#if JVET_P1006_PICTURE_HEADER
+  else if (m_pcEncCfg->getReshaper() && cs.picHeader->getLmcsEnabledFlag() && cs.slice->isIntra()) //intra slice
+#else
   else if (m_pcEncCfg->getReshaper() && cs.slice->getLmcsEnabledFlag() && cs.slice->isIntra()) //intra slice
+#endif
   {
     if ( compID == COMPONENT_Y && afterDb )
     {
@@ -4695,7 +4771,11 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 
 #if WCG_EXT
       if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+#if JVET_P1006_PICTURE_HEADER
+        m_pcEncCfg->getReshaper() && (tempCS->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
         m_pcEncCfg->getReshaper() && (tempCS->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#endif
       {
         const CPelBuf orgLuma = tempCS->getOrgBuf(tempCS->area.blocks[COMPONENT_Y]);
         if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))

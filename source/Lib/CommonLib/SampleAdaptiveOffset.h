@@ -95,7 +95,11 @@ protected:
   void xLosslessCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
   void xLosslessSampleRestoration(CodingUnit& cu, const ComponentID compID);
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
+#if JVET_P1006_PICTURE_HEADER
+  bool isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader);
+#else
   bool isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps);
+#endif
   inline bool isProcessDisabled(int xPos, int yPos, int numVerVirBndry, int numHorVirBndry, int verVirBndryPos[], int horVirBndryPos[])
   {
     bool bDisabledFlag = false;

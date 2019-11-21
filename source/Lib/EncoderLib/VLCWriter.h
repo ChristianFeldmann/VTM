@@ -131,6 +131,9 @@ public:
   void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
   void  codeDPS                 ( const DPS* dps );
+#if JVET_P1006_PICTURE_HEADER
+  void  codePictureHeader       ( PicHeader* picHeader );
+#endif
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );

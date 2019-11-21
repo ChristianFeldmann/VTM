@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_PREFIX@/lib
+sharedlibdir=@CMAKE_INSTALL_PREFIX@/lib
+includedir=@CMAKE_INSTALL_PREFIX@/include
+
+Name: libvtmencoder
+Description: VTM VVC encoder library
+Version: v0.1
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lvtmencoder
+Cflags: -I${includedir}

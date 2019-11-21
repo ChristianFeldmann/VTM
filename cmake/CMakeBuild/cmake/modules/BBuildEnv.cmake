@@ -1294,10 +1294,6 @@ macro( bb_build_env_setup )
   # the deploy folder may be used to save installer packages.
   set( bb_deploy_dir "${CMAKE_SOURCE_DIR}/deploy" )
     
-  if( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-    set( CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "Standard install prefix" FORCE )
-  endif()
-  
   if( BUILD_SHARED_LIBS )
     set( BBuildEnv_SHARED_DIR_POSTFIX "-shared" )
   else()

@@ -84,6 +84,7 @@ class EncLib;
 class AUWriterIf
 {
 public:
+  virtual ~AUWriterIf() = default;
   virtual void outputAU( const AccessUnit& ) = 0;
 };
 

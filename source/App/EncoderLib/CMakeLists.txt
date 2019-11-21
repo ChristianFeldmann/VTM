@@ -1,5 +1,5 @@
 # executable
-set( LIB_NAME libVVCEncoder )
+set( LIB_NAME vtmencoder )
 
 # get source files
 file( GLOB SRC_FILES "*.cpp" )
@@ -90,6 +90,21 @@ endif()
 # example: place header files in different folders
 source_group( "Natvis Files" FILES ${NATVIS_FILES} )
 
-# set the folder where to place the projects
-set_target_properties( ${LIB_NAME}  PROPERTIES FOLDER app LINKER_LANGUAGE CXX )
+# Create the package config file
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/libVTMEncoder.pc.cmakein
+		            ${CMAKE_CURRENT_BINARY_DIR}/libVTMEncoder.pc @ONLY)
 
+# set the folder where to place the projects
+set_target_properties( ${LIB_NAME} PROPERTIES FOLDER app LINKER_LANGUAGE CXX )
+
+# Set the header files to be public with the library
+set_target_properties( ${LIB_NAME} PROPERTIES PUBLIC_HEADER ${INC_FILES} )
+
+# Set the install target for the library
+INSTALL( TARGETS ${LIB_NAME}
+        LIBRARY DESTINATION lib
+        PUBLIC_HEADER DESTINATION include )
+
+# Install package config
+SET( INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
+INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/libVTMEncoder.pc DESTINATION "${INSTALL_PKGCONFIG_DIR}")

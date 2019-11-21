@@ -88,4 +88,13 @@ extern "C" {
     return LIBVTMENC_OK;
   }
 
+  VTM_ENC_API libVTMEnc_error libVTMEncoder_encode(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_in, vtm_pic_t *pic_out)
+  {
+    vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
+    if (!enc)
+      return LIBVTMENC_ERROR;
+
+    return LIBVTMENC_OK;
+  }
+
 }

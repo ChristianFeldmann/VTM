@@ -214,6 +214,16 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      m_noTrailConstraintFlag;
+  bool      m_noStsaConstraintFlag;
+  bool      m_noRaslConstraintFlag;
+  bool      m_noRadlConstraintFlag;
+  bool      m_noIdrConstraintFlag;
+  bool      m_noCraConstraintFlag;
+  bool      m_noGdrConstraintFlag;
+  bool      m_noApsConstraintFlag;
+#endif
 
   /* profile & level */
   Profile::Name m_profile;
@@ -787,6 +797,25 @@ public:
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
   void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
+  void      setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
+  bool      getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
+  void      setNoStsaConstraintFlag(bool bVal) { m_noStsaConstraintFlag = bVal; }
+  bool      getNoRaslConstraintFlag() const { return m_noRaslConstraintFlag; }
+  void      setNoRaslConstraintFlag(bool bVal) { m_noRaslConstraintFlag = bVal; }
+  bool      getNoRadlConstraintFlag() const { return m_noRadlConstraintFlag; }
+  void      setNoRadlConstraintFlag(bool bVal) { m_noRadlConstraintFlag = bVal; }
+  bool      getNoIdrConstraintFlag() const { return m_noIdrConstraintFlag; }
+  void      setNoIdrConstraintFlag(bool bVal) { m_noIdrConstraintFlag = bVal; }
+  bool      getNoCraConstraintFlag() const { return m_noCraConstraintFlag; }
+  void      setNoCraConstraintFlag(bool bVal) { m_noCraConstraintFlag = bVal; }
+  bool      getNoGdrConstraintFlag() const { return m_noGdrConstraintFlag; }
+  void      setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
+  bool      getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
+  void      setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+#endif
+
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }
   void      setFrameSkip                    ( uint32_t  i )      { m_FrameSkip = i; }

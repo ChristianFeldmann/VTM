@@ -138,6 +138,17 @@ EncAppCfg::EncAppCfg()
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+, m_noTrailConstraintFlag(false)
+, m_noStsaConstraintFlag(false)
+, m_noRaslConstraintFlag(false)
+, m_noRadlConstraintFlag(false)
+, m_noIdrConstraintFlag(false)
+, m_noCraConstraintFlag(false)
+, m_noGdrConstraintFlag(false)
+, m_noApsConstraintFlag(false)
+#endif
+
 #if EXTENSION_360_VIDEO
 , m_ext360(*this)
 #endif
@@ -3860,6 +3871,43 @@ void EncAppCfg::xPrintParameter()
   fflush( stdout );
 }
 
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+bool EncAppCfg::xHasNonZeroTemporalID ()
+{
+  for (unsigned int i = 0; i < m_iGOPSize; i++)
+  {
+    if ( m_GOPList[i].m_temporalId != 0 )
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool EncAppCfg::xHasLeadingPicture ()
+{
+  for (unsigned int i = 0; i < m_iGOPSize; i++)
+  {
+    for ( unsigned int j = 0; j < m_GOPList[i].m_numRefPics0; j++)
+    {
+      if ( m_GOPList[i].m_deltaRefPics0[j] < 0 )
+      {
+        return true;
+      }
+    }
+    for ( unsigned int j = 0; j < m_GOPList[i].m_numRefPics1; j++)
+    {
+      if ( m_GOPList[i].m_deltaRefPics1[j] < 0 )
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+#endif
+
+
 bool confirmPara(bool bflag, const char* message)
 {
   if (!bflag)
@@ -3870,5 +3918,7 @@ bool confirmPara(bool bflag, const char* message)
   msg( ERROR, "Error: %s\n",message);
   return true;
 }
+
+
 
 //! \}

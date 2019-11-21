@@ -68,6 +68,8 @@
 
 #define JVET_P0410_CHROMA_QP_MAPPING                      1 // JVET-P0410: Chroma QP Mapping signalling
 
+#define JVET_P0366_NUT_CONSTRAINT_FLAGS                   1 // JVET-P0366: Adding constraint flags for NAL unit types
+
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 
 #define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling

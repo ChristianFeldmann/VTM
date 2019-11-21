@@ -159,6 +159,9 @@ public:
   void  finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl = INFO);
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  void  checkNalUnitConstraints( uint32_t naluType );
+#endif
 
   void  setTargetDecLayer (int val) { m_iTargetLayer = val; }
   int   getTargetDecLayer()         { return m_iTargetLayer; }

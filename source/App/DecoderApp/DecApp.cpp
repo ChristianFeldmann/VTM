@@ -196,6 +196,9 @@ uint32_t DecApp::decode()
     else
     {
       read(nalu);
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+      m_cDecLib.checkNalUnitConstraints(nalu.m_nalUnitType);
+#endif
 
       if(m_cDecLib.getFirstSliceInPicture() &&
           (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||

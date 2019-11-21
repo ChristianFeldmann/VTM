@@ -3877,7 +3877,7 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
   int *dst = scalingList->getScalingListAddress(scalingListId);
 
   int PredListId = scalingList->getRefMatrixId(scalingListId);
-  if (PredListId > scalingListId) printf("Scaling List error predictor! \n");
+  CHECK(isPredictor && PredListId > scalingListId, "Scaling List error predictor!");
   const int *srcPred = (isPredictor) ? ((scalingListId == PredListId) ? scalingList->getScalingListDefaultAddress(scalingListId) : scalingList->getScalingListAddress(PredListId)) : NULL;
   int predCoef = 0;
 

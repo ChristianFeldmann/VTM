@@ -107,6 +107,10 @@ void EncSlice::init( EncLib* pcEncLib, const SPS& sps )
 void
 EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_pcRdCost->resetStore();
+  m_pcTrQuant->resetStore();
+#endif
   // store lambda
   m_pcRdCost ->setLambda( dLambda, slice->getSPS()->getBitDepths() );
 

@@ -127,6 +127,11 @@ void InterPrediction::destroy()
   }
 
   m_triangleBuf.destroy();
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_colorTransResiBuf[0].destroy();
+  m_colorTransResiBuf[1].destroy();
+  m_colorTransResiBuf[2].destroy();
+#endif
 
   if (m_storedMv != nullptr)
   {
@@ -190,6 +195,11 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC, cons
     }
 
     m_triangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    m_colorTransResiBuf[0].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+    m_colorTransResiBuf[1].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+    m_colorTransResiBuf[2].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#endif
 
     m_iRefListIdx = -1;
 

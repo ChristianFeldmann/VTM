@@ -992,6 +992,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  ("ColorTransform",                                  m_useColorTrans,                                  false, "Enable the color transform")
+#endif
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
@@ -1817,6 +1820,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_rgbFormat = (m_inputColourSpaceConvert == IPCOLOURSPACE_RGBtoGBR && m_chromaFormatIDC == CHROMA_444) ? true : false;
+#endif
 
   switch (m_conformanceWindowMode)
   {
@@ -2499,6 +2505,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    xConfirmPara(m_useColorTrans, "ACT Mode only allowed with NEXT profile");
+#endif
     xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
@@ -3800,6 +3809,10 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
   }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
+  msg(VERBOSE, "ACT:%d ", m_useColorTrans);
+#endif
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
     msg(VERBOSE, "IBC:%d ", m_IBCMode);

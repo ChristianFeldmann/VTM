@@ -1014,6 +1014,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
   }
   WRITE_FLAG( pcSPS->getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+  {
+    WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "act_flag");
+  }
+#endif
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0,                                                    "plt_flag" );

@@ -920,3 +920,76 @@ const CPelUnitBuf PelStorage::getBuf( const UnitArea &unit ) const
   return ( chromaFormat == CHROMA_400 ) ? CPelUnitBuf( chromaFormat, getBuf( unit.Y() ) ) : CPelUnitBuf( chromaFormat, getBuf( unit.Y() ), getBuf( unit.Cb() ), getBuf( unit.Cr() ) );
 }
 
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
+template<>
+void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward)
+{
+  const Pel* pOrg0 = bufs[COMPONENT_Y].buf;
+  const Pel* pOrg1 = bufs[COMPONENT_Cb].buf;
+  const Pel* pOrg2 = bufs[COMPONENT_Cr].buf;
+  const int  strideOrg = bufs[COMPONENT_Y].stride;
+
+  Pel* pDst0 = other.bufs[COMPONENT_Y].buf;
+  Pel* pDst1 = other.bufs[COMPONENT_Cb].buf;
+  Pel* pDst2 = other.bufs[COMPONENT_Cr].buf;
+  const int strideDst = other.bufs[COMPONENT_Y].stride;
+
+  int width = bufs[COMPONENT_Y].width;
+  int height = bufs[COMPONENT_Y].height;
+  int r, g, b;
+  int y0, cg, co;
+
+  CHECK(bufs[COMPONENT_Y].stride != bufs[COMPONENT_Cb].stride || bufs[COMPONENT_Y].stride != bufs[COMPONENT_Cr].stride, "unequal stride for 444 content");
+  CHECK(other.bufs[COMPONENT_Y].stride != other.bufs[COMPONENT_Cb].stride || other.bufs[COMPONENT_Y].stride != other.bufs[COMPONENT_Cr].stride, "unequal stride for 444 content");
+  CHECK(bufs[COMPONENT_Y].width != other.bufs[COMPONENT_Y].width || bufs[COMPONENT_Y].height != other.bufs[COMPONENT_Y].height, "unequal block size")
+
+    if (forward)
+    {
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          r = pOrg2[x];
+          g = pOrg0[x];
+          b = pOrg1[x];
+
+          pDst0[x] = (g << 1) + r + b;
+          pDst1[x] = (g << 1) - r - b;
+          pDst2[x] = ((r - b) << 1);
+          pDst0[x] = (pDst0[x] + 2) >> 2;
+          pDst1[x] = (pDst1[x] + 2) >> 2;
+          pDst2[x] = (pDst2[x] + 2) >> 2;
+        }
+        pOrg0 += strideOrg;
+        pOrg1 += strideOrg;
+        pOrg2 += strideOrg;
+        pDst0 += strideDst;
+        pDst1 += strideDst;
+        pDst2 += strideDst;
+      }
+    }
+    else
+    {
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          y0 = pOrg0[x];
+          cg = pOrg1[x];
+          co = pOrg2[x];
+
+          pDst0[x] = (y0 + cg);
+          pDst1[x] = (y0 - cg - co);
+          pDst2[x] = (y0 - cg + co);
+        }
+
+        pOrg0 += strideOrg;
+        pOrg1 += strideOrg;
+        pOrg2 += strideOrg;
+        pDst0 += strideDst;
+        pDst1 += strideDst;
+        pDst2 += strideDst;
+      }
+    }
+}
+#endif 

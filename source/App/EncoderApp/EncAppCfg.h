@@ -542,6 +542,12 @@ protected:
   uint32_t      m_maxNumTriangleCand;
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
+#if JVET_P1006_PICTURE_HEADER
+  bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header
+  bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
+  bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
+  bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
+#endif
   int       m_TMVPModeId;
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;

@@ -1618,7 +1618,11 @@ DepQuant::~DepQuant()
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
 #if JVET_P0058_CHROMA_TS
+#if JVET_P1006_PICTURE_HEADER
+  if ( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP) )
+#else
   if ( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP) )
+#endif
 #else
 #if JVET_P0059_CHROMA_BDPCM
   if ((tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID))) && 
@@ -1649,9 +1653,27 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
     const uint32_t    log2TrWidth     = floorLog2(width);
     const uint32_t    log2TrHeight    = floorLog2(height);
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+    const bool        disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+    const bool        disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
     const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP));
+#endif
+#else
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+    const bool        disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+    const bool        disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)), tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else
     const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)));
+#endif
 #endif
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
@@ -1664,7 +1686,11 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const ComponentID &compID, const QpParam &cQP )
 {
 #if JVET_P0058_CHROMA_TS
+#if JVET_P1006_PICTURE_HEADER
+  if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP))
+#else
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP))
+#endif
 #else
 #if JVET_P0059_CHROMA_BDPCM
   if ((tu.cs->slice->getDepQuantEnabledFlag() && (tu.mtsIdx != MTS_SKIP || !isLuma(compID))) && 
@@ -1694,9 +1720,27 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
     const uint32_t    log2TrWidth  = floorLog2(width);
     const uint32_t    log2TrHeight = floorLog2(height);
 #if JVET_P0058_CHROMA_TS
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
     const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP));
+#endif
+#else
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)), tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else
     const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx == MTS_SKIP && isLuma(compID)));
+#endif
 #endif
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }

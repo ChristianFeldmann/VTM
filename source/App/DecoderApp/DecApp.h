@@ -91,6 +91,9 @@ private:
 #endif
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
   bool  isNaluTheTargetLayer(InputNALUnit* nalu); ///< check whether given Nalu is within targetDecLayerIdSet
+#if JVET_P1006_PICTURE_HEADER
+  bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
+#endif
 };
 
 //! \}

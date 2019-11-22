@@ -107,6 +107,10 @@ void EncSlice::init( EncLib* pcEncLib, const SPS& sps )
 void
 EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_pcRdCost->resetStore();
+  m_pcTrQuant->resetStore();
+#endif
   // store lambda
   m_pcRdCost ->setLambda( dLambda, slice->getSPS()->getBitDepths() );
 
@@ -329,24 +333,40 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 {
   double dQP;
   double dLambda;
+#if JVET_P1006_PICTURE_HEADER
+  PicHeader *picHeader = pcPic->cs->picHeader;
+#endif
   pcPic->cs->resetPrevPLT(pcPic->cs->prevPLT);
 
   rpcSlice = pcPic->slices[0];
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
+#if JVET_P1006_PICTURE_HEADER
+  rpcSlice->setPicHeader( picHeader );
+#endif
   rpcSlice->initSlice();
   int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
   if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
   {
+#if JVET_P1006_PICTURE_HEADER
+    picHeader->setPicOutputFlag(false);
+#else
     rpcSlice->setPicOutputFlag(false);
+#endif
   }
   else
   {
+#if JVET_P1006_PICTURE_HEADER
+    picHeader->setPicOutputFlag(true);
+#else
     rpcSlice->setPicOutputFlag(true);
+#endif
   }
   rpcSlice->setPOC( pocCurr );
+#if !JVET_P1006_PICTURE_HEADER
   rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
   rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
+#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;
@@ -586,7 +606,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
   rpcSlice->setSliceChromaQpDelta( JOINT_CbCr,   0 );
 #endif
+#if !JVET_P1006_PICTURE_HEADER
   rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag() );
+#endif
   rpcSlice->setNumRefIdx(REF_PIC_LIST_0, m_pcCfg->getRPLEntry(0, iGOPid).m_numRefPicsActive);
   rpcSlice->setNumRefIdx(REF_PIC_LIST_1, m_pcCfg->getRPLEntry(1, iGOPid).m_numRefPicsActive);
 
@@ -632,6 +654,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceMode            ( m_pcCfg->getSliceMode()            );
   rpcSlice->setSliceArgument        ( m_pcCfg->getSliceArgument()        );
+#if !JVET_P1006_PICTURE_HEADER
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
   rpcSlice->setMaxNumTriangleCand   ( m_pcCfg->getMaxNumTriangleCand() );
@@ -648,6 +671,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
+#endif
   rpcSlice->setDisableSATDForRD(false);
 
   if( ( m_pcCfg->getIBCHashSearch() && m_pcCfg->getIBCMode() ) || m_pcCfg->getAllowDisFracMMVD() )
@@ -931,7 +955,11 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPAdapt; // adapted QPs
 
 #if ENABLE_QPA_SUB_CTU
+#if JVET_P1006_PICTURE_HEADER
+      if (pcv.widthInCtus > 1 && pcSlice->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
+#else
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
+#endif
 #elif ENABLE_QPA_SUB_CTU
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getMaxCuDQPDepth() == 0)  // reduce local DQP rate peaks
 #else
@@ -978,7 +1006,11 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
   const int       bitDepth = cs.slice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA); // overall image bit-depth
   const int   adaptedCtuQP = pcPic ? pcPic->m_iOffsetCtu[ctuAddr] : cs.slice->getSliceQpBase();
 
+#if JVET_P1006_PICTURE_HEADER
+  if (!pcPic || cs.slice->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
+#else
   if (!pcPic || cs.pps->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
+#endif
 
   for (unsigned addr = 0; addr < cs.picture->m_subCtuQP.size(); addr++)
   {
@@ -1384,16 +1416,31 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
 
   if ( hashRatio > totalCtu * hashThreshold )
   {
+#if JVET_P1006_PICTURE_HEADER
+    pcPic->cs->picHeader->setDisFracMMVD( true );
+#else
     pcSlice->setDisFracMMVD( true );
+#endif
   }
+#if JVET_P1006_PICTURE_HEADER
+  if (!pcPic->cs->picHeader->getDisFracMMVD()) {
+    bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
+    pcPic->cs->picHeader->setDisFracMMVD( useIntegerMVD );
+  }
+#else
   if (!pcSlice->getDisFracMMVD()) {
     bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
     pcSlice->setDisFracMMVD( useIntegerMVD );
   }
+#endif
 }
 
 
+#if JVET_P1006_PICTURE_HEADER
+void EncSlice::setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma )
+#else
 void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma )
+#endif
 {
   bool              sgnFlag = true;
 
@@ -1427,7 +1474,11 @@ void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const S
     sgnFlag = ( sumCbCr < 0 );
   }
 
+#if JVET_P1006_PICTURE_HEADER
+  cs.picHeader->setJointCbCrSignFlag( sgnFlag );
+#else
   cs.slice->setJointCbCrSignFlag( sgnFlag );
+#endif
 }
 
 
@@ -1479,12 +1530,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       cs.slice->setDisableSATDForRD(hashBlkHitPerc > 59);
     }
   }
+#if !JVET_P1006_PICTURE_HEADER
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 
   if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
   {
     setJointCbCrModes(cs, Position(0, 0), cs.area.lumaSize());
   }
+#endif
 
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
   uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;

@@ -138,6 +138,17 @@ EncAppCfg::EncAppCfg()
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+, m_noTrailConstraintFlag(false)
+, m_noStsaConstraintFlag(false)
+, m_noRaslConstraintFlag(false)
+, m_noRadlConstraintFlag(false)
+, m_noIdrConstraintFlag(false)
+, m_noCraConstraintFlag(false)
+, m_noGdrConstraintFlag(false)
+, m_noApsConstraintFlag(false)
+#endif
+
 #if EXTENSION_360_VIDEO
 , m_ext360(*this)
 #endif
@@ -855,7 +866,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ConfWinRight",                                    m_confWinRight,                                       0, "Right offset for window conformance mode 3")
   ("ConfWinTop",                                      m_confWinTop,                                         0, "Top offset for window conformance mode 3")
   ("ConfWinBottom",                                   m_confWinBottom,                                      0, "Bottom offset for window conformance mode 3")
+#if JVET_P1006_PICTURE_HEADER
+  ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                            false, "Enable Access Unit Delimiter NALUs")
+#else
   ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                             true, "Enable Access Unit Delimiter NALUs")
+#endif
   ("FrameRate,-fr",                                   m_iFrameRate,                                         0, "Frame rate")
   ("FrameSkip,-fs",                                   m_FrameSkip,                                         0u, "Number of frames to skip at start of input YUV")
   ("TemporalSubsampleRatio,-ts",                      m_temporalSubsampleRatio,                            1u, "Temporal sub-sample ratio when reading input YUV")
@@ -968,6 +983,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  ("ColorTransform",                                  m_useColorTrans,                                  false, "Enable the color transform")
+#endif
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
@@ -1199,6 +1217,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
+#endif
   ("DepQuant",                                        m_depQuantEnabledFlag,                                          true )
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
@@ -1214,6 +1235,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
   ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
                                                                                                                 "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
+#if JVET_P1006_PICTURE_HEADER
+  ("SliceLevelRpl",                                   m_sliceLevelRpl,                                   true, "Code reference picture lists in slice headers rather than picture header.")
+  ("SliceLevelDblk",                                  m_sliceLevelDblk,                                  true, "Code deblocking filter parameters in slice headers rather than picture header.")
+  ("SliceLevelSao",                                   m_sliceLevelSao,                                   true, "Code SAO parameters in slice headers rather than picture header.")
+  ("SliceLevelAlf",                                   m_sliceLevelAlf,                                   true, "Code ALF parameters in slice headers rather than picture header.")
+#endif
   ("FEN",                                             tmpFastInterSearchMode,   int(FASTINTERSEARCH_DISABLED), "fast encoder setting")
   ("ECU",                                             m_bUseEarlyCU,                                    false, "Early CU setting")
   ("FDM",                                             m_useFastDecisionForMerge,                         true, "Fast decision for Merge RD Cost")
@@ -1784,6 +1811,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_rgbFormat = (m_inputColourSpaceConvert == IPCOLOURSPACE_RGBtoGBR && m_chromaFormatIDC == CHROMA_444) ? true : false;
+#endif
 
   switch (m_conformanceWindowMode)
   {
@@ -2186,10 +2216,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
+#if !JVET_P1006_PICTURE_HEADER
   if (m_AccessUnitDelimiter == false)
   {
     printf ("Warning: Access unit delimiters are disabled. VVC requires the presence of access unit delimiters\n");
   }
+#endif
 
 #if JVET_O0756_CONFIG_HDRMETRICS && !JVET_O0756_CALCULATE_HDRMETRICS
   if ( m_calculateHdrMetrics == true)
@@ -2464,6 +2496,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    xConfirmPara(m_useColorTrans, "ACT Mode only allowed with NEXT profile");
+#endif
     xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
@@ -3760,6 +3795,10 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
   }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
+  msg(VERBOSE, "ACT:%d ", m_useColorTrans);
+#endif
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
@@ -3845,6 +3884,43 @@ void EncAppCfg::xPrintParameter()
   fflush( stdout );
 }
 
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+bool EncAppCfg::xHasNonZeroTemporalID ()
+{
+  for (unsigned int i = 0; i < m_iGOPSize; i++)
+  {
+    if ( m_GOPList[i].m_temporalId != 0 )
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool EncAppCfg::xHasLeadingPicture ()
+{
+  for (unsigned int i = 0; i < m_iGOPSize; i++)
+  {
+    for ( unsigned int j = 0; j < m_GOPList[i].m_numRefPics0; j++)
+    {
+      if ( m_GOPList[i].m_deltaRefPics0[j] < 0 )
+      {
+        return true;
+      }
+    }
+    for ( unsigned int j = 0; j < m_GOPList[i].m_numRefPics1; j++)
+    {
+      if ( m_GOPList[i].m_deltaRefPics1[j] < 0 )
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+#endif
+
+
 bool confirmPara(bool bflag, const char* message)
 {
   if (!bflag)
@@ -3855,5 +3931,7 @@ bool confirmPara(bool bflag, const char* message)
   msg( ERROR, "Error: %s\n",message);
   return true;
 }
+
+
 
 //! \}

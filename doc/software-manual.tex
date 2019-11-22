@@ -1640,10 +1640,16 @@ Specifies a file containing a list of QP deltas. The $n$-th line
 value delta for the picture with POC value $n$.
 \\
 
+\Option{PerceptQPA (-qpa)} &
+%\ShortOption{-qpa} &
+\Default{false} &
+Enables or disables the perceptually optimized QP adaptation (QPA) method described in JVET-H0047, JVET-K0206, and JVET-M0091. Use this together with 'SliceChromaQPOffsetPeriodicity=1' for best subjective quality. Cannot be used together with 'SelectiveRDOQ' (see above) or 'AdaptiveQp' (see below).
+\\
+
 \Option{AdaptiveQp (-aq)} &
 %\ShortOption{-aq} &
 \Default{false} &
-Enable or disable QP adaptation based upon a psycho-visual model.
+Enables or disables the legacy QP adaptation method based upon a psycho-visual model.
 \\
 
 \Option{MaxQPAdaptationRange (-aqr)} &
@@ -2305,7 +2311,7 @@ Enables or disables the use of intra block differential pulse code modulation mo
 \begin{tabular}{cp{0.45\textwidth}}
 	0 & Disable BDPCM for luma and chroma.\\
 	1 & Enable BDPCM for luma.\\
-	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is avaialble for 444. \\
+	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is available for 444.\\
 \end{tabular}
 \\
 

@@ -1119,8 +1119,9 @@ void EncCu::updateLambda (Slice* slice, const int dQP,
 #endif
   const double newLambda = oldLambda * pow (2.0, ((double)dQP - oldQP) / 3.0);
 #if RDOQ_CHROMA_LAMBDA
-  const double chromaLambda = newLambda / m_pcRdCost->getChromaWeight();
-  const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda, chromaLambda, chromaLambda};
+  const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Y),
+                                                 newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cb),
+                                                 newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cr)};
   m_pcTrQuant->setLambdas (lambdaArray);
 #else
   m_pcTrQuant->setLambda (newLambda);

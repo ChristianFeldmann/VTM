@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0438_ALF_APS_CONSTRAINT                     1 // JVET-P0438: add bitstream constraint for ALF APS 
+
 #define JVET_P0205_VPS_ID_0                               1 // JVET-P0205: VPS ID zero in SPS means no VPS in bitstream
 
 #define JVET_P1006_PICTURE_HEADER                         1 // JVET-P1006: Add picture header and related syntax changes

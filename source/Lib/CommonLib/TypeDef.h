@@ -50,6 +50,16 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0205_VPS_ID_0                               1 // JVET-P0205: VPS ID zero in SPS means no VPS in bitstream
+
+#define JVET_P1006_PICTURE_HEADER                         1 // JVET-P1006: Add picture header and related syntax changes
+
+#define JVET_P0365_SCALING_MATRIX_LFNST                   1 // JVET-P0365: Signal flag to indicate whether scaling matrices are used for LFNST-coded blocks
+
+#define JVET_P0243_SINGLE_BIT_DEPTH                       1 // JVET-P0243: Single bitdepth for luma and chroma
+
+#define JVET_P0244_SPS_CLEAN_UP                           1 // JVET-P0244/P0429: SPS cleanup changes
+
 #define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
 
 #define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
@@ -58,11 +68,18 @@
 
 #define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
 
+#define JVET_P0410_CHROMA_QP_MAPPING                      1 // JVET-P0410: Chroma QP Mapping signalling
+
+#define JVET_P0366_NUT_CONSTRAINT_FLAGS                   1 // JVET-P0366: Adding constraint flags for NAL unit types
+
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 
 #define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling
 
 #define JVET_P0469_QP_OUT_VAL                             1 // JVET-P0469: Coding delta_qp_diff_val instead of delta_qp_out_val
+
+#define JVET_P0588_SUFFIX_APS                             1 // JVET-P0588/P0452: suffix APS NUT
+
 #define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
@@ -94,6 +111,8 @@
 #define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
 
 #define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode
+
+#define JVET_P0517_ADAPTIVE_COLOR_TRANSFORM               1 // JVET-P0517: adaptive color transform
 
 #define JVET_P0090_32BIT_MVD                              1 // JVET-P0090: Limitation of abs_mvd_min2 binarization within 32-bit
 
@@ -961,9 +980,12 @@ enum NalUnitType
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16
-  NAL_UNIT_APS,                     // Todo: Remove this line after prefix and suffix APS have been implemented
-  //NAL_UNIT_PREFIX_APS,              // 17
-  //NAL_UNIT_SUFFIX_APS,              // 18
+#if JVET_P0588_SUFFIX_APS
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+#else
+  NAL_UNIT_APS,
+#endif
   NAL_UNIT_PH,                      // 19
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
   NAL_UNIT_EOS,                     // 21
@@ -1007,7 +1029,12 @@ enum NalUnitType
 
   NAL_UNIT_SPS,                     // 16
   NAL_UNIT_PPS,                     // 17
+#if JVET_P0588_SUFFIX_APS
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+#else
   NAL_UNIT_APS,                     // 18
+#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 19
   NAL_UNIT_EOS,                     // 20
   NAL_UNIT_EOB,                     // 21

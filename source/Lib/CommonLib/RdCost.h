@@ -117,6 +117,12 @@ private:
 #endif
   double                  m_DistScale;
   double                  m_dLambdaMotionSAD[2 /* 0=standard, 1=for transquant bypass when mixed-lossless cost evaluation enabled*/];
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  double                  m_lambdaStore[2][3];   // 0-org; 1-act
+  double                  m_DistScaleStore[2][3]; // 0-org; 1-act
+  bool                    m_resetStore;
+  int                     m_pairCheck;
+#endif
 
   // for motion cost
   Mv                      m_mvPredictor;
@@ -307,6 +313,11 @@ public:
   void           setReshapeInfo                              (uint32_t type, int lumaBD) { m_signalType = type; m_lumaBD = lumaBD; }
   void           updateReshapeLumaLevelToWeightTable         (SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt);
   inline std::vector<double>& getLumaLevelWeightTable        ()                   { return m_lumaLevelToWeightPLUT; }
+#endif
+
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  void           lambdaAdjustColorTrans(bool forward, ComponentID compID);
+  void           resetStore() { m_resetStore = true; }
 #endif
 
 private:

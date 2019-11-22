@@ -163,6 +163,16 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      m_noTrailConstraintFlag;
+  bool      m_noStsaConstraintFlag;
+  bool      m_noRaslConstraintFlag;
+  bool      m_noRadlConstraintFlag;
+  bool      m_noIdrConstraintFlag;
+  bool      m_noCraConstraintFlag;
+  bool      m_noGdrConstraintFlag;
+  bool      m_noApsConstraintFlag;
+#endif
 
   // profile/level
   Profile::Name m_profile;
@@ -307,6 +317,10 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  bool      m_rgbFormat;
+  bool      m_useColorTrans;
+#endif
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
 #if JVET_P0058_CHROMA_TS
@@ -542,6 +556,12 @@ protected:
   uint32_t      m_maxNumTriangleCand;
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
+#if JVET_P1006_PICTURE_HEADER
+  bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header
+  bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
+  bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
+  bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
+#endif
   int       m_TMVPModeId;
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;
@@ -574,6 +594,9 @@ protected:
 #endif
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  bool      m_disableScalingMatrixForLfnstBlks;
+#endif
   bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
   bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
   CostMode  m_costMode;                                       ///< Cost mode to use
@@ -671,6 +694,10 @@ protected:
   bool  xCheckParameter ();                                   ///< check validity of configuration values
   void  xPrintParameter ();                                   ///< print configuration values
   void  xPrintUsage     ();                                   ///< print usage
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool  xHasNonZeroTemporalID();                             ///< check presence of constant temporal ID in GOP structure
+  bool  xHasLeadingPicture();                                 ///< check presence of leading pictures in GOP structure
+#endif
 public:
   EncAppCfg();
   virtual ~EncAppCfg();

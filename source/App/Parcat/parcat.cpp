@@ -48,9 +48,20 @@
 class ParcatHLSyntaxReader : public VLCReader
 {
   public:
+#if JVET_P1006_PICTURE_HEADER
+    void  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager );
+#else
     bool  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic );
+#endif
 };
 
+#if JVET_P1006_PICTURE_HEADER
+void ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager )
+{
+  // POC is first syntax element in slice header
+  return;
+}
+#else
 bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager, bool isRapPic )
 {
   uint32_t  uiCode;
@@ -120,6 +131,7 @@ bool ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parame
 
   return firstSliceSegmentInPic;
 }
+#endif
 
 /**
  Find the beginning and end of a NAL (Network Abstraction Layer) unit in a byte buffer containing H264 bitstream data.
@@ -200,7 +212,12 @@ const char * NALU_TYPE[] =
     "NAL_UNIT_VPS",
     "NAL_UNIT_SPS",
     "NAL_UNIT_PPS",
+#if JVET_P0588_SUFFIX_APS
+    "NAL_UNIT_PREFIX_APS",
+    "NAL_UNIT_SUFFIX_APS",
+#else
     "NAL_UNIT_APS",
+#endif
     "NAL_UNIT_PH",
     "NAL_UNIT_ACCESS_UNIT_DELIMITER",
     "NAL_UNIT_EOS",
@@ -291,6 +308,9 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 
   int bits_for_poc = 8;
   bool skip_next_sei = false;
+#if JVET_P1006_PICTURE_HEADER
+  bool first_slice_segment_in_pic_flag = false;
+#endif
 
   while(find_nal_unit(p, sz, &nal_start, &nal_end) > 0)
   {
@@ -337,19 +357,33 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       HLSReader.parsePPS( pps, &parameterSetManager );
       parameterSetManager.storePPS( pps, inp_nalu.getBitstream().getFifo() );
     }
+#if JVET_P1006_PICTURE_HEADER
+    if( inp_nalu.m_nalUnitType == NAL_UNIT_PH )
+    {
+      first_slice_segment_in_pic_flag = true;
+    }
+#endif
 
     if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
       poc = 0;
       new_poc = *poc_base + poc;
+#if JVET_P1006_PICTURE_HEADER
+      first_slice_segment_in_pic_flag = false;
+#endif
     }
 #if JVET_P0363_CLEANUP_NUT_TABLE
-    if((nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type < NAL_UNIT_RESERVED_IRAP_VCL_12) )
+    if((nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL_12) )
 #else
     if((nalu_type < 7) || (nalu_type > 9 && nalu_type < 15) )
 #endif
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
+#if JVET_P1006_PICTURE_HEADER
+      
+      // beginning of slice header parsing, taken from VLCReader
+      parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager );
+#else
       bool isRapPic =
         inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
         || inp_nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
@@ -357,6 +391,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 
       // beginning of slice header parsing, taken from VLCReader
       bool first_slice_segment_in_pic_flag = parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager, isRapPic);
+#endif
       int num_bits_up_to_poc_lsb = parcatHLSReader.getBitstream()->getNumBitsRead();
       int offset = num_bits_up_to_poc_lsb;
 
@@ -371,7 +406,11 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       // int picOrderCntLSB = (pcSlice->getPOC()-pcSlice->getLastIDR()+(1<<pcSlice->getSPS()->getBitsForPOC())) & ((1<<pcSlice->getSPS()->getBitsForPOC())-1);
       unsigned picOrderCntLSB = (new_poc - *last_idr_poc +(1 << bits_for_poc)) & ((1<<bits_for_poc)-1);
 
+#if JVET_P1006_PICTURE_HEADER
+      int low = data & ((1 << low_bits) - 1);
+#else
       int low = data & ((1 << (low_bits + 1)) - 1);
+#endif
       int hi = data >> (16 - hi_bits);
       data = (hi << (16 - hi_bits)) | (picOrderCntLSB << low_bits) | low;
 
@@ -384,6 +423,9 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
         std::cout << "Changed poc " << poc << " to " << new_poc << std::endl;
 #endif
         ++cnt;
+#if JVET_P1006_PICTURE_HEADER
+        first_slice_segment_in_pic_flag = false;
+#endif
       }
     }
 
@@ -393,7 +435,19 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       idr_found = true;
     }
 
+#if JVET_P1006_PICTURE_HEADER
+#if JVET_P0588_SUFFIX_APS
+    if( ( idx > 1 && ( nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP ) ) || ( ( idx > 1 && !idr_found ) && ( nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_PREFIX_APS || nalu_type == NAL_UNIT_SUFFIX_APS || nalu_type == NAL_UNIT_PH || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER ) )
+#else
+    if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS ||nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS || nalu_type == NAL_UNIT_PH || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER))
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+    if( ( idx > 1 && ( nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP ) ) || ( ( idx > 1 && !idr_found ) && ( nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_PREFIX_APS || nalu_type == NAL_UNIT_SUFFIX_APS || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER ) )
+#else
     if((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS ||nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_APS || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER))
+#endif
+#endif
       || (nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei))
     {
     }

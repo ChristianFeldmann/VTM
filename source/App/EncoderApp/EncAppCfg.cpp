@@ -138,6 +138,17 @@ EncAppCfg::EncAppCfg()
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+, m_noTrailConstraintFlag(false)
+, m_noStsaConstraintFlag(false)
+, m_noRaslConstraintFlag(false)
+, m_noRadlConstraintFlag(false)
+, m_noIdrConstraintFlag(false)
+, m_noCraConstraintFlag(false)
+, m_noGdrConstraintFlag(false)
+, m_noApsConstraintFlag(false)
+#endif
+
 #if EXTENSION_360_VIDEO
 , m_ext360(*this)
 #endif
@@ -828,7 +839,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("InputBitDepthC",                                  m_inputBitDepth[CHANNEL_TYPE_CHROMA],                 0, "As per InputBitDepth but for chroma component. (default:InputBitDepth)")
   ("OutputBitDepthC",                                 m_outputBitDepth[CHANNEL_TYPE_CHROMA],                0, "As per OutputBitDepth but for chroma component. (default: use luma output bit-depth)")
   ("MSBExtendedBitDepthC",                            m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA],           0, "As per MSBExtendedBitDepth but for chroma component. (default:MSBExtendedBitDepth)")
+#if !JVET_P0243_SINGLE_BIT_DEPTH
   ("InternalBitDepthC",                               m_internalBitDepth[CHANNEL_TYPE_CHROMA],              0, "As per InternalBitDepth but for chroma component. (default:InternalBitDepth)")
+#endif
   ("ExtendedPrecision",                               m_extendedPrecisionProcessingFlag,                false, "Increased internal accuracies to support high bit depths (not valid in V1 profiles)")
   ("HighPrecisionPredictionWeighting",                m_highPrecisionOffsetsEnabledFlag,                false, "Use high precision option for weighted prediction (not valid in V1 profiles)")
   ("InputColourSpaceConvert",                         inputColourSpaceConvert,                     string(""), "Colour space conversion to apply to input video. Permitted values are (empty string=UNCHANGED) " + getListOfColourSpaceConverts(true))
@@ -853,7 +866,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ConfWinRight",                                    m_confWinRight,                                       0, "Right offset for window conformance mode 3")
   ("ConfWinTop",                                      m_confWinTop,                                         0, "Top offset for window conformance mode 3")
   ("ConfWinBottom",                                   m_confWinBottom,                                      0, "Bottom offset for window conformance mode 3")
+#if JVET_P1006_PICTURE_HEADER
+  ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                            false, "Enable Access Unit Delimiter NALUs")
+#else
   ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                             true, "Enable Access Unit Delimiter NALUs")
+#endif
   ("FrameRate,-fr",                                   m_iFrameRate,                                         0, "Frame rate")
   ("FrameSkip,-fs",                                   m_FrameSkip,                                         0u, "Number of frames to skip at start of input YUV")
   ("TemporalSubsampleRatio,-ts",                      m_temporalSubsampleRatio,                            1u, "Temporal sub-sample ratio when reading input YUV")
@@ -966,6 +983,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("AffineAmvrEncOpt",                                m_AffineAmvrEncOpt,                               false, "Enable encoder optimization of affine AMVR")
   ("DMVR",                                            m_DMVR,                                           false, "Decoder-side Motion Vector Refinement")
   ("MmvdDisNum",                                      m_MmvdDisNum,                                     8,     "Number of MMVD Distance Entries")
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  ("ColorTransform",                                  m_useColorTrans,                                  false, "Enable the color transform")
+#endif
   ("PLT",                                             m_PLTMode,                                           0u, "PLTMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
   ("JointCbCr",                                       m_JointCbCrMode,                                  false, "Enable joint coding of chroma residuals (JointCbCr, 0:off, 1:on)")
   ( "IBC",                                            m_IBCMode,                                           0u, "IBCMode (0x1:enabled, 0x0:disabled)  [default: disabled]")
@@ -1197,6 +1217,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
+#endif
   ("DepQuant",                                        m_depQuantEnabledFlag,                                          true )
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
@@ -1212,6 +1235,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
   ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
                                                                                                                 "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
+#if JVET_P1006_PICTURE_HEADER
+  ("SliceLevelRpl",                                   m_sliceLevelRpl,                                   true, "Code reference picture lists in slice headers rather than picture header.")
+  ("SliceLevelDblk",                                  m_sliceLevelDblk,                                  true, "Code deblocking filter parameters in slice headers rather than picture header.")
+  ("SliceLevelSao",                                   m_sliceLevelSao,                                   true, "Code SAO parameters in slice headers rather than picture header.")
+  ("SliceLevelAlf",                                   m_sliceLevelAlf,                                   true, "Code ALF parameters in slice headers rather than picture header.")
+#endif
   ("FEN",                                             tmpFastInterSearchMode,   int(FASTINTERSEARCH_DISABLED), "fast encoder setting")
   ("ECU",                                             m_bUseEarlyCU,                                    false, "Early CU setting")
   ("FDM",                                             m_useFastDecisionForMerge,                         true, "Fast decision for Merge RD Cost")
@@ -1661,10 +1690,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_internalBitDepth   [CHANNEL_TYPE_LUMA  ] = m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ];
   }
+#if !JVET_P0243_SINGLE_BIT_DEPTH
   if (m_internalBitDepth   [CHANNEL_TYPE_CHROMA] == 0)
   {
+#endif
     m_internalBitDepth   [CHANNEL_TYPE_CHROMA] = m_internalBitDepth   [CHANNEL_TYPE_LUMA  ];
+#if !JVET_P0243_SINGLE_BIT_DEPTH
   }
+#endif
   if (m_inputBitDepth      [CHANNEL_TYPE_CHROMA] == 0)
   {
     m_inputBitDepth      [CHANNEL_TYPE_CHROMA] = m_inputBitDepth      [CHANNEL_TYPE_LUMA  ];
@@ -1778,6 +1811,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_rgbFormat = (m_inputColourSpaceConvert == IPCOLOURSPACE_RGBtoGBR && m_chromaFormatIDC == CHROMA_444) ? true : false;
+#endif
 
   switch (m_conformanceWindowMode)
   {
@@ -2091,36 +2127,78 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
+#if JVET_P0410_CHROMA_QP_MAPPING
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size() - 2;
+#else
   m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
+#endif
   int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
+#if JVET_P0410_CHROMA_QP_MAPPING
+  m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] = -26 + cfg_qpInValCb.values[0];
+  CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+  CHECK(cfg_qpInValCb.values[0] != cfg_qpOutValCb.values[0], "First qpIn value should be equal to first qpOut value");
+  for (int i = 0; i < cfg_qpInValCb.values.size() - 1; i++)
+#else
   for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
+#endif
   {
     CHECK(cfg_qpInValCb.values[i] < -qpBdOffsetC || cfg_qpInValCb.values[i] > MAX_QP, "Some entries cfg_qpInValCb are out of valid range of -qpBdOffsetC to 63, inclusive.");
     CHECK(cfg_qpOutValCb.values[i] < -qpBdOffsetC || cfg_qpOutValCb.values[i] > MAX_QP, "Some entries cfg_qpOutValCb are out of valid range of -qpBdOffsetC to 63, inclusive.");
+#if JVET_P0410_CHROMA_QP_MAPPING
+    m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][i] = cfg_qpInValCb.values[i + 1] - cfg_qpInValCb.values[i] - 1;
+    m_chromaQpMappingTableParams.m_deltaQpOutVal[0][i] = cfg_qpOutValCb.values[i + 1] - cfg_qpOutValCb.values[i];
+#else
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][i] = (i == 0) ? cfg_qpInValCb.values[i] + qpBdOffsetC : cfg_qpInValCb.values[i] - cfg_qpInValCb.values[i - 1] - 1;
     m_chromaQpMappingTableParams.m_deltaQpOutVal[0][i] = (i == 0) ? cfg_qpOutValCb.values[i] + qpBdOffsetC : cfg_qpOutValCb.values[i] - cfg_qpOutValCb.values[i - 1];
+#endif
   }
   if (!m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag)
   {
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
+#if JVET_P0410_CHROMA_QP_MAPPING
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size() - 2;
+    m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] = -26 + cfg_qpInValCr.values[0];
+    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+    CHECK(cfg_qpInValCr.values[0] != cfg_qpOutValCr.values[0], "First qpIn value should be equal to first qpOut value");
+    for (int i = 0; i < cfg_qpInValCr.values.size() - 1; i++)
+#else
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
     for (int i = 0; i < cfg_qpInValCr.values.size(); i++)
+#endif
     {
       CHECK(cfg_qpInValCr.values[i] < -qpBdOffsetC || cfg_qpInValCr.values[i] > MAX_QP, "Some entries cfg_qpInValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
       CHECK(cfg_qpOutValCr.values[i] < -qpBdOffsetC || cfg_qpOutValCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+#if JVET_P0410_CHROMA_QP_MAPPING
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1][i] = cfg_qpInValCr.values[i + 1] - cfg_qpInValCr.values[i] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[1][i] = cfg_qpOutValCr.values[i + 1] - cfg_qpOutValCr.values[i];
+#else
       m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1][i] = (i == 0) ? cfg_qpInValCr.values[i] + qpBdOffsetC : cfg_qpInValCr.values[i] - cfg_qpInValCr.values[i - 1] - 1;
       m_chromaQpMappingTableParams.m_deltaQpOutVal[1][i] = (i == 0) ? cfg_qpOutValCr.values[i] + qpBdOffsetC : cfg_qpOutValCr.values[i] - cfg_qpOutValCr.values[i - 1];
+#endif
     }
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
+#if JVET_P0410_CHROMA_QP_MAPPING
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size() - 2;
+    m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] = -26 + cfg_qpInValCbCr.values[0];
+    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+    CHECK(cfg_qpInValCbCr.values[0] != cfg_qpInValCbCr.values[0], "First qpIn value should be equal to first qpOut value");
+    for (int i = 0; i < cfg_qpInValCbCr.values.size() - 1; i++)
+#else
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size()-1;
     for (int i = 0; i < cfg_qpInValCbCr.values.size(); i++)
+#endif
     {
       CHECK(cfg_qpInValCbCr.values[i] < -qpBdOffsetC || cfg_qpInValCbCr.values[i] > MAX_QP, "Some entries cfg_qpInValCbCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
       CHECK(cfg_qpOutValCbCr.values[i] < -qpBdOffsetC || cfg_qpOutValCbCr.values[i] > MAX_QP, "Some entries cfg_qpOutValCbCr are out of valid range of -qpBdOffsetC to 63, inclusive.");
+#if JVET_P0410_CHROMA_QP_MAPPING
+      m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2][i] = cfg_qpInValCbCr.values[i + 1] - cfg_qpInValCbCr.values[i] - 1;
+      m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = cfg_qpInValCbCr.values[i + 1] - cfg_qpInValCbCr.values[i];
+#else
       m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2][i] = (i == 0) ? cfg_qpInValCbCr.values[i] + qpBdOffsetC : cfg_qpInValCbCr.values[i] - cfg_qpInValCbCr.values[i - 1] - 1;
       m_chromaQpMappingTableParams.m_deltaQpOutVal[2][i] = (i == 0) ? cfg_qpOutValCbCr.values[i] + qpBdOffsetC : cfg_qpOutValCbCr.values[i] - cfg_qpOutValCbCr.values[i - 1];
+#endif
     }
   }
 
@@ -2138,10 +2216,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
+#if !JVET_P1006_PICTURE_HEADER
   if (m_AccessUnitDelimiter == false)
   {
     printf ("Warning: Access unit delimiters are disabled. VVC requires the presence of access unit delimiters\n");
   }
+#endif
 
 #if JVET_O0756_CONFIG_HDRMETRICS && !JVET_O0756_CALCULATE_HDRMETRICS
   if ( m_calculateHdrMetrics == true)
@@ -2416,6 +2496,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    xConfirmPara(m_useColorTrans, "ACT Mode only allowed with NEXT profile");
+#endif
     xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
     xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
     xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
@@ -2494,6 +2577,9 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
+#if JVET_P0243_SINGLE_BIT_DEPTH
+  xConfirmPara(m_internalBitDepth[CHANNEL_TYPE_CHROMA] != m_internalBitDepth[CHANNEL_TYPE_LUMA], "The internalBitDepth must be the same for luma and chroma");
+#endif
   xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
   xConfirmPara(m_chromaFormatConstraint<m_chromaFormatIDC, "The chroma format used must not be greater than the chromaFormatConstraint value");
 
@@ -2589,7 +2675,11 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] < m_inputBitDepth[CHANNEL_TYPE_CHROMA]), "MSB-extended bit depth for chroma channel (--MSBExtendedBitDepthC) must be greater than or equal to input bit depth for chroma channel (--InputBitDepthC)" );
 
   xConfirmPara( m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA]   > (m_internalBitDepth[CHANNEL_TYPE_LUMA  ]<10?0:(m_internalBitDepth[CHANNEL_TYPE_LUMA  ]-10)), "SaoLumaOffsetBitShift must be in the range of 0 to InternalBitDepth-10, inclusive");
+#if JVET_P0243_SINGLE_BIT_DEPTH
+  xConfirmPara( m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] > (m_internalBitDepth[CHANNEL_TYPE_CHROMA]<10?0:(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-10)), "SaoChromaOffsetBitShift must be in the range of 0 to InternalBitDepth-10, inclusive");
+#else
   xConfirmPara( m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] > (m_internalBitDepth[CHANNEL_TYPE_CHROMA]<10?0:(m_internalBitDepth[CHANNEL_TYPE_CHROMA]-10)), "SaoChromaOffsetBitShift must be in the range of 0 to InternalBitDepthC-10, inclusive");
+#endif
 
   xConfirmPara( m_chromaFormatIDC >= NUM_CHROMA_FORMAT,                                     "ChromaFormatIDC must be either 400, 420, 422 or 444" );
   std::string sTempIPCSC="InputColourSpaceConvert must be empty, "+getListOfColourSpaceConverts(true);
@@ -3705,6 +3795,10 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
   }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
+  msg(VERBOSE, "ACT:%d ", m_useColorTrans);
+#endif
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
@@ -3790,6 +3884,43 @@ void EncAppCfg::xPrintParameter()
   fflush( stdout );
 }
 
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+bool EncAppCfg::xHasNonZeroTemporalID ()
+{
+  for (unsigned int i = 0; i < m_iGOPSize; i++)
+  {
+    if ( m_GOPList[i].m_temporalId != 0 )
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool EncAppCfg::xHasLeadingPicture ()
+{
+  for (unsigned int i = 0; i < m_iGOPSize; i++)
+  {
+    for ( unsigned int j = 0; j < m_GOPList[i].m_numRefPics0; j++)
+    {
+      if ( m_GOPList[i].m_deltaRefPics0[j] < 0 )
+      {
+        return true;
+      }
+    }
+    for ( unsigned int j = 0; j < m_GOPList[i].m_numRefPics1; j++)
+    {
+      if ( m_GOPList[i].m_deltaRefPics1[j] < 0 )
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+#endif
+
+
 bool confirmPara(bool bflag, const char* message)
 {
   if (!bflag)
@@ -3800,5 +3931,7 @@ bool confirmPara(bool bflag, const char* message)
   msg( ERROR, "Error: %s\n",message);
   return true;
 }
+
+
 
 //! \}

@@ -214,6 +214,16 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      m_noTrailConstraintFlag;
+  bool      m_noStsaConstraintFlag;
+  bool      m_noRaslConstraintFlag;
+  bool      m_noRadlConstraintFlag;
+  bool      m_noIdrConstraintFlag;
+  bool      m_noCraConstraintFlag;
+  bool      m_noGdrConstraintFlag;
+  bool      m_noApsConstraintFlag;
+#endif
 
   /* profile & level */
   Profile::Name m_profile;
@@ -317,6 +327,10 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  bool      m_rgbFormat;
+  bool      m_useColorTrans;
+#endif
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
   unsigned  m_IBCMode;
@@ -589,6 +603,15 @@ protected:
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
+#if JVET_P1006_PICTURE_HEADER
+  bool      m_sliceLevelRpl;                      ///< code reference picture lists in slice headers rather than picture header
+  bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
+  bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
+  bool      m_sliceLevelAlf;                      ///< code ALF parameters in slice headers rather than picture header
+#endif
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  bool      m_disableScalingMatrixForLfnstBlks;
+#endif
   int       m_TMVPModeId;
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
@@ -778,6 +801,25 @@ public:
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
   void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
+  void      setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
+  bool      getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
+  void      setNoStsaConstraintFlag(bool bVal) { m_noStsaConstraintFlag = bVal; }
+  bool      getNoRaslConstraintFlag() const { return m_noRaslConstraintFlag; }
+  void      setNoRaslConstraintFlag(bool bVal) { m_noRaslConstraintFlag = bVal; }
+  bool      getNoRadlConstraintFlag() const { return m_noRadlConstraintFlag; }
+  void      setNoRadlConstraintFlag(bool bVal) { m_noRadlConstraintFlag = bVal; }
+  bool      getNoIdrConstraintFlag() const { return m_noIdrConstraintFlag; }
+  void      setNoIdrConstraintFlag(bool bVal) { m_noIdrConstraintFlag = bVal; }
+  bool      getNoCraConstraintFlag() const { return m_noCraConstraintFlag; }
+  void      setNoCraConstraintFlag(bool bVal) { m_noCraConstraintFlag = bVal; }
+  bool      getNoGdrConstraintFlag() const { return m_noGdrConstraintFlag; }
+  void      setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
+  bool      getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
+  void      setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+#endif
+
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }
   void      setFrameSkip                    ( uint32_t  i )      { m_FrameSkip = i; }
@@ -953,6 +995,12 @@ public:
   bool      getMMVD                         ()         const { return m_MMVD; }
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  void      setRGBFormatFlag(bool value) { m_rgbFormat = value; }
+  bool      getRGBFormatFlag()                         const { return m_rgbFormat; }
+  void      setUseColorTrans(bool value) { m_useColorTrans = value; }
+  bool      getUseColorTrans()                         const { return m_useColorTrans; }
+#endif
   void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
   unsigned  getPLTMode                   ()         const { return m_PLTMode; }
   void      setJointCbCr                    ( bool b )       { m_JointCbCrMode = b; }
@@ -1517,6 +1565,20 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
+#if JVET_P1006_PICTURE_HEADER
+  void         setSliceLevelRpl  ( bool b )                          { m_sliceLevelRpl = b;     }
+  bool         getSliceLevelRpl  ()                                  { return m_sliceLevelRpl;  }
+  void         setSliceLevelDblk ( bool b )                          { m_sliceLevelDblk = b;    }
+  bool         getSliceLevelDblk ()                                  { return m_sliceLevelDblk; }
+  void         setSliceLevelSao  ( bool b )                          { m_sliceLevelSao = b;     }
+  bool         getSliceLevelSao  ()                                  { return m_sliceLevelSao;  }
+  void         setSliceLevelAlf  ( bool b )                          { m_sliceLevelAlf = b;     }
+  bool         getSliceLevelAlf  ()                                  { return m_sliceLevelAlf;  }
+#endif
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  void         setDisableScalingMatrixForLfnstBlks(bool u)          { m_disableScalingMatrixForLfnstBlks = u;   }
+  bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }
+#endif
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }

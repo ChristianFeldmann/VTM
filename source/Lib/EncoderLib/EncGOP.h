@@ -212,6 +212,9 @@ public:
   void  compressGOP ( int iPOCLast, int iNumPicRcvd, PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRec,
                       bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                     , bool isEncodeLtRef
+#if JVET_N0278_FIXES
+                    , const int picIdInGOP
+#endif
   );
   void  xAttachSliceDataToNalUnit (OutputNALUnit& rNalu, OutputBitstream* pcBitstreamRedirect);
 
@@ -263,8 +266,11 @@ protected:
   );
   void  xPicInitHashME( Picture *pic, const PPS *pps, PicList &rcListPic );
   void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
+#if JVET_P1006_PICTURE_HEADER
+  void  xPicInitLMCS       (Picture *pic, PicHeader *picHeader, Slice *slice);
+#else
   void  xPicInitLMCS       (Picture *pic, Slice *slice);
-
+#endif
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
 
@@ -322,8 +328,15 @@ protected:
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
   int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
-  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId = 0 );
+#if JVET_P0588_SUFFIX_APS
+  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );
+#else
+  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId );
+#endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
+#if JVET_P1006_PICTURE_HEADER
+  int xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader );
+#endif
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );
 #if W0038_DB_OPT

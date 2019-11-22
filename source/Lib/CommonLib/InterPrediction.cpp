@@ -127,6 +127,11 @@ void InterPrediction::destroy()
   }
 
   m_triangleBuf.destroy();
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_colorTransResiBuf[0].destroy();
+  m_colorTransResiBuf[1].destroy();
+  m_colorTransResiBuf[2].destroy();
+#endif
 
   if (m_storedMv != nullptr)
   {
@@ -190,6 +195,11 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC, cons
     }
 
     m_triangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    m_colorTransResiBuf[0].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+    m_colorTransResiBuf[1].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+    m_colorTransResiBuf[2].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
+#endif
 
     m_iRefListIdx = -1;
 
@@ -535,7 +545,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
   pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
 
   bool bioApplied = false;
+#if JVET_P1006_PICTURE_HEADER
+  if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
+#else
   if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#endif
   {
     if (pu.cu->affine || m_subPuMC)
     {
@@ -1855,7 +1869,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     pu.cs->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
     bool bioApplied = false;
     const Slice &slice = *pu.cs->slice;
+#if JVET_P1006_PICTURE_HEADER
+    if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
+#else
     if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
+#endif
     {
 
       if (pu.cu->affine || m_subPuMC)

@@ -781,10 +781,10 @@ const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MTSIdx = ContextSetCfg::addCtxSet
 ({
-    { 37,  25,  27,   0, CNU, },
-    { 30,  40,  27,   0, CNU, },
-    { 13,   0,  35,   0, CNU, },
-    {  8,   0,   9,   0, DWS, },
+    { 37,  25,  27,   0, },
+    { 30,  40,  27,   0, },
+    { 13,   0,  35,   0, },
+    {  8,   0,   9,   0, },
 });
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet
@@ -1564,10 +1564,10 @@ const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::MTSIdx = ContextSetCfg::addCtxSet
 ({
-    { 29,  18,  27,   0, CNU },
-    { 29,  33,  27,   0, CNU },
-    { 20,   0,  42,   0, CNU },
-    {  8,   0,   9,   0, DWS },
+    { 29,  18,  27,   0, },
+    { 29,  33,  27,   0, },
+    { 20,   0,  42,   0, },
+    {  8,   0,   9,   0, },
 });
 
 const CtxSet ContextSetCfg::ISPMode = ContextSetCfg::addCtxSet

@@ -98,7 +98,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/libVTMEncoder.pc.cmakein
 set_target_properties( ${LIB_NAME} PROPERTIES FOLDER app LINKER_LANGUAGE CXX )
 
 # Set the header files to be public with the library
-set_target_properties( ${LIB_NAME} PROPERTIES PUBLIC_HEADER ${INC_FILES} )
+set_target_properties( ${LIB_NAME} PROPERTIES PUBLIC_HEADER libVTMEncoder.h )
 
 # Set the install target for the library
 INSTALL( TARGETS ${LIB_NAME}

@@ -83,6 +83,25 @@ typedef struct vtm_pic_t
   vtm_image_t img;
 } vtm_pic_t;
 
+typedef enum
+{
+  VTM_CHROMA_400        = 0,
+  VTM_CHROMA_420        = 1,
+  VTM_CHROMA_422        = 2,
+  VTM_CHROMA_444        = 3,
+  VTM_NUM_CHROMA_FORMAT = 4
+} vtm_chroma_format_t;
+
+typedef struct vtm_settings_t
+{
+  int source_width;
+  int source_height;
+  int source_bitdepth;
+  int fps_num;
+  int fps_den;
+  vtm_chroma_format_t chroma_format;
+} vtm_settings_t;
+
 /** Get info about the VTM encoder version (e.g. "VTM-6.0")
  */
 VTM_ENC_API const char *libVTMEncoder_get_version(void);
@@ -96,11 +115,17 @@ typedef void libVTMEncoder_context;
 /** Allocate and initialize a new encoder.
   * \return Returns a pointer to the new encoder or NULL if an error occurred.
   */
-VTM_ENC_API libVTMEncoder_context* libVTMEncoder_new_encoder(void);
+VTM_ENC_API libVTMEncoder_context* libVTMEncoder_new_encoder();
+
+/** Initialize the new encoder.
+  * \param settings The settings to apply
+  * \return Return an error code or LIBVTMENC_OK if no error occured
+  */
+VTM_ENC_API libVTMEnc_error libVTMEncoder_init_encoder(libVTMEncoder_context* encCtx, vtm_settings_t *settings);
 
 /** Destroy an existing encoder.
- * \param decCtx The encoder context to destroy that was created with libVTMEncoder_new_encoder
- * \return Return an error code or LIBVTMENC_OK if no error occured.
+ * \param encCtx The encoder context to destroy that was created with libVTMEncoder_new_encoder
+ * \return Return an error code or LIBVTMENC_OK if no error occured
  */
 VTM_ENC_API libVTMEnc_error libVTMEncoder_free_encoder(libVTMEncoder_context* encCtx);
 

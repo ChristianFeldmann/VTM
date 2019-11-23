@@ -37,29 +37,60 @@
 
 #include "libVTMEncoder.h"
 
-#include "EncoderLib/EncLib.h"
+#include "libVTMEncoderCfg.h"
+#include "Utilities/program_options_lite.h"
+#include "EncGOP.h"
 
 #include <vector>
 
-class vtmEncoderWrapper : public AUWriterIf
+class vtmEncoderWrapper : public LibVTMEncoderCfg, public AUWriterIf 
 {
 public:
   vtmEncoderWrapper()
   {
-    m_cEncLib.create();
-    m_cEncLib.init(false, this);
   }
-  ~vtmEncoderWrapper() { m_cEncLib.destroy(); }
+  ~vtmEncoderWrapper()
+  { 
+    m_cEncLib.destroy(); 
+  }
+
+  bool init()
+  {
+    try
+    {
+      if(!parseCfg())
+        return LIBVTMENC_ERROR;
+    }
+    catch (df::program_options_lite::ParseFailure &e)
+    {
+      std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
+      return false;
+    }
+    return true;
+  }
 
   void outputAU(const AccessUnit& au) override
   {
     m_lOutputAUList.push_back(au);
   }
 
-private:
-  EncLib m_cEncLib;
+  bool applySettings(vtm_settings_t *settings)
+  {
+    xInitLibCfg();
+    m_cEncLib.create(); // The part we need from xCreateLib
+    m_cEncLib.init(false, this); // xInitLib
+    
+    UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, m_iSourceHeight ) );
+    orgPic.create( unitArea );
+
+    return true;
+  }
+
+protected:
+  vtm_settings_t vtm_settings;
 
   std::vector<AccessUnit> m_lOutputAUList;
+  PelStorage orgPic;
 };
 
 extern "C" {
@@ -69,13 +100,31 @@ extern "C" {
     return VTM_VERSION;
   }
 
-  VTM_ENC_API libVTMEncoder_context* libVTMEncoder_new_encoder(void)
+  VTM_ENC_API libVTMEncoder_context* libVTMEncoder_new_encoder()
   {
     vtmEncoderWrapper *encCtx = new vtmEncoderWrapper();
     if (!encCtx)
       return NULL;
 
     return (libVTMEncoder_context*)encCtx;
+  }
+
+  VTM_ENC_API libVTMEnc_error libVTMEncoder_init_encoder(libVTMEncoder_context* encCtx, vtm_settings_t *settings)
+  {
+    vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
+    if (!enc)
+      return LIBVTMENC_ERROR;
+
+    if (!enc->init())
+      return LIBVTMENC_ERROR;
+
+    if (!settings)
+      return LIBVTMENC_ERROR;
+
+    if (!enc->applySettings(settings))
+      return LIBVTMENC_ERROR;
+
+    return LIBVTMENC_OK;
   }
 
   VTM_ENC_API libVTMEnc_error libVTMEncoder_free_encoder(libVTMEncoder_context* encCtx)

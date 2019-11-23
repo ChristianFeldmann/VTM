@@ -3639,6 +3639,7 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
     m_gcAnalyzeWPSNR.printSummary(chFmt, printSequenceMSE, printHexPsnr, bitDepths, m_pcCfg->getSummaryOutFilename());
   }
 #endif
+#if !FIELD_CODING_FIX // to remove repeated and wrong calculation of bitrate and PSNR when field coding is used
   if(isField)
   {
     //-- interlaced summary
@@ -3663,6 +3664,7 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
 #endif
     }
   }
+#endif
 
   msg( DETAILS,"\nRVM: %.3lf\n", xCalculateRVM() );
 }

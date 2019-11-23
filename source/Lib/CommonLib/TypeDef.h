@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define FIELD_CODING_FIX                                  1 // Fix field coding 
+
 #define JVET_P0205_VPS_ID_0                               1 // JVET-P0205: VPS ID zero in SPS means no VPS in bitstream
 
 #define JVET_P1006_PICTURE_HEADER                         1 // JVET-P1006: Add picture header and related syntax changes

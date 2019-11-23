@@ -990,6 +990,16 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
             compBuf.width,
             compBuf.height,
             isTopField );
+#if FIELD_CODING_FIX
+          // to get fields of true original buffer to avoid wrong PSNR calculation in summary
+          compBuf = pcPicYuvTrueOrg->get( compID );
+          separateFields( compBuf.buf,
+            pcField->getTrueOrigBuf().get(compID).buf,
+            compBuf.stride,
+            compBuf.width,
+            compBuf.height,
+            isTopField);
+#endif
         }
       }
 
@@ -1081,6 +1091,16 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
                          compBuf.width,
                          compBuf.height,
                          isTopField);
+#if FIELD_CODING_FIX
+          // to get fields of true original buffer to avoid wrong PSNR calculation in summary
+          compBuf = pcPicYuvTrueOrg->get( compID );
+          separateFields( compBuf.buf,
+                         pcField->getTrueOrigBuf().get(compID).buf,
+                         compBuf.stride,
+                         compBuf.width,
+                         compBuf.height,
+                         isTopField);
+#endif
         }
       }
 
@@ -1961,8 +1981,14 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
   ReferencePictureList*      rpl;
 
   int numRPLCandidates = getRPLCandidateSize(0);
+#if FIELD_CODING_FIX
+  // To allocate one additional memory for RPL of POC1 (first bottom field) which is not specified in cfg file
+  sps.createRPLList0(numRPLCandidates + (isFieldCoding ? 1 : 0));
+  sps.createRPLList1(numRPLCandidates + (isFieldCoding ? 1 : 0));
+#else
   sps.createRPLList0(numRPLCandidates);
   sps.createRPLList1(numRPLCandidates);
+#endif
   RPLList* rplList = 0;
 
   for (int i = 0; i < 2; i++)
@@ -1983,6 +2009,24 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       }
     }
   }
+
+#if FIELD_CODING_FIX
+  if (isFieldCoding)
+  {
+    // To set RPL of POC1 (first bottom field) which is not specified in cfg file
+    for (int i = 0; i < 2; i++)
+    {
+      rplList = (i == 0) ? sps.getRPLList0() : sps.getRPLList1();
+      rpl = rplList->getReferencePictureList(numRPLCandidates);
+      rpl->setNumberOfShorttermPictures(1);
+      rpl->setNumberOfLongtermPictures(0);
+      rpl->setNumberOfActivePictures(1);
+      rpl->setLtrpInSliceHeaderFlag(0);
+      rpl->setRefPicIdentifier(0, 1, 0);
+      rpl->setPOC(0, 0);
+    }
+  }
+#endif
 
   //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first
@@ -2133,6 +2177,46 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
       }
     }
   }
+
+#if FIELD_CODING_FIX
+  if (slice->getPic()->fieldPic)
+  {
+    // To set RPL index of POC1 (first bottom field)
+    if (POCCurr == 1)
+    {
+      slice->setRPL0idx(getRPLCandidateSize(0));
+      slice->setRPL1idx(getRPLCandidateSize(0));
+    }
+    else if (m_uiIntraPeriod < 0)
+    {
+      // To set RPL indexes for LD
+      int numRPLCandidates = getRPLCandidateSize(0);
+      if (POCCurr < numRPLCandidates - m_iGOPSize + 2)
+      {
+        slice->setRPL0idx(POCCurr + m_iGOPSize - 2);
+        slice->setRPL1idx(POCCurr + m_iGOPSize - 2);
+      }
+      else
+      {
+        if (POCCurr%m_iGOPSize == 0)
+        {
+          slice->setRPL0idx(m_iGOPSize - 2);
+          slice->setRPL1idx(m_iGOPSize - 2);
+        }
+        else if (POCCurr%m_iGOPSize == 1)
+        {
+          slice->setRPL0idx(m_iGOPSize - 1);
+          slice->setRPL1idx(m_iGOPSize - 1);
+        }
+        else
+        {
+          slice->setRPL0idx(POCCurr % m_iGOPSize - 2);
+          slice->setRPL1idx(POCCurr % m_iGOPSize - 2);
+        }
+      }
+    }
+  }
+#endif
 
   const ReferencePictureList *rpl0 = (slice->getSPS()->getRPLList0()->getReferencePictureList(slice->getRPL0idx()));
   const ReferencePictureList *rpl1 = (slice->getSPS()->getRPLList1()->getReferencePictureList(slice->getRPL1idx()));

@@ -1008,10 +1008,25 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  if (pcSPS->getBDOFEnabledFlag())
+  {
+    WRITE_FLAG(pcSPS->getBdofControlPresentFlag() ? 1 : 0,                              "sps_bdof_picture_level_present_flag");
+  }
+  if (pcSPS->getUseDMVR())
+  {
+    WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                              "sps_dmvr_picture_level_present_flag");
+  }
+  if (pcSPS->getUsePROF())
+  {
+    WRITE_FLAG(pcSPS->getProfControlPresentFlag() ? 1 : 0,                              "sps_prof_picture_level_present_flag");
+  }
+#else
   if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
   }
+#endif
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
@@ -1505,6 +1520,37 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setDisFracMMVD(false);
   }
   
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  // picture level BDOF disable flags
+  if (sps->getBdofControlPresentFlag())
+  {
+    WRITE_FLAG(picHeader->getDisBdofFlag(), "pic_disable_bdof_flag");
+  }
+  else
+  {
+    picHeader->setDisBdofFlag(0);
+  }
+
+  // picture level DMVR disable flags
+  if (sps->getDmvrControlPresentFlag())
+  {
+    WRITE_FLAG(picHeader->getDisDmvrFlag(), "pic_disable_dmvr_flag");
+  }
+  else
+  {
+    picHeader->setDisDmvrFlag(0);
+  }
+
+  // picture level PROF disable flags
+  if (sps->getProfControlPresentFlag())
+  {
+    WRITE_FLAG(picHeader->getDisProfFlag(), "pic_disable_prof_flag");
+  }
+  else
+  {
+    picHeader->setDisProfFlag(0);
+  }
+#else
   // picture level BDOF/DMVR/PROF disable flags
   if (sps->getBdofDmvrSlicePresentFlag())
   {
@@ -1514,7 +1560,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setDisBdofDmvrFlag(0);
   }
- 
+#endif
+
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
   {

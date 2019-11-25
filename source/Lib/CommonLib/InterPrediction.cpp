@@ -503,7 +503,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
 
   bool bioApplied = false;
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofFlag()))
+#else
   if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
+#endif
 #else
   if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
 #endif
@@ -927,6 +931,9 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   const bool subblkMVSpreadOverLimit = isSubblockVectorSpreadOverLimit( iDMvHorX, iDMvHorY, iDMvVerX, iDMvVerY, pu.interDir );
 
   bool enablePROF = (sps.getUsePROF()) && (!m_skipPROF) && (compID == COMPONENT_Y);
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  enablePROF &= (!pu.cs->picHeader->getDisProfFlag());
+#endif
   enablePROF &= !((pu.cu->affineType == AFFINEMODEL_6PARAM && _mv[0] == _mv[1] && _mv[0] == _mv[2]) || (pu.cu->affineType == AFFINEMODEL_4PARAM && _mv[0] == _mv[1]));
   enablePROF &= !subblkMVSpreadOverLimit;
   const int profThres = 1 << (iBit + (m_isBi ? 1 : 0));
@@ -1827,7 +1834,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     bool bioApplied = false;
     const Slice &slice = *pu.cs->slice;
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+    if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofFlag()))
+#else
     if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
+#endif
 #else
     if (pu.cs->sps->getBDOFEnabledFlag() && (!pu.cs->slice->getDisBdofDmvrFlag()))
 #endif

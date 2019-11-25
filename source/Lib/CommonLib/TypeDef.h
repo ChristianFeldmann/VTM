@@ -49,6 +49,7 @@
 #include <cstring>
 #include <assert.h>
 #include <cassert>
+#define JVET_P0314_PROF_BDOF_DMVR_HLS                     1 // JVET-P0314: BDOF/DMVR/PROF high level flags
 
 #define JVET_P0205_VPS_ID_0                               1 // JVET-P0205: VPS ID zero in SPS means no VPS in bitstream
 

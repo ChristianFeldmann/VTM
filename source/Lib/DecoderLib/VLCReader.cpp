@@ -1605,10 +1605,26 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  if (pcSPS->getBDOFEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_bdof_picture_level_present_flag");             pcSPS->setBdofControlPresentFlag(uiCode != 0);
+  }
+  if (pcSPS->getUseDMVR())
+  {
+    READ_FLAG(uiCode, "sps_dmvr_picture_level_present_flag");             pcSPS->setDmvrControlPresentFlag(uiCode != 0);
+  }
+  if (pcSPS->getUsePROF())
+  {
+    READ_FLAG(uiCode, "sps_prof_picture_level_present_flag");             pcSPS->setProfControlPresentFlag(uiCode != 0);
+  }
+#else
   if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
   }
+#endif
+
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
@@ -2205,6 +2221,37 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setDisFracMMVD(false);
   }
   
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  // picture level BDOF disable flags
+  if (sps->getBdofControlPresentFlag())
+  {
+    READ_FLAG(uiCode, "pic_disable_bdof_flag");  picHeader->setDisBdofFlag(uiCode != 0);
+  }
+  else
+  {
+    picHeader->setDisBdofFlag(0);
+  }
+
+  // picture level DMVR disable flags
+  if (sps->getDmvrControlPresentFlag())
+  {
+    READ_FLAG(uiCode, "pic_disable_dmvr_flag");  picHeader->setDisDmvrFlag(uiCode != 0);
+  }
+  else
+  {
+    picHeader->setDisDmvrFlag(0);
+  }
+
+  // picture level PROF disable flags
+  if (sps->getProfControlPresentFlag())
+  {
+    READ_FLAG(uiCode, "pic_disable_prof_flag");  picHeader->setDisProfFlag(uiCode != 0);
+  }
+  else
+  {
+    picHeader->setDisProfFlag(0);
+  }
+#else
   // picture level BDOF/DMVR/PROF disable flags
   if (sps->getBdofDmvrSlicePresentFlag())
   {
@@ -2214,6 +2261,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setDisBdofDmvrFlag(0);
   }
+#endif
 
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)

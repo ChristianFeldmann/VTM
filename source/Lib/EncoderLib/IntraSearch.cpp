@@ -277,8 +277,9 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
         m_pBestCS[width][height] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
         m_pTempCS[width][height] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
-        m_pBestCS[width][height]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
-        m_pTempCS[width][height]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
+        m_pBestCS[width][height]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
+        m_pTempCS[width][height]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
+
         m_pFullCS [width][height] = new CodingStructure*[uiNumLayersToAllocateFull];
         m_pSplitCS[width][height] = new CodingStructure*[uiNumLayersToAllocateSplit];
 
@@ -286,14 +287,13 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
         {
           m_pFullCS [width][height][layer] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
-          m_pFullCS [width][height][layer]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
+          m_pFullCS[width][height][layer]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
         }
 
         for( uint32_t layer = 0; layer < uiNumLayersToAllocateSplit; layer++ )
         {
           m_pSplitCS[width][height][layer] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
-
-          m_pSplitCS[width][height][layer]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
+          m_pSplitCS[width][height][layer]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
         }
       }
       else
@@ -314,41 +314,44 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
   for( uint32_t depth = 0; depth < uiNumSaveLayersToAllocate; depth++ )
   {
     m_pSaveCS[depth] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
-    m_pSaveCS[depth]->create( UnitArea( cform, Area( 0, 0, maxCUWidth, maxCUHeight ) ), false );
+    m_pSaveCS[depth]->create(UnitArea(cform, Area(0, 0, maxCUWidth, maxCUHeight)), false, (bool)pcEncCfg->getPLTMode());
   }
 
   m_isInitialized = true;
 #if JVET_P0077_LINE_CG_PALETTE
-  m_symbolSize = (1 << bitDepthY); // pixel values are within [0, SymbolSize-1] with size SymbolSize
-  if (m_truncBinBits == nullptr)
+  if (pcEncCfg->getPLTMode())
   {
-    m_truncBinBits = new uint16_t*[m_symbolSize];
-    for (unsigned i = 0; i < m_symbolSize; i++)
+    m_symbolSize = (1 << bitDepthY); // pixel values are within [0, SymbolSize-1] with size SymbolSize
+    if (m_truncBinBits == nullptr)
     {
-      m_truncBinBits[i] = new uint16_t[m_symbolSize + 1];
+      m_truncBinBits = new uint16_t*[m_symbolSize];
+      for (unsigned i = 0; i < m_symbolSize; i++)
+      {
+        m_truncBinBits[i] = new uint16_t[m_symbolSize + 1];
+      }
     }
-  }
-  if (m_escapeNumBins == nullptr)
-  {
-    m_escapeNumBins = new uint16_t[m_symbolSize];
-  }
-  initTBCTable(bitDepthY);
-  if (m_indexError[0] == nullptr)
-  {
-    for (unsigned i = 0; i < (MAXPLTSIZE + 1); i++)
+    if (m_escapeNumBins == nullptr)
     {
-      m_indexError[i] = new double[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      m_escapeNumBins = new uint16_t[m_symbolSize];
     }
-  }
-  if (m_minErrorIndexMap == nullptr)
-  {
-    m_minErrorIndexMap = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
-  }
-  if (m_statePtRDOQ[0] == nullptr)
-  {
-    for (unsigned i = 0; i < NUM_TRELLIS_STATE; i++)
+    initTBCTable(bitDepthY);
+    if (m_indexError[0] == nullptr)
     {
-      m_statePtRDOQ[i] = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      for (unsigned i = 0; i < (MAXPLTSIZE + 1); i++)
+      {
+        m_indexError[i] = new double[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      }
+    }
+    if (m_minErrorIndexMap == nullptr)
+    {
+      m_minErrorIndexMap = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+    }
+    if (m_statePtRDOQ[0] == nullptr)
+    {
+      for (unsigned i = 0; i < NUM_TRELLIS_STATE; i++)
+      {
+        m_statePtRDOQ[i] = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      }
     }
   }
 #endif

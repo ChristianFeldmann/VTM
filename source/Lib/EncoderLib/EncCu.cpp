@@ -106,14 +106,14 @@ void EncCu::create( EncCfg* encCfg )
         m_pTempCS[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
         m_pBestCS[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
-        m_pTempCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
-        m_pBestCS[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
+        m_pTempCS[w][h]->create(chromaFormat, Area(0, 0, width, height), false, (bool)encCfg->getPLTMode());
+        m_pBestCS[w][h]->create(chromaFormat, Area(0, 0, width, height), false, (bool)encCfg->getPLTMode());
 
         m_pTempCS2[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
         m_pBestCS2[w][h] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
-        m_pTempCS2[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
-        m_pBestCS2[w][h]->create( chromaFormat, Area( 0, 0, width, height ), false );
+        m_pTempCS2[w][h]->create(chromaFormat, Area(0, 0, width, height), false, (bool)encCfg->getPLTMode());
+        m_pBestCS2[w][h]->create(chromaFormat, Area(0, 0, width, height), false, (bool)encCfg->getPLTMode());
       }
       else
       {
@@ -638,9 +638,9 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
     jointPLT = true;
   }
   SplitSeries splitmode = -1;
-  uint32_t  bestLastPLTSize[MAX_NUM_COMPONENT];
-  Pel       bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for partition
-  uint32_t  curLastPLTSize[MAX_NUM_COMPONENT];
+  uint8_t   bestLastPLTSize[MAX_NUM_CHANNEL_TYPE];
+  Pel       bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for 
+  uint8_t   curLastPLTSize[MAX_NUM_CHANNEL_TYPE];
   Pel       curLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT if no partition
   for (int i = compBegin; i < (compBegin + numComp); i++)
   {

@@ -1047,7 +1047,7 @@ void DecLib::xActivateParameterSets()
     m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
 #endif
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
-    m_pcPic->cs->createCoeffs();
+    m_pcPic->cs->createCoeffs((bool)m_pcPic->cs->sps->getPLTMode());
 
     m_pcPic->allocateNewSlice();
     // make the slice-pilot a real slice, and set up the slice-pilot for the next slice

@@ -386,11 +386,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     cuCtx.qgStart    = true;
     cuCtx.isDQPCoded          = false;
   }
-#if JVET_P1006_PICTURE_HEADER
-  if( pps.getCuChromaQpOffsetEnabledFlag() && partitioner.currQgChromaEnable() )
-#else
   if( cs.slice->getUseChromaQpAdj() && partitioner.currQgChromaEnable() )
-#endif
   {
     cuCtx.isChromaQpAdjCoded  = false;
   }
@@ -402,11 +398,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       pCuCtxChroma->qgStart    = true;
       pCuCtxChroma->isDQPCoded = false;
     }
-#if JVET_P1006_PICTURE_HEADER
-    if (pps.getCuChromaQpOffsetEnabledFlag() && pPartitionerChroma->currQgChromaEnable())
-#else
     if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currQgChromaEnable())
-#endif
     {
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
@@ -1538,11 +1530,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       cuCtx.isDQPCoded = true;
     }
   }
-#if JVET_P1006_PICTURE_HEADER
-  if (cu.useEscape[compBegin] && cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && !cuCtx.isChromaQpAdjCoded)
-#else
   if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
-#endif
   {
     if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
     {
@@ -2885,11 +2873,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     SizeType channelWidth = !cu.isSepTree() ? cu.lwidth() : cu.chromaSize().width;
     SizeType channelHeight = !cu.isSepTree() ? cu.lheight() : cu.chromaSize().height;
 
-#if JVET_P1006_PICTURE_HEADER
-    if (cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#else
     if (cu.cs->slice->getUseChromaQpAdj() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#endif
     {
       cu_chroma_qp_offset(cu);
       cuCtx.isChromaQpAdjCoded = true;

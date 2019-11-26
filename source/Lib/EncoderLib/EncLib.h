@@ -58,6 +58,10 @@
 #include "EncAdaptiveLoopFilter.h"
 #include "RateCtrl.h"
 
+#if JVET_N0278_FIXES
+class EncLibCommon;
+#endif
+
 //! \ingroup EncoderLib
 //! \{
 
@@ -72,8 +76,13 @@ private:
   // picture
   int                       m_iPOCLast;                           ///< time index (POC)
   int                       m_iNumPicRcvd;                        ///< number of received pictures
-  uint32_t                      m_uiNumAllPicCoded;                   ///< number of coded pictures
+  uint32_t                  m_uiNumAllPicCoded;                   ///< number of coded pictures
+#if JVET_N0278_FIXES
+  PicList&                  m_cListPic;                           ///< dynamic list of pictures
+  int                       m_layerId;
+#else
   PicList                   m_cListPic;                           ///< dynamic list of pictures
+#endif
 
   // encoder search
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
@@ -114,9 +123,18 @@ private:
   EncCu                     m_cCuEncoder;                         ///< CU encoder
 #endif
   // SPS
+#if JVET_N0278_FIXES
+  ParameterSetMap<SPS>&     m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
+  ParameterSetMap<PPS>&     m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
+  ParameterSetMap<APS>&     m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
+#else
   ParameterSetMap<SPS>      m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>      m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
   ParameterSetMap<APS>      m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
+#endif
+#if JVET_P1006_PICTURE_HEADER
+  PicHeader                 m_picHeader;                          ///< picture header
+#endif
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -149,6 +167,9 @@ private:
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
+#if JVET_N0278_FIXES
+  int                       m_picIdInGOP;
+#endif
 
 public:
   SPS*                      getSPS( int spsId ) { return m_spsMap.getPS( spsId ); };
@@ -164,6 +185,9 @@ protected:
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
+#if JVET_P1006_PICTURE_HEADER
+  void  xInitPicHeader    (PicHeader &picHeader, const SPS &sps, const PPS &pps); ///< initialize Picture Header from encoder options
+#endif
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
   void  xInitScalingLists ( SPS &sps, APS &aps );     ///< initialize scaling lists
   void  xInitPPSforLT(PPS& pps);
@@ -173,10 +197,18 @@ protected:
   void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:
+#if JVET_N0278_FIXES
+  EncLib( EncLibCommon* encLibCommon );
+#else
   EncLib();
+#endif
   virtual ~EncLib();
 
+#if JVET_N0278_FIXES
+  void      create          ( const int layerId );
+#else
   void      create          ();
+#endif
   void      destroy         ();
   void      init            ( bool isFieldCoding, AUWriterIf* auWriterIf );
   void      deletePicBuffer ();
@@ -257,6 +289,27 @@ public:
   // -------------------------------------------------------------------------------------------------------------------
 
   /// encode several number of pictures until end-of-sequence
+#if JVET_N0278_FIXES
+  bool encodePrep( bool bEos,
+               PelStorage* pcPicYuvOrg,
+               PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded );
+
+  bool encode( const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded );
+
+  bool encodePrep( bool bEos,
+               PelStorage* pcPicYuvOrg,
+               PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded, bool isTff );
+
+  bool encode( const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
+               std::list<PelUnitBuf*>& rcListPicYuvRecOut,
+               int& iNumEncoded, bool isTff );
+#else
   void encode( bool bEos,
                PelStorage* pcPicYuvOrg,
                PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
@@ -269,10 +322,14 @@ public:
                PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, // used for SNR calculations. Picture in original colour space.
                std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                int& iNumEncoded, bool isTff );
+#endif
 
 
   void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }
 
+#if JVET_N0278_FIXES
+  int getLayerId() const { return m_layerId; }
+#endif
 };
 
 //! \}

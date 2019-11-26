@@ -67,6 +67,9 @@ struct TrQuantParams
 /// QP struct
 class QpParam
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+public:
+#endif
   int Qps[2];
   int pers[2];
   int rems[2];
@@ -121,12 +124,23 @@ public:
 #endif
   void   setLambda               ( const double dLambda )                      { m_dLambda = dLambda; }
   double getLambda               () const                                      { return m_dLambda; }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  void   lambdaAdjustColorTrans(bool forward);
+  void   resetStore() { m_resetStore = true; }
+#endif
 
   int* getQuantCoeff             ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_quantCoef            [sizeX][sizeY][list][qp]; };  //!< get Quant Coefficent
   int* getDequantCoeff           ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_dequantCoef          [sizeX][sizeY][list][qp]; };  //!< get DeQuant Coefficent
 
   void setUseScalingList         ( bool bUseScalingList){ m_scalingListEnabledFlag = bUseScalingList; };
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks) 
+  { 
+    return (m_scalingListEnabledFlag && !isTransformSkip && (!lfnstApplied || !disableScalingMatrixForLFNSTBlks));
+  }
+#else
   bool getUseScalingList         ( const uint32_t width, const uint32_t height, const bool isTransformSkip) { return (m_scalingListEnabledFlag && !isTransformSkip); };
+#endif
   void setScalingListDec         ( const ScalingList &scalingList);
   void processScalingListEnc     ( int *coeff, int *quantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
   void processScalingListDec     ( const int *coeff, int *dequantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
@@ -178,11 +192,19 @@ private:
 #if RDOQ_CHROMA_LAMBDA
   double   m_lambdas[MAX_NUM_COMPONENT];
 #endif
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  double   m_lambdasStore[2][MAX_NUM_COMPONENT];  // 0-org; 1-act
+  bool     m_resetStore;
+#endif
   bool     m_scalingListEnabledFlag;
   bool     m_isScalingListOwner;
 
   int      *m_quantCoef            [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
   int      *m_dequantCoef          [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of dequantization matrix coefficient 4x4
+
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  int      m_pairCheck;
+#endif
 };// END CLASS DEFINITION Quant
 
 

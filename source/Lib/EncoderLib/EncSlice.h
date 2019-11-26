@@ -139,6 +139,9 @@ public:
 #endif
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
   void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
+#if JVET_P1006_PICTURE_HEADER
+  void    setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma );
+#endif
 
   // misc. functions
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively

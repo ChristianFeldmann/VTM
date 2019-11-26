@@ -197,7 +197,11 @@ struct Picture : public UnitArea
   uint32_t margin;
   Picture();
 
+#if JVET_N0278_FIXES
+  void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerId );
+#else
   void create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder);
+#endif
   void destroy();
 
   void createTempBuffers( const unsigned _maxCUSize );
@@ -243,7 +247,11 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
+#if JVET_P1006_PICTURE_HEADER
+  void finalInit( const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
+#else
   void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
+#endif
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -256,6 +264,9 @@ struct Picture : public UnitArea
   static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
 
   static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
+
+private:
+  Window        m_conformanceWindow;
 
 public:
   bool m_bIsBorderExtended;
@@ -272,6 +283,13 @@ public:
   int  poc;
   uint32_t layer;
   uint32_t depth;
+#if JVET_N0278_FIXES
+  int      layerId;
+#endif
+
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+  bool subLayerNonReferencePictureDueToSTSA;
+#endif
 
   int* m_spliceIdx;
   int  m_ctuNums;
@@ -296,18 +314,11 @@ public:
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
 
-  uint32_t           m_picWidthInLumaSamples;
-  uint32_t           m_picHeightInLumaSamples;
-  Window             m_conformanceWindow;
-
-  void               setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
-  uint32_t           getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
-  void               setPicHeightInLumaSamples( uint32_t u )                         { m_picHeightInLumaSamples = u; }
-  uint32_t           getPicHeightInLumaSamples() const                               { return  m_picHeightInLumaSamples; }
+  uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
+  uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
 
   Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
   const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
-  void               setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

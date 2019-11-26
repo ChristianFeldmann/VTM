@@ -372,7 +372,11 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   fPosStep = tempIdx / 4;
   fPosPosition = tempIdx - fPosStep * (4);
   int offset = refMvdCands[fPosStep];
+#if JVET_P1006_PICTURE_HEADER
+  if ( pu.cu->slice->getPicHeader()->getDisFracMMVD() )
+#else
   if ( pu.cu->slice->getDisFracMMVD() )
+#endif
   {
     offset <<= 2;
   }

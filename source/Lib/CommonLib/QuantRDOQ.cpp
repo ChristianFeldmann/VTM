@@ -667,7 +667,16 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 #endif
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
+#if JVET_P0365_SCALING_MATRIX_LFNST
+#if JVET_P1006_PICTURE_HEADER
+  const bool   disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
+  const bool   disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
+  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+#else
   const bool   enableScalingLists             = getUseScalingList(uiWidth, uiHeight, isTransformSkip);
+#endif
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem(isTransformSkip)];
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int iQBits = QUANT_SHIFT + cQP.per(isTransformSkip) + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits
@@ -676,7 +685,11 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   const TCoeff entropyCodingMinimum = -(1 << maxLog2TrDynamicRange);
   const TCoeff entropyCodingMaximum =  (1 << maxLog2TrDynamicRange) - 1;
 
+#if JVET_P1006_PICTURE_HEADER
+  CoeffCodingContext cctx(tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag());
+#else
   CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
+#endif
   const int    iCGSizeM1      = (1 << cctx.log2CGSize()) - 1;
 
   int     iCGLastScanPos      = -1;
@@ -1281,7 +1294,11 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   uint32_t coeffLevels[3];
   double   coeffLevelError[4];
 
+#if JVET_P1006_PICTURE_HEADER
+  CoeffCodingContext cctx( tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag() );
+#else
   CoeffCodingContext cctx( tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag() );
+#endif
   const int sbSizeM1    = ( 1 << cctx.log2CGSize() ) - 1;
   double    baseCost    = 0;
   uint32_t  goRiceParam = 0;
@@ -1543,7 +1560,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   uint32_t coeffLevels[3];
   double   coeffLevelError[4];
 
+#if JVET_P1006_PICTURE_HEADER
+  CoeffCodingContext cctx(tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag());
+#else
   CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
+#endif
   const int sbSizeM1 = (1 << cctx.log2CGSize()) - 1;
   double    baseCost = 0;
   uint32_t  goRiceParam = 0;

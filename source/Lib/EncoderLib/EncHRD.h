@@ -35,9 +35,9 @@
 #ifndef __ENCHRD__
 #define __ENCHRD__
 
-#include "Common.h"
-#include "HRD.h"
-#include "Slice.h"
+#include "CommonLib/Common.h"
+#include "CommonLib/HRD.h"
+#include "CommonLib/Slice.h"
 #include "EncCfg.h"
 
 class EncHRD:public HRD

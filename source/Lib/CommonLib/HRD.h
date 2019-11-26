@@ -91,14 +91,29 @@ private:
   bool     m_nalHrdParametersPresentFlag;
   bool     m_vclHrdParametersPresentFlag;
   uint32_t m_tickDivisorMinus2;
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  bool     m_generalDecodingUnitHrdParamsPresentFlag;
+#else
   bool     m_decodingUnitCpbParamsInPicTimingSeiFlag;
   bool     m_decodingUnitHrdParamsPresentFlag;
+#endif
   uint32_t m_bitRateScale;
   uint32_t m_cpbSizeScale;
   uint32_t m_cpbSizeDuScale;
   HrdSubLayerInfo m_HRD[MAX_TLAYER];
 
 public:
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  HRDParameters()
+    :m_nalHrdParametersPresentFlag       (false)
+    ,m_vclHrdParametersPresentFlag       (false)
+    ,m_tickDivisorMinus2                 (0)
+    ,m_generalDecodingUnitHrdParamsPresentFlag  (false)
+    ,m_bitRateScale                      (0)
+    ,m_cpbSizeScale                      (0)
+    ,m_cpbSizeDuScale                    (0)
+  {}
+#else
   HRDParameters()
     :m_nalHrdParametersPresentFlag       (false)
     ,m_vclHrdParametersPresentFlag       (false)
@@ -109,6 +124,7 @@ public:
     ,m_cpbSizeScale                      (0)
     ,m_cpbSizeDuScale                    (0)
   {}
+#endif
 
   virtual ~HRDParameters() {}
 
@@ -123,11 +139,16 @@ public:
   uint32_t  getTickDivisorMinus2( ) const                                              { return m_tickDivisorMinus2;                                }
 
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  void      setGeneralDecodingUnitHrdParamsPresentFlag( bool flag)                     { m_generalDecodingUnitHrdParamsPresentFlag = flag;                 }
+  bool      getGeneralDecodingUnitHrdParamsPresentFlag( ) const                        { return m_generalDecodingUnitHrdParamsPresentFlag;                 }
+#else
   void      setDecodingUnitHrdParamsPresentFlag( bool flag)                            { m_decodingUnitHrdParamsPresentFlag = flag;                 }
   bool      getDecodingUnitHrdParamsPresentFlag( ) const                               { return m_decodingUnitHrdParamsPresentFlag;                 }
 
   void      setDecodingUnitCpbParamsInPicTimingSeiFlag( uint32_t value )               { m_decodingUnitCpbParamsInPicTimingSeiFlag = value;                                    }
   uint32_t  getDecodingUnitCpbParamsInPicTimingSeiFlag( ) const                        { return m_decodingUnitCpbParamsInPicTimingSeiFlag;                                     }
+#endif
 
   void      setBitRateScale( uint32_t value )                                          { m_bitRateScale = value;                                    }
   uint32_t  getBitRateScale( ) const                                                   { return m_bitRateScale;                                     }

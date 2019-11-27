@@ -1320,7 +1320,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
   
   // 4:4:4 colour plane ID
-  if( sps->getSeparateColourPlaneFlag() )	
+  if( sps->getSeparateColourPlaneFlag() )
   {
     WRITE_CODE( picHeader->getColourPlaneId(), 2, "colour_plane_id" );
   }
@@ -1330,7 +1330,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
   
   // picture output flag
-  if( pps->getOutputFlagPresentFlag() )	
+  if( pps->getOutputFlagPresentFlag() )
   {
     WRITE_FLAG( picHeader->getPicOutputFlag(), "pic_output_flag" );
   }
@@ -1342,7 +1342,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // reference picture lists
   WRITE_FLAG( picHeader->getPicRplPresentFlag(), "pic_rpl_present_flag" ); 
   if( picHeader->getPicRplPresentFlag() )
-  {	
+  {
     // List0 and List1
     for(int listIdx = 0; listIdx < 2; listIdx++) 
     {                 

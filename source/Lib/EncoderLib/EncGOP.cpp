@@ -385,8 +385,12 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   {
 #if JVET_P0205_VPS_ID_0
     if (slice->getSPS()->getVPSId() != 0)
-#endif
+    {
+      actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+    }
+#else
     actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
+#endif
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
@@ -399,29 +403,6 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   if( m_pcEncLib->PPSNeedsWriting( slice->getPPS()->getPPSId() ) ) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
     actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
-  }
-#if JVET_P0205_VPS_ID_0
-  // No VPS in the bitstream if the SPS refers to VPS ID zero
-  if (bSeqFirst && slice->getSPS()->getVPSId() != 0)
-#else
-  if (bSeqFirst)
-#endif
-  {
-    actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
-  }
-  if (bSeqFirst)
-  {
-    actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
-  }
-
-  if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
-  {
-    CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
-    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
-  }
-  if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
-  {
-    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
   }
 #endif
 

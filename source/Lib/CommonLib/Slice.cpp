@@ -123,6 +123,9 @@ Slice::Slice()
 , m_numEntryPoints                ( 0 )
 #endif
 , m_cabacInitFlag                 ( false )
+#if JVET_P0126_SIGNALLING_SUBPICID
+ , m_sliceSubPicId               ( 0 )
+#endif
 #if !JVET_P1006_PICTURE_HEADER
 , m_jointCbCrSignFlag             ( false )
 , m_bLMvdL1Zero                   ( false )
@@ -2025,6 +2028,9 @@ SPS::SPS()
 // Structure
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
+#if JVET_P0126_SIGNALLING_SUBPICID
+, m_subPicPresentFlag         (0)
+#endif
 #if JVET_P1006_PICTURE_HEADER
 , m_numSubPics(1)
 , m_subPicIdPresentFlag(0)

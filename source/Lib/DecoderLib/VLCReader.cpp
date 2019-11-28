@@ -1374,6 +1374,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
 
+ #if JVET_P0126_SIGNALLING_SUBPICID
+  READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
+#endif
+
 #if JVET_P1006_PICTURE_HEADER
   pcSPS->setNumSubPics( 1 );  // TODO - need sub-picture syntax
   READ_FLAG(uiCode, "sps_subpic_id_present_flag");                           pcSPS->setSubPicIdPresentFlag( uiCode != 0 );
@@ -2747,6 +2751,30 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       iPOCmsb = iPrevPOCmsb;
     }
     pcSlice->setPOC(iPOCmsb + iPOClsb);
+  }
+#endif
+
+#if JVET_P0126_SIGNALLING_SUBPICID
+  if (sps->getSubPicPresentFlag())
+  {
+    uint32_t bitsSubPicId;
+    if (sps->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = sps->getSubPicIdLen();
+    }
+    else if (picHeader->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = picHeader->getSubPicIdLen();
+    }
+    else if (pps->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = pps->getSubPicIdLen();
+    }
+    else
+    {
+      bitsSubPicId = ceilLog2(sps->getNumSubPics());
+    }
+    READ_CODE(bitsSubPicId, uiCode, "slice_subpic_id");    pcSlice->setSliceSubPicId(uiCode);
   }
 #endif
 #if JVET_P1004_REMOVE_BRICKS

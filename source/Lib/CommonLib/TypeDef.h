@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
+
 #define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks
 
 #define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS

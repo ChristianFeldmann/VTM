@@ -423,6 +423,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
 #endif
+
 #if JVET_P1004_REMOVE_BRICKS
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
@@ -673,6 +674,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   pcPPS->setTransquantBypassEnabledFlag(uiCode ? true : false);
 
 #if !JVET_P1004_REMOVE_BRICKS
+=======
+>>>>>>> JVET-P0126 removed auto space corrections
   READ_FLAG( uiCode, "single_tile_in_pic_flag" );                 pcPPS->setSingleTileInPicFlag(uiCode == 1);
 
   if(!pcPPS->getSingleTileInPicFlag())
@@ -932,6 +935,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       pcPPS->setSliceId(sliceID);
     }
   }
+
 
 #endif
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");         pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
@@ -1374,7 +1378,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
 
- #if JVET_P0126_SIGNALLING_SUBPICID
+#if JVET_P0126_SIGNALLING_SUBPICID
   READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
 #endif
 
@@ -2834,7 +2838,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       while (pps->getNumTilesInPic() > (1 << bitsSliceAddress))  //TODO: use the correct one
       {
-        bitsSliceAddress++;
+         bitsSliceAddress++;
+      }
       }
     }
     else
@@ -3175,7 +3180,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
             {
               uiCode = 0;
             }
-            pcSlice->setNumRefIdx( REF_PIC_LIST_1, uiCode + 1 );
+            pcSlice->setNumRefIdx(REF_PIC_LIST_1, uiCode + 1);
           }
           else
           {
@@ -3706,6 +3711,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
 #endif
 
+
 #if JVET_P1004_REMOVE_BRICKS
   if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
 #else
@@ -3727,6 +3733,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   }
 
   std::vector<uint32_t> entryPointOffset;
+
 #if JVET_P1004_REMOVE_BRICKS
   pcSlice->setNumEntryPoints( pps );
   if( pcSlice->getNumEntryPoints() > 0 )

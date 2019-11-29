@@ -991,6 +991,10 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   READ_FLAG(code, "alf_chroma_new_filter");
   param.newFilterFlag[CHANNEL_TYPE_CHROMA] = code;
 
+#if JVET_P0438_ALF_APS_CONSTRAINT
+  CHECK(param.newFilterFlag[CHANNEL_TYPE_LUMA] == 0 && param.newFilterFlag[CHANNEL_TYPE_CHROMA] == 0,
+    "bitstream conformance error, alf_luma_filter_signal_flag and alf_chroma_filter_signal_flag shall not equal to zero at the same time");
+#endif
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
@@ -1136,6 +1140,20 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
   uint32_t  symbol;
   READ_FLAG( symbol, "general_nal_hrd_parameters_present_flag" );           hrd->setNalHrdParametersPresentFlag( symbol == 1 ? true : false );
   READ_FLAG( symbol, "general_vcl_hrd_parameters_present_flag" );           hrd->setVclHrdParametersPresentFlag( symbol == 1 ? true : false );
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  READ_FLAG( symbol, "general_decoding_unit_hrd_params_present_flag" );           hrd->setGeneralDecodingUnitHrdParamsPresentFlag( symbol == 1 ? true : false );
+
+  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+  {
+    READ_CODE( 8, symbol, "tick_divisor_minus2" );                        hrd->setTickDivisorMinus2( symbol );
+  }
+  READ_CODE( 4, symbol, "bit_rate_scale" );                       hrd->setBitRateScale( symbol );
+  READ_CODE( 4, symbol, "cpb_size_scale" );                       hrd->setCpbSizeScale( symbol );
+  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+  {
+    READ_CODE( 4, symbol, "cpb_size_du_scale" );                  hrd->setCpbSizeDuScale( symbol );
+  }
+#else
   if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
   {
     READ_FLAG( symbol, "decoding_unit_hrd_params_present_flag" );           hrd->setDecodingUnitHrdParamsPresentFlag( symbol == 1 ? true : false );
@@ -1152,6 +1170,7 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
       READ_CODE( 4, symbol, "cpb_size_du_scale" );                  hrd->setCpbSizeDuScale( symbol );
     }
   }
+#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {
@@ -1626,10 +1645,26 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  if (pcSPS->getBDOFEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_bdof_picture_level_present_flag");             pcSPS->setBdofControlPresentFlag(uiCode != 0);
+  }
+  if (pcSPS->getUseDMVR())
+  {
+    READ_FLAG(uiCode, "sps_dmvr_picture_level_present_flag");             pcSPS->setDmvrControlPresentFlag(uiCode != 0);
+  }
+  if (pcSPS->getUsePROF())
+  {
+    READ_FLAG(uiCode, "sps_prof_picture_level_present_flag");             pcSPS->setProfControlPresentFlag(uiCode != 0);
+  }
+#else
   if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
   }
+#endif
+
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
   READ_FLAG( uiCode,    "sps_mip_flag");                            pcSPS->setUseMIP                 ( uiCode != 0 );
@@ -1948,7 +1983,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
   
   // 4:4:4 colour plane ID
-  if( sps->getSeparateColourPlaneFlag() )	
+  if( sps->getSeparateColourPlaneFlag() )
   {
     READ_CODE( 2, uiCode, "colour_plane_id" ); picHeader->setColourPlaneId( uiCode );
     CHECK(uiCode > 2, "colour_plane_id exceeds valid range");
@@ -1959,7 +1994,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
 
   // picture output flag
-  if( pps->getOutputFlagPresentFlag() )	
+  if( pps->getOutputFlagPresentFlag() )
   {
     READ_FLAG( uiCode, "pic_output_flag" ); picHeader->setPicOutputFlag( uiCode != 0 );
   }
@@ -1971,7 +2006,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // reference picture lists
   READ_FLAG( uiCode, "pic_rpl_present_flag" ); picHeader->setPicRplPresentFlag( uiCode != 0 );
   if( picHeader->getPicRplPresentFlag() )
-  {	
+  {
     // List0 and List1
     for(int listIdx = 0; listIdx < 2; listIdx++) 
     {                 
@@ -2226,6 +2261,37 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setDisFracMMVD(false);
   }
   
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  // picture level BDOF disable flags
+  if (sps->getBdofControlPresentFlag())
+  {
+    READ_FLAG(uiCode, "pic_disable_bdof_flag");  picHeader->setDisBdofFlag(uiCode != 0);
+  }
+  else
+  {
+    picHeader->setDisBdofFlag(0);
+  }
+
+  // picture level DMVR disable flags
+  if (sps->getDmvrControlPresentFlag())
+  {
+    READ_FLAG(uiCode, "pic_disable_dmvr_flag");  picHeader->setDisDmvrFlag(uiCode != 0);
+  }
+  else
+  {
+    picHeader->setDisDmvrFlag(0);
+  }
+
+  // picture level PROF disable flags
+  if (sps->getProfControlPresentFlag())
+  {
+    READ_FLAG(uiCode, "pic_disable_prof_flag");  picHeader->setDisProfFlag(uiCode != 0);
+  }
+  else
+  {
+    picHeader->setDisProfFlag(0);
+  }
+#else
   // picture level BDOF/DMVR/PROF disable flags
   if (sps->getBdofDmvrSlicePresentFlag())
   {
@@ -2235,6 +2301,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setDisBdofDmvrFlag(0);
   }
+#endif
 
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
@@ -3301,6 +3368,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           READ_CODE(3, uiCode, "slice_alf_aps_id_luma");
           apsId[i] = uiCode;
+#if JVET_P0438_ALF_APS_CONSTRAINT
+          APS* APStoCheckLuma = parameterSetManager->getAPS(apsId[i], ALF_APS);
+          CHECK(APStoCheckLuma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] != 1, "bitstream conformance error, alf_luma_filter_signal_flag shall be equal to 1");
+#endif
         }
 
 
@@ -3317,6 +3388,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
           pcSlice->setTileGroupApsIdChroma(uiCode);
+#if JVET_P0438_ALF_APS_CONSTRAINT
+          APS* APStoCheckChroma = parameterSetManager->getAPS(uiCode, ALF_APS);
+          CHECK(APStoCheckChroma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] != 1, "bitstream conformance error, alf_chroma_filter_signal_flag shall be equal to 1");
+#endif
         }
       }
       else
@@ -3600,6 +3675,12 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
 
+#if JVET_P0217_PTL_SYNTAX_CLEANUP
+  parseConstraintInfo( ptl->getConstraintInfo() );
+
+  READ_CODE( 8, symbol, "general_level_idc" ); ptl->setLevelIdc( Level::Name( symbol ) );
+#endif
+
   READ_CODE(8, symbol, "num_sub_profiles");
   uint8_t numSubProfiles = symbol;
   ptl->setNumSubProfile( numSubProfiles );
@@ -3608,9 +3689,11 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
     READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
   }
 
+#if !JVET_P0217_PTL_SYNTAX_CLEANUP
   parseConstraintInfo( ptl->getConstraintInfo() );
 
   READ_CODE(8 , symbol,   "general_level_idc"                ); ptl->setLevelIdc    (Level::Name(symbol));
+#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {
@@ -3629,6 +3712,16 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
       READ_CODE(8 , symbol,   "sub_layer_level_idc"                ); ptl->setSubLayerLevelIdc    (i, Level::Name(symbol));
     }
   }
+#if JVET_P0217_PTL_SYNTAX_CLEANUP
+  ptl->setSubLayerLevelIdc(maxNumSubLayersMinus1, ptl->getLevelIdc());
+  for( int i = maxNumSubLayersMinus1 - 1; i >= 0; i-- )
+  {
+    if( !ptl->getSubLayerLevelPresentFlag( i ) )
+    {
+      ptl->setSubLayerLevelIdc( i, ptl->getSubLayerLevelIdc( i + 1 ) );
+    }
+  }
+#endif
 }
 
 

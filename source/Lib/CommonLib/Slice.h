@@ -956,7 +956,13 @@ private:
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
   bool              m_fpelMmvdEnabledFlag;
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  bool              m_BdofControlPresentFlag;
+  bool              m_DmvrControlPresentFlag;
+  bool              m_ProfControlPresentFlag;
+#else
   bool              m_BdofDmvrSlicePresentFlag;
+#endif
   uint32_t              m_uiBitsForPOC;
   uint32_t              m_numLongTermRefPicSPS;
   uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1210,8 +1216,19 @@ public:
   void                    setUseDMVR(bool b)                                                              { m_DMVR = b;    }
   bool                    getUseMMVD()const                                                               { return m_MMVD; }
   void                    setUseMMVD(bool b)                                                              { m_MMVD = b;    }
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  bool                    getBdofControlPresentFlag()const                                                { return m_BdofControlPresentFlag; }
+  void                    setBdofControlPresentFlag(bool b)                                               { m_BdofControlPresentFlag = b;    }
+
+  bool                    getDmvrControlPresentFlag()const                                                { return m_DmvrControlPresentFlag; }
+  void                    setDmvrControlPresentFlag(bool b)                                               { m_DmvrControlPresentFlag = b;    }
+
+  bool                    getProfControlPresentFlag()const                                                { return m_ProfControlPresentFlag; }
+  void                    setProfControlPresentFlag(bool b)                                               { m_ProfControlPresentFlag = b;    }
+#else
   bool                    getBdofDmvrSlicePresentFlag()const                                              { return m_BdofDmvrSlicePresentFlag; }
   void                    setBdofDmvrSlicePresentFlag(bool b)                                             { m_BdofDmvrSlicePresentFlag = b; }
+#endif
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
@@ -1865,7 +1882,13 @@ private:
   uint32_t                    m_maxNumMergeCand;                                        //!< max number of merge candidates
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
   bool                        m_disFracMMVD;                                            //!< fractional MMVD offsets disabled flag
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  bool                        m_disBdofFlag;                                            //!< picture level BDOF disable flag
+  bool                        m_disDmvrFlag;                                            //!< picture level DMVR disable flag
+  bool                        m_disProfFlag;                                            //!< picture level PROF disable flag
+#else
   bool                        m_disBdofDmvrFlag;                                        //!< picture level BDOF/DMVR disable flag
+#endif
   uint32_t                    m_maxNumTriangleCand;                                     //!< max number of triangle merge candidates
   uint32_t                    m_maxNumIBCMergeCand;                                     //!< max number of IBC merge candidates
   bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag  
@@ -1973,8 +1996,17 @@ public:
   uint32_t                    getMaxNumAffineMergeCand() const                          { return m_maxNumAffineMergeCand;                                                              }
   void                        setDisFracMMVD( bool val )                                { m_disFracMMVD = val;                                                                         }
   bool                        getDisFracMMVD() const                                    { return m_disFracMMVD;                                                                        }  
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  void                        setDisBdofFlag( bool val )                                { m_disBdofFlag = val;                                                                         }
+  bool                        getDisBdofFlag() const                                    { return m_disBdofFlag;                                                                        }
+  void                        setDisDmvrFlag( bool val )                                { m_disDmvrFlag = val;                                                                         }
+  bool                        getDisDmvrFlag() const                                    { return m_disDmvrFlag;                                                                        }
+  void                        setDisProfFlag( bool val )                                { m_disProfFlag = val;                                                                         }
+  bool                        getDisProfFlag() const                                    { return m_disProfFlag;                                                                        }
+#else
   void                        setDisBdofDmvrFlag(bool val)                              { m_disBdofDmvrFlag = val;                                                                     }
   bool                        getDisBdofDmvrFlag() const                                { return m_disBdofDmvrFlag;                                                                    }
+#endif
   void                        setMaxNumTriangleCand(uint32_t b)                         { m_maxNumTriangleCand = b;                                                                    }
   uint32_t                    getMaxNumTriangleCand() const                             { return m_maxNumTriangleCand;                                                                 }
   void                        setMaxNumIBCMergeCand( uint32_t b )                       { m_maxNumIBCMergeCand = b;                                                                    }

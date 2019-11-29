@@ -245,7 +245,8 @@ public:
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
-  static const CtxSet   MTSIndex;
+  static const CtxSet   TransformSkipFlag;
+  static const CtxSet   MTSIdx;
   static const CtxSet   TransquantBypassFlag;
   static const CtxSet   LFNSTIdx;
   static const CtxSet   PLTFlag;

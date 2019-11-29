@@ -2047,8 +2047,8 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
 
-  uint32_t       reusePLTSizetmp = 0;
-  uint32_t       pltSizetmp = 0;
+  uint8_t        reusePLTSizetmp = 0;
+  uint8_t        pltSizetmp = 0;
   Pel            curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
   bool           curPLTpred[MAXPLTPREDSIZE];
 

@@ -1494,7 +1494,13 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setUseTriangle           ( m_Triangle );
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  sps.setBdofControlPresentFlag(m_BIO);
+  sps.setDmvrControlPresentFlag(m_DMVR);
+  sps.setProfControlPresentFlag(m_PROF);
+#else
   sps.setBdofDmvrSlicePresentFlag(m_DMVR || m_BIO);
+#endif
   sps.setAffineAmvrEnabledFlag              ( m_AffineAmvr );
   sps.setUseDMVR                            ( m_DMVR );
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
@@ -2031,7 +2037,13 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setGdrPicFlag(false);
   
   // BDOF / DMVR / PROF
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  picHeader.setDisBdofFlag(false);
+  picHeader.setDisDmvrFlag(false);
+  picHeader.setDisProfFlag(false);
+#else
   picHeader.setDisBdofDmvrFlag(false);
+#endif
 }
 
 #endif

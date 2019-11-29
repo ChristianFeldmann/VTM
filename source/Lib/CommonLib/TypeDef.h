@@ -50,6 +50,14 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
+
+#define JVET_P0551_ALF_SLICE_BOUNDARY                     1 // JVET-P0053/P0157/P0551: Applying picturce boundary padding to slice boundaries
+
+#define JVET_P0314_PROF_BDOF_DMVR_HLS                     1 // JVET-P0314: BDOF/DMVR/PROF high level flags
+
+#define JVET_P0438_ALF_APS_CONSTRAINT                     1 // JVET-P0438: add bitstream constraint for ALF APS 
+
 #define JVET_P0205_VPS_ID_0                               1 // JVET-P0205: VPS ID zero in SPS means no VPS in bitstream
 
 #define JVET_P1006_PICTURE_HEADER                         1 // JVET-P1006: Add picture header and related syntax changes
@@ -90,6 +98,8 @@
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
+
+#define JVET_P0217_PTL_SYNTAX_CLEANUP                     1 // JVET-P0217: On Profile, tier, and level syntax structure
 
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
@@ -215,7 +225,11 @@
 
 #define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
+#if JVET_P0551_ALF_SLICE_BOUNDARY
+#define JVET_O0625_ALF_PADDING                            0 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+#else
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+#endif
 
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
 #define MRG_SHARELIST_SHARSIZE                            32

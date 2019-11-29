@@ -795,17 +795,23 @@ void BestEncInfoCache::init( const Slice &slice )
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
   m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
-  m_runType   = new bool[numCoeff*MAX_NUM_TUS];
+  if (slice.getSPS()->getPLTMode())
+  {
+    m_runType   = new bool[numCoeff*MAX_NUM_TUS];
 #if !JVET_P0077_LINE_CG_PALETTE
-  m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
+    m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
 #endif
+  }
 #else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
-  m_runType   = new bool[numCoeff];
+  if (slice.getSPS()->getPLTMode())
+  {
+    m_runType   = new bool[numCoeff];
 #if !JVET_P0077_LINE_CG_PALETTE
-  m_runLength = new Pel [numCoeff];
+    m_runLength = new Pel [numCoeff];
 #endif
+  }
 #endif
 
   TCoeff *coeffPtr = m_pCoeff;
@@ -828,9 +834,9 @@ void BestEncInfoCache::init( const Slice &slice )
           {
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
-            bool   *runType[MAX_NUM_TBLOCKS]   = { 0, };
+            bool   *runType[MAX_NUM_TBLOCKS - 1] = { 0, };
 #if !JVET_P0077_LINE_CG_PALETTE
-            Pel    *runLength[MAX_NUM_TBLOCKS] = { 0, };
+            Pel    *runLength[MAX_NUM_TBLOCKS - 1] = { 0, };
 #endif
 
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
@@ -843,10 +849,13 @@ void BestEncInfoCache::init( const Slice &slice )
               {
                 coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
                 pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
-                runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
+                if (i < 2)
+                {
+                  runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
 #if !JVET_P0077_LINE_CG_PALETTE
-                runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
+                  runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
 #endif
+                }
               }
 
               tu.cs = &m_dummyCS;

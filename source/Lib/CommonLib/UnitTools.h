@@ -69,7 +69,7 @@ namespace CU
   bool isSameSliceAndTile             (const CodingUnit &cu, const CodingUnit &cu2);
   bool isLastSubCUOfCtu               (const CodingUnit &cu);
   uint32_t getCtuAddr                     (const CodingUnit &cu);
-#if JVET_O0625_ALF_PADDING
+#if JVET_O0625_ALF_PADDING || JVET_P0551_ALF_SLICE_BOUNDARY
   bool isSameBrick                    ( const CodingUnit& cu, const CodingUnit& cu2 );
 #endif
   int  predictQP                      (const CodingUnit& cu, const int prevQP );

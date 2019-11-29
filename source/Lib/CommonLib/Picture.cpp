@@ -985,7 +985,7 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   {
     cs = new CodingStructure( g_globalUnitCache.cuCache, g_globalUnitCache.puCache, g_globalUnitCache.tuCache );
     cs->sps = &sps;
-    cs->create( chromaFormatIDC, Area( 0, 0, iWidth, iHeight ), true );
+    cs->create(chromaFormatIDC, Area(0, 0, iWidth, iHeight), true, (bool)sps.getPLTMode());
   }
 
   cs->picture = this;

@@ -285,10 +285,56 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
 }
 #endif
 #else
+#if JVET_P0551_ALF_SLICE_BOUNDARY
+bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[] )
+#else
 bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
+#endif
 {
   clipTop = false; clipBottom = false; clipLeft = false; clipRight = false;
   numHorVirBndry = 0; numVerVirBndry = 0;
+#if JVET_P0551_ALF_SLICE_BOUNDARY
+  const PPS*   pps = cs.pps;
+#if JVET_P1006_PICTURE_HEADER
+  const PicHeader* picHeader = cs.picHeader;
+#endif
+#endif
+
+#if JVET_P1006_PICTURE_HEADER
+  if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+  {
+    for( int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++ )
+    {
+      if( picHeader->getVirtualBoundariesPosY(i) == yPos )
+      {
+        clipTop = true;
+      }
+      else if( picHeader->getVirtualBoundariesPosY(i) == yPos + height )
+      {
+        clipBottom = true;
+      }
+      else if( yPos < picHeader->getVirtualBoundariesPosY(i) && picHeader->getVirtualBoundariesPosY(i) < yPos + height )
+      {
+        horVirBndryPos[numHorVirBndry++] = picHeader->getVirtualBoundariesPosY(i);
+      }
+    }
+    for( int i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
+    {
+      if( picHeader->getVirtualBoundariesPosX(i) == xPos )
+      {
+        clipLeft = true;
+      }
+      else if( picHeader->getVirtualBoundariesPosX(i) == xPos + width )
+      {
+        clipRight = true;
+      }
+      else if( xPos < picHeader->getVirtualBoundariesPosX(i) && picHeader->getVirtualBoundariesPosX(i) < xPos + width )
+      {
+        verVirBndryPos[numVerVirBndry++] = picHeader->getVirtualBoundariesPosX(i);
+      }
+    }
+  }
+#else
   if( pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     for( int i = 0; i < pps->getNumHorVirtualBoundaries(); i++ )
@@ -322,6 +368,73 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
       }
     }
   }
+#endif
+
+#if JVET_P0551_ALF_SLICE_BOUNDARY
+  const Slice& slice = *(cs.slice);
+  int   ctuSize = slice.getSPS()->getCTUSize();
+  const Position currCtuPos(xPos, yPos);
+  const CodingUnit *currCtu = cs.getCU(currCtuPos, CHANNEL_TYPE_LUMA);
+  //top
+  if (yPos >= ctuSize && clipTop == false)
+  {
+    const Position prevCtuPos(xPos, yPos - ctuSize);
+    const CodingUnit *prevCtu = cs.getCU(prevCtuPos, CHANNEL_TYPE_LUMA);
+#if JVET_P1006_PICTURE_HEADER
+    if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu))
+#else
+    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
+#endif
+    {
+      clipTop = true;
+    }
+  }
+
+  //bottom
+  if (yPos + ctuSize < cs.pcv->lumaHeight && clipBottom == false)
+  {
+    const Position nextCtuPos(xPos, yPos + ctuSize);
+    const CodingUnit *nextCtu = cs.getCU(nextCtuPos, CHANNEL_TYPE_LUMA);
+#if JVET_P1006_PICTURE_HEADER
+    if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu))
+#else
+    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
+#endif
+    {
+      clipBottom = true;
+    }
+  }
+
+  //left
+  if (xPos >= ctuSize && clipLeft == false)
+  {
+    const Position prevCtuPos(xPos - ctuSize, yPos);
+    const CodingUnit *prevCtu = cs.getCU(prevCtuPos, CHANNEL_TYPE_LUMA);
+#if JVET_P1006_PICTURE_HEADER
+    if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu))
+#else
+    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
+#endif
+    {
+      clipLeft = true;
+    }
+  }
+
+  //right
+  if (xPos + ctuSize < cs.pcv->lumaWidth && clipRight == false)
+  {
+    const Position nextCtuPos(xPos + ctuSize, yPos);
+    const CodingUnit *nextCtu = cs.getCU(nextCtuPos, CHANNEL_TYPE_LUMA);
+#if JVET_P1006_PICTURE_HEADER
+    if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu))
+#else
+    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
+#endif
+    {
+      clipRight = true;
+    }
+  }
+#endif
   return numHorVirBndry > 0 || numVerVirBndry > 0 || clipTop || clipBottom || clipLeft || clipRight;
 }
 #endif
@@ -468,6 +581,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
+#elif JVET_P0551_ALF_SLICE_BOUNDARY
+      if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos ) )
 #else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif

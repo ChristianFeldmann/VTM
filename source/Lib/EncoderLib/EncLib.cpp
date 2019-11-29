@@ -919,8 +919,8 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
     }
     xGetNewPicBuffer( rcListPicYuvRecOut, pcPicCurr, ppsID );
 
-    const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
-    const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
+    const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
+    const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
 
     if( m_rprEnabled )
     {
@@ -934,7 +934,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 
       const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
 
-      const PPS *refPPS = m_ppsMap.getPS(0);
+      const PPS *refPPS = m_ppsMap.getPS( 0 );
 #if JVET_P0590_SCALING_WINDOW
       const Window& curScalingWindow = pPPS->getScalingWindow();
       int curPicWidth = pPPS->getPicWidthInLumaSamples() - curScalingWindow.getWindowLeftOffset() - curScalingWindow.getWindowRightOffset();
@@ -990,9 +990,8 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTru
 #else
     pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
-    PPS *ptrPPS = (ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
-    ptrPPS->setNumBricksInPic((int)pcPicCurr->brickMap->bricks.size());
-
+    PPS *ptrPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
+    ptrPPS->setNumBricksInPic( (int)pcPicCurr->brickMap->bricks.size() );
 
     pcPicCurr->poc = m_iPOCLast;
 
@@ -1634,6 +1633,29 @@ void EncLib::xInitSPS(SPS &sps)
   {
     sps.setRPL1CopyFromRPL0Flag( true );
   }
+
+#if JVET_P1006_PICTURE_HEADER
+
+  sps.setNumSubPics(1);  // TODO: modify for subpicture support
+  sps.setSubPicIdSignallingPresentFlag(false);
+  sps.setSubPicIdLen(16);
+  for(int picIdx=0; picIdx<MAX_NUM_SUB_PICS; picIdx++)
+  {
+    sps.setSubPicId(picIdx, picIdx);
+  }
+
+  sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+  sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
+  sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
+  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+  {
+    sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+  }
+  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
+  {
+    sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
+  }
+#endif
 
 #if JVET_P0590_SCALING_WINDOW
   sps.setRprEnabledFlag( m_rprEnabled );

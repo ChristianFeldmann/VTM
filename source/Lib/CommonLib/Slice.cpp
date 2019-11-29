@@ -1798,7 +1798,13 @@ PicHeader::PicHeader()
 , m_maxNumMergeCand                               ( MRG_MAX_NUM_CANDS )
 , m_maxNumAffineMergeCand                         ( AFFINE_MRG_MAX_NUM_CANDS )
 , m_disFracMMVD                                   ( 0 )
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+, m_disBdofFlag                                   ( 0 )
+, m_disDmvrFlag                                   ( 0 )
+, m_disProfFlag                                   ( 0 )
+#else
 , m_disBdofDmvrFlag                               ( 0 )
+#endif
 , m_maxNumTriangleCand                            ( 0 )
 , m_maxNumIBCMergeCand                            ( IBC_MRG_MAX_NUM_CANDS )
 , m_jointCbCrSignFlag                             ( 0 )
@@ -1884,7 +1890,13 @@ void PicHeader::initPicHeader()
   m_maxNumMergeCand                               = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand                         = AFFINE_MRG_MAX_NUM_CANDS;
   m_disFracMMVD                                   = 0;
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  m_disBdofFlag                                   = 0;
+  m_disDmvrFlag                                   = 0;
+  m_disProfFlag                                   = 0;
+#else
   m_disBdofDmvrFlag                               = 0;
+#endif
   m_maxNumTriangleCand                            = 0;
   m_maxNumIBCMergeCand                            = IBC_MRG_MAX_NUM_CANDS;
   m_jointCbCrSignFlag                             = 0;
@@ -2005,7 +2017,13 @@ SPS::SPS()
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+, m_BdofControlPresentFlag    ( false )
+, m_DmvrControlPresentFlag    ( false )
+, m_ProfControlPresentFlag    ( false )
+#else
 , m_BdofDmvrSlicePresentFlag  ( false )
+#endif
 , m_uiBitsForPOC              (  8)
 , m_numLongTermRefPicSPS      (  0)
 , m_log2MaxTbSize             (  6)

@@ -679,6 +679,19 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
 {
   WRITE_FLAG( hrd->getNalHrdParametersPresentFlag() ? 1 : 0 ,  "general_nal_hrd_parameters_present_flag" );
   WRITE_FLAG( hrd->getVclHrdParametersPresentFlag() ? 1 : 0 ,  "general_vcl_hrd_parameters_present_flag" );
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  WRITE_FLAG( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "general_decoding_unit_hrd_params_present_flag" );
+  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+  {
+    WRITE_CODE( hrd->getTickDivisorMinus2(), 8,            "tick_divisor_minus2" );
+  }
+  WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
+  WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
+  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+  {
+    WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
+  }
+#else
   if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
   {
     WRITE_FLAG( hrd->getDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
@@ -692,8 +705,9 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
     if( hrd->getDecodingUnitHrdParamsPresentFlag() )
     {
       WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
+    }
   }
-  }
+#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {
@@ -1008,10 +1022,25 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  if (pcSPS->getBDOFEnabledFlag())
+  {
+    WRITE_FLAG(pcSPS->getBdofControlPresentFlag() ? 1 : 0,                              "sps_bdof_picture_level_present_flag");
+  }
+  if (pcSPS->getUseDMVR())
+  {
+    WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                              "sps_dmvr_picture_level_present_flag");
+  }
+  if (pcSPS->getUsePROF())
+  {
+    WRITE_FLAG(pcSPS->getProfControlPresentFlag() ? 1 : 0,                              "sps_prof_picture_level_present_flag");
+  }
+#else
   if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
   }
+#endif
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
 
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
@@ -1291,7 +1320,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
   
   // 4:4:4 colour plane ID
-  if( sps->getSeparateColourPlaneFlag() )	
+  if( sps->getSeparateColourPlaneFlag() )
   {
     WRITE_CODE( picHeader->getColourPlaneId(), 2, "colour_plane_id" );
   }
@@ -1301,7 +1330,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
   
   // picture output flag
-  if( pps->getOutputFlagPresentFlag() )	
+  if( pps->getOutputFlagPresentFlag() )
   {
     WRITE_FLAG( picHeader->getPicOutputFlag(), "pic_output_flag" );
   }
@@ -1313,7 +1342,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // reference picture lists
   WRITE_FLAG( picHeader->getPicRplPresentFlag(), "pic_rpl_present_flag" ); 
   if( picHeader->getPicRplPresentFlag() )
-  {	
+  {
     // List0 and List1
     for(int listIdx = 0; listIdx < 2; listIdx++) 
     {                 
@@ -1505,6 +1534,37 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setDisFracMMVD(false);
   }
   
+#if JVET_P0314_PROF_BDOF_DMVR_HLS
+  // picture level BDOF disable flags
+  if (sps->getBdofControlPresentFlag())
+  {
+    WRITE_FLAG(picHeader->getDisBdofFlag(), "pic_disable_bdof_flag");
+  }
+  else
+  {
+    picHeader->setDisBdofFlag(0);
+  }
+
+  // picture level DMVR disable flags
+  if (sps->getDmvrControlPresentFlag())
+  {
+    WRITE_FLAG(picHeader->getDisDmvrFlag(), "pic_disable_dmvr_flag");
+  }
+  else
+  {
+    picHeader->setDisDmvrFlag(0);
+  }
+
+  // picture level PROF disable flags
+  if (sps->getProfControlPresentFlag())
+  {
+    WRITE_FLAG(picHeader->getDisProfFlag(), "pic_disable_prof_flag");
+  }
+  else
+  {
+    picHeader->setDisProfFlag(0);
+  }
+#else
   // picture level BDOF/DMVR/PROF disable flags
   if (sps->getBdofDmvrSlicePresentFlag())
   {
@@ -1514,7 +1574,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setDisBdofDmvrFlag(0);
   }
- 
+#endif
+
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
   {
@@ -2347,15 +2408,23 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
 
+#if JVET_P0217_PTL_SYNTAX_CLEANUP
+  codeConstraintInfo( ptl->getConstraintInfo() );
+
+  WRITE_CODE( int( ptl->getLevelIdc() ), 8, "general_level_idc" );
+#endif
+
   WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
   for (int i = 0; i < ptl->getNumSubProfile(); i++)
   {
     WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
   }
 
+#if !JVET_P0217_PTL_SYNTAX_CLEANUP
   codeConstraintInfo(ptl->getConstraintInfo());
 
   WRITE_CODE( int(ptl->getLevelIdc()), 8 ,     "general_level_idc"                     );
+#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {

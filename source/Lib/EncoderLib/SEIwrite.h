@@ -56,10 +56,19 @@ protected:
   void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
   void xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei);
 #endif
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId);
+#else
   void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps, HRD &hrd);
+#endif
   void xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei);
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei);
+  void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId);
+#else
   void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps);
   void xWriteSEIPictureTiming(const SEIPictureTiming& sei,const SPS *sps, const SEIBufferingPeriod& bp, const uint32_t temporalId);
+#endif
   void xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei);
   void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
 #if HEVC_SEI

@@ -1525,6 +1525,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   pTrQuant    ->setLambda ( pcSlice->getLambdas()[0] );
 #endif
   pRdCost     ->setLambda ( pcSlice->getLambdas()[0], pcSlice->getSPS()->getBitDepths() );
+#if WCG_EXT && ER_CHROMA_QP_WCG_PPS && ENABLE_QPA
+  if (!pCfg->getWCGChromaQPControl().isEnabled() && pCfg->getUsePerceptQPA() && !pCfg->getUseRateCtrl())
+  {
+    pRdCost->saveUnadjustedLambda();
+  }
+#endif
 
   int prevQP[2];
   int currQP[2];

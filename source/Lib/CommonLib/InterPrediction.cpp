@@ -317,7 +317,7 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
 
   pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
 #if JVET_P0590_SCALING_WINDOW
-  bool scaled = pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, pu.refIdx[0] ) != SCALE_1X || pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, pu.refIdx[1] ) != SCALE_1X;
+  bool scaled = ( pu.refIdx[0] < 0 ? false : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, pu.refIdx[0] ) != SCALE_1X ) || ( pu.refIdx[1] < 0 ? false : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, pu.refIdx[1] ) != SCALE_1X );
 #else
   bool scaled = !PU::isRefPicSameSize( pu );
 #endif
@@ -560,7 +560,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
   dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
 
 #if JVET_P0590_SCALING_WINDOW
-  bool samePicSize = pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X && pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X;
+  bool samePicSize = ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X );
 #else
   bool samePicSize = PU::isRefPicSameSize( pu );
 #endif
@@ -1895,8 +1895,8 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       }
     }
 
+    bioApplied = ( ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X ) ) ? bioApplied : false;
 #if JVET_P0590_SCALING_WINDOW
-    bioApplied = ( pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X && pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X ) ? bioApplied : false;
 #else
     bioApplied = PU::isRefPicSameSize( pu ) ? bioApplied : false;
 #endif

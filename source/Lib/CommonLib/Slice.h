@@ -2609,7 +2609,7 @@ public:
 #endif
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();
-  const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { return m_scalingRatio[refPicList][refIdx]; }
+  const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { CHECK( refIdx < 0, "Invalid reference index" ); return m_scalingRatio[refPicList][refIdx]; }
 #if !JVET_P1006_PICTURE_HEADER
   void                        setRecoveryPocCnt(int value) { m_recoveryPocCnt = value; }
   int                         getRecoveryPocCnt() const { return m_recoveryPocCnt; }

@@ -939,19 +939,23 @@ bool EncApp::encode()
     m_metricTime = m_cEncLib.getMetricTime();
 #endif
 
-  // write bistream to file if necessary
-  if( m_numEncoded > 0 )
+  // output when the entire GOP was proccessed
+  if( !keepDoing )
   {
-    xWriteOutput( m_numEncoded, m_recBufList );
-  }
-  // temporally skip frames
-  if( m_temporalSubsampleRatio > 1 )
-  {
+    // write bistream to file if necessary
+    if( m_numEncoded > 0 )
+    {
+      xWriteOutput( m_numEncoded, m_recBufList );
+    }
+    // temporally skip frames
+    if( m_temporalSubsampleRatio > 1 )
+    {
 #if EXTENSION_360_VIDEO
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
 #else
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
 #endif
+    }
   }
 
   return keepDoing;

@@ -3698,7 +3698,6 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
     m_gcAnalyzeWPSNR.printSummary(chFmt, printSequenceMSE, printHexPsnr, bitDepths, m_pcCfg->getSummaryOutFilename());
   }
 #endif
-#if !FIELD_CODING_FIX // to remove repeated and wrong calculation of bitrate and PSNR when field coding is used
   if(isField)
   {
     //-- interlaced summary
@@ -3706,7 +3705,11 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
     m_gcAnalyzeAll_in.setBits(m_gcAnalyzeAll.getBits());
     // prior to the above statement, the interlace analyser does not contain the correct total number of bits.
 
+#if FIELD_CODING_FIX
+    msg( INFO,"\n\nSUMMARY INTERLACED ---------------------------------------------\n" );
+#else
     msg( DETAILS,"\n\nSUMMARY INTERLACED ---------------------------------------------\n" );
+#endif    
 #if ENABLE_QPA
     m_gcAnalyzeAll_in.printOut( 'a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, printRprPSNR, bitDepths, useWPSNR );
 #else
@@ -3723,7 +3726,6 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
 #endif
     }
   }
-#endif
 
   msg( DETAILS,"\nRVM: %.3lf\n", xCalculateRVM() );
 }

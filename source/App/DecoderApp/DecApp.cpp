@@ -124,6 +124,7 @@ uint32_t DecApp::decode()
 
     // determine if next NAL unit will be the first one from a new picture
     bool bNewPicture = isNewPicture(&bitstreamFile, &bytestream);
+    bool bNewAccessUnit = bNewPicture && isNewAccessUnit( bNewPicture, &bitstreamFile, &bytestream );
     if(!bNewPicture) 
     { 
       AnnexBStats stats = AnnexBStats();
@@ -336,7 +337,7 @@ uint32_t DecApp::decode()
       }
     }
 #if JVET_P1006_PICTURE_HEADER
-    if(bNewPicture) 
+    if(bNewAccessUnit) 
     {
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
@@ -472,6 +473,99 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
 #else
   bitstreamFile->clear();
   bitstreamFile->seekg(location-streamoff(3));
+  bytestream->reset();
+#endif
+
+  // return TRUE if next NAL unit is the start of a new picture
+  return ret;
+}
+
+/**
+ - lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new access unit
+ */
+bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream )
+{
+  bool ret = false;
+  bool finished = false;
+  
+  // can only be the start of an AU if this is the start of a new picture
+  if( newPicture == false )
+  {
+    return false;
+  }
+
+  // save stream position for backup
+#if RExt__DECODER_DEBUG_STATISTICS
+  CodingStatistics::CodingStatisticsData* backupStats = new CodingStatistics::CodingStatisticsData(CodingStatistics::GetStatistics());
+  streampos location = bitstreamFile->tellg() - streampos(bytestream->GetNumBufferedBytes());
+#else
+  streampos location = bitstreamFile->tellg();
+#endif
+
+  // look ahead until access unit start location is determined
+  while (!finished && !!(*bitstreamFile))
+  {
+    AnnexBStats stats = AnnexBStats();
+    InputNALUnit nalu;
+    byteStreamNALUnit(*bytestream, nalu.getBitstream().getFifo(), stats);
+    if (nalu.getBitstream().getFifo().empty())
+    {
+      msg( ERROR, "Warning: Attempt to decode an empty NAL unit\n");
+    }
+    else
+    {
+      // get next NAL unit type
+      read(nalu);
+      switch( nalu.m_nalUnitType ) {
+        
+        // AUD always indicates the start of a new access unit
+        case NAL_UNIT_ACCESS_UNIT_DELIMITER:
+          ret = true;
+          finished = true;
+          break;
+
+        // slice types - check layer ID and POC
+        case NAL_UNIT_CODED_SLICE_TRAIL:
+        case NAL_UNIT_CODED_SLICE_STSA:
+        case NAL_UNIT_CODED_SLICE_RASL:
+        case NAL_UNIT_CODED_SLICE_RADL:
+        case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+        case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+        case NAL_UNIT_CODED_SLICE_CRA:
+        case NAL_UNIT_CODED_SLICE_GDR:
+          ret = m_cDecLib.isSliceNaluFirstInAU( newPicture, nalu );          
+          finished = true;
+          break;
+          
+        // NUT that are not the start of a new access unit
+        case NAL_UNIT_EOS:
+        case NAL_UNIT_EOB:
+#if JVET_P0588_SUFFIX_APS
+        case NAL_UNIT_SUFFIX_APS:
+#endif
+        case NAL_UNIT_SUFFIX_SEI:
+        case NAL_UNIT_FD:
+          ret = false;
+          finished = true;
+          break;
+        
+        // all other NUT - keep looking to find first VCL
+        default:
+          break;
+      }
+    }
+  }
+  
+  // restore previous stream location
+#if RExt__DECODER_DEBUG_BIT_STATISTICS
+  bitstreamFile->clear();
+  bitstreamFile->seekg(location);
+  bytestream->reset();
+  CodingStatistics::SetStatistics(*backupStats);
+  delete backupStats;
+#else
+  bitstreamFile->clear();
+  bitstreamFile->seekg(location);
   bytestream->reset();
 #endif
 

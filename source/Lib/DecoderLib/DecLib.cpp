@@ -395,6 +395,9 @@ DecLib::DecLib()
   , m_cacheModel()
 #endif
   , m_pcPic(NULL)
+#if JVET_P1006_PICTURE_HEADER
+  , m_prevLayerID(MAX_INT)
+#endif
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
   , m_bFirstSliceInPicture(true)
@@ -846,6 +849,54 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag)
   }
 
 }
+
+#if JVET_P1006_PICTURE_HEADER
+/**
+ - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
+ */
+bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
+{
+  // can only be the start of an AU if this is the start of a new picture
+  if( newPicture == false )
+  {
+    return false;
+  }
+
+  // should only be called for slice NALU types
+  if( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TRAIL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_STSA &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_RASL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_RADL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_W_RADL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_N_LP &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_CRA &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_GDR )
+  {
+    return false;
+  }
+  
+  // check for valid picture header
+  if(m_picHeader.isValid() == false)
+  {
+    return false;
+  }
+  
+  // check for layer ID less than or equal to previous picture's layer ID
+  if( nalu.m_nuhLayerId <= m_prevLayerID )
+  {
+    return true;
+  }
+
+  // get slice POC
+  m_apcSlicePilot->setPicHeader( &m_picHeader );
+  m_apcSlicePilot->initSlice(); 
+  m_HLSReader.setBitstream( &nalu.getBitstream() );
+  m_HLSReader.parseSliceHeaderToPoc( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
+
+  // check for different POC
+  return (m_apcSlicePilot->getPOC() != m_prevPOC);
+}
+#endif
 
 #if JVET_P1006_PICTURE_HEADER
 void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
@@ -1449,6 +1500,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     msg( WARNING, "Warning, the first slice of a picture might have been lost!\n");
   }
+#if JVET_P1006_PICTURE_HEADER
+  m_prevLayerID = nalu.m_nuhLayerId;
+#endif
 
   // leave when a new picture is found
   if(m_apcSlicePilot->getSliceCurStartCtuTsAddr() == 0 && !m_bFirstSliceInPicture)
@@ -1995,6 +2049,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
       m_associatedIRAPType = NAL_UNIT_INVALID;
       m_pocCRA = 0;
       m_pocRandomAccess = MAX_INT;
+#if JVET_P1006_PICTURE_HEADER
+      m_prevLayerID = MAX_INT;
+#endif
       m_prevPOC = MAX_INT;
       m_prevSliceSkipped = false;
       m_skippedPOC = 0;

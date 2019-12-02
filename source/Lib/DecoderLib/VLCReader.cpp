@@ -460,7 +460,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
-  READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
   if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
   {
     READ_UVLC(uiCode, "log2_max_transform_skip_block_size_minus2");

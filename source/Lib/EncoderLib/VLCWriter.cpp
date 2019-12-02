@@ -266,7 +266,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   }
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
-  WRITE_FLAG( pcPPS->getConstrainedIntraPred() ? 1 : 0,      "constrained_intra_pred_flag" );
   if (pcSPS->getTransformSkipEnabledFlag())
   {
     WRITE_UVLC(pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");

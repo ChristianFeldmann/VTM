@@ -2217,7 +2217,6 @@ PPS::PPS()
 , m_SPSId                            (0)
 , m_picInitQPMinus26                 (0)
 , m_useDQP                           (false)
-, m_bConstrainedIntraPred            (false)
 , m_bSliceChromaQpFlag               (false)
 #if !JVET_P1006_PICTURE_HEADER
 , m_cuQpDeltaSubdiv                  (0)

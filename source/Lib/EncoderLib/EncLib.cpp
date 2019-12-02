@@ -1596,7 +1596,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSubPicId(picIdx, sps.getSubPicId(picIdx));
   }
 #endif
-  pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if((getMaxDeltaQP() != 0 )|| getUseAdaptiveQP())

@@ -731,7 +731,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 #else
   const uint32_t maxNumMergeCand = slice.getMaxNumIBCMergeCand();
 #endif
-  const bool canFastExit = pu.cs->pps->getLog2ParallelMergeLevelMinus2() == 0;
+  const bool canFastExit = true;
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {
@@ -868,7 +868,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 #else
   const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
 #endif
-  const bool canFastExit     = pu.cs->pps->getLog2ParallelMergeLevelMinus2() == 0;
+  const bool canFastExit     = true;
 
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
@@ -1608,7 +1608,7 @@ bool PU::isDiffMER(const PredictionUnit &pu1, const PredictionUnit &pu2)
   const unsigned xP = pu2.lumaPos().x;
   const unsigned yP = pu2.lumaPos().y;
 
-  unsigned plevel = pu1.cs->pps->getLog2ParallelMergeLevelMinus2() + 2;
+  unsigned const plevel = 2;
 
   if ((xN >> plevel) != (xP >> plevel))
   {

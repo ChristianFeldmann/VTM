@@ -1798,7 +1798,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   pps.setDeblockingFilterControlPresentFlag(deblockingFilterControlPresentFlag);
 
-  pps.setLog2ParallelMergeLevelMinus2   (m_log2ParallelMergeLevelMinus2 );
   pps.setCabacInitPresentFlag(CABAC_INIT_PRESENT_FLAG);
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
 

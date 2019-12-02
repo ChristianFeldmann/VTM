@@ -858,11 +858,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 #endif
 
-
-
-  READ_UVLC( uiCode, "log2_parallel_merge_level_minus2");
-  pcPPS->setLog2ParallelMergeLevelMinus2 (uiCode);
-
 #if JVET_P1006_PICTURE_HEADER 
   READ_FLAG( uiCode, "picture_header_extension_present_flag");
   pcPPS->setPictureHeaderExtensionPresentFlag(uiCode);

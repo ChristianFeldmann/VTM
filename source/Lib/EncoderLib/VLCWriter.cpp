@@ -471,7 +471,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   }
 #endif
 
-  WRITE_UVLC( pcPPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
 #if JVET_P1006_PICTURE_HEADER 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
 #endif

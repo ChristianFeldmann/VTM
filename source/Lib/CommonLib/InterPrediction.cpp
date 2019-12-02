@@ -1895,8 +1895,8 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       }
     }
 
-    bioApplied = ( ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X ) ) ? bioApplied : false;
 #if JVET_P0590_SCALING_WINDOW
+    bioApplied = ( ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X ) ) ? bioApplied : false;
 #else
     bioApplied = PU::isRefPicSameSize( pu ) ? bioApplied : false;
 #endif

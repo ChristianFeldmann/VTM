@@ -1392,7 +1392,7 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && (pu.cu->GBiIdx == GBI_DEFAULT)
       && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag))
 #if JVET_P0590_SCALING_WINDOW
-      && pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X && pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X
+      && ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X )
 #else
       && PU::isRefPicSameSize( pu )
 #endif

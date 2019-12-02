@@ -3594,6 +3594,53 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   return;
 }
 
+#if JVET_P1006_PICTURE_HEADER
+void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
+{
+  uint32_t  uiCode;
+  PPS* pps = NULL;
+  SPS* sps = NULL;
+
+  CHECK(picHeader==0, "Invalid Picture Header");
+  CHECK(picHeader->isValid()==false, "Invalid Picture Header");
+  pps = parameterSetManager->getPPS( picHeader->getPPSId() );
+  //!KS: need to add error handling code here, if PPS is not available
+  CHECK(pps==0, "Invalid PPS");
+  sps = parameterSetManager->getSPS(pps->getSPSId());
+  //!KS: need to add error handling code here, if SPS is not available
+  CHECK(sps==0, "Invalid SPS");
+  
+  // picture order count
+  READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
+  if (pcSlice->getIdrPicFlag())
+  {
+    pcSlice->setPOC(uiCode);
+  }
+  else
+  {
+    int iPOClsb = uiCode;
+    int iPrevPOC = prevTid0POC;
+    int iMaxPOClsb = 1 << sps->getBitsForPOC();
+    int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
+    int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+    int iPOCmsb;
+    if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+    {
+      iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+    }
+    else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
+    {
+      iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+    }
+    else
+    {
+      iPOCmsb = iPrevPOCmsb;
+    }
+    pcSlice->setPOC(iPOCmsb + iPOClsb);
+  }
+}
+
+#endif
 void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 {
   uint32_t symbol;

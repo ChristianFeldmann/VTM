@@ -441,9 +441,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
   m_cEncLib.setWPBiPred                                          ( m_useWeightedBiPred   );
 
-  //====== Parallel Merge Estimation ========
-  m_cEncLib.setLog2ParallelMergeLevelMinus2                      ( m_log2ParallelMergeLevel - 2 );
-
   //====== Slice ========
   m_cEncLib.setSliceMode                                         ( m_sliceMode );
   m_cEncLib.setSliceArgument                                     ( m_sliceArgument );

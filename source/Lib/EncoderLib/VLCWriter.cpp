@@ -2208,12 +2208,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       CHECK(numberValidComponents < COMPONENT_Cr+1, "Too many valid components");
     }
 
-#if !JVET_P1006_PICTURE_HEADER
     if (pcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag())
     {
       WRITE_FLAG(pcSlice->getUseChromaQpAdj(), "cu_chroma_qp_offset_enabled_flag");
     }
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
     if( pcSlice->getSPS()->getSAOEnabledFlag() && !picHeader->getSaoEnabledPresentFlag() )

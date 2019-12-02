@@ -62,9 +62,7 @@ Slice::Slice()
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
-#if !JVET_P1006_PICTURE_HEADER
 , m_ChromaQpAdjEnabled            ( false )
-#endif
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
@@ -769,9 +767,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_eSliceType           = pSrc->m_eSliceType;
   m_iSliceQp             = pSrc->m_iSliceQp;
   m_iSliceQpBase         = pSrc->m_iSliceQpBase;
-#if !JVET_P1006_PICTURE_HEADER
   m_ChromaQpAdjEnabled              = pSrc->m_ChromaQpAdjEnabled;
-#endif
   m_deblockingFilterDisable         = pSrc->m_deblockingFilterDisable;
   m_deblockingFilterOverrideFlag    = pSrc->m_deblockingFilterOverrideFlag;
   m_deblockingFilterBetaOffsetDiv2  = pSrc->m_deblockingFilterBetaOffsetDiv2;

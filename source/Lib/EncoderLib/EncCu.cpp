@@ -689,11 +689,7 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 
   m_cuChromaQpOffsetIdxPlus1 = 0;
 
-#if JVET_P1006_PICTURE_HEADER
-  if( pps.getCuChromaQpOffsetEnabledFlag() )
-#else
   if( slice.getUseChromaQpAdj() )
-#endif
   {
     // TODO M0133 : double check encoder decisions with respect to chroma QG detection and actual encode
     int lgMinCuSize = sps.getLog2MinCodingBlockSize() +

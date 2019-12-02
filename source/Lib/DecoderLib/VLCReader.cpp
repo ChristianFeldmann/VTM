@@ -3303,7 +3303,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-#if !JVET_P1006_PICTURE_HEADER
     if (pps->getCuChromaQpOffsetEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
@@ -3312,7 +3311,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       pcSlice->setUseChromaQpAdj(false);
     }
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
     if( sps->getSAOEnabledFlag() && !picHeader->getSaoEnabledPresentFlag() )

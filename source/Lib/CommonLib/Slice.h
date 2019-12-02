@@ -2091,9 +2091,7 @@ private:
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
-#if !JVET_P1006_PICTURE_HEADER
   bool                       m_ChromaQpAdjEnabled;
-#endif
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
@@ -2302,9 +2300,7 @@ public:
   bool                        getUseWeightedPrediction() const                       { return( (m_eSliceType==P_SLICE && testWeightPred()) || (m_eSliceType==B_SLICE && testWeightBiPred()) ); }
   int                         getSliceQpDelta() const                                { return m_iSliceQpDelta;                                       }
   int                         getSliceChromaQpDelta(ComponentID compID) const        { return isLuma(compID) ? 0 : m_iSliceChromaQpDelta[compID];    }
-#if !JVET_P1006_PICTURE_HEADER
   bool                        getUseChromaQpAdj() const                              { return m_ChromaQpAdjEnabled;                                  }
-#endif
   bool                        getDeblockingFilterDisable() const                     { return m_deblockingFilterDisable;                             }
   bool                        getDeblockingFilterOverrideFlag() const                { return m_deblockingFilterOverrideFlag;                        }
   int                         getDeblockingFilterBetaOffsetDiv2()const               { return m_deblockingFilterBetaOffsetDiv2;                      }
@@ -2344,9 +2340,7 @@ public:
   void                        setSliceQp( int i )                                    { m_iSliceQp          = i;                                      }
   void                        setSliceQpDelta( int i )                               { m_iSliceQpDelta     = i;                                      }
   void                        setSliceChromaQpDelta( ComponentID compID, int i )     { m_iSliceChromaQpDelta[compID] = isLuma(compID) ? 0 : i;       }
-#if !JVET_P1006_PICTURE_HEADER
   void                        setUseChromaQpAdj( bool b )                            { m_ChromaQpAdjEnabled = b;                                     }
-#endif
   void                        setDeblockingFilterDisable( bool b )                   { m_deblockingFilterDisable= b;                                 }
   void                        setDeblockingFilterOverrideFlag( bool b )              { m_deblockingFilterOverrideFlag = b;                           }
   void                        setDeblockingFilterBetaOffsetDiv2( int i )             { m_deblockingFilterBetaOffsetDiv2 = i;                         }

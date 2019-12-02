@@ -154,7 +154,7 @@ namespace PU
   void fillAffineMvpCand              (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo);
   bool addMVPCandUnscaled             (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
   void xInheritedAffineMv             ( const PredictionUnit &pu, const PredictionUnit* puNeighbour, RefPicList eRefPicList, Mv rcMv[3] );
-  bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
+  bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
     , const bool isAvailableA1, const MotionInfo miLeft, const bool isAvailableB1, const MotionInfo miAbove
     , const bool ibcFlag
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST

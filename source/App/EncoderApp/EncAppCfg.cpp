@@ -1186,7 +1186,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t3: max number of tiles per slice")
   ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
 
-  ("ConstrainedIntraPred",                            m_bUseConstrainedIntraPred,                       false, "Constrained Intra Prediction")
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
@@ -3726,7 +3725,6 @@ void EncAppCfg::xPrintParameter()
   }
   msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
   msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
-  msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
 

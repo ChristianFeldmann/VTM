@@ -459,7 +459,6 @@ protected:
   int       m_signalledSliceIdLengthMinus1;
   std::vector<int> m_sliceId;
 
-  bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;

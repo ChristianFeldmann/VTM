@@ -474,7 +474,6 @@ protected:
   bool      m_ISP;
   bool      m_useFastISP;
 
-  bool      m_bUseConstrainedIntraPred;
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
@@ -1242,7 +1241,6 @@ public:
   void      setUseFastDecisionForMerge      ( bool  b )     { m_useFastDecisionForMerge = b; }
   void      setUseCbfFastMode               ( bool  b )     { m_bUseCbfFastMode = b; }
   void      setUseEarlySkipDetection        ( bool  b )     { m_useEarlySkipDetection = b; }
-  void      setUseConstrainedIntraPred      ( bool  b )     { m_bUseConstrainedIntraPred = b; }
   void      setFastUDIUseMPMEnabled         ( bool  b )     { m_bFastUDIUseMPMEnabled = b; }
   void      setFastMEForGenBLowDelayEnabled ( bool  b )     { m_bFastMEForGenBLowDelayEnabled = b; }
   void      setUseBLambdaForNonKeyLowDelayPictures ( bool b ) { m_bUseBLambdaForNonKeyLowDelayPictures = b; }
@@ -1265,7 +1263,6 @@ public:
   bool      getUseFastDecisionForMerge      () const{ return m_useFastDecisionForMerge; }
   bool      getUseCbfFastMode               () const{ return m_bUseCbfFastMode; }
   bool      getUseEarlySkipDetection        () const{ return m_useEarlySkipDetection; }
-  bool      getUseConstrainedIntraPred      ()      { return m_bUseConstrainedIntraPred; }
   bool      getFastUDIUseMPMEnabled         ()      { return m_bFastUDIUseMPMEnabled; }
   bool      getFastMEForGenBLowDelayEnabled ()      { return m_bFastMEForGenBLowDelayEnabled; }
   bool      getUseBLambdaForNonKeyLowDelayPictures () { return m_bUseBLambdaForNonKeyLowDelayPictures; }

@@ -1484,7 +1484,6 @@ private:
   int              m_deblockingFilterTcOffsetDiv2;      //< tc offset for deblocking filter
   bool             m_listsModificationPresentFlag;
   uint32_t             m_log2ParallelMergeLevelMinus2;
-  int              m_numExtraSliceHeaderBits;
 
 #if !JVET_P1006_PICTURE_HEADER
   bool             m_loopFilterAcrossVirtualBoundariesDisabledFlag;
@@ -1718,8 +1717,6 @@ public:
   void                   setListsModificationPresentFlag( bool b )                        { m_listsModificationPresentFlag = b;           }
   uint32_t                   getLog2ParallelMergeLevelMinus2() const                          { return m_log2ParallelMergeLevelMinus2;        }
   void                   setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel)                   { m_log2ParallelMergeLevelMinus2 = mrgLevel;    }
-  int                    getNumExtraSliceHeaderBits() const                               { return m_numExtraSliceHeaderBits;             }
-  void                   setNumExtraSliceHeaderBits(int i)                                { m_numExtraSliceHeaderBits = i;                }
   void                   setLoopFilterAcrossSlicesEnabledFlag( bool bValue )              { m_loopFilterAcrossSlicesEnabledFlag = bValue; }
   bool                   getLoopFilterAcrossSlicesEnabledFlag() const                     { return m_loopFilterAcrossSlicesEnabledFlag;   }
 #if JVET_P1006_PICTURE_HEADER

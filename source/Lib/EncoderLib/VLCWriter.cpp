@@ -243,7 +243,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     }
   }
 #endif
-  WRITE_CODE( pcPPS->getNumExtraSliceHeaderBits(), 3,        "num_extra_slice_header_bits");
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
@@ -1846,11 +1845,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
 #if !JVET_P1006_PICTURE_HEADER
     WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 1 : 0, "non_reference_picture_flag");
-
-    for( int i = 0; i < pcSlice->getPPS()->getNumExtraSliceHeaderBits(); i++ )
-    {
-      WRITE_FLAG( 0, "slice_reserved_flag[]" );
-    }
 #endif
 
     WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );

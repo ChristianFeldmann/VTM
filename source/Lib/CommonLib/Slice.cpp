@@ -2280,7 +2280,6 @@ PPS::PPS()
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_loopFilterAcrossSlicesEnabledFlag(false)
 , m_listsModificationPresentFlag     (0)
-, m_numExtraSliceHeaderBits          (0)
 #if !JVET_P1006_PICTURE_HEADER
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
 , m_numVerVirtualBoundaries          (0)

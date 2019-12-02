@@ -412,8 +412,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
 #endif
-  READ_CODE(3, uiCode, "num_extra_slice_header_bits");                pcPPS->setNumExtraSliceHeaderBits(uiCode);
-
 
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -2677,11 +2675,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
 #if !JVET_P1006_PICTURE_HEADER
     READ_FLAG(uiCode, "non_reference_picture_flag");  pcSlice->setNonRefPictFlag(uiCode);
-
-    for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
-    {
-      READ_FLAG(uiCode, "slice_reserved_flag[]"); // ignored
-    }
 #endif
 
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);

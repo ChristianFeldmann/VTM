@@ -1702,7 +1702,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSubPicId(picIdx, sps.getSubPicId(picIdx));
   }
 #endif
-  pps.setConstrainedIntraPred( m_bUseConstrainedIntraPred );
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if((getMaxDeltaQP() != 0 )|| getUseAdaptiveQP())
@@ -1904,7 +1903,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   pps.setDeblockingFilterControlPresentFlag(deblockingFilterControlPresentFlag);
 
-  pps.setLog2ParallelMergeLevelMinus2   (m_log2ParallelMergeLevelMinus2 );
   pps.setCabacInitPresentFlag(CABAC_INIT_PRESENT_FLAG);
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
 

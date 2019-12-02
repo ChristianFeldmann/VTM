@@ -423,7 +423,6 @@ void EncApp::xInitLibCfg()
   {
     m_cEncLib.setRdpcmEnabledFlag                                ( RDPCMSignallingMode(signallingModeIndex), m_rdpcmEnabledFlag[signallingModeIndex]);
   }
-  m_cEncLib.setUseConstrainedIntraPred                           ( m_bUseConstrainedIntraPred );
   m_cEncLib.setFastUDIUseMPMEnabled                              ( m_bFastUDIUseMPMEnabled );
   m_cEncLib.setFastMEForGenBLowDelayEnabled                      ( m_bFastMEForGenBLowDelayEnabled );
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
@@ -445,9 +444,6 @@ void EncApp::xInitLibCfg()
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
   m_cEncLib.setWPBiPred                                          ( m_useWeightedBiPred   );
-
-  //====== Parallel Merge Estimation ========
-  m_cEncLib.setLog2ParallelMergeLevelMinus2                      ( m_log2ParallelMergeLevel - 2 );
 
   //====== Slice ========
   m_cEncLib.setSliceMode                                         ( m_sliceMode );
@@ -944,19 +940,23 @@ bool EncApp::encode()
     m_metricTime = m_cEncLib.getMetricTime();
 #endif
 
-  // write bistream to file if necessary
-  if( m_numEncoded > 0 )
+  // output when the entire GOP was proccessed
+  if( !keepDoing )
   {
-    xWriteOutput( m_numEncoded, m_recBufList );
-  }
-  // temporally skip frames
-  if( m_temporalSubsampleRatio > 1 )
-  {
+    // write bistream to file if necessary
+    if( m_numEncoded > 0 )
+    {
+      xWriteOutput( m_numEncoded, m_recBufList );
+    }
+    // temporally skip frames
+    if( m_temporalSubsampleRatio > 1 )
+    {
 #if EXTENSION_360_VIDEO
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
 #else
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
 #endif
+    }
   }
 
   return keepDoing;

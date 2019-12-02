@@ -423,8 +423,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
 #endif
-  READ_CODE(3, uiCode, "num_extra_slice_header_bits");                pcPPS->setNumExtraSliceHeaderBits(uiCode);
-
 
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -473,7 +471,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
-  READ_FLAG( uiCode, "constrained_intra_pred_flag" );              pcPPS->setConstrainedIntraPred( uiCode ? true : false );
   if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
   {
     READ_UVLC(uiCode, "log2_max_transform_skip_block_size_minus2");
@@ -870,11 +867,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
   }
 #endif
-
-
-
-  READ_UVLC( uiCode, "log2_parallel_merge_level_minus2");
-  pcPPS->setLog2ParallelMergeLevelMinus2 (uiCode);
 
 #if JVET_P1006_PICTURE_HEADER 
   READ_FLAG( uiCode, "picture_header_extension_present_flag");
@@ -2698,11 +2690,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
 #if !JVET_P1006_PICTURE_HEADER
     READ_FLAG(uiCode, "non_reference_picture_flag");  pcSlice->setNonRefPictFlag(uiCode);
-
-    for (int i = 0; i < pps->getNumExtraSliceHeaderBits(); i++)
-    {
-      READ_FLAG(uiCode, "slice_reserved_flag[]"); // ignored
-    }
 #endif
 
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);
@@ -3324,7 +3311,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
 
-#if !JVET_P1006_PICTURE_HEADER
     if (pps->getCuChromaQpOffsetEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
@@ -3333,7 +3319,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       pcSlice->setUseChromaQpAdj(false);
     }
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
     if( sps->getSAOEnabledFlag() && !picHeader->getSaoEnabledPresentFlag() )
@@ -3617,6 +3602,53 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   return;
 }
 
+#if JVET_P1006_PICTURE_HEADER
+void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
+{
+  uint32_t  uiCode;
+  PPS* pps = NULL;
+  SPS* sps = NULL;
+
+  CHECK(picHeader==0, "Invalid Picture Header");
+  CHECK(picHeader->isValid()==false, "Invalid Picture Header");
+  pps = parameterSetManager->getPPS( picHeader->getPPSId() );
+  //!KS: need to add error handling code here, if PPS is not available
+  CHECK(pps==0, "Invalid PPS");
+  sps = parameterSetManager->getSPS(pps->getSPSId());
+  //!KS: need to add error handling code here, if SPS is not available
+  CHECK(sps==0, "Invalid SPS");
+  
+  // picture order count
+  READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
+  if (pcSlice->getIdrPicFlag())
+  {
+    pcSlice->setPOC(uiCode);
+  }
+  else
+  {
+    int iPOClsb = uiCode;
+    int iPrevPOC = prevTid0POC;
+    int iMaxPOClsb = 1 << sps->getBitsForPOC();
+    int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
+    int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+    int iPOCmsb;
+    if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+    {
+      iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+    }
+    else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
+    {
+      iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+    }
+    else
+    {
+      iPOCmsb = iPrevPOCmsb;
+    }
+    pcSlice->setPOC(iPOCmsb + iPOClsb);
+  }
+}
+
+#endif
 void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 {
   uint32_t symbol;

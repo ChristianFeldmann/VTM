@@ -161,6 +161,7 @@ public:
 #if JVET_P1006_PICTURE_HEADER
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
+  void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
 #else
   void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
 #endif

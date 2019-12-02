@@ -454,11 +454,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cuCtx.qgStart    = true;
     cuCtx.isDQPCoded = false;
   }
-#if JVET_P1006_PICTURE_HEADER
-  if( pps.getCuChromaQpOffsetEnabledFlag() && partitioner.currQgChromaEnable() )
-#else
   if( cs.slice->getUseChromaQpAdj() && partitioner.currQgChromaEnable() )
-#endif
   {
     cuCtx.isChromaQpAdjCoded  = false;
   }
@@ -471,11 +467,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       pCuCtxChroma->qgStart    = true;
       pCuCtxChroma->isDQPCoded = false;
     }
-#if JVET_P1006_PICTURE_HEADER
-    if (pps.getCuChromaQpOffsetEnabledFlag() && pPartitionerChroma->currQgChromaEnable())
-#else
     if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currQgChromaEnable())
-#endif
     {
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
@@ -1811,11 +1803,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       cuCtx.isDQPCoded = true;
     }
   }
-#if JVET_P1006_PICTURE_HEADER
-  if (cu.useEscape[compBegin] && cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && !cuCtx.isChromaQpAdjCoded)
-#else
   if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
-#endif
   {
     if (!cu.isSepTree() || isChroma(tu.chType))
     {
@@ -3187,11 +3175,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
     SizeType channelWidth = !cu.isSepTree() ? cu.lwidth() : cu.chromaSize().width;
     SizeType channelHeight = !cu.isSepTree() ? cu.lheight() : cu.chromaSize().height;
 
-#if JVET_P1006_PICTURE_HEADER
-    if (cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#else
     if (cu.cs->slice->getUseChromaQpAdj() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#endif
     {
       cu_chroma_qp_offset(cu);
       cuCtx.isChromaQpAdjCoded = true;

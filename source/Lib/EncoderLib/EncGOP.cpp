@@ -80,7 +80,6 @@ int getLSB(int poc, int maxLSB)
   }
 }
 
-
 EncGOP::EncGOP()
 {
   m_iLastIDR            = 0;
@@ -210,7 +209,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_HLSWriter            = pcEncLib->getHLSWriter();
   m_pcLoopFilter         = pcEncLib->getLoopFilter();
   m_pcSAO                = pcEncLib->getSAO();
-  m_pcALF = pcEncLib->getALF();
+  m_pcALF                = pcEncLib->getALF();
   m_pcRateCtrl           = pcEncLib->getRateCtrl();
   ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
   ::memset(m_totalCoded, 0, sizeof(m_totalCoded));
@@ -338,7 +337,7 @@ int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-  CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
+  CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
   m_HLSWriter->codeSPS( sps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -356,44 +355,72 @@ int EncGOP::xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, c
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
+#if JVET_P0588_SUFFIX_APS
+int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT )
+{
+  OutputNALUnit nalu( isPrefixNUT ? NAL_UNIT_PREFIX_APS : NAL_UNIT_SUFFIX_APS );
+#else
 int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId )
 {
   OutputNALUnit nalu(NAL_UNIT_APS);
+#endif
   m_HLSWriter->setBitstream(&nalu.m_Bitstream);
   nalu.m_nuhLayerId = layerId;
   nalu.m_temporalId = aps->getTemporalId();
+#if JVET_N0278_FIXES
+  aps->setLayerId( layerId );
+#endif
   CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
   m_HLSWriter->codeAPS(aps);
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
-int EncGOP::xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst)
+int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst )
 {
   int actualTotalBits = 0;
 
-  if (bSeqFirst)
+#if JVET_N0278_FIXES
+  if( bSeqFirst )
   {
-    actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
-  }
-  if (bSeqFirst)
-  {
-    actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+#if JVET_P0205_VPS_ID_0
+    if (slice->getSPS()->getVPSId() != 0)
+    {
+      actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+    }
+#else
+    actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
+#endif
+    actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
+
+    if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+    {
+      CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
+      actualTotalBits += xWriteSPS( accessUnit, slice->getSPS() );
+    }
   }
 
-  if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  if( m_pcEncLib->PPSNeedsWriting( slice->getPPS()->getPPSId() ) ) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
-    CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
-    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
+    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
   }
-  if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
-  {
-    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
-  }
+#endif
 
   return actualTotalBits;
 }
 
+#if JVET_P1006_PICTURE_HEADER
+int EncGOP::xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader )
+{
+  OutputNALUnit nalu(NAL_UNIT_PH);
+  m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+  nalu.m_temporalId = accessUnit.temporalId;
+  m_HLSWriter->codePictureHeader( picHeader );
+  accessUnit.push_back(new NALUnitEBSP(nalu));
+  return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
+}
+
+#endif
 void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
 {
   AUDWriter audWriter;
@@ -414,7 +441,11 @@ void EncGOP::xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUn
   {
     return;
   }
+#if JVET_N0278_FIXES
+  OutputNALUnit nalu( naluType, m_pcEncLib->getLayerId(), temporalId );
+#else
   OutputNALUnit nalu(naluType, temporalId);
+#endif
   m_seiWriter.writeSEImessages(nalu.m_Bitstream, seiMessages, sps, *m_HRD, false, temporalId);
   auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
   auPos++;
@@ -431,7 +462,11 @@ void EncGOP::xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages
   {
     SEIMessages tmpMessages;
     tmpMessages.push_back(*sei);
+#if JVET_N0278_FIXES
+    OutputNALUnit nalu( naluType, m_pcEncLib->getLayerId(), temporalId );
+#else
     OutputNALUnit nalu(naluType, temporalId);
+#endif
     m_seiWriter.writeSEImessages(nalu.m_Bitstream, tmpMessages, sps, *m_HRD, false, temporalId);
     auPos = accessUnit.insert(auPos, new NALUnitEBSP(nalu));
     auPos++;
@@ -536,7 +571,11 @@ void EncGOP::xWriteLeadingSEIMessages (SEIMessages& seiMessages, SEIMessages& du
   // update Timing and DU info SEI
   xUpdateDuData(testAU, duData);
   xUpdateTimingSEI(picTiming, duData, sps);
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  xUpdateDuInfoSEI(duInfoSeiMessages, picTiming, sps->getMaxTLayers());
+#else
   xUpdateDuInfoSEI(duInfoSeiMessages, picTiming);
+#endif
   // actual writing
   xWriteLeadingSEIOrdered(seiMessages, duInfoSeiMessages, accessUnit, temporalId, sps, false);
 
@@ -553,9 +592,12 @@ void EncGOP::xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &ac
 
 void EncGOP::xWriteDuSEIMessages (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData)
 {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && m_HRD->getBufferingPeriodSEI()->m_decodingUnitCpbParamsInPicTimingSeiFlag )
+#else
   const HRDParameters *hrd = sps->getHrdParameters();
-
   if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() )
+#endif
   {
     int naluIdx = 0;
     AccessUnit::iterator nalu = accessUnit.begin();
@@ -815,24 +857,39 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     SEIPictureTiming *pictureTimingSEI = new SEIPictureTiming();
 
     // DU parameters
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+#else
     if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+#endif
     {
       uint32_t numDU = (uint32_t) duData.size();
       pictureTimingSEI->m_numDecodingUnitsMinus1     = ( numDU - 1 );
       pictureTimingSEI->m_duCommonCpbRemovalDelayFlag = false;
       pictureTimingSEI->m_numNalusInDuMinus1.resize( numDU );
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      const uint32_t maxNumSubLayers = slice->getSPS()->getMaxTLayers();
+      pictureTimingSEI->m_duCpbRemovalDelayMinus1.resize( numDU * maxNumSubLayers );
+#else
       pictureTimingSEI->m_duCpbRemovalDelayMinus1.resize( numDU );
+#endif
     }
     const uint32_t cpbRemovalDelayLegth = m_HRD->getBufferingPeriodSEI()->m_cpbRemovalDelayLength;
     const uint32_t maxNumSubLayers = slice->getSPS()->getMaxTLayers();
+#if !JVET_P0202_P0203_FIX_HRD_RELATED_SEI
     pictureTimingSEI->m_ptMaxSubLayers = maxNumSubLayers;
+#endif
     pictureTimingSEI->m_auCpbRemovalDelay[maxNumSubLayers-1] = std::min<int>(std::max<int>(1, m_totalCoded[maxNumSubLayers-1] - m_lastBPSEI[maxNumSubLayers-1]), static_cast<int>(pow(2, static_cast<double>(cpbRemovalDelayLegth)))); // Syntax element signalled as minus, hence the .
     CHECK( (m_totalCoded[maxNumSubLayers-1] - m_lastBPSEI[maxNumSubLayers-1]) > pow(2, static_cast<double>(cpbRemovalDelayLegth)), " cpbRemovalDelayLegth too small for m_auCpbRemovalDelay[pt_max_sub_layers_minus1] at picture timing SEI " );
     const uint32_t temporalId = slice->getTLayer();
     for( int i = temporalId ; i < maxNumSubLayers - 1 ; i ++ )
     {
       int indexWithinGOP = (m_totalCoded[maxNumSubLayers - 1] - m_lastBPSEI[maxNumSubLayers - 1]) % m_pcCfg->getGOPSize();
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      pictureTimingSEI->m_ptSubLayerDelaysPresentFlag[i] = true;
+#else
       pictureTimingSEI->m_subLayerDelaysPresentFlag[i] = true;
+#endif
       if( ((m_rapWithLeading == true) && (indexWithinGOP == 0)) || (m_totalCoded[maxNumSubLayers - 1] == 0) || m_bufferingPeriodSEIPresentInAU)
       {
         pictureTimingSEI->m_cpbRemovalDelayDeltaEnabledFlag[i] = false;
@@ -1032,13 +1089,22 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
 #endif
     }
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+#else
     if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getDecodingUnitHrdParamsPresentFlag() )
+#endif
     {
       for( int i = 0; i < ( pictureTimingSEI->m_numDecodingUnitsMinus1 + 1 ); i ++ )
       {
         SEIDecodingUnitInfo *duInfoSEI = new SEIDecodingUnitInfo();
         duInfoSEI->m_decodingUnitIdx = i;
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+        for( int j = temporalId; j <= maxNumSubLayers; j++ )
+          duInfoSEI->m_duSptCpbRemovalDelayIncrement[j] = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i*maxNumSubLayers+j] + 1;
+#else
         duInfoSEI->m_duSptCpbRemovalDelay = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i] + 1;
+#endif
         duInfoSEI->m_dpbOutputDuDelayPresentFlag = false;
         duInfoSEI->m_picSptDpbOutputDuDelay = picSptDpbOutputDuDelay;
 
@@ -1097,7 +1163,11 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
     return;
   }
   const HRDParameters *hrd = sps->getHrdParameters();
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
+#else
   if( hrd->getDecodingUnitHrdParamsPresentFlag() )
+#endif
   {
     int i;
     uint64_t ui64Tmp;
@@ -1106,6 +1176,12 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
     std::vector<uint32_t> &rDuCpbRemovalDelayMinus1 = pictureTimingSEI->m_duCpbRemovalDelayMinus1;
     uint32_t maxDiff = ( hrd->getTickDivisorMinus2() + 2 ) - 1;
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    int maxNumSubLayers = sps->getMaxTLayers();
+    for( int j = 0; j < maxNumSubLayers - 1; j++ )
+      pictureTimingSEI->m_ptSubLayerDelaysPresentFlag[j] = false;
+#endif
+
     for( i = 0; i < numDU; i ++ )
     {
       pictureTimingSEI->m_numNalusInDuMinus1[ i ]       = ( i == 0 ) ? ( duData[i].accumNalsDU - 1 ) : ( duData[i].accumNalsDU- duData[i-1].accumNalsDU - 1 );
@@ -1113,11 +1189,19 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
 
     if( numDU == 1 )
     {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      rDuCpbRemovalDelayMinus1[ 0 + maxNumSubLayers - 1 ] = 0; /* don't care */
+#else
       rDuCpbRemovalDelayMinus1[ 0 ] = 0; /* don't care */
+#endif
     }
     else
     {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+      rDuCpbRemovalDelayMinus1[ (numDU - 1) * maxNumSubLayers + maxNumSubLayers - 1 ] = 0;/* by definition */
+#else
       rDuCpbRemovalDelayMinus1[ numDU - 1 ] = 0;/* by definition */
+#endif
       uint32_t tmp = 0;
       uint32_t accum = 0;
 
@@ -1146,6 +1230,18 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
           }
           else                            ui64Tmp = maxDiff - tmp + 1;
         }
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+        rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] = (uint32_t)ui64Tmp - uiPrev - 1;
+        if( (int)rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] < 0 )
+        {
+          rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] = 0;
+        }
+        else if (tmp > 0 && flag == 1)
+        {
+          tmp --;
+        }
+        accum += rDuCpbRemovalDelayMinus1[ i * maxNumSubLayers + maxNumSubLayers - 1 ] + 1;
+#else
         rDuCpbRemovalDelayMinus1[ i ] = (uint32_t)ui64Tmp - uiPrev - 1;
         if( (int)rDuCpbRemovalDelayMinus1[ i ] < 0 )
         {
@@ -1156,12 +1252,17 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
           tmp --;
         }
         accum += rDuCpbRemovalDelayMinus1[ i ] + 1;
+#endif
         uiPrev = accum;
       }
     }
   }
 }
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI, int maxSubLayers)
+#else
 void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI)
+#endif
 {
   if (duInfoSeiMessages.empty() || (pictureTimingSEI == NULL))
   {
@@ -1174,7 +1275,15 @@ void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *
   {
     SEIDecodingUnitInfo *duInfoSEI = (SEIDecodingUnitInfo*) (*du);
     duInfoSEI->m_decodingUnitIdx = i;
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+    for ( int j = 0; j < maxSubLayers; j++ )
+    {
+      duInfoSEI->m_duiSubLayerDelaysPresentFlag[j] = pictureTimingSEI->m_ptSubLayerDelaysPresentFlag[j];
+      duInfoSEI->m_duSptCpbRemovalDelayIncrement[j] = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i*maxSubLayers+j] + 1;
+    }
+#else
     duInfoSEI->m_duSptCpbRemovalDelay = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i] + 1;
+#endif
     duInfoSEI->m_dpbOutputDuDelayPresentFlag = false;
     i++;
   }
@@ -1511,8 +1620,12 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
             // patch IDR-slice to CRA-Intra-slice
             pcPic->slices[ i ]->setNalUnitType    ( slice0.getNalUnitType()    );
             pcPic->slices[ i ]->setLastIDR        ( slice0.getLastIDR()        );
+#if JVET_P1006_PICTURE_HEADER
+            if ( pcPic->cs->picHeader->getEnableTMVPFlag() )
+#else
             pcPic->slices[ i ]->setEnableTMVPFlag ( slice0.getEnableTMVPFlag() );
             if ( slice0.getEnableTMVPFlag() )
+#endif
             {
               pcPic->slices[ i ]->setColFromL0Flag( slice0.getColFromL0Flag()  );
               pcPic->slices[ i ]->setColRefIdx    ( slice0.getColRefIdx()      );
@@ -1741,7 +1854,11 @@ void EncGOP::xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, 
   m_pcSliceEncoder->resetQP( pic, sliceQP, lambda );
 }
 
+#if JVET_P1006_PICTURE_HEADER
+void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
+#else
 void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
+#endif
 {
   if (slice->getSPS()->getUseReshaper())
   {
@@ -1831,14 +1948,29 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
       }
     }
 
+#if JVET_P1006_PICTURE_HEADER
+    //set all necessary information in LMCS APS and picture header
+    picHeader->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
+    picHeader->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
+#else
     //set all necessary information in LMCS APS and slice
     slice->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
     slice->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
+#endif
     if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
     {
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setLmcsAPSId(apsId);
+      APS* lmcsAPS = picHeader->getLmcsAPS();
+#else
       slice->setLmcsAPSId(apsId);
       APS* lmcsAPS = slice->getLmcsAPS();
+#endif
       if (lmcsAPS == nullptr)
       {
         ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
@@ -1849,7 +1981,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
           lmcsAPS->setAPSId(apsId);
           lmcsAPS->setAPSType(LMCS_APS);
         }
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setLmcsAPS(lmcsAPS);
+#else
         slice->setLmcsAPS(lmcsAPS);
+#endif
       }
       //m_pcReshaper->copySliceReshaperInfo(lmcsAPS->getReshaperAPSInfo(), m_pcReshaper->getSliceReshaperInfo());
       SliceReshapeInfo& tInfo = lmcsAPS->getReshaperAPSInfo();
@@ -1865,10 +2001,22 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     }
 
 
+#if JVET_P1006_PICTURE_HEADER
+    if (picHeader->getLmcsEnabledFlag())
+#else
     if (slice->getLmcsEnabledFlag())
+#endif
     {
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setLmcsAPSId(apsId);
+#else
       slice->setLmcsAPSId(apsId);
+#endif
     }
   }
   else
@@ -1884,20 +2032,24 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                           std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                           bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                         , bool isEncodeLtRef
+#if JVET_N0278_FIXES
+                        , const int picIdInGOP
+#endif
 )
 {
   // TODO: Split this function up.
 
   Picture*        pcPic = NULL;
+#if JVET_P1006_PICTURE_HEADER
+  PicHeader*      picHeader = NULL;
+#endif
   Slice*      pcSlice;
   OutputBitstream  *pcBitstreamRedirect;
   pcBitstreamRedirect = new OutputBitstream;
   AccessUnit::iterator  itLocationToPushSliceHeaderNALU; // used to store location where NALU containing slice header is to be inserted
   Picture* scaledRefPic[MAX_NUM_REF] = {};
 
-  xInitGOP(iPOCLast, iNumPicRcvd, isField
-         , isEncodeLtRef
-  );
+  xInitGOP( iPOCLast, iNumPicRcvd, isField, isEncodeLtRef );
 
   m_iNumPicCoded = 0;
   SEIMessages leadingSeiMessages;
@@ -1912,6 +2064,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     effFieldIRAPMap.initialize(isField, m_iGopSize, iPOCLast, iNumPicRcvd, m_iLastIDR, this, m_pcCfg);
   }
 
+#if JVET_N0278_FIXES
+  for( int iGOPid = picIdInGOP; iGOPid <= picIdInGOP; iGOPid++ )
+  {
+    // reset flag indicating whether pictures have been encoded
+    m_pcCfg->setEncodedFlag( iGOPid, false );
+#else
   // reset flag indicating whether pictures have been encoded
   for ( int iGOPid=0; iGOPid < m_iGopSize; iGOPid++ )
   {
@@ -1920,6 +2078,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
   for ( int iGOPid=0; iGOPid < m_iGopSize; iGOPid++ )
   {
+#endif
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
     {
       iGOPid=effFieldIRAPMap.adjustGOPid(iGOPid);
@@ -1977,6 +2136,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     accessUnit.temporalId = m_pcCfg->getGOPEntry( iGOPid ).m_temporalId;
     xGetBuffer( rcListPic, rcListPicYuvRecOut,
                 iNumPicRcvd, iTimeOffset, pcPic, pocCurr, isField );
+#if JVET_P1006_PICTURE_HEADER
+    picHeader = pcPic->cs->picHeader;
+    picHeader->setSplitConsOverrideFlag(false);
+#endif
 
 #if ER_CHROMA_QP_WCG_PPS
     // th this is a hot fix for the choma qp control
@@ -2011,7 +2174,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, m_pcCfg->getNumWppThreads(), m_pcCfg->getNumWppExtraLines(), 1                             );
 #endif
     pcPic->createTempBuffers( pcPic->cs->pps->pcv->maxCUWidth );
-    pcPic->cs->createCoeffs();
+    pcPic->cs->createCoeffs((bool)pcPic->cs->sps->getPLTMode());
 
     //  Slice data initialization
     pcPic->clearSliceBuffer();
@@ -2032,8 +2195,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     pcSlice->setLastIDR(m_iLastIDR);
     pcSlice->setIndependentSliceIdx(0);
+#if !JVET_P1006_PICTURE_HEADER
     //set default slice level flag to the same as SPS level flag
     pcSlice->setLFCrossSliceBoundaryFlag(  pcSlice->getPPS()->getLoopFilterAcrossSlicesEnabledFlag()  );
+#endif
 
     if(pcSlice->getSliceType()==B_SLICE&&m_pcCfg->getGOPEntry(iGOPid).m_sliceType=='P')
     {
@@ -2238,6 +2403,22 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if( refLayer >= 0 && m_uiNumBlk[refLayer] != 0 )
         {
+#if JVET_P1006_PICTURE_HEADER
+          picHeader->setSplitConsOverrideFlag(true);
+          double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
+          if( dBlkSize < AMAXBT_TH32 || pcPic->cs->sps->getCTUSize()==32 )
+          {
+            picHeader->setMaxBTSize( 1, 32 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 32 );
+          }
+          else if( dBlkSize < AMAXBT_TH64 || pcPic->cs->sps->getCTUSize()==64 )
+          {
+            picHeader->setMaxBTSize( 1, 64 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 64 );
+          }
+          else
+          {
+            picHeader->setMaxBTSize( 1, 128 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 128 );
+          }
+#else
           pcSlice->setSplitConsOverrideFlag(true);
           double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
           if( dBlkSize < AMAXBT_TH32 )
@@ -2252,6 +2433,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             pcSlice->setMaxBTSize( 128 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 128 );
           }
+#endif
 
           m_uiBlkSize[refLayer] = 0;
           m_uiNumBlk [refLayer] = 0;
@@ -2330,12 +2512,20 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
       if (iGOPid == 0) // first picture in SOP (i.e. forward B)
       {
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setEnableTMVPFlag(0);
+#else
         pcSlice->setEnableTMVPFlag(0);
+#endif
       }
       else
       {
         // Note: pcSlice->getColFromL0Flag() is assumed to be always 0 and getcolRefIdx() is always 0.
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setEnableTMVPFlag(1);
+#else
         pcSlice->setEnableTMVPFlag(1);
+#endif
       }
     }
 #if JVET_P0206_TMVP_flags
@@ -2344,20 +2534,36 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     else if (m_pcEncLib->getTMVPModeId() == 1 && m_pcEncLib->getPPSTemporalMVPEnabledIdc() != 1)
 #endif
     {
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setEnableTMVPFlag(1);
+#else
       pcSlice->setEnableTMVPFlag(1);
+#endif
     }
     else
     {
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setEnableTMVPFlag(0);
+#else
       pcSlice->setEnableTMVPFlag(0);
+#endif
     }
 
     // disable TMVP when current picture is the only ref picture
     if (pcSlice->isIRAP() && pcSlice->getSPS()->getIBCFlag())
     {
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setEnableTMVPFlag(0);
+#else
       pcSlice->setEnableTMVPFlag(0);
+#endif
     }
 
+#if JVET_P1006_PICTURE_HEADER
+    if( pcSlice->getSliceType() != I_SLICE && picHeader->getEnableTMVPFlag() )
+#else
     if( pcSlice->getSliceType() != I_SLICE && pcSlice->getEnableTMVPFlag() )
+#endif
     {
       int colRefIdxL0 = -1, colRefIdxL1 = -1;
 
@@ -2422,11 +2628,19 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       }
       else
       {
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setEnableTMVPFlag( 0 );
+#else
         pcSlice->setEnableTMVPFlag( 0 );
+#endif
       }
     }
 
+#if JVET_P1006_PICTURE_HEADER
+    pcSlice->scaleRefPicList( scaledRefPic, pcPic->cs->picHeader, m_pcEncLib->getApss(), picHeader->getLmcsAPS(), picHeader->getScalingListAPS(), false );
+#else
     pcSlice->scaleRefPicList( scaledRefPic, m_pcEncLib->getApss(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), false );
+#endif
 
     // set adaptive search range for non-intra-slices
     if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
@@ -2453,15 +2667,27 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     if(bGPBcheck)
     {
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setMvdL1ZeroFlag(true);
+#else
       pcSlice->setMvdL1ZeroFlag(true);
+#endif
     }
     else
     {
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setMvdL1ZeroFlag(false);
+#else
       pcSlice->setMvdL1ZeroFlag(false);
+#endif
     }
 
     if ( pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
+#if JVET_P1006_PICTURE_HEADER
+      && picHeader->getMvdL1ZeroFlag() == false
+#else
       && pcSlice->getMvdL1ZeroFlag() == false
+#endif
       )
     {
       int currPOC = pcSlice->getPOC();
@@ -2565,7 +2791,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->m_uEnerHpCtu.resize (numberOfCtusInFrame);
     pcPic->m_iOffsetCtu.resize (numberOfCtusInFrame);
 #if ENABLE_QPA_SUB_CTU
+#if JVET_P1006_PICTURE_HEADER
+    if (pcSlice->getPPS()->getUseDQP() && pcSlice->getCuQpDeltaSubdiv() > 0)
+#else
     if (pcSlice->getPPS()->getUseDQP() && pcSlice->getPPS()->getCuQpDeltaSubdiv() > 0)
+#endif
     {
       const PreCalcValues &pcv = *pcPic->cs->pcv;
       const unsigned   mtsLog2 = (unsigned)floorLog2(std::min (pcPic->cs->sps->getMaxTbSize(), pcv.maxCUWidth));
@@ -2609,20 +2839,56 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       m_pcSliceEncoder->setUpLambda(pcSlice, pcSlice->getLambdas()[0], pcSlice->getSliceQp());
     }
 
+#if JVET_P1006_PICTURE_HEADER
+    xPicInitLMCS(pcPic, picHeader, pcSlice);
+#else
     xPicInitLMCS(pcPic, pcSlice);
+#endif
 
     if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
     {
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setScalingListPresentFlag( true );
+#else
       pcSlice->setscalingListPresentFlag( true );
+#endif
+
+#if JVET_N0278_FIXES
+      int apsId = std::min<int>( 7, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
       int apsId = 0;
+#endif
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setScalingListAPSId( apsId );
+#else
       pcSlice->setscalingListAPSId( apsId );
+#endif
 
       ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
       APS*  scalingListAPS = apsMap->getPS( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
       assert( scalingListAPS != NULL );
+#if JVET_P1006_PICTURE_HEADER
+      picHeader->setScalingListAPS( scalingListAPS );
+#else
       pcSlice->setscalingListAPS( scalingListAPS );
+#endif
     }
 
+#if JVET_P1006_PICTURE_HEADER
+    pcPic->cs->picHeader->setPic(pcPic);
+    pcPic->cs->picHeader->setValid();
+    if(pcPic->cs->sps->getFpelMmvdEnabledFlag()) 
+    {
+      // cannot set pic_fpel_mmvd_enabled_flag at slice level - need new picture-level version of checkDisFracMmvd algorithm?
+      // m_pcSliceEncoder->checkDisFracMmvd( pcPic, 0, numberOfCtusInFrame );
+      bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
+      pcPic->cs->picHeader->setDisFracMMVD( useIntegerMVD );
+    }
+    if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
+    {
+      m_pcSliceEncoder->setJointCbCrModes(*pcPic->cs, Position(0, 0), pcPic->cs->area.lumaSize());
+    }
+#endif
     if( encPic )
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
@@ -2680,8 +2946,21 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setLmcsEnabledFlag(true);
+#else
         pcSlice->setLmcsEnabledFlag(true);
+#endif
+
+#if JVET_N0278_FIXES
+        int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#else
         int apsId = 0;
+#endif
+
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setLmcsAPSId(apsId);
+#else
         pcSlice->setLmcsAPSId(apsId);
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
@@ -2693,6 +2972,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             pcPic->slices[s]->setLmcsAPSId(pcSlice->getLmcsAPSId());
           }
         }
+#endif
           CHECK((m_pcReshaper->getRecReshaped() == false), "Rec picture is not reshaped!");
           pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getInvLUT());
           m_pcReshaper->setRecReshaped(false);
@@ -2723,10 +3003,17 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
       {
+#if JVET_P1006_PICTURE_HEADER
+        picHeader->setScalingListPresentFlag(true);
+        int apsId = 0;
+        picHeader->setScalingListAPSId( apsId );
+#else
         pcSlice->setscalingListPresentFlag( true );
         int apsId = 0;
         pcSlice->setscalingListAPSId( apsId );
+#endif
       }
+#if !JVET_P1006_PICTURE_HEADER
       for( int s = 0; s < uiNumSliceSegments; s++ )
       {
         pcPic->slices[ s ]->setscalingListPresentFlag( pcSlice->getscalingListPresentFlag() );
@@ -2735,6 +3022,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->slices[ s ]->setscalingListAPSId( pcSlice->getscalingListAPSId() );
         }
       }
+#endif
 
       // SAO parameter estimation using non-deblocked pixels for CTU bottom and right boundary areas
       if( pcSlice->getSPS()->getSAOEnabledFlag() && m_pcCfg->getSaoCtuBoundary() )
@@ -2870,7 +3158,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
       }
+
+#if JVET_N0278_FIXES
+      int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
+
+      // it is assumed that layerIdx equal to 0 is always present
+      actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, writePS && !layerIdx );
+#else
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS);
+#endif
 
       if (writePS)
       {
@@ -2880,7 +3176,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         m_bSeqFirst = false;
       }
+
+#if JVET_N0278_FIXES
+      // it is assumed that layerIdx equal to 0 is always present
+      if( m_pcCfg->getAccessUnitDelimiter() && !layerIdx )
+#else
       if (m_pcCfg->getAccessUnitDelimiter())
+#endif
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
@@ -2890,30 +3192,70 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       if (pcSlice->getSPS()->getUseReshaper())
       {
         //only 1 LMCS data for 1 picture
+#if JVET_P1006_PICTURE_HEADER
+        int apsId = picHeader->getLmcsAPSId();
+#else
         int apsId = pcSlice->getLmcsAPSId();
+#endif
         ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
         APS* aps = apsMap->getPS((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
         bool writeAPS = aps && apsMap->getChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
         if (writeAPS)
         {
-          actualTotalBits += xWriteAPS(accessUnit, aps);
+#if JVET_N0278_FIXES
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
+#else
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS(accessUnit, aps, 0, true );
+#else
+          actualTotalBits += xWriteAPS(accessUnit, aps, 0 );
+#endif
+#endif
           apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + LMCS_APS);
+#if JVET_P1006_PICTURE_HEADER
+          CHECK(aps != picHeader->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
+#else
           CHECK(aps != pcSlice->getLmcsAPS(), "Wrong LMCS APS pointer in compressGOP");
+#endif
         }
       }
 
       // only 1 SCALING LIST data for 1 picture
       if( pcSlice->getSPS()->getScalingListFlag() && ( m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ ) )
       {
+#if JVET_P1006_PICTURE_HEADER
+        int apsId = picHeader->getScalingListAPSId();
+#else
         int apsId = pcSlice->getscalingListAPSId();
+#endif
         ParameterSetMap<APS> *apsMap = m_pcEncLib->getApsMap();
         APS* aps = apsMap->getPS( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
         bool writeAPS = aps && apsMap->getChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
         if( writeAPS )
         {
-          actualTotalBits += xWriteAPS( accessUnit, aps );
+#if JVET_N0278_FIXES
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
+#else
+          actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+          actualTotalBits += xWriteAPS( accessUnit, aps, 0, true );
+#else
+          actualTotalBits += xWriteAPS( accessUnit, aps, 0 );
+#endif
+#endif
           apsMap->clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + SCALING_LIST_APS );
+#if JVET_P1006_PICTURE_HEADER
+          CHECK( aps != picHeader->getScalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
+#else
           CHECK( aps != pcSlice->getscalingListAPS(), "Wrong SCALING LIST APS pointer in compressGOP" );
+#endif
         }
       }
 
@@ -2935,7 +3277,19 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           if (writeAPS )
           {
-            actualTotalBits += xWriteAPS(accessUnit, aps);
+#if JVET_N0278_FIXES
+#if JVET_P0588_SUFFIX_APS
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
+#else
+            actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId() );
+#endif
+#else
+#if JVET_P0588_SUFFIX_APS
+            actualTotalBits += xWriteAPS( accessUnit, aps, 0, true );
+#else
+            actualTotalBits += xWriteAPS(accessUnit, aps, 0);
+#endif
+#endif
             apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
             CHECK(aps != pcSlice->getAlfAPSs()[apsId], "Wrong APS pointer in compressGOP");
           }
@@ -2965,15 +3319,103 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setRPL0idx(pcPic->slices[0]->getRPL0idx());
         pcSlice->setRPL1idx(pcPic->slices[0]->getRPL1idx());
 
+#if JVET_P1006_PICTURE_HEADER
+        pcSlice->setNoIncorrectPicOutputFlag(false);
+        if (pcSlice->isIRAP())
+        {
+          if (pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
+          {
+            pcSlice->setNoIncorrectPicOutputFlag(true);
+          }
+          //the inference for NoOutputPriorPicsFlag
+          // KJS: This cannot happen at the encoder
+          if (!m_bFirst && (pcSlice->isIRAP() || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR) && pcSlice->getNoIncorrectPicOutputFlag())
+          {
+            if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR)
+            {
+              picHeader->setNoOutputOfPriorPicsFlag(true);
+            }
+          }
+        }
+
+        // code picture header before first slice
+        if(sliceSegmentIdxCount == 0) 
+        {
+          // code RPL in picture header or slice headers
+          if( !m_pcCfg->getSliceLevelRpl() && (!pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent()) )
+          {
+            picHeader->setPicRplPresentFlag(true);
+            picHeader->setRPL0idx(pcSlice->getRPL0idx());
+            picHeader->setRPL1idx(pcSlice->getRPL1idx());
+            picHeader->setRPL0(pcSlice->getRPL0());
+            picHeader->setRPL1(pcSlice->getRPL1());
+            *picHeader->getLocalRPL0() = *pcSlice->getLocalRPL0();
+            *picHeader->getLocalRPL1() = *pcSlice->getLocalRPL1();
+          }
+          else {
+            picHeader->setPicRplPresentFlag(false);
+          }
+          
+          // code DBLK in picture header or slice headers
+          if( !m_pcCfg->getSliceLevelDblk() )
+          {
+            picHeader->setDeblockingFilterOverridePresentFlag( true );
+            picHeader->setDeblockingFilterOverrideFlag   ( pcSlice->getDeblockingFilterOverrideFlag()   );
+            picHeader->setDeblockingFilterDisable        ( pcSlice->getDeblockingFilterDisable()        ); 
+            picHeader->setDeblockingFilterBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() ); 
+            picHeader->setDeblockingFilterTcOffsetDiv2   ( pcSlice->getDeblockingFilterTcOffsetDiv2()   );
+          }
+          else {
+            picHeader->setDeblockingFilterOverridePresentFlag( false );
+          }
+          
+          // code SAO parameters in picture header or slice headers
+          if( !m_pcCfg->getSliceLevelSao() )
+          {
+            picHeader->setSaoEnabledPresentFlag( true );
+            picHeader->setSaoEnabledFlag(CHANNEL_TYPE_LUMA,   pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA  ));
+            picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
+          }
+          else {
+            picHeader->setSaoEnabledPresentFlag( false );
+          }
+          
+          // code ALF parameters in picture header or slice headers
+          if( !m_pcCfg->getSliceLevelAlf() )
+          {
+            picHeader->setAlfEnabledPresentFlag( true );
+            picHeader->setAlfEnabledFlag(COMPONENT_Y,  pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y ) );
+            picHeader->setAlfEnabledFlag(COMPONENT_Cb, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) );
+            picHeader->setAlfEnabledFlag(COMPONENT_Cr, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) );            
+            picHeader->setNumAlfAps(pcSlice->getTileGroupNumAps());
+            picHeader->setAlfAPSs(pcSlice->getTileGroupApsIdLuma());
+            picHeader->setAlfApsIdChroma(pcSlice->getTileGroupApsIdChroma());
+          }
+          else {
+            picHeader->setAlfEnabledPresentFlag( false );
+          }
+
+          pcPic->cs->picHeader->setPic(pcPic);
+          pcPic->cs->picHeader->setValid();
+          actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);
+        }
+        pcSlice->setPicHeader( pcPic->cs->picHeader );
+
+#endif
         for ( uint32_t ui = 0 ; ui < numSubstreams; ui++ )
         {
           substreamsOut[ui].clear();
         }
 
         /* start slice NALunit */
+#if JVET_N0278_FIXES
+        OutputNALUnit nalu( pcSlice->getNalUnitType(), m_pcEncLib->getLayerId(), pcSlice->getTLayer() );
+#else
         OutputNALUnit nalu( pcSlice->getNalUnitType(), pcSlice->getTLayer() );
+#endif
         m_HLSWriter->setBitstream( &nalu.m_Bitstream );
 
+#if !JVET_P1006_PICTURE_HEADER
         pcSlice->setNoIncorrectPicOutputFlag(false);
         if (pcSlice->isIRAP())
         {
@@ -2991,6 +3433,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             }
           }
         }
+#endif
 
         tmpBitsBeforeWriting = m_HLSWriter->getNumberOfWrittenBits();
         m_HLSWriter->codeSliceHeader( pcSlice );
@@ -3038,7 +3481,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
             ( ( pcSlice->getSPS()->getHrdParameters()->getNalHrdParametersPresentFlag() )
            || ( pcSlice->getSPS()->getHrdParameters()->getVclHrdParametersPresentFlag() ) ) &&
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+            ( pcSlice->getSPS()->getHrdParameters()->getGeneralDecodingUnitHrdParamsPresentFlag() ) )
+#else
             ( pcSlice->getSPS()->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() ) )
+#endif
         {
             uint32_t numNalus = 0;
           uint32_t numRBSPBytes = 0;
@@ -3073,9 +3520,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       m_pcCfg->setEncodedFlag(iGOPid, true);
 
       double PSNR_Y;
-      xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y
-                       , isEncodeLtRef
-      );
+      xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y, isEncodeLtRef );
 
 #if HEVC_SEI
       // Only produce the Green Metadata SEI message with the last picture.
@@ -3164,8 +3609,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
   delete pcBitstreamRedirect;
 
+#if JVET_N0278_FIXES
+  CHECK( m_iNumPicCoded > 1, "Unspecified error" );
+#else
   CHECK(!( (m_iNumPicCoded == iNumPicRcvd) ), "Unspecified error");
-
+#endif
 }
 
 void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths )
@@ -3352,7 +3800,11 @@ void EncGOP::xGetBuffer( PicList&                  rcListPic,
   while (iterPic != rcListPic.end())
   {
     rpcPic = *(iterPic);
+#if JVET_N0278_FIXES
+    if( rpcPic->getPOC() == pocCurr && rpcPic->layerId == m_pcEncLib->getLayerId() )
+#else
     if (rpcPic->getPOC() == pocCurr)
+#endif
     {
       break;
     }
@@ -3896,8 +4348,14 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( g_verbosity >= NOTICE )
   {
+#if JVET_N0278_FIXES
+    msg( NOTICE, "POC %4d LId: %2d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
+         pcSlice->getPOC(),
+         pcSlice->getPic()->layerId,
+#else
     msg( NOTICE, "POC %4d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
          pcSlice->getPOC(),
+#endif
          pcSlice->getTLayer(),
          c,
          pcSlice->getSliceQp(),
@@ -3995,7 +4453,11 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       {
         const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
         
+#if JVET_P1006_PICTURE_HEADER
+        if( pcPic->cs->picHeader->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
+#else
         if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
+#endif
         {
           if ( scaleRatio.first != 1 << SCALE_RATIO_BITS || scaleRatio.second != 1 << SCALE_RATIO_BITS )
             msg( NOTICE, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );

@@ -50,15 +50,44 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
+
+#define JVET_P0551_ALF_SLICE_BOUNDARY                     1 // JVET-P0053/P0157/P0551: Applying picturce boundary padding to slice boundaries
+
+#define JVET_P0314_PROF_BDOF_DMVR_HLS                     1 // JVET-P0314: BDOF/DMVR/PROF high level flags
+
+#define JVET_P0438_ALF_APS_CONSTRAINT                     1 // JVET-P0438: add bitstream constraint for ALF APS 
+
+#define JVET_P0205_VPS_ID_0                               1 // JVET-P0205: VPS ID zero in SPS means no VPS in bitstream
+
+#define JVET_P1006_PICTURE_HEADER                         1 // JVET-P1006: Add picture header and related syntax changes
+
+#define JVET_P0365_SCALING_MATRIX_LFNST                   1 // JVET-P0365: Signal flag to indicate whether scaling matrices are used for LFNST-coded blocks
+
+#define JVET_P0243_SINGLE_BIT_DEPTH                       1 // JVET-P0243: Single bitdepth for luma and chroma
+
+#define JVET_P0244_SPS_CLEAN_UP                           1 // JVET-P0244/P0429: SPS cleanup changes
+
+#define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
+
 #define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
 
+#define JVET_P0363_CLEANUP_NUT_TABLE                      1 // JVET-P0363: Clean-up of NAL unit type table
+
 #define JVET_P01034_PRED_1D_SCALING_LIST                  1 // JVET-P1034: 1D Scaling list index and add predictor mode
+
+#define JVET_P0410_CHROMA_QP_MAPPING                      1 // JVET-P0410: Chroma QP Mapping signalling
+
+#define JVET_P0366_NUT_CONSTRAINT_FLAGS                   1 // JVET-P0366: Adding constraint flags for NAL unit types
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 
 #define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling
 
 #define JVET_P0469_QP_OUT_VAL                             1 // JVET-P0469: Coding delta_qp_diff_val instead of delta_qp_out_val
+
+#define JVET_P0588_SUFFIX_APS                             1 // JVET-P0588/P0452: suffix APS NUT
+
 #define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
@@ -66,6 +95,8 @@
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
+
+#define JVET_P0217_PTL_SYNTAX_CLEANUP                     1 // JVET-P0217: On Profile, tier, and level syntax structure
 
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
@@ -91,11 +122,15 @@
 
 #define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode
 
+#define JVET_P0517_ADAPTIVE_COLOR_TRANSFORM               1 // JVET-P0517: adaptive color transform
+
 #define JVET_P0090_32BIT_MVD                              1 // JVET-P0090: Limitation of abs_mvd_min2 binarization within 32-bit
 
 #define JVET_P0298_DISABLE_LEVELMAPPING_IN_BYPASS         1 // JVET-P0298: Disable level mapping in bypass mode
 
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
+
+#define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
@@ -155,6 +190,8 @@
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
+#define JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS              1 // JVET-O0235: NAL unit type constraints
+
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
 
 #define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
@@ -185,7 +222,11 @@
 
 #define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
+#if JVET_P0551_ALF_SLICE_BOUNDARY
+#define JVET_O0625_ALF_PADDING                            0 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+#else
 #define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+#endif
 
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
 #define MRG_SHARELIST_SHARSIZE                            32
@@ -929,6 +970,54 @@ enum PPSExtensionFlagIndex
 // TODO: Existing names used for the different NAL unit types can be altered to better reflect the names in the spec.
 //       However, the names in the spec are not yet stable at this point. Once the names are stable, a cleanup
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
+#if JVET_P0363_CLEANUP_NUT_TABLE
+enum NalUnitType
+{
+  NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
+  NAL_UNIT_CODED_SLICE_STSA,        // 1
+  NAL_UNIT_CODED_SLICE_RADL,        // 2
+  NAL_UNIT_CODED_SLICE_RASL,        // 3
+
+  NAL_UNIT_RESERVED_VCL_4,
+  NAL_UNIT_RESERVED_VCL_5,
+  NAL_UNIT_RESERVED_VCL_6,
+
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 7
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 8
+  NAL_UNIT_CODED_SLICE_CRA,         // 9
+  NAL_UNIT_CODED_SLICE_GDR,         // 10
+
+  NAL_UNIT_RESERVED_IRAP_VCL_11,
+  NAL_UNIT_RESERVED_IRAP_VCL_12,
+
+  NAL_UNIT_DPS,                     // 13
+  NAL_UNIT_VPS,                     // 14
+  NAL_UNIT_SPS,                     // 15
+  NAL_UNIT_PPS,                     // 16
+#if JVET_P0588_SUFFIX_APS
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+#else
+  NAL_UNIT_APS,
+#endif
+  NAL_UNIT_PH,                      // 19
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
+  NAL_UNIT_EOS,                     // 21
+  NAL_UNIT_EOB,                     // 22
+  NAL_UNIT_PREFIX_SEI,              // 23
+  NAL_UNIT_SUFFIX_SEI,              // 24
+  NAL_UNIT_FD,                      // 25
+
+  NAL_UNIT_RESERVED_NVCL_26,
+  NAL_UNIT_RESERVED_NVCL_27,
+
+  NAL_UNIT_UNSPECIFIED_28,
+  NAL_UNIT_UNSPECIFIED_29,
+  NAL_UNIT_UNSPECIFIED_30,
+  NAL_UNIT_UNSPECIFIED_31,
+  NAL_UNIT_INVALID
+};
+#else
 enum NalUnitType
 {
   NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
@@ -954,7 +1043,12 @@ enum NalUnitType
 
   NAL_UNIT_SPS,                     // 16
   NAL_UNIT_PPS,                     // 17
+#if JVET_P0588_SUFFIX_APS
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+#else
   NAL_UNIT_APS,                     // 18
+#endif
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 19
   NAL_UNIT_EOS,                     // 20
   NAL_UNIT_EOB,                     // 21
@@ -972,6 +1066,7 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_31,
   NAL_UNIT_INVALID
 };
+#endif
 
 #if SHARP_LUMA_DELTA_QP
 enum LumaLevelToDQPMode

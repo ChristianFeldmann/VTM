@@ -31,64 +31,21 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+/** \file     EncLibCommon.cpp
+    \brief    Common encoder library class
+*/
 
-#ifndef __NALWRITE__
-#define __NALWRITE__
+#include "CommonDef.h"
+#include "EncLibCommon.h"
 
-#include <ostream>
-
-#include "CommonLib/CommonDef.h"
-#include "CommonLib/BitStream.h"
-#include "CommonLib/NAL.h"
-
-//! \ingroup EncoderLib
-//! \{
-
-/**
- * A convenience wrapper to NALUnit that also provides a
- * bitstream object.
- */
-struct OutputNALUnit : public NALUnit
+EncLibCommon::EncLibCommon()
+  : m_apsIdStart( ALF_CTB_MAX_NUM_APS )
+  , m_spsMap( MAX_NUM_SPS )
+  , m_ppsMap( MAX_NUM_PPS )
+  , m_apsMap( MAX_NUM_APS * MAX_NUM_APS_TYPE )
 {
-  /**
-   * construct an OutputNALunit structure with given header values and
-   * storage for a bitstream.  Upon construction the NALunit header is
-   * written to the bitstream.
-   */
-  OutputNALUnit(
-    NalUnitType nalUnitType,
-#if JVET_N0278_FIXES
-    uint32_t layerId = 0,
-#endif
-    uint32_t temporalID = 0,
-    uint32_t reserved_zero_6bits = 0)
-#if JVET_N0278_FIXES
-  : NALUnit( nalUnitType, temporalID, reserved_zero_6bits, 0, layerId )
-#else
-  : NALUnit(nalUnitType, temporalID, reserved_zero_6bits)
-#endif
-  , m_Bitstream()
-  {}
-
-  OutputNALUnit& operator=(const NALUnit& src)
-  {
-    m_Bitstream.clear();
-    static_cast<NALUnit*>(this)->operator=(src);
-    return *this;
-  }
-
-  OutputBitstream m_Bitstream;
-};
-
-void write(std::ostream& out, OutputNALUnit& nalu);
-
-inline NALUnitEBSP::NALUnitEBSP(OutputNALUnit& nalu)
-  : NALUnit(nalu)
-{
-  write(m_nalUnitData, nalu);
 }
 
-//! \}
-
-#endif
+EncLibCommon::~EncLibCommon()
+{
+}

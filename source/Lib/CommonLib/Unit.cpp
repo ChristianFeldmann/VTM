@@ -265,6 +265,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mmvdSkip = other.mmvdSkip;
   affine            = other.affine;
   affineType        = other.affineType;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  colorTransform = other.colorTransform;
+#endif 
   triangle          = other.triangle;
   transQuantBypass  = other.transQuantBypass;
   bdpcmMode         = other.bdpcmMode;
@@ -291,16 +294,28 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
   mipFlag           = other.mipFlag;
-  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+
+  for (int idx = 0; idx < MAX_NUM_CHANNEL_TYPE; idx++)
   {
     curPLTSize[idx]   = other.curPLTSize[idx];
     useEscape[idx]    = other.useEscape[idx];
     useRotation[idx]  = other.useRotation[idx];
     reusePLTSize[idx] = other.reusePLTSize[idx];
     lastPLTSize[idx]  = other.lastPLTSize[idx];
-    memcpy( curPLT[idx],    other.curPLT[idx],        MAXPLTSIZE * sizeof(Pel) );
-    memcpy( reuseflag[idx], other.reuseflag[idx], MAXPLTPREDSIZE * sizeof(bool));
+    if (slice->getSPS()->getPLTMode())
+    {
+      memcpy(reuseflag[idx], other.reuseflag[idx], MAXPLTPREDSIZE * sizeof(bool));
+    }
   }
+
+  if (slice->getSPS()->getPLTMode())
+  {
+    for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+    {
+      memcpy(curPLT[idx], other.curPLT[idx], MAXPLTSIZE * sizeof(Pel));
+    }
+  }
+
   treeType          = other.treeType;
   modeType          = other.modeType;
   modeTypeSeries    = other.modeTypeSeries;
@@ -319,6 +334,9 @@ void CodingUnit::initData()
   mmvdSkip = false;
   affine            = false;
   affineType        = 0;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  colorTransform = false;
+#endif 
   triangle          = false;
   transQuantBypass  = false;
   bdpcmMode         = 0;
@@ -345,16 +363,22 @@ void CodingUnit::initData()
   smvdMode        = 0;
   ispMode           = 0;
   mipFlag           = false;
-  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+
+  for (int idx = 0; idx < MAX_NUM_CHANNEL_TYPE; idx++)
   {
     curPLTSize[idx]   = 0;
     reusePLTSize[idx] = 0;
     lastPLTSize[idx]  = 0;
     useEscape[idx]    = false;
     useRotation[idx]  = false;
-    memset(curPLT[idx],        0,     MAXPLTSIZE * sizeof(Pel) );
     memset(reuseflag[idx], false, MAXPLTPREDSIZE * sizeof(bool));
   }
+
+  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+  {
+    memset(curPLT[idx], 0, MAXPLTSIZE * sizeof(Pel));
+  }
+
   treeType          = TREE_D;
   modeType          = MODE_TYPE_ALL;
   modeTypeSeries    = 0;
@@ -722,7 +746,11 @@ TransformUnit::TransformUnit(const UnitArea& unit) : UnitArea(unit), cu(nullptr)
   {
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
-    m_runType[i]   = nullptr;
+  }
+
+  for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
+  {
+    m_runType[i] = nullptr;
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
 #endif
@@ -737,7 +765,11 @@ TransformUnit::TransformUnit(const ChromaFormat _chromaFormat, const Area &_area
   {
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
-    m_runType[i]   = nullptr;
+  }
+
+  for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
+  {
+    m_runType[i] = nullptr;
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
 #endif
@@ -777,7 +809,11 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **
   {
     m_coeffs[i] = coeffs[i];
     m_pcmbuf[i] = pcmbuf[i];
-    m_runType[i]   = runType[i];
+  }
+
+  for (uint32_t i = 0; i < numBlocks - 1; i++)
+  {
+    m_runType[i] = runType[i];
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = runLength[i];
 #endif
@@ -797,10 +833,13 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
     if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
-    if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
+    if (cu->slice->getSPS()->getPLTMode() && i < 2)
+    {
+      if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
 #if !JVET_P0077_LINE_CG_PALETTE
-    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
+      if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
 #endif
+    }
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
     compAlpha[i]     = other.compAlpha[i];
@@ -827,10 +866,14 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
   if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
-  if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i])   memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
+  if ((i == COMPONENT_Y || i == COMPONENT_Cb))
+  {
+    if (m_runType[i] && other.m_runType[i] && m_runType[i] != other.m_runType[i])   memcpy(m_runType[i], other.m_runType[i], sizeof(bool) * area);
 #if !JVET_P0077_LINE_CG_PALETTE
-  if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
+    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area);
 #endif
+  }
+
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
   compAlpha[i]     = other.compAlpha[i];

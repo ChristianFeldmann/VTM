@@ -143,7 +143,11 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
 
   const unsigned subdivIncr = (splitMode == CU_QUAD_SPLIT) ? 2 : (splitMode == CU_BT_SPLIT) ? 1 : 0;
   const bool qgEnable = partitioner.currQgEnable(); // QG possible at current level
+#if JVET_P1006_PICTURE_HEADER
+  const bool qgEnableChildren = qgEnable && ((partitioner.currSubdiv + subdivIncr) <= cs.slice->getCuQpDeltaSubdiv()) && (subdivIncr > 0); // QG possible at next level
+#else
   const bool qgEnableChildren = qgEnable && ((partitioner.currSubdiv + subdivIncr) <= pps.getCuQpDeltaSubdiv()) && (subdivIncr > 0); // QG possible at next level
+#endif
   const bool isLeafQG = (qgEnable && !qgEnableChildren);
 
   if( isLeafQG ) // QG at deepest level
@@ -435,6 +439,16 @@ bool CacheBlkInfoCtrl::isSkip( const UnitArea& area )
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isSkip;
 }
+
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+char CacheBlkInfoCtrl::getSelectColorSpaceOption(const UnitArea& area)
+{
+  unsigned idx1, idx2, idx3, idx4;
+  getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
+
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->selectColorSpaceOption;
+}
+#endif
 
 bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
 {
@@ -781,17 +795,23 @@ void BestEncInfoCache::init( const Slice &slice )
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
   m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
-  m_runType   = new bool[numCoeff*MAX_NUM_TUS];
+  if (slice.getSPS()->getPLTMode())
+  {
+    m_runType   = new bool[numCoeff*MAX_NUM_TUS];
 #if !JVET_P0077_LINE_CG_PALETTE
-  m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
+    m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
 #endif
+  }
 #else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
-  m_runType   = new bool[numCoeff];
+  if (slice.getSPS()->getPLTMode())
+  {
+    m_runType   = new bool[numCoeff];
 #if !JVET_P0077_LINE_CG_PALETTE
-  m_runLength = new Pel [numCoeff];
+    m_runLength = new Pel [numCoeff];
 #endif
+  }
 #endif
 
   TCoeff *coeffPtr = m_pCoeff;
@@ -814,9 +834,9 @@ void BestEncInfoCache::init( const Slice &slice )
           {
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
-            bool   *runType[MAX_NUM_TBLOCKS]   = { 0, };
+            bool   *runType[MAX_NUM_TBLOCKS - 1] = { 0, };
 #if !JVET_P0077_LINE_CG_PALETTE
-            Pel    *runLength[MAX_NUM_TBLOCKS] = { 0, };
+            Pel    *runLength[MAX_NUM_TBLOCKS - 1] = { 0, };
 #endif
 
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
@@ -829,10 +849,13 @@ void BestEncInfoCache::init( const Slice &slice )
               {
                 coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
                 pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
-                runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
+                if (i < 2)
+                {
+                  runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
 #if !JVET_P0077_LINE_CG_PALETTE
-                runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
+                  runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
 #endif
+                }
               }
 
               tu.cs = &m_dummyCS;
@@ -1192,7 +1215,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
     }
 #if ENABLE_QPA_SUB_CTU
+#if JVET_P1006_PICTURE_HEADER
+    else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.slice->getCuQpDeltaSubdiv() > 0)
+#else
     else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getCuQpDeltaSubdiv() > 0)
+#endif
     {
       const PreCalcValues &pcv = *cs.pcv;
 
@@ -1893,11 +1920,65 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isSkip   |= bestCU->skip;
           relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
           relatedCU.GBiIdx    = bestCU->GBiIdx;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+          if (bestCU->slice->getSPS()->getUseColorTrans())
+          {
+            if (m_pcEncCfg->getRGBFormatFlag())
+            {
+              if (bestCU->colorTransform && bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+            else
+            {
+              if (!bestCU->colorTransform || !bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+          }
+#endif
         }
         else if (CU::isIBC(*bestCU))
         {
           relatedCU.isIBC = true;
           relatedCU.isSkip |= bestCU->skip;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+          if (bestCU->slice->getSPS()->getUseColorTrans())
+          {
+            if (m_pcEncCfg->getRGBFormatFlag())
+            {
+              if (bestCU->colorTransform && bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+            else
+            {
+              if (!bestCU->colorTransform || !bestCU->rootCbf)
+              {
+                relatedCU.selectColorSpaceOption = 1;
+              }
+              else
+              {
+                relatedCU.selectColorSpaceOption = 2;
+              }
+            }
+          }
+#endif
         }
         else if( CU::isIntra( *bestCU ) )
         {

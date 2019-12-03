@@ -439,6 +439,9 @@ struct CodedCUInfo
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
   uint8_t GBiIdx;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
+#endif
 #if JVET_P1026_ISP_LFNST_COMBINATION
   uint16_t ispPredModeVal;
   double   bestDCT2NonISPCost;
@@ -498,6 +501,10 @@ public:
   bool  getInter( const UnitArea& area );
   void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
   uint8_t getGbiIdx( const UnitArea& area );
+
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  char  getSelectColorSpaceOption(const UnitArea& area);
+#endif
 };
 
 #if REUSE_CU_RESULTS

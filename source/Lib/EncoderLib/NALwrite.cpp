@@ -53,7 +53,11 @@ OutputBitstream bsNALUHeader;
   bsNALUHeader.write(forbiddenZero, 1);   // forbidden_zero_bit
   int nuhReservedZeroBit = 0;
   bsNALUHeader.write(nuhReservedZeroBit, 1);   // nuh_reserved_zero_bit
+#if JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES
+  CHECK(nalu.m_nuhLayerId > 55, "The value of nuh_layer_id shall be in the range of 0 to 55, inclusive");
+#else
   CHECK(nalu.m_nuhLayerId > 63, "nuh_layer_id > 63");
+#endif
   bsNALUHeader.write(nalu.m_nuhLayerId, 6);       // nuh_layer_id
   bsNALUHeader.write(nalu.m_nalUnitType, 5);      // nal_unit_type
   bsNALUHeader.write(nalu.m_temporalId + 1, 3);   // nuh_temporal_id_plus1

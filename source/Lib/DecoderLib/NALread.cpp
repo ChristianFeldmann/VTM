@@ -129,6 +129,9 @@ void readNalUnitHeader(InputNALUnit& nalu)
   nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
   nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
   nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
+#if JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES
+  CHECK(nalu.m_nuhLayerId > 55, "The value of nuh_layer_id shall be in the range of 0 to 55, inclusive");
+#endif
   nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
   nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
 
@@ -148,8 +151,13 @@ void readNalUnitHeader(InputNALUnit& nalu)
     }
     else
     {
+#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
+      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
+        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0"); 
+#else
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
          , "Invalid NAL type");
+#endif
     }
   }
 }

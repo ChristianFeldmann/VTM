@@ -43,6 +43,9 @@
 
 void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId)
 {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  const SEIBufferingPeriod *bp = NULL;
+#endif
   switch (sei.payloadType())
   {
 #if HEVC_SEI
@@ -54,20 +57,38 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     break;
 #endif
   case SEI::DECODING_UNIT_INFO:
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+    bp = hrd.getBufferingPeriodSEI();
+    CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Decoding Unit Information SEI");
+    xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), *bp, temporalId);
+#else
     xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), sps, hrd);
+#endif
     break;
   case SEI::DECODED_PICTURE_HASH:
     xWriteSEIDecodedPictureHash(*static_cast<const SEIDecodedPictureHash*>(&sei));
     break;
   case SEI::BUFFERING_PERIOD:
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+    xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei));
+#else
     xWriteSEIBufferingPeriod(*static_cast<const SEIBufferingPeriod*>(&sei), sps);
+#endif
     hrd.setBufferingPeriodSEI(static_cast<const SEIBufferingPeriod*>(&sei));
     break;
   case SEI::PICTURE_TIMING:
     {
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+      bp = hrd.getBufferingPeriodSEI();
+#else
       const SEIBufferingPeriod *bp = hrd.getBufferingPeriodSEI();
+#endif
       CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Picture Timing SEI");
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+      xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), *bp, temporalId);
+#else
       xWriteSEIPictureTiming(*static_cast<const SEIPictureTiming*>(&sei), sps, *bp, temporalId);
+#endif
     }
     break;
   case SEI::FRAME_FIELD_INFO:
@@ -255,11 +276,35 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 
   for (int i = 0; i < sei.activeSeqParameterSetId.size(); i++)
   {
+#if JVET_P0244_SPS_CLEAN_UP
+    WRITE_CODE( sei.activeSeqParameterSetId[i], 4, "active_seq_parameter_set_id" );
+#else
     WRITE_UVLC(sei.activeSeqParameterSetId[i], "active_seq_parameter_set_id");
+#endif
   }
 }
 #endif
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId)
+{
+  WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
+  if( !bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
+  {
+    for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+    {
+      WRITE_FLAG( sei.m_duiSubLayerDelaysPresentFlag[i], "dui_sub_layer_delays_present_flag[i]" );
+      if( sei.m_duiSubLayerDelaysPresentFlag[i] )
+        WRITE_CODE( sei.m_duSptCpbRemovalDelayIncrement[i], bp.getDuCpbRemovalDelayIncrementLength(), "du_spt_cpb_removal_delay_increment[i]");
+    }
+  }
+  WRITE_FLAG( sei.m_dpbOutputDuDelayPresentFlag, "dpb_output_du_delay_present_flag");
+  if(sei.m_dpbOutputDuDelayPresentFlag)
+  {
+    WRITE_CODE(sei.m_picSptDpbOutputDuDelay, bp.getDpbOutputDelayDuLength(), "pic_spt_dpb_output_du_delay");
+  }
+}
+#else
 void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps, HRD &hrd)
 {
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
@@ -273,12 +318,34 @@ void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const 
     WRITE_CODE(sei.m_picSptDpbOutputDuDelay, hrd.getBufferingPeriodSEI()->getDpbOutputDelayDuLength(), "pic_spt_dpb_output_du_delay");
   }
 }
+#endif
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
+#else
 void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps)
+#endif
 {
   WRITE_FLAG( sei.m_bpNalCpbParamsPresentFlag, "bp_nal_hrd_parameters_present_flag");
   WRITE_FLAG( sei.m_bpVclCpbParamsPresentFlag, "bp_vcl_hrd_parameters_present_flag");
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  CHECK (sei.m_initialCpbRemovalDelayLength < 1, "sei.m_initialCpbRemovalDelayLength must be > 0");
+  WRITE_CODE( sei.m_initialCpbRemovalDelayLength - 1, 5, "initial_cpb_removal_delay_length_minus1" );
+  CHECK (sei.m_cpbRemovalDelayLength < 1, "sei.m_cpbRemovalDelayLength must be > 0");
+  WRITE_CODE( sei.m_cpbRemovalDelayLength - 1,        5, "cpb_removal_delay_length_minus1" );
+  CHECK (sei.m_dpbOutputDelayLength < 1, "sei.m_dpbOutputDelayLength must be > 0");
+  WRITE_CODE( sei.m_dpbOutputDelayLength - 1,         5, "dpb_output_delay_length_minus1" );
+  WRITE_FLAG( sei.m_bpDecodingUnitHrdParamsPresentFlag, "bp_decoding_unit_hrd_params_present_flag"  );
+  if( sei.m_bpDecodingUnitHrdParamsPresentFlag )
+  {
+    CHECK (sei.m_duCpbRemovalDelayIncrementLength < 1, "sei.m_duCpbRemovalDelayIncrementLength must be > 0");
+    WRITE_CODE( sei.m_duCpbRemovalDelayIncrementLength - 1, 5, "du_cpb_removal_delay_increment_length_minus1" );
+    CHECK (sei.m_dpbOutputDelayDuLength < 1, "sei.m_dpbOutputDelayDuLength must be > 0");
+    WRITE_CODE( sei.m_dpbOutputDelayDuLength - 1, 5, "dpb_output_delay_du_length_minus1" );
+    WRITE_FLAG( sei.m_decodingUnitCpbParamsInPicTimingSeiFlag, "decoding_unit_cpb_params_in_pic_timing_sei_flag" );
+  }
+#else
   if (sei.m_bpNalCpbParamsPresentFlag || sei.m_bpVclCpbParamsPresentFlag)
   {
     CHECK (sei.m_initialCpbRemovalDelayLength < 1, "sei.m_initialCpbRemovalDelayLength must be > 0");
@@ -295,6 +362,7 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SP
       WRITE_CODE( sei.m_dpbOutputDelayDuLength - 1, 5, "dpb_output_delay_du_length_minus1" );
     }
   }
+#endif
 
   WRITE_FLAG( sei.m_concatenationFlag, "concatenation_flag");
 
@@ -331,9 +399,33 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SP
     }
   }
 }
-void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod &bp, const uint32_t temporalId)
-{
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod &bp, const uint32_t temporalId)
+#else
+void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps, const SEIBufferingPeriod &bp, const uint32_t temporalId)
+#endif
+{
+  
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  WRITE_CODE( sei.m_auCpbRemovalDelay[bp.m_bpMaxSubLayers - 1] - 1, bp.m_cpbRemovalDelayLength,               "cpb_removal_delay_minus1[bp_max_sub_layers_minus1]" );
+  for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+  {
+    WRITE_FLAG( sei.m_ptSubLayerDelaysPresentFlag[i], "pt_sub_layer_delays_present_flag[i]" );
+    if( sei.m_ptSubLayerDelaysPresentFlag[i] )
+    {
+      WRITE_FLAG( sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]" );
+      if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
+      {
+        WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
+      }
+      else
+      {
+        WRITE_CODE( sei.m_auCpbRemovalDelay[i] - 1, bp.m_cpbRemovalDelayLength,                                "cpb_removal_delay_minus1[i]" );
+      }
+    }
+  }
+#else
   CHECK (sei.m_ptMaxSubLayers < 1, "pt_max_sub_layers_minus1 must be > 0");
   WRITE_CODE( sei.m_ptMaxSubLayers - 1,        3, "pt_max_sub_layers_minus1" );
   WRITE_CODE( sei.m_auCpbRemovalDelay[sei.m_ptMaxSubLayers - 1] - 1, bp.m_cpbRemovalDelayLength,               "cpb_removal_delay_minus1[pt_max_sub_layers_minus1]" );
@@ -353,7 +445,39 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *s
       }
     }
   }
+#endif
   WRITE_CODE( sei.m_picDpbOutputDelay,     bp.m_dpbOutputDelayLength,                                          "dpb_output_delay" );
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
+  if( bp.m_bpDecodingUnitHrdParamsPresentFlag )
+  {
+    WRITE_CODE( sei.m_picDpbOutputDuDelay, bp.m_dpbOutputDelayDuLength, "pic_dpb_output_du_delay" );
+  }
+  if( bp.m_bpDecodingUnitHrdParamsPresentFlag && bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
+  {
+    WRITE_UVLC( sei.m_numDecodingUnitsMinus1, "num_decoding_units_minus1" );
+    WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
+    if( sei.m_duCommonCpbRemovalDelayFlag )
+    {
+      for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+      {
+        if( sei.m_ptSubLayerDelaysPresentFlag[i] )
+          WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1[i]" );
+      }
+    }
+    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+    {
+      WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
+      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+      {
+        for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
+        {
+          if( sei.m_ptSubLayerDelaysPresentFlag[j] )
+            WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i][j]" );
+        }
+      }
+    }
+  }
+#else
   if( sps->getHrdParameters()->getDecodingUnitHrdParamsPresentFlag() )
   {
     WRITE_CODE( sei.m_picDpbOutputDuDelay, bp.m_dpbOutputDelayDuLength, "pic_dpb_output_du_delay" );
@@ -375,6 +499,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *s
       }
     }
   }
+#endif
 }
 
 void SEIWriter::xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei)
@@ -562,7 +687,11 @@ void SEIWriter::xWriteSEINoDisplay(const SEINoDisplay& /*sei*/)
 
 void SEIWriter::xWriteSEISOPDescription(const SEISOPDescription& sei)
 {
+#if JVET_P0244_SPS_CLEAN_UP
+  WRITE_CODE( sei.m_sopSeqParameterSetId, 4,        "sop_seq_parameter_set_id" );
+#else
   WRITE_UVLC( sei.m_sopSeqParameterSetId,           "sop_seq_parameter_set_id"               );
+#endif
   WRITE_UVLC( sei.m_numPicsInSopMinus1,             "num_pics_in_sop_minus1"               );
   for (uint32_t i = 0; i <= sei.m_numPicsInSopMinus1; i++)
   {

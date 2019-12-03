@@ -205,7 +205,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 6.2 of the software.
+for the VVC project. It applies to version 7.0 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -380,7 +380,7 @@ pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchai
 \section{Using the encoder}
 
 \begin{minted}{bash}
-TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
+TAppEncoder 	[--help] [-li -c config.cfg] [-li --parameter=value]
 \end{minted}
 
 \begin{table}[ht]
@@ -392,6 +392,7 @@ TAppEncoder 	[--help] [-c config.cfg] [--parameter=value]
  \thead{Description} \\
 \hline
 \texttt{--help} & Prints parameter usage. \\
+\texttt{-li} & Applies to its next config file or command line parameter only to define  i-th layer encoding option. If empty, the configuration file applies to all layers\\
 \texttt{-c} & Defines configuration file to use.  Multiple configuration files
      may be used with repeated --c options. \\
 \texttt{--}\emph{parameter}\texttt{=}\emph{value}
@@ -602,7 +603,7 @@ Specifies the output coded bit stream file.
 \Option{ReconFile (-o)} &
 %\ShortOption{-o} &
 \Default{\NotSet} &
-Specifies the output locally reconstructed video file.
+Specifies the output locally reconstructed video file. If more than one layer is encoded (i.e. MaxLayers > 1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'reconst.yuv' becomes 'reconst0.yuv' for layer id 0, 'reconst' becomes 'reconst0'.
 \\
 
 \Option{SourceWidth (-wdt)}%
@@ -660,10 +661,8 @@ Note: This option has no effect on the decoding process.
 
 \Option{InputBitDepthC}%
 \Option{MSBExtendedBitDepthC}%
-\Option{InternalBitDepthC}%
 \Option{OutputBitDepthC} &
 %\ShortOption{\None} &
-\Default{0}%
 \Default{0}%
 \Default{0}%
 \Default{0} &
@@ -972,7 +971,7 @@ Enables writing of a decoding parameter set. If disabled, no parameter set will 
 \Option{MaxBitDepthConstraint} &
 %\ShortOption{\None} &
 \Default{0} &
-For --profile=main-RExt, specifies the value to use to derive the general_max_bit_depth constraint flags for RExt profiles; when 0, use $\max(InternalBitDepth, InternalBitDepthC)$
+For --profile=main-RExt, specifies the value to use to derive the general_max_bit_depth constraint flags for RExt profiles; when 0, use InternalBitDepth.
 \\
 
 \Option{MaxChromaFormatConstraint} &
@@ -1021,6 +1020,20 @@ Specifies the value of general_non_packed_constraint_flag
 %\ShortOption{\None} &
 \Default{false} &
 Specifies the value of general_frame_only_constraint_flag
+\\
+
+\end{OptionTableNoShorthand}
+
+
+%%
+%% Layer parameters
+%%
+
+\begin{OptionTableNoShorthand}{Layer parameters}{tab:layer}
+\Option{MaxLayers} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the value to use to derive the vps_max_layers_minus1 for layered coding
 \\
 
 \end{OptionTableNoShorthand}
@@ -1627,10 +1640,16 @@ Specifies a file containing a list of QP deltas. The $n$-th line
 value delta for the picture with POC value $n$.
 \\
 
+\Option{PerceptQPA (-qpa)} &
+%\ShortOption{-qpa} &
+\Default{false} &
+Enables or disables the perceptually optimized QP adaptation (QPA) method described in JVET-H0047, JVET-K0206, and JVET-M0091. Use this together with 'SliceChromaQPOffsetPeriodicity=1' and, in case of HDR input, 'LumaLevelToDeltaQPMode=1' for best subjective quality. Cannot be used together with 'SelectiveRDOQ' (see above) or 'AdaptiveQp' (see below).
+\\
+
 \Option{AdaptiveQp (-aq)} &
 %\ShortOption{-aq} &
 \Default{false} &
-Enable or disable QP adaptation based upon a psycho-visual model.
+Enables or disables the legacy QP adaptation method based upon a psycho-visual model.
 \\
 
 \Option{MaxQPAdaptationRange (-aqr)} &
@@ -1670,6 +1689,12 @@ Controls the specification of scaling lists:
 When ScalingList is set to 2, this parameter indicates the name of the file, which contains the defined scaling lists.
 If ScalingList is set to 2 and this parameter is an empty string, information on the format of the scaling list file
 is output and the encoder stops.
+\\
+
+\Option{DisableScalingMatrixForLFNST} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies whether scaling matrices are to be applied to blocks coded with LFNST.
 \\
 
 \Option{MaxCUChromaQpAdjustmentDepth} &
@@ -2134,12 +2159,6 @@ Sets the Weighted Prediction method to be used.
 \\
 
 
-\Option{Log2ParallelMergeLevel} &
-%\ShortOption{\None} &
-\Default{2} &
-Defines the PPS-derived Log2ParMrgLevel variable.
-\\
-
 \Option{SignHideFlag (-SBH)} &
 %\ShortOption{-SBH} &
 \Default{true} &
@@ -2199,6 +2218,30 @@ Enables signaling the below parameters either in PPS or for each slice according
   five_minus_max_num_subblock_merge_cand & s & p & p & p \\
   max_num_merge_cand_minus_max_num_triangle_cand & s & p & p & s \\
 \end{tabular}
+\\
+
+\Option{SliceLevelRpl} &
+%\ShortOption{\None} &
+\Default{true} &
+Code reference picture lists in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelDblk} &
+%\ShortOption{\None} &
+\Default{true} &
+Code deblocking filter parameters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelSao} &
+%\ShortOption{\None} &
+\Default{true} &
+Code SAO parameters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelAlf} &
+%\ShortOption{\None} &
+\Default{true} &
+Code ALF parameters in slice headers rather than picture header.
 \\
 
 \Option{TransformSkip} &
@@ -2262,7 +2305,7 @@ Enables or disables the use of intra block differential pulse code modulation mo
 \begin{tabular}{cp{0.45\textwidth}}
 	0 & Disable BDPCM for luma and chroma.\\
 	1 & Enable BDPCM for luma.\\
-	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is avaialble for 444. \\
+	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is available for 444.\\
 \end{tabular}
 \\
 
@@ -2320,6 +2363,12 @@ Adaptive LMCS mapping derivation options: Options 1 to 4 are for experimental te
 %\ShortOption{\None} &
 \Default{0} &
 LMCS initial total codeword (valid values [$0 - 1023$]) to be used in LMCS mapping derivation when LMCSAdpOption is not equal to 0.
+\\
+
+\Option{ColorTransform} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of adaptive color transform (ACT).
 \\
 
 \end{OptionTableNoShorthand}
@@ -3439,7 +3488,7 @@ Defines the input bit stream file name.
 \Option{ReconFile (-o)} &
 %\ShortOption{-o} &
 \Default{\NotSet} &
-Defines reconstructed YUV file name. If empty, no file is generated.
+Defines the reconstructed video file name. If empty, no file is generated. If the bitstream contains multiple layer and no single target layer is specified (i.e. TargetLayer=-1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'decoded.yuv' becomes 'decoded0.yuv' for layer id 0, 'decoded' becomes 'decoded0'.
 \\
 
 \Option{SkipFrames (-s)} &

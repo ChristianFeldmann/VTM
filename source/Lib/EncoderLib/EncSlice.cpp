@@ -107,6 +107,10 @@ void EncSlice::init( EncLib* pcEncLib, const SPS& sps )
 void
 EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  m_pcRdCost->resetStore();
+  m_pcTrQuant->resetStore();
+#endif
   // store lambda
   m_pcRdCost ->setLambda( dLambda, slice->getSPS()->getBitDepths() );
 
@@ -329,24 +333,40 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 {
   double dQP;
   double dLambda;
+#if JVET_P1006_PICTURE_HEADER
+  PicHeader *picHeader = pcPic->cs->picHeader;
+#endif
   pcPic->cs->resetPrevPLT(pcPic->cs->prevPLT);
 
   rpcSlice = pcPic->slices[0];
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
+#if JVET_P1006_PICTURE_HEADER
+  rpcSlice->setPicHeader( picHeader );
+#endif
   rpcSlice->initSlice();
   int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
   if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
   {
+#if JVET_P1006_PICTURE_HEADER
+    picHeader->setPicOutputFlag(false);
+#else
     rpcSlice->setPicOutputFlag(false);
+#endif
   }
   else
   {
+#if JVET_P1006_PICTURE_HEADER
+    picHeader->setPicOutputFlag(true);
+#else
     rpcSlice->setPicOutputFlag(true);
+#endif
   }
   rpcSlice->setPOC( pocCurr );
+#if !JVET_P1006_PICTURE_HEADER
   rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
   rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
+#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;
@@ -513,6 +533,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getIBCFlag()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
     int cbQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(false) : m_pcCfg->getGOPEntry(iGOPid).m_CbQPoffset;
     int crQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(true)  : m_pcCfg->getGOPEntry(iGOPid).m_CrQPoffset;
+    int cbCrQP = (cbQP + crQP) >> 1; // use floor of average chroma QP offset for joint-Cb/Cr coding
 
     cbQP = Clip3( -12, 12, cbQP + rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb) ) - rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb);
     crQP = Clip3( -12, 12, crQP + rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr) ) - rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr);
@@ -520,6 +541,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     CHECK(!(rpcSlice->getSliceChromaQpDelta(COMPONENT_Cb)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb)<=12 && rpcSlice->getSliceChromaQpDelta(COMPONENT_Cb)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb)>=-12), "Unspecified error");
     rpcSlice->setSliceChromaQpDelta(COMPONENT_Cr, Clip3( -12, 12, crQP));
     CHECK(!(rpcSlice->getSliceChromaQpDelta(COMPONENT_Cr)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr)<=12 && rpcSlice->getSliceChromaQpDelta(COMPONENT_Cr)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr)>=-12), "Unspecified error");
+    if (rpcSlice->getSPS()->getJointCbCrEnabledFlag())
+    {
+      cbCrQP = Clip3(-12, 12, cbCrQP + rpcSlice->getPPS()->getQpOffset(JOINT_CbCr)) - rpcSlice->getPPS()->getQpOffset(JOINT_CbCr);
+      rpcSlice->setSliceChromaQpDelta(JOINT_CbCr, Clip3( -12, 12, cbCrQP ));
+    }
   }
   else
   {
@@ -543,6 +569,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   dLambda *= lambdaModifier;
 #endif
 
+#if RDOQ_CHROMA_LAMBDA
+  m_pcRdCost->setDistortionWeight (COMPONENT_Y, 1.0); // no chroma weighting for luma
+#endif
   setUpLambda(rpcSlice, dLambda, iQP);
 
 #if WCG_EXT
@@ -632,6 +661,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceMode            ( m_pcCfg->getSliceMode()            );
   rpcSlice->setSliceArgument        ( m_pcCfg->getSliceArgument()        );
+#if !JVET_P1006_PICTURE_HEADER
   rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
   rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
   rpcSlice->setMaxNumTriangleCand   ( m_pcCfg->getMaxNumTriangleCand() );
@@ -648,6 +678,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
     rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
   }
+#endif
   rpcSlice->setDisableSATDForRD(false);
 
   if( ( m_pcCfg->getIBCHashSearch() && m_pcCfg->getIBCMode() ) || m_pcCfg->getAllowDisFracMMVD() )
@@ -752,7 +783,13 @@ void EncSlice::resetQP( Picture* pic, int sliceQP, double lambda )
 
   // store lambda
   slice->setSliceQp( sliceQP );
+#if RDOQ_CHROMA_LAMBDA
+  m_pcRdCost->setDistortionWeight (COMPONENT_Y, 1.0); // no chroma weighting for luma
+#endif
   setUpLambda(slice, lambda, sliceQP);
+#if WCG_EXT
+  m_pcRdCost->saveUnadjustedLambda();
+#endif
 }
 
 #if ENABLE_QPA
@@ -928,7 +965,11 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPAdapt; // adapted QPs
 
 #if ENABLE_QPA_SUB_CTU
+#if JVET_P1006_PICTURE_HEADER
+      if (pcv.widthInCtus > 1 && pcSlice->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
+#else
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
+#endif
 #elif ENABLE_QPA_SUB_CTU
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getMaxCuDQPDepth() == 0)  // reduce local DQP rate peaks
 #else
@@ -975,7 +1016,11 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
   const int       bitDepth = cs.slice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA); // overall image bit-depth
   const int   adaptedCtuQP = pcPic ? pcPic->m_iOffsetCtu[ctuAddr] : cs.slice->getSliceQpBase();
 
+#if JVET_P1006_PICTURE_HEADER
+  if (!pcPic || cs.slice->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
+#else
   if (!pcPic || cs.pps->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
+#endif
 
   for (unsigned addr = 0; addr < cs.picture->m_subCtuQP.size(); addr++)
   {
@@ -1381,16 +1426,31 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
 
   if ( hashRatio > totalCtu * hashThreshold )
   {
+#if JVET_P1006_PICTURE_HEADER
+    pcPic->cs->picHeader->setDisFracMMVD( true );
+#else
     pcSlice->setDisFracMMVD( true );
+#endif
   }
+#if JVET_P1006_PICTURE_HEADER
+  if (!pcPic->cs->picHeader->getDisFracMMVD()) {
+    bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
+    pcPic->cs->picHeader->setDisFracMMVD( useIntegerMVD );
+  }
+#else
   if (!pcSlice->getDisFracMMVD()) {
     bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
     pcSlice->setDisFracMMVD( useIntegerMVD );
   }
+#endif
 }
 
 
+#if JVET_P1006_PICTURE_HEADER
+void EncSlice::setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma )
+#else
 void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma )
+#endif
 {
   bool              sgnFlag = true;
 
@@ -1424,7 +1484,11 @@ void setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const S
     sgnFlag = ( sumCbCr < 0 );
   }
 
+#if JVET_P1006_PICTURE_HEADER
+  cs.picHeader->setJointCbCrSignFlag( sgnFlag );
+#else
   cs.slice->setJointCbCrSignFlag( sgnFlag );
+#endif
 }
 
 
@@ -1459,6 +1523,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   pTrQuant    ->setLambda ( pcSlice->getLambdas()[0] );
 #endif
   pRdCost     ->setLambda ( pcSlice->getLambdas()[0], pcSlice->getSPS()->getBitDepths() );
+#if WCG_EXT && ER_CHROMA_QP_WCG_PPS && ENABLE_QPA
+  if (!pCfg->getWCGChromaQPControl().isEnabled() && pCfg->getUsePerceptQPA() && !pCfg->getUseRateCtrl())
+  {
+    pRdCost->saveUnadjustedLambda();
+  }
+#endif
 
   int prevQP[2];
   int currQP[2];
@@ -1476,12 +1546,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       cs.slice->setDisableSATDForRD(hashBlkHitPerc > 59);
     }
   }
+#if !JVET_P1006_PICTURE_HEADER
   checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
 
   if (pcSlice->getSPS()->getJointCbCrEnabledFlag())
   {
     setJointCbCrModes(cs, Position(0, 0), cs.area.lumaSize());
   }
+#endif
 
   // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
   uint32_t startSliceRsRow = tileMap.getCtuBsToRsAddrMap(startCtuTsAddr) / widthInCtus;
@@ -1573,15 +1645,15 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 
         estQP     = Clip3( -pcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, estQP );
 
+        pRdCost->setLambda(estLambda, pcSlice->getSPS()->getBitDepths());
 #if WCG_EXT
         pRdCost->saveUnadjustedLambda();
 #endif
-        pRdCost->setLambda(estLambda, pcSlice->getSPS()->getBitDepths());
 
 #if RDOQ_CHROMA_LAMBDA
-        // set lambda for RDOQ
-        const double chromaLambda = estLambda / pRdCost->getChromaWeight();
-        const double lambdaArray[MAX_NUM_COMPONENT] = { estLambda, chromaLambda, chromaLambda };
+        const double lambdaArray[MAX_NUM_COMPONENT] = {estLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Y),
+                                                       estLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cb),
+                                                       estLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cr)};
         pTrQuant->setLambdas( lambdaArray );
 #else
         pTrQuant->setLambda( estLambda );
@@ -1603,8 +1675,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if !ENABLE_QPA_SUB_CTU
 #if RDOQ_CHROMA_LAMBDA
       pTrQuant->getLambdas (oldLambdaArray); // save the old lambdas
-      const double chromaLambda = newLambda / pRdCost->getChromaWeight();
-      const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda, chromaLambda, chromaLambda};
+      const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Y),
+                                                     newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cb),
+                                                     newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cr)};
       pTrQuant->setLambdas (lambdaArray);
 #else
       pTrQuant->setLambda (newLambda);

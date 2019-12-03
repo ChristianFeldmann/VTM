@@ -642,6 +642,9 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   if( cu.skip )
   {
     CHECK( !cu.firstPU->mergeFlag, "Merge flag has to be on!" );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    CHECK(cu.colorTransform, "ACT should not be enabled for skip mode");
+#endif
     PredictionUnit&   pu = *cu.firstPU;
     prediction_unit ( pu );
     end_of_ctu      ( cu, cuCtx );
@@ -651,8 +654,17 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
   // prediction mode and partitioning data
   pred_mode ( cu );
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if (CU::isIntra(cu))
+  {
+    adaptive_color_transform(cu);
+  }
+#endif
   if (CU::isPLT(cu))
   {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+    CHECK(cu.colorTransform, "ACT should not be enabled for PLT mode");
+#endif
     if (cu.isSepTree())
     {
       if (isLuma(partitioner.chType))
@@ -1126,7 +1138,6 @@ void CABACWriter::intra_luma_pred_mode( const PredictionUnit& pu )
     return;
   }
   extend_ref_line( pu );
-
   isp_mode( *pu.cu );
 
   // prev_intra_luma_pred_flag
@@ -1249,6 +1260,13 @@ void CABACWriter::intra_chroma_pred_mode(const PredictionUnit& pu)
 #endif
 
   const unsigned intraDir = pu.intraDir[1];
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if (pu.cu->colorTransform)
+  {
+    CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "chroma should use DM for adaptive color transform");
+    return;
+  }
+#endif
   if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
   {
     m_BinEncoder.encodeBin(PU::isLMCMode(intraDir) ? 1 : 0, Ctx::CclmModeFlag(0));
@@ -1302,9 +1320,19 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
 
     if( !cu.rootCbf )
     {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+      CHECK(cu.colorTransform, "ACT should not be enabled for root_cbf = 0");
+#endif
       return;
     }
   }
+
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if (CU::isInter(cu) || CU::isIBC(cu))
+  {
+    adaptive_color_transform(cu);
+  }
+#endif
 
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
@@ -1339,6 +1367,27 @@ void CABACWriter::rqt_root_cbf( const CodingUnit& cu )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "rqt_root_cbf() ctx=0 root_cbf=%d pos=(%d,%d)\n", cu.rootCbf ? 1 : 0, cu.lumaPos().x, cu.lumaPos().y );
 }
+
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+void CABACWriter::adaptive_color_transform(const CodingUnit& cu)
+{
+  if (!cu.slice->getSPS()->getUseColorTrans())
+  {
+    return;
+  }
+
+  if (cu.isSepTree())
+  {
+    CHECK(cu.colorTransform, "adaptive color transform should be disabled when dualtree and localtree are enabled");
+    return;
+  }
+
+  if (CU::isInter(cu) || CU::isIBC(cu) || CU::isIntra(cu))
+  {
+    m_BinEncoder.encodeBin(cu.colorTransform, Ctx::ACTFlag());
+  }
+}
+#endif
 
 void CABACWriter::sbt_mode( const CodingUnit& cu )
 {
@@ -1990,7 +2039,11 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     Mv mvd = pu.mvd[REF_PIC_LIST_0];
     mvd.changeIbcPrecInternal2Amvr(pu.cu->imv);
     mvd_coding(mvd, 0); // already changed to signaling precision
+#if JVET_P1006_PICTURE_HEADER
+    if ( pu.cu->slice->getPicHeader()->getMaxNumIBCMergeCand() == 1 )
+#else
     if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
+#endif
     {
       CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
     }
@@ -2033,7 +2086,11 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       if ( pu.cu->smvdMode != 1 )
       {
       ref_idx     ( pu, REF_PIC_LIST_1 );
+#if JVET_P1006_PICTURE_HEADER
+      if( !pu.cs->picHeader->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
+#else
       if( !pu.cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
+#endif
       {
         if ( pu.cu->affine )
         {
@@ -2083,7 +2140,11 @@ void CABACWriter::smvd_mode( const PredictionUnit& pu )
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
 
+ #if JVET_P1006_PICTURE_HEADER
+  if ( !cu.cs->slice->isIntra() && (cu.slice->getPicHeader()->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#else
   if ( !cu.cs->slice->isIntra() && (cu.slice->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
+#endif
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
     m_BinEncoder.encodeBin( cu.affine, Ctx::SubblockMergeFlag( ctxId ) );
@@ -2129,7 +2190,11 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
     merge_idx(pu);
     return;
   }
+#if JVET_P1006_PICTURE_HEADER
+  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->picHeader->getMaxNumTriangleCand() > 1;
+#else
   const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
+#endif
   const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
@@ -2232,7 +2297,11 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
 
   if ( pu.cu->affine )
   {
+#if JVET_P1006_PICTURE_HEADER
+    int numCandminus1 = int( pu.cs->picHeader->getMaxNumAffineMergeCand() ) - 1;
+#else
     int numCandminus1 = int( pu.cs->slice->getMaxNumAffineMergeCand() ) - 1;
+#endif
     if ( numCandminus1 > 0 )
     {
       if ( pu.mergeIdx == 0 )
@@ -2293,7 +2362,11 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
         }
       };
       m_BinEncoder.encodeBinEP(splitDir);
+#if JVET_P1006_PICTURE_HEADER
+      const int maxNumTriangleCand = pu.cs->picHeader->getMaxNumTriangleCand();
+#else
       const int maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
+#endif
       CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
       CHECK(candIdx0 >= maxNumTriangleCand, "Incorrect candIdx0");
       CHECK(candIdx1 >= maxNumTriangleCand, "Incorrect candIdx1");
@@ -2303,9 +2376,17 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
     }
     int numCandminus1;
     if (pu.cu->predMode == MODE_IBC)
+#if JVET_P1006_PICTURE_HEADER
+      numCandminus1 = int(pu.cs->picHeader->getMaxNumIBCMergeCand()) - 1;
+#else
       numCandminus1 = int(pu.cs->slice->getMaxNumIBCMergeCand()) - 1;
+#endif
     else
+#if JVET_P1006_PICTURE_HEADER
+      numCandminus1 = int(pu.cs->picHeader->getMaxNumMergeCand()) - 1;
+#else
       numCandminus1 = int(pu.cs->slice->getMaxNumMergeCand()) - 1;
+#endif
   if( numCandminus1 > 0 )
   {
     if( pu.mergeIdx == 0 )
@@ -2338,7 +2419,11 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   var1 = (mvpIdx - (var0 * MMVD_MAX_REFINE_NUM)) / 4;
   var2 = mvpIdx - (var0 * MMVD_MAX_REFINE_NUM) - var1 * 4;
 
+#if JVET_P1006_PICTURE_HEADER
+  if (pu.cs->picHeader->getMaxNumMergeCand() > 1)
+#else
   if (pu.cs->slice->getMaxNumMergeCand() > 1)
+#endif
   {
     static_assert(MMVD_BASE_MV_NUM == 2, "");
     assert(var0 < 2);
@@ -2719,9 +2804,17 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     }
     else
     {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+      bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
+      CHECK(lumaCbfIsInferredACT && !TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "adaptive color transform cannot have all zero coefficients");
+      bool lastCbfIsInferred    = lumaCbfIsInferredACT; // ISP and ACT are mutually exclusive
+      bool previousCbf          = false;
+      bool rootCbfSoFar         = false;
+#else
       bool previousCbf = false;
       bool rootCbfSoFar = false;
-      bool lastCbfIsInferred = false;
+      bool lastCbfIsInferred = false;    
+#endif
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -2924,7 +3017,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   }
 
   // determine sign hiding
+#if JVET_P1006_PICTURE_HEADER
+  bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
+#else
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
+#endif
 #if JVET_P0058_CHROMA_TS
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx[compID] == MTS_SKIP)
 #else
@@ -2987,7 +3084,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   last_sig_coeff( cctx, tu, compID );
 
   // code subblocks
+#if JVET_P1006_PICTURE_HEADER
+  const int stateTab  = ( tu.cs->picHeader->getDepQuantEnabledFlag() ? 32040 : 0 );
+#else
   const int stateTab  = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
+#endif
   int       state     = 0;
 
   int ctxBinSampleRatio = (compID == COMPONENT_Y) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;
@@ -3022,15 +3123,15 @@ void CABACWriter::ts_flag( const TransformUnit& tu, ComponentID compID )
 {
 #if JVET_P0058_CHROMA_TS
   int tsFlag = tu.mtsIdx[compID] == MTS_SKIP ? 1 : 0;
-  int ctxIdx = isLuma(compID) ? 6 : 11;
+  int ctxIdx = isLuma(compID) ? 0 : 1;
 #else
   int tsFlag = tu.mtsIdx == MTS_SKIP ? 1 : 0;
-  int ctxIdx = 6;
+  int ctxIdx = 0;
 #endif
   
   if( TU::isTSAllowed ( tu, compID ) )
   {
-    m_BinEncoder.encodeBin( tsFlag, Ctx::MTSIndex( ctxIdx ) );
+    m_BinEncoder.encodeBin( tsFlag, Ctx::TransformSkipFlag(ctxIdx));
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "ts_flag() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tsFlag );
 }
@@ -3059,15 +3160,15 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
     int symbol = mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
     int ctxIdx = 0;
     
-    m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
+    m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
     
     if( symbol )
     {
-      ctxIdx = 7;
+      ctxIdx = 1;
       for( int i = 0; i < 3; i++, ctxIdx++ )
       {
         symbol = mtsIdx > i + MTS_DST7_DST7 ? 1 : 0;
-        m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
+        m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
         
         if( !symbol )
         {
@@ -3098,11 +3199,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 #endif
 
 #if JVET_P0058_CHROMA_TS
-    ctxIdx = isLuma(compID) ? 6 : 11;
+    ctxIdx = isLuma(compID) ? 0 : 1;
 #else
-    ctxIdx = 6;
+    ctxIdx = 0;
 #endif
-    m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
+    m_BinEncoder.encodeBin(symbol, Ctx::TransformSkipFlag(ctxIdx));
   }
 
 #if JVET_P0058_CHROMA_TS
@@ -3119,11 +3220,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
       symbol = tu.mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
 #endif
       ctxIdx = 0;
-      m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
+      m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
 
       if( symbol )
       {
-        ctxIdx = 7;
+        ctxIdx = 1;
         for( int i = 0; i < 3; i++, ctxIdx++ )
         {
 #if JVET_P0058_CHROMA_TS
@@ -3131,7 +3232,7 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 #else
           symbol = tu.mtsIdx > i + MTS_DST7_DST7 ? 1 : 0;
 #endif
-          m_BinEncoder.encodeBin( symbol, Ctx::MTSIndex( ctxIdx ) );
+          m_BinEncoder.encodeBin( symbol, Ctx::MTSIdx(ctxIdx));
 
           if( !symbol )
           {
@@ -3151,7 +3252,11 @@ void CABACWriter::mts_coding( const TransformUnit& tu, ComponentID compID )
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) || cu.colorTransform )
+#else
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
+#endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "cu.ispMode != 0" );
     return;

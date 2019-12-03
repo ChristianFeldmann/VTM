@@ -285,6 +285,9 @@ static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL = 1 << MV
 static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << MV_FRACTIONAL_BITS_INTERNAL;
 static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << (MV_FRACTIONAL_BITS_INTERNAL + 1);
 
+#if JVET_P1006_PICTURE_HEADER
+static const int MAX_NUM_SUB_PICS =                               255;
+#endif
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
@@ -493,6 +496,10 @@ static const int ENC_PPS_ID_RPR =                                 3;
 static const int SCALE_RATIO_BITS =                              14;
 static const int MAX_SCALING_RATIO =                              8;  // max scaling ratio allowed in the software, it is used to allocated an internla buffer in the rescaling
 static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+static const int DELTA_QP_FOR_Y_Cg =                             -5;
+static const int DELTA_QP_FOR_Co =                               -3;
+#endif
 
 // ====================================================================================================================
 // Macro functions

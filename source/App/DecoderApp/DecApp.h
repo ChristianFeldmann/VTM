@@ -61,7 +61,11 @@ class DecApp : public DecAppCfg
 private:
   // class interface
   DecLib          m_cDecLib;                     ///< decoder class
+#if JVET_N0278_FIXES
+  std::unordered_map<int, VideoIOYuv>      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
+#else
   VideoIOYuv      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
+#endif
 
   // for output control
   int             m_iPOCLastDisplay;              ///< last POC in display order
@@ -80,9 +84,17 @@ private:
   void  xCreateDecLib     (); ///< create internal classes
   void  xDestroyDecLib    (); ///< destroy internal classes
   void  xWriteOutput      ( PicList* pcListPic , uint32_t tId); ///< write YUV to file
+#if JVET_N0278_FIXES
+  void  xFlushOutput( PicList* pcListPic, const int layerId = NOT_VALID ); ///< flush all remaining decoded pictures to file
+#else
   void  xFlushOutput      ( PicList* pcListPic ); ///< flush all remaining decoded pictures to file
+#endif
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
   bool  isNaluTheTargetLayer(InputNALUnit* nalu); ///< check whether given Nalu is within targetDecLayerIdSet
+#if JVET_P1006_PICTURE_HEADER
+  bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
+  bool  isNewAccessUnit(bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new access unit
+#endif
 };
 
 //! \}

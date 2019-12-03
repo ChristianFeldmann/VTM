@@ -193,6 +193,10 @@ public:
   , m_cpbRemovalDelayDeltasPresentFlag (false)
   , m_numCpbRemovalDelayDeltas (0)
   , m_bpMaxSubLayers (0)
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  , m_bpDecodingUnitHrdParamsPresentFlag (false)
+  , m_decodingUnitCpbParamsInPicTimingSeiFlag (false)
+#endif
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
@@ -221,6 +225,10 @@ public:
   int  m_numCpbRemovalDelayDeltas;
   int  m_bpMaxSubLayers;
   uint32_t m_cpbRemovalDelayDelta    [15];
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  bool m_bpDecodingUnitHrdParamsPresentFlag;
+  bool m_decodingUnitCpbParamsInPicTimingSeiFlag;
+#endif
 };
 
 class SEIPictureTiming : public SEI
@@ -229,6 +237,20 @@ public:
   PayloadType payloadType() const { return PICTURE_TIMING; }
   void copyTo (SEIPictureTiming& target) const;
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  SEIPictureTiming()
+  : m_picDpbOutputDelay (0)
+  , m_picDpbOutputDuDelay (0)
+  , m_numDecodingUnitsMinus1 (0)
+  , m_duCommonCpbRemovalDelayFlag (false)
+  {
+    ::memset(m_ptSubLayerDelaysPresentFlag, 0, sizeof(m_ptSubLayerDelaysPresentFlag));
+    ::memset(m_duCommonCpbRemovalDelayMinus1, 0, sizeof(m_duCommonCpbRemovalDelayMinus1));
+    ::memset(m_cpbRemovalDelayDeltaEnabledFlag, 0, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
+    ::memset(m_cpbRemovalDelayDeltaIdx, 0, sizeof(m_cpbRemovalDelayDeltaIdx));
+    ::memset(m_auCpbRemovalDelay, 0, sizeof(m_auCpbRemovalDelay));
+  }
+#else
   SEIPictureTiming()
   : m_ptMaxSubLayers (0)
   , m_picDpbOutputDelay (0)
@@ -242,11 +264,25 @@ public:
     ::memset(m_cpbRemovalDelayDeltaIdx, 0, sizeof(m_cpbRemovalDelayDeltaIdx));
     ::memset(m_auCpbRemovalDelay, 0, sizeof(m_auCpbRemovalDelay));
   }
+#endif
   virtual ~SEIPictureTiming()
   {
   }
 
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  bool  m_ptSubLayerDelaysPresentFlag[MAX_TLAYER];
+  bool  m_cpbRemovalDelayDeltaEnabledFlag[MAX_TLAYER];
+  uint32_t  m_cpbRemovalDelayDeltaIdx[MAX_TLAYER];
+  uint32_t  m_auCpbRemovalDelay[MAX_TLAYER];
+  uint32_t  m_picDpbOutputDelay;
+  uint32_t  m_picDpbOutputDuDelay;
+  uint32_t  m_numDecodingUnitsMinus1;
+  bool  m_duCommonCpbRemovalDelayFlag;
+  uint32_t  m_duCommonCpbRemovalDelayMinus1[MAX_TLAYER];
+  std::vector<uint32_t> m_numNalusInDuMinus1;
+  std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
+#else
   int  m_ptMaxSubLayers;
   bool  m_subLayerDelaysPresentFlag[MAX_TLAYER];
   bool  m_cpbRemovalDelayDeltaEnabledFlag[MAX_TLAYER];
@@ -259,6 +295,7 @@ public:
   uint32_t  m_duCommonCpbRemovalDelayMinus1;
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
+#endif
 };
 
 class SEIDecodingUnitInfo : public SEI
@@ -266,15 +303,31 @@ class SEIDecodingUnitInfo : public SEI
 public:
   PayloadType payloadType() const { return DECODING_UNIT_INFO; }
 
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  SEIDecodingUnitInfo()
+    : m_decodingUnitIdx(0)
+    , m_dpbOutputDuDelayPresentFlag(false)
+    , m_picSptDpbOutputDuDelay(0)
+  {
+    ::memset(m_duiSubLayerDelaysPresentFlag, 0, sizeof(m_duiSubLayerDelaysPresentFlag));
+    ::memset(m_duSptCpbRemovalDelayIncrement, 0, sizeof(m_duSptCpbRemovalDelayIncrement));
+  }
+#else
   SEIDecodingUnitInfo()
     : m_decodingUnitIdx(0)
     , m_duSptCpbRemovalDelay(0)
     , m_dpbOutputDuDelayPresentFlag(false)
     , m_picSptDpbOutputDuDelay(0)
   {}
+#endif
   virtual ~SEIDecodingUnitInfo() {}
   int m_decodingUnitIdx;
+#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+  bool m_duiSubLayerDelaysPresentFlag[MAX_TLAYER];
+  int m_duSptCpbRemovalDelayIncrement[MAX_TLAYER];
+#else
   int m_duSptCpbRemovalDelay;
+#endif
   bool m_dpbOutputDuDelayPresentFlag;
   int m_picSptDpbOutputDuDelay;
 };

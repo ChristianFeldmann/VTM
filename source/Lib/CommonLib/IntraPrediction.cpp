@@ -1290,15 +1290,12 @@ bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const
     return false;
   }
 
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
-
-  return !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
+  return true;
 }
 
 int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags)
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1313,10 +1310,8 @@ int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Posi
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
-    numIntra += valid ? 1 : 0;
-    *validFlags = valid;
+    ++numIntra;
+    *validFlags = true;
 
     validFlags++;
   }
@@ -1327,7 +1322,6 @@ int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Posi
 int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *bValidFlags)
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1342,10 +1336,8 @@ int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Posit
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
-    numIntra += valid ? 1 : 0;
-    *validFlags = valid;
+    ++numIntra;
+    *validFlags = true;
 
     validFlags--;
   }
@@ -1356,7 +1348,6 @@ int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Posit
 int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posRT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags )
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1371,10 +1362,8 @@ int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
-    numIntra += valid ? 1 : 0;
-    *validFlags = valid;
+    ++numIntra;
+    *validFlags = true;
 
     validFlags++;
   }
@@ -1385,7 +1374,6 @@ int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const
 int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLB, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *bValidFlags )
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1400,10 +1388,8 @@ int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const 
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
-    numIntra += valid ? 1 : 0;
-    *validFlags = valid;
+    ++numIntra;
+    *validFlags = true;
 
     validFlags--;
   }
@@ -2047,8 +2033,8 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
 
-  uint32_t       reusePLTSizetmp = 0;
-  uint32_t       pltSizetmp = 0;
+  uint8_t        reusePLTSizetmp = 0;
+  uint8_t        pltSizetmp = 0;
   Pel            curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
   bool           curPLTpred[MAXPLTPREDSIZE];
 

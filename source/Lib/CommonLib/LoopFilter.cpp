@@ -268,7 +268,11 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   int  horVirBndryPos[] = { 0, 0, 0 };
   int  verVirBndryPos[] = { 0, 0, 0 };
 
+#if JVET_P1006_PICTURE_HEADER
+  bool isCuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries( area.x, area.y, area.width, area.height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cu.cs->picHeader );
+#else
   bool isCuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries( area.x, area.y, area.width, area.height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cu.cs->slice->getPPS() );
+#endif
 
   xSetLoopfilterParam( cu );
   static_vector<int, 2*MAX_CU_SIZE> edgeIdx;
@@ -407,6 +411,30 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
   }
 }
 
+#if JVET_P1006_PICTURE_HEADER
+inline bool LoopFilter::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader )
+{
+  numHorVirBndry = 0; numVerVirBndry = 0;
+  if (picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag())
+  {
+    for (int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++)
+    {
+      if (yPos <= picHeader->getVirtualBoundariesPosY(i) && picHeader->getVirtualBoundariesPosY(i) < yPos + height)
+      {
+        horVirBndryPos[numHorVirBndry++] = picHeader->getVirtualBoundariesPosY(i);
+      }
+    }
+    for (int i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++)
+    {
+      if (xPos <= picHeader->getVirtualBoundariesPosX(i) && picHeader->getVirtualBoundariesPosX(i) < xPos + width)
+      {
+        verVirBndryPos[numVerVirBndry++] = picHeader->getVirtualBoundariesPosX(i);
+      }
+    }
+  }
+  return numHorVirBndry > 0 || numVerVirBndry > 0;
+}
+#else
 inline bool LoopFilter::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
@@ -429,6 +457,7 @@ inline bool LoopFilter::isCrossedByVirtualBoundaries(const int xPos, const int y
   }
   return numHorVirBndry > 0 || numVerVirBndry > 0;
 }
+#endif
 
 inline void LoopFilter::xDeriveEdgefilterParam( const int xPos, const int yPos, const int numVerVirBndry, const int numHorVirBndry, const int verVirBndryPos[], const int horVirBndryPos[], bool &verEdgeFilter, bool &horEdgeFilter )
 {
@@ -671,8 +700,13 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   const Position& pos = cu.blocks[cu.chType].pos();
 
   m_stLFCUParam.internalEdge = true;
+#if JVET_P1006_PICTURE_HEADER
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
+#else
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
+#endif
 }
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const
@@ -938,11 +972,27 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-        CHECK( !isAvailableLeft( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+#if JVET_P1006_PICTURE_HEADER
+        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#else
+        if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#endif
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
       else  // (iDir == EDGE_HOR)
       {
-        CHECK( !isAvailableAbove( cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() ), "Neighbour not available" );
+#if JVET_P1006_PICTURE_HEADER
+        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#else
+        if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#endif
+        {
+          m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
+          continue;
+        }
       }
 
       iQP = (cuP.qp + cuQ.qp + 1) >> 1;
@@ -1205,11 +1255,19 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
+#if JVET_P1006_PICTURE_HEADER
+        CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
+#else
         CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
+#endif
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_P1006_PICTURE_HEADER
+        CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
+#else
         CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
+#endif
       }
 
       bPartPNoFilter = bPartQNoFilter = false;

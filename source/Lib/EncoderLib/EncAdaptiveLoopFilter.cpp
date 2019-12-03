@@ -400,9 +400,17 @@ int AlfCovariance::gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) c
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 
+#if JVET_N0278_FIXES
+EncAdaptiveLoopFilter::EncAdaptiveLoopFilter( int& apsIdStart )
+#else
 EncAdaptiveLoopFilter::EncAdaptiveLoopFilter()
+#endif
   : m_CABACEstimator( nullptr )
+#if JVET_N0278_FIXES
+  , m_apsIdStart( apsIdStart )
+#else
   , m_apsIdStart( ALF_CTB_MAX_NUM_APS )
+#endif
 {
   for( int i = 0; i < MAX_NUM_COMPONENT; i++ )
   {
@@ -640,10 +648,18 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #endif
                                       )
 {
+#if JVET_N0278_FIXES
+  int layerIdx = cs.slice->getPic()->layerId; //VS: layerId should be converted to layerIdx
+
+   // IRAP AU is assumed
+  if( !layerIdx && ( cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA() ) )
+#else
   if (cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA())
+#endif
   {
     memset(cs.slice->getAlfAPSs(), 0, sizeof(*cs.slice->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
     m_apsIdStart = ALF_CTB_MAX_NUM_APS;
+
     m_apsMap->clear();
     for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
     {
@@ -706,7 +722,13 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
       const int width = ( xPos + pcv.maxCUWidth > pcv.lumaWidth ) ? ( pcv.lumaWidth - xPos ) : pcv.maxCUWidth;
       const int height = ( yPos + pcv.maxCUHeight > pcv.lumaHeight ) ? ( pcv.lumaHeight - yPos ) : pcv.maxCUHeight;
 #if JVET_O0625_ALF_PADDING
+#if JVET_P1006_PICTURE_HEADER
+      if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader ) )
+#else
       if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
+#endif
+#elif JVET_P0551_ALF_SLICE_BOUNDARY
+      if (isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos ) )
 #else
       if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
@@ -1830,7 +1852,13 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
       const int width = ( xPos + m_maxCUWidth > m_picWidth ) ? ( m_picWidth - xPos ) : m_maxCUWidth;
       const int height = ( yPos + m_maxCUHeight > m_picHeight ) ? ( m_picHeight - yPos ) : m_maxCUHeight;
 #if JVET_O0625_ALF_PADDING
+#if JVET_P1006_PICTURE_HEADER
+      if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader ) )
+#else
       if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
+#endif
+#elif JVET_P0551_ALF_SLICE_BOUNDARY
+      if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos ) )
 #else
       if( isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
@@ -2365,7 +2393,12 @@ std::vector<int> EncAdaptiveLoopFilter::getAvaiApsIdsLuma(CodingStructure& cs, i
     while (apsIdChecked < ALF_CTB_MAX_NUM_APS && !cs.slice->isIntra() && result.size() < ALF_CTB_MAX_NUM_APS && !cs.slice->getPendingRasInit() && !cs.slice->isIDRorBLA())
     {
       APS* curAPS = cs.slice->getAlfAPSs()[curApsId];
+
+#if JVET_N0278_FIXES
+      if( curAPS && curAPS->getLayerId() == cs.slice->getPic()->layerId && curAPS->getTemporalId() <= cs.slice->getTLayer() && curAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] )
+#else
       if (curAPS && curAPS->getTemporalId() <= cs.slice->getTLayer() && curAPS->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA])
+#endif
       {
         result.push_back(curApsId);
       }
@@ -2720,6 +2753,14 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
       continue;
     }
     APS* curAPS = m_apsMap->getPS((curApsId << NUM_APS_TYPE_LEN) + ALF_APS);
+
+#if JVET_N0278_FIXES
+    if( curAPS && curAPS->getLayerId() != cs.slice->getPic()->layerId )
+    {
+      continue;
+    }
+#endif
+
     double curCost = m_lambda[CHANNEL_TYPE_CHROMA] * 3;
     if (curApsId == newApsIdChroma)
     {
@@ -2905,7 +2946,13 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
         ctuEnableFlag |= m_ctuEnableFlag[compIdx][ctuIdx] > 0;
       }
 #if JVET_O0625_ALF_PADDING
+#if JVET_P1006_PICTURE_HEADER
+      if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader ) )
+#else
       if( isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
+#endif
+#elif JVET_P0551_ALF_SLICE_BOUNDARY
+      if ( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos ) )
 #else
       if (ctuEnableFlag && isCrossedByVirtualBoundaries(xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS()))
 #endif

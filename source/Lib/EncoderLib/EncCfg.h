@@ -214,6 +214,16 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      m_noTrailConstraintFlag;
+  bool      m_noStsaConstraintFlag;
+  bool      m_noRaslConstraintFlag;
+  bool      m_noRadlConstraintFlag;
+  bool      m_noIdrConstraintFlag;
+  bool      m_noCraConstraintFlag;
+  bool      m_noGdrConstraintFlag;
+  bool      m_noApsConstraintFlag;
+#endif
 
   /* profile & level */
   Profile::Name m_profile;
@@ -317,6 +327,10 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  bool      m_rgbFormat;
+  bool      m_useColorTrans;
+#endif
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
   unsigned  m_IBCMode;
@@ -460,7 +474,6 @@ protected:
   bool      m_ISP;
   bool      m_useFastISP;
 
-  bool      m_bUseConstrainedIntraPred;
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
@@ -582,13 +595,21 @@ protected:
   bool      m_useWeightedPred;       //< Use of Weighting Prediction (P_SLICE)
   bool      m_useWeightedBiPred;    //< Use of Bi-directional Weighting Prediction (B_SLICE)
   WeightedPredictionMethod m_weightedPredictionMethod;
-  uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
+#if JVET_P1006_PICTURE_HEADER
+  bool      m_sliceLevelRpl;                      ///< code reference picture lists in slice headers rather than picture header
+  bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
+  bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
+  bool      m_sliceLevelAlf;                      ///< code ALF parameters in slice headers rather than picture header
+#endif
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  bool      m_disableScalingMatrixForLfnstBlks;
+#endif
   int       m_TMVPModeId;
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
@@ -778,6 +799,25 @@ public:
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
   void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  bool      getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
+  void      setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
+  bool      getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
+  void      setNoStsaConstraintFlag(bool bVal) { m_noStsaConstraintFlag = bVal; }
+  bool      getNoRaslConstraintFlag() const { return m_noRaslConstraintFlag; }
+  void      setNoRaslConstraintFlag(bool bVal) { m_noRaslConstraintFlag = bVal; }
+  bool      getNoRadlConstraintFlag() const { return m_noRadlConstraintFlag; }
+  void      setNoRadlConstraintFlag(bool bVal) { m_noRadlConstraintFlag = bVal; }
+  bool      getNoIdrConstraintFlag() const { return m_noIdrConstraintFlag; }
+  void      setNoIdrConstraintFlag(bool bVal) { m_noIdrConstraintFlag = bVal; }
+  bool      getNoCraConstraintFlag() const { return m_noCraConstraintFlag; }
+  void      setNoCraConstraintFlag(bool bVal) { m_noCraConstraintFlag = bVal; }
+  bool      getNoGdrConstraintFlag() const { return m_noGdrConstraintFlag; }
+  void      setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
+  bool      getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
+  void      setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+#endif
+
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }
   void      setFrameSkip                    ( uint32_t  i )      { m_FrameSkip = i; }
@@ -953,6 +993,12 @@ public:
   bool      getMMVD                         ()         const { return m_MMVD; }
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
+#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
+  void      setRGBFormatFlag(bool value) { m_rgbFormat = value; }
+  bool      getRGBFormatFlag()                         const { return m_rgbFormat; }
+  void      setUseColorTrans(bool value) { m_useColorTrans = value; }
+  bool      getUseColorTrans()                         const { return m_useColorTrans; }
+#endif
   void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
   unsigned  getPLTMode                   ()         const { return m_PLTMode; }
   void      setJointCbCr                    ( bool b )       { m_JointCbCrMode = b; }
@@ -1195,7 +1241,6 @@ public:
   void      setUseFastDecisionForMerge      ( bool  b )     { m_useFastDecisionForMerge = b; }
   void      setUseCbfFastMode               ( bool  b )     { m_bUseCbfFastMode = b; }
   void      setUseEarlySkipDetection        ( bool  b )     { m_useEarlySkipDetection = b; }
-  void      setUseConstrainedIntraPred      ( bool  b )     { m_bUseConstrainedIntraPred = b; }
   void      setFastUDIUseMPMEnabled         ( bool  b )     { m_bFastUDIUseMPMEnabled = b; }
   void      setFastMEForGenBLowDelayEnabled ( bool  b )     { m_bFastMEForGenBLowDelayEnabled = b; }
   void      setUseBLambdaForNonKeyLowDelayPictures ( bool b ) { m_bUseBLambdaForNonKeyLowDelayPictures = b; }
@@ -1218,7 +1263,6 @@ public:
   bool      getUseFastDecisionForMerge      () const{ return m_useFastDecisionForMerge; }
   bool      getUseCbfFastMode               () const{ return m_bUseCbfFastMode; }
   bool      getUseEarlySkipDetection        () const{ return m_useEarlySkipDetection; }
-  bool      getUseConstrainedIntraPred      ()      { return m_bUseConstrainedIntraPred; }
   bool      getFastUDIUseMPMEnabled         ()      { return m_bFastUDIUseMPMEnabled; }
   bool      getFastMEForGenBLowDelayEnabled ()      { return m_bFastMEForGenBLowDelayEnabled; }
   bool      getUseBLambdaForNonKeyLowDelayPictures () { return m_bUseBLambdaForNonKeyLowDelayPictures; }
@@ -1503,8 +1547,6 @@ public:
   void         setWPBiPred            ( bool b )                     { m_useWeightedBiPred = b;    }
   bool         getUseWP               ()                             { return m_useWeightedPred;   }
   bool         getWPBiPred            ()                             { return m_useWeightedBiPred; }
-  void         setLog2ParallelMergeLevelMinus2   ( uint32_t u )          { m_log2ParallelMergeLevelMinus2       = u;    }
-  uint32_t         getLog2ParallelMergeLevelMinus2   ()                  { return m_log2ParallelMergeLevelMinus2;       }
   void         setMaxNumMergeCand                ( uint32_t u )          { m_maxNumMergeCand = u;      }
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
   void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
@@ -1517,6 +1559,20 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
+#if JVET_P1006_PICTURE_HEADER
+  void         setSliceLevelRpl  ( bool b )                          { m_sliceLevelRpl = b;     }
+  bool         getSliceLevelRpl  ()                                  { return m_sliceLevelRpl;  }
+  void         setSliceLevelDblk ( bool b )                          { m_sliceLevelDblk = b;    }
+  bool         getSliceLevelDblk ()                                  { return m_sliceLevelDblk; }
+  void         setSliceLevelSao  ( bool b )                          { m_sliceLevelSao = b;     }
+  bool         getSliceLevelSao  ()                                  { return m_sliceLevelSao;  }
+  void         setSliceLevelAlf  ( bool b )                          { m_sliceLevelAlf = b;     }
+  bool         getSliceLevelAlf  ()                                  { return m_sliceLevelAlf;  }
+#endif
+#if JVET_P0365_SCALING_MATRIX_LFNST
+  void         setDisableScalingMatrixForLfnstBlks(bool u)          { m_disableScalingMatrixForLfnstBlks = u;   }
+  bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }
+#endif
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }
@@ -1536,7 +1592,7 @@ public:
   void         setPPSCollocatedFromL0Idc ( int u )                   { m_PPSCollocatedFromL0Idc = u; }
   int          getPPSCollocatedFromL0Idc ()                          { return m_PPSCollocatedFromL0Idc; }
   void         setPPSSixMinusMaxNumMergeCandPlus1 ( uint32_t u )     { m_PPSSixMinusMaxNumMergeCandPlus1 = u; }
-  uint32_t	   getPPSSixMinusMaxNumMergeCandPlus1 ()                 { return m_PPSSixMinusMaxNumMergeCandPlus1; }
+  uint32_t     getPPSSixMinusMaxNumMergeCandPlus1 ()                 { return m_PPSSixMinusMaxNumMergeCandPlus1; }
 #if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
   void         setPPSFiveMinusMaxNumSubblockMergeCandPlus1 ( uint32_t u ) { m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 = u; }
   uint32_t     getPPSFiveMinusMaxNumSubblockMergeCandPlus1 ()        { return m_PPSFiveMinusMaxNumSubblockMergeCandPlus1; }

@@ -77,6 +77,9 @@ private:
 
   PicList                 m_cListPic;         //  Dynamic buffer
   ParameterSetManager     m_parameterSetManager;  // storage for parameter sets
+#if JVET_P1006_PICTURE_HEADER
+  PicHeader               m_picHeader;            // picture header
+#endif
   Slice*                  m_apcSlicePilot;
 
 
@@ -106,6 +109,9 @@ private:
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
   uint32_t                    m_uiSliceSegmentIdx;
+#if JVET_P1006_PICTURE_HEADER
+  uint32_t                m_prevLayerID;
+#endif
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
@@ -131,6 +137,10 @@ private:
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
   std::vector<int> m_accessUnitApsNals;
 
+#if JVET_N0278_FIXES
+  VPS*                    m_vps;
+#endif
+
 public:
   DecLib();
   virtual ~DecLib();
@@ -152,6 +162,9 @@ public:
   void  finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl = INFO);
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+  void  checkNalUnitConstraints( uint32_t naluType );
+#endif
 
   void  setTargetDecLayer (int val) { m_iTargetLayer = val; }
   int   getTargetDecLayer()         { return m_iTargetLayer; }
@@ -169,15 +182,33 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+#if JVET_P1006_PICTURE_HEADER
+  void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
+  void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
+  bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
+#endif
+
+#if JVET_N0278_FIXES
+  const VPS* getVPS()                     { return m_vps; }
+#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);
 
+#if JVET_N0278_FIXES
+  Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
+  void  xCreateLostPicture( int iLostPOC, const int layerId );
+  void  xCreateUnavailablePicture( int iUnavailablePoc, bool longTermFlag, const int layerId );
+  void  xActivateParameterSets( const int layerId );
+#else
   Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
   void  xCreateLostPicture (int iLostPOC);
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
-
   void      xActivateParameterSets();
+#endif
+#if JVET_P1006_PICTURE_HEADER
+  void      xDecodePicHeader( InputNALUnit& nalu );
+#endif
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
   void      xDecodeDPS( InputNALUnit& nalu );

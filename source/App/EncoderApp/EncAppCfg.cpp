@@ -2123,20 +2123,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     cfg_qpOutValCr.values = { 0 };
     cfg_qpOutValCbCr.values = { 0 };
   }
+  int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
 #if JVET_P0410_CHROMA_QP_MAPPING
-  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size() - 2;
-#else
-  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
-#endif
-  int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
-#if JVET_P0410_CHROMA_QP_MAPPING
-  m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] = -26 + cfg_qpInValCb.values[0];
-  CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
-  CHECK(cfg_qpInValCb.values[0] != cfg_qpOutValCb.values[0], "First qpIn value should be equal to first qpOut value");
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (cfg_qpOutValCb.values.size() > 1) ? (int)cfg_qpOutValCb.values.size() - 2 : 0;
+  m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] = (cfg_qpOutValCb.values.size() > 1) ? -26 + cfg_qpInValCb.values[0] : 0;
+  CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] > 36, "qpTableStartMinus26[0] is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+  CHECK(cfg_qpInValCb.values[0] != cfg_qpOutValCb.values[0], "First qpInValCb value should be equal to first qpOutValCb value");
   for (int i = 0; i < cfg_qpInValCb.values.size() - 1; i++)
 #else
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
   for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
 #endif
   {
@@ -2155,10 +2152,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
 #if JVET_P0410_CHROMA_QP_MAPPING
-    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size() - 2;
-    m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] = -26 + cfg_qpInValCr.values[0];
-    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
-    CHECK(cfg_qpInValCr.values[0] != cfg_qpOutValCr.values[0], "First qpIn value should be equal to first qpOut value");
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (cfg_qpOutValCr.values.size() > 1) ? (int)cfg_qpOutValCr.values.size() - 2 : 0;
+    m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] = (cfg_qpOutValCr.values.size() > 1) ? -26 + cfg_qpInValCr.values[0] : 0;
+    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] > 36, "qpTableStartMinus26[1] is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+    CHECK(cfg_qpInValCr.values[0] != cfg_qpOutValCr.values[0], "First qpInValCr value should be equal to first qpOutValCr value");
     for (int i = 0; i < cfg_qpInValCr.values.size() - 1; i++)
 #else
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
@@ -2178,10 +2175,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
 #if JVET_P0410_CHROMA_QP_MAPPING
-    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size() - 2;
-    m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] = -26 + cfg_qpInValCbCr.values[0];
-    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
-    CHECK(cfg_qpInValCbCr.values[0] != cfg_qpInValCbCr.values[0], "First qpIn value should be equal to first qpOut value");
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (cfg_qpOutValCbCr.values.size() > 1) ? (int)cfg_qpOutValCbCr.values.size() - 2 : 0;
+    m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] = (cfg_qpOutValCbCr.values.size() > 1) ? -26 + cfg_qpInValCbCr.values[0] : 0;
+    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] > 36, "qpTableStartMinus26[2] is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+    CHECK(cfg_qpInValCbCr.values[0] != cfg_qpInValCbCr.values[0], "First qpInValCbCr value should be equal to first qpOutValCbCr value");
     for (int i = 0; i < cfg_qpInValCbCr.values.size() - 1; i++)
 #else
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size()-1;

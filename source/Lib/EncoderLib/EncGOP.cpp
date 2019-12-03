@@ -404,6 +404,32 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   {
     actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
   }
+#else
+  if (bSeqFirst)
+  {
+#if JVET_P0205_VPS_ID_0
+    if (slice->getSPS()->getVPSId() != 0)
+    {
+      actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+    }
+#else
+    actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+#endif
+  }
+  if (bSeqFirst)
+  {
+    actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+  }
+
+  if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  {
+    CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
+    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
+  }
+  if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  {
+    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
+  }  
 #endif
 
   return actualTotalBits;

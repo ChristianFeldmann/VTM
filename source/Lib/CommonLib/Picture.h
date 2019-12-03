@@ -50,8 +50,6 @@
 #include "MCTS.h"
 #include <deque>
 
-#include "CommonLib/InterpolationFilter.h"
-
 #if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
 #if ENABLE_WPP_PARALLELISM
 #include <mutex>

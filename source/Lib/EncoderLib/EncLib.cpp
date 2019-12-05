@@ -1028,11 +1028,22 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
       }
     }
 
+#if !FIELD_CODING_FIX
     if( m_iNumPicRcvd && ( ( flush&&fieldNum == 1 ) || ( m_iPOCLast / 2 ) == 0 || m_iNumPicRcvd == m_iGOPSize ) )
     {
       keepDoing = false;
     }
+#endif
   }
+
+#if FIELD_CODING_FIX
+  if( m_iNumPicRcvd && ( flush || m_iPOCLast == 1 || m_iNumPicRcvd == m_iGOPSize ) )
+  {
+    m_picIdInGOP = 0;
+    m_iPOCLast -= 2;
+    keepDoing = false;
+  }
+#endif
 
   return keepDoing;
 }
@@ -1041,6 +1052,32 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
 {
   iNumEncoded = 0;
 
+#if FIELD_CODING_FIX
+  for( int fieldNum = 0; fieldNum < 2; fieldNum++ )
+  {
+    m_iPOCLast = ( m_iNumPicRcvd == m_iGOPSize ) ? m_uiNumAllPicCoded + m_iNumPicRcvd - 1 : m_iPOCLast + 1;
+
+    // compress GOP
+    m_cGOPEncoder.compressGOP( m_iPOCLast, m_iPOCLast < 2 ? m_iPOCLast + 1 : m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE, false, m_picIdInGOP );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    m_metricTime = m_cGOPEncoder.getMetricTime();
+#endif
+
+    m_picIdInGOP++;
+  }
+   
+  // go over all pictures in a GOP excluding first top field and first bottom field
+  if( m_picIdInGOP != m_iGOPSize && m_iPOCLast > 1 )
+  {
+    return true;
+  }
+
+  iNumEncoded += m_iNumPicRcvd;
+  m_uiNumAllPicCoded += m_iNumPicRcvd;
+  m_iNumPicRcvd = 0;
+  
+  return false;
+#else
   for( int fieldNum = 0; fieldNum < 2; fieldNum++ )
   {
     // compress GOP
@@ -1063,6 +1100,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
   }
 
   return false;
+#endif
 }
 #else
 void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
@@ -1160,7 +1198,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
  */
 void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId )
 {
-  // rotate he output buffer
+  // rotate the output buffer
   rcListPicYuvRecOut.push_back( rcListPicYuvRecOut.front() ); rcListPicYuvRecOut.pop_front();
 
   rpcPic=0;

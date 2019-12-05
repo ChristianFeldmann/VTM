@@ -2091,6 +2091,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   }
 
 #if JVET_N0278_FIXES
+#if FIELD_CODING_FIX
+  if( isField && picIdInGOP == 0 )
+  {
+    for( int iGOPid = 0; iGOPid < max(2, m_iGopSize); iGOPid++ )
+    {
+      m_pcCfg->setEncodedFlag( iGOPid, false );
+    }
+  }
+#endif
   for( int iGOPid = picIdInGOP; iGOPid <= picIdInGOP; iGOPid++ )
   {
     // reset flag indicating whether pictures have been encoded

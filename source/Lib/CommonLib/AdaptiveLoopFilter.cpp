@@ -648,6 +648,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
                 , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+                , m_alfVBLumaPos
 #else
                 , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -673,6 +675,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
                   , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+                   , m_alfVBChmaPos );
 #else
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
 #endif
@@ -717,6 +721,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
           , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+          , m_alfVBLumaPos
 #else
           , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -741,6 +747,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
             , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+            , m_alfVBChmaPos);
 #else
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
 #endif

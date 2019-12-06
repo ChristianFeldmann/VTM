@@ -970,11 +970,19 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
 #if JVET_O0625_ALF_PADDING
       m_deriveClassificationBlk( classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
+#if JVET_P0158_ALIGN_ALF_VB
+        , m_alfVBLumaPos, alfBryList );
+#else
         , ( ( i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight ) ? m_picHeight : m_alfVBLumaPos ), alfBryList );
+#endif
 #else
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
+#if JVET_P0158_ALIGN_ALF_VB
+        , m_alfVBLumaPos
+#else
         , ((i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
+#endif
       );
 #endif
     }

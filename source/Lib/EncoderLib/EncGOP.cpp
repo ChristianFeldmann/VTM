@@ -2138,6 +2138,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                 iNumPicRcvd, iTimeOffset, pcPic, pocCurr, isField );
 #if JVET_P1006_PICTURE_HEADER
     picHeader = pcPic->cs->picHeader;
+    picHeader->setSPSId( pcPic->cs->pps->getSPSId() );
+    picHeader->setPPSId( pcPic->cs->pps->getPPSId() );
     picHeader->setSplitConsOverrideFlag(false);
 #endif
 

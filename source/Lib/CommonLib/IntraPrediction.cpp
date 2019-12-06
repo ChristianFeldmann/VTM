@@ -1489,7 +1489,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   Pel*       pDst  = nullptr;
   Pel const* piSrc = nullptr;
 
-  bool isFirstRowOfCtu = ((pu.block(COMPONENT_Cb).y)&(((pu.cs->sps)->getMaxCUWidth() >> 1) - 1)) == 0;
+  bool isFirstRowOfCtu = ( lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1) ) == 0;
   const int strOffset = (CHROMA_444 == pu.chromaFormat) ? 0 : iRecStride;
 
   int c0_2tap = 1, c1_2tap = 1,                                                     offset_2tap = 1, shift_2tap = 1; //sum = 2

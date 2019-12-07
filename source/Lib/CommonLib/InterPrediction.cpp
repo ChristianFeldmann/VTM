@@ -315,10 +315,10 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   int  fstStep = (!verMC ? puHeight : puWidth);
   int  secStep = (!verMC ? puWidth : puHeight);
 
-  pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
 #if JVET_P0590_SCALING_WINDOW
-  bool scaled = ( pu.refIdx[0] < 0 ? false : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, pu.refIdx[0] ) != SCALE_1X ) || ( pu.refIdx[1] < 0 ? false : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, pu.refIdx[1] ) != SCALE_1X );
+  bool scaled = pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, 0 ) != SCALE_1X || ( pu.cs->slice->getSliceType() == B_SLICE ? pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, 0 ) != SCALE_1X : false );
 #else
+  pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
   bool scaled = !PU::isRefPicSameSize( pu );
 #endif
 

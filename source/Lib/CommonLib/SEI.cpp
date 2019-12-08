@@ -118,6 +118,9 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_bpDecodingUnitHrdParamsPresentFlag = m_bpDecodingUnitHrdParamsPresentFlag;
   target.m_decodingUnitCpbParamsInPicTimingSeiFlag = m_decodingUnitCpbParamsInPicTimingSeiFlag;
 #endif
+#if JVET_P0181
+  target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
+#endif
 }
 
 void SEIPictureTiming::copyTo (SEIPictureTiming& target) const

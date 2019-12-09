@@ -414,7 +414,14 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *s
     WRITE_FLAG( sei.m_ptSubLayerDelaysPresentFlag[i], "pt_sub_layer_delays_present_flag[i]" );
     if( sei.m_ptSubLayerDelaysPresentFlag[i] )
     {
-      WRITE_FLAG( sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]" );
+#if JVET_P0183
+      if (bp.m_cpbRemovalDelayDeltasPresentFlag)
+      {
+        WRITE_FLAG(sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]");
+      }
+#else
+      WRITE_FLAG(sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]");
+#endif
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
       {
         WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
@@ -434,8 +441,16 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *s
     WRITE_FLAG( sei.m_subLayerDelaysPresentFlag[i], "sub_layer_delays_present_flag[i]" );
     if( sei.m_subLayerDelaysPresentFlag[i] )
     {
-      WRITE_FLAG( sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]" );
-      if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
+      {
+#if JVET_P0183
+        if (bp.m_cpbRemovalDelayDeltasPresentFlag)
+        {
+          WRITE_FLAG(sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]");
+        }
+#else
+        WRITE_FLAG(sei.m_cpbRemovalDelayDeltaEnabledFlag[i], "cpb_removal_delay_delta_enabled_flag[i]");
+#endif
+        if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
       {
         WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
       }

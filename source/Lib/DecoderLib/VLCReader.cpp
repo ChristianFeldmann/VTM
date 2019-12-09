@@ -103,6 +103,33 @@ void xTraceFillerData ()
 
 #endif
 
+#if JVET_P0462_SEI360
+#if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
+void VLCReader::xReadSCode (uint32_t length, int& value, const char *pSymbolName)
+#else
+void VLCReader::xReadSCode (uint32_t length, int& value)
+#endif
+{
+  uint32_t val;
+  assert ( length > 0 && length<=32);
+  m_pcBitstream->read (length, val);
+  value= length>=32 ? int(val) : ( (-int( val & (uint32_t(1)<<(length-1)))) | int(val) );
+
+#if RExt__DECODER_DEBUG_BIT_STATISTICS
+  CodingStatistics::IncrementStatisticEP(pSymbolName, length, value);
+#endif
+#if ENABLE_TRACING
+  if (length < 10)
+  {
+    DTRACE( g_trace_ctx, D_HEADER, "%-50s i(%d)  : %d\n", pSymbolName, length, value );
+  }
+  else
+  {
+    DTRACE( g_trace_ctx, D_HEADER, "%-50s i(%d) : %d\n", pSymbolName, length, value );
+  }
+#endif
+}
+#endif
 
 // ====================================================================================================================
 // Protected member functions

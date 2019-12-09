@@ -97,6 +97,13 @@ public:
   void initTemporalLevel0IndexSEI(SEITemporalLevel0Index *sei, Slice *slice);
   void initSEIGreenMetadataInfo(SEIGreenMetadataInfo *sei, uint32_t u);
 #endif
+#if JVET_P0462_SEI360
+  void initSEIErp(SEIEquirectangularProjection *sei);
+  void initSEISphereRotation(SEISphereRotation *sei);
+  void initSEIOmniViewport(SEIOmniViewport *sei);
+  void initSEIRegionWisePacking(SEIRegionWisePacking *sei);
+#endif
+
 private:
   EncCfg* m_pcCfg;
   EncLib* m_pcEncLib;

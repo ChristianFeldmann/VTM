@@ -4024,7 +4024,7 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
     {
       predCoef = (PredListId >= SCALING_LIST_1D_START_16x16) ? scalingList->getScalingListDC(PredListId) : srcPred[0];
     }
-    scalingList->setScalingListDC(scalingListId, (nextCoef + predCoef + 256) % 256);
+    scalingList->setScalingListDC(scalingListId, (nextCoef + predCoef + 256) & 255);
 #else
   int nextCoef = SCALING_LIST_START_VALUE;
   ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))];
@@ -4053,7 +4053,7 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
 #if JVET_P01034_PRED_1D_SCALING_LIST
     nextCoef += data;  
     predCoef = (isPredictor) ? srcPred[scan[i].idx] : 0;
-    dst[scan[i].idx] = (nextCoef + predCoef + 256) % 256;
+    dst[scan[i].idx] = (nextCoef + predCoef + 256) & 255;
 #else
     nextCoef = (nextCoef + data + 256) % 256;
     dst[scan[i].idx] = nextCoef;

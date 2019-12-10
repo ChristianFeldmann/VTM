@@ -2680,6 +2680,7 @@ void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t sizeId
       data = scalingList->getScalingListDC(scalingListId) - nextCoef;
       nextCoef = scalingList->getScalingListDC(scalingListId);
     }
+    data = ((data + 128) & 255) - 128;
     WRITE_SVLC((int8_t)data, "scaling_list_dc_coef");
 #else
   const int *src = scalingList->getScalingListAddress(sizeId, listId);
@@ -2700,6 +2701,7 @@ void HLSWriter::xCodeScalingList(const ScalingList* scalingList, uint32_t sizeId
 #if JVET_P01034_PRED_1D_SCALING_LIST
     data = (isPredictor) ? (deltasrc[i] - nextCoef) : (src[scan[i].idx] - nextCoef);
     nextCoef = (isPredictor) ? deltasrc[i] : src[scan[i].idx];
+    data = ((data + 128) & 255) - 128;
     WRITE_SVLC((int8_t)data, "scaling_list_delta_coef");
 #else
     data = src[scan[i].idx] - nextCoef;

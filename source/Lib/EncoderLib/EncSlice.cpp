@@ -44,10 +44,6 @@
 #include "CommonLib/dtrace_blockstatistics.h"
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-extern recursive_mutex g_cache_mutex;
-#endif
 
 #include <math.h>
 
@@ -128,12 +124,6 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
       tmpWeight *= ( m_pcCfg->getGOPSize() >= 8 ? pow( 2.0, 0.1/3.0 ) : pow( 2.0, 0.2/3.0 ) );  // increase chroma weight for dependent quantization (in order to reduce bit rate shift from chroma to luma)
     }
     m_pcRdCost->setDistortionWeight( compID, tmpWeight );
-#if ENABLE_WPP_PARALLELISM
-    for( int jId = 1; jId < ( m_pcLib->getNumWppThreads() + m_pcLib->getNumWppExtraLines() ); jId++ )
-    {
-      m_pcLib->getRdCost( slice->getPic()->scheduler.getWppDataId( jId ) )->setDistortionWeight( compID, tmpWeight );
-    }
-#endif
     dLambdas[compIdx] = dLambda / tmpWeight;
   }
 
@@ -1204,12 +1194,6 @@ void EncSlice::setSearchRange( Slice* pcSlice )
       iRefPOC = pcSlice->getRefPic(e, iRefIdx)->getPOC();
       int newSearchRange = Clip3(m_pcCfg->getMinSearchWindow(), iMaxSR, (iMaxSR*ADAPT_SR_SCALE*abs(iCurrPOC - iRefPOC)+iOffset)/iGOPSize);
       m_pcInterSearch->setAdaptiveSearchRange(iDir, iRefIdx, newSearchRange);
-#if ENABLE_WPP_PARALLELISM
-      for( int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++ )
-      {
-        m_pcLib->getInterSearch( jId )->setAdaptiveSearchRange( iDir, iRefIdx, newSearchRange );
-      }
-#endif
     }
   }
 }
@@ -1360,7 +1344,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
   m_CABACEstimator->initCtxModels( *pcSlice );
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for( int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++ )
   {
     CABACWriter* cw = m_pcLib->getCABACEncoder( jId )->getCABACEstimator( pcSlice->getSPS() );
@@ -1437,7 +1421,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 #endif
     {
       m_CABACEstimator->initCtxModels (*pcSlice);
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       for (int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++)
       {
         CABACWriter* cw = m_pcLib->getCABACEncoder (jId)->getCABACEstimator (pcSlice->getSPS());
@@ -1468,42 +1452,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
     m_pcCuEncoder->getModeCtrl()->setPltEnc(doPlt);
   }
 
-#if ENABLE_WPP_PARALLELISM
-  bool bUseThreads = m_pcCfg->getNumWppThreads() > 1;
-  if( bUseThreads )
-  {
-#if JVET_P1004_REMOVE_BRICKS
-    CHECK( pcSlice->getFirstCtuRsAddrInSlice() != 0 || pcSlice->getNumCtuInSlice() != pcPic->cs->pcv->sizeInCtus, "not intended" );
-#else
-    CHECK( startCtuTsAddr != 0 || boundingCtuTsAddr != pcPic->cs->pcv->sizeInCtus, "not intended" );
-#endif
-
-    pcPic->cs->allocateVectorsAtPicLevel();
-
-    omp_set_num_threads( m_pcCfg->getNumWppThreads() + m_pcCfg->getNumWppExtraLines() );
-
-    #pragma omp parallel for schedule(static,1) if(bUseThreads)
-#if JVET_P1004_REMOVE_BRICKS
-    for( int ctuTsAddr = 0; ctuTsAddr < pcSlice->getNumCtuInSlice(); ctuTsAddr += pcPic->cs->pcv->widthInCtus )
-#else
-    for( int ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr += widthInCtus )
-#endif
-    {
-      // wpp thread start
-      pcPic->scheduler.setWppThreadId();
-#if ENABLE_SPLIT_PARALLELISM
-      pcPic->scheduler.setSplitThreadId( 0 );
-#endif
-#if JVET_P1004_REMOVE_BRICKS
-      encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, m_pcLib );
-#else
-      encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, ctuTsAddr, ctuTsAddr + widthInCtus, m_pcLib );
-#endif
-      // wpp thread stop
-    }
-  }
-  else
-#endif
 #if K0149_BLOCK_STATISTICS
   const SPS *sps = pcSlice->getSPS();
   CHECK(sps == 0, "No SPS present");
@@ -1642,9 +1590,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   const int iQPIndex              = pcSlice->getSliceQpBase();
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-  const int       dataId          = pcPic->scheduler.getWppDataId();
-#elif ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   const int       dataId          = 0;
 #endif
   CABACWriter*    pCABACWriter    = pEncLib->getCABACEncoder( PARL_PARAM0( dataId ) )->getCABACEstimator( pcSlice->getSPS() );
@@ -1652,10 +1598,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   RdCost*         pRdCost         = pEncLib->getRdCost( PARL_PARAM0( dataId ) );
   EncCfg*         pCfg            = pEncLib;
   RateCtrl*       pRateCtrl       = pEncLib->getRateCtrl();
-#if ENABLE_WPP_PARALLELISM
-  // first version dont use ctx from above
-  pCABACWriter->initCtxModels( *pcSlice );
-#endif
 #if RDOQ_CHROMA_LAMBDA
   pTrQuant    ->setLambdas( pcSlice->getLambdas() );
 #else
@@ -1737,9 +1679,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       cs.motionLut.lutIbc.resize(0);
     }
 
-#if ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.wait( ctuXPosInCtus, ctuYPosInCtus );
-#endif
 
 #if JVET_P1004_REMOVE_BRICKS
     if (cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && cs.pps->ctuIsTileRowBd( ctuYPosInCtus ))
@@ -1772,13 +1711,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
 
-#if ENABLE_WPP_PARALLELISM
-    if( ctuXPosInCtus == 0 && ctuYPosInCtus > 0 && widthInCtus > 1 && ( pEncLib->getNumWppThreads() > 1 || pEncLib->getEnsureWppBitEqual() ) )
-    {
-      pCABACWriter->getCtx() = pEncLib->m_entropyCodingSyncContextStateVec[ctuYPosInCtus-1];  // last line
-    }
-#else
-#endif
 
 #if RDOQ_CHROMA_LAMBDA && ENABLE_QPA && !ENABLE_QPA_SUB_CTU
     double oldLambdaArray[MAX_NUM_COMPONENT] = {0.0};
@@ -1866,7 +1798,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       for (int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++)
       {
         m_pcLib->getCuEncoder(jId)->setDecCuReshaperInEncCU(m_pcLib->getReshaper(jId), pcSlice->getSPS()->getChromaFormatIdc());
@@ -1879,11 +1811,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 
   if (pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU())
-#if ENABLE_WPP_PARALLELISM
-    pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
-#else
     m_pcCuEncoder->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
-#endif
 
 #if K0149_BLOCK_STATISTICS
     getAndStoreBlockStatistics(cs, ctuArea);
@@ -1909,11 +1837,11 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 
 #endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #pragma omp critical
 #endif
     pcSlice->setSliceBits( ( uint32_t ) ( pcSlice->getSliceBits() + numberOfWrittenBits ) );
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #pragma omp critical
 #endif
 
@@ -1926,23 +1854,11 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     {
       pEncLib->m_entropyCodingSyncContextState = pCABACWriter->getCtx();
     }
-#if ENABLE_WPP_PARALLELISM
-    if( ctuXPosInCtus == 1 && ( pEncLib->getNumWppThreads() > 1 || pEncLib->getEnsureWppBitEqual() ) )
-    {
-      pEncLib->m_entropyCodingSyncContextStateVec[ctuYPosInCtus] = pCABACWriter->getCtx();
-    }
-#endif
 
-#if !ENABLE_WPP_PARALLELISM
     int actualBits = int(cs.fracBits >> SCALE_BITS);
     actualBits    -= (int)m_uiPicTotalBits;
-#endif
     if ( pCfg->getUseRateCtrl() )
     {
-#if ENABLE_WPP_PARALLELISM
-      int actualBits      = int( cs.fracBits >> SCALE_BITS );
-      actualBits         -= (int)m_uiPicTotalBits;
-#endif
       int actualQP        = g_RCInvalidQPValue;
       double actualLambda = pRdCost->getLambda();
       int numberOfEffectivePixels    = 0;
@@ -1988,13 +1904,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 #endif
 
-#if !ENABLE_WPP_PARALLELISM
     m_uiPicTotalBits += actualBits;
     m_uiPicDist       = cs.dist;
-#endif
-#if ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.setReady( ctuXPosInCtus, ctuYPosInCtus );
-#endif
   }
 
   // this is wpp exclusive section

@@ -52,10 +52,6 @@
 #include <stdio.h>
 #include <cmath>
 #include <algorithm>
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-extern std::recursive_mutex g_cache_mutex;
-#endif
 
 
 
@@ -269,7 +265,7 @@ void EncCu::init( EncLib* pcEncLib, const SPS& sps PARL_PARAM( const int tId ) )
   m_CtxCache           = pcEncLib->getCtxCache( PARL_PARAM0( tId ) );
   m_pcRateCtrl         = pcEncLib->getRateCtrl();
   m_pcSliceEncoder     = pcEncLib->getSliceEncoder();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   m_pcEncLib           = pcEncLib;
   m_dataId             = tId;
 #endif
@@ -411,12 +407,6 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   m_CABACEstimator->getCtx() = m_CurrCtx->start;
   m_CurrCtx                  = 0;
 
-#if ENABLE_SPLIT_PARALLELISM && ENABLE_WPP_PARALLELISM
-  if( m_pcEncCfg->getNumSplitThreads() > 1 && m_pcEncCfg->getNumWppThreads() > 1 )
-  {
-    cs.picture->finishCtuPart( area );
-  }
-#endif
 
   // Ensure that a coding was found
   // Selected mode's RD-cost must be not MAX_DOUBLE.
@@ -1152,23 +1142,13 @@ void EncCu::xCompressCUParallel( CodingStructure *&tempCS, CodingStructure *&bes
   std::fill( jobUsed, jobUsed + NUM_RESERVERD_SPLIT_JOBS, false );
 
   const UnitArea currArea = CS::getArea( *tempCS, partitioner.currArea(), partitioner.chType );
-#if ENABLE_WPP_PARALLELISM
-  const int      wppTId   = picture->scheduler.getWppThreadId();
-#endif
   const bool doParallel   = !m_pcEncCfg->getForceSingleSplitThread();
-#if _MSC_VER && ENABLE_WPP_PARALLELISM
-#pragma omp parallel for schedule(dynamic,1) num_threads(NUM_SPLIT_THREADS_IF_MSVC) if(doParallel)
-#else
   omp_set_num_threads( m_pcEncCfg->getNumSplitThreads() );
 
 #pragma omp parallel for schedule(dynamic,1) if(doParallel)
-#endif
   for( int jId = 1; jId <= numJobs; jId++ )
   {
     // thread start
-#if ENABLE_WPP_PARALLELISM
-    picture->scheduler.setWppThreadId( wppTId );
-#endif
     picture->scheduler.setSplitThreadId();
     picture->scheduler.setSplitJobId( jId );
 

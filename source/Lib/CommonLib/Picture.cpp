@@ -39,93 +39,9 @@
 #include "SEI.h"
 #include "ChromaFormat.h"
 #include "CommonLib/InterpolationFilter.h"
-#if ENABLE_WPP_PARALLELISM
-#if ENABLE_WPP_STATIC_LINK
-#include <atomic>
-#else
-#include <condition_variable>
-#endif
-#endif
 
 
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-#if ENABLE_WPP_STATIC_LINK
-class SyncObj
-{
-public:
-  SyncObj() : m_Val(-1) {}
-  ~SyncObj()            {}
-
-  void reset()
-  {
-    m_Val = -1;
-  }
-
-  bool isReady( int64_t val ) const
-  {
-//    std::cout << "is ready m_Val " << m_Val << " val " << val << std::endl;
-    return m_Val >= val;
-  }
-
-  void wait( int64_t idx, int ctuPosY  )
-  {
-    while( ! isReady( idx ) )
-    {
-    }
-  }
-
-  void set( int64_t val, int ctuPosY)
-  {
-    m_Val = val;
-  }
-
-private:
-  std::atomic<int>         m_Val;
-};
-#else
-class SyncObj
-{
-public:
-  SyncObj() : m_Val(-1) {}
-  ~SyncObj()            {}
-
-  void reset()
-  {
-    std::unique_lock< std::mutex > lock( m_mutex );
-
-    m_Val = -1;
-  }
-
-  bool isReady( int64_t val ) const
-  {
-    return m_Val >= val;
-  }
-
-  void wait( int64_t idx, int ctuPosY  )
-  {
-    std::unique_lock< std::mutex > lock( m_mutex );
-
-    while( ! isReady( idx ) )
-    {
-      m_cv.wait( lock );
-    }
-  }
-
-  void set( int64_t val, int ctuPosY)
-  {
-    std::unique_lock< std::mutex > lock( m_mutex );
-    m_Val = val;
-    m_cv.notify_all();
-  }
-
-private:
-  int64_t                 m_Val;
-  std::condition_variable m_cv;
-  std::mutex              m_mutex;
-};
-#endif
-#endif
+#if ENABLE_SPLIT_PARALLELISM
 
 int g_wppThreadId( 0 );
 #pragma omp threadprivate(g_wppThreadId)
@@ -139,13 +55,6 @@ int g_splitJobId( 0 );
 #endif
 
 Scheduler::Scheduler() :
-#if ENABLE_WPP_PARALLELISM
-  m_numWppThreads( 1 ),
-  m_numWppDataInstances( 1 )
-#endif
-#if ENABLE_SPLIT_PARALLELISM && ENABLE_WPP_PARALLELISM
-  ,
-#endif
 #if ENABLE_SPLIT_PARALLELISM
   m_numSplitThreads( 1 )
 #endif
@@ -154,13 +63,6 @@ Scheduler::Scheduler() :
 
 Scheduler::~Scheduler()
 {
-#if ENABLE_WPP_PARALLELISM
-  for( auto & so : m_SyncObjs )
-  {
-    delete so;
-  }
-  m_SyncObjs.clear();
-#endif
 }
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -228,37 +130,6 @@ void Scheduler::setSplitThreadId( const int tId )
 #endif
 
 
-#if ENABLE_WPP_PARALLELISM
-unsigned Scheduler::getWppDataId( int lID ) const
-{
-  const int tId = lID == CURR_THREAD_ID ? g_wppThreadId : lID;
-
-#if ENABLE_SPLIT_PARALLELISM
-  if( m_numSplitThreads > 1 )
-  {
-    return tId * NUM_RESERVERD_SPLIT_JOBS;
-  }
-  else
-  {
-    return tId;
-  }
-#else
-  return tId;
-#endif
-}
-
-unsigned Scheduler::getWppThreadId() const
-{
-  return g_wppThreadId;
-}
-
-void Scheduler::setWppThreadId( const int tId )
-{
-  g_wppThreadId = tId == CURR_THREAD_ID ? omp_get_thread_num() : tId;
-
-  CHECK( g_wppThreadId >= PARL_WPP_MAX_NUM_THREADS, "The WPP thread ID " << g_wppThreadId << " is invalid!" );
-}
-#endif
 
 unsigned Scheduler::getDataId() const
 {
@@ -266,12 +137,6 @@ unsigned Scheduler::getDataId() const
   if( m_numSplitThreads > 1 )
   {
     return getSplitDataId();
-  }
-#endif
-#if ENABLE_WPP_PARALLELISM
-  if( m_numWppThreads > 1 )
-  {
-    return getWppDataId();
   }
 #endif
   return 0;
@@ -282,44 +147,6 @@ bool Scheduler::init( const int ctuYsize, const int ctuXsize, const int numWppTh
 #if ENABLE_SPLIT_PARALLELISM
   m_numSplitThreads = numSplitThreads;
 #endif
-#if ENABLE_WPP_PARALLELISM
-  m_firstNonFinishedLine    = 0;
-  m_numWppThreadsRunning    = 1;
-  m_numWppDataInstances     = numWppThreadsRunning+numWppExtraLines;
-  m_numWppThreads           = numWppThreadsRunning;
-  m_ctuYsize                = ctuYsize;
-  m_ctuXsize                = ctuXsize;
-
-  if( m_SyncObjs.size() == 0 )
-  {
-    m_SyncObjs.reserve( ctuYsize );
-    for( int i = (int)m_SyncObjs.size(); i < ctuYsize; i++ )
-    {
-      m_SyncObjs.push_back( new SyncObj );
-    }
-  }
-  else
-  {
-    CHECK( m_SyncObjs.size() != ctuYsize, "");
-  }
-
-  for( int i = 0; i < ctuYsize; i++ )
-  {
-    m_SyncObjs[i]->reset();
-  }
-
-  if( m_numWppThreads != m_numWppDataInstances )
-  {
-    m_LineDone.clear();
-    m_LineDone.resize(ctuYsize, -1);
-
-    m_LineProc.clear();
-    m_LineProc.resize(ctuYsize, false);
-
-    m_SyncObjs[0]->set(0,0);
-    m_LineProc[0]=true;
-  }
-#endif
 
   return true;
 }
@@ -329,107 +156,11 @@ int Scheduler::getNumPicInstances() const
 {
 #if !ENABLE_SPLIT_PARALLELISM
   return 1;
-#elif !ENABLE_WPP_PARALLELISM
-  return ( m_numSplitThreads > 1 ? m_numSplitThreads : 1 );
 #else
-  return m_numSplitThreads > 1 ? m_numWppDataInstances * m_numSplitThreads : 1;
+  return ( m_numSplitThreads > 1 ? m_numSplitThreads : 1 );
 #endif
 }
 
-#if ENABLE_WPP_PARALLELISM
-void Scheduler::wait( const int ctuPosX, const int ctuPosY )
-{
-  if( m_numWppThreads == m_numWppDataInstances )
-  {
-    if( ctuPosY > 0 && ctuPosX+1 < m_ctuXsize)
-    {
-      m_SyncObjs[ctuPosY-1]->wait( ctuPosX+1, ctuPosY-1 );
-    }
-    return;
-  }
-
-  m_SyncObjs[ctuPosY]->wait( ctuPosX, ctuPosY );
-}
-
-void Scheduler::setReady(const int ctuPosX, const int ctuPosY)
-{
-  if( m_numWppThreads == m_numWppDataInstances )
-  {
-    m_SyncObjs[ctuPosY]->set( ctuPosX, ctuPosY);
-    return;
-  }
-
-  std::unique_lock< std::mutex > lock( m_mutex );
-
-  if( ctuPosX+1 == m_ctuXsize )
-  {
-    m_LineProc[ctuPosY] = true; //prevent line from be further evaluated
-    m_LineDone[ctuPosY] = std::numeric_limits<int>::max();
-    m_firstNonFinishedLine = ctuPosY+1;
-  }
-  else
-  {
-    m_LineDone[ctuPosY] = ctuPosX;
-    m_LineProc[ctuPosY] = false;    // mark currently not processed
-  }
-
-  int lastLine = m_firstNonFinishedLine + m_numWppDataInstances;
-  lastLine = std::min( m_ctuYsize, lastLine )-1-m_firstNonFinishedLine;
-
-  m_numWppThreadsRunning--;
-
-  Position pos;
-  //if the current encoder is the last
-  const bool c1 = (ctuPosY == m_firstNonFinishedLine + m_numWppThreads - 1);
-  const bool c2 = (ctuPosY+1 <= m_firstNonFinishedLine+lastLine);
-  const bool c3 = (ctuPosX >= m_ctuXsize/4);
-  if( c1 && c2 && c3 && getNextCtu( pos, ctuPosY+1, 4 ) )
-  {
-    //  try to continue in the next row
-    // go on in the current line
-    m_SyncObjs[pos.y]->set(pos.x, pos.y);
-    m_numWppThreadsRunning++;
-  }
-  else if( getNextCtu( pos, ctuPosY, 1 ) )
-  {
-    //  try to continue in the same row
-    // go on in the current line
-    m_SyncObjs[pos.y]->set(pos.x, pos.y);
-    m_numWppThreadsRunning++;
-  }
-  for( int i = m_numWppThreadsRunning; i < m_numWppThreads; i++ )
-  {
-   // just go and get a job
-    for( int y = 0; y <= lastLine; y++ )
-    {
-      if( getNextCtu( pos, m_firstNonFinishedLine+y, 1 ))
-      {
-        m_SyncObjs[pos.y]->set(pos.x, pos.y);
-        m_numWppThreadsRunning++;
-        break;
-      }
-    }
-  }
-}
-
-
-bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
-{
-  int x = m_LineDone[ctuLine] + 1;
-  if( ! m_LineProc[ctuLine] )
-  {
-    int maxXOffset = x+offset >= m_ctuXsize ? m_ctuXsize-1 : x+offset;
-    if( (ctuLine == 0 || m_LineDone[ctuLine-1]>=maxXOffset) && (x==0 || m_LineDone[ctuLine]>=+x-1))
-    {
-      m_LineProc[ctuLine] = true;
-      pos.x = x; pos.y = ctuLine;
-      return true;
-    }
-  }
-  return false;
-}
-
-#endif
 #endif
 
 
@@ -841,11 +572,7 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
 void Picture::destroy()
 {
 #if ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-  for( int jId = 0; jId < ( PARL_SPLIT_MAX_NUM_THREADS * PARL_WPP_MAX_NUM_THREADS ); jId++ )
-#else
   for( int jId = 0; jId < PARL_SPLIT_MAX_NUM_THREADS; jId++ )
-#endif
 #endif
   for (uint32_t t = 0; t < NUM_PIC_TYPES; t++)
   {
@@ -1098,20 +825,6 @@ void Picture::finishParallelPart( const UnitArea& area )
   }
 }
 
-#if ENABLE_WPP_PARALLELISM
-void Picture::finishCtuPart( const UnitArea& ctuArea )
-{
-  const UnitArea clipdArea = clipArea( ctuArea, *this );
-  const int      sourceID  = scheduler.getSplitPicId( 0 );
-  // distribute the reconstruction across all of the parallel workers
-  for( int dataId = 0; dataId < scheduler.getNumPicInstances(); dataId++ )
-  {
-    if( dataId == sourceID ) continue;
-
-    M_BUFS( dataId, PIC_RECONSTRUCTION ).subBuf( clipdArea ).copyFrom( M_BUFS( sourceID, PIC_RECONSTRUCTION ).subBuf( clipdArea ) );
-  }
-}
-#endif
 
 #endif
 

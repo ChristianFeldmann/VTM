@@ -698,12 +698,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNumSplitThreads                                   ( m_numSplitThreads );
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
 #endif
-#if ENABLE_WPP_PARALLELISM
-  m_cEncLib.setNumWppThreads                                     ( m_numWppThreads );
-  m_cEncLib.setNumWppExtraLines                                  ( m_numWppExtraLines );
-  m_cEncLib.setEnsureWppBitEqual                                 ( m_ensureWppBitEqual );
-
-#endif
   m_cEncLib.setUseALF                                            ( m_alf );
   m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );

@@ -105,10 +105,7 @@ int main(int argc, char* argv[])
 #if ENABLE_SPLIT_PARALLELISM
   fprintf( stdout, "[SPLIT_PARALLEL (%d jobs)]", PARL_SPLIT_MAX_NUM_JOBS );
 #endif
-#if ENABLE_WPP_PARALLELISM
-  fprintf( stdout, "[WPP_PARALLEL]" );
-#endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   const char* waitPolicy = getenv( "OMP_WAIT_POLICY" );
   const char* maxThLim   = getenv( "OMP_THREAD_LIMIT" );
   fprintf( stdout, waitPolicy ? "[OMP: WAIT_POLICY=%s," : "[OMP: WAIT_POLICY=,", waitPolicy );

@@ -1153,7 +1153,7 @@ void EncReshape::adjustLmcsPivot()
   }
 }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 void EncReshape::copyState(const EncReshape &other)
 {
   m_srcReshaped     = other.m_srcReshaped;

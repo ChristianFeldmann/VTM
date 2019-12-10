@@ -194,7 +194,9 @@ namespace PU
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool checkDMVRCondition(const PredictionUnit& pu);
 
+#if !JVET_P0590_SCALING_WINDOW
   bool isRefPicSameSize( const PredictionUnit& pu );
+#endif
 }
 
 // TU tools

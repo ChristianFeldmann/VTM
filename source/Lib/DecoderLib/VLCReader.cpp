@@ -385,6 +385,17 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_UVLC( uiCode, "conf_win_bottom_offset" );             conf.setWindowBottomOffset( uiCode );
   }
 
+#if JVET_P0590_SCALING_WINDOW
+  READ_FLAG( uiCode, "scaling_window_flag" );
+  if( uiCode != 0 )
+  {
+    Window &scalingWindow = pcPPS->getScalingWindow();
+    READ_UVLC( uiCode, "scaling_win_left_offset" );               scalingWindow.setWindowLeftOffset( uiCode );
+    READ_UVLC( uiCode, "scaling_win_right_offset" );              scalingWindow.setWindowRightOffset( uiCode );
+    READ_UVLC( uiCode, "scaling_win_top_offset" );                scalingWindow.setWindowTopOffset( uiCode );
+    READ_UVLC( uiCode, "scaling_win_bottom_offset" );             scalingWindow.setWindowBottomOffset( uiCode );
+  }
+#endif
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 
@@ -1348,8 +1359,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode > 3, "Invalid chroma format signalled");
 #endif
 
-
-
   if( pcSPS->getChromaFormatIdc() == CHROMA_444 )
   {
     READ_FLAG(     uiCode, "separate_colour_plane_flag");        CHECK(uiCode != 0, "Invalid code");
@@ -1357,6 +1366,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSeparateColourPlaneFlag( uiCode != 0 );
 #endif
   }
+
+#if JVET_P0590_SCALING_WINDOW
+  READ_FLAG( uiCode, "ref_pic_resampling_enabled_flag" );        pcSPS->setRprEnabledFlag( uiCode );
+#endif
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
@@ -1665,10 +1678,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "sps_mmvd_enable_flag");                        pcSPS->setUseMMVD(uiCode != 0);
   // KJS: sps_cclm_enabled_flag
   READ_FLAG( uiCode,    "lm_chroma_enabled_flag" );                 pcSPS->setUseLMChroma            ( uiCode != 0 );
+#if JVET_P0592_CHROMA_PHASE
+  if( pcSPS->getChromaFormatIdc() == CHROMA_420 )
+  {
+    READ_FLAG( uiCode, "sps_chroma_horizontal_collocated_flag" );   pcSPS->setHorCollocatedChromaFlag( uiCode != 0 );
+    READ_FLAG( uiCode, "sps_chroma_vertical_collocated_flag" );     pcSPS->setVerCollocatedChromaFlag( uiCode != 0 );
+  }
+#else
   if ( pcSPS->getUseLMChroma() && pcSPS->getChromaFormatIdc() == CHROMA_420 )
   {
     READ_FLAG( uiCode,  "sps_cclm_collocated_chroma_flag" );        pcSPS->setCclmCollocatedChromaFlag( uiCode != 0 );
   }
+#endif
 
   READ_FLAG( uiCode,    "mts_enabled_flag" );                       pcSPS->setUseMTS                 ( uiCode != 0 );
   if ( pcSPS->getUseMTS() )

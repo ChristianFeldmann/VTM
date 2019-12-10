@@ -261,12 +261,52 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
-  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
+#if JVET_P0590_SCALING_WINDOW
+#if JVET_P0592_CHROMA_PHASE
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
+#else
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, 
+                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
+#endif
 
+  static void   rescalePicture( const std::pair<int, int> scalingRatio, 
+                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
+                                const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
+#if JVET_P0592_CHROMA_PHASE
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
+#else
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false );
+#endif
+#elif JVET_P0592_CHROMA_PHASE
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                                const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride,
+                                Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight,
+                                SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
+
+  static void   rescalePicture( const std::pair<int, int> scalingRatio,
+                                const CPelUnitBuf& beforeScaling, const Window& confBefore,
+                                const PelUnitBuf& afterScaling, const Window& confAfter,
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
+#else
+  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
   static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
+#endif
 
 private:
   Window        m_conformanceWindow;
+#if JVET_P0590_SCALING_WINDOW
+  Window        m_scalingWindow;
+#endif
 
 public:
   bool m_bIsBorderExtended;
@@ -316,9 +356,12 @@ public:
 
   uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
   uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
-
   Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
   const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
+#if JVET_P0590_SCALING_WINDOW
+  Window&            getScalingWindow()                                              { return  m_scalingWindow; }
+  const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
+#endif
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

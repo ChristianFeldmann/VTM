@@ -102,12 +102,22 @@ void CS::setRefinedMotionField(CodingStructure &cs)
 
 bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int& xScale, int& yScale )
 {
+#if JVET_P0590_SCALING_WINDOW
+  const Window& curScalingWindow = curPPS->getScalingWindow();
+  int curPicWidth = curPPS->getPicWidthInLumaSamples() - curScalingWindow.getWindowLeftOffset() - curScalingWindow.getWindowRightOffset();
+  int curPicHeight = curPPS->getPicHeightInLumaSamples() - curScalingWindow.getWindowTopOffset() - curScalingWindow.getWindowBottomOffset();
+
+  const Window& refScalingWindow = refPic->getScalingWindow();
+  int refPicWidth = refPic->getPicWidthInLumaSamples() - refScalingWindow.getWindowLeftOffset() - refScalingWindow.getWindowRightOffset();
+  int refPicHeight = refPic->getPicHeightInLumaSamples() - refScalingWindow.getWindowTopOffset() - refScalingWindow.getWindowBottomOffset();
+#else
   const Window& curConfWindow = curPPS->getConformanceWindow();
-  int curPicWidth = curPPS->getPicWidthInLumaSamples() - (curConfWindow.getWindowLeftOffset() + curConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  int curPicWidth = curPPS->getPicWidthInLumaSamples() - (curConfWindow.getWindowLeftOffset() + curConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(sps->getChromaFormatIdc());
   int curPicHeight = curPPS->getPicHeightInLumaSamples() - (curConfWindow.getWindowTopOffset() + curConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
   const Window& refConfWindow = refPic->getConformanceWindow();
-  int refPicWidth = refPic->getPicWidthInLumaSamples() - (refConfWindow.getWindowLeftOffset() + refConfWindow.getWindowRightOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+  int refPicWidth = refPic->getPicWidthInLumaSamples() - (refConfWindow.getWindowLeftOffset() + refConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(sps->getChromaFormatIdc());
   int refPicHeight = refPic->getPicHeightInLumaSamples() - (refConfWindow.getWindowTopOffset() + refConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps->getChromaFormatIdc());
+#endif
 
   xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
   yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
@@ -1392,7 +1402,11 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && ((pu.lheight() * pu.lwidth()) >= 128)
       && (pu.cu->GBiIdx == GBI_DEFAULT)
       && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag))
+#if JVET_P0590_SCALING_WINDOW
+      && ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X )
+#else
       && PU::isRefPicSameSize( pu )
+#endif
       ;
   }
   else
@@ -4062,6 +4076,7 @@ bool allowLfnstWithMip(const Size& block)
   return false;
 }
 
+#if !JVET_P0590_SCALING_WINDOW
 bool PU::isRefPicSameSize( const PredictionUnit& pu )
 {
   bool samePicSize = true;
@@ -4086,6 +4101,6 @@ bool PU::isRefPicSameSize( const PredictionUnit& pu )
 
   return samePicSize;
 }
-
+#endif
 
 

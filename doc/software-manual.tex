@@ -1707,89 +1707,68 @@ Specifies the maximum depth for CU chroma QP adjustment; if negative, CU chroma 
 
 
 %%
-%% Slice/Tile/Brick coding parameters
+%% Slice/Tile coding parameters
 %%
-\begin{OptionTableNoShorthand}{Slice, tile and brick coding parameters}{tab:slice-coding}
-%\Option{SliceGranularity} &
-%\ShortOption{\None} &
-%\Default{0} &
-%Determines the depth in an LCU at which slices may begin and end.
-%\par
-%\begin{tabular}{cp{0.45\textwidth}}
-% 0   & Slice addresses are LCU aligned \\
-% $1 \leq n \leq 3$
-%     & Slice start addresses are aligned to CUs at depth $n$ \\
-%\end{tabular}
-%
-%Note: The smallest permissible alignment is 16x16 CUs.
-%Values of $n$ must satisfy this constraint, for example, with a 64x64
-%LCU, $n$ must be less than or equal to 2.
-%\\
+\begin{OptionTableNoShorthand}{Slice and tile coding parameters}{tab:slice-coding}
 
-\Option{SliceMode} &
+\Option{EnablePicPartitioning} &
 %\ShortOption{\None} &
 \Default{0} &
-Controls the slice partitioning method in conjunction with
-SliceArgument.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
- 0 & Single slice \\
- 1 & (deprecated) Maximum number of CTUs per slice \\
- 2 & (deprecated) Maximum number of bytes per slice \\
- 3 & Maximum number of tiles per slice \\
- 4 & One slice per brick
-\end{tabular}
+Enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used).
 \\
 
-\Option{SliceArgument} &
+\Option{TileColumnWidthArray} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
-(deprecated)
-Specifies the maximum number of CTUs, bytes or tiles in a slice depending on the
-SliceMode setting.
+Tile column widths in units of CTUs. Last column width in list will be repeated uniformly to cover any remaining picture width.
 \\
 
-\Option{RectSliceFlag} &
+\Option{TileRowHeightArray} &
 %\ShortOption{\None} &
-\Default{1} &
-Controls the slice shape method in conjunction with SliceMode,
-SliceArgument, and Tile/Brick configurations.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
- 0 & Raster scan slice. Bricks within slice are in raster scan order  \\
- 1 & Rectangular slice. Bricks within slice form rectangular shape \\
- NOTE: When SliceMode is equal to 3, RectSliceFlag is equal to 1, 
- and there is more than one tiles/bricks in the pic, 
- NumRecSliceInPicMinus1 must be greater than 0
-\end{tabular}
+\Default{\NotSet} &
+Tile row heights in units of CTUs. Last row height in list will be repeated uniformly to cover any remaining picture height.
 \\
 
-\Option{NumRecSlicesInPicMinus1} &
+\Option{RasterScanSlices} &
 %\ShortOption{\None} &
 \Default{0} &
-Specifies the number of rectangular slices in the picture.
+Use raster-scan or rectangular slices (0: rectangular, 1: raster-scan).
 \\
 
-\Option{RectSlicesBoundaryArray} &
+\Option{RectSlicePositions} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
-Specifies a space or comma separated list of top-left brick index and 
-bottom-right brick index of rectangular slices.
-The top-left brick index and bottom-right brick index corresponds to the top left 
-rectangular slice in the picture. The rest of indices corresponds to the each rectangular slices
-in the picture in the rectangular slice raster scan in the picture, respectively.
+Rectangular slice positions. List containing pairs of top-left CTU RS address followed by bottom-right CTU RS address.
+\\
 
-For example, when the picture is partitioned into 16 tiles (4 tile columns and 4 tile rows), 
-each tile is not further partitioned into bricks, SliceMode is equal to 3, SliceArgument is equal to 4, 
-and NumRecSlicesInPicMinus1 is equal to 3, the values of RectSlicesBoundaryArray shall be as followss: 
-0 5 2 7 8 13 10 15.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
- First  slice has top-left brick index 0  and bottom-right brick index 5 \\
- Second slice has top-left brick index 2  and bottom-right brick index 7 \\
- Third  slice has top-left brick index 8  and bottom-right brick index 13 \\
- Fourth slice has top-left brick index 10 and bottom-right brick index 15
-\end{tabular}
+\Option{RectSliceFixedWidth} &
+%\ShortOption{\None} &
+\Default{0} &
+Fixed rectangular slice width in units of tiles (0: disable this feature and use RectSlicePositions instead).
+\\
+
+\Option{RectSliceFixedHeight} &
+%\ShortOption{\None} &
+\Default{0} &
+Fixed rectangular slice height in units of tiles (0: disable this feature and use RectSlicePositions instead).
+\\
+
+\Option{RasterSliceSizes} &
+%\ShortOption{\None} &
+\Default{\NotSet} &
+Raster-scan slice sizes in units of tiles. Last size in list will be repeated uniformly to cover any remaining tiles in the picture.
+\\
+
+\Option{DisableLoopFilterAcrossTiles} &
+%\ShortOption{\None} &
+\Default{0} &
+Loop filtering applied across tile boundaries or not (0: filter across tile boundaries  1: do not filter across tile boundaries).
+\\
+
+\Option{DisableLoopFilterAcrossSlices} &
+%\ShortOption{\None} &
+\Default{0} &
+Loop filtering applied across slice boundaries or not (0: filter across slice boundaries 1: do not filter across slice boundaries).
 \\
 
 \Option{IDRRefParamList} &
@@ -1806,70 +1785,6 @@ beginning of each line of CTBs in order to produce a bitstream that can
 be encoded or decoded using one or more cores.
 \\
 
-\Option{TileUniformSpacing} &
-%\ShortOption{\None} &
-\Default{false} &
-Controls the mode used to determine per row and column tile sizes.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
- 0 & Each tile column width and tile row height is explicitly set
-     by TileColumnWidthArray and TileRowHeightArray respectively \\
- 1 & Tile columns and tile rows are uniformly spaced. \\
-\end{tabular}
-\\
-
-\Option{UniformTileColsWidthMinus1}%
-\Option{UniformTileRowHeightMinus1} &
-%\ShortOption{\None} &
-\Default{-1} &
-Specifies the tile width and height to use if TileUniformSpacing is set to 1.
-\\
-
-\Option{NumTileColumnsMinus1}%
-\Option{NumTileRowsMinus1} &
-%\ShortOption{\None} &
-\Default{0} &
-Specifies the tile based picture partitioning geometry as
-$\mathrm{NumTileColumnsMinus1} + 1 \times \mathrm{NumTileRowsMinus1} + 1$
-columns and rows.
-\\
-
-\Option{TileColumnWidthArray}%
-\Option{TileRowHeightArray} &
-%\ShortOption{\None} &
-\Default{\NotSet} &
-Specifies a space or comma separated list of widths and heights,
-respectively, of each tile column or tile row.  The first value in the
-list corresponds to the leftmost tile column or topmost tile row.
-\\
-
-\Option{BrickSplit1}%
-\Option{BrickSplit2} %
-\Option{BrickSplitN} &
-%\ShortOption{\None} &
-\Default{\NotSet} &
-Specifies the splitting of tiles into bricks, N can be in the range of 1 to 128 and has no further meaning except to distinguish different splitting parameters.
-
-The following options are supported:
-
-BrickSplitN tileIdx uniform (numsplits) heights
-
-\begin{tabular}{cp{0.45\textwidth}}
- tileIdx & the index of the tile to be split in raster scan order starting with zero \\
- uniform & specifies whether uniform splitting shall be used (1 for uniform, 0 non-uniform) \\
- numsplits & specifies the number of splits, if uniform is not used \\
- heights & specifies the height of the uniform splits or a list of heights for non-uniform splits \\
-\end{tabular}
- 
-\\
-\Option{TileRowHeightArray} &
-%\ShortOption{\None} &
-\Default{\NotSet} &
-Specifies a space or comma separated list of widths and heights,
-respectively, of each tile column or tile row.  The first value in the
-list corresponds to the leftmost tile column or topmost tile row.
-\\
-
 
 \end{OptionTableNoShorthand}
 
@@ -1883,13 +1798,6 @@ list corresponds to the leftmost tile column or topmost tile row.
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables the in-loop deblocking filter.
-\\
-
-\Option{LFCrossSliceBoundaryFlag} &
-%\ShortOption{\None} &
-\Default{true} &
-Enables or disables the use of in-loop filtering across slice
-boundaries.
 \\
 
 \Option{LoopFilterOffsetInPPS}&
@@ -1924,12 +1832,6 @@ shall be an integer number in the range $-6..6$.
 \Default{0}&
 Specifies the use of a deblocking filter metric to evaluate the suitability of deblocking. If non-zero then
 LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values are 0, 1 and 2.
-\\
-
-\Option{LFCrossSliceBoundaryFlag}&
-%\ShortOption{\None}&
-\Default{true}&
-Enables or disables the use of a deblocking across tile boundaries.
 \\
 
 \Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&

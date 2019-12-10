@@ -193,7 +193,9 @@ protected:
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
+#if !JVET_P1004_REMOVE_BRICKS
   void  xInitPPSforTiles  (PPS &pps);
+#endif
   void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:

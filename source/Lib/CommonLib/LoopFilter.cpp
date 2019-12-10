@@ -700,12 +700,22 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   const Position& pos = cu.blocks[cu.chType].pos();
 
   m_stLFCUParam.internalEdge = true;
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+#else
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
 #else
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
+#endif
 #endif
 }
 
@@ -972,10 +982,18 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#else
+        if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
 #else
         if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#endif
 #endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
@@ -984,10 +1002,18 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#else
+        if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
 #else
         if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#endif
 #endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
@@ -1255,18 +1281,34 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#else
+        CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #else
         CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #endif
+#endif
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#else
+        CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #else
         CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
+#endif
 #endif
       }
 

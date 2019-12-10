@@ -221,7 +221,11 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   }
 
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
+#if JVET_P1004_REMOVE_BRICKS
+  bufferingPeriodSEI->m_bpDecodingUnitHrdParamsPresentFlag = m_pcCfg->getNoPicPartitionFlag() == false;
+#else
   bufferingPeriodSEI->m_bpDecodingUnitHrdParamsPresentFlag = (m_pcCfg->getSliceMode() > 0) || (m_pcCfg->getSliceSegmentMode() > 0);
+#endif
   bufferingPeriodSEI->m_decodingUnitCpbParamsInPicTimingSeiFlag = !m_pcCfg->getDecodingUnitInfoSEIEnabled();
 #endif
 

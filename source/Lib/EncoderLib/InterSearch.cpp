@@ -8259,23 +8259,40 @@ bool InterSearch::searchBv(PredictionUnit& pu, int xPos, int yPos, int width, in
     return false;
   }
 
+#if JVET_P1004_REMOVE_BRICKS
+  unsigned curTileIdx = pu.cs->pps->getTileIdx(pu.lumaPos());
+  unsigned refTileIdx = pu.cs->pps->getTileIdx(Position(refLeftX, refTopY));
+#else
   unsigned curTileIdx = pu.cs->picture->brickMap->getBrickIdxRsMap(pu.lumaPos());
   unsigned refTileIdx = pu.cs->picture->brickMap->getBrickIdxRsMap(Position(refLeftX, refTopY));
+#endif
   if (curTileIdx != refTileIdx)
   {
     return false;
   }
+#if JVET_P1004_REMOVE_BRICKS
+  refTileIdx = pu.cs->pps->getTileIdx(Position(refLeftX, refBottomY));
+#else
   refTileIdx = pu.cs->picture->brickMap->getBrickIdxRsMap(Position(refLeftX, refBottomY));
+#endif
   if (curTileIdx != refTileIdx)
   {
     return false;
   }
+#if JVET_P1004_REMOVE_BRICKS
+  refTileIdx = pu.cs->pps->getTileIdx(Position(refRightX, refTopY));
+#else
   refTileIdx = pu.cs->picture->brickMap->getBrickIdxRsMap(Position(refRightX, refTopY));
+#endif
   if (curTileIdx != refTileIdx)
   {
     return false;
   }
+#if JVET_P1004_REMOVE_BRICKS
+  refTileIdx = pu.cs->pps->getTileIdx(Position(refRightX, refBottomY));
+#else
   refTileIdx = pu.cs->picture->brickMap->getBrickIdxRsMap(Position(refRightX, refBottomY));
+#endif
   if (curTileIdx != refTileIdx)
   {
     return false;

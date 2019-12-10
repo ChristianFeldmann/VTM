@@ -200,8 +200,10 @@ protected:
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
   bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
+#if !JVET_P1004_REMOVE_BRICKS
   BrickSplit    m_brickSplits[MAX_TILES];
   BrickSplitMap m_brickSplitMap;
+#endif
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
@@ -435,6 +437,23 @@ protected:
   bool      m_useFastDecisionForMerge;                        ///< flag for using Fast Decision Merge RD-Cost
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
+#if JVET_P1004_REMOVE_BRICKS
+  bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
+  std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
+  std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
+  bool      m_rasterSliceFlag;                                ///< indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)
+  std::vector<uint32_t> m_rectSlicePos;                       ///< rectangular slice positions (pairs of top-left CTU address followed by bottom-right CTU address)
+  int       m_rectSliceFixedWidth;                            ///< fixed rectangular slice width in units of tiles (0: disable this feature and use RectSlicePositions instead)
+  int       m_rectSliceFixedHeight;                           ///< fixed rectangular slice height in units of tiles (0: disable this feature and use RectSlicePositions instead)
+  std::vector<uint32_t> m_rasterSliceSize;                    ///< raster-scan slice sizes in units of tiles (last size will be repeated uniformly to cover any remaining tiles in the picture)
+  bool      m_disableLFCrossTileBoundaryFlag;                 ///< 0: filter across tile boundaries  1: do not filter across tile boundaries
+  bool      m_disableLFCrossSliceBoundaryFlag;                ///< 0: filter across slice boundaries 1: do not filter across slice boundaries
+  uint32_t  m_numSlicesInPic;                                 ///< derived number of rectangular slices in the picture (raster-scan slice specified at slice level)
+  bool      m_tileIdxDeltaPresentFlag;                        ///< derived tile index delta present flag
+  std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
+  uint32_t  m_numTileCols;                                    ///< derived number of tile columns
+  uint32_t  m_numTileRows;                                    ///< derived number of tile rows
+#else
   SliceConstraint m_sliceMode;
   int             m_sliceArgument;                            ///< argument according to selected slice mode
 
@@ -448,8 +467,10 @@ protected:
   int       m_uniformTileRowHeightMinus1;
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
+#endif
   bool      m_entropyCodingSyncEnabledFlag;
 
+#if !JVET_P1004_REMOVE_BRICKS
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -458,6 +479,7 @@ protected:
   bool      m_signalledSliceIdFlag;
   int       m_signalledSliceIdLengthMinus1;
   std::vector<int> m_sliceId;
+#endif
 
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;

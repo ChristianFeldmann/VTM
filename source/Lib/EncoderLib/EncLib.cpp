@@ -309,6 +309,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
     conformanceWindow.setWindow( 0, ( width - scaledWidth ) / SPS::getWinUnitX( sps0.getChromaFormatIdc() ), 0, ( height - scaledHeight ) / SPS::getWinUnitY( sps0.getChromaFormatIdc() ) );
 
+#if JVET_P1004_REMOVE_BRICKS
+    // disable picture partitioning for scaled RPR pictures (slice/tile config only provided for the original resolution)
+    m_noPicPartitionFlag = true;
+
+#endif
     pps.setConformanceWindow( conformanceWindow );
 
     xInitPPS( pps, sps0 ); // will allocate memory for and initialize pps.pcv inside
@@ -457,7 +462,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #else
     picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
+#if !JVET_P1004_REMOVE_BRICKS
     pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
+#endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -708,8 +715,10 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
 #else
     pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
+#if !JVET_P1004_REMOVE_BRICKS
     PPS *ptrPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
     ptrPPS->setNumBricksInPic( (int)pcPicCurr->brickMap->bricks.size() );
+#endif
 
     pcPicCurr->poc = m_iPOCLast;
 
@@ -1761,7 +1770,51 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
 
+#if JVET_P1004_REMOVE_BRICKS
+  pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
+  if( m_noPicPartitionFlag == false )
+  {
+    pps.setLog2CtuSize( ceilLog2( sps.getCTUSize()) );
+    pps.setNumExpTileColumns( (uint32_t) m_tileColumnWidth.size() );
+    pps.setNumExpTileRows( (uint32_t) m_tileRowHeight.size() );
+    pps.setTileColumnWidths( m_tileColumnWidth );
+    pps.setTileRowHeights( m_tileRowHeight );
+    pps.initTiles();
+    pps.setRectSliceFlag( m_rectSliceFlag );
+    if( m_rectSliceFlag ) 
+    {
+      pps.setNumSlicesInPic( m_numSlicesInPic );
+      pps.setTileIdxDeltaPresentFlag( m_tileIdxDeltaPresentFlag );
+      pps.setRectSlices( m_rectSlices );
+      pps.initRectSliceMap( );
+    }
+    else
+    {
+      pps.initRasterSliceMap( m_rasterSliceSize );
+    }
+    pps.setLoopFilterAcrossTilesEnabledFlag( m_bLFCrossTileBoundaryFlag );
+    pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
+  }
+  else
+  {
+    pps.setLog2CtuSize( ceilLog2( sps.getCTUSize()) );
+    pps.setNumExpTileColumns(1);
+    pps.setNumExpTileRows(1);
+    pps.addTileColumnWidth( pps.getPicWidthInCtu( ) );
+    pps.addTileRowHeight( pps.getPicHeightInCtu( ) );
+    pps.initTiles();
+    pps.setRectSliceFlag( 1 );
+    pps.setNumSlicesInPic( 1 );
+    pps.initRectSlices( );
+    pps.setTileIdxDeltaPresentFlag( 0 );
+    pps.setSliceTileIdx( 0, 0 );
+    pps.initRectSliceMap( );
+    pps.setLoopFilterAcrossTilesEnabledFlag( true );
+    pps.setLoopFilterAcrossSlicesEnabledFlag( true );
+  }
+#else
   pps.setSingleTileInPicFlag((m_iNumColumnsMinus1 == 0 && m_iNumRowsMinus1 == 0));
+#endif
 
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
@@ -1827,10 +1880,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
+#if !JVET_P1004_REMOVE_BRICKS
 
 
   xInitPPSforTiles(pps);
 
+#endif
 #if JVET_P1006_PICTURE_HEADER
   pps.setPictureHeaderExtensionPresentFlag(false);
 #else
@@ -2150,6 +2205,7 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   slice->setRPL1(rpl1);
 }
 
+#if !JVET_P1004_REMOVE_BRICKS
 void  EncLib::xInitPPSforTiles(PPS &pps)
 {
   if ( (m_iNumColumnsMinus1==0) && (m_iNumRowsMinus1==0) )
@@ -2380,6 +2436,7 @@ void  EncCfg::xCheckGSParameters()
     }
   }
 }
+#endif
 
 void EncLib::setParamSetChanged(int spsId, int ppsId)
 {

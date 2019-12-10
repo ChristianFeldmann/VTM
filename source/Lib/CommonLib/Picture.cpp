@@ -438,6 +438,7 @@ bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
 // ---------------------------------------------------------------------------
 
 
+#if !JVET_P1004_REMOVE_BRICKS
 Brick::Brick()
 : m_widthInCtus     (0)
 , m_heightInCtus    (0)
@@ -781,10 +782,13 @@ uint32_t BrickMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool add
   return subStrm;
 }
 
+#endif
 
 Picture::Picture()
 {
+#if !JVET_P1004_REMOVE_BRICKS
   brickMap             = nullptr;
+#endif
   cs                   = nullptr;
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
@@ -867,12 +871,14 @@ void Picture::destroy()
   }
   SEIs.clear();
 
+#if !JVET_P1004_REMOVE_BRICKS
   if ( brickMap )
   {
     brickMap->destroy();
     delete brickMap;
     brickMap = nullptr;
   }
+#endif
   if (m_spliceIdx)
   {
     delete[] m_spliceIdx;
@@ -967,12 +973,14 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   SEIs.clear();
   clearSliceBuffer();
 
+#if !JVET_P1004_REMOVE_BRICKS
   if( brickMap )
   {
     brickMap->destroy();
     delete brickMap;
     brickMap = nullptr;
   }
+#endif
 
   const ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
   const int          iWidth = pps.getPicWidthInLumaSamples();
@@ -1003,8 +1011,10 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   cs->pcv     = pps.pcv;
   m_conformanceWindow = pps.getConformanceWindow();
 
+#if !JVET_P1004_REMOVE_BRICKS
   brickMap = new BrickMap;
   brickMap->create( sps, pps );
+#endif
   if (m_spliceIdx == NULL)
   {
     m_ctuNums = cs->pcv->sizeInCtus;

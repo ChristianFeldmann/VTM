@@ -890,8 +890,13 @@ void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const Comp
   }
 
   const Position posLT = area;
+#if JVET_P1004_REMOVE_BRICKS
+  bool           isLeftAvail  = (cs.getCURestricted(posLT.offset(-1, 0), cu, CHANNEL_TYPE_LUMA) != NULL) && cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
+  bool           isAboveAvail = (cs.getCURestricted(posLT.offset(0, -1), cu, CHANNEL_TYPE_LUMA) != NULL) && cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
+#else
   bool           isLeftAvail = cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
   bool           isAboveAvail = cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
+#endif
   // ----- Step 1: unfiltered reference samples -----
   if (cu.blocks[area.compID].x == area.x && cu.blocks[area.compID].y == area.y)
   {
@@ -1290,7 +1295,11 @@ bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const
     return false;
   }
 
+#if JVET_P1004_REMOVE_BRICKS
+  return (cs.getCURestricted(refPos, cu, chType) != NULL);
+#else
   return true;
+#endif
 }
 
 int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags)
@@ -1310,8 +1319,14 @@ int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Posi
       break;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+#else
     ++numIntra;
     *validFlags = true;
+#endif
 
     validFlags++;
   }
@@ -1336,8 +1351,14 @@ int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Posit
       break;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+#else
     ++numIntra;
     *validFlags = true;
+#endif
 
     validFlags--;
   }
@@ -1362,8 +1383,14 @@ int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const
       break;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+#else
     ++numIntra;
     *validFlags = true;
+#endif
 
     validFlags++;
   }
@@ -1388,8 +1415,14 @@ int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const 
       break;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
+    numIntra += valid ? 1 : 0;
+    *validFlags = valid;
+#else
     ++numIntra;
     *validFlags = true;
+#endif
 
     validFlags--;
   }

@@ -423,7 +423,102 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+  READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
+  if(!pcPPS->getNoPicPartitionFlag())
+  {
+    int colIdx, rowIdx;
+    pcPPS->resetTileSliceInfo();
 
+    // CTU size - required to match size in SPS
+    READ_CODE(2, uiCode, "log2_pps_ctu_size_minus5");                 pcPPS->setLog2CtuSize(uiCode + 5);  
+    CHECK(uiCode > 2, "log2_pps_ctu_size_minus5 must be less than or equal to 2");
+    
+    // number of explicit tile columns/rows
+    READ_UVLC( uiCode, "num_exp_tile_columns_minus1" );               pcPPS->setNumExpTileColumns( uiCode + 1 );
+    READ_UVLC( uiCode, "num_exp_tile_rows_minus1" );                  pcPPS->setNumExpTileRows( uiCode + 1 );
+    CHECK(pcPPS->getNumExpTileColumns() > MAX_TILE_COLS,              "Number of explicit tile columns exceeds valid range");
+    CHECK(pcPPS->getNumExpTileRows() > MAX_TILE_ROWS,                 "Number of explicit tile rows exceeds valid range");
+    
+    // tile sizes
+    for( colIdx = 0; colIdx < pcPPS->getNumExpTileColumns(); colIdx++ )
+    {
+      READ_UVLC( uiCode, "tile_column_width_minus1[i]" );             pcPPS->addTileColumnWidth( uiCode + 1 );
+    }
+    for( rowIdx = 0; rowIdx < pcPPS->getNumExpTileRows(); rowIdx++ )
+    {
+      READ_UVLC( uiCode, "tile_row_height_minus1[i]" );               pcPPS->addTileRowHeight( uiCode + 1 );
+    }
+    pcPPS->initTiles();
+     
+    // rectangular slice signalling
+    READ_CODE(1, uiCode, "rect_slice_flag");                          pcPPS->setRectSliceFlag( uiCode == 1 );
+    if( pcPPS->getRectSliceFlag() ) 
+    {
+      int32_t tileIdx = 0;
+
+      READ_UVLC( uiCode, "num_slices_in_pic_minus1" );                pcPPS->setNumSlicesInPic( uiCode + 1 );
+      CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
+      READ_CODE(1, uiCode, "tile_idx_delta_present_flag");            pcPPS->setTileIdxDeltaPresentFlag( uiCode == 1 );
+      pcPPS->initRectSlices();
+      
+      // read rectangular slice parameters
+      for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )
+      {
+        pcPPS->setSliceTileIdx( i, tileIdx );
+
+        // complete tiles within a single slice
+        READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+        READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );       pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+
+        // multiple slices within a single tile special case
+        if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
+        {
+          READ_UVLC( uiCode, "num_slices_in_tile_minus1[i]" );        pcPPS->setNumSlicesInTile( i, uiCode + 1 );
+          uint32_t numSlicesInTile = pcPPS->getNumSlicesInTile( i );
+          for( int j = 0; j < numSlicesInTile-1; j++ )
+          {
+            READ_UVLC( uiCode, "slice_height_in_ctu_minus1[i]" );     pcPPS->setSliceHeightInCtu( i, uiCode + 1 );
+            i++;
+            pcPPS->setSliceWidthInTiles ( i, 1 );
+            pcPPS->setSliceHeightInTiles( i, 1 );
+            pcPPS->setNumSlicesInTile   ( i, numSlicesInTile );
+            pcPPS->setSliceTileIdx      ( i, tileIdx );
+          }
+        }
+
+        // tile index offset to start of next slice
+        if( i < pcPPS->getNumSlicesInPic()-1 )
+        {
+          if( pcPPS->getTileIdxDeltaPresentFlag() ) 
+          {
+            int32_t  tileIdxDelta;
+            READ_SVLC( tileIdxDelta, "tile_idx_delta[i]" );
+            tileIdx += tileIdxDelta;
+            CHECK( tileIdx < 0 || tileIdx >= pcPPS->getNumTiles(), "Invalid tile_idx_delta.");
+          }
+          else
+          {
+            tileIdx += pcPPS->getSliceWidthInTiles( i );
+            if( tileIdx % pcPPS->getNumTileColumns() == 0)
+            {
+              tileIdx += (pcPPS->getSliceHeightInTiles( i ) - 1) * pcPPS->getNumTileColumns();
+            }
+          }
+        }
+      }
+      pcPPS->setSliceTileIdx(pcPPS->getNumSlicesInPic()-1, tileIdx );
+      
+      // initialize mapping between rectangular slices and CTUs
+      pcPPS->initRectSliceMap();
+    }
+
+    // loop filtering across slice/tile controls
+    READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
+    READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
+  }
+
+#endif
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
   READ_UVLC(uiCode, "num_ref_idx_l0_default_active_minus1");
@@ -577,6 +672,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "transquant_bypass_enabled_flag");
   pcPPS->setTransquantBypassEnabledFlag(uiCode ? true : false);
 
+#if !JVET_P1004_REMOVE_BRICKS
   READ_FLAG( uiCode, "single_tile_in_pic_flag" );                 pcPPS->setSingleTileInPicFlag(uiCode == 1);
 
   if(!pcPPS->getSingleTileInPicFlag())
@@ -837,6 +933,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
   }
 
+#endif
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");         pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
 
   READ_FLAG( uiCode, "deblocking_filter_control_present_flag" );       pcPPS->setDeblockingFilterControlPresentFlag( uiCode ? true : false );
@@ -1900,6 +1997,30 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   sps = parameterSetManager->getSPS(picHeader->getSPSId());
   CHECK(sps==0, "Invalid SPS");
   
+#if JVET_P1004_REMOVE_BRICKS
+  // initialize tile/slice info for no partitioning case
+  if( pps->getNoPicPartitionFlag() )
+  {
+    pps->resetTileSliceInfo();
+    pps->setLog2CtuSize( ceilLog2(sps->getCTUSize()) );
+    pps->setNumExpTileColumns(1);
+    pps->setNumExpTileRows(1);
+    pps->addTileColumnWidth( pps->getPicWidthInCtu( ) );
+    pps->addTileRowHeight( pps->getPicHeightInCtu( ) );
+    pps->initTiles();
+    pps->setRectSliceFlag( 1 );
+    pps->setNumSlicesInPic( 1 );
+    pps->initRectSlices( );
+    pps->setTileIdxDeltaPresentFlag( 0 );
+    pps->setSliceTileIdx( 0, 0 );
+    pps->initRectSliceMap( );
+  }
+  else 
+  {
+    CHECK(pps->getCtuSize() != sps->getCTUSize(), "PPS CTU size does not match CTU size in SPS");
+  }
+
+#endif
   // sub-picture IDs
   if( sps->getSubPicIdPresentFlag() ) 
   {
@@ -2628,6 +2749,58 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+
+  // raster scan slices
+  if(pps->getRectSliceFlag() == 0) 
+  {
+    uint32_t sliceAddr, numTilesInSlice;
+
+    // slice address is the raster scan tile index of first tile in slice
+    if( pps->getNumTiles() > 1 ) 
+    {      
+      int bitsSliceAddress = ceilLog2(pps->getNumTiles());
+      READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
+      READ_UVLC(uiCode, "num_tiles_in_slice_minus1");        numTilesInSlice = uiCode + 1;      
+    }
+    else {
+      sliceAddr = 0;
+      numTilesInSlice = 1;
+    }
+    CHECK(sliceAddr >= pps->getNumTiles(), "Invalid slice address");
+    pcSlice->initSliceMap();
+    pcSlice->setSliceID(sliceAddr);
+    
+    for( uint32_t tileIdx = sliceAddr; tileIdx < sliceAddr + numTilesInSlice; tileIdx++ )
+    {
+      uint32_t tileX = tileIdx % pps->getNumTileColumns();
+      uint32_t tileY = tileIdx / pps->getNumTileColumns();
+      CHECK(tileY >= pps->getNumTileRows(), "Number of tiles in slice exceeds the remaining number of tiles in picture");
+
+      pcSlice->addCtusToSlice(pps->getTileColumnBd(tileX), pps->getTileColumnBd(tileX + 1),
+                              pps->getTileRowBd(tileY), pps->getTileRowBd(tileY + 1), pps->getPicWidthInCtu());
+   }
+  }
+  // rectangular slices
+  else 
+  {
+    uint32_t sliceAddr;
+
+    // slice address is the index of the slice within the current sub-picture
+    if( pps->getNumSlicesInPic() > 1 ) 
+    {
+      int bitsSliceAddress = ceilLog2(pps->getNumSlicesInPic());  // change to NumSlicesInSubPic when available
+      READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
+      CHECK(sliceAddr >= pps->getNumSlicesInPic(), "Invalid slice address");
+    }
+    else {
+      sliceAddr = 0;
+    }
+    pcSlice->setSliceMap( pps->getSliceMap(sliceAddr) );
+    pcSlice->setSliceID(sliceAddr);
+  }
+
+#else
     int bitsSliceAddress = 1;
     if (!pps->getRectSliceFlag())
     {
@@ -2688,6 +2861,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
 
+#endif
 #if !JVET_P1006_PICTURE_HEADER
     READ_FLAG(uiCode, "non_reference_picture_flag");  pcSlice->setNonRefPictFlag(uiCode);
 #endif
@@ -3504,7 +3678,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
 #endif
 
+#if JVET_P1004_REMOVE_BRICKS
+  if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
+#else
     if( pcSlice->getSliceCurStartBrickIdx() == 0 )
+#endif
   {
     pcSlice->setDefaultClpRng( *sps );
 
@@ -3521,6 +3699,20 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   }
 
   std::vector<uint32_t> entryPointOffset;
+#if JVET_P1004_REMOVE_BRICKS
+  pcSlice->setNumEntryPoints( pps );
+  if( pcSlice->getNumEntryPoints() > 0 )
+  {
+    uint32_t offsetLenMinus1;
+    READ_UVLC( offsetLenMinus1, "offset_len_minus1" );
+    entryPointOffset.resize( pcSlice->getNumEntryPoints() );
+    for( uint32_t idx = 0; idx < pcSlice->getNumEntryPoints(); idx++ )
+    {
+      READ_CODE( offsetLenMinus1 + 1, uiCode, "entry_point_offset_minus1" );
+      entryPointOffset[idx] = uiCode + 1;
+    }
+  }
+#else
   if( !pps->getSingleTileInPicFlag() || pps->getEntropyCodingSyncEnabledFlag() )
   {
     uint32_t numEntryPointOffsets;
@@ -3556,6 +3748,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
     }
   }
+#endif
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatistics::IncrementStatisticEP(STATS__BYTE_ALIGNMENT_BITS,m_pcBitstream->readByteAlignment(),0);
@@ -3565,7 +3758,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
   pcSlice->clearSubstreamSizes();
 
+#if JVET_P1004_REMOVE_BRICKS
+  if( pcSlice->getNumEntryPoints() > 0 )
+#else
   if( !pps->getSingleTileInPicFlag() || pps->getEntropyCodingSyncEnabledFlag() )
+#endif
   {
     int endOfSliceHeaderLocation = m_pcBitstream->getByteLocation();
 
@@ -4045,7 +4242,7 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
     {
       predCoef = (PredListId >= SCALING_LIST_1D_START_16x16) ? scalingList->getScalingListDC(PredListId) : srcPred[0];
     }
-    scalingList->setScalingListDC(scalingListId, (nextCoef + predCoef + 256) % 256);
+    scalingList->setScalingListDC(scalingListId, (nextCoef + predCoef + 256) & 255);
 #else
   int nextCoef = SCALING_LIST_START_VALUE;
   ScanElement *scan = g_scanOrder[SCAN_UNGROUPED][SCAN_DIAG][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))][gp_sizeIdxInfo->idxFrom(1 << (sizeId == SCALING_LIST_2x2 ? 1 : (sizeId == SCALING_LIST_4x4 ? 2 : 3)))];
@@ -4074,7 +4271,7 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
 #if JVET_P01034_PRED_1D_SCALING_LIST
     nextCoef += data;  
     predCoef = (isPredictor) ? srcPred[scan[i].idx] : 0;
-    dst[scan[i].idx] = (nextCoef + predCoef + 256) % 256;
+    dst[scan[i].idx] = (nextCoef + predCoef + 256) & 255;
 #else
     nextCoef = (nextCoef + data + 256) % 256;
     dst[scan[i].idx] = nextCoef;

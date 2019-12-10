@@ -2784,9 +2784,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     // Allocate some coders, now the number of tiles are known.
     const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
+#if JVET_P1004_REMOVE_BRICKS
+    const int numSubstreamsColumns = pcSlice->getPPS()->getNumTileColumns();
+    const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRows());
+    const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->cs->pps->getNumSlicesInPic());
+#else
     const int numSubstreamsColumns = (pcSlice->getPPS()->getNumTileColumnsMinus1() + 1);
     const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRowsMinus1() + 1);
     const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->brickMap->bricks.size());
+#endif
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
 #if ENABLE_QPA
@@ -2896,18 +2902,28 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
 
+#if JVET_P1004_REMOVE_BRICKS
+      for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
+      {
+        pcSlice->setSliceMap( pcPic->cs->pps->getSliceMap( sliceIdx ) );
+#else
       pcSlice->setSliceCurStartCtuTsAddr( 0 );
 
       uint32_t sliceIdx = 0;
       const BrickMap& tileMap = *(pcPic->brickMap);
       for(uint32_t nextCtuTsAddr = 0; nextCtuTsAddr < numberOfCtusInFrame; )
       {
+#endif
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
+#if JVET_P1004_REMOVE_BRICKS
+        if(sliceIdx < pcPic->cs->pps->getNumSlicesInPic() - 1)
+#else
         const uint32_t curSliceEnd = pcSlice->getSliceCurEndCtuTsAddr();
         pcSlice->setSliceIndex(sliceIdx);
         if(curSliceEnd < numberOfCtusInFrame)
+#endif
         {
           uint32_t independentSliceIdx = pcSlice->getIndependentSliceIdx();
           pcPic->allocateNewSlice();
@@ -2916,6 +2932,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcSlice = pcPic->slices[uiNumSliceSegments];
           CHECK(!(pcSlice->getPPS() != 0), "Unspecified error");
           pcSlice->copySliceInfo(pcPic->slices[uiNumSliceSegments - 1]);
+#if !JVET_P1004_REMOVE_BRICKS
           sliceIdx++;
           if (pcSlice->getPPS()->getRectSliceFlag())
           {
@@ -2933,12 +2950,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             pcSlice->setSliceCurStartCtuTsAddr(curSliceEnd);
           }
+#endif
           pcSlice->setSliceBits(0);
           independentSliceIdx++;
           pcSlice->setIndependentSliceIdx(independentSliceIdx);
           uiNumSliceSegments++;
         }
+#if !JVET_P1004_REMOVE_BRICKS
         nextCtuTsAddr = curSliceEnd;
+#endif
       }
 
       duData.clear();
@@ -3307,7 +3327,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       std::size_t binCountsInNalUnits   = 0; // For implementation of cabac_zero_word stuffing (section 7.4.3.10)
       std::size_t numBytesInVclNalUnits = 0; // For implementation of cabac_zero_word stuffing (section 7.4.3.10)
 
+#if JVET_P1004_REMOVE_BRICKS
+      for(uint32_t sliceSegmentIdxCount = 0; sliceSegmentIdxCount < pcPic->cs->pps->getNumSlicesInPic(); sliceSegmentIdxCount++ )
+#else
       for(uint32_t sliceSegmentStartCtuTsAddr = 0, sliceSegmentIdxCount = 0; sliceSegmentStartCtuTsAddr < numberOfCtusInFrame; sliceSegmentIdxCount++, sliceSegmentStartCtuTsAddr = pcSlice->getSliceCurEndCtuTsAddr())
+#endif
       {
         pcSlice = pcPic->slices[sliceSegmentIdxCount];
         if(sliceSegmentIdxCount > 0 && pcSlice->getSliceType()!= I_SLICE)

@@ -601,13 +601,17 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
+#if !JVET_P1004_REMOVE_BRICKS
     if (cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
     {
+#endif
       // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
       // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
       // copy in case the APS gets used more than once.
       m_cALF.ALFProcess(cs);
+#if !JVET_P1004_REMOVE_BRICKS
     }
+#endif
 
   }
 
@@ -1098,10 +1102,12 @@ void DecLib::xActivateParameterSets()
 #else
     m_pcPic->finalInit( *sps, *pps, apss, lmcsAPS, scalinglistAPS );
 #endif
+#if !JVET_P1004_REMOVE_BRICKS
 #if JVET_P1006_PICTURE_HEADER
     m_parameterSetManager.getPPS(m_picHeader.getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
 #else
     m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
+#endif
 #endif
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs((bool)m_pcPic->cs->sps->getPLTMode());
@@ -1350,10 +1356,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   m_apcSlicePilot->setSliceCurStartCtuTsAddr(0);
   m_apcSlicePilot->setSliceCurEndCtuTsAddr(0);
   m_apcSlicePilot->setSliceCurStartBrickIdx(0);
   m_apcSlicePilot->setSliceCurEndBrickIdx(0);
+#endif
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
@@ -1511,7 +1519,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_prevSliceSkipped = false;
 
   //we should only get a different poc for a new picture (with CTU address==0)
+#if JVET_P1004_REMOVE_BRICKS
+  if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
+#else
   if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getSliceCurStartCtuTsAddr() != 0))
+#endif
   {
     msg( WARNING, "Warning, the first slice of a picture might have been lost!\n");
   }
@@ -1520,7 +1532,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
 
   // leave when a new picture is found
+#if JVET_P1004_REMOVE_BRICKS
+  if(m_apcSlicePilot->getFirstCtuRsAddrInSlice() == 0 && !m_bFirstSliceInPicture)
+#else
   if(m_apcSlicePilot->getSliceCurStartCtuTsAddr() == 0 && !m_bFirstSliceInPicture)
+#endif
   {
     if (m_prevPOC >= m_pocRandomAccess)
     {
@@ -1610,6 +1626,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
   #endif
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (pcSlice->getPPS()->getRectSliceFlag())
   {
     int sliceIdx = pcSlice->getSliceIndex();
@@ -1648,6 +1665,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   pcSlice->setSliceCurStartCtuTsAddr(startCtuIdx);
   pcSlice->setSliceCurEndCtuTsAddr(endCtuIdx);
+#endif
 
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
   pcSlice->constructRefPicList(m_cListPic);

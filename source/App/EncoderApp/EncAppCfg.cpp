@@ -231,6 +231,7 @@ std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry)     //in
   return in;
 }
 
+#if !JVET_P1004_REMOVE_BRICKS
 std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry)     //input
 {
   in>>entry.m_tileIdx;
@@ -249,6 +250,7 @@ std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry)     //
   }
   return in;
 }
+#endif
 
 
 bool confirmPara(bool bflag, const char* message);
@@ -715,6 +717,91 @@ automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
     }
   }
 }
+#if JVET_P1004_REMOVE_BRICKS
+
+static uint32_t getMaxTileColsByLevel( Level::Name level )
+{
+  switch( level ) 
+  {
+    case Level::LEVEL1:
+    case Level::LEVEL2:
+    case Level::LEVEL2_1:
+      return 1;
+    case Level::LEVEL3:
+      return 2;
+    case Level::LEVEL3_1:
+      return 3;
+    case Level::LEVEL4:
+    case Level::LEVEL4_1:
+      return 5;
+    case Level::LEVEL5:
+    case Level::LEVEL5_1:
+    case Level::LEVEL5_2:
+      return 10;
+    case Level::LEVEL6:
+    case Level::LEVEL6_1:
+    case Level::LEVEL6_2:
+    default:
+      return 20;
+  }
+}
+
+static uint32_t getMaxTileRowsByLevel( Level::Name level )
+{
+  switch( level ) 
+  {
+    case Level::LEVEL1:
+    case Level::LEVEL2:
+    case Level::LEVEL2_1:
+      return 1;
+    case Level::LEVEL3:
+      return 2;
+    case Level::LEVEL3_1:
+      return 3;
+    case Level::LEVEL4:
+    case Level::LEVEL4_1:
+      return 5;
+    case Level::LEVEL5:
+    case Level::LEVEL5_1:
+    case Level::LEVEL5_2:
+      return 11;
+    case Level::LEVEL6:
+    case Level::LEVEL6_1:
+    case Level::LEVEL6_2:
+    default:
+      return 21;
+  }
+}
+
+static uint32_t getMaxSlicesByLevel( Level::Name level )
+{
+  switch( level ) 
+  {
+    case Level::LEVEL1:
+    case Level::LEVEL2:
+      return 16;
+    case Level::LEVEL2_1:
+      return 20;
+    case Level::LEVEL3:
+      return 30;
+    case Level::LEVEL3_1:
+      return 40;
+    case Level::LEVEL4:
+    case Level::LEVEL4_1:
+      return 75;
+    case Level::LEVEL5:
+    case Level::LEVEL5_1:
+    case Level::LEVEL5_2:
+      return 200;
+    case Level::LEVEL6:
+    case Level::LEVEL6_1:
+    case Level::LEVEL6_2:
+    default:
+      return 600;
+  }
+}
+
+#endif
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
@@ -733,7 +820,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int tmpWeightedPredictionMethod;
   int tmpFastInterSearchMode;
   int tmpMotionEstimationSearchMethod;
+#if !JVET_P1004_REMOVE_BRICKS 
   int tmpSliceMode;
+#endif
   int tmpDecodedPictureHashSEIMappedType;
   string inputColourSpaceConvert;
   string inputPathPrefix;
@@ -741,14 +830,23 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int saoOffsetBitShift[MAX_NUM_CHANNEL_TYPE];
 
   // Multi-value input fields:                                // minval, maxval (incl), min_entries, max_entries (incl) [, default values, number of default values]
+#if JVET_P1004_REMOVE_BRICKS  
+  SMultiValueInput<uint32_t>  cfgTileColumnWidth              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t>  cfgTileRowHeight                (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t>  cfgRectSlicePos                 (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t>  cfgRasterSliceSize              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#else  
   SMultiValueInput<uint32_t> cfg_ColumnWidth                     (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t> cfg_RowHeight                       (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#endif
   SMultiValueInput<int>  cfg_startOfCodedInterval            (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
   SMultiValueInput<int>  cfg_codedPivotValue                 (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
   SMultiValueInput<int>  cfg_targetPivotValue                (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
 
+#if !JVET_P1004_REMOVE_BRICKS 
   SMultiValueInput<uint32_t> cfg_SliceIdx                    (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t> cfg_SignalledSliceId            (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#endif
 
   SMultiValueInput<double> cfg_adIntraLambdaModifier         (0, std::numeric_limits<double>::max(), 0, MAX_TLAYER); ///< Lambda modifier for Intra pictures, one for each temporal layer. If size>temporalLayer, then use [temporalLayer], else if size>0, use [size()-1], else use m_adLambdaModifier.
 
@@ -1188,6 +1286,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxNumOffsetsPerPic",                             m_maxNumOffsetsPerPic,                             2048, "Max number of SAO offset per picture (Default: 2048)")
   ("SAOLcuBoundary",                                  m_saoCtuBoundary,                                 false, "0: right/bottom CTU boundary areas skipped from SAO parameter estimation, 1: non-deblocked pixels are used for those areas")
   ("SAOGreedyEnc",                                    m_saoGreedyMergeEnc,                              false, "SAO greedy merge encoding algorithm")
+#if JVET_P1004_REMOVE_BRICKS    
+  ("EnablePicPartitioning",                           m_picPartitionFlag,                               false, "Enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)")
+  ("TileColumnWidthArray",                            cfgTileColumnWidth,                  cfgTileColumnWidth, "Tile column widths in units of CTUs. Last column width in list will be repeated uniformly to cover any remaining picture width")
+  ("TileRowHeightArray",                              cfgTileRowHeight,                      cfgTileRowHeight, "Tile row heights in units of CTUs. Last row height in list will be repeated uniformly to cover any remaining picture height")
+  ("RasterScanSlices",                                m_rasterSliceFlag,                                false, "Indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)")
+  ("RectSlicePositions",                              cfgRectSlicePos,                        cfgRectSlicePos, "Rectangular slice positions. List containing pairs of top-left CTU RS address followed by bottom-right CTU RS address")
+  ("RectSliceFixedWidth",                             m_rectSliceFixedWidth,                                0, "Fixed rectangular slice width in units of tiles (0: disable this feature and use RectSlicePositions instead)")
+  ("RectSliceFixedHeight",                            m_rectSliceFixedHeight,                               0, "Fixed rectangular slice height in units of tiles (0: disable this feature and use RectSlicePositions instead)")
+  ("RasterSliceSizes",                                cfgRasterSliceSize,                  cfgRasterSliceSize, "Raster-scan slice sizes in units of tiles. Last size in list will be repeated uniformly to cover any remaining tiles in the picture")
+  ("DisableLoopFilterAcrossTiles",                    m_disableLFCrossTileBoundaryFlag,                 false, "Loop filtering applied across tile boundaries or not (0: filter across tile boundaries  1: do not filter across tile boundaries)")
+  ("DisableLoopFilterAcrossSlices",                   m_disableLFCrossSliceBoundaryFlag,                false, "Loop filtering applied across slice boundaries or not (0: filter across slice boundaries 1: do not filter across slice boundaries)")
+#else
   ("SliceMode",                                       tmpSliceMode,                            int(NO_SLICES), "0: Disable all Recon slice limits, 1: (deprecated #CTU), 2: (deprecated #bytes), 3:specify tiles per slice, 4: one brick per slice")
   ("SliceArgument",                                   m_sliceArgument,                                      0, "Depending on SliceMode being:"
                                                                                                                "\t1: max number of CTUs per slice"
@@ -1195,6 +1305,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t3: max number of tiles per slice")
   ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
 
+#endif
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
@@ -1202,6 +1313,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WeightedPredP,-wpP",                              m_useWeightedPred,                                false, "Use weighted prediction in P slices")
   ("WeightedPredB,-wpB",                              m_useWeightedBiPred,                              false, "Use weighted (bidirectional) prediction in B slices")
   ("WeightedPredMethod,-wpM",                         tmpWeightedPredictionMethod, int(WP_PER_PICTURE_WITH_SIMPLE_DC_COMBINED_COMPONENT), "Weighted prediction method")
+#if !JVET_P1004_REMOVE_BRICKS
     //deprecated copies of renamed tile parameters
   ("UniformSpacingIdc",                               m_tileUniformSpacingFlag,                         false,      "deprecated alias of TileUniformSpacing")
   ("TileUniformSpacing",                              m_tileUniformSpacingFlag,                         false,      "Indicates that tile columns and rows are distributed uniformly")
@@ -1212,7 +1324,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TileColumnWidthArray",                            cfg_ColumnWidth,                        cfg_ColumnWidth, "Array containing tile column width values in units of CTU")
   ("TileRowHeightArray",                              cfg_RowHeight,                            cfg_RowHeight, "Array containing tile row height values in units of CTU")
   ("LFCrossTileBoundaryFlag",                         m_bLFCrossTileBoundaryFlag,                        true, "1: cross-tile-boundary loop filtering. 0:non-cross-tile-boundary loop filtering")
+#endif
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
+#if !JVET_P1004_REMOVE_BRICKS
 
   ("RectSliceFlag",                                   m_rectSliceFlag,                                  true, "Rectangular slice flag")
   ("NumRectSlicesInPicMinus1",                        m_numSlicesInPicMinus1,                              0, "Number slices in pic minus 1")
@@ -1222,6 +1336,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("RectSlicesBoundaryArray",                         cfg_SliceIdx,                              cfg_SliceIdx, "Rectangular slices boundaries in Pic")
   ("SignalledSliceId",                                cfg_SignalledSliceId,                       cfg_SliceIdx, "Signalled rectangular slice ID")
 
+#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
 #if JVET_P0365_SCALING_MATRIX_LFNST
@@ -1467,6 +1582,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     opts.addOptions()(cOSS.str(), m_GOPList[i-1], GOPEntry());
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   for(int i=1; i<MAX_TILES+1; i++)
   {
     std::ostringstream cOSS;
@@ -1474,6 +1590,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     opts.addOptions()(cOSS.str(), m_brickSplits[i-1], BrickSplit());
   }
 
+#endif
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
@@ -1623,6 +1740,54 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_framesToBeEncoded *= 2;
   }
 
+#if JVET_P1004_REMOVE_BRICKS
+  if( m_picPartitionFlag ) 
+  {
+    // store tile column widths
+    m_tileColumnWidth.resize(cfgTileColumnWidth.values.size());
+    for(uint32_t i=0; i<cfgTileColumnWidth.values.size(); i++)
+    {
+      m_tileColumnWidth[i]=cfgTileColumnWidth.values[i];
+    }
+
+    // store tile row heights
+    m_tileRowHeight.resize(cfgTileRowHeight.values.size());
+    for(uint32_t i=0; i<cfgTileRowHeight.values.size(); i++)
+    {
+      m_tileRowHeight[i]=cfgTileRowHeight.values[i];
+    }
+
+    // store rectangular slice positions
+    if( !m_rasterSliceFlag ) 
+    {
+      m_rectSlicePos.resize(cfgRectSlicePos.values.size());
+      for(uint32_t i=0; i<cfgRectSlicePos.values.size(); i++)
+      {
+        m_rectSlicePos[i]=cfgRectSlicePos.values[i];
+      }
+    }
+
+    // store raster-scan slice sizes
+    else 
+    {
+      m_rasterSliceSize.resize(cfgRasterSliceSize.values.size());
+      for(uint32_t i=0; i<cfgRasterSliceSize.values.size(); i++)
+      {
+        m_rasterSliceSize[i]=cfgRasterSliceSize.values[i];
+      }
+    }
+  }
+  else 
+  {
+    m_tileColumnWidth.clear();
+    m_tileRowHeight.clear();
+    m_rectSlicePos.clear();
+    m_rasterSliceSize.clear();
+    m_rectSliceFixedWidth = 0;
+    m_rectSliceFixedHeight = 0;
+  }
+
+#else
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
     if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)
@@ -1670,6 +1835,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_tileRowHeight.clear();
   }
+#endif
   m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
   m_subProfile.resize(m_numSubProfile);
   for (uint8_t i = 0; i < m_numSubProfile; ++i)
@@ -1677,6 +1843,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_subProfile[i] = cfg_SubProfile.values[i];
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (m_tileUniformSpacingFlag)
   {
     int uniformTileHeight = ((m_uniformTileRowHeightMinus1 + 1) * m_uiCTUSize);
@@ -1684,6 +1851,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_numTileRowsMinus1 = ((m_iSourceHeight + uniformTileHeight - 1) / uniformTileHeight) - 1;
     m_numTileColumnsMinus1 = ((m_iSourceWidth + uniformTileWidth - 1) / uniformTileWidth) - 1;
   }
+#endif
   /* rules for input, output and internal bitdepths as per help text */
   if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
   {
@@ -1885,6 +2053,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (tmpSliceMode<0 || tmpSliceMode>=int(NUMBER_OF_SLICE_CONSTRAINT_MODES))
   {
     EXIT( "Error: bad slice mode");
@@ -2033,6 +2202,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_sliceId[i] = i;
     }
   }
+#endif
 
   if (tmpDecodedPictureHashSEIMappedType<0 || tmpDecodedPictureHashSEIMappedType>=int(NUMBER_OF_HASHTYPES))
   {
@@ -2890,17 +3060,21 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(!m_useTransformSkip, "BDPCM cannot be used when transform skip is disabled.");
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (m_sliceMode!=NO_SLICES)
   {
     xConfirmPara( m_sliceArgument < 1 ,         "SliceArgument should be larger than or equal to 1" );
   }
+#endif
 
 
+#if !JVET_P1004_REMOVE_BRICKS
   bool tileFlag = (m_numTileColumnsMinus1 > 0 || m_numTileRowsMinus1 > 0 );
   if (m_profile!=Profile::HIGHTHROUGHPUTREXT)
   {
     xConfirmPara( tileFlag && m_entropyCodingSyncEnabledFlag, "Tiles and entropy-coding-sync (Wavefronts) can not be applied together, except in the High Throughput Intra 4:4:4 16 profile");
   }
+#endif
 
   xConfirmPara( m_iSourceWidth  % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Picture width must be an integer multiple of the specified chroma subsampling");
   xConfirmPara( m_iSourceHeight % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Picture height must be an integer multiple of the specified chroma subsampling");
@@ -3327,6 +3501,264 @@ bool EncAppCfg::xCheckParameter()
     m_maxDecPicBuffering[MAX_TLAYER-1] = m_numReorderPics[MAX_TLAYER-1] + 1;
   }
 
+#if JVET_P1004_REMOVE_BRICKS
+  if( m_picPartitionFlag ) 
+  {
+    PPS pps;
+    uint32_t colIdx, rowIdx;
+    uint32_t remSize;
+ 
+    pps.setPicWidthInLumaSamples( m_iSourceWidth );
+    pps.setPicHeightInLumaSamples( m_iSourceHeight );
+    pps.setLog2CtuSize( floorLog2(m_uiCTUSize) );
+
+    // set default tile column if not provided
+    if( m_tileColumnWidth.size() == 0 ) 
+    {
+      m_tileColumnWidth.push_back( pps.getPicWidthInCtu() );
+    }
+    // set default tile row if not provided
+    if( m_tileRowHeight.size() == 0 ) 
+    {
+      m_tileRowHeight.push_back( pps.getPicHeightInCtu() );
+    }
+
+    // remove any tile columns that can be specified implicitly
+    while( m_tileColumnWidth.size() > 1 && m_tileColumnWidth.end()[-1] == m_tileColumnWidth.end()[-2] )
+    {
+      m_tileColumnWidth.pop_back();
+    }
+
+    // remove any tile rows that can be specified implicitly
+    while( m_tileRowHeight.size() > 1 && m_tileRowHeight.end()[-1] == m_tileRowHeight.end()[-2] )
+    {
+      m_tileRowHeight.pop_back();
+    }
+
+    // setup tiles in temporary PPS structure
+    remSize = pps.getPicWidthInCtu();
+    for( colIdx=0; remSize > 0 && colIdx<m_tileColumnWidth.size(); colIdx++ )
+    {
+      xConfirmPara(m_tileColumnWidth[ colIdx ] == 0, "Tile column widths cannot be equal to 0");
+      m_tileColumnWidth[ colIdx ] = std::min( remSize, m_tileColumnWidth[ colIdx ]);
+      pps.addTileColumnWidth( m_tileColumnWidth[ colIdx ] );
+      remSize -= m_tileColumnWidth[ colIdx ];
+    }
+    m_tileColumnWidth.resize( colIdx );
+    pps.setNumExpTileColumns( (uint32_t)m_tileColumnWidth.size() );    
+    remSize = pps.getPicHeightInCtu();
+    for( rowIdx=0; remSize > 0 && rowIdx<m_tileRowHeight.size(); rowIdx++ )
+    {
+      xConfirmPara(m_tileRowHeight[ rowIdx ] == 0, "Tile row heights cannot be equal to 0");
+      m_tileRowHeight[ rowIdx ] = std::min( remSize, m_tileRowHeight[ rowIdx ]);
+      pps.addTileRowHeight( m_tileRowHeight[ rowIdx ] );
+      remSize -= m_tileRowHeight[ rowIdx ];
+    }
+    m_tileRowHeight.resize( rowIdx );
+    pps.setNumExpTileRows( (uint32_t)m_tileRowHeight.size() );
+    pps.initTiles();
+    xConfirmPara(pps.getNumTileColumns() > getMaxTileColsByLevel( m_level ), "Number of tile columns exceeds maximum number allowed according to specified level");
+    xConfirmPara(pps.getNumTileRows()    > getMaxTileRowsByLevel( m_level ), "Number of tile rows exceeds maximum number allowed according to specified level");
+    m_numTileCols = pps.getNumTileColumns();
+    m_numTileRows = pps.getNumTileRows();
+
+    // rectangular slices
+    if( !m_rasterSliceFlag )
+    {
+      uint32_t sliceIdx;
+      bool     needTileIdxDelta = false;
+
+      // generate slice list for the simplified fixed-rectangular-slice-size config option
+      if( m_rectSliceFixedWidth > 0 && m_rectSliceFixedHeight > 0 )
+      {
+        int tileIdx = 0;
+        m_rectSlicePos.clear();
+        while( tileIdx < pps.getNumTiles() ) 
+        {
+          uint32_t startTileX = tileIdx % pps.getNumTileColumns();
+          uint32_t startTileY = tileIdx / pps.getNumTileColumns();
+          uint32_t startCtuX  = pps.getTileColumnBd( startTileX );
+          uint32_t startCtuY  = pps.getTileRowBd( startTileY );
+          uint32_t stopCtuX   = (startTileX + m_rectSliceFixedWidth)  >= pps.getNumTileColumns() ? pps.getPicWidthInCtu() - 1  : pps.getTileColumnBd( startTileX + m_rectSliceFixedWidth ) - 1;
+          uint32_t stopCtuY   = (startTileY + m_rectSliceFixedHeight) >= pps.getNumTileRows()    ? pps.getPicHeightInCtu() - 1 : pps.getTileRowBd( startTileY + m_rectSliceFixedHeight ) - 1;
+          uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
+          uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
+          
+          // add rectangular slice to list
+          m_rectSlicePos.push_back( startCtuY * pps.getPicWidthInCtu() + startCtuX );          
+          m_rectSlicePos.push_back( stopCtuY  * pps.getPicWidthInCtu() + stopCtuX  );
+          
+          // get slice size in tiles
+          uint32_t sliceWidth  = stopTileX - startTileX + 1;
+          uint32_t sliceHeight = stopTileY - startTileY + 1;
+
+          // move to next tile in raster scan order
+          tileIdx += sliceWidth;
+          if( tileIdx % pps.getNumTileColumns() == 0 )
+          {
+            tileIdx += (sliceHeight - 1) * pps.getNumTileColumns();
+          }
+        }
+      }
+
+      xConfirmPara( m_rectSlicePos.size() & 1, "Odd number of rectangular slice positions provided. Rectangular slice positions must be specified in pairs of (top-left / bottom-right) raster-scan CTU addresses.");
+      
+      // set default slice size if not provided
+      if( m_rectSlicePos.size() == 0 ) 
+      {
+        m_rectSlicePos.push_back( 0 );
+        m_rectSlicePos.push_back( pps.getPicWidthInCtu() * pps.getPicHeightInCtu() - 1 );
+      }
+      pps.setNumSlicesInPic( (uint32_t)(m_rectSlicePos.size() >> 1) );
+      xConfirmPara(pps.getNumSlicesInPic() > getMaxSlicesByLevel( m_level ), "Number of rectangular slices exceeds maximum number allowed according to specified level");
+      pps.initRectSlices();
+
+      // set slice parameters from CTU addresses
+      for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
+      {
+        xConfirmPara( m_rectSlicePos[2*sliceIdx]     >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
+        xConfirmPara( m_rectSlicePos[2*sliceIdx + 1] >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
+
+        // map raster scan CTU address to X/Y position
+        uint32_t startCtuX = m_rectSlicePos[2*sliceIdx]     % pps.getPicWidthInCtu();
+        uint32_t startCtuY = m_rectSlicePos[2*sliceIdx]     / pps.getPicWidthInCtu();
+        uint32_t stopCtuX  = m_rectSlicePos[2*sliceIdx + 1] % pps.getPicWidthInCtu();
+        uint32_t stopCtuY  = m_rectSlicePos[2*sliceIdx + 1] / pps.getPicWidthInCtu();
+        
+        // get corresponding tile index
+        uint32_t startTileX = pps.ctuToTileCol( startCtuX );
+        uint32_t startTileY = pps.ctuToTileRow( startCtuY );
+        uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
+        uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
+        uint32_t tileIdx    = startTileY * pps.getNumTileColumns() + startTileX;
+
+        // get slice size in tiles
+        uint32_t sliceWidth  = stopTileX - startTileX + 1;
+        uint32_t sliceHeight = stopTileY - startTileY + 1;
+        
+        // check for slice / tile alignment
+        xConfirmPara( startCtuX != pps.getTileColumnBd( startTileX ), "Rectangular slice position does not align with a left tile edge.");
+        xConfirmPara( stopCtuX  != (pps.getTileColumnBd( stopTileX + 1 ) - 1), "Rectangular slice position does not align with a right tile edge.");
+        if( sliceWidth > 1 || sliceHeight > 1 )
+        {
+          xConfirmPara( startCtuY != pps.getTileRowBd( startTileY ), "Rectangular slice position does not align with a top tile edge.");
+          xConfirmPara( stopCtuY  != (pps.getTileRowBd( stopTileY + 1 ) - 1), "Rectangular slice position does not align with a bottom tile edge.");
+        }
+
+        // set slice size and tile index
+        pps.setSliceWidthInTiles( sliceIdx, sliceWidth );
+        pps.setSliceHeightInTiles( sliceIdx, sliceHeight );
+        pps.setSliceTileIdx( sliceIdx, tileIdx );
+        if( sliceIdx > 0 && !needTileIdxDelta )
+        {
+          uint32_t lastTileIdx = pps.getSliceTileIdx( sliceIdx-1 );
+          lastTileIdx += pps.getSliceWidthInTiles( sliceIdx-1 );
+          if( lastTileIdx % pps.getNumTileColumns() == 0)
+          {
+            lastTileIdx += (pps.getSliceHeightInTiles( sliceIdx-1 ) - 1) * pps.getNumTileColumns();
+          }
+          if( lastTileIdx != tileIdx )
+          {
+            needTileIdxDelta = true;
+          }
+        }
+
+        // special case for multiple slices within a single tile
+        if( sliceWidth == 1 && sliceHeight == 1 )
+        {
+          uint32_t firstSliceIdx = sliceIdx;
+          uint32_t numSlicesInTile = 1;
+          pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+          
+          while( sliceIdx < pps.getNumSlicesInPic()-1 ) 
+          {
+            uint32_t nextTileIdx;
+            startCtuX   = m_rectSlicePos[2*(sliceIdx+1)]     % pps.getPicWidthInCtu();
+            startCtuY   = m_rectSlicePos[2*(sliceIdx+1)]     / pps.getPicWidthInCtu();
+            stopCtuX    = m_rectSlicePos[2*(sliceIdx+1) + 1] % pps.getPicWidthInCtu();
+            stopCtuY    = m_rectSlicePos[2*(sliceIdx+1) + 1] / pps.getPicWidthInCtu();          
+            startTileX  = pps.ctuToTileCol( startCtuX );
+            startTileY  = pps.ctuToTileRow( startCtuY );
+            stopTileX   = pps.ctuToTileCol( stopCtuX );
+            stopTileY   = pps.ctuToTileRow( stopCtuY );
+            nextTileIdx = startTileY * pps.getNumTileColumns() + startTileX;
+            sliceWidth  = stopTileX - startTileX + 1;
+            sliceHeight = stopTileY - startTileY + 1;
+            if(nextTileIdx != tileIdx || sliceWidth != 1 || sliceHeight != 1) 
+            {
+              break;
+            }
+            numSlicesInTile++;
+            sliceIdx++;
+            pps.setSliceWidthInTiles( sliceIdx, 1 );
+            pps.setSliceHeightInTiles( sliceIdx, 1 );
+            pps.setSliceTileIdx( sliceIdx, tileIdx );    
+            pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+          }
+          pps.setNumSlicesInTile( firstSliceIdx, numSlicesInTile );
+        }
+      }
+      pps.setTileIdxDeltaPresentFlag( needTileIdxDelta );
+      m_tileIdxDeltaPresentFlag = needTileIdxDelta;
+      
+      // check rectangular slice mapping and full picture CTU coverage
+      pps.initRectSliceMap();
+
+      // store rectangular slice parameters from temporary PPS structure
+      m_numSlicesInPic = pps.getNumSlicesInPic();
+      m_rectSlices.resize( pps.getNumSlicesInPic() );
+      for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
+      {
+        m_rectSlices[sliceIdx].setSliceWidthInTiles( pps.getSliceWidthInTiles(sliceIdx) );
+        m_rectSlices[sliceIdx].setSliceHeightInTiles( pps.getSliceHeightInTiles(sliceIdx) );
+        m_rectSlices[sliceIdx].setNumSlicesInTile( pps.getNumSlicesInTile(sliceIdx) );
+        m_rectSlices[sliceIdx].setSliceHeightInCtu( pps.getSliceHeightInCtu(sliceIdx) );
+        m_rectSlices[sliceIdx].setTileIdx( pps.getSliceTileIdx(sliceIdx) );
+      }
+    }
+    // raster-scan slices
+    else
+    {
+      uint32_t listIdx = 0;
+      uint32_t remTiles = pps.getNumTiles();
+
+      // set default slice size if not provided
+      if( m_rasterSliceSize.size() == 0 ) 
+      {
+        m_rasterSliceSize.push_back( remTiles );
+      }
+
+      // set raster slice sizes
+      while( remTiles > 0 )
+      {
+        // truncate if size exceeds number of remaining tiles
+        if( listIdx < m_rasterSliceSize.size() )
+        {
+          m_rasterSliceSize[listIdx] = std::min( remTiles, m_rasterSliceSize[listIdx] );
+          remTiles -= m_rasterSliceSize[listIdx];
+        }
+        // replicate last size uniformly as needed to cover the remainder of the picture
+        else
+        {
+          m_rasterSliceSize.push_back( std::min( remTiles, m_rasterSliceSize.back() ) );
+          remTiles -= m_rasterSliceSize.back();
+        }
+        listIdx++;
+      }
+      // shrink list if too many sizes were provided
+      m_rasterSliceSize.resize( listIdx );
+      
+      m_numSlicesInPic = (uint32_t)m_rasterSliceSize.size();
+      xConfirmPara(m_rasterSliceSize.size() > getMaxSlicesByLevel( m_level ), "Number of raster-scan slices exceeds maximum number allowed according to specified level");
+    }
+  }
+  else 
+  {
+    m_numTileCols = 1;
+    m_numTileRows = 1;
+    m_numSlicesInPic = 1;
+  }
+#else
 
   for (int i=0; i<MAX_TILES; i++)
   {
@@ -3336,11 +3768,20 @@ bool EncAppCfg::xCheckParameter()
       // ToDo: check that brick dimensions don't exceed tile dimensions
     }
   }
+#endif
 
+#if JVET_P1004_REMOVE_BRICKS
+  if ((m_MCTSEncConstraint) && (!m_disableLFCrossTileBoundaryFlag))
+#else
   if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
+#endif
   {
     printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");
+#if JVET_P1004_REMOVE_BRICKS
+    m_disableLFCrossTileBoundaryFlag = true;
+#else
     m_bLFCrossTileBoundaryFlag = false;
+#endif
   }
   if ((m_MCTSEncConstraint) && (m_TMVPModeId))
   {
@@ -3724,12 +4165,17 @@ void EncAppCfg::xPrintParameter()
   msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
 #endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
+#if JVET_P1004_REMOVE_BRICKS
+  msg( VERBOSE, "Tiles: %dx%d ", m_numTileCols, m_numTileRows );
+  msg( VERBOSE, "Slices: %d ", m_numSlicesInPic);
+#else
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)
   {
     msg( VERBOSE, "A=%d ", m_sliceArgument);
   }
   msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
+#endif
   msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );

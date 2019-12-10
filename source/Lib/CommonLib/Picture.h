@@ -116,6 +116,7 @@ class AQpLayer;
 typedef std::list<SEI*> SEIMessages;
 
 
+#if !JVET_P1004_REMOVE_BRICKS
 class Brick
 {
 private:
@@ -183,6 +184,7 @@ struct BrickMap
   void initBrickMap( const SPS& sps, const PPS& pps );
   void initCtuBsRsAddrMap();
 };
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -365,7 +367,9 @@ public:
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
+#if !JVET_P1004_REMOVE_BRICKS
   BrickMap*     brickMap;
+#endif
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 

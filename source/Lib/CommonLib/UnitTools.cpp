@@ -860,11 +860,11 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
     {
       mrgCtx.mvFieldNeighbours[cnt * 2].setMvField(Mv(0, 0), MAX_NUM_REF);
       mrgCtx.interDirNeighbours[cnt] = 1;
-      cnt++;
       if (mrgCandIdx == cnt)
       {
         return;
       }
+      cnt++;
     }
 
   mrgCtx.numValidMergeCand = cnt;

@@ -1951,7 +1951,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   }
 
 #else
-
   int bitsSliceAddress = 1;
   if (!pcSlice->getPPS()->getRectSliceFlag())
   {

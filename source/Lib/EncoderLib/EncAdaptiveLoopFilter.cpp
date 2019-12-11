@@ -850,7 +850,11 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
 
   setEnableFlag(m_alfParamTemp, channel, true);
 #if ENABLE_QPA
+#if JVET_P1004_REMOVE_BRICKS
+  CHECK ((chromaWeight > 0.0) && (cs.slice->getFirstCtuRsAddrInSlice() != 0), "incompatible start CTU address, must be 0");
+#else
   CHECK ((chromaWeight > 0.0) && (cs.slice->getSliceCurStartCtuTsAddr() != 0), "incompatible start CTU address, must be 0");
+#endif
 #endif
 
   reconstructCoeff(m_alfParamTemp, channel, true, isLuma(channel));
@@ -1920,7 +1924,11 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
               const CompArea& compAreaDst = areaDst.block( compID );
                 getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compAreaDst, compArea, chType
                   , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
+#if JVET_P0158_ALIGN_ALF_VB
+                  , (compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos
+#else
                   , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
+#endif
 #if JVET_O0625_ALF_PADDING
                   , compIdx ? alfBryListChroma : alfBryList
 #endif
@@ -1972,7 +1980,11 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
         {
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea, compArea, chType
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
+#if JVET_P0158_ALIGN_ALF_VB
+            , (compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos
+#else
             , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
+#endif
 #if JVET_O0625_ALF_PADDING
             , alfBryList
 #endif

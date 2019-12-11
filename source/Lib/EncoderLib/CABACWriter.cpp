@@ -246,7 +246,11 @@ void CABACWriter::sao( const Slice& slice, unsigned ctuRsAddr )
   int                 rx                      = ctuRsAddr - ry * frame_width_in_ctus;
   const Position      pos                     ( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
   const unsigned      curSliceIdx             = slice.getIndependentSliceIdx();
+#if JVET_P1004_REMOVE_BRICKS
+  const unsigned      curTileIdx              = cs.pps->getTileIdx( pos );
+#else
   const unsigned      curTileIdx              = cs.picture->brickMap->getBrickIdxRsMap( pos );
+#endif
   bool                leftMergeAvail          = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0  ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
   bool                aboveMergeAvail         = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
   sao_block_pars( sao_ctu_pars, sps.getBitDepths(), sliceEnabled, leftMergeAvail, aboveMergeAvail, false );
@@ -386,11 +390,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
     cuCtx.qgStart    = true;
     cuCtx.isDQPCoded          = false;
   }
-#if JVET_P1006_PICTURE_HEADER
-  if( pps.getCuChromaQpOffsetEnabledFlag() && partitioner.currQgChromaEnable() )
-#else
   if( cs.slice->getUseChromaQpAdj() && partitioner.currQgChromaEnable() )
-#endif
   {
     cuCtx.isChromaQpAdjCoded  = false;
   }
@@ -402,11 +402,7 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       pCuCtxChroma->qgStart    = true;
       pCuCtxChroma->isDQPCoded = false;
     }
-#if JVET_P1006_PICTURE_HEADER
-    if (pps.getCuChromaQpOffsetEnabledFlag() && pPartitionerChroma->currQgChromaEnable())
-#else
     if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currQgChromaEnable())
-#endif
     {
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
@@ -1456,8 +1452,10 @@ void CABACWriter::sbt_mode( const CodingUnit& cu )
 
 void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
 {
+ #if !JVET_P1004_REMOVE_BRICKS
   const Slice*  slice             = cu.cs->slice;
   const int     currentCTUTsAddr  = cu.cs->picture->brickMap->getCtuRsToBsAddrMap( CU::getCtuAddr( cu ) );
+#endif
   const bool    isLastSubCUOfCtu  = CU::isLastSubCUOfCtu( cu );
 
   if ( isLastSubCUOfCtu
@@ -1466,12 +1464,14 @@ void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
   {
     cuCtx.isDQPCoded = ( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded );
 
+ #if !JVET_P1004_REMOVE_BRICKS
     // The 1-terminating bit is added to all streams, so don't add it here when it's 1.
     // i.e. when the slice segment CurEnd CTU address is the current CTU address+1.
     if(slice->getSliceCurEndCtuTsAddr() != currentCTUTsAddr + 1)
     {
       m_BinEncoder.encodeBinTrm( 0 );
     }
+#endif
   }
 }
 
@@ -1538,11 +1538,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
       cuCtx.isDQPCoded = true;
     }
   }
-#if JVET_P1006_PICTURE_HEADER
-  if (cu.useEscape[compBegin] && cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && !cuCtx.isChromaQpAdjCoded)
-#else
   if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
-#endif
   {
     if (!CS::isDualITree(*tu.cs) || isChroma(tu.chType))
     {
@@ -2885,11 +2881,7 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     SizeType channelWidth = !cu.isSepTree() ? cu.lwidth() : cu.chromaSize().width;
     SizeType channelHeight = !cu.isSepTree() ? cu.lheight() : cu.chromaSize().height;
 
-#if JVET_P1006_PICTURE_HEADER
-    if (cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#else
     if (cu.cs->slice->getUseChromaQpAdj() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#endif
     {
       cu_chroma_qp_offset(cu);
       cuCtx.isChromaQpAdjCoded = true;
@@ -3999,7 +3991,11 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
     int                 rx = ctuRsAddr - ry * frame_width_in_ctus;
     const Position      pos( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
     const uint32_t          curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_P1004_REMOVE_BRICKS
+    const uint32_t      curTileIdx = cs.pps->getTileIdx( pos );
+#else
     const uint32_t      curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( pos );
+#endif
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
 

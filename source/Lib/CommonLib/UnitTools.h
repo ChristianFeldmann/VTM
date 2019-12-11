@@ -70,7 +70,9 @@ namespace CU
   bool isLastSubCUOfCtu               (const CodingUnit &cu);
   uint32_t getCtuAddr                     (const CodingUnit &cu);
 #if JVET_O0625_ALF_PADDING || JVET_P0551_ALF_SLICE_BOUNDARY
+#if !JVET_P1004_REMOVE_BRICKS
   bool isSameBrick                    ( const CodingUnit& cu, const CodingUnit& cu2 );
+#endif
 #endif
   int  predictQP                      (const CodingUnit& cu, const int prevQP );
 
@@ -154,7 +156,7 @@ namespace PU
   void fillAffineMvpCand              (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo);
   bool addMVPCandUnscaled             (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
   void xInheritedAffineMv             ( const PredictionUnit &pu, const PredictionUnit* puNeighbour, RefPicList eRefPicList, Mv rcMv[3] );
-  bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
+  bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
     , const bool isAvailableA1, const MotionInfo miLeft, const bool isAvailableB1, const MotionInfo miAbove
     , const bool ibcFlag
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
@@ -192,7 +194,9 @@ namespace PU
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool checkDMVRCondition(const PredictionUnit& pu);
 
+#if !JVET_P0590_SCALING_WINDOW
   bool isRefPicSameSize( const PredictionUnit& pu );
+#endif
 }
 
 // TU tools

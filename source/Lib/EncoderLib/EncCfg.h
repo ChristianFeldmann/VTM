@@ -133,6 +133,7 @@ struct RPLEntry
 
 std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry);     //input
 
+#if !JVET_P1004_REMOVE_BRICKS
 struct BrickSplit
 {
   int     m_tileIdx;
@@ -154,6 +155,7 @@ typedef std::map<int, BrickSplit> BrickSplitMap;
 
 std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry);     //input
 
+#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -283,7 +285,12 @@ protected:
   unsigned  m_log2DiffMaxMinCodingBlockSize;
 
   int       m_LMChroma;
+#if JVET_P0592_CHROMA_PHASE
+  bool      m_horCollocatedChromaFlag;
+  bool      m_verCollocatedChromaFlag;
+#else
   bool      m_cclmCollocatedChromaFlag;
+#endif
   int       m_IntraMTS;
   int       m_InterMTS;
 #if JVET_P0273_MTSIntraMaxCand
@@ -474,13 +481,24 @@ protected:
   bool      m_ISP;
   bool      m_useFastISP;
 
-  bool      m_bUseConstrainedIntraPred;
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
 #if JVET_O0549_ENCODER_ONLY_FILTER
   bool      m_gopBasedTemporalFilterEnabled;
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+  bool      m_noPicPartitionFlag;                             ///< no picture partitioning flag (single tile, single slice)
+  std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
+  std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
+  bool      m_rectSliceFlag;                                  ///< indicates if using rectangular or raster-scan slices
+  uint32_t  m_numSlicesInPic;                                 ///< number of rectangular slices in the picture (raster-scan slice specified at slice level)
+  bool      m_tileIdxDeltaPresentFlag;                        ///< rectangular slice tile index delta present flag
+  std::vector<RectSlice> m_rectSlices;                        ///< list of rectanglar slice syntax parameters
+  std::vector<uint32_t> m_rasterSliceSize;                    ///< raster-scan slice sizes in units of tiles
+  bool      m_bLFCrossTileBoundaryFlag;                       ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
+  bool      m_bLFCrossSliceBoundaryFlag;                      ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
+#else
   //====== Slice ========
   SliceConstraint m_sliceMode;
   int       m_sliceArgument;
@@ -488,8 +506,10 @@ protected:
   SliceConstraint m_sliceSegmentMode;
   int       m_sliceSegmentArgument;
   bool      m_bLFCrossSliceBoundaryFlag;
+#endif
 
   bool      m_intraSmoothingDisabledFlag;
+#if !JVET_P1004_REMOVE_BRICKS
   bool      m_loopFilterAcrossBricksEnabledFlag;
   bool      m_tileUniformSpacingFlag;
   int       m_iNumColumnsMinus1;
@@ -498,9 +518,11 @@ protected:
   int       m_uniformTileRowHeightMinus1;
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
+#endif
 
   bool      m_entropyCodingSyncEnabledFlag;
 
+#if !JVET_P1004_REMOVE_BRICKS
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -510,6 +532,7 @@ protected:
   int       m_signalledSliceIdLengthMinus1;
   std::vector<int> m_sliceId;
   BrickSplitMap m_brickSplitMap;
+#endif
 
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
@@ -596,7 +619,6 @@ protected:
   bool      m_useWeightedPred;       //< Use of Weighting Prediction (P_SLICE)
   bool      m_useWeightedBiPred;    //< Use of Bi-directional Weighting Prediction (B_SLICE)
   WeightedPredictionMethod m_weightedPredictionMethod;
-  uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
@@ -729,8 +751,10 @@ protected:
 
 public:
   EncCfg()
+#if !JVET_P1004_REMOVE_BRICKS
   : m_tileColumnWidth()
   , m_tileRowHeight()
+#endif
   {
   }
 
@@ -920,8 +944,15 @@ public:
 
   void      setUseLMChroma                  ( int n )        { m_LMChroma = n; }
   int       getUseLMChroma()                           const { return m_LMChroma; }
+#if JVET_P0592_CHROMA_PHASE
+  void      setHorCollocatedChromaFlag( bool b )             { m_horCollocatedChromaFlag = b; }
+  bool      getHorCollocatedChromaFlag()               const { return m_horCollocatedChromaFlag; }
+  void      setVerCollocatedChromaFlag( bool b )             { m_verCollocatedChromaFlag = b; }
+  bool      getVerCollocatedChromaFlag()               const { return m_verCollocatedChromaFlag; }
+#else
   void      setCclmCollocatedChromaFlag     ( bool b )       { m_cclmCollocatedChromaFlag = b; }
   bool      getCclmCollocatedChromaFlag     ()         const { return m_cclmCollocatedChromaFlag; }
+#endif
 
   void      setSubPuMvpMode(int n)          { m_SubPuMvpMode = n; }
   bool      getSubPuMvpMode()         const { return m_SubPuMvpMode; }
@@ -1247,7 +1278,6 @@ public:
   void      setUseFastDecisionForMerge      ( bool  b )     { m_useFastDecisionForMerge = b; }
   void      setUseCbfFastMode               ( bool  b )     { m_bUseCbfFastMode = b; }
   void      setUseEarlySkipDetection        ( bool  b )     { m_useEarlySkipDetection = b; }
-  void      setUseConstrainedIntraPred      ( bool  b )     { m_bUseConstrainedIntraPred = b; }
   void      setFastUDIUseMPMEnabled         ( bool  b )     { m_bFastUDIUseMPMEnabled = b; }
   void      setFastMEForGenBLowDelayEnabled ( bool  b )     { m_bFastMEForGenBLowDelayEnabled = b; }
   void      setUseBLambdaForNonKeyLowDelayPictures ( bool b ) { m_bUseBLambdaForNonKeyLowDelayPictures = b; }
@@ -1270,7 +1300,6 @@ public:
   bool      getUseFastDecisionForMerge      () const{ return m_useFastDecisionForMerge; }
   bool      getUseCbfFastMode               () const{ return m_bUseCbfFastMode; }
   bool      getUseEarlySkipDetection        () const{ return m_useEarlySkipDetection; }
-  bool      getUseConstrainedIntraPred      ()      { return m_bUseConstrainedIntraPred; }
   bool      getFastUDIUseMPMEnabled         ()      { return m_bFastUDIUseMPMEnabled; }
   bool      getFastMEForGenBLowDelayEnabled ()      { return m_bFastMEForGenBLowDelayEnabled; }
   bool      getUseBLambdaForNonKeyLowDelayPictures () { return m_bUseBLambdaForNonKeyLowDelayPictures; }
@@ -1327,6 +1356,29 @@ public:
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }
   bool      getFastDeltaQp                  () const { return m_bFastDeltaQP; }
 
+#if JVET_P1004_REMOVE_BRICKS
+  //====== Tiles and Slices ========
+  void      setNoPicPartitionFlag( bool b )                                { m_noPicPartitionFlag = b;              }
+  bool      getNoPicPartitionFlag()                                        { return m_noPicPartitionFlag;           }
+  void      setTileColWidths( std::vector<uint32_t> tileColWidths )        { m_tileColumnWidth = tileColWidths;     }
+  const     std::vector<uint32_t>*   getTileColWidths() const              { return &m_tileColumnWidth;             }
+  void      setTileRowHeights( std::vector<uint32_t> tileRowHeights )      { m_tileRowHeight = tileRowHeights;      }
+  const     std::vector<uint32_t>*   getTileRowHeights() const             { return &m_tileRowHeight;               }
+  void      setRectSliceFlag( bool b )                                     { m_rectSliceFlag = b;                   }
+  bool      getRectSliceFlag()                                             { return m_rectSliceFlag;                }
+  void      setNumSlicesInPic( uint32_t u )                                { m_numSlicesInPic = u;                  }
+  uint32_t  getNumSlicesInPic()                                            { return m_numSlicesInPic;               }
+  void      setTileIdxDeltaPresentFlag( bool b )                           { m_tileIdxDeltaPresentFlag = b;         }
+  bool      getTileIdxDeltaPresentFlag()                                   { return m_tileIdxDeltaPresentFlag;      }
+  void      setRectSlices( std::vector<RectSlice> rectSlices )             { m_rectSlices = rectSlices;             }
+  const     std::vector<RectSlice>*   getRectSlices() const                { return &m_rectSlices;                  }
+  void      setRasterSliceSizes( std::vector<uint32_t> rasterSliceSizes )  { m_rasterSliceSize = rasterSliceSizes;  }
+  const     std::vector<uint32_t>*   getRasterSliceSizes() const           { return &m_rasterSliceSize;             }
+  void      setLFCrossTileBoundaryFlag( bool b )                           { m_bLFCrossTileBoundaryFlag = b;        }
+  bool      getLFCrossTileBoundaryFlag()                                   { return m_bLFCrossTileBoundaryFlag;     }
+  void      setLFCrossSliceBoundaryFlag( bool b )                          { m_bLFCrossSliceBoundaryFlag = b;       }
+  bool      getLFCrossSliceBoundaryFlag()                                  { return m_bLFCrossSliceBoundaryFlag;    }
+#else
   //====== Slice ========
   void  setSliceMode                   ( SliceConstraint  i )        { m_sliceMode = i;              }
   void  setSliceArgument               ( int  i )                    { m_sliceArgument = i;          }
@@ -1339,6 +1391,7 @@ public:
   int   getSliceSegmentArgument        ()                            { return m_sliceSegmentArgument;}
   void      setLFCrossSliceBoundaryFlag     ( bool   bValue  )       { m_bLFCrossSliceBoundaryFlag = bValue; }
   bool      getLFCrossSliceBoundaryFlag     ()                       { return m_bLFCrossSliceBoundaryFlag;   }
+#endif
 
   void      setUseSAO                  (bool bVal)                   { m_bUseSAO = bVal; }
   bool      getUseSAO                  ()                            { return m_bUseSAO; }
@@ -1356,6 +1409,7 @@ public:
 
   void  setSaoGreedyMergeEnc           (bool val)                    { m_saoGreedyMergeEnc = val; }
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
+#if !JVET_P1004_REMOVE_BRICKS
   void  setLFCrossTileBoundaryFlag               ( bool   val  )     { m_loopFilterAcrossBricksEnabledFlag = val; }
   bool  getLFCrossTileBoundaryFlag               ()                  { return m_loopFilterAcrossBricksEnabledFlag;   }
   void  setTileUniformSpacingFlag      ( bool b )                    { m_tileUniformSpacingFlag = b; }
@@ -1393,6 +1447,7 @@ public:
   void  setBrickSplitMap(const BrickSplitMap& val)                   { m_brickSplitMap = val; }
 
   void  xCheckGSParameters();
+#endif
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }
@@ -1555,8 +1610,6 @@ public:
   void         setWPBiPred            ( bool b )                     { m_useWeightedBiPred = b;    }
   bool         getUseWP               ()                             { return m_useWeightedPred;   }
   bool         getWPBiPred            ()                             { return m_useWeightedBiPred; }
-  void         setLog2ParallelMergeLevelMinus2   ( uint32_t u )          { m_log2ParallelMergeLevelMinus2       = u;    }
-  uint32_t         getLog2ParallelMergeLevelMinus2   ()                  { return m_log2ParallelMergeLevelMinus2;       }
   void         setMaxNumMergeCand                ( uint32_t u )          { m_maxNumMergeCand = u;      }
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
   void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }

@@ -169,7 +169,11 @@ void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& max
   unsigned          stdMaxDepth = ( floorLog2(cs.sps->getCTUSize()) - floorLog2(cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )));
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_P1004_REMOVE_BRICKS
+  const unsigned    curTileIdx  = cs.pps->getTileIdx( currArea().lumaPos() );
+#else
   const unsigned    curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( currArea().lumaPos() );
+#endif
 
   const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), pos, curSliceIdx, curTileIdx, chType );
   const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), pos, curSliceIdx, curTileIdx, chType );

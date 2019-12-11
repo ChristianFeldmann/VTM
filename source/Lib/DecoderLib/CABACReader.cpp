@@ -130,10 +130,18 @@ void CABACReader::remaining_bytes( bool noTrailingBytesExpected )
 //================================================================================
 //  clause 7.3.8.2
 //--------------------------------------------------------------------------------
+#if JVET_P1004_REMOVE_BRICKS
+//    void  coding_tree_unit( cs, area, qpL, qpC, ctuRsAddr )
+#else
 //    bool  coding_tree_unit( cs, area, qpL, qpC, ctuRsAddr )
+#endif
 //================================================================================
 
+#if JVET_P1004_REMOVE_BRICKS
+void CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, int (&qps)[2], unsigned ctuRsAddr )
+#else
 bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, int (&qps)[2], unsigned ctuRsAddr )
+#endif
 {
   CUCtx cuCtx( qps[CH_L] );
   QTBTPartitioner partitioner;
@@ -152,7 +160,11 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     int                 rx = ctuRsAddr - ry * frame_width_in_ctus;
     const Position      pos( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
     const uint32_t          curSliceIdx = cs.slice->getIndependentSliceIdx();
+#if JVET_P1004_REMOVE_BRICKS
+    const uint32_t          curTileIdx = cs.pps->getTileIdx( pos );
+#else
     const uint32_t          curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( pos );
+#endif
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
 
@@ -195,26 +207,44 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     }
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   bool isLast = false;
+#endif
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
   {
     QTBTPartitioner chromaPartitioner;
     chromaPartitioner.initCtu(area, CH_C, *cs.slice);
     CUCtx cuCtxChroma(qps[CH_C]);
+#if JVET_P1004_REMOVE_BRICKS
+    coding_tree(cs, partitioner, cuCtx, &chromaPartitioner, &cuCtxChroma);
+#else
     isLast    = coding_tree(cs, partitioner, cuCtx, &chromaPartitioner, &cuCtxChroma);
+#endif
     qps[CH_L] = cuCtx.qp;
     qps[CH_C] = cuCtxChroma.qp;
   }
   else
   {
+#if JVET_P1004_REMOVE_BRICKS
+    coding_tree(cs, partitioner, cuCtx);
+#else
     isLast    = coding_tree(cs, partitioner, cuCtx);
+#endif
     qps[CH_L] = cuCtx.qp;
+#if JVET_P1004_REMOVE_BRICKS
+    if( CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
+#else
     if( !isLast && CS::isDualITree( cs ) && cs.pcv->chrFormat != CHROMA_400 )
+#endif
     {
       CUCtx cuCtxChroma( qps[CH_C] );
       partitioner.initCtu(area, CH_C, *cs.slice);
+#if JVET_P1004_REMOVE_BRICKS
+      coding_tree(cs, partitioner, cuCtxChroma);
+#else
       isLast    = coding_tree(cs, partitioner, cuCtxChroma);
+#endif
       qps[CH_C] = cuCtxChroma.qp;
     }
   }
@@ -222,7 +252,9 @@ bool CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
   DTRACE_COND( ctuRsAddr == 0, g_trace_ctx, D_QP_PER_CTU, "\n%4d %2d", cs.picture->poc, cs.slice->getSliceQpBase() );
   DTRACE     (                 g_trace_ctx, D_QP_PER_CTU, " %3d",           qps[CH_L] - cs.slice->getSliceQpBase() );
 
+#if !JVET_P1004_REMOVE_BRICKS
   return isLast;
+#endif
 }
 
 void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
@@ -321,7 +353,11 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SAO );
 
+#if JVET_P1004_REMOVE_BRICKS
+  const unsigned  curTileIdx  = cs.pps->getTileIdx( pos );
+#else
   const unsigned  curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( pos );
+#endif
   if( cs.getCURestricted( pos.offset(-(int)cs.pcv->maxCUWidth, 0), pos, curSliceIdx, curTileIdx, CH_L ) )
   {
     // sao_merge_left_flag
@@ -436,16 +472,26 @@ void CABACReader::sao( CodingStructure& cs, unsigned ctuRsAddr )
 //================================================================================
 //  clause 7.3.8.4
 //--------------------------------------------------------------------------------
+#if JVET_P1004_REMOVE_BRICKS
+//    void  coding_tree       ( cs, partitioner, cuCtx )
+#else
 //    bool  coding_tree       ( cs, partitioner, cuCtx )
+#endif
 //    bool  split_cu_flag     ( cs, partitioner )
 //    split split_cu_mode_mt  ( cs, partitioner )
 //================================================================================
 
+#if JVET_P1004_REMOVE_BRICKS
+void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, Partitioner* pPartitionerChroma, CUCtx* pCuCtxChroma)
+#else
 bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CUCtx& cuCtx, Partitioner* pPartitionerChroma, CUCtx* pCuCtxChroma)
+#endif
 {
   const PPS      &pps         = *cs.pps;
   const UnitArea &currArea    = partitioner.currArea();
+#if !JVET_P1004_REMOVE_BRICKS
   bool           lastSegment  = false;
+#endif
 
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
   //Note: do not reset qg at chroma CU
@@ -454,11 +500,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cuCtx.qgStart    = true;
     cuCtx.isDQPCoded = false;
   }
-#if JVET_P1006_PICTURE_HEADER
-  if( pps.getCuChromaQpOffsetEnabledFlag() && partitioner.currQgChromaEnable() )
-#else
   if( cs.slice->getUseChromaQpAdj() && partitioner.currQgChromaEnable() )
-#endif
   {
     cuCtx.isChromaQpAdjCoded  = false;
   }
@@ -471,11 +513,7 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       pCuCtxChroma->qgStart    = true;
       pCuCtxChroma->isDQPCoded = false;
     }
-#if JVET_P1006_PICTURE_HEADER
-    if (pps.getCuChromaQpOffsetEnabledFlag() && pPartitionerChroma->currQgChromaEnable())
-#else
     if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currQgChromaEnable())
-#endif
     {
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
@@ -524,15 +562,25 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
         bool beContinue = true;
         bool lumaContinue = true;
         bool chromaContinue = true;
+#if !JVET_P1004_REMOVE_BRICKS
         bool lastSegmentC = false;
+#endif
 
         while (beContinue)
         {
           if (partitioner.currArea().lwidth() > 64 || partitioner.currArea().lheight() > 64)
           {
+#if JVET_P1004_REMOVE_BRICKS
+            if (cs.area.blocks[partitioner.chType].contains(partitioner.currArea().blocks[partitioner.chType].pos()))
+#else
             if (!lastSegmentC && cs.area.blocks[partitioner.chType].contains(partitioner.currArea().blocks[partitioner.chType].pos()))
+#endif
             {
+#if JVET_P1004_REMOVE_BRICKS
+              coding_tree(cs, partitioner, cuCtx, pPartitionerChroma, pCuCtxChroma);
+#else
               lastSegmentC = coding_tree(cs, partitioner, cuCtx, pPartitionerChroma, pCuCtxChroma);
+#endif
             }
             lumaContinue = partitioner.nextPart(cs);
             chromaContinue = pPartitionerChroma->nextPart(cs);
@@ -542,18 +590,36 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
           else
           {
             //dual tree coding under 64x64 block
+#if JVET_P1004_REMOVE_BRICKS
+            if (cs.area.blocks[partitioner.chType].contains(partitioner.currArea().blocks[partitioner.chType].pos()))
+#else
             if (!lastSegment && cs.area.blocks[partitioner.chType].contains(partitioner.currArea().blocks[partitioner.chType].pos()))
+#endif
             {
+#if JVET_P1004_REMOVE_BRICKS
+              coding_tree(cs, partitioner, cuCtx);
+#else
               lastSegment = coding_tree(cs, partitioner, cuCtx);
+#endif
             }
             lumaContinue = partitioner.nextPart(cs);
+#if JVET_P1004_REMOVE_BRICKS
+            if (cs.area.blocks[pPartitionerChroma->chType].contains(pPartitionerChroma->currArea().blocks[pPartitionerChroma->chType].pos()))
+#else
             if (!lastSegmentC && cs.area.blocks[pPartitionerChroma->chType].contains(pPartitionerChroma->currArea().blocks[pPartitionerChroma->chType].pos()))
+#endif
             {
+#if JVET_P1004_REMOVE_BRICKS
+              coding_tree(cs, *pPartitionerChroma, *pCuCtxChroma);
+#else
               lastSegmentC = coding_tree(cs, *pPartitionerChroma, *pCuCtxChroma);
+#endif
             }
             chromaContinue = pPartitionerChroma->nextPart(cs);
             CHECK(lumaContinue != chromaContinue, "luma chroma partition should be matched");
+#if !JVET_P1004_REMOVE_BRICKS
             CHECK(lastSegment == true, "luma should not be the last segment");
+#endif
             beContinue = lumaContinue;
           }
         }
@@ -592,7 +658,9 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
         CodingUnit* chromaFirstCu = cs.getCU(pPartitionerChroma->currArea().chromaPos(), CHANNEL_TYPE_CHROMA);
         tempLastLumaCu->next = chromaFirstCu;
 
+#if !JVET_P1004_REMOVE_BRICKS
         lastSegment = lastSegmentC;
+#endif
       }
       else
       {
@@ -608,9 +676,17 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       partitioner.splitCurrArea( splitMode, cs );
       do
       {
+#if JVET_P1004_REMOVE_BRICKS
+        if( cs.area.blocks[partitioner.chType].contains( partitioner.currArea().blocks[partitioner.chType].pos() ) )
+#else
         if( !lastSegment && cs.area.blocks[partitioner.chType].contains( partitioner.currArea().blocks[partitioner.chType].pos() ) )
+#endif
         {
+#if JVET_P1004_REMOVE_BRICKS
+          coding_tree( cs, partitioner, cuCtx );
+#else
           lastSegment = coding_tree( cs, partitioner, cuCtx );
+#endif
         }
       } while( partitioner.nextPart( cs ) );
 
@@ -621,9 +697,17 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
         partitioner.chType = CHANNEL_TYPE_CHROMA;
         cs.treeType = partitioner.treeType = TREE_C;
 
+#if JVET_P1004_REMOVE_BRICKS
+        if( cs.picture->blocks[partitioner.chType].contains( partitioner.currArea().blocks[partitioner.chType].pos() ) )
+#else
         if( !lastSegment && cs.picture->blocks[partitioner.chType].contains( partitioner.currArea().blocks[partitioner.chType].pos() ) )
+#endif
         {
+#if JVET_P1004_REMOVE_BRICKS
+          coding_tree( cs, partitioner, cuCtx );
+#else
           lastSegment = coding_tree( cs, partitioner, cuCtx );
+#endif
         }
 
         //recover treeType
@@ -638,14 +722,22 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       if (startShareThisLevel == 1)
         shareStateDec = NO_SHARE;
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+      return;
+#else
       return lastSegment;
+#endif
   }
 
   CodingUnit& cu = cs.addCU( CS::getArea( cs, currArea, partitioner.chType ), partitioner.chType );
 
   partitioner.setCUData( cu );
   cu.slice   = cs.slice;
+#if JVET_P1004_REMOVE_BRICKS
+  cu.tileIdx = cs.pps->getTileIdx( currArea.lumaPos() );
+#else
   cu.tileIdx = cs.picture->brickMap->getBrickIdxRsMap( currArea.lumaPos() );
+#endif
   CHECK( cu.cs->treeType != partitioner.treeType, "treeType mismatch" );
   int lumaQPinLocalDualTree = -1;
 
@@ -678,7 +770,11 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     cu.shareParentSize = (shareStateDec == SHARING) ? shareParentSize : partitioner.currArea().lumaSize();
 #endif
 
+#if JVET_P1004_REMOVE_BRICKS
+  coding_unit( cu, partitioner, cuCtx );
+#else
   bool isLastCtu = coding_unit( cu, partitioner, cuCtx );
+#endif
   //recover cuCtx.qp to luma qp after decoding the chroma CU
   if( pps.getUseDQP() && partitioner.isSepTree( cs ) && isChroma( cu.chType ) )
   {
@@ -723,7 +819,9 @@ bool CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   if (startShareThisLevel == 1)
     shareStateDec = NO_SHARE;
 #endif
+#if !JVET_P1004_REMOVE_BRICKS
   return isLastCtu;
+#endif
 }
 
 ModeType CABACReader::mode_constraint( CodingStructure& cs, Partitioner &partitioner, PartSplit splitMode )
@@ -819,7 +917,11 @@ PartSplit CABACReader::split_cu_mode( CodingStructure& cs, Partitioner &partitio
 //================================================================================
 //  clause 7.3.8.5
 //--------------------------------------------------------------------------------
+#if JVET_P1004_REMOVE_BRICKS
+//    void  coding_unit               ( cu, partitioner, cuCtx )
+#else
 //    bool  coding_unit               ( cu, partitioner, cuCtx )
+#endif
 //    void  cu_transquant_bypass_flag ( cu )
 //    void  cu_skip_flag              ( cu )
 //    void  pred_mode                 ( cu )
@@ -830,10 +932,18 @@ PartSplit CABACReader::split_cu_mode( CodingStructure& cs, Partitioner &partitio
 //    void  intra_chroma_pred_mode    ( pu )
 //    void  cu_residual               ( cu, partitioner, cuCtx )
 //    void  rqt_root_cbf              ( cu )
+#if JVET_P1004_REMOVE_BRICKS
+//    void  end_of_ctu                ( cu, cuCtx )
+#else
 //    bool  end_of_ctu                ( cu, cuCtx )
+#endif
 //================================================================================
 
+#if JVET_P1004_REMOVE_BRICKS
+void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& cuCtx )
+#else
 bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& cuCtx )
+#endif
 {
   CodingStructure& cs = *cu.cs;
   CHECK( cu.treeType != partitioner.treeType || cu.modeType != partitioner.modeType, "treeType or modeType mismatch" );
@@ -863,7 +973,12 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 #endif
     MergeCtx           mrgCtx;
     prediction_unit  ( pu, mrgCtx );
+#if JVET_P1004_REMOVE_BRICKS
+    end_of_ctu( cu, cuCtx );
+    return;
+#else
     return end_of_ctu( cu, cuCtx );
+#endif
   }
 
   // prediction mode and partitioning data
@@ -895,7 +1010,12 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     {
       cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
     }
+#if JVET_P1004_REMOVE_BRICKS
+    end_of_ctu(cu, cuCtx);
+    return;
+#else
     return end_of_ctu(cu, cuCtx);
+#endif
   }
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
 #if JVET_P0059_CHROMA_BDPCM
@@ -912,7 +1032,11 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   cu_residual( cu, partitioner, cuCtx );
 
   // check end of cu
+#if JVET_P1004_REMOVE_BRICKS
+  end_of_ctu( cu, cuCtx );
+#else
   return end_of_ctu( cu, cuCtx );
+#endif
 }
 
 
@@ -1719,7 +1843,11 @@ void CABACReader::sbt_mode( CodingUnit& cu )
 }
 
 
+#if JVET_P1004_REMOVE_BRICKS
+void CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
+#else
 bool CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
+#endif
 {
   const Position rbPos = recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].bottomRight().offset( 1, 1 ) );
 
@@ -1730,10 +1858,14 @@ bool CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
   {
     cuCtx.isDQPCoded = ( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded );
 
+#if !JVET_P1004_REMOVE_BRICKS
     return terminating_bit();
+#endif
   }
+#if !JVET_P1004_REMOVE_BRICKS
 
   return false;
+#endif
 }
 
 void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx)
@@ -1811,11 +1943,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       cuCtx.isDQPCoded = true;
     }
   }
-#if JVET_P1006_PICTURE_HEADER
-  if (cu.useEscape[compBegin] && cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && !cuCtx.isChromaQpAdjCoded)
-#else
   if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
-#endif
   {
     if (!cu.isSepTree() || isChroma(tu.chType))
     {
@@ -3187,11 +3315,7 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
     SizeType channelWidth = !cu.isSepTree() ? cu.lwidth() : cu.chromaSize().width;
     SizeType channelHeight = !cu.isSepTree() ? cu.lheight() : cu.chromaSize().height;
 
-#if JVET_P1006_PICTURE_HEADER
-    if (cu.cs->pps->getCuChromaQpOffsetEnabledFlag() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#else
     if (cu.cs->slice->getUseChromaQpAdj() && (channelWidth > 64 || channelHeight > 64 || cbfChroma) && !cuCtx.isChromaQpAdjCoded)
-#endif
     {
       cu_chroma_qp_offset(cu);
       cuCtx.isChromaQpAdjCoded = true;

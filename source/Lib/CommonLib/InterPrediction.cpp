@@ -315,8 +315,12 @@ void InterPrediction::xSubPuMC( PredictionUnit& pu, PelUnitBuf& predBuf, const R
   int  fstStep = (!verMC ? puHeight : puWidth);
   int  secStep = (!verMC ? puWidth : puHeight);
 
+#if JVET_P0590_SCALING_WINDOW
+  bool scaled = pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, 0 ) != SCALE_1X || ( pu.cs->slice->getSliceType() == B_SLICE ? pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, 0 ) != SCALE_1X : false );
+#else
   pu.refIdx[0] = 0; pu.refIdx[1] = pu.cs->slice->getSliceType() == B_SLICE ? 0 : -1;
   bool scaled = !PU::isRefPicSameSize( pu );
+#endif
 
   m_subPuMC = true;
 
@@ -370,6 +374,48 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
   Position puPos = pu.lumaPos();
   Size puSize = pu.lumaSize();
 
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  JVET_J0090_SET_CACHE_ENABLE(true);
+  int mvShift = (MV_FRACTIONAL_BITS_INTERNAL);
+  for (int k = 0; k < NUM_REF_PIC_LIST_01; k++)
+  {
+    RefPicList refId = (RefPicList)k;
+    const Picture* refPic = pu.cu->slice->getRefPic(refId, pu.refIdx[refId]);
+    for (int compID = 0; compID < MAX_NUM_COMPONENT; compID++)
+    {
+      Mv cMv = pu.mv[refId];
+      int mvshiftTemp = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+      int filtersize = (compID == (COMPONENT_Y)) ? NTAPS_LUMA : NTAPS_CHROMA;
+      cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp), -(((filtersize >> 1) - 1) << mvshiftTemp));
+      bool wrapRef = false;
+      if (pu.cs->sps->getWrapAroundEnabledFlag())
+      {
+        wrapRef = wrapClipMv(cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps);
+      }
+      else
+      {
+        clipMv(cMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps);
+      }
+
+      int width = predBuf.bufs[compID].width + (filtersize - 1);
+      int height = predBuf.bufs[compID].height + (filtersize - 1);
+
+      CPelBuf refBuf;
+      Position recOffset = pu.blocks[compID].pos().offset(cMv.getHor() >> mvshiftTemp, cMv.getVer() >> mvshiftTemp);
+      refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, recOffset, pu.blocks[compID].size()), wrapRef);
+
+      JVET_J0090_SET_REF_PICTURE(refPic, (ComponentID)compID);
+      for (int row = 0; row < height; row++)
+      {
+        for (int col = 0; col < width; col++)
+        {
+          JVET_J0090_CACHE_ACCESS(((Pel *)refBuf.buf) + row * refBuf.stride + col, __FILE__, __LINE__);
+        }
+      }
+    }
+  }
+  JVET_J0090_SET_CACHE_ENABLE(false);
+#endif
   PredictionUnit subPu;
 
   subPu.cs = pu.cs;
@@ -412,6 +458,7 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
       motionCompensation(subPu, subPredBuf, eRefPicList);
     }
   }
+  JVET_J0090_SET_CACHE_ENABLE(true);
 }
 
 void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const bool& bi
@@ -555,7 +602,11 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
   bool dmvrApplied = false;
   dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
 
+#if JVET_P0590_SCALING_WINDOW
+  bool samePicSize = ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X );
+#else
   bool samePicSize = PU::isRefPicSameSize( pu );
+#endif
   dmvrApplied = dmvrApplied && samePicSize;
   bioApplied = bioApplied && samePicSize;
 
@@ -782,7 +833,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
     JVET_J0090_SET_CACHE_ENABLE( false );
     m_if.filterVer(compID, (Pel*)tmpBuf.buf + ((vFilterSize >> 1) - 1) * tmpBuf.stride, tmpBuf.stride, dstBuf.buf, dstBuf.stride, backupWidth, backupHeight, yFrac, false, rndRes, chFmt, clpRng, bilinearMC, bilinearMC, useAltHpelIf);
   }
-  JVET_J0090_SET_CACHE_ENABLE( srcPadStride == 0 ); // Enabled only in non-DMVR process, In DMVR process, srcPadStride is always non-zero
+  JVET_J0090_SET_CACHE_ENABLE((srcPadStride == 0) && (bioApplied == false)); // Enabled only in non-DMVR-non-BDOF process, In DMVR process, srcPadStride is always non-zero
   if (bioApplied && compID == COMPONENT_Y)
   {
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
@@ -1886,7 +1937,12 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         bioApplied = false;
       }
     }
+
+#if JVET_P0590_SCALING_WINDOW
+    bioApplied = ( ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X ) ) ? bioApplied : false;
+#else
     bioApplied = PU::isRefPicSameSize( pu ) ? bioApplied : false;
+#endif
     bool dmvrApplied = false;
     dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
     if ((pu.lumaSize().width > MAX_BDOF_APPLICATION_REGION || pu.lumaSize().height > MAX_BDOF_APPLICATION_REGION) && pu.mergeType != MRG_TYPE_SUBPU_ATMVP && (bioApplied && !dmvrApplied))
@@ -2257,9 +2313,10 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
         offset += (deltaIntMvX);
         srcBufPelPtr = (srcBuf.buf + offset);
       }
-
+      JVET_J0090_SET_CACHE_ENABLE(false);
       xPredInterBlk( (ComponentID)compID, pu, refPic, cMvClipped, pcYUVTemp, true, pu.cs->slice->getClpRngs().comp[compID],
         bioApplied, false, pu.cu->slice->getScalingRatio( refId, pu.refIdx[refId] ), 0, 0, 0, srcBufPelPtr, pcPadstride );
+      JVET_J0090_SET_CACHE_ENABLE(false);
     }
     pcYUVTemp = pcYuvSrc1;
     pcPadTemp = pcPad1;
@@ -2360,6 +2417,49 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 
   int            bioEnabledThres = 2 * dy * dx;
   bool           bioAppliedType[MAX_NUM_SUBCU_DMVR];
+
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  JVET_J0090_SET_CACHE_ENABLE(true);
+  for (int k = 0; k < NUM_REF_PIC_LIST_01; k++)
+  {
+    RefPicList refId = (RefPicList)k;
+    const Picture* refPic = pu.cu->slice->getRefPic(refId, pu.refIdx[refId]);
+    for (int compID = 0; compID < MAX_NUM_COMPONENT; compID++)
+    {
+      Mv cMv = pu.mv[refId];
+      int mvshiftTemp = mvShift + getComponentScaleX((ComponentID)compID, pu.chromaFormat);
+      int filtersize = (compID == (COMPONENT_Y)) ? NTAPS_LUMA : NTAPS_CHROMA;
+      cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp), -(((filtersize >> 1) - 1) << mvshiftTemp));
+      bool wrapRef = false;
+      if (pu.cs->sps->getWrapAroundEnabledFlag())
+      {
+        wrapRef = wrapClipMv(cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps);
+      }
+      else
+      {
+        clipMv(cMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps);
+      }
+
+      int width = pcYuvDst.bufs[compID].width + (filtersize - 1);
+      int height = pcYuvDst.bufs[compID].height + (filtersize - 1);
+
+      CPelBuf refBuf;
+      Position recOffset = pu.blocks[compID].pos().offset(cMv.getHor() >> mvshiftTemp, cMv.getVer() >> mvshiftTemp);
+      refBuf = refPic->getRecoBuf(CompArea((ComponentID)compID, pu.chromaFormat, recOffset, pu.blocks[compID].size()), wrapRef);
+
+      JVET_J0090_SET_REF_PICTURE(refPic, (ComponentID)compID);
+      for (int row = 0; row < height; row++)
+      {
+        for (int col = 0; col < width; col++)
+        {
+          JVET_J0090_CACHE_ACCESS(((Pel *)refBuf.buf) + row * refBuf.stride + col, __FILE__, __LINE__);
+        }
+      }
+    }
+  }
+  JVET_J0090_SET_CACHE_ENABLE(false);
+#endif
+
   {
     int num = 0;
 
@@ -2659,14 +2759,44 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int offX = 1 << ( posShift - shiftHor - 1 );
     int offY = 1 << ( posShift - shiftVer - 1 );
 
+#if JVET_P0590_SCALING_WINDOW
+    const int64_t posX = ( ( blk.pos().x << ::getComponentScaleX( compID, chFmt ) ) - pps.getScalingWindow().getWindowLeftOffset() ) >> ::getComponentScaleX( compID, chFmt );
+    const int64_t posY = ( ( blk.pos().y << ::getComponentScaleY( compID, chFmt ) ) - pps.getScalingWindow().getWindowTopOffset() ) >> ::getComponentScaleY( compID, chFmt );
+
+#if JVET_P0592_CHROMA_PHASE
+    int addX = isLuma( compID ) ? 0 : int( 1 - refPic->cs->sps->getHorCollocatedChromaFlag() ) * 8 * ( scalingRatio.first - SCALE_1X.first );
+    int addY = isLuma( compID ) ? 0 : int( 1 - refPic->cs->sps->getVerCollocatedChromaFlag() ) * 8 * ( scalingRatio.second - SCALE_1X.second );
+
+    x0Int = ( ( posX << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() ) * (int64_t)scalingRatio.first + addX;
+    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) ) + ( refPic->cs->pps->getScalingWindow().getWindowLeftOffset() << ( ( posShift - ::getComponentScaleX( compID, chFmt ) ) ) );
+
+    y0Int = ( ( posY << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() ) * (int64_t)scalingRatio.second + addY;
+    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) ) + ( refPic->cs->pps->getScalingWindow().getWindowTopOffset() << ( ( posShift - ::getComponentScaleY( compID, chFmt ) ) ) );
+#else
+    x0Int = ( ( posX << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() ) * (int64_t)scalingRatio.first;
+    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) ) + ( refPic->cs->pps->getScalingWindow().getWindowLeftOffset() << ( ( posShift - ::getComponentScaleX( compID, chFmt ) ) ) );
+
+    y0Int = ( ( posY << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() ) * (int64_t)scalingRatio.second;
+    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) ) + ( refPic->cs->pps->getScalingWindow().getWindowTopOffset() << ( ( posShift - ::getComponentScaleY( compID, chFmt ) ) ) );
+#endif
+#elif JVET_P0592_CHROMA_PHASE
+    int addX = isLuma( compID ) ? 0 : int( 1 - refPic->cs->sps->getHorCollocatedChromaFlag() ) * 8 * ( scalingRatio.first - SCALE_1X.first );
+    int addY = isLuma( compID ) ? 0 : int( 1 - refPic->cs->sps->getVerCollocatedChromaFlag() ) * 8 * ( scalingRatio.second - SCALE_1X.second );
+
+    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* (int64_t)scalingRatio.first + addX;
+    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
+
+    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* (int64_t)scalingRatio.second + addY;
+    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
+#else
     x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* (int64_t)scalingRatio.first;
     x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
 
     y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* (int64_t)scalingRatio.second;
     y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
+#endif
 
     const int extSize = isLuma( compID ) ? 1 : 2;
-
     int vFilterSize = isLuma( compID ) ? NTAPS_LUMA : NTAPS_CHROMA;
 
     int yInt0 = ( (int32_t)y0Int + offY ) >> posShift;
@@ -2676,15 +2806,12 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     xInt0 = std::min( std::max( -(NTAPS_LUMA / 2), xInt0 ), ( refPicWidth >> ::getComponentScaleX( compID, chFmt ) ) + (NTAPS_LUMA / 2) );
         
     int refHeight = ((((int32_t)y0Int + (height-1) * stepY) + offY ) >> posShift) - ((((int32_t)y0Int + 0 * stepY) + offY ) >> posShift) + 1;
-
     refHeight = std::max<int>( 1, refHeight );
 
-    CHECK( MAX_CU_SIZE * MAX_SCALING_RATIO < refHeight + vFilterSize - 1 + extSize, "Buffer size is not enough, increase MAX_SCALING_RATIO" );
+    CHECK( MAX_CU_SIZE * MAX_SCALING_RATIO + 16 < refHeight + vFilterSize - 1 + extSize, "Buffer is not large enough, increase MAX_SCALING_RATIO" );
 
     Pel buffer[( MAX_CU_SIZE + 16 ) * ( MAX_CU_SIZE * MAX_SCALING_RATIO + 16 )];
-
     int tmpStride = width;
-
     int xInt = 0, yInt = 0;
 
     for( col = 0; col < width; col++ )
@@ -2726,9 +2853,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
 #endif
       JVET_J0090_SET_CACHE_ENABLE( true );
     }
-
-    Position offset = Position( xInt, yInt );
-    refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, 1 ) ), wrapRef );
   }
 
   return scaled;

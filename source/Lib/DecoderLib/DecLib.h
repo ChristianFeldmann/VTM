@@ -109,6 +109,9 @@ private:
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
   uint32_t                    m_uiSliceSegmentIdx;
+#if JVET_P1006_PICTURE_HEADER
+  uint32_t                m_prevLayerID;
+#endif
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
@@ -182,6 +185,7 @@ public:
 #if JVET_P1006_PICTURE_HEADER
   void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
+  bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 #endif
 
 #if JVET_N0278_FIXES

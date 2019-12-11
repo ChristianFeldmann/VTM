@@ -149,7 +149,7 @@ template<int signedMode> void invTransformCbCr( PelBuf &resCb, PelBuf &resCr )
       if      ( signedMode ==  1 )  { cr[x] =  cb[x] >> 1;  }
       else if ( signedMode == -1 )  { cr[x] = -cb[x] >> 1;  }
       else if ( signedMode ==  2 )  { cr[x] =  cb[x]; }
-      else if ( signedMode == -2 )  { cr[x] = -cb[x]; }
+      else if ( signedMode == -2 )  { cr[x] = (cb[x] == -32768 && sizeof(Pel) == 2) ? 32767 : -cb[x]; }   // non-normative clipping to prevent 16-bit overflow
       else if ( signedMode ==  3 )  { cb[x] =  cr[x] >> 1; }
       else if ( signedMode == -3 )  { cb[x] = -cr[x] >> 1; }
     }

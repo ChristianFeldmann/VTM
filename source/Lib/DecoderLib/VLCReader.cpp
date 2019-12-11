@@ -674,8 +674,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   pcPPS->setTransquantBypassEnabledFlag(uiCode ? true : false);
 
 #if !JVET_P1004_REMOVE_BRICKS
-=======
->>>>>>> JVET-P0126 removed auto space corrections
   READ_FLAG( uiCode, "single_tile_in_pic_flag" );                 pcPPS->setSingleTileInPicFlag(uiCode == 1);
 
   if(!pcPPS->getSingleTileInPicFlag())

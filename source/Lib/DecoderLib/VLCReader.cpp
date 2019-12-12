@@ -423,6 +423,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
 #endif
+
 #if JVET_P1004_REMOVE_BRICKS
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
@@ -933,6 +934,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
   }
 
+
 #endif
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");         pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
 
@@ -1373,6 +1375,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
+
+#if JVET_P0126_SIGNALLING_SUBPICID
+  READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
+#endif
 
 #if JVET_P1006_PICTURE_HEADER
   pcSPS->setNumSubPics( 1 );  // TODO - need sub-picture syntax
@@ -2749,6 +2755,30 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 #endif
+
+#if JVET_P0126_SIGNALLING_SUBPICID
+  if (sps->getSubPicPresentFlag())
+  {
+    uint32_t bitsSubPicId;
+    if (sps->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = sps->getSubPicIdLen();
+    }
+    else if (picHeader->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = picHeader->getSubPicIdLen();
+    }
+    else if (pps->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = pps->getSubPicIdLen();
+    }
+    else
+    {
+      bitsSubPicId = ceilLog2(sps->getNumSubPics());
+    }
+    READ_CODE(bitsSubPicId, uiCode, "slice_subpic_id");    pcSlice->setSliceSubPicId(uiCode);
+  }
+#endif
 #if JVET_P1004_REMOVE_BRICKS
 
   // raster scan slices
@@ -2806,7 +2836,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     {
       while (pps->getNumTilesInPic() > (1 << bitsSliceAddress))  //TODO: use the correct one
       {
-        bitsSliceAddress++;
+         bitsSliceAddress++;
       }
     }
     else
@@ -3147,7 +3177,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
             {
               uiCode = 0;
             }
-            pcSlice->setNumRefIdx( REF_PIC_LIST_1, uiCode + 1 );
+            pcSlice->setNumRefIdx(REF_PIC_LIST_1, uiCode + 1);
           }
           else
           {
@@ -3678,6 +3708,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       }
 #endif
 
+
 #if JVET_P1004_REMOVE_BRICKS
   if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
 #else
@@ -3699,6 +3730,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   }
 
   std::vector<uint32_t> entryPointOffset;
+
 #if JVET_P1004_REMOVE_BRICKS
   pcSlice->setNumEntryPoints( pps );
   if( pcSlice->getNumEntryPoints() > 0 )

@@ -869,6 +869,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
 
+#if JVET_P0126_SIGNALLING_SUBPICID
+  WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
+#endif
+
 #if JVET_P1006_PICTURE_HEADER
   WRITE_FLAG( pcSPS->getSubPicIdPresentFlag(), "sps_subpic_id_present_flag");
   if( pcSPS->getSubPicIdPresentFlag() )
@@ -1898,6 +1902,31 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if !JVET_P1006_PICTURE_HEADER
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
 #endif
+
+ #if JVET_P0126_SIGNALLING_SUBPICID
+  if (pcSlice->getSPS()->getSubPicPresentFlag())
+  {
+    uint32_t bitsSubPicId;
+    if (pcSlice->getSPS()->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = pcSlice->getSPS()->getSubPicIdLen();
+    }
+    else if (picHeader->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = picHeader->getSubPicIdLen();
+    }
+    else if (pcSlice->getPPS()->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = pcSlice->getPPS()->getSubPicIdLen();
+    }
+    else
+    {
+      bitsSubPicId = ceilLog2(pcSlice->getSPS()->getNumSubPics());
+    }
+    WRITE_CODE(pcSlice->getSliceSubPicId(), bitsSubPicId, "slice_subpic_id");
+  }
+#endif
+
 #if JVET_P1004_REMOVE_BRICKS
   // raster scan slices
   if( pcSlice->getPPS()->getRectSliceFlag() == 0 ) 

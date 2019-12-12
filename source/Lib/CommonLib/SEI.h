@@ -197,6 +197,9 @@ public:
   , m_bpDecodingUnitHrdParamsPresentFlag (false)
   , m_decodingUnitCpbParamsInPicTimingSeiFlag (false)
 #endif
+#if JVET_P0181
+    , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
+#endif
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
@@ -228,6 +231,9 @@ public:
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   bool m_bpDecodingUnitHrdParamsPresentFlag;
   bool m_decodingUnitCpbParamsInPicTimingSeiFlag;
+#endif
+#if JVET_P0181
+  bool m_sublayerInitialCpbRemovalDelayPresentFlag;
 #endif
 };
 

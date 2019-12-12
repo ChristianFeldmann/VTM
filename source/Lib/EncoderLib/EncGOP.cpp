@@ -428,7 +428,8 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   nalu.m_temporalId = slice->getTLayer();
 #if JVET_P0218_AUD_TID_AND_LAYERID
   int vpsId = slice->getSPS()->getVPSId();
-  if (vpsId == 0) {
+  if (vpsId == 0)
+  {
     nalu.m_nuhLayerId = 0;
   }
   else

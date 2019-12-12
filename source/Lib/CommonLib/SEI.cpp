@@ -198,6 +198,12 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
 #endif
 #endif
+#if JVET_P0462_SEI360
+    case SEI::EQUIRECTANGULAR_PROJECTION:           return "Equirectangular projection";
+    case SEI::SPHERE_ROTATION:                      return "Sphere rotation";
+    case SEI::REGION_WISE_PACKING:                  return "Region wise packing information";
+    case SEI::OMNI_VIEWPORT:                        return "Omni viewport";
+#endif
     default:                                        return "Unknown";
   }
 }

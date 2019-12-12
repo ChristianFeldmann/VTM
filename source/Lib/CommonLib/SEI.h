@@ -95,6 +95,12 @@ public:
     COLOUR_REMAPPING_INFO                = 142,
 #endif
     DEPENDENT_RAP_INDICATION             = 145,
+#if JVET_P0462_SEI360
+    EQUIRECTANGULAR_PROJECTION           = 150,
+    SPHERE_ROTATION                      = 154,
+    REGION_WISE_PACKING                  = 155,
+    OMNI_VIEWPORT                        = 156,
+#endif
 #if HEVC_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
@@ -110,6 +116,96 @@ public:
 
   virtual PayloadType payloadType() const = 0;
 };
+
+
+#if JVET_P0462_SEI360
+class SEIEquirectangularProjection : public SEI
+{
+public:
+  PayloadType payloadType() const { return EQUIRECTANGULAR_PROJECTION; }
+
+  SEIEquirectangularProjection()  {}
+  virtual ~SEIEquirectangularProjection() {}
+
+  bool    m_erpCancelFlag;
+  bool    m_erpPersistenceFlag;
+  bool    m_erpGuardBandFlag;
+  uint8_t m_erpGuardBandType;
+  uint8_t m_erpLeftGuardBandWidth;
+  uint8_t m_erpRightGuardBandWidth;
+};
+
+class SEISphereRotation : public SEI
+{
+public:
+  PayloadType payloadType() const { return SPHERE_ROTATION; }
+
+  SEISphereRotation()  {}
+  virtual ~SEISphereRotation() {}
+
+  bool  m_sphereRotationCancelFlag;
+  bool  m_sphereRotationPersistenceFlag;
+  int   m_sphereRotationYaw;
+  int   m_sphereRotationPitch;
+  int   m_sphereRotationRoll;
+};
+
+class SEIOmniViewport : public SEI
+{
+public:
+  PayloadType payloadType() const { return OMNI_VIEWPORT; }
+
+  SEIOmniViewport() {}
+  virtual ~SEIOmniViewport() {}
+
+  struct OmniViewport
+  {
+    int      azimuthCentre;
+    int      elevationCentre;
+    int      tiltCentre;
+    uint32_t horRange;
+    uint32_t verRange;
+  };
+
+  uint32_t m_omniViewportId;
+  bool     m_omniViewportCancelFlag;
+  bool     m_omniViewportPersistenceFlag;
+  uint8_t  m_omniViewportCntMinus1;
+  std::vector<OmniViewport> m_omniViewportRegions;  
+};
+
+class SEIRegionWisePacking : public SEI
+{
+public:
+  PayloadType payloadType() const { return REGION_WISE_PACKING; }
+  SEIRegionWisePacking() {}
+  virtual ~SEIRegionWisePacking() {}
+  bool                  m_rwpCancelFlag;
+  bool                  m_rwpPersistenceFlag;
+  bool                  m_constituentPictureMatchingFlag;
+  int                   m_numPackedRegions;
+  int                   m_projPictureWidth;
+  int                   m_projPictureHeight;
+  int                   m_packedPictureWidth;
+  int                   m_packedPictureHeight;
+  std::vector<uint8_t>  m_rwpTransformType;
+  std::vector<bool>     m_rwpGuardBandFlag;
+  std::vector<uint32_t> m_projRegionWidth;
+  std::vector<uint32_t> m_projRegionHeight;
+  std::vector<uint32_t> m_rwpProjRegionTop;
+  std::vector<uint32_t> m_projRegionLeft;
+  std::vector<uint16_t> m_packedRegionWidth;
+  std::vector<uint16_t> m_packedRegionHeight;
+  std::vector<uint16_t> m_packedRegionTop;
+  std::vector<uint16_t> m_packedRegionLeft;
+  std::vector<uint8_t>  m_rwpLeftGuardBandWidth;
+  std::vector<uint8_t>  m_rwpRightGuardBandWidth;
+  std::vector<uint8_t>  m_rwpTopGuardBandHeight;
+  std::vector<uint8_t>  m_rwpBottomGuardBandHeight;
+  std::vector<bool>     m_rwpGuardBandNotUsedForPredFlag;
+  std::vector<uint8_t>  m_rwpGuardBandType;
+};
+#endif
 
 #if HEVC_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;

@@ -2702,6 +2702,10 @@ The table below lists the SEI messages defined for Version 1 and Range-Extension
   141 & Knee function information                & Table \ref{tab:sei-knee-function} \\
   142 & Colour remapping information             & Table \ref{tab:sei-colour-remapping}\\
   143 & Deinterlaced field identification        & (Not handled)\\
+  150 & Equirectangular projection               & Table \ref{tab:sei-erp} \\
+  154 & Sphere rotation                          & Table \ref{tab:sei-sphere-rotation} \\
+  155 & Region-wise packing                      & Table \ref{tab:sei-rwp} \\
+  156 & Omni viewport                            & Table \ref{tab:sei-omni-viewport} \\  
 \end{SEIListTable}
 %%
 %% SEI messages
@@ -3305,6 +3309,215 @@ The contents of the file are a list of the SEI message's syntax element names (i
 An example file can be found in cfg/misc/example_colour_remapping_sei_encoder_0.txt.
 \\
 \end{OptionTableNoShorthand}
+
+\begin{OptionTableNoShorthand}{Equirectangular Projection SEI message encoder parameters}{tab:sei-erp}
+\Option{SEIErpEnabled} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of equirectangular projection SEI message.
+\\
+\Option{SEIErpCancelFlag} &
+\Default{true} &
+Indicates that equirectangular projection SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEIErpPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the equirectangular projection SEI message.
+\\
+\Option{SEIErpGuardBandFlag} &
+\Default{false} &
+Indicates the existence of guard band areas in the constituent picture.
+\\
+\Option{SEIErpGuardBandType} &
+\Default{0} &
+Indicates the type of the guard bands.
+\\
+\Option{SEIErpLeftGuardBandWidth} &
+\Default{0} &
+Inicates the width of the guard band on the left side of the onstituent picture.
+\\
+\Option{SEIErpRightGuardBandWidth} &
+\Default{0} &
+Inicates the width of the guard band on the right side of the onstituent picture.
+\\
+\end{OptionTableNoShorthand}
+
+\begin{OptionTableNoShorthand}{Sphere Rotation SEI message encoder parameters}{tab:sei-sphere-rotation}
+\Option{SEISphereRotationEnabled} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of sphere rotation SEI message.
+\\
+\Option{SEISphereRotationCancelFlag} &
+\Default{true} &
+Indicates that the sphere rotation SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEISphereRotationPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the sphere rotation SEI message.
+\\
+\Option{SEISphereRotationYawRotation} &
+\Default{0} &
+Specifies the value of the yaw rotation angle.
+\\
+\Option{SEISphereRotationPitchRotation} &
+\Default{0} &
+Specifies the value of the pitch rotation angle.
+\\
+\Option{SEISphereRotationRollRotation} &
+\Default{0} &
+Specifies the value of the roll rotation angle.
+\\
+\end{OptionTableNoShorthand}
+
+\begin{OptionTableNoShorthand}{Region-wise packing SEI message encoder parameters}{tab:sei-rwp}
+\Option{SEIRwpEnabled} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of region-wise packing SEI message.
+\\
+\Option{SEIRwpCancelFlag} &
+\Default{true} &
+Indicates that RWP SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEIRwpPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the RWP SEI message.
+\\
+\Option{SEIRwpConstituentPictureMatchingFlag} &
+\Default{false} &
+Specifies the RWP SEI message applies individually to each constituent picture (true) or to the projected picture (false).
+\\
+\Option{SEIRwpNumPackedRegions} &
+\Default{0} &
+Specifies the number of packed regions when constituent picture matching flag is equal to 0.
+\\
+\Option{SEIRwpProjPictureWidth} &
+\Default{0} &
+Specifies the width of the projected picture.
+\\
+\Option{SEIRwpProjPictureHeight} &
+\Default{0} &
+Specifies the height of the projected picture.
+\\
+\Option{SEIRwpPackedPictureWidth} &
+\Default{0} &
+Specifies the width of the packed picture.
+\\
+\Option{SEIRwpPackedPictureHeight} &
+\Default{0} &
+Specifies the height of the packed picture.
+\\
+\Option{SEIRwpTransformType} &
+\Default{} &
+An array that specifies the rotation and mirroring to be applied to the packed regions.
+\\
+\Option{SEIRwpGuardBandFlag} &
+\Default{} &
+An array that specifies the existence of guard band in the packed regions.
+\\
+\Option{SEIRwpProjRegionWidth} &
+\Default{} &
+An array that specifies the width of the projected regions.
+\\
+\Option{SEIRwpProjRegionHeight} &
+\Default{} &
+An array that specifies the height of the projected regions.
+\\
+\Option{SEIRwpGuardBandFlag} &
+\Default{} &
+An array that specifies the existence of guard band in the packed regions.
+\\
+\Option{SEIRwpProjRegionTop} &
+\Default{} &
+An array that specifies the top sample row of the projected regions.
+\\
+\Option{SEIRwpProjRegionLeft} &
+\Default{} &
+An array that specifies the left-most sample column of the projected regions. 
+\\
+\Option{SEIRwpPackedRegionWidth} &
+\Default{} &
+An array that specifies the width of the packed regions.
+\\
+\Option{SEIRwpPackedRegionHeight} &
+\Default{} &
+An array that specifies the height of the packed regions.
+\\
+\Option{SEIRwpPackedRegionTop} &
+\Default{} &
+An array that specifies the top luma sample row of the packed regions.
+\\
+\Option{SEIRwpPackedRegionLeft} &
+\Default{} &
+An array that specifies the left-most luma sample column of the packed regions.
+\\
+\Option{SEIRwpLeftGuardBandWidth} &
+\Default{} &
+An array that specifies the width of the guard band on the left side of the packed regions.
+\\
+\Option{SEIRwpRightGuardBandWidth} &
+\Default{} &
+An array that specifies the width of the guard band on the right side of the packed regions.
+\\
+\Option{SEIRwpTopGuardBandHeight} &
+\Default{} &
+An array that specifies the height of the guard band above the packed regions.
+\\
+\Option{SEIRwpBottomGuardBandHeight} &
+\Default{} &
+An array that specifies the height of the guard band below the packed regions.
+\\
+\Option{SEIRwpGuardBandNotUsedForPredFlag} &
+\Default{} &
+An array that specifies if the guard bands is used in the inter prediction process.
+\\
+\Option{SEIRwpGuardBandType} &
+\Default{} &
+An array that specifies the type of the guard bands for the packed regions.
+\\
+\end{OptionTableNoShorthand}
+
+\begin{OptionTableNoShorthand}{Omni Viewport SEI message encoder parameters}{tab:sei-omni-viewport}
+\Option{SEIOmniViewportEnabled} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of omni viewport SEI message.
+\\
+\Option{SEIOmniViewportId} &
+\Default{0} &
+Contains an identifying number that may be used to identify the purpose of the one or more recommended viewport regions.
+\\
+\Option{SEIOmniViewportCancelFlag} &
+\Default{true} &
+Indicates that the omni viewport SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEIOmniViewportPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the omni viewport SEI message.
+\\
+\Option{SEIOmniViewportCntMinus1} &
+\Default{0} &
+Specifies the number of recommended viewport regions minus 1.
+\\
+\Option{SEIOmniViewportAzimuthCentre} &
+\Default{} &
+An array that indicates the centre of the i-th recommended viewport region.
+\\
+\Option{SEIOmniViewportElevationCentre} &
+\Default{} &
+An array that indicates the centre of the i-th recommended viewport region.
+\\
+\Option{SEIOmniViewportTiltCentre} &
+\Default{} &
+An array that indicates the tilt angle of the i-th recommended viewport region.
+\\
+\Option{SEIOmniViewportHorRange} &
+\Default{} &
+An array that indicates the azimuth range of the i-th recommended viewport region.
+\\
+\Option{SEIOmniViewportVerRange} &
+\Default{} &
+An array that indicates the elevation range of the i-th recommended viewport region.
+\\
+\end{OptionTableNoShorthand}
+
 
 
 

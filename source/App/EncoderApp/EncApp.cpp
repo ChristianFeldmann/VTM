@@ -550,6 +550,56 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
 #endif
+#if JVET_P0462_SEI360
+  m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
+  m_cEncLib.setErpSEICancelFlag                                  ( m_erpSEICancelFlag );        
+  m_cEncLib.setErpSEIPersistenceFlag                             ( m_erpSEIPersistenceFlag );   
+  m_cEncLib.setErpSEIGuardBandFlag                               ( m_erpSEIGuardBandFlag );     
+  m_cEncLib.setErpSEIGuardBandType                               ( m_erpSEIGuardBandType );     
+  m_cEncLib.setErpSEILeftGuardBandWidth                          ( m_erpSEILeftGuardBandWidth );
+  m_cEncLib.setErpSEIRightGuardBandWidth                         ( m_erpSEIRightGuardBandWidth );
+  m_cEncLib.setSphereRotationSEIEnabled                          ( m_sphereRotationSEIEnabled );
+  m_cEncLib.setSphereRotationSEICancelFlag                       ( m_sphereRotationSEICancelFlag );
+  m_cEncLib.setSphereRotationSEIPersistenceFlag                  ( m_sphereRotationSEIPersistenceFlag );
+  m_cEncLib.setSphereRotationSEIYaw                              ( m_sphereRotationSEIYaw );
+  m_cEncLib.setSphereRotationSEIPitch                            ( m_sphereRotationSEIPitch );
+  m_cEncLib.setSphereRotationSEIRoll                             ( m_sphereRotationSEIRoll );
+  m_cEncLib.setOmniViewportSEIEnabled                            ( m_omniViewportSEIEnabled );          
+  m_cEncLib.setOmniViewportSEIId                                 ( m_omniViewportSEIId );               
+  m_cEncLib.setOmniViewportSEICancelFlag                         ( m_omniViewportSEICancelFlag );       
+  m_cEncLib.setOmniViewportSEIPersistenceFlag                    ( m_omniViewportSEIPersistenceFlag );  
+  m_cEncLib.setOmniViewportSEICntMinus1                          ( m_omniViewportSEICntMinus1 );        
+  m_cEncLib.setOmniViewportSEIAzimuthCentre                      ( m_omniViewportSEIAzimuthCentre );    
+  m_cEncLib.setOmniViewportSEIElevationCentre                    ( m_omniViewportSEIElevationCentre );  
+  m_cEncLib.setOmniViewportSEITiltCentre                         ( m_omniViewportSEITiltCentre );       
+  m_cEncLib.setOmniViewportSEIHorRange                           ( m_omniViewportSEIHorRange );         
+  m_cEncLib.setOmniViewportSEIVerRange                           ( m_omniViewportSEIVerRange );         
+  m_cEncLib.setRwpSEIEnabled                                     (m_rwpSEIEnabled);
+  m_cEncLib.setRwpSEIRwpCancelFlag                               (m_rwpSEIRwpCancelFlag);
+  m_cEncLib.setRwpSEIRwpPersistenceFlag                          (m_rwpSEIRwpPersistenceFlag);
+  m_cEncLib.setRwpSEIConstituentPictureMatchingFlag              (m_rwpSEIConstituentPictureMatchingFlag);
+  m_cEncLib.setRwpSEINumPackedRegions                            (m_rwpSEINumPackedRegions);
+  m_cEncLib.setRwpSEIProjPictureWidth                            (m_rwpSEIProjPictureWidth);
+  m_cEncLib.setRwpSEIProjPictureHeight                           (m_rwpSEIProjPictureHeight);
+  m_cEncLib.setRwpSEIPackedPictureWidth                          (m_rwpSEIPackedPictureWidth);
+  m_cEncLib.setRwpSEIPackedPictureHeight                         (m_rwpSEIPackedPictureHeight);
+  m_cEncLib.setRwpSEIRwpTransformType                            (m_rwpSEIRwpTransformType);
+  m_cEncLib.setRwpSEIRwpGuardBandFlag                            (m_rwpSEIRwpGuardBandFlag);
+  m_cEncLib.setRwpSEIProjRegionWidth                             (m_rwpSEIProjRegionWidth);
+  m_cEncLib.setRwpSEIProjRegionHeight                            (m_rwpSEIProjRegionHeight);
+  m_cEncLib.setRwpSEIRwpSEIProjRegionTop                         (m_rwpSEIRwpSEIProjRegionTop);
+  m_cEncLib.setRwpSEIProjRegionLeft                              (m_rwpSEIProjRegionLeft);
+  m_cEncLib.setRwpSEIPackedRegionWidth                           (m_rwpSEIPackedRegionWidth);
+  m_cEncLib.setRwpSEIPackedRegionHeight                          (m_rwpSEIPackedRegionHeight);
+  m_cEncLib.setRwpSEIPackedRegionTop                             (m_rwpSEIPackedRegionTop);
+  m_cEncLib.setRwpSEIPackedRegionLeft                            (m_rwpSEIPackedRegionLeft);
+  m_cEncLib.setRwpSEIRwpLeftGuardBandWidth                       (m_rwpSEIRwpLeftGuardBandWidth);
+  m_cEncLib.setRwpSEIRwpRightGuardBandWidth                      (m_rwpSEIRwpRightGuardBandWidth);
+  m_cEncLib.setRwpSEIRwpTopGuardBandHeight                       (m_rwpSEIRwpTopGuardBandHeight);
+  m_cEncLib.setRwpSEIRwpBottomGuardBandHeight                    (m_rwpSEIRwpBottomGuardBandHeight);
+  m_cEncLib.setRwpSEIRwpGuardBandNotUsedForPredFlag              (m_rwpSEIRwpGuardBandNotUsedForPredFlag);
+  m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
+#endif
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
 #if HEVC_SEI
   m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );

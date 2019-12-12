@@ -93,6 +93,12 @@ protected:
 #endif
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
 #endif
+#if JVET_P0462_SEI360
+  void xWriteSEIEquirectangularProjection         (const SEIEquirectangularProjection &sei);
+  void xWriteSEISphereRotation                    (const SEISphereRotation &sei);
+  void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
+  void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
+#endif
 
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();

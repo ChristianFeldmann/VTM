@@ -243,6 +243,7 @@
 
 #define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling
 
+#define JVET_P0183                                        1 // JVET-P0183 : conditionally signal cpb_removal_delay_delta_enabled_flag
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 

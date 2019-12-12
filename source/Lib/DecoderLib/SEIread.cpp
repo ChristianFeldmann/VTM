@@ -688,8 +688,20 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     sei_read_flag( pDecodedMessageOutputStream,    symbol, "pt_sub_layer_delays_present_flag[i]" );    sei.m_ptSubLayerDelaysPresentFlag[i] = (symbol == 1);
     if( sei.m_ptSubLayerDelaysPresentFlag[ i ] )
     {
-      sei_read_flag( pDecodedMessageOutputStream,    symbol, "cpb_removal_delay_delta_enabled_flag[i]" );         
-      sei.m_cpbRemovalDelayDeltaEnabledFlag[i]        = (symbol == 1);
+#if JVET_P0183
+      if (bp.m_cpbRemovalDelayDeltasPresentFlag)
+      {
+        sei_read_flag(pDecodedMessageOutputStream, symbol, "cpb_removal_delay_delta_enabled_flag[i]");
+        sei.m_cpbRemovalDelayDeltaEnabledFlag[i] = (symbol == 1);
+      }
+      else
+      {
+        sei.m_cpbRemovalDelayDeltaEnabledFlag[i] = false;
+      }
+#else
+      sei_read_flag(pDecodedMessageOutputStream, symbol, "cpb_removal_delay_delta_enabled_flag[i]");
+      sei.m_cpbRemovalDelayDeltaEnabledFlag[i] = (symbol == 1);
+#endif
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[ i ] )
       {
         sei_read_code( pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]" );
@@ -712,7 +724,19 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     sei_read_flag( pDecodedMessageOutputStream,    symbol, "sub_layer_delays_present_flag[i]" );         sei.m_subLayerDelaysPresentFlag[i]        = (symbol == 1);
     if( sei.m_subLayerDelaysPresentFlag[ i ] )
     {
-      sei_read_flag( pDecodedMessageOutputStream,    symbol, "cpb_removal_delay_delta_enabled_flag[i]" );         sei.m_cpbRemovalDelayDeltaEnabledFlag[i]        = (symbol == 1);
+#if JVET_P0183
+      if (bp.m_cpbRemovalDelayDeltasPresentFlag)
+      {
+        sei_read_flag(pDecodedMessageOutputStream, symbol, "cpb_removal_delay_delta_enabled_flag[i]");
+        sei.m_cpbRemovalDelayDeltaEnabledFlag[i] = (symbol == 1);
+      }
+      else
+      {
+        sei.m_cpbRemovalDelayDeltaEnabledFlag[i] = false;
+      }
+#else
+      sei_read_flag(pDecodedMessageOutputStream, symbol, "cpb_removal_delay_delta_enabled_flag[i]");         sei.m_cpbRemovalDelayDeltaEnabledFlag[i] = (symbol == 1);
+#endif
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[ i ] )
       {
         sei_read_code( pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]" );

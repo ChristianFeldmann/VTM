@@ -2838,7 +2838,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       {
          bitsSliceAddress++;
       }
-      }
     }
     else
     {

@@ -639,6 +639,14 @@ protected:
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
+#if JVET_P0450_SEI_SARI
+  bool                  m_sampleAspectRatioInfoSEIEnabled;
+  bool                  m_sariCancelFlag;
+  bool                  m_sariPersistenceFlag;
+  int                   m_sariAspectRatioIdc;
+  int                   m_sariSarWidth;
+  int                   m_sariSarHeight;
+#endif
   bool      m_MCTSEncConstraint;
 #if HEVC_SEI
   bool      m_timeCodeSEIEnabled;
@@ -1700,6 +1708,20 @@ public:
   bool     getRwpSEIRwpGuardBandNotUsedForPredFlag(uint32_t idx) const                                      { return m_rwpSEIRwpGuardBandNotUsedForPredFlag[idx]; }
   void     setRwpSEIRwpGuardBandType(const std::vector<uint8_t>& rwpGuardBandType)                          { m_rwpSEIRwpGuardBandType = rwpGuardBandType; }
   uint8_t  getRwpSEIRwpGuardBandType(uint32_t idx) const                                                    { return m_rwpSEIRwpGuardBandType[idx]; }
+#endif
+#if JVET_P0450_SEI_SARI
+  bool     getSampleAspectRatioInfoSEIEnabled() const                                                       { return m_sampleAspectRatioInfoSEIEnabled; }
+  void     setSampleAspectRatioInfoSEIEnabled(const bool val)                                               { m_sampleAspectRatioInfoSEIEnabled = val; }
+  bool     getSariCancelFlag() const                                                                        { return m_sariCancelFlag; }
+  void     setSariCancelFlag(const bool val)                                                                { m_sariCancelFlag = val; }
+  bool     getSariPersistenceFlag() const                                                                   { return m_sariPersistenceFlag; }
+  void     setSariPersistenceFlag(const bool val)                                                           { m_sariPersistenceFlag = val; }
+  int      getSariAspectRatioIdc() const                                                                    { return m_sariAspectRatioIdc; }
+  void     setSariAspectRatioIdc(const int val)                                                             { m_sariAspectRatioIdc = val; }
+  int      getSariSarWidth() const                                                                          { return m_sariSarWidth; }
+  void     setSariSarWidth(const int val)                                                                   { m_sariSarWidth = val; }
+  int      getSariSarHeight() const                                                                         { return m_sariSarHeight; }
+  void     setSariSarHeight(const int val)                                                                  { m_sariSarHeight = val; }
 #endif
   void  setMCTSEncConstraint(bool b)                                 { m_MCTSEncConstraint = b; }
   bool  getMCTSEncConstraint()                                       { return m_MCTSEncConstraint; }

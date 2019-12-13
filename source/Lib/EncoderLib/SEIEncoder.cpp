@@ -428,6 +428,31 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
 }
 #endif
 
+#if JVET_P0450_SEI_SARI
+void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampleAspectRatioInfo)
+{
+  CHECK(!(m_isInitialized), "seiSampleAspectRatioInfo already initialized");
+  CHECK(!(seiSampleAspectRatioInfo != nullptr), "Need a seiSampleAspectRatioInfo for initialization (got nullptr)");
+
+  seiSampleAspectRatioInfo->m_sariCancelFlag = m_pcCfg->getSariCancelFlag();
+  if (!seiSampleAspectRatioInfo->m_sariCancelFlag)
+  {
+    seiSampleAspectRatioInfo->m_sariPersistenceFlag   = m_pcCfg->getSariPersistenceFlag();
+    seiSampleAspectRatioInfo->m_sariAspectRatioIdc    = m_pcCfg->getSariAspectRatioIdc();
+    if (seiSampleAspectRatioInfo->m_sariAspectRatioIdc == 255)
+    {
+      seiSampleAspectRatioInfo->m_sariSarWidth   = m_pcCfg->getSariSarWidth();
+      seiSampleAspectRatioInfo->m_sariSarHeight  = m_pcCfg->getSariSarHeight();
+    }
+    else
+    {
+      seiSampleAspectRatioInfo->m_sariSarWidth   = 0;
+      seiSampleAspectRatioInfo->m_sariSarHeight  = 0;
+    }
+  }
+}
+#endif
+
 
 #if HEVC_SEI
 //! initialize scalable nesting SEI message.

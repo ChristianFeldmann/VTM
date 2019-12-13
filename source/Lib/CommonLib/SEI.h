@@ -107,6 +107,9 @@ public:
 #endif
 #endif
     FRAME_FIELD_INFO                     = 168,
+#if JVET_P0450_SEI_SARI
+    SAMPLE_ASPECT_RATIO_INFO             = 204,
+#endif
   };
 
   SEI() {}
@@ -204,6 +207,21 @@ public:
   std::vector<uint8_t>  m_rwpBottomGuardBandHeight;
   std::vector<bool>     m_rwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpGuardBandType;
+};
+#endif
+
+#if JVET_P0450_SEI_SARI
+class SEISampleAspectRatioInfo : public SEI
+{
+public:
+  PayloadType payloadType() const { return SAMPLE_ASPECT_RATIO_INFO; }
+  SEISampleAspectRatioInfo() {}
+  virtual ~SEISampleAspectRatioInfo() {}
+  bool                  m_sariCancelFlag;
+  bool                  m_sariPersistenceFlag;
+  int                   m_sariAspectRatioIdc;
+  int                   m_sariSarWidth;
+  int                   m_sariSarHeight;
 };
 #endif
 

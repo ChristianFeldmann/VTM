@@ -103,6 +103,9 @@ public:
   void initSEIOmniViewport(SEIOmniViewport *sei);
   void initSEIRegionWisePacking(SEIRegionWisePacking *sei);
 #endif
+#if JVET_P0450_SEI_SARI
+  void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
+#endif
 
 private:
   EncCfg* m_pcCfg;

@@ -3518,6 +3518,32 @@ An array that indicates the elevation range of the i-th recommended viewport reg
 \\
 \end{OptionTableNoShorthand}
 
+\begin{OptionTableNoShorthand}{Sample Aspect Ratio Information SEI message encoder parameters}{tab:sei-sari}
+\Option{SEISampleAspectRatioInfo} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of Sample Aspect Ratio Information SEI message.
+\\
+\Option{SEISARICancelFlag} &
+\Default{true} &
+Indicates that the Sample Aspect Ratio Information SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEISARIPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the Sample Aspect Ratio Information SEI message.
+\\
+\Option{SEISARIAspectRatioIdc} &
+\Default{0} &
+Specifies aspect ratio IDC as defined in the standard.
+\\
+\Option{SEISARISarWidth} &
+\Default{0} &
+Specifies the horizontal size of the sample aspect ratio, if SEISARIAspectRatioIdc is equal to 255.
+\\
+\Option{SEISARISarHeight} &
+\Default{0} &
+Specifies the vertical size of the sample aspect ratio, if SEISARIAspectRatioIdc is equal to 255.
+\\
+\end{OptionTableNoShorthand}
 
 
 

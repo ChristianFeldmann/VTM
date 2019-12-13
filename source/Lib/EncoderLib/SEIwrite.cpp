@@ -169,6 +169,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIRegionWisePacking(*static_cast<const SEIRegionWisePacking*>(&sei));
     break;
 #endif
+#if JVET_P0450_SEI_SARI
+  case SEI::SAMPLE_ASPECT_RATIO_INFO:
+    xWriteSEISampleAspectRatioInfo(*static_cast<const SEISampleAspectRatioInfo*>(&sei));
+    break;
+#endif
   default:
     THROW("Trying to write unhandled SEI message");
     break;
@@ -1163,5 +1168,22 @@ void SEIWriter::xWriteSEIRegionWisePacking(const SEIRegionWisePacking &sei)
   }
 }
 #endif
+#if JVET_P0450_SEI_SARI
+void SEIWriter::xWriteSEISampleAspectRatioInfo(const SEISampleAspectRatioInfo &sei)
+{
+  WRITE_FLAG( sei.m_sariCancelFlag,                                           "sari_cancel_flag" );
+  if(!sei.m_sariCancelFlag)
+  {
+    WRITE_FLAG( sei.m_sariPersistenceFlag,                                    "sari_persistence_flag" );
+    WRITE_CODE( (uint32_t)sei.m_sariAspectRatioIdc, 8,                        "sari_aspect_ratio_idc");
+    if (sei.m_sariAspectRatioIdc == 255)
+    {
+      WRITE_CODE( (uint32_t)sei.m_sariSarWidth, 16,                           "sari_sar_width");
+      WRITE_CODE( (uint32_t)sei.m_sariSarHeight, 16,                           "sari_sar_height");
+    }
+  }
+}
+#endif
+
 
 //! \}

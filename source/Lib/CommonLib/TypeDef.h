@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P1038_ALF_PAD_RASTER_SLICE                   1 // JVET-P1038, handle ALF padding in raster scan slice
+
 #define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
 
 #define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks

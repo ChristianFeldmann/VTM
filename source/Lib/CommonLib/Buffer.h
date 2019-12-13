@@ -125,6 +125,9 @@ struct AreaBuf : public Size
 #if JVET_O0549_ENCODER_ONLY_FILTER
   void extendBorderPel(unsigned marginX, unsigned marginY);
 #endif
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+  void padBorderPel         ( unsigned marginX, unsigned marginY, int dir );
+#endif
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t gbiIdx);
   void removeWeightHighFreq ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t iGbiWeight);
   void addAvg               ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng );
@@ -572,6 +575,46 @@ void AreaBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
 }
 #endif
 
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+template<typename T>
+void AreaBuf<T>::padBorderPel( unsigned marginX, unsigned marginY, int dir )
+{
+  T*  p = buf;
+  int s = stride;
+  int h = height;
+  int w = width;
+
+  CHECK( w  > s, "Size of buffer too small to extend" );
+
+  // top-left margin
+  if ( dir == 1 )
+  {
+    for( int y = 0; y < marginY; y++ )
+    {
+      for( int x = 0; x < marginX; x++ )
+      {
+        p[x] = p[marginX];
+      }
+      p += s;
+    }
+  }
+
+  // bottom-right margin
+  if ( dir == 2 )
+  {
+    p = buf + s * ( h - marginY ) + w - marginX;
+
+    for( int y = 0; y < marginY; y++ )
+    {
+      for( int x = 0; x < marginX; x++ )
+      {
+        p[x] = p[-1];
+      }
+      p += s;
+    }
+  }
+}
+#endif
 
 template<typename T>
 void AreaBuf<T>::extendBorderPel( unsigned margin )
@@ -751,6 +794,9 @@ struct UnitBuf
 #if JVET_O0549_ENCODER_ONLY_FILTER
   void extendBorderPel(unsigned marginX, unsigned marginY);
 #endif
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+  void padBorderPel         ( unsigned margin, int dir );
+#endif
   void extendBorderPel      ( unsigned margin );
   void removeHighFreq       ( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
                             , const int8_t gbiWeight = g_GbiWeights[GBI_DEFAULT]
@@ -903,6 +949,17 @@ void UnitBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
   for (unsigned i = 0; i < bufs.size(); i++)
   {
     bufs[i].extendBorderPel(marginX >> getComponentScaleX(ComponentID(i), chromaFormat), marginY >> getComponentScaleY(ComponentID(i), chromaFormat));
+  }
+}
+#endif
+
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+template<typename T>
+void UnitBuf<T>::padBorderPel( unsigned margin, int dir )
+{
+  for( unsigned i = 0; i < bufs.size(); i++ )
+  {
+    bufs[i].padBorderPel( margin >> getComponentScaleX( ComponentID( i ), chromaFormat ), margin >> getComponentScaleY( ComponentID( i ), chromaFormat ), dir );
   }
 }
 #endif

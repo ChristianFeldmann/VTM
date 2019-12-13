@@ -302,7 +302,11 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
 #endif
 #else
 #if JVET_P0551_ALF_SLICE_BOUNDARY
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], int& rasterSliceAlfPad )
+#else
 bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[] )
+#endif
 #else
 bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
 #endif
@@ -471,7 +475,57 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
     }
   }
 #endif
+
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+  rasterSliceAlfPad = 0;
+  if ( !clipTop && !clipLeft )
+  {
+    //top-left CTU
+    if ( xPos >= ctuSize && yPos >= ctuSize )
+    {
+      const Position prevCtuPos( xPos - ctuSize, yPos - ctuSize );
+      const CodingUnit *prevCtu = cs.getCU( prevCtuPos, CHANNEL_TYPE_LUMA );
+#if JVET_P1006_PICTURE_HEADER
+#if JVET_P1004_REMOVE_BRICKS
+      if ( !pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice( *currCtu, *prevCtu ) )
+#else
+      if ( !pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice( *currCtu, *prevCtu ) )
+#endif
+#else
+      if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
+#endif
+      {
+        rasterSliceAlfPad = 1;
+      }
+    }
+  }
+
+  if ( !clipBottom && !clipRight )
+  {
+    //bottom-right CTU
+    if ( xPos + ctuSize < cs.pcv->lumaWidth && yPos + ctuSize < cs.pcv->lumaHeight )
+    {
+      const Position nextCtuPos( xPos + ctuSize, yPos + ctuSize );
+      const CodingUnit *nextCtu = cs.getCU( nextCtuPos, CHANNEL_TYPE_LUMA );
+#if JVET_P1006_PICTURE_HEADER
+#if JVET_P1004_REMOVE_BRICKS
+      if ( !pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice( *currCtu, *nextCtu ) )
+#else
+      if ( !pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice( *currCtu, *nextCtu ) )
+#endif
+#else
+      if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
+#endif
+      {
+        rasterSliceAlfPad += 2;
+      }
+    }
+  }
+
+  return numHorVirBndry > 0 || numVerVirBndry > 0 || clipTop || clipBottom || clipLeft || clipRight || rasterSliceAlfPad;
+#else
   return numHorVirBndry > 0 || numVerVirBndry > 0 || clipTop || clipBottom || clipLeft || clipRight;
+#endif
 }
 #endif
 
@@ -646,7 +700,12 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
 #elif JVET_P0551_ALF_SLICE_BOUNDARY
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+      int rasterSliceAlfPad = 0;
+      if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, rasterSliceAlfPad ) )
+#else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos ) )
+#endif
 #else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
@@ -679,6 +738,19 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
             const int hBuf = h + (clipT ? 0 : MAX_ALF_PADDING_SIZE) + (clipB ? 0 : MAX_ALF_PADDING_SIZE);
             PelUnitBuf buf = m_tempBuf2.subBuf( UnitArea( cs.area.chromaFormat, Area( 0, 0, wBuf, hBuf ) ) );
             buf.copyFrom( tmpYuv.subBuf( UnitArea( cs.area.chromaFormat, Area( xStart - (clipL ? 0 : MAX_ALF_PADDING_SIZE), yStart - (clipT ? 0 : MAX_ALF_PADDING_SIZE), wBuf, hBuf ) ) ) );
+#if JVET_P1038_ALF_PAD_RASTER_SLICE
+            // pad top-left unavailable samples for raster slice
+            if ( xStart == xPos && yStart == yPos && ( rasterSliceAlfPad & 1 ) )
+            {
+              buf.padBorderPel( MAX_ALF_PADDING_SIZE, 1 );
+            }
+
+            // pad bottom-right unavailable samples for raster slice
+            if ( xEnd == xPos + width && yEnd == yPos + height && ( rasterSliceAlfPad & 2 ) )
+            {
+              buf.padBorderPel( MAX_ALF_PADDING_SIZE, 2 );
+            }
+#endif
             buf.extendBorderPel( MAX_ALF_PADDING_SIZE );
             buf = buf.subBuf( UnitArea ( cs.area.chromaFormat, Area( clipL ? 0 : MAX_ALF_PADDING_SIZE, clipT ? 0 : MAX_ALF_PADDING_SIZE, w, h ) ) );
 

@@ -1111,6 +1111,9 @@ private:
   int               m_LadfQpOffset[MAX_LADF_INTERVALS];
   int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  bool              m_MRL;
+#endif
   bool              m_MIP;
   ChromaQpMappingTable m_chromaQpMappingTable;
   bool m_GDREnabledFlag;
@@ -1424,6 +1427,10 @@ public:
   bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  void      setUseMRL             ( bool b )                                        { m_MRL = b; }
+  bool      getUseMRL             ()                                      const     { return m_MRL; }
+#endif
   void      setUseMIP             ( bool b )                                        { m_MIP = b; }
   bool      getUseMIP             ()                                      const     { return m_MIP; }
 

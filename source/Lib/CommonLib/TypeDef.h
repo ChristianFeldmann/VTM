@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P2001_SYNTAX_ORDER_MISMATCHES                1 // JVET-P2001: Rearrange SPS/PPS syntax to match JVET-P2001 draft text
+
 #define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
 
 #define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks

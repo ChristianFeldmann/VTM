@@ -746,6 +746,34 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
   }
 #endif
 #endif
+#if JVET_P0462_SEI360
+  if (m_pcCfg->getErpSEIEnabled())
+  {
+    SEIEquirectangularProjection *sei = new SEIEquirectangularProjection;
+    m_seiEncoder.initSEIErp(sei);
+    seiMessages.push_back(sei);
+  }
+
+  if (m_pcCfg->getSphereRotationSEIEnabled())
+  {
+    SEISphereRotation *sei = new SEISphereRotation;
+    m_seiEncoder.initSEISphereRotation(sei);
+    seiMessages.push_back(sei);
+  }
+
+  if (m_pcCfg->getOmniViewportSEIEnabled())
+  {
+    SEIOmniViewport *sei = new SEIOmniViewport;
+    m_seiEncoder.initSEIOmniViewport(sei);
+    seiMessages.push_back(sei);
+  }
+  if (m_pcCfg->getRwpSEIEnabled())
+  {
+    SEIRegionWisePacking *seiRegionWisePacking = new SEIRegionWisePacking;
+    m_seiEncoder.initSEIRegionWisePacking(seiRegionWisePacking);
+    seiMessages.push_back(seiRegionWisePacking);
+  }
+#endif
 }
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)

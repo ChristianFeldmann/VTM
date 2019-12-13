@@ -118,6 +118,9 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_bpDecodingUnitHrdParamsPresentFlag = m_bpDecodingUnitHrdParamsPresentFlag;
   target.m_decodingUnitCpbParamsInPicTimingSeiFlag = m_decodingUnitCpbParamsInPicTimingSeiFlag;
 #endif
+#if JVET_P0181
+  target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
+#endif
 }
 
 void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
@@ -194,6 +197,12 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
 #endif
+#endif
+#if JVET_P0462_SEI360
+    case SEI::EQUIRECTANGULAR_PROJECTION:           return "Equirectangular projection";
+    case SEI::SPHERE_ROTATION:                      return "Sphere rotation";
+    case SEI::REGION_WISE_PACKING:                  return "Region wise packing information";
+    case SEI::OMNI_VIEWPORT:                        return "Omni viewport";
 #endif
     default:                                        return "Unknown";
   }

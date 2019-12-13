@@ -50,6 +50,24 @@
 
 #if ENABLE_TRACING
 
+#if JVET_P0462_SEI360
+void  VLCWriter::xWriteSCodeTr (int value, uint32_t  length, const char *pSymbolName)
+{
+  xWriteSCode (value,length);
+  if( g_HLSTraceEnable )
+  {
+    if( length<10 )
+    {
+      DTRACE( g_trace_ctx, D_HEADER, "%-50s u(%d)  : %d\n", pSymbolName, length, value );
+    }
+    else
+    {
+      DTRACE( g_trace_ctx, D_HEADER, "%-50s u(%d) : %d\n", pSymbolName, length, value );
+    }
+  }
+}
+#endif
+
 void  VLCWriter::xWriteCodeTr (uint32_t value, uint32_t  length, const char *pSymbolName)
 {
   xWriteCode (value,length);
@@ -98,6 +116,14 @@ bool g_HLSTraceEnable = true;
 
 #endif
 
+#if JVET_P0462_SEI360
+void VLCWriter::xWriteSCode    ( int code, uint32_t length )
+{
+  assert ( length > 0 && length<=32 );
+  assert( length==32 || (code>=-(1<<(length-1)) && code<(1<<(length-1))) );
+  m_pcBitIf->write( length==32 ? uint32_t(code) : ( uint32_t(code)&((1<<length)-1) ), length );
+}
+#endif
 
 void VLCWriter::xWriteCode     ( uint32_t uiCode, uint32_t uiLength )
 {
@@ -868,6 +894,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
+
+#if JVET_P0126_SIGNALLING_SUBPICID
+  WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
+#endif
 
 #if JVET_P1006_PICTURE_HEADER
   WRITE_FLAG( pcSPS->getSubPicIdPresentFlag(), "sps_subpic_id_present_flag");
@@ -1898,6 +1928,31 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #if !JVET_P1006_PICTURE_HEADER
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
 #endif
+
+ #if JVET_P0126_SIGNALLING_SUBPICID
+  if (pcSlice->getSPS()->getSubPicPresentFlag())
+  {
+    uint32_t bitsSubPicId;
+    if (pcSlice->getSPS()->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = pcSlice->getSPS()->getSubPicIdLen();
+    }
+    else if (picHeader->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = picHeader->getSubPicIdLen();
+    }
+    else if (pcSlice->getPPS()->getSubPicIdSignallingPresentFlag())
+    {
+      bitsSubPicId = pcSlice->getPPS()->getSubPicIdLen();
+    }
+    else
+    {
+      bitsSubPicId = ceilLog2(pcSlice->getSPS()->getNumSubPics());
+    }
+    WRITE_CODE(pcSlice->getSliceSubPicId(), bitsSubPicId, "slice_subpic_id");
+  }
+#endif
+
 #if JVET_P1004_REMOVE_BRICKS
   // raster scan slices
   if( pcSlice->getPPS()->getRectSliceFlag() == 0 ) 

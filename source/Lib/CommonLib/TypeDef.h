@@ -52,6 +52,8 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
+
 #define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks
 
 #define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
@@ -241,7 +243,13 @@
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
+#define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling
+
+#define JVET_P0183                                        1 // JVET-P0183 : conditionally signal cpb_removal_delay_delta_enabled_flag
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+
+#define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

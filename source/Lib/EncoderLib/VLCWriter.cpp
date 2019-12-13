@@ -372,10 +372,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   }
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
-  if (pcSPS->getTransformSkipEnabledFlag())
-  {
-    WRITE_UVLC(pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");
-  }
+  WRITE_UVLC( pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");
   WRITE_FLAG( pcPPS->getUseDQP() ? 1 : 0, "cu_qp_delta_enabled_flag" );
 #if !JVET_P1006_PICTURE_HEADER 
   if ( pcPPS->getUseDQP() )

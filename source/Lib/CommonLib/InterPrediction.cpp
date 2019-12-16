@@ -493,7 +493,10 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   {
     if( pu.cu->slice->getScalingRatio( eRefPicList, iRefIdx ) == SCALE_1X )
     {
-      clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+      if( !sps.getWrapAroundEnabledFlag() )
+      {
+        clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
+      }
     }
   }
 
@@ -2271,7 +2274,10 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
     m_iRefListIdx = refId;
     const Picture* refPic = pu.cu->slice->getRefPic( refId, pu.refIdx[refId] )->unscaledPic;
     Mv cMvClipped = cMv;
-    clipMv( cMvClipped, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
+    if( !pu.cs->sps->getWrapAroundEnabledFlag() ) 
+    {
+      clipMv( cMvClipped, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
+    }
 
     Mv startMv = mergeMV[refId];
 
@@ -2362,8 +2368,11 @@ void InterPrediction::xinitMC(PredictionUnit& pu, const ClpRngs &clpRngs)
   Mv mergeMVL1(pu.mv[REF_PIC_LIST_1]);
 
   /*Clip the starting MVs*/
-  clipMv( mergeMVL0, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
-  clipMv( mergeMVL1, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
+  if( !pu.cs->sps->getWrapAroundEnabledFlag() )
+  {
+    clipMv( mergeMVL0, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
+    clipMv( mergeMVL1, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
+  }
 
   /*L0 MC for refinement*/
   {

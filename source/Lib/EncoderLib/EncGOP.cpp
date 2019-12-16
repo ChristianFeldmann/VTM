@@ -791,9 +791,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
   // mastering display colour volume
   if (m_pcCfg->getMasteringDisplaySEI().colourVolumeSEIEnabled)
   {
-   // const SEIMasteringDisplay &seiCfg = m_pcCfg->getMasteringDisplaySEI();
     SEIMasteringDisplayColourVolume *sei = new SEIMasteringDisplayColourVolume;
-    //sei->values = seiCfg;
     m_seiEncoder.initSEIMasteringDisplayColourVolume(sei);
     seiMessages.push_back(sei);
   }

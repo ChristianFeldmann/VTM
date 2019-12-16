@@ -46,13 +46,10 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define READ_SCODE(length, code, name)    xReadSCode  ( length, code, name )
 #endif
 #define READ_CODE(length, code, name)     xReadCodeTr ( length, code, name )
-#if JVET_P0337_PORTING_SEI
-#define READ_SCODE(length, code, name)    xReadSCodeTr ( length, code, name )
-#endif
 #define READ_UVLC(        code, name)     xReadUvlcTr (         code, name )
 #define READ_SVLC(        code, name)     xReadSvlcTr (         code, name )
 #define READ_FLAG(        code, name)     xReadFlagTr (         code, name )
@@ -61,26 +58,20 @@
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define READ_SCODE(length, code, name)    xReadSCode( length, code, name )
 #endif
 #define READ_CODE(length, code, name)     xReadCode ( length, code, name )
-#if JVET_P0337_PORTING_SEI
-#define READ_SCODE(length, code, name)    xReadSCode ( length, code, name )
-#endif
 #define READ_UVLC(        code, name)     xReadUvlc (         code, name )
 #define READ_SVLC(        code, name)     xReadSvlc (         code, name )
 #define READ_FLAG(        code, name)     xReadFlag (         code, name )
 
 #else
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define READ_SCODE(length, code, name)    xReadSCode ( length, code )
 #endif
 #define READ_CODE(length, code, name)     xReadCode ( length, code )
-#if JVET_P0337_PORTING_SEI
-#define READ_SCODE(length, code, name)    xReadSCode ( length, code )
-#endif
 #define READ_UVLC(        code, name)     xReadUvlc (         code )
 #define READ_SVLC(        code, name)     xReadSvlc (         code )
 #define READ_FLAG(        code, name)     xReadFlag (         code )
@@ -106,31 +97,22 @@ protected:
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   void  xReadCode    ( uint32_t   length, uint32_t& val, const char *pSymbolName );
-#if JVET_P0337_PORTING_SEI
-  void xReadSCode    ( uint32_t   length, int32_t& val, const char *pSymbolName);
-#endif
   void  xReadUvlc    (                uint32_t& val, const char *pSymbolName );
   void  xReadSvlc    (                 int& val, const char *pSymbolName );
   void  xReadFlag    (                uint32_t& val, const char *pSymbolName );
 #else
   void  xReadCode    ( uint32_t   length, uint32_t& val );
-#if JVET_P0337_PORTING_SEI
-  void xReadSCode    ( uint32_t   length, int32_t& val);
-#endif
   void  xReadUvlc    (                uint32_t& val );
   void  xReadSvlc    (                 int& val );
   void  xReadFlag    (                uint32_t& val );
 #endif
 #if ENABLE_TRACING
   void  xReadCodeTr  ( uint32_t  length, uint32_t& rValue, const char *pSymbolName );
-#if JVET_P0337_PORTING_SEI
-  void xReadSCodeTr  (uint32_t   length, int32_t& rValue, const char *pSymbolName);
-#endif
   void  xReadUvlcTr  (               uint32_t& rValue, const char *pSymbolName );
   void  xReadSvlcTr  (                int& rValue, const char *pSymbolName );
   void  xReadFlagTr  (               uint32_t& rValue, const char *pSymbolName );
 #endif
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
   void  xReadSCode   ( uint32_t  length, int& val, const char *pSymbolName );
 #else

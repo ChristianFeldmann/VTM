@@ -66,25 +66,6 @@ void  VLCReader::xReadCodeTr(uint32_t length, uint32_t& rValue, const char *pSym
   }
 }
 
-#if JVET_P0337_PORTING_SEI
-void  VLCReader::xReadSCodeTr(uint32_t length, int32_t& rValue, const char *pSymbolName)
-{
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-  xReadSCode(length, rValue, pSymbolName);
-#else
-  xReadSCode(length, rValue);
-#endif
-  if (length < 10)
-  {
-    DTRACE(g_trace_ctx, D_HEADER, "%-50s i(%d)  : %u\n", pSymbolName, length, rValue);
-  }
-  else
-  {
-    DTRACE(g_trace_ctx, D_HEADER, "%-50s i(%d) : %u\n", pSymbolName, length, rValue);
-  }
-}
-#endif
-
 void  VLCReader::xReadUvlcTr(uint32_t& rValue, const char *pSymbolName)
 {
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
@@ -122,7 +103,7 @@ void xTraceFillerData ()
 
 #endif
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
 void VLCReader::xReadSCode (uint32_t length, int& value, const char *pSymbolName)
 #else
@@ -165,30 +146,6 @@ void VLCReader::xReadCode (uint32_t uiLength, uint32_t& ruiCode)
   CodingStatistics::IncrementStatisticEP(pSymbolName, uiLength, ruiCode);
 #endif
 }
-#if JVET_P0337_PORTING_SEI
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-void VLCReader::xReadSCode(uint32_t uiLength, int32_t& ruiCode, const char *pSymbolName)
-#else
-void VLCReader::xReadSCode(uint32_t uiLength, int32_t& ruiCode)
-#endif
-{
-  uint32_t val;
-  CHECK(uiLength == 0, "Reading a code of length '0'");
-  m_pcBitstream->read(uiLength, val);
-  if ((val & (1 << (uiLength - 1))) == 0)
-  {
-    ruiCode = val;
-  }
-  else
-  {
-    val &= (1 << (uiLength - 1)) - 1;
-    ruiCode = ~val + 1;
-  }
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-  CodingStatistics::IncrementStatisticEP(pSymbolName, uiLength, ruiCode);
-#endif
-}
-#endif
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 void VLCReader::xReadUvlc( uint32_t& ruiVal, const char *pSymbolName)
 #else

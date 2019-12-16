@@ -231,8 +231,6 @@
 
 #define JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND     1 // JVET-P0152: remove pps_five_minus_max_num_subblock_merge_cand_plus1
 
-#define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting SEI
-
 #define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
@@ -257,6 +255,8 @@
 
 #define JVET_P0450_SEI_SARI                               1 // Sample aspect ratio information SEI
 #define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
+
+#define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting several HEVC SEIs and add encoder control
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

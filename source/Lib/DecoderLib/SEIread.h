@@ -129,13 +129,10 @@ protected:
   void xParseSEIContentColourVolume           (SEIContentColourVolume& sei,           uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
   void sei_read_scode(std::ostream *pOS, uint32_t length, int& code, const char *pSymbolName);
 #endif
   void sei_read_code(std::ostream *pOS, uint32_t uiLength, uint32_t& ruiCode, const char *pSymbolName);
-#if JVET_P0337_PORTING_SEI
-  void sei_read_scode(std::ostream *pOS, uint32_t uiLength, int32_t& ruiCode, const char *pSymbolName);
-#endif
   void sei_read_uvlc(std::ostream *pOS,                uint32_t& ruiCode, const char *pSymbolName);
   void sei_read_svlc(std::ostream *pOS,                int&  ruiCode, const char *pSymbolName);
   void sei_read_flag(std::ostream *pOS,                uint32_t& ruiCode, const char *pSymbolName);

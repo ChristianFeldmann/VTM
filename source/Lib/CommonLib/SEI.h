@@ -109,7 +109,6 @@ public:
     REGION_WISE_PACKING                  = 155,
     OMNI_VIEWPORT                        = 156,
 #endif
-#if HEVC_SEI
 #if HEVC_SEI && !JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
@@ -244,8 +243,8 @@ public:
   int                   m_sariSarHeight;
 };
 #endif
+#endif
 
-#if HEVC_SEI
 #if HEVC_SEI || JVET_P0337_PORTING_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;
 

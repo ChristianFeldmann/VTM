@@ -174,6 +174,7 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::REGION_WISE_PACKING:
     xWriteSEIRegionWisePacking(*static_cast<const SEIRegionWisePacking*>(&sei));
     break;
+#endif
 #if JVET_P0337_PORTING_SEI
   case SEI::USER_DATA_REGISTERED_ITU_T_T35:
     xWriteSEIUserDataRegistered(*static_cast<const SEIUserDataRegistered*>(&sei));

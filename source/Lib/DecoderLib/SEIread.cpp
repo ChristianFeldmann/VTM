@@ -70,17 +70,6 @@ void SEIReader::sei_read_code(std::ostream *pOS, uint32_t uiLength, uint32_t& ru
   }
 }
 
-#if JVET_P0337_PORTING_SEI
-void SEIReader::sei_read_scode(std::ostream *pOS, uint32_t uiLength, int32_t& ruiCode, const char *pSymbolName)
-{
-  READ_SCODE(uiLength, ruiCode, pSymbolName);
-  if (pOS)
-  {
-    (*pOS) << "  " << std::setw(55) << pSymbolName << ": " << ruiCode << "\n";
-  }
-}
-#endif
-
 void SEIReader::sei_read_uvlc(std::ostream *pOS, uint32_t& ruiCode, const char *pSymbolName)
 {
   READ_UVLC(ruiCode, pSymbolName);

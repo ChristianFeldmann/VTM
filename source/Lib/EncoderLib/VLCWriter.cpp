@@ -50,7 +50,7 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 void  VLCWriter::xWriteSCodeTr (int value, uint32_t  length, const char *pSymbolName)
 {
   xWriteSCode (value,length);
@@ -84,24 +84,6 @@ void  VLCWriter::xWriteCodeTr (uint32_t value, uint32_t  length, const char *pSy
     }
   }
 }
-#if JVET_P0337_PORTING_SEI
-void  VLCWriter::xWriteSCodeTr(int32_t value, uint32_t  length, const char *pSymbolName)
-{
-  xWriteSCode(value, length);
-
-  if (g_HLSTraceEnable)
-  {
-    if (length < 10)
-    {
-      DTRACE(g_trace_ctx, D_HEADER, "%-50s i(%d)  : %d\n", pSymbolName, length, value);
-    }
-    else
-    {
-      DTRACE(g_trace_ctx, D_HEADER, "%-50s i(%d) : %d\n", pSymbolName, length, value);
-    }
-  }
-}
-#endif
 
 void  VLCWriter::xWriteUvlcTr (uint32_t value, const char *pSymbolName)
 {
@@ -134,7 +116,7 @@ bool g_HLSTraceEnable = true;
 
 #endif
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 void VLCWriter::xWriteSCode    ( int code, uint32_t length )
 {
   assert ( length > 0 && length<=32 );
@@ -148,24 +130,6 @@ void VLCWriter::xWriteCode     ( uint32_t uiCode, uint32_t uiLength )
   CHECK( uiLength == 0, "Code of length '0' not supported" );
   m_pcBitIf->write( uiCode, uiLength );
 }
-
-#if JVET_P0337_PORTING_SEI
-void VLCWriter::xWriteSCode    (int32_t iCode, uint32_t uiLength)
-{
-  assert(uiLength > 0);
-  uint32_t uiCode;
-  if (iCode >= 0)
-  {
-    uiCode = (uint32_t)iCode;
-  }
-  else
-  {
-    uiCode = ~(iCode)+1;
-    uiCode |= (1 << 31);
-  }
-  m_pcBitIf->write(uiCode, uiLength);
-}
-#endif
 
 void VLCWriter::xWriteUvlc     ( uint32_t uiCode )
 {

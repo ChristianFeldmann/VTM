@@ -545,7 +545,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       // this should always be true
       CHECK( !pu.Y().valid(), "PU is not valid" );
       bool isFirstLineOfCtu = (((pu.block(COMPONENT_Y).y)&((pu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+      int numOfPassesExtendRef = ((!sps.getUseMRL() || isFirstLineOfCtu) ? 1 : MRL_NUM_REF_LINES);
+#else
       int numOfPassesExtendRef = (isFirstLineOfCtu ? 1 : MRL_NUM_REF_LINES);
+#endif
       pu.multiRefIdx = 0;
 
       if( numModesForFullRD != numModesAvailable )

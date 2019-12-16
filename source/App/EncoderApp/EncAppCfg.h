@@ -376,6 +376,9 @@ protected:
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
   unsigned  m_maxNumAlfAlternativesChroma;
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  bool      m_MRL;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
   int       m_fastLocalDualTreeMode;

@@ -1483,6 +1483,14 @@ void CABACReader::extend_ref_line(CodingUnit& cu)
 
   for (int k = 0; k < numBlocks; k++)
   {
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+    if( !cu.cs->sps->getUseMRL() )
+    {
+      pu->multiRefIdx = 0;
+      pu = pu->next;
+      continue;
+    }
+#endif
     bool isFirstLineOfCtu = (((cu.block(COMPONENT_Y).y)&((cu.cs->sps)->getMaxCUWidth() - 1)) == 0);
     if (isFirstLineOfCtu)
     {

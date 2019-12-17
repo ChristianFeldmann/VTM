@@ -621,14 +621,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             pu.intraDir[0] = modeIdx;
 
             initPredIntraParams(pu, pu.Y(), sps);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
             if( useDPCMForFirstPassIntraEstimation( pu, uiMode ) )
             {
               encPredIntraDPCM( COMPONENT_Y, piOrg, piPred, uiMode );
             }
             else
             {
+#endif
               predIntraAng( COMPONENT_Y, piPred, pu);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
             }
+#endif
             // Use the min between SAD and HAD as the cost criterion
             // SAD is scaled by 2 to align with the scaling of HAD
             minSadHad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
@@ -697,14 +701,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
                 pu.intraDir[0] = mode;
 
                 initPredIntraParams(pu, pu.Y(), sps);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
                 if (useDPCMForFirstPassIntraEstimation(pu, mode))
                 {
                   encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
                 }
                 else
                 {
+#endif
                   predIntraAng(COMPONENT_Y, piPred, pu );
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
                 }
+#endif
 
                 // Use the min between SAD and SATD as the cost criterion
                 // SAD is scaled by 2 to align with the scaling of HAD
@@ -762,14 +770,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               pu.intraDir[0] = mode;
               initPredIntraParams(pu, pu.Y(), sps);
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
               if (useDPCMForFirstPassIntraEstimation(pu, mode))
               {
                 encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
               }
               else
               {
+#endif
                 predIntraAng(COMPONENT_Y, piPred, pu);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
               }
+#endif
 
               // Use the min between SAD and SATD as the cost criterion
               // SAD is scaled by 2 to align with the scaling of HAD
@@ -5885,6 +5897,7 @@ void IntraSearch::invalidateBestRdModeFirstColorSpace()
 }
 #endif
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode )
 {
   CHECK( pOrg.buf == 0, "Encoder DPCM called without original buffer" );
@@ -5921,13 +5934,10 @@ void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, Pel
 
 bool IntraSearch::useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode )
 {
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  return false;
-#else
   return CU::isRDPCMEnabled( *pu.cu ) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
-#endif
 }
 
+#endif
 template<typename T, size_t N>
 void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip)
 {

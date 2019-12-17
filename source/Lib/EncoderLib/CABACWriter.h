@@ -87,7 +87,9 @@ public:
 
   // coding unit (clause 7.3.8.5)
   void        coding_unit               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void        cu_transquant_bypass_flag ( const CodingUnit&             cu );
+#endif
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
   void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );

@@ -769,7 +769,11 @@ Distortion InterSearch::xGetInterPredictionError( PredictionUnit& pu, PelUnitBuf
   DistParam cDistParam;
   cDistParam.applyWeight = false;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  m_pcRdCost->setDistParam(cDistParam, origBuf.Y(), predBuf.Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, m_pcEncCfg->getUseHADME() && !pu.cu->slice->getDisableSATDForRD());
+#else
   m_pcRdCost->setDistParam(cDistParam, origBuf.Y(), predBuf.Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, m_pcEncCfg->getUseHADME() && !pu.cu->transQuantBypass && !pu.cu->slice->getDisableSATDForRD());
+#endif
 
   return (Distortion)cDistParam.distFunc( cDistParam );
 }
@@ -1291,7 +1295,11 @@ void InterSearch::xIBCEstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
   // disable weighted prediction
   setWpScalingDistParam(-1, REF_PIC_LIST_X, pu.cs->slice);
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  m_pcRdCost->getMotionCost(0);
+#else
   m_pcRdCost->getMotionCost(0, pu.cu->transQuantBypass);
+#endif
   m_pcRdCost->setPredictors(pcMvPred);
   m_pcRdCost->setCostScale(0);
 
@@ -1892,7 +1900,11 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
         m_cDistParam.cur.stride = refStride;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_pcRdCost->selectMotionLambda( );
+#else
         m_pcRdCost->selectMotionLambda(pu.cu->transQuantBypass);
+#endif
         m_pcRdCost->setCostScale(0);
 
         list<BlockHash>::iterator it;
@@ -2091,7 +2103,11 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
 
         m_cDistParam.cur.stride = refStride;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_pcRdCost->selectMotionLambda( );
+#else
         m_pcRdCost->selectMotionLambda(pu.cu->transQuantBypass);
+#endif
         m_pcRdCost->setCostScale(0);
 
         list<BlockHash>::iterator it;
@@ -2356,7 +2372,11 @@ void InterSearch::predInterSearch(CodingUnit& cu, Partitioner& partitioner)
 
     xGetBlkBits( cs.slice->isInterP(), puIdx, uiLastMode, uiMbBits );
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    m_pcRdCost->selectMotionLambda( );
+#else
     m_pcRdCost->selectMotionLambda( cu.transQuantBypass );
+#endif
 
     unsigned imvShift = pu.cu->imv == IMV_HPEL ? 1 : (pu.cu->imv << 1);
     if ( checkNonAffine )
@@ -3316,7 +3336,11 @@ Distortion InterSearch::xGetAffineTemplateCost( PredictionUnit& pu, PelUnitBuf& 
   }
 
   // calc distortion
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  enum DFunc distFunc = (pu.cs->slice->getDisableSATDForRD()) ? DF_SAD : DF_HAD;
+#else
   enum DFunc distFunc = (pu.cu->transQuantBypass || pu.cs->slice->getDisableSATDForRD()) ? DF_SAD : DF_HAD;
+#endif
   uiCost  = m_pcRdCost->getDistPart( origBuf.Y(), predBuf.Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y
     , distFunc
   );
@@ -4208,7 +4232,11 @@ void InterSearch::xPatternSearchIntRefine(PredictionUnit& pu, IntTZSearchStruct&
   CHECK( amvpInfo.mvCand[riMVPIdx] != rcMvPred, "xPatternSearchIntRefine(): MvPred issue.");
 
   const SPS &sps = *pu.cs->sps;
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  m_pcRdCost->setDistParam(m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !pu.cs->slice->getDisableSATDForRD());
+#else
   m_pcRdCost->setDistParam(m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !pu.cu->transQuantBypass && !pu.cs->slice->getDisableSATDForRD());
+#endif
 
   // -> set MV scale for cost calculation to QPEL (0)
   m_pcRdCost->setCostScale ( 0 );
@@ -4324,7 +4352,9 @@ void InterSearch::xPatternSearchFracDIF(
   Distortion&           ruiCost
 )
 {
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   const bool bIsLosslessCoded = pu.cu->transQuantBypass;
+#endif
 
   //  Reference pattern initialization (integer scale)
   int         iOffset    = rcMvInt.getHor() + rcMvInt.getVer() * cStruct.iRefStride;
@@ -4336,14 +4366,22 @@ void InterSearch::xPatternSearchFracDIF(
     m_pcRdCost->setCostScale(0);
     xExtDIFUpSamplingH(&cPatternRoi, cStruct.useAltHpelIf);
     rcMvQter = rcMvInt;   rcMvQter <<= 2;    // for mv-cost
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    ruiCost = xPatternRefinement(cStruct.pcPatternKey, baseRefMv, 1, rcMvQter, !pu.cs->slice->getDisableSATDForRD());
+#else
     ruiCost = xPatternRefinement(cStruct.pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded && !pu.cs->slice->getDisableSATDForRD());
+#endif
     return;
   }
 
 
   if (cStruct.imvShift > IMV_FPEL || (m_useCompositeRef && cStruct.zeroMV))
   {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    m_pcRdCost->setDistParam(m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY + iOffset, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !pu.cs->slice->getDisableSATDForRD());
+#else
     m_pcRdCost->setDistParam(m_cDistParam, *cStruct.pcPatternKey, cStruct.piRefY + iOffset, cStruct.iRefStride, m_lumaClpRng.bd, COMPONENT_Y, 0, 1, m_pcEncCfg->getUseHADME() && !bIsLosslessCoded && !pu.cs->slice->getDisableSATDForRD());
+#endif
     ruiCost = m_cDistParam.distFunc( m_cDistParam );
     ruiCost += m_pcRdCost->getCostOfVectorWithPredictor( rcMvInt.getHor(), rcMvInt.getVer(), cStruct.imvShift );
     return;
@@ -4355,7 +4393,11 @@ void InterSearch::xPatternSearchFracDIF(
 
   rcMvHalf = rcMvInt;   rcMvHalf <<= 1;    // for mv-cost
   Mv baseRefMv(0, 0);
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  ruiCost = xPatternRefinement(cStruct.pcPatternKey, baseRefMv, 2, rcMvHalf, (!pu.cs->slice->getDisableSATDForRD()));
+#else
   ruiCost = xPatternRefinement(cStruct.pcPatternKey, baseRefMv, 2, rcMvHalf, (!bIsLosslessCoded && !pu.cs->slice->getDisableSATDForRD()));
+#endif
 
   //  quarter-pel refinement
   if (cStruct.imvShift == IMV_OFF)
@@ -4367,7 +4409,11 @@ void InterSearch::xPatternSearchFracDIF(
 
   rcMvQter = rcMvInt;    rcMvQter <<= 1;    // for mv-cost
   rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  ruiCost = xPatternRefinement(cStruct.pcPatternKey, baseRefMv, 1, rcMvQter, (!pu.cs->slice->getDisableSATDForRD()));
+#else
   ruiCost = xPatternRefinement(cStruct.pcPatternKey, baseRefMv, 1, rcMvQter, (!bIsLosslessCoded && !pu.cs->slice->getDisableSATDForRD()));
+#endif
   }
 }
 
@@ -4427,7 +4473,11 @@ Distortion InterSearch::xGetSymmetricCost( PredictionUnit& pu, PelUnitBuf& origB
   double fWeight = xGetMEDistortionWeight( pu.cu->GBiIdx, eTarRefPicList );
 
   // calc distortion
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  DFunc distFunc = (!pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#else
   DFunc distFunc = (!pu.cu->transQuantBypass && !pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#endif
   cost = (Distortion)floor( fWeight * (double)m_pcRdCost->getDistPart( bufTmp.Y(), predBufB.Y(), pu.cs->sps->getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, distFunc ) );
 #else
   if (gbiIdx != GBI_DEFAULT)
@@ -4436,7 +4486,11 @@ Distortion InterSearch::xGetSymmetricCost( PredictionUnit& pu, PelUnitBuf& origB
     bufTmp.Y().addAvg( predBufA.Y(), predBufB.Y(), pu.cu->slice->clpRng( COMPONENT_Y ) );
 
   // calc distortion
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  DFunc distFunc = (!pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#else
   DFunc distFunc = (!pu.cu->transQuantBypass && !pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#endif
   cost = m_pcRdCost->getDistPart(bufTmp.Y(), origBuf.Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, distFunc);
 #endif
   return(cost);
@@ -5368,7 +5422,11 @@ void InterSearch::xCheckBestAffineMVP( PredictionUnit &pu, AffineAMVPInfo &affin
 
   int mvNum = pu.cu->affineType ? 3 : 2;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  m_pcRdCost->selectMotionLambda( );
+#else
   m_pcRdCost->selectMotionLambda( pu.cu->transQuantBypass );
+#endif
   m_pcRdCost->setCostScale ( 0 );
 
   int iBestMVPIdx = riMVPIdx;
@@ -5444,7 +5502,11 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
   double        fWeight       = 1.0;
 
   PelUnitBuf  origBufTmp = m_tmpStorageLCU.getBuf( UnitAreaRelative( *pu.cu, pu ) );
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  enum DFunc distFunc = (pu.cs->slice->getDisableSATDForRD()) ? DF_SAD : DF_HAD;
+#else
   enum DFunc distFunc = (pu.cu->transQuantBypass || pu.cs->slice->getDisableSATDForRD()) ? DF_SAD : DF_HAD;
+#endif
   m_iRefListIdx = eRefPicList;
 
   // if Bi, set to ( 2 * Org - ListX )
@@ -6935,11 +6997,13 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #else
             currCompCost = m_pcRdCost->calcRdCost(currCompFracBits, currCompDist);
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 
             if (csFull->isLossless)
             {
               nonCoeffCost = MAX_DOUBLE;
             }
+#endif
           }
           else if( transformMode > 0 && !bUseCrossCPrediction )
           {
@@ -7440,7 +7504,9 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   const ChromaFormat format     = cs.area.chromaFormat;;
   const int  numValidComponents = getNumberValidComponents(format);
   const SPS &sps                = *cs.sps;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   const PPS &pps                = *cs.pps;
+#endif
 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool colorTransAllowed = cs.slice->getSPS()->getUseColorTrans() && luma && chroma;
@@ -7514,11 +7580,13 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
     m_CABACEstimator->resetBits();
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     if( pps.getTransquantBypassEnabledFlag() )
     {
       m_CABACEstimator->cu_transquant_bypass_flag( cu );
     }
 
+#endif
     PredictionUnit &pu = *cs.getPU( partitioner.chType );
 
     m_CABACEstimator->cu_skip_flag  ( cu );
@@ -7718,11 +7786,19 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 #if WCG_EXT
     if( m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      zeroCost = m_pcRdCost->calcRdCost( zeroFracBits, zeroDistortion, false );
+#else
       zeroCost = cs.isLossless ? ( cs.cost + 1 ) : m_pcRdCost->calcRdCost( zeroFracBits, zeroDistortion, false );
+#endif
     }
     else
 #endif
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    zeroCost = m_pcRdCost->calcRdCost( zeroFracBits, zeroDistortion );
+#else
     zeroCost = cs.isLossless ? ( cs.cost + 1 ) : m_pcRdCost->calcRdCost( zeroFracBits, zeroDistortion );
+#endif
   }
 
   const int  numValidTBlocks   = ::getNumberValidTBlocks( *cs.pcv );
@@ -7935,11 +8011,13 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     CHECK(cu.colorTransform, "ACT should not be enabled for skip mode");
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     if( cs.pps->getTransquantBypassEnabledFlag() )
     {
       m_CABACEstimator->cu_transquant_bypass_flag( cu );
     }
 
+#endif
     m_CABACEstimator->cu_skip_flag  ( cu );
     if (cu.firstPU->mhIntraFlag)
     {
@@ -7955,10 +8033,12 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
   {
     CHECK( cu.skip, "Skip flag has to be off at this point!" );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     if( cs.pps->getTransquantBypassEnabledFlag() )
     {
       m_CABACEstimator->cu_transquant_bypass_flag( cu );
     }
+#endif
     if (cu.Y().valid())
     m_CABACEstimator->cu_skip_flag( cu );
     m_CABACEstimator->pred_mode   ( cu );
@@ -8167,7 +8247,11 @@ void InterSearch::symmvdCheckBestMvp(
         xPredInterBlk( COMPONENT_Y, pu, picRefB, mvB, predBufB, false, pu.cu->slice->clpRng( COMPONENT_Y ), false, false );
       }
       // calc distortion
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      DFunc distFunc = (!pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#else
       DFunc distFunc = (!pu.cu->transQuantBypass && !pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#endif
       Distortion cost = (Distortion)floor( fWeight * (double)m_pcRdCost->getDistPart( bufTmp.Y(), predBufB.Y(), pu.cs->sps->getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, distFunc ) );
 #else
       xPredInterBlk(COMPONENT_Y, pu, picRefB, mvB, predBufB, true, pu.cu->slice->clpRng(COMPONENT_Y), false, false);
@@ -8179,7 +8263,11 @@ void InterSearch::symmvdCheckBestMvp(
         bufTmp.Y().addAvg(predBufA.Y(), predBufB.Y(), pu.cu->slice->clpRng(COMPONENT_Y));
 
       // calc distortion
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      DFunc distFunc = (!pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#else
       DFunc distFunc = (!pu.cu->transQuantBypass && !pu.cu->slice->getDisableSATDForRD()) ? DF_HAD : DF_SAD;
+#endif
       Distortion cost = m_pcRdCost->getDistPart(bufTmp.Y(), origBuf.Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, distFunc);
 #endif
 

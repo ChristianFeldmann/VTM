@@ -93,7 +93,9 @@ public:
 #else
   bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
+#endif
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
   void        bdpcm_mode                ( CodingUnit&                   cu,     const ComponentID compID );

@@ -247,7 +247,9 @@ public:
   static const CtxSet   SaoTypeIdx;
   static const CtxSet   TransformSkipFlag;
   static const CtxSet   MTSIdx;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   static const CtxSet   TransquantBypassFlag;
+#endif
   static const CtxSet   LFNSTIdx;
   static const CtxSet   PLTFlag;
   static const CtxSet   RotationFlag;

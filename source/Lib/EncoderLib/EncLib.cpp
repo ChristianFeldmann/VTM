@@ -1987,7 +1987,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   CHECK(!(bestPos <= 15), "Unspecified error");
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
+#endif
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
 #if !JVET_P1004_REMOVE_BRICKS
 
@@ -2646,6 +2648,7 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
     }
     else
     {
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if SHARP_LUMA_DELTA_QP
       // Only adjust QP when not lossless
       if (!(( getMaxDeltaQP() == 0 ) && (!getLumaLevelToDeltaQPMapping().isEnabled()) && (qp == -lumaQpBDOffset ) && (pSlice->getPPS()->getTransquantBypassEnabledFlag())))
@@ -2654,6 +2657,7 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 #endif
 
       {
+#endif
         const GOPEntry &gopEntry=getGOPEntry(gopIndex);
         // adjust QP according to the QP offset for the GOP entry.
         qp +=gopEntry.m_QPOffset;
@@ -2663,7 +2667,9 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
         int qpOffset = (int)floor(Clip3<double>(0.0, 3.0, dqpOffset));
         qp += qpOffset ;
       }
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     }
+#endif
 
 #if !QP_SWITCHING_FOR_PARALLEL
     // modify QP if a fractional QP was originally specified, cause dQPs to be 0 or 1.

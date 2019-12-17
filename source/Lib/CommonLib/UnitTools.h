@@ -61,7 +61,9 @@ namespace CU
   bool isIBC                          (const CodingUnit &cu);
   bool isPLT                          (const CodingUnit &cu);
   bool isRDPCMEnabled                 (const CodingUnit &cu);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool isLosslessCoded                (const CodingUnit &cu);
+#endif
 
   bool isSameCtu                      (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSlice                    (const CodingUnit &cu, const CodingUnit &cu2);

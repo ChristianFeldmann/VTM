@@ -702,6 +702,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "weighted_bipred_flag" );         // Use of Bi-Directional Weighting Prediction (B_SLICE)
   pcPPS->setWPBiPred( uiCode==1 );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   // transquant_bypass is not supported in VVC
   pcPPS->setTransquantBypassEnabledFlag(false);
@@ -709,6 +710,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "transquant_bypass_enabled_flag");
   pcPPS->setTransquantBypassEnabledFlag(uiCode ? true : false);
 
+#endif
 #endif
 #if !JVET_P1004_REMOVE_BRICKS
   READ_FLAG( uiCode, "single_tile_in_pic_flag" );                 pcPPS->setSingleTileInPicFlag(uiCode == 1);

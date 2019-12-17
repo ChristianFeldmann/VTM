@@ -391,7 +391,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   const uint32_t             uiHeightBit   =                   floorLog2(partitioner.currArea().lheight());
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( ) * FRAC_BITS_SCALE;
+#else
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) * FRAC_BITS_SCALE;
+#endif
 
   //===== loop over partitions =====
 
@@ -1569,7 +1573,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
 #endif
 #if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
 #else
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      const bool useHadamard = true;
+#else
       const bool useHadamard = !cu.transQuantBypass;
+#endif
 #endif
       pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
 
@@ -3027,10 +3035,12 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       && cu.Y().valid()
       )
       {
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
         if( cs.pps->getTransquantBypassEnabledFlag() )
         {
           m_CABACEstimator->cu_transquant_bypass_flag( cu );
         }
+#endif
         m_CABACEstimator->cu_skip_flag( cu );
         m_CABACEstimator->pred_mode   ( cu );
       }
@@ -4978,7 +4988,11 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
     saveChromaCS.pcv = csFull->pcv;
     saveChromaCS.picture = csFull->picture;
     saveChromaCS.area.repositionTo(csFull->area);
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    saveChromaCS.initStructData(MAX_INT, true);
+#else
     saveChromaCS.initStructData(MAX_INT, false, true);
+#endif
     tmpTU = &saveChromaCS.addTU(currArea, partitioner.chType);
 
     CompArea&  cbArea = tu.blocks[COMPONENT_Cb];
@@ -5294,7 +5308,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     saveCS.pcv      = cs.pcv;
     saveCS.picture  = cs.picture;
     saveCS.area.repositionTo( cs.area );
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    saveCS.initStructData( MAX_INT, true );
+#else
     saveCS.initStructData( MAX_INT, false, true );
+#endif
 
     if( !currTU.cu->isSepTree() && currTU.cu->ispMode )
     {
@@ -5903,7 +5921,11 @@ void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, Pel
 
 bool IntraSearch::useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode )
 {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  return false;
+#else
   return CU::isRDPCMEnabled( *pu.cu ) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
+#endif
 }
 
 template<typename T, size_t N>

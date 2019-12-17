@@ -432,12 +432,14 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 
   WRITE_FLAG( pcPPS->getUseWP() ? 1 : 0,  "weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcPPS->getWPBiPred() ? 1 : 0, "weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   // transquant_bypass is not supported in VVC
   CHECK( pcPPS->getTransquantBypassEnabledFlag(), "transquant_bypass_enabled_flag is not supported in VVC");
 #else
   WRITE_FLAG( pcPPS->getTransquantBypassEnabledFlag()  ? 1 : 0, "transquant_bypass_enabled_flag" );
 
+#endif
 #endif
 #if !JVET_P1004_REMOVE_BRICKS
   WRITE_FLAG( pcPPS->getSingleTileInPicFlag() ? 1 : 0, "single_tile_in_pic_flag" );

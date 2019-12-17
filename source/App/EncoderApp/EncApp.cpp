@@ -504,7 +504,8 @@ void EncApp::xInitLibCfg()
    m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
   m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setToneMappingInfoSEIEnabled                         ( m_toneMappingInfoSEIEnabled );
   m_cEncLib.setTMISEIToneMapId                                   ( m_toneMapId );
   m_cEncLib.setTMISEIToneMapCancelFlag                           ( m_toneMapCancelFlag );
@@ -535,17 +536,17 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setChromaResamplingFilterHintEnabled                 ( m_chromaResamplingFilterSEIenabled );
   m_cEncLib.setChromaResamplingHorFilterIdc                      ( m_chromaResamplingHorFilterIdc );
   m_cEncLib.setChromaResamplingVerFilterIdc                      ( m_chromaResamplingVerFilterIdc );
-#if !JVET_P0337_PORTING_SEI
+#endif
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );
   m_cEncLib.setFramePackingArrangementSEIId                      ( m_framePackingSEIId );
   m_cEncLib.setFramePackingArrangementSEIQuincunx                ( m_framePackingSEIQuincunx );
   m_cEncLib.setFramePackingArrangementSEIInterpretation          ( m_framePackingSEIInterpretation );
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIEnabled    ( m_segmentedRectFramePackingSEIEnabled );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEICancel     ( m_segmentedRectFramePackingSEICancel );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIType       ( m_segmentedRectFramePackingSEIType );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIPersistence( m_segmentedRectFramePackingSEIPersistence );
-#endif
   m_cEncLib.setDisplayOrientationSEIAngle                        ( m_displayOrientationSEIAngle );
   m_cEncLib.setTemporalLevel0IndexSEIEnabled                     ( m_temporalLevel0IndexSEIEnabled );
   m_cEncLib.setGradualDecodingRefreshInfoEnabled                 ( m_gradualDecodingRefreshInfoEnabled );
@@ -554,6 +555,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSOPDescriptionSEIEnabled                          ( m_SOPDescriptionSEIEnabled );
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
+#endif
 #endif
 #if JVET_P0462_SEI360
   m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
@@ -614,7 +616,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSariSarHeight                                     (m_sariSarHeight);
 #endif
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );
   m_cEncLib.setNumberOfTimeSets                                  ( m_timeCodeSEINumTs );
   for(int i = 0; i < m_timeCodeSEINumTs; i++)
@@ -633,16 +636,17 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setKneeSEIInputKneePoint                             ( m_kneeSEIInputKneePoint );
   m_cEncLib.setKneeSEIOutputKneePoint                            ( m_kneeSEIOutputKneePoint );
   m_cEncLib.setColourRemapInfoSEIFileRoot                        ( m_colourRemapSEIFileRoot );
-#if !JVET_P0337_PORTING_SEI
+#endif
   m_cEncLib.setMasteringDisplaySEI                               ( m_masteringDisplay );
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    ( m_preferredTransferCharacteristics>=0     );
   m_cEncLib.setSEIPreferredTransferCharacteristics               ( uint8_t(m_preferredTransferCharacteristics) );
 #endif
-#endif
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setSEIGreenMetadataInfoSEIEnable                     ( m_greenMetadataType > 0 );
   m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
   m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
+#endif
 #endif
 #if JVET_P0337_PORTING_SEI
   // film grain charcteristics
@@ -656,21 +660,10 @@ void EncApp::xInitLibCfg()
   for (int i = 0; i < MAX_NUM_COMPONENT; i++) {
     m_cEncLib.setFGCSEICompModelPresent                          (m_fgcSEICompModelPresent[i], i);
   }
-  // frame packing SEI
-  m_cEncLib.setFramePackingArrangementSEIEnabled                 (m_framePackingSEIEnabled);
-  m_cEncLib.setFramePackingArrangementSEIType                    (m_framePackingSEIType);
-  m_cEncLib.setFramePackingArrangementSEIId                      (m_framePackingSEIId);
-  m_cEncLib.setFramePackingArrangementSEIQuincunx                (m_framePackingSEIQuincunx);
-  m_cEncLib.setFramePackingArrangementSEIInterpretation          (m_framePackingSEIInterpretation);
-  // mastering display colour volume SEI
-  m_cEncLib.setMasteringDisplaySEI                               (m_masteringDisplay);
   // content light level
   m_cEncLib.setCLLSEIEnabled                                     (m_cllSEIEnabled);
   m_cEncLib.setCLLSEIMaxContentLightLevel                        ((uint16_t)m_cllSEIMaxContentLevel);
   m_cEncLib.setCLLSEIMaxPicAvgLightLevel                         ((uint16_t)m_cllSEIMaxPicAvgLevel);
-  // alternative transfer charactersitics info SEI
-  m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    (m_preferredTransferCharacteristics >= 0);
-  m_cEncLib.setSEIPreferredTransferCharacteristics               (uint8_t(m_preferredTransferCharacteristics));
   // ambient viewing enviornment
   m_cEncLib.setAmbientViewingEnvironmentSEIEnabled               (m_aveSEIEnabled);
   m_cEncLib.setAmbientViewingEnvironmentSEIIlluminance           (m_aveSEIAmbientIlluminance);

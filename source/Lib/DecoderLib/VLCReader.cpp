@@ -146,6 +146,7 @@ void VLCReader::xReadCode (uint32_t uiLength, uint32_t& ruiCode)
   CodingStatistics::IncrementStatisticEP(pSymbolName, uiLength, ruiCode);
 #endif
 }
+
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 void VLCReader::xReadUvlc( uint32_t& ruiVal, const char *pSymbolName)
 #else

@@ -542,7 +542,8 @@ protected:
   bool      m_pictureTimingSEIEnabled;
   bool      m_frameFieldInfoSEIEnabled;
   bool      m_dependentRAPIndicationSEIEnabled;
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   bool      m_recoveryPointSEIEnabled;
   bool      m_toneMappingInfoSEIEnabled;
   int       m_toneMapId;
@@ -571,13 +572,13 @@ protected:
   int*      m_startOfCodedInterval;
   int*      m_codedPivotValue;
   int*      m_targetPivotValue;
-#if !JVET_P0337_PORTING_SEI
+#endif
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
-#endif
+#if !JVET_P0337_PORTING_SEI
   bool      m_segmentedRectFramePackingSEIEnabled;
   bool      m_segmentedRectFramePackingSEICancel;
   int       m_segmentedRectFramePackingSEIType;
@@ -586,6 +587,7 @@ protected:
   bool      m_temporalLevel0IndexSEIEnabled;
   bool      m_gradualDecodingRefreshInfoEnabled;
   int       m_noDisplaySEITLayer;
+#endif
 #endif
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
@@ -653,7 +655,8 @@ protected:
   int                   m_sariSarHeight;
 #endif
   bool      m_MCTSEncConstraint;
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   bool      m_timeCodeSEIEnabled;
   int       m_timeCodeSEINumTs;
   SEITimeSet   m_timeSetArray[MAX_TIMECODE_SEI_SETS];
@@ -669,16 +672,17 @@ protected:
   int*      m_kneeSEIInputKneePoint;
   int*      m_kneeSEIOutputKneePoint;
   std::string m_colourRemapSEIFileRoot;          ///< SEI Colour Remapping File (initialized from external file)
-#if !JVET_P0337_PORTING_SEI
+#endif
   SEIMasteringDisplay m_masteringDisplay;
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   bool      m_alternativeTransferCharacteristicsSEIEnabled;
   uint8_t     m_preferredTransferCharacteristics;
 #endif
-#endif
+#if !JVET_P0337_PORTING_SEI
   bool      m_greenMetadataInfoSEIEnabled;
   uint8_t     m_greenMetadataType;
   uint8_t     m_xsdMetricType;
+#endif
 #endif
 #if JVET_P0337_PORTING_SEI
   // film grain characterstics sei
@@ -690,21 +694,10 @@ protected:
   uint8_t   m_fgcSEIBlendingModeID;
   uint8_t   m_fgcSEILog2ScaleFactor;
   bool      m_fgcSEICompModelPresent[MAX_NUM_COMPONENT];
-// frame packing sei
-  bool      m_framePackingSEIEnabled;
-  int       m_framePackingSEIType;
-  int       m_framePackingSEIId;
-  int       m_framePackingSEIQuincunx;
-  int       m_framePackingSEIInterpretation;
-// mdcv sei
-  SEIMasteringDisplay m_masteringDisplay;
 // cll SEI
   bool      m_cllSEIEnabled;
   uint16_t  m_cllSEIMaxContentLevel;
   uint16_t  m_cllSEIMaxPicAvgLevel;
-// atc sei
-  bool      m_alternativeTransferCharacteristicsSEIEnabled;
-  uint8_t   m_preferredTransferCharacteristics;
 // ave sei
   bool      m_aveSEIEnabled;
   uint32_t  m_aveSEIAmbientIlluminance;
@@ -1571,7 +1564,8 @@ public:
   bool  getFrameFieldInfoSEIEnabled() const                           { return m_frameFieldInfoSEIEnabled; }
   void  setDependentRAPIndicationSEIEnabled(bool b)                  { m_dependentRAPIndicationSEIEnabled = b; }
   int   getDependentRAPIndicationSEIEnabled() const                  { return m_dependentRAPIndicationSEIEnabled; }
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   void  setRecoveryPointSEIEnabled(bool b)                           { m_recoveryPointSEIEnabled = b; }
   bool  getRecoveryPointSEIEnabled() const                           { return m_recoveryPointSEIEnabled; }
   void  setToneMappingInfoSEIEnabled(bool b)                         { m_toneMappingInfoSEIEnabled = b;  }
@@ -1628,7 +1622,7 @@ public:
   int   getTMISEINominalWhiteLevelLumaCodeValue()                    { return m_nominalWhiteLevelLumaCodeValue;  }
   void  setTMISEIExtendedWhiteLevelLumaCodeValue(int b)              { m_extendedWhiteLevelLumaCodeValue =b;  }
   int   getTMISEIExtendedWhiteLevelLumaCodeValue()                   { return m_extendedWhiteLevelLumaCodeValue;  }
-#if !JVET_P0337_PORTING_SEI
+#endif
   void  setFramePackingArrangementSEIEnabled(bool b)                 { m_framePackingSEIEnabled = b; }
   bool  getFramePackingArrangementSEIEnabled() const                 { return m_framePackingSEIEnabled; }
   void  setFramePackingArrangementSEIType(int b)                     { m_framePackingSEIType = b; }
@@ -1639,7 +1633,7 @@ public:
   int   getFramePackingArrangementSEIQuincunx()                      { return m_framePackingSEIQuincunx; }
   void  setFramePackingArrangementSEIInterpretation(int b)           { m_framePackingSEIInterpretation = b; }
   int   getFramePackingArrangementSEIInterpretation()                { return m_framePackingSEIInterpretation; }
-#endif
+#if !JVET_P0337_PORTING_SEI
   void  setSegmentedRectFramePackingArrangementSEIEnabled(bool b)    { m_segmentedRectFramePackingSEIEnabled = b; }
   bool  getSegmentedRectFramePackingArrangementSEIEnabled() const    { return m_segmentedRectFramePackingSEIEnabled; }
   void  setSegmentedRectFramePackingArrangementSEICancel(int b)      { m_segmentedRectFramePackingSEICancel = b; }
@@ -1656,6 +1650,7 @@ public:
   bool  getGradualDecodingRefreshInfoEnabled() const                 { return m_gradualDecodingRefreshInfoEnabled; }
   void  setNoDisplaySEITLayer(int b)                                 { m_noDisplaySEITLayer = b;    }
   int   getNoDisplaySEITLayer()                                      { return m_noDisplaySEITLayer; }
+#endif
 #endif
   void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
@@ -1784,7 +1779,8 @@ public:
 #endif
   void  setMCTSEncConstraint(bool b)                                 { m_MCTSEncConstraint = b; }
   bool  getMCTSEncConstraint()                                       { return m_MCTSEncConstraint; }
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   void  setTimeCodeSEIEnabled(bool b)                                { m_timeCodeSEIEnabled = b; }
   bool  getTimeCodeSEIEnabled()                                      { return m_timeCodeSEIEnabled; }
   void  setNumberOfTimeSets(int value)                               { m_timeCodeSEINumTs = value; }
@@ -1816,7 +1812,7 @@ public:
   int*  getKneeSEIOutputKneePoint()                                  { return m_kneeSEIOutputKneePoint; }
   void  setColourRemapInfoSEIFileRoot( const std::string &s )        { m_colourRemapSEIFileRoot = s; }
   const std::string &getColourRemapInfoSEIFileRoot() const           { return m_colourRemapSEIFileRoot; }
-#if !JVET_P0337_PORTING_SEI
+#endif
   void  setMasteringDisplaySEI(const SEIMasteringDisplay &src)       { m_masteringDisplay = src; }
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void  setSEIAlternativeTransferCharacteristicsSEIEnable( bool b)   { m_alternativeTransferCharacteristicsSEIEnabled = b;    }
@@ -1824,16 +1820,15 @@ public:
   void  setSEIPreferredTransferCharacteristics(uint8_t v)              { m_preferredTransferCharacteristics = v;    }
   uint8_t getSEIPreferredTransferCharacteristics() const               { return m_preferredTransferCharacteristics; }
 #endif
-#endif
+#if !JVET_P0337_PORTING_SEI
   void  setSEIGreenMetadataInfoSEIEnable( bool b)                    { m_greenMetadataInfoSEIEnabled = b;    }
   bool  getSEIGreenMetadataInfoSEIEnable( ) const                    { return m_greenMetadataInfoSEIEnabled; }
   void  setSEIGreenMetadataType(uint8_t v)                             { m_greenMetadataType = v;    }
   uint8_t getSEIGreenMetadataType() const                              { return m_greenMetadataType; }
   void  setSEIXSDMetricType(uint8_t v)                                 { m_xsdMetricType = v;    }
   uint8_t getSEIXSDMetricType() const                                  { return m_xsdMetricType; }
-#if !JVET_P0337_PORTING_SEI
-  const SEIMasteringDisplay &getMasteringDisplaySEI() const          { return m_masteringDisplay; }
 #endif
+  const SEIMasteringDisplay &getMasteringDisplaySEI() const          { return m_masteringDisplay; }
 #endif
 #if JVET_P0337_PORTING_SEI
   // film grain SEI
@@ -1853,20 +1848,6 @@ public:
   uint8_t getFilmGrainCharactersticsSEILog2ScaleFactor()             { return m_fgcSEILog2ScaleFactor; }
   void  setFGCSEICompModelPresent(bool b, int index)                 { m_fgcSEICompModelPresent[index] = b; }
   bool  getFGCSEICompModelPresent(int index)                         { return m_fgcSEICompModelPresent[index]; }
-  // frame packing SEI
-  void  setFramePackingArrangementSEIEnabled(bool b)                 { m_framePackingSEIEnabled = b; }
-  bool  getFramePackingArrangementSEIEnabled() const                 { return m_framePackingSEIEnabled; }
-  void  setFramePackingArrangementSEIType(int b)                     { m_framePackingSEIType = b; }
-  int   getFramePackingArrangementSEIType()                          { return m_framePackingSEIType; }
-  void  setFramePackingArrangementSEIId(int b)                       { m_framePackingSEIId = b; }
-  int   getFramePackingArrangementSEIId()                            { return m_framePackingSEIId; }
-  void  setFramePackingArrangementSEIQuincunx(int b)                 { m_framePackingSEIQuincunx = b; }
-  int   getFramePackingArrangementSEIQuincunx()                      { return m_framePackingSEIQuincunx; }
-  void  setFramePackingArrangementSEIInterpretation(int b)           { m_framePackingSEIInterpretation = b; }
-  int   getFramePackingArrangementSEIInterpretation()                { return m_framePackingSEIInterpretation; }
-  // mdcv SEI
-  void  setMasteringDisplaySEI(const SEIMasteringDisplay &src)       { m_masteringDisplay = src; }
-  const SEIMasteringDisplay &getMasteringDisplaySEI() const          { return m_masteringDisplay; }
   // cll SEI
   void  setCLLSEIEnabled(bool b)                                     { m_cllSEIEnabled = b; }
   bool  getCLLSEIEnabled()                                           { return m_cllSEIEnabled; }
@@ -1874,11 +1855,6 @@ public:
   uint16_t getCLLSEIMaxContentLightLevel()                           { return m_cllSEIMaxContentLevel; }
   void  setCLLSEIMaxPicAvgLightLevel(uint16_t v)                     { m_cllSEIMaxPicAvgLevel = v; }
   uint16_t getCLLSEIMaxPicAvgLightLevel()                            { return m_cllSEIMaxPicAvgLevel; }
-  // atc SEI
-  void  setSEIAlternativeTransferCharacteristicsSEIEnable( bool b)   { m_alternativeTransferCharacteristicsSEIEnabled = b;    }
-  bool  getSEIAlternativeTransferCharacteristicsSEIEnable( ) const   { return m_alternativeTransferCharacteristicsSEIEnabled; }
-  void  setSEIPreferredTransferCharacteristics(uint8_t v)            { m_preferredTransferCharacteristics = v;    }
-  uint8_t getSEIPreferredTransferCharacteristics() const             { return m_preferredTransferCharacteristics; }
   // ave SEI
   void  setAmbientViewingEnvironmentSEIEnabled (bool b)              { m_aveSEIEnabled = b; }
   bool  getAmbientViewingEnvironmentSEIEnabled ()                    { return m_aveSEIEnabled; }

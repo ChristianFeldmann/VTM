@@ -160,29 +160,29 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::PAN_SCAN_RECT:                        return "Pan-scan rectangle";                   // not currently decoded
 #endif
     case SEI::FILLER_PAYLOAD:                       return "Filler payload";                       // not currently decoded
-#if HEVC_SEI
-#if !JVET_P0337_PORTING_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";                 // not currently decoded
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
-#endif
+#if !JVET_P0337_PORTING_SEI
     case SEI::RECOVERY_POINT:                       return "Recovery point";
     case SEI::SCENE_INFO:                           return "Scene information";                    // not currently decoded
     case SEI::FULL_FRAME_SNAPSHOT:                  return "Picture snapshot";                     // not currently decoded
     case SEI::PROGRESSIVE_REFINEMENT_SEGMENT_START: return "Progressive refinement segment start"; // not currently decoded
     case SEI::PROGRESSIVE_REFINEMENT_SEGMENT_END:   return "Progressive refinement segment end";   // not currently decoded
-#if !JVET_P0337_PORTING_SEI
-    case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
 #endif
+    case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
+#if !JVET_P0337_PORTING_SEI
     case SEI::POST_FILTER_HINT:                     return "Post filter hint";                     // not currently decoded
     case SEI::TONE_MAPPING_INFO:                    return "Tone mapping information";
     case SEI::KNEE_FUNCTION_INFO:                   return "Knee function information";
-#if !JVET_P0337_PORTING_SEI
-    case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
 #endif
+    case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
+#if !JVET_P0337_PORTING_SEI
     case SEI::DISPLAY_ORIENTATION:                  return "Display orientation";
     case SEI::GREEN_METADATA:                       return "Green metadata information";
     case SEI::SOP_DESCRIPTION:                      return "Structure of pictures information";
     case SEI::ACTIVE_PARAMETER_SETS:                return "Active parameter sets";
+#endif
 #endif
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
 #if HEVC_SEI
@@ -190,32 +190,26 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
 #endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
     case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";
     case SEI::NO_DISPLAY:                           return "No display";
     case SEI::TIME_CODE:                            return "Time code";
-#if !JVET_P0337_PORTING_SEI
-    case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";
 #endif
+    case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";
+#if !JVET_P0337_PORTING_SEI
     case SEI::SEGM_RECT_FRAME_PACKING:              return "Segmented rectangular frame packing arrangement";
     case SEI::TEMP_MOTION_CONSTRAINED_TILE_SETS:    return "Temporal motion constrained tile sets";
     case SEI::CHROMA_RESAMPLING_FILTER_HINT:        return "Chroma sampling filter hint";
     case SEI::COLOUR_REMAPPING_INFO:                return "Colour remapping info";
-#if !JVET_P0337_PORTING_SEI
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
 #endif
 #endif
-#endif
 #if JVET_P0337_PORTING_SEI
-    case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";
-    case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
-    case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";
-    case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
-    case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";
     case SEI::CONTENT_LIGHT_LEVEL_INFO:             return "Content light level information";
-    case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
     case SEI::AMBIENT_VIEWING_ENVIRONMENT:          return "Ambient viewing environment";
     case SEI::CONTENT_COLOUR_VOLUME:                return "Content colour volume";
 #endif

@@ -60,47 +60,49 @@ public:
     PAN_SCAN_RECT                        = 2,
 #endif
     FILLER_PAYLOAD                       = 3,
-#if HEVC_SEI
-#if !JVET_P0337_PORTING_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
     USER_DATA_REGISTERED_ITU_T_T35       = 4,
     USER_DATA_UNREGISTERED               = 5,
-#endif
+#if !JVET_P0337_PORTING_SEI
     RECOVERY_POINT                       = 6,
     SCENE_INFO                           = 9,
     FULL_FRAME_SNAPSHOT                  = 15,
     PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
     PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
-#if !JVET_P0337_PORTING_SEI
-    FILM_GRAIN_CHARACTERISTICS           = 19,
 #endif
+    FILM_GRAIN_CHARACTERISTICS           = 19,
+#if !JVET_P0337_PORTING_SEI
     POST_FILTER_HINT                     = 22,
     TONE_MAPPING_INFO                    = 23,
-#if !JVET_P0337_PORTING_SEI
-    FRAME_PACKING                        = 45,
 #endif
+    FRAME_PACKING                        = 45,
+#if !JVET_P0337_PORTING_SEI
     DISPLAY_ORIENTATION                  = 47,
     GREEN_METADATA                       = 56,
     SOP_DESCRIPTION                      = 128,
     ACTIVE_PARAMETER_SETS                = 129,
+#endif
 #endif
     DECODING_UNIT_INFO                   = 130,
 #if HEVC_SEI
     TEMPORAL_LEVEL0_INDEX                = 131,
 #endif
     DECODED_PICTURE_HASH                 = 132,
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
     SCALABLE_NESTING                     = 133,
     REGION_REFRESH_INFO                  = 134,
     NO_DISPLAY                           = 135,
     TIME_CODE                            = 136,
-#if !JVET_P0337_PORTING_SEI
-    MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
 #endif
+    MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
+#if !JVET_P0337_PORTING_SEI
     SEGM_RECT_FRAME_PACKING              = 138,
     TEMP_MOTION_CONSTRAINED_TILE_SETS    = 139,
     CHROMA_RESAMPLING_FILTER_HINT        = 140,
     KNEE_FUNCTION_INFO                   = 141,
     COLOUR_REMAPPING_INFO                = 142,
+#endif
 #endif
     DEPENDENT_RAP_INDICATION             = 145,
 #if JVET_P0462_SEI360
@@ -119,11 +121,6 @@ public:
     SAMPLE_ASPECT_RATIO_INFO             = 204,
 #endif
 #if JVET_P0337_PORTING_SEI
-    USER_DATA_REGISTERED_ITU_T_T35       = 4,
-    USER_DATA_UNREGISTERED               = 5,
-    FILM_GRAIN_CHARACTERISTICS           = 19,
-    FRAME_PACKING                        = 45,
-    MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     CONTENT_LIGHT_LEVEL_INFO             = 144,
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
     AMBIENT_VIEWING_ENVIRONMENT          = 148,
@@ -502,7 +499,8 @@ public:
   bool m_duplicateFlag;
 };
 
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
 class SEIRecoveryPoint : public SEI
 {
 public:
@@ -515,8 +513,8 @@ public:
   bool m_exactMatchingFlag;
   bool m_brokenLinkFlag;
 };
+#endif
 
-#if !JVET_P0337_PORTING_SEI
 class SEIFramePacking : public SEI
 {
 public:
@@ -544,7 +542,8 @@ public:
   bool m_arrangementPersistenceFlag;
   bool m_upsampledAspectRatio;
 };
-#endif
+
+#if !JVET_P0337_PORTING_SEI
 class SEISegmentedRectFramePacking : public SEI
 {
 public:
@@ -748,7 +747,7 @@ public:
   std::vector<std::vector<int> > m_verFilterCoeff;
   std::vector<std::vector<int> > m_horFilterCoeff;
 };
-#if !JVET_P0337_PORTING_SEI
+#endif
 class SEIMasteringDisplayColourVolume : public SEI
 {
 public:
@@ -758,7 +757,6 @@ public:
 
     SEIMasteringDisplay values;
 };
-#endif
 #endif
 
 typedef std::list<SEI*> SEIMessages;
@@ -874,8 +872,8 @@ void xTraceSEIHeader();
 void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
-#if HEVC_SEI
-#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI && !JVET_P0337_PORTING_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI 
 class SEIAlternativeTransferCharacteristics : public SEI
 {
 public:
@@ -889,7 +887,7 @@ public:
   uint32_t m_preferredTransferCharacteristics;
 };
 #endif
-
+#if !JVET_P0337_PORTING_SEI
 class SEIGreenMetadataInfo : public SEI
 {
 public:
@@ -902,6 +900,7 @@ public:
     uint32_t m_xsdMetricType;
     uint32_t m_xsdMetricValue;
 };
+#endif
 #endif
 #if JVET_P0337_PORTING_SEI
 class SEIUserDataRegistered : public SEI
@@ -946,51 +945,12 @@ public:
   struct CompModel
   {
     bool  presentFlag;
-    uint8_t numModelValues; // this must be the same as intensityValues[*].compModelValue.size()
+    uint8_t numModelValues;
     std::vector<CompModelIntensityValues> intensityValues;
   };
 
   CompModel m_compModel[MAX_NUM_COMPONENT];
   bool      m_filmGrainCharacteristicsPersistenceFlag;
-};
-
-class SEIFramePacking : public SEI
-{
-public:
-  PayloadType payloadType() const { return FRAME_PACKING; }
-
-  SEIFramePacking() {}
-  virtual ~SEIFramePacking() {}
-
-  int  m_arrangementId;
-  bool m_arrangementCancelFlag;
-  int  m_arrangementType;
-  bool m_quincunxSamplingFlag;
-  int  m_contentInterpretationType;
-  bool m_spatialFlippingFlag;
-  bool m_frame0FlippedFlag;
-  bool m_fieldViewsFlag;
-  bool m_currentFrameIsFrame0Flag;
-  bool m_frame0SelfContainedFlag;
-  bool m_frame1SelfContainedFlag;
-  int  m_frame0GridPositionX;
-  int  m_frame0GridPositionY;
-  int  m_frame1GridPositionX;
-  int  m_frame1GridPositionY;
-  int  m_arrangementReservedByte;
-  bool m_arrangementPersistenceFlag;
-  bool m_upsampledAspectRatio;
-};
-
-
-class SEIMasteringDisplayColourVolume : public SEI
-{
-public:
-  PayloadType payloadType() const { return MASTERING_DISPLAY_COLOUR_VOLUME; }
-  SEIMasteringDisplayColourVolume() {}
-  virtual ~SEIMasteringDisplayColourVolume() {}
-
-  SEIMasteringDisplay values;
 };
 
 class SEIContentLightLevelInfo : public SEI
@@ -1003,19 +963,6 @@ public:
 
   uint32_t m_maxContentLightLevel;
   uint32_t m_maxPicAverageLightLevel;
-};
-
-class SEIAlternativeTransferCharacteristics : public SEI
-{
-public:
-  PayloadType payloadType() const { return ALTERNATIVE_TRANSFER_CHARACTERISTICS; }
-
-  SEIAlternativeTransferCharacteristics() : m_preferredTransferCharacteristics(18)
-  { }
-
-  virtual ~SEIAlternativeTransferCharacteristics() {}
-
-  uint32_t m_preferredTransferCharacteristics;
 };
 
 class SEIAmbientViewingEnvironment : public SEI

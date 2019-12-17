@@ -502,7 +502,8 @@ protected:
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
   bool      m_frameFieldInfoSEIEnabled;
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   bool      m_toneMappingInfoSEIEnabled;
   bool      m_chromaResamplingFilterSEIenabled;
   int       m_chromaResamplingHorFilterIdc;
@@ -533,13 +534,13 @@ protected:
   int*      m_startOfCodedInterval;
   int*      m_codedPivotValue;
   int*      m_targetPivotValue;
-#if !JVET_P0337_PORTING_SEI
+#endif
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
-#endif
+#if !JVET_P0337_PORTING_SEI
   bool      m_segmentedRectFramePackingSEIEnabled;
   bool      m_segmentedRectFramePackingSEICancel;
   int       m_segmentedRectFramePackingSEIType;
@@ -566,36 +567,29 @@ protected:
   int       m_kneeSEINumKneePointsMinus1;
   int*      m_kneeSEIInputKneePoint;
   int*      m_kneeSEIOutputKneePoint;
-#if !JVET_P0337_PORTING_SEI
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   int       m_preferredTransferCharacteristics;
 #endif
-#endif
+#if !JVET_P0337_PORTING_SEI
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
+#endif
 #endif
 #if JVET_P0337_PORTING_SEI
   // film grain characterstics sei
   bool      m_fgcSEIEnabled;
   bool      m_fgcSEICancelFlag;
   bool      m_fgcSEIPersistenceFlag;
-  uint32_t   m_fgcSEIModelID;
+  uint32_t  m_fgcSEIModelID;
   bool      m_fgcSEISepColourDescPresentFlag;
-  uint32_t   m_fgcSEIBlendingModeID;
-  uint32_t   m_fgcSEILog2ScaleFactor;
+  uint32_t  m_fgcSEIBlendingModeID;
+  uint32_t  m_fgcSEILog2ScaleFactor;
   bool      m_fgcSEICompModelPresent[MAX_NUM_COMPONENT];
-  // frame packing sei
-  bool      m_framePackingSEIEnabled;
-  int       m_framePackingSEIType;
-  int       m_framePackingSEIId;
-  int       m_framePackingSEIQuincunx;
-  int       m_framePackingSEIInterpretation;
   // content light level SEI
   bool      m_cllSEIEnabled;
   uint32_t  m_cllSEIMaxContentLevel;
   uint32_t  m_cllSEIMaxPicAvgLevel;
-  // alternative transfer characteristics sei
-  int       m_preferredTransferCharacteristics;
   // ambient viewing environment sei
   bool      m_aveSEIEnabled;
   uint32_t  m_aveSEIAmbientIlluminance;

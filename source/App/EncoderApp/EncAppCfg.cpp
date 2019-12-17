@@ -1444,7 +1444,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIPictureTiming",                                m_pictureTimingSEIEnabled,                        false, "Control generation of picture timing SEI messages")
   ("SEIDecodingUnitInfo",                             m_decodingUnitInfoSEIEnabled,                     false, "Control generation of decoding unit information SEI message.")
   ("SEIFrameFieldInfo",                               m_frameFieldInfoSEIEnabled,                       false, "Control generation of frame field information SEI messages")
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   ("SEIToneMappingInfo",                              m_toneMappingInfoSEIEnabled,                      false, "Control generation of Tone Mapping SEI messages")
   ("SEIToneMapId",                                    m_toneMapId,                                          0, "Specifies Id of Tone Mapping SEI message for a given session")
   ("SEIToneMapCancelFlag",                            m_toneMapCancelFlag,                              false, "Indicates that Tone Mapping SEI message cancels the persistence or follows")
@@ -1486,7 +1487,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0: unspecified  - Chroma filter is unknown or is determined by the application"
                                                                                                                "\t1: User-defined - Filter coefficients are specified in the chroma sampling filter hint SEI message"
                                                                                                                "\t2: Standards-defined - ITU-T Rec. T.800 | ISO/IEC15444-1, 5/3 filter")
-#if !JVET_P0337_PORTING_SEI
+#endif
   ("SEIFramePacking",                                 m_framePackingSEIEnabled,                         false, "Control generation of frame packing SEI messages")
   ("SEIFramePackingType",                             m_framePackingSEIType,                                0, "Define frame packing arrangement\n"
                                                                                                                "\t3: side by side - frames are displayed horizontally\n"
@@ -1498,11 +1499,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0: unspecified\n"
                                                                                                                "\t1: stereo pair, frame0 represents left view\n"
                                                                                                                "\t2: stereo pair, frame0 represents right view")
+
+#if !JVET_P0337_PORTING_SEI
   ("SEISegmentedRectFramePacking",                    m_segmentedRectFramePackingSEIEnabled,            false, "Controls generation of segmented rectangular frame packing SEI messages")
   ("SEISegmentedRectFramePackingCancel",              m_segmentedRectFramePackingSEICancel,             false, "If equal to 1, cancels the persistence of any previous SRFPA SEI message")
   ("SEISegmentedRectFramePackingType",                m_segmentedRectFramePackingSEIType,                   0, "Specifies the arrangement of the frames in the reconstructed picture")
   ("SEISegmentedRectFramePackingPersistence",         m_segmentedRectFramePackingSEIPersistence,        false, "If equal to 0, the SEI applies to the current frame only")
-#endif
   ("SEIDisplayOrientation",                           m_displayOrientationSEIAngle,                         0, "Control generation of display orientation SEI messages\n"
                                                                                                                "\tN: 0 < N < (2^16 - 1) enable display orientation SEI message with anticlockwise_rotation = N and display_orientation_repetition_period = 1\n"
                                                                                                                "\t0: disable")
@@ -1543,7 +1545,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIKneeFunctionNumKneePointsMinus1",              m_kneeSEINumKneePointsMinus1,                         2, "Specifies the number of knee points - 1")
   ("SEIKneeFunctionInputKneePointValue",              cfg_kneeSEIInputKneePointValue,   cfg_kneeSEIInputKneePointValue, "Array of input knee point")
   ("SEIKneeFunctionOutputKneePointValue",             cfg_kneeSEIOutputKneePointValue, cfg_kneeSEIOutputKneePointValue, "Array of output knee point")
-#if !JVET_P0337_PORTING_SEI
+#endif
   ("SEIMasteringDisplayColourVolume",                 m_masteringDisplay.colourVolumeSEIEnabled,         false, "Control generation of mastering display colour volume SEI messages")
   ("SEIMasteringDisplayMaxLuminance",                 m_masteringDisplay.maxLuminance,                  10000u, "Specifies the mastering display maximum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
   ("SEIMasteringDisplayMinLuminance",                 m_masteringDisplay.minLuminance,                      0u, "Specifies the mastering display minimum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
@@ -1552,9 +1554,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   ("SEIPreferredTransferCharacterisics",              m_preferredTransferCharacteristics,                   -1, "Value for the preferred_transfer_characteristics field of the Alternative transfer characteristics SEI which will override the corresponding entry in the VUI. If negative, do not produce the respective SEI message")
 #endif
-#endif
+#if !JVET_P0337_PORTING_SEI
   ("SEIGreenMetadataType",                            m_greenMetadataType,                                  0u, "Value for the green_metadata_type specifies the type of metadata that is present in the SEI message. If green_metadata_type is 1, then metadata enabling quality recovery after low-power encoding is present")
   ("SEIXSDMetricType",                                m_xsdMetricType,                                      0u, "Value for the xsd_metric_type indicates the type of the objective quality metric. PSNR is the only type currently supported")
+#endif
 #endif
 
 #if JVET_P0462_SEI360
@@ -1633,24 +1636,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIFGCCompModelPresentComp0",                     m_fgcSEICompModelPresent[0],                       false, "Specifies the presence of film grain modelling on colour component 0.")
   ("SEIFGCCompModelPresentComp1",                     m_fgcSEICompModelPresent[1],                       false, "Specifies the presence of film grain modelling on colour component 1.")
   ("SEIFGCCompModelPresentComp2",                     m_fgcSEICompModelPresent[2],                       false, "Specifies the presence of film grain modelling on colour component 2.")
-// frame packing SEI
-  ("SEIFramePacking",                                 m_framePackingSEIEnabled,                         false, "Control generation of the frame packing SEI messages")
-  ("SEIFramePackingId",                               m_framePackingSEIId,                                  0, "Id of frame packing SEI message for a given session")
-  ("SEIFramePackingType",                             m_framePackingSEIType,                                0, "Define frame packing arrangement\n"
-                                                                                                               "\t3: side by side - frames are displayed horizontally\n"
-                                                                                                               "\t4: top bottom - frames are displayed vertically\n"
-                                                                                                               "\t5: frame alternation - one frame is alternated with the other")
-  ("SEIFramePackingQuincunx",                         m_framePackingSEIQuincunx,                            0, "Indicate the presence of a Quincunx type video frame")
-  ("SEIFramePackingInterpretation",                   m_framePackingSEIInterpretation,                      0, "Indicate the interpretation of the frame pair\n"
-                                                                                                               "\t0: unspecified\n"
-                                                                                                               "\t1: stereo pair, frame0 represents left view\n"
-                                                                                                               "\t2: stereo pair, frame0 represents right view")
-// mastering display colour volume SEI
-  ("SEIMasteringDisplayColourVolume",                 m_masteringDisplay.colourVolumeSEIEnabled,         false, "Control generation of the mastering display colour volume SEI messages")
-  ("SEIMasteringDisplayMaxLuminance",                 m_masteringDisplay.maxLuminance,                  10000u, "Specifies the mastering display maximum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
-  ("SEIMasteringDisplayMinLuminance",                 m_masteringDisplay.minLuminance,                      0u, "Specifies the mastering display minimum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
-  ("SEIMasteringDisplayPrimaries",                    cfg_DisplayPrimariesCode,       cfg_DisplayPrimariesCode, "Mastering display primaries for all three colour planes in CIE xy coordinates in increments of 1/50000 (results in the ranges 0 to 50000 inclusive)")
-  ("SEIMasteringDisplayWhitePoint",                   cfg_DisplayWhitePointCode,     cfg_DisplayWhitePointCode, "Mastering display white point CIE xy coordinates in normalised increments of 1/50000 (e.g. 0.333 = 16667)")
+
 // content light level SEI
   ("SEICLLEnabled",                                   m_cllSEIEnabled,                                   false, "Control generation of the content light level SEI message")
   ("SEICLLMaxContentLightLevel",                      m_cllSEIMaxContentLevel,                              0u, "When not equal to 0, specifies an upper bound on the maximum light level among all individual samples in a 4:4:4 representation "
@@ -1659,8 +1645,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEICLLMaxPicAvgLightLevel",                       m_cllSEIMaxPicAvgLevel,                               0u, "When not equal to 0, specifies an upper bound on the maximum average light level among the samples in a 4:4:4 representation "
                                                                                                                 "of red, green, and blue colour primary intensities in the linear light domain for any individual picture of the CLVS, "
                                                                                                                 "in units of candelas per square metre.When equal to 0, no such upper bound is indicated.")
-// alternative transfer characteristics SEI
-  ("SEIPreferredTransferCharacterisics",              m_preferredTransferCharacteristics,                   -1, "Value for the preferred_transfer_characteristics field of the Alternative transfer characteristics SEI which will override the corresponding entry in the VUI. If negative, do not produce the respective SEI message")
 // ambient viewing environment SEI
   ("SEIAVEEnabled",                                   m_aveSEIEnabled,                                   false, "Control generation of the ambient viewing environment SEI message")
   ("SEIAVEAmbientIlluminance",                        m_aveSEIAmbientIlluminance,                      100000u, "Specifies the environmental illluminance of the ambient viewing environment in units of 1/10000 lux for the ambient viewing environment SEI message")
@@ -2621,8 +2605,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if HEVC_SEI
-#if !JVET_P0337_PORTING_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   if( m_masteringDisplay.colourVolumeSEIEnabled )
   {
     for(uint32_t idx=0; idx<6; idx++)
@@ -2634,8 +2617,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_masteringDisplay.whitePoint[idx] = uint16_t((cfg_DisplayWhitePointCode.values.size() > idx) ? cfg_DisplayWhitePointCode.values[idx] : 0);
     }
   }
-#endif
-
+#if !JVET_P0337_PORTING_SEI
   if( m_toneMappingInfoSEIEnabled && !m_toneMapCancelFlag )
   {
     if( m_toneMapModelId == 2 && !cfg_startOfCodedInterval.values.empty() )
@@ -2705,6 +2687,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
+#endif
 #if JVET_P0462_SEI360
   if ( m_omniViewportSEIEnabled && !m_omniViewportSEICancelFlag )
   {
@@ -2724,19 +2707,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if JVET_P0337_PORTING_SEI
-  if (m_masteringDisplay.colourVolumeSEIEnabled)
-  {
-    for (uint32_t idx = 0; idx<6; idx++)
-    {
-      m_masteringDisplay.primaries[idx / 2][idx % 2] = uint16_t((cfg_DisplayPrimariesCode.values.size() > idx) ? cfg_DisplayPrimariesCode.values[idx] : 0);
-    }
-    for (uint32_t idx = 0; idx<2; idx++)
-    {
-      m_masteringDisplay.whitePoint[idx] = uint16_t((cfg_DisplayWhitePointCode.values.size() > idx) ? cfg_DisplayWhitePointCode.values[idx] : 0);
-    }
-  }
-#endif
   if(!m_rwpSEIRwpCancelFlag && m_rwpSEIEnabled)
   {
     CHECK (!( m_rwpSEINumPackedRegions > 0 && m_rwpSEINumPackedRegions <= std::numeric_limits<uint8_t>::max() ), "SEIRwpNumPackedRegions must be in the range of 1 to 255");
@@ -4195,13 +4165,14 @@ bool EncAppCfg::xCheckParameter()
 #endif
   xConfirmPara(!m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce, "CUTransquantBypassFlagForce cannot be 1 when TransquantBypassEnableFlag is 0");
 
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
 #endif
 #if HEVC_SEI
   if (m_framePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIType < 3 || m_framePackingSEIType > 5 , "SEIFramePackingType must be in rage 3 to 5");
   }
-
+#if !JVET_P0337_PORTING_SEI
   if (m_segmentedRectFramePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIEnabled , "SEISegmentedRectFramePacking must be 0 when SEIFramePacking is 1");
@@ -4217,6 +4188,7 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara(m_timeCodeSEINumTs > MAX_TIMECODE_SEI_SETS, "Number of time sets cannot exceed 3");
   }
+#endif
 #endif
 
 #if JVET_P0462_SEI360
@@ -4250,7 +4222,7 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
 
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif

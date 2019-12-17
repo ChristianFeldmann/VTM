@@ -180,17 +180,17 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
   {
     switch (payloadType)
     {
-#if HEVC_SEI
-#if !JVET_P0337_PORTING_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
     case SEI::USER_DATA_UNREGISTERED:
       sei = new SEIuserDataUnregistered;
       xParseSEIuserDataUnregistered((SEIuserDataUnregistered&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#endif
+#if !JVET_P0337_PORTING_SEI
     case SEI::ACTIVE_PARAMETER_SETS:
       sei = new SEIActiveParameterSets;
       xParseSEIActiveParameterSets((SEIActiveParameterSets&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
+#endif
 #endif
     case SEI::DECODING_UNIT_INFO:
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
@@ -255,17 +255,18 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       sei = new SEIDependentRAPIndication;
       xParseSEIDependentRAPIndication((SEIDependentRAPIndication&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
     case SEI::RECOVERY_POINT:
       sei = new SEIRecoveryPoint;
       xParseSEIRecoveryPoint((SEIRecoveryPoint&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#if !JVET_P0337_PORTING_SEI
+#endif
     case SEI::FRAME_PACKING:
       sei = new SEIFramePacking;
       xParseSEIFramePacking((SEIFramePacking&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#endif
+#if !JVET_P0337_PORTING_SEI
     case SEI::SEGM_RECT_FRAME_PACKING:
       sei = new SEISegmentedRectFramePacking;
       xParseSEISegmentedRectFramePacking((SEISegmentedRectFramePacking&) *sei, payloadSize, pDecodedMessageOutputStream);
@@ -319,7 +320,7 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       sei = new SEIColourRemappingInfo;
       xParseSEIColourRemappingInfo((SEIColourRemappingInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#if !JVET_P0337_PORTING_SEI
+#endif
     case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:
       sei = new SEIMasteringDisplayColourVolume;
       xParseSEIMasteringDisplayColourVolume((SEIMasteringDisplayColourVolume&) *sei, payloadSize, pDecodedMessageOutputStream);
@@ -361,29 +362,13 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       sei = new SEIUserDataRegistered;
       xParseSEIUserDataRegistered((SEIUserDataRegistered&)*sei, payloadSize, pDecodedMessageOutputStream);
       break;
-    case SEI::USER_DATA_UNREGISTERED:
-      sei = new SEIuserDataUnregistered;
-      xParseSEIuserDataUnregistered((SEIuserDataUnregistered&)*sei, payloadSize, pDecodedMessageOutputStream);
-      break;
     case SEI::FILM_GRAIN_CHARACTERISTICS:
       sei = new SEIFilmGrainCharacteristics;
       xParseSEIFilmGrainCharacteristics((SEIFilmGrainCharacteristics&)*sei, payloadSize, pDecodedMessageOutputStream);
       break;
-    case SEI::FRAME_PACKING:
-      sei = new SEIFramePacking;
-      xParseSEIFramePacking((SEIFramePacking&)*sei, payloadSize, pDecodedMessageOutputStream);
-      break;
-    case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:
-      sei = new SEIMasteringDisplayColourVolume;
-      xParseSEIMasteringDisplayColourVolume((SEIMasteringDisplayColourVolume&)*sei, payloadSize, pDecodedMessageOutputStream);
-      break;
     case SEI::CONTENT_LIGHT_LEVEL_INFO:
       sei = new SEIContentLightLevelInfo;
       xParseSEIContentLightLevelInfo((SEIContentLightLevelInfo&)*sei, payloadSize, pDecodedMessageOutputStream);
-      break;
-    case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS:
-      sei = new SEIAlternativeTransferCharacteristics;
-      xParseSEIAlternativeTransferCharacteristics((SEIAlternativeTransferCharacteristics&)*sei, payloadSize, pDecodedMessageOutputStream);
       break;
     case SEI::AMBIENT_VIEWING_ENVIRONMENT:
       sei = new SEIAmbientViewingEnvironment;
@@ -954,7 +939,8 @@ void SEIReader::xParseSEIDependentRAPIndication( SEIDependentRAPIndication& sei,
 }
 
 
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
 void SEIReader::xParseSEIRecoveryPoint(SEIRecoveryPoint& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   int  iCode;
@@ -965,7 +951,7 @@ void SEIReader::xParseSEIRecoveryPoint(SEIRecoveryPoint& sei, uint32_t payloadSi
   sei_read_flag( pDecodedMessageOutputStream, uiCode, "exact_matching_flag" );   sei.m_exactMatchingFlag  = uiCode;
   sei_read_flag( pDecodedMessageOutputStream, uiCode, "broken_link_flag" );      sei.m_brokenLinkFlag     = uiCode;
 }
-#if !JVET_P0337_PORTING_SEI
+#endif
 void SEIReader::xParseSEIFramePacking(SEIFramePacking& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;
@@ -1002,7 +988,7 @@ void SEIReader::xParseSEIFramePacking(SEIFramePacking& sei, uint32_t payloadSize
   }
   sei_read_flag( pDecodedMessageOutputStream, val, "upsampled_aspect_ratio_flag" );                  sei.m_upsampledAspectRatio = val;
 }
-#endif
+#if !JVET_P0337_PORTING_SEI
 void SEIReader::xParseSEISegmentedRectFramePacking(SEISegmentedRectFramePacking& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;
@@ -1493,7 +1479,7 @@ void SEIReader::xParseSEIColourRemappingInfo(SEIColourRemappingInfo& sei, uint32
     }
   }
 }
-#if !JVET_P0337_PORTING_SEI
+#endif
 void SEIReader::xParseSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t code;
@@ -1525,7 +1511,7 @@ void SEIReader::xParseSEIAlternativeTransferCharacteristics(SEIAlternativeTransf
   sei_read_code(pDecodedMessageOutputStream, 8, code, "preferred_transfer_characteristics"); sei.m_preferredTransferCharacteristics = code;
 }
 #endif
-#endif
+#if !JVET_P0337_PORTING_SEI
 void SEIReader::xParseSEIGreenMetadataInfo(SEIGreenMetadataInfo& sei, uint32_t payloadSize, std::ostream* pDecodedMessageOutputStream)
 {
   uint32_t code;
@@ -1540,6 +1526,7 @@ void SEIReader::xParseSEIGreenMetadataInfo(SEIGreenMetadataInfo& sei, uint32_t p
   sei_read_code(pDecodedMessageOutputStream, 16, code, "xsd_metric_value");
   sei.m_xsdMetricValue = code;
 }
+#endif
 #endif
 #if JVET_P0337_PORTING_SEI
 void SEIReader::xParseSEIUserDataRegistered(SEIUserDataRegistered& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
@@ -1619,65 +1606,6 @@ void SEIReader::xParseSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics& s
   } // cancel flag
 }
 
-void SEIReader::xParseSEIFramePacking(SEIFramePacking& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
-{
-  uint32_t val;
-  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-
-  sei_read_uvlc(pDecodedMessageOutputStream, val, "frame_packing_arrangement_id");                 sei.m_arrangementId = val;
-  sei_read_flag(pDecodedMessageOutputStream, val, "frame_packing_arrangement_cancel_flag");        sei.m_arrangementCancelFlag = val;
-
-  if (!sei.m_arrangementCancelFlag)
-  {
-    sei_read_code(pDecodedMessageOutputStream, 7, val, "frame_packing_arrangement_type");          sei.m_arrangementType = val;
-    CHECK((sei.m_arrangementType <= 2) || (sei.m_arrangementType >= 6), "Invalid arrangement type");
-
-    sei_read_flag(pDecodedMessageOutputStream, val, "quincunx_sampling_flag");                     sei.m_quincunxSamplingFlag = val;
-
-    sei_read_code(pDecodedMessageOutputStream, 6, val, "content_interpretation_type");             sei.m_contentInterpretationType = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "spatial_flipping_flag");                      sei.m_spatialFlippingFlag = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "frame0_flipped_flag");                        sei.m_frame0FlippedFlag = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "field_views_flag");                           sei.m_fieldViewsFlag = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "current_frame_is_frame0_flag");               sei.m_currentFrameIsFrame0Flag = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "frame0_self_contained_flag");                 sei.m_frame0SelfContainedFlag = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "frame1_self_contained_flag");                 sei.m_frame1SelfContainedFlag = val;
-
-    if (sei.m_quincunxSamplingFlag == 0 && sei.m_arrangementType != 5)
-    {
-      sei_read_code(pDecodedMessageOutputStream, 4, val, "frame0_grid_position_x");                sei.m_frame0GridPositionX = val;
-      sei_read_code(pDecodedMessageOutputStream, 4, val, "frame0_grid_position_y");                sei.m_frame0GridPositionY = val;
-      sei_read_code(pDecodedMessageOutputStream, 4, val, "frame1_grid_position_x");                sei.m_frame1GridPositionX = val;
-      sei_read_code(pDecodedMessageOutputStream, 4, val, "frame1_grid_position_y");                sei.m_frame1GridPositionY = val;
-    }
-
-    sei_read_code(pDecodedMessageOutputStream, 8, val, "frame_packing_arrangement_reserved_byte"); sei.m_arrangementReservedByte = val;
-    sei_read_flag(pDecodedMessageOutputStream, val, "frame_packing_arrangement_persistence_flag"); sei.m_arrangementPersistenceFlag = (val != 0);
-  }
-  sei_read_flag(pDecodedMessageOutputStream, val, "upsampled_aspect_ratio_flag");                  sei.m_upsampledAspectRatio = val;
-}
-
-void SEIReader::xParseSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
-{
-  uint32_t code;
-  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "display_primaries_x[0]"); sei.values.primaries[0][0] = code;
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "display_primaries_y[0]"); sei.values.primaries[0][1] = code;
-
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "display_primaries_x[1]"); sei.values.primaries[1][0] = code;
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "display_primaries_y[1]"); sei.values.primaries[1][1] = code;
-
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "display_primaries_x[2]"); sei.values.primaries[2][0] = code;
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "display_primaries_y[2]"); sei.values.primaries[2][1] = code;
-
-
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "white_point_x"); sei.values.whitePoint[0] = code;
-  sei_read_code(pDecodedMessageOutputStream, 16, code, "white_point_y"); sei.values.whitePoint[1] = code;
-
-  sei_read_code(pDecodedMessageOutputStream, 32, code, "max_display_mastering_luminance"); sei.values.maxLuminance = code;
-  sei_read_code(pDecodedMessageOutputStream, 32, code, "min_display_mastering_luminance"); sei.values.minLuminance = code;
-}
-
 void SEIReader::xParseSEIContentLightLevelInfo(SEIContentLightLevelInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t code;
@@ -1685,14 +1613,6 @@ void SEIReader::xParseSEIContentLightLevelInfo(SEIContentLightLevelInfo& sei, ui
 
   sei_read_code(pDecodedMessageOutputStream, 16, code, "max_content_light_level");     sei.m_maxContentLightLevel = code;
   sei_read_code(pDecodedMessageOutputStream, 16, code, "max_pic_average_light_level"); sei.m_maxPicAverageLightLevel = code;
-}
-
-void SEIReader::xParseSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics& sei, uint32_t payloadSize, std::ostream* pDecodedMessageOutputStream)
-{
-  uint32_t code;
-  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-
-  sei_read_code(pDecodedMessageOutputStream, 8, code, "preferred_transfer_characteristics"); sei.m_preferredTransferCharacteristics = code;
 }
 
 void SEIReader::xParseSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)

@@ -733,7 +733,7 @@ void DecCu::xReconInter(CodingUnit &cu)
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
-  CHECK(CU::isIBC(cu) && cu.firstPU->mhIntraFlag, "IBC and MHIntra cannot be used together");
+  CHECK(CU::isIBC(cu) && cu.firstPU->ciipFlag, "IBC and Ciip cannot be used together");
   CHECK(CU::isIBC(cu) && cu.affine, "IBC and Affine cannot be used together");
   CHECK(CU::isIBC(cu) && cu.triangle, "IBC and triangle cannot be used together");
   CHECK(CU::isIBC(cu) && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
@@ -759,7 +759,7 @@ void DecCu::xReconInter(CodingUnit &cu)
 #endif
   }
 
-  if (cu.firstPU->mhIntraFlag)
+  if (cu.firstPU->ciipFlag)
   {
 #if JVET_P1006_PICTURE_HEADER
     if (cu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
@@ -816,7 +816,7 @@ void DecCu::xReconInter(CodingUnit &cu)
         tmpPred.copyFrom(cs.getPredBuf(cu).get(COMPONENT_Y));
       }
 #endif
-      if (!cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
+      if (!cu.firstPU->ciipFlag && !CU::isIBC(cu))
         cs.getPredBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
 #if KEEP_PRED_AND_RESI_SIGNALS
@@ -843,9 +843,9 @@ void DecCu::xReconInter(CodingUnit &cu)
   {
     cs.getRecoBuf(cu).copyClip(cs.getPredBuf(cu), cs.slice->clpRngs());
 #if JVET_P1006_PICTURE_HEADER
-    if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
+    if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
 #else
-    if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->mhIntraFlag && !CU::isIBC(cu))
+    if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
 #endif
     {
       cs.getRecoBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
@@ -992,7 +992,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     {
       if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
       {
-        CHECK(pu.mhIntraFlag == true, "invalid MHIntra");
+        CHECK(pu.ciipFlag == true, "invalid Ciip");
         if (pu.cs->sps->getSBTMVPEnabledFlag())
         {
           Size bufSize = g_miScaling.scale(pu.lumaSize());
@@ -1033,7 +1033,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
           PU::getAffineMergeCand( pu, affineMergeCtx, pu.mergeIdx );
           pu.interDir = affineMergeCtx.interDirNeighbours[pu.mergeIdx];
           pu.cu->affineType = affineMergeCtx.affineType[pu.mergeIdx];
-          pu.cu->GBiIdx = affineMergeCtx.GBiIdx[pu.mergeIdx];
+          pu.cu->BcwIdx = affineMergeCtx.BcwIdx[pu.mergeIdx];
           pu.mergeType = affineMergeCtx.mergeType[pu.mergeIdx];
           if ( pu.mergeType == MRG_TYPE_SUBPU_ATMVP )
           {

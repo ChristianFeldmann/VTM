@@ -126,9 +126,9 @@ EncAppCfg::EncAppCfg()
 , m_bNoMtsConstraintFlag(false)
 , m_noSbtConstraintFlag(false)
 , m_bNoAffineMotionConstraintFlag(false)
-, m_bNoGbiConstraintFlag(false)
+, m_bNoBcwConstraintFlag(false)
 , m_noIbcConstraintFlag(false)
-, m_bNoMhIntraConstraintFlag(false)
+, m_bNoCiipConstraintFlag(false)
 , m_noFPelMmvdConstraintFlag(false)
 , m_bNoTriangleConstraintFlag(false)
 , m_bNoLadfConstraintFlag(false)
@@ -1096,15 +1096,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
-  ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
-  ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
+  ("BCW",                                             m_bcw,                                            false, "Enable Generalized Bi-prediction(Bcw)")
+  ("BcwFast",                                         m_BcwFast,                                        false, "Fast methods for Generalized Bi-prediction(Bcw)\n")
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   ("LADF",                                            m_LadfEnabed,                                     false, "Luma adaptive deblocking filter QP Offset(L0414)")
   ("LadfNumIntervals",                                m_LadfNumIntervals,                                   3, "LADF number of intervals (2-5, inclusive)")
   ("LadfQpOffset",                                    cfg_LadfQpOffset,                      cfg_LadfQpOffset, "LADF QP offset")
   ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
-  ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
+  ("CIIP",                                            m_ciip,                                           false, "Enable CIIP mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
   ("HashME",                                          m_HashME,                                         false, "Enable hash motion estimation (0:off, 1:on)")
 
@@ -1136,7 +1136,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("VirtualBoundariesPosX",                           cfg_virtualBoundariesPosX,    cfg_virtualBoundariesPosX, "Locations of the vertical virtual boundaries in units of luma samples")
   ("VirtualBoundariesPosY",                           cfg_virtualBoundariesPosY,    cfg_virtualBoundariesPosY, "Locations of the horizontal virtual boundaries in units of luma samples")
   ("EncDbOpt",                                        m_encDbOpt,                                       false, "Encoder optimization with deblocking filter")
-  ("LMCSEnable",                                      m_lumaReshapeEnable,                              false, "Enable LMCS (luma mapping with chroma scaling")
+  ("LMCSEnable",                                      m_lmcsEnabled,                                    false, "Enable LMCS (luma mapping with chroma scaling")
   ("LMCSSignalType",                                  m_reshapeSignalType,                                 0u, "Input signal type: 0:SDR, 1:HDR-PQ, 2:HDR-HLG")
   ("LMCSUpdateCtrl",                                  m_updateCtrl,                                         0, "LMCS model update control: 0:RA, 1:AI, 2:LDB/LDP")
   ("LMCSAdpOption",                                   m_adpOption,                                          0, "LMCS adaptation options: 0:automatic(default),"
@@ -2838,8 +2838,8 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_MTSInterMaxCand, "MTS only allowed with NEXT profile" );
     xConfirmPara( m_SMVD, "SMVD is only allowed with NEXT profile" );
     xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
-    xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
-    xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
+    xConfirmPara( m_bcw, "Bcw is only allowed with NEXT profile" );
+    xConfirmPara( m_BcwFast, "BcwFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
@@ -3104,34 +3104,34 @@ bool EncAppCfg::xCheckParameter()
 #if SHARP_LUMA_DELTA_QP
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
-  if (m_lumaLevelToDeltaQPMapping.mode && m_lumaReshapeEnable)
+  if (m_lumaLevelToDeltaQPMapping.mode && m_lmcsEnabled)
   {
 #if !JVET_P0335_HDRCTC_CHANGE
     msg(WARNING, "For HDR-PQ, reshaper should be used mutual-exclusively with Luma-level-based Delta QP. If use luma DQP, turn reshaper off.\n");
-    m_lumaReshapeEnable = false;
+    m_lmcsEnabled = false;
 #else
     msg(WARNING, "For HDR-PQ, LMCS should be used mutual-exclusively with Luma-level-based Delta QP. If use LMCS, turn lumaDQP off.\n");
     m_lumaLevelToDeltaQPMapping.mode = LUMALVL_TO_DQP_DISABLED;
 #endif
   }
-  if (!m_lumaReshapeEnable)
+  if (!m_lmcsEnabled)
   {
     m_reshapeSignalType = RESHAPE_SIGNAL_NULL;
     m_intraCMD = 0;
   }
-  if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
+  if (m_lmcsEnabled && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
   {
     m_intraCMD = 1;
   }
-  else if (m_lumaReshapeEnable && (m_reshapeSignalType == RESHAPE_SIGNAL_SDR || m_reshapeSignalType == RESHAPE_SIGNAL_HLG))
+  else if (m_lmcsEnabled && (m_reshapeSignalType == RESHAPE_SIGNAL_SDR || m_reshapeSignalType == RESHAPE_SIGNAL_HLG))
   {
     m_intraCMD = 0;
   }
   else
   {
-    m_lumaReshapeEnable = false;
+    m_lmcsEnabled = false;
   }
-  if (m_lumaReshapeEnable)
+  if (m_lmcsEnabled)
   {
     xConfirmPara(m_updateCtrl < 0, "Min. LMCS Update Control is 0");
     xConfirmPara(m_updateCtrl > 2, "Max. LMCS Update Control is 2");
@@ -4419,12 +4419,12 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "ISP:%d ", m_ISP );
     msg( VERBOSE, "SMVD:%d ", m_SMVD );
     msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
-    msg( VERBOSE, "GBi:%d ", m_GBi );
-    msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
+    msg( VERBOSE, "Bcw:%d ", m_bcw );
+    msg( VERBOSE, "BcwFast:%d ", m_BcwFast );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif
-    msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
+    msg(VERBOSE, "CIIP:%d ", m_ciip);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
     m_allowDisFracMMVD = m_MMVD ? m_allowDisFracMMVD : false;
     if ( m_MMVD )
@@ -4465,8 +4465,8 @@ void EncAppCfg::xPrintParameter()
     }
     msg(VERBOSE, " ] ");
   }
-    msg(VERBOSE, "Reshape:%d ", m_lumaReshapeEnable);
-    if (m_lumaReshapeEnable)
+    msg(VERBOSE, "Reshape:%d ", m_lmcsEnabled);
+    if (m_lmcsEnabled)
     {
       msg(VERBOSE, "(Signal:%s ", m_reshapeSignalType == 0 ? "SDR" : (m_reshapeSignalType == 2 ? "HDR-HLG" : "HDR-PQ"));
       msg(VERBOSE, "Opt:%d", m_adpOption);

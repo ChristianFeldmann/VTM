@@ -184,17 +184,17 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 extern MsgLevel g_verbosity;
 
 
-extern const int8_t g_GbiLog2WeightBase;
-extern const int8_t g_GbiWeightBase;
-extern const int8_t g_GbiWeights[GBI_NUM];
-extern const int8_t g_GbiSearchOrder[GBI_NUM];
-extern       int8_t g_GbiCodingOrder[GBI_NUM];
-extern       int8_t g_GbiParsingOrder[GBI_NUM];
+extern const int8_t g_BcwLog2WeightBase;
+extern const int8_t g_BcwWeightBase;
+extern const int8_t g_BcwWeights[BCW_NUM];
+extern const int8_t g_BcwSearchOrder[BCW_NUM];
+extern       int8_t g_BcwCodingOrder[BCW_NUM];
+extern       int8_t g_BcwParsingOrder[BCW_NUM];
 
 class CodingStructure;
-int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList);
-void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs);
-uint32_t deriveWeightIdxBits(uint8_t gbiIdx);
+int8_t getBcwWeight(uint8_t bcwIdx, uint8_t uhRefFrmList);
+void resetBcwCodingOrder(bool bRunDecoding, const CodingStructure &cs);
+uint32_t deriveWeightIdxBits(uint8_t bcwIdx);
 
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,

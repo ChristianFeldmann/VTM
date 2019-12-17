@@ -1853,16 +1853,16 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 
 #if JVET_P1004_REMOVE_BRICKS
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
 #else
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
 #endif
-    if( updateGbiCodingOrder )
+    if( updateBcwCodingOrder )
     {
-      resetGbiCodingOrder(false, cs);
+      resetBcwCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-    if (pcSlice->getSPS()->getUseReshaper())
+    if (pcSlice->getSPS()->getUseLmcs())
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
 
@@ -2109,13 +2109,13 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     }
 
 #if JVET_P1004_REMOVE_BRICKS
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
 #else
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
 #endif
-    if( updateGbiCodingOrder )
+    if( updateBcwCodingOrder )
     {
-      resetGbiCodingOrder(false, cs);
+      resetBcwCodingOrder(false, cs);
     }
 
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );

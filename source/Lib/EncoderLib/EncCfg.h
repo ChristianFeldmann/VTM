@@ -204,9 +204,9 @@ protected:
   bool      m_bNoMtsConstraintFlag;
   bool      m_noSbtConstraintFlag;
   bool      m_bNoAffineMotionConstraintFlag;
-  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
-  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
@@ -316,8 +316,8 @@ protected:
 
   bool      m_SMVD;
   bool      m_compositeRefEnabled;        //composite reference
-  bool      m_GBi;
-  bool      m_GBiFast;
+  bool      m_bcw;
+  bool      m_BcwFast;
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabled;
   int       m_LadfNumIntervals;
@@ -325,7 +325,7 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-  bool      m_MHIntra;
+  bool      m_ciip;
   bool      m_Triangle;
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
@@ -357,7 +357,7 @@ protected:
   unsigned  m_numHorVirtualBoundaries;
   unsigned  m_virtualBoundariesPosX[3];
   unsigned  m_virtualBoundariesPosY[3];
-  bool      m_lumaReshapeEnable;
+  bool      m_lmcsEnabled;
   unsigned  m_reshapeSignalType;
   unsigned  m_intraCMD;
   ReshapeCW m_reshapeCW;
@@ -854,12 +854,12 @@ public:
   void      setNoSbtConstraintFlag(bool bVal) { m_noSbtConstraintFlag = bVal; }
   bool      getNoAffineMotionConstraintFlag() const { return m_bNoAffineMotionConstraintFlag; }
   void      setNoAffineMotionConstraintFlag(bool bVal) { m_bNoAffineMotionConstraintFlag = bVal; }
-  bool      getNoGbiConstraintFlag() const { return m_bNoGbiConstraintFlag; }
-  void      setNoGbiConstraintFlag(bool bVal) { m_bNoGbiConstraintFlag = bVal; }
+  bool      getNoBcwConstraintFlag() const { return m_bNoBcwConstraintFlag; }
+  void      setNoBcwConstraintFlag(bool bVal) { m_bNoBcwConstraintFlag = bVal; }
   bool      getNoIbcConstraintFlag() const { return m_noIbcConstraintFlag; }
   void      setNoIbcConstraintFlag(bool bVal) { m_noIbcConstraintFlag = bVal; }
-  bool      getNoMhIntraConstraintFlag() const { return m_bNoMhIntraConstraintFlag; }
-  void      setNoMhIntraConstraintFlag(bool bVal) { m_bNoMhIntraConstraintFlag = bVal; }
+  bool      getNoCiipConstraintFlag() const { return m_bNoCiipConstraintFlag; }
+  void      setNoCiipConstraintFlag(bool bVal) { m_bNoCiipConstraintFlag = bVal; }
   bool      getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
   void      setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
   bool      getNoTriangleConstraintFlag() const { return m_bNoTriangleConstraintFlag; }
@@ -1044,10 +1044,10 @@ public:
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }
   void      setUseSMVD                      ( bool b )       { m_SMVD = b; }
   bool      getUseSMVD                      ()         const { return m_SMVD; }
-  void      setUseGBi                       ( bool b )       { m_GBi = b; }
-  bool      getUseGBi                       ()         const { return m_GBi; }
-  void      setUseGBiFast                   ( uint32_t b )   { m_GBiFast = b; }
-  bool      getUseGBiFast                   ()         const { return m_GBiFast; }
+  void      setUseBcw                       ( bool b )       { m_bcw = b; }
+  bool      getUseBcw                       ()         const { return m_bcw; }
+  void      setUseBcwFast                   ( uint32_t b )   { m_BcwFast = b; }
+  bool      getUseBcwFast                   ()         const { return m_BcwFast; }
 
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void      setUseLadf                      ( bool b )       { m_LadfEnabled = b; }
@@ -1061,8 +1061,8 @@ public:
 
 #endif
 
-  void      setUseMHIntra                   ( bool b )       { m_MHIntra = b; }
-  bool      getUseMHIntra                   ()         const { return m_MHIntra; }
+  void      setUseCiip                   ( bool b )       { m_ciip = b; }
+  bool      getUseCiip                   ()         const { return m_ciip; }
   void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
   bool      getUseTriangle                  ()         const { return m_Triangle; }
   void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
@@ -1122,8 +1122,8 @@ public:
   unsigned  getVirtualBoundariesPosY        ( unsigned idx ) const { return m_virtualBoundariesPosY[idx]; }
   void      setUseISP                       ( bool b )       { m_ISP = b; }
   bool      getUseISP                       ()         const { return m_ISP; }
-  void      setReshaper                     ( bool b )                   { m_lumaReshapeEnable = b; }
-  bool      getReshaper                     () const                     { return m_lumaReshapeEnable; }
+  void      setLmcs                         ( bool b )                   { m_lmcsEnabled = b; }
+  bool      getLmcs                         () const                     { return m_lmcsEnabled; }
   void      setReshapeSignalType            ( uint32_t signalType )      { m_reshapeSignalType = signalType; }
   uint32_t  getReshapeSignalType            () const                     { return m_reshapeSignalType; }
   void      setReshapeIntraCMD              (uint32_t intraCMD)          { m_intraCMD = intraCMD; }

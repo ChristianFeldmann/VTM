@@ -424,7 +424,7 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
   subPu.mmvdMergeFlag = pu.mmvdMergeFlag;
   subPu.mmvdEncOptMode = pu.mmvdEncOptMode;
   subPu.mergeFlag = pu.mergeFlag;
-  subPu.mhIntraFlag = pu.mhIntraFlag;
+  subPu.ciipFlag = pu.ciipFlag;
   subPu.mvRefine = pu.mvRefine;
   subPu.refIdx[0] = pu.refIdx[0];
   subPu.refIdx[1] = pu.refIdx[1];
@@ -586,7 +586,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
       }
     }
 
-    if (bioApplied && pu.mhIntraFlag)
+    if (bioApplied && pu.ciipFlag)
       bioApplied = false;
 
     if (bioApplied && pu.cu->smvdMode)
@@ -594,7 +594,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
       bioApplied = false;
     }
 
-    if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
+    if (pu.cu->cs->sps->getUseBcw() && bioApplied && pu.cu->BcwIdx != BCW_DEFAULT)
     {
       bioApplied = false;
     }
@@ -688,7 +688,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
   const bool lumaOnly   = luma && !chroma;
   const bool chromaOnly = !luma && chroma;
 #endif
-  if( !pu.cu->triangle && (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->GBiIdx==GBI_DEFAULT)
+  if( !pu.cu->triangle && (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->BcwIdx==BCW_DEFAULT)
   {
 #if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
     xWeightedPredictionBi( pu, srcPred0, srcPred1, pcYuvPred, m_maxCompIDToPred, lumaOnly, chromaOnly );
@@ -1532,18 +1532,18 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
 #endif
     {
       xApplyBiPROF(pu, pcYuvSrc0.bufs[COMPONENT_Y], pcYuvSrc1.bufs[COMPONENT_Y], pcYuvDst.bufs[COMPONENT_Y], clpRngs.comp[COMPONENT_Y]);
-      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx, true);
+      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->BcwIdx, true);
       CHECK(yuvDstTmp, "yuvDstTmp is disallowed with PROF");
       return;
     }
 #endif
-    if( pu.cu->GBiIdx != GBI_DEFAULT && (yuvDstTmp || !pu.mhIntraFlag) )
+    if( pu.cu->BcwIdx != BCW_DEFAULT && (yuvDstTmp || !pu.ciipFlag) )
     {
-      CHECK(bioApplied, "GBi is disallowed with BIO");
+      CHECK(bioApplied, "Bcw is disallowed with BIO");
 #if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
-      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx, chromaOnly, lumaOnly);
+      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->BcwIdx, chromaOnly, lumaOnly);
 #else
-      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->GBiIdx);
+      pcYuvDst.addWeightedAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, pu.cu->BcwIdx);
 #endif
       if (yuvDstTmp)
 #if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
@@ -1802,11 +1802,11 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   Pel* dstY = pcYuvDst.bufAt(0, 0);
 
   if(m_applyPROF[0] && m_applyPROF[1])
-    g_pelBufOP.applyBiPROF[1](dstY, pcYuvDst.stride, srcY0, srcY1, pcYuvSrc0.stride, width, height, gX0, gY0, gX1, gY1, gradXExt0.stride, dMvX0, dMvY0, dMvX1, dMvY1, blockWidth, getGbiWeight(pu.cu->GBiIdx, REF_PIC_LIST_0), clpRng);
+    g_pelBufOP.applyBiPROF[1](dstY, pcYuvDst.stride, srcY0, srcY1, pcYuvSrc0.stride, width, height, gX0, gY0, gX1, gY1, gradXExt0.stride, dMvX0, dMvY0, dMvX1, dMvY1, blockWidth, getBcwWeight(pu.cu->BcwIdx, REF_PIC_LIST_0), clpRng);
   else if (m_applyPROF[0])
-    g_pelBufOP.applyBiPROF[0](dstY, pcYuvDst.stride, srcY0, srcY1, pcYuvSrc0.stride, width, height, gX0, gY0, gX1, gY1, gradXExt0.stride, dMvX0, dMvY0, dMvX1, dMvY1, blockWidth, getGbiWeight(pu.cu->GBiIdx, REF_PIC_LIST_0), clpRng);
+    g_pelBufOP.applyBiPROF[0](dstY, pcYuvDst.stride, srcY0, srcY1, pcYuvSrc0.stride, width, height, gX0, gY0, gX1, gY1, gradXExt0.stride, dMvX0, dMvY0, dMvX1, dMvY1, blockWidth, getBcwWeight(pu.cu->BcwIdx, REF_PIC_LIST_0), clpRng);
   else
-    g_pelBufOP.applyBiPROF[0](dstY, pcYuvDst.stride, srcY1, srcY0, pcYuvSrc0.stride, width, height, gX1, gY1, gX0, gY0, gradXExt0.stride, dMvX1, dMvY1, dMvX0, dMvY0, blockWidth, getGbiWeight(pu.cu->GBiIdx, REF_PIC_LIST_1), clpRng);
+    g_pelBufOP.applyBiPROF[0](dstY, pcYuvDst.stride, srcY1, srcY0, pcYuvSrc0.stride, width, height, gX1, gY1, gX0, gY0, gradXExt0.stride, dMvX1, dMvY1, dMvX0, dMvY0, blockWidth, getBcwWeight(pu.cu->BcwIdx, REF_PIC_LIST_1), clpRng);
 }
 #endif
 
@@ -1815,7 +1815,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   , PelUnitBuf* predBufWOBIO /*= NULL*/
 )
 {
-  CHECK(predBufWOBIO && pu.mhIntraFlag, "the case should not happen!");
+  CHECK(predBufWOBIO && pu.ciipFlag, "the case should not happen!");
 
   if (!pu.cs->pcv->isEncoder)
   {
@@ -1922,7 +1922,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
         }
       }
 
-      if (bioApplied && pu.mhIntraFlag)
+      if (bioApplied && pu.ciipFlag)
       {
         bioApplied = false;
       }
@@ -1931,7 +1931,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       {
         bioApplied = false;
       }
-      if (pu.cu->cs->sps->getUseGBi() && bioApplied && pu.cu->GBiIdx != GBI_DEFAULT)
+      if (pu.cu->cs->sps->getUseBcw() && bioApplied && pu.cu->BcwIdx != BCW_DEFAULT)
       {
         bioApplied = false;
       }

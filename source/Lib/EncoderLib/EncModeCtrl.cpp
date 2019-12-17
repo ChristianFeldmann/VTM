@@ -600,19 +600,19 @@ bool CacheBlkInfoCtrl::getInter(const UnitArea& area)
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isInter;
 }
-void CacheBlkInfoCtrl::setGbiIdx(const UnitArea& area, uint8_t gBiIdx)
+void CacheBlkInfoCtrl::setBcwIdx(const UnitArea& area, uint8_t gBiIdx)
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
 
-  m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx = gBiIdx;
+  m_codedCUInfo[idx1][idx2][idx3][idx4]->BcwIdx = gBiIdx;
 }
-uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
+uint8_t CacheBlkInfoCtrl::getBcwIdx(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
 
-  return m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx;
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->BcwIdx;
 }
 
 #if REUSE_CU_RESULTS
@@ -1919,7 +1919,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isInter   = true;
           relatedCU.isSkip   |= bestCU->skip;
           relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
-          relatedCU.GBiIdx    = bestCU->GBiIdx;
+          relatedCU.BcwIdx    = bestCU->BcwIdx;
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if (bestCU->slice->getSPS()->getUseColorTrans())
           {

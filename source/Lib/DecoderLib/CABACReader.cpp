@@ -1393,29 +1393,29 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 
   imv_mode   ( cu, mrgCtx );
   affine_amvr_mode( cu, mrgCtx );
-  cu_gbi_flag( cu );
+  cu_bcw_flag( cu );
 
 }
 
-void CABACReader::cu_gbi_flag(CodingUnit& cu)
+void CABACReader::cu_bcw_flag(CodingUnit& cu)
 {
-  if(!CU::isGBiIdxCoded(cu))
+  if(!CU::isBcwIdxCoded(cu))
   {
     return;
   }
 
-  CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
+  CHECK(!(BCW_NUM > 1 && (BCW_NUM == 2 || (BCW_NUM & 0x01) == 1)), " !( BCW_NUM > 1 && ( BCW_NUM == 2 || ( BCW_NUM & 0x01 ) == 1 ) ) ");
 
-  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__GBI_IDX);
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__BCW_IDX);
 
   uint32_t idx = 0;
 
-  uint32_t symbol = m_BinDecoder.decodeBin(Ctx::GBiIdx(0));
+  uint32_t symbol = m_BinDecoder.decodeBin(Ctx::BcwIdx(0));
 
-  int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
+  int32_t numBcw = (cu.slice->getCheckLDC()) ? 5 : 3;
   if(symbol == 1)
   {
-    uint32_t prefixNumBits = numGBi - 2;
+    uint32_t prefixNumBits = numBcw - 2;
     uint32_t step = 1;
 
     idx = 1;
@@ -1431,10 +1431,10 @@ void CABACReader::cu_gbi_flag(CodingUnit& cu)
     }
   }
 
-  uint8_t gbiIdx = (uint8_t)g_GbiParsingOrder[idx];
-  CU::setGbiIdx(cu, gbiIdx);
+  uint8_t bcwIdx = (uint8_t)g_BcwParsingOrder[idx];
+  CU::setBcwIdx(cu, bcwIdx);
 
-  DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
+  DTRACE(g_trace_ctx, D_SYNTAX, "cu_bcw_flag() bcw_idx=%d\n", cu.BcwIdx ? 1 : 0);
 }
 
 void CABACReader::xReadTruncBinCode(uint32_t& symbol, uint32_t maxSymbol)
@@ -2568,7 +2568,7 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.mv    [REF_PIC_LIST_1] = Mv(0, 0);
     pu.refIdx[REF_PIC_LIST_1] = -1;
     pu.interDir               =  1;
-    pu.cu->GBiIdx = GBI_DEFAULT;
+    pu.cu->BcwIdx = BCW_DEFAULT;
   }
 
   if ( pu.cu->smvdMode )
@@ -2684,7 +2684,7 @@ void CABACReader::merge_data( PredictionUnit& pu )
 #else
     const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
 #endif
-    const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
+    const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
     if (pu.cu->lwidth() * pu.cu->lheight() >= 64
       && (triangleAvailable || ciipAvailable))
     {
@@ -2715,17 +2715,17 @@ void CABACReader::merge_data( PredictionUnit& pu )
       pu.cu->mmvdSkip = false;
       if (triangleAvailable && ciipAvailable)
       {
-        MHIntra_flag(pu);
+        Ciip_flag(pu);
       }
       else if (ciipAvailable)
       {
-        pu.mhIntraFlag = true;
+        pu.ciipFlag = true;
       }
       else
       {
-        pu.mhIntraFlag = false;
+        pu.ciipFlag = false;
       }
-      if (pu.mhIntraFlag)
+      if (pu.ciipFlag)
       {
         pu.intraDir[0] = PLANAR_IDX;
         pu.intraDir[1] = DM_CHROMA_IDX;
@@ -2998,23 +2998,23 @@ void CABACReader::mvp_flag( PredictionUnit& pu, RefPicList eRefList )
 }
 
 
-void CABACReader::MHIntra_flag(PredictionUnit& pu)
+void CABACReader::Ciip_flag(PredictionUnit& pu)
 {
-  if (!pu.cs->sps->getUseMHIntra())
+  if (!pu.cs->sps->getUseCiip())
   {
-    pu.mhIntraFlag = false;
+    pu.ciipFlag = false;
     return;
   }
   if (pu.cu->skip)
   {
-    pu.mhIntraFlag = false;
+    pu.ciipFlag = false;
     return;
   }
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MH_INTRA_FLAG);
 
-  pu.mhIntraFlag = (m_BinDecoder.decodeBin(Ctx::MHIntraFlag()));
-  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  pu.ciipFlag = (m_BinDecoder.decodeBin(Ctx::CiipFlag()));
+  DTRACE(g_trace_ctx, D_SYNTAX, "Ciip_flag() Ciip=%d pos=(%d,%d) size=%dx%d\n", pu.ciipFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
 

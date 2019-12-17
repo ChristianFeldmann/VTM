@@ -231,13 +231,13 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     }
 
 #if JVET_P1004_REMOVE_BRICKS
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
 #else
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
 #endif
-    if(updateGbiCodingOrder)
+    if(updateBcwCodingOrder)
     {
-      resetGbiCodingOrder(true, cs);
+      resetBcwCodingOrder(true, cs);
     }
 
     if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == tileXPosInCtus)

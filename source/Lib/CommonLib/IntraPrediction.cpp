@@ -815,7 +815,7 @@ void IntraPrediction::switchBuffer(const PredictionUnit &pu, ComponentID compID,
 
 void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 {
-  if (!cu.firstPU->mhIntraFlag)
+  if (!cu.firstPU->ciipFlag)
   {
     return;
   }

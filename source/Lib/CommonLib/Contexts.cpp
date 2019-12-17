@@ -419,7 +419,7 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::BcwIdx = ContextSetCfg::addCtxSet
 ({
   {   5, },
   {   4, },
@@ -893,7 +893,7 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::CiipFlag = ContextSetCfg::addCtxSet
 ({
   {  50, },
   {  50, },
@@ -1202,7 +1202,7 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::BcwIdx = ContextSetCfg::addCtxSet
 ({
   {  20, },
   {   5, },
@@ -1676,7 +1676,7 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::CiipFlag = ContextSetCfg::addCtxSet
 ({
   {  58, },
   {  58, },

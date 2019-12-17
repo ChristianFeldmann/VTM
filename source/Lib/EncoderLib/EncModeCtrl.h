@@ -438,7 +438,7 @@ struct CodedCUInfo
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
-  uint8_t GBiIdx;
+  uint8_t BcwIdx;
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
 #endif
@@ -499,8 +499,8 @@ public:
   void setMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv );
 
   bool  getInter( const UnitArea& area );
-  void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
-  uint8_t getGbiIdx( const UnitArea& area );
+  void  setBcwIdx( const UnitArea& area, uint8_t gBiIdx );
+  uint8_t getBcwIdx( const UnitArea& area );
 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char  getSelectColorSpaceOption(const UnitArea& area);

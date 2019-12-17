@@ -760,7 +760,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
-  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
      return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
   }
@@ -786,7 +786,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   {
     return tmpBs;
   }
-  if ((cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  if ((cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
     return 1;
   }

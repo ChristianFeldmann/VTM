@@ -386,7 +386,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
+#define ENABLE_SIMD_OPT_BCW                               1                                                 ///< SIMD optimization for Bcw
 #endif
 
 // End of SIMD optimizations

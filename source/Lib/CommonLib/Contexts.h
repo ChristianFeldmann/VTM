@@ -264,14 +264,14 @@ public:
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
   static const CtxSet   ImvFlag;
-  static const CtxSet   GBiIdx;
+  static const CtxSet   BcwIdx;
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   ctbAlfAlternative;
 #if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
   static const CtxSet   AlfUseLatestFilt;
 #endif
   static const CtxSet   AlfUseTemporalFilt;
-  static const CtxSet   MHIntraFlag;
+  static const CtxSet   CiipFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
   static const CtxSet   ISPMode;

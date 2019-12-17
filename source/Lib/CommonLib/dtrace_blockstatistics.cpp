@@ -486,8 +486,8 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MMVDMergeIdx),  pu.mmvdMergeIdx);
               }
-              DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MHIntraFlag),  pu.mhIntraFlag);
-              if (pu.mhIntraFlag)
+              DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::CiipFlag),  pu.ciipFlag);
+              if (pu.ciipFlag)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::Luma_IntraMode),  pu.intraDir[COMPONENT_Y]);
               }
@@ -669,7 +669,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SMVDFlag), cu.smvdMode);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
-          DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GBIIndex), cu.GBiIdx);
+          DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::BCWIndex), cu.BcwIdx);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SbtIdx), cu.getSbtIdx());
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SbtPos), cu.getSbtPos());
         }
@@ -870,12 +870,12 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               {
                 DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::AffineFlag), pu.cu->affine);
               }
-              if (pu.cs->sps->getUseMHIntra() && !pu.cu->skip && !pu.cu->affine && !(pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
+              if (pu.cs->sps->getUseCiip() && !pu.cu->skip && !pu.cu->affine && !(pu.cu->lwidth() * pu.cu->lheight() < 64 || pu.cu->lwidth() >= MAX_CU_SIZE || pu.cu->lheight() >= MAX_CU_SIZE)
                 && !pu.mmvdMergeFlag
                 )
               {
-                DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MHIntraFlag), pu.mhIntraFlag);
-                if (pu.mhIntraFlag)
+                DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::CiipFlag), pu.ciipFlag);
+                if (pu.ciipFlag)
                 {
                   if (cu.Y().valid())
                   {
@@ -995,9 +995,9 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
             {
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
             }
-            if (CU::isGBiIdxCoded(cu))
+            if (CU::isBcwIdxCoded(cu))
             {
-              DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GBIIndex), cu.GBiIdx);
+              DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::BCWIndex), cu.BcwIdx);
             }
             break;
           }

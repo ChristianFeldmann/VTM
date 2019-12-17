@@ -89,10 +89,10 @@ namespace CU
   bool  isFirstTBInPredReg(const CodingUnit& cu, const ComponentID compID, const CompArea &area);
   bool  isMinWidthPredEnabledForBlkSize(const int w, const int h);
   void  adjustPredArea(CompArea &area);
-  bool  isGBiIdxCoded                 (const CodingUnit& cu);
-  uint8_t getValidGbiIdx              (const CodingUnit& cu);
-  void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
-  uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
+  bool  isBcwIdxCoded                 (const CodingUnit& cu);
+  uint8_t getValidBcwIdx              (const CodingUnit& cu);
+  void  setBcwIdx                     (CodingUnit& cu, uint8_t uh);
+  uint8_t deriveBcwIdx                (uint8_t bcwLO, uint8_t bcwL1);
   bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
 #if JVET_P1026_MTS_SIGNALLING
   bool isMTSAllowed                   (const CodingUnit& cu, const ComponentID compID);
@@ -171,7 +171,7 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
-  void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int8_t gbiIdx, int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
+  void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int8_t bcwIdx, int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool clipCPMVs = false );

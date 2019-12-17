@@ -878,31 +878,31 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
   imv_mode   ( cu );
   affine_amvr_mode( cu );
 
-  cu_gbi_flag( cu );
+  cu_bcw_flag( cu );
 
 }
 
-void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
+void CABACWriter::cu_bcw_flag(const CodingUnit& cu)
 {
-  if(!CU::isGBiIdxCoded(cu))
+  if(!CU::isBcwIdxCoded(cu))
   {
     return;
   }
 
-  CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
-  const uint8_t gbiCodingIdx = (uint8_t)g_GbiCodingOrder[CU::getValidGbiIdx(cu)];
+  CHECK(!(BCW_NUM > 1 && (BCW_NUM == 2 || (BCW_NUM & 0x01) == 1)), " !( BCW_NUM > 1 && ( BCW_NUM == 2 || ( BCW_NUM & 0x01 ) == 1 ) ) ");
+  const uint8_t bcwCodingIdx = (uint8_t)g_BcwCodingOrder[CU::getValidBcwIdx(cu)];
 
-  const int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
-  m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 0 : 1), Ctx::GBiIdx(0));
-  if(numGBi > 2 && gbiCodingIdx != 0)
+  const int32_t numBcw = (cu.slice->getCheckLDC()) ? 5 : 3;
+  m_BinEncoder.encodeBin((bcwCodingIdx == 0 ? 0 : 1), Ctx::BcwIdx(0));
+  if(numBcw > 2 && bcwCodingIdx != 0)
   {
-    const uint32_t prefixNumBits = numGBi - 2;
+    const uint32_t prefixNumBits = numBcw - 2;
     const uint32_t step = 1;
 
     uint8_t idx = 1;
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
-      if (gbiCodingIdx == idx)
+      if (bcwCodingIdx == idx)
       {
         m_BinEncoder.encodeBinEP(0);
         break;
@@ -915,7 +915,7 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
     }
   }
 
-  DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
+  DTRACE(g_trace_ctx, D_SYNTAX, "cu_bcw_flag() bcw_idx=%d\n", cu.BcwIdx ? 1 : 0);
 }
 
 void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
@@ -2215,7 +2215,7 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
 #else
   const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
 #endif
-  const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
+  const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
   {
@@ -2241,7 +2241,7 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
   {
     if (triangleAvailable && ciipAvailable)
     {
-      MHIntra_flag(pu);
+      Ciip_flag(pu);
     }
     merge_idx(pu);
   }
@@ -2563,20 +2563,20 @@ void CABACWriter::mvp_flag( const PredictionUnit& pu, RefPicList eRefList )
   DTRACE( g_trace_ctx, D_SYNTAX, "mvpIdx(refList:%d)=%d\n", eRefList, pu.mvpIdx[eRefList] );
 }
 
-void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
+void CABACWriter::Ciip_flag(const PredictionUnit& pu)
 {
-  if (!pu.cs->sps->getUseMHIntra())
+  if (!pu.cs->sps->getUseCiip())
   {
-    CHECK(pu.mhIntraFlag == true, "invalid MHIntra SPS");
+    CHECK(pu.ciipFlag == true, "invalid Ciip SPS");
     return;
   }
   if (pu.cu->skip)
   {
-    CHECK(pu.mhIntraFlag == true, "invalid MHIntra and skip");
+    CHECK(pu.ciipFlag == true, "invalid Ciip and skip");
     return;
   }
-  m_BinEncoder.encodeBin(pu.mhIntraFlag, Ctx::MHIntraFlag());
-  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  m_BinEncoder.encodeBin(pu.ciipFlag, Ctx::CiipFlag());
+  DTRACE(g_trace_ctx, D_SYNTAX, "Ciip_flag() Ciip=%d pos=(%d,%d) size=%dx%d\n", pu.ciipFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
 

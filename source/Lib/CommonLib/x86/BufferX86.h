@@ -556,9 +556,9 @@ template< X86_VEXT vext, bool l1PROFEnabled = true>
 void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t w0, const ClpRng& clpRng)
 {
   const int rShift = IF_INTERNAL_PREC - clpRng.bd;
-  const int shiftNum = (rShift > 2 ? rShift : 2) + g_GbiLog2WeightBase;
-  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_GbiLog2WeightBase);
-  const int8_t w1 = g_GbiWeightBase - w0;
+  const int shiftNum = (rShift > 2 ? rShift : 2) + g_BcwLog2WeightBase;
+  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_BcwLog2WeightBase);
+  const int8_t w1 = g_BcwWeightBase - w0;
 
   __m128i mm_offset = _mm_set1_epi32(offset);
   __m128i mm_w0 = _mm_set1_epi32(w0);
@@ -1125,13 +1125,13 @@ void reco_SSE( const int16_t* src0, int src0Stride, const int16_t* src1, int src
   }
 }
 
-#if ENABLE_SIMD_OPT_GBI
+#if ENABLE_SIMD_OPT_BCW
 template< X86_VEXT vext, int W >
-void removeWeightHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1, int src1Stride, int width, int height, int shift, int gbiWeight)
+void removeWeightHighFreq_SSE(int16_t* src0, int src0Stride, const int16_t* src1, int src1Stride, int width, int height, int shift, int bcwWeight)
 {
-  int normalizer = ((1 << 16) + (gbiWeight>0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
-  int weight0 = normalizer << g_GbiLog2WeightBase;
-  int weight1 = (g_GbiWeightBase - gbiWeight)*normalizer;
+  int normalizer = ((1 << 16) + (bcwWeight>0 ? (bcwWeight >> 1) : -(bcwWeight >> 1))) / bcwWeight;
+  int weight0 = normalizer << g_BcwLog2WeightBase;
+  int weight1 = (g_BcwWeightBase - bcwWeight)*normalizer;
   int offset = 1 << (shift - 1);
   if (W == 8)
   {
@@ -1431,7 +1431,7 @@ void PelBufferOps::_initPelBufOpsX86()
 
   linTf8 = linTf_SSE_entry<vext, 8>;
   linTf4 = linTf_SSE_entry<vext, 4>;
-#if ENABLE_SIMD_OPT_GBI
+#if ENABLE_SIMD_OPT_BCW
   removeWeightHighFreq8 = removeWeightHighFreq_SSE<vext, 8>;
   removeWeightHighFreq4 = removeWeightHighFreq_SSE<vext, 4>;
   removeHighFreq8 = removeHighFreq_SSE<vext, 8>;

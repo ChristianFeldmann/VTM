@@ -157,9 +157,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoMtsConstraintFlag                               ( (m_MTS || m_MTSImplicit) ? false : true );
   m_cEncLib.setNoSbtConstraintFlag                               ( !m_SBT );
   m_cEncLib.setNoAffineMotionConstraintFlag                      ( !m_Affine );
-  m_cEncLib.setNoGbiConstraintFlag                               ( !m_GBi );
+  m_cEncLib.setNoBcwConstraintFlag                               ( !m_bcw );
   m_cEncLib.setNoIbcConstraintFlag                               ( m_IBCMode ? false : true );
-  m_cEncLib.setNoMhIntraConstraintFlag                           ( !m_MHIntra );
+  m_cEncLib.setNoCiipConstraintFlag                           ( !m_ciip );
   m_cEncLib.setNoFPelMmvdConstraintFlag                          ( !(m_MMVD && m_allowDisFracMMVD) );
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
@@ -181,7 +181,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoIdrConstraintFlag                               ( false ); // Not yet possible to encode bitstream starting with a GDR picture
   m_cEncLib.setNoCraConstraintFlag                               ( m_iDecodingRefreshType != 1 );
   m_cEncLib.setNoGdrConstraintFlag                               ( false ); // Not yet possible to encode GDR using config parameters
-  m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lumaReshapeEnable && m_useScalingListId == SCALING_LIST_OFF);
+  m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lmcsEnabled && m_useScalingListId == SCALING_LIST_OFF);
 #endif
 
   //====== Coding Structure ========
@@ -326,8 +326,8 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );
-  m_cEncLib.setUseGBi                                            ( m_GBi );
-  m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
+  m_cEncLib.setUseBcw                                            ( m_bcw );
+  m_cEncLib.setUseBcwFast                                        ( m_BcwFast );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
   if ( m_LadfEnabed )
@@ -340,7 +340,7 @@ void EncApp::xInitLibCfg()
     }
   }
 #endif
-  m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
+  m_cEncLib.setUseCiip                                        ( m_ciip );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
   m_cEncLib.setUseHashME                                         ( m_HashME );
 
@@ -758,7 +758,7 @@ void EncApp::xInitLibCfg()
 
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
-  m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
+  m_cEncLib.setLmcs                                              ( m_lmcsEnabled );
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );

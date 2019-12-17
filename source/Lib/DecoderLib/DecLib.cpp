@@ -587,7 +587,7 @@ void DecLib::executeLoopFilters()
 
   CodingStructure& cs = *m_pcPic->cs;
 
-  if (cs.sps->getUseReshaper() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+  if (cs.sps->getUseLmcs() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
   {
       CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
       m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
@@ -1143,7 +1143,7 @@ void DecLib::xActivateParameterSets()
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
-    if (sps->getUseReshaper())
+    if (sps->getUseLmcs())
     {
       m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
     }
@@ -1173,7 +1173,7 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
-    if (sps->getUseReshaper())
+    if (sps->getUseLmcs())
     {
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
@@ -1838,7 +1838,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
 
-  if (pcSlice->getSPS()->getUseReshaper())
+  if (pcSlice->getSPS()->getUseLmcs())
   {
     if (m_bFirstSliceInPicture)
       m_sliceLmcsApsId = -1;

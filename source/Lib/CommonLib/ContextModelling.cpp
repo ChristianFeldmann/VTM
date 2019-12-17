@@ -332,7 +332,7 @@ unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
-  pu.regularMergeFlag        = !(pu.mhIntraFlag || pu.cu->triangle);
+  pu.regularMergeFlag        = !(pu.ciipFlag || pu.cu->triangle);
   pu.mergeFlag               = true;
   pu.mmvdMergeFlag = false;
   pu.interDir                = interDirNeighbours[candIdx];
@@ -355,7 +355,7 @@ void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
     pu.bv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT); // used for only integer resolution
     pu.cu->imv = pu.cu->imv == IMV_HPEL ? 0 : pu.cu->imv;
   }
-  pu.cu->GBiIdx = ( interDirNeighbours[candIdx] == 3 ) ? GBiIdx[candIdx] : GBI_DEFAULT;
+  pu.cu->BcwIdx = ( interDirNeighbours[candIdx] == 3 ) ? BcwIdx[candIdx] : BCW_DEFAULT;
 
   PU::restrictBiPredMergeCandsOne(pu);
   pu.mmvdEncOptMode = 0;
@@ -525,7 +525,7 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   pu.mvpNum[REF_PIC_LIST_1] = NOT_VALID;
   pu.cu->imv = mmvdUseAltHpelIf[fPosBaseIdx] ? IMV_HPEL : 0;
 
-  pu.cu->GBiIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? GBiIdx[fPosBaseIdx] : GBI_DEFAULT;
+  pu.cu->BcwIdx = (interDirNeighbours[fPosBaseIdx] == 3) ? BcwIdx[fPosBaseIdx] : BCW_DEFAULT;
 
   for (int refList = 0; refList < 2; refList++)
   {

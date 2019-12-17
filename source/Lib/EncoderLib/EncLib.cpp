@@ -155,7 +155,7 @@ void EncLib::create ()
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
 #endif
-  if (m_lumaReshapeEnable)
+  if (m_lmcsEnabled)
   {
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
     for (int jId = 0; jId < m_numCuEncStacks; jId++)
@@ -1389,9 +1389,9 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
   cinfo->setNoSbtConstraintFlag(m_noSbtConstraintFlag);
   cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
-  cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+  cinfo->setNoBcwConstraintFlag(m_bNoBcwConstraintFlag);
   cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
-  cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+  cinfo->setNoCiipConstraintFlag(m_bNoCiipConstraintFlag);
   cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
@@ -1483,7 +1483,7 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
   sps.setUseSMVD                ( m_SMVD );
-  sps.setUseGBi                ( m_GBi );
+  sps.setUseBcw                ( m_bcw );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.setLadfEnabled           ( m_LadfEnabled );
   if ( m_LadfEnabled )
@@ -1498,7 +1498,7 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
-  sps.setUseMHIntra            ( m_MHIntra );
+  sps.setUseCiip            ( m_ciip );
   sps.setUseTriangle           ( m_Triangle );
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
@@ -1520,7 +1520,7 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
   sps.setUseISP                             ( m_ISP );
-  sps.setUseReshaper                        ( m_lumaReshapeEnable );
+  sps.setUseLmcs                            ( m_lmcsEnabled );
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   sps.setUseMRL                ( m_MRL );
 #endif

@@ -594,7 +594,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   }
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
-  READ_UVLC(uiCode, "log2_max_transform_skip_block_size_minus2");
+  READ_UVLC(uiCode, "log2_transform_skip_max_size_minus2");
   pcPPS->setLog2MaxTransformSkipBlockSize(uiCode + 2);
 
   READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );

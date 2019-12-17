@@ -52,6 +52,8 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P2001_SYNTAX_ORDER_MISMATCHES                1 // JVET-P2001: Rearrange SPS/PPS syntax to match JVET-P2001 draft text
+
 #define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
 
 #define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks
@@ -204,6 +206,8 @@
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
 
 #define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
+
+#define JVET_P0218_AUD_TID_AND_LAYERID                    1 // JVET-P0218: Set temporal ID and layer ID of Access Unit Delimiter
 
 #define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping
 

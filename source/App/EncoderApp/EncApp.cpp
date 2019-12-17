@@ -401,6 +401,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseNonLinearAlfLuma                               ( m_useNonLinearAlfLuma );
   m_cEncLib.setUseNonLinearAlfChroma                             ( m_useNonLinearAlfChroma );
   m_cEncLib.setMaxNumAlfAlternativesChroma                       ( m_maxNumAlfAlternativesChroma );
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  m_cEncLib.setUseMRL                                            ( m_MRL );
+#endif
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
   m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );

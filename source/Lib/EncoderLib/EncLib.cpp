@@ -1579,6 +1579,9 @@ void EncLib::xInitSPS(SPS &sps)
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
   sps.setUseISP                             ( m_ISP );
   sps.setUseReshaper                        ( m_lumaReshapeEnable );
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  sps.setUseMRL                ( m_MRL );
+#endif
   sps.setUseMIP                ( m_MIP );
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;

@@ -700,6 +700,16 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
 
   sei_read_flag( pDecodedMessageOutputStream, code, "concatenation_flag");
   sei.m_concatenationFlag = code;
+#if JVET_P0446_CONCATENATION
+  sei_read_flag ( pDecodedMessageOutputStream, code, "additional_concatenation_info_present_flag");
+  sei.m_additionalConcatenationInfoPresentFlag = code;
+  if (sei.m_additionalConcatenationInfoPresentFlag)
+  {
+    sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, "max_initial_removal_delay_for_concatenation" );
+    sei.m_maxInitialRemovalDelayForConcatenation = code;
+  }
+#endif
+
   sei_read_code( pDecodedMessageOutputStream, ( sei.m_cpbRemovalDelayLength ), code, "au_cpb_removal_delay_delta_minus1" );
   sei.m_auCpbRemovalDelayDelta = code + 1;
   sei_read_flag( pDecodedMessageOutputStream, code, "cpb_removal_delay_deltas_present_flag" );               sei.m_cpbRemovalDelayDeltasPresentFlag = code;

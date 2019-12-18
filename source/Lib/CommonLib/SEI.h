@@ -332,6 +332,10 @@ public:
 #endif
 #if JVET_P0181
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
+#if JVET_P0446_CONCATENATION
+    , m_additionalConcatenationInfoPresentFlag (false)
+    , m_maxInitialRemovalDelayForConcatenation (0)
+#endif
 #endif
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
@@ -367,6 +371,10 @@ public:
 #endif
 #if JVET_P0181
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
+#endif
+#if JVET_P0446_CONCATENATION
+  bool     m_additionalConcatenationInfoPresentFlag;
+  uint32_t m_maxInitialRemovalDelayForConcatenation;
 #endif
 };
 

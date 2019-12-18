@@ -1406,9 +1406,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "RCCpbSize",                                      m_RCCpbSize,                                         0u, "Rate control: CPB size" )
   ( "RCInitialCpbFullness",                           m_RCInitialCpbFullness,                             0.9, "Rate control: initial CPB fullness" )
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   ("TransquantBypassEnable",                          m_TransquantBypassEnabledFlag,                    false, "transquant_bypass_enabled_flag indicator in PPS")
   ("TransquantBypassEnableFlag",                      m_TransquantBypassEnabledFlag,                    false, "deprecated and obsolete, but still needed for compatibility reasons")
   ("CUTransquantBypassFlagForce",                     m_CUTransquantBypassFlagForce,                    false, "Force transquant bypass mode, when transquant_bypass_enabled_flag is enabled")
+#endif
   ("CostMode",                                        m_costMode,                         COST_STANDARD_LOSSY, "Use alternative cost functions: choose between 'lossy', 'sequence_level_lossless', 'lossless' (which forces QP to " MACRO_TO_STRING(LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP) ") and 'mixed_lossless_lossy' (which used QP'=" MACRO_TO_STRING(LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME) " for pre-estimates of transquant-bypass blocks).")
   ("RecalculateQPAccordingToLambda",                  m_recalculateQPAccordingToLambda,                 false, "Recalculate QP values according to lambda values. Do not suggest to be enabled in all intra case")
 #if HEVC_SEI
@@ -3059,6 +3061,7 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara( m_bufferingPeriodSEIEnabled == true && m_RCCpbSize == 0,  "RCCpbSize must be greater than zero, when buffering period SEI is enabled" );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   if ( m_CUTransquantBypassFlagForce && m_bUseHADME )
   {
     msg( WARNING, "****************************************************************************\n");
@@ -3069,6 +3072,7 @@ bool EncAppCfg::xCheckParameter()
     m_bUseHADME = false; // this has been disabled so that the lambda is calculated slightly differently for lossless modes (as a result of JCTVC-R0104).
   }
 
+#endif
   xConfirmPara (m_log2MaxTransformSkipBlockSize < 2, "Transform Skip Log2 Max Size must be at least 2 (4x4)");
 
 
@@ -4093,11 +4097,13 @@ bool EncAppCfg::xCheckParameter()
   }
 #endif
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   xConfirmPara(m_TransquantBypassEnabledFlag , "TransquantBypassEnableFlag is not supported in VVC");
 #endif
   xConfirmPara(!m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce, "CUTransquantBypassFlagForce cannot be 1 when TransquantBypassEnableFlag is 0");
 
+#endif
 #if HEVC_SEI
   if (m_framePackingSEIEnabled)
   {
@@ -4370,6 +4376,7 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   if (m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce)
   {
     msg( VERBOSE, "TransQuantBypassEnabled: =1");
@@ -4379,6 +4386,7 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "TransQuantBypassEnabled:%d ", (m_TransquantBypassEnabledFlag)? 1:0 );
   }
 
+#endif
   msg( VERBOSE, "WPP:%d ", (int)m_useWeightedPred);
   msg( VERBOSE, "WPB:%d ", (int)m_useWeightedBiPred);
   const int iWaveFrontSubstreams = m_entropyCodingSyncEnabledFlag ? (m_iSourceHeight + m_uiMaxCUHeight - 1) / m_uiMaxCUHeight : 1;

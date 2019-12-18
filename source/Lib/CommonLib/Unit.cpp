@@ -269,7 +269,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   colorTransform = other.colorTransform;
 #endif 
   triangle          = other.triangle;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   transQuantBypass  = other.transQuantBypass;
+#endif
   bdpcmMode         = other.bdpcmMode;
 #if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = other.bdpcmModeChroma;
@@ -338,7 +340,9 @@ void CodingUnit::initData()
   colorTransform = false;
 #endif 
   triangle          = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   transQuantBypass  = false;
+#endif
   bdpcmMode         = 0;
 #if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = 0;
@@ -932,6 +936,17 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   int tbZeroOutWidth = blocks[compID].width;
   int tbZeroOutHeight = blocks[compID].height;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P1026_MTS_SIGNALLING
+  if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && compID == COMPONENT_Y )
+#else
+#if JVET_P0058_CHROMA_TS
+  if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#else
+  if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#endif
+#endif
+#else
 #if JVET_P1026_MTS_SIGNALLING
   if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && !cu->transQuantBypass && compID == COMPONENT_Y )
 #else
@@ -939,6 +954,7 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
 #else
   if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#endif
 #endif
 #endif
   {

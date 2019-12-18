@@ -2341,7 +2341,9 @@ PPS::PPS()
 , m_loopFilterAcrossTilesEnabledFlag (1)
 , m_loopFilterAcrossSlicesEnabledFlag(0)
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 , m_TransquantBypassEnabledFlag      (false)
+#endif
 , m_log2MaxTransformSkipBlockSize    (2)
 , m_entropyCodingSyncEnabledFlag     (false)
 #if !JVET_P1004_REMOVE_BRICKS

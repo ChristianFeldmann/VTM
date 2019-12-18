@@ -685,6 +685,7 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 ({
   { CNU, },
@@ -693,6 +694,7 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#endif
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
 #if JVET_P0350_LFNST_IDX_CTX
@@ -1468,6 +1470,7 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 ({
   { CNU, },
@@ -1476,6 +1479,7 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#endif
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
 #if JVET_P0350_LFNST_IDX_CTX

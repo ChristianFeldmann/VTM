@@ -176,8 +176,10 @@ public:
 #endif
   void predIntraMip               (const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu);
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   static bool useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode);
 
+#endif
   void geneWeightedPred           (const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf);
   Pel* getPredictorPtr2           (const ComponentID compID, uint32_t idx) { return m_yuvExt2[compID][idx]; }
   void switchBuffer               (const PredictionUnit &pu, ComponentID compID, PelBuf srcBuff, Pel *dst);

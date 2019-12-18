@@ -211,10 +211,17 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_bpNalCpbParamsPresentFlag = true;
   bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;
   bufferingPeriodSEI->m_bpMaxSubLayers = m_pcCfg->getMaxTempLayer() ;
+#if JVET_P0446_BP_CPB_CNT_FIX
+  bufferingPeriodSEI->m_bpCpbCnt = 1;
+#endif
   for(int i=0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
   {
+#if !JVET_P0446_BP_CPB_CNT_FIX
     bufferingPeriodSEI->m_bpCpbCnt[i] = 1;
     for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt[i]; j++)
+#else
+    for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt; j++)
+#endif
     {
       bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][0] = uiInitialCpbRemovalDelay;
       bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][1] = uiInitialCpbRemovalDelay;
@@ -319,6 +326,15 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
     }
   }
+#if JVET_P0446_ALT_CPB
+  // A commercial encoder should track the buffer state for all layers and sub-layers
+  // to ensure CPB conformance. Such tracking is required for calculating alternative
+  // CPB parameters.
+  // Unfortunately VTM does not have such tracking. Thus we cannot encode alternative 
+  // CPB parameters here.
+  bufferingPeriodSEI->m_altCpbParamsPresentFlag = false;
+  bufferingPeriodSEI->m_useAltCpbParamsFlag = false;
+#endif
 }
 
 #if JVET_P0462_SEI360

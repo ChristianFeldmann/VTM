@@ -113,7 +113,11 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
   ::memcpy(target.m_initialCpbRemovalOffset, m_initialCpbRemovalOffset, sizeof(m_initialCpbRemovalOffset));
   ::memcpy(target.m_cpbRemovalDelayDelta, m_cpbRemovalDelayDelta, sizeof(m_cpbRemovalDelayDelta));
+#if !JVET_P0446_BP_CPB_CNT_FIX
   ::memcpy(target.m_bpCpbCnt, m_bpCpbCnt, sizeof(m_bpCpbCnt));
+#else
+  target.m_bpCpbCnt = m_bpCpbCnt;
+#endif
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   target.m_bpDecodingUnitHrdParamsPresentFlag = m_bpDecodingUnitHrdParamsPresentFlag;
   target.m_decodingUnitCpbParamsInPicTimingSeiFlag = m_decodingUnitCpbParamsInPicTimingSeiFlag;
@@ -124,6 +128,9 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 #if JVET_P0446_CONCATENATION
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_maxInitialRemovalDelayForConcatenation = m_maxInitialRemovalDelayForConcatenation;
+#endif
+#if JVET_P0446_ALT_CPB
+  target.m_altCpbParamsPresentFlag = m_altCpbParamsPresentFlag;
 #endif
 }
 
@@ -151,6 +158,13 @@ void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 
   target.m_numNalusInDuMinus1 = m_numNalusInDuMinus1;
   target.m_duCpbRemovalDelayMinus1 = m_duCpbRemovalDelayMinus1;
+#if JVET_P0446_ALT_CPB
+  target.m_cpbAltTimingInfoPresentFlag = m_cpbAltTimingInfoPresentFlag;
+  target.m_cpbAltInitialCpbRemovalDelayDelta = m_cpbAltInitialCpbRemovalDelayDelta;
+  target.m_cpbAltInitialCpbRemovalOffsetDelta = m_cpbAltInitialCpbRemovalOffsetDelta;
+  target.m_cpbDelayOffset = m_cpbDelayOffset;
+  target.m_dpbDelayOffset = m_dpbDelayOffset;
+#endif
 }
 
 // Static member

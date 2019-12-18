@@ -624,6 +624,15 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
 
+#if JVET_P0450_SEI_SARI
+  bool                  m_sampleAspectRatioInfoSEIEnabled;
+  bool                  m_sariCancelFlag;
+  bool                  m_sariPersistenceFlag;
+  int                   m_sariAspectRatioIdc;
+  int                   m_sariSarWidth;
+  int                   m_sariSarHeight;
+#endif
+
   bool      m_MCTSEncConstraint;
 
   // weighted prediction

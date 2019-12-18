@@ -106,7 +106,9 @@ protected:
   void xParseSEIOmniViewport                  (SEIOmniViewport& sei,                  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIRegionWisePacking             (SEIRegionWisePacking& sei,             uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
-
+#if JVET_P0450_SEI_SARI
+  void xParseSEISampleAspectRatioInfo         (SEISampleAspectRatioInfo& sei,         uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
 #if JVET_P0462_SEI360
   void sei_read_scode(std::ostream *pOS, uint32_t length, int& code, const char *pSymbolName);
 #endif

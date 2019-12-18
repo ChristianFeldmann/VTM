@@ -761,6 +761,14 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiRegionWisePacking);
   }
 #endif
+#if JVET_P0450_SEI_SARI
+  if (m_pcCfg->getSampleAspectRatioInfoSEIEnabled())
+  {
+    SEISampleAspectRatioInfo *seiSampleAspectRatioInfo = new SEISampleAspectRatioInfo;
+    m_seiEncoder.initSEISampleAspectRatioInfo(seiSampleAspectRatioInfo);
+    seiMessages.push_back(seiSampleAspectRatioInfo);
+  }
+#endif
 }
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)

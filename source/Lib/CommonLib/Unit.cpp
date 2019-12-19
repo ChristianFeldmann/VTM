@@ -269,7 +269,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   colorTransform = other.colorTransform;
 #endif 
   triangle          = other.triangle;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   transQuantBypass  = other.transQuantBypass;
+#endif
   bdpcmMode         = other.bdpcmMode;
 #if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = other.bdpcmModeChroma;
@@ -283,7 +285,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   tileIdx           = other.tileIdx;
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-  GBiIdx            = other.GBiIdx;
+  BcwIdx            = other.BcwIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
 
@@ -338,7 +340,9 @@ void CodingUnit::initData()
   colorTransform = false;
 #endif 
   triangle          = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   transQuantBypass  = false;
+#endif
   bdpcmMode         = 0;
 #if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = 0;
@@ -352,7 +356,7 @@ void CodingUnit::initData()
   tileIdx           = 0;
   imv               = 0;
   imvNumCand        = 0;
-  GBiIdx            = GBI_DEFAULT;
+  BcwIdx            = BCW_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
@@ -473,7 +477,7 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   {
     return 0;
   }
-  if( firstPU->mhIntraFlag )
+  if( firstPU->ciipFlag )
   {
     return 0;
   }
@@ -583,7 +587,7 @@ void PredictionUnit::initData()
       mvAffi[i][j].setZero();
     }
   }
-  mhIntraFlag = false;
+  ciipFlag = false;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = Position(-1, -1);
   shareParentSize.width = -1;
@@ -641,7 +645,7 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
       mvAffi[i][j] = predData.mvAffi[i][j];
     }
   }
-  mhIntraFlag = predData.mhIntraFlag;
+  ciipFlag = predData.ciipFlag;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = predData.shareParentPos;
   shareParentSize = predData.shareParentSize;
@@ -693,7 +697,7 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
       mvAffi[i][j] = other.mvAffi[i][j];
     }
   }
-  mhIntraFlag = other.mhIntraFlag;
+  ciipFlag = other.ciipFlag;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = other.shareParentPos;
   shareParentSize = other.shareParentSize;
@@ -932,6 +936,17 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   int tbZeroOutWidth = blocks[compID].width;
   int tbZeroOutHeight = blocks[compID].height;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P1026_MTS_SIGNALLING
+  if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && compID == COMPONENT_Y )
+#else
+#if JVET_P0058_CHROMA_TS
+  if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#else
+  if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#endif
+#endif
+#else
 #if JVET_P1026_MTS_SIGNALLING
   if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && !cu->transQuantBypass && compID == COMPONENT_Y )
 #else
@@ -939,6 +954,7 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
 #else
   if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#endif
 #endif
 #endif
   {

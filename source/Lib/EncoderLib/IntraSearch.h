@@ -498,9 +498,11 @@ protected:
 #endif
   bool       xIntraCodingLumaISP      ( CodingStructure& cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode );
   static bool useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode );
 
+#endif
   template<typename T, size_t N>
   void reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip);
 #if !JVET_P0077_LINE_CG_PALETTE

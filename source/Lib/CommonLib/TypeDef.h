@@ -52,6 +52,8 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P2001_REMOVE_TRANSQUANT_BYPASS               1 // JVET-P2001: Remove transquant bypass - not supported in JVET-P2001 draft text
+
 #define JVET_P2001_SYNTAX_ORDER_MISMATCHES                1 // JVET-P2001: Rearrange SPS/PPS syntax to match JVET-P2001 draft text
 
 #define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
@@ -253,6 +255,7 @@
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
+#define JVET_P0450_SEI_SARI                               1 // Sample aspect ratio information SEI
 #define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
@@ -388,7 +391,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
+#define ENABLE_SIMD_OPT_BCW                               1                                                 ///< SIMD optimization for Bcw
 #endif
 
 // End of SIMD optimizations

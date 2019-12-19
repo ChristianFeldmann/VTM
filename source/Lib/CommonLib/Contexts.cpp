@@ -419,7 +419,7 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::BcwIdx = ContextSetCfg::addCtxSet
 ({
   {   5, },
   {   4, },
@@ -685,6 +685,7 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 ({
   { CNU, },
@@ -693,6 +694,7 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#endif
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
 #if JVET_P0350_LFNST_IDX_CTX
@@ -893,7 +895,7 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::CiipFlag = ContextSetCfg::addCtxSet
 ({
   {  50, },
   {  50, },
@@ -1202,7 +1204,7 @@ const CtxSet ContextSetCfg::AffMergeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::GBiIdx = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::BcwIdx = ContextSetCfg::addCtxSet
 ({
   {  20, },
   {   5, },
@@ -1468,6 +1470,7 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
   {   0, },
 });
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
 ({
   { CNU, },
@@ -1476,6 +1479,7 @@ const CtxSet ContextSetCfg::TransquantBypassFlag = ContextSetCfg::addCtxSet
   { DWS, },
 });
 
+#endif
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
 #if JVET_P0350_LFNST_IDX_CTX
@@ -1676,7 +1680,7 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-const CtxSet ContextSetCfg::MHIntraFlag = ContextSetCfg::addCtxSet
+const CtxSet ContextSetCfg::CiipFlag = ContextSetCfg::addCtxSet
 ({
   {  58, },
   {  58, },

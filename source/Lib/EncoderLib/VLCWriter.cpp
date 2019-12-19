@@ -289,7 +289,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     int colIdx, rowIdx;
 
     // CTU size - required to match size in SPS
-    WRITE_CODE( pcPPS->getLog2CtuSize() - 5, 2, "log2_pps_ctu_size_minus5" );
+    WRITE_CODE( pcPPS->getLog2CtuSize() - 5, 2, "pps_log2_ctu_size_minus5" );
     
     // number of explicit tile columns/rows
     WRITE_UVLC( pcPPS->getNumExpTileColumns() - 1, "num_exp_tile_columns_minus1" );
@@ -399,7 +399,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   WRITE_FLAG(pcPPS->getJointCbCrQpOffsetPresentFlag() ? 1 : 0, "pps_joint_cbcr_qp_offset_present_flag");
   if (pcPPS->getJointCbCrQpOffsetPresentFlag())
   {
-    WRITE_SVLC(pcPPS->getQpOffset(JOINT_CbCr), "pps_joint_cbcr_qp_offset");
+    WRITE_SVLC(pcPPS->getQpOffset(JOINT_CbCr), "pps_joint_cbcr_qp_offset_value");
   }
 #else
   WRITE_SVLC( pcPPS->getQpOffset(JOINT_CbCr),   "pps_joint_cbcr_qp_offset" );
@@ -411,7 +411,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   if (pcPPS->getCuChromaQpOffsetEnabledFlag())
   {
 #if !JVET_P1006_PICTURE_HEADER 
-    WRITE_UVLC(pcPPS->getCuChromaQpOffsetSubdiv(),                      "cu_chroma_qp_offset_subdiv");
+    WRITE_UVLC(pcPPS->getCuChromaQpOffsetSubdiv(),                      "pps_cu_chroma_qp_offset_subdiv");
 #endif
     WRITE_UVLC(pcPPS->getChromaQpOffsetListLen() - 1,                   "chroma_qp_offset_list_len_minus1");
     /* skip zero index */
@@ -432,12 +432,14 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 
   WRITE_FLAG( pcPPS->getUseWP() ? 1 : 0,  "weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcPPS->getWPBiPred() ? 1 : 0, "weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   // transquant_bypass is not supported in VVC
   CHECK( pcPPS->getTransquantBypassEnabledFlag(), "transquant_bypass_enabled_flag is not supported in VVC");
 #else
   WRITE_FLAG( pcPPS->getTransquantBypassEnabledFlag()  ? 1 : 0, "transquant_bypass_enabled_flag" );
 
+#endif
 #endif
 #if !JVET_P1004_REMOVE_BRICKS
   WRITE_FLAG( pcPPS->getSingleTileInPicFlag() ? 1 : 0, "single_tile_in_pic_flag" );
@@ -611,7 +613,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 #if JVET_P1006_PICTURE_HEADER 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
 #endif
-  WRITE_FLAG( pcPPS->getSliceHeaderExtensionPresentFlag() ? 1 : 0, "slice_segment_header_extension_present_flag");
+  WRITE_FLAG( pcPPS->getSliceHeaderExtensionPresentFlag() ? 1 : 0, "slice_header_extension_present_flag");
 
   bool pps_extension_present_flag=false;
   bool pps_extension_flags[NUM_PPS_EXTENSION_FLAGS]={false};
@@ -1144,14 +1146,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG( pcSPS->getUseSMVD() ? 1 : 0,                                            "sps_smvd_enabled_flag" );
 #endif
-  WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "sps_dmvr_enable_flag" );
+  WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "sps_dmvr_enabled_flag" );
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES && JVET_P0314_PROF_BDOF_DMVR_HLS
   if (pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                            "sps_dmvr_pic_present_flag");
   }
 #endif
-  WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enable_flag");
+  WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enabled_flag");
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "sps_isp_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMRL() ? 1 : 0,                                             "sps_mrl_enabled_flag");
@@ -1178,11 +1180,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 #endif
 
-  WRITE_FLAG( pcSPS->getUseMTS() ? 1 : 0,                                                      "mts_enabled_flag" );
+  WRITE_FLAG( pcSPS->getUseMTS() ? 1 : 0,                                                      "sps_mts_enabled_flag" );
   if ( pcSPS->getUseMTS() )
   {
-    WRITE_FLAG( pcSPS->getUseIntraMTS() ? 1 : 0,                                               "mts_intra_enabled_flag" );
-    WRITE_FLAG( pcSPS->getUseInterMTS() ? 1 : 0,                                               "mts_inter_enabled_flag" );
+    WRITE_FLAG( pcSPS->getUseIntraMTS() ? 1 : 0,                                               "sps_explicit_mts_intra_enabled_flag" );
+    WRITE_FLAG( pcSPS->getUseInterMTS() ? 1 : 0,                                               "sps_explicit_mts_inter_enabled_flag" );
   }
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                                      "sps_sbt_enabled_flag");
@@ -1190,11 +1192,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseLFNST() ? 1 : 0,                                                    "lfnst_enabled_flag" );
   WRITE_FLAG( pcSPS->getUseSMVD() ? 1 : 0,                                                     "smvd_flag" );
 #endif
-  // KJS: sps_affine_enabled_flag
-  WRITE_FLAG( pcSPS->getUseAffine() ? 1 : 0,                                                   "affine_flag" );
+  WRITE_FLAG( pcSPS->getUseAffine() ? 1 : 0,                                                   "sps_affine_enabled_flag" );
   if ( pcSPS->getUseAffine() )
   {
-    WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "affine_type_flag" );
+    WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "sps_affine_type_flag" );
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
     WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
     WRITE_FLAG( pcSPS->getUsePROF() ? 1 : 0,                                                   "sps_affine_prof_enabled_flag" );
@@ -1210,25 +1211,25 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
   }
 #if !JVET_P2001_SYNTAX_ORDER_MISMATCHES
-  WRITE_FLAG( pcSPS->getUseGBi() ? 1 : 0,                                                      "gbi_flag" );
+  WRITE_FLAG( pcSPS->getUseBcw() ? 1 : 0,                                                      "bcw_flag" );
 #endif
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
-    WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "act_flag");
+    WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "sps_act_enabled_flag");
   }
 #endif
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
-    WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0,                                                    "plt_flag" );
+    WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0,                                                    "sps_palette_enabled_flag" );
   }
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
-  WRITE_FLAG( pcSPS->getUseGBi() ? 1 : 0,                                                      "sps_bcw_enabled_flag" );
+  WRITE_FLAG( pcSPS->getUseBcw() ? 1 : 0,                                                      "sps_bcw_enabled_flag" );
 #endif
-  WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "ibc_flag");
+  WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "sps_ibc_enabled_flag");
 
   // KJS: sps_ciip_enabled_flag
-  WRITE_FLAG( pcSPS->getUseMHIntra() ? 1 : 0,                                                  "mhintra_flag" );
+  WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
 
   if ( pcSPS->getUseMMVD() )
   {
@@ -1255,7 +1256,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
   }
 #endif
-  WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "triangle_flag" );
+  WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "sps_triangle_enabled_flag" );
 
 #if !JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG( pcSPS->getUseMIP() ? 1: 0,                                                       "sps_mip_flag" );
@@ -1268,8 +1269,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getMaxSbtSize() == 64 ? 1 : 0,                                  "max_sbt_size_64_flag");
   }
 #endif
-  // KJS: not in draft yet
-  WRITE_FLAG(pcSPS->getUseReshaper() ? 1 : 0, "sps_reshaper_enable_flag");
+  WRITE_FLAG(pcSPS->getUseLmcs() ? 1 : 0, "sps_lmcs_enable_flag");
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG( pcSPS->getUseLFNST() ? 1 : 0,                                                    "sps_lfnst_enabled_flag" );
 #else
@@ -1294,7 +1294,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
 
   // KJS: remove scaling lists?
-  WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "scaling_list_enabled_flag" );
+  WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
 
 #if JVET_P1006_PICTURE_HEADER
   WRITE_FLAG( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" );
@@ -1957,7 +1957,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
 
   // luma mapping / chroma scaling controls
-  if (sps->getUseReshaper())
+  if (sps->getUseLmcs())
   {
     WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "pic_lmcs_enabled_flag");
     if (picHeader->getLmcsEnabledFlag())
@@ -2587,7 +2587,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       WRITE_FLAG(pcSlice->getLFCrossSliceBoundaryFlag()?1:0, "slice_loop_filter_across_slices_enabled_flag");
     }
 
-    if (pcSlice->getSPS()->getUseReshaper())
+    if (pcSlice->getSPS()->getUseLmcs())
     {
       WRITE_FLAG( pcSlice->getLmcsEnabledFlag()? 1 : 0, "slice_lmcs_enabled_flag");
       if (pcSlice->getLmcsEnabledFlag())
@@ -2642,9 +2642,9 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoMtsConstraintFlag() ? 1 : 0, "no_mts_constraint_flag");
   WRITE_FLAG(cinfo->getNoSbtConstraintFlag() ? 1 : 0, "no_sbt_constraint_flag");
   WRITE_FLAG(cinfo->getNoAffineMotionConstraintFlag() ? 1 : 0, "no_affine_motion_constraint_flag");
-  WRITE_FLAG(cinfo->getNoGbiConstraintFlag() ? 1 : 0, "no_gbi_constraint_flag");
+  WRITE_FLAG(cinfo->getNoBcwConstraintFlag() ? 1 : 0, "no_bcw_constraint_flag");
   WRITE_FLAG(cinfo->getNoIbcConstraintFlag() ? 1 : 0, "no_ibc_constraint_flag");
-  WRITE_FLAG(cinfo->getNoMhIntraConstraintFlag() ? 1 : 0, "no_mh_intra_constraint_flag");
+  WRITE_FLAG(cinfo->getNoCiipConstraintFlag() ? 1 : 0, "no_ciip_constraint_flag");
   WRITE_FLAG(cinfo->getNoFPelMmvdConstraintFlag() ? 1 : 0, "no_fpel_mmvd_constraint_flag");
   WRITE_FLAG(cinfo->getNoTriangleConstraintFlag() ? 1 : 0, "no_triangle_constraint_flag");
   WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");

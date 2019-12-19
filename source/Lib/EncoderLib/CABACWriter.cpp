@@ -612,7 +612,9 @@ void CABACWriter::split_cu_mode( const PartSplit split, const CodingStructure& c
 //  clause 7.3.8.5
 //--------------------------------------------------------------------------------
 //    void  coding_unit               ( cu, partitioner, cuCtx )
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 //    void  cu_transquant_bypass_flag ( cu )
+#endif
 //    void  cu_skip_flag              ( cu )
 //    void  pred_mode                 ( cu )
 //    void  part_mode                 ( cu )
@@ -629,11 +631,13 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 {
   DTRACE( g_trace_ctx, D_SYNTAX, "coding_unit() treeType=%d modeType=%d\n", cu.treeType, cu.modeType );
   CodingStructure& cs = *cu.cs;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   // transquant bypass flag
   if( cs.pps->getTransquantBypassEnabledFlag() )
   {
     cu_transquant_bypass_flag( cu );
   }
+#endif
 
   // skip flag
   if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
@@ -704,12 +708,14 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 }
 
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 void CABACWriter::cu_transquant_bypass_flag( const CodingUnit& cu )
 {
   m_BinEncoder.encodeBin( (cu.transQuantBypass), Ctx::TransquantBypassFlag() );
 }
 
 
+#endif
 void CABACWriter::cu_skip_flag( const CodingUnit& cu )
 {
   unsigned ctxId = DeriveCtx::CtxSkipFlag( cu );
@@ -878,31 +884,31 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
   imv_mode   ( cu );
   affine_amvr_mode( cu );
 
-  cu_gbi_flag( cu );
+  cu_bcw_flag( cu );
 
 }
 
-void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
+void CABACWriter::cu_bcw_flag(const CodingUnit& cu)
 {
-  if(!CU::isGBiIdxCoded(cu))
+  if(!CU::isBcwIdxCoded(cu))
   {
     return;
   }
 
-  CHECK(!(GBI_NUM > 1 && (GBI_NUM == 2 || (GBI_NUM & 0x01) == 1)), " !( GBI_NUM > 1 && ( GBI_NUM == 2 || ( GBI_NUM & 0x01 ) == 1 ) ) ");
-  const uint8_t gbiCodingIdx = (uint8_t)g_GbiCodingOrder[CU::getValidGbiIdx(cu)];
+  CHECK(!(BCW_NUM > 1 && (BCW_NUM == 2 || (BCW_NUM & 0x01) == 1)), " !( BCW_NUM > 1 && ( BCW_NUM == 2 || ( BCW_NUM & 0x01 ) == 1 ) ) ");
+  const uint8_t bcwCodingIdx = (uint8_t)g_BcwCodingOrder[CU::getValidBcwIdx(cu)];
 
-  const int32_t numGBi = (cu.slice->getCheckLDC()) ? 5 : 3;
-  m_BinEncoder.encodeBin((gbiCodingIdx == 0 ? 0 : 1), Ctx::GBiIdx(0));
-  if(numGBi > 2 && gbiCodingIdx != 0)
+  const int32_t numBcw = (cu.slice->getCheckLDC()) ? 5 : 3;
+  m_BinEncoder.encodeBin((bcwCodingIdx == 0 ? 0 : 1), Ctx::BcwIdx(0));
+  if(numBcw > 2 && bcwCodingIdx != 0)
   {
-    const uint32_t prefixNumBits = numGBi - 2;
+    const uint32_t prefixNumBits = numBcw - 2;
     const uint32_t step = 1;
 
     uint8_t idx = 1;
     for(int ui = 0; ui < prefixNumBits; ++ui)
     {
-      if (gbiCodingIdx == idx)
+      if (bcwCodingIdx == idx)
       {
         m_BinEncoder.encodeBinEP(0);
         break;
@@ -915,7 +921,7 @@ void CABACWriter::cu_gbi_flag(const CodingUnit& cu)
     }
   }
 
-  DTRACE(g_trace_ctx, D_SYNTAX, "cu_gbi_flag() gbi_idx=%d\n", cu.GBiIdx ? 1 : 0);
+  DTRACE(g_trace_ctx, D_SYNTAX, "cu_bcw_flag() bcw_idx=%d\n", cu.BcwIdx ? 1 : 0);
 }
 
 void CABACWriter::xWriteTruncBinCode(uint32_t symbol, uint32_t maxSymbol)
@@ -2215,7 +2221,7 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
 #else
   const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
 #endif
-  const bool ciipAvailable = pu.cs->sps->getUseMHIntra() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
+  const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
   {
@@ -2241,7 +2247,7 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
   {
     if (triangleAvailable && ciipAvailable)
     {
-      MHIntra_flag(pu);
+      Ciip_flag(pu);
     }
     merge_idx(pu);
   }
@@ -2563,20 +2569,20 @@ void CABACWriter::mvp_flag( const PredictionUnit& pu, RefPicList eRefList )
   DTRACE( g_trace_ctx, D_SYNTAX, "mvpIdx(refList:%d)=%d\n", eRefList, pu.mvpIdx[eRefList] );
 }
 
-void CABACWriter::MHIntra_flag(const PredictionUnit& pu)
+void CABACWriter::Ciip_flag(const PredictionUnit& pu)
 {
-  if (!pu.cs->sps->getUseMHIntra())
+  if (!pu.cs->sps->getUseCiip())
   {
-    CHECK(pu.mhIntraFlag == true, "invalid MHIntra SPS");
+    CHECK(pu.ciipFlag == true, "invalid Ciip SPS");
     return;
   }
   if (pu.cu->skip)
   {
-    CHECK(pu.mhIntraFlag == true, "invalid MHIntra and skip");
+    CHECK(pu.ciipFlag == true, "invalid Ciip and skip");
     return;
   }
-  m_BinEncoder.encodeBin(pu.mhIntraFlag, Ctx::MHIntraFlag());
-  DTRACE(g_trace_ctx, D_SYNTAX, "MHIntra_flag() MHIntra=%d pos=(%d,%d) size=%dx%d\n", pu.mhIntraFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
+  m_BinEncoder.encodeBin(pu.ciipFlag, Ctx::CiipFlag());
+  DTRACE(g_trace_ctx, D_SYNTAX, "Ciip_flag() Ciip=%d pos=(%d,%d) size=%dx%d\n", pu.ciipFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
 }
 
 
@@ -3037,10 +3043,18 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   }
 
   // determine sign hiding
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P1006_PICTURE_HEADER
+  bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
+#else
+  bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
   bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
 #else
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
+#endif
 #endif
 #if JVET_P0058_CHROMA_TS
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx[compID] == MTS_SKIP)
@@ -3118,6 +3132,17 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   {
     cctx.initSubblock       ( subSetId, sigGroupFlags[subSetId] );
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P1026_MTS_SIGNALLING
+    if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 && compID == COMPONENT_Y )
+#else
+#if JVET_P0058_CHROMA_TS
+    if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].height <= 32 && tu.blocks[compID].width <= 32)) && compID == COMPONENT_Y)
+#else
+    if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && compID == COMPONENT_Y )
+#endif
+#endif
+#else
 #if JVET_P1026_MTS_SIGNALLING
     if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
@@ -3125,6 +3150,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
     if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].height <= 32 && tu.blocks[compID].width <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
 #else
     if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
 #endif
     {
@@ -3296,10 +3322,18 @@ void CABACWriter::isp_mode( const CodingUnit& cu )
 void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P0058_CHROMA_TS
+  if (!CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && (tu.mtsIdx[compID] == MTS_SKIP))
+#else
+  if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP ) )
+#endif
+#else
 #if JVET_P0058_CHROMA_TS
   if (!CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && (tu.mtsIdx[compID] == MTS_SKIP || cu.transQuantBypass))
 #else
   if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP || cu.transQuantBypass ) )
+#endif
 #endif
   {
     ChannelType chType = toChannelType( compID );
@@ -3335,7 +3369,11 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     return;
   }
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  if( cu.cs->sps->getUseLFNST() && CU::isIntra( cu ) )
+#else
   if( cu.cs->sps->getUseLFNST() && CU::isIntra( cu ) && !CU::isLosslessCoded( cu ) )
+#endif
   {
     const bool lumaFlag                   = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag                 = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
@@ -3409,6 +3447,17 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx, const TransformUnit&
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P1026_MTS_SIGNALLING
+  if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 && compID == COMPONENT_Y )
+#else
+#if JVET_P0058_CHROMA_TS
+  if ((tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].width <= 32 && tu.blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#else
+  if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && compID == COMPONENT_Y )
+#endif
+#endif
+#else
 #if JVET_P1026_MTS_SIGNALLING
   if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
 #else
@@ -3416,6 +3465,7 @@ void CABACWriter::last_sig_coeff( CoeffCodingContext& cctx, const TransformUnit&
   if ((tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].width <= 32 && tu.blocks[compID].height <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
 #else
   if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
+#endif
 #endif
 #endif
   {

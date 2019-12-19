@@ -4165,9 +4165,8 @@ bool EncAppCfg::xCheckParameter()
 #endif
   xConfirmPara(!m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce, "CUTransquantBypassFlagForce cannot be 1 when TransquantBypassEnableFlag is 0");
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
 #endif
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   if (m_framePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIType < 3 || m_framePackingSEIType > 5 , "SEIFramePackingType must be in rage 3 to 5");

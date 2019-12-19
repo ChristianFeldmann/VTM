@@ -356,7 +356,6 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       xParseSEISampleAspectRatioInfo((SEISampleAspectRatioInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
 #endif
-#endif
 #if JVET_P0337_PORTING_SEI
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:
       sei = new SEIUserDataRegistered;

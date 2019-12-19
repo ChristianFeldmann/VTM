@@ -240,7 +240,6 @@ public:
   int                   m_sariSarHeight;
 };
 #endif
-#endif
 
 #if HEVC_SEI || JVET_P0337_PORTING_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;

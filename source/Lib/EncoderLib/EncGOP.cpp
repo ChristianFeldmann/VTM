@@ -771,7 +771,6 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiSampleAspectRatioInfo);
   }
 #endif
-#endif
 #if JVET_P0337_PORTING_SEI
   // film grain
   if (m_pcCfg->getFilmGrainCharactersticsSEIEnabled())

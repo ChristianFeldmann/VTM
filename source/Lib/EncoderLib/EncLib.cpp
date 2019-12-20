@@ -121,14 +121,11 @@ void EncLib::create ()
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #if ENABLE_SPLIT_PARALLELISM
   m_numCuEncStacks  = m_numSplitThreads == 1 ? 1 : NUM_RESERVERD_SPLIT_JOBS;
 #else
   m_numCuEncStacks  = 1;
-#endif
-#if ENABLE_WPP_PARALLELISM
-  m_numCuEncStacks *= ( m_numWppThreads + m_numWppExtraLines );
 #endif
 
   m_cCuEncoder      = new EncCu              [m_numCuEncStacks];
@@ -152,12 +149,12 @@ void EncLib::create ()
 
   m_cLoopFilter.create( m_maxTotalCUDepth );
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
 #endif
   if (m_lmcsEnabled)
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for (int jId = 0; jId < m_numCuEncStacks; jId++)
     {
       m_cReshaper[jId].createEnc(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_bitDepth[COMPONENT_Y]);
@@ -179,7 +176,7 @@ void EncLib::destroy ()
   // destroy processing unit classes
   m_cGOPEncoder.        destroy();
   m_cSliceEncoder.      destroy();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cCuEncoder[jId].destroy();
@@ -195,7 +192,7 @@ void EncLib::destroy ()
   m_cEncSAO.            destroy();
   m_cLoopFilter.        destroy();
   m_cRateCtrl.          destroy();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for (int jId = 0; jId < m_numCuEncStacks; jId++)
   {
     m_cReshaper[jId].   destroy();
@@ -203,7 +200,7 @@ void EncLib::destroy ()
 #else
   m_cReshaper.          destroy();
 #endif
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cInterSearch[jId].   destroy();
@@ -214,7 +211,7 @@ void EncLib::destroy ()
   m_cIntraSearch.       destroy();
 #endif
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   delete[] m_cCuEncoder;
   delete[] m_cInterSearch;
   delete[] m_cIntraSearch;
@@ -272,7 +269,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     m_cRateCtrl.initHrdParam(sps0.getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
   }
 #endif
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     m_cRdCost[jId].setCostMode ( m_costMode );
@@ -352,7 +349,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   // initialize processing unit classes
   m_cGOPEncoder.  init( this );
   m_cSliceEncoder.init( this, sps0 );
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for( int jId = 0; jId < m_numCuEncStacks; jId++ )
   {
     // precache a few objects
@@ -458,9 +455,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   {
     xInitScalingLists( sps0, *m_apsMap.getPS( ENC_PPS_ID_RPR ) );
   }
-#if ENABLE_WPP_PARALLELISM
-  m_entropyCodingSyncContextStateVec.resize( pps0.pcv->heightInCtus );
-#endif
   if (getUseCompositeRef())
   {
     Picture *picBg = new Picture;
@@ -508,7 +502,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
   {
     quant->setFlatScalingList(maxLog2TrDynamicRange, sps.getBitDepths());
     quant->setUseScalingList(false);
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( int jId = 1; jId < m_numCuEncStacks; jId++ )
     {
       getTrQuant( jId )->getQuant()->setFlatScalingList( maxLog2TrDynamicRange, sps.getBitDepths() );
@@ -521,7 +515,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     aps.getScalingList().setDefaultScalingList ();
     quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
     quant->setUseScalingList(true);
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( int jId = 1; jId < m_numCuEncStacks; jId++ )
     {
       getTrQuant( jId )->getQuant()->setUseScalingList( true );
@@ -542,7 +536,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     }
     quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
     quant->setUseScalingList(true);
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( int jId = 1; jId < m_numCuEncStacks; jId++ )
     {
       getTrQuant( jId )->getQuant()->setUseScalingList( true );

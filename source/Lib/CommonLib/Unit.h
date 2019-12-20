@@ -361,7 +361,7 @@ struct CodingUnit : public UnitArea
 
   TransformUnit *firstTU;
   TransformUnit *lastTU;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   int64_t cacheId;
   bool    cacheUsed;
@@ -455,7 +455,7 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   MotionBuf         getMotionBuf();
   CMotionBuf        getMotionBuf() const;
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   int64_t cacheId;
   bool    cacheUsed;
@@ -527,7 +527,7 @@ struct TransformUnit : public UnitArea
 #endif
         bool*     getRunTypes(const ComponentID id);
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t cacheId;
   bool    cacheUsed;
 

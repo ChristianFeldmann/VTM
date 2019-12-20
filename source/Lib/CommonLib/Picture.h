@@ -50,11 +50,7 @@
 #include "MCTS.h"
 #include <deque>
 
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-class SyncObj;
-#endif
+#if ENABLE_SPLIT_PARALLELISM
 
 #define CURR_THREAD_ID -1
 
@@ -74,34 +70,9 @@ public:
   void     setSplitThreadId( const int tId = CURR_THREAD_ID );
   unsigned getNumSplitThreads() const { return m_numSplitThreads; };
 #endif
-#if ENABLE_WPP_PARALLELISM
-  unsigned getWppDataId  ( int lId = CURR_THREAD_ID ) const;
-  unsigned getWppThreadId() const;
-  void     setWppThreadId( const int tId = CURR_THREAD_ID );
-#endif
   unsigned getDataId     () const;
   bool init              ( const int ctuYsize, const int ctuXsize, const int numWppThreadsRunning, const int numWppExtraLines, const int numSplitThreads );
   int  getNumPicInstances() const;
-#if ENABLE_WPP_PARALLELISM
-  void setReady          ( const int ctuPosX, const int ctuPosY );
-  void wait              ( const int ctuPosX, const int ctuPosY );
-
-private:
-  bool getNextCtu( Position& pos, int ctuLine, int offset );
-
-private:
-  int m_firstNonFinishedLine;
-  int m_numWppThreads;
-  int m_numWppThreadsRunning;
-  int m_numWppDataInstances;
-  int m_ctuYsize;
-  int m_ctuXsize;
-
-  std::vector<int>         m_LineDone;
-  std::vector<bool>        m_LineProc;
-  std::mutex               m_mutex;
-  std::vector<SyncObj*>    m_SyncObjs;
-#endif
 #if ENABLE_SPLIT_PARALLELISM
 
   int   m_numSplitThreads;
@@ -335,11 +306,7 @@ public:
   int  m_ctuNums;
 
 #if ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-  PelStorage m_bufs[( PARL_SPLIT_MAX_NUM_JOBS * PARL_WPP_MAX_NUM_THREADS )][NUM_PIC_TYPES];
-#else
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];
-#endif
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
@@ -381,11 +348,8 @@ private:
 #if ENABLE_SPLIT_PARALLELISM
 public:
   void finishParallelPart   ( const UnitArea& ctuArea );
-#if ENABLE_WPP_PARALLELISM
-  void finishCtuPart        ( const UnitArea& ctuArea );
 #endif
-#endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 public:
   Scheduler                  scheduler;
 #endif

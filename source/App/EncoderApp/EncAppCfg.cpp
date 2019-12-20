@@ -1633,11 +1633,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("NumWppThreads",                                   m_numWppThreads,                              1, "Number of threads used to run WPP-style parallelization")
   ("NumWppExtraLines",                                m_numWppExtraLines,                           0, "Number of additional wpp lines to switch when threads are blocked")
   ("DebugCTU",                                        m_debugCTU,                                  -1, "If DebugBitstream is present, load frames up to this POC from this bitstream. Starting with DebugPOC-frame at CTUline containin debug CTU.")
-#if ENABLE_WPP_PARALLELISM
-  ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                       true, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-#else
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-#endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
   ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
@@ -2830,9 +2826,6 @@ bool EncAppCfg::xCheckParameter()
   if( m_profile != Profile::NEXT )
   {
     THROW( "Next profile with an alternative partitioner has to be enabled if HEVC_USE_RQT is off!" );
-#if ENABLE_WPP_PARALLELISM
-    xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
-#endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
@@ -2876,26 +2869,12 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_SPLIT_PARALLELISM
   xConfirmPara( m_numSplitThreads < 1, "Number of used threads cannot be smaller than 1" );
   xConfirmPara( m_numSplitThreads > PARL_SPLIT_MAX_NUM_THREADS, "Number of used threads cannot be higher than the number of actual jobs" );
-#if _MSC_VER && ENABLE_WPP_PARALLELISM
-  xConfirmPara( m_numSplitThreads > 1 && m_numSplitThreads != NUM_SPLIT_THREADS_IF_MSVC, "Due to poor implementation by Microsoft, NumSplitThreads cannot be set dynamically on runtime!" );
-#endif
 #else
   xConfirmPara( m_numSplitThreads != 1, "ENABLE_SPLIT_PARALLELISM is disabled, numSplitThreads has to be 1" );
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-  xConfirmPara( m_numWppThreads < 1, "Number of threads used for WPP-style parallelization cannot be smaller than 1" );
-  xConfirmPara( m_numWppThreads > PARL_WPP_MAX_NUM_THREADS, "Number of threads used for WPP-style parallelization cannot be bigger than PARL_WPP_MAX_NUM_THREADS" );
-  xConfirmPara( !m_ensureWppBitEqual && m_numWppThreads > 1, "WPP bit equality is implied when using WPP-style parallelism" );
-#if ENABLE_WPP_STATIC_LINK
-  xConfirmPara( m_numWppExtraLines != 0, "WPP-style extra lines out of range" );
-#else
-  xConfirmPara( m_numWppExtraLines < 0, "WPP-style extra lines out of range" );
-#endif
-#else
   xConfirmPara( m_numWppThreads != 1, "ENABLE_WPP_PARALLELISM is disabled, numWppThreads has to be 1" );
   xConfirmPara( m_ensureWppBitEqual, "ENABLE_WPP_PARALLELISM is disabled, cannot ensure being WPP bit-equal" );
-#endif
 
 
 #if SHARP_LUMA_DELTA_QP && ENABLE_QPA

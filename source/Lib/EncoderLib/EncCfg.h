@@ -785,11 +785,6 @@ protected:
   int         m_numSplitThreads;
   bool        m_forceSingleSplitThread;
 #endif
-#if ENABLE_WPP_PARALLELISM
-  int         m_numWppThreads;
-  int         m_numWppExtraLines;
-  bool        m_ensureWppBitEqual;
-#endif
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
 #if JVET_O0756_CALCULATE_HDRMETRICS
@@ -2002,14 +1997,6 @@ public:
   int          getNumSplitThreads()                            const { return m_numSplitThreads; }
   void         setForceSingleSplitThread( bool b )                   { m_forceSingleSplitThread = b; }
   int          getForceSingleSplitThread()                     const { return m_forceSingleSplitThread; }
-#endif
-#if ENABLE_WPP_PARALLELISM
-  void         setNumWppThreads( int n )                             { m_numWppThreads = n; }
-  int          getNumWppThreads()                              const { return m_numWppThreads; }
-  void         setNumWppExtraLines( int n )                          { m_numWppExtraLines = n; }
-  int          getNumWppExtraLines()                           const { return m_numWppExtraLines; }
-  void         setEnsureWppBitEqual( bool b)                         { m_ensureWppBitEqual = b; }
-  bool         getEnsureWppBitEqual()                          const { return m_ensureWppBitEqual; }
 #endif
   void         setUseALF( bool b ) { m_alf = b; }
   bool         getUseALF()                                      const { return m_alf; }

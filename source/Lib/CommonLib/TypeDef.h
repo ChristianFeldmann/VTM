@@ -288,16 +288,6 @@ typedef std::pair<int, int>  TrCost;
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif
 
-#ifndef ENABLE_WPP_PARALLELISM
-#define ENABLE_WPP_PARALLELISM                            0
-#endif
-#if ENABLE_WPP_PARALLELISM
-#ifndef ENABLE_WPP_STATIC_LINK
-#define ENABLE_WPP_STATIC_LINK                            0 // bug fix static link
-#endif
-#define PARL_WPP_MAX_NUM_THREADS                         16
-
-#endif
 #ifndef ENABLE_SPLIT_PARALLELISM
 #define ENABLE_SPLIT_PARALLELISM                          0
 #endif
@@ -1515,13 +1505,13 @@ template<typename T>
 class dynamic_cache
 {
   std::vector<T*> m_cache;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t         m_cacheId;
 #endif
 
 public:
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   dynamic_cache()
   {
     static int cacheId = 0;
@@ -1553,7 +1543,7 @@ public:
     {
       ret = m_cache.back();
       m_cache.pop_back();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       CHECK( ret->cacheId != m_cacheId, "Putting item into wrong cache!" );
       CHECK( !ret->cacheUsed,           "Fetched an element that should've been in cache!!" );
 #endif
@@ -1563,7 +1553,7 @@ public:
       ret = new T;
     }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     ret->cacheId   = m_cacheId;
     ret->cacheUsed = false;
 
@@ -1573,7 +1563,7 @@ public:
 
   void cache( T* el )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );
     CHECK( el->cacheUsed,            "Putting cached item back into cache!" );
 
@@ -1585,7 +1575,7 @@ public:
 
   void cache( std::vector<T*>& vel )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( auto el : vel )
     {
       CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );

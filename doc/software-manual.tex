@@ -1874,6 +1874,12 @@ Specifies the locations of the horizontal virtual boundaries in units of luma sa
 
 \begin{OptionTableNoShorthand}{Coding tools parameters}{tab:coding-tools}
 
+\Option{MRL} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of multiple reference line intra prediction (MRL).
+\\
+
 \Option{MIP} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -1966,32 +1972,6 @@ If enabled use a fast ME for generalised B Low Delay slices
 \Default{true} &
 Enables use of B-Lambda for non-key low-delay pictures
 \\
-
-%\Option{TransquantBypassEnable} &
-%%\ShortOption{\None} &
-%\Default{false} &
-%Enables or disables the ability to bypass the transform,
-%quantization and filtering stages at CU level.
-%This option corresponds to the value of
-%transquant_bypass_enabled_flag that is transmitted in the PPS.
-%
-%See CUTransquantBypassFlagForce for further details.
-%\\
-%
-%\Option{CUTransquantBypassFlagForce} &
-%%\ShortOption{\None} &
-%\Default{0} &
-%Controls the per CU transformation, quantization and filtering
-%mode decision.
-%This option controls the value of the per CU cu_transquant_bypass_flag.
-%\par
-%\begin{tabular}{cp{0.45\textwidth}}
-% 0 & Bypass is searched on a CU-by-CU basis and will be used if the cost is lower than not bypassing. \\
-% 1 & Bypass is forced for all CUs. \\
-%\end{tabular}
-%
-%This option has no effect if TransquantBypassEnable is disabled.
-%\\
 
 \Option{PCMEnabledFlag} &
 %\ShortOption{\None} &
@@ -3518,6 +3498,32 @@ An array that indicates the elevation range of the i-th recommended viewport reg
 \\
 \end{OptionTableNoShorthand}
 
+\begin{OptionTableNoShorthand}{Sample Aspect Ratio Information SEI message encoder parameters}{tab:sei-sari}
+\Option{SEISampleAspectRatioInfo} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of Sample Aspect Ratio Information SEI message.
+\\
+\Option{SEISARICancelFlag} &
+\Default{true} &
+Indicates that the Sample Aspect Ratio Information SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEISARIPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the Sample Aspect Ratio Information SEI message.
+\\
+\Option{SEISARIAspectRatioIdc} &
+\Default{0} &
+Specifies aspect ratio IDC as defined in the standard.
+\\
+\Option{SEISARISarWidth} &
+\Default{0} &
+Specifies the horizontal size of the sample aspect ratio, if SEISARIAspectRatioIdc is equal to 255.
+\\
+\Option{SEISARISarHeight} &
+\Default{0} &
+Specifies the vertical size of the sample aspect ratio, if SEISARIAspectRatioIdc is equal to 255.
+\\
+\end{OptionTableNoShorthand}
 
 
 

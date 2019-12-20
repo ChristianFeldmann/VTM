@@ -760,7 +760,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
-  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
      return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
   }
@@ -786,7 +786,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   {
     return tmpBs;
   }
-  if ((cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  if ((cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
     return 1;
   }
@@ -917,7 +917,9 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
   const PPS     &pps      = *(cu.cs->pps);
   const SPS     &sps      = *(cu.cs->sps);
   const Slice   &slice    = *(cu.slice);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   const bool    ppsTransquantBypassEnabledFlag = pps.getTransquantBypassEnabledFlag();
+#endif
   const bool    spsPaletteEnabledFlag          = sps.getPLTMode();
   const int     bitDepthLuma                   = sps.getBitDepth(CHANNEL_TYPE_LUMA);
   const ClpRng& clpRng( cu.cs->slice->clpRng(COMPONENT_Y) );
@@ -1100,12 +1102,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
           int dL = d0L + d3L;
 
           bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
           if (ppsTransquantBypassEnabledFlag)
           {
             // check if each of PUs is lossless coded
             bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
             bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
           }
+#endif
           if (spsPaletteEnabledFlag)
           {
             // check if each of PUs is palette coded
@@ -1145,12 +1149,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
         const int d  = d0  + d3;
 
         bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
         if( ppsTransquantBypassEnabledFlag )
         {
           // check if each of PUs is lossless coded
           bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
           bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
         }
+#endif
         if( spsPaletteEnabledFlag)
         {
           // check if each of PUs is palette coded
@@ -1313,12 +1319,14 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
       }
 
       bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
       if( pps.getTransquantBypassEnabledFlag() )
       {
         // check if each of PUs is lossless coded
         bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
         bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
       }
+#endif
       if ( sps.getPLTMode())
       {
         // check if each of PUs is palette coded

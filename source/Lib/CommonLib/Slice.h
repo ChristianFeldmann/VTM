@@ -273,9 +273,9 @@ class ConstraintInfo
   bool              m_noMtsConstraintFlag;
   bool              m_noSbtConstraintFlag;
   bool              m_noAffineMotionConstraintFlag;
-  bool              m_noGbiConstraintFlag;
+  bool              m_noBcwConstraintFlag;
   bool              m_noIbcConstraintFlag;
-  bool              m_noMhIntraConstraintFlag;
+  bool              m_noCiipConstraintFlag;
   bool              m_noFPelMmvdConstraintFlag;
   bool              m_noTriangleConstraintFlag;
   bool              m_noLadfConstraintFlag;
@@ -319,9 +319,9 @@ public:
     , m_noMtsConstraintFlag      (false)
     , m_noSbtConstraintFlag      (false)
     , m_noAffineMotionConstraintFlag(false)
-    , m_noGbiConstraintFlag      (false)
+    , m_noBcwConstraintFlag      (false)
     , m_noIbcConstraintFlag      (false)
-    , m_noMhIntraConstraintFlag  (false)
+    , m_noCiipConstraintFlag  (false)
     , m_noFPelMmvdConstraintFlag (false)
     , m_noTriangleConstraintFlag (false)
     , m_noLadfConstraintFlag     (false)
@@ -400,12 +400,12 @@ public:
   void          setNoSbtConstraintFlag(bool bVal) { m_noSbtConstraintFlag = bVal; }
   bool          getNoAffineMotionConstraintFlag() const { return m_noAffineMotionConstraintFlag; }
   void          setNoAffineMotionConstraintFlag(bool bVal) { m_noAffineMotionConstraintFlag = bVal; }
-  bool          getNoGbiConstraintFlag() const { return m_noGbiConstraintFlag; }
-  void          setNoGbiConstraintFlag(bool bVal) { m_noGbiConstraintFlag = bVal; }
+  bool          getNoBcwConstraintFlag() const { return m_noBcwConstraintFlag; }
+  void          setNoBcwConstraintFlag(bool bVal) { m_noBcwConstraintFlag = bVal; }
   bool          getNoIbcConstraintFlag() const { return m_noIbcConstraintFlag; }
   void          setNoIbcConstraintFlag(bool bVal) { m_noIbcConstraintFlag = bVal; }
-  bool          getNoMhIntraConstraintFlag() const { return m_noMhIntraConstraintFlag; }
-  void          setNoMhIntraConstraintFlag(bool bVal) { m_noMhIntraConstraintFlag = bVal; }
+  bool          getNoCiipConstraintFlag() const { return m_noCiipConstraintFlag; }
+  void          setNoCiipConstraintFlag(bool bVal) { m_noCiipConstraintFlag = bVal; }
   bool          getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
   void          setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
   bool          getNoTriangleConstraintFlag() const { return m_noTriangleConstraintFlag; }
@@ -1085,7 +1085,7 @@ private:
 #endif 
   unsigned          m_PLTMode;
 
-  bool              m_lumaReshapeEnable;
+  bool              m_lmcsEnabled;
   bool              m_AMVREnabledFlag;
   bool              m_LMChroma;
 #if JVET_P0592_CHROMA_PHASE
@@ -1102,14 +1102,17 @@ private:
   bool              m_Affine;
   bool              m_AffineType;
   bool              m_PROF;
-  bool              m_GBi;                        //
-  bool              m_MHIntra;
+  bool              m_bcw;                        //
+  bool              m_ciip;
   bool              m_Triangle;
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool              m_LadfEnabled;
   int               m_LadfNumIntervals;
   int               m_LadfQpOffset[MAX_LADF_INTERVALS];
   int               m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
+#endif
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  bool              m_MRL;
 #endif
   bool              m_MIP;
   ChromaQpMappingTable m_chromaQpMappingTable;
@@ -1357,8 +1360,8 @@ public:
   bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
-  void                    setUseReshaper(bool b)                                                          { m_lumaReshapeEnable = b;                                                   }
-  bool                    getUseReshaper() const                                                          { return m_lumaReshapeEnable;                                                }
+  void                    setUseLmcs(bool b)                                                              { m_lmcsEnabled = b;                                                   }
+  bool                    getUseLmcs() const                                                              { return m_lmcsEnabled;                                                }
   void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
   unsigned                getIBCFlag() const                                                              { return m_IBCFlag; }
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
@@ -1407,8 +1410,8 @@ public:
   bool      getUseLFNST           ()                                      const     { return m_LFNST; }
   void      setUseSMVD(bool b)                                                      { m_SMVD = b; }
   bool      getUseSMVD()                                                  const     { return m_SMVD; }
-  void      setUseGBi             ( bool b )                                        { m_GBi = b; }
-  bool      getUseGBi             ()                                      const     { return m_GBi; }
+  void      setUseBcw             ( bool b )                                        { m_bcw = b; }
+  bool      getUseBcw             ()                                      const     { return m_bcw; }
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   void      setLadfEnabled        ( bool b )                                        { m_LadfEnabled = b; }
   bool      getLadfEnabled        ()                                      const     { return m_LadfEnabled; }
@@ -1420,10 +1423,14 @@ public:
   int       getLadfIntervalLowerBound( int idx )                          const     { return m_LadfIntervalLowerBound[ idx ]; }
 #endif
 
-  void      setUseMHIntra         ( bool b )                                        { m_MHIntra = b; }
-  bool      getUseMHIntra         ()                                      const     { return m_MHIntra; }
+  void      setUseCiip         ( bool b )                                        { m_ciip = b; }
+  bool      getUseCiip         ()                                      const     { return m_ciip; }
   void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
   bool      getUseTriangle        ()                                      const     { return m_Triangle; }
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  void      setUseMRL             ( bool b )                                        { m_MRL = b; }
+  bool      getUseMRL             ()                                      const     { return m_MRL; }
+#endif
   void      setUseMIP             ( bool b )                                        { m_MIP = b; }
   bool      getUseMIP             ()                                      const     { return m_MIP; }
 
@@ -1548,7 +1555,9 @@ private:
   bool             m_loopFilterAcrossTilesEnabledFlag;  //!< loop filtering applied across tiles flag
   bool             m_loopFilterAcrossSlicesEnabledFlag; //!< loop filtering applied across slices flag
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool             m_TransquantBypassEnabledFlag;       //!< Indicates presence of cu_transquant_bypass_flag in CUs.
+#endif
   int              m_log2MaxTransformSkipBlockSize;
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
@@ -1803,8 +1812,10 @@ public:
   void                   checkSliceMap(); 
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void                   setTransquantBypassEnabledFlag( bool b )                         { m_TransquantBypassEnabledFlag = b;            }
   bool                   getTransquantBypassEnabledFlag() const                           { return m_TransquantBypassEnabledFlag;         }
+#endif
 
   uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }
   void                   setLog2MaxTransformSkipBlockSize(uint32_t u)                     { m_log2MaxTransformSkipBlockSize = u; }
@@ -2325,6 +2336,9 @@ private:
 
   // access channel
   const DPS*                 m_dps;
+#if JVET_P0218_AUD_TID_AND_LAYERID
+  const VPS*                 m_pcVPS;
+#endif
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
   Picture*                   m_pcPic;
@@ -2456,6 +2470,10 @@ public:
 
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
+#if JVET_P0218_AUD_TID_AND_LAYERID
+  void                        setVPS( const VPS* pcVPS )                             { m_pcVPS = pcVPS;                                              }
+  const VPS*                  getVPS() const                                         { return m_pcVPS;                                               }
+#endif
 
 #if JVET_P1006_PICTURE_HEADER
   void                        setPPS( const PPS* pcPPS )                             { m_pcPPS = pcPPS;                                              }

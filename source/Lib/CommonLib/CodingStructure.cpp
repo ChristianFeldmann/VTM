@@ -1073,7 +1073,11 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.treeType  = treeType;
   subStruct.modeType  = modeType;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  subStruct.initStructData( currQP[_chType] );
+#else
   subStruct.initStructData( currQP[_chType], isLossless );
+#endif
 
   if( isTuEnc )
   {
@@ -1366,7 +1370,11 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
   }
 }
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+void CodingStructure::initStructData( const int &QP, const bool &skipMotBuf )
+#else
 void CodingStructure::initStructData( const int &QP, const bool &_isLosses, const bool &skipMotBuf )
+#endif
 {
   clearPUs();
   clearTUs();
@@ -1375,7 +1383,9 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   if( QP < MAX_INT )
   {
     currQP[0] = currQP[1] = QP;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     isLossless            = _isLosses;
+#endif
   }
 
   if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && !m_isTuEnc)))

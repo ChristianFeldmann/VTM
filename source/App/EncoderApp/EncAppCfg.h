@@ -151,9 +151,9 @@ protected:
   bool      m_bNoMtsConstraintFlag;
   bool      m_noSbtConstraintFlag;
   bool      m_bNoAffineMotionConstraintFlag;
-  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
-  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
@@ -306,8 +306,8 @@ protected:
 #endif
   bool      m_SMVD;
   bool      m_compositeRefEnabled;
-  bool      m_GBi;
-  bool      m_GBiFast;
+  bool      m_bcw;
+  bool      m_BcwFast;
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabed;
   int       m_LadfNumIntervals;
@@ -315,7 +315,7 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-  bool      m_MHIntra;
+  bool      m_ciip;
   bool      m_Triangle;
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
@@ -350,7 +350,7 @@ protected:
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;
   std::vector<unsigned> m_virtualBoundariesPosY;
-  bool      m_lumaReshapeEnable;
+  bool      m_lmcsEnabled;
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
@@ -376,6 +376,9 @@ protected:
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
   unsigned  m_maxNumAlfAlternativesChroma;
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  bool      m_MRL;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
   int       m_fastLocalDualTreeMode;
@@ -621,6 +624,15 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
 
+#if JVET_P0450_SEI_SARI
+  bool                  m_sampleAspectRatioInfoSEIEnabled;
+  bool                  m_sariCancelFlag;
+  bool                  m_sariPersistenceFlag;
+  int                   m_sariAspectRatioIdc;
+  int                   m_sariSarWidth;
+  int                   m_sariSarHeight;
+#endif
+
   bool      m_MCTSEncConstraint;
 
   // weighted prediction
@@ -674,8 +686,10 @@ protected:
 #if JVET_P0365_SCALING_MATRIX_LFNST
   bool      m_disableScalingMatrixForLfnstBlks;
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
   bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
+#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value

@@ -312,7 +312,9 @@ struct CodingUnit : public UnitArea
   bool           colorTransform;
 #endif
   bool           triangle;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool           transQuantBypass;
+#endif
   int            bdpcmMode;
 #if JVET_P0059_CHROMA_BDPCM
   int            bdpcmModeChroma;
@@ -323,7 +325,7 @@ struct CodingUnit : public UnitArea
   uint32_t           tileIdx;
   uint8_t         mtsFlag;
   uint32_t        lfnstIdx;
-  uint8_t         GBiIdx;
+  uint8_t         BcwIdx;
   int             refIdxBi[2];
   bool           mipFlag;
 
@@ -410,7 +412,7 @@ struct InterPredictionData
   Mv        mvdL0SubPu[MAX_NUM_SUBCU_DMVR];
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
-  bool      mhIntraFlag;
+  bool      ciipFlag;
 
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position  shareParentPos;

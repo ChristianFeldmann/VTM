@@ -479,10 +479,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   dQP = m_pcCfg->getBaseQP();
   if(eSliceType!=I_SLICE)
   {
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if SHARP_LUMA_DELTA_QP
     if (!(( m_pcCfg->getMaxDeltaQP() == 0) && (!m_pcCfg->getLumaLevelToDeltaQPMapping().isEnabled()) && (dQP == -rpcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA) ) && (rpcSlice->getPPS()->getTransquantBypassEnabledFlag())))
 #else
     if (!(( m_pcCfg->getMaxDeltaQP() == 0 ) && (dQP == -rpcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA) ) && (rpcSlice->getPPS()->getTransquantBypassEnabledFlag())))
+#endif
 #endif
     {
       dQP += m_pcCfg->getGOPEntry(iGOPid).m_QPOffset;
@@ -1418,7 +1420,11 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   if( startCtuTsAddr == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
 #endif
   {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    cs.initStructData (pcSlice->getSliceQp());
+#else
     cs.initStructData (pcSlice->getSliceQp(), pcSlice->getPPS()->getTransquantBypassEnabledFlag());
+#endif
   }
 
 #if ENABLE_QPA
@@ -1853,16 +1859,16 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #endif
 
 #if JVET_P1004_REMOVE_BRICKS
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
 #else
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
 #endif
-    if( updateGbiCodingOrder )
+    if( updateBcwCodingOrder )
     {
-      resetGbiCodingOrder(false, cs);
+      resetBcwCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-    if (pcSlice->getSPS()->getUseReshaper())
+    if (pcSlice->getSPS()->getUseLmcs())
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
 
@@ -2109,13 +2115,13 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     }
 
 #if JVET_P1004_REMOVE_BRICKS
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
 #else
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
 #endif
-    if( updateGbiCodingOrder )
+    if( updateBcwCodingOrder )
     {
-      resetGbiCodingOrder(false, cs);
+      resetBcwCodingOrder(false, cs);
     }
 
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );

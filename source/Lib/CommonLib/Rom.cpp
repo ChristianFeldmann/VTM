@@ -216,50 +216,50 @@ public:
     return rtn;
   }
 };
-const int8_t g_GbiLog2WeightBase = 3;
-const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
-const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
-const int8_t g_GbiSearchOrder[GBI_NUM] = { GBI_DEFAULT, GBI_DEFAULT - 2, GBI_DEFAULT + 2, GBI_DEFAULT - 1, GBI_DEFAULT + 1 };
-int8_t g_GbiCodingOrder[GBI_NUM];
-int8_t g_GbiParsingOrder[GBI_NUM];
+const int8_t g_BcwLog2WeightBase = 3;
+const int8_t g_BcwWeightBase = (1 << g_BcwLog2WeightBase);
+const int8_t g_BcwWeights[BCW_NUM] = { -2, 3, 4, 5, 10 };
+const int8_t g_BcwSearchOrder[BCW_NUM] = { BCW_DEFAULT, BCW_DEFAULT - 2, BCW_DEFAULT + 2, BCW_DEFAULT - 1, BCW_DEFAULT + 1 };
+int8_t g_BcwCodingOrder[BCW_NUM];
+int8_t g_BcwParsingOrder[BCW_NUM];
 
-int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList)
+int8_t getBcwWeight(uint8_t bcwIdx, uint8_t uhRefFrmList)
 {
   // Weghts for the model: P0 + w * (P1 - P0) = (1-w) * P0 + w * P1
   // Retuning  1-w for P0 or w for P1
-  return (uhRefFrmList == REF_PIC_LIST_0 ? g_GbiWeightBase - g_GbiWeights[gbiIdx] : g_GbiWeights[gbiIdx]);
+  return (uhRefFrmList == REF_PIC_LIST_0 ? g_BcwWeightBase - g_BcwWeights[bcwIdx] : g_BcwWeights[bcwIdx]);
 }
 
-void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs)
+void resetBcwCodingOrder(bool bRunDecoding, const CodingStructure &cs)
 {
-  // Form parsing order: { GBI_DEFAULT, GBI_DEFAULT+1, GBI_DEFAULT-1, GBI_DEFAULT+2, GBI_DEFAULT-2, ... }
-  g_GbiParsingOrder[0] = GBI_DEFAULT;
-  for (int i = 1; i <= (GBI_NUM >> 1); ++i)
+  // Form parsing order: { BCW_DEFAULT, BCW_DEFAULT+1, BCW_DEFAULT-1, BCW_DEFAULT+2, BCW_DEFAULT-2, ... }
+  g_BcwParsingOrder[0] = BCW_DEFAULT;
+  for (int i = 1; i <= (BCW_NUM >> 1); ++i)
   {
-    g_GbiParsingOrder[2 * i - 1] = GBI_DEFAULT + (int8_t)i;
-    g_GbiParsingOrder[2 * i] = GBI_DEFAULT - (int8_t)i;
+    g_BcwParsingOrder[2 * i - 1] = BCW_DEFAULT + (int8_t)i;
+    g_BcwParsingOrder[2 * i] = BCW_DEFAULT - (int8_t)i;
   }
 
   // Form encoding order
   if (!bRunDecoding)
   {
-    for (int i = 0; i < GBI_NUM; ++i)
+    for (int i = 0; i < BCW_NUM; ++i)
     {
-      g_GbiCodingOrder[(uint32_t)g_GbiParsingOrder[i]] = i;
+      g_BcwCodingOrder[(uint32_t)g_BcwParsingOrder[i]] = i;
     }
   }
 }
 
-uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::codeGbiIdx and TDecSbac::parseGbiIdx
+uint32_t deriveWeightIdxBits(uint8_t bcwIdx) // Note: align this with TEncSbac::codeBcwIdx and TDecSbac::parseBcwIdx
 {
   uint32_t numBits = 1;
-  uint8_t  gbiCodingIdx = (uint8_t)g_GbiCodingOrder[gbiIdx];
+  uint8_t  bcwCodingIdx = (uint8_t)g_BcwCodingOrder[bcwIdx];
 
-  if (GBI_NUM > 2 && gbiCodingIdx != 0)
+  if (BCW_NUM > 2 && bcwCodingIdx != 0)
   {
-    uint32_t prefixNumBits = GBI_NUM - 2;
+    uint32_t prefixNumBits = BCW_NUM - 2;
     uint32_t step = 1;
-    uint8_t  prefixSymbol = gbiCodingIdx;
+    uint8_t  prefixSymbol = bcwCodingIdx;
 
     // Truncated unary code
     uint8_t idx = 1;

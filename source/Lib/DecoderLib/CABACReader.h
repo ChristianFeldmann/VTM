@@ -93,12 +93,14 @@ public:
 #else
   bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
+#endif
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
   void        bdpcm_mode                ( CodingUnit&                   cu,     const ComponentID compID );
   void        cu_pred_data              ( CodingUnit&                   cu );
-  void        cu_gbi_flag               ( CodingUnit&                   cu );
+  void        cu_bcw_flag               ( CodingUnit&                   cu );
   void        extend_ref_line           (CodingUnit&                     cu);
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
@@ -135,7 +137,7 @@ public:
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
-  void        MHIntra_flag              ( PredictionUnit&               pu );
+  void        Ciip_flag              ( PredictionUnit&               pu );
   void        smvd_mode              ( PredictionUnit&               pu );
 
 

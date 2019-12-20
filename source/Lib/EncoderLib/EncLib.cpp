@@ -155,7 +155,7 @@ void EncLib::create ()
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
 #endif
-  if (m_lumaReshapeEnable)
+  if (m_lmcsEnabled)
   {
 #if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
     for (int jId = 0; jId < m_numCuEncStacks; jId++)
@@ -1389,9 +1389,9 @@ void EncLib::xInitSPS(SPS &sps)
   cinfo->setNoMtsConstraintFlag(m_bNoMtsConstraintFlag);
   cinfo->setNoSbtConstraintFlag(m_noSbtConstraintFlag);
   cinfo->setNoAffineMotionConstraintFlag(m_bNoAffineMotionConstraintFlag);
-  cinfo->setNoGbiConstraintFlag(m_bNoGbiConstraintFlag);
+  cinfo->setNoBcwConstraintFlag(m_bNoBcwConstraintFlag);
   cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
-  cinfo->setNoMhIntraConstraintFlag(m_bNoMhIntraConstraintFlag);
+  cinfo->setNoCiipConstraintFlag(m_bNoCiipConstraintFlag);
   cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
@@ -1483,7 +1483,7 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
   sps.setUseSMVD                ( m_SMVD );
-  sps.setUseGBi                ( m_GBi );
+  sps.setUseBcw                ( m_bcw );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   sps.setLadfEnabled           ( m_LadfEnabled );
   if ( m_LadfEnabled )
@@ -1498,7 +1498,7 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
-  sps.setUseMHIntra            ( m_MHIntra );
+  sps.setUseCiip            ( m_ciip );
   sps.setUseTriangle           ( m_Triangle );
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
@@ -1520,7 +1520,10 @@ void EncLib::xInitSPS(SPS &sps)
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
   sps.setUseISP                             ( m_ISP );
-  sps.setUseReshaper                        ( m_lumaReshapeEnable );
+  sps.setUseLmcs                            ( m_lmcsEnabled );
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  sps.setUseMRL                ( m_MRL );
+#endif
   sps.setUseMIP                ( m_MIP );
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
@@ -1984,7 +1987,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   CHECK(!(bestPos <= 15), "Unspecified error");
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   pps.setTransquantBypassEnabledFlag(getTransquantBypassEnabledFlag());
+#endif
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
 #if !JVET_P1004_REMOVE_BRICKS
 
@@ -2643,6 +2648,7 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
     }
     else
     {
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if SHARP_LUMA_DELTA_QP
       // Only adjust QP when not lossless
       if (!(( getMaxDeltaQP() == 0 ) && (!getLumaLevelToDeltaQPMapping().isEnabled()) && (qp == -lumaQpBDOffset ) && (pSlice->getPPS()->getTransquantBypassEnabledFlag())))
@@ -2651,6 +2657,7 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 #endif
 
       {
+#endif
         const GOPEntry &gopEntry=getGOPEntry(gopIndex);
         // adjust QP according to the QP offset for the GOP entry.
         qp +=gopEntry.m_QPOffset;
@@ -2660,7 +2667,9 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
         int qpOffset = (int)floor(Clip3<double>(0.0, 3.0, dqpOffset));
         qp += qpOffset ;
       }
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     }
+#endif
 
 #if !QP_SWITCHING_FOR_PARALLEL
     // modify QP if a fractional QP was originally specified, cause dQPs to be 0 or 1.

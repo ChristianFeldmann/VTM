@@ -2091,7 +2091,7 @@ SPS::SPS()
 , m_wrapAroundOffset          (  0)
 , m_IBCFlag                   (  0)
 , m_PLTMode                   (  0)
-, m_lumaReshapeEnable         (false)
+, m_lmcsEnabled               (false)
 , m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )
 #if JVET_P0592_CHROMA_PHASE
@@ -2106,13 +2106,16 @@ SPS::SPS()
 , m_Affine                    ( false )
 , m_AffineType                ( false )
 , m_PROF                      ( false )
-, m_MHIntra                   ( false )
+, m_ciip                   ( false )
 , m_Triangle                  ( false )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
 , m_LadfEnabled               ( false )
 , m_LadfNumIntervals          ( 0 )
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
+#endif
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+, m_MRL                       ( false )
 #endif
 , m_MIP                       ( false )
 , m_GDREnabledFlag            ( true )
@@ -2338,7 +2341,9 @@ PPS::PPS()
 , m_loopFilterAcrossTilesEnabledFlag (1)
 , m_loopFilterAcrossSlicesEnabledFlag(0)
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 , m_TransquantBypassEnabledFlag      (false)
+#endif
 , m_log2MaxTransformSkipBlockSize    (2)
 , m_entropyCodingSyncEnabledFlag     (false)
 #if !JVET_P1004_REMOVE_BRICKS

@@ -99,6 +99,9 @@ protected:
   void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
   void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
 #endif
+#if JVET_P0450_SEI_SARI
+  void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
+#endif
 
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();

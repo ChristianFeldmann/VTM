@@ -388,6 +388,9 @@ DecLib::DecLib()
   , m_cInterPred()
   , m_cTrQuant()
   , m_cSliceDecoder()
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  , m_cTrQuantScalingList()
+#endif
   , m_cCuDecoder()
   , m_HLSReader()
   , m_seiReader()
@@ -421,6 +424,10 @@ DecLib::DecLib()
   , m_debugCTU( -1 )
 #if JVET_N0278_FIXES
   , m_vps( nullptr )
+#endif
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  , m_scalingListUpdateFlag(true)
+  , m_PreScalingListAPSId(-1)
 #endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
@@ -1177,7 +1184,11 @@ void DecLib::xActivateParameterSets()
     {
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+    m_cTrQuant.init(m_cTrQuantScalingList.getQuant(), sps->getMaxTbSize(), false, false, false, false);
+#else
     m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false );
+#endif
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
@@ -1829,7 +1840,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       scalingList.setDefaultScalingList();
     }
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+    int scalingListAPSId = pcSlice->getPicHeader()->getScalingListAPSId();
+    if (getScalingListUpdateFlag() || (scalingListAPSId != getPreScalingListAPSId()))
+    {
+      quant->setScalingListDec(scalingList);
+      setScalingListUpdateFlag(false);
+      setPreScalingListAPSId(scalingListAPSId);
+    }
+#else
     quant->setScalingListDec( scalingList );
+#endif
     quant->setUseScalingList( true );
   }
   else
@@ -2000,6 +2021,12 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setLayerId( nalu.m_nuhLayerId );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  if (aps->getAPSType() == SCALING_LIST_APS)
+  {
+    setScalingListUpdateFlag(true);
+  }
+#endif
 }
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 {

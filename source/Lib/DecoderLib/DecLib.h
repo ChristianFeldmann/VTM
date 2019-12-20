@@ -92,6 +92,9 @@ private:
   InterPrediction         m_cInterPred;
   TrQuant                 m_cTrQuant;
   DecSlice                m_cSliceDecoder;
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  TrQuant                 m_cTrQuantScalingList;
+#endif
   DecCu                   m_cCuDecoder;
   HLSyntaxReader          m_HLSReader;
   CABACDecoder            m_CABACDecoder;
@@ -139,6 +142,10 @@ private:
 
 #if JVET_N0278_FIXES
   VPS*                    m_vps;
+#endif
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  bool                    m_scalingListUpdateFlag;
+  int                     m_PreScalingListAPSId;
 #endif
 
 public:
@@ -190,6 +197,16 @@ public:
 
 #if JVET_N0278_FIXES
   const VPS* getVPS()                     { return m_vps; }
+#endif
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  void  initScalingList()
+  {
+    m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
+  }
+  bool  getScalingListUpdateFlag() { return m_scalingListUpdateFlag; }
+  void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
+  int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
+  void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
 #endif
 
 protected:

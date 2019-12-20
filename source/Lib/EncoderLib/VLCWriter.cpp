@@ -1406,11 +1406,24 @@ void HLSWriter::codeDPS( const DPS* dps )
 #endif
   WRITE_CODE( dps->getDecodingParameterSetId(),     4,        "dps_decoding_parameter_set_id" );
   WRITE_CODE( dps->getMaxSubLayersMinus1(),         3,        "dps_max_sub_layers_minus1" );
+#if !JVET_P0478_PTL_DPS
   WRITE_FLAG( 0,                                              "dps_reserved_zero_bit" );
 
   ProfileTierLevel ptl = dps->getProfileTierLevel();
   codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
+#else
+  WRITE_CODE( 0,                                    5,         "dps_reserved_zero_5bits" );
+  uint32_t numPTLs = (uint32_t) dps->getNumPTLs();
+  CHECK (numPTLs<1, "At least one PTL must be available in DPS");
 
+  WRITE_CODE( numPTLs - 1,                          4,         "dps_num_ptls_minus1" );
+
+  for (int i=0; i< numPTLs; i++)
+  {
+    ProfileTierLevel ptl = dps->getProfileTierLevel(i);
+    codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
+  }
+#endif
   WRITE_FLAG( 0,                                              "dps_extension_flag" );
   xWriteRbspTrailingBits();
 }

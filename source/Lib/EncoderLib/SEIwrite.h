@@ -52,9 +52,11 @@ public:
   void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested, const uint32_t temporalId);
 
 protected:
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei);
+#endif
 #endif
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId);
@@ -71,9 +73,12 @@ protected:
 #endif
   void xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei);
   void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
+#endif
   void xWriteSEIFramePacking(const SEIFramePacking& sei);
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEISegmentedRectFramePacking(const SEISegmentedRectFramePacking& sei);
   void xWriteSEIDisplayOrientation(const SEIDisplayOrientation &sei);
   void xWriteSEITemporalLevel0Index(const SEITemporalLevel0Index &sei);
@@ -87,11 +92,14 @@ protected:
   void xWriteSEIChromaResamplingFilterHint(const SEIChromaResamplingFilterHint& sei);
   void xWriteSEIKneeFunctionInfo(const SEIKneeFunctionInfo &sei);
   void xWriteSEIColourRemappingInfo(const SEIColourRemappingInfo& sei);
+#endif
   void xWriteSEIMasteringDisplayColourVolume( const SEIMasteringDisplayColourVolume& sei);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);
 #endif
+#if !JVET_P0337_PORTING_SEI
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
+#endif
 #endif
 #if JVET_P0462_SEI360
   void xWriteSEIEquirectangularProjection         (const SEIEquirectangularProjection &sei);
@@ -103,6 +111,13 @@ protected:
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 #endif
 
+#if JVET_P0337_PORTING_SEI
+  void xWriteSEIUserDataRegistered(const SEIUserDataRegistered& sei);
+  void xWriteSEIFilmGrainCharacteristics(const SEIFilmGrainCharacteristics& sei);
+  void xWriteSEIContentLightLevelInfo(const SEIContentLightLevelInfo& sei);
+  void xWriteSEIAmbientViewingEnvironment(const SEIAmbientViewingEnvironment& sei);
+  void xWriteSEIContentColourVolume(const SEIContentColourVolume &sei);
+#endif
   void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();
 };

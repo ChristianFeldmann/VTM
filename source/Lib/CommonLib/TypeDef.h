@@ -247,6 +247,8 @@
 #define MRG_SHARELIST_SHARSIZE                            32
 #endif
 
+#define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
+
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling

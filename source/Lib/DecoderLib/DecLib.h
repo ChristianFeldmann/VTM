@@ -236,6 +236,10 @@ protected:
   void      xParsePrefixSEImessages();
   void      xParsePrefixSEIsForUnknownVCLNal();
 
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS && JVET_P0478_PTL_DPS
+  void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
+#endif
+
 };// END CLASS DEFINITION DecLib
 
 

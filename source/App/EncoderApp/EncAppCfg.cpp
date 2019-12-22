@@ -1610,6 +1610,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIRwpGuardBandNotUsedForPredFlag",               cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, "Specifies if the guard bands is used in the inter prediction process.")
   ("SEIRwpGuardBandType",                             cfg_rwpSEIRwpGuardBandType,               cfg_rwpSEIRwpGuardBandType,               "Specifies the type of the guard bands for the i-th packed region.")
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  ("SEISubpicureLevelInfo",                           m_subpicureLevelInfoSEIEnabled,           false, "Control generation of Subpicture Level Information SEI messages")
+#endif
 #if JVET_P0450_SEI_SARI
   ("SEISampleAspectRatioInfo",                        m_sampleAspectRatioInfoSEIEnabled,        false, "Control generation of Sample Aspect Ratio Information SEI messages")
   ("SEISARICancelFlag",                               m_sariCancelFlag,                         false, "Indicates that Sample Aspect Ratio Information SEI message cancels the persistence or follows")

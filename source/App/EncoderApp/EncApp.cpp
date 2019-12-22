@@ -607,6 +607,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRwpSEIRwpGuardBandNotUsedForPredFlag              (m_rwpSEIRwpGuardBandNotUsedForPredFlag);
   m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
+#endif
 #if JVET_P0450_SEI_SARI
   m_cEncLib.setSampleAspectRatioInfoSEIEnabled                   (m_sampleAspectRatioInfoSEIEnabled);
   m_cEncLib.setSariCancelFlag                                    (m_sariCancelFlag);

@@ -663,6 +663,10 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
 
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  bool m_subpicureLevelInfoSEIEnabled;
+#endif
+
 #if JVET_P0450_SEI_SARI
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;

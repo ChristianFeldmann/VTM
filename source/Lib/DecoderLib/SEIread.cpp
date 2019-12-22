@@ -350,6 +350,12 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       xParseSEIRegionWisePacking((SEIRegionWisePacking&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+    case SEI::SUBPICTURE_LEVEL_INFO:
+      sei = new SEISubpicureLevelInfo;
+      xParseSEISubpictureLevelInfo((SEISubpicureLevelInfo&) *sei, sps, payloadSize, pDecodedMessageOutputStream);
+      break;
+#endif
 #if JVET_P0450_SEI_SARI
     case SEI::SAMPLE_ASPECT_RATIO_INFO:
       sei = new SEISampleAspectRatioInfo;
@@ -1794,6 +1800,44 @@ void SEIReader::xParseSEIRegionWisePacking(SEIRegionWisePacking& sei, uint32_t p
   }
 }
 #endif
+
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, const SPS *sps, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
+{
+  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
+  if (sps == nullptr)
+  {
+    fprintf (stderr, "no SPS available, not parsing Subpicture level information SEI");
+    return;
+  }
+  uint32_t val;
+  sei_read_code( pDecodedMessageOutputStream,   4,  val,    "sli_seq_parameter_set_id" );         sei.m_sliSeqParameterSetId  = val;
+  sei_read_code( pDecodedMessageOutputStream,   3,  val,    "num_ref_levels_minus1" );            sei.m_numRefLevels  = val + 1;
+  sei_read_flag( pDecodedMessageOutputStream,       val,    "explicit_fraction_present_flag" );   sei.m_explicitFractionPresentFlag = val;
+  
+  sei.m_refLevelIdc.resize(sei.m_numRefLevels);
+  if (sei.m_explicitFractionPresentFlag)
+  {
+    sei.m_refLevelFraction.resize(sei.m_numRefLevels);
+  }
+
+  for( int i = 0; i  <  sei.m_numRefLevels; i++ ) 
+  {
+    sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_idc[i]" );         sei.m_refLevelIdc[i]  = (Level::Name) val;
+    if( sei.m_explicitFractionPresentFlag )
+    {
+      int numSubPics = sps->getNumSubPics();
+      sei.m_refLevelFraction[i].resize(numSubPics);
+
+      for( int j = 0; j  <  numSubPics; j++ )
+      {
+        sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_fraction_minus1[i][j]" );  sei.m_refLevelFraction[i][j]= val;
+      }
+    }
+  }
+}
+#endif
+
 #if JVET_P0450_SEI_SARI
 void SEIReader::xParseSEISampleAspectRatioInfo(SEISampleAspectRatioInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {

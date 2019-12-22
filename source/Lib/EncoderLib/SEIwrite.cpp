@@ -194,6 +194,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIContentColourVolume(*static_cast<const SEIContentColourVolume*>(&sei));
     break;
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  case SEI::SUBPICTURE_LEVEL_INFO:
+    xWriteSEISubpictureLevelInfo(*static_cast<const SEISubpicureLevelInfo*>(&sei), sps);
+    break;
+#endif
 #if JVET_P0450_SEI_SARI
   case SEI::SAMPLE_ASPECT_RATIO_INFO:
     xWriteSEISampleAspectRatioInfo(*static_cast<const SEISampleAspectRatioInfo*>(&sei));
@@ -1198,6 +1203,35 @@ void SEIWriter::xWriteSEIRegionWisePacking(const SEIRegionWisePacking &sei)
   }
 }
 #endif
+
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, const SPS* sps)
+{
+  WRITE_CODE( (uint32_t)sei.m_sliSeqParameterSetId, 4,                        "sli_seq_parameter_set_id");
+  CHECK(sei.m_numRefLevels < 1, "SEISubpicureLevelInfo: numRefLevels must be greater than zero");
+  CHECK(sei.m_numRefLevels != (int)sei.m_refLevelIdc.size(), "SEISubpicureLevelInfo: numRefLevels must be equal to the number of levels");
+  if (sei.m_explicitFractionPresentFlag)
+  {
+    CHECK(sei.m_numRefLevels != (int)sei.m_refLevelFraction.size(), "SEISubpicureLevelInfo: numRefLevels must be equal to the number of fractions");
+  }
+  WRITE_CODE( (uint32_t)sei.m_numRefLevels - 1, 3,                            "num_ref_levels_minus1");
+  WRITE_FLAG(           sei.m_explicitFractionPresentFlag,                    "explicit_fraction_present_flag");
+
+  for (int i=0; i<sei.m_numRefLevels; i++)
+  {
+    WRITE_CODE( (uint32_t)sei.m_refLevelIdc[i], 8,                            "ref_level_idc[i]");
+    if (sei.m_explicitFractionPresentFlag)
+    {
+      CHECK(sps->getNumSubPics() != (int)sei.m_refLevelFraction[i].size(),    "SEISubpicureLevelInfo: number of fractions differs from number of subpictures");
+      for (int j = 0; j < sps->getNumSubPics(); j++)
+      {
+        WRITE_CODE( (uint32_t)sei.m_refLevelFraction[i][j], 8,                "ref_level_fraction_minus1[i][j]");
+      }
+    }
+  }
+}
+#endif
+
 #if JVET_P0450_SEI_SARI
 void SEIWriter::xWriteSEISampleAspectRatioInfo(const SEISampleAspectRatioInfo &sei)
 {

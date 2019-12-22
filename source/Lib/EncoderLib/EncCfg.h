@@ -646,6 +646,9 @@ protected:
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  bool m_subpicureLevelInfoSEIEnabled;
+#endif
 #if JVET_P0450_SEI_SARI
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
@@ -1757,6 +1760,10 @@ public:
   bool     getRwpSEIRwpGuardBandNotUsedForPredFlag(uint32_t idx) const                                      { return m_rwpSEIRwpGuardBandNotUsedForPredFlag[idx]; }
   void     setRwpSEIRwpGuardBandType(const std::vector<uint8_t>& rwpGuardBandType)                          { m_rwpSEIRwpGuardBandType = rwpGuardBandType; }
   uint8_t  getRwpSEIRwpGuardBandType(uint32_t idx) const                                                    { return m_rwpSEIRwpGuardBandType[idx]; }
+#endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  bool    getSubpicureLevelInfoSEIEnabled() const { return m_subpicureLevelInfoSEIEnabled; }
+  void    setSubpicureLevelInfoSEIEnabled(bool val) { m_subpicureLevelInfoSEIEnabled = val; }
 #endif
 #if JVET_P0450_SEI_SARI
   bool     getSampleAspectRatioInfoSEIEnabled() const                                                       { return m_sampleAspectRatioInfoSEIEnabled; }

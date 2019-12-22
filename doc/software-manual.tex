@@ -2690,6 +2690,8 @@ The table below lists the SEI messages defined for Version 1 and Range-Extension
   154 & Sphere rotation                          & Table \ref{tab:sei-sphere-rotation} \\
   155 & Region-wise packing                      & Table \ref{tab:sei-rwp} \\
   156 & Omni viewport                            & Table \ref{tab:sei-omni-viewport} \\  
+  203 & Subpicture Level Information             & Table \ref{tab:sei-subpic-level} \\  
+  204 & Sample Aspect Ratio Information          & Table \ref{tab:sei-sari} \\  
 \end{SEIListTable}
 %%
 %% SEI messages
@@ -3582,6 +3584,14 @@ Specifies the vertical size of the sample aspect ratio, if SEISARIAspectRatioIdc
 \\
 \end{OptionTableNoShorthand}
 
+\begin{OptionTableNoShorthand}{Sample Aspect Ratio Information SEI message encoder parameters}{tab:sei-subpic-level}
+\Option{SEISubpictureLevelInfo} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of Subpicture Level Information SEI message.
+Note, currently no other configuration options are available, because this depends on the number of subpictures,
+which are still not supported in the software. An example SEI with dummy values is generated, when the option is enabled.
+\\
+\end{OptionTableNoShorthand}
 
 
 \begin{OptionTableNoShorthand}{Content light level info SEI message encoder parameters}{tab:sei-content-light-level}

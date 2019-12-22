@@ -107,6 +107,9 @@ protected:
   void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
   void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei, const SPS* sps);
+#endif
 #if JVET_P0450_SEI_SARI
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 #endif

@@ -50,7 +50,7 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 void  VLCWriter::xWriteSCodeTr (int value, uint32_t  length, const char *pSymbolName)
 {
   xWriteSCode (value,length);
@@ -116,7 +116,7 @@ bool g_HLSTraceEnable = true;
 
 #endif
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 void VLCWriter::xWriteSCode    ( int code, uint32_t length )
 {
   assert ( length > 0 && length<=32 );
@@ -377,10 +377,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 #endif
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
-  if (pcSPS->getTransformSkipEnabledFlag())
-  {
-    WRITE_UVLC(pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_max_transform_skip_block_size_minus2");
-  }
+  WRITE_UVLC( pcPPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_transform_skip_max_size_minus2");
   WRITE_FLAG( pcPPS->getUseDQP() ? 1 : 0, "cu_qp_delta_enabled_flag" );
 #if !JVET_P1006_PICTURE_HEADER 
   if ( pcPPS->getUseDQP() )
@@ -1406,11 +1403,24 @@ void HLSWriter::codeDPS( const DPS* dps )
 #endif
   WRITE_CODE( dps->getDecodingParameterSetId(),     4,        "dps_decoding_parameter_set_id" );
   WRITE_CODE( dps->getMaxSubLayersMinus1(),         3,        "dps_max_sub_layers_minus1" );
+#if !JVET_P0478_PTL_DPS
   WRITE_FLAG( 0,                                              "dps_reserved_zero_bit" );
 
   ProfileTierLevel ptl = dps->getProfileTierLevel();
   codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
+#else
+  WRITE_CODE( 0,                                    5,         "dps_reserved_zero_5bits" );
+  uint32_t numPTLs = (uint32_t) dps->getNumPTLs();
+  CHECK (numPTLs<1, "At least one PTL must be available in DPS");
 
+  WRITE_CODE( numPTLs - 1,                          4,         "dps_num_ptls_minus1" );
+
+  for (int i=0; i< numPTLs; i++)
+  {
+    ProfileTierLevel ptl = dps->getProfileTierLevel(i);
+    codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
+  }
+#endif
   WRITE_FLAG( 0,                                              "dps_extension_flag" );
   xWriteRbspTrailingBits();
 }

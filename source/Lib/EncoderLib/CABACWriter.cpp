@@ -2042,7 +2042,7 @@ void CABACWriter::xWriteTruncMsbP1RefinementBits(uint32_t symbol, PLTRunMode run
 void CABACWriter::prediction_unit( const PredictionUnit& pu )
 {
   CHECK( pu.cu->treeType == TREE_C, "cannot be chroma CU" );
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   CHECK( pu.cacheUsed, "Processing a PU that should be in cache!" );
   CHECK( pu.cu->cacheUsed, "Processing a CU that should be in cache!" );
 

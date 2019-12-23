@@ -504,7 +504,8 @@ void EncApp::xInitLibCfg()
    m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
   m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setToneMappingInfoSEIEnabled                         ( m_toneMappingInfoSEIEnabled );
   m_cEncLib.setTMISEIToneMapId                                   ( m_toneMapId );
   m_cEncLib.setTMISEIToneMapCancelFlag                           ( m_toneMapCancelFlag );
@@ -535,11 +536,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setChromaResamplingFilterHintEnabled                 ( m_chromaResamplingFilterSEIenabled );
   m_cEncLib.setChromaResamplingHorFilterIdc                      ( m_chromaResamplingHorFilterIdc );
   m_cEncLib.setChromaResamplingVerFilterIdc                      ( m_chromaResamplingVerFilterIdc );
+#endif
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );
   m_cEncLib.setFramePackingArrangementSEIId                      ( m_framePackingSEIId );
   m_cEncLib.setFramePackingArrangementSEIQuincunx                ( m_framePackingSEIQuincunx );
   m_cEncLib.setFramePackingArrangementSEIInterpretation          ( m_framePackingSEIInterpretation );
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIEnabled    ( m_segmentedRectFramePackingSEIEnabled );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEICancel     ( m_segmentedRectFramePackingSEICancel );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIType       ( m_segmentedRectFramePackingSEIType );
@@ -552,6 +555,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSOPDescriptionSEIEnabled                          ( m_SOPDescriptionSEIEnabled );
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
+#endif
 #endif
 #if JVET_P0462_SEI360
   m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
@@ -603,6 +607,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRwpSEIRwpGuardBandNotUsedForPredFlag              (m_rwpSEIRwpGuardBandNotUsedForPredFlag);
   m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
+#endif
 #if JVET_P0450_SEI_SARI
   m_cEncLib.setSampleAspectRatioInfoSEIEnabled                   (m_sampleAspectRatioInfoSEIEnabled);
   m_cEncLib.setSariCancelFlag                                    (m_sariCancelFlag);
@@ -612,7 +619,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSariSarHeight                                     (m_sariSarHeight);
 #endif
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );
   m_cEncLib.setNumberOfTimeSets                                  ( m_timeCodeSEINumTs );
   for(int i = 0; i < m_timeCodeSEINumTs; i++)
@@ -631,16 +639,58 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setKneeSEIInputKneePoint                             ( m_kneeSEIInputKneePoint );
   m_cEncLib.setKneeSEIOutputKneePoint                            ( m_kneeSEIOutputKneePoint );
   m_cEncLib.setColourRemapInfoSEIFileRoot                        ( m_colourRemapSEIFileRoot );
+#endif
   m_cEncLib.setMasteringDisplaySEI                               ( m_masteringDisplay );
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    ( m_preferredTransferCharacteristics>=0     );
   m_cEncLib.setSEIPreferredTransferCharacteristics               ( uint8_t(m_preferredTransferCharacteristics) );
 #endif
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setSEIGreenMetadataInfoSEIEnable                     ( m_greenMetadataType > 0 );
   m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
   m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
 #endif
-
+#endif
+#if JVET_P0337_PORTING_SEI
+  // film grain charcteristics
+  m_cEncLib.setFilmGrainCharactersticsSEIEnabled                 (m_fgcSEIEnabled);
+  m_cEncLib.setFilmGrainCharactersticsSEICancelFlag              (m_fgcSEICancelFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIPersistenceFlag         (m_fgcSEIPersistenceFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIModelID                 ((uint8_t)m_fgcSEIModelID);
+  m_cEncLib.setFilmGrainCharactersticsSEISepColourDescPresent    (m_fgcSEISepColourDescPresentFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIBlendingModeID          ((uint8_t)m_fgcSEIBlendingModeID);
+  m_cEncLib.setFilmGrainCharactersticsSEILog2ScaleFactor         ((uint8_t)m_fgcSEILog2ScaleFactor);
+  for (int i = 0; i < MAX_NUM_COMPONENT; i++) {
+    m_cEncLib.setFGCSEICompModelPresent                          (m_fgcSEICompModelPresent[i], i);
+  }
+  // content light level
+  m_cEncLib.setCLLSEIEnabled                                     (m_cllSEIEnabled);
+  m_cEncLib.setCLLSEIMaxContentLightLevel                        ((uint16_t)m_cllSEIMaxContentLevel);
+  m_cEncLib.setCLLSEIMaxPicAvgLightLevel                         ((uint16_t)m_cllSEIMaxPicAvgLevel);
+  // ambient viewing enviornment
+  m_cEncLib.setAmbientViewingEnvironmentSEIEnabled               (m_aveSEIEnabled);
+  m_cEncLib.setAmbientViewingEnvironmentSEIIlluminance           (m_aveSEIAmbientIlluminance);
+  m_cEncLib.setAmbientViewingEnvironmentSEIAmbientLightX         ((uint16_t)m_aveSEIAmbientLightX);
+  m_cEncLib.setAmbientViewingEnvironmentSEIAmbientLightY         ((uint16_t)m_aveSEIAmbientLightY);
+  // content colour volume SEI
+  m_cEncLib.setCcvSEIEnabled                                     (m_ccvSEIEnabled);
+  m_cEncLib.setCcvSEICancelFlag                                  (m_ccvSEICancelFlag);
+  m_cEncLib.setCcvSEIPersistenceFlag                             (m_ccvSEIPersistenceFlag);
+  m_cEncLib.setCcvSEIEnabled                                     (m_ccvSEIEnabled);
+  m_cEncLib.setCcvSEICancelFlag                                  (m_ccvSEICancelFlag);
+  m_cEncLib.setCcvSEIPersistenceFlag                             (m_ccvSEIPersistenceFlag);
+  m_cEncLib.setCcvSEIPrimariesPresentFlag                        (m_ccvSEIPrimariesPresentFlag);
+  m_cEncLib.setCcvSEIMinLuminanceValuePresentFlag                (m_ccvSEIMinLuminanceValuePresentFlag);
+  m_cEncLib.setCcvSEIMaxLuminanceValuePresentFlag                (m_ccvSEIMaxLuminanceValuePresentFlag);
+  m_cEncLib.setCcvSEIAvgLuminanceValuePresentFlag                (m_ccvSEIAvgLuminanceValuePresentFlag);
+  for(int i = 0; i < MAX_NUM_COMPONENT; i++) {
+    m_cEncLib.setCcvSEIPrimariesX                                (m_ccvSEIPrimariesX[i], i);
+    m_cEncLib.setCcvSEIPrimariesY                                (m_ccvSEIPrimariesY[i], i);
+  }
+  m_cEncLib.setCcvSEIMinLuminanceValue                           (m_ccvSEIMinLuminanceValue);
+  m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
+  m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
+#endif
 #if !JVET_P1004_REMOVE_BRICKS
   m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
   if (m_tileUniformSpacingFlag)
@@ -760,12 +810,6 @@ void EncApp::xInitLibCfg()
 #if ENABLE_SPLIT_PARALLELISM
   m_cEncLib.setNumSplitThreads                                   ( m_numSplitThreads );
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
-#endif
-#if ENABLE_WPP_PARALLELISM
-  m_cEncLib.setNumWppThreads                                     ( m_numWppThreads );
-  m_cEncLib.setNumWppExtraLines                                  ( m_numWppExtraLines );
-  m_cEncLib.setEnsureWppBitEqual                                 ( m_ensureWppBitEqual );
-
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
   m_cEncLib.setLmcs                                              ( m_lmcsEnabled );

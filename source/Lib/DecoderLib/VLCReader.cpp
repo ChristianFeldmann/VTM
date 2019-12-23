@@ -103,7 +103,7 @@ void xTraceFillerData ()
 
 #endif
 
-#if JVET_P0462_SEI360
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
 void VLCReader::xReadSCode (uint32_t length, int& value, const char *pSymbolName)
 #else
@@ -599,11 +599,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #endif
 
   READ_SVLC(iCode, "init_qp_minus26" );                            pcPPS->setPicInitQPMinus26(iCode);
-  if (parameterSetManager->getSPS(pcPPS->getSPSId())->getTransformSkipEnabledFlag())
-  {
-    READ_UVLC(uiCode, "log2_max_transform_skip_block_size_minus2");
-    pcPPS->setLog2MaxTransformSkipBlockSize(uiCode + 2);
-  }
+  READ_UVLC(uiCode, "log2_transform_skip_max_size_minus2");
+  pcPPS->setLog2MaxTransformSkipBlockSize(uiCode + 2);
 
   READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );
 #if !JVET_P1006_PICTURE_HEADER 
@@ -2083,11 +2080,27 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   dps->setDecodingParameterSetId( symbol );
 
   READ_CODE( 3,  symbol,  "dps_max_sub_layers_minus1" );          dps->setMaxSubLayersMinus1( symbol );
+#if !JVET_P0478_PTL_DPS
   READ_FLAG( symbol,      "dps_reserved_zero_bit" );              CHECK(symbol != 0, "dps_reserved_zero_bit must be equal to zero");
 
   ProfileTierLevel ptl;
   parseProfileTierLevel(&ptl, dps->getMaxSubLayersMinus1());
   dps->setProfileTierLevel(ptl);
+#else
+  READ_CODE( 5, symbol,       "dps_reserved_zero_5bits" );              CHECK(symbol != 0, "dps_reserved_zero_5bits must be equal to zero");
+  
+  uint32_t numPTLs;
+  READ_CODE( 4, numPTLs,       "dps_num_ptls_minus1" );
+  numPTLs += 1;
+
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(numPTLs);
+  for (int i=0; i<numPTLs; i++)
+  {
+     parseProfileTierLevel(&ptls[i], dps->getMaxSubLayersMinus1());
+  }
+  dps->setProfileTierLevel(ptls);
+#endif
 
   READ_FLAG( symbol,      "dps_extension_flag" );
   if (symbol)

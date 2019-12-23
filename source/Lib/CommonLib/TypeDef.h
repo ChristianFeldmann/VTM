@@ -52,6 +52,8 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P0257_SCALING_LISTS_SPEEDUP_DEC              1 // JVET-P0257: Decoder speed-up for handling scaling matrices
+
 #define JVET_P2001_REMOVE_TRANSQUANT_BYPASS               1 // JVET-P2001: Remove transquant bypass - not supported in JVET-P2001 draft text
 
 #define JVET_P2001_SYNTAX_ORDER_MISMATCHES                1 // JVET-P2001: Rearrange SPS/PPS syntax to match JVET-P2001 draft text
@@ -146,6 +148,8 @@
 #define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
+
+#define JVET_P0984_SEI_SUBPIC_LEVEL                       1 // JVET-P0984: Subpicture level information SEI
 
 #define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around
 
@@ -247,6 +251,8 @@
 #define MRG_SHARELIST_SHARSIZE                            32
 #endif
 
+#define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
+
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling
@@ -257,6 +263,8 @@
 
 #define JVET_P0450_SEI_SARI                               1 // Sample aspect ratio information SEI
 #define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
+
+#define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting several HEVC SEIs and add encoder control
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
@@ -288,16 +296,6 @@ typedef std::pair<int, int>  TrCost;
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif
 
-#ifndef ENABLE_WPP_PARALLELISM
-#define ENABLE_WPP_PARALLELISM                            0
-#endif
-#if ENABLE_WPP_PARALLELISM
-#ifndef ENABLE_WPP_STATIC_LINK
-#define ENABLE_WPP_STATIC_LINK                            0 // bug fix static link
-#endif
-#define PARL_WPP_MAX_NUM_THREADS                         16
-
-#endif
 #ifndef ENABLE_SPLIT_PARALLELISM
 #define ENABLE_SPLIT_PARALLELISM                          0
 #endif
@@ -1515,13 +1513,13 @@ template<typename T>
 class dynamic_cache
 {
   std::vector<T*> m_cache;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t         m_cacheId;
 #endif
 
 public:
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   dynamic_cache()
   {
     static int cacheId = 0;
@@ -1553,7 +1551,7 @@ public:
     {
       ret = m_cache.back();
       m_cache.pop_back();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       CHECK( ret->cacheId != m_cacheId, "Putting item into wrong cache!" );
       CHECK( !ret->cacheUsed,           "Fetched an element that should've been in cache!!" );
 #endif
@@ -1563,7 +1561,7 @@ public:
       ret = new T;
     }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     ret->cacheId   = m_cacheId;
     ret->cacheUsed = false;
 
@@ -1573,7 +1571,7 @@ public:
 
   void cache( T* el )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );
     CHECK( el->cacheUsed,            "Putting cached item back into cache!" );
 
@@ -1585,7 +1583,7 @@ public:
 
   void cache( std::vector<T*>& vel )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( auto el : vel )
     {
       CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );

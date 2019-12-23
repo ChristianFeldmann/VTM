@@ -680,21 +680,22 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 {
   OutputNALUnit nalu(NAL_UNIT_PREFIX_SEI);
 
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   if(m_pcCfg->getActiveParameterSetsSEIEnabled())
   {
     SEIActiveParameterSets *sei = new SEIActiveParameterSets;
     m_seiEncoder.initSEIActiveParameterSets(sei, sps);
     seiMessages.push_back(sei);
   }
-
+#endif
   if(m_pcCfg->getFramePackingArrangementSEIEnabled())
   {
     SEIFramePacking *sei = new SEIFramePacking;
     m_seiEncoder.initSEIFramePacking (sei, m_iNumPicCoded);
     seiMessages.push_back(sei);
   }
-
+#if !JVET_P0337_PORTING_SEI
   if(m_pcCfg->getSegmentedRectFramePackingArrangementSEIEnabled())
   {
     SEISegmentedRectFramePacking *sei = new SEISegmentedRectFramePacking;
@@ -750,6 +751,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEIChromaResamplingFilterHint(seiChromaResamplingFilterHint, m_pcCfg->getChromaResamplingHorFilterIdc(), m_pcCfg->getChromaResamplingVerFilterIdc());
     seiMessages.push_back(seiChromaResamplingFilterHint);
   }
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   if(m_pcCfg->getSEIAlternativeTransferCharacteristicsSEIEnable())
   {
@@ -787,12 +789,61 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiRegionWisePacking);
   }
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  if (m_pcCfg->getSubpicureLevelInfoSEIEnabled())
+  {
+    SEISubpicureLevelInfo *seiSubpicureLevelInfo = new SEISubpicureLevelInfo;
+    m_seiEncoder.initSEISubpictureLevelInfo(seiSubpicureLevelInfo, sps);
+    seiMessages.push_back(seiSubpicureLevelInfo);
+  }
+#endif
 #if JVET_P0450_SEI_SARI
   if (m_pcCfg->getSampleAspectRatioInfoSEIEnabled())
   {
     SEISampleAspectRatioInfo *seiSampleAspectRatioInfo = new SEISampleAspectRatioInfo;
     m_seiEncoder.initSEISampleAspectRatioInfo(seiSampleAspectRatioInfo);
     seiMessages.push_back(seiSampleAspectRatioInfo);
+  }
+#endif
+#if JVET_P0337_PORTING_SEI
+  // film grain
+  if (m_pcCfg->getFilmGrainCharactersticsSEIEnabled())
+  {
+    SEIFilmGrainCharacteristics *sei = new SEIFilmGrainCharacteristics;
+    m_seiEncoder.initSEIFilmGrainCharacteristics(sei);
+    seiMessages.push_back(sei);
+  }
+
+  // mastering display colour volume
+  if (m_pcCfg->getMasteringDisplaySEI().colourVolumeSEIEnabled)
+  {
+    SEIMasteringDisplayColourVolume *sei = new SEIMasteringDisplayColourVolume;
+    m_seiEncoder.initSEIMasteringDisplayColourVolume(sei);
+    seiMessages.push_back(sei);
+  }
+
+  // content light level
+  if (m_pcCfg->getCLLSEIEnabled())
+  {
+    SEIContentLightLevelInfo *seiCLL = new SEIContentLightLevelInfo;
+    m_seiEncoder.initSEIContentLightLevel(seiCLL);
+    seiMessages.push_back(seiCLL);
+  }
+
+  // ambient viewing environment
+  if (m_pcCfg->getAmbientViewingEnvironmentSEIEnabled())
+  {
+    SEIAmbientViewingEnvironment *seiAVE = new SEIAmbientViewingEnvironment;
+    m_seiEncoder.initSEIAmbientViewingEnvironment(seiAVE);
+    seiMessages.push_back(seiAVE);
+  }
+
+  // content colour volume
+  if (m_pcCfg->getCcvSEIEnabled())
+  {
+    SEIContentColourVolume *seiContentColourVolume = new SEIContentColourVolume;
+    m_seiEncoder.initSEIContentColourVolume(seiContentColourVolume);
+    seiMessages.push_back(seiContentColourVolume);
   }
 #endif
 }
@@ -2252,12 +2303,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     m_pcSliceEncoder->create( picWidth, picHeight, chromaFormatIDC, maxCUWidth, maxCUHeight, maxTotalCUDepth );
 
-#if ENABLE_SPLIT_PARALLELISM && ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, m_pcCfg->getNumWppThreads(), m_pcCfg->getNumWppExtraLines(), m_pcCfg->getNumSplitThreads() );
-#elif ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, 1                          , 0                             , m_pcCfg->getNumSplitThreads() );
-#elif ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, m_pcCfg->getNumWppThreads(), m_pcCfg->getNumWppExtraLines(), 1                             );
 #endif
     pcPic->createTempBuffers( pcPic->cs->pps->pcv->maxCUWidth );
     pcPic->cs->createCoeffs((bool)pcPic->cs->sps->getPLTMode());

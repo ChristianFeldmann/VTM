@@ -116,7 +116,7 @@ public:
   double getCWeight() { return m_chromaWeight; }
   void adjustLmcsPivot();
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   void copyState(const EncReshape& other);
 #endif
 };// END CLASS DEFINITION EncReshape

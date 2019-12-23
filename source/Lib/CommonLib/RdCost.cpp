@@ -242,7 +242,11 @@ void RdCost::copyState( const RdCost& other )
   m_mvPredictor   = other.m_mvPredictor;
   m_motionLambda  = other.m_motionLambda;
   m_iCostScale    = other.m_iCostScale;
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  m_dLambdaMotionSAD = other.m_dLambdaMotionSAD;
+#else
   memcpy( m_dLambdaMotionSAD, other.m_dLambdaMotionSAD, sizeof( m_dLambdaMotionSAD ) );
+#endif
 #if WCG_EXT
   m_dLambda_unadjusted  = other.m_dLambda_unadjusted ;
   m_DistScaleUnadjusted = other.m_DistScaleUnadjusted;

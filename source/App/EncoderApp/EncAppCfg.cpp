@@ -1444,7 +1444,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIPictureTiming",                                m_pictureTimingSEIEnabled,                        false, "Control generation of picture timing SEI messages")
   ("SEIDecodingUnitInfo",                             m_decodingUnitInfoSEIEnabled,                     false, "Control generation of decoding unit information SEI message.")
   ("SEIFrameFieldInfo",                               m_frameFieldInfoSEIEnabled,                       false, "Control generation of frame field information SEI messages")
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   ("SEIToneMappingInfo",                              m_toneMappingInfoSEIEnabled,                      false, "Control generation of Tone Mapping SEI messages")
   ("SEIToneMapId",                                    m_toneMapId,                                          0, "Specifies Id of Tone Mapping SEI message for a given session")
   ("SEIToneMapCancelFlag",                            m_toneMapCancelFlag,                              false, "Indicates that Tone Mapping SEI message cancels the persistence or follows")
@@ -1486,6 +1487,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0: unspecified  - Chroma filter is unknown or is determined by the application"
                                                                                                                "\t1: User-defined - Filter coefficients are specified in the chroma sampling filter hint SEI message"
                                                                                                                "\t2: Standards-defined - ITU-T Rec. T.800 | ISO/IEC15444-1, 5/3 filter")
+#endif
   ("SEIFramePacking",                                 m_framePackingSEIEnabled,                         false, "Control generation of frame packing SEI messages")
   ("SEIFramePackingType",                             m_framePackingSEIType,                                0, "Define frame packing arrangement\n"
                                                                                                                "\t3: side by side - frames are displayed horizontally\n"
@@ -1497,6 +1499,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0: unspecified\n"
                                                                                                                "\t1: stereo pair, frame0 represents left view\n"
                                                                                                                "\t2: stereo pair, frame0 represents right view")
+
+#if !JVET_P0337_PORTING_SEI
   ("SEISegmentedRectFramePacking",                    m_segmentedRectFramePackingSEIEnabled,            false, "Controls generation of segmented rectangular frame packing SEI messages")
   ("SEISegmentedRectFramePackingCancel",              m_segmentedRectFramePackingSEICancel,             false, "If equal to 1, cancels the persistence of any previous SRFPA SEI message")
   ("SEISegmentedRectFramePackingType",                m_segmentedRectFramePackingSEIType,                   0, "Specifies the arrangement of the frames in the reconstructed picture")
@@ -1541,6 +1545,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIKneeFunctionNumKneePointsMinus1",              m_kneeSEINumKneePointsMinus1,                         2, "Specifies the number of knee points - 1")
   ("SEIKneeFunctionInputKneePointValue",              cfg_kneeSEIInputKneePointValue,   cfg_kneeSEIInputKneePointValue, "Array of input knee point")
   ("SEIKneeFunctionOutputKneePointValue",             cfg_kneeSEIOutputKneePointValue, cfg_kneeSEIOutputKneePointValue, "Array of output knee point")
+#endif
   ("SEIMasteringDisplayColourVolume",                 m_masteringDisplay.colourVolumeSEIEnabled,         false, "Control generation of mastering display colour volume SEI messages")
   ("SEIMasteringDisplayMaxLuminance",                 m_masteringDisplay.maxLuminance,                  10000u, "Specifies the mastering display maximum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
   ("SEIMasteringDisplayMinLuminance",                 m_masteringDisplay.minLuminance,                      0u, "Specifies the mastering display minimum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
@@ -1549,8 +1554,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   ("SEIPreferredTransferCharacterisics",              m_preferredTransferCharacteristics,                   -1, "Value for the preferred_transfer_characteristics field of the Alternative transfer characteristics SEI which will override the corresponding entry in the VUI. If negative, do not produce the respective SEI message")
 #endif
+#if !JVET_P0337_PORTING_SEI
   ("SEIGreenMetadataType",                            m_greenMetadataType,                                  0u, "Value for the green_metadata_type specifies the type of metadata that is present in the SEI message. If green_metadata_type is 1, then metadata enabling quality recovery after low-power encoding is present")
   ("SEIXSDMetricType",                                m_xsdMetricType,                                      0u, "Value for the xsd_metric_type indicates the type of the objective quality metric. PSNR is the only type currently supported")
+#endif
 #endif
 
 #if JVET_P0462_SEI360
@@ -1603,6 +1610,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIRwpGuardBandNotUsedForPredFlag",               cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, "Specifies if the guard bands is used in the inter prediction process.")
   ("SEIRwpGuardBandType",                             cfg_rwpSEIRwpGuardBandType,               cfg_rwpSEIRwpGuardBandType,               "Specifies the type of the guard bands for the i-th packed region.")
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  ("SEISubpicureLevelInfo",                           m_subpicureLevelInfoSEIEnabled,           false, "Control generation of Subpicture Level Information SEI messages")
+#endif
 #if JVET_P0450_SEI_SARI
   ("SEISampleAspectRatioInfo",                        m_sampleAspectRatioInfoSEIEnabled,        false, "Control generation of Sample Aspect Ratio Information SEI messages")
   ("SEISARICancelFlag",                               m_sariCancelFlag,                         false, "Indicates that Sample Aspect Ratio Information SEI message cancels the persistence or follows")
@@ -1616,6 +1626,50 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TraceChannelsList",                               bTracingChannelsList,                              false, "List all available tracing channels")
   ("TraceRule",                                       sTracingRule,                               string( "" ), "Tracing rule (ex: \"D_CABAC:poc==8\" or \"D_REC_CB_LUMA:poc==8\")")
   ("TraceFile",                                       sTracingFile,                               string( "" ), "Tracing file")
+#endif
+#if JVET_P0337_PORTING_SEI
+// film grain characteristics SEI
+  ("SEIFGCEnabled",                                   m_fgcSEIEnabled,                                   false, "Control generation of the film grain characteristics SEI message")
+  ("SEIFGCCancelFlag",                                m_fgcSEICancelFlag,                                 true, "Specifies the persistence of any previous film grain characteristics SEI message in output order.")
+  ("SEIFGCPersistenceFlag",                           m_fgcSEIPersistenceFlag,                           false, "Specifies the persistence of the film grain characteristics SEI message for the current layer.")
+  ("SEIFGCModelID",                                   m_fgcSEIModelID,                                      0u, "Specifies the film grain simulation model. 0: frequency filtering; 1: auto-regression.")
+  ("SEIFGCSepColourDescPresentFlag",                  m_fgcSEISepColourDescPresentFlag,                  false, "Specifies the presence of a distinct colour space description for the film grain characteristics specified in the SEI message.")
+  ("SEIFGCBlendingModeID",                            m_fgcSEIBlendingModeID,                               0u, "Specifies the blending mode used to blend the simulated film grain with the decoded images. 0: additive; 1: multiplicative.")
+  ("SEIFGCLog2ScaleFactor",                           m_fgcSEILog2ScaleFactor,                              0u, "Specifies a scale factor used in the film grain characterization equations.")
+  ("SEIFGCCompModelPresentComp0",                     m_fgcSEICompModelPresent[0],                       false, "Specifies the presence of film grain modelling on colour component 0.")
+  ("SEIFGCCompModelPresentComp1",                     m_fgcSEICompModelPresent[1],                       false, "Specifies the presence of film grain modelling on colour component 1.")
+  ("SEIFGCCompModelPresentComp2",                     m_fgcSEICompModelPresent[2],                       false, "Specifies the presence of film grain modelling on colour component 2.")
+
+// content light level SEI
+  ("SEICLLEnabled",                                   m_cllSEIEnabled,                                   false, "Control generation of the content light level SEI message")
+  ("SEICLLMaxContentLightLevel",                      m_cllSEIMaxContentLevel,                              0u, "When not equal to 0, specifies an upper bound on the maximum light level among all individual samples in a 4:4:4 representation "
+                                                                                                                "of red, green, and blue colour primary intensities in the linear light domain for the pictures of the CLVS, "
+                                                                                                                "in units of candelas per square metre.When equal to 0, no such upper bound is indicated.")
+  ("SEICLLMaxPicAvgLightLevel",                       m_cllSEIMaxPicAvgLevel,                               0u, "When not equal to 0, specifies an upper bound on the maximum average light level among the samples in a 4:4:4 representation "
+                                                                                                                "of red, green, and blue colour primary intensities in the linear light domain for any individual picture of the CLVS, "
+                                                                                                                "in units of candelas per square metre.When equal to 0, no such upper bound is indicated.")
+// ambient viewing environment SEI
+  ("SEIAVEEnabled",                                   m_aveSEIEnabled,                                   false, "Control generation of the ambient viewing environment SEI message")
+  ("SEIAVEAmbientIlluminance",                        m_aveSEIAmbientIlluminance,                      100000u, "Specifies the environmental illluminance of the ambient viewing environment in units of 1/10000 lux for the ambient viewing environment SEI message")
+  ("SEIAVEAmbientLightX",                             m_aveSEIAmbientLightX,                            15635u, "Specifies the normalized x chromaticity coordinate of the environmental ambient light in the nominal viewing enviornment according to the CIE 1931 definition in units of 1/50000 lux for the ambient viewing enviornment SEI message")
+  ("SEIAVEAmbientLightY",                             m_aveSEIAmbientLightY,                            16450u, "Specifies the normalized y chromaticity coordinate of the environmental ambient light in the nominal viewing enviornment according to the CIE 1931 definition in units of 1/50000 lux for the ambient viewing enviornment SEI message")
+// content colour volume SEI
+  ("SEICCVEnabled",                                   m_ccvSEIEnabled,                                   false, "Control generation of the Content Colour Volume SEI message")
+  ("SEICCVCancelFlag",                                m_ccvSEICancelFlag,                                 true, "Specifies the persistence of any previous content colour volume SEI message in output order.")
+  ("SEICCVPersistenceFlag",                           m_ccvSEIPersistenceFlag,                           false, "Specifies the persistence of the content colour volume SEI message for the current layer.")
+  ("SEICCVPrimariesPresent",                          m_ccvSEIPrimariesPresentFlag,                       true, "Specifies whether the CCV primaries are present in the content colour volume SEI message.")
+  ("m_ccvSEIPrimariesX0",                             m_ccvSEIPrimariesX[0],                             0.300, "Specifies the x coordinate of the first (green) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesY0",                             m_ccvSEIPrimariesY[0],                             0.600, "Specifies the y coordinate of the first (green) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesX1",                             m_ccvSEIPrimariesX[1],                             0.150, "Specifies the x coordinate of the second (blue) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesY1",                             m_ccvSEIPrimariesY[1],                             0.060, "Specifies the y coordinate of the second (blue) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesX2",                             m_ccvSEIPrimariesX[2],                             0.640, "Specifies the x coordinate of the third (red) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesY2",                             m_ccvSEIPrimariesY[2],                             0.330, "Specifies the y coordinate of the third (red) primary for the content colour volume SEI message")
+  ("SEICCVMinLuminanceValuePresent",                  m_ccvSEIMinLuminanceValuePresentFlag,               true, "Specifies whether the CCV min luminance value is present in the content colour volume SEI message")
+  ("SEICCVMinLuminanceValue",                         m_ccvSEIMinLuminanceValue,                           0.0, "specifies the CCV min luminance value  in the content colour volume SEI message")
+  ("SEICCVMaxLuminanceValuePresent",                  m_ccvSEIMaxLuminanceValuePresentFlag,               true, "Specifies whether the CCV max luminance value is present in the content colour volume SEI message")
+  ("SEICCVMaxLuminanceValue",                         m_ccvSEIMaxLuminanceValue,                           0.1, "specifies the CCV max luminance value  in the content colour volume SEI message")
+  ("SEICCVAvgLuminanceValuePresent",                  m_ccvSEIAvgLuminanceValuePresentFlag,               true, "Specifies whether the CCV avg luminance value is present in the content colour volume SEI message")
+  ("SEICCVAvgLuminanceValue",                         m_ccvSEIAvgLuminanceValue,                          0.01, "specifies the CCV avg luminance value  in the content colour volume SEI message")
 #endif
 
   ("DebugBitstream",                                  m_decodeBitstreams[0],             string( "" ), "Assume the frames up to POC DebugPOC will be the same as in this bitstream. Load those frames from the bitstream instead of encoding them." )
@@ -1633,11 +1687,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("NumWppThreads",                                   m_numWppThreads,                              1, "Number of threads used to run WPP-style parallelization")
   ("NumWppExtraLines",                                m_numWppExtraLines,                           0, "Number of additional wpp lines to switch when threads are blocked")
   ("DebugCTU",                                        m_debugCTU,                                  -1, "If DebugBitstream is present, load frames up to this POC from this bitstream. Starting with DebugPOC-frame at CTUline containin debug CTU.")
-#if ENABLE_WPP_PARALLELISM
-  ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                       true, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-#else
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-#endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
   ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
@@ -2554,7 +2604,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-  #if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   if( m_masteringDisplay.colourVolumeSEIEnabled )
   {
     for(uint32_t idx=0; idx<6; idx++)
@@ -2566,7 +2616,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_masteringDisplay.whitePoint[idx] = uint16_t((cfg_DisplayWhitePointCode.values.size() > idx) ? cfg_DisplayWhitePointCode.values[idx] : 0);
     }
   }
-
+#if !JVET_P0337_PORTING_SEI
   if( m_toneMappingInfoSEIEnabled && !m_toneMapCancelFlag )
   {
     if( m_toneMapModelId == 2 && !cfg_startOfCodedInterval.values.empty() )
@@ -2635,6 +2685,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_timeSetArray[i].timeOffsetValue       = cfg_timeCodeSeiTimeOffsetValue      .values.size()>i ? cfg_timeCodeSeiTimeOffsetValue      .values [i] : 0;
     }
   }
+#endif
 #endif
 #if JVET_P0462_SEI360
   if ( m_omniViewportSEIEnabled && !m_omniViewportSEICancelFlag )
@@ -2830,9 +2881,6 @@ bool EncAppCfg::xCheckParameter()
   if( m_profile != Profile::NEXT )
   {
     THROW( "Next profile with an alternative partitioner has to be enabled if HEVC_USE_RQT is off!" );
-#if ENABLE_WPP_PARALLELISM
-    xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
-#endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
@@ -2876,26 +2924,12 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_SPLIT_PARALLELISM
   xConfirmPara( m_numSplitThreads < 1, "Number of used threads cannot be smaller than 1" );
   xConfirmPara( m_numSplitThreads > PARL_SPLIT_MAX_NUM_THREADS, "Number of used threads cannot be higher than the number of actual jobs" );
-#if _MSC_VER && ENABLE_WPP_PARALLELISM
-  xConfirmPara( m_numSplitThreads > 1 && m_numSplitThreads != NUM_SPLIT_THREADS_IF_MSVC, "Due to poor implementation by Microsoft, NumSplitThreads cannot be set dynamically on runtime!" );
-#endif
 #else
   xConfirmPara( m_numSplitThreads != 1, "ENABLE_SPLIT_PARALLELISM is disabled, numSplitThreads has to be 1" );
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-  xConfirmPara( m_numWppThreads < 1, "Number of threads used for WPP-style parallelization cannot be smaller than 1" );
-  xConfirmPara( m_numWppThreads > PARL_WPP_MAX_NUM_THREADS, "Number of threads used for WPP-style parallelization cannot be bigger than PARL_WPP_MAX_NUM_THREADS" );
-  xConfirmPara( !m_ensureWppBitEqual && m_numWppThreads > 1, "WPP bit equality is implied when using WPP-style parallelism" );
-#if ENABLE_WPP_STATIC_LINK
-  xConfirmPara( m_numWppExtraLines != 0, "WPP-style extra lines out of range" );
-#else
-  xConfirmPara( m_numWppExtraLines < 0, "WPP-style extra lines out of range" );
-#endif
-#else
   xConfirmPara( m_numWppThreads != 1, "ENABLE_WPP_PARALLELISM is disabled, numWppThreads has to be 1" );
   xConfirmPara( m_ensureWppBitEqual, "ENABLE_WPP_PARALLELISM is disabled, cannot ensure being WPP bit-equal" );
-#endif
 
 
 #if SHARP_LUMA_DELTA_QP && ENABLE_QPA
@@ -4114,12 +4148,12 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara(!m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce, "CUTransquantBypassFlagForce cannot be 1 when TransquantBypassEnableFlag is 0");
 
 #endif
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   if (m_framePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIType < 3 || m_framePackingSEIType > 5 , "SEIFramePackingType must be in rage 3 to 5");
   }
-
+#if !JVET_P0337_PORTING_SEI
   if (m_segmentedRectFramePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIEnabled , "SEISegmentedRectFramePacking must be 0 when SEIFramePacking is 1");
@@ -4135,6 +4169,7 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara(m_timeCodeSEINumTs > MAX_TIMECODE_SEI_SETS, "Number of time sets cannot exceed 3");
   }
+#endif
 #endif
 
 #if JVET_P0462_SEI360
@@ -4168,7 +4203,7 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
 
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif

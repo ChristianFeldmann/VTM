@@ -59,9 +59,11 @@ public:
 
 protected:
   void xReadSEImessage                        (SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t temporalId, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   void xParseSEIuserDataUnregistered          (SEIuserDataUnregistered &sei,          uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#if !JVET_P0337_PORTING_SEI
   void xParseSEIActiveParameterSets           (SEIActiveParameterSets  &sei,          uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
 #endif
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
   void xParseSEIDecodingUnitInfo              (SEIDecodingUnitInfo& sei,              uint32_t payloadSize, const SEIBufferingPeriod& bp, const uint32_t temporalId, std::ostream *pDecodedMessageOutputStream);
@@ -78,9 +80,12 @@ protected:
 #endif
   void xParseSEIFrameFieldinfo                (SEIFrameFieldInfo& sei,                 uint32_t payloadSize,                    std::ostream *pDecodedMessageOutputStream);
   void xParseSEIDependentRAPIndication        (SEIDependentRAPIndication& sei,        uint32_t payLoadSize,                     std::ostream *pDecodedMessageOutputStream);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   void xParseSEIRecoveryPoint                 (SEIRecoveryPoint& sei,                 uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
   void xParseSEIFramePacking                  (SEIFramePacking& sei,                  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#if !JVET_P0337_PORTING_SEI
   void xParseSEISegmentedRectFramePacking     (SEISegmentedRectFramePacking& sei,     uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIDisplayOrientation            (SEIDisplayOrientation &sei,            uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEITemporalLevel0Index           (SEITemporalLevel0Index &sei,           uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
@@ -93,12 +98,17 @@ protected:
   void xParseSEITimeCode                      (SEITimeCode& sei,                      uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIChromaResamplingFilterHint    (SEIChromaResamplingFilterHint& sei,    uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIKneeFunctionInfo              (SEIKneeFunctionInfo& sei,              uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
   void xParseSEIMasteringDisplayColourVolume  (SEIMasteringDisplayColourVolume& sei,  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#if !JVET_P0337_PORTING_SEI
   void xParseSEIColourRemappingInfo           (SEIColourRemappingInfo& sei,           uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void xParseSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics& sei,              uint32_t payLoadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
+#if !JVET_P0337_PORTING_SEI
   void xParseSEIGreenMetadataInfo             (SEIGreenMetadataInfo& sei,             uint32_t payLoadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
 #endif
 #if JVET_P0462_SEI360
   void xParseSEIEquirectangularProjection     (SEIEquirectangularProjection &sei,     uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
@@ -106,10 +116,21 @@ protected:
   void xParseSEIOmniViewport                  (SEIOmniViewport& sei,                  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIRegionWisePacking             (SEIRegionWisePacking& sei,             uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  void xParseSEISubpictureLevelInfo           (SEISubpicureLevelInfo& sei, const SPS *sps, uint32_t payloadSize,            std::ostream *pDecodedMessageOutputStream);
+#endif
 #if JVET_P0450_SEI_SARI
   void xParseSEISampleAspectRatioInfo         (SEISampleAspectRatioInfo& sei,         uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
-#if JVET_P0462_SEI360
+#if JVET_P0337_PORTING_SEI
+  void xParseSEIUserDataRegistered            (SEIUserDataRegistered& sei,            uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+  void xParseSEIFilmGrainCharacteristics      (SEIFilmGrainCharacteristics& sei,      uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+  void xParseSEIContentLightLevelInfo         (SEIContentLightLevelInfo& sei,         uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+  void xParseSEIAmbientViewingEnvironment     (SEIAmbientViewingEnvironment& sei,     uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+  void xParseSEIContentColourVolume           (SEIContentColourVolume& sei,           uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
+
+#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
   void sei_read_scode(std::ostream *pOS, uint32_t length, int& code, const char *pSymbolName);
 #endif
   void sei_read_code(std::ostream *pOS, uint32_t uiLength, uint32_t& ruiCode, const char *pSymbolName);

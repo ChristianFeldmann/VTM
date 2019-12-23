@@ -717,7 +717,7 @@ static inline int ceilLog2(uint32_t x)
 #define _UNIT_AREA_AT(_a,_x,_y,_w,_h)
 #endif
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #include <omp.h>
 
 #define PARL_PARAM(DEF) , DEF

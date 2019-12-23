@@ -388,6 +388,9 @@ DecLib::DecLib()
   , m_cInterPred()
   , m_cTrQuant()
   , m_cSliceDecoder()
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  , m_cTrQuantScalingList()
+#endif
   , m_cCuDecoder()
   , m_HLSReader()
   , m_seiReader()
@@ -421,6 +424,10 @@ DecLib::DecLib()
   , m_debugCTU( -1 )
 #if JVET_N0278_FIXES
   , m_vps( nullptr )
+#endif
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  , m_scalingListUpdateFlag(true)
+  , m_PreScalingListAPSId(-1)
 #endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
@@ -1177,7 +1184,11 @@ void DecLib::xActivateParameterSets()
     {
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+    m_cTrQuant.init(m_cTrQuantScalingList.getQuant(), sps->getMaxTbSize(), false, false, false, false);
+#else
     m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false );
+#endif
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
@@ -1829,7 +1840,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       scalingList.setDefaultScalingList();
     }
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+    int scalingListAPSId = pcSlice->getPicHeader()->getScalingListAPSId();
+    if (getScalingListUpdateFlag() || (scalingListAPSId != getPreScalingListAPSId()))
+    {
+      quant->setScalingListDec(scalingList);
+      setScalingListUpdateFlag(false);
+      setPreScalingListAPSId(scalingListAPSId);
+    }
+#else
     quant->setScalingListDec( scalingList );
+#endif
     quant->setUseScalingList( true );
   }
   else
@@ -2000,6 +2021,12 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setLayerId( nalu.m_nuhLayerId );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+  if (aps->getAPSType() == SCALING_LIST_APS)
+  {
+    setScalingListUpdateFlag(true);
+  }
+#endif
 }
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 {
@@ -2186,6 +2213,7 @@ bool DecLib::isRandomAccessSkipPicture( int& iSkipFrame, int& iPOCLastDisplay )
   return false;
 }
 
+#if !JVET_P0478_PTL_DPS
 #if JVET_P0366_NUT_CONSTRAINT_FLAGS
 void DecLib::checkNalUnitConstraints( uint32_t naluType )
 {
@@ -2227,6 +2255,59 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
 #endif
   }
 }
+#endif
+#else
+#if JVET_P0366_NUT_CONSTRAINT_FLAGS
+void DecLib::checkNalUnitConstraints( uint32_t naluType )
+{
+  if (m_parameterSetManager.getActiveSPS() != NULL && m_parameterSetManager.getActiveSPS()->getProfileTierLevel() != NULL)
+  {
+    const ConstraintInfo *cInfo = m_parameterSetManager.getActiveSPS()->getProfileTierLevel()->getConstraintInfo();
+    xCheckNalUnitConstraintFlags( cInfo, naluType );
+  }
+  if (m_parameterSetManager.getActiveDPS() != NULL)
+  {
+    const DPS *dps = m_parameterSetManager.getActiveDPS();
+    for (int i=0; i< dps->getNumPTLs(); i++)
+    { 
+      ProfileTierLevel ptl = dps->getProfileTierLevel(i);
+      const ConstraintInfo *cInfo = ptl.getConstraintInfo();
+      xCheckNalUnitConstraintFlags( cInfo, naluType );
+    }
+  }
+}
+void DecLib::xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType )
+{
+  if (cInfo != NULL)
+  {
+    CHECK(cInfo->getNoTrailConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_TRAIL,
+      "Non-conforming bitstream. no_trail_constraint_flag is equal to 1 but bitstream contains NAL unit of type TRAIL_NUT.");
+    CHECK(cInfo->getNoStsaConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_STSA,
+      "Non-conforming bitstream. no_stsa_constraint_flag is equal to 1 but bitstream contains NAL unit of type STSA_NUT.");
+    CHECK(cInfo->getNoRaslConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_RASL,
+      "Non-conforming bitstream. no_rasl_constraint_flag is equal to 1 but bitstream contains NAL unit of type RASL_NUT.");
+    CHECK(cInfo->getNoRadlConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_RADL,
+      "Non-conforming bitstream. no_radl_constraint_flag is equal to 1 but bitstream contains NAL unit of type RADL_NUT.");
+    CHECK(cInfo->getNoIdrConstraintFlag() && (naluType == NAL_UNIT_CODED_SLICE_IDR_W_RADL),
+      "Non-conforming bitstream. no_idr_constraint_flag is equal to 1 but bitstream contains NAL unit of type IDR_W_RADL.");
+    CHECK(cInfo->getNoIdrConstraintFlag() && (naluType == NAL_UNIT_CODED_SLICE_IDR_N_LP),
+      "Non-conforming bitstream. no_idr_constraint_flag is equal to 1 but bitstream contains NAL unit of type IDR_N_LP.");
+    CHECK(cInfo->getNoCraConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_CRA,
+      "Non-conforming bitstream. no_cra_constraint_flag is equal to 1 but bitstream contains NAL unit of type CRA_NUT.");
+    CHECK(cInfo->getNoGdrConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_GDR,
+      "Non-conforming bitstream. no_gdr_constraint_flag is equal to 1 but bitstream contains NAL unit of type GDR_NUT.");
+#if !JVET_P0588_SUFFIX_APS
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_NUT.");
+#else
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_PREFIX_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_PREFIX_NUT.");
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_SUFFIX_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_SUFFIX_NUT.");
+#endif
+  }
+}
+#endif
 #endif
 
 //! \}

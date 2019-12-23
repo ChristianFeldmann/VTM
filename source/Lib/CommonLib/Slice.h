@@ -710,7 +710,11 @@ class DPS
 private:
   int m_decodingParameterSetId;
   int m_maxSubLayersMinus1;
+#if !JVET_P0478_PTL_DPS
   ProfileTierLevel m_profileTierLevel;
+#else
+  std::vector<ProfileTierLevel> m_profileTierLevel;
+#endif
 
 public:
   DPS()
@@ -725,8 +729,14 @@ public:
   int  getMaxSubLayersMinus1() const { return m_maxSubLayersMinus1; }
   void setMaxSubLayersMinus1(int val) { m_maxSubLayersMinus1 = val; }
 
+#if !JVET_P0478_PTL_DPS
   void setProfileTierLevel(const ProfileTierLevel &val)          { m_profileTierLevel = val; }
   const ProfileTierLevel& getProfileTierLevel() const            { return m_profileTierLevel; }
+#else
+  size_t getNumPTLs() const { return m_profileTierLevel.size(); }
+  void  setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_profileTierLevel = val; }
+  const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
+#endif
 };
 
 

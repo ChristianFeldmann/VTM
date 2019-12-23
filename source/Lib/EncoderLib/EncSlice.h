@@ -136,9 +136,6 @@ public:
   void    calCostSliceI       ( Picture* pcPic );
 
   void    encodeSlice         ( Picture* pcPic, OutputBitstream* pcSubstreams, uint32_t &numBinsCoded );
-#if ENABLE_WPP_PARALLELISM
-  static
-#endif
 #if JVET_P1004_REMOVE_BRICKS
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pcEncLib );
 #else

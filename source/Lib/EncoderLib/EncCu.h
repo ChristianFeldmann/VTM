@@ -91,7 +91,7 @@ private:
   CtxPair*              m_CurrCtx;
   CtxCache*             m_CtxCache;
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int                   m_dataId;
 #endif
 
@@ -134,7 +134,7 @@ private:
 
   int                   m_ctuIbcSearchRangeX;
   int                   m_ctuIbcSearchRangeY;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
   int                   m_bestBcwIdx[2];

@@ -512,7 +512,7 @@ CodingUnit& CodingStructure::addCU( const UnitArea &unit, const ChannelType chTy
   if( prevCU )
   {
     prevCU->next = cu;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
     CHECK( prevCU->cacheId != cu->cacheId, "Inconsintent cacheId between previous and current CU" );
 #endif
@@ -556,7 +556,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
   pu->cs     = this;
   pu->cu     = m_isTuEnc ? cus[0] : getCU( unit.blocks[chType].pos(), chType );
   pu->chType = chType;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   CHECK( pu->cacheId != pu->cu->cacheId, "Inconsintent cacheId between the PU and assigned CU" );
   CHECK( pu->cu->firstPU != nullptr, "Without an RQT the firstPU should be null" );
@@ -567,7 +567,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
   if( prevPU && prevPU->cu == pu->cu )
   {
     prevPU->next = pu;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
     CHECK( prevPU->cacheId != pu->cacheId, "Inconsintent cacheId between previous and current PU" );
 #endif
@@ -617,7 +617,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   tu->cs     = this;
   tu->cu     = m_isTuEnc ? cus[0] : getCU( unit.blocks[chType].pos(), chType );
   tu->chType = chType;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   if( tu->cu )
     CHECK( tu->cacheId != tu->cu->cacheId, "Inconsintent cacheId between the TU and assigned CU" );
@@ -630,7 +630,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   {
     prevTU->next = tu;
     tu->prev     = prevTU;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
     CHECK( prevTU->cacheId != tu->cacheId, "Inconsintent cacheId between previous and current TU" );
 #endif
@@ -1140,72 +1140,6 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   }
   prevPLT = subStruct.prevPLT;
 
-#if ENABLE_WPP_PARALLELISM
-
-  if( nullptr == parent )
-  {
-#pragma omp critical
-    {
-      fracBits += subStruct.fracBits;
-      dist     += subStruct.dist;
-      cost     += subStruct.cost;
-      costDbOffset += subStruct.costDbOffset;
-      if( parent )
-      {
-        // allow this to be false at the top level
-        CHECKD( !area.contains( subArea ), "Trying to use a sub-structure not contained in self" );
-      }
-
-      // copy the CUs over
-      if( subStruct.m_isTuEnc )
-      {
-        // don't copy if the substruct was created for encoding of the TUs
-      }
-      else
-      {
-        for( const auto &pcu : subStruct.cus )
-        {
-          // add an analogue CU into own CU store
-          const UnitArea &cuPatch = *pcu;
-          CodingUnit &cu = addCU( cuPatch, pcu->chType );
-
-          // copy the CU info from subPatch
-          cu = *pcu;
-        }
-      }
-
-      // copy the PUs over
-      if( subStruct.m_isTuEnc )
-      {
-        // don't copy if the substruct was created for encoding of the TUs
-      }
-      else
-      {
-        for( const auto &ppu : subStruct.pus )
-        {
-          // add an analogue PU into own PU store
-          const UnitArea &puPatch = *ppu;
-          PredictionUnit &pu = addPU( puPatch, ppu->chType );
-
-          // copy the PU info from subPatch
-          pu = *ppu;
-        }
-      }
-      // copy the TUs over
-      for( const auto &ptu : subStruct.tus )
-      {
-        // add an analogue TU into own TU store
-        const UnitArea &tuPatch = *ptu;
-        TransformUnit &tu = addTU( tuPatch, ptu->chType );
-
-        // copy the TU info from subPatch
-        tu = *ptu;
-      }
-    }
-
-    return;
-  }
-#endif
 
   fracBits += subStruct.fracBits;
   dist     += subStruct.dist;

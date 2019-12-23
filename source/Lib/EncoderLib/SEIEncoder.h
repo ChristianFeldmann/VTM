@@ -69,16 +69,21 @@ public:
   };
 
   // leading SEIs
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const SPS *sps);
+#endif
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
+#if !JVET_P0337_PORTING_SEI
   void initSEIDisplayOrientation(SEIDisplayOrientation *sei);
   void initSEIToneMappingInfo(SEIToneMappingInfo *sei);
   void initSEISOPDescription(SEISOPDescription *sei, Slice *slice, int picInGOP, int lastIdr, int currGOPSize);
 #endif
+#endif
   void initSEIDependentRAPIndication(SEIDependentRAPIndication *sei);
   void initSEIBufferingPeriod(SEIBufferingPeriod *sei, bool noLeadingPictures);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
   void initSEIRecoveryPoint(SEIRecoveryPoint *sei, Slice *slice);
   void initSEISegmentedRectFramePacking(SEISegmentedRectFramePacking *sei);
@@ -87,6 +92,7 @@ public:
   void initSEIChromaResamplingFilterHint(SEIChromaResamplingFilterHint *sei, int iHorFilterIndex, int iVerFilterIndex);
   void initSEITimeCode(SEITimeCode *sei);
   bool initSEIColourRemappingInfo(SEIColourRemappingInfo *sei, int currPOC); // returns true on success, false on failure.
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
 #endif
@@ -103,10 +109,19 @@ public:
   void initSEIOmniViewport(SEIOmniViewport *sei);
   void initSEIRegionWisePacking(SEIRegionWisePacking *sei);
 #endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  void initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps);
+#endif
 #if JVET_P0450_SEI_SARI
   void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
 #endif
-
+#if JVET_P0337_PORTING_SEI
+  void initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *sei);
+  void initSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume *sei);
+  void initSEIContentLightLevel(SEIContentLightLevelInfo *sei);
+  void initSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment *sei);
+  void initSEIContentColourVolume(SEIContentColourVolume *sei);
+#endif
 private:
   EncCfg* m_pcCfg;
   EncLib* m_pcEncLib;

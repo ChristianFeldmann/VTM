@@ -91,7 +91,7 @@ private:
   CtxPair*              m_CurrCtx;
   CtxCache*             m_CtxCache;
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int                   m_dataId;
 #endif
 
@@ -134,11 +134,11 @@ private:
 
   int                   m_ctuIbcSearchRangeX;
   int                   m_ctuIbcSearchRangeY;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   EncLib*               m_pcEncLib;
 #endif
-  int                   m_bestGbiIdx[2];
-  double                m_bestGbiCost[2];
+  int                   m_bestBcwIdx[2];
+  double                m_bestBcwCost[2];
   TriangleMotionInfo    m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
   uint8_t               m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
@@ -218,12 +218,12 @@ protected:
                              , const EncTestMode& encTestMode
                              , int residualPass       = 0
                              , bool* bestHasNonResi   = NULL
-                             , double* equGBiCost     = NULL
+                             , double* equBcwCost     = NULL
                            );
 #if REUSE_CU_RESULTS
   void xReuseCachedResult     ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &Partitioner );
 #endif
-  bool xIsGBiSkip(const CodingUnit& cu)
+  bool xIsBcwSkip(const CodingUnit& cu)
   {
     if (cu.slice->getSliceType() != B_SLICE)
     {

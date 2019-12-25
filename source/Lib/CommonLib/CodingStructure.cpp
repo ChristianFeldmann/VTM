@@ -78,11 +78,15 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   {
     m_coeffs[ i ] = nullptr;
     m_pcmbuf[ i ] = nullptr;
-    m_runType[i]   = nullptr;
+    m_offsets[ i ] = 0;
+  }
+
+  for (uint32_t i = 0; i < MAX_NUM_CHANNEL_TYPE; i++)
+  {
+    m_runType[i] = nullptr;
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
 #endif
-    m_offsets[ i ] = 0;
   }
 
   for( uint32_t i = 0; i < MAX_NUM_CHANNEL_TYPE; i++ )
@@ -508,7 +512,7 @@ CodingUnit& CodingStructure::addCU( const UnitArea &unit, const ChannelType chTy
   if( prevCU )
   {
     prevCU->next = cu;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
     CHECK( prevCU->cacheId != cu->cacheId, "Inconsintent cacheId between previous and current CU" );
 #endif
@@ -552,7 +556,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
   pu->cs     = this;
   pu->cu     = m_isTuEnc ? cus[0] : getCU( unit.blocks[chType].pos(), chType );
   pu->chType = chType;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   CHECK( pu->cacheId != pu->cu->cacheId, "Inconsintent cacheId between the PU and assigned CU" );
   CHECK( pu->cu->firstPU != nullptr, "Without an RQT the firstPU should be null" );
@@ -563,7 +567,7 @@ PredictionUnit& CodingStructure::addPU( const UnitArea &unit, const ChannelType 
   if( prevPU && prevPU->cu == pu->cu )
   {
     prevPU->next = pu;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
     CHECK( prevPU->cacheId != pu->cacheId, "Inconsintent cacheId between previous and current PU" );
 #endif
@@ -613,7 +617,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   tu->cs     = this;
   tu->cu     = m_isTuEnc ? cus[0] : getCU( unit.blocks[chType].pos(), chType );
   tu->chType = chType;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   if( tu->cu )
     CHECK( tu->cacheId != tu->cu->cacheId, "Inconsintent cacheId between the TU and assigned CU" );
@@ -626,7 +630,7 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   {
     prevTU->next = tu;
     tu->prev     = prevTU;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
     CHECK( prevTU->cacheId != tu->cacheId, "Inconsintent cacheId between previous and current TU" );
 #endif
@@ -655,9 +659,9 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
 
   uint32_t numCh = ::getNumberValidComponents( area.chromaFormat );
 
-  for( uint32_t i = 0; i < numCh; i++ )
+  for (uint32_t i = 0; i < numCh; i++)
   {
-    if( !tu->blocks[i].valid() )
+    if (!tu->blocks[i].valid())
     {
       continue;
     }
@@ -665,33 +669,38 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
     if (i < ::getNumberValidChannels(area.chromaFormat))
     {
       const CompArea &_selfBlk = area.blocks[i];
-      const CompArea     &_blk = tu-> blocks[i];
+      const CompArea     &_blk = tu->blocks[i];
 
-      bool isIspTu = tu->cu != nullptr && tu->cu->ispMode && isLuma( _blk.compID );
+      bool isIspTu = tu->cu != nullptr && tu->cu->ispMode && isLuma(_blk.compID);
 
       bool isFirstIspTu = false;
-      if( isIspTu )
+      if (isIspTu)
       {
-        isFirstIspTu = CU::isISPFirst( *tu->cu, _blk, getFirstComponentOfChannel( ChannelType( i ) ) );
+        isFirstIspTu = CU::isISPFirst(*tu->cu, _blk, getFirstComponentOfChannel(ChannelType(i)));
       }
-      if( !isIspTu || isFirstIspTu )
+      if (!isIspTu || isFirstIspTu)
       {
         const UnitScale& scale = unitScale[_blk.compID];
 
-        const Area scaledSelf  = scale.scale( _selfBlk );
-        const Area scaledBlk   = isIspTu ? scale.scale( tu->cu->blocks[i] ) : scale.scale( _blk );
-        unsigned *idxPtr       = m_tuIdx[i] + rsAddr( scaledBlk.pos(), scaledSelf.pos(), scaledSelf.width );
-        CHECK( *idxPtr, "Overwriting a pre-existing value, should be '0'!" );
-        AreaBuf<uint32_t>( idxPtr, scaledSelf.width, scaledBlk.size() ).fill( idx );
+        const Area scaledSelf = scale.scale(_selfBlk);
+        const Area scaledBlk = isIspTu ? scale.scale(tu->cu->blocks[i]) : scale.scale(_blk);
+        unsigned *idxPtr = m_tuIdx[i] + rsAddr(scaledBlk.pos(), scaledSelf.pos(), scaledSelf.width);
+        CHECK(*idxPtr, "Overwriting a pre-existing value, should be '0'!");
+        AreaBuf<uint32_t>(idxPtr, scaledSelf.width, scaledBlk.size()).fill(idx);
       }
     }
 
     coeffs[i] = m_coeffs[i] + m_offsets[i];
     pcmbuf[i] = m_pcmbuf[i] + m_offsets[i];
-    runType[i]   = m_runType[i]   + m_offsets[i];
+
+    if (i < MAX_NUM_CHANNEL_TYPE)
+    {
+      if (m_runType[i] != nullptr) runType[i] = m_runType[i] + m_offsets[i];
 #if !JVET_P0077_LINE_CG_PALETTE
-    runLength[i] = m_runLength[i] + m_offsets[i];
+      if (m_runLength[i] != nullptr) runLength[i] = m_runLength[i] + m_offsets[i];
 #endif
+    }
+
     unsigned areaSize = tu->blocks[i].area();
     m_offsets[i] += areaSize;
   }
@@ -811,9 +820,9 @@ void CodingStructure::allocateVectorsAtPicLevel()
 
 
 
-void CodingStructure::create(const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer)
+void CodingStructure::create(const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer, const bool isPLTused)
 {
-  createInternals( UnitArea( _chromaFormat, _area ), isTopLayer );
+  createInternals(UnitArea(_chromaFormat, _area), isTopLayer, isPLTused);
 
   if( isTopLayer ) return;
 
@@ -823,9 +832,9 @@ void CodingStructure::create(const ChromaFormat &_chromaFormat, const Area& _are
   m_orgr.create( area );
 }
 
-void CodingStructure::create(const UnitArea& _unit, const bool isTopLayer)
+void CodingStructure::create(const UnitArea& _unit, const bool isTopLayer, const bool isPLTused)
 {
-  createInternals( _unit, isTopLayer );
+  createInternals(_unit, isTopLayer, isPLTused);
 
   if( isTopLayer ) return;
 
@@ -835,7 +844,7 @@ void CodingStructure::create(const UnitArea& _unit, const bool isTopLayer)
   m_orgr.create( area );
 }
 
-void CodingStructure::createInternals( const UnitArea& _unit, const bool isTopLayer )
+void CodingStructure::createInternals(const UnitArea& _unit, const bool isTopLayer, const bool isPLTused)
 {
   area = _unit;
 
@@ -863,7 +872,7 @@ void CodingStructure::createInternals( const UnitArea& _unit, const bool isTopLa
     m_offsets[i] = 0;
   }
 
-  if( !isTopLayer ) createCoeffs();
+  if( !isTopLayer ) createCoeffs(isPLTused);
 
   unsigned _lumaAreaScaled = g_miScaling.scale( area.lumaSize() ).area();
   m_motionBuf       = new MotionInfo[_lumaAreaScaled];
@@ -897,18 +906,22 @@ void CodingStructure::addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> &
 
 void CodingStructure::resetPrevPLT(PLTBuf& prevPLT)
 {
-  for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
+  for (int comp = 0; comp < MAX_NUM_CHANNEL_TYPE; comp++)
   {
     prevPLT.curPLTSize[comp] = 0;
+  }
+
+  for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
+  {
     memset(prevPLT.curPLT[comp], 0, MAXPLTPREDSIZE * sizeof(Pel));
   }
 }
 
-void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT)
+void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM_CHANNEL_TYPE], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT)
 {
   Pel stuffedPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
-  uint32_t tempCurPLTsize[MAX_NUM_COMPONENT];
-  uint32_t stuffPLTsize[MAX_NUM_COMPONENT];
+  uint8_t tempCurPLTsize[MAX_NUM_CHANNEL_TYPE];
+  uint8_t stuffPLTsize[MAX_NUM_COMPONENT];
 
   for (int i = compBegin; i < (compBegin + numComp); i++)
   {
@@ -968,7 +981,7 @@ void CodingStructure::rebindPicBufs()
   }
 }
 
-void CodingStructure::createCoeffs()
+void CodingStructure::createCoeffs(const bool isPLTused)
 {
   const unsigned numCh = getNumberValidComponents( area.chromaFormat );
 
@@ -978,10 +991,19 @@ void CodingStructure::createCoeffs()
 
     m_coeffs[i] = _area > 0 ? ( TCoeff* ) xMalloc( TCoeff, _area ) : nullptr;
     m_pcmbuf[i] = _area > 0 ? ( Pel*    ) xMalloc( Pel,    _area ) : nullptr;
-    m_runType[i]   = _area > 0 ? ( bool*  ) xMalloc( bool, _area ) : nullptr;
+  }
+
+  if (isPLTused)
+  {
+    for (unsigned i = 0; i < numCh - 1; i++)
+    {
+      unsigned _area = area.blocks[i].area();
+
+      m_runType[i] = _area > 0 ? (bool*)xMalloc(bool, _area) : nullptr;
 #if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = _area > 0 ? ( Pel*   ) xMalloc( Pel,  _area ) : nullptr;
+      m_runLength[i] = _area > 0 ? (Pel*)xMalloc(Pel, _area) : nullptr;
 #endif
+    }
   }
 }
 
@@ -991,7 +1013,11 @@ void CodingStructure::destroyCoeffs()
   {
     if( m_coeffs[i] ) { xFree( m_coeffs[i] ); m_coeffs[i] = nullptr; }
     if( m_pcmbuf[i] ) { xFree( m_pcmbuf[i] ); m_pcmbuf[i] = nullptr; }
-    if (m_runType[i])   { xFree(m_runType[i]);   m_runType[i]   = nullptr; }
+  }
+
+  for (uint32_t i = 0; i < MAX_NUM_CHANNEL_TYPE; i++)
+  {
+    if (m_runType[i]) { xFree(m_runType[i]);   m_runType[i] = nullptr; }
 #if !JVET_P0077_LINE_CG_PALETTE
     if (m_runLength[i]) { xFree(m_runLength[i]); m_runLength[i] = nullptr; }
 #endif
@@ -1047,7 +1073,11 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.treeType  = treeType;
   subStruct.modeType  = modeType;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  subStruct.initStructData( currQP[_chType] );
+#else
   subStruct.initStructData( currQP[_chType], isLossless );
+#endif
 
   if( isTuEnc )
   {
@@ -1110,72 +1140,6 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   }
   prevPLT = subStruct.prevPLT;
 
-#if ENABLE_WPP_PARALLELISM
-
-  if( nullptr == parent )
-  {
-#pragma omp critical
-    {
-      fracBits += subStruct.fracBits;
-      dist     += subStruct.dist;
-      cost     += subStruct.cost;
-      costDbOffset += subStruct.costDbOffset;
-      if( parent )
-      {
-        // allow this to be false at the top level
-        CHECKD( !area.contains( subArea ), "Trying to use a sub-structure not contained in self" );
-      }
-
-      // copy the CUs over
-      if( subStruct.m_isTuEnc )
-      {
-        // don't copy if the substruct was created for encoding of the TUs
-      }
-      else
-      {
-        for( const auto &pcu : subStruct.cus )
-        {
-          // add an analogue CU into own CU store
-          const UnitArea &cuPatch = *pcu;
-          CodingUnit &cu = addCU( cuPatch, pcu->chType );
-
-          // copy the CU info from subPatch
-          cu = *pcu;
-        }
-      }
-
-      // copy the PUs over
-      if( subStruct.m_isTuEnc )
-      {
-        // don't copy if the substruct was created for encoding of the TUs
-      }
-      else
-      {
-        for( const auto &ppu : subStruct.pus )
-        {
-          // add an analogue PU into own PU store
-          const UnitArea &puPatch = *ppu;
-          PredictionUnit &pu = addPU( puPatch, ppu->chType );
-
-          // copy the PU info from subPatch
-          pu = *ppu;
-        }
-      }
-      // copy the TUs over
-      for( const auto &ptu : subStruct.tus )
-      {
-        // add an analogue TU into own TU store
-        const UnitArea &tuPatch = *ptu;
-        TransformUnit &tu = addTU( tuPatch, ptu->chType );
-
-        // copy the TU info from subPatch
-        tu = *ptu;
-      }
-    }
-
-    return;
-  }
-#endif
 
   fracBits += subStruct.fracBits;
   dist     += subStruct.dist;
@@ -1340,7 +1304,11 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
   }
 }
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+void CodingStructure::initStructData( const int &QP, const bool &skipMotBuf )
+#else
 void CodingStructure::initStructData( const int &QP, const bool &_isLosses, const bool &skipMotBuf )
+#endif
 {
   clearPUs();
   clearTUs();
@@ -1349,7 +1317,9 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   if( QP < MAX_INT )
   {
     currQP[0] = currQP[1] = QP;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     isLossless            = _isLosses;
+#endif
   }
 
   if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && !m_isTuEnc)))

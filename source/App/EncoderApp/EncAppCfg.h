@@ -151,9 +151,9 @@ protected:
   bool      m_bNoMtsConstraintFlag;
   bool      m_noSbtConstraintFlag;
   bool      m_bNoAffineMotionConstraintFlag;
-  bool      m_bNoGbiConstraintFlag;
+  bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
-  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
@@ -200,8 +200,10 @@ protected:
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
   bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
+#if !JVET_P1004_REMOVE_BRICKS
   BrickSplit    m_brickSplits[MAX_TILES];
   BrickSplitMap m_brickSplitMap;
+#endif
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
@@ -260,7 +262,7 @@ protected:
 #if SHARP_LUMA_DELTA_QP
   LumaLevelToDeltaQPMapping m_lumaLevelToDeltaQPMapping;      ///< mapping from luma level to Delta QP.
 #endif
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   SEIMasteringDisplay m_masteringDisplay;
 #endif
 
@@ -288,7 +290,12 @@ protected:
   bool      m_PROF;
   bool      m_BIO;
   int       m_LMChroma;
+#if JVET_P0592_CHROMA_PHASE
+  bool      m_horCollocatedChromaFlag;
+  bool      m_verCollocatedChromaFlag;
+#else
   bool      m_cclmCollocatedChromaFlag;
+#endif
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
@@ -299,8 +306,8 @@ protected:
 #endif
   bool      m_SMVD;
   bool      m_compositeRefEnabled;
-  bool      m_GBi;
-  bool      m_GBiFast;
+  bool      m_bcw;
+  bool      m_BcwFast;
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabed;
   int       m_LadfNumIntervals;
@@ -308,7 +315,7 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-  bool      m_MHIntra;
+  bool      m_ciip;
   bool      m_Triangle;
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
@@ -343,7 +350,7 @@ protected:
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;
   std::vector<unsigned> m_virtualBoundariesPosY;
-  bool      m_lumaReshapeEnable;
+  bool      m_lmcsEnabled;
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
@@ -369,6 +376,9 @@ protected:
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
   unsigned  m_maxNumAlfAlternativesChroma;
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  bool      m_MRL;
+#endif
   bool      m_MIP;
   bool      m_useFastMIP;
   int       m_fastLocalDualTreeMode;
@@ -435,6 +445,23 @@ protected:
   bool      m_useFastDecisionForMerge;                        ///< flag for using Fast Decision Merge RD-Cost
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
+#if JVET_P1004_REMOVE_BRICKS
+  bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
+  std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
+  std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
+  bool      m_rasterSliceFlag;                                ///< indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)
+  std::vector<uint32_t> m_rectSlicePos;                       ///< rectangular slice positions (pairs of top-left CTU address followed by bottom-right CTU address)
+  int       m_rectSliceFixedWidth;                            ///< fixed rectangular slice width in units of tiles (0: disable this feature and use RectSlicePositions instead)
+  int       m_rectSliceFixedHeight;                           ///< fixed rectangular slice height in units of tiles (0: disable this feature and use RectSlicePositions instead)
+  std::vector<uint32_t> m_rasterSliceSize;                    ///< raster-scan slice sizes in units of tiles (last size will be repeated uniformly to cover any remaining tiles in the picture)
+  bool      m_disableLFCrossTileBoundaryFlag;                 ///< 0: filter across tile boundaries  1: do not filter across tile boundaries
+  bool      m_disableLFCrossSliceBoundaryFlag;                ///< 0: filter across slice boundaries 1: do not filter across slice boundaries
+  uint32_t  m_numSlicesInPic;                                 ///< derived number of rectangular slices in the picture (raster-scan slice specified at slice level)
+  bool      m_tileIdxDeltaPresentFlag;                        ///< derived tile index delta present flag
+  std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
+  uint32_t  m_numTileCols;                                    ///< derived number of tile columns
+  uint32_t  m_numTileRows;                                    ///< derived number of tile rows
+#else
   SliceConstraint m_sliceMode;
   int             m_sliceArgument;                            ///< argument according to selected slice mode
 
@@ -448,8 +475,10 @@ protected:
   int       m_uniformTileRowHeightMinus1;
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
+#endif
   bool      m_entropyCodingSyncEnabledFlag;
 
+#if !JVET_P1004_REMOVE_BRICKS
   bool      m_rectSliceFlag;
   int       m_numSlicesInPicMinus1;
   std::vector<int> m_topLeftBrickIdx;
@@ -458,8 +487,8 @@ protected:
   bool      m_signalledSliceIdFlag;
   int       m_signalledSliceIdLengthMinus1;
   std::vector<int> m_sliceId;
+#endif
 
-  bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
@@ -473,7 +502,8 @@ protected:
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
   bool      m_frameFieldInfoSEIEnabled;
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   bool      m_toneMappingInfoSEIEnabled;
   bool      m_chromaResamplingFilterSEIenabled;
   int       m_chromaResamplingHorFilterIdc;
@@ -504,11 +534,13 @@ protected:
   int*      m_startOfCodedInterval;
   int*      m_codedPivotValue;
   int*      m_targetPivotValue;
+#endif
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
+#if !JVET_P0337_PORTING_SEI
   bool      m_segmentedRectFramePackingSEIEnabled;
   bool      m_segmentedRectFramePackingSEICancel;
   int       m_segmentedRectFramePackingSEIType;
@@ -535,13 +567,114 @@ protected:
   int       m_kneeSEINumKneePointsMinus1;
   int*      m_kneeSEIInputKneePoint;
   int*      m_kneeSEIOutputKneePoint;
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   int       m_preferredTransferCharacteristics;
 #endif
+#if !JVET_P0337_PORTING_SEI
   uint32_t      m_greenMetadataType;
   uint32_t      m_xsdMetricType;
 #endif
+#endif
+#if JVET_P0337_PORTING_SEI
+  // film grain characterstics sei
+  bool      m_fgcSEIEnabled;
+  bool      m_fgcSEICancelFlag;
+  bool      m_fgcSEIPersistenceFlag;
+  uint32_t  m_fgcSEIModelID;
+  bool      m_fgcSEISepColourDescPresentFlag;
+  uint32_t  m_fgcSEIBlendingModeID;
+  uint32_t  m_fgcSEILog2ScaleFactor;
+  bool      m_fgcSEICompModelPresent[MAX_NUM_COMPONENT];
+  // content light level SEI
+  bool      m_cllSEIEnabled;
+  uint32_t  m_cllSEIMaxContentLevel;
+  uint32_t  m_cllSEIMaxPicAvgLevel;
+  // ambient viewing environment sei
+  bool      m_aveSEIEnabled;
+  uint32_t  m_aveSEIAmbientIlluminance;
+  uint32_t  m_aveSEIAmbientLightX;
+  uint32_t  m_aveSEIAmbientLightY;
+  // content colour volume sei
+  bool      m_ccvSEIEnabled;
+  bool      m_ccvSEICancelFlag;
+  bool      m_ccvSEIPersistenceFlag;
+  bool      m_ccvSEIPrimariesPresentFlag;
+  bool      m_ccvSEIMinLuminanceValuePresentFlag;
+  bool      m_ccvSEIMaxLuminanceValuePresentFlag;
+  bool      m_ccvSEIAvgLuminanceValuePresentFlag;
+  double    m_ccvSEIPrimariesX[MAX_NUM_COMPONENT];
+  double    m_ccvSEIPrimariesY[MAX_NUM_COMPONENT];
+  double    m_ccvSEIMinLuminanceValue;
+  double    m_ccvSEIMaxLuminanceValue;
+  double    m_ccvSEIAvgLuminanceValue;
+#endif
 
+#if JVET_P0462_SEI360
+  bool      m_erpSEIEnabled;
+  bool      m_erpSEICancelFlag;
+  bool      m_erpSEIPersistenceFlag;
+  bool      m_erpSEIGuardBandFlag;
+  uint32_t  m_erpSEIGuardBandType;
+  uint32_t  m_erpSEILeftGuardBandWidth;
+  uint32_t  m_erpSEIRightGuardBandWidth;
+
+  bool      m_sphereRotationSEIEnabled;
+  bool      m_sphereRotationSEICancelFlag;
+  bool      m_sphereRotationSEIPersistenceFlag;
+  int       m_sphereRotationSEIYaw;
+  int       m_sphereRotationSEIPitch;
+  int       m_sphereRotationSEIRoll;
+
+  bool      m_omniViewportSEIEnabled;
+  uint32_t  m_omniViewportSEIId;
+  bool      m_omniViewportSEICancelFlag;
+  bool      m_omniViewportSEIPersistenceFlag;
+  uint32_t  m_omniViewportSEICntMinus1;
+  std::vector<int>      m_omniViewportSEIAzimuthCentre;
+  std::vector<int>      m_omniViewportSEIElevationCentre;
+  std::vector<int>      m_omniViewportSEITiltCentre;
+  std::vector<uint32_t> m_omniViewportSEIHorRange;
+  std::vector<uint32_t> m_omniViewportSEIVerRange;
+  bool                  m_rwpSEIEnabled;
+  bool                  m_rwpSEIRwpCancelFlag;
+  bool                  m_rwpSEIRwpPersistenceFlag;
+  bool                  m_rwpSEIConstituentPictureMatchingFlag;
+  int                   m_rwpSEINumPackedRegions;
+  int                   m_rwpSEIProjPictureWidth;
+  int                   m_rwpSEIProjPictureHeight;
+  int                   m_rwpSEIPackedPictureWidth;
+  int                   m_rwpSEIPackedPictureHeight;
+  std::vector<uint8_t>  m_rwpSEIRwpTransformType;
+  std::vector<bool>     m_rwpSEIRwpGuardBandFlag;
+  std::vector<uint32_t> m_rwpSEIProjRegionWidth;
+  std::vector<uint32_t> m_rwpSEIProjRegionHeight;
+  std::vector<uint32_t> m_rwpSEIRwpSEIProjRegionTop;
+  std::vector<uint32_t> m_rwpSEIProjRegionLeft;
+  std::vector<uint16_t> m_rwpSEIPackedRegionWidth;
+  std::vector<uint16_t> m_rwpSEIPackedRegionHeight;
+  std::vector<uint16_t> m_rwpSEIPackedRegionTop;
+  std::vector<uint16_t> m_rwpSEIPackedRegionLeft;
+  std::vector<uint8_t>  m_rwpSEIRwpLeftGuardBandWidth;
+  std::vector<uint8_t>  m_rwpSEIRwpRightGuardBandWidth;
+  std::vector<uint8_t>  m_rwpSEIRwpTopGuardBandHeight;
+  std::vector<uint8_t>  m_rwpSEIRwpBottomGuardBandHeight;
+  std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
+  std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
+#endif
+
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  bool m_subpicureLevelInfoSEIEnabled;
+#endif
+
+#if JVET_P0450_SEI_SARI
+  bool                  m_sampleAspectRatioInfoSEIEnabled;
+  bool                  m_sariCancelFlag;
+  bool                  m_sariPersistenceFlag;
+  int                   m_sariAspectRatioIdc;
+  int                   m_sariSarWidth;
+  int                   m_sariSarHeight;
+#endif
 
   bool      m_MCTSEncConstraint;
 
@@ -550,7 +683,6 @@ protected:
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
   WeightedPredictionMethod m_weightedPredictionMethod;
 
-  uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
@@ -597,8 +729,10 @@ protected:
 #if JVET_P0365_SCALING_MATRIX_LFNST
   bool      m_disableScalingMatrixForLfnstBlks;
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
   bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
+#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value

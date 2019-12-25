@@ -97,6 +97,16 @@ static void getAreaIdx(const Area& area, const PreCalcValues &pcv, unsigned &idx
 
 struct EncTestMode
 {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  EncTestMode()
+    : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ) {}
+  EncTestMode( EncTestModeType _type )
+    : type( _type       ), opts( ETO_STANDARD ), qp( -1  ) {}
+  EncTestMode( EncTestModeType _type, int _qp )
+    : type( _type       ), opts( ETO_STANDARD ), qp( _qp ) {}
+  EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp )
+    : type( _type       ), opts( _opts        ), qp( _qp ) {}
+#else
   EncTestMode()
     : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ), lossless( false ) {}
   EncTestMode( EncTestModeType _type )
@@ -105,11 +115,14 @@ struct EncTestMode
     : type( _type       ), opts( ETO_STANDARD ), qp( _qp ), lossless( _lossless ) {}
   EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp, bool _lossless )
     : type( _type       ), opts( _opts        ), qp( _qp ), lossless( _lossless ) {}
+#endif
 
   EncTestModeType type;
   EncTestModeOpts opts;
   int             qp;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool            lossless;
+#endif
   double          maxCostAllowed;
 };
 
@@ -438,7 +451,7 @@ struct CodedCUInfo
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
-  uint8_t GBiIdx;
+  uint8_t BcwIdx;
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
 #endif
@@ -499,8 +512,8 @@ public:
   void setMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv );
 
   bool  getInter( const UnitArea& area );
-  void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
-  uint8_t getGbiIdx( const UnitArea& area );
+  void  setBcwIdx( const UnitArea& area, uint8_t gBiIdx );
+  uint8_t getBcwIdx( const UnitArea& area );
 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char  getSelectColorSpaceOption(const UnitArea& area);

@@ -247,7 +247,9 @@ public:
   static const CtxSet   SaoTypeIdx;
   static const CtxSet   TransformSkipFlag;
   static const CtxSet   MTSIdx;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   static const CtxSet   TransquantBypassFlag;
+#endif
   static const CtxSet   LFNSTIdx;
   static const CtxSet   PLTFlag;
   static const CtxSet   RotationFlag;
@@ -264,14 +266,14 @@ public:
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
   static const CtxSet   ImvFlag;
-  static const CtxSet   GBiIdx;
+  static const CtxSet   BcwIdx;
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   ctbAlfAlternative;
 #if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
   static const CtxSet   AlfUseLatestFilt;
 #endif
   static const CtxSet   AlfUseTemporalFilt;
-  static const CtxSet   MHIntraFlag;
+  static const CtxSet   CiipFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
   static const CtxSet   ISPMode;
@@ -448,7 +450,7 @@ private:
   CtxStore<BinProbModel_Std>    m_CtxStore_Std;
 protected:
   unsigned                      m_GRAdaptStats[RExt__GOLOMB_RICE_ADAPTATION_STATISTICS_SETS];
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
 public:
   int64_t cacheId;

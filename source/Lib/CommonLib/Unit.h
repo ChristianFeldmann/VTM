@@ -49,7 +49,7 @@
 // tools
 // ---------------------------------------------------------------------------
 struct PLTBuf {
-  uint32_t       curPLTSize[MAX_NUM_COMPONENT];
+  uint8_t        curPLTSize[MAX_NUM_CHANNEL_TYPE];
   Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
 };
 inline Position recalcPosition(const ChromaFormat _cf, const ComponentID srcCId, const ComponentID dstCId, const Position &pos)
@@ -312,7 +312,9 @@ struct CodingUnit : public UnitArea
   bool           colorTransform;
 #endif
   bool           triangle;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool           transQuantBypass;
+#endif
   int            bdpcmMode;
 #if JVET_P0059_CHROMA_BDPCM
   int            bdpcmModeChroma;
@@ -323,7 +325,7 @@ struct CodingUnit : public UnitArea
   uint32_t           tileIdx;
   uint8_t         mtsFlag;
   uint32_t        lfnstIdx;
-  uint8_t         GBiIdx;
+  uint8_t         BcwIdx;
   int             refIdxBi[2];
   bool           mipFlag;
 
@@ -335,12 +337,12 @@ struct CodingUnit : public UnitArea
 #endif
   uint8_t          smvdMode;
   uint8_t        ispMode;
-  bool           useEscape[MAX_NUM_COMPONENT];
-  bool           useRotation[MAX_NUM_COMPONENT];
-  bool           reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
-  uint32_t       lastPLTSize[MAX_NUM_COMPONENT];
-  uint32_t       reusePLTSize[MAX_NUM_COMPONENT];
-  uint32_t       curPLTSize[MAX_NUM_COMPONENT];
+  bool           useEscape[MAX_NUM_CHANNEL_TYPE];
+  bool           useRotation[MAX_NUM_CHANNEL_TYPE];
+  bool           reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE];
+  uint8_t        lastPLTSize[MAX_NUM_CHANNEL_TYPE];
+  uint8_t        reusePLTSize[MAX_NUM_CHANNEL_TYPE];
+  uint8_t        curPLTSize[MAX_NUM_CHANNEL_TYPE];
   Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE];
 
   CodingUnit() : chType( CH_L ) { }
@@ -359,7 +361,7 @@ struct CodingUnit : public UnitArea
 
   TransformUnit *firstTU;
   TransformUnit *lastTU;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   int64_t cacheId;
   bool    cacheUsed;
@@ -410,7 +412,7 @@ struct InterPredictionData
   Mv        mvdL0SubPu[MAX_NUM_SUBCU_DMVR];
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
-  bool      mhIntraFlag;
+  bool      ciipFlag;
 
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   Position  shareParentPos;
@@ -453,7 +455,7 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   MotionBuf         getMotionBuf();
   CMotionBuf        getMotionBuf() const;
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   int64_t cacheId;
   bool    cacheUsed;
@@ -525,7 +527,7 @@ struct TransformUnit : public UnitArea
 #endif
         bool*     getRunTypes(const ComponentID id);
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t cacheId;
   bool    cacheUsed;
 
@@ -533,9 +535,9 @@ struct TransformUnit : public UnitArea
 private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
-  bool   *m_runType[MAX_NUM_TBLOCKS];
+  bool   *m_runType[ MAX_NUM_TBLOCKS - 1 ];
 #if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *m_runLength[MAX_NUM_TBLOCKS];
+  Pel    *m_runLength[MAX_NUM_TBLOCKS - 1];
 #endif
 };
 

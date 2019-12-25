@@ -600,19 +600,19 @@ bool CacheBlkInfoCtrl::getInter(const UnitArea& area)
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isInter;
 }
-void CacheBlkInfoCtrl::setGbiIdx(const UnitArea& area, uint8_t gBiIdx)
+void CacheBlkInfoCtrl::setBcwIdx(const UnitArea& area, uint8_t gBiIdx)
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
 
-  m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx = gBiIdx;
+  m_codedCUInfo[idx1][idx2][idx3][idx4]->BcwIdx = gBiIdx;
 }
-uint8_t CacheBlkInfoCtrl::getGbiIdx(const UnitArea& area)
+uint8_t CacheBlkInfoCtrl::getBcwIdx(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
   getAreaIdx(area.Y(), *m_slice_chblk->getPPS()->pcv, idx1, idx2, idx3, idx4);
 
-  return m_codedCUInfo[idx1][idx2][idx3][idx4]->GBiIdx;
+  return m_codedCUInfo[idx1][idx2][idx3][idx4]->BcwIdx;
 }
 
 #if REUSE_CU_RESULTS
@@ -795,17 +795,23 @@ void BestEncInfoCache::init( const Slice &slice )
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
   m_pCoeff  = new TCoeff[numCoeff*MAX_NUM_TUS];
   m_pPcmBuf = new Pel   [numCoeff*MAX_NUM_TUS];
-  m_runType   = new bool[numCoeff*MAX_NUM_TUS];
+  if (slice.getSPS()->getPLTMode())
+  {
+    m_runType   = new bool[numCoeff*MAX_NUM_TUS];
 #if !JVET_P0077_LINE_CG_PALETTE
-  m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
+    m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
 #endif
+  }
 #else
   m_pCoeff  = new TCoeff[numCoeff];
   m_pPcmBuf = new Pel   [numCoeff];
-  m_runType   = new bool[numCoeff];
+  if (slice.getSPS()->getPLTMode())
+  {
+    m_runType   = new bool[numCoeff];
 #if !JVET_P0077_LINE_CG_PALETTE
-  m_runLength = new Pel [numCoeff];
+    m_runLength = new Pel [numCoeff];
 #endif
+  }
 #endif
 
   TCoeff *coeffPtr = m_pCoeff;
@@ -828,9 +834,9 @@ void BestEncInfoCache::init( const Slice &slice )
           {
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
-            bool   *runType[MAX_NUM_TBLOCKS]   = { 0, };
+            bool   *runType[MAX_NUM_TBLOCKS - 1] = { 0, };
 #if !JVET_P0077_LINE_CG_PALETTE
-            Pel    *runLength[MAX_NUM_TBLOCKS] = { 0, };
+            Pel    *runLength[MAX_NUM_TBLOCKS - 1] = { 0, };
 #endif
 
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
@@ -843,10 +849,13 @@ void BestEncInfoCache::init( const Slice &slice )
               {
                 coeff[i] = coeffPtr; coeffPtr += area.blocks[i].area();
                 pcmbf[i] = pcmPtr;   pcmPtr += area.blocks[i].area();
-                runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
+                if (i < 2)
+                {
+                  runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
 #if !JVET_P0077_LINE_CG_PALETTE
-                runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
+                  runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
 #endif
+                }
               }
 
               tu.cs = &m_dummyCS;
@@ -1255,7 +1264,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   {
     for( int qp = maxQP; qp >= minQP; qp-- )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_QT, ETO_STANDARD, qp } );
+#else
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_QT, ETO_STANDARD, qp, false } );
+#endif
     }
   }
 
@@ -1264,7 +1277,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add split modes
     for( int qp = maxQP; qp >= minQP; qp-- )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_TT_V, ETO_STANDARD, qp } );
+#else
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_TT_V, ETO_STANDARD, qp, false } );
+#endif
     }
   }
 
@@ -1273,7 +1290,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add split modes
     for( int qp = maxQP; qp >= minQP; qp-- )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_TT_H, ETO_STANDARD, qp } );
+#else
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_TT_H, ETO_STANDARD, qp, false } );
+#endif
     }
   }
 
@@ -1285,7 +1306,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add split modes
     for( int qp = maxQP; qp >= minQP; qp-- )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_BT_V, ETO_STANDARD, qp } );
+#else
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_BT_V, ETO_STANDARD, qp, false } );
+#endif
     }
     m_ComprCUCtxList.back().set( DID_VERT_SPLIT, true );
   }
@@ -1299,7 +1324,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add split modes
     for( int qp = maxQP; qp >= minQP; qp-- )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_BT_H, ETO_STANDARD, qp } );
+#else
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_BT_H, ETO_STANDARD, qp, false } );
+#endif
     }
     m_ComprCUCtxList.back().set( DID_HORZ_SPLIT, true );
   }
@@ -1312,7 +1341,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   {
     for( int qp = maxQPq; qp >= minQPq; qp-- )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_QT, ETO_STANDARD, qp } );
+#else
       m_ComprCUCtxList.back().testModes.push_back( { ETM_SPLIT_QT, ETO_STANDARD, qp, false } );
+#endif
     }
   }
 
@@ -1320,8 +1353,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
 
   xGetMinMaxQP( minQP, maxQP, cs, partitioner, baseQP, *cs.sps, *cs.pps, CU_DONT_SPLIT );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool useLossless = false;
+#endif
   int  lowestQP = minQP;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   if( cs.pps->getTransquantBypassEnabledFlag() )
   {
     useLossless = true; // mark that the first iteration is to cost TQB mode.
@@ -1332,6 +1368,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       maxQP = minQP;
     }
   }
+#endif
 
   //////////////////////////////////////////////////////////////////////////
   // Add unit coding modes: Intra, InterME, InterMerge ...
@@ -1351,13 +1388,19 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
   for( int qpLoop = maxQP; qpLoop >= minQP; qpLoop-- )
   {
     const int  qp       = std::max( qpLoop, lowestQP );
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     const bool lossless = useLossless && qpLoop == minQP;
+#endif
 #if REUSE_CU_RESULTS
     const bool isReusingCu = isValid( cs, partitioner, qp );
     cuECtx.set( IS_REUSING_CU, isReusingCu );
     if( isReusingCu )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back( {ETM_RECO_CACHED, ETO_STANDARD, qp} );
+#else
       m_ComprCUCtxList.back().testModes.push_back( {ETM_RECO_CACHED, ETO_STANDARD, qp, lossless} );
+#endif
     }
 #endif
     // add intra modes
@@ -1365,21 +1408,41 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     {
     if (cs.slice->getSPS()->getPLTMode() && ( cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4) ) && getPltEnc() )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp });
+#else
       m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp, lossless });
+#endif
     }
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp } );
+#else
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp, lossless } );
+#endif
     if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc() )
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp });
+#else
       m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp, lossless });
+#endif
     }
     }
     // add ibc mode to intra path
     if (cs.sps->getIBCFlag() && checkIbc)
     {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC,         ETO_STANDARD,  qp });
+#else
       m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC,         ETO_STANDARD,  qp, lossless });
+#endif
       if (partitioner.chType == CHANNEL_TYPE_LUMA)
       {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC_MERGE,   ETO_STANDARD,  qp });
+#else
         m_ComprCUCtxList.back().testModes.push_back({ ETM_IBC_MERGE,   ETO_STANDARD,  qp, lossless });
+#endif
       }
     }
   }
@@ -1390,42 +1453,85 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     for( int qpLoop = maxQP; qpLoop >= minQP; qpLoop-- )
     {
       const int  qp       = std::max( qpLoop, lowestQP );
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
       const bool lossless = useLossless && qpLoop == minQP;
+#endif
       if (m_pcEncCfg->getIMV())
       {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back({ ETM_INTER_ME,  EncTestModeOpts( 4 << ETO_IMV_SHIFT ), qp });
+#else
         m_ComprCUCtxList.back().testModes.push_back({ ETM_INTER_ME,  EncTestModeOpts( 4 << ETO_IMV_SHIFT ), qp, lossless });
+#endif
       }
       if( m_pcEncCfg->getIMV() || m_pcEncCfg->getUseAffineAmvr() )
       {
         int imv = m_pcEncCfg->getIMV4PelFast() ? 3 : 2;
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( imv << ETO_IMV_SHIFT ), qp } );
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( 1 << ETO_IMV_SHIFT ), qp } );
+#else
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( imv << ETO_IMV_SHIFT ), qp, lossless } );
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME, EncTestModeOpts( 1 << ETO_IMV_SHIFT ), qp, lossless } );
+#endif
       }
       // add inter modes
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
         if( cs.sps->getUseTriangle() && cs.slice->isInterB() )
         {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+          m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp } );
+#else
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
+#endif
         }
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp } );
+#else
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
+#endif
         if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+          m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp } );
+#else
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
+#endif
         }
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp } );
+#else
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp, lossless } );
+#endif
       }
       else
       {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp } );
+#else
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp, lossless } );
+#endif
         if( cs.sps->getUseTriangle() && cs.slice->isInterB() )
         {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+          m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp } );
+#else
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp, lossless } );
+#endif
         }
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+        m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp } );
+#else
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp, lossless } );
+#endif
         if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+          m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp } );
+#else
           m_ComprCUCtxList.back().testModes.push_back( { ETM_AFFINE,    ETO_STANDARD, qp, lossless } );
+#endif
         }
       }
       if (m_pcEncCfg->getUseHashME())
@@ -1433,7 +1539,11 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
         int minSize = min(cs.area.lwidth(), cs.area.lheight());
         if (minSize < 128 && minSize >= 4)
         {
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+          m_ComprCUCtxList.back().testModes.push_back({ ETM_HASH_INTER, ETO_STANDARD, qp });
+#else
           m_ComprCUCtxList.back().testModes.push_back({ ETM_HASH_INTER, ETO_STANDARD, qp, lossless });
+#endif
         }
       }
     }
@@ -1586,7 +1696,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         if (bestCU && !CU::isIntra(*bestCU))
         {
           DistParam distParam;
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+          const bool useHad = true;
+#else
           const bool useHad = !bestCU->transQuantBypass;
+#endif
           m_pcRdCost->setDistParam( distParam, cs.getOrgBuf( COMPONENT_Y ), cuECtx.bestCS->getPredBuf( COMPONENT_Y ), cs.sps->getBitDepth( CHANNEL_TYPE_LUMA ), COMPONENT_Y, useHad );
           cuECtx.interHad = distParam.distFunc( distParam );
         }
@@ -1910,7 +2024,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isInter   = true;
           relatedCU.isSkip   |= bestCU->skip;
           relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
-          relatedCU.GBiIdx    = bestCU->GBiIdx;
+          relatedCU.BcwIdx    = bestCU->BcwIdx;
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if (bestCU->slice->getSPS()->getUseColorTrans())
           {

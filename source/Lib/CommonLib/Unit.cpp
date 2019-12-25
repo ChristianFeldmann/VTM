@@ -269,7 +269,9 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   colorTransform = other.colorTransform;
 #endif 
   triangle          = other.triangle;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   transQuantBypass  = other.transQuantBypass;
+#endif
   bdpcmMode         = other.bdpcmMode;
 #if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = other.bdpcmModeChroma;
@@ -283,7 +285,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   tileIdx           = other.tileIdx;
   imv               = other.imv;
   imvNumCand        = other.imvNumCand;
-  GBiIdx            = other.GBiIdx;
+  BcwIdx            = other.BcwIdx;
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
 
@@ -294,16 +296,28 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
   mipFlag           = other.mipFlag;
-  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+
+  for (int idx = 0; idx < MAX_NUM_CHANNEL_TYPE; idx++)
   {
     curPLTSize[idx]   = other.curPLTSize[idx];
     useEscape[idx]    = other.useEscape[idx];
     useRotation[idx]  = other.useRotation[idx];
     reusePLTSize[idx] = other.reusePLTSize[idx];
     lastPLTSize[idx]  = other.lastPLTSize[idx];
-    memcpy( curPLT[idx],    other.curPLT[idx],        MAXPLTSIZE * sizeof(Pel) );
-    memcpy( reuseflag[idx], other.reuseflag[idx], MAXPLTPREDSIZE * sizeof(bool));
+    if (slice->getSPS()->getPLTMode())
+    {
+      memcpy(reuseflag[idx], other.reuseflag[idx], MAXPLTPREDSIZE * sizeof(bool));
+    }
   }
+
+  if (slice->getSPS()->getPLTMode())
+  {
+    for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+    {
+      memcpy(curPLT[idx], other.curPLT[idx], MAXPLTSIZE * sizeof(Pel));
+    }
+  }
+
   treeType          = other.treeType;
   modeType          = other.modeType;
   modeTypeSeries    = other.modeTypeSeries;
@@ -326,7 +340,9 @@ void CodingUnit::initData()
   colorTransform = false;
 #endif 
   triangle          = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   transQuantBypass  = false;
+#endif
   bdpcmMode         = 0;
 #if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = 0;
@@ -340,7 +356,7 @@ void CodingUnit::initData()
   tileIdx           = 0;
   imv               = 0;
   imvNumCand        = 0;
-  GBiIdx            = GBI_DEFAULT;
+  BcwIdx            = BCW_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
@@ -351,16 +367,22 @@ void CodingUnit::initData()
   smvdMode        = 0;
   ispMode           = 0;
   mipFlag           = false;
-  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+
+  for (int idx = 0; idx < MAX_NUM_CHANNEL_TYPE; idx++)
   {
     curPLTSize[idx]   = 0;
     reusePLTSize[idx] = 0;
     lastPLTSize[idx]  = 0;
     useEscape[idx]    = false;
     useRotation[idx]  = false;
-    memset(curPLT[idx],        0,     MAXPLTSIZE * sizeof(Pel) );
     memset(reuseflag[idx], false, MAXPLTPREDSIZE * sizeof(bool));
   }
+
+  for (int idx = 0; idx < MAX_NUM_COMPONENT; idx++)
+  {
+    memset(curPLT[idx], 0, MAXPLTSIZE * sizeof(Pel));
+  }
+
   treeType          = TREE_D;
   modeType          = MODE_TYPE_ALL;
   modeTypeSeries    = 0;
@@ -455,7 +477,7 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   {
     return 0;
   }
-  if( firstPU->mhIntraFlag )
+  if( firstPU->ciipFlag )
   {
     return 0;
   }
@@ -565,7 +587,7 @@ void PredictionUnit::initData()
       mvAffi[i][j].setZero();
     }
   }
-  mhIntraFlag = false;
+  ciipFlag = false;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = Position(-1, -1);
   shareParentSize.width = -1;
@@ -623,7 +645,7 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
       mvAffi[i][j] = predData.mvAffi[i][j];
     }
   }
-  mhIntraFlag = predData.mhIntraFlag;
+  ciipFlag = predData.ciipFlag;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = predData.shareParentPos;
   shareParentSize = predData.shareParentSize;
@@ -675,7 +697,7 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
       mvAffi[i][j] = other.mvAffi[i][j];
     }
   }
-  mhIntraFlag = other.mhIntraFlag;
+  ciipFlag = other.ciipFlag;
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
   shareParentPos = other.shareParentPos;
   shareParentSize = other.shareParentSize;
@@ -728,7 +750,11 @@ TransformUnit::TransformUnit(const UnitArea& unit) : UnitArea(unit), cu(nullptr)
   {
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
-    m_runType[i]   = nullptr;
+  }
+
+  for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
+  {
+    m_runType[i] = nullptr;
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
 #endif
@@ -743,7 +769,11 @@ TransformUnit::TransformUnit(const ChromaFormat _chromaFormat, const Area &_area
   {
     m_coeffs[i] = nullptr;
     m_pcmbuf[i] = nullptr;
-    m_runType[i]   = nullptr;
+  }
+
+  for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
+  {
+    m_runType[i] = nullptr;
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = nullptr;
 #endif
@@ -783,7 +813,11 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **
   {
     m_coeffs[i] = coeffs[i];
     m_pcmbuf[i] = pcmbuf[i];
-    m_runType[i]   = runType[i];
+  }
+
+  for (uint32_t i = 0; i < numBlocks - 1; i++)
+  {
+    m_runType[i] = runType[i];
 #if !JVET_P0077_LINE_CG_PALETTE
     m_runLength[i] = runLength[i];
 #endif
@@ -803,10 +837,13 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
 
     if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
     if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
-    if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
+    if (cu->slice->getSPS()->getPLTMode() && i < 2)
+    {
+      if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
 #if !JVET_P0077_LINE_CG_PALETTE
-    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
+      if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
 #endif
+    }
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
     compAlpha[i]     = other.compAlpha[i];
@@ -833,10 +870,14 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   if (m_coeffs[i] && other.m_coeffs[i] && m_coeffs[i] != other.m_coeffs[i]) memcpy(m_coeffs[i], other.m_coeffs[i], sizeof(TCoeff) * area);
   if (m_pcmbuf[i] && other.m_pcmbuf[i] && m_pcmbuf[i] != other.m_pcmbuf[i]) memcpy(m_pcmbuf[i], other.m_pcmbuf[i], sizeof(Pel   ) * area);
-  if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i])   memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
+  if ((i == COMPONENT_Y || i == COMPONENT_Cb))
+  {
+    if (m_runType[i] && other.m_runType[i] && m_runType[i] != other.m_runType[i])   memcpy(m_runType[i], other.m_runType[i], sizeof(bool) * area);
 #if !JVET_P0077_LINE_CG_PALETTE
-  if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
+    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area);
 #endif
+  }
+
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
   compAlpha[i]     = other.compAlpha[i];
@@ -895,6 +936,17 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   int tbZeroOutWidth = blocks[compID].width;
   int tbZeroOutHeight = blocks[compID].height;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P1026_MTS_SIGNALLING
+  if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && compID == COMPONENT_Y )
+#else
+#if JVET_P0058_CHROMA_TS
+  if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#else
+  if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
+#endif
+#endif
+#else
 #if JVET_P1026_MTS_SIGNALLING
   if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && !cu->transQuantBypass && compID == COMPONENT_Y )
 #else
@@ -902,6 +954,7 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
 #else
   if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
+#endif
 #endif
 #endif
   {

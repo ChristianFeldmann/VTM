@@ -114,8 +114,8 @@ private:
   CodingStructure **m_pSaveCS;
 
   ClpRng          m_lumaClpRng;
-  uint32_t        m_estWeightIdxBits[GBI_NUM];
-  GBiMotionParam  m_uniMotions;
+  uint32_t        m_estWeightIdxBits[BCW_NUM];
+  BcwMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
   std::unordered_map< Position, std::unordered_map< Size, BlkRecord> > m_ctuRecord;
   AffineMVInfo       *m_affMVList;
@@ -315,7 +315,7 @@ public:
     }
   }
   void resetSavedAffineMotion();
-  void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
+  void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int bcwIdx );
   bool searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize);
 protected:
 
@@ -517,9 +517,9 @@ protected:
                                     Mv                    hevcMv[2][33]
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-                                  , uint8_t               gbiIdx = GBI_DEFAULT
-                                  , bool                  enforceGBiPred = false
-                                  , uint32_t              gbiIdxBits = 0
+                                  , uint8_t               bcwIdx = BCW_DEFAULT
+                                  , bool                  enforceBcwPred = false
+                                  , uint32_t              bcwIdxBits = 0
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,
@@ -549,24 +549,24 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-  Distortion xGetSymmetricCost( PredictionUnit& pu, PelUnitBuf& origBuf, RefPicList eCurRefPicList, const MvField& cCurMvField, MvField& cTarMvField , int gbiIdx );
+  Distortion xGetSymmetricCost( PredictionUnit& pu, PelUnitBuf& origBuf, RefPicList eCurRefPicList, const MvField& cCurMvField, MvField& cTarMvField , int bcwIdx );
 
   Distortion xSymmeticRefineMvSearch( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred
-    , RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion uiMinCost, int searchPattern, int nSearchStepShift, uint32_t uiMaxSearchRounds , int gbiIdx );
+    , RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion uiMinCost, int searchPattern, int nSearchStepShift, uint32_t uiMaxSearchRounds , int bcwIdx );
 
-  void xSymmetricMotionEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred, RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion& ruiCost, int gbiIdx );
+  void xSymmetricMotionEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred, RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion& ruiCost, int bcwIdx );
 
   bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost
                                     , int& mvpIdx, const AffineAMVPInfo& aamvpi
   );
-  double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
+  double xGetMEDistortionWeight   ( uint8_t bcwIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 
   void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
 
 public:
   void resetBufferedUniMotions    () { m_uniMotions.reset(); }
-  uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }
+  uint32_t getWeightIdxBits       ( uint8_t bcwIdx ) { return m_estWeightIdxBits[bcwIdx]; }
   void initWeightIdxBits          ();
   void symmvdCheckBestMvp(
     PredictionUnit& pu,
@@ -574,7 +574,7 @@ public:
     Mv curMv,
     RefPicList curRefList,
     AMVPInfo amvpInfo[2][33],
-    int32_t gbiIdx,
+    int32_t bcwIdx,
     Mv cMvPredSym[2],
     int32_t mvpIdxSym[2],
     Distortion& bestCost,

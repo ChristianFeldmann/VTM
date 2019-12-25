@@ -218,7 +218,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   m_AUWriterIf = pcEncLib->getAUWriterIf();
 
 #if WCG_EXT
-  if (m_pcCfg->getReshaper())
+  if (m_pcCfg->getLmcs())
   {
     pcEncLib->getRdCost()->setReshapeInfo(m_pcCfg->getReshapeSignalType(), m_pcCfg->getBitDepth(CHANNEL_TYPE_LUMA));
     pcEncLib->getRdCost()->initLumaLevelToWeightTableReshape();
@@ -230,7 +230,7 @@ void EncGOP::init ( EncLib* pcEncLib )
   }
   pcEncLib->getALF()->getLumaLevelWeightTable() = pcEncLib->getRdCost()->getLumaLevelWeightTable();
   int alfWSSD = 0;
-  if (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
+  if (m_pcCfg->getLmcs() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ )
   {
     alfWSSD = 1;
   }
@@ -385,8 +385,12 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   {
 #if JVET_P0205_VPS_ID_0
     if (slice->getSPS()->getVPSId() != 0)
-#endif
+    {
+      actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+    }
+#else
     actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
+#endif
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
@@ -399,29 +403,6 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   if( m_pcEncLib->PPSNeedsWriting( slice->getPPS()->getPPSId() ) ) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
     actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
-  }
-#if JVET_P0205_VPS_ID_0
-  // No VPS in the bitstream if the SPS refers to VPS ID zero
-  if (bSeqFirst && slice->getSPS()->getVPSId() != 0)
-#else
-  if (bSeqFirst)
-#endif
-  {
-    actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
-  }
-  if (bSeqFirst)
-  {
-    actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
-  }
-
-  if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
-  {
-    CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
-    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
-  }
-  if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
-  {
-    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
   }
 #endif
 
@@ -445,7 +426,20 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   AUDWriter audWriter;
   OutputNALUnit nalu(NAL_UNIT_ACCESS_UNIT_DELIMITER);
   nalu.m_temporalId = slice->getTLayer();
+#if JVET_P0218_AUD_TID_AND_LAYERID
+  int vpsId = slice->getSPS()->getVPSId();
+  if (vpsId == 0)
+  {
+    nalu.m_nuhLayerId = 0;
+  }
+  else
+  {
+    nalu.m_nuhLayerId = slice->getVPS()->getVPSIncludedLayerId(0);
+  }
+  CHECK( nalu.m_temporalId != accessUnit.temporalId, "TemporalId shall be equal to the TemporalId of the AU containing the NAL unit" );
+#else
   CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
+#endif
   int picType = slice->isIntra() ? 0 : (slice->isInterP() ? 1 : 2);
 
   audWriter.codeAUD(nalu.m_Bitstream, picType);
@@ -660,21 +654,22 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 {
   OutputNALUnit nalu(NAL_UNIT_PREFIX_SEI);
 
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   if(m_pcCfg->getActiveParameterSetsSEIEnabled())
   {
     SEIActiveParameterSets *sei = new SEIActiveParameterSets;
     m_seiEncoder.initSEIActiveParameterSets(sei, sps);
     seiMessages.push_back(sei);
   }
-
+#endif
   if(m_pcCfg->getFramePackingArrangementSEIEnabled())
   {
     SEIFramePacking *sei = new SEIFramePacking;
     m_seiEncoder.initSEIFramePacking (sei, m_iNumPicCoded);
     seiMessages.push_back(sei);
   }
-
+#if !JVET_P0337_PORTING_SEI
   if(m_pcCfg->getSegmentedRectFramePackingArrangementSEIEnabled())
   {
     SEISegmentedRectFramePacking *sei = new SEISegmentedRectFramePacking;
@@ -730,6 +725,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEIChromaResamplingFilterHint(seiChromaResamplingFilterHint, m_pcCfg->getChromaResamplingHorFilterIdc(), m_pcCfg->getChromaResamplingVerFilterIdc());
     seiMessages.push_back(seiChromaResamplingFilterHint);
   }
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   if(m_pcCfg->getSEIAlternativeTransferCharacteristicsSEIEnable())
   {
@@ -738,6 +734,91 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiAlternativeTransferCharacteristics);
   }
 #endif
+#endif
+#if JVET_P0462_SEI360
+  if (m_pcCfg->getErpSEIEnabled())
+  {
+    SEIEquirectangularProjection *sei = new SEIEquirectangularProjection;
+    m_seiEncoder.initSEIErp(sei);
+    seiMessages.push_back(sei);
+  }
+
+  if (m_pcCfg->getSphereRotationSEIEnabled())
+  {
+    SEISphereRotation *sei = new SEISphereRotation;
+    m_seiEncoder.initSEISphereRotation(sei);
+    seiMessages.push_back(sei);
+  }
+
+  if (m_pcCfg->getOmniViewportSEIEnabled())
+  {
+    SEIOmniViewport *sei = new SEIOmniViewport;
+    m_seiEncoder.initSEIOmniViewport(sei);
+    seiMessages.push_back(sei);
+  }
+  if (m_pcCfg->getRwpSEIEnabled())
+  {
+    SEIRegionWisePacking *seiRegionWisePacking = new SEIRegionWisePacking;
+    m_seiEncoder.initSEIRegionWisePacking(seiRegionWisePacking);
+    seiMessages.push_back(seiRegionWisePacking);
+  }
+#endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  if (m_pcCfg->getSubpicureLevelInfoSEIEnabled())
+  {
+    SEISubpicureLevelInfo *seiSubpicureLevelInfo = new SEISubpicureLevelInfo;
+    m_seiEncoder.initSEISubpictureLevelInfo(seiSubpicureLevelInfo, sps);
+    seiMessages.push_back(seiSubpicureLevelInfo);
+  }
+#endif
+#if JVET_P0450_SEI_SARI
+  if (m_pcCfg->getSampleAspectRatioInfoSEIEnabled())
+  {
+    SEISampleAspectRatioInfo *seiSampleAspectRatioInfo = new SEISampleAspectRatioInfo;
+    m_seiEncoder.initSEISampleAspectRatioInfo(seiSampleAspectRatioInfo);
+    seiMessages.push_back(seiSampleAspectRatioInfo);
+  }
+#endif
+#if JVET_P0337_PORTING_SEI
+  // film grain
+  if (m_pcCfg->getFilmGrainCharactersticsSEIEnabled())
+  {
+    SEIFilmGrainCharacteristics *sei = new SEIFilmGrainCharacteristics;
+    m_seiEncoder.initSEIFilmGrainCharacteristics(sei);
+    seiMessages.push_back(sei);
+  }
+
+  // mastering display colour volume
+  if (m_pcCfg->getMasteringDisplaySEI().colourVolumeSEIEnabled)
+  {
+    SEIMasteringDisplayColourVolume *sei = new SEIMasteringDisplayColourVolume;
+    m_seiEncoder.initSEIMasteringDisplayColourVolume(sei);
+    seiMessages.push_back(sei);
+  }
+
+  // content light level
+  if (m_pcCfg->getCLLSEIEnabled())
+  {
+    SEIContentLightLevelInfo *seiCLL = new SEIContentLightLevelInfo;
+    m_seiEncoder.initSEIContentLightLevel(seiCLL);
+    seiMessages.push_back(seiCLL);
+  }
+
+  // ambient viewing environment
+  if (m_pcCfg->getAmbientViewingEnvironmentSEIEnabled())
+  {
+    SEIAmbientViewingEnvironment *seiAVE = new SEIAmbientViewingEnvironment;
+    m_seiEncoder.initSEIAmbientViewingEnvironment(seiAVE);
+    seiMessages.push_back(seiAVE);
+  }
+
+  // content colour volume
+  if (m_pcCfg->getCcvSEIEnabled())
+  {
+    SEIContentColourVolume *seiContentColourVolume = new SEIContentColourVolume;
+    m_seiEncoder.initSEIContentColourVolume(seiContentColourVolume);
+    seiMessages.push_back(seiContentColourVolume);
+  }
 #endif
 }
 
@@ -1119,7 +1200,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
         SEIDecodingUnitInfo *duInfoSEI = new SEIDecodingUnitInfo();
         duInfoSEI->m_decodingUnitIdx = i;
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
-	for( int j = temporalId; j <= maxNumSubLayers; j++ )
+        for( int j = temporalId; j <= maxNumSubLayers; j++ )
           duInfoSEI->m_duSptCpbRemovalDelayIncrement[j] = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i*maxNumSubLayers+j] + 1;
 #else
         duInfoSEI->m_duSptCpbRemovalDelay = pictureTimingSEI->m_duCpbRemovalDelayMinus1[i] + 1;
@@ -1879,7 +1960,7 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
 void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
 #endif
 {
-  if (slice->getSPS()->getUseReshaper())
+  if (slice->getSPS()->getUseLmcs())
   {
     const SliceType sliceType = slice->getSliceType();
 
@@ -2157,6 +2238,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
                 iNumPicRcvd, iTimeOffset, pcPic, pocCurr, isField );
 #if JVET_P1006_PICTURE_HEADER
     picHeader = pcPic->cs->picHeader;
+    picHeader->setSPSId( pcPic->cs->pps->getSPSId() );
+    picHeader->setPPSId( pcPic->cs->pps->getPPSId() );
     picHeader->setSplitConsOverrideFlag(false);
 #endif
 
@@ -2185,15 +2268,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     m_pcSliceEncoder->create( picWidth, picHeight, chromaFormatIDC, maxCUWidth, maxCUHeight, maxTotalCUDepth );
 
-#if ENABLE_SPLIT_PARALLELISM && ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, m_pcCfg->getNumWppThreads(), m_pcCfg->getNumWppExtraLines(), m_pcCfg->getNumSplitThreads() );
-#elif ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, 1                          , 0                             , m_pcCfg->getNumSplitThreads() );
-#elif ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.init( pcPic->cs->pcv->heightInCtus, pcPic->cs->pcv->widthInCtus, m_pcCfg->getNumWppThreads(), m_pcCfg->getNumWppExtraLines(), 1                             );
 #endif
     pcPic->createTempBuffers( pcPic->cs->pps->pcv->maxCUWidth );
-    pcPic->cs->createCoeffs();
+    pcPic->cs->createCoeffs((bool)pcPic->cs->sps->getPLTMode());
 
     //  Slice data initialization
     pcPic->clearSliceBuffer();
@@ -2801,9 +2880,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     // Allocate some coders, now the number of tiles are known.
     const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
+#if JVET_P1004_REMOVE_BRICKS
+    const int numSubstreamsColumns = pcSlice->getPPS()->getNumTileColumns();
+    const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRows());
+    const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->cs->pps->getNumSlicesInPic());
+#else
     const int numSubstreamsColumns = (pcSlice->getPPS()->getNumTileColumnsMinus1() + 1);
     const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRowsMinus1() + 1);
     const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->brickMap->bricks.size());
+#endif
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
 #if ENABLE_QPA
@@ -2913,18 +2998,28 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
 
+#if JVET_P1004_REMOVE_BRICKS
+      for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
+      {
+        pcSlice->setSliceMap( pcPic->cs->pps->getSliceMap( sliceIdx ) );
+#else
       pcSlice->setSliceCurStartCtuTsAddr( 0 );
 
       uint32_t sliceIdx = 0;
       const BrickMap& tileMap = *(pcPic->brickMap);
       for(uint32_t nextCtuTsAddr = 0; nextCtuTsAddr < numberOfCtusInFrame; )
       {
+#endif
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
+#if JVET_P1004_REMOVE_BRICKS
+        if(sliceIdx < pcPic->cs->pps->getNumSlicesInPic() - 1)
+#else
         const uint32_t curSliceEnd = pcSlice->getSliceCurEndCtuTsAddr();
         pcSlice->setSliceIndex(sliceIdx);
         if(curSliceEnd < numberOfCtusInFrame)
+#endif
         {
           uint32_t independentSliceIdx = pcSlice->getIndependentSliceIdx();
           pcPic->allocateNewSlice();
@@ -2933,6 +3028,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcSlice = pcPic->slices[uiNumSliceSegments];
           CHECK(!(pcSlice->getPPS() != 0), "Unspecified error");
           pcSlice->copySliceInfo(pcPic->slices[uiNumSliceSegments - 1]);
+#if !JVET_P1004_REMOVE_BRICKS
           sliceIdx++;
           if (pcSlice->getPPS()->getRectSliceFlag())
           {
@@ -2950,12 +3046,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             pcSlice->setSliceCurStartCtuTsAddr(curSliceEnd);
           }
+#endif
           pcSlice->setSliceBits(0);
           independentSliceIdx++;
           pcSlice->setIndependentSliceIdx(independentSliceIdx);
           uiNumSliceSegments++;
         }
+#if !JVET_P1004_REMOVE_BRICKS
         nextCtuTsAddr = curSliceEnd;
+#endif
       }
 
       duData.clear();
@@ -2963,7 +3062,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       CodingStructure& cs = *pcPic->cs;
       pcSlice = pcPic->slices[0];
 
-      if (pcSlice->getSPS()->getUseReshaper() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
+      if (pcSlice->getSPS()->getUseLmcs() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
 #if JVET_P1006_PICTURE_HEADER
         picHeader->setLmcsEnabledFlag(true);
@@ -3208,7 +3307,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       //send LMCS APS when LMCSModel is updated. It can be updated even current slice does not enable reshaper.
       //For example, in RA, update is on intra slice, but intra slice may not use reshaper
-      if (pcSlice->getSPS()->getUseReshaper())
+      if (pcSlice->getSPS()->getUseLmcs())
       {
         //only 1 LMCS data for 1 picture
 #if JVET_P1006_PICTURE_HEADER
@@ -3324,7 +3423,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       std::size_t binCountsInNalUnits   = 0; // For implementation of cabac_zero_word stuffing (section 7.4.3.10)
       std::size_t numBytesInVclNalUnits = 0; // For implementation of cabac_zero_word stuffing (section 7.4.3.10)
 
+#if JVET_P1004_REMOVE_BRICKS
+      for(uint32_t sliceSegmentIdxCount = 0; sliceSegmentIdxCount < pcPic->cs->pps->getNumSlicesInPic(); sliceSegmentIdxCount++ )
+#else
       for(uint32_t sliceSegmentStartCtuTsAddr = 0, sliceSegmentIdxCount = 0; sliceSegmentStartCtuTsAddr < numberOfCtusInFrame; sliceSegmentIdxCount++, sliceSegmentStartCtuTsAddr = pcSlice->getSliceCurEndCtuTsAddr())
+#endif
       {
         pcSlice = pcPic->slices[sliceSegmentIdxCount];
         if(sliceSegmentIdxCount > 0 && pcSlice->getSliceType()!= I_SLICE)
@@ -3641,7 +3744,7 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
   const bool    useWPSNR = m_pcEncLib->getUseWPSNR();
 #endif
 #if WCG_WPSNR
-  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
+  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getLmcs() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
 #endif
 
   if( m_pcCfg->getDecodeBitstream(0).empty() && m_pcCfg->getDecodeBitstream(1).empty() && !m_pcCfg->useFastForwardToPOC() )
@@ -3997,7 +4100,7 @@ uint64_t EncGOP::xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, 
 double EncGOP::xFindDistortionPlaneWPSNR(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift, const CPelBuf& picLuma0,
   ComponentID compID, const ChromaFormat chfmt    )
 {
-  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
+  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getLmcs() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
   if (!useLumaWPSNR)
   {
     return 0;
@@ -4131,16 +4234,16 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
   CHECK(!(conversion == IPCOLOURSPACE_UNCHANGED), "Unspecified error");
 //  const CPelUnitBuf& org = (conversion != IPCOLOURSPACE_UNCHANGED) ? pcPic->getPicYuvTrueOrg()->getBuf() : pcPic->getPicYuvOrg()->getBuf();
 #if JVET_O0549_ENCODER_ONLY_FILTER
-  const CPelUnitBuf& org = (sps.getUseReshaper() || m_pcCfg->getGopBasedTemporalFilterEnabled()) ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
+  const CPelUnitBuf& org = (sps.getUseLmcs() || m_pcCfg->getGopBasedTemporalFilterEnabled()) ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
 #else
-  const CPelUnitBuf& org = sps.getUseReshaper() ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
+  const CPelUnitBuf& org = sps.getUseLmcs() ? pcPic->getTrueOrigBuf() : pcPic->getOrigBuf();
 #endif
 #if ENABLE_QPA
   const bool    useWPSNR = m_pcEncLib->getUseWPSNR();
 #endif
   double  dPSNR[MAX_NUM_COMPONENT];
 #if WCG_WPSNR
-  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getReshaper() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
+  const bool    useLumaWPSNR = m_pcEncLib->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcCfg->getLmcs() && m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ);
   double  dPSNRWeighted[MAX_NUM_COMPONENT];
   double  MSEyuvframeWeighted[MAX_NUM_COMPONENT];
 #endif
@@ -4186,11 +4289,34 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( m_pcEncLib->isRPREnabled() )
   {
-    const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
+    const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
+
+#if JVET_P0590_SCALING_WINDOW
+    int xScale, yScale;
+    // it is assumed that full resolution picture PPS has ppsId 0
+    const PPS* pps = m_pcEncLib->getPPS(0);
+    CU::getRprScaling( &sps, pps, pcPic, xScale, yScale );
+    std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
+
+#if JVET_P0592_CHROMA_PHASE
+    Picture::rescalePicture( scalingRatio, picC, pcPic->getScalingWindow(), upscaledRec, pps->getScalingWindow(), format, sps.getBitDepths(), false, false, sps.getHorCollocatedChromaFlag(), sps.getVerCollocatedChromaFlag() );
+#else
+    Picture::rescalePicture( scalingRatio, picC, pcPic->getScalingWindow(), upscaledRec, pps->getScalingWindow(), format, sps.getBitDepths(), false );
+#endif
+#elif JVET_P0592_CHROMA_PHASE
+    int xScale, yScale;
+    // it is assumed that full resolution picture PPS has ppsId 0
+    const PPS* pps = m_pcEncLib->getPPS( 0 );
+    CU::getRprScaling( &sps, pps, pcPic, xScale, yScale );
+    std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
+
+    Picture::rescalePicture( scalingRatio, picC, pcPic->getConformanceWindow(), upscaledRec, m_pcEncLib->getConformanceWindow(), format, sps.getBitDepths(), false, false, sps.getHorCollocatedChromaFlag(), sps.getVerCollocatedChromaFlag() );
+#else
     // the input source picture has a conformance window derived at encoder
     Window& conformanceWindow = m_pcEncLib->getConformanceWindow();
     Picture::rescalePicture( picC, pcPic->cs->pps->getConformanceWindow(), upscaledRec, conformanceWindow, format, sps.getBitDepths(), false );
+#endif
   }
 
   for (int comp = 0; comp < ::getNumberValidComponents(formatD); comp++)
@@ -4202,8 +4328,25 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     CHECK(!( p.width  == o.width), "Unspecified error");
     CHECK(!( p.height == o.height), "Unspecified error");
 
+#if JVET_P0590_SCALING_WINDOW
+    int padX = m_pcEncLib->getPad( 0 );
+    int padY = m_pcEncLib->getPad( 1 );
+
+    // when RPR is enabled, picture padding is picture specific due to possible different picture resoluitons, however only full resolution padding is stored in EncLib
+    // get per picture padding from the conformance window, in this case if conformance window is set not equal to the padding then PSNR results may be inaccurate
+    if( m_pcEncLib->isRPREnabled() )
+    {
+      Window& conf = pcPic->getConformanceWindow();
+      padX = conf.getWindowRightOffset() * SPS::getWinUnitX( format );
+      padY = conf.getWindowBottomOffset() * SPS::getWinUnitY( format );
+    }
+
+    const uint32_t width = p.width - ( padX >> ::getComponentScaleX( compID, format ) );
+    const uint32_t height = p.height - ( padY >> ( !!bPicIsField + ::getComponentScaleY( compID, format ) ) );
+#else
     const uint32_t   width  = p.width  - (m_pcEncLib->getPad(0) >> ::getComponentScaleX(compID, format));
     const uint32_t   height = p.height - (m_pcEncLib->getPad(1) >> (!!bPicIsField+::getComponentScaleY(compID,format)));
+#endif
 
     // create new buffers with correct dimensions
     const CPelBuf recPB(p.bufAt(0, 0), p.stride, width, height);
@@ -4230,8 +4373,24 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
     if( m_pcEncLib->isRPREnabled() )
     {
-      const CPelBuf& upscaledOrg = sps.getUseReshaper() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
+      const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
+#if JVET_P0590_SCALING_WINDOW
+      const uint32_t upscaledWidth = upscaledOrg.width - ( m_pcEncLib->getPad( 0 ) >> ::getComponentScaleX( compID, format ) );
+      const uint32_t upscaledHeight = upscaledOrg.height - ( m_pcEncLib->getPad( 1 ) >> ( !!bPicIsField + ::getComponentScaleY( compID, format ) ) );
+
+      // create new buffers with correct dimensions
+      const CPelBuf upscaledRecPB( upscaledRec.get( compID ).bufAt( 0, 0 ), upscaledRec.get( compID ).stride, upscaledWidth, upscaledHeight );
+      const CPelBuf upscaledOrgPB( upscaledOrg.bufAt( 0, 0 ), upscaledOrg.stride, upscaledWidth, upscaledHeight );
+
+#if ENABLE_QPA
+      const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRecPB, upscaledOrgPB, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ) );
+#else
+      const uint64_t scaledSSD = xFindDistortionPlane( upsacledRecPB, upsacledOrgPB, 0 );
+#endif
+
+      upscaledPSNR[comp] = upscaledSSD ? 10.0 * log10( (double)maxval * maxval * upscaledWidth * upscaledHeight / (double)upscaledSSD ) : 999.99;
+#else
 #if ENABLE_QPA
       const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ), ::getComponentScaleY( compID, format ) );
 #else
@@ -4239,6 +4398,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #endif
 
       upscaledPSNR[comp] = upscaledSSD ? 10.0 * log10( (double)maxval * maxval * upscaledOrg.width * upscaledOrg.height / (double)upscaledSSD ) : 999.99;
+#endif
     }
   }
 

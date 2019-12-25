@@ -90,6 +90,25 @@ void MCTSHelper::clipMvToArea( Mv& rcMv, const Area& block, const Area& clipArea
 
 Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
 {
+#if JVET_P1004_REMOVE_BRICKS
+  const PPS *pps = cs->pps;
+  const int  maxCUWidth  = cs->pcv->maxCUWidth;
+  const int  maxCUHeight = cs->pcv->maxCUHeight;
+
+  const uint32_t tileIdx = pps->getTileIdx( (uint32_t)ctuAddr );
+  const uint32_t tileX = tileIdx % pps->getNumTileColumns();
+  const uint32_t tileY = tileIdx / pps->getNumTileColumns();
+  
+  const int tileWidthtInCtus = pps->getTileColumnWidth( tileX );
+  const int tileHeightInCtus = pps->getTileRowHeight  ( tileY );  
+  const int tileXPosInCtus   = pps->getTileColumnBd( tileX );
+  const int tileYPosInCtus   = pps->getTileRowBd( tileY );
+
+  const int tileLeftTopPelPosX = maxCUWidth * tileXPosInCtus;
+  const int tileLeftTopPelPosY = maxCUHeight * tileYPosInCtus;
+  const int tileRightBottomPelPosX = std::min<int>( ( ( tileWidthtInCtus + tileXPosInCtus ) * maxCUWidth ), (int)cs->picture->lwidth() ) - 1;
+  const int tileRightBottomPelPosY = std::min<int>( ( ( tileHeightInCtus + tileYPosInCtus ) * maxCUHeight ), (int)cs->picture->lheight() ) - 1;
+#else
   const BrickMap* tileMap = cs->picture->brickMap;
   const int       tileIdx = tileMap->getBrickIdxRsMap( ctuAddr );
   const Brick&  currentTile = tileMap->bricks[tileIdx];
@@ -109,6 +128,7 @@ Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
   const int tileLeftTopPelPosY = maxCUHeight * tileYPosInCtus;
   const int tileRightBottomPelPosX = std::min<int>( ( ( tileWidthtInCtus + tileXPosInCtus ) * maxCUWidth ), (int)cs->picture->lwidth() ) - 1;
   const int tileRightBottomPelPosY = std::min<int>( ( ( tileHeightInCtus + tileYPosInCtus ) * maxCUHeight ), (int)cs->picture->lheight() ) - 1;
+#endif
 
   return Area( tileLeftTopPelPosX, tileLeftTopPelPosY, tileRightBottomPelPosX - tileLeftTopPelPosX + 1, tileRightBottomPelPosY - tileLeftTopPelPosY + 1 );
 }

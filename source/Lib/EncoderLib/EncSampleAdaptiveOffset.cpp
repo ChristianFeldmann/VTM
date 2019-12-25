@@ -246,7 +246,9 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   xLosslessDisableProcess(cs);
+#endif
 }
 
 
@@ -838,7 +840,11 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
 
   int ctuRsAddr = 0;
 #if ENABLE_QPA
+#if JVET_P1004_REMOVE_BRICKS
+  CHECK ((chromaWeight > 0.0) && (cs.slice->getFirstCtuRsAddrInSlice() != 0), "incompatible start CTU address, must be 0");
+#else
   CHECK ((chromaWeight > 0.0) && (cs.slice->getSliceCurStartCtuTsAddr() != 0), "incompatible start CTU address, must be 0");
+#endif
 #endif
 
   for( uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
@@ -1548,7 +1554,11 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
 #if JVET_P1006_PICTURE_HEADER
   bool isLoopFiltAcrossSlicePPS = cs.pps->getLoopFilterAcrossSlicesEnabledFlag();
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+  bool isLoopFiltAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
+#else
   bool isLoopFiltAcrossTilePPS = cs.pps->getLoopFilterAcrossBricksEnabledFlag();
+#endif
 
   const int width = cs.pcv->maxCUWidth;
   const int height = cs.pcv->maxCUHeight;

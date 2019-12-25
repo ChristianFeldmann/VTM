@@ -752,11 +752,13 @@ void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const u
   }
 }
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode)
 {
   return CU::isRDPCMEnabled(*pu.cu) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
 }
 
+#endif
 void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
 {
   const int            width = pred.width;
@@ -815,7 +817,7 @@ void IntraPrediction::switchBuffer(const PredictionUnit &pu, ComponentID compID,
 
 void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 {
-  if (!cu.firstPU->mhIntraFlag)
+  if (!cu.firstPU->ciipFlag)
   {
     return;
   }
@@ -890,8 +892,13 @@ void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const Comp
   }
 
   const Position posLT = area;
+#if JVET_P1004_REMOVE_BRICKS
+  bool           isLeftAvail  = (cs.getCURestricted(posLT.offset(-1, 0), cu, CHANNEL_TYPE_LUMA) != NULL) && cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
+  bool           isAboveAvail = (cs.getCURestricted(posLT.offset(0, -1), cu, CHANNEL_TYPE_LUMA) != NULL) && cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
+#else
   bool           isLeftAvail = cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
   bool           isAboveAvail = cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
+#endif
   // ----- Step 1: unfiltered reference samples -----
   if (cu.blocks[area.compID].x == area.x && cu.blocks[area.compID].y == area.y)
   {
@@ -1290,15 +1297,16 @@ bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const
     return false;
   }
 
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
-
-  return !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
+#if JVET_P1004_REMOVE_BRICKS
+  return (cs.getCURestricted(refPos, cu, chType) != NULL);
+#else
+  return true;
+#endif
 }
 
 int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags)
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1313,10 +1321,14 @@ int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Posi
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
+#else
+    ++numIntra;
+    *validFlags = true;
+#endif
 
     validFlags++;
   }
@@ -1327,7 +1339,6 @@ int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Posi
 int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *bValidFlags)
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1342,10 +1353,14 @@ int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Posit
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
+#else
+    ++numIntra;
+    *validFlags = true;
+#endif
 
     validFlags--;
   }
@@ -1356,7 +1371,6 @@ int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Posit
 int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posRT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags )
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1371,10 +1385,14 @@ int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
+#else
+    ++numIntra;
+    *validFlags = true;
+#endif
 
     validFlags++;
   }
@@ -1385,7 +1403,6 @@ int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const
 int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLB, const uint32_t uiNumUnitsInPU, const uint32_t unitHeight, bool *bValidFlags )
 {
   const CodingStructure& cs = *cu.cs;
-  const bool isConstrained = cs.pps->getConstrainedIntraPred();
 
   bool *    validFlags = bValidFlags;
   int       numIntra   = 0;
@@ -1400,10 +1417,14 @@ int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const 
       break;
     }
 
-    const bool valid = !isConstrained || CU::isIntra(*cs.getCURestricted(refPos, cu, chType));
-
+#if JVET_P1004_REMOVE_BRICKS
+    const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
+#else
+    ++numIntra;
+    *validFlags = true;
+#endif
 
     validFlags--;
   }
@@ -1503,7 +1524,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   Pel*       pDst  = nullptr;
   Pel const* piSrc = nullptr;
 
-  bool isFirstRowOfCtu = ((pu.block(COMPONENT_Cb).y)&(((pu.cs->sps)->getMaxCUWidth() >> 1) - 1)) == 0;
+  bool isFirstRowOfCtu = ( lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1) ) == 0;
   const int strOffset = (CHROMA_444 == pu.chromaFormat) ? 0 : iRecStride;
 
   int c0_2tap = 1, c1_2tap = 1,                                                     offset_2tap = 1, shift_2tap = 1; //sum = 2
@@ -2047,8 +2068,8 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
 
-  uint32_t       reusePLTSizetmp = 0;
-  uint32_t       pltSizetmp = 0;
+  uint8_t        reusePLTSizetmp = 0;
+  uint8_t        pltSizetmp = 0;
   Pel            curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
   bool           curPLTpred[MAXPLTPREDSIZE];
 

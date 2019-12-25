@@ -61,7 +61,9 @@ namespace CU
   bool isIBC                          (const CodingUnit &cu);
   bool isPLT                          (const CodingUnit &cu);
   bool isRDPCMEnabled                 (const CodingUnit &cu);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool isLosslessCoded                (const CodingUnit &cu);
+#endif
 
   bool isSameCtu                      (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSlice                    (const CodingUnit &cu, const CodingUnit &cu2);
@@ -70,7 +72,9 @@ namespace CU
   bool isLastSubCUOfCtu               (const CodingUnit &cu);
   uint32_t getCtuAddr                     (const CodingUnit &cu);
 #if JVET_O0625_ALF_PADDING || JVET_P0551_ALF_SLICE_BOUNDARY
+#if !JVET_P1004_REMOVE_BRICKS
   bool isSameBrick                    ( const CodingUnit& cu, const CodingUnit& cu2 );
+#endif
 #endif
   int  predictQP                      (const CodingUnit& cu, const int prevQP );
 
@@ -87,10 +91,10 @@ namespace CU
   bool  isFirstTBInPredReg(const CodingUnit& cu, const ComponentID compID, const CompArea &area);
   bool  isMinWidthPredEnabledForBlkSize(const int w, const int h);
   void  adjustPredArea(CompArea &area);
-  bool  isGBiIdxCoded                 (const CodingUnit& cu);
-  uint8_t getValidGbiIdx              (const CodingUnit& cu);
-  void  setGbiIdx                     (CodingUnit& cu, uint8_t uh);
-  uint8_t deriveGbiIdx                (uint8_t gbiLO, uint8_t gbiL1);
+  bool  isBcwIdxCoded                 (const CodingUnit& cu);
+  uint8_t getValidBcwIdx              (const CodingUnit& cu);
+  void  setBcwIdx                     (CodingUnit& cu, uint8_t uh);
+  uint8_t deriveBcwIdx                (uint8_t bcwLO, uint8_t bcwL1);
   bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
 #if JVET_P1026_MTS_SIGNALLING
   bool isMTSAllowed                   (const CodingUnit& cu, const ComponentID compID);
@@ -154,7 +158,7 @@ namespace PU
   void fillAffineMvpCand              (      PredictionUnit &pu, const RefPicList &eRefPicList, const int &refIdx, AffineAMVPInfo &affiAMVPInfo);
   bool addMVPCandUnscaled             (const PredictionUnit &pu, const RefPicList &eRefPicList, const int &iRefIdx, const Position &pos, const MvpDir &eDir, AMVPInfo &amvpInfo);
   void xInheritedAffineMv             ( const PredictionUnit &pu, const PredictionUnit* puNeighbour, RefPicList eRefPicList, Mv rcMv[3] );
-  bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const bool canFastExit, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
+  bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
     , const bool isAvailableA1, const MotionInfo miLeft, const bool isAvailableB1, const MotionInfo miAbove
     , const bool ibcFlag
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
@@ -169,7 +173,7 @@ namespace PU
   bool isBipredRestriction            (const PredictionUnit &pu);
   void spanMotionInfo                 (      PredictionUnit &pu, const MergeCtx &mrgCtx = MergeCtx() );
   void applyImv                       (      PredictionUnit &pu, MergeCtx &mrgCtx, InterPrediction *interPred = NULL );
-  void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int8_t gbiIdx, int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
+  void getAffineControlPointCand(const PredictionUnit &pu, MotionInfo mi[4], bool isAvailable[4], int verIdx[4], int8_t bcwIdx, int modelIdx, int verNum, AffineMergeCtx& affMrgCtx);
   void getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx, const int mrgCandIdx = -1 );
   void setAllAffineMvField            (      PredictionUnit &pu, MvField *mvField, RefPicList eRefList );
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool clipCPMVs = false );
@@ -192,7 +196,9 @@ namespace PU
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool checkDMVRCondition(const PredictionUnit& pu);
 
+#if !JVET_P0590_SCALING_WINDOW
   bool isRefPicSameSize( const PredictionUnit& pu );
+#endif
 }
 
 // TU tools

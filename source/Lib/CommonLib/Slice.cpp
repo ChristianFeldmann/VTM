@@ -62,9 +62,7 @@ Slice::Slice()
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
-#if !JVET_P1006_PICTURE_HEADER
 , m_ChromaQpAdjEnabled            ( false )
-#endif
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
@@ -82,6 +80,9 @@ Slice::Slice()
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
+#if JVET_P1006_PICTURE_HEADER
+, m_pcPicHeader                   ( NULL )
+#endif
 , m_colFromL0Flag                 ( true )
 #if !JVET_P1006_PICTURE_HEADER
 , m_noOutputPriorPicsFlag         ( false )
@@ -99,22 +100,32 @@ Slice::Slice()
 #endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
+#if !JVET_P1004_REMOVE_BRICKS
 , m_sliceMode                     ( NO_SLICES )
 , m_sliceArgument                 ( 0 )
 , m_sliceCurStartCtuTsAddr        ( 0 )
 , m_sliceCurEndCtuTsAddr          ( 0 )
+#endif
 , m_independentSliceIdx           ( 0 )
 , m_nextSlice                     ( false )
 , m_sliceBits                     ( 0 )
 , m_bFinalized                    ( false )
+#if !JVET_P1004_REMOVE_BRICKS
 , m_sliceCurStartBrickIdx         ( 0 )
 , m_sliceCurEndBrickIdx           ( 0 )
 , m_sliceNumBricks                ( 0 )
 , m_sliceIdx                      ( 0 )
+#endif
 , m_bTestWeightPred               ( false )
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )
+#if JVET_P1004_REMOVE_BRICKS
+, m_numEntryPoints                ( 0 )
+#endif
 , m_cabacInitFlag                 ( false )
+#if JVET_P0126_SIGNALLING_SUBPICID
+ , m_sliceSubPicId               ( 0 )
+#endif
 #if !JVET_P1006_PICTURE_HEADER
 , m_jointCbCrSignFlag             ( false )
 , m_bLMvdL1Zero                   ( false )
@@ -181,10 +192,17 @@ Slice::Slice()
   }
 
   memset(m_alfApss, 0, sizeof(m_alfApss));
+#if JVET_P1004_REMOVE_BRICKS
+
+  m_sliceMap.initSliceMap();
+#endif
 }
 
 Slice::~Slice()
 {
+#if JVET_P1004_REMOVE_BRICKS
+  m_sliceMap.initSliceMap();
+#endif
 }
 
 
@@ -277,6 +295,27 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setTileGroupNumAps(picHeader->getNumAlfAps());
   setAlfAPSs(picHeader->getAlfAPSs());
   setTileGroupApsIdChroma(picHeader->getAlfApsIdChroma());   
+}
+
+#endif
+#if JVET_P1004_REMOVE_BRICKS
+void  Slice::setNumEntryPoints( const PPS *pps ) 
+{
+  uint32_t ctuAddr, ctuX, ctuY;
+  m_numEntryPoints = 0;
+
+  // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
+  // ignore the first CTU since it doesn't count as an entry point
+  for( uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++ ) 
+  {
+    ctuAddr = m_sliceMap.getCtuAddrInSlice( i );
+    ctuX = ( ctuAddr % pps->getPicWidthInCtu() );
+    ctuY = ( ctuAddr / pps->getPicWidthInCtu() );
+    if( pps->ctuIsTileColBd( ctuX ) && (pps->ctuIsTileRowBd( ctuY ) || pps->getEntropyCodingSyncEnabledFlag() ) ) 
+    {
+      m_numEntryPoints++;
+    }
+  }
 }
 
 #endif
@@ -769,9 +808,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_eSliceType           = pSrc->m_eSliceType;
   m_iSliceQp             = pSrc->m_iSliceQp;
   m_iSliceQpBase         = pSrc->m_iSliceQpBase;
-#if !JVET_P1006_PICTURE_HEADER
   m_ChromaQpAdjEnabled              = pSrc->m_ChromaQpAdjEnabled;
-#endif
   m_deblockingFilterDisable         = pSrc->m_deblockingFilterDisable;
   m_deblockingFilterOverrideFlag    = pSrc->m_deblockingFilterOverrideFlag;
   m_deblockingFilterBetaOffsetDiv2  = pSrc->m_deblockingFilterBetaOffsetDiv2;
@@ -819,6 +856,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 
   if( cpyAlmostAll ) m_pcPic  = pSrc->m_pcPic;
 
+#if JVET_P1006_PICTURE_HEADER
+  m_pcPicHeader          = pSrc->m_pcPicHeader;
+#endif
   m_colFromL0Flag        = pSrc->m_colFromL0Flag;
   m_colRefIdx            = pSrc->m_colRefIdx;
 
@@ -838,10 +878,14 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_uiTLayer                      = pSrc->m_uiTLayer;
   m_bTLayerSwitchingFlag          = pSrc->m_bTLayerSwitchingFlag;
 
+#if JVET_P1004_REMOVE_BRICKS
+  m_sliceMap                      = pSrc->m_sliceMap;
+#else
   m_sliceMode                     = pSrc->m_sliceMode;
   m_sliceArgument                 = pSrc->m_sliceArgument;
   m_sliceCurStartCtuTsAddr        = pSrc->m_sliceCurStartCtuTsAddr;
   m_sliceCurEndCtuTsAddr          = pSrc->m_sliceCurEndCtuTsAddr;
+#endif
   m_independentSliceIdx           = pSrc->m_independentSliceIdx;
   m_nextSlice                     = pSrc->m_nextSlice;
   m_clpRngs                       = pSrc->m_clpRngs;
@@ -1984,6 +2028,9 @@ SPS::SPS()
 // Structure
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
+#if JVET_P0126_SIGNALLING_SUBPICID
+, m_subPicPresentFlag         (0)
+#endif
 #if JVET_P1006_PICTURE_HEADER
 , m_numSubPics(1)
 , m_subPicIdPresentFlag(0)
@@ -2044,17 +2091,22 @@ SPS::SPS()
 , m_wrapAroundOffset          (  0)
 , m_IBCFlag                   (  0)
 , m_PLTMode                   (  0)
-, m_lumaReshapeEnable         (false)
+, m_lmcsEnabled               (false)
 , m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )
+#if JVET_P0592_CHROMA_PHASE
+, m_horCollocatedChromaFlag   ( true )
+, m_verCollocatedChromaFlag   ( false )
+#else
 , m_cclmCollocatedChromaFlag  ( false )
+#endif
 , m_IntraMTS                  ( false )
 , m_InterMTS                  ( false )
 , m_LFNST                     ( false )
 , m_Affine                    ( false )
 , m_AffineType                ( false )
 , m_PROF                      ( false )
-, m_MHIntra                   ( false )
+, m_ciip                   ( false )
 , m_Triangle                  ( false )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
 , m_LadfEnabled               ( false )
@@ -2062,9 +2114,15 @@ SPS::SPS()
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
 #endif
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+, m_MRL                       ( false )
+#endif
 , m_MIP                       ( false )
-    ,m_GDREnabledFlag         (1)
-, m_SubLayerCbpParametersPresentFlag (1)
+, m_GDREnabledFlag            ( true )
+, m_SubLayerCbpParametersPresentFlag ( true )
+#if JVET_P0590_SCALING_WINDOW
+, m_rprEnabledFlag            ( false )
+#endif
 
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
@@ -2206,6 +2264,35 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
   }
 }
 
+#if JVET_P1004_REMOVE_BRICKS
+SliceMap::SliceMap()
+: m_sliceID              (0)
+, m_numTilesInSlice      (0)
+, m_numCtuInSlice        (0)
+{
+  m_ctuAddrInSlice.clear();
+}
+
+SliceMap::~SliceMap()
+{
+  m_numCtuInSlice = 0;
+  m_ctuAddrInSlice.clear();
+}
+
+RectSlice::RectSlice()
+: m_tileIdx            (0)
+, m_sliceWidthInTiles  (0)
+, m_sliceHeightInTiles (0)
+, m_numSlicesInTile    (0)
+, m_sliceHeightInCtu   (0)
+{
+}
+
+RectSlice::~RectSlice()
+{
+}
+
+#endif
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
 // m_log2SaoOffsetScale initialized below
@@ -2221,7 +2308,6 @@ PPS::PPS()
 , m_SPSId                            (0)
 , m_picInitQPMinus26                 (0)
 , m_useDQP                           (false)
-, m_bConstrainedIntraPred            (false)
 , m_bSliceChromaQpFlag               (false)
 #if !JVET_P1006_PICTURE_HEADER
 , m_cuQpDeltaSubdiv                  (0)
@@ -2241,9 +2327,26 @@ PPS::PPS()
 , m_subPicIdSignallingPresentFlag    (0)
 , m_subPicIdLen                      (16)
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+, m_noPicPartitionFlag               (1)
+, m_log2CtuSize                      (0)
+, m_ctuSize                          (0)
+, m_picWidthInCtu                    (0)
+, m_picHeightInCtu                   (0)
+, m_numTileCols                      (1)
+, m_numTileRows                      (1)
+, m_rectSliceFlag                    (1)  
+, m_numSlicesInPic                   (1)
+, m_tileIdxDeltaPresentFlag          (0)
+, m_loopFilterAcrossTilesEnabledFlag (1)
+, m_loopFilterAcrossSlicesEnabledFlag(0)
+#endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 , m_TransquantBypassEnabledFlag      (false)
+#endif
 , m_log2MaxTransformSkipBlockSize    (2)
 , m_entropyCodingSyncEnabledFlag     (false)
+#if !JVET_P1004_REMOVE_BRICKS
 , m_loopFilterAcrossBricksEnabledFlag (true)
 , m_uniformTileSpacingFlag           (false)
 , m_numTileColumnsMinus1             (0)
@@ -2259,6 +2362,7 @@ PPS::PPS()
 , m_numBricksInPic                   (1)
 , m_signalledSliceIdFlag             (false)
 ,m_signalledSliceIdLengthMinus1      (0)
+#endif
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
 , m_PPSRefPicListSPSIdc0             (0)
@@ -2278,9 +2382,10 @@ PPS::PPS()
 , m_pictureHeaderExtensionPresentFlag(0)
 #endif
 , m_sliceHeaderExtensionPresentFlag  (false)
+#if !JVET_P1004_REMOVE_BRICKS
 , m_loopFilterAcrossSlicesEnabledFlag(false)
+#endif
 , m_listsModificationPresentFlag     (0)
-, m_numExtraSliceHeaderBits          (0)
 #if !JVET_P1006_PICTURE_HEADER
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
 , m_numVerVirtualBoundaries          (0)
@@ -2298,13 +2403,275 @@ PPS::PPS()
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
 #endif
+#if JVET_P1004_REMOVE_BRICKS
+  m_tileColWidth.clear();
+  m_tileRowHeight.clear();
+  m_tileColBd.clear();
+  m_tileRowBd.clear();
+  m_ctuToTileCol.clear();
+  m_ctuToTileRow.clear();
+  m_rectSlices.clear();
+  m_sliceMap.clear();
+#endif
 }
 
 PPS::~PPS()
 {
+#if JVET_P1004_REMOVE_BRICKS
+  m_tileColWidth.clear();
+  m_tileRowHeight.clear();
+  m_tileColBd.clear();
+  m_tileRowBd.clear();
+  m_ctuToTileCol.clear();
+  m_ctuToTileRow.clear();
+  m_rectSlices.clear();
+  m_sliceMap.clear();
+
+#endif
   delete pcv;
 }
 
+#if JVET_P1004_REMOVE_BRICKS
+/**
+ - reset tile and slice parameters and lists
+ */
+void PPS::resetTileSliceInfo()
+{
+  m_numExpTileCols = 0;
+  m_numExpTileRows = 0;
+  m_numTileCols    = 0;
+  m_numTileRows    = 0;
+  m_numSlicesInPic = 0;
+  m_tileColWidth.clear();
+  m_tileRowHeight.clear();
+  m_tileColBd.clear();
+  m_tileRowBd.clear();
+  m_ctuToTileCol.clear();
+  m_ctuToTileRow.clear();
+  m_rectSlices.clear();
+  m_sliceMap.clear();
+}
+
+/**
+ - initialize tile row/column sizes and boundaries
+ */
+void PPS::initTiles()
+{
+  int       colIdx, rowIdx;
+  int       ctuX, ctuY;
+  
+  // check explicit tile column sizes
+  uint32_t  remainingWidthInCtu  = m_picWidthInCtu;
+  for( colIdx = 0; colIdx < m_numExpTileCols; colIdx++ )
+  {
+    CHECK(m_tileColWidth[colIdx] > remainingWidthInCtu,    "Tile column width exceeds picture width");
+    remainingWidthInCtu -= m_tileColWidth[colIdx];
+  }
+
+  // divide remaining picture width into uniform tile columns
+  uint32_t  uniformTileColWidth = m_tileColWidth[colIdx-1];
+  while( remainingWidthInCtu > 0 ) 
+  {
+    CHECK(colIdx >= MAX_TILE_COLS, "Number of tile columns exceeds valid range");
+    uniformTileColWidth = std::min(remainingWidthInCtu, uniformTileColWidth);
+    m_tileColWidth.push_back( uniformTileColWidth );
+    remainingWidthInCtu -= uniformTileColWidth;
+    colIdx++;
+  }
+  m_numTileCols = colIdx;
+    
+  // check explicit tile row sizes
+  uint32_t  remainingHeightInCtu  = m_picHeightInCtu;
+  for( rowIdx = 0; rowIdx < m_numExpTileRows; rowIdx++ )
+  {
+    CHECK(m_tileRowHeight[rowIdx] > remainingHeightInCtu,     "Tile row height exceeds picture height");
+    remainingHeightInCtu -= m_tileRowHeight[rowIdx];
+  }
+    
+  // divide remaining picture height into uniform tile rows
+  uint32_t  uniformTileRowHeight = m_tileRowHeight[rowIdx - 1];
+  while( remainingHeightInCtu > 0 ) 
+  {
+    CHECK(rowIdx >= MAX_TILE_ROWS, "Number of tile rows exceeds valid range");
+    uniformTileRowHeight = std::min(remainingHeightInCtu, uniformTileRowHeight);
+    m_tileRowHeight.push_back( uniformTileRowHeight );
+    remainingHeightInCtu -= uniformTileRowHeight;
+    rowIdx++;
+  }
+  m_numTileRows = rowIdx;
+
+  // set left column bounaries
+  m_tileColBd.push_back( 0 );
+  for( colIdx = 0; colIdx < m_numTileCols; colIdx++ )
+  {
+    m_tileColBd.push_back( m_tileColBd[ colIdx ] + m_tileColWidth[ colIdx ] );
+  }
+  
+  // set top row bounaries
+  m_tileRowBd.push_back( 0 );
+  for( rowIdx = 0; rowIdx < m_numTileRows; rowIdx++ )
+  {
+    m_tileRowBd.push_back( m_tileRowBd[ rowIdx ] + m_tileRowHeight[ rowIdx ] );
+  }
+
+  // set mapping between horizontal CTU address and tile column index
+  colIdx = 0;
+  for( ctuX = 0; ctuX <= m_picWidthInCtu; ctuX++ ) 
+  {
+    if( ctuX == m_tileColBd[ colIdx + 1 ] )
+    {
+      colIdx++;
+    }
+    m_ctuToTileCol.push_back( colIdx );
+  }
+  
+  // set mapping between vertical CTU address and tile row index
+  rowIdx = 0;
+  for( ctuY = 0; ctuY <= m_picHeightInCtu; ctuY++ ) 
+  {
+    if( ctuY == m_tileRowBd[ rowIdx + 1 ] )
+    {
+      rowIdx++;
+    }
+    m_ctuToTileRow.push_back( rowIdx );
+  }
+}
+
+/**
+ - initialize memory for rectangular slice parameters
+ */
+void PPS::initRectSlices()
+{ 
+  CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
+  m_rectSlices.resize(m_numSlicesInPic);
+}
+
+/**
+ - initialize mapping between rectangular slices and CTUs
+ */
+void PPS::initRectSliceMap()
+{
+  uint32_t  ctuY;
+  uint32_t  tileX, tileY;
+    
+  // allocate new memory for slice list
+  CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
+  m_sliceMap.resize( m_numSlicesInPic );
+
+  // generate CTU maps for all rectangular slices in picture
+  for( uint32_t i = 0; i < m_numSlicesInPic; i++ )
+  {
+    m_sliceMap[ i ].initSliceMap();
+
+    // get position of first tile in slice
+    tileX =  m_rectSlices[ i ].getTileIdx() % m_numTileCols;
+    tileY =  m_rectSlices[ i ].getTileIdx() / m_numTileCols;
+    
+    // infer slice size for last slice in picture
+    if( i == m_numSlicesInPic-1 ) 
+    {
+      m_rectSlices[ i ].setSliceWidthInTiles ( m_numTileCols - tileX );
+      m_rectSlices[ i ].setSliceHeightInTiles( m_numTileRows - tileY );
+      m_rectSlices[ i ].setNumSlicesInTile( 1 );
+    }
+
+    // set slice index
+    m_sliceMap[ i ].setSliceID(i);
+    
+    // complete tiles within a single slice case
+    if( m_rectSlices[ i ].getSliceWidthInTiles( ) > 1 || m_rectSlices[ i ].getSliceHeightInTiles( ) > 1)
+    {
+      for( uint32_t j = 0; j < m_rectSlices[ i ].getSliceHeightInTiles( ); j++ )
+      {
+        for( uint32_t k = 0; k < m_rectSlices[ i ].getSliceWidthInTiles( ); k++ )
+        {
+          m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX + k), getTileColumnBd(tileX + k +1),
+                                          getTileRowBd(tileY + j), getTileRowBd(tileY + j +1), m_picWidthInCtu);
+        }
+      }
+    }
+    // multiple slices within a single tile case
+    else 
+    {
+      uint32_t  numSlicesInTile = m_rectSlices[ i ].getNumSlicesInTile( );
+
+      ctuY = getTileRowBd( tileY );
+      for( uint32_t j = 0; j < numSlicesInTile-1; j++ ) 
+      {
+        m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX), getTileColumnBd(tileX+1),
+                                        ctuY, ctuY + m_rectSlices[ i ].getSliceHeightInCtu(), m_picWidthInCtu);
+        ctuY += m_rectSlices[ i ].getSliceHeightInCtu();
+        i++;
+        m_sliceMap[ i ].setSliceID(i);
+      }
+
+      // infer slice height for last slice in tile
+      CHECK( ctuY >= getTileRowBd( tileY + 1 ), "Invalid rectangular slice signalling");
+      m_rectSlices[ i ].setSliceHeightInCtu( getTileRowBd( tileY + 1 ) - ctuY );
+      m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX), getTileColumnBd(tileX+1),
+                                      ctuY, getTileRowBd( tileY + 1 ), m_picWidthInCtu);
+    } 
+  }
+
+  // check for valid rectangular slice map
+  checkSliceMap();
+}
+
+void PPS::initRasterSliceMap( std::vector<uint32_t> numTilesInSlice )
+{
+  uint32_t tileIdx = 0;
+  setNumSlicesInPic( (uint32_t) numTilesInSlice.size() );
+
+  // allocate new memory for slice list
+  CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
+  m_sliceMap.resize( m_numSlicesInPic );
+
+  for( uint32_t sliceIdx = 0; sliceIdx < numTilesInSlice.size(); sliceIdx++ ) 
+  {
+    m_sliceMap[sliceIdx].initSliceMap();
+    m_sliceMap[sliceIdx].setSliceID( tileIdx );
+    m_sliceMap[sliceIdx].setNumTilesInSlice( numTilesInSlice[sliceIdx] );
+    for( uint32_t idx = 0; idx < numTilesInSlice[sliceIdx]; idx++ )
+    {
+      uint32_t tileX = tileIdx % getNumTileColumns();
+      uint32_t tileY = tileIdx / getNumTileColumns();
+      CHECK(tileY >= getNumTileRows(), "Number of tiles in slice exceeds the remaining number of tiles in picture");
+
+      m_sliceMap[sliceIdx].addCtusToSlice(getTileColumnBd(tileX), getTileColumnBd(tileX + 1),
+                                          getTileRowBd(tileY), getTileRowBd(tileY + 1), 
+                                          getPicWidthInCtu());
+      tileIdx++;
+    }
+  }
+
+  // check for valid raster-scan slice map
+  checkSliceMap();
+}
+
+/**
+ - check if slice map covers the entire picture without skipping or duplicating any CTU positions
+ */
+void PPS::checkSliceMap()
+{
+  uint32_t i;
+  std::vector<uint32_t>  ctuList, sliceList;
+  uint32_t picSizeInCtu = getPicWidthInCtu() * getPicHeightInCtu();
+  for( i = 0; i < m_numSlicesInPic; i++ )
+  {
+    sliceList = m_sliceMap[ i ].getCtuAddrList();
+    ctuList.insert( ctuList.end(), sliceList.begin(), sliceList.end() );
+  }  
+  CHECK( ctuList.size() < picSizeInCtu, "Slice map contains too few CTUs");
+  CHECK( ctuList.size() > picSizeInCtu, "Slice map contains too many CTUs");
+  std::sort( ctuList.begin(), ctuList.end() );   
+  for( i = 1; i < ctuList.size(); i++ )
+  {
+    CHECK( ctuList[i] > ctuList[i-1]+1, "CTU missing in slice map");
+    CHECK( ctuList[i] == ctuList[i-1],  "CTU duplicated in slice map");
+  }
+}
+
+#endif
 APS::APS()
 : m_APSId(0)
 , m_temporalId( 0 )
@@ -3335,7 +3702,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
       m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
 
 #if JVET_P0206_TMVP_flags
+#if JVET_P0590_SCALING_WINDOW
+      if( m_scalingRatio[refList][rIdx] == SCALE_1X && pps->getPicWidthInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicWidthInLumaSamples() && pps->getPicHeightInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicHeightInLumaSamples() )
+#else
       if( m_scalingRatio[refList][rIdx] == SCALE_1X )
+#endif
       {
         refPicIsSameRes = true;
       }
@@ -3404,7 +3775,25 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
 
           // rescale the reference picture
           const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
+#if JVET_P0590_SCALING_WINDOW
+#if JVET_P0592_CHROMA_PHASE
+          Picture::rescalePicture( m_scalingRatio[refList][rIdx], 
+                                   m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), 
+                                   scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(), 
+                                   sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
+                                   sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
+#else
+          Picture::rescalePicture( m_scalingRatio[refList][rIdx], m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
+#endif
+#elif JVET_P0592_CHROMA_PHASE
+          Picture::rescalePicture( m_scalingRatio[refList][rIdx], m_apcRefPicList[refList][rIdx]->getRecoBuf(),
+                                   m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getConformanceWindow(),
+                                   scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(),
+                                   sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
+                                   sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
+#else
           Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getConformanceWindow(), scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
+#endif
           scaledRefPic[j]->extendPicBorder();
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];

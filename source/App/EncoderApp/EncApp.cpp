@@ -157,9 +157,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoMtsConstraintFlag                               ( (m_MTS || m_MTSImplicit) ? false : true );
   m_cEncLib.setNoSbtConstraintFlag                               ( !m_SBT );
   m_cEncLib.setNoAffineMotionConstraintFlag                      ( !m_Affine );
-  m_cEncLib.setNoGbiConstraintFlag                               ( !m_GBi );
+  m_cEncLib.setNoBcwConstraintFlag                               ( !m_bcw );
   m_cEncLib.setNoIbcConstraintFlag                               ( m_IBCMode ? false : true );
-  m_cEncLib.setNoMhIntraConstraintFlag                           ( !m_MHIntra );
+  m_cEncLib.setNoCiipConstraintFlag                           ( !m_ciip );
   m_cEncLib.setNoFPelMmvdConstraintFlag                          ( !(m_MMVD && m_allowDisFracMMVD) );
   m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
@@ -181,7 +181,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoIdrConstraintFlag                               ( false ); // Not yet possible to encode bitstream starting with a GDR picture
   m_cEncLib.setNoCraConstraintFlag                               ( m_iDecodingRefreshType != 1 );
   m_cEncLib.setNoGdrConstraintFlag                               ( false ); // Not yet possible to encode GDR using config parameters
-  m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lumaReshapeEnable && m_useScalingListId == SCALING_LIST_OFF);
+  m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lmcsEnabled && m_useScalingListId == SCALING_LIST_OFF);
 #endif
 
   //====== Coding Structure ========
@@ -304,7 +304,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPROF                                              ( m_PROF );
   m_cEncLib.setBIO                                               (m_BIO);
   m_cEncLib.setUseLMChroma                                       ( m_LMChroma );
+#if JVET_P0592_CHROMA_PHASE
+  m_cEncLib.setHorCollocatedChromaFlag                           ( m_horCollocatedChromaFlag );
+  m_cEncLib.setVerCollocatedChromaFlag                           ( m_verCollocatedChromaFlag );
+#else
   m_cEncLib.setCclmCollocatedChromaFlag                          ( m_cclmCollocatedChromaFlag );
+#endif
   m_cEncLib.setIntraMTS                                          ( m_MTS & 1 );
   m_cEncLib.setInterMTS                                          ( ( m_MTS >> 1 ) & 1 );
 #if JVET_P0273_MTSIntraMaxCand
@@ -321,8 +326,8 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setUseCompositeRef                                   ( m_compositeRefEnabled );
   m_cEncLib.setUseSMVD                                           ( m_SMVD );
-  m_cEncLib.setUseGBi                                            ( m_GBi );
-  m_cEncLib.setUseGBiFast                                        ( m_GBiFast );
+  m_cEncLib.setUseBcw                                            ( m_bcw );
+  m_cEncLib.setUseBcwFast                                        ( m_BcwFast );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   m_cEncLib.setUseLadf                                           ( m_LadfEnabed );
   if ( m_LadfEnabed )
@@ -335,7 +340,7 @@ void EncApp::xInitLibCfg()
     }
   }
 #endif
-  m_cEncLib.setUseMHIntra                                        ( m_MHIntra );
+  m_cEncLib.setUseCiip                                        ( m_ciip );
   m_cEncLib.setUseTriangle                                       ( m_Triangle );
   m_cEncLib.setUseHashME                                         ( m_HashME );
 
@@ -396,6 +401,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseNonLinearAlfLuma                               ( m_useNonLinearAlfLuma );
   m_cEncLib.setUseNonLinearAlfChroma                             ( m_useNonLinearAlfChroma );
   m_cEncLib.setMaxNumAlfAlternativesChroma                       ( m_maxNumAlfAlternativesChroma );
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  m_cEncLib.setUseMRL                                            ( m_MRL );
+#endif
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
   m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );
@@ -418,7 +426,6 @@ void EncApp::xInitLibCfg()
   {
     m_cEncLib.setRdpcmEnabledFlag                                ( RDPCMSignallingMode(signallingModeIndex), m_rdpcmEnabledFlag[signallingModeIndex]);
   }
-  m_cEncLib.setUseConstrainedIntraPred                           ( m_bUseConstrainedIntraPred );
   m_cEncLib.setFastUDIUseMPMEnabled                              ( m_bFastUDIUseMPMEnabled );
   m_cEncLib.setFastMEForGenBLowDelayEnabled                      ( m_bFastMEForGenBLowDelayEnabled );
   m_cEncLib.setUseBLambdaForNonKeyLowDelayPictures               ( m_bUseBLambdaForNonKeyLowDelayPictures );
@@ -441,9 +448,30 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
   m_cEncLib.setWPBiPred                                          ( m_useWeightedBiPred   );
 
-  //====== Parallel Merge Estimation ========
-  m_cEncLib.setLog2ParallelMergeLevelMinus2                      ( m_log2ParallelMergeLevel - 2 );
-
+#if JVET_P1004_REMOVE_BRICKS
+  //====== Tiles and Slices ========
+  m_cEncLib.setNoPicPartitionFlag( !m_picPartitionFlag );
+  if( m_picPartitionFlag )
+  {
+    m_cEncLib.setTileColWidths( m_tileColumnWidth );
+    m_cEncLib.setTileRowHeights( m_tileRowHeight );
+    m_cEncLib.setRectSliceFlag( !m_rasterSliceFlag );
+    m_cEncLib.setNumSlicesInPic( m_numSlicesInPic );
+    m_cEncLib.setTileIdxDeltaPresentFlag( m_tileIdxDeltaPresentFlag );
+    m_cEncLib.setRectSlices( m_rectSlices );
+    m_cEncLib.setRasterSliceSizes( m_rasterSliceSize );
+    m_cEncLib.setLFCrossTileBoundaryFlag( !m_disableLFCrossTileBoundaryFlag );
+    m_cEncLib.setLFCrossSliceBoundaryFlag( !m_disableLFCrossSliceBoundaryFlag );
+  }
+  else
+  {
+    m_cEncLib.setRectSliceFlag( true );
+    m_cEncLib.setNumSlicesInPic( 1 );
+    m_cEncLib.setTileIdxDeltaPresentFlag( 0 );
+    m_cEncLib.setLFCrossTileBoundaryFlag( true );
+    m_cEncLib.setLFCrossSliceBoundaryFlag( true );
+  }
+#else
   //====== Slice ========
   m_cEncLib.setSliceMode                                         ( m_sliceMode );
   m_cEncLib.setSliceArgument                                     ( m_sliceArgument );
@@ -454,6 +482,7 @@ void EncApp::xInitLibCfg()
     m_bLFCrossSliceBoundaryFlag = true;
   }
   m_cEncLib.setLFCrossSliceBoundaryFlag                          ( m_bLFCrossSliceBoundaryFlag );
+#endif
   m_cEncLib.setUseSAO                                            ( m_bUseSAO );
   m_cEncLib.setTestSAODisableAtPictureLevel                      ( m_bTestSAODisableAtPictureLevel );
   m_cEncLib.setSaoEncodingRate                                   ( m_saoEncodingRate );
@@ -475,7 +504,8 @@ void EncApp::xInitLibCfg()
    m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
   m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setToneMappingInfoSEIEnabled                         ( m_toneMappingInfoSEIEnabled );
   m_cEncLib.setTMISEIToneMapId                                   ( m_toneMapId );
   m_cEncLib.setTMISEIToneMapCancelFlag                           ( m_toneMapCancelFlag );
@@ -506,11 +536,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setChromaResamplingFilterHintEnabled                 ( m_chromaResamplingFilterSEIenabled );
   m_cEncLib.setChromaResamplingHorFilterIdc                      ( m_chromaResamplingHorFilterIdc );
   m_cEncLib.setChromaResamplingVerFilterIdc                      ( m_chromaResamplingVerFilterIdc );
+#endif
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );
   m_cEncLib.setFramePackingArrangementSEIId                      ( m_framePackingSEIId );
   m_cEncLib.setFramePackingArrangementSEIQuincunx                ( m_framePackingSEIQuincunx );
   m_cEncLib.setFramePackingArrangementSEIInterpretation          ( m_framePackingSEIInterpretation );
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIEnabled    ( m_segmentedRectFramePackingSEIEnabled );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEICancel     ( m_segmentedRectFramePackingSEICancel );
   m_cEncLib.setSegmentedRectFramePackingArrangementSEIType       ( m_segmentedRectFramePackingSEIType );
@@ -524,8 +556,71 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
 #endif
+#endif
+#if JVET_P0462_SEI360
+  m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
+  m_cEncLib.setErpSEICancelFlag                                  ( m_erpSEICancelFlag );        
+  m_cEncLib.setErpSEIPersistenceFlag                             ( m_erpSEIPersistenceFlag );   
+  m_cEncLib.setErpSEIGuardBandFlag                               ( m_erpSEIGuardBandFlag );     
+  m_cEncLib.setErpSEIGuardBandType                               ( m_erpSEIGuardBandType );     
+  m_cEncLib.setErpSEILeftGuardBandWidth                          ( m_erpSEILeftGuardBandWidth );
+  m_cEncLib.setErpSEIRightGuardBandWidth                         ( m_erpSEIRightGuardBandWidth );
+  m_cEncLib.setSphereRotationSEIEnabled                          ( m_sphereRotationSEIEnabled );
+  m_cEncLib.setSphereRotationSEICancelFlag                       ( m_sphereRotationSEICancelFlag );
+  m_cEncLib.setSphereRotationSEIPersistenceFlag                  ( m_sphereRotationSEIPersistenceFlag );
+  m_cEncLib.setSphereRotationSEIYaw                              ( m_sphereRotationSEIYaw );
+  m_cEncLib.setSphereRotationSEIPitch                            ( m_sphereRotationSEIPitch );
+  m_cEncLib.setSphereRotationSEIRoll                             ( m_sphereRotationSEIRoll );
+  m_cEncLib.setOmniViewportSEIEnabled                            ( m_omniViewportSEIEnabled );          
+  m_cEncLib.setOmniViewportSEIId                                 ( m_omniViewportSEIId );               
+  m_cEncLib.setOmniViewportSEICancelFlag                         ( m_omniViewportSEICancelFlag );       
+  m_cEncLib.setOmniViewportSEIPersistenceFlag                    ( m_omniViewportSEIPersistenceFlag );  
+  m_cEncLib.setOmniViewportSEICntMinus1                          ( m_omniViewportSEICntMinus1 );        
+  m_cEncLib.setOmniViewportSEIAzimuthCentre                      ( m_omniViewportSEIAzimuthCentre );    
+  m_cEncLib.setOmniViewportSEIElevationCentre                    ( m_omniViewportSEIElevationCentre );  
+  m_cEncLib.setOmniViewportSEITiltCentre                         ( m_omniViewportSEITiltCentre );       
+  m_cEncLib.setOmniViewportSEIHorRange                           ( m_omniViewportSEIHorRange );         
+  m_cEncLib.setOmniViewportSEIVerRange                           ( m_omniViewportSEIVerRange );         
+  m_cEncLib.setRwpSEIEnabled                                     (m_rwpSEIEnabled);
+  m_cEncLib.setRwpSEIRwpCancelFlag                               (m_rwpSEIRwpCancelFlag);
+  m_cEncLib.setRwpSEIRwpPersistenceFlag                          (m_rwpSEIRwpPersistenceFlag);
+  m_cEncLib.setRwpSEIConstituentPictureMatchingFlag              (m_rwpSEIConstituentPictureMatchingFlag);
+  m_cEncLib.setRwpSEINumPackedRegions                            (m_rwpSEINumPackedRegions);
+  m_cEncLib.setRwpSEIProjPictureWidth                            (m_rwpSEIProjPictureWidth);
+  m_cEncLib.setRwpSEIProjPictureHeight                           (m_rwpSEIProjPictureHeight);
+  m_cEncLib.setRwpSEIPackedPictureWidth                          (m_rwpSEIPackedPictureWidth);
+  m_cEncLib.setRwpSEIPackedPictureHeight                         (m_rwpSEIPackedPictureHeight);
+  m_cEncLib.setRwpSEIRwpTransformType                            (m_rwpSEIRwpTransformType);
+  m_cEncLib.setRwpSEIRwpGuardBandFlag                            (m_rwpSEIRwpGuardBandFlag);
+  m_cEncLib.setRwpSEIProjRegionWidth                             (m_rwpSEIProjRegionWidth);
+  m_cEncLib.setRwpSEIProjRegionHeight                            (m_rwpSEIProjRegionHeight);
+  m_cEncLib.setRwpSEIRwpSEIProjRegionTop                         (m_rwpSEIRwpSEIProjRegionTop);
+  m_cEncLib.setRwpSEIProjRegionLeft                              (m_rwpSEIProjRegionLeft);
+  m_cEncLib.setRwpSEIPackedRegionWidth                           (m_rwpSEIPackedRegionWidth);
+  m_cEncLib.setRwpSEIPackedRegionHeight                          (m_rwpSEIPackedRegionHeight);
+  m_cEncLib.setRwpSEIPackedRegionTop                             (m_rwpSEIPackedRegionTop);
+  m_cEncLib.setRwpSEIPackedRegionLeft                            (m_rwpSEIPackedRegionLeft);
+  m_cEncLib.setRwpSEIRwpLeftGuardBandWidth                       (m_rwpSEIRwpLeftGuardBandWidth);
+  m_cEncLib.setRwpSEIRwpRightGuardBandWidth                      (m_rwpSEIRwpRightGuardBandWidth);
+  m_cEncLib.setRwpSEIRwpTopGuardBandHeight                       (m_rwpSEIRwpTopGuardBandHeight);
+  m_cEncLib.setRwpSEIRwpBottomGuardBandHeight                    (m_rwpSEIRwpBottomGuardBandHeight);
+  m_cEncLib.setRwpSEIRwpGuardBandNotUsedForPredFlag              (m_rwpSEIRwpGuardBandNotUsedForPredFlag);
+  m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
+#endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
+#endif
+#if JVET_P0450_SEI_SARI
+  m_cEncLib.setSampleAspectRatioInfoSEIEnabled                   (m_sampleAspectRatioInfoSEIEnabled);
+  m_cEncLib.setSariCancelFlag                                    (m_sariCancelFlag);
+  m_cEncLib.setSariPersistenceFlag                               (m_sariPersistenceFlag);
+  m_cEncLib.setSariAspectRatioIdc                                (m_sariAspectRatioIdc);
+  m_cEncLib.setSariSarWidth                                      (m_sariSarWidth);
+  m_cEncLib.setSariSarHeight                                     (m_sariSarHeight);
+#endif
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );
   m_cEncLib.setNumberOfTimeSets                                  ( m_timeCodeSEINumTs );
   for(int i = 0; i < m_timeCodeSEINumTs; i++)
@@ -544,16 +639,59 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setKneeSEIInputKneePoint                             ( m_kneeSEIInputKneePoint );
   m_cEncLib.setKneeSEIOutputKneePoint                            ( m_kneeSEIOutputKneePoint );
   m_cEncLib.setColourRemapInfoSEIFileRoot                        ( m_colourRemapSEIFileRoot );
+#endif
   m_cEncLib.setMasteringDisplaySEI                               ( m_masteringDisplay );
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    ( m_preferredTransferCharacteristics>=0     );
   m_cEncLib.setSEIPreferredTransferCharacteristics               ( uint8_t(m_preferredTransferCharacteristics) );
 #endif
+#if !JVET_P0337_PORTING_SEI
   m_cEncLib.setSEIGreenMetadataInfoSEIEnable                     ( m_greenMetadataType > 0 );
   m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
   m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
 #endif
-
+#endif
+#if JVET_P0337_PORTING_SEI
+  // film grain charcteristics
+  m_cEncLib.setFilmGrainCharactersticsSEIEnabled                 (m_fgcSEIEnabled);
+  m_cEncLib.setFilmGrainCharactersticsSEICancelFlag              (m_fgcSEICancelFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIPersistenceFlag         (m_fgcSEIPersistenceFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIModelID                 ((uint8_t)m_fgcSEIModelID);
+  m_cEncLib.setFilmGrainCharactersticsSEISepColourDescPresent    (m_fgcSEISepColourDescPresentFlag);
+  m_cEncLib.setFilmGrainCharactersticsSEIBlendingModeID          ((uint8_t)m_fgcSEIBlendingModeID);
+  m_cEncLib.setFilmGrainCharactersticsSEILog2ScaleFactor         ((uint8_t)m_fgcSEILog2ScaleFactor);
+  for (int i = 0; i < MAX_NUM_COMPONENT; i++) {
+    m_cEncLib.setFGCSEICompModelPresent                          (m_fgcSEICompModelPresent[i], i);
+  }
+  // content light level
+  m_cEncLib.setCLLSEIEnabled                                     (m_cllSEIEnabled);
+  m_cEncLib.setCLLSEIMaxContentLightLevel                        ((uint16_t)m_cllSEIMaxContentLevel);
+  m_cEncLib.setCLLSEIMaxPicAvgLightLevel                         ((uint16_t)m_cllSEIMaxPicAvgLevel);
+  // ambient viewing enviornment
+  m_cEncLib.setAmbientViewingEnvironmentSEIEnabled               (m_aveSEIEnabled);
+  m_cEncLib.setAmbientViewingEnvironmentSEIIlluminance           (m_aveSEIAmbientIlluminance);
+  m_cEncLib.setAmbientViewingEnvironmentSEIAmbientLightX         ((uint16_t)m_aveSEIAmbientLightX);
+  m_cEncLib.setAmbientViewingEnvironmentSEIAmbientLightY         ((uint16_t)m_aveSEIAmbientLightY);
+  // content colour volume SEI
+  m_cEncLib.setCcvSEIEnabled                                     (m_ccvSEIEnabled);
+  m_cEncLib.setCcvSEICancelFlag                                  (m_ccvSEICancelFlag);
+  m_cEncLib.setCcvSEIPersistenceFlag                             (m_ccvSEIPersistenceFlag);
+  m_cEncLib.setCcvSEIEnabled                                     (m_ccvSEIEnabled);
+  m_cEncLib.setCcvSEICancelFlag                                  (m_ccvSEICancelFlag);
+  m_cEncLib.setCcvSEIPersistenceFlag                             (m_ccvSEIPersistenceFlag);
+  m_cEncLib.setCcvSEIPrimariesPresentFlag                        (m_ccvSEIPrimariesPresentFlag);
+  m_cEncLib.setCcvSEIMinLuminanceValuePresentFlag                (m_ccvSEIMinLuminanceValuePresentFlag);
+  m_cEncLib.setCcvSEIMaxLuminanceValuePresentFlag                (m_ccvSEIMaxLuminanceValuePresentFlag);
+  m_cEncLib.setCcvSEIAvgLuminanceValuePresentFlag                (m_ccvSEIAvgLuminanceValuePresentFlag);
+  for(int i = 0; i < MAX_NUM_COMPONENT; i++) {
+    m_cEncLib.setCcvSEIPrimariesX                                (m_ccvSEIPrimariesX[i], i);
+    m_cEncLib.setCcvSEIPrimariesY                                (m_ccvSEIPrimariesY[i], i);
+  }
+  m_cEncLib.setCcvSEIMinLuminanceValue                           (m_ccvSEIMinLuminanceValue);
+  m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
+  m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
+#endif
+#if !JVET_P1004_REMOVE_BRICKS
   m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
   if (m_tileUniformSpacingFlag)
   {
@@ -584,6 +722,7 @@ void EncApp::xInitLibCfg()
     m_bLFCrossTileBoundaryFlag = true;
   }
   m_cEncLib.setLFCrossTileBoundaryFlag                           ( m_bLFCrossTileBoundaryFlag );
+#endif
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
 #if JVET_P1006_PICTURE_HEADER
@@ -625,8 +764,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCpbSize                                           ( m_RCCpbSize );
   m_cEncLib.setInitialCpbFullness                                ( m_RCInitialCpbFullness );
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   m_cEncLib.setTransquantBypassEnabledFlag                       ( m_TransquantBypassEnabledFlag );
   m_cEncLib.setCUTransquantBypassFlagForceValue                  ( m_CUTransquantBypassFlagForce );
+#endif
   m_cEncLib.setCostMode                                          ( m_costMode );
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
@@ -670,14 +811,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNumSplitThreads                                   ( m_numSplitThreads );
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
 #endif
-#if ENABLE_WPP_PARALLELISM
-  m_cEncLib.setNumWppThreads                                     ( m_numWppThreads );
-  m_cEncLib.setNumWppExtraLines                                  ( m_numWppExtraLines );
-  m_cEncLib.setEnsureWppBitEqual                                 ( m_ensureWppBitEqual );
-
-#endif
   m_cEncLib.setUseALF                                            ( m_alf );
-  m_cEncLib.setReshaper                                          ( m_lumaReshapeEnable );
+  m_cEncLib.setLmcs                                              ( m_lmcsEnabled );
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );
   m_cEncLib.setReshapeCW                                         ( m_reshapeCW );
@@ -939,19 +1074,23 @@ bool EncApp::encode()
     m_metricTime = m_cEncLib.getMetricTime();
 #endif
 
-  // write bistream to file if necessary
-  if( m_numEncoded > 0 )
+  // output when the entire GOP was proccessed
+  if( !keepDoing )
   {
-    xWriteOutput( m_numEncoded, m_recBufList );
-  }
-  // temporally skip frames
-  if( m_temporalSubsampleRatio > 1 )
-  {
+    // write bistream to file if necessary
+    if( m_numEncoded > 0 )
+    {
+      xWriteOutput( m_numEncoded, m_recBufList );
+    }
+    // temporally skip frames
+    if( m_temporalSubsampleRatio > 1 )
+    {
 #if EXTENSION_360_VIDEO
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
 #else
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
 #endif
+    }
   }
 
   return keepDoing;

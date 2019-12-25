@@ -700,12 +700,22 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
   const Position& pos = cu.blocks[cu.chType].pos();
 
   m_stLFCUParam.internalEdge = true;
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+#else
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() );
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
 #else
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag() );
+#endif
 #endif
 }
 
@@ -750,7 +760,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
-  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
      return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
   }
@@ -776,7 +786,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   {
     return tmpBs;
   }
-  if ((cuP.firstPU->mhIntraFlag || cuQ.firstPU->mhIntraFlag))
+  if ((cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
     return 1;
   }
@@ -907,7 +917,9 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
   const PPS     &pps      = *(cu.cs->pps);
   const SPS     &sps      = *(cu.cs->sps);
   const Slice   &slice    = *(cu.slice);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   const bool    ppsTransquantBypassEnabledFlag = pps.getTransquantBypassEnabledFlag();
+#endif
   const bool    spsPaletteEnabledFlag          = sps.getPLTMode();
   const int     bitDepthLuma                   = sps.getBitDepth(CHANNEL_TYPE_LUMA);
   const ClpRng& clpRng( cu.cs->slice->clpRng(COMPONENT_Y) );
@@ -972,10 +984,18 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#else
+        if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
 #else
         if (!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#endif
 #endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
@@ -984,10 +1004,18 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#else
+        if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
 #else
         if (!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()))
+#endif
 #endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
@@ -1074,12 +1102,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
           int dL = d0L + d3L;
 
           bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
           if (ppsTransquantBypassEnabledFlag)
           {
             // check if each of PUs is lossless coded
             bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
             bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
           }
+#endif
           if (spsPaletteEnabledFlag)
           {
             // check if each of PUs is palette coded
@@ -1119,12 +1149,14 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
         const int d  = d0  + d3;
 
         bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
         if( ppsTransquantBypassEnabledFlag )
         {
           // check if each of PUs is lossless coded
           bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
           bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
         }
+#endif
         if( spsPaletteEnabledFlag)
         {
           // check if each of PUs is palette coded
@@ -1255,28 +1287,46 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#else
+        CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #else
         CHECK(!isAvailableLeft(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #endif
+#endif
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_P1004_REMOVE_BRICKS
+#if JVET_P1006_PICTURE_HEADER
+        CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#else
+        CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#endif
+#else
 #if JVET_P1006_PICTURE_HEADER
         CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #else
         CHECK(!isAvailableAbove(cu, cuP, !slice.getLFCrossSliceBoundaryFlag(), !pps.getLoopFilterAcrossBricksEnabledFlag()), "Neighbour not available");
 #endif
+#endif
       }
 
       bPartPNoFilter = bPartQNoFilter = false;
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
       if( pps.getTransquantBypassEnabledFlag() )
       {
         // check if each of PUs is lossless coded
         bPartPNoFilter = bPartPNoFilter || cuP.transQuantBypass;
         bPartQNoFilter = bPartQNoFilter || cuQ.transQuantBypass;
       }
+#endif
       if ( sps.getPLTMode())
       {
         // check if each of PUs is palette coded

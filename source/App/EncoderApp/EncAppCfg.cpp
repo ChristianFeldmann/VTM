@@ -126,9 +126,9 @@ EncAppCfg::EncAppCfg()
 , m_bNoMtsConstraintFlag(false)
 , m_noSbtConstraintFlag(false)
 , m_bNoAffineMotionConstraintFlag(false)
-, m_bNoGbiConstraintFlag(false)
+, m_bNoBcwConstraintFlag(false)
 , m_noIbcConstraintFlag(false)
-, m_bNoMhIntraConstraintFlag(false)
+, m_bNoCiipConstraintFlag(false)
 , m_noFPelMmvdConstraintFlag(false)
 , m_bNoTriangleConstraintFlag(false)
 , m_bNoLadfConstraintFlag(false)
@@ -231,6 +231,7 @@ std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry)     //in
   return in;
 }
 
+#if !JVET_P1004_REMOVE_BRICKS
 std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry)     //input
 {
   in>>entry.m_tileIdx;
@@ -249,6 +250,7 @@ std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry)     //
   }
   return in;
 }
+#endif
 
 
 bool confirmPara(bool bflag, const char* message);
@@ -715,6 +717,91 @@ automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
     }
   }
 }
+#if JVET_P1004_REMOVE_BRICKS
+
+static uint32_t getMaxTileColsByLevel( Level::Name level )
+{
+  switch( level ) 
+  {
+    case Level::LEVEL1:
+    case Level::LEVEL2:
+    case Level::LEVEL2_1:
+      return 1;
+    case Level::LEVEL3:
+      return 2;
+    case Level::LEVEL3_1:
+      return 3;
+    case Level::LEVEL4:
+    case Level::LEVEL4_1:
+      return 5;
+    case Level::LEVEL5:
+    case Level::LEVEL5_1:
+    case Level::LEVEL5_2:
+      return 10;
+    case Level::LEVEL6:
+    case Level::LEVEL6_1:
+    case Level::LEVEL6_2:
+    default:
+      return 20;
+  }
+}
+
+static uint32_t getMaxTileRowsByLevel( Level::Name level )
+{
+  switch( level ) 
+  {
+    case Level::LEVEL1:
+    case Level::LEVEL2:
+    case Level::LEVEL2_1:
+      return 1;
+    case Level::LEVEL3:
+      return 2;
+    case Level::LEVEL3_1:
+      return 3;
+    case Level::LEVEL4:
+    case Level::LEVEL4_1:
+      return 5;
+    case Level::LEVEL5:
+    case Level::LEVEL5_1:
+    case Level::LEVEL5_2:
+      return 11;
+    case Level::LEVEL6:
+    case Level::LEVEL6_1:
+    case Level::LEVEL6_2:
+    default:
+      return 21;
+  }
+}
+
+static uint32_t getMaxSlicesByLevel( Level::Name level )
+{
+  switch( level ) 
+  {
+    case Level::LEVEL1:
+    case Level::LEVEL2:
+      return 16;
+    case Level::LEVEL2_1:
+      return 20;
+    case Level::LEVEL3:
+      return 30;
+    case Level::LEVEL3_1:
+      return 40;
+    case Level::LEVEL4:
+    case Level::LEVEL4_1:
+      return 75;
+    case Level::LEVEL5:
+    case Level::LEVEL5_1:
+    case Level::LEVEL5_2:
+      return 200;
+    case Level::LEVEL6:
+    case Level::LEVEL6_1:
+    case Level::LEVEL6_2:
+    default:
+      return 600;
+  }
+}
+
+#endif
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
@@ -733,7 +820,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int tmpWeightedPredictionMethod;
   int tmpFastInterSearchMode;
   int tmpMotionEstimationSearchMethod;
+#if !JVET_P1004_REMOVE_BRICKS 
   int tmpSliceMode;
+#endif
   int tmpDecodedPictureHashSEIMappedType;
   string inputColourSpaceConvert;
   string inputPathPrefix;
@@ -741,14 +830,23 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int saoOffsetBitShift[MAX_NUM_CHANNEL_TYPE];
 
   // Multi-value input fields:                                // minval, maxval (incl), min_entries, max_entries (incl) [, default values, number of default values]
+#if JVET_P1004_REMOVE_BRICKS  
+  SMultiValueInput<uint32_t>  cfgTileColumnWidth              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t>  cfgTileRowHeight                (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t>  cfgRectSlicePos                 (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t>  cfgRasterSliceSize              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#else  
   SMultiValueInput<uint32_t> cfg_ColumnWidth                     (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t> cfg_RowHeight                       (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#endif
   SMultiValueInput<int>  cfg_startOfCodedInterval            (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
   SMultiValueInput<int>  cfg_codedPivotValue                 (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
   SMultiValueInput<int>  cfg_targetPivotValue                (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
 
+#if !JVET_P1004_REMOVE_BRICKS 
   SMultiValueInput<uint32_t> cfg_SliceIdx                    (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t> cfg_SignalledSliceId            (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#endif
 
   SMultiValueInput<double> cfg_adIntraLambdaModifier         (0, std::numeric_limits<double>::max(), 0, MAX_TLAYER); ///< Lambda modifier for Intra pictures, one for each temporal layer. If size>temporalLayer, then use [temporalLayer], else if size>0, use [size()-1], else use m_adLambdaModifier.
 
@@ -792,6 +890,29 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<bool> cfg_timeCodeSeiHoursFlag            (0,  1, 0, MAX_TIMECODE_SEI_SETS);
   SMultiValueInput<int>  cfg_timeCodeSeiTimeOffsetLength     (0, 31, 0, MAX_TIMECODE_SEI_SETS);
   SMultiValueInput<int>  cfg_timeCodeSeiTimeOffsetValue      (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, MAX_TIMECODE_SEI_SETS);
+#if JVET_P0462_SEI360
+  SMultiValueInput<int>      cfg_omniViewportSEIAzimuthCentre    (-11796480, 11796479, 0, 15);
+  SMultiValueInput<int>      cfg_omniViewportSEIElevationCentre  ( -5898240,  5898240, 0, 15);
+  SMultiValueInput<int>      cfg_omniViewportSEITiltCentre       (-11796480, 11796479, 0, 15);
+  SMultiValueInput<uint32_t> cfg_omniViewportSEIHorRange         (        1, 23592960, 0, 15);
+  SMultiValueInput<uint32_t> cfg_omniViewportSEIVerRange         (        1, 11796480, 0, 15);
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpTransformType                 (0, 7, 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<bool>       cfg_rwpSEIRwpGuardBandFlag                 (0, 1, 0, std::numeric_limits<uint8_t>::max()); 
+  SMultiValueInput<uint32_t>   cfg_rwpSEIProjRegionWidth                  (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIProjRegionHeight                 (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpSEIProjRegionTop              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIProjRegionLeft                   (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIPackedRegionWidth                (0, std::numeric_limits<uint16_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIPackedRegionHeight               (0, std::numeric_limits<uint16_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIPackedRegionTop                  (0, std::numeric_limits<uint16_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIPackedRegionLeft                 (0, std::numeric_limits<uint16_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpLeftGuardBandWidth            (0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpRightGuardBandWidth           (0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpTopGuardBandHeight            (0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpBottomGuardBandHeight         (0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<bool>       cfg_rwpSEIRwpGuardBandNotUsedForPredFlag   (0, 1,   0, std::numeric_limits<uint8_t>::max());
+  SMultiValueInput<uint32_t>   cfg_rwpSEIRwpGuardBandType                 (0, 7,   0, 4*std::numeric_limits<uint8_t>::max());
+#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   const int defaultLadfQpOffset[3] = { 1, 0, 1 };
   const int defaultLadfIntervalLowerBound[2] = { 350, 833 };
@@ -935,12 +1056,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DualITree",                                       m_dualTree,                                       false, "Use separate QTBT trees for intra slice luma and chroma channel types")
   ( "LFNST",                                          m_LFNST,                                          false, "Enable LFNST (0:off, 1:on)  [default: off]" )
   ( "FastLFNST",                                      m_useFastLFNST,                                   false, "Fast methods for LFNST" )
-  ("SubPuMvp",                                       m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
-  ("MMVD",                                           m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
-  ("Affine",                                         m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
-  ("AffineType",                                     m_AffineType,                                     true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
-  ("PROF",                                           m_PROF,                                           false, "Enable Prediction refinement with optical flow for affine mode (0:off, 1:on)  [default: off]")
-  ("BIO",                                            m_BIO,                                             false, "Enable bi-directional optical flow")
+  ("SubPuMvp",                                        m_SubPuMvpMode,                                       0, "Enable Sub-PU temporal motion vector prediction (0:off, 1:ATMVP, 2:STMVP, 3:ATMVP+STMVP)  [default: off]")
+  ("MMVD",                                            m_MMVD,                                            true, "Enable Merge mode with Motion Vector Difference (0:off, 1:on)  [default: 1]")
+  ("Affine",                                          m_Affine,                                         false, "Enable affine prediction (0:off, 1:on)  [default: off]")
+  ("AffineType",                                      m_AffineType,                                      true,  "Enable affine type prediction (0:off, 1:on)  [default: on]" )
+  ("PROF",                                            m_PROF,                                           false, "Enable Prediction refinement with optical flow for affine mode (0:off, 1:on)  [default: off]")
+  ("BIO",                                             m_BIO,                                            false, "Enable bi-directional optical flow")
   ("IMV",                                             m_ImvMode,                                            1, "Adaptive MV precision Mode (IMV)\n"
                                                                                                                "\t0: disabled\n"
                                                                                                                "\t1: enabled (1/2-Pel, Full-Pel and 4-PEL)\n")
@@ -948,9 +1069,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
+#if JVET_P0592_CHROMA_PHASE
+  ("HorCollocatedChroma",                             m_horCollocatedChromaFlag,                         true, "Specifies location of a chroma sample relatively to the luma sample in horizontal direction in the reference picture resampling\n"
+                                                                                                               "\t0:  horizontally shifted by 0.5 units of luma samples\n"
+                                                                                                               "\t1:  collocated (default)\n")
+  ("VerCollocatedChroma",                             m_verCollocatedChromaFlag,                        false, "Specifies location of a chroma sample relatively to the luma sample in vertical direction in the cross-component linear model intra prediction and the reference picture resampling\n"
+                                                                                                               "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
+                                                                                                               "\t1:  collocated\n")
+#else
   ("CclmCollocatedChroma",                            m_cclmCollocatedChromaFlag,                       false, "Specifies the location of the top-left downsampled luma sample in cross-component linear model intra prediction relative to the top-left luma sample\n"
                                                                                                                "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
                                                                                                                "\t1:  collocated\n")
+#endif
   ("MTS",                                             m_MTS,                                                0, "Multiple Transform Set (MTS)\n"
     "\t0:  Disable MTS\n"
     "\t1:  Enable only Intra MTS\n"
@@ -966,15 +1096,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "ISP",                                            m_ISP,                                            false, "Enable Intra Sub-Partitions\n" )
   ("SMVD",                                            m_SMVD,                                           false, "Enable Symmetric MVD\n")
   ("CompositeLTReference",                            m_compositeRefEnabled,                            false, "Enable Composite Long Term Reference Frame")
-  ("GBi",                                             m_GBi,                                            false, "Enable Generalized Bi-prediction(GBi)")
-  ("GBiFast",                                         m_GBiFast,                                        false, "Fast methods for Generalized Bi-prediction(GBi)\n")
+  ("BCW",                                             m_bcw,                                            false, "Enable Generalized Bi-prediction(Bcw)")
+  ("BcwFast",                                         m_BcwFast,                                        false, "Fast methods for Generalized Bi-prediction(Bcw)\n")
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   ("LADF",                                            m_LadfEnabed,                                     false, "Luma adaptive deblocking filter QP Offset(L0414)")
   ("LadfNumIntervals",                                m_LadfNumIntervals,                                   3, "LADF number of intervals (2-5, inclusive)")
   ("LadfQpOffset",                                    cfg_LadfQpOffset,                      cfg_LadfQpOffset, "LADF QP offset")
   ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
-  ("MHIntra",                                         m_MHIntra,                                        false, "Enable MHIntra mode")
+  ("CIIP",                                            m_ciip,                                           false, "Enable CIIP mode")
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
   ("HashME",                                          m_HashME,                                         false, "Enable hash motion estimation (0:off, 1:on)")
 
@@ -1006,7 +1136,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("VirtualBoundariesPosX",                           cfg_virtualBoundariesPosX,    cfg_virtualBoundariesPosX, "Locations of the vertical virtual boundaries in units of luma samples")
   ("VirtualBoundariesPosY",                           cfg_virtualBoundariesPosY,    cfg_virtualBoundariesPosY, "Locations of the horizontal virtual boundaries in units of luma samples")
   ("EncDbOpt",                                        m_encDbOpt,                                       false, "Encoder optimization with deblocking filter")
-  ("LMCSEnable",                                      m_lumaReshapeEnable,                              false, "Enable LMCS (luma mapping with chroma scaling")
+  ("LMCSEnable",                                      m_lmcsEnabled,                                    false, "Enable LMCS (luma mapping with chroma scaling")
   ("LMCSSignalType",                                  m_reshapeSignalType,                                 0u, "Input signal type: 0:SDR, 1:HDR-PQ, 2:HDR-HLG")
   ("LMCSUpdateCtrl",                                  m_updateCtrl,                                         0, "LMCS model update control: 0:RA, 1:AI, 2:LDB/LDP")
   ("LMCSAdpOption",                                   m_adpOption,                                          0, "LMCS adaptation options: 0:automatic(default),"
@@ -1027,6 +1157,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
   ("MaxNumAlfAlternativesChroma",                     m_maxNumAlfAlternativesChroma,
                                                                     (unsigned)MAX_NUM_ALF_ALTERNATIVES_CHROMA, std::string("Maximum number of alternative Chroma filters (1-") + std::to_string(MAX_NUM_ALF_ALTERNATIVES_CHROMA) + std::string (", inclusive)") )
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  ("MRL",                                             m_MRL,                                            false,  "Enable MRL (multiple reference line intra prediction)")
+#endif
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
   ("FastLocalDualTreeMode",                           m_fastLocalDualTreeMode,                              0,  "Fast intra pass coding for local dual-tree in intra coding region, 0: off, 1: use threshold, 2: one intra mode only")
@@ -1179,6 +1312,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxNumOffsetsPerPic",                             m_maxNumOffsetsPerPic,                             2048, "Max number of SAO offset per picture (Default: 2048)")
   ("SAOLcuBoundary",                                  m_saoCtuBoundary,                                 false, "0: right/bottom CTU boundary areas skipped from SAO parameter estimation, 1: non-deblocked pixels are used for those areas")
   ("SAOGreedyEnc",                                    m_saoGreedyMergeEnc,                              false, "SAO greedy merge encoding algorithm")
+#if JVET_P1004_REMOVE_BRICKS    
+  ("EnablePicPartitioning",                           m_picPartitionFlag,                               false, "Enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)")
+  ("TileColumnWidthArray",                            cfgTileColumnWidth,                  cfgTileColumnWidth, "Tile column widths in units of CTUs. Last column width in list will be repeated uniformly to cover any remaining picture width")
+  ("TileRowHeightArray",                              cfgTileRowHeight,                      cfgTileRowHeight, "Tile row heights in units of CTUs. Last row height in list will be repeated uniformly to cover any remaining picture height")
+  ("RasterScanSlices",                                m_rasterSliceFlag,                                false, "Indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)")
+  ("RectSlicePositions",                              cfgRectSlicePos,                        cfgRectSlicePos, "Rectangular slice positions. List containing pairs of top-left CTU RS address followed by bottom-right CTU RS address")
+  ("RectSliceFixedWidth",                             m_rectSliceFixedWidth,                                0, "Fixed rectangular slice width in units of tiles (0: disable this feature and use RectSlicePositions instead)")
+  ("RectSliceFixedHeight",                            m_rectSliceFixedHeight,                               0, "Fixed rectangular slice height in units of tiles (0: disable this feature and use RectSlicePositions instead)")
+  ("RasterSliceSizes",                                cfgRasterSliceSize,                  cfgRasterSliceSize, "Raster-scan slice sizes in units of tiles. Last size in list will be repeated uniformly to cover any remaining tiles in the picture")
+  ("DisableLoopFilterAcrossTiles",                    m_disableLFCrossTileBoundaryFlag,                 false, "Loop filtering applied across tile boundaries or not (0: filter across tile boundaries  1: do not filter across tile boundaries)")
+  ("DisableLoopFilterAcrossSlices",                   m_disableLFCrossSliceBoundaryFlag,                false, "Loop filtering applied across slice boundaries or not (0: filter across slice boundaries 1: do not filter across slice boundaries)")
+#else
   ("SliceMode",                                       tmpSliceMode,                            int(NO_SLICES), "0: Disable all Recon slice limits, 1: (deprecated #CTU), 2: (deprecated #bytes), 3:specify tiles per slice, 4: one brick per slice")
   ("SliceArgument",                                   m_sliceArgument,                                      0, "Depending on SliceMode being:"
                                                                                                                "\t1: max number of CTUs per slice"
@@ -1186,7 +1331,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t3: max number of tiles per slice")
   ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
 
-  ("ConstrainedIntraPred",                            m_bUseConstrainedIntraPred,                       false, "Constrained Intra Prediction")
+#endif
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
@@ -1194,7 +1339,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WeightedPredP,-wpP",                              m_useWeightedPred,                                false, "Use weighted prediction in P slices")
   ("WeightedPredB,-wpB",                              m_useWeightedBiPred,                              false, "Use weighted (bidirectional) prediction in B slices")
   ("WeightedPredMethod,-wpM",                         tmpWeightedPredictionMethod, int(WP_PER_PICTURE_WITH_SIMPLE_DC_COMBINED_COMPONENT), "Weighted prediction method")
-  ("Log2ParallelMergeLevel",                          m_log2ParallelMergeLevel,                            2u, "Parallel merge estimation region")
+#if !JVET_P1004_REMOVE_BRICKS
     //deprecated copies of renamed tile parameters
   ("UniformSpacingIdc",                               m_tileUniformSpacingFlag,                         false,      "deprecated alias of TileUniformSpacing")
   ("TileUniformSpacing",                              m_tileUniformSpacingFlag,                         false,      "Indicates that tile columns and rows are distributed uniformly")
@@ -1205,7 +1350,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TileColumnWidthArray",                            cfg_ColumnWidth,                        cfg_ColumnWidth, "Array containing tile column width values in units of CTU")
   ("TileRowHeightArray",                              cfg_RowHeight,                            cfg_RowHeight, "Array containing tile row height values in units of CTU")
   ("LFCrossTileBoundaryFlag",                         m_bLFCrossTileBoundaryFlag,                        true, "1: cross-tile-boundary loop filtering. 0:non-cross-tile-boundary loop filtering")
+#endif
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
+#if !JVET_P1004_REMOVE_BRICKS
 
   ("RectSliceFlag",                                   m_rectSliceFlag,                                  true, "Rectangular slice flag")
   ("NumRectSlicesInPicMinus1",                        m_numSlicesInPicMinus1,                              0, "Number slices in pic minus 1")
@@ -1215,6 +1362,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("RectSlicesBoundaryArray",                         cfg_SliceIdx,                              cfg_SliceIdx, "Rectangular slices boundaries in Pic")
   ("SignalledSliceId",                                cfg_SignalledSliceId,                       cfg_SliceIdx, "Signalled rectangular slice ID")
 
+#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
 #if JVET_P0365_SCALING_MATRIX_LFNST
@@ -1258,9 +1406,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "RCCpbSize",                                      m_RCCpbSize,                                         0u, "Rate control: CPB size" )
   ( "RCInitialCpbFullness",                           m_RCInitialCpbFullness,                             0.9, "Rate control: initial CPB fullness" )
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   ("TransquantBypassEnable",                          m_TransquantBypassEnabledFlag,                    false, "transquant_bypass_enabled_flag indicator in PPS")
   ("TransquantBypassEnableFlag",                      m_TransquantBypassEnabledFlag,                    false, "deprecated and obsolete, but still needed for compatibility reasons")
   ("CUTransquantBypassFlagForce",                     m_CUTransquantBypassFlagForce,                    false, "Force transquant bypass mode, when transquant_bypass_enabled_flag is enabled")
+#endif
   ("CostMode",                                        m_costMode,                         COST_STANDARD_LOSSY, "Use alternative cost functions: choose between 'lossy', 'sequence_level_lossless', 'lossless' (which forces QP to " MACRO_TO_STRING(LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP) ") and 'mixed_lossless_lossy' (which used QP'=" MACRO_TO_STRING(LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME) " for pre-estimates of transquant-bypass blocks).")
   ("RecalculateQPAccordingToLambda",                  m_recalculateQPAccordingToLambda,                 false, "Recalculate QP values according to lambda values. Do not suggest to be enabled in all intra case")
 #if HEVC_SEI
@@ -1294,7 +1444,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIPictureTiming",                                m_pictureTimingSEIEnabled,                        false, "Control generation of picture timing SEI messages")
   ("SEIDecodingUnitInfo",                             m_decodingUnitInfoSEIEnabled,                     false, "Control generation of decoding unit information SEI message.")
   ("SEIFrameFieldInfo",                               m_frameFieldInfoSEIEnabled,                       false, "Control generation of frame field information SEI messages")
-#if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
+#if !JVET_P0337_PORTING_SEI
   ("SEIToneMappingInfo",                              m_toneMappingInfoSEIEnabled,                      false, "Control generation of Tone Mapping SEI messages")
   ("SEIToneMapId",                                    m_toneMapId,                                          0, "Specifies Id of Tone Mapping SEI message for a given session")
   ("SEIToneMapCancelFlag",                            m_toneMapCancelFlag,                              false, "Indicates that Tone Mapping SEI message cancels the persistence or follows")
@@ -1336,6 +1487,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0: unspecified  - Chroma filter is unknown or is determined by the application"
                                                                                                                "\t1: User-defined - Filter coefficients are specified in the chroma sampling filter hint SEI message"
                                                                                                                "\t2: Standards-defined - ITU-T Rec. T.800 | ISO/IEC15444-1, 5/3 filter")
+#endif
   ("SEIFramePacking",                                 m_framePackingSEIEnabled,                         false, "Control generation of frame packing SEI messages")
   ("SEIFramePackingType",                             m_framePackingSEIType,                                0, "Define frame packing arrangement\n"
                                                                                                                "\t3: side by side - frames are displayed horizontally\n"
@@ -1347,6 +1499,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t0: unspecified\n"
                                                                                                                "\t1: stereo pair, frame0 represents left view\n"
                                                                                                                "\t2: stereo pair, frame0 represents right view")
+
+#if !JVET_P0337_PORTING_SEI
   ("SEISegmentedRectFramePacking",                    m_segmentedRectFramePackingSEIEnabled,            false, "Controls generation of segmented rectangular frame packing SEI messages")
   ("SEISegmentedRectFramePackingCancel",              m_segmentedRectFramePackingSEICancel,             false, "If equal to 1, cancels the persistence of any previous SRFPA SEI message")
   ("SEISegmentedRectFramePackingType",                m_segmentedRectFramePackingSEIType,                   0, "Specifies the arrangement of the frames in the reconstructed picture")
@@ -1391,6 +1545,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIKneeFunctionNumKneePointsMinus1",              m_kneeSEINumKneePointsMinus1,                         2, "Specifies the number of knee points - 1")
   ("SEIKneeFunctionInputKneePointValue",              cfg_kneeSEIInputKneePointValue,   cfg_kneeSEIInputKneePointValue, "Array of input knee point")
   ("SEIKneeFunctionOutputKneePointValue",             cfg_kneeSEIOutputKneePointValue, cfg_kneeSEIOutputKneePointValue, "Array of output knee point")
+#endif
   ("SEIMasteringDisplayColourVolume",                 m_masteringDisplay.colourVolumeSEIEnabled,         false, "Control generation of mastering display colour volume SEI messages")
   ("SEIMasteringDisplayMaxLuminance",                 m_masteringDisplay.maxLuminance,                  10000u, "Specifies the mastering display maximum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
   ("SEIMasteringDisplayMinLuminance",                 m_masteringDisplay.minLuminance,                      0u, "Specifies the mastering display minimum luminance value in units of 1/10000 candela per square metre (32-bit code value)")
@@ -1399,14 +1554,122 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   ("SEIPreferredTransferCharacterisics",              m_preferredTransferCharacteristics,                   -1, "Value for the preferred_transfer_characteristics field of the Alternative transfer characteristics SEI which will override the corresponding entry in the VUI. If negative, do not produce the respective SEI message")
 #endif
+#if !JVET_P0337_PORTING_SEI
   ("SEIGreenMetadataType",                            m_greenMetadataType,                                  0u, "Value for the green_metadata_type specifies the type of metadata that is present in the SEI message. If green_metadata_type is 1, then metadata enabling quality recovery after low-power encoding is present")
   ("SEIXSDMetricType",                                m_xsdMetricType,                                      0u, "Value for the xsd_metric_type indicates the type of the objective quality metric. PSNR is the only type currently supported")
+#endif
+#endif
+
+#if JVET_P0462_SEI360
+  ("SEIErpEnabled",                                   m_erpSEIEnabled,                                   false, "Control generation of equirectangular projection SEI messages")
+  ("SEIErpCancelFlag",                                m_erpSEICancelFlag,                                 true, "Indicate that equirectangular projection SEI message cancels the persistence or follows")
+  ("SEIErpPersistenceFlag",                           m_erpSEIPersistenceFlag,                           false, "Specifies the persistence of the equirectangular projection SEI messages")
+  ("SEIErpGuardBandFlag",                             m_erpSEIGuardBandFlag,                             false, "Indicate the existence of guard band areas in the constituent picture")
+  ("SEIErpGuardBandType",                             m_erpSEIGuardBandType,                                0u, "Indicate the type of the guard band")
+  ("SEIErpLeftGuardBandWidth",                        m_erpSEILeftGuardBandWidth,                           0u, "Indicate the width of the guard band on the left side of the constituent picture")
+  ("SEIErpRightGuardBandWidth",                       m_erpSEIRightGuardBandWidth,                          0u, "Indicate the width of the guard band on the right side of the constituent picture")
+  ("SEISphereRotationEnabled",                        m_sphereRotationSEIEnabled,                        false, "Control generation of sphere rotation SEI messages")
+  ("SEISphereRotationCancelFlag",                     m_sphereRotationSEICancelFlag,                      true, "Indicate that sphere rotation SEI message cancels the persistence or follows")
+  ("SEISphereRotationPersistenceFlag",                m_sphereRotationSEIPersistenceFlag,                false, "Specifies the persistence of the sphere rotation SEI messages")
+  ("SEISphereRotationYaw",                            m_sphereRotationSEIYaw,                                0, "Specifies the value of the yaw rotation angle")
+  ("SEISphereRotationPitch",                          m_sphereRotationSEIPitch,                              0, "Specifies the value of the pitch rotation angle")
+  ("SEISphereRotationRoll",                           m_sphereRotationSEIRoll,                               0, "Specifies the value of the roll rotation angle")
+  ("SEIOmniViewportEnabled",                          m_omniViewportSEIEnabled,                          false, "Control generation of omni viewport SEI messages")
+  ("SEIOmniViewportId",                               m_omniViewportSEIId,                                  0u, "An identifying number that may be used to identify the purpose of the one or more recommended viewport regions")
+  ("SEIOmniViewportCancelFlag",                       m_omniViewportSEICancelFlag,                        true, "Indicate that omni viewport SEI message cancels the persistence or follows")
+  ("SEIOmniViewportPersistenceFlag",                  m_omniViewportSEIPersistenceFlag,                  false, "Specifies the persistence of the omni viewport SEI messages")
+  ("SEIOmniViewportCntMinus1",                        m_omniViewportSEICntMinus1,                           0u, "specifies the number of recommended viewport regions minus 1")
+  ("SEIOmniViewportAzimuthCentre",                    cfg_omniViewportSEIAzimuthCentre,     cfg_omniViewportSEIAzimuthCentre,     "Indicate the centre of the i-th recommended viewport region")
+  ("SEIOmniViewportElevationCentre",                  cfg_omniViewportSEIElevationCentre,   cfg_omniViewportSEIElevationCentre,   "Indicate the centre of the i-th recommended viewport region")
+  ("SEIOmniViewportTiltCentre",                       cfg_omniViewportSEITiltCentre,        cfg_omniViewportSEITiltCentre,        "Indicates the tilt angle of the i-th recommended viewport region")
+  ("SEIOmniViewportHorRange",                         cfg_omniViewportSEIHorRange,          cfg_omniViewportSEIHorRange,          "Indicates the azimuth range of the i-th recommended viewport region")
+  ("SEIOmniViewportVerRange",                         cfg_omniViewportSEIVerRange,          cfg_omniViewportSEIVerRange,          "Indicates the elevation range of the i-th recommended viewport region")
+  ("SEIRwpEnabled",                                   m_rwpSEIEnabled,                          false,                                    "Controls if region-wise packing SEI message enabled")
+  ("SEIRwpCancelFlag",                                m_rwpSEIRwpCancelFlag,                    true,                                    "Specifies the persistence of any previous region-wise packing SEI message in output order.")
+  ("SEIRwpPersistenceFlag",                           m_rwpSEIRwpPersistenceFlag,               false,                                    "Specifies the persistence of the region-wise packing SEI message for the current layer.")
+  ("SEIRwpConstituentPictureMatchingFlag",            m_rwpSEIConstituentPictureMatchingFlag,   false,                                    "Specifies the information in the SEI message apply individually to each constituent picture or to the projected picture.")
+  ("SEIRwpNumPackedRegions",                          m_rwpSEINumPackedRegions,                 0,                                        "specifies the number of packed regions when constituent picture matching flag is equal to 0.")
+  ("SEIRwpProjPictureWidth",                          m_rwpSEIProjPictureWidth,                 0,                                        "Specifies the width of the projected picture.")
+  ("SEIRwpProjPictureHeight",                         m_rwpSEIProjPictureHeight,                0,                                        "Specifies the height of the projected picture.")
+  ("SEIRwpPackedPictureWidth",                        m_rwpSEIPackedPictureWidth,               0,                                        "specifies the width of the packed picture.")
+  ("SEIRwpPackedPictureHeight",                       m_rwpSEIPackedPictureHeight,              0,                                        "Specifies the height of the packed picture.")
+  ("SEIRwpTransformType",                             cfg_rwpSEIRwpTransformType,               cfg_rwpSEIRwpTransformType,               "specifies the rotation and mirroring to be applied to the i-th packed region.")
+  ("SEIRwpGuardBandFlag",                             cfg_rwpSEIRwpGuardBandFlag,               cfg_rwpSEIRwpGuardBandFlag,               "specifies the existence of guard band in the i-th packed region.")
+  ("SEIRwpProjRegionWidth",                           cfg_rwpSEIProjRegionWidth,                cfg_rwpSEIProjRegionWidth,                "specifies the width of the i-th projected region.")
+  ("SEIRwpProjRegionHeight",                          cfg_rwpSEIProjRegionHeight,               cfg_rwpSEIProjRegionHeight,               "specifies the height of the i-th projected region.")
+  ("SEIRwpProjRegionTop",                             cfg_rwpSEIRwpSEIProjRegionTop,            cfg_rwpSEIRwpSEIProjRegionTop,            "specifies the top sample row of the i-th projected region.")
+  ("SEIRwpProjRegionLeft",                            cfg_rwpSEIProjRegionLeft,                 cfg_rwpSEIProjRegionLeft,                 "specifies the left-most sample column of the i-th projected region.")
+  ("SEIRwpPackedRegionWidth",                         cfg_rwpSEIPackedRegionWidth,              cfg_rwpSEIPackedRegionWidth,              "specifies the width of the i-th packed region.")
+  ("SEIRwpPackedRegionHeight",                        cfg_rwpSEIPackedRegionHeight,             cfg_rwpSEIPackedRegionHeight,             "specifies the height of the i-th packed region.")
+  ("SEIRwpPackedRegionTop",                           cfg_rwpSEIPackedRegionTop,                cfg_rwpSEIPackedRegionTop,                "specifies the top luma sample row of the i-th packed region.")
+  ("SEIRwpPackedRegionLeft",                          cfg_rwpSEIPackedRegionLeft,               cfg_rwpSEIPackedRegionLeft,               "specifies the left-most luma sample column of the i-th packed region.")
+  ("SEIRwpLeftGuardBandWidth",                        cfg_rwpSEIRwpLeftGuardBandWidth,          cfg_rwpSEIRwpLeftGuardBandWidth,          "specifies the width of the guard band on the left side of the i-th packed region.")
+  ("SEIRwpRightGuardBandWidth",                       cfg_rwpSEIRwpRightGuardBandWidth,         cfg_rwpSEIRwpRightGuardBandWidth,         "specifies the width of the guard band on the right side of the i-th packed region.")
+  ("SEIRwpTopGuardBandHeight",                        cfg_rwpSEIRwpTopGuardBandHeight,          cfg_rwpSEIRwpTopGuardBandHeight,          "specifies the height of the guard band above the i-th packed region.")
+  ("SEIRwpBottomGuardBandHeight",                     cfg_rwpSEIRwpBottomGuardBandHeight,       cfg_rwpSEIRwpBottomGuardBandHeight,       "specifies the height of the guard band below the i-th packed region.")
+  ("SEIRwpGuardBandNotUsedForPredFlag",               cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, "Specifies if the guard bands is used in the inter prediction process.")
+  ("SEIRwpGuardBandType",                             cfg_rwpSEIRwpGuardBandType,               cfg_rwpSEIRwpGuardBandType,               "Specifies the type of the guard bands for the i-th packed region.")
+#endif
+#if JVET_P0984_SEI_SUBPIC_LEVEL
+  ("SEISubpicureLevelInfo",                           m_subpicureLevelInfoSEIEnabled,           false, "Control generation of Subpicture Level Information SEI messages")
+#endif
+#if JVET_P0450_SEI_SARI
+  ("SEISampleAspectRatioInfo",                        m_sampleAspectRatioInfoSEIEnabled,        false, "Control generation of Sample Aspect Ratio Information SEI messages")
+  ("SEISARICancelFlag",                               m_sariCancelFlag,                         false, "Indicates that Sample Aspect Ratio Information SEI message cancels the persistence or follows")
+  ("SEISARIPersistenceFlag",                          m_sariPersistenceFlag,                    true, "Specifies the persistence of the Sample Aspect Ratio Information SEI message")
+  ("SEISARIAspectRatioIdc",                           m_sariAspectRatioIdc,                     0, "Specifies the Sample Aspect Ratio IDC of Sample Aspect Ratio Information SEI messages")
+  ("SEISARISarWidth",                                 m_sariSarWidth,                           0, "Specifies the Sample Aspect Ratio Width of Sample Aspect Ratio Information SEI messages, if extended SAR is chosen.")
+  ("SEISARISarHeight",                                m_sariSarHeight,                          0, "Specifies the Sample Aspect Ratio Height of Sample Aspect Ratio Information SEI messages, if extended SAR is chosen.")
 #endif
   ("MCTSEncConstraint",                               m_MCTSEncConstraint,                               false, "For MCTS, constrain motion vectors at tile boundaries")
 #if ENABLE_TRACING
   ("TraceChannelsList",                               bTracingChannelsList,                              false, "List all available tracing channels")
   ("TraceRule",                                       sTracingRule,                               string( "" ), "Tracing rule (ex: \"D_CABAC:poc==8\" or \"D_REC_CB_LUMA:poc==8\")")
   ("TraceFile",                                       sTracingFile,                               string( "" ), "Tracing file")
+#endif
+#if JVET_P0337_PORTING_SEI
+// film grain characteristics SEI
+  ("SEIFGCEnabled",                                   m_fgcSEIEnabled,                                   false, "Control generation of the film grain characteristics SEI message")
+  ("SEIFGCCancelFlag",                                m_fgcSEICancelFlag,                                 true, "Specifies the persistence of any previous film grain characteristics SEI message in output order.")
+  ("SEIFGCPersistenceFlag",                           m_fgcSEIPersistenceFlag,                           false, "Specifies the persistence of the film grain characteristics SEI message for the current layer.")
+  ("SEIFGCModelID",                                   m_fgcSEIModelID,                                      0u, "Specifies the film grain simulation model. 0: frequency filtering; 1: auto-regression.")
+  ("SEIFGCSepColourDescPresentFlag",                  m_fgcSEISepColourDescPresentFlag,                  false, "Specifies the presence of a distinct colour space description for the film grain characteristics specified in the SEI message.")
+  ("SEIFGCBlendingModeID",                            m_fgcSEIBlendingModeID,                               0u, "Specifies the blending mode used to blend the simulated film grain with the decoded images. 0: additive; 1: multiplicative.")
+  ("SEIFGCLog2ScaleFactor",                           m_fgcSEILog2ScaleFactor,                              0u, "Specifies a scale factor used in the film grain characterization equations.")
+  ("SEIFGCCompModelPresentComp0",                     m_fgcSEICompModelPresent[0],                       false, "Specifies the presence of film grain modelling on colour component 0.")
+  ("SEIFGCCompModelPresentComp1",                     m_fgcSEICompModelPresent[1],                       false, "Specifies the presence of film grain modelling on colour component 1.")
+  ("SEIFGCCompModelPresentComp2",                     m_fgcSEICompModelPresent[2],                       false, "Specifies the presence of film grain modelling on colour component 2.")
+
+// content light level SEI
+  ("SEICLLEnabled",                                   m_cllSEIEnabled,                                   false, "Control generation of the content light level SEI message")
+  ("SEICLLMaxContentLightLevel",                      m_cllSEIMaxContentLevel,                              0u, "When not equal to 0, specifies an upper bound on the maximum light level among all individual samples in a 4:4:4 representation "
+                                                                                                                "of red, green, and blue colour primary intensities in the linear light domain for the pictures of the CLVS, "
+                                                                                                                "in units of candelas per square metre.When equal to 0, no such upper bound is indicated.")
+  ("SEICLLMaxPicAvgLightLevel",                       m_cllSEIMaxPicAvgLevel,                               0u, "When not equal to 0, specifies an upper bound on the maximum average light level among the samples in a 4:4:4 representation "
+                                                                                                                "of red, green, and blue colour primary intensities in the linear light domain for any individual picture of the CLVS, "
+                                                                                                                "in units of candelas per square metre.When equal to 0, no such upper bound is indicated.")
+// ambient viewing environment SEI
+  ("SEIAVEEnabled",                                   m_aveSEIEnabled,                                   false, "Control generation of the ambient viewing environment SEI message")
+  ("SEIAVEAmbientIlluminance",                        m_aveSEIAmbientIlluminance,                      100000u, "Specifies the environmental illluminance of the ambient viewing environment in units of 1/10000 lux for the ambient viewing environment SEI message")
+  ("SEIAVEAmbientLightX",                             m_aveSEIAmbientLightX,                            15635u, "Specifies the normalized x chromaticity coordinate of the environmental ambient light in the nominal viewing enviornment according to the CIE 1931 definition in units of 1/50000 lux for the ambient viewing enviornment SEI message")
+  ("SEIAVEAmbientLightY",                             m_aveSEIAmbientLightY,                            16450u, "Specifies the normalized y chromaticity coordinate of the environmental ambient light in the nominal viewing enviornment according to the CIE 1931 definition in units of 1/50000 lux for the ambient viewing enviornment SEI message")
+// content colour volume SEI
+  ("SEICCVEnabled",                                   m_ccvSEIEnabled,                                   false, "Control generation of the Content Colour Volume SEI message")
+  ("SEICCVCancelFlag",                                m_ccvSEICancelFlag,                                 true, "Specifies the persistence of any previous content colour volume SEI message in output order.")
+  ("SEICCVPersistenceFlag",                           m_ccvSEIPersistenceFlag,                           false, "Specifies the persistence of the content colour volume SEI message for the current layer.")
+  ("SEICCVPrimariesPresent",                          m_ccvSEIPrimariesPresentFlag,                       true, "Specifies whether the CCV primaries are present in the content colour volume SEI message.")
+  ("m_ccvSEIPrimariesX0",                             m_ccvSEIPrimariesX[0],                             0.300, "Specifies the x coordinate of the first (green) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesY0",                             m_ccvSEIPrimariesY[0],                             0.600, "Specifies the y coordinate of the first (green) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesX1",                             m_ccvSEIPrimariesX[1],                             0.150, "Specifies the x coordinate of the second (blue) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesY1",                             m_ccvSEIPrimariesY[1],                             0.060, "Specifies the y coordinate of the second (blue) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesX2",                             m_ccvSEIPrimariesX[2],                             0.640, "Specifies the x coordinate of the third (red) primary for the content colour volume SEI message")
+  ("m_ccvSEIPrimariesY2",                             m_ccvSEIPrimariesY[2],                             0.330, "Specifies the y coordinate of the third (red) primary for the content colour volume SEI message")
+  ("SEICCVMinLuminanceValuePresent",                  m_ccvSEIMinLuminanceValuePresentFlag,               true, "Specifies whether the CCV min luminance value is present in the content colour volume SEI message")
+  ("SEICCVMinLuminanceValue",                         m_ccvSEIMinLuminanceValue,                           0.0, "specifies the CCV min luminance value  in the content colour volume SEI message")
+  ("SEICCVMaxLuminanceValuePresent",                  m_ccvSEIMaxLuminanceValuePresentFlag,               true, "Specifies whether the CCV max luminance value is present in the content colour volume SEI message")
+  ("SEICCVMaxLuminanceValue",                         m_ccvSEIMaxLuminanceValue,                           0.1, "specifies the CCV max luminance value  in the content colour volume SEI message")
+  ("SEICCVAvgLuminanceValuePresent",                  m_ccvSEIAvgLuminanceValuePresentFlag,               true, "Specifies whether the CCV avg luminance value is present in the content colour volume SEI message")
+  ("SEICCVAvgLuminanceValue",                         m_ccvSEIAvgLuminanceValue,                          0.01, "specifies the CCV avg luminance value  in the content colour volume SEI message")
 #endif
 
   ("DebugBitstream",                                  m_decodeBitstreams[0],             string( "" ), "Assume the frames up to POC DebugPOC will be the same as in this bitstream. Load those frames from the bitstream instead of encoding them." )
@@ -1424,11 +1687,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("NumWppThreads",                                   m_numWppThreads,                              1, "Number of threads used to run WPP-style parallelization")
   ("NumWppExtraLines",                                m_numWppExtraLines,                           0, "Number of additional wpp lines to switch when threads are blocked")
   ("DebugCTU",                                        m_debugCTU,                                  -1, "If DebugBitstream is present, load frames up to this POC from this bitstream. Starting with DebugPOC-frame at CTUline containin debug CTU.")
-#if ENABLE_WPP_PARALLELISM
-  ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                       true, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-#else
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-#endif
   ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
   ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
@@ -1460,6 +1719,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     opts.addOptions()(cOSS.str(), m_GOPList[i-1], GOPEntry());
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   for(int i=1; i<MAX_TILES+1; i++)
   {
     std::ostringstream cOSS;
@@ -1467,6 +1727,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     opts.addOptions()(cOSS.str(), m_brickSplits[i-1], BrickSplit());
   }
 
+#endif
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
@@ -1616,6 +1877,54 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_framesToBeEncoded *= 2;
   }
 
+#if JVET_P1004_REMOVE_BRICKS
+  if( m_picPartitionFlag ) 
+  {
+    // store tile column widths
+    m_tileColumnWidth.resize(cfgTileColumnWidth.values.size());
+    for(uint32_t i=0; i<cfgTileColumnWidth.values.size(); i++)
+    {
+      m_tileColumnWidth[i]=cfgTileColumnWidth.values[i];
+    }
+
+    // store tile row heights
+    m_tileRowHeight.resize(cfgTileRowHeight.values.size());
+    for(uint32_t i=0; i<cfgTileRowHeight.values.size(); i++)
+    {
+      m_tileRowHeight[i]=cfgTileRowHeight.values[i];
+    }
+
+    // store rectangular slice positions
+    if( !m_rasterSliceFlag ) 
+    {
+      m_rectSlicePos.resize(cfgRectSlicePos.values.size());
+      for(uint32_t i=0; i<cfgRectSlicePos.values.size(); i++)
+      {
+        m_rectSlicePos[i]=cfgRectSlicePos.values[i];
+      }
+    }
+
+    // store raster-scan slice sizes
+    else 
+    {
+      m_rasterSliceSize.resize(cfgRasterSliceSize.values.size());
+      for(uint32_t i=0; i<cfgRasterSliceSize.values.size(); i++)
+      {
+        m_rasterSliceSize[i]=cfgRasterSliceSize.values[i];
+      }
+    }
+  }
+  else 
+  {
+    m_tileColumnWidth.clear();
+    m_tileRowHeight.clear();
+    m_rectSlicePos.clear();
+    m_rasterSliceSize.clear();
+    m_rectSliceFixedWidth = 0;
+    m_rectSliceFixedHeight = 0;
+  }
+
+#else
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
     if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)
@@ -1663,6 +1972,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_tileRowHeight.clear();
   }
+#endif
   m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
   m_subProfile.resize(m_numSubProfile);
   for (uint8_t i = 0; i < m_numSubProfile; ++i)
@@ -1670,6 +1980,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_subProfile[i] = cfg_SubProfile.values[i];
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (m_tileUniformSpacingFlag)
   {
     int uniformTileHeight = ((m_uniformTileRowHeightMinus1 + 1) * m_uiCTUSize);
@@ -1677,6 +1988,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_numTileRowsMinus1 = ((m_iSourceHeight + uniformTileHeight - 1) / uniformTileHeight) - 1;
     m_numTileColumnsMinus1 = ((m_iSourceWidth + uniformTileWidth - 1) / uniformTileWidth) - 1;
   }
+#endif
   /* rules for input, output and internal bitdepths as per help text */
   if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
   {
@@ -1878,6 +2190,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (tmpSliceMode<0 || tmpSliceMode>=int(NUMBER_OF_SLICE_CONSTRAINT_MODES))
   {
     EXIT( "Error: bad slice mode");
@@ -2026,6 +2339,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_sliceId[i] = i;
     }
   }
+#endif
 
   if (tmpDecodedPictureHashSEIMappedType<0 || tmpDecodedPictureHashSEIMappedType>=int(NUMBER_OF_HASHTYPES))
   {
@@ -2125,20 +2439,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     cfg_qpOutValCr.values = { 0 };
     cfg_qpOutValCbCr.values = { 0 };
   }
+  int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(cfg_qpInValCb.values.size());
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0].resize(cfg_qpOutValCb.values.size());
 #if JVET_P0410_CHROMA_QP_MAPPING
-  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size() - 2;
-#else
-  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
-#endif
-  int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
-#if JVET_P0410_CHROMA_QP_MAPPING
-  m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] = -26 + cfg_qpInValCb.values[0];
-  CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
-  CHECK(cfg_qpInValCb.values[0] != cfg_qpOutValCb.values[0], "First qpIn value should be equal to first qpOut value");
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (cfg_qpOutValCb.values.size() > 1) ? (int)cfg_qpOutValCb.values.size() - 2 : 0;
+  m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] = (cfg_qpOutValCb.values.size() > 1) ? -26 + cfg_qpInValCb.values[0] : 0;
+  CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[0] > 36, "qpTableStartMinus26[0] is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+  CHECK(cfg_qpInValCb.values[0] != cfg_qpOutValCb.values[0], "First qpInValCb value should be equal to first qpOutValCb value");
   for (int i = 0; i < cfg_qpInValCb.values.size() - 1; i++)
 #else
+  m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[0] = (int)cfg_qpOutValCb.values.size()-1;
   for (int i = 0; i < cfg_qpInValCb.values.size(); i++)
 #endif
   {
@@ -2157,10 +2468,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[1].resize(cfg_qpInValCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[1].resize(cfg_qpOutValCr.values.size());
 #if JVET_P0410_CHROMA_QP_MAPPING
-    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size() - 2;
-    m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] = -26 + cfg_qpInValCr.values[0];
-    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
-    CHECK(cfg_qpInValCr.values[0] != cfg_qpOutValCr.values[0], "First qpIn value should be equal to first qpOut value");
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (cfg_qpOutValCr.values.size() > 1) ? (int)cfg_qpOutValCr.values.size() - 2 : 0;
+    m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] = (cfg_qpOutValCr.values.size() > 1) ? -26 + cfg_qpInValCr.values[0] : 0;
+    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[1] > 36, "qpTableStartMinus26[1] is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+    CHECK(cfg_qpInValCr.values[0] != cfg_qpOutValCr.values[0], "First qpInValCr value should be equal to first qpOutValCr value");
     for (int i = 0; i < cfg_qpInValCr.values.size() - 1; i++)
 #else
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[1] = (int)cfg_qpOutValCr.values.size()-1;
@@ -2180,10 +2491,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaQpMappingTableParams.m_deltaQpInValMinus1[2].resize(cfg_qpInValCbCr.values.size());
     m_chromaQpMappingTableParams.m_deltaQpOutVal[2].resize(cfg_qpOutValCbCr.values.size());
 #if JVET_P0410_CHROMA_QP_MAPPING
-    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size() - 2;
-    m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] = -26 + cfg_qpInValCbCr.values[0];
-    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] > 36, "qpTableStartMinus26 is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
-    CHECK(cfg_qpInValCbCr.values[0] != cfg_qpInValCbCr.values[0], "First qpIn value should be equal to first qpOut value");
+    m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (cfg_qpOutValCbCr.values.size() > 1) ? (int)cfg_qpOutValCbCr.values.size() - 2 : 0;
+    m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] = (cfg_qpOutValCbCr.values.size() > 1) ? -26 + cfg_qpInValCbCr.values[0] : 0;
+    CHECK(m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] < -26 - qpBdOffsetC || m_chromaQpMappingTableParams.m_qpTableStartMinus26[2] > 36, "qpTableStartMinus26[2] is out of valid range of -26 -qpBdOffsetC to 36, inclusive.")
+    CHECK(cfg_qpInValCbCr.values[0] != cfg_qpInValCbCr.values[0], "First qpInValCbCr value should be equal to first qpOutValCbCr value");
     for (int i = 0; i < cfg_qpInValCbCr.values.size() - 1; i++)
 #else
     m_chromaQpMappingTableParams.m_numPtsInCQPTableMinus1[2] = (int)cfg_qpOutValCbCr.values.size()-1;
@@ -2293,7 +2604,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-  #if HEVC_SEI
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   if( m_masteringDisplay.colourVolumeSEIEnabled )
   {
     for(uint32_t idx=0; idx<6; idx++)
@@ -2305,7 +2616,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_masteringDisplay.whitePoint[idx] = uint16_t((cfg_DisplayWhitePointCode.values.size() > idx) ? cfg_DisplayWhitePointCode.values[idx] : 0);
     }
   }
-
+#if !JVET_P0337_PORTING_SEI
   if( m_toneMappingInfoSEIEnabled && !m_toneMapCancelFlag )
   {
     if( m_toneMapModelId == 2 && !cfg_startOfCodedInterval.values.empty() )
@@ -2375,7 +2686,86 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
+#endif
+#if JVET_P0462_SEI360
+  if ( m_omniViewportSEIEnabled && !m_omniViewportSEICancelFlag )
+  {
+    CHECK (!( m_omniViewportSEICntMinus1 >= 0 && m_omniViewportSEICntMinus1 < 16 ), "SEIOmniViewportCntMinus1 must be in the range of 0 to 16");
+    m_omniViewportSEIAzimuthCentre.resize  (m_omniViewportSEICntMinus1+1);
+    m_omniViewportSEIElevationCentre.resize(m_omniViewportSEICntMinus1+1);
+    m_omniViewportSEITiltCentre.resize     (m_omniViewportSEICntMinus1+1);
+    m_omniViewportSEIHorRange.resize       (m_omniViewportSEICntMinus1+1);
+    m_omniViewportSEIVerRange.resize       (m_omniViewportSEICntMinus1+1);
+    for(int i=0; i<(m_omniViewportSEICntMinus1+1); i++)
+    {
+      m_omniViewportSEIAzimuthCentre[i]   = cfg_omniViewportSEIAzimuthCentre  .values.size() > i ? cfg_omniViewportSEIAzimuthCentre  .values[i] : 0;
+      m_omniViewportSEIElevationCentre[i] = cfg_omniViewportSEIElevationCentre.values.size() > i ? cfg_omniViewportSEIElevationCentre.values[i] : 0;
+      m_omniViewportSEITiltCentre[i]      = cfg_omniViewportSEITiltCentre     .values.size() > i ? cfg_omniViewportSEITiltCentre     .values[i] : 0;
+      m_omniViewportSEIHorRange[i]        = cfg_omniViewportSEIHorRange       .values.size() > i ? cfg_omniViewportSEIHorRange       .values[i] : 0;
+      m_omniViewportSEIVerRange[i]        = cfg_omniViewportSEIVerRange       .values.size() > i ? cfg_omniViewportSEIVerRange       .values[i] : 0;
+    }
+  }
 
+  if(!m_rwpSEIRwpCancelFlag && m_rwpSEIEnabled)
+  {
+    CHECK (!( m_rwpSEINumPackedRegions > 0 && m_rwpSEINumPackedRegions <= std::numeric_limits<uint8_t>::max() ), "SEIRwpNumPackedRegions must be in the range of 1 to 255");
+    CHECK (!(cfg_rwpSEIRwpTransformType.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIRwpTransformType values be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIRwpGuardBandFlag.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIRwpGuardBandFlag values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIProjRegionWidth.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIProjRegionWidth values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIProjRegionHeight.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIProjRegionHeight values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIRwpSEIProjRegionTop.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIRwpSEIProjRegionTop values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIProjRegionLeft.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIProjRegionLeft values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIPackedRegionWidth.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIPackedRegionWidth values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIPackedRegionHeight.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIPackedRegionHeight values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIPackedRegionTop.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIPackedRegionTop values must be equal to SEIRwpNumPackedRegions");
+    CHECK (!(cfg_rwpSEIPackedRegionLeft.values.size() == m_rwpSEINumPackedRegions), "Number of must SEIPackedRegionLeft values must be equal to SEIRwpNumPackedRegions");
+
+    m_rwpSEIRwpTransformType.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpGuardBandFlag.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIProjRegionWidth.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIProjRegionHeight.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpSEIProjRegionTop.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIProjRegionLeft.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIPackedRegionWidth.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIPackedRegionHeight.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIPackedRegionTop.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIPackedRegionLeft.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpLeftGuardBandWidth.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpRightGuardBandWidth.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpTopGuardBandHeight.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpBottomGuardBandHeight.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpGuardBandNotUsedForPredFlag.resize(m_rwpSEINumPackedRegions);
+    m_rwpSEIRwpGuardBandType.resize(4*m_rwpSEINumPackedRegions);
+    for( int i=0; i < m_rwpSEINumPackedRegions; i++ )
+    {
+      m_rwpSEIRwpTransformType[i]                     = cfg_rwpSEIRwpTransformType.values[i];
+      CHECK (!( m_rwpSEIRwpTransformType[i] >= 0 && m_rwpSEIRwpTransformType[i] <= 7 ), "SEIRwpTransformType must be in the range of 0 to 7");
+      m_rwpSEIRwpGuardBandFlag[i]                     = cfg_rwpSEIRwpGuardBandFlag.values[i];
+      m_rwpSEIProjRegionWidth[i]                      = cfg_rwpSEIProjRegionWidth.values[i];
+      m_rwpSEIProjRegionHeight[i]                     = cfg_rwpSEIProjRegionHeight.values[i];
+      m_rwpSEIRwpSEIProjRegionTop[i]                  = cfg_rwpSEIRwpSEIProjRegionTop.values[i];
+      m_rwpSEIProjRegionLeft[i]                       = cfg_rwpSEIProjRegionLeft.values[i];
+      m_rwpSEIPackedRegionWidth[i]                    = cfg_rwpSEIPackedRegionWidth.values[i];
+      m_rwpSEIPackedRegionHeight[i]                   = cfg_rwpSEIPackedRegionHeight.values[i];
+      m_rwpSEIPackedRegionTop[i]                      = cfg_rwpSEIPackedRegionTop.values[i];
+      m_rwpSEIPackedRegionLeft[i]                     = cfg_rwpSEIPackedRegionLeft.values[i]; 
+      if( m_rwpSEIRwpGuardBandFlag[i] )
+      {
+        m_rwpSEIRwpLeftGuardBandWidth[i]              =  cfg_rwpSEIRwpLeftGuardBandWidth.values[i];
+        m_rwpSEIRwpRightGuardBandWidth[i]             =  cfg_rwpSEIRwpRightGuardBandWidth.values[i];
+        m_rwpSEIRwpTopGuardBandHeight[i]              =  cfg_rwpSEIRwpTopGuardBandHeight.values[i];
+        m_rwpSEIRwpBottomGuardBandHeight[i]           =  cfg_rwpSEIRwpBottomGuardBandHeight.values[i];
+        CHECK (! ( m_rwpSEIRwpLeftGuardBandWidth[i] > 0 || m_rwpSEIRwpRightGuardBandWidth[i] > 0 || m_rwpSEIRwpTopGuardBandHeight[i] >0 || m_rwpSEIRwpBottomGuardBandHeight[i] >0 ), "At least one of the RWP guard band parameters mut be greater than zero");
+        m_rwpSEIRwpGuardBandNotUsedForPredFlag[i]     =  cfg_rwpSEIRwpGuardBandNotUsedForPredFlag.values[i];
+        for( int j=0; j < 4; j++ )
+        {
+          m_rwpSEIRwpGuardBandType[i*4 + j]           =  cfg_rwpSEIRwpGuardBandType.values[i*4 + j];
+        }
+
+      }
+    }
+  }
+#endif
   m_reshapeCW.binCW.resize(3);
   m_reshapeCW.rspFps = m_iFrameRate;
   m_reshapeCW.rspPicSize = m_iSourceWidth*m_iSourceHeight;
@@ -2491,9 +2881,6 @@ bool EncAppCfg::xCheckParameter()
   if( m_profile != Profile::NEXT )
   {
     THROW( "Next profile with an alternative partitioner has to be enabled if HEVC_USE_RQT is off!" );
-#if ENABLE_WPP_PARALLELISM
-    xConfirmPara( m_numWppThreads > 1, "WPP-style parallelization only supported with NEXT profile" );
-#endif
     xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
     xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
@@ -2508,8 +2895,8 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara( m_MTSInterMaxCand, "MTS only allowed with NEXT profile" );
     xConfirmPara( m_SMVD, "SMVD is only allowed with NEXT profile" );
     xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
-    xConfirmPara( m_GBi, "GBi is only allowed with NEXT profile" );
-    xConfirmPara( m_GBiFast, "GBiFast is only allowed with NEXT profile" );
+    xConfirmPara( m_bcw, "Bcw is only allowed with NEXT profile" );
+    xConfirmPara( m_BcwFast, "BcwFast is only allowed with NEXT profile" );
     xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
     xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
     xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
@@ -2537,26 +2924,12 @@ bool EncAppCfg::xCheckParameter()
 #if ENABLE_SPLIT_PARALLELISM
   xConfirmPara( m_numSplitThreads < 1, "Number of used threads cannot be smaller than 1" );
   xConfirmPara( m_numSplitThreads > PARL_SPLIT_MAX_NUM_THREADS, "Number of used threads cannot be higher than the number of actual jobs" );
-#if _MSC_VER && ENABLE_WPP_PARALLELISM
-  xConfirmPara( m_numSplitThreads > 1 && m_numSplitThreads != NUM_SPLIT_THREADS_IF_MSVC, "Due to poor implementation by Microsoft, NumSplitThreads cannot be set dynamically on runtime!" );
-#endif
 #else
   xConfirmPara( m_numSplitThreads != 1, "ENABLE_SPLIT_PARALLELISM is disabled, numSplitThreads has to be 1" );
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-  xConfirmPara( m_numWppThreads < 1, "Number of threads used for WPP-style parallelization cannot be smaller than 1" );
-  xConfirmPara( m_numWppThreads > PARL_WPP_MAX_NUM_THREADS, "Number of threads used for WPP-style parallelization cannot be bigger than PARL_WPP_MAX_NUM_THREADS" );
-  xConfirmPara( !m_ensureWppBitEqual && m_numWppThreads > 1, "WPP bit equality is implied when using WPP-style parallelism" );
-#if ENABLE_WPP_STATIC_LINK
-  xConfirmPara( m_numWppExtraLines != 0, "WPP-style extra lines out of range" );
-#else
-  xConfirmPara( m_numWppExtraLines < 0, "WPP-style extra lines out of range" );
-#endif
-#else
   xConfirmPara( m_numWppThreads != 1, "ENABLE_WPP_PARALLELISM is disabled, numWppThreads has to be 1" );
   xConfirmPara( m_ensureWppBitEqual, "ENABLE_WPP_PARALLELISM is disabled, cannot ensure being WPP bit-equal" );
-#endif
 
 
 #if SHARP_LUMA_DELTA_QP && ENABLE_QPA
@@ -2729,6 +3102,7 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara( m_bufferingPeriodSEIEnabled == true && m_RCCpbSize == 0,  "RCCpbSize must be greater than zero, when buffering period SEI is enabled" );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   if ( m_CUTransquantBypassFlagForce && m_bUseHADME )
   {
     msg( WARNING, "****************************************************************************\n");
@@ -2739,6 +3113,7 @@ bool EncAppCfg::xCheckParameter()
     m_bUseHADME = false; // this has been disabled so that the lambda is calculated slightly differently for lossless modes (as a result of JCTVC-R0104).
   }
 
+#endif
   xConfirmPara (m_log2MaxTransformSkipBlockSize < 2, "Transform Skip Log2 Max Size must be at least 2 (4x4)");
 
 
@@ -2774,34 +3149,34 @@ bool EncAppCfg::xCheckParameter()
 #if SHARP_LUMA_DELTA_QP
   xConfirmPara( m_lumaLevelToDeltaQPMapping.mode && m_uiDeltaQpRD > 0,                      "Luma-level-based Delta QP cannot be used together with slice level multiple-QP optimization\n" );
 #endif
-  if (m_lumaLevelToDeltaQPMapping.mode && m_lumaReshapeEnable)
+  if (m_lumaLevelToDeltaQPMapping.mode && m_lmcsEnabled)
   {
 #if !JVET_P0335_HDRCTC_CHANGE
     msg(WARNING, "For HDR-PQ, reshaper should be used mutual-exclusively with Luma-level-based Delta QP. If use luma DQP, turn reshaper off.\n");
-    m_lumaReshapeEnable = false;
+    m_lmcsEnabled = false;
 #else
     msg(WARNING, "For HDR-PQ, LMCS should be used mutual-exclusively with Luma-level-based Delta QP. If use LMCS, turn lumaDQP off.\n");
     m_lumaLevelToDeltaQPMapping.mode = LUMALVL_TO_DQP_DISABLED;
 #endif
   }
-  if (!m_lumaReshapeEnable)
+  if (!m_lmcsEnabled)
   {
     m_reshapeSignalType = RESHAPE_SIGNAL_NULL;
     m_intraCMD = 0;
   }
-  if (m_lumaReshapeEnable && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
+  if (m_lmcsEnabled && m_reshapeSignalType == RESHAPE_SIGNAL_PQ)
   {
     m_intraCMD = 1;
   }
-  else if (m_lumaReshapeEnable && (m_reshapeSignalType == RESHAPE_SIGNAL_SDR || m_reshapeSignalType == RESHAPE_SIGNAL_HLG))
+  else if (m_lmcsEnabled && (m_reshapeSignalType == RESHAPE_SIGNAL_SDR || m_reshapeSignalType == RESHAPE_SIGNAL_HLG))
   {
     m_intraCMD = 0;
   }
   else
   {
-    m_lumaReshapeEnable = false;
+    m_lmcsEnabled = false;
   }
-  if (m_lumaReshapeEnable)
+  if (m_lmcsEnabled)
   {
     xConfirmPara(m_updateCtrl < 0, "Min. LMCS Update Control is 0");
     xConfirmPara(m_updateCtrl > 2, "Max. LMCS Update Control is 2");
@@ -2886,17 +3261,21 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(!m_useTransformSkip, "BDPCM cannot be used when transform skip is disabled.");
   }
 
+#if !JVET_P1004_REMOVE_BRICKS
   if (m_sliceMode!=NO_SLICES)
   {
     xConfirmPara( m_sliceArgument < 1 ,         "SliceArgument should be larger than or equal to 1" );
   }
+#endif
 
 
+#if !JVET_P1004_REMOVE_BRICKS
   bool tileFlag = (m_numTileColumnsMinus1 > 0 || m_numTileRowsMinus1 > 0 );
   if (m_profile!=Profile::HIGHTHROUGHPUTREXT)
   {
     xConfirmPara( tileFlag && m_entropyCodingSyncEnabledFlag, "Tiles and entropy-coding-sync (Wavefronts) can not be applied together, except in the High Throughput Intra 4:4:4 16 profile");
   }
+#endif
 
   xConfirmPara( m_iSourceWidth  % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Picture width must be an integer multiple of the specified chroma subsampling");
   xConfirmPara( m_iSourceHeight % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Picture height must be an integer multiple of the specified chroma subsampling");
@@ -3323,6 +3702,264 @@ bool EncAppCfg::xCheckParameter()
     m_maxDecPicBuffering[MAX_TLAYER-1] = m_numReorderPics[MAX_TLAYER-1] + 1;
   }
 
+#if JVET_P1004_REMOVE_BRICKS
+  if( m_picPartitionFlag ) 
+  {
+    PPS pps;
+    uint32_t colIdx, rowIdx;
+    uint32_t remSize;
+ 
+    pps.setPicWidthInLumaSamples( m_iSourceWidth );
+    pps.setPicHeightInLumaSamples( m_iSourceHeight );
+    pps.setLog2CtuSize( floorLog2(m_uiCTUSize) );
+
+    // set default tile column if not provided
+    if( m_tileColumnWidth.size() == 0 ) 
+    {
+      m_tileColumnWidth.push_back( pps.getPicWidthInCtu() );
+    }
+    // set default tile row if not provided
+    if( m_tileRowHeight.size() == 0 ) 
+    {
+      m_tileRowHeight.push_back( pps.getPicHeightInCtu() );
+    }
+
+    // remove any tile columns that can be specified implicitly
+    while( m_tileColumnWidth.size() > 1 && m_tileColumnWidth.end()[-1] == m_tileColumnWidth.end()[-2] )
+    {
+      m_tileColumnWidth.pop_back();
+    }
+
+    // remove any tile rows that can be specified implicitly
+    while( m_tileRowHeight.size() > 1 && m_tileRowHeight.end()[-1] == m_tileRowHeight.end()[-2] )
+    {
+      m_tileRowHeight.pop_back();
+    }
+
+    // setup tiles in temporary PPS structure
+    remSize = pps.getPicWidthInCtu();
+    for( colIdx=0; remSize > 0 && colIdx<m_tileColumnWidth.size(); colIdx++ )
+    {
+      xConfirmPara(m_tileColumnWidth[ colIdx ] == 0, "Tile column widths cannot be equal to 0");
+      m_tileColumnWidth[ colIdx ] = std::min( remSize, m_tileColumnWidth[ colIdx ]);
+      pps.addTileColumnWidth( m_tileColumnWidth[ colIdx ] );
+      remSize -= m_tileColumnWidth[ colIdx ];
+    }
+    m_tileColumnWidth.resize( colIdx );
+    pps.setNumExpTileColumns( (uint32_t)m_tileColumnWidth.size() );    
+    remSize = pps.getPicHeightInCtu();
+    for( rowIdx=0; remSize > 0 && rowIdx<m_tileRowHeight.size(); rowIdx++ )
+    {
+      xConfirmPara(m_tileRowHeight[ rowIdx ] == 0, "Tile row heights cannot be equal to 0");
+      m_tileRowHeight[ rowIdx ] = std::min( remSize, m_tileRowHeight[ rowIdx ]);
+      pps.addTileRowHeight( m_tileRowHeight[ rowIdx ] );
+      remSize -= m_tileRowHeight[ rowIdx ];
+    }
+    m_tileRowHeight.resize( rowIdx );
+    pps.setNumExpTileRows( (uint32_t)m_tileRowHeight.size() );
+    pps.initTiles();
+    xConfirmPara(pps.getNumTileColumns() > getMaxTileColsByLevel( m_level ), "Number of tile columns exceeds maximum number allowed according to specified level");
+    xConfirmPara(pps.getNumTileRows()    > getMaxTileRowsByLevel( m_level ), "Number of tile rows exceeds maximum number allowed according to specified level");
+    m_numTileCols = pps.getNumTileColumns();
+    m_numTileRows = pps.getNumTileRows();
+
+    // rectangular slices
+    if( !m_rasterSliceFlag )
+    {
+      uint32_t sliceIdx;
+      bool     needTileIdxDelta = false;
+
+      // generate slice list for the simplified fixed-rectangular-slice-size config option
+      if( m_rectSliceFixedWidth > 0 && m_rectSliceFixedHeight > 0 )
+      {
+        int tileIdx = 0;
+        m_rectSlicePos.clear();
+        while( tileIdx < pps.getNumTiles() ) 
+        {
+          uint32_t startTileX = tileIdx % pps.getNumTileColumns();
+          uint32_t startTileY = tileIdx / pps.getNumTileColumns();
+          uint32_t startCtuX  = pps.getTileColumnBd( startTileX );
+          uint32_t startCtuY  = pps.getTileRowBd( startTileY );
+          uint32_t stopCtuX   = (startTileX + m_rectSliceFixedWidth)  >= pps.getNumTileColumns() ? pps.getPicWidthInCtu() - 1  : pps.getTileColumnBd( startTileX + m_rectSliceFixedWidth ) - 1;
+          uint32_t stopCtuY   = (startTileY + m_rectSliceFixedHeight) >= pps.getNumTileRows()    ? pps.getPicHeightInCtu() - 1 : pps.getTileRowBd( startTileY + m_rectSliceFixedHeight ) - 1;
+          uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
+          uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
+          
+          // add rectangular slice to list
+          m_rectSlicePos.push_back( startCtuY * pps.getPicWidthInCtu() + startCtuX );          
+          m_rectSlicePos.push_back( stopCtuY  * pps.getPicWidthInCtu() + stopCtuX  );
+          
+          // get slice size in tiles
+          uint32_t sliceWidth  = stopTileX - startTileX + 1;
+          uint32_t sliceHeight = stopTileY - startTileY + 1;
+
+          // move to next tile in raster scan order
+          tileIdx += sliceWidth;
+          if( tileIdx % pps.getNumTileColumns() == 0 )
+          {
+            tileIdx += (sliceHeight - 1) * pps.getNumTileColumns();
+          }
+        }
+      }
+
+      xConfirmPara( m_rectSlicePos.size() & 1, "Odd number of rectangular slice positions provided. Rectangular slice positions must be specified in pairs of (top-left / bottom-right) raster-scan CTU addresses.");
+      
+      // set default slice size if not provided
+      if( m_rectSlicePos.size() == 0 ) 
+      {
+        m_rectSlicePos.push_back( 0 );
+        m_rectSlicePos.push_back( pps.getPicWidthInCtu() * pps.getPicHeightInCtu() - 1 );
+      }
+      pps.setNumSlicesInPic( (uint32_t)(m_rectSlicePos.size() >> 1) );
+      xConfirmPara(pps.getNumSlicesInPic() > getMaxSlicesByLevel( m_level ), "Number of rectangular slices exceeds maximum number allowed according to specified level");
+      pps.initRectSlices();
+
+      // set slice parameters from CTU addresses
+      for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
+      {
+        xConfirmPara( m_rectSlicePos[2*sliceIdx]     >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
+        xConfirmPara( m_rectSlicePos[2*sliceIdx + 1] >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
+
+        // map raster scan CTU address to X/Y position
+        uint32_t startCtuX = m_rectSlicePos[2*sliceIdx]     % pps.getPicWidthInCtu();
+        uint32_t startCtuY = m_rectSlicePos[2*sliceIdx]     / pps.getPicWidthInCtu();
+        uint32_t stopCtuX  = m_rectSlicePos[2*sliceIdx + 1] % pps.getPicWidthInCtu();
+        uint32_t stopCtuY  = m_rectSlicePos[2*sliceIdx + 1] / pps.getPicWidthInCtu();
+        
+        // get corresponding tile index
+        uint32_t startTileX = pps.ctuToTileCol( startCtuX );
+        uint32_t startTileY = pps.ctuToTileRow( startCtuY );
+        uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
+        uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
+        uint32_t tileIdx    = startTileY * pps.getNumTileColumns() + startTileX;
+
+        // get slice size in tiles
+        uint32_t sliceWidth  = stopTileX - startTileX + 1;
+        uint32_t sliceHeight = stopTileY - startTileY + 1;
+        
+        // check for slice / tile alignment
+        xConfirmPara( startCtuX != pps.getTileColumnBd( startTileX ), "Rectangular slice position does not align with a left tile edge.");
+        xConfirmPara( stopCtuX  != (pps.getTileColumnBd( stopTileX + 1 ) - 1), "Rectangular slice position does not align with a right tile edge.");
+        if( sliceWidth > 1 || sliceHeight > 1 )
+        {
+          xConfirmPara( startCtuY != pps.getTileRowBd( startTileY ), "Rectangular slice position does not align with a top tile edge.");
+          xConfirmPara( stopCtuY  != (pps.getTileRowBd( stopTileY + 1 ) - 1), "Rectangular slice position does not align with a bottom tile edge.");
+        }
+
+        // set slice size and tile index
+        pps.setSliceWidthInTiles( sliceIdx, sliceWidth );
+        pps.setSliceHeightInTiles( sliceIdx, sliceHeight );
+        pps.setSliceTileIdx( sliceIdx, tileIdx );
+        if( sliceIdx > 0 && !needTileIdxDelta )
+        {
+          uint32_t lastTileIdx = pps.getSliceTileIdx( sliceIdx-1 );
+          lastTileIdx += pps.getSliceWidthInTiles( sliceIdx-1 );
+          if( lastTileIdx % pps.getNumTileColumns() == 0)
+          {
+            lastTileIdx += (pps.getSliceHeightInTiles( sliceIdx-1 ) - 1) * pps.getNumTileColumns();
+          }
+          if( lastTileIdx != tileIdx )
+          {
+            needTileIdxDelta = true;
+          }
+        }
+
+        // special case for multiple slices within a single tile
+        if( sliceWidth == 1 && sliceHeight == 1 )
+        {
+          uint32_t firstSliceIdx = sliceIdx;
+          uint32_t numSlicesInTile = 1;
+          pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+          
+          while( sliceIdx < pps.getNumSlicesInPic()-1 ) 
+          {
+            uint32_t nextTileIdx;
+            startCtuX   = m_rectSlicePos[2*(sliceIdx+1)]     % pps.getPicWidthInCtu();
+            startCtuY   = m_rectSlicePos[2*(sliceIdx+1)]     / pps.getPicWidthInCtu();
+            stopCtuX    = m_rectSlicePos[2*(sliceIdx+1) + 1] % pps.getPicWidthInCtu();
+            stopCtuY    = m_rectSlicePos[2*(sliceIdx+1) + 1] / pps.getPicWidthInCtu();          
+            startTileX  = pps.ctuToTileCol( startCtuX );
+            startTileY  = pps.ctuToTileRow( startCtuY );
+            stopTileX   = pps.ctuToTileCol( stopCtuX );
+            stopTileY   = pps.ctuToTileRow( stopCtuY );
+            nextTileIdx = startTileY * pps.getNumTileColumns() + startTileX;
+            sliceWidth  = stopTileX - startTileX + 1;
+            sliceHeight = stopTileY - startTileY + 1;
+            if(nextTileIdx != tileIdx || sliceWidth != 1 || sliceHeight != 1) 
+            {
+              break;
+            }
+            numSlicesInTile++;
+            sliceIdx++;
+            pps.setSliceWidthInTiles( sliceIdx, 1 );
+            pps.setSliceHeightInTiles( sliceIdx, 1 );
+            pps.setSliceTileIdx( sliceIdx, tileIdx );    
+            pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+          }
+          pps.setNumSlicesInTile( firstSliceIdx, numSlicesInTile );
+        }
+      }
+      pps.setTileIdxDeltaPresentFlag( needTileIdxDelta );
+      m_tileIdxDeltaPresentFlag = needTileIdxDelta;
+      
+      // check rectangular slice mapping and full picture CTU coverage
+      pps.initRectSliceMap();
+
+      // store rectangular slice parameters from temporary PPS structure
+      m_numSlicesInPic = pps.getNumSlicesInPic();
+      m_rectSlices.resize( pps.getNumSlicesInPic() );
+      for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
+      {
+        m_rectSlices[sliceIdx].setSliceWidthInTiles( pps.getSliceWidthInTiles(sliceIdx) );
+        m_rectSlices[sliceIdx].setSliceHeightInTiles( pps.getSliceHeightInTiles(sliceIdx) );
+        m_rectSlices[sliceIdx].setNumSlicesInTile( pps.getNumSlicesInTile(sliceIdx) );
+        m_rectSlices[sliceIdx].setSliceHeightInCtu( pps.getSliceHeightInCtu(sliceIdx) );
+        m_rectSlices[sliceIdx].setTileIdx( pps.getSliceTileIdx(sliceIdx) );
+      }
+    }
+    // raster-scan slices
+    else
+    {
+      uint32_t listIdx = 0;
+      uint32_t remTiles = pps.getNumTiles();
+
+      // set default slice size if not provided
+      if( m_rasterSliceSize.size() == 0 ) 
+      {
+        m_rasterSliceSize.push_back( remTiles );
+      }
+
+      // set raster slice sizes
+      while( remTiles > 0 )
+      {
+        // truncate if size exceeds number of remaining tiles
+        if( listIdx < m_rasterSliceSize.size() )
+        {
+          m_rasterSliceSize[listIdx] = std::min( remTiles, m_rasterSliceSize[listIdx] );
+          remTiles -= m_rasterSliceSize[listIdx];
+        }
+        // replicate last size uniformly as needed to cover the remainder of the picture
+        else
+        {
+          m_rasterSliceSize.push_back( std::min( remTiles, m_rasterSliceSize.back() ) );
+          remTiles -= m_rasterSliceSize.back();
+        }
+        listIdx++;
+      }
+      // shrink list if too many sizes were provided
+      m_rasterSliceSize.resize( listIdx );
+      
+      m_numSlicesInPic = (uint32_t)m_rasterSliceSize.size();
+      xConfirmPara(m_rasterSliceSize.size() > getMaxSlicesByLevel( m_level ), "Number of raster-scan slices exceeds maximum number allowed according to specified level");
+    }
+  }
+  else 
+  {
+    m_numTileCols = 1;
+    m_numTileRows = 1;
+    m_numSlicesInPic = 1;
+  }
+#else
 
   for (int i=0; i<MAX_TILES; i++)
   {
@@ -3332,11 +3969,20 @@ bool EncAppCfg::xCheckParameter()
       // ToDo: check that brick dimensions don't exceed tile dimensions
     }
   }
+#endif
 
+#if JVET_P1004_REMOVE_BRICKS
+  if ((m_MCTSEncConstraint) && (!m_disableLFCrossTileBoundaryFlag))
+#else
   if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
+#endif
   {
     printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");
+#if JVET_P1004_REMOVE_BRICKS
+    m_disableLFCrossTileBoundaryFlag = true;
+#else
     m_bLFCrossTileBoundaryFlag = false;
+#endif
   }
   if ((m_MCTSEncConstraint) && (m_TMVPModeId))
   {
@@ -3464,6 +4110,9 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_vuiParametersPresentFlag && m_chromaLocInfoPresentFlag && (m_chromaSampleLocTypeTopField != m_chromaSampleLocTypeBottomField ), "When chromaResamplingFilterSEI is enabled, ChromaSampleLocTypeTopField has to be equal to ChromaSampleLocTypeBottomField" );
   }
 #endif
+#if JVET_P0450_SEI_SARI
+  xConfirmPara( m_sariAspectRatioIdc < 0 || m_sariAspectRatioIdc > 255, "SEISARISampleAspectRatioIdc must be in the range of 0 to 255");
+#endif
 
   if ( m_RCEnableRateControl )
   {
@@ -3492,16 +4141,19 @@ bool EncAppCfg::xCheckParameter()
   }
 #endif
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+  xConfirmPara(m_TransquantBypassEnabledFlag , "TransquantBypassEnableFlag is not supported in VVC");
+#endif
   xConfirmPara(!m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce, "CUTransquantBypassFlagForce cannot be 1 when TransquantBypassEnableFlag is 0");
 
-  xConfirmPara(m_log2ParallelMergeLevel < 2, "Log2ParallelMergeLevel should be larger than or equal to 2");
-
-#if HEVC_SEI
+#endif
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
   if (m_framePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIType < 3 || m_framePackingSEIType > 5 , "SEIFramePackingType must be in rage 3 to 5");
   }
-
+#if !JVET_P0337_PORTING_SEI
   if (m_segmentedRectFramePackingSEIEnabled)
   {
     xConfirmPara(m_framePackingSEIEnabled , "SEISegmentedRectFramePacking must be 0 when SEIFramePacking is 1");
@@ -3518,8 +4170,40 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_timeCodeSEINumTs > MAX_TIMECODE_SEI_SETS, "Number of time sets cannot exceed 3");
   }
 #endif
+#endif
 
-#if HEVC_SEI
+#if JVET_P0462_SEI360
+  if( m_erpSEIEnabled && !m_erpSEICancelFlag )
+  {
+    xConfirmPara( m_erpSEIGuardBandType < 0 || m_erpSEIGuardBandType > 8, "SEIEquirectangularprojectionGuardBandType must be in the range of 0 to 7");
+    xConfirmPara( (m_chromaFormatIDC == CHROMA_420 || m_chromaFormatIDC == CHROMA_422) && (m_erpSEILeftGuardBandWidth%2 == 1), "SEIEquirectangularprojectionLeftGuardBandWidth must be an even number for 4:2:0 or 4:2:2 chroma format");
+    xConfirmPara( (m_chromaFormatIDC == CHROMA_420 || m_chromaFormatIDC == CHROMA_422) && (m_erpSEIRightGuardBandWidth%2 == 1), "SEIEquirectangularprojectionRightGuardBandWidth must be an even number for 4:2:0 or 4:2:2 chroma format");
+  }
+
+  if( m_sphereRotationSEIEnabled && !m_sphereRotationSEICancelFlag )
+  {
+    xConfirmPara( m_sphereRotationSEIYaw  < -(180<<16) || m_sphereRotationSEIYaw > (180<<16)-1, "SEISphereRotationYaw must be in the range of -11 796 480 to 11 796 479");
+    xConfirmPara( m_sphereRotationSEIPitch < -(90<<16) || m_sphereRotationSEIYaw > (90<<16),    "SEISphereRotationPitch must be in the range of -5 898 240 to 5 898 240");
+    xConfirmPara( m_sphereRotationSEIRoll < -(180<<16) || m_sphereRotationSEIYaw > (180<<16)-1, "SEISphereRotationRoll must be in the range of -11 796 480 to 11 796 479");
+  }
+
+  if ( m_omniViewportSEIEnabled && !m_omniViewportSEICancelFlag )
+  {
+    xConfirmPara( m_omniViewportSEIId < 0 || m_omniViewportSEIId > 1023, "SEIomniViewportId must be in the range of 0 to 1023");
+    xConfirmPara( m_omniViewportSEICntMinus1 < 0 || m_omniViewportSEICntMinus1 > 15, "SEIomniViewportCntMinus1 must be in the range of 0 to 15");
+    for ( uint32_t i=0; i<=m_omniViewportSEICntMinus1; i++ )
+    {
+      xConfirmPara( m_omniViewportSEIAzimuthCentre[i] < -(180<<16)  || m_omniViewportSEIAzimuthCentre[i] > (180<<16)-1, "SEIOmniViewportAzimuthCentre must be in the range of -11 796 480 to 11 796 479");
+      xConfirmPara( m_omniViewportSEIElevationCentre[i] < -(90<<16) || m_omniViewportSEIElevationCentre[i] > (90<<16),  "SEIOmniViewportSEIElevationCentre must be in the range of -5 898 240 to 5 898 240");
+      xConfirmPara( m_omniViewportSEITiltCentre[i] < -(180<<16)     || m_omniViewportSEITiltCentre[i] > (180<<16)-1,    "SEIOmniViewportTiltCentre must be in the range of -11 796 480 to 11 796 479");
+      xConfirmPara( m_omniViewportSEIHorRange[i] < 1 || m_omniViewportSEIHorRange[i] > (360<<16), "SEIOmniViewportHorRange must be in the range of 1 to 360*2^16");
+      xConfirmPara( m_omniViewportSEIVerRange[i] < 1 || m_omniViewportSEIVerRange[i] > (180<<16), "SEIOmniViewportVerRange must be in the range of 1 to 180*2^16");
+    }
+  }
+#endif
+
+
+#if HEVC_SEI || JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif
@@ -3722,17 +4406,22 @@ void EncAppCfg::xPrintParameter()
   msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
 #endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
+#if JVET_P1004_REMOVE_BRICKS
+  msg( VERBOSE, "Tiles: %dx%d ", m_numTileCols, m_numTileRows );
+  msg( VERBOSE, "Slices: %d ", m_numSlicesInPic);
+#else
   msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
   if (m_sliceMode!=NO_SLICES)
   {
     msg( VERBOSE, "A=%d ", m_sliceArgument);
   }
   msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
+#endif
   msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
-  msg( VERBOSE, "CIP:%d ", m_bUseConstrainedIntraPred);
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   if (m_TransquantBypassEnabledFlag && m_CUTransquantBypassFlagForce)
   {
     msg( VERBOSE, "TransQuantBypassEnabled: =1");
@@ -3742,9 +4431,9 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "TransQuantBypassEnabled:%d ", (m_TransquantBypassEnabledFlag)? 1:0 );
   }
 
+#endif
   msg( VERBOSE, "WPP:%d ", (int)m_useWeightedPred);
   msg( VERBOSE, "WPB:%d ", (int)m_useWeightedBiPred);
-  msg( VERBOSE, "PME:%d ", m_log2ParallelMergeLevel);
   const int iWaveFrontSubstreams = m_entropyCodingSyncEnabledFlag ? (m_iSourceHeight + m_uiMaxCUHeight - 1) / m_uiMaxCUHeight : 1;
   msg( VERBOSE, " WaveFrontSynchro:%d WaveFrontSubstreams:%d", m_entropyCodingSyncEnabledFlag?1:0, iWaveFrontSubstreams);
   msg( VERBOSE, " ScalingList:%d ", m_useScalingListId );
@@ -3769,21 +4458,26 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     msg( VERBOSE, "BIO:%d ", m_BIO );
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
+#if JVET_P0592_CHROMA_PHASE
+    msg( VERBOSE, "HorCollocatedChroma:%d ", m_horCollocatedChromaFlag );
+    msg( VERBOSE, "VerCollocatedChroma:%d ", m_verCollocatedChromaFlag );
+#else
     if( m_LMChroma && m_chromaFormatIDC == CHROMA_420 )
     {
       msg( VERBOSE, "CclmCollocatedChroma:%d ", m_cclmCollocatedChromaFlag );
     }
+#endif
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
     msg( VERBOSE, "SBT:%d ", m_SBT );
     msg( VERBOSE, "ISP:%d ", m_ISP );
     msg( VERBOSE, "SMVD:%d ", m_SMVD );
     msg( VERBOSE, "CompositeLTReference:%d ", m_compositeRefEnabled);
-    msg( VERBOSE, "GBi:%d ", m_GBi );
-    msg( VERBOSE, "GBiFast:%d ", m_GBiFast );
+    msg( VERBOSE, "Bcw:%d ", m_bcw );
+    msg( VERBOSE, "BcwFast:%d ", m_BcwFast );
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif
-    msg(VERBOSE, "MHIntra:%d ", m_MHIntra);
+    msg(VERBOSE, "CIIP:%d ", m_ciip);
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
     m_allowDisFracMMVD = m_MMVD ? m_allowDisFracMMVD : false;
     if ( m_MMVD )
@@ -3824,8 +4518,8 @@ void EncAppCfg::xPrintParameter()
     }
     msg(VERBOSE, " ] ");
   }
-    msg(VERBOSE, "Reshape:%d ", m_lumaReshapeEnable);
-    if (m_lumaReshapeEnable)
+    msg(VERBOSE, "Reshape:%d ", m_lmcsEnabled);
+    if (m_lmcsEnabled)
     {
       msg(VERBOSE, "(Signal:%s ", m_reshapeSignalType == 0 ? "SDR" : (m_reshapeSignalType == 2 ? "HDR-HLG" : "HDR-PQ"));
       msg(VERBOSE, "Opt:%d", m_adpOption);
@@ -3835,6 +4529,9 @@ void EncAppCfg::xPrintParameter()
 #endif
       msg(VERBOSE, ") ");
     }
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+    msg(VERBOSE, "MRL:%d ", m_MRL);
+#endif
     msg(VERBOSE, "MIP:%d ", m_MIP);
     msg(VERBOSE, "EncDbOpt:%d ", m_encDbOpt);
   msg( VERBOSE, "\nFAST TOOL CFG: " );

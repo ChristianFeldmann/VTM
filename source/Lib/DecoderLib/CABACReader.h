@@ -67,7 +67,11 @@ public:
   void        remaining_bytes           ( bool                          noTrailingBytesExpected );
 
   // coding tree unit (clause 7.3.8.2)
+#if JVET_P1004_REMOVE_BRICKS
+  void        coding_tree_unit          ( CodingStructure&              cs,     const UnitArea& area,     int (&qps)[2],   unsigned  ctuRsAddr );
+#else
   bool        coding_tree_unit          ( CodingStructure&              cs,     const UnitArea& area,     int (&qps)[2],   unsigned  ctuRsAddr );
+#endif
 
   // sao (clause 7.3.8.3)
   void        sao                       ( CodingStructure&              cs,     unsigned        ctuRsAddr );
@@ -75,18 +79,28 @@ public:
   void        readAlfCtuFilterIndex(CodingStructure&              cs, unsigned        ctuRsAddr);
 
   // coding (quad)tree (clause 7.3.8.4)
+#if JVET_P1004_REMOVE_BRICKS
+  void        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
+#else
   bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
+#endif
   PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );
   ModeType    mode_constraint           ( CodingStructure&              cs,     Partitioner&    pm,       const PartSplit splitMode );
 
   // coding unit (clause 7.3.8.5)
+#if JVET_P1004_REMOVE_BRICKS
+  void        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
+#else
   bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
+#endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
+#endif
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
   void        bdpcm_mode                ( CodingUnit&                   cu,     const ComponentID compID );
   void        cu_pred_data              ( CodingUnit&                   cu );
-  void        cu_gbi_flag               ( CodingUnit&                   cu );
+  void        cu_bcw_flag               ( CodingUnit&                   cu );
   void        extend_ref_line           (CodingUnit&                     cu);
   void        intra_luma_pred_modes     ( CodingUnit&                   cu );
   void        intra_chroma_pred_modes   ( CodingUnit&                   cu );
@@ -98,7 +112,11 @@ public:
   void        adaptive_color_transform(CodingUnit&             cu);
 #endif 
   void        sbt_mode                  ( CodingUnit&                   cu );
+#if JVET_P1004_REMOVE_BRICKS
+  void        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
+#else
   bool        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
+#endif
   void        mip_flag                  ( CodingUnit&                   cu );
   void        mip_pred_modes            ( CodingUnit&                   cu );
   void        mip_pred_mode             ( PredictionUnit&               pu );
@@ -119,7 +137,7 @@ public:
   void        inter_pred_idc            ( PredictionUnit&               pu );
   void        ref_idx                   ( PredictionUnit&               pu,     RefPicList      eRefList );
   void        mvp_flag                  ( PredictionUnit&               pu,     RefPicList      eRefList );
-  void        MHIntra_flag              ( PredictionUnit&               pu );
+  void        Ciip_flag              ( PredictionUnit&               pu );
   void        smvd_mode              ( PredictionUnit&               pu );
 
 

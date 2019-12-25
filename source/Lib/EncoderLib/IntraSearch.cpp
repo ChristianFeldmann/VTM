@@ -277,8 +277,9 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
         m_pBestCS[width][height] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
         m_pTempCS[width][height] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
-        m_pBestCS[width][height]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
-        m_pTempCS[width][height]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
+        m_pBestCS[width][height]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
+        m_pTempCS[width][height]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
+
         m_pFullCS [width][height] = new CodingStructure*[uiNumLayersToAllocateFull];
         m_pSplitCS[width][height] = new CodingStructure*[uiNumLayersToAllocateSplit];
 
@@ -286,14 +287,13 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
         {
           m_pFullCS [width][height][layer] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
 
-          m_pFullCS [width][height][layer]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
+          m_pFullCS[width][height][layer]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
         }
 
         for( uint32_t layer = 0; layer < uiNumLayersToAllocateSplit; layer++ )
         {
           m_pSplitCS[width][height][layer] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
-
-          m_pSplitCS[width][height][layer]->create( m_pcEncCfg->getChromaFormatIdc(), Area( 0, 0, gp_sizeIdxInfo->sizeFrom( width ), gp_sizeIdxInfo->sizeFrom( height ) ), false );
+          m_pSplitCS[width][height][layer]->create(m_pcEncCfg->getChromaFormatIdc(), Area(0, 0, gp_sizeIdxInfo->sizeFrom(width), gp_sizeIdxInfo->sizeFrom(height)), false, (bool)pcEncCfg->getPLTMode());
         }
       }
       else
@@ -314,41 +314,44 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
   for( uint32_t depth = 0; depth < uiNumSaveLayersToAllocate; depth++ )
   {
     m_pSaveCS[depth] = new CodingStructure( m_unitCache.cuCache, m_unitCache.puCache, m_unitCache.tuCache );
-    m_pSaveCS[depth]->create( UnitArea( cform, Area( 0, 0, maxCUWidth, maxCUHeight ) ), false );
+    m_pSaveCS[depth]->create(UnitArea(cform, Area(0, 0, maxCUWidth, maxCUHeight)), false, (bool)pcEncCfg->getPLTMode());
   }
 
   m_isInitialized = true;
 #if JVET_P0077_LINE_CG_PALETTE
-  m_symbolSize = (1 << bitDepthY); // pixel values are within [0, SymbolSize-1] with size SymbolSize
-  if (m_truncBinBits == nullptr)
+  if (pcEncCfg->getPLTMode())
   {
-    m_truncBinBits = new uint16_t*[m_symbolSize];
-    for (unsigned i = 0; i < m_symbolSize; i++)
+    m_symbolSize = (1 << bitDepthY); // pixel values are within [0, SymbolSize-1] with size SymbolSize
+    if (m_truncBinBits == nullptr)
     {
-      m_truncBinBits[i] = new uint16_t[m_symbolSize + 1];
+      m_truncBinBits = new uint16_t*[m_symbolSize];
+      for (unsigned i = 0; i < m_symbolSize; i++)
+      {
+        m_truncBinBits[i] = new uint16_t[m_symbolSize + 1];
+      }
     }
-  }
-  if (m_escapeNumBins == nullptr)
-  {
-    m_escapeNumBins = new uint16_t[m_symbolSize];
-  }
-  initTBCTable(bitDepthY);
-  if (m_indexError[0] == nullptr)
-  {
-    for (unsigned i = 0; i < (MAXPLTSIZE + 1); i++)
+    if (m_escapeNumBins == nullptr)
     {
-      m_indexError[i] = new double[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      m_escapeNumBins = new uint16_t[m_symbolSize];
     }
-  }
-  if (m_minErrorIndexMap == nullptr)
-  {
-    m_minErrorIndexMap = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
-  }
-  if (m_statePtRDOQ[0] == nullptr)
-  {
-    for (unsigned i = 0; i < NUM_TRELLIS_STATE; i++)
+    initTBCTable(bitDepthY);
+    if (m_indexError[0] == nullptr)
     {
-      m_statePtRDOQ[i] = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      for (unsigned i = 0; i < (MAXPLTSIZE + 1); i++)
+      {
+        m_indexError[i] = new double[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      }
+    }
+    if (m_minErrorIndexMap == nullptr)
+    {
+      m_minErrorIndexMap = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+    }
+    if (m_statePtRDOQ[0] == nullptr)
+    {
+      for (unsigned i = 0; i < NUM_TRELLIS_STATE; i++)
+      {
+        m_statePtRDOQ[i] = new uint8_t[MAX_CU_BLKSIZE_PLT*MAX_CU_BLKSIZE_PLT];
+      }
     }
   }
 #endif
@@ -388,7 +391,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   const uint32_t             uiHeightBit   =                   floorLog2(partitioner.currArea().lheight());
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( ) * FRAC_BITS_SCALE;
+#else
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) * FRAC_BITS_SCALE;
+#endif
 
   //===== loop over partitions =====
 
@@ -542,7 +549,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       // this should always be true
       CHECK( !pu.Y().valid(), "PU is not valid" );
       bool isFirstLineOfCtu = (((pu.block(COMPONENT_Y).y)&((pu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
+      int numOfPassesExtendRef = ((!sps.getUseMRL() || isFirstLineOfCtu) ? 1 : MRL_NUM_REF_LINES);
+#else
       int numOfPassesExtendRef = (isFirstLineOfCtu ? 1 : MRL_NUM_REF_LINES);
+#endif
       pu.multiRefIdx = 0;
 
       if( numModesForFullRD != numModesAvailable )
@@ -610,14 +621,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             pu.intraDir[0] = modeIdx;
 
             initPredIntraParams(pu, pu.Y(), sps);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
             if( useDPCMForFirstPassIntraEstimation( pu, uiMode ) )
             {
               encPredIntraDPCM( COMPONENT_Y, piOrg, piPred, uiMode );
             }
             else
             {
+#endif
               predIntraAng( COMPONENT_Y, piPred, pu);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
             }
+#endif
             // Use the min between SAD and HAD as the cost criterion
             // SAD is scaled by 2 to align with the scaling of HAD
             minSadHad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
@@ -686,14 +701,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
                 pu.intraDir[0] = mode;
 
                 initPredIntraParams(pu, pu.Y(), sps);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
                 if (useDPCMForFirstPassIntraEstimation(pu, mode))
                 {
                   encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
                 }
                 else
                 {
+#endif
                   predIntraAng(COMPONENT_Y, piPred, pu );
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
                 }
+#endif
 
                 // Use the min between SAD and SATD as the cost criterion
                 // SAD is scaled by 2 to align with the scaling of HAD
@@ -751,14 +770,18 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               pu.intraDir[0] = mode;
               initPredIntraParams(pu, pu.Y(), sps);
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
               if (useDPCMForFirstPassIntraEstimation(pu, mode))
               {
                 encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
               }
               else
               {
+#endif
                 predIntraAng(COMPONENT_Y, piPred, pu);
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
               }
+#endif
 
               // Use the min between SAD and SATD as the cost criterion
               // SAD is scaled by 2 to align with the scaling of HAD
@@ -1562,7 +1585,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
 #endif
 #if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
 #else
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+      const bool useHadamard = true;
+#else
       const bool useHadamard = !cu.transQuantBypass;
+#endif
 #endif
       pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
 
@@ -1847,9 +1874,9 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 #endif
 
 #if JVET_P1006_PICTURE_HEADER
-  if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+  if (m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #else
-  if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+  if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #endif
   {
     cs.getPredBuf().copyFrom(cs.getOrgBuf());
@@ -1942,9 +1969,9 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 #if WCG_EXT
     if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
 #if JVET_P1006_PICTURE_HEADER
-      m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+      m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
 #else
-      m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+      m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
 #endif
     {
       const CPelBuf orgLuma = cs.getOrgBuf(cs.area.blocks[COMPONENT_Y]);
@@ -2025,9 +2052,9 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
   {
     CompArea  area = cu.blocks[comp];
 #if JVET_P1006_PICTURE_HEADER
-    if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #else
-    if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #endif
     {
       orgBuf[comp] = cs.getPredBuf(area);
@@ -2633,7 +2660,7 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
     CompArea  area = cu.blocks[comp];
-    if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
     {
       orgBuf[comp] = cs.getPredBuf(area);
     }
@@ -2708,9 +2735,9 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
   {
     CompArea  area = cu.blocks[comp];
 #if JVET_P1006_PICTURE_HEADER
-    if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #else
-    if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #endif
     {
       orgBuf[comp] = cs.getPredBuf(area);
@@ -2788,9 +2815,9 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   {
     CompArea  area = cu.blocks[comp];
 #if JVET_P1006_PICTURE_HEADER
-    if (m_pcEncCfg->getReshaper() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #else
-    if (m_pcEncCfg->getReshaper() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+    if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
 #endif
     {
       orgBuf[comp] = cs.getPredBuf(area);
@@ -3020,10 +3047,12 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       && cu.Y().valid()
       )
       {
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
         if( cs.pps->getTransquantBypassEnabledFlag() )
         {
           m_CABACEstimator->cu_transquant_bypass_flag( cu );
         }
+#endif
         m_CABACEstimator->cu_skip_flag( cu );
         m_CABACEstimator->pred_mode   ( cu );
       }
@@ -3732,7 +3761,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   //===== update distortion =====
 #if WCG_EXT
-  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getReshaper()
+  if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getLmcs()
 #if JVET_P1006_PICTURE_HEADER
     && slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
 #else
@@ -4971,7 +5000,11 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
     saveChromaCS.pcv = csFull->pcv;
     saveChromaCS.picture = csFull->picture;
     saveChromaCS.area.repositionTo(csFull->area);
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    saveChromaCS.initStructData(MAX_INT, true);
+#else
     saveChromaCS.initStructData(MAX_INT, false, true);
+#endif
     tmpTU = &saveChromaCS.addTU(currArea, partitioner.chType);
 
     CompArea&  cbArea = tu.blocks[COMPONENT_Cb];
@@ -5036,7 +5069,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
 
       piReco.reconstruct(piPred, piResi, cs.slice->clpRng(compID));
 
-      if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getReshaper()
+      if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getLmcs()
 #if JVET_P1006_PICTURE_HEADER
         & slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
 #else
@@ -5115,7 +5148,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
           PelBuf            piResi = invColorTransResidual.bufs[compID];
 
           piReco.reconstruct(piPred, piResi, cs.slice->clpRng(compID));
-          if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getReshaper()
+          if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (m_pcEncCfg->getLmcs()
 #if JVET_P1006_PICTURE_HEADER
             & slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || (isChroma(compID) && m_pcEncCfg->getReshapeIntraCMD()))))
 #else
@@ -5287,7 +5320,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     saveCS.pcv      = cs.pcv;
     saveCS.picture  = cs.picture;
     saveCS.area.repositionTo( cs.area );
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+    saveCS.initStructData( MAX_INT, true );
+#else
     saveCS.initStructData( MAX_INT, false, true );
+#endif
 
     if( !currTU.cu->isSepTree() && currTU.cu->ispMode )
     {
@@ -5768,14 +5805,14 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
 {
   uint32_t orgMode = uiMode;
 
-  if (!pu.mhIntraFlag)
+  if (!pu.ciipFlag)
   std::swap(orgMode, pu.intraDir[chType]);
 
   m_CABACEstimator->resetBits();
 
   if( isLuma( chType ) )
   {
-    if (!pu.mhIntraFlag)
+    if (!pu.ciipFlag)
     {
       m_CABACEstimator->intra_luma_pred_mode(pu);
     }
@@ -5785,7 +5822,7 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
     m_CABACEstimator->intra_chroma_pred_mode( pu );
   }
 
-  if ( !pu.mhIntraFlag )
+  if ( !pu.ciipFlag )
   std::swap(orgMode, pu.intraDir[chType]);
 
   return m_CABACEstimator->getEstFracBits();
@@ -5860,6 +5897,7 @@ void IntraSearch::invalidateBestRdModeFirstColorSpace()
 }
 #endif
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode )
 {
   CHECK( pOrg.buf == 0, "Encoder DPCM called without original buffer" );
@@ -5899,6 +5937,7 @@ bool IntraSearch::useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, 
   return CU::isRDPCMEnabled( *pu.cu ) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
 }
 
+#endif
 template<typename T, size_t N>
 void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip)
 {

@@ -50,6 +50,16 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P0257_SCALING_LISTS_SPEEDUP_DEC              1 // JVET-P0257: Decoder speed-up for handling scaling matrices
+
+#define JVET_P2001_REMOVE_TRANSQUANT_BYPASS               1 // JVET-P2001: Remove transquant bypass - not supported in JVET-P2001 draft text
+
+#define JVET_P2001_SYNTAX_ORDER_MISMATCHES                1 // JVET-P2001: Rearrange SPS/PPS syntax to match JVET-P2001 draft text
+
+#define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
+
+#define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks
+
 #define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
 
 #define JVET_P0551_ALF_SLICE_BOUNDARY                     1 // JVET-P0053/P0157/P0551: Applying picturce boundary padding to slice boundaries
@@ -88,6 +98,9 @@
 
 #define JVET_P0588_SUFFIX_APS                             1 // JVET-P0588/P0452: suffix APS NUT
 
+#define JVET_P0590_SCALING_WINDOW                         1 // JVET-P0590: scaling window for RPR
+#define JVET_P0592_CHROMA_PHASE                           1 // JVET-P0592: chroma phase for RPR
+
 #define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
@@ -95,6 +108,8 @@
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
+
+#define JVET_P0217_PTL_SYNTAX_CLEANUP                     1 // JVET-P0217: On Profile, tier, and level syntax structure
 
 #define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
@@ -131,6 +146,8 @@
 #define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
+
+#define JVET_P0984_SEI_SUBPIC_LEVEL                       1 // JVET-P0984: Subpicture level information SEI
 
 #define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around
 
@@ -194,6 +211,8 @@
 
 #define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
 
+#define JVET_P0218_AUD_TID_AND_LAYERID                    1 // JVET-P0218: Set temporal ID and layer ID of Access Unit Delimiter
+
 #define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping
 
 #define JVET_P0063_LDT_SPLIT_FIX                          1 // JVET-P0063: Fix local dual tree on BT/TT split conditions in inter coding region
@@ -230,9 +249,20 @@
 #define MRG_SHARELIST_SHARSIZE                            32
 #endif
 
+#define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
+
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
+#define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling
+
+#define JVET_P0183                                        1 // JVET-P0183 : conditionally signal cpb_removal_delay_delta_enabled_flag
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
+
+#define JVET_P0450_SEI_SARI                               1 // Sample aspect ratio information SEI
+#define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
+
+#define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting several HEVC SEIs and add encoder control
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
@@ -264,16 +294,6 @@ typedef std::pair<int, int>  TrCost;
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif
 
-#ifndef ENABLE_WPP_PARALLELISM
-#define ENABLE_WPP_PARALLELISM                            0
-#endif
-#if ENABLE_WPP_PARALLELISM
-#ifndef ENABLE_WPP_STATIC_LINK
-#define ENABLE_WPP_STATIC_LINK                            0 // bug fix static link
-#endif
-#define PARL_WPP_MAX_NUM_THREADS                         16
-
-#endif
 #ifndef ENABLE_SPLIT_PARALLELISM
 #define ENABLE_SPLIT_PARALLELISM                          0
 #endif
@@ -367,7 +387,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
+#define ENABLE_SIMD_OPT_BCW                               1                                                 ///< SIMD optimization for Bcw
 #endif
 
 // End of SIMD optimizations
@@ -815,6 +835,7 @@ enum ScalingList1dStartIdx
   SCALING_LIST_1D_START_64x64  = 26,
 };
 #endif
+#if !JVET_P1004_REMOVE_BRICKS
 // Slice / Slice segment encoding modes
 enum SliceConstraint
 {
@@ -825,6 +846,7 @@ enum SliceConstraint
   SINGLE_BRICK_PER_SLICE = 4,          ///< each brick is coded as separate NAL unit (slice)
   NUMBER_OF_SLICE_CONSTRAINT_MODES = 5
 };
+#endif
 
 // For use with decoded picture hash SEI messages, generated by encoder.
 enum HashType
@@ -1489,13 +1511,13 @@ template<typename T>
 class dynamic_cache
 {
   std::vector<T*> m_cache;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t         m_cacheId;
 #endif
 
 public:
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   dynamic_cache()
   {
     static int cacheId = 0;
@@ -1527,7 +1549,7 @@ public:
     {
       ret = m_cache.back();
       m_cache.pop_back();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       CHECK( ret->cacheId != m_cacheId, "Putting item into wrong cache!" );
       CHECK( !ret->cacheUsed,           "Fetched an element that should've been in cache!!" );
 #endif
@@ -1537,7 +1559,7 @@ public:
       ret = new T;
     }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     ret->cacheId   = m_cacheId;
     ret->cacheUsed = false;
 
@@ -1547,7 +1569,7 @@ public:
 
   void cache( T* el )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );
     CHECK( el->cacheUsed,            "Putting cached item back into cache!" );
 
@@ -1559,7 +1581,7 @@ public:
 
   void cache( std::vector<T*>& vel )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( auto el : vel )
     {
       CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );

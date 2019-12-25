@@ -666,9 +666,12 @@ void SampleAdaptiveOffset::SAOProcess( CodingStructure& cs, SAOBlkParam* saoBlkP
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   xLosslessDisableProcess(cs);
+#endif
 }
 
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 void SampleAdaptiveOffset::xLosslessDisableProcess(CodingStructure& cs)
 {
   const PreCalcValues& pcv = *cs.pcv;
@@ -751,6 +754,7 @@ void SampleAdaptiveOffset::xLosslessSampleRestoration(CodingUnit& cu, const Comp
   }
 
 }
+#endif
 
 void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos,
   bool& isLeftAvail,
@@ -839,7 +843,11 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
 #endif
 
   // check cross tile flags
+#if JVET_P1004_REMOVE_BRICKS
+  const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
+#else
   const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossBricksEnabledFlag();
+#endif
   if (!isLoopFilterAcrossTilePPS)
   {
     isLeftAvail       = (!isLeftAvail)       ? false : CU::isSameTile(*cuCurr, *cuLeft);

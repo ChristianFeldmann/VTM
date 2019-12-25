@@ -100,14 +100,14 @@ void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1,
 #endif
 
   const int clipbd = clpRng.bd;
-  const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + g_GbiLog2WeightBase;
-  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_GbiLog2WeightBase);
+  const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + g_BcwLog2WeightBase;
+  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_BcwLog2WeightBase);
 
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
 #endif
 
-  const int8_t w1 = g_GbiWeightBase - w0;
+  const int8_t w1 = g_BcwWeightBase - w0;
 
   for (int h = 0; h < height; h++)
   {
@@ -354,12 +354,12 @@ void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy
   }
 }
 
-#if ENABLE_SIMD_OPT_GBI
-void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int gbiWeight)
+#if ENABLE_SIMD_OPT_BCW
+void removeWeightHighFreq(int16_t* dst, int dstStride, const int16_t* src, int srcStride, int width, int height, int shift, int bcwWeight)
 {
-  int normalizer = ((1 << 16) + (gbiWeight > 0 ? (gbiWeight >> 1) : -(gbiWeight >> 1))) / gbiWeight;
-  int weight0 = normalizer << g_GbiLog2WeightBase;
-  int weight1 = (g_GbiWeightBase - gbiWeight)*normalizer;
+  int normalizer = ((1 << 16) + (bcwWeight > 0 ? (bcwWeight >> 1) : -(bcwWeight >> 1))) / bcwWeight;
+  int weight0 = normalizer << g_BcwLog2WeightBase;
+  int weight1 = (g_BcwWeightBase - bcwWeight)*normalizer;
 #define REM_HF_INC  \
   src += srcStride; \
   dst += dstStride; \
@@ -436,7 +436,7 @@ PelBufferOps::PelBufferOps()
 
   copyBuffer = copyBufferCore;
   padding = paddingCore;
-#if ENABLE_SIMD_OPT_GBI
+#if ENABLE_SIMD_OPT_BCW
   removeWeightHighFreq8 = removeWeightHighFreq;
   removeWeightHighFreq4 = removeWeightHighFreq;
   removeHighFreq8 = removeHighFreq;
@@ -489,11 +489,11 @@ void paddingCore(Pel *ptr, int stride, int width, int height, int padSize)
   }
 }
 template<>
-void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t gbiIdx)
+void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBuf<const Pel> &other2, const ClpRng& clpRng, const int8_t bcwIdx)
 {
-  const int8_t w0 = getGbiWeight(gbiIdx, REF_PIC_LIST_0);
-  const int8_t w1 = getGbiWeight(gbiIdx, REF_PIC_LIST_1);
-  const int8_t log2WeightBase = g_GbiLog2WeightBase;
+  const int8_t w0 = getBcwWeight(bcwIdx, REF_PIC_LIST_0);
+  const int8_t w1 = getBcwWeight(bcwIdx, REF_PIC_LIST_1);
+  const int8_t log2WeightBase = g_BcwLog2WeightBase;
 
   const Pel* src0 = other1.buf;
   const Pel* src2 = other2.buf;

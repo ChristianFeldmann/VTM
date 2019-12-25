@@ -89,7 +89,9 @@ public:
   Position    sharedBndPos;
   Size        sharedBndSize;
 #endif
+#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   bool        isLossless;
+#endif
   const SPS *sps;
   const PPS *pps;
 #if JVET_P1006_PICTURE_HEADER
@@ -102,13 +104,16 @@ public:
   const PreCalcValues* pcv;
 
   CodingStructure(CUCache&, PUCache&, TUCache&);
-  void create( const UnitArea &_unit, const bool isTopLayer );
-  void create( const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer );
+
+  void create(const UnitArea &_unit, const bool isTopLayer, const bool isPLTused);
+  void create(const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer, const bool isPLTused);
+
   void destroy();
   void releaseIntermediateData();
 
   void rebindPicBufs();
-  void createCoeffs();
+
+  void createCoeffs(const bool isPLTused);
   void destroyCoeffs();
 
   void allocateVectorsAtPicLevel();
@@ -171,7 +176,11 @@ public:
   TreeType    treeType; //because partitioner can not go deep to tu and cu coding (e.g., addCU()), need another variable for indicating treeType
   ModeType    modeType;
 
+#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
+  void initStructData  (const int &QP = MAX_INT, const bool &skipMotBuf = false);
+#else
   void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
+#endif
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);
@@ -191,7 +200,7 @@ public:
 
 
 private:
-  void createInternals(const UnitArea& _unit, const bool isTopLayer);
+  void createInternals(const UnitArea& _unit, const bool isTopLayer, const bool isPLTused);
 
 public:
 
@@ -205,7 +214,8 @@ public:
 
   PLTBuf prevPLT;
   void resetPrevPLT(PLTBuf& prevPLT);
-  void reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
+  void reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM_CHANNEL_TYPE], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
+
 private:
 
   // needed for TU encoding
@@ -233,9 +243,9 @@ private:
 
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
-  bool   *m_runType  [MAX_NUM_COMPONENT];
+  bool   *m_runType[ MAX_NUM_CHANNEL_TYPE ];
 #if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *m_runLength[MAX_NUM_COMPONENT];
+  Pel    *m_runLength[MAX_NUM_CHANNEL_TYPE];
 #endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 

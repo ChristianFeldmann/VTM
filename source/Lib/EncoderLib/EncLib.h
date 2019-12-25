@@ -85,7 +85,7 @@ private:
 #endif
 
   // encoder search
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   InterSearch              *m_cInterSearch;                       ///< encoder search class
   IntraSearch              *m_cIntraSearch;                       ///< encoder search class
 #else
@@ -93,7 +93,7 @@ private:
   IntraSearch               m_cIntraSearch;                       ///< encoder search class
 #endif
   // coding tool
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   TrQuant                  *m_cTrQuant;                           ///< transform & quantization class
 #else
   TrQuant                   m_cTrQuant;                           ///< transform & quantization class
@@ -102,13 +102,13 @@ private:
   EncSampleAdaptiveOffset   m_cEncSAO;                            ///< sample adaptive offset class
   EncAdaptiveLoopFilter     m_cEncALF;
   HLSWriter                 m_HLSWriter;                          ///< CAVLC encoder
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   CABACEncoder             *m_CABACEncoder;
 #else
   CABACEncoder              m_CABACEncoder;
 #endif
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   EncReshape               *m_cReshaper;                        ///< reshaper class
 #else
   EncReshape                m_cReshaper;                        ///< reshaper class
@@ -117,7 +117,7 @@ private:
   // processing unit
   EncGOP                    m_cGOPEncoder;                        ///< GOP encoder
   EncSlice                  m_cSliceEncoder;                      ///< slice encoder
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   EncCu                    *m_cCuEncoder;                         ///< CU encoder
 #else
   EncCu                     m_cCuEncoder;                         ///< CU encoder
@@ -136,7 +136,7 @@ private:
   PicHeader                 m_picHeader;                          ///< picture header
 #endif
   // RD cost computation
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
   CtxCache                 *m_CtxCache;                           ///< buffer for temporarily stored context models
 #else
@@ -148,7 +148,7 @@ private:
 
   AUWriterIf*               m_AUWriterIf;
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int                       m_numCuEncStacks;
 #endif
 
@@ -175,9 +175,6 @@ public:
   SPS*                      getSPS( int spsId ) { return m_spsMap.getPS( spsId ); };
   APS**                     getApss() { return m_apss; }
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility
-#if ENABLE_WPP_PARALLELISM
-  std::vector<Ctx>          m_entropyCodingSyncContextStateVec;   ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#endif
 
 protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
@@ -193,7 +190,9 @@ protected:
   void  xInitPPSforLT(PPS& pps);
   void  xInitHrdParameters(SPS &sps);                 ///< initialize HRDParameters parameters
 
+#if !JVET_P1004_REMOVE_BRICKS
   void  xInitPPSforTiles  (PPS &pps);
+#endif
   void  xInitRPL(SPS &sps, bool isFieldCoding);           ///< initialize SPS from encoder options
 
 public:
@@ -219,7 +218,7 @@ public:
 
   AUWriterIf*             getAUWriterIf         ()              { return   m_AUWriterIf;           }
   PicList*                getListPic            ()              { return  &m_cListPic;             }
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   InterSearch*            getInterSearch        ( int jId = 0 ) { return  &m_cInterSearch[jId];    }
   IntraSearch*            getIntraSearch        ( int jId = 0 ) { return  &m_cIntraSearch[jId];    }
 
@@ -236,13 +235,13 @@ public:
   EncGOP*                 getGOPEncoder         ()              { return  &m_cGOPEncoder;          }
   EncSlice*               getSliceEncoder       ()              { return  &m_cSliceEncoder;        }
   EncHRD*                 getHRD                ()              { return  &m_encHRD;               }
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   EncCu*                  getCuEncoder          ( int jId = 0 ) { return  &m_cCuEncoder[jId];      }
 #else
   EncCu*                  getCuEncoder          ()              { return  &m_cCuEncoder;           }
 #endif
   HLSWriter*              getHLSWriter          ()              { return  &m_HLSWriter;            }
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   CABACEncoder*           getCABACEncoder       ( int jId = 0 ) { return  &m_CABACEncoder[jId];    }
 
   RdCost*                 getRdCost             ( int jId = 0 ) { return  &m_cRdCost[jId];         }
@@ -266,12 +265,12 @@ public:
   const PPS* getPPS( int Id ) { return m_ppsMap.getPS( Id); }
   const APS*             getAPS(int Id) { return m_apsMap.getPS(Id); }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   void                   setNumCuEncStacks( int n )             { m_numCuEncStacks = n; }
   int                    getNumCuEncStacks()              const { return m_numCuEncStacks; }
 #endif
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   EncReshape*            getReshaper( int jId = 0 )             { return  &m_cReshaper[jId]; }
 #else
   EncReshape*            getReshaper()                          { return  &m_cReshaper; }

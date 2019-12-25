@@ -115,7 +115,11 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
     const bool useJQP = ( abs(TU::getICTMode(tu)) == 2 );
 
     chromaQpOffset += tu.cs->pps->getQpOffset            ( useJQP ? JOINT_CbCr : compID );
+#if JVET_P1004_REMOVE_BRICKS
+    chromaQpOffset += tu.cu->slice->getSliceChromaQpDelta( useJQP ? JOINT_CbCr : compID );
+#else
     chromaQpOffset += tu.cs->slice->getSliceChromaQpDelta( useJQP ? JOINT_CbCr : compID );
+#endif
 
     chromaQpOffset += tu.cs->pps->getChromaQpOffsetListEntry( tu.cu->chromaQpAdj ).u.offset[int( useJQP ? JOINT_CbCr : compID ) - 1];
   }
@@ -385,9 +389,9 @@ void Quant::dequant(const TransformUnit &tu,
 
 #if JVET_P0365_SCALING_MATRIX_LFNST
 #if JVET_P1006_PICTURE_HEADER
-  const bool            disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool            disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #else
-  const bool            disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool            disableSMForLFNST = tu.cs->slice->getScalingListPresentFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #endif
   const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else
@@ -938,16 +942,69 @@ void Quant::processScalingListEnc( int *coeff, int *quantcoeff, int quantScales,
   }
 }
 
-/** set quantized matrix coefficient for decode
- * \param coeff quantaized matrix address
- * \param dequantcoeff quantaized matrix address
- * \param invQuantScales IQ(QP%6))
- * \param height height
- * \param width width
- * \param ratio ratio for upscale
- * \param sizuNum matrix size
- * \param dc dc parameter
- */
+#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
+void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizeNum, uint32_t dc)
+{
+  if (height != width)
+  {
+    int ratioWH = (height > width  ) ? (height / width  ) : (width   / height);
+    int ratioH  = (height / sizeNum) ? (height / sizeNum) : (sizeNum / height);
+    int ratioW  = (width  / sizeNum) ? (width  / sizeNum) : (sizeNum / width );
+    if (height > width)
+    {
+      for (uint32_t j = 0; j < height; j++)
+      {
+        int coeffLineSep        = (j / ratioH) * sizeNum;
+        int dequantCoeffLineSep = j * width;
+        for (uint32_t i = 0; i < width; i++)
+        {
+          if (i >= JVET_C0024_ZERO_OUT_TH || j >= JVET_C0024_ZERO_OUT_TH)
+          {
+            dequantcoeff[dequantCoeffLineSep + i] = 0;
+            continue;
+          }
+          dequantcoeff[dequantCoeffLineSep + i] = invQuantScales * coeff[coeffLineSep + ((i * ratioWH) / ratioH)];
+        }
+      }
+    }
+    else  //ratioH < ratioW
+    {
+      for (uint32_t j = 0; j < height; j++)
+      {
+        int coeffLineSep        = ((j * ratioWH) / ratioW) * sizeNum;
+        int dequantCoeffLineSep = j * width;
+        for (uint32_t i = 0; i < width; i++)
+        {
+          if (i >= JVET_C0024_ZERO_OUT_TH || j >= JVET_C0024_ZERO_OUT_TH)
+          {
+            dequantcoeff[dequantCoeffLineSep + i] = 0;
+            continue;
+          }
+          dequantcoeff[dequantCoeffLineSep + i] = invQuantScales * coeff[coeffLineSep + (i / ratioW)];
+        }
+      }
+    }
+    int largeOne = (width > height) ? width : height;
+    if (largeOne > 8)
+      dequantcoeff[0] = invQuantScales * dc;
+    return;
+  }
+  for (uint32_t j = 0; j<height; j++)
+  {
+    int coeffLineSep        = (j / ratio) * sizeNum;
+    int dequantCoeffLineSep = j * width;
+    for (uint32_t i = 0; i<width; i++)
+    {
+      dequantcoeff[dequantCoeffLineSep + i] = invQuantScales * coeff[coeffLineSep + i / ratio];
+    }
+  }
+
+  if (ratio > 1)
+  {
+    dequantcoeff[0] = invQuantScales * dc;
+  }
+}
+#else
 void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc)
 {
   if (height != width)
@@ -993,6 +1050,7 @@ void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQ
     dequantcoeff[0] = invQuantScales * dc;
   }
 }
+#endif
 
 /** initialization process of scaling list array
  */
@@ -1103,9 +1161,9 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
 
 #if JVET_P0365_SCALING_MATRIX_LFNST
 #if JVET_P1006_PICTURE_HEADER
-    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+    const bool disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #else
-    const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+    const bool disableSMForLFNST = tu.cs->slice->getScalingListPresentFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #endif
     const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, useTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else
@@ -1197,9 +1255,9 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
 #if JVET_P0365_SCALING_MATRIX_LFNST
 #if JVET_P1006_PICTURE_HEADER
-  const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #else
-  const bool disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool disableSMForLFNST = tu.cs->slice->getScalingListPresentFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #endif
   const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0), tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else
@@ -1255,9 +1313,9 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
   const int            scalingListType                = getScalingListType(tu.cu->predMode, compID);
 #if JVET_P0365_SCALING_MATRIX_LFNST
 #if JVET_P1006_PICTURE_HEADER
-  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool           disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #else
-  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool           disableSMForLFNST = tu.cs->slice->getScalingListPresentFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #endif
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else
@@ -1341,9 +1399,9 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   const int            scalingListType        = getScalingListType(tu.cu->predMode, compID);
 #if JVET_P0365_SCALING_MATRIX_LFNST
 #if JVET_P1006_PICTURE_HEADER
-  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool           disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #else
-  const bool           disableSMForLFNST = tu.cs->sps->getScalingListFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+  const bool           disableSMForLFNST = tu.cs->slice->getScalingListPresentFlag() ? tu.cs->slice->getscalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
 #endif
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, tu.cu->lfnstIdx > 0, disableSMForLFNST);
 #else

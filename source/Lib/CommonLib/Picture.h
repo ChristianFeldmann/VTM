@@ -50,13 +50,7 @@
 #include "MCTS.h"
 #include <deque>
 
-#include "CommonLib/InterpolationFilter.h"
-
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-class SyncObj;
-#endif
+#if ENABLE_SPLIT_PARALLELISM
 
 #define CURR_THREAD_ID -1
 
@@ -76,34 +70,9 @@ public:
   void     setSplitThreadId( const int tId = CURR_THREAD_ID );
   unsigned getNumSplitThreads() const { return m_numSplitThreads; };
 #endif
-#if ENABLE_WPP_PARALLELISM
-  unsigned getWppDataId  ( int lId = CURR_THREAD_ID ) const;
-  unsigned getWppThreadId() const;
-  void     setWppThreadId( const int tId = CURR_THREAD_ID );
-#endif
   unsigned getDataId     () const;
   bool init              ( const int ctuYsize, const int ctuXsize, const int numWppThreadsRunning, const int numWppExtraLines, const int numSplitThreads );
   int  getNumPicInstances() const;
-#if ENABLE_WPP_PARALLELISM
-  void setReady          ( const int ctuPosX, const int ctuPosY );
-  void wait              ( const int ctuPosX, const int ctuPosY );
-
-private:
-  bool getNextCtu( Position& pos, int ctuLine, int offset );
-
-private:
-  int m_firstNonFinishedLine;
-  int m_numWppThreads;
-  int m_numWppThreadsRunning;
-  int m_numWppDataInstances;
-  int m_ctuYsize;
-  int m_ctuXsize;
-
-  std::vector<int>         m_LineDone;
-  std::vector<bool>        m_LineProc;
-  std::mutex               m_mutex;
-  std::vector<SyncObj*>    m_SyncObjs;
-#endif
 #if ENABLE_SPLIT_PARALLELISM
 
   int   m_numSplitThreads;
@@ -118,6 +87,7 @@ class AQpLayer;
 typedef std::list<SEI*> SEIMessages;
 
 
+#if !JVET_P1004_REMOVE_BRICKS
 class Brick
 {
 private:
@@ -185,6 +155,7 @@ struct BrickMap
   void initBrickMap( const SPS& sps, const PPS& pps );
   void initCtuBsRsAddrMap();
 };
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -261,12 +232,52 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
-  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
+#if JVET_P0590_SCALING_WINDOW
+#if JVET_P0592_CHROMA_PHASE
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
+#else
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, 
+                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
+#endif
 
+  static void   rescalePicture( const std::pair<int, int> scalingRatio, 
+                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
+                                const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
+#if JVET_P0592_CHROMA_PHASE
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
+#else
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false );
+#endif
+#elif JVET_P0592_CHROMA_PHASE
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                                const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride,
+                                Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight,
+                                SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
+
+  static void   rescalePicture( const std::pair<int, int> scalingRatio,
+                                const CPelUnitBuf& beforeScaling, const Window& confBefore,
+                                const PelUnitBuf& afterScaling, const Window& confAfter,
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
+#else
+  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
   static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
+#endif
 
 private:
   Window        m_conformanceWindow;
+#if JVET_P0590_SCALING_WINDOW
+  Window        m_scalingWindow;
+#endif
 
 public:
   bool m_bIsBorderExtended;
@@ -295,11 +306,7 @@ public:
   int  m_ctuNums;
 
 #if ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-  PelStorage m_bufs[( PARL_SPLIT_MAX_NUM_JOBS * PARL_WPP_MAX_NUM_THREADS )][NUM_PIC_TYPES];
-#else
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];
-#endif
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
@@ -316,15 +323,20 @@ public:
 
   uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
   uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
-
   Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
   const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
+#if JVET_P0590_SCALING_WINDOW
+  Window&            getScalingWindow()                                              { return  m_scalingWindow; }
+  const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
+#endif
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
+#if !JVET_P1004_REMOVE_BRICKS
   BrickMap*     brickMap;
+#endif
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
@@ -336,11 +348,8 @@ private:
 #if ENABLE_SPLIT_PARALLELISM
 public:
   void finishParallelPart   ( const UnitArea& ctuArea );
-#if ENABLE_WPP_PARALLELISM
-  void finishCtuPart        ( const UnitArea& ctuArea );
 #endif
-#endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 public:
   Scheduler                  scheduler;
 #endif

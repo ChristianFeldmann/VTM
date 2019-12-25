@@ -103,7 +103,11 @@ void AdaptiveLoopFilter::getAlfBoundary( const CodingStructure& cs, int posX, in
       topBry = posY;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    if ( !pps.getLoopFilterAcrossTilesEnabledFlag() && !CU::isSameTile( *currCtu, *prevCtu ) )
+#else
     if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *prevCtu ) )
+#endif
     {
       topBry = posY;
     }
@@ -124,7 +128,11 @@ void AdaptiveLoopFilter::getAlfBoundary( const CodingStructure& cs, int posX, in
       botBry = posY + ctuSize;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    if ( !pps.getLoopFilterAcrossTilesEnabledFlag() && !CU::isSameTile( *currCtu, *nextCtu ) )
+#else
     if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *nextCtu ) )
+#endif
     {
       botBry = posY + ctuSize;
     }
@@ -145,7 +153,11 @@ void AdaptiveLoopFilter::getAlfBoundary( const CodingStructure& cs, int posX, in
       leftBry = posX;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    if ( !pps.getLoopFilterAcrossTilesEnabledFlag() && !CU::isSameTile( *currCtu, *prevCtu ) )
+#else
     if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *prevCtu ) )
+#endif
     {
       leftBry = posX;
     }
@@ -166,7 +178,11 @@ void AdaptiveLoopFilter::getAlfBoundary( const CodingStructure& cs, int posX, in
       rightBry = posX + ctuSize;
     }
 
+#if JVET_P1004_REMOVE_BRICKS
+    if ( !pps.getLoopFilterAcrossTilesEnabledFlag() && !CU::isSameTile( *currCtu, *nextCtu ) )
+#else
     if ( !pps.getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameBrick( *currCtu, *nextCtu ) )
+#endif
     {
       rightBry = posX + ctuSize;
     }
@@ -381,7 +397,12 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
     const Position prevCtuPos(xPos, yPos - ctuSize);
     const CodingUnit *prevCtu = cs.getCU(prevCtuPos, CHANNEL_TYPE_LUMA);
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_P1004_REMOVE_BRICKS
+    if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu)) || 
+        (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *prevCtu)))
+#else
     if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu))
+#endif
 #else
     if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
 #endif
@@ -396,7 +417,12 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
     const Position nextCtuPos(xPos, yPos + ctuSize);
     const CodingUnit *nextCtu = cs.getCU(nextCtuPos, CHANNEL_TYPE_LUMA);
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_P1004_REMOVE_BRICKS
+    if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu)) || 
+        (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *nextCtu)))
+#else
     if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu))
+#endif
 #else
     if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
 #endif
@@ -411,7 +437,12 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
     const Position prevCtuPos(xPos - ctuSize, yPos);
     const CodingUnit *prevCtu = cs.getCU(prevCtuPos, CHANNEL_TYPE_LUMA);
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_P1004_REMOVE_BRICKS
+    if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu)) || 
+        (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *prevCtu)))
+#else
     if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu))
+#endif
 #else
     if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
 #endif
@@ -426,7 +457,12 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
     const Position nextCtuPos(xPos + ctuSize, yPos);
     const CodingUnit *nextCtu = cs.getCU(nextCtuPos, CHANNEL_TYPE_LUMA);
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_P1004_REMOVE_BRICKS
+    if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu)) || 
+        (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *nextCtu)))
+#else
     if (!pps->getLoopFilterAcrossBricksEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu))
+#endif
 #else
     if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
 #endif
@@ -528,11 +564,13 @@ const int AdaptiveLoopFilter::m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_
 
 void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 {
+#if !JVET_P1004_REMOVE_BRICKS
   if (!cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y) && !cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) && !cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr))
   {
     return;
   }
 
+#endif
 
   // set clipping range
   m_clpRngs = cs.slice->getClpRngs();
@@ -543,8 +581,13 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
     m_ctuEnableFlag[compIdx] = cs.picture->getAlfCtuEnableFlag( compIdx );
     m_ctuAlternative[compIdx] = cs.picture->getAlfCtuAlternativeData( compIdx );
   }
+#if JVET_P1004_REMOVE_BRICKS
+  short* alfCtuFilterIndex = nullptr;
+  uint32_t lastSliceIdx = 0xFFFFFFFF;
+#else
   reconstructCoeffAPSs(cs, true, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) || cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), false);
   short* alfCtuFilterIndex = cs.slice->getPic()->getAlfCtbFilterIndex();
+#endif
 
   PelUnitBuf recYuv = cs.getRecoBuf();
   m_tempBuf.copyFrom( recYuv );
@@ -568,6 +611,27 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
   {
     for( int xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth )
     {
+#if JVET_P1004_REMOVE_BRICKS
+      // get first CU in CTU
+      const CodingUnit *cu = cs.getCU( Position(xPos, yPos), CHANNEL_TYPE_LUMA );
+
+      // skip this CTU if ALF is disabled
+      if (!cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Y) && !cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) && !cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr))
+      {
+        ctuIdx++;
+        continue;
+      }
+
+      // reload ALF APS each time the slice changes during raster scan filtering
+      if(ctuIdx == 0 || lastSliceIdx != cu->slice->getSliceID() || alfCtuFilterIndex==nullptr)
+      {
+        cs.slice = cu->slice;
+        reconstructCoeffAPSs(cs, true, cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) || cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), false);
+        alfCtuFilterIndex = cu->slice->getPic()->getAlfCtbFilterIndex();
+      }
+      lastSliceIdx = cu->slice->getSliceID();
+
+#endif
       const int width = ( xPos + pcv.maxCUWidth > pcv.lumaWidth ) ? ( pcv.lumaWidth - xPos ) : pcv.maxCUWidth;
       const int height = ( yPos + pcv.maxCUHeight > pcv.lumaHeight ) ? ( pcv.lumaHeight - yPos ) : pcv.maxCUHeight;
       bool ctuEnableFlag = m_ctuEnableFlag[COMPONENT_Y][ctuIdx];
@@ -648,6 +712,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
                 , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+                , m_alfVBLumaPos
 #else
                 , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -673,6 +739,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
                   , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+                   , m_alfVBChmaPos );
 #else
                   , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
 #endif
@@ -717,6 +785,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
           , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBLumaPos ), alfBryList
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+          , m_alfVBLumaPos
 #else
           , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
 #endif
@@ -741,6 +811,8 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
             , ( ( yPos + pcv.maxCUHeight >= pcv.lumaHeight ) ? pcv.lumaHeight : m_alfVBChmaPos ), alfBryList );
 #endif
+#elif JVET_P0158_ALIGN_ALF_VB
+            , m_alfVBChmaPos);
 #else
             , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
 #endif
@@ -970,11 +1042,19 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
 #if JVET_O0625_ALF_PADDING
       m_deriveClassificationBlk( classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
+#if JVET_P0158_ALIGN_ALF_VB
+        , m_alfVBLumaPos, alfBryList );
+#else
         , ( ( i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight ) ? m_picHeight : m_alfVBLumaPos ), alfBryList );
+#endif
 #else
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
+#if JVET_P0158_ALIGN_ALF_VB
+        , m_alfVBLumaPos
+#else
         , ((i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
+#endif
       );
 #endif
     }

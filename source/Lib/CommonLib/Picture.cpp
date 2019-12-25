@@ -38,93 +38,10 @@
 #include "Picture.h"
 #include "SEI.h"
 #include "ChromaFormat.h"
-#if ENABLE_WPP_PARALLELISM
-#if ENABLE_WPP_STATIC_LINK
-#include <atomic>
-#else
-#include <condition_variable>
-#endif
-#endif
+#include "CommonLib/InterpolationFilter.h"
 
 
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-#if ENABLE_WPP_STATIC_LINK
-class SyncObj
-{
-public:
-  SyncObj() : m_Val(-1) {}
-  ~SyncObj()            {}
-
-  void reset()
-  {
-    m_Val = -1;
-  }
-
-  bool isReady( int64_t val ) const
-  {
-//    std::cout << "is ready m_Val " << m_Val << " val " << val << std::endl;
-    return m_Val >= val;
-  }
-
-  void wait( int64_t idx, int ctuPosY  )
-  {
-    while( ! isReady( idx ) )
-    {
-    }
-  }
-
-  void set( int64_t val, int ctuPosY)
-  {
-    m_Val = val;
-  }
-
-private:
-  std::atomic<int>         m_Val;
-};
-#else
-class SyncObj
-{
-public:
-  SyncObj() : m_Val(-1) {}
-  ~SyncObj()            {}
-
-  void reset()
-  {
-    std::unique_lock< std::mutex > lock( m_mutex );
-
-    m_Val = -1;
-  }
-
-  bool isReady( int64_t val ) const
-  {
-    return m_Val >= val;
-  }
-
-  void wait( int64_t idx, int ctuPosY  )
-  {
-    std::unique_lock< std::mutex > lock( m_mutex );
-
-    while( ! isReady( idx ) )
-    {
-      m_cv.wait( lock );
-    }
-  }
-
-  void set( int64_t val, int ctuPosY)
-  {
-    std::unique_lock< std::mutex > lock( m_mutex );
-    m_Val = val;
-    m_cv.notify_all();
-  }
-
-private:
-  int64_t                 m_Val;
-  std::condition_variable m_cv;
-  std::mutex              m_mutex;
-};
-#endif
-#endif
+#if ENABLE_SPLIT_PARALLELISM
 
 int g_wppThreadId( 0 );
 #pragma omp threadprivate(g_wppThreadId)
@@ -138,13 +55,6 @@ int g_splitJobId( 0 );
 #endif
 
 Scheduler::Scheduler() :
-#if ENABLE_WPP_PARALLELISM
-  m_numWppThreads( 1 ),
-  m_numWppDataInstances( 1 )
-#endif
-#if ENABLE_SPLIT_PARALLELISM && ENABLE_WPP_PARALLELISM
-  ,
-#endif
 #if ENABLE_SPLIT_PARALLELISM
   m_numSplitThreads( 1 )
 #endif
@@ -153,13 +63,6 @@ Scheduler::Scheduler() :
 
 Scheduler::~Scheduler()
 {
-#if ENABLE_WPP_PARALLELISM
-  for( auto & so : m_SyncObjs )
-  {
-    delete so;
-  }
-  m_SyncObjs.clear();
-#endif
 }
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -227,37 +130,6 @@ void Scheduler::setSplitThreadId( const int tId )
 #endif
 
 
-#if ENABLE_WPP_PARALLELISM
-unsigned Scheduler::getWppDataId( int lID ) const
-{
-  const int tId = lID == CURR_THREAD_ID ? g_wppThreadId : lID;
-
-#if ENABLE_SPLIT_PARALLELISM
-  if( m_numSplitThreads > 1 )
-  {
-    return tId * NUM_RESERVERD_SPLIT_JOBS;
-  }
-  else
-  {
-    return tId;
-  }
-#else
-  return tId;
-#endif
-}
-
-unsigned Scheduler::getWppThreadId() const
-{
-  return g_wppThreadId;
-}
-
-void Scheduler::setWppThreadId( const int tId )
-{
-  g_wppThreadId = tId == CURR_THREAD_ID ? omp_get_thread_num() : tId;
-
-  CHECK( g_wppThreadId >= PARL_WPP_MAX_NUM_THREADS, "The WPP thread ID " << g_wppThreadId << " is invalid!" );
-}
-#endif
 
 unsigned Scheduler::getDataId() const
 {
@@ -265,12 +137,6 @@ unsigned Scheduler::getDataId() const
   if( m_numSplitThreads > 1 )
   {
     return getSplitDataId();
-  }
-#endif
-#if ENABLE_WPP_PARALLELISM
-  if( m_numWppThreads > 1 )
-  {
-    return getWppDataId();
   }
 #endif
   return 0;
@@ -281,44 +147,6 @@ bool Scheduler::init( const int ctuYsize, const int ctuXsize, const int numWppTh
 #if ENABLE_SPLIT_PARALLELISM
   m_numSplitThreads = numSplitThreads;
 #endif
-#if ENABLE_WPP_PARALLELISM
-  m_firstNonFinishedLine    = 0;
-  m_numWppThreadsRunning    = 1;
-  m_numWppDataInstances     = numWppThreadsRunning+numWppExtraLines;
-  m_numWppThreads           = numWppThreadsRunning;
-  m_ctuYsize                = ctuYsize;
-  m_ctuXsize                = ctuXsize;
-
-  if( m_SyncObjs.size() == 0 )
-  {
-    m_SyncObjs.reserve( ctuYsize );
-    for( int i = (int)m_SyncObjs.size(); i < ctuYsize; i++ )
-    {
-      m_SyncObjs.push_back( new SyncObj );
-    }
-  }
-  else
-  {
-    CHECK( m_SyncObjs.size() != ctuYsize, "");
-  }
-
-  for( int i = 0; i < ctuYsize; i++ )
-  {
-    m_SyncObjs[i]->reset();
-  }
-
-  if( m_numWppThreads != m_numWppDataInstances )
-  {
-    m_LineDone.clear();
-    m_LineDone.resize(ctuYsize, -1);
-
-    m_LineProc.clear();
-    m_LineProc.resize(ctuYsize, false);
-
-    m_SyncObjs[0]->set(0,0);
-    m_LineProc[0]=true;
-  }
-#endif
 
   return true;
 }
@@ -328,107 +156,11 @@ int Scheduler::getNumPicInstances() const
 {
 #if !ENABLE_SPLIT_PARALLELISM
   return 1;
-#elif !ENABLE_WPP_PARALLELISM
-  return ( m_numSplitThreads > 1 ? m_numSplitThreads : 1 );
 #else
-  return m_numSplitThreads > 1 ? m_numWppDataInstances * m_numSplitThreads : 1;
+  return ( m_numSplitThreads > 1 ? m_numSplitThreads : 1 );
 #endif
 }
 
-#if ENABLE_WPP_PARALLELISM
-void Scheduler::wait( const int ctuPosX, const int ctuPosY )
-{
-  if( m_numWppThreads == m_numWppDataInstances )
-  {
-    if( ctuPosY > 0 && ctuPosX+1 < m_ctuXsize)
-    {
-      m_SyncObjs[ctuPosY-1]->wait( ctuPosX+1, ctuPosY-1 );
-    }
-    return;
-  }
-
-  m_SyncObjs[ctuPosY]->wait( ctuPosX, ctuPosY );
-}
-
-void Scheduler::setReady(const int ctuPosX, const int ctuPosY)
-{
-  if( m_numWppThreads == m_numWppDataInstances )
-  {
-    m_SyncObjs[ctuPosY]->set( ctuPosX, ctuPosY);
-    return;
-  }
-
-  std::unique_lock< std::mutex > lock( m_mutex );
-
-  if( ctuPosX+1 == m_ctuXsize )
-  {
-    m_LineProc[ctuPosY] = true; //prevent line from be further evaluated
-    m_LineDone[ctuPosY] = std::numeric_limits<int>::max();
-    m_firstNonFinishedLine = ctuPosY+1;
-  }
-  else
-  {
-    m_LineDone[ctuPosY] = ctuPosX;
-    m_LineProc[ctuPosY] = false;    // mark currently not processed
-  }
-
-  int lastLine = m_firstNonFinishedLine + m_numWppDataInstances;
-  lastLine = std::min( m_ctuYsize, lastLine )-1-m_firstNonFinishedLine;
-
-  m_numWppThreadsRunning--;
-
-  Position pos;
-  //if the current encoder is the last
-  const bool c1 = (ctuPosY == m_firstNonFinishedLine + m_numWppThreads - 1);
-  const bool c2 = (ctuPosY+1 <= m_firstNonFinishedLine+lastLine);
-  const bool c3 = (ctuPosX >= m_ctuXsize/4);
-  if( c1 && c2 && c3 && getNextCtu( pos, ctuPosY+1, 4 ) )
-  {
-    //  try to continue in the next row
-    // go on in the current line
-    m_SyncObjs[pos.y]->set(pos.x, pos.y);
-    m_numWppThreadsRunning++;
-  }
-  else if( getNextCtu( pos, ctuPosY, 1 ) )
-  {
-    //  try to continue in the same row
-    // go on in the current line
-    m_SyncObjs[pos.y]->set(pos.x, pos.y);
-    m_numWppThreadsRunning++;
-  }
-  for( int i = m_numWppThreadsRunning; i < m_numWppThreads; i++ )
-  {
-   // just go and get a job
-    for( int y = 0; y <= lastLine; y++ )
-    {
-      if( getNextCtu( pos, m_firstNonFinishedLine+y, 1 ))
-      {
-        m_SyncObjs[pos.y]->set(pos.x, pos.y);
-        m_numWppThreadsRunning++;
-        break;
-      }
-    }
-  }
-}
-
-
-bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
-{
-  int x = m_LineDone[ctuLine] + 1;
-  if( ! m_LineProc[ctuLine] )
-  {
-    int maxXOffset = x+offset >= m_ctuXsize ? m_ctuXsize-1 : x+offset;
-    if( (ctuLine == 0 || m_LineDone[ctuLine-1]>=maxXOffset) && (x==0 || m_LineDone[ctuLine]>=+x-1))
-    {
-      m_LineProc[ctuLine] = true;
-      pos.x = x; pos.y = ctuLine;
-      return true;
-    }
-  }
-  return false;
-}
-
-#endif
 #endif
 
 
@@ -437,6 +169,7 @@ bool Scheduler::getNextCtu( Position& pos, int ctuLine, int offset)
 // ---------------------------------------------------------------------------
 
 
+#if !JVET_P1004_REMOVE_BRICKS
 Brick::Brick()
 : m_widthInCtus     (0)
 , m_heightInCtus    (0)
@@ -780,10 +513,13 @@ uint32_t BrickMap::getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool add
   return subStrm;
 }
 
+#endif
 
 Picture::Picture()
 {
+#if !JVET_P1004_REMOVE_BRICKS
   brickMap             = nullptr;
+#endif
   cs                   = nullptr;
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
@@ -836,11 +572,7 @@ void Picture::create(const ChromaFormat &_chromaFormat, const Size &size, const 
 void Picture::destroy()
 {
 #if ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-  for( int jId = 0; jId < ( PARL_SPLIT_MAX_NUM_THREADS * PARL_WPP_MAX_NUM_THREADS ); jId++ )
-#else
   for( int jId = 0; jId < PARL_SPLIT_MAX_NUM_THREADS; jId++ )
-#endif
 #endif
   for (uint32_t t = 0; t < NUM_PIC_TYPES; t++)
   {
@@ -866,12 +598,14 @@ void Picture::destroy()
   }
   SEIs.clear();
 
+#if !JVET_P1004_REMOVE_BRICKS
   if ( brickMap )
   {
     brickMap->destroy();
     delete brickMap;
     brickMap = nullptr;
   }
+#endif
   if (m_spliceIdx)
   {
     delete[] m_spliceIdx;
@@ -966,12 +700,14 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   SEIs.clear();
   clearSliceBuffer();
 
+#if !JVET_P1004_REMOVE_BRICKS
   if( brickMap )
   {
     brickMap->destroy();
     delete brickMap;
     brickMap = nullptr;
   }
+#endif
 
   const ChromaFormat chromaFormatIDC = sps.getChromaFormatIdc();
   const int          iWidth = pps.getPicWidthInLumaSamples();
@@ -985,7 +721,7 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   {
     cs = new CodingStructure( g_globalUnitCache.cuCache, g_globalUnitCache.puCache, g_globalUnitCache.tuCache );
     cs->sps = &sps;
-    cs->create( chromaFormatIDC, Area( 0, 0, iWidth, iHeight ), true );
+    cs->create(chromaFormatIDC, Area(0, 0, iWidth, iHeight), true, (bool)sps.getPLTMode());
   }
 
   cs->picture = this;
@@ -1001,9 +737,14 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   cs->scalinglistAps = scalingListAps;
   cs->pcv     = pps.pcv;
   m_conformanceWindow = pps.getConformanceWindow();
+#if JVET_P0590_SCALING_WINDOW
+  m_scalingWindow = pps.getScalingWindow();
+#endif
 
+#if !JVET_P1004_REMOVE_BRICKS
   brickMap = new BrickMap;
   brickMap->create( sps, pps );
+#endif
   if (m_spliceIdx == NULL)
   {
     m_ctuNums = cs->pcv->sizeInCtus;
@@ -1025,6 +766,9 @@ void Picture::allocateNewSlice()
 
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
+#if JVET_P0218_AUD_TID_AND_LAYERID
+  slice.setVPS( cs->vps);
+#endif
   if(slices.size()>=2)
   {
     slice.copySliceInfo( slices[slices.size()-2] );
@@ -1036,6 +780,9 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
+#if JVET_P0218_AUD_TID_AND_LAYERID
+  p->setVPS(cs->vps);
+#endif
   p->setAlfAPSs(cs->alfApss);
 
 #if !JVET_P1006_PICTURE_HEADER
@@ -1049,6 +796,9 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
+#if JVET_P0218_AUD_TID_AND_LAYERID
+  pTmp->setVPS(0);
+#endif
   memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
 
 #if !JVET_P1006_PICTURE_HEADER
@@ -1084,20 +834,6 @@ void Picture::finishParallelPart( const UnitArea& area )
   }
 }
 
-#if ENABLE_WPP_PARALLELISM
-void Picture::finishCtuPart( const UnitArea& ctuArea )
-{
-  const UnitArea clipdArea = clipArea( ctuArea, *this );
-  const int      sourceID  = scheduler.getSplitPicId( 0 );
-  // distribute the reconstruction across all of the parallel workers
-  for( int dataId = 0; dataId < scheduler.getNumPicInstances(); dataId++ )
-  {
-    if( dataId == sourceID ) continue;
-
-    M_BUFS( dataId, PIC_RECONSTRUCTION ).subBuf( clipdArea ).copyFrom( M_BUFS( sourceID, PIC_RECONSTRUCTION ).subBuf( clipdArea ) );
-  }
-}
-#endif
 
 #endif
 
@@ -1253,7 +989,152 @@ const TFilterCoeff DownsamplingFilterSRC[8][16][12] =
     }
 };
 
+#if JVET_P0590_SCALING_WINDOW
+#if JVET_P0592_CHROMA_PHASE
+void Picture::sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                              const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                              const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                              const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                              const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag )
+#else
+void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
+                              const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                              const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                              const int bitDepth, const bool useLumaFilter, const bool downsampling )
+#endif
+{
+  const Pel* orgSrc = beforeScale.buf;
+  const int orgWidth = beforeScale.width;
+  const int orgHeight = beforeScale.height;
+  const int orgStride = beforeScale.stride;
+
+  Pel* scaledSrc = afterScale.buf;
+  const int scaledWidth = afterScale.width;
+  const int scaledHeight = afterScale.height;
+  const int scaledStride = afterScale.stride;
+
+  if( orgWidth == scaledWidth && orgHeight == scaledHeight && scalingRatio == SCALE_1X && !beforeScaleLeftOffset && !beforeScaleTopOffset && !afterScaleLeftOffset && !afterScaleTopOffset )
+  {
+    for( int j = 0; j < orgHeight; j++ )
+    {
+      memcpy( scaledSrc + j * scaledStride, orgSrc + j * orgStride, sizeof( Pel ) * orgWidth );
+    }
+
+    return;
+  }
+
+  const TFilterCoeff* filterHor = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
+  const TFilterCoeff* filterVer = useLumaFilter ? &InterpolationFilter::m_lumaFilter[0][0] : &InterpolationFilter::m_chromaFilter[0][0];
+  const int numFracPositions = useLumaFilter ? 15 : 31;
+  const int numFracShift = useLumaFilter ? 4 : 5;
+  const int posShiftX = SCALE_RATIO_BITS - numFracShift + compScale.first;
+  const int posShiftY = SCALE_RATIO_BITS - numFracShift + compScale.second;
+#if JVET_P0592_CHROMA_PHASE
+  int addX = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << SCALE_RATIO_BITS ) + ( ( int( 1 - horCollocatedPositionFlag ) * 8 * ( scalingRatio.first - SCALE_1X.first ) + ( 1 << ( 2 + compScale.first ) ) ) >> ( 3 + compScale.first ) );
+  int addY = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << SCALE_RATIO_BITS ) + ( ( int( 1 - verCollocatedPositionFlag ) * 8 * ( scalingRatio.second - SCALE_1X.second ) + ( 1 << ( 2 + compScale.second ) ) ) >> ( 3 + compScale.second ) );
+#else
+  int addX = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << SCALE_RATIO_BITS );
+  int addY = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << SCALE_RATIO_BITS );
+#endif
+
+  if( downsampling )
+  {
+    int verFilter = 0;
+    int horFilter = 0;
+
+    if( scalingRatio.first > ( 15 << SCALE_RATIO_BITS ) / 4 )   horFilter = 7;
+    else if( scalingRatio.first > ( 20 << SCALE_RATIO_BITS ) / 7 )   horFilter = 6;
+    else if( scalingRatio.first > ( 5 << SCALE_RATIO_BITS ) / 2 )   horFilter = 5;
+    else if( scalingRatio.first > ( 2 << SCALE_RATIO_BITS ) )   horFilter = 4;
+    else if( scalingRatio.first > ( 5 << SCALE_RATIO_BITS ) / 3 )   horFilter = 3;
+    else if( scalingRatio.first > ( 5 << SCALE_RATIO_BITS ) / 4 )   horFilter = 2;
+    else if( scalingRatio.first > ( 20 << SCALE_RATIO_BITS ) / 19 )   horFilter = 1;
+
+    if( scalingRatio.second > ( 15 << SCALE_RATIO_BITS ) / 4 )   verFilter = 7;
+    else if( scalingRatio.second > ( 20 << SCALE_RATIO_BITS ) / 7 )   verFilter = 6;
+    else if( scalingRatio.second > ( 5 << SCALE_RATIO_BITS ) / 2 )   verFilter = 5;
+    else if( scalingRatio.second > ( 2 << SCALE_RATIO_BITS ) )   verFilter = 4;
+    else if( scalingRatio.second > ( 5 << SCALE_RATIO_BITS ) / 3 )   verFilter = 3;
+    else if( scalingRatio.second > ( 5 << SCALE_RATIO_BITS ) / 4 )   verFilter = 2;
+    else if( scalingRatio.second > ( 20 << SCALE_RATIO_BITS ) / 19 )   verFilter = 1;
+
+    filterHor = &DownsamplingFilterSRC[horFilter][0][0];
+    filterVer = &DownsamplingFilterSRC[verFilter][0][0];
+  }
+
+  const int filterLength = downsampling ? 12 : ( useLumaFilter ? NTAPS_LUMA : NTAPS_CHROMA );
+  const int log2Norm = downsampling ? 14 : 12;
+
+  int *buf = new int[orgHeight * scaledWidth];
+  int maxVal = ( 1 << bitDepth ) - 1;
+
+  CHECK( bitDepth > 17, "Overflow may happen!" );
+
+  for( int i = 0; i < scaledWidth; i++ )
+  {
+    const Pel* org = orgSrc;
+    int refPos = ( ( ( i << compScale.first ) - afterScaleLeftOffset ) * scalingRatio.first + addX ) >> posShiftX;
+    int integer = refPos >> numFracShift;
+    int frac = refPos & numFracPositions;
+    int* tmp = buf + i;
+
+    for( int j = 0; j < orgHeight; j++ )
+    {
+      int sum = 0;
+      const TFilterCoeff* f = filterHor + frac * filterLength;
+
+      for( int k = 0; k < filterLength; k++ )
+      {
+        int xInt = std::min<int>( std::max( 0, integer + k - filterLength / 2 + 1 ), orgWidth - 1 );
+        sum += f[k] * org[xInt]; // postpone horizontal filtering gain removal after vertical filtering
+      }
+
+      *tmp = sum;
+
+      tmp += scaledWidth;
+      org += orgStride;
+    }
+  }
+
+  Pel* dst = scaledSrc;
+
+  for( int j = 0; j < scaledHeight; j++ )
+  {
+    int refPos = ( ( ( j << compScale.second ) - afterScaleTopOffset ) * scalingRatio.second + addY ) >> posShiftY;
+    int integer = refPos >> numFracShift;
+    int frac = refPos & numFracPositions;
+
+    for( int i = 0; i < scaledWidth; i++ )
+    {
+      int sum = 0;
+      int* tmp = buf + i;
+      const TFilterCoeff* f = filterVer + frac * filterLength;
+
+      for( int k = 0; k < filterLength; k++ )
+      {
+        int yInt = std::min<int>( std::max( 0, integer + k - filterLength / 2 + 1 ), orgHeight - 1 );
+        sum += f[k] * tmp[yInt*scaledWidth];
+      }
+
+      dst[i] = std::min<int>( std::max( 0, ( sum + ( 1 << ( log2Norm - 1 ) ) ) >> log2Norm ), maxVal );
+    }
+
+    dst += scaledStride;
+  }
+
+  delete[] buf;
+}
+#else
+#if JVET_P0592_CHROMA_PHASE
+void Picture::sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                              const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride,
+                              Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight,
+                              SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride,
+                              const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                              const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag )
+#else
 void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling )
+#endif
 {
   if( orgWidth == scaledWidth && orgHeight == scaledHeight )
   {
@@ -1270,10 +1151,17 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   const int numFracPositions = useLumaFilter ? 15 : 31;
   const int numFracShift = useLumaFilter ? 4 : 5;
 
+#if JVET_P0592_CHROMA_PHASE
+  const int posShift = SCALE_RATIO_BITS - numFracShift;
+  int addX = ( 1 << ( posShift - 1 ) ) + ( ( int( 1 - horCollocatedPositionFlag ) * 8 * ( scalingRatio.first - SCALE_1X.first ) + ( 1 << ( 3 + compScale.first ) ) ) >> ( 4 + compScale.first ) );
+  int addY = ( 1 << ( posShift - 1 ) ) + ( ( int( 1 - verCollocatedPositionFlag ) * 8 * ( scalingRatio.second - SCALE_1X.second ) + ( 1 << ( 3 + compScale.second ) ) ) >> ( 4 + compScale.second ) );
+#endif
+
   if( downsampling )
   {
     int verFilter = 0;
     int horFilter = 0;
+
     if( 4 * orgHeight > 15 * scaledHeight )   verFilter = 7;
     else if( 7 * orgHeight > 20 * scaledHeight )   verFilter = 6;
     else if( 2 * orgHeight > 5 * scaledHeight )   verFilter = 5;
@@ -1305,8 +1193,14 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
   for( int i = 0; i < paddedWidth; i++ )
   {
     const Pel* org = orgSrc;
+#if JVET_P0592_CHROMA_PHASE
+    int refPos = ( i * scalingRatio.first + addX ) >> posShift;
+    int integer = refPos >> numFracShift;
+    int frac = refPos & numFracPositions;
+#else
     int integer = ( i * orgWidth ) / scaledWidth;
     int frac = ( ( i * orgWidth << numFracShift ) / scaledWidth ) & numFracPositions;
+#endif
 
     int* tmp = buf + i;
 
@@ -1332,8 +1226,14 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
 
   for( int j = 0; j < paddedHeight; j++ )
   {
+#if JVET_P0592_CHROMA_PHASE
+    int refPos = ( j * scalingRatio.second + addY ) >> posShift;
+    int integer = refPos >> numFracShift;
+    int frac = refPos & numFracPositions;
+#else
     int integer = ( j * orgHeight ) / scaledHeight;
     int frac = ( ( j * orgHeight << numFracShift ) / scaledHeight ) & numFracPositions;
+#endif
 
     for( int i = 0; i < paddedWidth; i++ )
     {
@@ -1355,7 +1255,64 @@ void Picture::sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType org
 
   delete[] buf;
 }
+#endif
 
+#if JVET_P0590_SCALING_WINDOW
+void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
+                              const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore,
+                              const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
+#if JVET_P0592_CHROMA_PHASE
+                              const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                              const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag )
+#else
+                              const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling )
+#endif
+{
+  for( int comp = 0; comp < ::getNumberValidComponents( chromaFormatIDC ); comp++ )
+  {
+    ComponentID compID = ComponentID( comp );
+    const CPelBuf& beforeScale = beforeScaling.get( compID );
+    const PelBuf& afterScale = afterScaling.get( compID );
+
+#if JVET_P0592_CHROMA_PHASE
+    sampleRateConv( scalingRatio, std::pair<int, int>( ::getComponentScaleX( compID, chromaFormatIDC ), ::getComponentScaleY( compID, chromaFormatIDC ) ),
+                    beforeScale, scalingWindowBefore.getWindowLeftOffset(), scalingWindowBefore.getWindowTopOffset(), 
+                    afterScale, scalingWindowAfter.getWindowLeftOffset(), scalingWindowAfter.getWindowTopOffset(), 
+                    bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
+                    isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
+#else
+    Picture::sampleRateConv( scalingRatio, 
+                             beforeScale, scalingWindowBefore.getWindowLeftOffset(), scalingWindowBefore.getWindowTopOffset(), 
+                             afterScale, scalingWindowAfter.getWindowLeftOffset(), scalingWindowAfter.getWindowTopOffset(), 
+                             bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling );
+#endif
+  }
+}
+#elif JVET_P0592_CHROMA_PHASE
+void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
+                              const CPelUnitBuf& beforeScaling, const Window& confBefore,
+                              const PelUnitBuf& afterScaling, const Window& confAfter,
+                              const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                              const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag )
+{
+  for( int comp = 0; comp < ::getNumberValidComponents( chromaFormatIDC ); comp++ )
+  {
+    ComponentID compID = ComponentID( comp );
+    const CPelBuf& beforeScale = beforeScaling.get( compID );
+    const PelBuf& afterScale = afterScaling.get( compID );
+    int widthBefore = beforeScale.width - ( ( ( confBefore.getWindowLeftOffset() + confBefore.getWindowRightOffset() ) * SPS::getWinUnitX( chromaFormatIDC ) ) >> getChannelTypeScaleX( (ChannelType)( comp > 0 ), chromaFormatIDC ) );
+    int heightBefore = beforeScale.height - ( ( ( confBefore.getWindowTopOffset() + confBefore.getWindowBottomOffset() ) * SPS::getWinUnitY( chromaFormatIDC ) ) >> getChannelTypeScaleY( (ChannelType)( comp > 0 ), chromaFormatIDC ) );
+    int widthAfter = afterScale.width - ( ( ( confAfter.getWindowLeftOffset() + confAfter.getWindowRightOffset() ) * SPS::getWinUnitX( chromaFormatIDC ) ) >> getChannelTypeScaleX( (ChannelType)( comp > 0 ), chromaFormatIDC ) );
+    int heightAfter = afterScale.height - ( ( ( confAfter.getWindowTopOffset() + confAfter.getWindowBottomOffset() ) * SPS::getWinUnitY( chromaFormatIDC ) ) >> getChannelTypeScaleY( (ChannelType)( comp > 0 ), chromaFormatIDC ) );
+
+    sampleRateConv( scalingRatio, std::pair<int, int>( ::getComponentScaleX( compID, chromaFormatIDC ), ::getComponentScaleY( compID, chromaFormatIDC ) ),
+                    beforeScale.buf, widthBefore, heightBefore, beforeScale.stride,
+                    afterScale.buf, widthAfter, heightAfter, afterScale.width, afterScale.height, afterScale.stride,
+                    bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
+                    isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
+  }
+}
+#else
 void Picture::rescalePicture( const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling )
 {
   for( int comp = 0; comp < ::getNumberValidComponents( chromaFormatIDC ); comp++ )
@@ -1371,6 +1328,7 @@ void Picture::rescalePicture( const CPelUnitBuf& beforeScaling, const Window& co
     Picture::sampleRateConv( beforeScale.buf,  widthBefore, heightBefore, beforeScale.stride, afterScale.buf, widthAfter, heightAfter, afterScale.width, afterScale.height, afterScale.stride, bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma(compID), downsampling );
   }
 }
+#endif
 
 void Picture::extendPicBorder()
 {

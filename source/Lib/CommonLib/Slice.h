@@ -746,6 +746,9 @@ class VPS
 private:
   int                   m_VPSId;
   uint32_t              m_uiMaxLayers;
+#if JVET_P0185
+  uint32_t              m_vpsMaxSubLayers;
+#endif
 
   uint32_t              m_vpsIncludedLayerId[MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
@@ -760,6 +763,11 @@ public:
 
   uint32_t          getMaxLayers() const                                 { return m_uiMaxLayers;                                            }
   void              setMaxLayers(uint32_t l)                             { m_uiMaxLayers = l;                                               }
+
+#if JVET_P0185
+  uint32_t          getMaxSubLayers() const                              { return m_vpsMaxSubLayers;                                        }
+  void              setMaxSubLayers(uint32_t value)                      { m_vpsMaxSubLayers = value;                                       }
+#endif
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }

@@ -1648,7 +1648,6 @@ void EncLib::xInitSPS(SPS &sps)
   }
 
 #if JVET_P1006_PICTURE_HEADER
-  //sps.setNumSubPics(1);  // TODO: modify for subpicture support
 #if JVET_P0171_SUBPICTURE_LAYOUT
   for (int picIdx = 0; picIdx < MAX_NUM_SUB_PICS; picIdx++) {
     sps.setSubPicCtuTopLeftX(picIdx, 0);

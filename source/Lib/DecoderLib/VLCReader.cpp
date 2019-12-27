@@ -1462,7 +1462,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
 #if JVET_P1006_PICTURE_HEADER
-  //pcSPS->setNumSubPics( 1 );  // TODO - need sub-picture syntax
 #if JVET_P0171_SUBPICTURE_LAYOUT
   if (pcSPS->getSubPicPresentFlag()) {
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);

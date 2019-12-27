@@ -1261,6 +1261,7 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
         }
       }
       else if( pcPic->layerId == layerId )
+      {
 #else
     for (i = 0; isNeedToCheck && !isReference && i<pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures(); i++)
     {
@@ -1283,6 +1284,9 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
           pcPic->longTerm = true;
         }
       }
+#if JVET_O1159_SCALABILITY
+      }
+#endif
     }
     // mark the picture as "unused for reference" if it is not in
     // the Reference Picture List

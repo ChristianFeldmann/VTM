@@ -232,7 +232,63 @@ namespace df
         parent.addOption(new Option<T>(name, storage, default_val, desc));
         return *this;
       }
+#if 1 //JVET_O1159_SCALABILITY
+      template<typename T>
+      OptionSpecific&
+        operator()(const std::string& name, T* storage, T default_val, unsigned uiMaxNum, const std::string& desc = "")
+      {
+        std::string cNameBuffer;
+        std::string cDescriptionBuffer;
 
+        for (unsigned int uiK = 0; uiK < uiMaxNum; uiK++)
+        {
+          // it needs to be reset when extra digit is added, e.g. number 10 and above
+          cNameBuffer.resize(name.size() + 10);
+          cDescriptionBuffer.resize(desc.size() + 10);
+
+          // isn't there are sprintf function for string??
+          sprintf((char*)cNameBuffer.c_str(), name.c_str(), uiK, uiK);
+          sprintf((char*)cDescriptionBuffer.c_str(), desc.c_str(), uiK, uiK);
+
+          size_t pos = cNameBuffer.find_first_of('\0');
+          if (pos != std::string::npos)
+          {
+            cNameBuffer.resize(pos);
+          }
+
+          parent.addOption(new Option<T>(cNameBuffer, (storage[uiK]), default_val, cDescriptionBuffer));
+        }
+
+        return *this;
+      }
+
+      template<typename T>
+      OptionSpecific&
+        operator()(const std::string& name, T** storage, T default_val, unsigned uiMaxNum, const std::string& desc = "")
+      {
+        std::string cNameBuffer;
+        std::string cDescriptionBuffer;
+
+        for (unsigned int uiK = 0; uiK < uiMaxNum; uiK++)
+        {
+          // it needs to be reset when extra digit is added, e.g. number 10 and above
+          cNameBuffer.resize(name.size() + 10);
+          cDescriptionBuffer.resize(desc.size() + 10);
+
+          // isn't there are sprintf function for string??
+          sprintf((char*)cNameBuffer.c_str(), name.c_str(), uiK, uiK);
+          sprintf((char*)cDescriptionBuffer.c_str(), desc.c_str(), uiK, uiK);
+
+          size_t pos = cNameBuffer.find_first_of('\0');
+          if (pos != std::string::npos)
+            cNameBuffer.resize(pos);
+
+          parent.addOption(new Option<T>(cNameBuffer, *(storage[uiK]), default_val, cDescriptionBuffer));
+        }
+
+        return *this;
+      }
+#endif
       /**
        * Add option described by name to the parent Options list,
        *   with desc as an optional help description

@@ -332,11 +332,17 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
   }
 }
 
-
+#if JVET_O1159_SCALABILITY
+int EncGOP::xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId )
+#else
 int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
+#endif
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
+#if JVET_O1159_SCALABILITY
+  nalu.m_nuhLayerId = layerId;
+#endif
   CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
   m_HLSWriter->codeSPS( sps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
@@ -396,7 +402,11 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
+#if JVET_O1159_SCALABILITY
+      actualTotalBits += xWriteSPS( accessUnit, slice->getSPS(), m_pcEncLib->getLayerId() );
+#else
       actualTotalBits += xWriteSPS( accessUnit, slice->getSPS() );
+#endif
     }
   }
 
@@ -415,6 +425,9 @@ int EncGOP::xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader )
   OutputNALUnit nalu(NAL_UNIT_PH);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
   nalu.m_temporalId = accessUnit.temporalId;
+#if JVET_P1019_OUTPUT_LAYER_SET
+  nalu.m_nuhLayerId = m_pcEncLib->getLayerId();
+#endif
   m_HLSWriter->codePictureHeader( picHeader );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
@@ -434,7 +447,11 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   }
   else
   {
+#if JVET_O1159_SCALABILITY
+    nalu.m_nuhLayerId = slice->getVPS()->getLayerId(0);
+#else
     nalu.m_nuhLayerId = slice->getVPS()->getVPSIncludedLayerId(0);
+#endif
   }
   CHECK( nalu.m_temporalId != accessUnit.temporalId, "TemporalId shall be equal to the TemporalId of the AU containing the NAL unit" );
 #else
@@ -2060,7 +2077,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
     {
 #if JVET_N0278_FIXES
+#if JVET_O1159_SCALABILITY
+      int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
+#else
       int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#endif
 #else
       int apsId = 0;
 #endif
@@ -2108,7 +2129,11 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
 #endif
     {
 #if JVET_N0278_FIXES
+#if JVET_O1159_SCALABILITY
+      int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
+#else
       int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#endif
 #else
       int apsId = 0;
 #endif
@@ -2399,12 +2424,24 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
 
     if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0 ||
-        (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && !pcSlice->isIRAP() && ( pcSlice->isDRAP() || !pcSlice->isPOCInRefPicList(pcSlice->getRPL0(), pcSlice->getAssociatedIRAPPOC())) ))
+        (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && !pcSlice->isIRAP() && ( pcSlice->isDRAP() || !pcSlice->isPOCInRefPicList(pcSlice->getRPL0(), pcSlice->getAssociatedIRAPPOC())) )
+#if JVET_O1159_SCALABILITY
+      || ( !pcSlice->isIRAP() && pcSlice->getPic()->cs->vps && m_pcEncLib->getNumRefLayers( pcSlice->getPic()->cs->vps->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) ) )
+#endif
+      )
     {
+#if JVET_O1159_SCALABILITY
+      xCreateExplicitReferencePictureSetFromReference( pcSlice, rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1() );
+#else
       pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
+#endif
     }
 
+#if JVET_O1159_SCALABILITY
+    pcSlice->applyReferencePictureListBasedMarking( rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1(), pcSlice->getPic()->layerId );
+#else
     pcSlice->applyReferencePictureListBasedMarking(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
+#endif
 
     if(pcSlice->getTLayer() > 0
       && !(pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL     // Check if not a leading picture
@@ -2414,6 +2451,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if (pcSlice->isStepwiseTemporalLayerSwitchingPointCandidate(rcListPic))
       {
         bool isSTSA=true;
+
+#if JVET_O1159_SCALABILITY
+        if( !m_pcEncLib->getVPS()->getAllIndependentLayersFlag() && m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) )
+        {
+          isSTSA = false;
+        }
+#endif
+
         for(int ii=iGOPid+1;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
         {
           int lTid = m_pcCfg->getRPLEntry(0, ii).m_temporalId;
@@ -2958,7 +3003,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
 
 #if JVET_N0278_FIXES
+#if JVET_O1159_SCALABILITY
+      int apsId = std::min<int>( 7, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
+#else
       int apsId = std::min<int>( 7, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#endif
 #else
       int apsId = 0;
 #endif
@@ -3071,7 +3120,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
 
 #if JVET_N0278_FIXES
+#if JVET_O1159_SCALABILITY
+        int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
+#else
         int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
+#endif
 #else
         int apsId = 0;
 #endif
@@ -3278,7 +3331,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       }
 
 #if JVET_N0278_FIXES
+#if JVET_O1159_SCALABILITY
+      int layerIdx = m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() );
+#else
       int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
+#endif
 
       // it is assumed that layerIdx equal to 0 is always present
       actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, writePS && !layerIdx );
@@ -4650,6 +4707,15 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
           else
             msg( NOTICE, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
         }
+
+#if JVET_O1159_SCALABILITY
+        if( pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) == pcSlice->getPOC() )
+        {
+          msg( NOTICE, ".%d", pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->layerId );
+        }
+#endif
+
+        msg( NOTICE, " " );
       }
       msg( NOTICE, "]" );
     }
@@ -5448,6 +5514,277 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
       pcSlice->setDeblockingFilterTcOffsetDiv2   ( tcOffsetDiv2Best);
     }
   }
+}
+#endif
+
+#if JVET_O1159_SCALABILITY
+void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 )
+{
+  Picture* rpcPic;
+  int pocCycle = 0;
+
+  Picture* pic = slice->getPic();
+  const VPS* vps = slice->getPic()->cs->vps;
+  int layerIdx = vps == nullptr ? 0 : vps->getGeneralLayerIdx( pic->layerId );
+
+  ReferencePictureList* pLocalRPL0 = slice->getLocalRPL0();
+  *pLocalRPL0 = ReferencePictureList( slice->getSPS()->getInterLayerPresentFlag() );
+
+  uint32_t numOfSTRPL0 = 0;
+  uint32_t numOfLTRPL0 = 0;
+  uint32_t numOfILRPL0 = 0;
+  uint32_t numOfRefPic = rpl0->getNumberOfShorttermPictures() + rpl0->getNumberOfLongtermPictures();
+  uint32_t refPicIdxL0 = 0;
+
+  for( int ii = 0; ii < numOfRefPic; ii++ )
+  {
+    // loop through all pictures in the reference picture buffer
+    PicList::iterator iterPic = rcListPic.begin();
+    bool isAvailable = false;
+
+    pocCycle = 1 << ( slice->getSPS()->getBitsForPOC() );
+    while( iterPic != rcListPic.end() )
+    {
+      rpcPic = *( iterPic++ );
+
+      if( rpcPic->layerId == pic->layerId )
+      {
+        if( !rpl0->isRefPicLongterm( ii ) && rpcPic->referenced && rpcPic->getPOC() == slice->getPOC() - rpl0->getRefPicIdentifier( ii ) && !slice->isPocRestrictedByDRAP( rpcPic->getPOC(), rpcPic->precedingDRAP ) )
+        {
+          isAvailable = true;
+          break;
+        }
+        else if( rpl0->isRefPicLongterm( ii ) && rpcPic->referenced && ( rpcPic->getPOC() & ( pocCycle - 1 ) ) == rpl0->getRefPicIdentifier( ii ) && !slice->isPocRestrictedByDRAP( rpcPic->getPOC(), rpcPic->precedingDRAP ) )
+        {
+          isAvailable = true;
+          break;
+        }
+      }
+    }
+
+    if( isAvailable )
+    {
+      pLocalRPL0->setRefPicIdentifier( refPicIdxL0, rpl0->getRefPicIdentifier( ii ), rpl0->isRefPicLongterm( ii ), false, NOT_VALID );
+      refPicIdxL0++;
+      numOfSTRPL0 = numOfSTRPL0 + ( ( rpl0->isRefPicLongterm( ii ) ) ? 0 : 1 );
+      numOfLTRPL0 += ( rpl0->isRefPicLongterm( ii ) && !rpl0->isInterLayerRefPic( ii ) ) ? 1 : 0;
+      isAvailable = false;
+    }
+  }
+
+  // inter-layer reference pictures are added to the end of the reference picture list
+  if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
+  {
+    numOfRefPic = rpl0->getNumberOfInterLayerPictures() ? rpl0->getNumberOfInterLayerPictures() : m_pcEncLib->getNumRefLayers( layerIdx );
+
+    for( int ii = 0; ii < numOfRefPic; ii++ )
+    {
+      // loop through all pictures in the reference picture buffer
+      PicList::iterator iterPic = rcListPic.begin();
+
+      while( iterPic != rcListPic.end() )
+      {
+        rpcPic = *( iterPic++ );
+        int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
+
+        if( rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag( layerIdx, refLayerIdx ) )
+        {          
+          pLocalRPL0->setRefPicIdentifier( refPicIdxL0, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
+          refPicIdxL0++;
+          numOfILRPL0++;
+          break;
+        }
+      }
+    }
+  }
+
+  if( slice->getEnableDRAPSEI() )
+  {
+    pLocalRPL0->setNumberOfShorttermPictures( numOfSTRPL0 );
+    pLocalRPL0->setNumberOfLongtermPictures( numOfLTRPL0 );
+    pLocalRPL0->setNumberOfInterLayerPictures( numOfILRPL0 );
+
+    if( !slice->isIRAP() && !slice->isPOCInRefPicList( pLocalRPL0, slice->getAssociatedIRAPPOC() ) )
+    {
+      if( slice->getUseLTforDRAP() && !slice->isPOCInRefPicList( rpl1, slice->getAssociatedIRAPPOC() ) )
+      {
+        // Adding associated IRAP as longterm picture
+        pLocalRPL0->setRefPicIdentifier( refPicIdxL0, slice->getAssociatedIRAPPOC(), true, false, 0 );
+        refPicIdxL0++;
+        numOfLTRPL0++;
+      }
+      else
+      {
+        // Adding associated IRAP as shortterm picture
+        pLocalRPL0->setRefPicIdentifier( refPicIdxL0, slice->getPOC() - slice->getAssociatedIRAPPOC(), false, false, 0 );
+        refPicIdxL0++;
+        numOfSTRPL0++;
+      }
+    }
+  }
+
+  ReferencePictureList* pLocalRPL1 = slice->getLocalRPL1();
+  *pLocalRPL1 = ReferencePictureList( slice->getSPS()->getInterLayerPresentFlag() );
+
+  uint32_t numOfSTRPL1 = 0;
+  uint32_t numOfLTRPL1 = 0;
+  uint32_t numOfILRPL1 = 0;
+  numOfRefPic = rpl1->getNumberOfShorttermPictures() + rpl1->getNumberOfLongtermPictures();
+  uint32_t refPicIdxL1 = 0;
+
+  for( int ii = 0; ii < numOfRefPic; ii++ )
+  {
+    // loop through all pictures in the reference picture buffer
+    PicList::iterator iterPic = rcListPic.begin();
+    bool isAvailable = false;
+    pocCycle = 1 << ( slice->getSPS()->getBitsForPOC() );
+    while( iterPic != rcListPic.end() )
+    {
+      rpcPic = *( iterPic++ );
+
+      if( rpcPic->layerId == pic->layerId )
+      {
+        if( !rpl1->isRefPicLongterm( ii ) && rpcPic->referenced && rpcPic->getPOC() == slice->getPOC() - rpl1->getRefPicIdentifier( ii ) && !slice->isPocRestrictedByDRAP( rpcPic->getPOC(), rpcPic->precedingDRAP ) )
+        {
+          isAvailable = true;
+          break;
+        }
+        else if( rpl1->isRefPicLongterm( ii ) && rpcPic->referenced && ( rpcPic->getPOC() & ( pocCycle - 1 ) ) == rpl1->getRefPicIdentifier( ii ) && !slice->isPocRestrictedByDRAP( rpcPic->getPOC(), rpcPic->precedingDRAP ) )
+        {
+          isAvailable = true;
+          break;
+        }
+      }      
+    }
+
+    if( isAvailable )
+    {
+      pLocalRPL1->setRefPicIdentifier( refPicIdxL1, rpl1->getRefPicIdentifier( ii ), rpl1->isRefPicLongterm( ii ), false, NOT_VALID );
+      refPicIdxL1++;
+      numOfSTRPL1 = numOfSTRPL1 + ( ( rpl1->isRefPicLongterm( ii ) ) ? 0 : 1 );
+      numOfLTRPL1 += ( rpl1->isRefPicLongterm( ii ) && !rpl1->isInterLayerRefPic( ii ) ) ? 1 : 0;
+      isAvailable = false;
+    }
+  }
+
+  
+  // inter-layer reference pictures are added to the end of the reference picture list
+  if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
+  {
+    numOfRefPic = rpl1->getNumberOfInterLayerPictures() ? rpl1->getNumberOfInterLayerPictures() : m_pcEncLib->getNumRefLayers( layerIdx );
+
+    for( int ii = 0; ii < numOfRefPic; ii++ )
+    {
+      // loop through all pictures in the reference picture buffer
+      PicList::iterator iterPic = rcListPic.begin();
+
+      while( iterPic != rcListPic.end() )
+      {
+        rpcPic = *( iterPic++ );
+        int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
+
+        if( rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag( layerIdx, refLayerIdx ) )
+        {
+          pLocalRPL1->setRefPicIdentifier( refPicIdxL1, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
+          refPicIdxL1++;
+          numOfILRPL1++;
+          break;
+        }
+      }
+    }
+  }
+
+  //Copy from L1 if we have less than active ref pic
+  int numOfNeedToFill = rpl0->getNumberOfActivePictures() - (numOfLTRPL0 + numOfSTRPL0);
+  bool isDisallowMixedRefPic = ( slice->getSPS()->getAllActiveRplEntriesHasSameSignFlag() ) ? true : false;
+  int originalL0StrpNum = numOfSTRPL0;
+  int originalL0LtrpNum = numOfLTRPL0;
+  int originalL0IlrpNum = numOfILRPL0;
+
+  for( int ii = 0; numOfNeedToFill > 0 && ii < ( pLocalRPL1->getNumberOfLongtermPictures() + pLocalRPL1->getNumberOfShorttermPictures() + pLocalRPL1->getNumberOfInterLayerPictures() ); ii++ )
+  {
+    if( ii <= ( numOfLTRPL1 + numOfSTRPL1 + numOfILRPL1 - 1 ) )
+    {
+      //Make sure this copy is not already in L0
+      bool canIncludeThis = true;
+      for( int jj = 0; jj < refPicIdxL0; jj++ )
+      {
+        if( ( pLocalRPL1->getRefPicIdentifier( ii ) == pLocalRPL0->getRefPicIdentifier( jj ) ) && ( pLocalRPL1->isRefPicLongterm( ii ) == pLocalRPL0->isRefPicLongterm( jj ) ) && pLocalRPL1->getInterLayerRefPicIdx( ii ) == pLocalRPL0->getInterLayerRefPicIdx( jj ) )
+        {
+          canIncludeThis = false;
+        }
+
+        bool sameSign = ( pLocalRPL1->getRefPicIdentifier( ii ) > 0 ) == ( pLocalRPL0->getRefPicIdentifier( 0 ) > 0 );
+
+        if( isDisallowMixedRefPic && canIncludeThis && !pLocalRPL1->isRefPicLongterm( ii ) && !sameSign )
+        {
+          canIncludeThis = false;
+        }
+      }
+      if( canIncludeThis )
+      {
+        pLocalRPL0->setRefPicIdentifier( refPicIdxL0, pLocalRPL1->getRefPicIdentifier( ii ), pLocalRPL1->isRefPicLongterm( ii ), pLocalRPL1->isInterLayerRefPic( ii ), pLocalRPL1->getInterLayerRefPicIdx( ii ) );
+        refPicIdxL0++;
+        numOfSTRPL0 = numOfSTRPL0 + ( ( pLocalRPL1->isRefPicLongterm( ii ) ) ? 0 : 1 );
+        numOfLTRPL0 += ( pLocalRPL1->isRefPicLongterm( ii ) && !pLocalRPL1->isInterLayerRefPic( ii ) ) ? 1 : 0;
+        numOfILRPL0 += pLocalRPL1->isInterLayerRefPic( ii ) ? 1 : 0;
+        numOfNeedToFill--;
+      }
+    }
+  }
+  pLocalRPL0->setNumberOfLongtermPictures( numOfLTRPL0 );
+  pLocalRPL0->setNumberOfShorttermPictures( numOfSTRPL0 );
+  pLocalRPL0->setNumberOfInterLayerPictures( numOfILRPL0 );
+  int numPics = numOfLTRPL0 + numOfSTRPL0;
+
+  pLocalRPL0->setNumberOfActivePictures( ( numPics < rpl0->getNumberOfActivePictures() ? numPics : rpl0->getNumberOfActivePictures() ) + numOfILRPL0 );
+  pLocalRPL0->setLtrpInSliceHeaderFlag( rpl0->getLtrpInSliceHeaderFlag() );
+  slice->setRPL0idx( -1 );
+  slice->setRPL0( pLocalRPL0 );
+
+  //Copy from L0 if we have less than active ref pic
+  numOfNeedToFill = pLocalRPL0->getNumberOfActivePictures() - ( numOfLTRPL1 + numOfSTRPL1 );
+
+  for( int ii = 0; numOfNeedToFill > 0 && ii < ( pLocalRPL0->getNumberOfLongtermPictures() + pLocalRPL0->getNumberOfShorttermPictures() + pLocalRPL0->getNumberOfInterLayerPictures() ); ii++ )
+  {
+    if( ii <= ( originalL0StrpNum + originalL0LtrpNum + originalL0IlrpNum - 1 ) )
+    {
+      //Make sure this copy is not already in L0
+      bool canIncludeThis = true;
+      for( int jj = 0; jj < refPicIdxL1; jj++ )
+      {
+        if( ( pLocalRPL0->getRefPicIdentifier( ii ) == pLocalRPL1->getRefPicIdentifier( jj ) ) && ( pLocalRPL0->isRefPicLongterm( ii ) == pLocalRPL1->isRefPicLongterm( jj ) ) && pLocalRPL0->getInterLayerRefPicIdx( ii ) == pLocalRPL1->getInterLayerRefPicIdx( jj ) )
+        {
+          canIncludeThis = false;
+        }
+
+        bool sameSign = ( pLocalRPL0->getRefPicIdentifier( ii ) > 0 ) == ( pLocalRPL1->getRefPicIdentifier( 0 ) > 0 );
+
+        if( isDisallowMixedRefPic && canIncludeThis && !pLocalRPL0->isRefPicLongterm( ii ) && !sameSign )
+        {
+          canIncludeThis = false;
+        }
+      }
+      if( canIncludeThis )
+      {
+        pLocalRPL1->setRefPicIdentifier( refPicIdxL1, pLocalRPL0->getRefPicIdentifier( ii ), pLocalRPL0->isRefPicLongterm( ii ), pLocalRPL0->isInterLayerRefPic( ii ), pLocalRPL0->getInterLayerRefPicIdx( ii ) );
+        refPicIdxL1++;
+        numOfSTRPL1 = numOfSTRPL1 + ( ( pLocalRPL0->isRefPicLongterm( ii ) ) ? 0 : 1 );
+        numOfLTRPL1 += ( pLocalRPL0->isRefPicLongterm( ii ) && !pLocalRPL0->isInterLayerRefPic( ii ) ) ? 1 : 0;
+        numOfLTRPL1 += pLocalRPL0->isInterLayerRefPic( ii ) ? 1 : 0;
+        numOfNeedToFill--;
+      }
+    }
+  }
+  pLocalRPL1->setNumberOfLongtermPictures( numOfLTRPL1 );
+  pLocalRPL1->setNumberOfShorttermPictures( numOfSTRPL1 );
+  pLocalRPL1->setNumberOfInterLayerPictures( numOfILRPL1 );
+  numPics = numOfLTRPL1 + numOfSTRPL1;
+
+  pLocalRPL1->setNumberOfActivePictures( ( isDisallowMixedRefPic ? numPics : ( numPics < rpl1->getNumberOfActivePictures() ? numPics : rpl1->getNumberOfActivePictures() ) ) + numOfILRPL1 );
+  pLocalRPL1->setLtrpInSliceHeaderFlag( rpl1->getLtrpInSliceHeaderFlag() );
+  slice->setRPL1idx( -1 );
+  slice->setRPL1( pLocalRPL1 );
 }
 #endif
 //! \}

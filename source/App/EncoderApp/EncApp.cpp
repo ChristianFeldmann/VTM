@@ -93,14 +93,110 @@ void EncApp::xInitLibCfg()
   VPS vps;
 
 #if JVET_N0278_FIXES
-  vps.setMaxLayers                                               ( m_maxLayers );
+  vps.setMaxLayers( m_maxLayers );
+
+#if JVET_O1159_SCALABILITY
+  if (vps.getMaxLayers() > 1)
+  {
+    vps.setVPSId(1);  //JVET_P0205 vps_video_parameter_set_id shall be greater than 0 for multi-layer coding
+  }
+  else
+  {
+    vps.setVPSId(0);
+    vps.setEachLayerIsAnOlsFlag(1); // If vps_max_layers_minus1 is equal to 0,
+                                    // the value of each_layer_is_an_ols_flag is inferred to be equal to 1.
+                                    // Otherwise, when vps_all_independent_layers_flag is equal to 0,
+                                    // the value of each_layer_is_an_ols_flag is inferred to be equal to 0.
+  }
+  vps.setMaxSublayers(m_maxSublayers);
+  if (vps.getMaxLayers() > 1 && vps.getMaxSublayers() > 1)
+  {
+    vps.setAllLayersSameNumSublayersFlag(m_allLayersSameNumSublayersFlag);
+  }
+  if (vps.getMaxLayers() > 1)
+  {
+    vps.setAllIndependentLayersFlag(m_allIndependentLayersFlag);
+    if (!vps.getAllIndependentLayersFlag())
+    {
+      vps.setEachLayerIsAnOlsFlag(0);
+    }
+  }
+
+  for (int i = 0; i < vps.getMaxLayers(); i++)
+  {
+    vps.setGeneralLayerIdx( m_layerId[i], i );
+    vps.setLayerId(i, m_layerId[i]);
+
+    if (i > 0 && !vps.getAllIndependentLayersFlag())
+    {
+      vps.setIndependentLayerFlag( i, m_numRefLayers[i] ? false : true );
+
+      if (!vps.getIndependentLayerFlag(i))
+      {
+        for (int j = 0, k = 0; j < i; j++)
+        {
+          if (m_refLayerIdxStr[i].find(to_string(j)) != std::string::npos)
+          {
+            vps.setDirectRefLayerFlag(i, j, true);
+            vps.setInterLayerRefIdc( i, j, k );
+            vps.setDirectRefLayerIdx(i, k++, j);
+          }
+          else
+          {
+            vps.setDirectRefLayerFlag(i, j, false);
+          }
+        }
+      }
+    }
+  }
+
+
+  if (vps.getMaxLayers() > 1)
+  {
+    if (vps.getAllIndependentLayersFlag())
+    {
+      vps.setEachLayerIsAnOlsFlag(m_eachLayerIsAnOlsFlag);
+      if (vps.getEachLayerIsAnOlsFlag() == 0)
+      {
+        vps.setOlsModeIdc(2); // When vps_all_independent_layers_flag is equal to 1 and each_layer_is_an_ols_flag is equal to 0, the value of ols_mode_idc is inferred to be equal to 2
+      }
+    }
+    if (!vps.getEachLayerIsAnOlsFlag())
+    {
+      if (!vps.getAllIndependentLayersFlag())
+      {
+        vps.setOlsModeIdc(m_olsModeIdc);
+      }
+      if (vps.getOlsModeIdc() == 2)
+      {
+        vps.setNumOutputLayerSets(m_numOutputLayerSets);
+        for (int i = 1; i < vps.getNumOutputLayerSets(); i++)
+        {
+          for (int j = 0; j < vps.getMaxLayers(); j++)
+          {
+            if (m_olsOutputLayerStr[i].find(to_string(j)) != std::string::npos)
+            {
+              vps.setOlsOutputLayerFlag(i, j, 1);
+            }
+            else
+            {
+              vps.setOlsOutputLayerFlag(i, j, 0);
+            }
+          }
+        }
+      }
+    }
+  }
+#endif
 #else
   vps.setMaxLayers                                               ( 1 );
 #endif
+#if !JVET_O1159_SCALABILITY
   for(int i = 0; i < MAX_TLAYER; i++)
   {
     vps.setVPSIncludedLayerId                                    ( 0, i );
   }
+#endif
   vps.setVPSExtensionFlag                                        ( false );
   m_cEncLib.setVPS(&vps);
   m_cEncLib.setProfile                                           ( m_profile);
@@ -842,6 +938,9 @@ void EncApp::xInitLibCfg()
 #endif
 #if JVET_O0549_ENCODER_ONLY_FILTER
   m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
+#endif
+#if JVET_O1159_SCALABILITY
+  m_cEncLib.setNumRefLayers                                       ( m_numRefLayers );
 #endif
 }
 

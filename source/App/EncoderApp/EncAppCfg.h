@@ -797,6 +797,20 @@ protected:
 
 #if JVET_N0278_FIXES
   int         m_maxLayers;
+
+#if JVET_O1159_SCALABILITY
+  int         m_layerId[MAX_VPS_LAYERS];
+  int         m_layerIdx;
+  int         m_maxSublayers;
+  bool        m_allLayersSameNumSublayersFlag;
+  bool        m_allIndependentLayersFlag;
+  int         m_numRefLayers[MAX_VPS_LAYERS];
+  std::string m_refLayerIdxStr[MAX_VPS_LAYERS];
+  bool        m_eachLayerIsAnOlsFlag;
+  int         m_olsModeIdc;
+  int         m_numOutputLayerSets;
+  std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
+#endif
 #endif
 
 #if EXTENSION_360_VIDEO

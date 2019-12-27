@@ -1404,7 +1404,7 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && ((pu.lheight() * pu.lwidth()) >= 128)
       && (pu.cu->BcwIdx == BCW_DEFAULT)
       && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag))
-#if JVET_P0590_SCALING_WINDOW
+#if JVET_P0590_SCALING_WINDOW || JVET_O1159_SCALABILITY
       && ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X )
 #else
       && PU::isRefPicSameSize( pu )
@@ -4080,7 +4080,7 @@ bool allowLfnstWithMip(const Size& block)
   return false;
 }
 
-#if !JVET_P0590_SCALING_WINDOW
+#if !JVET_P0590_SCALING_WINDOW && !JVET_O1159_SCALABILITY
 bool PU::isRefPicSameSize( const PredictionUnit& pu )
 {
   bool samePicSize = true;

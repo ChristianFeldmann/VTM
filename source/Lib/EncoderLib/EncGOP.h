@@ -330,7 +330,11 @@ protected:
 
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
+#if JVET_O1159_SCALABILITY
+  int xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId = 0 );
+#else
   int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
+#endif
   int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
 #if JVET_P0588_SUFFIX_APS
   int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );
@@ -345,6 +349,9 @@ protected:
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );
 #if W0038_DB_OPT
   void applyDeblockingFilterParameterSelection( Picture* pcPic, const uint32_t numSlices, const int gopID );
+#endif
+#if JVET_O1159_SCALABILITY
+  void xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 );
 #endif
 };// END CLASS DEFINITION EncGOP
 

@@ -219,7 +219,11 @@ struct Picture : public UnitArea
 
   void extendPicBorder();
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_O1159_SCALABILITY
+  void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
+#else
   void finalInit( const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
+#endif
 #else
   void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 #endif

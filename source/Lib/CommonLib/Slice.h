@@ -84,12 +84,26 @@ private:
   bool  m_deltaPocMSBPresentFlag[MAX_NUM_REF_PICS];
   int   m_deltaPOCMSBCycleLT[MAX_NUM_REF_PICS];
   bool  m_ltrp_in_slice_header_flag;
+#if JVET_O1159_SCALABILITY
+  bool  m_interLayerPresentFlag;
+  bool  m_isInterLayerRefPic[MAX_NUM_REF_PICS];
+  int   m_interLayerRefPicIdx[MAX_NUM_REF_PICS];
+  int   m_numberOfInterLayerPictures;
+#endif
 
 public:
+#if JVET_O1159_SCALABILITY
+  ReferencePictureList( const bool interLayerPicPresentFlag = false );
+#else
   ReferencePictureList();
+#endif
   virtual ~ReferencePictureList();
 
+#if JVET_O1159_SCALABILITY
+  void    setRefPicIdentifier( int idx, int identifier, bool isLongterm, bool isInterLayerRefPic, int interLayerIdx );
+#else
   void    setRefPicIdentifier(int idx, int identifier, bool isLongterm);
+#endif
   int     getRefPicIdentifier(int idx) const;
   bool    isRefPicLongterm(int idx) const;
 
@@ -102,7 +116,14 @@ public:
   void    setLtrpInSliceHeaderFlag(bool flag) { m_ltrp_in_slice_header_flag = flag; }
   bool    getLtrpInSliceHeaderFlag() const { return m_ltrp_in_slice_header_flag; }
 
+#if JVET_O1159_SCALABILITY
+  void    setNumberOfInterLayerPictures( const int numberOfIlrp ) { m_numberOfInterLayerPictures = numberOfIlrp; }
+  int     getNumberOfInterLayerPictures() const { return m_numberOfInterLayerPictures; }
+
+  int     getNumRefEntries() const { return m_numberOfShorttermPictures + m_numberOfLongtermPictures + m_numberOfInterLayerPictures; }
+#else
   int     getNumRefEntries() const { return m_numberOfShorttermPictures + m_numberOfLongtermPictures; }
+#endif
 
   void    setPOC(int idx, int POC);
   int     getPOC(int idx) const;
@@ -116,6 +137,14 @@ public:
   void    setDeltaPocMSBPresentFlag(int i, bool x) { m_deltaPocMSBPresentFlag[i] = x; }
 
   void    printRefPicInfo() const;
+
+#if JVET_O1159_SCALABILITY
+  bool      getInterLayerPresentFlag()                   const { return m_interLayerPresentFlag; }
+  void      setInterLayerPresentFlag( bool b )                 { m_interLayerPresentFlag = b; }
+  bool      isInterLayerRefPic( int idx )                const { return m_isInterLayerRefPic[idx]; }
+  int       getInterLayerRefPicIdx( int idx )            const { return m_interLayerRefPicIdx[idx]; }
+  void      setInterLayerRefPicIdx( int idx, int layerIdc )    { m_interLayerRefPicIdx[idx] = layerIdc; }
+#endif
 };
 
 /// Reference Picture List set class
@@ -746,8 +775,25 @@ class VPS
 private:
   int                   m_VPSId;
   uint32_t              m_uiMaxLayers;
+#if JVET_O1159_SCALABILITY
+  uint32_t              m_uiMaxSublayers;
+  uint32_t              m_vpsLayerId[MAX_VPS_LAYERS];
+  bool                  m_vpsAllLayersSameNumSubLayersFlag;
+  bool                  m_vpsAllIndependentLayersFlag;
+  bool                  m_vpsIndependentLayerFlag[MAX_VPS_LAYERS];
+  bool                  m_vpsDirectRefLayerFlag[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
+  bool                  m_vpsEachLayerIsAnOlsFlag;
+  uint32_t              m_vpsOlsModeIdc;
+  uint32_t              m_vpsNumOutputLayerSets;
+  bool                  m_vpsOlsOutputLayerFlag[MAX_NUM_OLSS][MAX_VPS_LAYERS];
+  uint32_t              m_directRefLayerIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
+  uint32_t              m_generalLayerIdx[MAX_VPS_LAYERS];
 
+  // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
+  uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
+#else
   uint32_t              m_vpsIncludedLayerId[MAX_VPS_LAYERS];
+#endif
   bool                  m_vpsExtensionFlag;
 
 public:
@@ -761,11 +807,52 @@ public:
   uint32_t          getMaxLayers() const                                 { return m_uiMaxLayers;                                            }
   void              setMaxLayers(uint32_t l)                             { m_uiMaxLayers = l;                                               }
 
+#if JVET_O1159_SCALABILITY
+  uint32_t          getMaxSublayers() const { return m_uiMaxSublayers; }
+  void              setMaxSublayers(uint32_t l) { m_uiMaxSublayers = l; }
+
+  bool              getAllLayersSameNumSublayersFlag() const { return m_vpsAllLayersSameNumSubLayersFlag; }
+  void              setAllLayersSameNumSublayersFlag(bool t) { m_vpsAllLayersSameNumSubLayersFlag = t; }
+
+  uint32_t          getLayerId(uint32_t layerIdx) const { return m_vpsLayerId[layerIdx]; }
+  void              setLayerId(uint32_t layerIdx, uint32_t layerId) { m_vpsLayerId[layerIdx] = layerId; }
+
+  bool              getAllIndependentLayersFlag() const { return m_vpsAllIndependentLayersFlag; }
+  void              setAllIndependentLayersFlag(bool t) { m_vpsAllIndependentLayersFlag = t; }
+
+  bool              getIndependentLayerFlag(uint32_t layerIdx) const { return m_vpsIndependentLayerFlag[layerIdx]; }
+  void              setIndependentLayerFlag(uint32_t layerIdx, bool t) { m_vpsIndependentLayerFlag[layerIdx] = t; }
+
+  bool              getDirectRefLayerFlag(uint32_t layerIdx, uint32_t refLayerIdx) const { return m_vpsDirectRefLayerFlag[layerIdx][refLayerIdx]; }
+  void              setDirectRefLayerFlag(uint32_t layerIdx, uint32_t refLayerIdx, bool t) { m_vpsDirectRefLayerFlag[layerIdx][refLayerIdx] = t; }
+
+  uint32_t          getDirectRefLayerIdx( uint32_t layerIdx, uint32_t refLayerIdc ) const { return m_directRefLayerIdx[layerIdx][refLayerIdc]; }
+  void              setDirectRefLayerIdx( uint32_t layerIdx, uint32_t refLayerIdc, uint32_t refLayerIdx ) { m_directRefLayerIdx[layerIdx][refLayerIdc] = refLayerIdx; }
+
+  uint32_t          getInterLayerRefIdc( uint32_t layerIdx, uint32_t refLayerIdx ) const { return m_interLayerRefIdx[layerIdx][refLayerIdx]; }
+  void              setInterLayerRefIdc( uint32_t layerIdx, uint32_t refLayerIdx, uint32_t refLayerIdc ) { m_interLayerRefIdx[layerIdx][refLayerIdx] = refLayerIdc; }
+
+  uint32_t          getGeneralLayerIdx(uint32_t layerId) const { return m_generalLayerIdx[layerId]; }
+  void              setGeneralLayerIdx(uint32_t layerId, uint32_t layerIdc) { m_generalLayerIdx[layerId] = layerIdc; }
+
+  bool              getEachLayerIsAnOlsFlag() const { return m_vpsEachLayerIsAnOlsFlag; }
+  void              setEachLayerIsAnOlsFlag(bool t) { m_vpsEachLayerIsAnOlsFlag = t; }
+
+  uint32_t          getOlsModeIdc() const { return m_vpsOlsModeIdc; }
+  void              setOlsModeIdc(uint32_t t) { m_vpsOlsModeIdc = t; }
+
+  uint32_t          getNumOutputLayerSets() const { return m_vpsNumOutputLayerSets; }
+  void              setNumOutputLayerSets(uint8_t t) { m_vpsNumOutputLayerSets = t; }
+
+  bool              getOlsOutputLayerFlag(uint32_t ols, uint32_t layer) const { return m_vpsOlsOutputLayerFlag[ols][layer]; }
+  void              setOlsOutputLayerFlag(uint32_t ols, uint32_t layer, bool t) { m_vpsOlsOutputLayerFlag[ols][layer] = t; }
+#else
+  void              setVPSIncludedLayerId(uint32_t v, uint32_t layer) { m_vpsIncludedLayerId[layer] = v; }
+  uint32_t          getVPSIncludedLayerId(uint32_t layer) const { return m_vpsIncludedLayerId[layer]; }
+#endif
+
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
-
-  void              setVPSIncludedLayerId(uint32_t v, uint32_t Layer)        { m_vpsIncludedLayerId[Layer] = v;                                    }
-  uint32_t          getVPSIncludedLayerId(uint32_t Layer) const              { return m_vpsIncludedLayerId[Layer];                                 }
 };
 
 class Window
@@ -1132,6 +1219,9 @@ private:
 #if JVET_P0590_SCALING_WINDOW
   bool              m_rprEnabledFlag;
 #endif
+#if JVET_O1159_SCALABILITY
+  bool              m_interLayerPresentFlag;
+#endif
 
 public:
 
@@ -1458,9 +1548,14 @@ public:
   bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
 
 #if JVET_P0590_SCALING_WINDOW
-  bool      getRprEnabledFlag()                                           const    { return m_rprEnabledFlag; }
-  void      setRprEnabledFlag( bool flag )                                         { m_rprEnabledFlag = flag; }
+  bool      getRprEnabledFlag()                                           const     { return m_rprEnabledFlag; }
+  void      setRprEnabledFlag( bool flag )                                          { m_rprEnabledFlag = flag; }
 #endif
+#if JVET_O1159_SCALABILITY
+  bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
+  void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
+#endif
+
 };
 
 
@@ -2689,11 +2784,18 @@ public:
 
   void                        checkLeadingPictureRestrictions( PicList& rcListPic )                                         const;
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList* pRPL, int rplIdx, bool printErrors, int* refPicIndex) const;
+#if JVET_O1159_SCALABILITY
+  void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId )  const;
+#else
   void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1 )  const;
+#endif
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors)                const;
+#if !JVET_O1159_SCALABILITY
+  // this is encoder only function
   void                        createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1);
+#endif
 #if !JVET_P1006_PICTURE_HEADER
   void                        setMaxNumMergeCand(uint32_t val )                          { m_maxNumMergeCand = val;                                      }
   uint32_t                    getMaxNumMergeCand() const                             { return m_maxNumMergeCand;                                     }
@@ -3045,6 +3147,10 @@ public:
                  ParameterSetManager();
   virtual        ~ParameterSetManager();
 
+#if JVET_O1159_SCALABILITY
+  void           storeVPS(VPS *vps, const std::vector<uint8_t> &naluData)    { m_vpsMap.storePS(vps->getVPSId(), vps, &naluData); }
+  VPS*           getVPS( int vpsId )                                         { return m_vpsMap.getPS( vpsId ); };
+#endif
 
   void           storeDPS(DPS *dps, const std::vector<uint8_t> &naluData)    { m_dpsMap.storePS( dps->getDecodingParameterSetId(), dps, &naluData); };
   //! get pointer to existing video parameter set

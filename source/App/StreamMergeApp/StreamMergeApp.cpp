@@ -279,9 +279,10 @@ uint32_t StreamMergeApp::mergeStreams()
 
   //set VPS which will be replicated for all layers but with differnt nul_layer_id
   vps.setMaxLayers(m_numInputStreams);
+#if !JVET_O1159_SCALABILITY
   for (int i = 0; i < m_numInputStreams; i++)
     vps.setVPSIncludedLayerId(i < 63 ? i : i + 1, i); //value 63 is reserved
-
+#endif
   vps.setVPSExtensionFlag(false);
 
   //Loop all input bitstreams to interleave their NALUs

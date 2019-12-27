@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P1019_OUTPUT_LAYER_SET                       1 // JVET-P1019: Signaling of output layer set (OLS) and its output process
+
 #define JVET_P0257_SCALING_LISTS_SPEEDUP_DEC              1 // JVET-P0257: Decoder speed-up for handling scaling matrices
 
 #define JVET_P2001_REMOVE_TRANSQUANT_BYPASS               1 // JVET-P2001: Remove transquant bypass - not supported in JVET-P2001 draft text
@@ -144,6 +146,8 @@
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
 #define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
+
+#define JVET_O1159_SCALABILITY                            1 // JVET-O1159: Scalability
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
@@ -270,7 +274,7 @@ typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 
 // clang-format off
-#define REUSE_CU_RESULTS                                  1
+#define REUSE_CU_RESULTS                                  1 
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
 #endif

@@ -185,8 +185,14 @@ void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
 
 void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc )
 {
+#if JVET_O1159_SCALABILITY
+  uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures() + rpl->getNumberOfInterLayerPictures();
+  WRITE_UVLC( numRefPic, "num_ref_entries[ listIdx ][ rplsIdx ]" );
+#else
   WRITE_UVLC(rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures(), "num_ref_entries[ listIdx ][ rplsIdx ]");
   uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures();
+#endif
+
   if (isLongTermPresent)
   {
     WRITE_FLAG(rpl->getLtrpInSliceHeaderFlag(), "ltrp_in_slice_header_flag[ listIdx ][ rplsIdx ]");
@@ -196,8 +202,26 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
   bool firstSTRP = true;
   for (int ii = 0; ii < numRefPic; ii++)
   {
-    if (isLongTermPresent)
-      WRITE_FLAG(!rpl->isRefPicLongterm(ii), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]");
+#if JVET_O1159_SCALABILITY
+    if( rpl->getInterLayerPresentFlag() )
+    {
+      WRITE_FLAG( rpl->isInterLayerRefPic( ii ), "inter_layer_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]" );
+
+      if( rpl->isInterLayerRefPic( ii ) )
+      {
+        CHECK( rpl->getInterLayerRefPicIdx( ii ) < 0, "Wrong inter-layer reference index" );
+        WRITE_UVLC( rpl->getInterLayerRefPicIdx( ii ), "ilrp_idx[ listIdx ][ rplsIdx ][ i ]" );
+      }
+    }
+
+    if( !rpl->isInterLayerRefPic( ii ) )
+    {
+#endif
+    if( isLongTermPresent )
+    {
+      WRITE_FLAG( !rpl->isRefPicLongterm( ii ), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]" );
+    }
+
     if (!rpl->isRefPicLongterm(ii))
     {
       if (firstSTRP)
@@ -225,6 +249,9 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
     {
       WRITE_CODE(rpl->getRefPicIdentifier(ii), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][i]");
     }
+#if JVET_O1159_SCALABILITY
+    }
+#endif
   }
 }
 
@@ -987,6 +1014,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
   WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
+#if JVET_O1159_SCALABILITY
+  WRITE_FLAG( pcSPS->getInterLayerPresentFlag() ? 1 : 0, "inter_layer_ref_pics_present_flag" );
+#endif 
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG(pcSPS->getIDRRefParamListPresent() ? 1 : 0, "sps_idr_rpl_present_flag" );
 #endif
@@ -1431,13 +1461,64 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   xTraceVPSHeader();
 #endif
   WRITE_CODE(pcVPS->getVPSId(), 4, "vps_video_parameter_set_id");
+#if JVET_O1159_SCALABILITY
+  WRITE_CODE(pcVPS->getMaxLayers() - 1, 6, "vps_max_layers_minus1");
+  WRITE_CODE(pcVPS->getMaxSublayers() - 1, 3, "vps_max_sublayers_minus1");
+  if (pcVPS->getMaxLayers() > 1 && pcVPS->getMaxSublayers() > 1) 
+  {
+    WRITE_FLAG(pcVPS->getAllLayersSameNumSublayersFlag(), "vps_all_layers_same_num_sublayers_flag");
+  }
+  if (pcVPS->getMaxLayers() > 1)
+  {
+    WRITE_FLAG(pcVPS->getAllIndependentLayersFlag(), "vps_all_independent_layers_flag");
+  }
+  for (uint32_t i = 0; i < pcVPS->getMaxLayers(); i++)
+  {
+    WRITE_CODE(pcVPS->getLayerId(i), 6, "vps_layer_id");
+    if (i > 0 && !pcVPS->getAllIndependentLayersFlag())
+    {
+      WRITE_FLAG(pcVPS->getIndependentLayerFlag(i), "vps_independent_layer_flag");
+      if (!pcVPS->getIndependentLayerFlag(i))
+      {
+        for (int j = 0; j < i; j++)
+        {
+          WRITE_FLAG(pcVPS->getDirectRefLayerFlag(i, j), "vps_direct_dependency_flag");
+        }
+      }
+    }
+  }
+  if( pcVPS->getMaxLayers() > 1 )
+  {
+    if (pcVPS->getAllIndependentLayersFlag()) 
+    {
+      WRITE_FLAG(pcVPS->getEachLayerIsAnOlsFlag(), "vps_each_layer_is_an_ols_flag");
+    }
+    if (!pcVPS->getEachLayerIsAnOlsFlag()) 
+    {
+      if (!pcVPS->getAllIndependentLayersFlag()) {
+        WRITE_CODE(pcVPS->getOlsModeIdc(), 2, "vps_ols_mode_idc");
+      }
+      if (pcVPS->getOlsModeIdc() == 2)
+      {
+        WRITE_CODE(pcVPS->getNumOutputLayerSets() - 1, 8, "vps_num_output_layer_sets_minus1");
+        for (uint32_t i = 1; i < pcVPS->getNumOutputLayerSets(); i++)
+        {
+          for (uint32_t j = 0; j < pcVPS->getMaxLayers(); j++)
+          {
+            WRITE_FLAG(pcVPS->getOlsOutputLayerFlag(i, j), "vps_ols_output_layer_flag");
+          }
+        }
+      }
+    }
+  }
+#else
   WRITE_CODE(pcVPS->getMaxLayers() - 1, 8, "vps_max_layers_minus1");
   for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
   {
     WRITE_CODE(pcVPS->getVPSIncludedLayerId(i), 7, "vps_included_layer_id");
     WRITE_FLAG(0, "vps_reserved_zero_1bit");
   }
-
+#endif
   WRITE_FLAG(0, "vps_extension_flag");
 
   //future extensions here..

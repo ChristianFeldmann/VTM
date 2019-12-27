@@ -1217,9 +1217,10 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
           pcPic->longTerm = true;
         }
       }
-      else if( pcPic->layerId == layerId )
+      else if (pcPic->layerId == layerId)
+      {
 #else
-    for (i = 0; isNeedToCheck && !isReference && i<pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures(); i++)
+    for (i = 0; isNeedToCheck && !isReference && i < pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures(); i++)
     {
 #endif
       if (!(pRPL0->isRefPicLongterm(i)))
@@ -1240,6 +1241,9 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
           pcPic->longTerm = true;
         }
       }
+#if JVET_O1159_SCALABILITY
+      }
+#endif
     }
 
 #if JVET_O1159_SCALABILITY

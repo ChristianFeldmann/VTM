@@ -993,6 +993,7 @@ void InterPrediction::xPredAffineBlk( const ComponentID& compID, const Predictio
   const int profThres = 1 << (iBit + (m_isBi ? 1 : 0));
   enablePROF &= !m_encOnly || pu.cu->slice->getCheckLDC() || iDMvHorX > profThres || iDMvHorY > profThres || iDMvVerX > profThres || iDMvVerY > profThres || iDMvHorX < -profThres || iDMvHorY < -profThres || iDMvVerX < -profThres || iDMvVerY < -profThres;
   enablePROF &= pu.cs->pps->getPicWidthInLumaSamples() == refPic->getPicWidthInLumaSamples() && pu.cs->pps->getPicHeightInLumaSamples() == refPic->getPicHeightInLumaSamples();
+  enablePROF &= scalingRatio == SCALE_1X;
 
 #if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   if (compID == COMPONENT_Y)

@@ -1847,7 +1847,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   if( eRefPicList != REF_PIC_LIST_X )
   {
     CHECK(predBufWOBIO != NULL, "the case should not happen!");
-    if( ( ( sliceType == P_SLICE && pps.getUseWP() ) || ( sliceType == B_SLICE && pps.getWPBiPred() ) ) )
+    if ((CU::isIBC(*pu.cu) == false) && ((sliceType == P_SLICE && pps.getUseWP()) || (sliceType == B_SLICE && pps.getWPBiPred())))
     {
       xPredInterUni         ( pu,          eRefPicList, predBuf, true
         , false

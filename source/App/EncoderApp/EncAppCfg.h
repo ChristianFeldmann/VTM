@@ -476,6 +476,10 @@ protected:
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
 #endif
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  bool      m_subPicPartitionFlag;
+  bool      m_singleSlicePerSubPicFlag;
+#endif
   bool      m_entropyCodingSyncEnabledFlag;
 
 #if !JVET_P1004_REMOVE_BRICKS

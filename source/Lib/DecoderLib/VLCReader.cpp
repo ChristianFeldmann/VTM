@@ -1462,7 +1462,26 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
 #if JVET_P1006_PICTURE_HEADER
-  pcSPS->setNumSubPics( 1 );  // TODO - need sub-picture syntax
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  if (pcSPS->getSubPicPresentFlag()) {
+    READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
+    for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
+    {
+      READ_CODE(ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_ctu_top_left_x[ i ]");
+      pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
+      READ_CODE(ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_ctu_top_left_y[ i ]");
+      pcSPS->setSubPicCtuTopLeftY(picIdx, uiCode);
+      READ_CODE(ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_width_minus1[ i ]");
+      pcSPS->setSubPicWidth(picIdx, uiCode + 1);
+      READ_CODE(ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_height_minus1[ i ]");
+      pcSPS->setSubPicHeight(picIdx, uiCode + 1);
+      READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");
+      pcSPS->setSubPicTreatedAsPicFlag(picIdx, uiCode);
+      READ_FLAG(uiCode, "loop_filter_across_subpic_enabled_flag[ i ]");
+      pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
+    }
+  }
+#endif
   READ_FLAG(uiCode, "sps_subpic_id_present_flag");                           pcSPS->setSubPicIdPresentFlag( uiCode != 0 );
   if( pcSPS->getSubPicIdPresentFlag() )
   {

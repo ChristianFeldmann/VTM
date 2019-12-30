@@ -52,6 +52,8 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P1038_ALF_PAD_RASTER_SLICE                   1 // JVET-P1038, handle ALF padding in raster scan slice
+
 #define JVET_P0257_SCALING_LISTS_SPEEDUP_DEC              1 // JVET-P0257: Decoder speed-up for handling scaling matrices
 
 #define JVET_P2001_REMOVE_TRANSQUANT_BYPASS               1 // JVET-P2001: Remove transquant bypass - not supported in JVET-P2001 draft text
@@ -265,6 +267,8 @@
 #define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
 
 #define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting several HEVC SEIs and add encoder control
+
+#define JVET_P0171_SUBPICTURE_LAYOUT                      1  //JVET-P0171: subpicture layout
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

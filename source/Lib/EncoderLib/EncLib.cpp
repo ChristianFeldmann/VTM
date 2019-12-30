@@ -1706,8 +1706,16 @@ void EncLib::xInitSPS(SPS &sps)
   }
 
 #if JVET_P1006_PICTURE_HEADER
-
-  sps.setNumSubPics(1);  // TODO: modify for subpicture support
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  for (int picIdx = 0; picIdx < MAX_NUM_SUB_PICS; picIdx++) {
+    sps.setSubPicCtuTopLeftX(picIdx, 0);
+    sps.setSubPicCtuTopLeftY(picIdx, 0);
+    sps.setSubPicWidth(picIdx, ((sps.getMaxPicWidthInLumaSamples() + sps.getCTUSize() - 1)  >> floorLog2(sps.getCTUSize())));
+    sps.setSubPicHeight(picIdx, ((sps.getMaxPicHeightInLumaSamples() + sps.getCTUSize() - 1)  >> floorLog2(sps.getCTUSize())));
+    sps.setSubPicTreatedAsPicFlag(picIdx, 0);
+    sps.setLoopFilterAcrossSubpicEnabledFlag(picIdx, 1);
+  }
+#endif
   sps.setSubPicIdSignallingPresentFlag(false);
   sps.setSubPicIdLen(16);
   for(int picIdx=0; picIdx<MAX_NUM_SUB_PICS; picIdx++)

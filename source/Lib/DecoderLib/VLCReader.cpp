@@ -2147,18 +2147,9 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   READ_CODE(4, uiCode, "vps_video_parameter_set_id");         pcVPS->setVPSId(uiCode);
 #endif
 
+ READ_CODE(8, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
 #if JVET_P0185
-  if (0 == pcVPS->getVPSId())
-  {
-    pcVPS->setMaxLayers(1);
-  }
-  else
-  {
-    READ_CODE(8, uiCode, "vps_max_layers_minus1");            pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
-  }
-  READ_CODE(8, uiCode, "vps_max_sub_layers_minus1");          pcVPS->setMaxSubLayers(uiCode + 1);
-#else
-  READ_CODE(8, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
+  READ_CODE(3, uiCode, "vps_max_sub_layers_minus1");          pcVPS->setMaxSubLayers(uiCode + 1);
 #endif
   for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
   {

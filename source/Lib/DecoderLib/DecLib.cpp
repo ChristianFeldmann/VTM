@@ -2052,6 +2052,19 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 
     case NAL_UNIT_SPS:
       xDecodeSPS( nalu );
+#if JVET_P0185
+      {
+        const SPS* pcSPS = m_parameterSetManager.getActiveSPS();
+        if (0 == pcSPS->getVPSId())
+        {
+          if (m_vps != nullptr)
+          {
+            delete m_vps;
+          }
+          m_vps = new VPS();
+        }
+      }
+#endif
       return false;
 
     case NAL_UNIT_PPS:

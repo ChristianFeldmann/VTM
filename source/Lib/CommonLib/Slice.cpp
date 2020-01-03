@@ -2336,6 +2336,9 @@ PPS::PPS()
 , m_numTileCols                      (1)
 , m_numTileRows                      (1)
 , m_rectSliceFlag                    (1)  
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  , m_singleSlicePerSubPicFlag       (0)
+#endif
 , m_numSlicesInPic                   (1)
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
@@ -2410,6 +2413,9 @@ PPS::PPS()
   m_tileRowBd.clear();
   m_ctuToTileCol.clear();
   m_ctuToTileRow.clear();
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  m_ctuToSubPicIdx.clear();
+#endif
   m_rectSlices.clear();
   m_sliceMap.clear();
 #endif
@@ -2424,6 +2430,9 @@ PPS::~PPS()
   m_tileRowBd.clear();
   m_ctuToTileCol.clear();
   m_ctuToTileRow.clear();
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  m_ctuToSubPicIdx.clear();
+#endif
   m_rectSlices.clear();
   m_sliceMap.clear();
 
@@ -2448,6 +2457,9 @@ void PPS::resetTileSliceInfo()
   m_tileRowBd.clear();
   m_ctuToTileCol.clear();
   m_ctuToTileRow.clear();
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  m_ctuToSubPicIdx.clear();
+#endif
   m_rectSlices.clear();
   m_sliceMap.clear();
 }
@@ -2557,7 +2569,24 @@ void PPS::initRectSliceMap()
   // allocate new memory for slice list
   CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
   m_sliceMap.resize( m_numSlicesInPic );
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  if ((getNumSubPics() > 0) && getSingleSlicePerSubPicFlag())
+  {
+    for (uint32_t i = 0; i <= getNumSubPics() - 1; i++)
+    {
+      m_sliceMap[i].initSliceMap();
+    }
+    uint32_t picSizeInCtu = getPicWidthInCtu() * getPicHeightInCtu();
+    uint32_t sliceIdx;
+    for (uint32_t i = 0; i < picSizeInCtu; i++)
+    {
+      sliceIdx = getCtuToSubPicIdx(i);
+      m_sliceMap[sliceIdx].pushToCtuAddrInSlice(i);
+    }
+  }
+  else
+  {
+#endif
   // generate CTU maps for all rectangular slices in picture
   for( uint32_t i = 0; i < m_numSlicesInPic; i++ )
   {
@@ -2612,7 +2641,9 @@ void PPS::initRectSliceMap()
                                       ctuY, getTileRowBd( tileY + 1 ), m_picWidthInCtu);
     } 
   }
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  }
+#endif
   // check for valid rectangular slice map
   checkSliceMap();
 }

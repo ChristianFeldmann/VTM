@@ -307,7 +307,15 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
      
     // rectangular slice signalling
     WRITE_FLAG( pcPPS->getRectSliceFlag( ) ? 1 : 0, "rect_slice_flag");
-    if( pcPPS->getRectSliceFlag() ) 
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+    if (pcPPS->getRectSliceFlag())
+    {
+      WRITE_FLAG(pcPPS->getSingleSlicePerSubPicFlag( ) ? 1 : 0, "single_slice_per_subpic_flag");
+    }
+    if (pcPPS->getRectSliceFlag() & !(pcPPS->getSingleSlicePerSubPicFlag()))
+#else
+    if (pcPPS->getRectSliceFlag())
+#endif 
     {      
       WRITE_UVLC( pcPPS->getNumSlicesInPic( ) - 1, "num_slices_in_pic_minus1" );
       WRITE_FLAG( pcPPS->getTileIdxDeltaPresentFlag( ) ? 1 : 0, "tile_idx_delta_present_flag");

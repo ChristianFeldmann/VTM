@@ -659,6 +659,9 @@ public:
   uint32_t               getNumCtuInSlice() const             { return m_numCtuInSlice;   }
   std::vector<uint32_t>  getCtuAddrList( ) const              { return m_ctuAddrInSlice;  }
   uint32_t               getCtuAddrInSlice( int idx ) const   { CHECK(idx >= m_ctuAddrInSlice.size(), "CTU index exceeds number of CTUs in slice."); return m_ctuAddrInSlice[idx]; }
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  void                   pushToCtuAddrInSlice( uint32_t u )   { m_ctuAddrInSlice.push_back(u); m_numCtuInSlice++;}
+#endif
 
   void  initSliceMap() 
   {
@@ -1584,6 +1587,10 @@ private:
   std::vector<uint32_t> m_ctuToTileCol;                 //!< mapping between CTU horizontal address and tile column index
   std::vector<uint32_t> m_ctuToTileRow;                 //!< mapping between CTU vertical address and tile row index
   bool             m_rectSliceFlag;                     //!< rectangular slice flag  
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  bool             m_singleSlicePerSubPicFlag;          //!< single slice per sub-picture flag
+  std::vector<uint32_t> m_ctuToSubPicIdx;               //!< mapping between CTU and Sub-picture index
+#endif
   uint32_t         m_numSlicesInPic;                    //!< number of rectangular slices in the picture (raster-scan slice specified at slice level)
   bool             m_tileIdxDeltaPresentFlag;           //!< tile index delta present flag
   std::vector<RectSlice> m_rectSlices;                  //!< list of rectangular slice signalling parameters
@@ -1821,6 +1828,11 @@ public:
   uint32_t               getTileIdx( const Position& pos ) const                          { return getTileIdx( pos.x / m_ctuSize, pos.y / m_ctuSize );                                                                      }
   void                   setRectSliceFlag( bool b )                                       { m_rectSliceFlag = b;                                                                                                            }
   bool                   getRectSliceFlag( ) const                                        { return  m_rectSliceFlag;                                                                                                        }
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  void                   setSingleSlicePerSubPicFlag( bool b )                            { m_singleSlicePerSubPicFlag = b;                                                                                                 }
+  bool                   getSingleSlicePerSubPicFlag( ) const                             { return  m_singleSlicePerSubPicFlag;                                                                                             }
+  uint32_t               getCtuToSubPicIdx( int idx ) const                               { CHECK( idx >= m_ctuToSubPicIdx.size(), "CTU address index exceeds valid range" ); return  m_ctuToSubPicIdx[idx];                }
+#endif
   void                   setNumSlicesInPic( uint32_t u )                                  { CHECK( u > MAX_SLICES, "Number of slices in picture exceeds valid range" ); m_numSlicesInPic = u;                               }
   uint32_t               getNumSlicesInPic( ) const                                       { return  m_numSlicesInPic;                                                                                                       }
   void                   setTileIdxDeltaPresentFlag( bool b )                             { m_tileIdxDeltaPresentFlag = b;                                                                                                  }

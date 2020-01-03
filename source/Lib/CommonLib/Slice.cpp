@@ -3523,9 +3523,16 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         }
         else
         {
+#if JVET_P0185
+          m_vpsMap.clear();
+          m_vpsMap.allocatePS(0);
+          m_activeVPSId = 0;
+          m_vpsMap.setActive(0);
+#else
           //No actual VPS
           m_activeVPSId = -1;
           m_vpsMap.clear();
+#endif
         }
 #endif
 
@@ -3584,6 +3591,14 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
 {
   parameterSet->setSPSId(psId);
 }
+
+#if JVET_P0185
+template <>
+void ParameterSetMap<VPS>::setID(VPS* parameterSet, const int psId)
+{
+  parameterSet->setVPSId(psId);
+}
+#endif
 
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)

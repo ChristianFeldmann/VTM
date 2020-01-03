@@ -1454,6 +1454,10 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
 #endif
   WRITE_CODE(pcVPS->getVPSId(), 4, "vps_video_parameter_set_id");
   WRITE_CODE(pcVPS->getMaxLayers() - 1, 8, "vps_max_layers_minus1");
+#if JVET_P0185
+  CHECK(pcVPS->getMaxSubLayers() < 1 || pcVPS->getMaxSubLayers() > 7, "vps_max_sub_layers_minus1 must be in range 0..6");
+  WRITE_CODE(pcVPS->getMaxSubLayers() - 1, 3, "vps_max_sub_layers_minus1");
+#endif
   for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
   {
     WRITE_CODE(pcVPS->getVPSIncludedLayerId(i), 7, "vps_included_layer_id");

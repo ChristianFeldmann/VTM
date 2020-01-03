@@ -321,6 +321,9 @@ public:
   , m_initialCpbRemovalDelayLength (0)
   , m_cpbRemovalDelayLength (0)
   , m_dpbOutputDelayLength (0)
+#if JVET_P0446_BP_CPB_CNT_FIX
+  , m_bpCpbCnt(0)
+#endif
   , m_duCpbRemovalDelayIncrementLength (0)
   , m_dpbOutputDelayDuLength (0)
   , m_cpbRemovalDelayDeltasPresentFlag (false)
@@ -333,11 +336,21 @@ public:
 #if JVET_P0181
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
 #endif
+#if JVET_P0446_CONCATENATION
+    , m_additionalConcatenationInfoPresentFlag (false)
+    , m_maxInitialRemovalDelayForConcatenation (0)
+#endif
+#if JVET_P0446_ALT_CPB
+    , m_altCpbParamsPresentFlag (false)
+    , m_useAltCpbParamsFlag (false)
+#endif
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
+#if !JVET_P0446_BP_CPB_CNT_FIX
     ::memset(m_bpCpbCnt, 0, sizeof(m_bpCpbCnt));
+#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
@@ -350,7 +363,11 @@ public:
   uint32_t m_initialCpbRemovalDelayLength;
   uint32_t m_cpbRemovalDelayLength;
   uint32_t m_dpbOutputDelayLength;
+#if !JVET_P0446_BP_CPB_CNT_FIX
   int      m_bpCpbCnt[MAX_TLAYER];
+#else
+  int      m_bpCpbCnt;
+#endif
   uint32_t m_duCpbRemovalDelayIncrementLength;
   uint32_t m_dpbOutputDelayDuLength;
   uint32_t m_initialCpbRemovalDelay         [MAX_TLAYER][MAX_CPB_CNT][2];
@@ -368,6 +385,14 @@ public:
 #if JVET_P0181
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
 #endif
+#if JVET_P0446_CONCATENATION
+  bool     m_additionalConcatenationInfoPresentFlag;
+  uint32_t m_maxInitialRemovalDelayForConcatenation;
+#endif
+#if JVET_P0446_ALT_CPB
+  bool     m_altCpbParamsPresentFlag;
+  bool     m_useAltCpbParamsFlag;
+#endif
 };
 
 class SEIPictureTiming : public SEI
@@ -382,6 +407,11 @@ public:
   , m_picDpbOutputDuDelay (0)
   , m_numDecodingUnitsMinus1 (0)
   , m_duCommonCpbRemovalDelayFlag (false)
+#if JVET_P0446_ALT_CPB
+  , m_cpbAltTimingInfoPresentFlag (false)
+  , m_cpbDelayOffset (0)
+  , m_dpbDelayOffset (0)
+#endif
   {
     ::memset(m_ptSubLayerDelaysPresentFlag, 0, sizeof(m_ptSubLayerDelaysPresentFlag));
     ::memset(m_duCommonCpbRemovalDelayMinus1, 0, sizeof(m_duCommonCpbRemovalDelayMinus1));
@@ -397,6 +427,11 @@ public:
   , m_numDecodingUnitsMinus1 (0)
   , m_duCommonCpbRemovalDelayFlag (false)
   , m_duCommonCpbRemovalDelayMinus1 (0)
+#if JVET_P0446_ALT_CPB
+    , m_cpbAltTimingInfoPresentFlag (false)
+    , m_cpbDelayOffset (0)
+    , m_dpbDelayOffset (0)
+#endif
   {
     ::memset(m_subLayerDelaysPresentFlag, 0, sizeof(m_subLayerDelaysPresentFlag));
     ::memset(m_cpbRemovalDelayDeltaEnabledFlag, 0, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
@@ -434,6 +469,13 @@ public:
   uint32_t  m_duCommonCpbRemovalDelayMinus1;
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
+#endif
+#if JVET_P0446_ALT_CPB
+  bool     m_cpbAltTimingInfoPresentFlag;
+  std::vector<uint32_t> m_cpbAltInitialCpbRemovalDelayDelta;
+  std::vector<uint32_t> m_cpbAltInitialCpbRemovalOffsetDelta;
+  uint32_t m_cpbDelayOffset;
+  uint32_t m_dpbDelayOffset;
 #endif
 };
 

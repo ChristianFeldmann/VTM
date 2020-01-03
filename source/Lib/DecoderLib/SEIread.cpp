@@ -670,6 +670,9 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
   sei_read_code( pDecodedMessageOutputStream, 5, code, "initial_cpb_removal_delay_length_minus1" );     sei.m_initialCpbRemovalDelayLength = code + 1;
   sei_read_code( pDecodedMessageOutputStream, 5, code, "cpb_removal_delay_length_minus1" );             sei.m_cpbRemovalDelayLength        = code + 1;
   sei_read_code( pDecodedMessageOutputStream, 5, code, "dpb_output_delay_length_minus1" );              sei.m_dpbOutputDelayLength         = code + 1;
+#if JVET_P0446_ALT_CPB
+  sei_read_flag( pDecodedMessageOutputStream, code, "alt_cpb_params_present_flag");                     sei.m_altCpbParamsPresentFlag      = code;
+#endif
   sei_read_flag( pDecodedMessageOutputStream, code, "bp_decoding_unit_hrd_params_present_flag" );       sei.m_bpDecodingUnitHrdParamsPresentFlag = code;
   if( sei.m_bpDecodingUnitHrdParamsPresentFlag )
   {
@@ -700,6 +703,16 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
 
   sei_read_flag( pDecodedMessageOutputStream, code, "concatenation_flag");
   sei.m_concatenationFlag = code;
+#if JVET_P0446_CONCATENATION
+  sei_read_flag ( pDecodedMessageOutputStream, code, "additional_concatenation_info_present_flag");
+  sei.m_additionalConcatenationInfoPresentFlag = code;
+  if (sei.m_additionalConcatenationInfoPresentFlag)
+  {
+    sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, "max_initial_removal_delay_for_concatenation" );
+    sei.m_maxInitialRemovalDelayForConcatenation = code;
+  }
+#endif
+
   sei_read_code( pDecodedMessageOutputStream, ( sei.m_cpbRemovalDelayLength ), code, "au_cpb_removal_delay_delta_minus1" );
   sei.m_auCpbRemovalDelayDelta = code + 1;
   sei_read_flag( pDecodedMessageOutputStream, code, "cpb_removal_delay_deltas_present_flag" );               sei.m_cpbRemovalDelayDeltasPresentFlag = code;
@@ -713,6 +726,9 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
     }
   }
   sei_read_code( pDecodedMessageOutputStream, 3, code, "bp_max_sub_layers_minus1" );     sei.m_bpMaxSubLayers = code + 1;
+#if JVET_P0446_BP_CPB_CNT_FIX
+  sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_cpb_cnt_minus1" ); sei.m_bpCpbCnt = code + 1;
+#endif
 #if JVET_P0181
   sei_read_flag(pDecodedMessageOutputStream, code, "sublayer_initial_cpb_removal_delay_present_flag");
   sei.m_sublayerInitialCpbRemovalDelayPresentFlag = code;
@@ -721,13 +737,19 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
   for (i = 0; i < sei.m_bpMaxSubLayers; i++)
 #endif
   {
+#if !JVET_P0446_BP_CPB_CNT_FIX
     sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_cpb_cnt_minus1[i]" ); sei.m_bpCpbCnt[i] = code + 1;
+#endif
     for( nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
       if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
          ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
       {
+#if JVET_P0446_BP_CPB_CNT_FIX
+        for( int j = 0; j < ( sei.m_bpCpbCnt ); j ++ )
+#else
         for( int j = 0; j < ( sei.m_bpCpbCnt[i] ); j ++ )
+#endif
         {
           sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, nalOrVcl ? "vcl_initial_cpb_removal_delay[i][j]" : "nal_initial_cpb_removal_delay[i][j]" );
           sei.m_initialCpbRemovalDelay[i][j][nalOrVcl] = code;
@@ -737,6 +759,13 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
       }
     }
   }
+#if JVET_P0446_ALT_CPB
+  if (sei.m_altCpbParamsPresentFlag)
+  {
+    sei_read_flag(pDecodedMessageOutputStream, code, "use_alt_cpb_params_flag"); sei.m_useAltCpbParamsFlag = code;
+  }
+#endif
+
 }
 
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
@@ -755,6 +784,33 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
 #if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
   sei_read_code( pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, symbol, "cpb_removal_delay_minus1[bp_max_sub_layers_minus1]" );
   sei.m_auCpbRemovalDelay[bp.m_bpMaxSubLayers - 1] = symbol + 1;
+
+#if JVET_P0446_ALT_CPB
+  if( bp.m_altCpbParamsPresentFlag ) 
+  {
+    sei_read_flag( pDecodedMessageOutputStream, symbol, "cpb_alt_timing_info_present_flag" ); sei.m_cpbAltTimingInfoPresentFlag = symbol;
+    if( sei.m_cpbAltTimingInfoPresentFlag ) 
+    {
+      sei.m_cpbAltInitialCpbRemovalDelayDelta.resize(bp.m_bpCpbCnt);
+      sei.m_cpbAltInitialCpbRemovalOffsetDelta.resize(bp.m_bpCpbCnt);
+      for( int i = 0; i < bp.m_bpCpbCnt; i++ ) 
+      {
+        sei_read_code( pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol, "cpb_alt_initial_cpb_removal_delay_delta[ i ]" );
+        sei.m_cpbAltInitialCpbRemovalDelayDelta[i]= symbol;
+        sei_read_code( pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol, "cpb_alt_initial_cpb_removal_offset_delta[ i ]" );
+        sei.m_cpbAltInitialCpbRemovalOffsetDelta[i]= symbol;
+      }
+      sei_read_code( pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_cpbDelayOffset, "cpb_delay_offset" );
+      sei_read_code( pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_dpbDelayOffset, "dpb_delay_offset" );
+    }
+  }
+  else
+  {
+    sei.m_cpbAltTimingInfoPresentFlag = false;
+    sei.m_cpbDelayOffset = sei.m_dpbDelayOffset = 0;
+  }
+#endif
+
   for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
   {
     sei_read_flag( pDecodedMessageOutputStream,    symbol, "pt_sub_layer_delays_present_flag[i]" );    sei.m_ptSubLayerDelaysPresentFlag[i] = (symbol == 1);

@@ -254,6 +254,13 @@
 
 #define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
 
+#define JVET_P0446_CONCATENATION                          1 // concatenation info in BP SEI
+#define JVET_P0446_ALT_CPB                                1 // alternative CPB parameters
+#define JVET_P0446_BP_CPB_CNT_FIX                         1 // bp_cpb_cnt is not an array according to the spec text
+#if JVET_P0446_ALT_CPB && !JVET_P0446_BP_CPB_CNT_FIX
+#error JVET_P0446_BP_CPB_CNT_FIX must be enabled for JVET_P0446_ALT_CPB
+#endif
+
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling

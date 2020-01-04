@@ -90,7 +90,12 @@ private:
   void  xFlushOutput      ( PicList* pcListPic ); ///< flush all remaining decoded pictures to file
 #endif
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
+#if JVET_P1019_OUTPUT_LAYER_SET
+  bool  isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu); ///< check whether given Nalu is within targetOutputLayerIdSet
+  bool  deriveOutputLayerSet(); ///< derive OLS and layer sets
+#else
   bool  isNaluTheTargetLayer(InputNALUnit* nalu); ///< check whether given Nalu is within targetDecLayerIdSet
+#endif
 #if JVET_P1006_PICTURE_HEADER
   bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
   bool  isNewAccessUnit(bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new access unit

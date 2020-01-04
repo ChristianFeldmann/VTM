@@ -243,7 +243,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   aps0.setAPSType( SCALING_LIST_APS );
 
   // initialize SPS
+#if JVET_O1159_SCALABILITY
+  xInitSPS( sps0, m_cVPS );
+#else
   xInitSPS(sps0);
+#endif
 #if JVET_P0185
   xInitVPS(m_cVPS, sps0);
 #else
@@ -469,7 +473,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
     picBg->getRecoBuf().fill(0);
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_O1159_SCALABILITY
+    picBg->finalInit( &m_cVPS, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
     picBg->finalInit( sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
 #else
     picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
@@ -629,7 +637,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
 
     picCurr->M_BUFS( 0, PIC_ORIGINAL ).copyFrom( m_cGOPEncoder.getPicBg()->getRecoBuf() );
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_O1159_SCALABILITY
+    picCurr->finalInit( &m_cVPS, *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
     picCurr->finalInit( *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
 #else
     picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
@@ -762,8 +774,12 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
     }
-#if JVET_P1006_PICTURE_HEADER    
+#if JVET_P1006_PICTURE_HEADER
+#if JVET_O1159_SCALABILITY
+    pcPicCurr->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
     pcPicCurr->finalInit( *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
 #else
     pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
@@ -1099,7 +1115,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
         const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
         const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_O1159_SCALABILITY
+        pcField->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
         pcField->finalInit( *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
 #else
         pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #endif
@@ -1338,7 +1358,6 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   m_iNumPicRcvd++;
 }
 
-
 #if JVET_P0185
 void EncLib::xInitVPS(VPS& vps, const SPS& sps)
 #else
@@ -1350,14 +1369,15 @@ void EncLib::xInitVPS(VPS& vps)
 #if !JVET_N0278_FIXES  
   vps.setMaxLayers(1);
 #endif
+#if !JVET_O1159_SCALABILITY
   for (uint32_t i = 0; i < vps.getMaxLayers(); i++)
   {
     vps.setVPSIncludedLayerId(0, i);
   }
+#endif
 #if JVET_P0185
   vps.setMaxSubLayers(sps.getMaxTLayers());
 #endif
-
 }
 
 void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
@@ -1376,8 +1396,11 @@ void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
 #endif
 }
 
-
+#if JVET_O1159_SCALABILITY
+void EncLib::xInitSPS( SPS& sps, VPS& vps )
+#else
 void EncLib::xInitSPS(SPS &sps)
+#endif
 {
   ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
   ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
@@ -1436,7 +1459,9 @@ void EncLib::xInitSPS(SPS &sps)
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */
-
+#if JVET_O1159_SCALABILITY
+  sps.setVPSId(m_cVPS.getVPSId());
+#endif
   sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
   sps.setMaxCUWidth             ( m_maxCUWidth        );
@@ -1690,7 +1715,10 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
 
-#if JVET_P0590_SCALING_WINDOW
+#if JVET_O1159_SCALABILITY
+  sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
+  sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
+#elif JVET_P0590_SCALING_WINDOW
   sps.setRprEnabledFlag( m_rprEnabled );
 #endif
 }
@@ -2173,10 +2201,19 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       rpl->setNumberOfLongtermPictures(0);   //Hardcoded as 0 for now. need to update this when implementing LTRP
       rpl->setNumberOfActivePictures(ge.m_numRefPicsActive);
       rpl->setLtrpInSliceHeaderFlag(ge.m_ltrp_in_slice_header_flag);
+#if JVET_O1159_SCALABILITY
+      rpl->setInterLayerPresentFlag( sps.getInterLayerPresentFlag() );
+      // inter-layer reference picture is not signaled in SPS RPL, SPS is shared currently
+      rpl->setNumberOfInterLayerPictures( 0 );
+#endif
 
       for (int k = 0; k < ge.m_numRefPics; k++)
       {
+#if JVET_O1159_SCALABILITY
+        rpl->setRefPicIdentifier( k, ge.m_deltaRefPics[k], 0, false, 0 );
+#else
         rpl->setRefPicIdentifier(k, ge.m_deltaRefPics[k], 0);
+#endif
       }
     }
   }

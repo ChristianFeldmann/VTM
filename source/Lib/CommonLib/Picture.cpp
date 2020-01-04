@@ -688,7 +688,11 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const
 const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
 #if JVET_P1006_PICTURE_HEADER
+#if JVET_O1159_SCALABILITY
+void Picture::finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
+#else
 void Picture::finalInit( const SPS& sps, const PPS& pps, PicHeader* picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
+#endif
 #else
 void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
 #endif
@@ -724,6 +728,9 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
     cs->create(chromaFormatIDC, Area(0, 0, iWidth, iHeight), true, (bool)sps.getPLTMode());
   }
 
+#if JVET_O1159_SCALABILITY
+  cs->vps = vps;
+#endif
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;

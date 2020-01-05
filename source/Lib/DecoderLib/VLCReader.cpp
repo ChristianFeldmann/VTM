@@ -2244,6 +2244,9 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       READ_FLAG(uiCode, "vps_independent_layer_flag");     pcVPS->setIndependentLayerFlag(i, uiCode);
       if (!pcVPS->getIndependentLayerFlag(i))
       {
+#if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
+        uint16_t sumUiCode = 0;
+#endif
         for (int j = 0, k = 0; j < i; j++)
         {
           READ_FLAG(uiCode, "vps_direct_dependency_flag"); pcVPS->setDirectRefLayerFlag(i, j, uiCode);
@@ -2251,8 +2254,14 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
           {
             pcVPS->setInterLayerRefIdc( i, j, k );
             pcVPS->setDirectRefLayerIdx( i, k++, j );
+#if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
+            sumUiCode++;
+#endif
           }
         }
+#if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
+        CHECK(sumUiCode == 0, "at least one value of j such that the value of vps_direct_dependency_flag[ i ][ j ] is equal to 1,when vps_independent_layer_flag[ i ] is equal to 0 ");
+#endif
       }
     }
   }

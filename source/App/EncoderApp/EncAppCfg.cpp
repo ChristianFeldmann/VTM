@@ -1927,12 +1927,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_subPicTreatedAsPicFlag            = cfg_subPicTreatedAsPicFlag.values;
     m_loopFilterAcrossSubpicEnabledFlag = cfg_loopFilterAcrossSubpicEnabledFlag.values;
     m_subPicId                          = cfg_subPicId.values;
-    for(int i = 0; i < m_numSubPics; i++){
+    for(int i = 0; i < m_numSubPics; i++)
+    {
       CHECK(m_subPicCtuTopLeftX[i] + m_subPicWidth[i] > (m_iSourceWidth + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
       CHECK(m_subPicCtuTopLeftY[i] + m_subPicHeight[i] > (m_iSourceHeight + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
     }
-    if (m_subPicIdPresentFlag) {
-      if (m_subPicIdSignallingPresentFlag) {
+    if (m_subPicIdPresentFlag) 
+    {
+      if (m_subPicIdSignallingPresentFlag) 
+      {
         CHECK( m_subPicIdLen > 16, "sibpic ID length must not exceed 16 bits" );
       }
     }
@@ -4374,9 +4377,11 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "CU size / depth / total-depth          : %d / %d / %d\n", m_uiMaxCUWidth, m_uiMaxCUDepth, m_uiMaxCodingDepth );
 #if JVET_P0171_SUBPICTURE_LAYOUT
   msg(DETAILS, "subpicture present flag                            : %d\n", m_subPicPresentFlag);
-  if (m_subPicPresentFlag) {
+  if (m_subPicPresentFlag) 
+  {
     msg(DETAILS, "number of subpictures                            : %d\n", m_numSubPics);
-    for (int i = 0; i < m_numSubPics; i++) {
+    for (int i = 0; i < m_numSubPics; i++) 
+    {
       msg(DETAILS, "[%d]th subpictures location                           :[%d %d]\n", i, m_subPicCtuTopLeftX[i], m_subPicCtuTopLeftY[i]);
       msg(DETAILS, "[%d]th subpictures size                           :[%d %d]\n", i, m_subPicWidth[i], m_subPicHeight[i]);
       msg(DETAILS, "[%d]th subpictures treated as picture flag                           :%d\n", i, m_subPicTreatedAsPicFlag);
@@ -4385,9 +4390,11 @@ void EncAppCfg::xPrintParameter()
     }
   }
   msg(DETAILS, "subpicture ID present flag                            : %d\n", m_subPicIdPresentFlag);
-  if (m_subPicIdPresentFlag) {
+  if (m_subPicIdPresentFlag) 
+  {
     msg(DETAILS, "subpicture ID signalling present flag                            : %d\n", m_subPicIdSignallingPresentFlag);
-    for (int i = 0; i < m_numSubPics; i++) {
+    for (int i = 0; i < m_numSubPics; i++) 
+    {
       msg(DETAILS, "[%d]th subpictures ID length                           :%d\n", i, m_subPicIdLen);
       msg(DETAILS, "[%d]th subpictures ID                          :%d\n", i, m_subPicId);
 

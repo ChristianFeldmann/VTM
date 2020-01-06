@@ -390,7 +390,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
 #if JVET_P0171_SUBPICTURE_LAYOUT
   m_cEncLib.setSubPicPresentFlag                                 ( m_subPicPresentFlag );
-  if(m_subPicPresentFlag){
+  if(m_subPicPresentFlag)
+  {
     m_cEncLib.setNumSubPics                                      ( m_numSubPics );
     for (int i = 0; i < m_numSubPics; i++)
     {
@@ -403,9 +404,11 @@ void EncApp::xInitLibCfg()
     }
   }
   m_cEncLib.setSubPicIdPresentFlag                               ( m_subPicIdPresentFlag );
-  if (m_subPicIdPresentFlag) {
+  if (m_subPicIdPresentFlag) 
+  {
     m_cEncLib.setSubPicIdSignallingPresentFlag                   ( m_subPicIdSignallingPresentFlag );
-    if(m_subPicIdSignallingPresentFlag){
+    if(m_subPicIdSignallingPresentFlag)
+    {
       m_cEncLib.setSubPicIdLen                                   ( m_subPicIdLen );
       for (int i = 0; i < m_numSubPics; i++)
       {

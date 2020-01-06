@@ -1687,9 +1687,11 @@ void EncLib::xInitSPS(SPS &sps)
 #if JVET_P1006_PICTURE_HEADER
 #if JVET_P0171_SUBPICTURE_LAYOUT
   sps.setSubPicPresentFlag(m_subPicPresentFlag);
-  if (m_subPicPresentFlag) {
+  if (m_subPicPresentFlag) 
+  {
     sps.setNumSubPics(m_numSubPics);
-    for (int i = 0; i < m_numSubPics; i++) {
+    for (int i = 0; i < m_numSubPics; i++) 
+    {
       sps.setSubPicCtuTopLeftX(i, m_subPicCtuTopLeftX[i] );
       sps.setSubPicCtuTopLeftY(i, m_subPicCtuTopLeftY[i]);
       sps.setSubPicWidth(i, m_subPicWidth[i]);
@@ -1700,9 +1702,11 @@ void EncLib::xInitSPS(SPS &sps)
   }
 #endif
   sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
-  if (m_subPicIdPresentFlag) {
+  if (m_subPicIdPresentFlag) 
+  {
     sps.setSubPicIdSignallingPresentFlag(m_subPicIdSignallingPresentFlag);
-    if (m_subPicIdSignallingPresentFlag){
+    if (m_subPicIdSignallingPresentFlag)
+    {
       sps.setSubPicIdLen(m_subPicIdLen);
       for (int i = 0; i < m_numSubPics; i++)
   {

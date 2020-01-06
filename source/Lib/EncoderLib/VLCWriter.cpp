@@ -965,7 +965,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_P0126_SIGNALLING_SUBPICID
   WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
 #if JVET_P0171_SUBPICTURE_LAYOUT
-  if(pcSPS->getSubPicPresentFlag()){
+  if(pcSPS->getSubPicPresentFlag())
+  {
     WRITE_CODE(pcSPS->getNumSubPics() - 1, 8, "sps_num_subpics_minus1");
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {

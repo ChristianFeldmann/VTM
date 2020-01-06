@@ -923,7 +923,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosY       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
 
   SMultiValueInput<uint8_t> cfg_SubProfile(0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
-
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  SMultiValueInput<uint32_t>  cfg_subPicCtuTopLeftX(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_subPicCtuTopLeftY(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_subPicWidth(1, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_subPicHeight(1, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_subPicTreatedAsPicFlag(0, 1, 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_loopFilterAcrossSubpicEnabledFlag(0, 1, 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_subPicId(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+#endif
   int warnUnknowParameter = 0;
 
 #if ENABLE_TRACING
@@ -1044,6 +1052,20 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  ("SubPicPresentFlag",                               m_subPicPresentFlag,                              false, "equal to 1 specifies that subpicture parameters are present in in the SPS RBSP syntax")
+  ("NumSubPics",                                      m_numSubPics,                                        0u, "specifies the number of subpictures")
+  ("SubPicCtuTopLeftX",                               cfg_subPicCtuTopLeftX,            cfg_subPicCtuTopLeftX, "specifies horizontal position of top left CTU of i-th subpicture in unit of CtbSizeY")
+  ("SubPicCtuTopLeftY",                               cfg_subPicCtuTopLeftY,            cfg_subPicCtuTopLeftY, "specifies vertical position of top left CTU of i-th subpicture in unit of CtbSizeY")
+  ("SubPicWidth",                                     cfg_subPicWidth,                        cfg_subPicWidth, "specifies the width of the i-th subpicture in units of CtbSizeY")
+  ("SubPicHeight",                                    cfg_subPicHeight,                      cfg_subPicHeight, "specifies the height of the i-th subpicture in units of CtbSizeY")
+  ("SubPicTreatedAsPicFlag",                          cfg_subPicTreatedAsPicFlag,  cfg_subPicTreatedAsPicFlag, "equal to 1 specifies that the i-th subpicture of each coded picture in the CLVS is treated as a picture in the decoding process excluding in-loop filtering operations")
+  ("LoopFilterAcrossSubpicEnabledFlag",               cfg_loopFilterAcrossSubpicEnabledFlag, cfg_loopFilterAcrossSubpicEnabledFlag, "equal to 1 specifies that in-loop filtering operations may be performed across the boundaries of the i-th subpicture in each coded picture in the CLVS")
+  ("SubPicIdPresentFlag",                             m_subPicIdPresentFlag,                            false, "equal to 1 specifies that subpicture ID mapping is present in the SPS")
+  ("SubPicIdSignallingPresentFlag",                   m_subPicIdSignallingPresentFlag,                  false, "equal to 1 specifies that subpicture ID mapping is signalled in the SPS")
+  ("SubPicIdLen",                                     m_subPicIdLen,                                       0u, "specifies the number of bits used to represent the syntax element sps_subpic_id[ i ]. ")
+  ("SubPicId",                                        cfg_subPicId,                              cfg_subPicId, "specifies that subpicture ID of the i-th subpicture")
+#endif
   ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
@@ -1894,7 +1916,28 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     //number of fields to encode
     m_framesToBeEncoded *= 2;
   }
-
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  if ( m_subPicPresentFlag )
+  {
+    CHECK( m_numSubPics > 255 || m_numSubPics < 1, "Number of subpicture must be within 1 to 255" );
+    m_subPicCtuTopLeftX                 = cfg_subPicCtuTopLeftX.values;
+    m_subPicCtuTopLeftY                 = cfg_subPicCtuTopLeftY.values;
+    m_subPicWidth                       = cfg_subPicWidth.values;
+    m_subPicHeight                      = cfg_subPicHeight.values;
+    m_subPicTreatedAsPicFlag            = cfg_subPicTreatedAsPicFlag.values;
+    m_loopFilterAcrossSubpicEnabledFlag = cfg_loopFilterAcrossSubpicEnabledFlag.values;
+    m_subPicId                          = cfg_subPicId.values;
+    for(int i = 0; i < m_numSubPics; i++){
+      CHECK(m_subPicCtuTopLeftX[i] + m_subPicWidth[i] > (m_iSourceWidth + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
+      CHECK(m_subPicCtuTopLeftY[i] + m_subPicHeight[i] > (m_iSourceHeight + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
+    }
+    if (m_subPicIdPresentFlag) {
+      if (m_subPicIdSignallingPresentFlag) {
+        CHECK( m_subPicIdLen > 16, "sibpic ID length must not exceed 16 bits" );
+      }
+    }
+  }
+#endif
 #if JVET_P1004_REMOVE_BRICKS
   if( m_picPartitionFlag ) 
   {
@@ -4329,6 +4372,28 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
   msg( DETAILS, "CU size / depth / total-depth          : %d / %d / %d\n", m_uiMaxCUWidth, m_uiMaxCUDepth, m_uiMaxCodingDepth );
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  msg(DETAILS, "subpicture present flag                            : %d\n", m_subPicPresentFlag);
+  if (m_subPicPresentFlag) {
+    msg(DETAILS, "number of subpictures                            : %d\n", m_numSubPics);
+    for (int i = 0; i < m_numSubPics; i++) {
+      msg(DETAILS, "[%d]th subpictures location                           :[%d %d]\n", i, m_subPicCtuTopLeftX[i], m_subPicCtuTopLeftY[i]);
+      msg(DETAILS, "[%d]th subpictures size                           :[%d %d]\n", i, m_subPicWidth[i], m_subPicHeight[i]);
+      msg(DETAILS, "[%d]th subpictures treated as picture flag                           :%d\n", i, m_subPicTreatedAsPicFlag);
+      msg(DETAILS, "loop filter cross [%d]th subpictures enabled flag                           :%d\n", i, m_loopFilterAcrossSubpicEnabledFlag);
+
+    }
+  }
+  msg(DETAILS, "subpicture ID present flag                            : %d\n", m_subPicIdPresentFlag);
+  if (m_subPicIdPresentFlag) {
+    msg(DETAILS, "subpicture ID signalling present flag                            : %d\n", m_subPicIdSignallingPresentFlag);
+    for (int i = 0; i < m_numSubPics; i++) {
+      msg(DETAILS, "[%d]th subpictures ID length                           :%d\n", i, m_subPicIdLen);
+      msg(DETAILS, "[%d]th subpictures ID                          :%d\n", i, m_subPicId);
+
+    }
+  }
+#endif
   msg( DETAILS, "Max TB size                            : %d \n", 1 << m_log2MaxTbSize );
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );

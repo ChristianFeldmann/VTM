@@ -2294,7 +2294,11 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       rpl->setNumberOfLongtermPictures(0);
       rpl->setNumberOfActivePictures(1);
       rpl->setLtrpInSliceHeaderFlag(0);
+#if JVET_O1159_SCALABILITY
+      rpl->setRefPicIdentifier(0, 1, 0, false, 0);
+#else      
       rpl->setRefPicIdentifier(0, 1, 0);
+#endif      
       rpl->setPOC(0, 0);
     }
   }

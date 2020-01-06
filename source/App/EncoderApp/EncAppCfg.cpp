@@ -1332,6 +1332,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
 
 #endif
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  ("EnableSubPicPartitioning",                        m_subPicPartitionFlag,                             true, "Enable Sub-Picture partitioning (0: single slice per sub-picture, 1: multiple slices per sub-picture can be used)")
+#endif
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
@@ -1696,6 +1699,21 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
 #if JVET_N0278_FIXES
   ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
+#if JVET_O1159_SCALABILITY
+
+  ;
+  opts.addOptions()
+  ( "MaxSublayers",                                   m_maxSublayers,                               1, "Max number of Sublayers")
+  ( "AllLayersSameNumSublayersFlag",                  m_allLayersSameNumSublayersFlag,           true, "All layers same num sublayersflag")
+  ( "AllIndependentLayersFlag",                       m_allIndependentLayersFlag,                true, "All layers are independent layer")
+  ( "LayerId%d",                                      m_layerId,                    0, MAX_VPS_LAYERS, "Max number of Sublayers")
+  ( "NumRefLayers%d",                                 m_numRefLayers,               0, MAX_VPS_LAYERS, "Number of direct reference layer index of i-th layer")
+  ( "RefLayerIdx%d",                                  m_refLayerIdxStr,    string(""), MAX_VPS_LAYERS, "Reference layer index(es)")
+  ( "EachLayerIsAnOlsFlag",                           m_eachLayerIsAnOlsFlag,                    true, "Each layer is an OLS layer flag")
+  ( "OlsModeIdc",                                     m_olsModeIdc,                                 0, "Output layer set mode")
+  ( "NumOutputLayerSets",                             m_numOutputLayerSets,                         1, "Number of output layer sets")
+  ( "OlsOutputLayer%d",                               m_olsOutputLayerStr, string(""), MAX_VPS_LAYERS, "Output layer index of i-th OLS")
+#endif
 #endif
     ;
 
@@ -1979,7 +1997,16 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_subProfile[i] = cfg_SubProfile.values[i];
   }
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  if (m_subPicPartitionFlag)
+  {
+    m_singleSlicePerSubPicFlag = false;
+  }
+  else
+  {
+    m_singleSlicePerSubPicFlag = true;
+  }
+#endif
 #if !JVET_P1004_REMOVE_BRICKS
   if (m_tileUniformSpacingFlag)
   {

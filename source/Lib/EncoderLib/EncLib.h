@@ -178,9 +178,17 @@ public:
 
 protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
-  void  xInitVPS          (VPS &vps); ///< initialize VPS from encoder options
+#if JVET_P0185
+  void  xInitVPS(VPS& vps, const SPS& sps); ///< initialize VPS from encoder options
+#else
+  void  xInitVPS(VPS& vps); ///< initialize VPS from encoder options
+#endif
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
+#if JVET_O1159_SCALABILITY
+  void  xInitSPS          ( SPS& sps, VPS& vps );       ///< initialize SPS from encoder options
+#else
   void  xInitSPS          (SPS &sps);                 ///< initialize SPS from encoder options
+#endif
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
 #if JVET_P1006_PICTURE_HEADER
   void  xInitPicHeader    (PicHeader &picHeader, const SPS &sps, const PPS &pps); ///< initialize Picture Header from encoder options

@@ -522,7 +522,10 @@ protected:
   std::vector<int> m_tileColumnWidth;
   std::vector<int> m_tileRowHeight;
 #endif
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  //====== Sub-picture and Slices ========
+  bool      m_singleSlicePerSubPicFlag;
+#endif
   bool      m_entropyCodingSyncEnabledFlag;
 
 #if !JVET_P1004_REMOVE_BRICKS
@@ -850,6 +853,9 @@ protected:
   bool        m_rprEnabled;
   int         m_switchPocPeriod;
   int         m_upscaledOutput;
+#if JVET_O1159_SCALABILITY
+  int         m_numRefLayers[MAX_VPS_LAYERS];
+#endif
 
 public:
   EncCfg()
@@ -1498,7 +1504,11 @@ public:
   void      setLFCrossSliceBoundaryFlag     ( bool   bValue  )       { m_bLFCrossSliceBoundaryFlag = bValue; }
   bool      getLFCrossSliceBoundaryFlag     ()                       { return m_bLFCrossSliceBoundaryFlag;   }
 #endif
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  //====== Sub-picture and Slices ========
+  void      setSingleSlicePerSubPicFlagFlag( bool b )                { m_singleSlicePerSubPicFlag = b;    }
+  bool      getSingleSlicePerSubPicFlagFlag( )                       { return m_singleSlicePerSubPicFlag;    }
+#endif
   void      setUseSAO                  (bool bVal)                   { m_bUseSAO = bVal; }
   bool      getUseSAO                  ()                            { return m_bUseSAO; }
   void  setTestSAODisableAtPictureLevel (bool bVal)                  { m_bTestSAODisableAtPictureLevel = bVal; }
@@ -2153,6 +2163,11 @@ public:
   void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
   void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
   int         getUpscaledOutput()                              const { return m_upscaledOutput; }
+
+#if JVET_O1159_SCALABILITY
+  void        setNumRefLayers( int* numRefLayers )                   { std::memcpy( m_numRefLayers, numRefLayers, sizeof( m_numRefLayers ) ); }
+  int         getNumRefLayers( int layerIdx )                  const { return m_numRefLayers[layerIdx];  }
+#endif
 };
 
 //! \}

@@ -52,7 +52,11 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG           1 // JVET-P1024: single_slice_per_subpic_flag in the PPS
+
 #define JVET_P1038_ALF_PAD_RASTER_SLICE                   1 // JVET-P1038, handle ALF padding in raster scan slice
+
+#define JVET_P1019_OUTPUT_LAYER_SET                       1 // JVET-P1019: Signaling of output layer set (OLS) and its output process
 
 #define JVET_P0257_SCALING_LISTS_SPEEDUP_DEC              1 // JVET-P0257: Decoder speed-up for handling scaling matrices
 
@@ -148,6 +152,8 @@
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
 #define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
+
+#define JVET_O1159_SCALABILITY                            1 // JVET-O1159: Scalability
 
 #define JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER           1 // JVET-P0325: reorder the spatial merge candidates
 
@@ -255,6 +261,13 @@
 
 #define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
 
+#define JVET_P0446_CONCATENATION                          1 // concatenation info in BP SEI
+#define JVET_P0446_ALT_CPB                                1 // alternative CPB parameters
+#define JVET_P0446_BP_CPB_CNT_FIX                         1 // bp_cpb_cnt is not an array according to the spec text
+#if JVET_P0446_ALT_CPB && !JVET_P0446_BP_CPB_CNT_FIX
+#error JVET_P0446_BP_CPB_CNT_FIX must be enabled for JVET_P0446_ALT_CPB
+#endif
+
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling
@@ -270,13 +283,15 @@
 
 #define JVET_P0171_SUBPICTURE_LAYOUT                      1  //JVET-P0171: subpicture layout
 
+#define JVET_P0185                                        1 // Infer vps_max_layers_minus1 to be equal to 0 when not present and also signal vps_max_sub_layers_minus1 
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 
 // clang-format off
-#define REUSE_CU_RESULTS                                  1
+#define REUSE_CU_RESULTS                                  1 
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
 #endif

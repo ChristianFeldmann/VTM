@@ -497,8 +497,24 @@ void Slice::constructRefPicList(PicList& rcListPic)
   uint32_t numOfActiveRef = 0;
   //construct L0
   numOfActiveRef = getNumRefIdx(REF_PIC_LIST_0);
+#if JVET_O1159_SCALABILITY
+  int layerIdx = m_pcPic->cs->vps == nullptr ? 0 : m_pcPic->cs->vps->getGeneralLayerIdx( m_pcPic->layerId );
+#endif
+
   for (int ii = 0; ii < numOfActiveRef; ii++)
   {
+#if JVET_O1159_SCALABILITY
+    if( m_pRPL0->isInterLayerRefPic( ii ) )
+    {
+      CHECK( m_pRPL0->getInterLayerRefPicIdx( ii ) == NOT_VALID, "Wrong ILRP index" );
+
+      int refLayerIdx = m_pcPic->cs->vps->getDirectRefLayerIdx( layerIdx, m_pRPL0->getInterLayerRefPicIdx( ii ) );
+
+      pcRefPic = xGetRefPic( rcListPic, getPOC(), refLayerIdx );
+      pcRefPic->longTerm = true;
+    }
+    else
+#endif
     if (!m_pRPL0->isRefPicLongterm(ii))
     {
 #if JVET_N0278_FIXES
@@ -530,6 +546,18 @@ void Slice::constructRefPicList(PicList& rcListPic)
   numOfActiveRef = getNumRefIdx(REF_PIC_LIST_1);
   for (int ii = 0; ii < numOfActiveRef; ii++)
   {
+#if JVET_O1159_SCALABILITY
+    if( m_pRPL1->isInterLayerRefPic( ii ) )
+    {
+      CHECK( m_pRPL1->getInterLayerRefPicIdx( ii ) == NOT_VALID, "Wrong ILRP index" );
+
+      int refLayerIdx = m_pcPic->cs->vps->getDirectRefLayerIdx( layerIdx, m_pRPL1->getInterLayerRefPicIdx( ii ) );
+
+      pcRefPic = xGetRefPic( rcListPic, getPOC(), refLayerIdx );
+      pcRefPic->longTerm = true;
+    }
+    else
+#endif
     if (!m_pRPL1->isRefPicLongterm(ii))
     {
 #if JVET_N0278_FIXES
@@ -623,7 +651,11 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       {
         CHECK(getPOC() - pRPL1->getRefPicIdentifier(i) < pocCRA, "Invalid state");
       }
+#if JVET_O1159_SCALABILITY
+      else if( !pRPL1->isInterLayerRefPic( i ) )
+#else
       else
+#endif
       {
 #if JVET_N0278_FIXES
         CHECK( xGetLongTermRefPic( rcListPic, pRPL1->getRefPicIdentifier( i ), pRPL1->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
@@ -1148,7 +1180,11 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
 
 //Function for applying picture marking based on the Reference Picture List
+#if JVET_O1159_SCALABILITY
+void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId ) const
+#else
 void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1) const
+#endif
 {
   int i, isReference;
   checkLeadingPictureRestrictions(rcListPic);
@@ -1167,8 +1203,26 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
     isReference = 0;
     // loop through all pictures in the Reference Picture Set
     // to see if the picture should be kept as reference picture
-    for (i = 0; isNeedToCheck && !isReference && i<pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures(); i++)
+#if JVET_O1159_SCALABILITY
+    for( i = 0; isNeedToCheck && !isReference && i < pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures() + pRPL0->getNumberOfInterLayerPictures(); i++ )
     {
+      if( pRPL0->isInterLayerRefPic( i ) )
+      {
+        // Diagonal inter-layer prediction is not allowed
+        CHECK( pRPL0->getRefPicIdentifier( i ), "ILRP identifier should be 0" );
+
+        if( pcPic->poc == m_iPOC )
+        {
+          isReference = 1;
+          pcPic->longTerm = true;
+        }
+      }
+      else if (pcPic->layerId == layerId)
+      {
+#else
+    for (i = 0; isNeedToCheck && !isReference && i < pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures(); i++)
+    {
+#endif
       if (!(pRPL0->isRefPicLongterm(i)))
       {
         if (pcPic->poc == this->getPOC() - pRPL0->getRefPicIdentifier(i))
@@ -1187,9 +1241,31 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
           pcPic->longTerm = true;
         }
       }
+#if JVET_O1159_SCALABILITY
+      }
+#endif
     }
+
+#if JVET_O1159_SCALABILITY
+    for( i = 0; isNeedToCheck && !isReference && i < pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures() + pRPL1->getNumberOfInterLayerPictures(); i++ )
+    {
+      if( pRPL1->isInterLayerRefPic( i ) )
+      {
+        // Diagonal inter-layer prediction is not allowed
+        CHECK( pRPL1->getRefPicIdentifier( i ), "ILRP identifier should be 0" );
+
+        if( pcPic->poc == m_iPOC )
+        {
+          isReference = 1;
+          pcPic->longTerm = true;
+        }
+      }
+      else if( pcPic->layerId == layerId )
+      {
+#else
     for (i = 0; isNeedToCheck && !isReference && i<pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures(); i++)
     {
+#endif
       if (!(pRPL1->isRefPicLongterm(i)))
       {
         if (pcPic->poc == this->getPOC() - pRPL1->getRefPicIdentifier(i))
@@ -1208,10 +1284,17 @@ void Slice::applyReferencePictureListBasedMarking(PicList& rcListPic, const Refe
           pcPic->longTerm = true;
         }
       }
+#if JVET_O1159_SCALABILITY
+      }
+#endif
     }
     // mark the picture as "unused for reference" if it is not in
     // the Reference Picture List
+#if JVET_O1159_SCALABILITY
+    if( pcPic->layerId == layerId && pcPic->poc != m_iPOC && isReference == 0 )
+#else
     if (pcPic->poc != this->getPOC() && isReference == 0)
+#endif
     {
       pcPic->referenced = false;
       pcPic->longTerm = false;
@@ -1234,12 +1317,23 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
 
   if (this->isIDRorBLA()) return 0; //Assume that all pic in the DPB will be flushed anyway so no need to check.
 
+#if JVET_O1159_SCALABILITY
+  int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures() + pRPL->getNumberOfInterLayerPictures();
+#else
   int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures();
+#endif
   //Check long term ref pics
   for (int ii = 0; pRPL->getNumberOfLongtermPictures() > 0 && ii < numberOfPictures; ii++)
   {
+#if JVET_O1159_SCALABILITY
+    if( !pRPL->isRefPicLongterm( ii ) || pRPL->isInterLayerRefPic( ii ) )
+    {
+      continue;
+    }
+#else
     if (!pRPL->isRefPicLongterm(ii))
       continue;
+#endif
 
     notPresentPoc = pRPL->getRefPicIdentifier(ii);
     isAvailable = 0;
@@ -1326,12 +1420,23 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
 
   if (this->isIDRorBLA()) return 0; //Assume that all pic in the DPB will be flushed anyway so no need to check.
 
+#if JVET_O1159_SCALABILITY
+  int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures() + pRPL->getNumberOfInterLayerPictures();
+#else
   int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures();
+#endif
   //Check long term ref pics
   for (int ii = 0; pRPL->getNumberOfLongtermPictures() > 0 && ii < numberOfPictures; ii++)
   {
+#if JVET_O1159_SCALABILITY
+    if( !pRPL->isRefPicLongterm( ii ) || pRPL->isInterLayerRefPic( ii ) )
+    {
+      continue;
+    }
+#else
     if (!pRPL->isRefPicLongterm(ii))
       continue;
+#endif
 
     notPresentPoc = pRPL->getRefPicIdentifier(ii);
     isAvailable = 0;
@@ -1413,8 +1518,24 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
 
 bool Slice::isPOCInRefPicList(const ReferencePictureList *rpl, int poc )
 {
+#if JVET_O1159_SCALABILITY
+  for( int i = 0; i < rpl->getNumberOfLongtermPictures() + rpl->getNumberOfShorttermPictures() + rpl->getNumberOfInterLayerPictures(); i++ )
+  {
+    if( rpl->isInterLayerRefPic( i ) )
+    {
+      // Diagonal inter-layer prediction is not allowed
+      CHECK( rpl->getRefPicIdentifier( i ), "ILRP identifier should be 0" );
+
+      if( poc == m_iPOC )
+      {
+        return true;
+      }
+    }
+    else
+#else
   for (int i = 0; i < rpl->getNumberOfLongtermPictures() + rpl->getNumberOfShorttermPictures(); i++)
   {
+#endif
     if (rpl->isRefPicLongterm(i))
     {
       if (poc == rpl->getRefPicIdentifier(i))
@@ -1504,6 +1625,7 @@ void Slice::checkConformanceForDRAP( uint32_t temporalId )
   }
 }
 
+#if !JVET_O1159_SCALABILITY
 void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1)
 {
   Picture* rpcPic;
@@ -1678,6 +1800,7 @@ void Slice::createExplicitReferencePictureSetFromReference(PicList& rcListPic, c
   this->setRPL1idx(-1);
   this->setRPL1(pLocalRPL1);
 }
+#endif
 
 //! get AC and DC values for weighted pred
 void  Slice::getWpAcDcParam(const WPACDCParam *&wp) const
@@ -1795,12 +1918,43 @@ unsigned Slice::getMinPictureDistance() const
 VPS::VPS()
   : m_VPSId(0)
   , m_uiMaxLayers(1)
-  , m_vpsExtensionFlag()
+#if JVET_P0185
+  , m_vpsMaxSubLayers(1)
+#endif
+#if JVET_O1159_SCALABILITY
+  , m_vpsAllLayersSameNumSubLayersFlag (true)
+  , m_vpsAllIndependentLayersFlag(true)
+  , m_vpsEachLayerIsAnOlsFlag (1)
+  , m_vpsOlsModeIdc (0)
+  , m_vpsNumOutputLayerSets (1)
+#endif
+, m_vpsExtensionFlag()
 {
+#if JVET_O1159_SCALABILITY
+  for (int i = 0; i < MAX_VPS_LAYERS; i++)
+  {
+    m_vpsLayerId[i] = 0;
+    m_vpsIndependentLayerFlag[i] = 1;
+    for (int j = 0; j < MAX_VPS_LAYERS; j++)
+    {
+      m_vpsDirectRefLayerFlag[i][j] = 0;
+      m_directRefLayerIdx[i][j] = MAX_VPS_LAYERS;
+      m_interLayerRefIdx[i][i] = NOT_VALID;
+    }
+  }
+  for (int i = 0; i < MAX_NUM_OLSS; i++)
+  {
+    for (int j = 0; j < MAX_VPS_LAYERS; j++)
+    {
+      m_vpsOlsOutputLayerFlag[i][j] = 0;
+    }
+  }
+#else
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_vpsIncludedLayerId[i] = 0;
   }
+#endif
 }
 
 VPS::~VPS()
@@ -1886,11 +2040,17 @@ PicHeader::PicHeader()
   m_localRPL0.setNumberOfShorttermPictures(0);
   m_localRPL0.setNumberOfLongtermPictures(0);
   m_localRPL0.setLtrpInSliceHeaderFlag(0);
+#if JVET_O1159_SCALABILITY
+  m_localRPL0.setNumberOfInterLayerPictures( 0 );
+#endif
 
   m_localRPL1.setNumberOfActivePictures(0);
   m_localRPL1.setNumberOfShorttermPictures(0);
   m_localRPL1.setNumberOfLongtermPictures(0);
   m_localRPL1.setLtrpInSliceHeaderFlag(0);
+#if JVET_O1159_SCALABILITY
+  m_localRPL1.setNumberOfInterLayerPictures( 0 );
+#endif
 
   m_alfApsId.resize(0);
 }
@@ -2344,6 +2504,9 @@ PPS::PPS()
 , m_numTileCols                      (1)
 , m_numTileRows                      (1)
 , m_rectSliceFlag                    (1)  
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  , m_singleSlicePerSubPicFlag       (0)
+#endif
 , m_numSlicesInPic                   (1)
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
@@ -2418,6 +2581,9 @@ PPS::PPS()
   m_tileRowBd.clear();
   m_ctuToTileCol.clear();
   m_ctuToTileRow.clear();
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  m_ctuToSubPicIdx.clear();
+#endif
   m_rectSlices.clear();
   m_sliceMap.clear();
 #endif
@@ -2432,6 +2598,9 @@ PPS::~PPS()
   m_tileRowBd.clear();
   m_ctuToTileCol.clear();
   m_ctuToTileRow.clear();
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  m_ctuToSubPicIdx.clear();
+#endif
   m_rectSlices.clear();
   m_sliceMap.clear();
 
@@ -2456,6 +2625,9 @@ void PPS::resetTileSliceInfo()
   m_tileRowBd.clear();
   m_ctuToTileCol.clear();
   m_ctuToTileRow.clear();
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  m_ctuToSubPicIdx.clear();
+#endif
   m_rectSlices.clear();
   m_sliceMap.clear();
 }
@@ -2565,7 +2737,24 @@ void PPS::initRectSliceMap()
   // allocate new memory for slice list
   CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
   m_sliceMap.resize( m_numSlicesInPic );
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  if ((getNumSubPics() > 0) && getSingleSlicePerSubPicFlag())
+  {
+    for (uint32_t i = 0; i <= getNumSubPics() - 1; i++)
+    {
+      m_sliceMap[i].initSliceMap();
+    }
+    uint32_t picSizeInCtu = getPicWidthInCtu() * getPicHeightInCtu();
+    uint32_t sliceIdx;
+    for (uint32_t i = 0; i < picSizeInCtu; i++)
+    {
+      sliceIdx = getCtuToSubPicIdx(i);
+      m_sliceMap[sliceIdx].pushToCtuAddrInSlice(i);
+    }
+  }
+  else
+  {
+#endif
   // generate CTU maps for all rectangular slices in picture
   for( uint32_t i = 0; i < m_numSlicesInPic; i++ )
   {
@@ -2620,7 +2809,9 @@ void PPS::initRectSliceMap()
                                       ctuY, getTileRowBd( tileY + 1 ), m_picWidthInCtu);
     } 
   }
-
+#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
+  }
+#endif
   // check for valid rectangular slice map
   checkSliceMap();
 }
@@ -2693,29 +2884,49 @@ APS::~APS()
 {
 }
 
-
+#if JVET_O1159_SCALABILITY
+ReferencePictureList::ReferencePictureList( const bool interLayerPicPresentFlag )
+#else
 ReferencePictureList::ReferencePictureList()
+#endif
   : m_numberOfShorttermPictures(0)
   , m_numberOfLongtermPictures(0)
   , m_numberOfActivePictures(MAX_INT)
   , m_ltrp_in_slice_header_flag(0)
+#if JVET_O1159_SCALABILITY
+  , m_interLayerPresentFlag( interLayerPicPresentFlag )
+  , m_numberOfInterLayerPictures( 0 )
+#endif
 {
   ::memset(m_isLongtermRefPic, 0, sizeof(m_isLongtermRefPic));
   ::memset(m_refPicIdentifier, 0, sizeof(m_refPicIdentifier));
   ::memset(m_POC, 0, sizeof(m_POC));
+#if JVET_O1159_SCALABILITY
+  ::memset( m_isInterLayerRefPic, 0, sizeof( m_isInterLayerRefPic ) );
+  ::memset( m_interLayerRefPicIdx, 0, sizeof( m_interLayerRefPicIdx ) );
+#endif
 }
 
 ReferencePictureList::~ReferencePictureList()
 {
 }
 
+#if JVET_O1159_SCALABILITY
+void ReferencePictureList::setRefPicIdentifier( int idx, int identifier, bool isLongterm, bool isInterLayerRefPic, int interLayerIdx )
+#else
 void ReferencePictureList::setRefPicIdentifier(int idx, int identifier, bool isLongterm)
+#endif
 {
   m_refPicIdentifier[idx] = identifier;
   m_isLongtermRefPic[idx] = isLongterm;
 
   m_deltaPocMSBPresentFlag[idx] = false;
   m_deltaPOCMSBCycleLT[idx] = 0;
+
+#if JVET_O1159_SCALABILITY
+  m_isInterLayerRefPic[idx] = isInterLayerRefPic;
+  m_interLayerRefPicIdx[idx] = interLayerIdx;
+#endif
 }
 
 int ReferencePictureList::getRefPicIdentifier(int idx) const
@@ -3500,9 +3711,16 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         }
         else
         {
+#if JVET_P0185
+          m_vpsMap.clear();
+          m_vpsMap.allocatePS(0);
+          m_activeVPSId = 0;
+          m_vpsMap.setActive(0);
+#else
           //No actual VPS
           m_activeVPSId = -1;
           m_vpsMap.clear();
+#endif
         }
 #endif
 
@@ -3561,6 +3779,14 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
 {
   parameterSet->setSPSId(psId);
 }
+
+#if JVET_P0185
+template <>
+void ParameterSetMap<VPS>::setID(VPS* parameterSet, const int psId)
+{
+  parameterSet->setVPSId(psId);
+}
+#endif
 
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
@@ -3764,7 +3990,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
             scaledRefPic[j]->referenced = true;
 
 #if JVET_P1006_PICTURE_HEADER
-            scaledRefPic[ j ]->finalInit( *sps, *pps, picHeader, apss, lmcsAps, scalingListAps );
+#if JVET_O1159_SCALABILITY
+            scaledRefPic[j]->finalInit( m_pcPic->cs->vps, *sps, *pps, picHeader, apss, lmcsAps, scalingListAps );
+#else
+            scaledRefPic[j]->finalInit( *sps, *pps, picHeader, apss, lmcsAps, scalingListAps );
+#endif
 #else
             scaledRefPic[ j ]->finalInit( *sps, *pps, apss, lmcsAps, scalingListAps );
 #endif

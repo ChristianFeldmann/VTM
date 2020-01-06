@@ -116,6 +116,10 @@ uint32_t DecApp::decode()
 #endif
   bool loopFiltered = false;
 
+#if JVET_P1019_OUTPUT_LAYER_SET
+  bool bPicSkipped = false;
+#endif
+
   while (!!bitstreamFile)
   {
 #if JVET_P1006_PICTURE_HEADER
@@ -150,14 +154,48 @@ uint32_t DecApp::decode()
             (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
              nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
         {
+#if JVET_N0278_FIXES
+          xFlushOutput(pcListPic, nalu.m_nuhLayerId);
+#else
           xFlushOutput(pcListPic);
+#endif
         }
 
         // parse NAL unit syntax if within target decoding layer
+#if JVET_P1019_OUTPUT_LAYER_SET
+        if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu))
+#else
         if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu) && isNaluTheTargetLayer(&nalu))
+#endif
         {
+#if JVET_P1019_OUTPUT_LAYER_SET
+          if (bPicSkipped)
+          {
+            if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
+            {
+              if (m_cDecLib.isSliceNaluFirstInAU(true, nalu))
+              {
+                m_cDecLib.resetAccessUnitNals();
+                m_cDecLib.resetAccessUnitApsNals();
+              }
+              bPicSkipped = false;
+            }
+          }
+#endif
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
+#if JVET_P1019_OUTPUT_LAYER_SET
+          if (nalu.m_nalUnitType == NAL_UNIT_VPS)
+          {
+            deriveOutputLayerSet();
+          }
+#endif
         }
+#if JVET_P1019_OUTPUT_LAYER_SET
+        else
+        {
+          bPicSkipped = true;
+        }
+#endif
       }
     }
 #else 
@@ -212,7 +250,11 @@ uint32_t DecApp::decode()
 #endif
       }
 
+#if JVET_P1019_OUTPUT_LAYER_SET
+      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu))
+#else
       if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
+#endif
       {
         bNewPicture = false;
       }
@@ -248,7 +290,11 @@ uint32_t DecApp::decode()
 #endif
 
 
-    if( ( bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) && !m_cDecLib.getFirstSliceInSequence() )
+#if JVET_P1019_OUTPUT_LAYER_SET
+    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
+#else
+    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence())
+#endif
     {
       if (!loopFiltered || bitstreamFile)
       {
@@ -297,7 +343,11 @@ uint32_t DecApp::decode()
 
 #if JVET_N0278_FIXES
         std::string reconFileName = m_reconFileName;
-        if( m_reconFileName.compare( "/dev/null" ) && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1)  && (m_iTargetLayer == -1) )
+#if JVET_P1019_OUTPUT_LAYER_SET
+        if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu)))
+#else
+        if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (m_iTargetLayer == -1))
+#endif
         {
           size_t pos = reconFileName.find_last_of('.');
           if (pos != string::npos)
@@ -309,7 +359,10 @@ uint32_t DecApp::decode()
             reconFileName.append( std::to_string( nalu.m_nuhLayerId ) );
           }
         }
-        m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
+#if JVET_P1019_OUTPUT_LAYER_SET
+        if(((m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu))) || (m_cDecLib.getVPS() == nullptr))
+#endif
+        m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open(reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon); // write mode
 #else
         m_cVideoIOYuvReconFile.open( m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
         openedReconFile = true;
@@ -368,6 +421,173 @@ uint32_t DecApp::decode()
 
   return nRet;
 }
+
+#if JVET_P1019_OUTPUT_LAYER_SET
+bool DecApp::deriveOutputLayerSet()
+{
+  int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
+  int TotalNumOlss = 0;
+  int each_layer_is_an_ols_flag = m_cDecLib.getVPS()->getEachLayerIsAnOlsFlag();
+  int ols_mode_idc = m_cDecLib.getVPS()->getOlsModeIdc();
+  int num_output_layer_sets_minus1 = m_cDecLib.getVPS()->getNumOutputLayerSets() - 1;
+  int i = 0, j = 0, k = 0, r = 0;
+  int*  NumOutputLayersInOls;
+  int*  NumLayersInOls;
+  int** OutputLayerIdInOls;
+  int** OutputLayerIdx;
+  int** layerIncludedInOlsFlag;
+  int** LayerIdInOls;
+  int** dependencyFlag;
+  int** RefLayerIdx;
+  int*  NumRefLayers;
+
+  if (vps_max_layers_minus1 == 0)
+    TotalNumOlss = 1;
+  else if (each_layer_is_an_ols_flag || ols_mode_idc == 0 || ols_mode_idc == 1)
+    TotalNumOlss = vps_max_layers_minus1 + 1;
+  else if (ols_mode_idc == 2)
+    TotalNumOlss = num_output_layer_sets_minus1 + 1;
+
+  NumOutputLayersInOls = new int[m_cDecLib.getVPS()->getNumOutputLayerSets()];
+  NumLayersInOls = new int[m_cDecLib.getVPS()->getNumOutputLayerSets()];
+  OutputLayerIdInOls = new int*[TotalNumOlss];
+  OutputLayerIdx = new int*[TotalNumOlss];
+  layerIncludedInOlsFlag = new int*[TotalNumOlss];
+  LayerIdInOls = new int*[TotalNumOlss];
+
+  for (i = 0; i < TotalNumOlss; i++)
+  {
+    OutputLayerIdInOls[i] = new int[vps_max_layers_minus1 + 1];
+    OutputLayerIdx[i] = new int[vps_max_layers_minus1 + 1];
+    layerIncludedInOlsFlag[i] = new int[vps_max_layers_minus1 + 1];
+    LayerIdInOls[i] = new int[vps_max_layers_minus1 + 1];
+  }
+
+  dependencyFlag = new int*[vps_max_layers_minus1 + 1];
+  RefLayerIdx = new int*[vps_max_layers_minus1 + 1];
+  NumRefLayers = new int[vps_max_layers_minus1 + 1];
+
+  for (i = 0; i <= vps_max_layers_minus1; i++)
+  {
+    dependencyFlag[i] = new int[vps_max_layers_minus1 + 1];
+    RefLayerIdx[i] = new int[vps_max_layers_minus1 + 1];
+  }
+
+  for (i = 0; i <= vps_max_layers_minus1; i++) {
+    for (j = 0; j <= vps_max_layers_minus1; j++) {
+      dependencyFlag[i][j] = m_cDecLib.getVPS()->getDirectRefLayerFlag(i, j);
+      for (k = 0; k < i; k++)
+        if (m_cDecLib.getVPS()->getDirectRefLayerFlag(i, k) && dependencyFlag[k][j])
+          dependencyFlag[i][j] = 1;
+    }
+  }
+  for (i = 0; i <= vps_max_layers_minus1; i++)
+  {
+    for (j = 0, r = 0; j <= vps_max_layers_minus1; j++)
+    {
+      if (dependencyFlag[i][j])
+        RefLayerIdx[i][r++] = j;
+    }
+    NumRefLayers[i] = r;
+  }
+
+  NumOutputLayersInOls[0] = 1;
+  OutputLayerIdInOls[0][0] = m_cDecLib.getVPS()->getLayerId(0);
+  for (i = 1; i < TotalNumOlss; i++)
+  {
+    if (each_layer_is_an_ols_flag || ols_mode_idc == 0)
+    {
+      NumOutputLayersInOls[i] = 1;
+      OutputLayerIdInOls[i][0] = m_cDecLib.getVPS()->getLayerId(i);
+    }
+    else if (ols_mode_idc == 1) {
+      NumOutputLayersInOls[i] = i + 1;
+      for (j = 0; j < NumOutputLayersInOls[i]; j++)
+        OutputLayerIdInOls[i][j] = m_cDecLib.getVPS()->getLayerId(j);
+    }
+    else if (ols_mode_idc == 2) {
+      for (j = 0; j <= vps_max_layers_minus1; j++)
+      {
+        layerIncludedInOlsFlag[i][j] = 0;
+      }
+      for (k = 0, j = 0; k <= vps_max_layers_minus1; k++)
+      {
+        if (m_cDecLib.getVPS()->getOlsOutputLayerFlag(i, k))
+        {
+          layerIncludedInOlsFlag[i][k] = 1;
+          OutputLayerIdx[i][j] = k;
+          OutputLayerIdInOls[i][j++] = m_cDecLib.getVPS()->getLayerId(k);
+        }
+      }
+      NumOutputLayersInOls[i] = j;
+      for (j = 0; j < NumOutputLayersInOls[i]; j++)
+      {
+        int idx = OutputLayerIdx[i][j];
+        for (k = 0; k < NumRefLayers[idx]; k++)
+          layerIncludedInOlsFlag[i][RefLayerIdx[idx][k]] = 1;
+      }
+    }
+  }
+
+  m_targetOutputLayerIdSet.clear();
+  for (i = 0; i < NumOutputLayersInOls[m_iTargetOLS]; i++)
+    m_targetOutputLayerIdSet.push_back(OutputLayerIdInOls[m_iTargetOLS][i]);
+
+  NumLayersInOls[0] = 1;
+  LayerIdInOls[0][0] = m_cDecLib.getVPS()->getLayerId(0);
+  for (i = 1; i < TotalNumOlss; i++)
+  {
+    if (each_layer_is_an_ols_flag)
+    {
+      NumLayersInOls[i] = 1;
+      LayerIdInOls[i][0] = m_cDecLib.getVPS()->getLayerId(i);
+    }
+    else if (ols_mode_idc == 0 || ols_mode_idc == 1)
+    {
+      NumLayersInOls[i] = i + 1;
+      for (j = 0; j < NumLayersInOls[i]; j++)
+        LayerIdInOls[i][j] = m_cDecLib.getVPS()->getLayerId(j);
+    }
+    else if (ols_mode_idc == 2)
+    {
+      for (k = 0, j = 0; k <= vps_max_layers_minus1; k++)
+        if (layerIncludedInOlsFlag[i][k])
+          LayerIdInOls[i][j++] = m_cDecLib.getVPS()->getLayerId(k);
+      NumLayersInOls[i] = j;
+    }
+  }
+
+  m_targetDecLayerIdSet.clear();
+  for (i = 0; i < NumLayersInOls[m_iTargetOLS]; i++)
+    m_targetDecLayerIdSet.push_back(LayerIdInOls[m_iTargetOLS][i]);
+
+  delete[] NumOutputLayersInOls;
+  delete[] NumLayersInOls;
+  delete[] NumRefLayers;
+
+  for (i = 0; i < TotalNumOlss; i++)
+  {
+    delete[] OutputLayerIdInOls[i];
+    delete[] OutputLayerIdx[i];
+    delete[] layerIncludedInOlsFlag[i];
+    delete[] LayerIdInOls[i];
+  }
+  delete[] OutputLayerIdInOls;
+  delete[] OutputLayerIdx;
+  delete[] layerIncludedInOlsFlag;
+  delete[] LayerIdInOls;
+
+  for (i = 0; i <= vps_max_layers_minus1; i++)
+  {
+    delete[] dependencyFlag[i];
+    delete[] RefLayerIdx[i];
+  }
+  delete[] dependencyFlag;
+  delete[] RefLayerIdx;
+
+  return true;
+}
+#endif
 
 #if JVET_P1006_PICTURE_HEADER
 /**
@@ -593,7 +813,9 @@ void DecApp::xCreateDecLib()
   );
   m_cDecLib.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
 
+#if !JVET_P1019_OUTPUT_LAYER_SET
   m_cDecLib.setTargetDecLayer(m_iTargetLayer);
+#endif
 
   if (!m_outputDecodedSEIMessagesFilename.empty())
   {
@@ -1014,6 +1236,26 @@ bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
   return false;
 }
 
+#if JVET_P1019_OUTPUT_LAYER_SET
+/** \param nalu Input nalu to check whether its LayerId is within targetOutputLayerIdSet
+ */
+bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
+{
+  if (m_targetOutputLayerIdSet.size() == 0) // By default, the set is empty, meaning all LayerIds are allowed
+  {
+    return true;
+  }
+  for (std::vector<int>::iterator it = m_targetOutputLayerIdSet.begin(); it != m_targetOutputLayerIdSet.end(); it++)
+  {
+    if (nalu->m_nuhLayerId == (*it))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+#else
 /** \param nalu Input nalu to check whether its LayerId is the specified target layer
 */
 bool DecApp::isNaluTheTargetLayer(InputNALUnit* nalu)
@@ -1023,5 +1265,6 @@ bool DecApp::isNaluTheTargetLayer(InputNALUnit* nalu)
 
   return false;
 }
+#endif
 
 //! \}

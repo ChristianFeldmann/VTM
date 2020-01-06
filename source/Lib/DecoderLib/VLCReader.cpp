@@ -2260,7 +2260,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
           }
         }
 #if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
-        CHECK(sumUiCode == 0, "at least one value of j such that the value of vps_direct_dependency_flag[ i ][ j ] is equal to 1,when vps_independent_layer_flag[ i ] is equal to 0 ");
+        CHECK(sumUiCode == 0, "There has to be at least one value of j such that the value of vps_direct_dependency_flag[ i ][ j ] is equal to 1,when vps_independent_layer_flag[ i ] is equal to 0 ");
 #endif
       }
     }

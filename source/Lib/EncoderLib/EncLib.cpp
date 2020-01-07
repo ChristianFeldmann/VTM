@@ -1717,6 +1717,13 @@ void EncLib::xInitSPS(SPS &sps)
 
 #if JVET_O1159_SCALABILITY
   sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
+#if JVET_P0182
+  for (unsigned int i = 0; i < vps.getMaxLayers(); ++i)
+  {
+    CHECK((vps.getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
+  }
+#endif
+
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
 #elif JVET_P0590_SCALING_WINDOW
   sps.setRprEnabledFlag( m_rprEnabled );

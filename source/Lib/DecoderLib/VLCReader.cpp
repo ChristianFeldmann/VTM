@@ -414,7 +414,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
       if (!rpl->getLtrpInSliceHeaderFlag())
         READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
 #if JVET_O1159_SCALABILITY
-      rpl->setRefPicIdentifier( ii, deltaValue, isLongTerm, false, 0 );
+      rpl->setRefPicIdentifier( ii, code, isLongTerm, false, 0 );
 #else
       rpl->setRefPicIdentifier(ii, code, isLongTerm);
 #endif 
@@ -3473,7 +3473,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
             {
               READ_CODE(sps->getBitsForPOC(), uiCode, "slice_poc_lsb_lt[i][j]");
 #if JVET_O1159_SCALABILITY
-              pcSlice->getLocalRPL0()->setRefPicIdentifier( i, uiCode, true, false, 0 );
+              pcSlice->getLocalRPL1()->setRefPicIdentifier( i, uiCode, true, false, 0 );
 #else
               pcSlice->getLocalRPL1()->setRefPicIdentifier(i, uiCode, true);
 #endif

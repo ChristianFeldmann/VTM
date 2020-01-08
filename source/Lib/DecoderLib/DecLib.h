@@ -219,12 +219,20 @@ protected:
 #if JVET_N0278_FIXES
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
-  void  xCreateUnavailablePicture( int iUnavailablePoc, bool longTermFlag, const int layerId );
+#if JVET_P0184
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
+#else
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId);
+#endif
   void  xActivateParameterSets( const int layerId );
 #else
   Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
   void  xCreateLostPicture (int iLostPOC);
+#if JVET_P0184
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const bool interLayerRefPicFlag);
+#else
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
+#endif
   void      xActivateParameterSets();
 #endif
 #if JVET_P1006_PICTURE_HEADER

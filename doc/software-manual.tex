@@ -2131,12 +2131,6 @@ Code deblocking filter parameters in slice headers rather than picture header.
 Code SAO parameters in slice headers rather than picture header.
 \\
 
-\Option{SliceLevelAlf} &
-%\ShortOption{\None} &
-\Default{true} &
-Code ALF parameters in slice headers rather than picture header.
-\\
-
 \Option{TransformSkip} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -2162,6 +2156,12 @@ decision for chroma TUs.  When disabled, no RDO search is performed for
 chroma TUs.
 \par
 This option has no effect if TransformSkip is disabled.
+\\
+
+\Option{ALF} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables adaptive loop filter.
 \\
 
 \Option{UseNonLinearAlfLuma} &

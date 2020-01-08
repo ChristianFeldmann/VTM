@@ -117,7 +117,7 @@
 	\@strutb \it Title: & \@title \\
 	\@strutb \it Status: & \@jvetdocstatus \\
 	\@strutb \it Purpose: & \@jvetdocpurpose \\
-	\@strutb \it Author(s): & %
+	\@strutb \it Editors: & %
 		\setcounter{jvet@author@column}{0}
 		\let\@and\\
 		\renewcommand{\and}{\@and\setcounter{jvet@author@column}{0}}

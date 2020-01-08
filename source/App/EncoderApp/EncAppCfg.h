@@ -276,6 +276,20 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  bool m_subPicPresentFlag;
+  unsigned m_numSubPics;
+  std::vector<uint32_t> m_subPicCtuTopLeftX;
+  std::vector<uint32_t> m_subPicCtuTopLeftY;
+  std::vector<uint32_t> m_subPicWidth;
+  std::vector<uint32_t> m_subPicHeight;
+  std::vector<uint32_t> m_subPicTreatedAsPicFlag;
+  std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
+  bool m_subPicIdPresentFlag;
+  bool m_subPicIdSignallingPresentFlag;
+  unsigned m_subPicIdLen;
+  std::vector<uint32_t> m_subPicId;
+#endif
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxMTTHierarchyDepth;

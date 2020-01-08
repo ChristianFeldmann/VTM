@@ -414,6 +414,32 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
   {
     actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
   }
+#else
+  if (bSeqFirst)
+  {
+#if JVET_P0205_VPS_ID_0
+    if (slice->getSPS()->getVPSId() != 0)
+    {
+      actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+    }
+#else
+    actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+#endif
+  }
+  if (bSeqFirst)
+  {
+    actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+  }
+
+  if (m_pcEncLib->SPSNeedsWriting(slice->getSPS()->getSPSId())) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  {
+    CHECK(!(bSeqFirst), "Unspecified error"); // Implementations that use more than 1 SPS need to be aware of activation issues.
+    actualTotalBits += xWriteSPS(accessUnit, slice->getSPS());
+  }
+  if (m_pcEncLib->PPSNeedsWriting(slice->getPPS()->getPPSId())) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
+  {
+    actualTotalBits += xWritePPS(accessUnit, slice->getPPS(), slice->getSPS());
+  }  
 #endif
 
   return actualTotalBits;
@@ -2190,6 +2216,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
   }
 
 #if JVET_N0278_FIXES
+#if FIELD_CODING_FIX
+  if( isField && picIdInGOP == 0 )
+  {
+    for( int iGOPid = 0; iGOPid < max(2, m_iGopSize); iGOPid++ )
+    {
+      m_pcCfg->setEncodedFlag( iGOPid, false );
+    }
+  }
+#endif
   for( int iGOPid = picIdInGOP; iGOPid <= picIdInGOP; iGOPid++ )
   {
     // reset flag indicating whether pictures have been encoded
@@ -3884,7 +3919,11 @@ void EncGOP::printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const boo
     m_gcAnalyzeAll_in.setBits(m_gcAnalyzeAll.getBits());
     // prior to the above statement, the interlace analyser does not contain the correct total number of bits.
 
+#if FIELD_CODING_FIX
+    msg( INFO,"\n\nSUMMARY INTERLACED ---------------------------------------------\n" );
+#else
     msg( DETAILS,"\n\nSUMMARY INTERLACED ---------------------------------------------\n" );
+#endif    
 #if ENABLE_QPA
     m_gcAnalyzeAll_in.printOut( 'a', chFmt, printMSEBasedSNR, printSequenceMSE, printHexPsnr, printRprPSNR, bitDepths, useWPSNR );
 #else
@@ -4902,7 +4941,11 @@ void EncGOP::xCalculateInterlacedAddPSNR( Picture* pcPicOrgFirstField, Picture* 
 
   *PSNR_Y = dPSNR[COMPONENT_Y];
 
-  msg( DETAILS, "\n                                      Interlaced frame %d: [Y %6.4lf dB    U %6.4lf dB    V %6.4lf dB]", pcPicOrgSecondField->getPOC()/2 , dPSNR[COMPONENT_Y], dPSNR[COMPONENT_Cb], dPSNR[COMPONENT_Cr] );
+#if FIELD_CODING_FIX
+  msg( INFO, "\n                                      Interlaced frame %d: [Y %6.4lf dB    U %6.4lf dB    V %6.4lf dB]", pcPicOrgSecondField->getPOC()/2, dPSNR[COMPONENT_Y], dPSNR[COMPONENT_Cb], dPSNR[COMPONENT_Cr] );
+#else
+  msg( DETAILS, "\n                                      Interlaced frame %d: [Y %6.4lf dB    U %6.4lf dB    V %6.4lf dB]", pcPicOrgSecondField->getPOC()/2, dPSNR[COMPONENT_Y], dPSNR[COMPONENT_Cb], dPSNR[COMPONENT_Cr] );
+#endif  
   if (printFrameMSE)
   {
     msg( DETAILS, " [Y MSE %6.4lf  U MSE %6.4lf  V MSE %6.4lf]", MSEyuvframe[COMPONENT_Y], MSEyuvframe[COMPONENT_Cb], MSEyuvframe[COMPONENT_Cr] );

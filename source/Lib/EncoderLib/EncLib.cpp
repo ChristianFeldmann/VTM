@@ -1107,6 +1107,16 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
             compBuf.width,
             compBuf.height,
             isTopField );
+#if FIELD_CODING_FIX
+          // to get fields of true original buffer to avoid wrong PSNR calculation in summary
+          compBuf = pcPicYuvTrueOrg->get( compID );
+          separateFields( compBuf.buf,
+            pcField->getTrueOrigBuf().get(compID).buf,
+            compBuf.stride,
+            compBuf.width,
+            compBuf.height,
+            isTopField);
+#endif
         }
       }
 
@@ -1139,11 +1149,22 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
       }
     }
 
+#if !FIELD_CODING_FIX
     if( m_iNumPicRcvd && ( ( flush&&fieldNum == 1 ) || ( m_iPOCLast / 2 ) == 0 || m_iNumPicRcvd == m_iGOPSize ) )
     {
       keepDoing = false;
     }
+#endif
   }
+
+#if FIELD_CODING_FIX
+  if( m_iNumPicRcvd && ( flush || m_iPOCLast == 1 || m_iNumPicRcvd == m_iGOPSize ) )
+  {
+    m_picIdInGOP = 0;
+    m_iPOCLast -= 2;
+    keepDoing = false;
+  }
+#endif
 
   return keepDoing;
 }
@@ -1152,6 +1173,32 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
 {
   iNumEncoded = 0;
 
+#if FIELD_CODING_FIX
+  for( int fieldNum = 0; fieldNum < 2; fieldNum++ )
+  {
+    m_iPOCLast = ( m_iNumPicRcvd == m_iGOPSize ) ? m_uiNumAllPicCoded + m_iNumPicRcvd - 1 : m_iPOCLast + 1;
+
+    // compress GOP
+    m_cGOPEncoder.compressGOP( m_iPOCLast, m_iPOCLast < 2 ? m_iPOCLast + 1 : m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE, false, m_picIdInGOP );
+#if JVET_O0756_CALCULATE_HDRMETRICS
+    m_metricTime = m_cGOPEncoder.getMetricTime();
+#endif
+
+    m_picIdInGOP++;
+  }
+   
+  // go over all pictures in a GOP excluding first top field and first bottom field
+  if( m_picIdInGOP != m_iGOPSize && m_iPOCLast > 1 )
+  {
+    return true;
+  }
+
+  iNumEncoded += m_iNumPicRcvd;
+  m_uiNumAllPicCoded += m_iNumPicRcvd;
+  m_iNumPicRcvd = 0;
+  
+  return false;
+#else
   for( int fieldNum = 0; fieldNum < 2; fieldNum++ )
   {
     // compress GOP
@@ -1174,6 +1221,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
   }
 
   return false;
+#endif
 }
 #else
 void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
@@ -1202,6 +1250,16 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
                          compBuf.width,
                          compBuf.height,
                          isTopField);
+#if FIELD_CODING_FIX
+          // to get fields of true original buffer to avoid wrong PSNR calculation in summary
+          compBuf = pcPicYuvTrueOrg->get( compID );
+          separateFields( compBuf.buf,
+                         pcField->getTrueOrigBuf().get(compID).buf,
+                         compBuf.stride,
+                         compBuf.width,
+                         compBuf.height,
+                         isTopField);
+#endif
         }
       }
 
@@ -1261,7 +1319,7 @@ void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTr
  */
 void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId )
 {
-  // rotate he output buffer
+  // rotate the output buffer
   rcListPicYuvRecOut.push_back( rcListPicYuvRecOut.front() ); rcListPicYuvRecOut.pop_front();
 
   rpcPic=0;
@@ -2206,8 +2264,14 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
   ReferencePictureList*      rpl;
 
   int numRPLCandidates = getRPLCandidateSize(0);
+#if FIELD_CODING_FIX
+  // To allocate one additional memory for RPL of POC1 (first bottom field) which is not specified in cfg file
+  sps.createRPLList0(numRPLCandidates + (isFieldCoding ? 1 : 0));
+  sps.createRPLList1(numRPLCandidates + (isFieldCoding ? 1 : 0));
+#else
   sps.createRPLList0(numRPLCandidates);
   sps.createRPLList1(numRPLCandidates);
+#endif
   RPLList* rplList = 0;
 
   for (int i = 0; i < 2; i++)
@@ -2237,6 +2301,28 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       }
     }
   }
+
+#if FIELD_CODING_FIX
+  if (isFieldCoding)
+  {
+    // To set RPL of POC1 (first bottom field) which is not specified in cfg file
+    for (int i = 0; i < 2; i++)
+    {
+      rplList = (i == 0) ? sps.getRPLList0() : sps.getRPLList1();
+      rpl = rplList->getReferencePictureList(numRPLCandidates);
+      rpl->setNumberOfShorttermPictures(1);
+      rpl->setNumberOfLongtermPictures(0);
+      rpl->setNumberOfActivePictures(1);
+      rpl->setLtrpInSliceHeaderFlag(0);
+#if JVET_O1159_SCALABILITY
+      rpl->setRefPicIdentifier(0, 1, 0, false, 0);
+#else      
+      rpl->setRefPicIdentifier(0, 1, 0);
+#endif      
+      rpl->setPOC(0, 0);
+    }
+  }
+#endif
 
   //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first
@@ -2387,6 +2473,46 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
       }
     }
   }
+
+#if FIELD_CODING_FIX
+  if (slice->getPic()->fieldPic)
+  {
+    // To set RPL index of POC1 (first bottom field)
+    if (POCCurr == 1)
+    {
+      slice->setRPL0idx(getRPLCandidateSize(0));
+      slice->setRPL1idx(getRPLCandidateSize(0));
+    }
+    else if (m_uiIntraPeriod < 0)
+    {
+      // To set RPL indexes for LD
+      int numRPLCandidates = getRPLCandidateSize(0);
+      if (POCCurr < numRPLCandidates - m_iGOPSize + 2)
+      {
+        slice->setRPL0idx(POCCurr + m_iGOPSize - 2);
+        slice->setRPL1idx(POCCurr + m_iGOPSize - 2);
+      }
+      else
+      {
+        if (POCCurr%m_iGOPSize == 0)
+        {
+          slice->setRPL0idx(m_iGOPSize - 2);
+          slice->setRPL1idx(m_iGOPSize - 2);
+        }
+        else if (POCCurr%m_iGOPSize == 1)
+        {
+          slice->setRPL0idx(m_iGOPSize - 1);
+          slice->setRPL1idx(m_iGOPSize - 1);
+        }
+        else
+        {
+          slice->setRPL0idx(POCCurr % m_iGOPSize - 2);
+          slice->setRPL1idx(POCCurr % m_iGOPSize - 2);
+        }
+      }
+    }
+  }
+#endif
 
   const ReferencePictureList *rpl0 = (slice->getSPS()->getRPLList0()->getReferencePictureList(slice->getRPL0idx()));
   const ReferencePictureList *rpl1 = (slice->getSPS()->getRPLList1()->getReferencePictureList(slice->getRPL1idx()));

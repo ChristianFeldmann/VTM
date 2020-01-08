@@ -289,6 +289,8 @@
 
 #define JVET_P0182                                        1 // JVET-P0182: Check to verify if vps_independent_layer_flag[layer_id] is true, then inter_layer_pics_present_flag must be false
 
+#define JVET_P0184                                        1  //JVET-P0184: Decoding process for generating unavailable reference pictures
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;

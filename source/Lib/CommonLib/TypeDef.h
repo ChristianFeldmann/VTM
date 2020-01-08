@@ -52,6 +52,8 @@
 
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
+#define JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT        1 // JVET-P0135: add constraint on vps_direct_dependency_flag[ i ][ j ], when vps_independent_layer_flag[ i ] is equal to 0
+
 #define JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG           1 // JVET-P1024: single_slice_per_subpic_flag in the PPS
 
 #define JVET_P1038_ALF_PAD_RASTER_SLICE                   1 // JVET-P1038, handle ALF padding in raster scan slice
@@ -284,6 +286,8 @@
 #define JVET_P0171_SUBPICTURE_LAYOUT                      1  //JVET-P0171: subpicture layout
 
 #define JVET_P0185                                        1 // Infer vps_max_layers_minus1 to be equal to 0 when not present and also signal vps_max_sub_layers_minus1 
+
+#define JVET_P0182                                        1 // JVET-P0182: Check to verify if vps_independent_layer_flag[layer_id] is true, then inter_layer_pics_present_flag must be false
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 

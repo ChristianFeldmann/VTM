@@ -1,7 +1,21 @@
-How to build VTM
-================
+VTM reference software for VVC
+==============================
 
-The software uses CMake to create platform-specific build files. 
+This software package is the reference software for Versatile Video Coding (VVC). The reference software includes both encoder and decoder functionality.
+
+Reference software is useful in aiding users of a video coding standard to establish and test conformance and interoperability, and to educate users and demonstrate the capabilities of the standard. For these purposes, this software is provided as an aid for the study and implementation of Versatile Video Coding.
+
+The software has been jointly developed by the ITU-T Video Coding Experts Group (VCEG, Question 6 of ITU-T Study Group 16) and the ISO/IEC Moving Picture Experts Group (MPEG, Working Group 11 of Subcommittee 29 of ISO/IEC Joint Technical Committee 1).
+
+A software manual, which contains usage instructions, can be found in the "doc" subdirectory of this software package.
+
+Build instructions
+==================
+
+The CMake tool is used to create platform-specific build files. 
+
+Although CMake may be able to generate 32-bit binaries, **it is generally suggested to build 64-bit binaries**. 32-bit binaries are not able to access more than 2GB of RAM, which will not be sufficient for coding larger image formats. Building in 32-bit environments is not tested and will not be supported.
+
 
 Build instructions for plain CMake (suggested)
 ----------------------------------------------
@@ -86,16 +100,21 @@ To use the default system compiler simply call:
 ```bash
 make all
 ```
-For MSYS2 and MinGW: Open an MSYS MinGW 64-Bit terminal and change into the root directory of this project.
+
+
+**MSYS2 and MinGW (Windows)**
+
+**Note:** Build files for MSYS MinGW were added on request. The build platform is not regularily tested and can't be supported. 
+
+Open an MSYS MinGW 64-Bit terminal and change into the root directory of this project.
 
 Call:
 ```bash
 make all toolset=gcc
 ```
 
+The following tools need to be installed for MSYS2 and MinGW:
 
-Tool Installation on Windows
-----------------------------
 Download CMake: http://www.cmake.org/ and install it.
 
 Python and GnuWin32 are not mandatory, but they simplify the build process for the user.

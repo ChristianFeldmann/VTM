@@ -44,7 +44,6 @@ protected:
   bool     m_timingInfoPresentFlag;
   uint32_t m_numUnitsInTick;
   uint32_t m_timeScale;
-  bool     m_pocProportionalToTimingFlag;
   int      m_numTicksPocDiffOneMinus1;
 
 public:
@@ -52,7 +51,6 @@ public:
     : m_timingInfoPresentFlag      (false)
     , m_numUnitsInTick             (1001)
     , m_timeScale                  (60000)
-    , m_pocProportionalToTimingFlag(false)
     , m_numTicksPocDiffOneMinus1   (0)
   {}
 
@@ -63,9 +61,6 @@ public:
   uint32_t getNumUnitsInTick( ) const              { return m_numUnitsInTick;              }
   void     setTimeScale( uint32_t value )          { m_timeScale = value;                  }
   uint32_t getTimeScale( ) const                   { return m_timeScale;                   }
-
-  void     setPocProportionalToTimingFlag(bool x)  { m_pocProportionalToTimingFlag = x;    }
-  bool     getPocProportionalToTimingFlag( ) const { return m_pocProportionalToTimingFlag; }
 
   void     setNumTicksPocDiffOneMinus1(int x)      { m_numTicksPocDiffOneMinus1 = x;       }
   int      getNumTicksPocDiffOneMinus1( ) const    { return m_numTicksPocDiffOneMinus1;    }

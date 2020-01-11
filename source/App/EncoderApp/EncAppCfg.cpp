@@ -1201,8 +1201,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("GOPSize,g",                                       m_iGOPSize,                                           1, "GOP size of temporal structure")
   ("DRAPPeriod",                                      m_drapPeriod,                                         0, "DRAP period in frames (0: disable Dependent RAP indication SEI messages)")
   ("ReWriteParamSets",                                m_rewriteParamSets,                           false, "Enable rewriting of Parameter sets before every (intra) random access point")
-  //Alias with same name as in HM
-  ("ReWriteParamSetsFlag",                            m_rewriteParamSets,                           false, "Alias for ReWriteParamSets")
   ("IDRRefParamList",                                 m_idrRefParamList,                            false, "Enable indication of reference picture list syntax elements in slice headers of IDR pictures")
   // motion search options
   ("DisableIntraInInter",                             m_bDisableIntraPUsInInterSlices,                  false, "Flag to disable intra PUs in inter slices")
@@ -1393,8 +1391,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #if JVET_P0365_SCALING_MATRIX_LFNST
   ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
 #endif
-  ("DepQuant",                                        m_depQuantEnabledFlag,                                          true )
-  ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false )
+  ("DepQuant",                                        m_depQuantEnabledFlag,                                          true, "Enable  dependent quantization (Default: 1)" )
+  ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false,  "Enable sign hiding" )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
   ("MaxNumAffineMergeCand",                           m_maxNumAffineMergeCand,                             5u, "Maximum number of affine merge candidates")
   ("MaxNumTriangleCand",                              m_maxNumTriangleCand,                                5u, "Maximum number of triangle candidates")
@@ -4384,8 +4382,8 @@ void EncAppCfg::xPrintParameter()
     {
       msg(DETAILS, "[%d]th subpictures location                           :[%d %d]\n", i, m_subPicCtuTopLeftX[i], m_subPicCtuTopLeftY[i]);
       msg(DETAILS, "[%d]th subpictures size                           :[%d %d]\n", i, m_subPicWidth[i], m_subPicHeight[i]);
-      msg(DETAILS, "[%d]th subpictures treated as picture flag                           :%d\n", i, m_subPicTreatedAsPicFlag);
-      msg(DETAILS, "loop filter cross [%d]th subpictures enabled flag                           :%d\n", i, m_loopFilterAcrossSubpicEnabledFlag);
+      msg(DETAILS, "[%d]th subpictures treated as picture flag                           :%d\n", i, m_subPicTreatedAsPicFlag[i]);
+      msg(DETAILS, "loop filter cross [%d]th subpictures enabled flag                           :%d\n", i, m_loopFilterAcrossSubpicEnabledFlag[i]);
 
     }
   }
@@ -4396,7 +4394,7 @@ void EncAppCfg::xPrintParameter()
     for (int i = 0; i < m_numSubPics; i++) 
     {
       msg(DETAILS, "[%d]th subpictures ID length                           :%d\n", i, m_subPicIdLen);
-      msg(DETAILS, "[%d]th subpictures ID                          :%d\n", i, m_subPicId);
+      msg(DETAILS, "[%d]th subpictures ID                          :%d\n", i, m_subPicId[i]);
 
     }
   }
@@ -4454,7 +4452,7 @@ void EncAppCfg::xPrintParameter()
   }
 
   msg( DETAILS, "RateControl                            : %d\n", m_RCEnableRateControl );
-  msg( DETAILS, "WPMethod                               : %d\n", int(m_weightedPredictionMethod));
+  msg( DETAILS, "WeightedPredMethod                     : %d\n", int(m_weightedPredictionMethod));
 
   if(m_RCEnableRateControl)
   {

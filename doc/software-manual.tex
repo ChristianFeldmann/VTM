@@ -2254,6 +2254,12 @@ Adaptive LMCS mapping derivation options: Options 1 to 4 are for experimental te
 LMCS initial total codeword (valid values [$0 - 1023$]) to be used in LMCS mapping derivation when LMCSAdpOption is not equal to 0.
 \\
 
+\Option{LMCSOffset} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the LMCS chroma residual scaling offset. This parameter corresponds to the value of lmcsDeltaCrs, derived from lmcs_delta_sign_crs_flag and lmcs_delta_abs_crs, that are transmitted in the APS. Valid values are in the range [-7;7].
+\\
+
 \Option{ColorTransform} &
 %\ShortOption{\None} &
 \Default{false} &

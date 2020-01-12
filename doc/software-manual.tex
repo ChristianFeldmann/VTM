@@ -2511,26 +2511,6 @@ Specifies the location of chroma samples for bottom field.
 Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1).
 \\
 
-\Option{DefaultDisplayWindowFlag} &
-\Default{flag} &
-Indicates the presence of the Default Window parameters.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-false & Disabled \\
-true & Enabled \\
-\end{tabular}
-\\
-
-\Option{DefDispWinLeftOffset}%
-\Option{DefDispWinRightOffset}%
-\Option{DefDispWinTopOffset}%
-\Option{DefDispWinBottomOffset} &
-\Default{0} &
-Specifies the horizontal and vertical offset to be applied to the
-input video from the conformance window in luma samples.
-Must be a multiple of the chroma resolution (e.g. a multiple of two for 4:2:0).
-\\
-
 \Option{NumTicksPocDiffOneMinus} &
 \Default{0} &
 Specificies the value of the VUI syntax element `vui_num_ticks_poc_diff_one_minus1', which specifies the number of clock ticks corresponding to a difference of picture order count values equal to 1, and is used only when PocProportionalToTimingFlag is true.
@@ -4007,17 +3987,6 @@ When a non-empty file name is specified, information regarding any decoded SEI m
 \Default{\NotSet} &
 Specifies that the colour remapping SEI message should be applied to the output video, with the output written to this file.
 If no value is specified, the SEI message is ignored and no mapping is applied.
-\\
-
-\Option{RespectDefDispWindow (-w)} &
-%\ShortOption{-w} &
-\Default{0} &
-Video region to be output by the decoder.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-  0 & Output content inside the conformance window. \\
-  1 & Output content inside the default window. \\
-\end{tabular}
 \\
 
 \Option{OutputColourSpaceConvert} &

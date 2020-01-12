@@ -1881,6 +1881,13 @@ Specifies the locations of the vertical virtual boundaries in units of luma samp
 Specifies the locations of the horizontal virtual boundaries in units of luma samples
 \\
 
+\Option{EncDbOpt}&
+%\ShortOption{\None}&
+\Default{false}&
+Enables or disables encoder-side deblocking optimization. When it is enabled, deblocking filter is applied during mode decision.
+\\
+
+
 \end{OptionTableNoShorthand}
 
 
@@ -2184,6 +2191,12 @@ Value shall be in the range 1..8.
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables symmetric MVD mode.
+\\
+
+\Option{PLT} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables palette mode coding.
 \\
 
 \Option{BDPCM} &

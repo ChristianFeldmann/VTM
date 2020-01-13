@@ -913,6 +913,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<bool>       cfg_rwpSEIRwpGuardBandNotUsedForPredFlag   (0, 1,   0, std::numeric_limits<uint8_t>::max());
   SMultiValueInput<uint32_t>   cfg_rwpSEIRwpGuardBandType                 (0, 7,   0, 4*std::numeric_limits<uint8_t>::max());
 #endif
+#if JVET_P0597_GCMP_SEI
+  SMultiValueInput<uint32_t>   cfg_gcmpSEIFaceIndex                  (0, 5, 5, 6);
+  SMultiValueInput<uint32_t>   cfg_gcmpSEIFaceRotation               (0, 3, 5, 6);
+  SMultiValueInput<double>     cfg_gcmpSEIFunctionCoeffU             (0.0, 1.0, 5, 6);
+  SMultiValueInput<uint32_t>   cfg_gcmpSEIFunctionUAffectedByVFlag   (0, 1, 5, 6);
+  SMultiValueInput<double>     cfg_gcmpSEIFunctionCoeffV             (0.0, 1.0, 5, 6);
+  SMultiValueInput<uint32_t>   cfg_gcmpSEIFunctionVAffectedByUFlag   (0, 1, 5, 6);
+#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   const int defaultLadfQpOffset[3] = { 1, 0, 1 };
   const int defaultLadfIntervalLowerBound[2] = { 350, 833 };
@@ -1612,6 +1620,22 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIRwpBottomGuardBandHeight",                     cfg_rwpSEIRwpBottomGuardBandHeight,       cfg_rwpSEIRwpBottomGuardBandHeight,       "specifies the height of the guard band below the i-th packed region.")
   ("SEIRwpGuardBandNotUsedForPredFlag",               cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, cfg_rwpSEIRwpGuardBandNotUsedForPredFlag, "Specifies if the guard bands is used in the inter prediction process.")
   ("SEIRwpGuardBandType",                             cfg_rwpSEIRwpGuardBandType,               cfg_rwpSEIRwpGuardBandType,               "Specifies the type of the guard bands for the i-th packed region.")
+#endif
+#if JVET_P0597_GCMP_SEI
+  ("SEIGcmpEnabled",                                  m_gcmpSEIEnabled,                         false,                                    "Control generation of generalized cubemap projection SEI messages")
+  ("SEIGcmpCancelFlag",                               m_gcmpSEICancelFlag,                      true,                                     "Indicate that generalized cubemap projection SEI message cancels the persistence or follows")
+  ("SEIGcmpPersistenceFlag",                          m_gcmpSEIPersistenceFlag,                 false,                                    "Specifies the persistence of the generalized cubemap projection SEI messages")
+  ("SEIGcmpPackingType",                              m_gcmpSEIPackingType,                     0u,                                       "Specifies the packing type")
+  ("SEIGcmpMappingFunctionType",                      m_gcmpSEIMappingFunctionType,             0u,                                       "Specifies the mapping function used to adjust the sample locations of the cubemap projection")
+  ("SEIGcmpFaceIndex",                                cfg_gcmpSEIFaceIndex,                     cfg_gcmpSEIFaceIndex,                     "Specifies the face index for the i-th face")
+  ("SEIGcmpFaceRotation",                             cfg_gcmpSEIFaceRotation,                  cfg_gcmpSEIFaceRotation,                  "Specifies the rotation to be applied to the i-th face")
+  ("SEIGcmpFunctionCoeffU",                           cfg_gcmpSEIFunctionCoeffU,                cfg_gcmpSEIFunctionCoeffU,                "Specifies the coefficient used in the cubemap mapping function of the u-axis of the i-th face")
+  ("SEIGcmpFunctionUAffectedByVFlag",                 cfg_gcmpSEIFunctionUAffectedByVFlag,      cfg_gcmpSEIFunctionUAffectedByVFlag,      "Specifies whether the cubemap mapping function of the u-axis refers to the v position of the sample location")
+  ("SEIGcmpFunctionCoeffV",                           cfg_gcmpSEIFunctionCoeffV,                cfg_gcmpSEIFunctionCoeffV,                "Specifies the coefficient used in the cubemap mapping function of the v-axis of the i-th face")
+  ("SEIGcmpFunctionVAffectedByUFlag",                 cfg_gcmpSEIFunctionVAffectedByUFlag,      cfg_gcmpSEIFunctionVAffectedByUFlag,      "Specifies whether the cubemap mapping function of the v-axis refers to the u position of the sample location")
+  ("SEIGcmpGuardBandFlag",                            m_gcmpSEIGuardBandFlag,                   false,                                    "Indicate the existence of guard band areas in the picture")
+  ("SEIGcmpGuardBandBoundaryType",                    m_gcmpSEIGuardBandBoundaryType,           false,                                    "Indicate which face boundaries contain guard bands")
+  ("SEIGcmpGuardBandSamplesMinus1",                   m_gcmpSEIGuardBandSamplesMinus1,          0u,                                       "Specifies the number of guard band samples minus1 used in the cubemap projected picture")
 #endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   ("SEISubpicureLevelInfo",                           m_subpicureLevelInfoSEIEnabled,           false, "Control generation of Subpicture Level Information SEI messages")
@@ -2789,6 +2813,39 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
           m_rwpSEIRwpGuardBandType[i*4 + j]           =  cfg_rwpSEIRwpGuardBandType.values[i*4 + j];
         }
 
+      }
+    }
+  }
+#endif
+#if JVET_P0597_GCMP_SEI
+  if (m_gcmpSEIEnabled && !m_gcmpSEICancelFlag)
+  {
+    int numFace = m_gcmpSEIPackingType == 4 || m_gcmpSEIPackingType == 5 ? 5 : 6;
+    CHECK (!(cfg_gcmpSEIFaceIndex.values.size()                  == numFace), "Number of SEIGcmpFaceIndex must be equal to 5 when SEIGcmpPackingType is equal to 4 or 5, otherwise, it must be equal to 6");
+    CHECK (!(cfg_gcmpSEIFaceRotation.values.size()               == numFace), "Number of SEIGcmpFaceRotation must be equal to 5 when SEIGcmpPackingType is equal to 4 or 5, otherwise, it must be equal to 6");
+    m_gcmpSEIFaceIndex.resize(numFace);
+    m_gcmpSEIFaceRotation.resize(numFace);
+    if (m_gcmpSEIMappingFunctionType == 2)
+    {
+      CHECK (!(cfg_gcmpSEIFunctionCoeffU.values.size()           == numFace), "Number of SEIGcmpFunctionCoeffU must be equal to 5 when SEIGcmpPackingType is equal to 4 or 5, otherwise, it must be equal to 6");
+      CHECK (!(cfg_gcmpSEIFunctionUAffectedByVFlag.values.size() == numFace), "Number of SEIGcmpFunctionUAffectedByVFlag must be equal to 5 when SEIGcmpPackingType is equal to 4 or 5, otherwise, it must be equal to 6");
+      CHECK (!(cfg_gcmpSEIFunctionCoeffV.values.size()           == numFace), "Number of SEIGcmpFunctionCoeffV must be equal to 5 when SEIGcmpPackingType is equal to 4 or 5, otherwise, it must be equal to 6");
+      CHECK (!(cfg_gcmpSEIFunctionVAffectedByUFlag.values.size() == numFace), "Number of SEIGcmpFunctionVAffectedByUFlag must be equal to 5 when SEIGcmpPackingType is equal to 4 or 5, otherwise, it must be equal to 6");
+      m_gcmpSEIFunctionCoeffU.resize(numFace);
+      m_gcmpSEIFunctionUAffectedByVFlag.resize(numFace);
+      m_gcmpSEIFunctionCoeffV.resize(numFace);
+      m_gcmpSEIFunctionVAffectedByUFlag.resize(numFace);
+    }
+    for (int i = 0; i < numFace; i++)
+    {
+      m_gcmpSEIFaceIndex[i]                = cfg_gcmpSEIFaceIndex.values[i];
+      m_gcmpSEIFaceRotation[i]             = cfg_gcmpSEIFaceRotation.values[i];
+      if (m_gcmpSEIMappingFunctionType == 2)
+      {
+        m_gcmpSEIFunctionCoeffU[i]           = cfg_gcmpSEIFunctionCoeffU.values[i];
+        m_gcmpSEIFunctionUAffectedByVFlag[i] = cfg_gcmpSEIFunctionUAffectedByVFlag.values[i];
+        m_gcmpSEIFunctionCoeffV[i]           = cfg_gcmpSEIFunctionCoeffV.values[i];
+        m_gcmpSEIFunctionVAffectedByUFlag[i] = cfg_gcmpSEIFunctionVAffectedByUFlag.values[i];
       }
     }
   }
@@ -4229,6 +4286,27 @@ bool EncAppCfg::xCheckParameter()
   }
 #endif
 
+#if JVET_P0597_GCMP_SEI
+  if (m_gcmpSEIEnabled && !m_gcmpSEICancelFlag)
+  {
+    xConfirmPara( m_gcmpSEIMappingFunctionType < 0 || m_gcmpSEIMappingFunctionType > 2, "SEIGcmpMappingFunctionType must be in the range of 0 to 2");
+    int numFace = m_gcmpSEIPackingType == 4 || m_gcmpSEIPackingType == 5 ? 5 : 6;
+    for ( int i = 0; i < numFace; i++ )
+    {
+      xConfirmPara( m_gcmpSEIFaceIndex[i] < 0 || m_gcmpSEIFaceIndex[i] > 5,       "SEIGcmpFaceIndex must be in the range of 0 to 5");
+      xConfirmPara( m_gcmpSEIFaceRotation[i] < 0 || m_gcmpSEIFaceRotation[i] > 3, "SEIGcmpFaceRotation must be in the range of 0 to 3");
+      if (m_gcmpSEIMappingFunctionType == 2)
+      {
+        xConfirmPara( m_gcmpSEIFunctionCoeffU[i] <= 0.0 || m_gcmpSEIFunctionCoeffU[i] > 1.0, "SEIGcmpFunctionCoeffU must be in the range (0, 1]");
+        xConfirmPara( m_gcmpSEIFunctionCoeffV[i] <= 0.0 || m_gcmpSEIFunctionCoeffV[i] > 1.0, "SEIGcmpFunctionCoeffV must be in the range (0, 1]");
+      }
+    }
+    if (m_gcmpSEIGuardBandFlag)
+    {
+      xConfirmPara( m_gcmpSEIGuardBandSamplesMinus1 < 0 || m_gcmpSEIGuardBandSamplesMinus1 > 15, "SEIGcmpGuardBandSamplesMinus1 must be in the range of 0 to 15");
+    }
+  }
+#endif
 
 #if HEVC_SEI || JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI

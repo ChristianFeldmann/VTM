@@ -667,6 +667,23 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
 
+#if JVET_P0597_GCMP_SEI
+  bool                 m_gcmpSEIEnabled;
+  bool                 m_gcmpSEICancelFlag;
+  bool                 m_gcmpSEIPersistenceFlag;
+  uint32_t             m_gcmpSEIPackingType;
+  uint32_t             m_gcmpSEIMappingFunctionType;
+  std::vector<uint8_t> m_gcmpSEIFaceIndex;
+  std::vector<uint8_t> m_gcmpSEIFaceRotation;
+  std::vector<double>  m_gcmpSEIFunctionCoeffU;
+  std::vector<bool>    m_gcmpSEIFunctionUAffectedByVFlag;
+  std::vector<double>  m_gcmpSEIFunctionCoeffV;
+  std::vector<bool>    m_gcmpSEIFunctionVAffectedByUFlag;
+  bool                 m_gcmpSEIGuardBandFlag;
+  bool                 m_gcmpSEIGuardBandBoundaryType;
+  uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
+#endif
+
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   bool m_subpicureLevelInfoSEIEnabled;
 #endif

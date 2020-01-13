@@ -116,6 +116,9 @@ protected:
   void xParseSEIOmniViewport                  (SEIOmniViewport& sei,                  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIRegionWisePacking             (SEIRegionWisePacking& sei,             uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
 #endif
+#if JVET_P0597_GCMP_SEI
+  void xParseSEIGeneralizedCubemapProjection  (SEIGeneralizedCubemapProjection &sei,  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
+#endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   void xParseSEISubpictureLevelInfo           (SEISubpicureLevelInfo& sei, const SPS *sps, uint32_t payloadSize,            std::ostream *pDecodedMessageOutputStream);
 #endif

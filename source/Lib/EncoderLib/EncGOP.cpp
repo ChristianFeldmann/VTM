@@ -780,6 +780,14 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(seiRegionWisePacking);
   }
 #endif
+#if JVET_P0597_GCMP_SEI
+  if (m_pcCfg->getGcmpSEIEnabled())
+  {
+    SEIGeneralizedCubemapProjection *sei = new SEIGeneralizedCubemapProjection;
+    m_seiEncoder.initSEIGcmp(sei);
+    seiMessages.push_back(sei);
+  }
+#endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   if (m_pcCfg->getSubpicureLevelInfoSEIEnabled())
   {

@@ -283,6 +283,8 @@
 
 #define JVET_P0185                                        1 // Infer vps_max_layers_minus1 to be equal to 0 when not present and also signal vps_max_sub_layers_minus1 
 
+#define JVET_P0597_GCMP_SEI                               1 // JVET-P0597: generalized cubemap projection SEI message
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;

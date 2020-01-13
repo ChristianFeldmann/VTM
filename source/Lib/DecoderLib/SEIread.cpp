@@ -350,6 +350,12 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       xParseSEIRegionWisePacking((SEIRegionWisePacking&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
 #endif
+#if JVET_P0597_GCMP_SEI
+    case SEI::GENERALIZED_CUBEMAP_PROJECTION:
+      sei = new SEIGeneralizedCubemapProjection;
+      xParseSEIGeneralizedCubemapProjection((SEIGeneralizedCubemapProjection&) *sei, payloadSize, pDecodedMessageOutputStream);
+      break;
+#endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
     case SEI::SUBPICTURE_LEVEL_INFO:
       sei = new SEISubpicureLevelInfo;
@@ -1852,6 +1858,52 @@ void SEIReader::xParseSEIRegionWisePacking(SEIRegionWisePacking& sei, uint32_t p
         }
         sei_read_code( pDecodedMessageOutputStream,   3,  val,    "rwp_guard_band_reserved_zero_3bits" );
       }
+    }
+  }
+}
+#endif
+
+#if JVET_P0597_GCMP_SEI
+void SEIReader::xParseSEIGeneralizedCubemapProjection(SEIGeneralizedCubemapProjection& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
+{
+  uint32_t val;
+  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
+
+  sei_read_flag( pDecodedMessageOutputStream,          val,    "gcmp_cancel_flag" );                      sei.m_gcmpCancelFlag = val;
+  if (!sei.m_gcmpCancelFlag)
+  {
+    sei_read_flag( pDecodedMessageOutputStream,        val,    "gcmp_persistence_flag"    );              sei.m_gcmpPersistenceFlag = val;
+    sei_read_code( pDecodedMessageOutputStream,     3, val,    "gcmp_packing_type" );                     sei.m_gcmpPackingType = val;
+    sei_read_code( pDecodedMessageOutputStream,     2, val,    "gcmp_mapping_function_type"     );        sei.m_gcmpMappingFunctionType = val;
+
+    int numFace = sei.m_gcmpPackingType == 4 || sei.m_gcmpPackingType == 5 ? 5 : 6;
+    sei.m_gcmpFaceIndex.resize(numFace);
+    sei.m_gcmpFaceRotation.resize(numFace);
+    if (sei.m_gcmpMappingFunctionType == 2)
+    {
+      sei.m_gcmpFunctionCoeffU.resize(numFace);
+      sei.m_gcmpFunctionUAffectedByVFlag.resize(numFace);
+      sei.m_gcmpFunctionCoeffV.resize(numFace);
+      sei.m_gcmpFunctionVAffectedByUFlag.resize(numFace);
+    }
+
+    for (int i = 0; i < numFace; i++)
+    {
+      sei_read_code( pDecodedMessageOutputStream,   3, val,    "gcmp_face_index" );                       sei.m_gcmpFaceIndex[i] = val;
+      sei_read_code( pDecodedMessageOutputStream,   2, val,    "gcmp_face_rotation" );                    sei.m_gcmpFaceRotation[i] = val;
+      if (sei.m_gcmpMappingFunctionType == 2)
+      {
+        sei_read_code( pDecodedMessageOutputStream, 7, val,    "gcmp_function_coeff_u" );                 sei.m_gcmpFunctionCoeffU[i] = val;
+        sei_read_flag( pDecodedMessageOutputStream,    val,    "gcmp_function_u_affected_by_v_flag"    ); sei.m_gcmpFunctionUAffectedByVFlag[i] = val;
+        sei_read_code( pDecodedMessageOutputStream, 7, val,    "gcmp_function_coeff_v" );                 sei.m_gcmpFunctionCoeffV[i] = val;
+        sei_read_flag( pDecodedMessageOutputStream,    val,    "gcmp_function_v_affected_by_u_flag"    ); sei.m_gcmpFunctionVAffectedByUFlag[i] = val;
+      }
+    }
+    sei_read_flag( pDecodedMessageOutputStream,        val,    "gcmp_guard_band_flag" );                  sei.m_gcmpGuardBandFlag = val;
+    if (sei.m_gcmpGuardBandFlag)
+    {
+      sei_read_flag( pDecodedMessageOutputStream,      val,    "gcmp_guard_band_boundary_type" );         sei.m_gcmpGuardBandBoundaryType  = val;
+      sei_read_code( pDecodedMessageOutputStream,   4, val,    "gcmp_guard_band_samples_minus1" );        sei.m_gcmpGuardBandSamplesMinus1 = val;
     }
   }
 }

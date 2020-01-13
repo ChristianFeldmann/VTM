@@ -708,6 +708,22 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRwpSEIRwpGuardBandNotUsedForPredFlag              (m_rwpSEIRwpGuardBandNotUsedForPredFlag);
   m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
 #endif
+#if JVET_P0597_GCMP_SEI
+  m_cEncLib.setGcmpSEIEnabled                                    ( m_gcmpSEIEnabled );
+  m_cEncLib.setGcmpSEICancelFlag                                 ( m_gcmpSEICancelFlag );
+  m_cEncLib.setGcmpSEIPersistenceFlag                            ( m_gcmpSEIPersistenceFlag );                                                              
+  m_cEncLib.setGcmpSEIPackingType                                ( (uint8_t)m_gcmpSEIPackingType );
+  m_cEncLib.setGcmpSEIMappingFunctionType                        ( (uint8_t)m_gcmpSEIMappingFunctionType );                                                              
+  m_cEncLib.setGcmpSEIFaceIndex                                  ( m_gcmpSEIFaceIndex );
+  m_cEncLib.setGcmpSEIFaceRotation                               ( m_gcmpSEIFaceRotation );
+  m_cEncLib.setGcmpSEIFunctionCoeffU                             ( m_gcmpSEIFunctionCoeffU );
+  m_cEncLib.setGcmpSEIFunctionUAffectedByVFlag                   ( m_gcmpSEIFunctionUAffectedByVFlag );
+  m_cEncLib.setGcmpSEIFunctionCoeffV                             ( m_gcmpSEIFunctionCoeffV );
+  m_cEncLib.setGcmpSEIFunctionVAffectedByUFlag                   ( m_gcmpSEIFunctionVAffectedByUFlag );                                                              
+  m_cEncLib.setGcmpSEIGuardBandFlag                              ( m_gcmpSEIGuardBandFlag );
+  m_cEncLib.setGcmpSEIGuardBandBoundaryType                      ( m_gcmpSEIGuardBandBoundaryType );
+  m_cEncLib.setGcmpSEIGuardBandSamplesMinus1                     ( (uint8_t)m_gcmpSEIGuardBandSamplesMinus1 );
+#endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
 #endif

@@ -454,6 +454,52 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
 }
 #endif
 
+#if JVET_P0597_GCMP_SEI
+void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCubemapProjection)
+{
+  CHECK(!(m_isInitialized), "seiGeneralizedCubemapProjection already initialized");
+  CHECK(!(seiGeneralizedCubemapProjection != nullptr), "Need a seiGeneralizedCubemapProjection for initialization (got nullptr)");
+
+  seiGeneralizedCubemapProjection->m_gcmpCancelFlag                      = m_pcCfg->getGcmpSEICancelFlag();
+  if (!seiGeneralizedCubemapProjection->m_gcmpCancelFlag)
+  {
+    seiGeneralizedCubemapProjection->m_gcmpPersistenceFlag               = m_pcCfg->getGcmpSEIPersistenceFlag();
+    seiGeneralizedCubemapProjection->m_gcmpPackingType                   = m_pcCfg->getGcmpSEIPackingType();
+    seiGeneralizedCubemapProjection->m_gcmpMappingFunctionType           = m_pcCfg->getGcmpSEIMappingFunctionType();
+
+    int numFace = seiGeneralizedCubemapProjection->m_gcmpPackingType == 4 || seiGeneralizedCubemapProjection->m_gcmpPackingType == 5 ? 5 : 6;
+    seiGeneralizedCubemapProjection->m_gcmpFaceIndex.resize(numFace);
+    seiGeneralizedCubemapProjection->m_gcmpFaceRotation.resize(numFace);
+    if (seiGeneralizedCubemapProjection->m_gcmpMappingFunctionType == 2)
+    {
+      seiGeneralizedCubemapProjection->m_gcmpFunctionCoeffU.resize(numFace);
+      seiGeneralizedCubemapProjection->m_gcmpFunctionUAffectedByVFlag.resize(numFace);
+      seiGeneralizedCubemapProjection->m_gcmpFunctionCoeffV.resize(numFace);
+      seiGeneralizedCubemapProjection->m_gcmpFunctionVAffectedByUFlag.resize(numFace);
+    }
+    for (int i = 0; i < numFace; i++)
+    {
+      seiGeneralizedCubemapProjection->m_gcmpFaceIndex[i]                = m_pcCfg->getGcmpSEIFaceIndex(i);
+      seiGeneralizedCubemapProjection->m_gcmpFaceRotation[i]             = m_pcCfg->getGcmpSEIFaceRotation(i);
+      if (seiGeneralizedCubemapProjection->m_gcmpMappingFunctionType == 2)
+      {
+        seiGeneralizedCubemapProjection->m_gcmpFunctionCoeffU[i]           = std::max<uint8_t>(1, (uint8_t)(128.0 * m_pcCfg->getGcmpSEIFunctionCoeffU(i) + 0.5)) - 1;
+        seiGeneralizedCubemapProjection->m_gcmpFunctionUAffectedByVFlag[i] = m_pcCfg->getGcmpSEIFunctionUAffectedByVFlag(i);
+        seiGeneralizedCubemapProjection->m_gcmpFunctionCoeffV[i]           = std::max<uint8_t>(1, (uint8_t)(128.0 * m_pcCfg->getGcmpSEIFunctionCoeffV(i) + 0.5)) - 1;
+        seiGeneralizedCubemapProjection->m_gcmpFunctionVAffectedByUFlag[i] = m_pcCfg->getGcmpSEIFunctionVAffectedByUFlag(i);
+      }
+    }
+
+    seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag                 = m_pcCfg->getGcmpSEIGuardBandFlag();
+    if (seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag)
+    {
+      seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryType       = m_pcCfg->getGcmpSEIGuardBandBoundaryType();
+      seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1      = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
+    }
+  }
+}
+#endif
+
 #if JVET_P0450_SEI_SARI
 void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampleAspectRatioInfo)
 {

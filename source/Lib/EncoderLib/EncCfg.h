@@ -649,6 +649,22 @@ protected:
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 #endif
+#if JVET_P0597_GCMP_SEI
+  bool                 m_gcmpSEIEnabled;
+  bool                 m_gcmpSEICancelFlag;
+  bool                 m_gcmpSEIPersistenceFlag;
+  uint8_t              m_gcmpSEIPackingType;
+  uint8_t              m_gcmpSEIMappingFunctionType;
+  std::vector<uint8_t> m_gcmpSEIFaceIndex;
+  std::vector<uint8_t> m_gcmpSEIFaceRotation;
+  std::vector<double>  m_gcmpSEIFunctionCoeffU;
+  std::vector<bool>    m_gcmpSEIFunctionUAffectedByVFlag;
+  std::vector<double>  m_gcmpSEIFunctionCoeffV;
+  std::vector<bool>    m_gcmpSEIFunctionVAffectedByUFlag;
+  bool                 m_gcmpSEIGuardBandFlag;
+  bool                 m_gcmpSEIGuardBandBoundaryType;
+  uint8_t              m_gcmpSEIGuardBandSamplesMinus1;
+#endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   bool m_subpicureLevelInfoSEIEnabled;
 #endif
@@ -1770,6 +1786,36 @@ public:
   bool     getRwpSEIRwpGuardBandNotUsedForPredFlag(uint32_t idx) const                                      { return m_rwpSEIRwpGuardBandNotUsedForPredFlag[idx]; }
   void     setRwpSEIRwpGuardBandType(const std::vector<uint8_t>& rwpGuardBandType)                          { m_rwpSEIRwpGuardBandType = rwpGuardBandType; }
   uint8_t  getRwpSEIRwpGuardBandType(uint32_t idx) const                                                    { return m_rwpSEIRwpGuardBandType[idx]; }
+#endif
+#if JVET_P0597_GCMP_SEI
+  void    setGcmpSEIEnabled(bool b)                                                                 { m_gcmpSEIEnabled = b; }
+  bool    getGcmpSEIEnabled()                                                                       { return m_gcmpSEIEnabled; }
+  void    setGcmpSEICancelFlag(bool b)                                                              { m_gcmpSEICancelFlag = b; }
+  bool    getGcmpSEICancelFlag()                                                                    { return m_gcmpSEICancelFlag; }
+  void    setGcmpSEIPersistenceFlag(bool b)                                                         { m_gcmpSEIPersistenceFlag = b; }
+  bool    getGcmpSEIPersistenceFlag()                                                               { return m_gcmpSEIPersistenceFlag; }
+  void    setGcmpSEIPackingType(uint8_t u)                                                          { m_gcmpSEIPackingType = u; }
+  uint8_t getGcmpSEIPackingType()                                                                   { return m_gcmpSEIPackingType; }
+  void    setGcmpSEIMappingFunctionType(uint8_t u)                                                  { m_gcmpSEIMappingFunctionType = u; }
+  uint8_t getGcmpSEIMappingFunctionType()                                                           { return m_gcmpSEIMappingFunctionType; }
+  void    setGcmpSEIFaceIndex(const std::vector<uint8_t>& gcmpFaceIndex)                            { m_gcmpSEIFaceIndex = gcmpFaceIndex; }
+  uint8_t getGcmpSEIFaceIndex(int idx) const                                                        { return m_gcmpSEIFaceIndex[idx]; }
+  void    setGcmpSEIFaceRotation(const std::vector<uint8_t>& gcmpFaceRotation)                      { m_gcmpSEIFaceRotation = gcmpFaceRotation; }
+  uint8_t getGcmpSEIFaceRotation(int idx) const                                                     { return m_gcmpSEIFaceRotation[idx]; }
+  void    setGcmpSEIFunctionCoeffU(const std::vector<double>& gcmpFunctionCoeffU)                   { m_gcmpSEIFunctionCoeffU = gcmpFunctionCoeffU; }
+  double  getGcmpSEIFunctionCoeffU(int idx) const                                                   { return m_gcmpSEIFunctionCoeffU[idx]; }
+  void    setGcmpSEIFunctionUAffectedByVFlag(const std::vector<bool>& gcmpFunctionUAffectedByVFlag) { m_gcmpSEIFunctionUAffectedByVFlag = gcmpFunctionUAffectedByVFlag; }
+  bool    getGcmpSEIFunctionUAffectedByVFlag(int idx) const                                         { return m_gcmpSEIFunctionUAffectedByVFlag[idx]; }
+  void    setGcmpSEIFunctionCoeffV(const std::vector<double>& gcmpFunctionCoeffV)                   { m_gcmpSEIFunctionCoeffV = gcmpFunctionCoeffV; }
+  double  getGcmpSEIFunctionCoeffV(int idx) const                                                   { return m_gcmpSEIFunctionCoeffV[idx]; }
+  void    setGcmpSEIFunctionVAffectedByUFlag(const std::vector<bool>& gcmpFunctionVAffectedByUFlag) { m_gcmpSEIFunctionVAffectedByUFlag = gcmpFunctionVAffectedByUFlag; }
+  bool    getGcmpSEIFunctionVAffectedByUFlag(int idx) const                                         { return m_gcmpSEIFunctionVAffectedByUFlag[idx]; }
+  void    setGcmpSEIGuardBandFlag(bool b)                                                           { m_gcmpSEIGuardBandFlag = b; }
+  bool    getGcmpSEIGuardBandFlag()                                                                 { return m_gcmpSEIGuardBandFlag; }
+  void    setGcmpSEIGuardBandBoundaryType(bool b)                                                   { m_gcmpSEIGuardBandBoundaryType = b; }
+  bool    getGcmpSEIGuardBandBoundaryType()                                                         { return m_gcmpSEIGuardBandBoundaryType; }
+  void    setGcmpSEIGuardBandSamplesMinus1( uint8_t u )                                             { m_gcmpSEIGuardBandSamplesMinus1 = u; }
+  uint8_t getGcmpSEIGuardBandSamplesMinus1()                                                        { return m_gcmpSEIGuardBandSamplesMinus1; }
 #endif
 #if JVET_P0984_SEI_SUBPIC_LEVEL
   bool    getSubpicureLevelInfoSEIEnabled() const { return m_subpicureLevelInfoSEIEnabled; }

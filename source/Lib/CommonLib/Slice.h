@@ -909,6 +909,7 @@ class VUI
 {
 private:
   bool       m_aspectRatioInfoPresentFlag;
+  bool       m_aspectRatioConstantFlag;
   int        m_aspectRatioIdc;
   int        m_sarWidth;
   int        m_sarHeight;
@@ -923,12 +924,12 @@ private:
   int        m_chromaSampleLocType;
   bool       m_overscanInfoPresentFlag;
   bool       m_overscanAppropriateFlag;
-  bool       m_videoSignalTypePresentFlag;
   bool       m_videoFullRangeFlag;
 
 public:
   VUI()
     : m_aspectRatioInfoPresentFlag        (false) //TODO: This initialiser list contains magic numbers
+    , m_aspectRatioConstantFlag           (true)
     , m_aspectRatioIdc                    (0)
     , m_sarWidth                          (0)
     , m_sarHeight                         (0)
@@ -943,7 +944,6 @@ public:
     , m_chromaSampleLocType               (0)
     , m_overscanInfoPresentFlag           (false)
     , m_overscanAppropriateFlag           (false)
-    , m_videoSignalTypePresentFlag        (false)
     , m_videoFullRangeFlag                (false)
   {}
 
@@ -951,6 +951,8 @@ public:
 
   bool              getAspectRatioInfoPresentFlag() const                  { return m_aspectRatioInfoPresentFlag;           }
   void              setAspectRatioInfoPresentFlag(bool i)                  { m_aspectRatioInfoPresentFlag = i;              }
+  bool              getAspectRatioConstantFlag() const                     { return m_aspectRatioConstantFlag;           }
+  void              setAspectRatioConstantFlag(bool b)                     { m_aspectRatioConstantFlag = b;              }
 
   int               getAspectRatioIdc() const                              { return m_aspectRatioIdc;                       }
   void              setAspectRatioIdc(int i)                               { m_aspectRatioIdc = i;                          }
@@ -993,9 +995,6 @@ public:
 
   bool              getOverscanAppropriateFlag() const                     { return m_overscanAppropriateFlag;              }
   void              setOverscanAppropriateFlag(bool i)                     { m_overscanAppropriateFlag = i;                 }
-
-  bool              getVideoSignalTypePresentFlag() const                  { return m_videoSignalTypePresentFlag;           }
-  void              setVideoSignalTypePresentFlag(bool i)                  { m_videoSignalTypePresentFlag = i;              }
 
   bool              getVideoFullRangeFlag() const                          { return m_videoFullRangeFlag;                   }
   void              setVideoFullRangeFlag(bool i)                          { m_videoFullRangeFlag = i;                      }

@@ -1313,6 +1313,7 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
   READ_FLAG( symbol, "aspect_ratio_info_present_flag");           pcVUI->setAspectRatioInfoPresentFlag(symbol);
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
+    READ_FLAG( symbol, "aspect_ratio_constant_flag");           pcVUI->setAspectRatioConstantFlag(symbol);
     READ_CODE(8, symbol, "aspect_ratio_idc");                         pcVUI->setAspectRatioIdc(symbol);
     if (pcVUI->getAspectRatioIdc() == 255)
     {
@@ -1327,6 +1328,7 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
     READ_CODE(8, symbol, "colour_primaries");                       pcVUI->setColourPrimaries(symbol);
     READ_CODE(8, symbol, "transfer_characteristics");               pcVUI->setTransferCharacteristics(symbol);
     READ_CODE(8, symbol, "matrix_coeffs");                          pcVUI->setMatrixCoefficients(symbol);
+    READ_FLAG(   symbol, "video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
   }
 
   READ_FLAG(     symbol, "field_seq_flag");                           pcVUI->setFieldSeqFlag(symbol);
@@ -1350,13 +1352,6 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
   {
     READ_FLAG(   symbol, "overscan_appropriate_flag");                pcVUI->setOverscanAppropriateFlag(symbol);
   }
-
-  READ_FLAG(     symbol, "video_signal_type_present_flag");           pcVUI->setVideoSignalTypePresentFlag(symbol);
-  if (pcVUI->getVideoSignalTypePresentFlag())
-  {
-    READ_FLAG(   symbol, "video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
-  }
-
 }
 
 void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLayer, uint32_t maxNumSubLayersMinus1)

@@ -291,6 +291,8 @@
 
 #define JVET_P0184                                        1  //JVET-P0184: Decoding process for generating unavailable reference pictures
 
+#define JVET_P0597_GCMP_SEI                               1 // JVET-P0597: generalized cubemap projection SEI message
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;

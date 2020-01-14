@@ -111,6 +111,9 @@ public:
     REGION_WISE_PACKING                  = 155,
     OMNI_VIEWPORT                        = 156,
 #endif
+#if JVET_P0597_GCMP_SEI
+    GENERALIZED_CUBEMAP_PROJECTION       = 153,
+#endif
 #if HEVC_SEI && !JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
@@ -226,6 +229,31 @@ public:
   std::vector<uint8_t>  m_rwpBottomGuardBandHeight;
   std::vector<bool>     m_rwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpGuardBandType;
+};
+#endif
+
+#if JVET_P0597_GCMP_SEI
+class SEIGeneralizedCubemapProjection : public SEI
+{
+public:
+  PayloadType payloadType() const { return GENERALIZED_CUBEMAP_PROJECTION; }
+
+  SEIGeneralizedCubemapProjection()  {}
+  virtual ~SEIGeneralizedCubemapProjection() {}
+
+  bool                 m_gcmpCancelFlag;
+  bool                 m_gcmpPersistenceFlag;
+  uint8_t              m_gcmpPackingType;
+  uint8_t              m_gcmpMappingFunctionType;
+  std::vector<uint8_t> m_gcmpFaceIndex;
+  std::vector<uint8_t> m_gcmpFaceRotation;
+  std::vector<uint8_t> m_gcmpFunctionCoeffU;
+  std::vector<bool>    m_gcmpFunctionUAffectedByVFlag;
+  std::vector<uint8_t> m_gcmpFunctionCoeffV;
+  std::vector<bool>    m_gcmpFunctionVAffectedByUFlag;
+  bool                 m_gcmpGuardBandFlag;
+  bool                 m_gcmpGuardBandBoundaryType;
+  uint8_t              m_gcmpGuardBandSamplesMinus1;
 };
 #endif
 

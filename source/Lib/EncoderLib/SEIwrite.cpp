@@ -177,6 +177,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIRegionWisePacking(*static_cast<const SEIRegionWisePacking*>(&sei));
     break;
 #endif
+#if JVET_P0597_GCMP_SEI
+  case SEI::GENERALIZED_CUBEMAP_PROJECTION:
+    xWriteSEIGeneralizedCubemapProjection(*static_cast<const SEIGeneralizedCubemapProjection*>(&sei));
+    break;
+#endif
 #if JVET_P0337_PORTING_SEI
   case SEI::USER_DATA_REGISTERED_ITU_T_T35:
     xWriteSEIUserDataRegistered(*static_cast<const SEIUserDataRegistered*>(&sei));
@@ -1242,6 +1247,38 @@ void SEIWriter::xWriteSEIRegionWisePacking(const SEIRegionWisePacking &sei)
         }
         WRITE_CODE( 0, 3,                                                    "rwp_guard_band_reserved_zero_3bits" );
       }
+    }
+  }
+}
+#endif
+
+#if JVET_P0597_GCMP_SEI
+void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubemapProjection &sei)
+{
+  WRITE_FLAG( sei.m_gcmpCancelFlag,                           "gcmp_cancel_flag" );
+  if (!sei.m_gcmpCancelFlag)
+  {
+    WRITE_FLAG( sei.m_gcmpPersistenceFlag,                    "gcmp_persistence_flag" );
+    WRITE_CODE( sei.m_gcmpPackingType,                     3, "gcmp_packing_type" );  
+    WRITE_CODE( sei.m_gcmpMappingFunctionType,             2, "gcmp_mapping_function_type" );
+    int numFace = sei.m_gcmpPackingType == 4 || sei.m_gcmpPackingType == 5 ? 5 : 6;
+    for (int i = 0; i < numFace; i++)
+    {
+      WRITE_CODE( sei.m_gcmpFaceIndex[i],                  3, "gcmp_face_index" );  
+      WRITE_CODE( sei.m_gcmpFaceRotation[i],               2, "gcmp_face_rotation" );  
+      if (sei.m_gcmpMappingFunctionType == 2)
+      {
+        WRITE_CODE( sei.m_gcmpFunctionCoeffU[i],           7, "gcmp_function_coeff_u" );  
+        WRITE_FLAG( sei.m_gcmpFunctionUAffectedByVFlag[i],    "gcmp_function_u_affected_by_v_flag" );
+        WRITE_CODE( sei.m_gcmpFunctionCoeffV[i],           7, "gcmp_function_coeff_v" );  
+        WRITE_FLAG( sei.m_gcmpFunctionVAffectedByUFlag[i],    "gcmp_function_v_affected_by_u_flag" );
+      }
+    }
+    WRITE_FLAG( sei.m_gcmpGuardBandFlag,                      "gcmp_guard_band_flag" );
+    if (sei.m_gcmpGuardBandFlag)
+    {
+      WRITE_FLAG( sei.m_gcmpGuardBandBoundaryType,            "gcmp_guard_band_boundary_type" );  
+      WRITE_CODE( sei.m_gcmpGuardBandSamplesMinus1,        4, "gcmp_guard_band_samples_minus1" );  
     }
   }
 }

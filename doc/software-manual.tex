@@ -2684,6 +2684,7 @@ The table below lists the SEI messages defined for Version 1 and Range-Extension
   148 & Ambient viewing environment              & Table \ref{tab:sei-ambient-viewing-environment}\\
   149 & Content colour volume                    & Table \ref{tab:sei-content-colour-volume}\\
   150 & Equirectangular projection               & Table \ref{tab:sei-erp} \\
+  153 & Generalized cubemap projection           & Table \ref{tab:sei-gcmp} \\
   154 & Sphere rotation                          & Table \ref{tab:sei-sphere-rotation} \\
   155 & Region-wise packing                      & Table \ref{tab:sei-rwp} \\
   156 & Omni viewport                            & Table \ref{tab:sei-omni-viewport} \\  
@@ -3375,6 +3376,96 @@ Inicates the width of the guard band on the left side of the onstituent picture.
 \Option{SEIErpRightGuardBandWidth} &
 \Default{0} &
 Inicates the width of the guard band on the right side of the onstituent picture.
+\\
+\end{OptionTableNoShorthand}
+
+\begin{OptionTableNoShorthand}{Generalized Cubemap Projection SEI message encoder parameters}{tab:sei-gcmp}
+\Option{SEIGcmpEnabled} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of generalized cubemap projection SEI message.
+\\
+\Option{SEIGcmpCancelFlag} &
+\Default{true} &
+Indicates that generalized cubemap projection SEI message cancels the persistence (true) or follows (false).
+\\
+\Option{SEIGcmpPersistenceFlag} &
+\Default{false} &
+Specifies the persistence of the generalized cubemap projection SEI message.
+\\
+\Option{SEIGcmpPackingType} &
+\Default{0} &
+Specifies the packing type.
+\par
+\begin{tabular}{cp{0.35\textwidth}}
+ 0 & 6 rows and 1 columns \\
+ 1 & 3 rows and 2 columns \\
+ 2 & 2 rows and 3 columns \\
+ 3 & 1 rows and 6 columns \\
+ 4 & 1 rows and 5 columns (hemisphere cubemap) \\
+ 5 & 5 rows and 1 columns (hemisphere cubemap) \\
+\end{tabular}
+\\
+\Option{SEIGcmpMappingFunctionType} &
+\Default{0} &
+Specifies the mapping function used to adjust the sample locations.
+\par
+\begin{tabular}{cp{0.35\textwidth}}
+ 0 & Disabled (conventional cubemap projection) \\
+ 1 & Equi-angular mapping function \\
+ 2 & Defined by SEIGcmpFunctionCoeffU, SEIGcmpFunctionUAffectedByVFlag, SEIGcmpFunctionCoeffV, and SEIGcmpFunctionVAffectedByUFlag \\
+\end{tabular}
+\\
+\Option{SEIGcmpFaceIndex} &
+\Default{} &
+An array that specifies the face index for the faces packed in the cubemap projected picture.
+\par
+\begin{tabular}{cp{0.35\textwidth}}
+ 0 & Front face \\
+ 1 & Back face \\
+ 2 & Top face \\
+ 3 & Bottom face \\
+ 4 & Right face \\
+ 5 & Left face \\
+\end{tabular}
+\\
+\Option{SEIGcmpFaceRotation} &
+\Default{} &
+An array that specifies the rotation to be applied to the faces.
+\par
+\begin{tabular}{cp{0.35\textwidth}}
+ 0 & No rotation \\
+ 1 & 90 degree anticlockwise \\
+ 2 & 180 degree anticlockwise \\
+ 3 & 270 degree anticlockwise \\
+\end{tabular}
+\\
+\Option{SEIGcmpFunctionCoeffU} &
+\Default{} &
+An array that specifies the coefficients used in the cubemap mapping function of the u-axis for the faces when SEIGcmpMappingFunctionType is set to 2.
+\\
+\Option{SEIGcmpFunctionUAffectedByVFlag} &
+\Default{} &
+An array that specifies whether the cubemap mapping function of the u-axis refers to the v position of the sample location for the faces when SEIGcmpMappingFunctionType is set to 2.
+\\
+\Option{SEIGcmpFunctionCoeffV} &
+\Default{} &
+An array that specifies the coefficients used in the cubemap mapping function of the v-axis for the faces when SEIGcmpMappingFunctionType is set to 2.
+\\
+\Option{SEIGcmpFunctionVAffectedByUFlag} &
+\Default{} &
+An array that specifies whether the cubemap mapping function of the v-axis refers to the u position of the sample location for the faces when SEIGcmpMappingFunctionType is set to 2.
+\\
+\Option{SEIGcmpGuardBandFlag} &
+\Default{false} &
+Indicates the existence of guard band areas in the picture.
+\\
+\Option{SEIGcmpGuardBandBoundaryType} &
+\Default{false} &
+Enables (true) or disables (false) the boundary guard bands.
+\\
+\Option{SEIGcmpGuardBandSamplesMinus1} &
+\Default{0} &
+Specifies the number of guard band samples minus 1 used in the cubemap projected picture.
 \\
 \end{OptionTableNoShorthand}
 

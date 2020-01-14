@@ -1971,14 +1971,6 @@ for LCU bottom and right boundary areas.
 When true, resets the encoder's SAO state after an IRAP (POC order).
 \\
 
-\Option{ConstrainedIntraPred} &
-%\ShortOption{\None} &
-\Default{false} &
-Enables or disables constrained intra prediction.  Constrained intra
-prediction only permits samples from intra blocks in the same slice as the
-current block to be used for intra prediction.
-\\
-
 \Option{FastUDIUseMPMEnabled} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2511,39 +2503,6 @@ Specifies the location of chroma samples for bottom field.
 Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1).
 \\
 
-\Option{NumTicksPocDiffOneMinus} &
-\Default{0} &
-Specificies the value of the VUI syntax element `vui_num_ticks_poc_diff_one_minus1', which specifies the number of clock ticks corresponding to a difference of picture order count values equal to 1, and is used only when PocProportionalToTimingFlag is true.
-\\
-
-\Option{BitstreamRestriction} &
-\Default{false} &
-Signals whether bitstream restriction parameters are present.
-\\
-\Option{TilesFixedStructure} &
-\Default{false} &
-Indicates that each active picture parameter set has the same values of the syntax elements related to tiles.
-\\
-\Option{MotionVectorsOverPicBoundaries} &
-\Default{false} &
-Indicates that no samples outside the picture boundaries are used for inter prediction.
-\\
-\Option{MaxBytesPerPicDenom} &
-\Default{2} &
-Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture.
-\\
-\Option{MaxBitsPerMinCuDenom} &
-\Default{1} &
-Indicates an upper bound for the number of bits of coding_unit() data.
-\\
-\Option{Log2MaxMvLengthHorizontal} &
-\Default{15} &
-Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units.
-\\
-\Option{Log2MaxMvLengthVertical} &
-\Default{15} &
-Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units.
-\\
 \end{OptionTableNoShorthand}
 
 

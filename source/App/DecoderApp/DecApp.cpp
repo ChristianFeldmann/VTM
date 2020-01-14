@@ -360,7 +360,9 @@ uint32_t DecApp::decode()
           }
         }
 #if JVET_P1019_OUTPUT_LAYER_SET
-        if(((m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu))) || (m_cDecLib.getVPS() == nullptr))
+        if(((m_cDecLib.getVPS() != nullptr) &&
+              ((m_cDecLib.getVPS()->getMaxLayers() == 1) || (isNaluWithinTargetOutputLayerIdSet(&nalu)))) ||
+            (m_cDecLib.getVPS() == nullptr))
 #endif
         m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open(reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon); // write mode
 #else

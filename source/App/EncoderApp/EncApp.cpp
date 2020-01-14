@@ -388,6 +388,35 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  m_cEncLib.setSubPicPresentFlag                                 ( m_subPicPresentFlag );
+  if(m_subPicPresentFlag)
+  {
+    m_cEncLib.setNumSubPics                                      ( m_numSubPics );
+    for (int i = 0; i < m_numSubPics; i++)
+    {
+      m_cEncLib.setSubPicCtuTopLeftX                             ( m_subPicCtuTopLeftX[i], i );
+      m_cEncLib.setSubPicCtuTopLeftY                             ( m_subPicCtuTopLeftY[i], i );
+      m_cEncLib.setSubPicWidth                                   ( m_subPicWidth[i], i );
+      m_cEncLib.setSubPicHeight                                  ( m_subPicHeight[i], i );
+      m_cEncLib.setSubPicTreatedAsPicFlag                        ( m_subPicTreatedAsPicFlag[i], i );
+      m_cEncLib.setLoopFilterAcrossSubpicEnabledFlag             ( m_loopFilterAcrossSubpicEnabledFlag[i], i );
+    }
+  }
+  m_cEncLib.setSubPicIdPresentFlag                               ( m_subPicIdPresentFlag );
+  if (m_subPicIdPresentFlag) 
+  {
+    m_cEncLib.setSubPicIdSignallingPresentFlag                   ( m_subPicIdSignallingPresentFlag );
+    if(m_subPicIdSignallingPresentFlag)
+    {
+      m_cEncLib.setSubPicIdLen                                   ( m_subPicIdLen );
+      for (int i = 0; i < m_numSubPics; i++)
+      {
+        m_cEncLib.setSubPicId                                    ( m_subPicId[i], i );
+      }
+    }
+  }
+#endif
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxMTTHierarchyDepth                              ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
@@ -976,7 +1005,12 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList )
 #if EXTENSION_360_VIDEO
   m_cVideoIOYuvInputFile.skipFrames(m_FrameSkip, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC);
 #else
+#if FIELD_CODING_FIX
+  const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
+  m_cVideoIOYuvInputFile.skipFrames(m_FrameSkip, m_iSourceWidth - m_aiPad[0], sourceHeight - m_aiPad[1], m_InputChromaFormatIDC);
+#else
   m_cVideoIOYuvInputFile.skipFrames(m_FrameSkip, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC);
+#endif  
 #endif
   if (!m_reconFileName.empty())
   {
@@ -1208,7 +1242,12 @@ bool EncApp::encode()
 #if EXTENSION_360_VIDEO
       m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
 #else
+#if FIELD_CODING_FIX
+    const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
+    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], sourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+#else
       m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], m_iSourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
+#endif      
 #endif
     }
   }

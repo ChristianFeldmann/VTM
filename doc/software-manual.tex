@@ -1405,6 +1405,12 @@ Specifies the base value of the quantization parameter. If it is non-integer, th
 Specifies a QP offset from the base QP value to be used for intra frames.
 \\
 
+\Option{DepQuant} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables the usage of dependent quantization.
+\\
+
 \Option{LambdaFromQpEnable} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1643,10 +1649,10 @@ value delta for the picture with POC value $n$.
 \Option{PerceptQPA (-qpa)} &
 %\ShortOption{-qpa} &
 \Default{false} &
-Enables or disables the perceptually optimized QP adaptation (QPA) method described in JVET-H0047, JVET-K0206, and JVET-M0091. Use this together with 'SliceChromaQPOffsetPeriodicity=1' and, in case of HDR input, 'LumaLevelToDeltaQPMode=1' for best subjective quality. Cannot be used together with 'SelectiveRDOQ' (see above) or 'AdaptiveQp' (see below).
+Enables or disables the perceptually optimized QP adaptation (QPA) method described in JVET-H0047, JVET-K0206, and JVET-M0091. Use this together with 'SliceChromaQPOffsetPeriodicity=1' and, in case of HDR input, 'LumaLevelToDeltaQPMode=1' for best subjective quality. Cannot be used together with 'SelectiveRDOQ' (see above) or 'AdaptiveQP' (see below).
 \\
 
-\Option{AdaptiveQp (-aq)} &
+\Option{AdaptiveQP (-aq)} &
 %\ShortOption{-aq} &
 \Default{false} &
 Enables or disables the legacy QP adaptation method based upon a psycho-visual model.
@@ -2037,7 +2043,7 @@ Enables the use of weighted prediction in P slices.
 Enables the use of weighted prediction in B slices.
 \\
 
-\Option{WPMethod (-wpM)} &
+\Option{WeightedPredMethod (-wpM)} &
 %\ShortOption{\-wpM} &
 \Default{0} &
 Sets the Weighted Prediction method to be used.
@@ -2061,16 +2067,6 @@ last nonzero coefficient along the scanning line exceeds 4, the sign bit
 of the first nonzero coefficient will not be directly transmitted in the
 bitstream, but may be inferred from the parity of the sum of all nonzero
 coefficients in the current coefficient group.
-\\
-
-\Option{StrongIntraSmoothing (-sis)} &
-%\ShortOption{-sis} &
-\Default{true} &
-If enabled specifies that for 32x32 intra prediction block, the intra smoothing
-when applied is either the 1:2:1 smoothing filter or a stronger bi-linear 
-interpolation filter.  Key reference sample values are tested and if the criteria 
-is satisfied, the stronger intra smoothing filter is applied.
-If disabled, the intra smoothing filter when applied is the 1:2:1 smoothing filter.
 \\
 
 \Option{TMVPMode} &
@@ -2131,12 +2127,6 @@ Code deblocking filter parameters in slice headers rather than picture header.
 Code SAO parameters in slice headers rather than picture header.
 \\
 
-\Option{SliceLevelAlf} &
-%\ShortOption{\None} &
-\Default{true} &
-Code ALF parameters in slice headers rather than picture header.
-\\
-
 \Option{TransformSkip} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -2162,6 +2152,12 @@ decision for chroma TUs.  When disabled, no RDO search is performed for
 chroma TUs.
 \par
 This option has no effect if TransformSkip is disabled.
+\\
+
+\Option{ALF} &
+%\ShortOption{\None} &
+\Default{true} &
+Enables or disables adaptive loop filter.
 \\
 
 \Option{UseNonLinearAlfLuma} &
@@ -2479,7 +2475,7 @@ Signals whether colour_primaries, transfer_characteristics and matrix_coefficien
 \Default{2} &
 Indicates chromaticity coordinates of the source primaries.
 \\
-\Option{TransferCharateristics} &
+\Option{TransferCharacteristics} &
 \Default{2} &
 Indicates the opto-electronic transfer characteristics of the source.
 \\
@@ -2522,16 +2518,6 @@ true & Enabled \\
 Specifies the horizontal and vertical offset to be applied to the
 input video from the conformance window in luma samples.
 Must be a multiple of the chroma resolution (e.g. a multiple of two for 4:2:0).
-\\
-
-\Option{FrameFieldInfoPresentFlag} &
-\Default{false} &
-Specificies the value of the VUI syntax element `frame_field_info_present_flag', which indicates that pic_struct and field coding related values are present in picture timing SEI messages.
-\\
-
-\Option{PocProportionalToTimingFlag} &
-\Default{false} &
-Specificies the value of the VUI syntax element `vui_poc_proportional_to_timing_flag', which indicates that the POC value is proportional to the output time with respect to the first picture in the CVS.
 \\
 
 \Option{NumTicksPocDiffOneMinus} &
@@ -2702,6 +2688,7 @@ The table below lists the SEI messages defined for Version 1 and Range-Extension
   154 & Sphere rotation                          & Table \ref{tab:sei-sphere-rotation} \\
   155 & Region-wise packing                      & Table \ref{tab:sei-rwp} \\
   156 & Omni viewport                            & Table \ref{tab:sei-omni-viewport} \\  
+  168 & Frame-field information                  & Table \ref{tab:sei-frame-field} \\  
   203 & Subpicture Level Information             & Table \ref{tab:sei-subpic-level} \\  
   204 & Sample Aspect Ratio Information          & Table \ref{tab:sei-sari} \\  
 \end{SEIListTable}
@@ -3495,15 +3482,15 @@ Indicates that the sphere rotation SEI message cancels the persistence (true) or
 \Default{false} &
 Specifies the persistence of the sphere rotation SEI message.
 \\
-\Option{SEISphereRotationYawRotation} &
+\Option{SEISphereRotationYaw} &
 \Default{0} &
 Specifies the value of the yaw rotation angle.
 \\
-\Option{SEISphereRotationPitchRotation} &
+\Option{SEISphereRotationPitch} &
 \Default{0} &
 Specifies the value of the pitch rotation angle.
 \\
-\Option{SEISphereRotationRollRotation} &
+\Option{SEISphereRotationRoll} &
 \Default{0} &
 Specifies the value of the roll rotation angle.
 \\
@@ -3686,7 +3673,14 @@ Specifies the vertical size of the sample aspect ratio, if SEISARIAspectRatioIdc
 \\
 \end{OptionTableNoShorthand}
 
-\begin{OptionTableNoShorthand}{Sample Aspect Ratio Information SEI message encoder parameters}{tab:sei-subpic-level}
+\begin{OptionTableNoShorthand}{Frame-Field Information SEI message encoder parameters}{tab:sei-frame-field}
+\Option{SEIFrameFieldInfo} &
+\Default{false} &
+Enables (true) or disables (false) the insertion of Frame-Field Information SEI message.
+\\
+\end{OptionTableNoShorthand}
+
+\begin{OptionTableNoShorthand}{Subpicture Level Information SEI message encoder parameters}{tab:sei-subpic-level}
 \Option{SEISubpictureLevelInfo} &
 \Default{false} &
 Enables (true) or disables (false) the insertion of Subpicture Level Information SEI message.

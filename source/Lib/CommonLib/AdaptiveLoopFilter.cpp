@@ -962,6 +962,8 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType chann
     for( int classIdx = 0; classIdx < numClasses; classIdx++ )
     {
       int filterIdx = alfParam.filterCoeffDeltaIdx[classIdx];
+
+      CHECK(!(filterIdx >= 0 && filterIdx < alfParam.numLumaFilters), "Bad coeff delta idx in ALF");
       for (int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx)
       {
         m_coeffFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
@@ -970,8 +972,9 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType chann
       m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
       for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
       {
-        int clipIdx = alfParam.nonLinearFlag[channel][altIdx] ? (clipp + filterIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
-        (m_clippFinal + classIdx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
+        int clipIdx = alfParam.nonLinearFlag[channel][altIdx] ? clipp[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] : 0;
+        CHECK(!(clipIdx >= 0 && clipIdx < MaxAlfNumClippingValues), "Bad clip idx in ALF");
+        m_clippFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
       }
       m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] =
         isRdo ? 0 :

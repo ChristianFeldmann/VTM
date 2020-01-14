@@ -273,6 +273,20 @@ protected:
 
   int       m_maxTempLayer;                      ///< Max temporal layer
   unsigned  m_CTUSize;
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  bool                  m_subPicPresentFlag;
+  unsigned              m_numSubPics;
+  uint32_t              m_subPicCtuTopLeftX[MAX_NUM_SUB_PICS];
+  uint32_t              m_subPicCtuTopLeftY[MAX_NUM_SUB_PICS];
+  uint32_t              m_subPicWidth[MAX_NUM_SUB_PICS];
+  uint32_t              m_subPicHeight[MAX_NUM_SUB_PICS];
+  uint32_t              m_subPicTreatedAsPicFlag[MAX_NUM_SUB_PICS];
+  uint32_t              m_loopFilterAcrossSubpicEnabledFlag[MAX_NUM_SUB_PICS];
+  bool                  m_subPicIdPresentFlag;
+  bool                  m_subPicIdSignallingPresentFlag;
+  unsigned              m_subPicIdLen;
+  uint32_t              m_subPicId[MAX_NUM_SUB_PICS];
+#endif
   bool      m_useSplitConsOverride;
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
   unsigned  m_uiMaxMTTHierarchyDepth;
@@ -1024,7 +1038,11 @@ public:
   }
   const RPLEntry &getRPLEntry(int L01, int idx) const { return (L01 == 0) ? m_RPLList0[idx] : m_RPLList1[idx]; }
   int       getRPLCandidateSize(int L01) const { return  (L01 == 0) ? m_numRPLList0 : m_numRPLList1; }
+#if FIELD_CODING_FIX
+  void      setEncodedFlag(uint32_t  i, bool value) { m_RPLList0[i].m_isEncoded = value; m_RPLList1[i].m_isEncoded = value; m_GOPList[i].m_isEncoded = value; }
+#else
   void      setEncodedFlag(uint32_t  i, bool value) { m_RPLList0[i].m_isEncoded = value; m_RPLList1[i].m_isEncoded = value; }
+#endif
   void      setMaxDecPicBuffering           ( uint32_t u, uint32_t tlayer ) { m_maxDecPicBuffering[tlayer] = u;    }
   void      setNumReorderPics               ( int  i, uint32_t tlayer ) { m_numReorderPics[tlayer] = i;    }
   void      setDrapPeriod                   (int drapPeriod) { m_drapPeriod = drapPeriod; }
@@ -1056,7 +1074,33 @@ public:
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
+#if JVET_P0171_SUBPICTURE_LAYOUT
+  void      setSubPicPresentFlag                        (bool b)                    { m_subPicPresentFlag = b; }
+  void      setNumSubPics                               (uint32_t u)                { m_numSubPics = u; }
+  void      setSubPicCtuTopLeftX                        (uint32_t u, int i)         { m_subPicCtuTopLeftX[i] = u; }
+  void      setSubPicCtuTopLeftY                        (uint32_t u, int i)         { m_subPicCtuTopLeftY[i] = u; }
+  void      setSubPicWidth                              (uint32_t u, int i)         { m_subPicWidth[i] = u; }
+  void      setSubPicHeight                             (uint32_t u, int i)         { m_subPicHeight[i] = u; }
+  void      setSubPicTreatedAsPicFlag                   (bool b, int i)             { m_subPicTreatedAsPicFlag[i] = b; }
+  void      setLoopFilterAcrossSubpicEnabledFlag        (uint32_t u, int i)         { m_loopFilterAcrossSubpicEnabledFlag[i] = u; }
+  void      setSubPicIdPresentFlag                      (bool b)                    { m_subPicIdPresentFlag = b; }
+  void      setSubPicIdSignallingPresentFlag            (bool b)                    { m_subPicIdSignallingPresentFlag = b; }
+  void      setSubPicIdLen                              (uint32_t u)                { m_subPicIdLen = u; }
+  void      setSubPicId                                 (uint32_t b, int i)         { m_subPicId[i] = b; }
 
+  bool      getSubPicPresentFlag                        ()                          { return m_subPicPresentFlag; }
+  uint32_t  getNumSubPics                               ()                          { return m_numSubPics; }
+  uint32_t  getSubPicCtuTopLeftX                        (int i)                     { return m_subPicCtuTopLeftX[i]; }
+  uint32_t  getSubPicCtuTopLeftY                        (int i)                     { return m_subPicCtuTopLeftY[i]; }
+  uint32_t  getSubPicWidth                              (int i)                     { return m_subPicWidth[i]; }
+  uint32_t  getSubPicHeight                             (int i)                     { return m_subPicHeight[i]; }
+  bool      getSubPicTreatedAsPicFlag                   (int i)                     { return m_subPicTreatedAsPicFlag[i]; }
+  uint32_t  getLoopFilterAcrossSubpicEnabledFlag        (int i)                     { return m_loopFilterAcrossSubpicEnabledFlag[i]; }
+  bool      getSubPicIdPresentFlag                      ()                          { return m_subPicIdPresentFlag; }
+  bool      getSubPicIdSignallingPresentFlag            ()                          { return m_subPicIdSignallingPresentFlag; }
+  uint32_t  getSubPicIdLen                              ()                          { return m_subPicIdLen; }
+  uint32_t  getSubPicId                                 (int i)                     { return m_subPicId[i]; }
+#endif
   void      setLFNST                        ( bool b )       { m_LFNST = b; }
   bool      getLFNST()                                 const { return m_LFNST; }
   void      setUseFastLFNST                 ( bool b )       { m_useFastLFNST = b; }

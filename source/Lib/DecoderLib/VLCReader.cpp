@@ -414,7 +414,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
       if (!rpl->getLtrpInSliceHeaderFlag())
         READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
 #if JVET_O1159_SCALABILITY
-      rpl->setRefPicIdentifier( ii, deltaValue, isLongTerm, false, 0 );
+      rpl->setRefPicIdentifier( ii, code, isLongTerm, false, 0 );
 #else
       rpl->setRefPicIdentifier(ii, code, isLongTerm);
 #endif 
@@ -1524,17 +1524,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
 #if JVET_P1006_PICTURE_HEADER
 #if JVET_P0171_SUBPICTURE_LAYOUT
-  if (pcSPS->getSubPicPresentFlag()) {
+  if (pcSPS->getSubPicPresentFlag()) 
+  {
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
-      READ_CODE(ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_ctu_top_left_x[ i ]");
+      READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_x[ i ]");
       pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
-      READ_CODE(ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_ctu_top_left_y[ i ]");
+      READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_y[ i ]");
       pcSPS->setSubPicCtuTopLeftY(picIdx, uiCode);
-      READ_CODE(ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_width_minus1[ i ]");
+      READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_width_minus1[ i ]");
       pcSPS->setSubPicWidth(picIdx, uiCode + 1);
-      READ_CODE(ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()))), uiCode, "subpic_height_minus1[ i ]");
+      READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_height_minus1[ i ]");
       pcSPS->setSubPicHeight(picIdx, uiCode + 1);
       READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");
       pcSPS->setSubPicTreatedAsPicFlag(picIdx, uiCode);
@@ -2244,6 +2245,9 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       READ_FLAG(uiCode, "vps_independent_layer_flag");     pcVPS->setIndependentLayerFlag(i, uiCode);
       if (!pcVPS->getIndependentLayerFlag(i))
       {
+#if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
+        uint16_t sumUiCode = 0;
+#endif
         for (int j = 0, k = 0; j < i; j++)
         {
           READ_FLAG(uiCode, "vps_direct_dependency_flag"); pcVPS->setDirectRefLayerFlag(i, j, uiCode);
@@ -2251,8 +2255,14 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
           {
             pcVPS->setInterLayerRefIdc( i, j, k );
             pcVPS->setDirectRefLayerIdx( i, k++, j );
+#if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
+            sumUiCode++;
+#endif
           }
         }
+#if JVET_P0135_VPS_DIRECT_DEPEN_FLAG_CONSRAINT
+        CHECK(sumUiCode == 0, "There has to be at least one value of j such that the value of vps_direct_dependency_flag[ i ][ j ] is equal to 1,when vps_independent_layer_flag[ i ] is equal to 0 ");
+#endif
       }
     }
   }
@@ -3473,7 +3483,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
             {
               READ_CODE(sps->getBitsForPOC(), uiCode, "slice_poc_lsb_lt[i][j]");
 #if JVET_O1159_SCALABILITY
-              pcSlice->getLocalRPL0()->setRefPicIdentifier( i, uiCode, true, false, 0 );
+              pcSlice->getLocalRPL1()->setRefPicIdentifier( i, uiCode, true, false, 0 );
 #else
               pcSlice->getLocalRPL1()->setRefPicIdentifier(i, uiCode, true);
 #endif
@@ -4615,6 +4625,8 @@ void HLSyntaxReader::decodeScalingList(ScalingList *scalingList, uint32_t sizeId
   int PredListId = scalingList->getRefMatrixId(scalingListId);
   CHECK(isPredictor && PredListId > scalingListId, "Scaling List error predictor!");
   const int *srcPred = (isPredictor) ? ((scalingListId == PredListId) ? scalingList->getScalingListDefaultAddress(scalingListId) : scalingList->getScalingListAddress(PredListId)) : NULL;
+  if(isPredictor && scalingListId == PredListId)
+    scalingList->setScalingListDC(PredListId, SCALING_LIST_DC);
   int predCoef = 0;
 
   if (scalingListId >= SCALING_LIST_1D_START_16x16)

@@ -757,7 +757,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   }
 
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
-  const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
+  const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); 
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
   if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
@@ -1283,7 +1283,7 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
     {
       const CodingUnit& cuQ =  cu;
       CodingUnit& cuP1 = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, cu.chType, pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), cu.chType );
-      CodingUnit& cuP  = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, ((!cuP1.cs->pcv->ISingleTree && cuP1.slice->isIntra()) ? CHANNEL_TYPE_CHROMA : cu.chType), pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), ((!cuP1.cs->pcv->ISingleTree && cuP1.slice->isIntra()) ? CHANNEL_TYPE_CHROMA : cu.chType));
+      CodingUnit& cuP  = *cu.cs->getCU( recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, (cuP1.isSepTree() ? CHANNEL_TYPE_CHROMA : cu.chType), pos.offset( xoffset - uiNumPelsLuma, yoffset - uiNumPelsLuma ) ), (cuP1.isSepTree() ? CHANNEL_TYPE_CHROMA : cu.chType));
 
       if (edgeDir == EDGE_VER)
       {
@@ -1365,13 +1365,16 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
 #if JVET_P1001_DEBLOCKING_CHROMAQP_FIX
-        int shiftHor = cu.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cu.firstPU->chromaFormat);
-        int shiftVer = cu.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cu.firstPU->chromaFormat);
-        const Position& posQ = Position{ pos.x >> shiftHor,  pos.y >> shiftVer };
-        const Position  posP = (edgeDir == EDGE_VER) ? posQ.offset(-1, 0) : posQ.offset(0, -1);
+        int shiftHorP = cuP.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuP.firstPU->chromaFormat);
+        int shiftVerP = cuP.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuP.firstPU->chromaFormat);
+        int shiftHorQ = cuQ.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
+        int shiftVerQ = cuQ.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
+        const Position& posQ = Position{ pos.x >> shiftHorQ,  pos.y >> shiftVerQ };
+        const Position& posP1 = Position{ pos.x >> shiftHorP,  pos.y >> shiftVerP };
+        const Position  posP = (edgeDir == EDGE_VER) ? posP1.offset(-1, 0) : posP1.offset(0, -1);
 
         const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
-        const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); //based on chType of the current cu, because cuQ.chType and cuP.chType are not the same when local dual-tree is applied
+        const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType); 
 
         const QpParam cQP(tuP, ComponentID(chromaIdx + 1));
         const QpParam cQQ(tuQ, ComponentID(chromaIdx + 1));

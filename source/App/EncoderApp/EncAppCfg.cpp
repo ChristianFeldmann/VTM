@@ -1068,7 +1068,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   // Profile and level
 #if JVET_P2001E_PROFILES
-  ("Profile",                                         extendedProfile,              ExtendedProfileName::NONE, "Profile name to use for encoding. Use main, main_10, main_444, main_444_10, auto, or none")
+  ("Profile",                                         extendedProfile,              ExtendedProfileName::NONE, "Profile name to use for encoding. Use main_10, main_444_10, auto, or none")
 #else
   ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
 #endif

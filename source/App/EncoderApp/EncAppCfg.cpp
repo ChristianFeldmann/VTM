@@ -60,6 +60,12 @@ namespace po = df::program_options_lite;
 
 enum ExtendedProfileName // this is used for determining profile strings, where multiple profiles map to a single profile idc with various constraint flag combinations
 {
+#if JVET_P2001E_PROFILES
+  NONE        = Profile::NONE,
+  MAIN_10     = Profile::MAIN_10,
+  MAIN_444_10 = Profile::MAIN_444_10,
+  AUTO = -1
+#else
   NONE = 0,
   MAIN = 1,
   MAIN10 = 2,
@@ -93,6 +99,7 @@ enum ExtendedProfileName // this is used for determining profile strings, where 
   MAIN_444_STILL_PICTURE = 11308,
   MAIN_444_16_STILL_PICTURE = 12316,
   NEXT          = 6
+#endif
 };
 
 
@@ -275,12 +282,17 @@ static const struct MapStrToProfile
 strToProfile[] =
 {
   {"none",                 Profile::NONE               },
+#if JVET_P2001E_PROFILES
+  {"main_10",              Profile::MAIN_10            },
+  {"main_444_10",          Profile::MAIN_444_10        }
+#else
   {"main",                 Profile::MAIN               },
   {"main10",               Profile::MAIN10             },
   {"main-still-picture",   Profile::MAINSTILLPICTURE   },
   {"main-RExt",            Profile::MAINREXT           },
   {"high-throughput-RExt", Profile::HIGHTHROUGHPUTREXT },
   {"next",                 Profile::NEXT           }
+#endif
 };
 
 static const struct MapStrToExtendedProfile
@@ -291,6 +303,11 @@ static const struct MapStrToExtendedProfile
 strToExtendedProfile[] =
 {
     {"none",                      NONE             },
+#if JVET_P2001E_PROFILES
+    {"main_10",                   MAIN_10          },
+    {"main_444_10",               MAIN_444_10      },
+    {"auto",                      AUTO             }
+#else
     {"main",                      MAIN             },
     {"main10",                    MAIN10           },
     {"main_still_picture",        MAINSTILLPICTURE },
@@ -325,8 +342,10 @@ strToExtendedProfile[] =
     {"main_444_16_intra",         MAIN_444_16_INTRA},
     {"main_444_16_still_picture", MAIN_444_16_STILL_PICTURE },
     {"next",                      NEXT }
+#endif
 };
 
+#if !JVET_P2001E_PROFILES
 static const ExtendedProfileName validRExtProfileNames[2/* intraConstraintFlag*/][4/* bit depth constraint 8=0, 10=1, 12=2, 16=3*/][4/*chroma format*/]=
 {
     {
@@ -342,6 +361,7 @@ static const ExtendedProfileName validRExtProfileNames[2/* intraConstraintFlag*/
         { NONE,          NONE,          NONE,              MAIN_444_16_INTRA }  // 16-bit intra for 400, 420, 422 and 444
     }
 };
+#endif
 
 static const struct MapStrToTier
 {
@@ -642,6 +662,7 @@ static inline istream& operator >> (std::istream& in, std::map<T1, T2>& map)
 }
 #endif
 
+#if !JVET_P2001E_PROFILES
 static void
 automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
                                const bool bUsingChromaQPAdjustment,
@@ -717,6 +738,8 @@ automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
     }
   }
 }
+#endif
+
 #if JVET_P1004_REMOVE_BRICKS
 
 static uint32_t getMaxTileColsByLevel( Level::Name level )
@@ -1044,7 +1067,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("HarmonizeGopFirstFieldCoupleEnabled",             m_bHarmonizeGopFirstFieldCoupleEnabled,            true, "Enables harmonization of Gop first field couple")
 
   // Profile and level
+#if JVET_P2001E_PROFILES
+  ("Profile",                                         extendedProfile,              ExtendedProfileName::NONE, "Profile name to use for encoding. Use main, main_10, main_444, main_444_10, auto, or none")
+#else
   ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
+#endif
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
   ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
@@ -1052,8 +1079,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("IntraConstraintFlag",                             m_intraConstraintFlag,                            false, "Value of general_intra_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
+#if !JVET_P2001E_PROFILES
   ("OnePictureOnlyConstraintFlag",                    m_onePictureOnlyConstraintFlag,                   false, "Value of general_one_picture_only_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
   ("LowerBitRateConstraintFlag",                      m_lowerBitRateConstraintFlag,                      true, "Value of general_lower_bit_rate_constraint_flag to use for RExt profiles")
+#endif
 
   ("ProgressiveSource",                               m_progressiveSourceFlag,                          false, "Indicate that source is progressive")
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
@@ -2133,6 +2162,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   CHECK( tmpMotionEstimationSearchMethod < 0 || tmpMotionEstimationSearchMethod >= MESEARCH_NUMBER_OF_METHODS, "Error in cfg" );
   m_motionEstimationSearchMethod=MESearchMethod(tmpMotionEstimationSearchMethod);
 
+#if JVET_P2001E_PROFILES
+  if (extendedProfile == ExtendedProfileName::AUTO)
+  {
+    if (xAutoDetermineProfile())
+    {
+      EXIT( "Unable to determine profile from configured settings");
+    }
+  }
+#else
   if (extendedProfile >= 1000 && extendedProfile <= 12316)
   {
     m_profile = Profile::MAINREXT;
@@ -2151,11 +2189,28 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       default: tmpConstraintChromaFormat=444; break;
     }
   }
+#endif
   else
   {
     m_profile = Profile::Name(extendedProfile);
   }
 
+#if JVET_P2001E_PROFILES
+  {
+    m_chromaFormatConstraint       = (tmpConstraintChromaFormat == 0) ? m_chromaFormatIDC : numberToChromaFormat(tmpConstraintChromaFormat);
+    if (m_bitDepthConstraint == 0)
+    {
+      if (m_profile == Profile::MAIN_10 || m_profile == Profile::MAIN_444_10)
+      {
+        m_bitDepthConstraint = 10;
+      }
+      else // m_profile == Profile::NONE
+      {
+        m_bitDepthConstraint = 8+15; // max value - unconstrained.
+      }
+    }
+  }
+#else
   if (m_profile == Profile::HIGHTHROUGHPUTREXT )
   {
     if (m_bitDepthConstraint == 0)
@@ -2215,6 +2270,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? m_chromaFormatIDC : numberToChromaFormat(tmpConstraintChromaFormat);
     m_bitDepthConstraint     = ( ( m_profile == Profile::MAIN10 || m_profile == Profile::NEXT ) ? 10 : 8 );
   }
+#endif
 
 
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
@@ -2978,6 +3034,36 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 // Private member functions
 // ====================================================================================================================
 
+#if JVET_P2001E_PROFILES
+///< auto determine the profile to use given the other configuration settings. Returns 1 if erred. Can select profile 'NONE'
+
+int EncAppCfg::xAutoDetermineProfile()
+{
+  const int maxBitDepth= std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[m_chromaFormatIDC==ChromaFormat::CHROMA_400 ? CHANNEL_TYPE_LUMA : CHANNEL_TYPE_CHROMA]);
+  m_profile=Profile::NONE;
+
+  if (m_chromaFormatIDC==ChromaFormat::CHROMA_400 || m_chromaFormatIDC==ChromaFormat::CHROMA_420)
+  {
+    if (maxBitDepth<=10)
+    {
+      m_profile=Profile::MAIN_10;
+    }
+  }
+  else if (m_chromaFormatIDC==ChromaFormat::CHROMA_422 || m_chromaFormatIDC==ChromaFormat::CHROMA_444)
+  {
+    if (maxBitDepth<=10)
+    {
+      m_profile=Profile::MAIN_444_10;
+    }
+  }
+  else
+  {
+    return 1; // unknown chroma format
+  }
+  return 0;
+}
+#endif
+
 bool EncAppCfg::xCheckParameter()
 {
   msg( NOTICE, "\n" );
@@ -3006,6 +3092,13 @@ bool EncAppCfg::xCheckParameter()
 #define xConfirmPara(a,b) check_failed |= confirmPara(a,b)
 
 
+#if JVET_P2001E_PROFILES
+  if( m_depQuantEnabledFlag )
+  {
+    xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
+    xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
+  }
+#else
   if( m_profile != Profile::NEXT )
   {
     THROW( "Next profile with an alternative partitioner has to be enabled if HEVC_USE_RQT is off!" );
@@ -3040,6 +3133,7 @@ bool EncAppCfg::xCheckParameter()
     }
 
   }
+#endif
 
   if( m_wrapAround )
   {
@@ -3077,10 +3171,28 @@ bool EncAppCfg::xCheckParameter()
 
 
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
+#if !JVET_P2001E_PROFILES
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
+#endif
 #if JVET_P0243_SINGLE_BIT_DEPTH
   xConfirmPara(m_internalBitDepth[CHANNEL_TYPE_CHROMA] != m_internalBitDepth[CHANNEL_TYPE_LUMA], "The internalBitDepth must be the same for luma and chroma");
 #endif
+#if JVET_P2001E_PROFILES
+  if (m_profile==Profile::MAIN_10 || m_profile==Profile::MAIN_444_10)
+  {
+    xConfirmPara(m_crossComponentPredictionEnabledFlag==true, "CrossComponentPrediction must not be used for given profile.");
+    xConfirmPara(m_log2MaxTransformSkipBlockSize>=6, "Transform Skip Log2 Max Size must be less or equal to 5 for given profile.");
+    xConfirmPara(m_transformSkipRotationEnabledFlag==true, "UseResidualRotation must not be enabled for given profile.");
+    xConfirmPara(m_transformSkipContextEnabledFlag==true, "UseSingleSignificanceMapContext must not be enabled for given profile.");
+    xConfirmPara(m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT]==true, "ImplicitResidualDPCM must not be enabled for given profile.");
+    xConfirmPara(m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT]==true, "ExplicitResidualDPCM must not be enabled for given profile.");
+    xConfirmPara(m_persistentRiceAdaptationEnabledFlag==true, "GolombRiceParameterAdaption must not be enabled for given profile.");
+    xConfirmPara(m_extendedPrecisionProcessingFlag==true, "UseExtendedPrecision must not be enabled for given profile.");
+    xConfirmPara(m_highPrecisionOffsetsEnabledFlag==true, "UseHighPrecisionPredictionWeighting must not be enabled for given profile.");
+    xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for given profile.");
+    xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for given profile.");
+  }
+#else
   xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
   xConfirmPara(m_chromaFormatConstraint<m_chromaFormatIDC, "The chroma format used must not be greater than the chromaFormatConstraint value");
 
@@ -3149,6 +3261,7 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for non main-RExt profiles.");
     xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for non main-RExt profiles.");
   }
+#endif
 
 
   // check range of parameters
@@ -4421,6 +4534,7 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Frame/Field                            : Frame based coding\n" );
     msg( DETAILS, "Frame index                            : %u - %d (%d frames)\n", m_FrameSkip, m_FrameSkip + m_framesToBeEncoded - 1, m_framesToBeEncoded );
   }
+#if !JVET_P2001E_PROFILES
   if (m_profile == Profile::MAINREXT)
   {
     ExtendedProfileName validProfileName;
@@ -4447,6 +4561,7 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Profile                                : %s (%s)\n", profileToString(m_profile), (rextSubProfile.empty())?"INVALID REXT PROFILE":rextSubProfile.c_str() );
   }
   else
+#endif
   {
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
@@ -4617,9 +4732,15 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, " SignBitHidingFlag:%d ", m_signDataHidingEnabledFlag);
   msg( VERBOSE, "RecalQP:%d ", m_recalculateQPAccordingToLambda ? 1 : 0 );
 
+#if !JVET_P2001E_PROFILES
   if( m_profile == Profile::NEXT )
+#endif
   {
+#if JVET_P2001E_PROFILES
+    msg( VERBOSE, "\nTOOL CFG: " );
+#else
     msg( VERBOSE, "\nNEXT TOOL CFG: " );
+#endif
     msg( VERBOSE, "LFNST:%d ", m_LFNST );
     msg( VERBOSE, "MMVD:%d ", m_MMVD);
     msg( VERBOSE, "Affine:%d ", m_Affine );

@@ -380,7 +380,7 @@ pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchai
 \section{Using the encoder}
 
 \begin{minted}{bash}
-TAppEncoder 	[--help] [-li -c config.cfg] [-li --parameter=value]
+EncoderApp [--help] [-li -c config.cfg] [-li --parameter=value]
 \end{minted}
 
 \begin{table}[ht]
@@ -3837,7 +3837,7 @@ Numerous constants that guard individual adoptions are defined within
 \section{Using the decoder}
 \subsection{General}
 \begin{minted}{bash}
-TAppDecoder -b str.bin -o dec.yuv [options]
+DecoderApp -b str.bin -o dec.yuv [options]
 \end{minted}
 
 \begin{OptionTableNoShorthand}{Decoder options}{tab:decoder-options}

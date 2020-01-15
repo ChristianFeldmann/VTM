@@ -803,6 +803,7 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
   WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "aspect_ratio_info_present_flag");
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
+    WRITE_FLAG(pcVUI->getAspectRatioConstantFlag(),             "aspect_ratio_constant_flag");
     WRITE_CODE(pcVUI->getAspectRatioIdc(), 8,                   "aspect_ratio_idc" );
     if (pcVUI->getAspectRatioIdc() == 255)
     {
@@ -816,6 +817,7 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_CODE(pcVUI->getColourPrimaries(), 8,                "colour_primaries");
     WRITE_CODE(pcVUI->getTransferCharacteristics(), 8,        "transfer_characteristics");
     WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "matrix_coeffs");
+    WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                "video_full_range_flag");
   }
   WRITE_FLAG(pcVUI->getFieldSeqFlag(),                          "field_seq_flag");
   WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "chroma_loc_info_present_flag");
@@ -836,12 +838,6 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
   {
     WRITE_FLAG(pcVUI->getOverscanAppropriateFlag(),             "overscan_appropriate_flag");
   }
-  WRITE_FLAG(pcVUI->getVideoSignalTypePresentFlag(),            "video_signal_type_present_flag");
-  if (pcVUI->getVideoSignalTypePresentFlag())
-  {
-    WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                  "video_full_range_flag");
-  }
-
 }
 
 void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1)

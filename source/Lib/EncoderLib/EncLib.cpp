@@ -1679,6 +1679,7 @@ void EncLib::xInitSPS(SPS &sps)
   {
     VUI* pcVUI = sps.getVuiParameters();
     pcVUI->setAspectRatioInfoPresentFlag(getAspectRatioInfoPresentFlag());
+    pcVUI->setAspectRatioConstantFlag(!getSampleAspectRatioInfoSEIEnabled());
     pcVUI->setAspectRatioIdc(getAspectRatioIdc());
     pcVUI->setSarWidth(getSarWidth());
     pcVUI->setSarHeight(getSarHeight());
@@ -1693,7 +1694,6 @@ void EncLib::xInitSPS(SPS &sps)
     pcVUI->setChromaSampleLocType(getChromaSampleLocType());
     pcVUI->setOverscanInfoPresentFlag(getOverscanInfoPresentFlag());
     pcVUI->setOverscanAppropriateFlag(getOverscanAppropriateFlag());
-    pcVUI->setVideoSignalTypePresentFlag(getVideoSignalTypePresentFlag());
     pcVUI->setVideoFullRangeFlag(getVideoFullRangeFlag());
   }
 

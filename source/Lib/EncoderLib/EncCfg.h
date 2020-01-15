@@ -836,7 +836,6 @@ protected:
   int       m_chromaSampleLocType;                            ///< Specifies the location of chroma samples for progressive content
   bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
   bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
-  bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
   bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
 
   bool      m_bEfficientFieldIRAPEnabled;                     ///< enable to code fields in a specific, potentially more efficient, order.
@@ -2137,8 +2136,6 @@ public:
   void         setOverscanInfoPresentFlag(bool i)                    { m_overscanInfoPresentFlag = i; }
   bool         getOverscanAppropriateFlag()                          { return m_overscanAppropriateFlag; }
   void         setOverscanAppropriateFlag(bool i)                    { m_overscanAppropriateFlag = i; }
-  bool         getVideoSignalTypePresentFlag()                       { return m_videoSignalTypePresentFlag; }
-  void         setVideoSignalTypePresentFlag(bool i)                 { m_videoSignalTypePresentFlag = i; }
   bool         getVideoFullRangeFlag()                               { return m_videoFullRangeFlag; }
   void         setVideoFullRangeFlag(bool i)                         { m_videoFullRangeFlag = i; }
 

@@ -935,7 +935,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setChromaSampleLocType                               ( m_chromaSampleLocType );
   m_cEncLib.setOverscanInfoPresentFlag                           ( m_overscanInfoPresentFlag );
   m_cEncLib.setOverscanAppropriateFlag                           ( m_overscanAppropriateFlag );
-  m_cEncLib.setVideoSignalTypePresentFlag                        ( m_videoSignalTypePresentFlag );
   m_cEncLib.setVideoFullRangeFlag                                ( m_videoFullRangeFlag );
   m_cEncLib.setEfficientFieldIRAPEnabled                         ( m_bEfficientFieldIRAPEnabled );
   m_cEncLib.setHarmonizeGopFirstFieldCoupleEnabled               ( m_bHarmonizeGopFirstFieldCoupleEnabled );

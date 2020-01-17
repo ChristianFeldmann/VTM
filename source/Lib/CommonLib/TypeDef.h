@@ -88,7 +88,6 @@
 
 
 
-#define JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP             1 // JVET-P0445: encoder speed up for sub-block based merge candidate search
 
 #define JVET_P0206_TMVP_flags                             1 // JVET-P0206: Signalling TMVP usage (remove pps TMVP idc and constraint when RPR is used)
 

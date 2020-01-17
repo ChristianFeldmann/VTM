@@ -3303,11 +3303,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
         distParam.cur = acMergeBuffer[uiMergeCand].Y();
 
-#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
         m_pcInterSearch->motionCompensation( pu, acMergeBuffer[uiMergeCand], REF_PIC_LIST_X, true, false );
-#else
-        m_pcInterSearch->motionCompensation( pu, acMergeBuffer[uiMergeCand] );
-#endif
 
         Distortion uiSad = distParam.distFunc( distParam );
         uint32_t   uiBitsCand = uiMergeCand + 1;
@@ -3398,12 +3394,8 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
       }
       if ( mrgTempBufSet )
       {
-#if JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP
         tempCS->getPredBuf().copyFrom(acMergeBuffer[uiMergeCand], true, false);   // Copy Luma Only
         m_pcInterSearch->motionCompensation(pu, REF_PIC_LIST_X, false, true);
-#else
-        tempCS->getPredBuf().copyFrom( acMergeBuffer[uiMergeCand] );
-#endif
       }
       else
       {

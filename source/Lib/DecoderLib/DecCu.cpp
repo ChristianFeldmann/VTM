@@ -129,11 +129,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         const int vSize = cs.slice->getSPS()->getMaxCUHeight() > 64 ? 64 : cs.slice->getSPS()->getMaxCUHeight();
         if((currCU.Y().x % vSize) == 0 && (currCU.Y().y % vSize) == 0)
         {
-#if JVET_P1018_IBC_NO_WRAPAROUND
           m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x  + g_IBCBufferSize / cs.slice->getSPS()->getMaxCUHeight() / 2, currCU.Y().y);
-#else
-          m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x, currCU.Y().y);
-#endif
         }
       }
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST

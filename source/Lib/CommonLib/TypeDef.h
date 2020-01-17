@@ -107,7 +107,6 @@
 
 
 
-#define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around
 
 #define JVET_P0406_YUV_FMT_GENERALIZATION_LDT             1 // JVET-P0406: Generalization of local dual tree (LDT) for different YUV formats
 

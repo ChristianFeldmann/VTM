@@ -3211,11 +3211,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   {
     if (trModes)
     {
-#if JVET_P0273_MTSIntraMaxCand
       m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, m_pcEncCfg->getMTSIntraMaxCand());
-#else
-      m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, CU::isIntra(*tu.cu) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand());
-#endif
 #if JVET_P0058_CHROMA_TS
       tu.mtsIdx[compID] = trModes->at(0).first;
 #else
@@ -3278,11 +3274,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 #if JVET_P0058_CHROMA_TS
     if (trModes)
     {
-#if JVET_P0273_MTSIntraMaxCand
         m_pcTrQuant->transformNxN(tu, compID, qpCbCr, trModes, m_pcEncCfg->getMTSIntraMaxCand());
-#else
-        m_pcTrQuant->transformNxN(tu, compID, qpCbCr, trModes, CU::isIntra(*tu.cu) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand());
-#endif
         tu.mtsIdx[compID] = trModes->at(0).first;
     }
 #endif
@@ -3482,11 +3474,7 @@ void IntraSearch::xIntraCodingACTTUBlock(TransformUnit &tu, const ComponentID &c
 
     if (trModes)
     {
-#if JVET_P0273_MTSIntraMaxCand
       m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, m_pcEncCfg->getMTSIntraMaxCand());
-#else
-      m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, CU::isIntra(*tu.cu) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand());
-#endif
 #if JVET_P0058_CHROMA_TS
       tu.mtsIdx[compID] = trModes->at(0).first;
 #else

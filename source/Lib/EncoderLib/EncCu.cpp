@@ -1733,11 +1733,7 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
   int        startLfnstIdx       = 0;
   int        endLfnstIdx         = sps.getUseLFNST() ? maxLfnstIdx : 0;
 
-#if JVET_P0273_MTSIntraMaxCand
   int grpNumMax = sps.getUseLFNST() ? m_pcEncCfg->getMTSIntraMaxCand() : 1;
-#else
-  int grpNumMax = sps.getUseLFNST() ? 4 : 1;
-#endif
   m_modeCtrl->setISPWasTested(false);
   m_pcIntraSearch->invalidateBestModeCost();
   if (sps.getUseColorTrans() && !CS::isDualITree(*tempCS))

@@ -6690,11 +6690,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           {
             if( transformMode == 0 )
             {
-#if JVET_P0273_MTSIntraMaxCand
               m_pcTrQuant->transformNxN( tu, compID, cQP, &trModes, m_pcEncCfg->getMTSInterMaxCand() );
-#else
-              m_pcTrQuant->transformNxN( tu, compID, cQP, &trModes, CU::isIntra( *tu.cu ) ? m_pcEncCfg->getIntraMTSMaxCand() : m_pcEncCfg->getInterMTSMaxCand() );
-#endif
 #if JVET_P0058_CHROMA_TS
               tu.mtsIdx[compID] = trModes[0].first;
 #else

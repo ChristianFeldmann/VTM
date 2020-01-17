@@ -282,13 +282,8 @@ protected:
   bool      m_verCollocatedChromaFlag;
   int       m_IntraMTS;
   int       m_InterMTS;
-#if JVET_P0273_MTSIntraMaxCand
   int       m_MTSIntraMaxCand;
   int       m_MTSInterMaxCand;
-#else
-  int       m_IntraMTSMaxCand;
-  int       m_InterMTSMaxCand;
-#endif
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
   int       m_SBTFast64WidthTh;                   ///< Enable size-64 SBT in encoder RDO check for HD and above sequences
@@ -1034,17 +1029,10 @@ public:
   void      setBIO(bool b)                                   { m_BIO = b; }
   bool      getBIO()                                   const { return m_BIO; }
 
-#if JVET_P0273_MTSIntraMaxCand
   void      setMTSIntraMaxCand              ( unsigned u )   { m_MTSIntraMaxCand = u; }
   unsigned  getMTSIntraMaxCand              ()         const { return m_MTSIntraMaxCand; }
   void      setMTSInterMaxCand              ( unsigned u )   { m_MTSInterMaxCand = u; }
   unsigned  getMTSInterMaxCand              ()         const { return m_MTSInterMaxCand; }
-#else
-  void      setIntraMTSMaxCand              ( unsigned u )   { m_IntraMTSMaxCand = u; }
-  unsigned  getIntraMTSMaxCand              ()         const { return m_IntraMTSMaxCand; }
-  void      setInterMTSMaxCand              ( unsigned u )   { m_InterMTSMaxCand = u; }
-  unsigned  getInterMTSMaxCand              ()         const { return m_InterMTSMaxCand; }
-#endif
   void      setIntraMTS                     ( bool b )       { m_IntraMTS = b; }
   bool      getIntraMTS                     ()         const { return m_IntraMTS; }
   void      setInterMTS                     ( bool b )       { m_InterMTS = b; }

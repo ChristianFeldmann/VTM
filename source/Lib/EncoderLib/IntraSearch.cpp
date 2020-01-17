@@ -398,7 +398,6 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
   const uint32_t lfnstIdx = cu.lfnstIdx;
   double costInterCU = findInterCUCost( cu );
 
-
   const int width  = partitioner.currArea().lwidth();
   const int height = partitioner.currArea().lheight();
 
@@ -454,7 +453,6 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;
 
-
   auto &pu = *cu.firstPU;
   bool validReturn = false;
   {
@@ -469,7 +467,7 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     const bool fastMip    = sps.getUseMIP() && m_pcEncCfg->getUseFastMIP();
     const bool mipAllowed = sps.getUseMIP() && isLuma(partitioner.chType) && ((cu.lfnstIdx == 0) || allowLfnstWithMip(cu.firstPU->lumaSize()));
     const bool testMip = mipAllowed && !(cu.lwidth() > (8 * cu.lheight()) || cu.lheight() > (8 * cu.lwidth()));
-    const bool supportedMipBlkSize = pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT; 
+    const bool supportedMipBlkSize = pu.lwidth() <= MIP_MAX_WIDTH && pu.lheight() <= MIP_MAX_HEIGHT;
 
     static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiRdModeList;
 
@@ -497,193 +495,85 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     }
     else
     {
-    if( mtsUsageFlag != 2 )
-    {
-      // this should always be true
-      CHECK( !pu.Y().valid(), "PU is not valid" );
-      bool isFirstLineOfCtu = (((pu.block(COMPONENT_Y).y)&((pu.cs->sps)->getMaxCUWidth() - 1)) == 0);
-      int numOfPassesExtendRef = ((!sps.getUseMRL() || isFirstLineOfCtu) ? 1 : MRL_NUM_REF_LINES);
-      pu.multiRefIdx = 0;
-
-      if( numModesForFullRD != numModesAvailable )
+      if (mtsUsageFlag != 2)
       {
-        CHECK( numModesForFullRD >= numModesAvailable, "Too many modes for full RD search" );
+        // this should always be true
+        CHECK(!pu.Y().valid(), "PU is not valid");
+        bool isFirstLineOfCtu     = (((pu.block(COMPONENT_Y).y) & ((pu.cs->sps)->getMaxCUWidth() - 1)) == 0);
+        int  numOfPassesExtendRef = ((!sps.getUseMRL() || isFirstLineOfCtu) ? 1 : MRL_NUM_REF_LINES);
+        pu.multiRefIdx            = 0;
 
-        const CompArea &area = pu.Y();
-
-        PelBuf piOrg         = cs.getOrgBuf(area);
-        PelBuf piPred        = cs.getPredBuf(area);
-
-        DistParam distParamSad;
-        DistParam distParamHad;
-        if (cu.slice->getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+        if (numModesForFullRD != numModesAvailable)
         {
-          CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
-          PelBuf tmpOrg = m_tmpStorageLCU.getBuf(tmpArea);
-          tmpOrg.copyFrom(piOrg);
-          tmpOrg.rspSignal(m_pcReshape->getFwdLUT());
-          m_pcRdCost->setDistParam(distParamSad, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, false); // Use SAD cost
-          m_pcRdCost->setDistParam(distParamHad, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,  true); // Use HAD (SATD) cost
-        }
-        else
-        {
-          m_pcRdCost->setDistParam(distParamSad, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, false); // Use SAD cost
-          m_pcRdCost->setDistParam(distParamHad, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,  true); // Use HAD (SATD) cost
-        }
+          CHECK(numModesForFullRD >= numModesAvailable, "Too many modes for full RD search");
 
-        distParamSad.applyWeight = false;
-        distParamHad.applyWeight = false;
+          const CompArea &area = pu.Y();
 
-        if( testMip && supportedMipBlkSize )
-        {
-          numModesForFullRD += fastMip? std::max(numModesForFullRD, floorLog2(std::min(pu.lwidth(), pu.lheight())) - 1) : numModesForFullRD;
-        }
-        const int numHadCand = (testMip ? 2 : 1) * 3;
+          PelBuf piOrg  = cs.getOrgBuf(area);
+          PelBuf piPred = cs.getPredBuf(area);
 
-        //*** Derive (regular) candidates using Hadamard
-        cu.mipFlag = false;
-
-        //===== init pattern for luma prediction =====
-        initIntraPatternChType(cu, pu.Y(), true);
-        bool bSatdChecked[NUM_INTRA_MODE];
-        memset( bSatdChecked, 0, sizeof( bSatdChecked ) );
-
-        if( !LFNSTLoadFlag )
-        {
-          for( int modeIdx = 0; modeIdx < numModesAvailable; modeIdx++ )
+          DistParam distParamSad;
+          DistParam distParamHad;
+          if (cu.slice->getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
           {
-            uint32_t       uiMode = modeIdx;
-            Distortion minSadHad = 0;
-
-            // Skip checking extended Angular modes in the first round of SATD
-            if( uiMode > DC_IDX && ( uiMode & 1 ) )
-            {
-              continue;
-            }
-
-            bSatdChecked[uiMode] = true;
-
-            pu.intraDir[0] = modeIdx;
-
-            initPredIntraParams(pu, pu.Y(), sps);
-              predIntraAng( COMPONENT_Y, piPred, pu);
-            // Use the min between SAD and HAD as the cost criterion
-            // SAD is scaled by 2 to align with the scaling of HAD
-            minSadHad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
-
-            // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
-            m_CABACEstimator->getCtx() = SubCtx( Ctx::MipFlag, ctxStartMipFlag );
-            m_CABACEstimator->getCtx() = SubCtx( Ctx::ISPMode, ctxStartIspMode );
-            m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaPlanarFlag, ctxStartPlanarFlag);
-            m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
-            m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
-
-            uint64_t fracModeBits = xFracModeBitsIntra(pu, uiMode, CHANNEL_TYPE_LUMA);
-
-            double cost = ( double ) minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
-
-            DTRACE(g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost, uiMode);
-
-            updateCandList( ModeInfo( false, false, 0, NOT_INTRA_SUBPARTITIONS, uiMode ), cost,              uiRdModeList,  CandCostList, numModesForFullRD );
-            updateCandList( ModeInfo( false, false, 0, NOT_INTRA_SUBPARTITIONS, uiMode ), double(minSadHad), uiHadModeList, CandHadList,  numHadCand );
+            CompArea tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+            PelBuf   tmpOrg = m_tmpStorageLCU.getBuf(tmpArea);
+            tmpOrg.copyFrom(piOrg);
+            tmpOrg.rspSignal(m_pcReshape->getFwdLUT());
+            m_pcRdCost->setDistParam(distParamSad, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,
+                                     false);   // Use SAD cost
+            m_pcRdCost->setDistParam(distParamHad, tmpOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,
+                                     true);   // Use HAD (SATD) cost
           }
-          if( !sps.getUseMIP() && LFNSTSaveFlag )
+          else
           {
-            // save found best modes
-            m_uiSavedNumRdModesLFNST   = numModesForFullRD;
-            m_uiSavedRdModeListLFNST   = uiRdModeList;
-            m_dSavedModeCostLFNST      = CandCostList;
-            // PBINTRA fast
-            m_uiSavedHadModeListLFNST  = uiHadModeList;
-            m_dSavedHadListLFNST       = CandHadList;
-            LFNSTSaveFlag              = false;
+            m_pcRdCost->setDistParam(distParamSad, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,
+                                     false);   // Use SAD cost
+            m_pcRdCost->setDistParam(distParamHad, piOrg, piPred, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y,
+                                     true);   // Use HAD (SATD) cost
           }
-        } // NSSTFlag
-        if( !sps.getUseMIP() && LFNSTLoadFlag )
-        {
-          // restore saved modes
-          numModesForFullRD = m_uiSavedNumRdModesLFNST;
-          uiRdModeList      = m_uiSavedRdModeListLFNST;
-          CandCostList      = m_dSavedModeCostLFNST;
-          // PBINTRA fast
-          uiHadModeList     = m_uiSavedHadModeListLFNST;
-          CandHadList       = m_dSavedHadListLFNST;
-        } // !LFNSTFlag
 
-        if (!(sps.getUseMIP() && LFNSTLoadFlag))
-        {
-        static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> parentCandList = uiRdModeList;
+          distParamSad.applyWeight = false;
+          distParamHad.applyWeight = false;
 
-        // Second round of SATD for extended Angular modes
-        for (int modeIdx = 0; modeIdx < numModesForFullRD; modeIdx++)
-        {
-          unsigned parentMode = parentCandList[modeIdx].modeId;
-          if (parentMode > (DC_IDX + 1) && parentMode < (NUM_LUMA_MODE - 1))
+          if (testMip && supportedMipBlkSize)
           {
-            for (int subModeIdx = -1; subModeIdx <= 1; subModeIdx += 2)
+            numModesForFullRD += fastMip
+                                   ? std::max(numModesForFullRD, floorLog2(std::min(pu.lwidth(), pu.lheight())) - 1)
+                                   : numModesForFullRD;
+          }
+          const int numHadCand = (testMip ? 2 : 1) * 3;
+
+          //*** Derive (regular) candidates using Hadamard
+          cu.mipFlag = false;
+
+          //===== init pattern for luma prediction =====
+          initIntraPatternChType(cu, pu.Y(), true);
+          bool bSatdChecked[NUM_INTRA_MODE];
+          memset(bSatdChecked, 0, sizeof(bSatdChecked));
+
+          if (!LFNSTLoadFlag)
+          {
+            for (int modeIdx = 0; modeIdx < numModesAvailable; modeIdx++)
             {
-              unsigned mode = parentMode + subModeIdx;
+              uint32_t   uiMode    = modeIdx;
+              Distortion minSadHad = 0;
 
-
-              if (!bSatdChecked[mode])
+              // Skip checking extended Angular modes in the first round of SATD
+              if (uiMode > DC_IDX && (uiMode & 1))
               {
-                pu.intraDir[0] = mode;
-
-                initPredIntraParams(pu, pu.Y(), sps);
-                  predIntraAng(COMPONENT_Y, piPred, pu );
-
-                // Use the min between SAD and SATD as the cost criterion
-                // SAD is scaled by 2 to align with the scaling of HAD
-                Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
-
-                // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
-                m_CABACEstimator->getCtx() = SubCtx( Ctx::MipFlag, ctxStartMipFlag );
-                m_CABACEstimator->getCtx() = SubCtx( Ctx::ISPMode, ctxStartIspMode );
-                m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaPlanarFlag, ctxStartPlanarFlag);
-                m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
-                m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
-
-                uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
-
-                double cost = (double) minSadHad + (double) fracModeBits * sqrtLambdaForFirstPass;
-
-                updateCandList( ModeInfo( false, false, 0, NOT_INTRA_SUBPARTITIONS, mode ), cost,              uiRdModeList,  CandCostList, numModesForFullRD );
-                updateCandList( ModeInfo( false, false, 0, NOT_INTRA_SUBPARTITIONS, mode ), double(minSadHad), uiHadModeList, CandHadList,  numHadCand );
-
-                bSatdChecked[mode] = true;
+                continue;
               }
-            }
-          }
-        }
-        if ( saveDataForISP )
-        {
-          // we save the regular intra modes list
-          m_ispCandListHor = uiRdModeList;
-        }
-        pu.multiRefIdx = 1;
-        const int  numMPMs = NUM_MOST_PROBABLE_MODES;
-        unsigned  multiRefMPM [numMPMs];
-        PU::getIntraMPMs(pu, multiRefMPM);
-        for (int mRefNum = 1; mRefNum < numOfPassesExtendRef; mRefNum++)
-        {
-          int multiRefIdx = MULTI_REF_LINE_IDX[mRefNum];
 
-          pu.multiRefIdx = multiRefIdx;
-          {
-            initIntraPatternChType(cu, pu.Y(), true);
-          }
-          for (int x = 1; x < numMPMs; x++)
-          {
-            uint32_t mode = multiRefMPM[x];
-            {
-              pu.intraDir[0] = mode;
+              bSatdChecked[uiMode] = true;
+
+              pu.intraDir[0] = modeIdx;
+
               initPredIntraParams(pu, pu.Y(), sps);
-
-                predIntraAng(COMPONENT_Y, piPred, pu);
-
-              // Use the min between SAD and SATD as the cost criterion
+              predIntraAng(COMPONENT_Y, piPred, pu);
+              // Use the min between SAD and HAD as the cost criterion
               // SAD is scaled by 2 to align with the scaling of HAD
-              Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
+              minSadHad += std::min(distParamSad.distFunc(distParamSad) * 2, distParamHad.distFunc(distParamHad));
 
               // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
               m_CABACEstimator->getCtx() = SubCtx( Ctx::MipFlag, ctxStartMipFlag );
@@ -692,252 +582,384 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
               m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
               m_CABACEstimator->getCtx() = SubCtx( Ctx::MultiRefLineIdx, ctxStartMrlIdx );
 
-              uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
-
-              double cost = (double)minSadHad + (double)fracModeBits * sqrtLambdaForFirstPass;
-              updateCandList( ModeInfo( false, false, multiRefIdx, NOT_INTRA_SUBPARTITIONS, mode ), cost,              uiRdModeList,  CandCostList, numModesForFullRD );
-              updateCandList( ModeInfo( false, false, multiRefIdx, NOT_INTRA_SUBPARTITIONS, mode ), double(minSadHad), uiHadModeList, CandHadList,  numHadCand );
-            }
-          }
-        }
-        CHECKD( uiRdModeList.size() != numModesForFullRD, "Error: RD mode list size" );
-
-        if (LFNSTSaveFlag && testMip && !allowLfnstWithMip(cu.firstPU->lumaSize())) // save a different set for the next run
-        {
-          // save found best modes
-          m_uiSavedRdModeListLFNST = uiRdModeList;
-          m_dSavedModeCostLFNST = CandCostList;
-          // PBINTRA fast
-          m_uiSavedHadModeListLFNST = uiHadModeList;
-          m_dSavedHadListLFNST = CandHadList;
-          m_uiSavedNumRdModesLFNST = g_aucIntraModeNumFast_UseMPM_2D[uiWidthBit - MIN_CU_LOG2][uiHeightBit - MIN_CU_LOG2];
-          m_uiSavedRdModeListLFNST.resize(m_uiSavedNumRdModesLFNST);
-          m_dSavedModeCostLFNST.resize(m_uiSavedNumRdModesLFNST);
-          // PBINTRA fast
-          m_uiSavedHadModeListLFNST.resize(3);
-          m_dSavedHadListLFNST.resize(3);
-          LFNSTSaveFlag = false;
-        }
-          //*** Derive MIP candidates using Hadamard
-        if( testMip && ! supportedMipBlkSize )
-        {
-          // avoid estimation for unsupported blk sizes
-          const int transpOff    = getNumModesMip( pu.Y() );
-          const int numModesFull = (transpOff << 1);
-          for( uint32_t uiModeFull = 0; uiModeFull < numModesFull; uiModeFull++ )
-          {
-            const bool     isTransposed = (uiModeFull >= transpOff ? true : false);
-            const uint32_t uiMode       = (isTransposed ? uiModeFull - transpOff : uiModeFull);
-
-            numModesForFullRD++;
-            uiRdModeList.push_back( ModeInfo(true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode) );
-            CandCostList.push_back(0);
-          }
-        }
-        else
-          if (testMip)
-          {
-            cu.mipFlag = true;
-            pu.multiRefIdx = 0;
-
-            double mipHadCost[MAX_NUM_MIP_MODE] = { MAX_DOUBLE };
-
-            initIntraPatternChType(cu, pu.Y());
-            initIntraMip( pu, pu.Y() );
-
-            const int transpOff    = getNumModesMip( pu.Y() );
-            const int numModesFull = (transpOff << 1);
-            for( uint32_t uiModeFull = 0; uiModeFull < numModesFull; uiModeFull++ )
-            {
-              const bool     isTransposed = (uiModeFull >= transpOff ? true : false);
-              const uint32_t uiMode       = (isTransposed ? uiModeFull - transpOff : uiModeFull);
-
-              pu.mipTransposedFlag = isTransposed;
-              pu.intraDir[CHANNEL_TYPE_LUMA] = uiMode;
-              predIntraMip(COMPONENT_Y, piPred, pu);
-
-              // Use the min between SAD and HAD as the cost criterion
-              // SAD is scaled by 2 to align with the scaling of HAD
-              Distortion minSadHad = std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
-
-              m_CABACEstimator->getCtx() = SubCtx( Ctx::MipFlag, ctxStartMipFlag );
-
               uint64_t fracModeBits = xFracModeBitsIntra(pu, uiMode, CHANNEL_TYPE_LUMA);
 
-              double cost = double(minSadHad) + double(fracModeBits) * sqrtLambdaForFirstPass;
-              mipHadCost[uiModeFull] = cost;
-              DTRACE(g_trace_ctx, D_INTRA_COST, "IntraMIP: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost, uiModeFull);
+              double cost = (double) minSadHad + (double) fracModeBits * sqrtLambdaForFirstPass;
 
-              updateCandList( ModeInfo( true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode ), cost,                  uiRdModeList,  CandCostList, numModesForFullRD + 1 );
-              updateCandList( ModeInfo( true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode ), 0.8*double(minSadHad), uiHadModeList, CandHadList,  numHadCand );
+              DTRACE(g_trace_ctx, D_INTRA_COST, "IntraHAD: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost, uiMode);
+
+              updateCandList(ModeInfo(false, false, 0, NOT_INTRA_SUBPARTITIONS, uiMode), cost, uiRdModeList,
+                             CandCostList, numModesForFullRD);
+              updateCandList(ModeInfo(false, false, 0, NOT_INTRA_SUBPARTITIONS, uiMode), double(minSadHad),
+                             uiHadModeList, CandHadList, numHadCand);
             }
-
-            const double thresholdHadCost = 1.0 + 1.4 / sqrt((double)(pu.lwidth()*pu.lheight()));
-            reduceHadCandList(uiRdModeList, CandCostList, numModesForFullRD, thresholdHadCost, mipHadCost, pu, fastMip);
-          }
-          if ( sps.getUseMIP() && LFNSTSaveFlag)
+            if (!sps.getUseMIP() && LFNSTSaveFlag)
+            {
+              // save found best modes
+              m_uiSavedNumRdModesLFNST = numModesForFullRD;
+              m_uiSavedRdModeListLFNST = uiRdModeList;
+              m_dSavedModeCostLFNST    = CandCostList;
+              // PBINTRA fast
+              m_uiSavedHadModeListLFNST = uiHadModeList;
+              m_dSavedHadListLFNST      = CandHadList;
+              LFNSTSaveFlag             = false;
+            }
+          }   // NSSTFlag
+          if (!sps.getUseMIP() && LFNSTLoadFlag)
           {
-            // save found best modes
-            m_uiSavedNumRdModesLFNST = numModesForFullRD;
-            m_uiSavedRdModeListLFNST = uiRdModeList;
-            m_dSavedModeCostLFNST = CandCostList;
+            // restore saved modes
+            numModesForFullRD = m_uiSavedNumRdModesLFNST;
+            uiRdModeList      = m_uiSavedRdModeListLFNST;
+            CandCostList      = m_dSavedModeCostLFNST;
             // PBINTRA fast
-            m_uiSavedHadModeListLFNST = uiHadModeList;
-            m_dSavedHadListLFNST = CandHadList;
-            LFNSTSaveFlag = false;
-          }
-        }
-        else //if( sps.getUseMIP() && LFNSTLoadFlag)
-        {
-          // restore saved modes
-          numModesForFullRD = m_uiSavedNumRdModesLFNST;
-          uiRdModeList = m_uiSavedRdModeListLFNST;
-          CandCostList = m_dSavedModeCostLFNST;
-          // PBINTRA fast
-          uiHadModeList = m_uiSavedHadModeListLFNST;
-          CandHadList = m_dSavedHadListLFNST;
-        }
+            uiHadModeList = m_uiSavedHadModeListLFNST;
+            CandHadList   = m_dSavedHadListLFNST;
+          }   // !LFNSTFlag
 
-        if( m_pcEncCfg->getFastUDIUseMPMEnabled() )
-        {
-          const int numMPMs = NUM_MOST_PROBABLE_MODES;
-          unsigned  uiPreds[numMPMs];
-
-          pu.multiRefIdx = 0;
-
-          const int numCand = PU::getIntraMPMs( pu, uiPreds );
-
-          for( int j = 0; j < numCand; j++ )
+          if (!(sps.getUseMIP() && LFNSTLoadFlag))
           {
-            bool mostProbableModeIncluded = false;
-            ModeInfo mostProbableMode( false, false, 0, NOT_INTRA_SUBPARTITIONS, uiPreds[j] );
+            static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> parentCandList = uiRdModeList;
 
-
-            for( int i = 0; i < numModesForFullRD; i++ )
+            // Second round of SATD for extended Angular modes
+            for (int modeIdx = 0; modeIdx < numModesForFullRD; modeIdx++)
             {
-              mostProbableModeIncluded |= ( mostProbableMode == uiRdModeList[i] );
+              unsigned parentMode = parentCandList[modeIdx].modeId;
+              if (parentMode > (DC_IDX + 1) && parentMode < (NUM_LUMA_MODE - 1))
+              {
+                for (int subModeIdx = -1; subModeIdx <= 1; subModeIdx += 2)
+                {
+                  unsigned mode = parentMode + subModeIdx;
+
+                  if (!bSatdChecked[mode])
+                  {
+                    pu.intraDir[0] = mode;
+
+                    initPredIntraParams(pu, pu.Y(), sps);
+                    predIntraAng(COMPONENT_Y, piPred, pu);
+
+                    // Use the min between SAD and SATD as the cost criterion
+                    // SAD is scaled by 2 to align with the scaling of HAD
+                    Distortion minSadHad =
+                      std::min(distParamSad.distFunc(distParamSad) * 2, distParamHad.distFunc(distParamHad));
+
+                    // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been
+                    // pre-estimated.
+                    m_CABACEstimator->getCtx() = SubCtx(Ctx::MipFlag, ctxStartMipFlag);
+                    m_CABACEstimator->getCtx() = SubCtx(Ctx::ISPMode, ctxStartIspMode);
+                    m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaPlanarFlag, ctxStartPlanarFlag);
+                    m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
+                    m_CABACEstimator->getCtx() = SubCtx(Ctx::MultiRefLineIdx, ctxStartMrlIdx);
+
+                    uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
+
+                    double cost = (double) minSadHad + (double) fracModeBits * sqrtLambdaForFirstPass;
+
+                    updateCandList(ModeInfo(false, false, 0, NOT_INTRA_SUBPARTITIONS, mode), cost, uiRdModeList,
+                                   CandCostList, numModesForFullRD);
+                    updateCandList(ModeInfo(false, false, 0, NOT_INTRA_SUBPARTITIONS, mode), double(minSadHad),
+                                   uiHadModeList, CandHadList, numHadCand);
+
+                    bSatdChecked[mode] = true;
+                  }
+                }
+              }
             }
-            if( !mostProbableModeIncluded )
+            if (saveDataForISP)
             {
-              numModesForFullRD++;
-              uiRdModeList.push_back( mostProbableMode );
-              CandCostList.push_back(0);
+              // we save the regular intra modes list
+              m_ispCandListHor = uiRdModeList;
+            }
+            pu.multiRefIdx    = 1;
+            const int numMPMs = NUM_MOST_PROBABLE_MODES;
+            unsigned  multiRefMPM[numMPMs];
+            PU::getIntraMPMs(pu, multiRefMPM);
+            for (int mRefNum = 1; mRefNum < numOfPassesExtendRef; mRefNum++)
+            {
+              int multiRefIdx = MULTI_REF_LINE_IDX[mRefNum];
+
+              pu.multiRefIdx = multiRefIdx;
+              {
+                initIntraPatternChType(cu, pu.Y(), true);
+              }
+              for (int x = 1; x < numMPMs; x++)
+              {
+                uint32_t mode = multiRefMPM[x];
+                {
+                  pu.intraDir[0] = mode;
+                  initPredIntraParams(pu, pu.Y(), sps);
+
+                  predIntraAng(COMPONENT_Y, piPred, pu);
+
+                  // Use the min between SAD and SATD as the cost criterion
+                  // SAD is scaled by 2 to align with the scaling of HAD
+                  Distortion minSadHad =
+                    std::min(distParamSad.distFunc(distParamSad) * 2, distParamHad.distFunc(distParamHad));
+
+                  // NB xFracModeBitsIntra will not affect the mode for chroma that may have already been pre-estimated.
+                  m_CABACEstimator->getCtx() = SubCtx(Ctx::MipFlag, ctxStartMipFlag);
+                  m_CABACEstimator->getCtx() = SubCtx(Ctx::ISPMode, ctxStartIspMode);
+                  m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaPlanarFlag, ctxStartPlanarFlag);
+                  m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
+                  m_CABACEstimator->getCtx() = SubCtx(Ctx::MultiRefLineIdx, ctxStartMrlIdx);
+
+                  uint64_t fracModeBits = xFracModeBitsIntra(pu, mode, CHANNEL_TYPE_LUMA);
+
+                  double cost = (double) minSadHad + (double) fracModeBits * sqrtLambdaForFirstPass;
+                  updateCandList(ModeInfo(false, false, multiRefIdx, NOT_INTRA_SUBPARTITIONS, mode), cost, uiRdModeList,
+                                 CandCostList, numModesForFullRD);
+                  updateCandList(ModeInfo(false, false, multiRefIdx, NOT_INTRA_SUBPARTITIONS, mode), double(minSadHad),
+                                 uiHadModeList, CandHadList, numHadCand);
+                }
+              }
+            }
+            CHECKD(uiRdModeList.size() != numModesForFullRD, "Error: RD mode list size");
+
+            if (LFNSTSaveFlag && testMip
+                && !allowLfnstWithMip(cu.firstPU->lumaSize()))   // save a different set for the next run
+            {
+              // save found best modes
+              m_uiSavedRdModeListLFNST = uiRdModeList;
+              m_dSavedModeCostLFNST    = CandCostList;
+              // PBINTRA fast
+              m_uiSavedHadModeListLFNST = uiHadModeList;
+              m_dSavedHadListLFNST      = CandHadList;
+              m_uiSavedNumRdModesLFNST =
+                g_aucIntraModeNumFast_UseMPM_2D[uiWidthBit - MIN_CU_LOG2][uiHeightBit - MIN_CU_LOG2];
+              m_uiSavedRdModeListLFNST.resize(m_uiSavedNumRdModesLFNST);
+              m_dSavedModeCostLFNST.resize(m_uiSavedNumRdModesLFNST);
+              // PBINTRA fast
+              m_uiSavedHadModeListLFNST.resize(3);
+              m_dSavedHadListLFNST.resize(3);
+              LFNSTSaveFlag = false;
+            }
+            //*** Derive MIP candidates using Hadamard
+            if (testMip && !supportedMipBlkSize)
+            {
+              // avoid estimation for unsupported blk sizes
+              const int transpOff    = getNumModesMip(pu.Y());
+              const int numModesFull = (transpOff << 1);
+              for (uint32_t uiModeFull = 0; uiModeFull < numModesFull; uiModeFull++)
+              {
+                const bool     isTransposed = (uiModeFull >= transpOff ? true : false);
+                const uint32_t uiMode       = (isTransposed ? uiModeFull - transpOff : uiModeFull);
+
+                numModesForFullRD++;
+                uiRdModeList.push_back(ModeInfo(true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode));
+                CandCostList.push_back(0);
+              }
+            }
+            else if (testMip)
+            {
+              cu.mipFlag     = true;
+              pu.multiRefIdx = 0;
+
+              double mipHadCost[MAX_NUM_MIP_MODE] = { MAX_DOUBLE };
+
+              initIntraPatternChType(cu, pu.Y());
+              initIntraMip(pu, pu.Y());
+
+              const int transpOff    = getNumModesMip(pu.Y());
+              const int numModesFull = (transpOff << 1);
+              for (uint32_t uiModeFull = 0; uiModeFull < numModesFull; uiModeFull++)
+              {
+                const bool     isTransposed = (uiModeFull >= transpOff ? true : false);
+                const uint32_t uiMode       = (isTransposed ? uiModeFull - transpOff : uiModeFull);
+
+                pu.mipTransposedFlag           = isTransposed;
+                pu.intraDir[CHANNEL_TYPE_LUMA] = uiMode;
+                predIntraMip(COMPONENT_Y, piPred, pu);
+
+                // Use the min between SAD and HAD as the cost criterion
+                // SAD is scaled by 2 to align with the scaling of HAD
+                Distortion minSadHad =
+                  std::min(distParamSad.distFunc(distParamSad) * 2, distParamHad.distFunc(distParamHad));
+
+                m_CABACEstimator->getCtx() = SubCtx(Ctx::MipFlag, ctxStartMipFlag);
+
+                uint64_t fracModeBits = xFracModeBitsIntra(pu, uiMode, CHANNEL_TYPE_LUMA);
+
+                double cost            = double(minSadHad) + double(fracModeBits) * sqrtLambdaForFirstPass;
+                mipHadCost[uiModeFull] = cost;
+                DTRACE(g_trace_ctx, D_INTRA_COST, "IntraMIP: %u, %llu, %f (%d)\n", minSadHad, fracModeBits, cost,
+                       uiModeFull);
+
+                updateCandList(ModeInfo(true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode), cost, uiRdModeList,
+                               CandCostList, numModesForFullRD + 1);
+                updateCandList(ModeInfo(true, isTransposed, 0, NOT_INTRA_SUBPARTITIONS, uiMode),
+                               0.8 * double(minSadHad), uiHadModeList, CandHadList, numHadCand);
+              }
+
+              const double thresholdHadCost = 1.0 + 1.4 / sqrt((double) (pu.lwidth() * pu.lheight()));
+              reduceHadCandList(uiRdModeList, CandCostList, numModesForFullRD, thresholdHadCost, mipHadCost, pu,
+                                fastMip);
+            }
+            if (sps.getUseMIP() && LFNSTSaveFlag)
+            {
+              // save found best modes
+              m_uiSavedNumRdModesLFNST = numModesForFullRD;
+              m_uiSavedRdModeListLFNST = uiRdModeList;
+              m_dSavedModeCostLFNST    = CandCostList;
+              // PBINTRA fast
+              m_uiSavedHadModeListLFNST = uiHadModeList;
+              m_dSavedHadListLFNST      = CandHadList;
+              LFNSTSaveFlag             = false;
             }
           }
-          if ( saveDataForISP )
+          else   // if( sps.getUseMIP() && LFNSTLoadFlag)
           {
-            // we add the MPMs to the list that contains only regular intra modes
+            // restore saved modes
+            numModesForFullRD = m_uiSavedNumRdModesLFNST;
+            uiRdModeList      = m_uiSavedRdModeListLFNST;
+            CandCostList      = m_dSavedModeCostLFNST;
+            // PBINTRA fast
+            uiHadModeList = m_uiSavedHadModeListLFNST;
+            CandHadList   = m_dSavedHadListLFNST;
+          }
+
+          if (m_pcEncCfg->getFastUDIUseMPMEnabled())
+          {
+            const int numMPMs = NUM_MOST_PROBABLE_MODES;
+            unsigned  uiPreds[numMPMs];
+
+            pu.multiRefIdx = 0;
+
+            const int numCand = PU::getIntraMPMs(pu, uiPreds);
+
             for (int j = 0; j < numCand; j++)
             {
               bool     mostProbableModeIncluded = false;
               ModeInfo mostProbableMode( false, false, 0, NOT_INTRA_SUBPARTITIONS, uiPreds[j] );
 
-              for (int i = 0; i < m_ispCandListHor.size(); i++)
+              for (int i = 0; i < numModesForFullRD; i++)
               {
-                mostProbableModeIncluded |= (mostProbableMode == m_ispCandListHor[i]);
+                mostProbableModeIncluded |= (mostProbableMode == uiRdModeList[i]);
               }
               if (!mostProbableModeIncluded)
               {
-                m_ispCandListHor.push_back(mostProbableMode);
+                numModesForFullRD++;
+                uiRdModeList.push_back(mostProbableMode);
+                CandCostList.push_back(0);
+              }
+            }
+            if (saveDataForISP)
+            {
+              // we add the MPMs to the list that contains only regular intra modes
+              for (int j = 0; j < numCand; j++)
+              {
+                bool     mostProbableModeIncluded = false;
+                ModeInfo mostProbableMode(false, false, 0, NOT_INTRA_SUBPARTITIONS, uiPreds[j]);
+
+                for (int i = 0; i < m_ispCandListHor.size(); i++)
+                {
+                  mostProbableModeIncluded |= (mostProbableMode == m_ispCandListHor[i]);
+                }
+                if (!mostProbableModeIncluded)
+                {
+                  m_ispCandListHor.push_back(mostProbableMode);
+                }
               }
             }
           }
         }
-      }
-      else
-      {
-        THROW( "Full search not supported for MIP" );
-      }
-      if( sps.getUseLFNST() && mtsUsageFlag == 1 )
-      {
-        // Store the modes to be checked with RD
-        m_savedNumRdModes[ lfnstIdx ]     = numModesForFullRD;
-        std::copy_n( uiRdModeList.begin(),  numModesForFullRD, m_savedRdModeList[ lfnstIdx ] );
-      }
-    }
-    else //mtsUsage = 2 (here we potentially reduce the number of modes that will be full-RD checked)
-    {
-      if( ( m_pcEncCfg->getUseFastLFNST() || !cu.slice->isIntra() ) && m_bestModeCostValid[ lfnstIdx ] )
-      {
-        numModesForFullRD = 0;
-
-        double thresholdSkipMode = 1.0 + ( ( cu.lfnstIdx > 0 ) ? 0.1 : 1.0 ) * ( 1.4 / sqrt( ( double ) ( width*height ) ) );
-
-        // Skip checking the modes with much larger R-D cost than the best mode
-        for( int i = 0; i < m_savedNumRdModes[ lfnstIdx ]; i++ )
+        else
         {
-          if( m_modeCostStore[ lfnstIdx ][ i ] <= thresholdSkipMode * m_bestModeCostStore[ lfnstIdx ] )
+          THROW("Full search not supported for MIP");
+        }
+        if (sps.getUseLFNST() && mtsUsageFlag == 1)
+        {
+          // Store the modes to be checked with RD
+          m_savedNumRdModes[lfnstIdx] = numModesForFullRD;
+          std::copy_n(uiRdModeList.begin(), numModesForFullRD, m_savedRdModeList[lfnstIdx]);
+        }
+      }
+      else   // mtsUsage = 2 (here we potentially reduce the number of modes that will be full-RD checked)
+      {
+        if ((m_pcEncCfg->getUseFastLFNST() || !cu.slice->isIntra()) && m_bestModeCostValid[lfnstIdx])
+        {
+          numModesForFullRD = 0;
+
+          double thresholdSkipMode = 1.0 + ((cu.lfnstIdx > 0) ? 0.1 : 1.0) * (1.4 / sqrt((double) (width * height)));
+
+          // Skip checking the modes with much larger R-D cost than the best mode
+          for (int i = 0; i < m_savedNumRdModes[lfnstIdx]; i++)
           {
-            uiRdModeList.push_back( m_savedRdModeList[ lfnstIdx ][ i ] );
-            numModesForFullRD++;
+            if (m_modeCostStore[lfnstIdx][i] <= thresholdSkipMode * m_bestModeCostStore[lfnstIdx])
+            {
+              uiRdModeList.push_back(m_savedRdModeList[lfnstIdx][i]);
+              numModesForFullRD++;
+            }
           }
         }
-      }
-      else //this is necessary because we skip the candidates list calculation, since it was already obtained for the DCT-II. Now we load it
-      {
-        // Restore the modes to be checked with RD
-        numModesForFullRD = m_savedNumRdModes[ lfnstIdx ];
-        uiRdModeList.resize( numModesForFullRD );
-        std::copy_n( m_savedRdModeList[ lfnstIdx ], m_savedNumRdModes[ lfnstIdx ], uiRdModeList.begin() );
-        CandCostList.resize( numModesForFullRD );
-      }
-    }
-
-    CHECK( numModesForFullRD != uiRdModeList.size(), "Inconsistent state!" );
-
-    // after this point, don't use numModesForFullRD
-
-    // PBINTRA fast
-    if( m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable && !cs.slice->getDisableSATDForRD() && ( mtsUsageFlag != 2 || lfnstIdx > 0 ) )
-    {
-      double pbintraRatio = (lfnstIdx > 0) ? 1.25 : PBINTRA_RATIO;
-      int maxSize = -1;
-      ModeInfo bestMipMode;
-      int bestMipIdx = -1;
-      for( int idx = 0; idx < uiRdModeList.size(); idx++ )
-      {
-        if( uiRdModeList[idx].mipFlg )
+        else   // this is necessary because we skip the candidates list calculation, since it was already obtained for
+               // the DCT-II. Now we load it
         {
-          bestMipMode = uiRdModeList[idx];
-          bestMipIdx = idx;
-          break;
+          // Restore the modes to be checked with RD
+          numModesForFullRD = m_savedNumRdModes[lfnstIdx];
+          uiRdModeList.resize(numModesForFullRD);
+          std::copy_n(m_savedRdModeList[lfnstIdx], m_savedNumRdModes[lfnstIdx], uiRdModeList.begin());
+          CandCostList.resize(numModesForFullRD);
         }
       }
-      const int numHadCand = 3;
-      for (int k = numHadCand - 1; k >= 0; k--)
+
+      CHECK(numModesForFullRD != uiRdModeList.size(), "Inconsistent state!");
+
+      // after this point, don't use numModesForFullRD
+
+      // PBINTRA fast
+      if (m_pcEncCfg->getUsePbIntraFast() && !cs.slice->isIntra() && uiRdModeList.size() < numModesAvailable
+          && !cs.slice->getDisableSATDForRD() && (mtsUsageFlag != 2 || lfnstIdx > 0))
       {
-        if (CandHadList.size() < (k + 1) || CandHadList[k] > cs.interHad * pbintraRatio) { maxSize = k; }
-      }
-      if (maxSize > 0)
-      {
-        uiRdModeList.resize(std::min<size_t>(uiRdModeList.size(), maxSize));
-        if( bestMipIdx >= 0 )
+        double   pbintraRatio = (lfnstIdx > 0) ? 1.25 : PBINTRA_RATIO;
+        int      maxSize      = -1;
+        ModeInfo bestMipMode;
+        int      bestMipIdx = -1;
+        for (int idx = 0; idx < uiRdModeList.size(); idx++)
         {
-          if( uiRdModeList.size() <= bestMipIdx )
+          if (uiRdModeList[idx].mipFlg)
           {
-            uiRdModeList.push_back(bestMipMode);
+            bestMipMode = uiRdModeList[idx];
+            bestMipIdx  = idx;
+            break;
           }
         }
-        if ( saveDataForISP )
+        const int numHadCand = 3;
+        for (int k = numHadCand - 1; k >= 0; k--)
         {
-          m_ispCandListHor.resize(std::min<size_t>(m_ispCandListHor.size(), maxSize));
+          if (CandHadList.size() < (k + 1) || CandHadList[k] > cs.interHad * pbintraRatio)
+          {
+            maxSize = k;
+          }
+        }
+        if (maxSize > 0)
+        {
+          uiRdModeList.resize(std::min<size_t>(uiRdModeList.size(), maxSize));
+          if (bestMipIdx >= 0)
+          {
+            if (uiRdModeList.size() <= bestMipIdx)
+            {
+              uiRdModeList.push_back(bestMipMode);
+            }
+          }
+          if (saveDataForISP)
+          {
+            m_ispCandListHor.resize(std::min<size_t>(m_ispCandListHor.size(), maxSize));
+          }
+        }
+        if (maxSize == 0)
+        {
+          cs.dist     = std::numeric_limits<Distortion>::max();
+          cs.interHad = 0;
+
+          //===== reset context models =====
+          m_CABACEstimator->getCtx() = SubCtx(Ctx::MipFlag, ctxStartMipFlag);
+          m_CABACEstimator->getCtx() = SubCtx(Ctx::ISPMode, ctxStartIspMode);
+          m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaPlanarFlag, ctxStartPlanarFlag);
+          m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
+          m_CABACEstimator->getCtx() = SubCtx(Ctx::MultiRefLineIdx, ctxStartMrlIdx);
+
+          return false;
         }
       }
-      if (maxSize == 0)
-      {
-        cs.dist = std::numeric_limits<Distortion>::max();
-        cs.interHad = 0;
-
-        //===== reset context models =====
-        m_CABACEstimator->getCtx() = SubCtx(Ctx::MipFlag, ctxStartMipFlag);
-        m_CABACEstimator->getCtx() = SubCtx(Ctx::ISPMode, ctxStartIspMode);
-        m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaPlanarFlag, ctxStartPlanarFlag);
-        m_CABACEstimator->getCtx() = SubCtx(Ctx::IntraLumaMpmFlag, ctxStartIntraMode);
-        m_CABACEstimator->getCtx() = SubCtx(Ctx::MultiRefLineIdx, ctxStartMrlIdx);
-
-        return false;
-      }
-    }
     }
 
     int numNonISPModes = (int)uiRdModeList.size();
@@ -948,7 +970,9 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
       const int maxNumRDModesISP = sps.getUseLFNST() ? 16 * NUM_LFNST_NUM_PER_SET : 16;
       m_curIspLfnstIdx = 0;
       for (int i = 0; i < maxNumRDModesISP; i++)
+      {
         uiRdModeList.push_back( ModeInfo( false, false, 0, INTRA_SUBPARTITIONS_RESERVED, 0 ) );
+      }
     }
 
     //===== check modes (using r-d costs) =====
@@ -965,7 +989,6 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     csBest->initStructData();
     csTemp->picture = cs.picture;
     csBest->picture = cs.picture;
-
 
     // just to be sure
     numModesForFullRD = ( int ) uiRdModeList.size();
@@ -997,22 +1020,26 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
         uiOrgMode = uiRdModeList[mode];
       }
       if (!cu.bdpcmMode && uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
+      {
+        if (mode == numNonISPModes)   // the list needs to be sorted only once
         {
-          if (mode == numNonISPModes) // the list needs to be sorted only once
+          if (m_pcEncCfg->getUseFastISP())
           {
-            if (m_pcEncCfg->getUseFastISP())
-            {
-              m_modeCtrl->setBestPredModeDCT2(uiBestPUMode.modeId);
-            }
-            if (!xSortISPCandList(bestCurrentCost, csBest->cost, uiBestPUMode))
-              break;
+            m_modeCtrl->setBestPredModeDCT2(uiBestPUMode.modeId);
           }
-          xGetNextISPMode(uiRdModeList[mode], (mode > 0 ? &uiRdModeList[mode - 1] : nullptr), Size(width, height));
-          if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
-            continue;
-          cu.lfnstIdx = m_curIspLfnstIdx;
-          uiOrgMode = uiRdModeList[mode];
+          if (!xSortISPCandList(bestCurrentCost, csBest->cost, uiBestPUMode))
+          {
+            break;
+          }
         }
+        xGetNextISPMode(uiRdModeList[mode], (mode > 0 ? &uiRdModeList[mode - 1] : nullptr), Size(width, height));
+        if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
+        {
+          continue;
+        }
+        cu.lfnstIdx = m_curIspLfnstIdx;
+        uiOrgMode   = uiRdModeList[mode];
+      }
       cu.mipFlag                     = uiOrgMode.mipFlg;
       pu.mipTransposedFlag           = uiOrgMode.mipTrFlg;
       cu.ispMode                     = uiOrgMode.ispMod;
@@ -1058,8 +1085,11 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
           tmpValidReturn = xRecurIntraCodingACTQT(*csTemp, partitioner, mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst);
         }
         else
-        tmpValidReturn = xRecurIntraCodingLumaQT( *csTemp, partitioner, uiBestPUMode.ispMod ? bestCurrentCost : MAX_DOUBLE, -1, TU_NO_ISP, uiBestPUMode.ispMod,
-                                                  mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst );
+        {
+          tmpValidReturn = xRecurIntraCodingLumaQT(
+            *csTemp, partitioner, uiBestPUMode.ispMod ? bestCurrentCost : MAX_DOUBLE, -1, TU_NO_ISP,
+            uiBestPUMode.ispMod, mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst);
+        }
       }
 
       if (!cu.ispMode && !cu.mtsFlag && !cu.lfnstIdx && !cu.bdpcmMode && !pu.multiRefIdx && !cu.mipFlag && testISP)
@@ -1081,9 +1111,8 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
       }
 
       DTRACE(g_trace_ctx, D_INTRA_COST, "IntraCost T [x=%d,y=%d,w=%d,h=%d] %f (%d,%d,%d,%d,%d,%d) \n", cu.blocks[0].x,
-        cu.blocks[0].y, (int)width, (int)height, csTemp->cost, uiOrgMode.modeId, uiOrgMode.ispMod,
-        pu.multiRefIdx, cu.mipFlag, cu.lfnstIdx, cu.mtsFlag);
-
+             cu.blocks[0].y, (int) width, (int) height, csTemp->cost, uiOrgMode.modeId, uiOrgMode.ispMod,
+             pu.multiRefIdx, cu.mipFlag, cu.lfnstIdx, cu.mtsFlag);
 
       if( tmpValidReturn )
       {
@@ -1166,7 +1195,10 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
         cs.useSubStructure(*csBest, partitioner.chType, pu, true, true, keepResi, keepResi);
       }
       else
-      cs.useSubStructure( *csBest, partitioner.chType, pu.singleChan( CHANNEL_TYPE_LUMA ), true, true, keepResi, keepResi );
+      {
+        cs.useSubStructure(*csBest, partitioner.chType, pu.singleChan(CHANNEL_TYPE_LUMA), true, true, keepResi,
+                           keepResi);
+      }
     }
     csBest->releaseIntermediateData();
     if( validReturn )

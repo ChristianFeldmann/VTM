@@ -1008,7 +1008,6 @@ static inline __m128i simdInterpolateLuma10Bit2P4(int16_t const *src, int srcStr
   return sumLo;
 }
 
-#if JVET_P0512_SIMD_HIGH_BITDEPTH
 #ifdef USE_AVX2
 static inline __m256i simdInterpolateLumaHighBit2P16(int16_t const *src1, int srcStride, __m256i *mmCoeff, const __m256i & mmOffset, __m128i &mmShift)
 {
@@ -1112,7 +1111,6 @@ static void simdInterpolateN2_HIGHBIT_M4(const int16_t* src, int srcStride, int1
     dst += dstStride;
   }
 }
-#endif
 
 template<X86_VEXT vext, bool isLast>
 static void simdInterpolateN2_10BIT_M4(const int16_t* src, int srcStride, int16_t *dst, int dstStride, int cStride, int width, int height, int shift, int offset, const ClpRng& clpRng, int16_t const *c)
@@ -1218,9 +1216,6 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
       offset = 1 << (shift - 1);
     }
   }
-#if !JVET_P0512_SIMD_HIGH_BITDEPTH
-  if( clpRng.bd <= 10 )
-#endif
   {
     if( N == 8 && !( width & 0x07 ) )
     {
@@ -1272,18 +1267,14 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
     {
       if (N == 2 && !(width & 0x03))
       {
-#if JVET_P0512_SIMD_HIGH_BITDEPTH
         if (clpRng.bd <= 10)
         {
-#endif
         simdInterpolateN2_10BIT_M4<vext, isLast>(src, srcStride, dst, dstStride, cStride, width, height, shift, offset, clpRng, c);
-#if JVET_P0512_SIMD_HIGH_BITDEPTH
         }
         else
         {
           simdInterpolateN2_HIGHBIT_M4<vext, isLast>(src, srcStride, dst, dstStride, cStride, width, height, shift, offset, clpRng, c);
         }
-#endif
         return;
       }
     }

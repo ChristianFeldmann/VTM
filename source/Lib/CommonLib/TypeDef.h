@@ -53,7 +53,6 @@
 #define FIELD_CODING_FIX                                  1 // Fix field coding 
 
 
-#define JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG           1 // JVET-P1024: single_slice_per_subpic_flag in the PPS
 
 #define JVET_P1038_ALF_PAD_RASTER_SLICE                   1 // JVET-P1038, handle ALF padding in raster scan slice
 

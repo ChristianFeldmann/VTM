@@ -510,15 +510,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
      
     // rectangular slice signalling
     READ_CODE(1, uiCode, "rect_slice_flag");                          pcPPS->setRectSliceFlag( uiCode == 1 );
-#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
     if (pcPPS->getRectSliceFlag()) 
     {
       READ_FLAG(uiCode, "single_slice_per_subpic_flag");            pcPPS->setSingleSlicePerSubPicFlag(uiCode == 1);
     }
     if (pcPPS->getRectSliceFlag() & !(pcPPS->getSingleSlicePerSubPicFlag()))
-#else
-    if (pcPPS->getRectSliceFlag())
-#endif
     {
       int32_t tileIdx = 0;
 

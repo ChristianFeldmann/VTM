@@ -1387,9 +1387,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
 
 #endif
-#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
   ("EnableSubPicPartitioning",                        m_subPicPartitionFlag,                             true, "Enable Sub-Picture partitioning (0: single slice per sub-picture, 1: multiple slices per sub-picture can be used)")
-#endif
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
@@ -2085,7 +2083,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_subProfile[i] = cfg_SubProfile.values[i];
   }
-#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
   if (m_subPicPartitionFlag)
   {
     m_singleSlicePerSubPicFlag = false;
@@ -2094,7 +2091,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_singleSlicePerSubPicFlag = true;
   }
-#endif
 #if !JVET_P1004_REMOVE_BRICKS
   if (m_tileUniformSpacingFlag)
   {

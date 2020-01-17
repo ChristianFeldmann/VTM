@@ -586,10 +586,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLFCrossSliceBoundaryFlag                          ( m_bLFCrossSliceBoundaryFlag );
 #endif
 
-#if JVET_P1024_SINGLE_SLICE_PER_SUBPIC_FLAG
   //====== Sub-picture and Slices ========
   m_cEncLib.setSingleSlicePerSubPicFlagFlag                      ( m_singleSlicePerSubPicFlag );
-#endif
   m_cEncLib.setUseSAO                                            ( m_bUseSAO );
   m_cEncLib.setTestSAODisableAtPictureLevel                      ( m_bTestSAODisableAtPictureLevel );
   m_cEncLib.setSaoEncodingRate                                   ( m_saoEncodingRate );

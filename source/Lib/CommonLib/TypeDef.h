@@ -126,7 +126,6 @@
 
 
 
-#define JVET_P1023_DMVR_BDOF_RP_CONDITION                 1 // JVET_P1023: Reference picture conditions in DMVR and BDOF
 
 #define JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG      1 // JVET-P0162: Removal of alf_ctb_use_first_aps_flag
 

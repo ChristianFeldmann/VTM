@@ -1289,11 +1289,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
   ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
-#if JVET_P0059_CHROMA_BDPCM
   ("BDPCM",                                           m_useBDPCM,                                           0, "BDPCM (0:off, 1:lumaonly, 2:lumachroma")
-#else
-  ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM")
-#endif
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
@@ -4029,9 +4025,7 @@ bool EncAppCfg::xCheckParameter()
   check_failed |= m_ext360.verifyParameters();
 #endif
 
-#if JVET_P0059_CHROMA_BDPCM
   xConfirmPara(m_useBDPCM < 0 || m_useBDPCM > 2, "BDPCM must be in range 0..2");
-#endif
 
 #undef xConfirmPara
   return check_failed;

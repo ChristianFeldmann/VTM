@@ -537,11 +537,7 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
 #endif
       if( useTransformSkip )
       {
-#if JVET_P0059_CHROMA_BDPCM
         if( (tu.cu->bdpcmMode && isLuma(compID)) || (isChroma(compID) && tu.cu->bdpcmModeChroma ) )
-#else
-        if( tu.cu->bdpcmMode && isLuma(compID) )
-#endif
         {
           forwardRDPCM( tu, compID, pSrc, uiAbsSum, cQP, ctx );
         }
@@ -1425,11 +1421,7 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
 
   const bool extendedPrecision = sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
-#if JVET_P0059_CHROMA_BDPCM
   const int  dirMode = isLuma(compID) ? tu.cu->bdpcmMode : tu.cu->bdpcmModeChroma;
-#else
-  const int  dirMode = tu.cu->bdpcmMode;
-#endif
   int transformShift = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
 
   if (extendedPrecision)

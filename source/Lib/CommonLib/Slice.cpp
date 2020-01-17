@@ -1769,11 +1769,7 @@ SPS::SPS()
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_transformSkipEnabledFlag  (false)
-#if JVET_P0059_CHROMA_BDPCM
 , m_BDPCMEnabled              (0)
-#else
-, m_BDPCMEnabledFlag          (false)
-#endif
 , m_JointCbCrEnabledFlag      (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)

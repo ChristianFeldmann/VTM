@@ -128,7 +128,6 @@
 
 
 
-#define JVET_P0059_CHROMA_BDPCM                           1 // JVET-P0059: Enable BDPCM for chroma
 
 #define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
 
@@ -410,14 +409,12 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // Enumeration
 // ====================================================================================================================
 
-#if JVET_P0059_CHROMA_BDPCM
 enum BDPCMControl
 {
   BDPCM_INACTIVE = 0,
   BDPCM_LUMAONLY = 1,
   BDPCM_LUMACHROMA = 2,
 };
-#endif
 
 enum ApsType
 {

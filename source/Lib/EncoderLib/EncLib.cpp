@@ -1152,11 +1152,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
-#if JVET_P0059_CHROMA_BDPCM
   sps.setBDPCMEnabled(m_useBDPCM);
-#else
-  sps.setBDPCMEnabledFlag(m_useBDPCM);
-#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 

@@ -1310,7 +1310,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
   if (pcSPS->getTransformSkipEnabledFlag())
   {
-#if JVET_P0059_CHROMA_BDPCM
       READ_FLAG(uiCode, "sps_bdpcm_enabled_flag");
       if (uiCode && pcSPS->getChromaFormatIdc() == CHROMA_444 )
       {
@@ -1318,9 +1317,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
           uiCode++;
       }
       pcSPS->setBDPCMEnabled(uiCode);
-#else
-    READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
-#endif
   }
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );

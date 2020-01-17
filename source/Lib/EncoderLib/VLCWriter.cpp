@@ -855,7 +855,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG(pcSPS->getTransformSkipEnabledFlag() ? 1 : 0, "sps_transform_skip_enabled_flag");
   if (pcSPS->getTransformSkipEnabledFlag())
   {
-#if JVET_P0059_CHROMA_BDPCM
       WRITE_FLAG(pcSPS->getBDPCMEnabled() ? 1 : 0, "sps_bdpcm_enabled_flag");
       if (pcSPS->getBDPCMEnabled() && pcSPS->getChromaFormatIdc() == CHROMA_444)
       {
@@ -865,17 +864,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       {
         CHECK(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA, "BDPCM for chroma can be used for 444 only.")
       }
-#else
-    WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");
-#endif
   }
   else
   {
-#if JVET_P0059_CHROMA_BDPCM
     CHECK(pcSPS->getBDPCMEnabled()!=0, "BDPCM cannot be used when transform skip is disabled");
-#else
-    CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
-#endif
   }
 
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );

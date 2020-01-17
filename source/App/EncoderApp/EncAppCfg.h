@@ -204,11 +204,7 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
-#if JVET_P0059_CHROMA_BDPCM
   int       m_useBDPCM;
-#else
-  bool      m_useBDPCM;
-#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context

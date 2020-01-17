@@ -1005,11 +1005,7 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
   RDPCMMode rdpcmMode = RDPCM_OFF;
   rdpcmNxN(tu, compID, cQP, uiAbsSum, rdpcmMode);
 
-#if JVET_P0059_CHROMA_BDPCM
   if ((tu.cu->bdpcmMode && isLuma(compID)) || (!isLuma(compID) && tu.cu->bdpcmModeChroma))
-#else
-  if( tu.cu->bdpcmMode && isLuma(compID) )
-#endif
   {
     tu.mtsIdx[compID] = MTS_SKIP;
   }

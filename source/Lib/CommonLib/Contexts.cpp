@@ -458,7 +458,6 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {   7,  19,   5,   7, },
     {   5,   1,   8,   9, },
   }),
-#if JVET_P0059_CHROMA_BDPCM
   ContextSetCfg::addCtxSet
   ({
     {  25, CNU, },
@@ -473,22 +472,6 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {  33,  28, CNU, },
     {   2,   1, DWS, },
   })
-#else
-  ContextSetCfg::addCtxSet
-  ({
-    {  25, },
-    {  25, },
-    {  12, },
-    {   5, },
-  }),
-  ContextSetCfg::addCtxSet
-  ({
-    {   9,  44, },
-    {  25,  29, },
-    {  33,  21, },
-    {   2,   1, },
-  })
-#endif
 };
 
 const CtxSet ContextSetCfg::SigCoeffGroup[] =
@@ -1198,7 +1181,6 @@ const CtxSet ContextSetCfg::QtCbf[] =
     {   7, CNU,   5,   7, },
     {   5, DWS,   8,   8, },
   }),
-#if JVET_P0059_CHROMA_BDPCM
   ContextSetCfg::addCtxSet
   ({
     { 25, CNU, },
@@ -1213,22 +1195,6 @@ ContextSetCfg::addCtxSet
     { 33,  21, CNU, },
     {  2,   1, DWS, },
 })
-#else
-  ContextSetCfg::addCtxSet
-  ({
-    {  25, },
-    {  25, },
-    {  12, },
-    {   5, },
-  }),
-  ContextSetCfg::addCtxSet
-  ({
-    {   9,  44, },
-    {  25,  29, },
-    {  33,  21, },
-    {   2,   1, },
-  })
-#endif
 };
 
 const CtxSet ContextSetCfg::SigCoeffGroup[] =

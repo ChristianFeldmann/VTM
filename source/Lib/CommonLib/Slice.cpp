@@ -1988,9 +1988,7 @@ SPS::SPS()
 , m_LadfQpOffset              { 0 }
 , m_LadfIntervalLowerBound    { 0 }
 #endif
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
 , m_MRL                       ( false )
-#endif
 , m_MIP                       ( false )
 , m_GDREnabledFlag            ( true )
 , m_SubLayerCbpParametersPresentFlag ( true )

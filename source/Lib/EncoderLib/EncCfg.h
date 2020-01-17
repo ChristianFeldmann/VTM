@@ -392,9 +392,7 @@ protected:
   bool      m_useNonLinearAlfLuma;
   bool      m_useNonLinearAlfChroma;
   unsigned  m_maxNumAlfAlternativesChroma;
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   bool      m_MRL;
-#endif
   bool      m_MIP;
   bool      m_useFastMIP;
   int       m_fastLocalDualTreeMode;
@@ -1270,10 +1268,8 @@ public:
   bool      getUseNonLinearAlfChroma        () const         { return m_useNonLinearAlfChroma; }
   void      setMaxNumAlfAlternativesChroma  ( uint32_t u )   { m_maxNumAlfAlternativesChroma = u; }
   uint32_t  getMaxNumAlfAlternativesChroma  () const         { return m_maxNumAlfAlternativesChroma; }
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   void      setUseMRL                       ( bool b )       { m_MRL = b; }
   bool      getUseMRL                       () const         { return m_MRL; }
-#endif
   void      setUseMIP                       ( bool b )       { m_MIP = b; }
   bool      getUseMIP                       () const         { return m_MIP; }
   void      setUseFastMIP                   ( bool b )       { m_useFastMIP = b; }

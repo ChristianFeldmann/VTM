@@ -952,12 +952,10 @@ void CABACWriter::extend_ref_line(const PredictionUnit& pu)
   {
     return;
   }
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   if( !cu.cs->sps->getUseMRL() )
   {
     return;
   }
-#endif
   bool isFirstLineOfCtu = (((cu.block(COMPONENT_Y).y)&((cu.cs->sps)->getMaxCUWidth() - 1)) == 0);
   if (isFirstLineOfCtu)
   {
@@ -981,12 +979,10 @@ void CABACWriter::extend_ref_line(const CodingUnit& cu)
   {
     return;
   }
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   if( !cu.cs->sps->getUseMRL() )
   {
     return;
   }
-#endif
 
   const int numBlocks = CU::getNumPUs(cu);
   const PredictionUnit* pu = cu.firstPU;

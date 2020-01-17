@@ -1214,9 +1214,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("UseNonLinearAlfChroma",                           m_useNonLinearAlfChroma,                           true, "Non-linear adaptive loop filters for Chroma Channels")
   ("MaxNumAlfAlternativesChroma",                     m_maxNumAlfAlternativesChroma,
                                                                     (unsigned)MAX_NUM_ALF_ALTERNATIVES_CHROMA, std::string("Maximum number of alternative Chroma filters (1-") + std::to_string(MAX_NUM_ALF_ALTERNATIVES_CHROMA) + std::string (", inclusive)") )
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   ("MRL",                                             m_MRL,                                            false,  "Enable MRL (multiple reference line intra prediction)")
-#endif
   ("MIP",                                             m_MIP,                                             true,  "Enable MIP (matrix-based intra prediction)")
   ("FastMIP",                                         m_useFastMIP,                                     false,  "Fast encoder search for MIP (matrix-based intra prediction)")
   ("FastLocalDualTreeMode",                           m_fastLocalDualTreeMode,                              0,  "Fast intra pass coding for local dual-tree in intra coding region, 0: off, 1: use threshold, 2: one intra mode only")
@@ -4775,9 +4773,7 @@ void EncAppCfg::xPrintParameter()
 #endif
       msg(VERBOSE, ") ");
     }
-#if JVET_P2001_SYNTAX_ORDER_MISMATCHES
     msg(VERBOSE, "MRL:%d ", m_MRL);
-#endif
     msg(VERBOSE, "MIP:%d ", m_MIP);
     msg(VERBOSE, "EncDbOpt:%d ", m_encDbOpt);
   msg( VERBOSE, "\nFAST TOOL CFG: " );

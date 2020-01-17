@@ -211,17 +211,10 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_bpNalCpbParamsPresentFlag = true;
   bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;
   bufferingPeriodSEI->m_bpMaxSubLayers = m_pcCfg->getMaxTempLayer() ;
-#if JVET_P0446_BP_CPB_CNT_FIX
   bufferingPeriodSEI->m_bpCpbCnt = 1;
-#endif
   for(int i=0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
   {
-#if !JVET_P0446_BP_CPB_CNT_FIX
-    bufferingPeriodSEI->m_bpCpbCnt[i] = 1;
-    for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt[i]; j++)
-#else
     for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt; j++)
-#endif
     {
       bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][0] = uiInitialCpbRemovalDelay;
       bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][1] = uiInitialCpbRemovalDelay;

@@ -652,9 +652,7 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
     }
   }
   sei_read_code( pDecodedMessageOutputStream, 3, code, "bp_max_sub_layers_minus1" );     sei.m_bpMaxSubLayers = code + 1;
-#if JVET_P0446_BP_CPB_CNT_FIX
   sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_cpb_cnt_minus1" ); sei.m_bpCpbCnt = code + 1;
-#endif
 #if JVET_P0181
   sei_read_flag(pDecodedMessageOutputStream, code, "sublayer_initial_cpb_removal_delay_present_flag");
   sei.m_sublayerInitialCpbRemovalDelayPresentFlag = code;
@@ -663,19 +661,12 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
   for (i = 0; i < sei.m_bpMaxSubLayers; i++)
 #endif
   {
-#if !JVET_P0446_BP_CPB_CNT_FIX
-    sei_read_uvlc( pDecodedMessageOutputStream, code, "bp_cpb_cnt_minus1[i]" ); sei.m_bpCpbCnt[i] = code + 1;
-#endif
     for( nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
       if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
          ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
       {
-#if JVET_P0446_BP_CPB_CNT_FIX
         for( int j = 0; j < ( sei.m_bpCpbCnt ); j ++ )
-#else
-        for( int j = 0; j < ( sei.m_bpCpbCnt[i] ); j ++ )
-#endif
         {
           sei_read_code( pDecodedMessageOutputStream, sei.m_initialCpbRemovalDelayLength, code, nalOrVcl ? "vcl_initial_cpb_removal_delay[i][j]" : "nal_initial_cpb_removal_delay[i][j]" );
           sei.m_initialCpbRemovalDelay[i][j][nalOrVcl] = code;

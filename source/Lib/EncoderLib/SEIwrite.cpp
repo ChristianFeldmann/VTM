@@ -380,10 +380,8 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
     CHECK (sei.m_bpMaxSubLayers < 1, "bp_max_sub_layers_minus1 must be > 0");
     WRITE_CODE( sei.m_bpMaxSubLayers - 1,        3, "bp_max_sub_layers_minus1" );
   }
-#if JVET_P0446_BP_CPB_CNT_FIX
   CHECK (sei.m_bpCpbCnt < 1, "sei.m_bpCpbCnt must be > 0");
   WRITE_UVLC( sei.m_bpCpbCnt - 1, "bp_cpb_cnt_minus1");
-#endif
 #if JVET_P0181
   WRITE_FLAG(sei.m_sublayerInitialCpbRemovalDelayPresentFlag, "sublayer_initial_cpb_removal_delay_present_flag");
   for (int i = (sei.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : sei.m_bpMaxSubLayers - 1); i < sei.m_bpMaxSubLayers; i++)
@@ -391,20 +389,12 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
   for (int i = 0; i < sei.m_bpMaxSubLayers; i++)
 #endif
   {
-#if !JVET_P0446_BP_CPB_CNT_FIX
-    CHECK (sei.m_bpCpbCnt[i] < 1, "sei.m_bpCpbCnt[i] must be > 0");
-    WRITE_UVLC( sei.m_bpCpbCnt[i] - 1, "bp_cpb_cnt_minus1[i]");
-#endif
     for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
       if( ( ( nalOrVcl == 0 ) && ( sei.m_bpNalCpbParamsPresentFlag ) ) ||
          ( ( nalOrVcl == 1 ) && ( sei.m_bpVclCpbParamsPresentFlag ) ) )
       {
-#if !JVET_P0446_BP_CPB_CNT_FIX
-        for( int j = 0; j < sei.m_bpCpbCnt[i]; j ++ )
-#else
         for( int j = 0; j < sei.m_bpCpbCnt; j ++ )
-#endif
         {
           WRITE_CODE( sei.m_initialCpbRemovalDelay[j][i][nalOrVcl],  sei.m_initialCpbRemovalDelayLength,           "initial_cpb_removal_delay[j][i][nalOrVcl]" );
           WRITE_CODE( sei.m_initialCpbRemovalOffset[j][i][nalOrVcl], sei.m_initialCpbRemovalDelayLength,           "initial_cpb_removal_delay_offset[j][i][nalOrVcl]" );

@@ -113,11 +113,7 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
   ::memcpy(target.m_initialCpbRemovalOffset, m_initialCpbRemovalOffset, sizeof(m_initialCpbRemovalOffset));
   ::memcpy(target.m_cpbRemovalDelayDelta, m_cpbRemovalDelayDelta, sizeof(m_cpbRemovalDelayDelta));
-#if !JVET_P0446_BP_CPB_CNT_FIX
-  ::memcpy(target.m_bpCpbCnt, m_bpCpbCnt, sizeof(m_bpCpbCnt));
-#else
   target.m_bpCpbCnt = m_bpCpbCnt;
-#endif
   target.m_bpDecodingUnitHrdParamsPresentFlag = m_bpDecodingUnitHrdParamsPresentFlag;
   target.m_decodingUnitCpbParamsInPicTimingSeiFlag = m_decodingUnitCpbParamsInPicTimingSeiFlag;
 #if JVET_P0181

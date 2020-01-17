@@ -152,10 +152,6 @@
 
 
 
-#define JVET_P0446_BP_CPB_CNT_FIX                         1 // bp_cpb_cnt is not an array according to the spec text
-#if !JVET_P0446_BP_CPB_CNT_FIX
-#error JVET_P0446_BP_CPB_CNT_FIX must be enabled for JVET_P0446_ALT_CPB
-#endif
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 

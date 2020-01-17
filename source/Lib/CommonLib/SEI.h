@@ -347,9 +347,7 @@ public:
   , m_initialCpbRemovalDelayLength (0)
   , m_cpbRemovalDelayLength (0)
   , m_dpbOutputDelayLength (0)
-#if JVET_P0446_BP_CPB_CNT_FIX
   , m_bpCpbCnt(0)
-#endif
   , m_duCpbRemovalDelayIncrementLength (0)
   , m_dpbOutputDelayDuLength (0)
   , m_cpbRemovalDelayDeltasPresentFlag (false)
@@ -368,9 +366,6 @@ public:
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
-#if !JVET_P0446_BP_CPB_CNT_FIX
-    ::memset(m_bpCpbCnt, 0, sizeof(m_bpCpbCnt));
-#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
@@ -383,11 +378,7 @@ public:
   uint32_t m_initialCpbRemovalDelayLength;
   uint32_t m_cpbRemovalDelayLength;
   uint32_t m_dpbOutputDelayLength;
-#if !JVET_P0446_BP_CPB_CNT_FIX
-  int      m_bpCpbCnt[MAX_TLAYER];
-#else
   int      m_bpCpbCnt;
-#endif
   uint32_t m_duCpbRemovalDelayIncrementLength;
   uint32_t m_dpbOutputDelayDuLength;
   uint32_t m_initialCpbRemovalDelay         [MAX_TLAYER][MAX_CPB_CNT][2];

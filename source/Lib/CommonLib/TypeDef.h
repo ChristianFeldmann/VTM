@@ -135,7 +135,6 @@
 
 
 
-#define JVET_P0218_AUD_TID_AND_LAYERID                    1 // JVET-P0218: Set temporal ID and layer ID of Access Unit Delimiter
 
 #define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping
 

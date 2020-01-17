@@ -411,7 +411,6 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   AUDWriter audWriter;
   OutputNALUnit nalu(NAL_UNIT_ACCESS_UNIT_DELIMITER);
   nalu.m_temporalId = slice->getTLayer();
-#if JVET_P0218_AUD_TID_AND_LAYERID
   int vpsId = slice->getSPS()->getVPSId();
   if (vpsId == 0)
   {
@@ -422,9 +421,6 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
     nalu.m_nuhLayerId = slice->getVPS()->getLayerId(0);
   }
   CHECK( nalu.m_temporalId != accessUnit.temporalId, "TemporalId shall be equal to the TemporalId of the AU containing the NAL unit" );
-#else
-  CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
-#endif
   int picType = slice->isIntra() ? 0 : (slice->isInterP() ? 1 : 2);
 
   audWriter.codeAUD(nalu.m_Bitstream, picType);

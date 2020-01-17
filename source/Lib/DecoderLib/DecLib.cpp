@@ -168,9 +168,7 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                     pcEncPic->slices.back()->initSlice();
                     pcEncPic->slices.back()->setPPS( pcEncPic->slices[0]->getPPS() );
                     pcEncPic->slices.back()->setSPS( pcEncPic->slices[0]->getSPS() );
-#if JVET_P0218_AUD_TID_AND_LAYERID
                     pcEncPic->slices.back()->setVPS( pcEncPic->slices[0]->getVPS() );
-#endif
                     pcEncPic->slices.back()->setPic( pcEncPic->slices[0]->getPic() );
                   }
                   pcEncPic->slices[i]->copySliceInfo( pic->slices[i], false );

@@ -2129,9 +2129,7 @@ private:
 
   // access channel
   const DPS*                 m_dps;
-#if JVET_P0218_AUD_TID_AND_LAYERID
   const VPS*                 m_pcVPS;
-#endif
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
   Picture*                   m_pcPic;
@@ -2196,10 +2194,8 @@ public:
 
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
-#if JVET_P0218_AUD_TID_AND_LAYERID
   void                        setVPS( const VPS* pcVPS )                             { m_pcVPS = pcVPS;                                              }
   const VPS*                  getVPS() const                                         { return m_pcVPS;                                               }
-#endif
 
   void                        setPPS( const PPS* pcPPS )                             { m_pcPPS = pcPPS;                                              }
   const PPS*                  getPPS() const                                         { return m_pcPPS;                                               }

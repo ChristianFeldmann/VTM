@@ -379,9 +379,7 @@ void Picture::allocateNewSlice()
 
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
-#if JVET_P0218_AUD_TID_AND_LAYERID
   slice.setVPS( cs->vps);
-#endif
   if(slices.size()>=2)
   {
     slice.copySliceInfo( slices[slices.size()-2] );
@@ -393,9 +391,7 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
   p->setSPS(cs->sps);
   p->setPPS(cs->pps);
-#if JVET_P0218_AUD_TID_AND_LAYERID
   p->setVPS(cs->vps);
-#endif
   p->setAlfAPSs(cs->alfApss);
 
 
@@ -403,9 +399,7 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
   slices[i] = p;
   pTmp->setSPS(0);
   pTmp->setPPS(0);
-#if JVET_P0218_AUD_TID_AND_LAYERID
   pTmp->setVPS(0);
-#endif
   memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
 
   return pTmp;

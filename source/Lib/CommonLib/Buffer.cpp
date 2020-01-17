@@ -184,11 +184,7 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
   Pel* srcTmp = pSrc + srcStride + 1;
   Pel* gradXTmp = gradX + gradStride + 1;
   Pel* gradYTmp = gradY + gradStride + 1;
-#if JVET_P0653_BDOF_PROF_PARA_DEV
   int  shift1 = 6;
-#else
-  int  shift1 = std::max<int>(6, (bitDepth - 6));
-#endif
 
   for (int y = 0; y < (height - 2 * BIO_EXTEND_SIZE); y++)
   {
@@ -228,13 +224,8 @@ void gradFilterCore(Pel* pSrc, int srcStride, int width, int height, int gradStr
 
 void calcBIOSumsCore(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
 {
-#if JVET_P0653_BDOF_PROF_PARA_DEV
   int shift4 = 4;
   int shift5 = 1;
-#else
-  int shift4 = std::max<int>(4, (bitDepth - 8));
-  int shift5 = std::max<int>(1, (bitDepth - 11));
-#endif
 
   for (int y = 0; y < 6; y++)
   {
@@ -259,38 +250,6 @@ void calcBIOSumsCore(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
   }
 }
 
-#if !JVET_P0653_BDOF_PROF_PARA_DEV
-void calcBIOParCore(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
-{
-  int shift4 = std::max<int>(4, (bitDepth - 8));
-  int shift5 = std::max<int>(1, (bitDepth - 11));
-  for (int y = 0; y < heightG; y++)
-  {
-    for (int x = 0; x < widthG; x++)
-    {
-      int temp = (srcY0Temp[x] >> shift4) - (srcY1Temp[x] >> shift4);
-      int tempX = (gradX0[x] + gradX1[x]) >> shift5;
-      int tempY = (gradY0[x] + gradY1[x]) >> shift5;
-      dotProductTemp1[x] = tempX * tempX;
-      dotProductTemp2[x] = tempX * tempY;
-      dotProductTemp3[x] = -tempX * temp;
-      dotProductTemp5[x] = tempY * tempY;
-      dotProductTemp6[x] = -tempY * temp;
-    }
-    srcY0Temp += src0Stride;
-    srcY1Temp += src1Stride;
-    gradX0 += gradStride;
-    gradX1 += gradStride;
-    gradY0 += gradStride;
-    gradY1 += gradStride;
-    dotProductTemp1 += widthG;
-    dotProductTemp2 += widthG;
-    dotProductTemp3 += widthG;
-    dotProductTemp5 += widthG;
-    dotProductTemp6 += widthG;
-  }
-}
-#endif
 
 void calcBlkGradientCore(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)
 {

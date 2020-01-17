@@ -988,13 +988,8 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
       dMvV += blockWidth;
     }
 
-#if JVET_P0653_BDOF_PROF_PARA_DEV
     const int mvShift  = 8;
     const int dmvLimit = ( 1 << 5 ) - 1;
-#else
-    const int mvShift = shift + MV_FRACTIONAL_BITS_INTERNAL + 2 - std::max<int>(5, clpRng.bd - 7);
-    const int dmvLimit = (1 << (std::max<int>(5, clpRng.bd - 7)));
-#endif
 
     if (!g_pelBufOP.roundIntVector)
     {
@@ -1311,11 +1306,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   bitDepth = clipBitDepths.recon[toChannelType(COMPONENT_Y)];
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
-#if JVET_P0653_BDOF_PROF_PARA_DEV
   const int   limit = ( 1 << 4 ) - 1;
-#else
-  const int   limit = (1<<(std::max<int>(5, bitDepth - 7)));
-#endif
 
   int xUnit = (width >> 2);
   int yUnit = (height >> 2);
@@ -1504,14 +1495,8 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   const int height = pu.Y().height;
 
   const int bit = MAX_CU_DEPTH;
-#if JVET_P0653_BDOF_PROF_PARA_DEV
   const int mvShift  = 8;
   const int dmvLimit = ( 1 << 5 ) - 1;
-#else
-  const int shift = bit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
-  const int mvShift = shift + MV_FRACTIONAL_BITS_INTERNAL + 2 - std::max<int>(5, clpRng.bd - 7);
-  const int dmvLimit = (1 << (std::max<int>(5, clpRng.bd - 7)));
-#endif
 
   for (int list = 0; list < 2; list++)
   {

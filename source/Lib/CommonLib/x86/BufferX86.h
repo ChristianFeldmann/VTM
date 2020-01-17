@@ -265,13 +265,8 @@ template< X86_VEXT vext >
 void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel* gradX1, Pel* gradY0, Pel* gradY1, int xu, int yu, const int src0Stride, const int src1Stride, const int widthG, const int bitDepth, int* sumAbsGX, int* sumAbsGY, int* sumDIX, int* sumDIY, int* sumSignGY_GX)
 
 {
-#if JVET_P0653_BDOF_PROF_PARA_DEV
   int shift4 = 4;
   int shift5 = 1;
-#else
-  int shift4 = std::max<int>(4, (bitDepth - 8));
-  int shift5 = std::max<int>(1, (bitDepth - 11));
-#endif
 
   __m128i sumAbsGXTmp = _mm_setzero_si128();
   __m128i sumDIXTmp = _mm_setzero_si128();
@@ -699,11 +694,7 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
 
   int widthInside = width - 2 * BIO_EXTEND_SIZE;
   int heightInside = height - 2 * BIO_EXTEND_SIZE;
-#if JVET_P0653_BDOF_PROF_PARA_DEV
   int shift1 = 6;
-#else
-  int shift1 = std::max<int>(6, bitDepth - 6);
-#endif
   __m128i mmShift1 = _mm_cvtsi32_si128( shift1 );
   assert((widthInside & 3) == 0);
 
@@ -778,154 +769,6 @@ void gradFilter_SSE(Pel* src, int srcStride, int width, int height, int gradStri
   }
 }
 
-#if !JVET_P0653_BDOF_PROF_PARA_DEV
-template< X86_VEXT vext >
-void calcBIOPar_SSE(const Pel* srcY0Temp, const Pel* srcY1Temp, const Pel* gradX0, const Pel* gradX1, const Pel* gradY0, const Pel* gradY1, int* dotProductTemp1, int* dotProductTemp2, int* dotProductTemp3, int* dotProductTemp5, int* dotProductTemp6, const int src0Stride, const int src1Stride, const int gradStride, const int widthG, const int heightG, const int bitDepth)
-{
-  int shift4 = std::max<int>(4, (bitDepth - 8));
-  int shift5 = std::max<int>(1, (bitDepth - 11));
-  for (int y = 0; y < heightG; y++)
-  {
-    int x = 0;
-    for (; x < ((widthG >> 3) << 3); x += 8)
-    {
-      __m128i mmSrcY0Temp = _mm_sra_epi16(_mm_loadu_si128((__m128i*)(srcY0Temp + x)), _mm_cvtsi32_si128(shift4));
-      __m128i mmSrcY1Temp = _mm_sra_epi16(_mm_loadu_si128((__m128i*)(srcY1Temp + x)), _mm_cvtsi32_si128(shift4));
-      __m128i mmGradX0 = _mm_loadu_si128((__m128i*)(gradX0 + x));
-      __m128i mmGradX1 = _mm_loadu_si128((__m128i*)(gradX1 + x));
-      __m128i mmGradY0 = _mm_loadu_si128((__m128i*)(gradY0 + x));
-      __m128i mmGradY1 = _mm_loadu_si128((__m128i*)(gradY1 + x));
-
-      __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
-      __m128i mmTempX = _mm_sra_epi16(_mm_add_epi16(mmGradX0, mmGradX1), _mm_cvtsi32_si128(shift5));
-      __m128i mmTempY = _mm_sra_epi16(_mm_add_epi16(mmGradY0, mmGradY1), _mm_cvtsi32_si128(shift5));
-
-      // m_piDotProductTemp1
-      __m128i mm_b = _mm_mulhi_epi16(mmTempX, mmTempX);
-      __m128i mm_a = _mm_mullo_epi16(mmTempX, mmTempX);
-
-      __m128i mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-      __m128i mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp1 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(dotProductTemp1 + x + 4), mm_h);
-
-      // m_piDotProductTemp2
-      mm_b = _mm_mulhi_epi16(mmTempX, mmTempY);
-      mm_a = _mm_mullo_epi16(mmTempX, mmTempY);
-
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-      mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp2 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(dotProductTemp2 + x + 4), mm_h);
-
-      // m_piDotProductTemp3
-      mm_b = _mm_mulhi_epi16(mmTempX, mmTemp1);
-      mm_a = _mm_mullo_epi16(mmTempX, mmTemp1);
-
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-      mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp3 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(dotProductTemp3 + x + 4), mm_h);
-
-      // m_piDotProductTemp5
-      mm_b = _mm_mulhi_epi16(mmTempY, mmTempY);
-      mm_a = _mm_mullo_epi16(mmTempY, mmTempY);
-
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-      mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp5 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(dotProductTemp5 + x + 4), mm_h);
-
-      // m_piDotProductTemp6
-      mm_b = _mm_mulhi_epi16(mmTempY, mmTemp1);
-      mm_a = _mm_mullo_epi16(mmTempY, mmTemp1);
-
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-      mm_h = _mm_unpackhi_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp6 + x), mm_l);
-      _mm_storeu_si128((__m128i *)(dotProductTemp6 + x + 4), mm_h);
-    }
-
-    for (; x < ((widthG >> 2) << 2); x += 4)
-    {
-      __m128i mmSrcY0Temp = _mm_sra_epi16(_mm_loadl_epi64((__m128i*)(srcY0Temp + x)), _mm_cvtsi32_si128(shift4));
-      __m128i mmSrcY1Temp = _mm_sra_epi16(_mm_loadl_epi64((__m128i*)(srcY1Temp + x)), _mm_cvtsi32_si128(shift4));
-      __m128i mmGradX0 = _mm_loadl_epi64((__m128i*)(gradX0 + x));
-      __m128i mmGradX1 = _mm_loadl_epi64((__m128i*)(gradX1 + x));
-      __m128i mmGradY0 = _mm_loadl_epi64((__m128i*)(gradY0 + x));
-      __m128i mmGradY1 = _mm_loadl_epi64((__m128i*)(gradY1 + x));
-
-      __m128i mmTemp1 = _mm_sub_epi16(mmSrcY1Temp, mmSrcY0Temp);
-      __m128i mmTempX = _mm_sra_epi16(_mm_add_epi16(mmGradX0, mmGradX1), _mm_cvtsi32_si128(shift5));
-      __m128i mmTempY = _mm_sra_epi16(_mm_add_epi16(mmGradY0, mmGradY1), _mm_cvtsi32_si128(shift5));
-
-      // m_piDotProductTemp1
-      __m128i mm_b = _mm_mulhi_epi16(mmTempX, mmTempX);
-      __m128i mm_a = _mm_mullo_epi16(mmTempX, mmTempX);
-      __m128i mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp1 + x), mm_l);
-
-      // m_piDotProductTemp2
-      mm_b = _mm_mulhi_epi16(mmTempX, mmTempY);
-      mm_a = _mm_mullo_epi16(mmTempX, mmTempY);
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp2 + x), mm_l);
-
-      // m_piDotProductTemp3
-      mm_b = _mm_mulhi_epi16(mmTempX, mmTemp1);
-      mm_a = _mm_mullo_epi16(mmTempX, mmTemp1);
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp3 + x), mm_l);
-
-      // m_piDotProductTemp5
-      mm_b = _mm_mulhi_epi16(mmTempY, mmTempY);
-      mm_a = _mm_mullo_epi16(mmTempY, mmTempY);
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp5 + x), mm_l);
-
-      // m_piDotProductTemp6
-      mm_b = _mm_mulhi_epi16(mmTempY, mmTemp1);
-      mm_a = _mm_mullo_epi16(mmTempY, mmTemp1);
-      mm_l = _mm_unpacklo_epi16(mm_a, mm_b);
-
-      _mm_storeu_si128((__m128i *)(dotProductTemp6 + x), mm_l);
-    }
-
-    for (; x < widthG; x++)
-    {
-      int temp = (srcY0Temp[x] >> shift4) - (srcY1Temp[x] >> shift4);
-      int tempX = (gradX0[x] + gradX1[x]) >> shift5;
-      int tempY = (gradY0[x] + gradY1[x]) >> shift5;
-      dotProductTemp1[x] = tempX * tempX;
-      dotProductTemp2[x] = tempX * tempY;
-      dotProductTemp3[x] = -tempX * temp;
-      dotProductTemp5[x] = tempY * tempY;
-      dotProductTemp6[x] = -tempY * temp;
-    }
-
-    srcY0Temp += src0Stride;
-    srcY1Temp += src1Stride;
-    gradX0 += gradStride;
-    gradX1 += gradStride;
-    gradY0 += gradStride;
-    gradY1 += gradStride;
-    dotProductTemp1 += widthG;
-    dotProductTemp2 += widthG;
-    dotProductTemp3 += widthG;
-    dotProductTemp5 += widthG;
-    dotProductTemp6 += widthG;
-  }
-}
-#endif
 
 template< X86_VEXT vext >
 void calcBlkGradient_SSE(int sx, int sy, int     *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize)

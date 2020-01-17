@@ -69,7 +69,6 @@
 
 
 
-#define JVET_P0244_SPS_CLEAN_UP                           1 // JVET-P0244/P0429: SPS cleanup changes
 
 #define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
 

@@ -312,11 +312,7 @@ void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
 
   for (int i = 0; i < sei.activeSeqParameterSetId.size(); i++)
   {
-#if JVET_P0244_SPS_CLEAN_UP
     WRITE_CODE( sei.activeSeqParameterSetId[i], 4, "active_seq_parameter_set_id" );
-#else
-    WRITE_UVLC(sei.activeSeqParameterSetId[i], "active_seq_parameter_set_id");
-#endif
   }
 }
 #endif
@@ -694,11 +690,7 @@ void SEIWriter::xWriteSEINoDisplay(const SEINoDisplay& /*sei*/)
 
 void SEIWriter::xWriteSEISOPDescription(const SEISOPDescription& sei)
 {
-#if JVET_P0244_SPS_CLEAN_UP
   WRITE_CODE( sei.m_sopSeqParameterSetId, 4,        "sop_seq_parameter_set_id" );
-#else
-  WRITE_UVLC( sei.m_sopSeqParameterSetId,           "sop_seq_parameter_set_id"               );
-#endif
   WRITE_UVLC( sei.m_numPicsInSopMinus1,             "num_pics_in_sop_minus1"               );
   for (uint32_t i = 0; i <= sei.m_numPicsInSopMinus1; i++)
   {

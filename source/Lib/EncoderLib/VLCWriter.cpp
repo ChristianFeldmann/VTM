@@ -253,11 +253,7 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 #endif
 
   WRITE_UVLC( pcPPS->getPPSId(),                             "pps_pic_parameter_set_id" );
-#if JVET_P0244_SPS_CLEAN_UP
   WRITE_CODE( pcPPS->getSPSId(), 4,                          "pps_seq_parameter_set_id" );
-#else
-  WRITE_UVLC( pcPPS->getSPSId(),                             "pps_seq_parameter_set_id" );
-#endif
 
   WRITE_UVLC( pcPPS->getPicWidthInLumaSamples(), "pic_width_in_luma_samples" );
   WRITE_UVLC( pcPPS->getPicHeightInLumaSamples(), "pic_height_in_luma_samples" );
@@ -714,17 +710,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
 
-#if JVET_P0244_SPS_CLEAN_UP
   WRITE_CODE( pcSPS->getSPSId (), 4, "sps_seq_parameter_set_id" );
-#else
-  WRITE_UVLC(pcSPS->getSPSId (), "sps_seq_parameter_set_id");
-#endif
 
-#if JVET_P0244_SPS_CLEAN_UP
   WRITE_CODE(int(pcSPS->getChromaFormatIdc ()), 2, "chroma_format_idc");
-#else
-  WRITE_UVLC( int(pcSPS->getChromaFormatIdc ()),    "chroma_format_idc" );
-#endif
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
   if( format == CHROMA_444 )
@@ -778,11 +766,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 
-#if JVET_P0244_SPS_CLEAN_UP
   WRITE_CODE(pcSPS->getBitsForPOC()-4, 4, "log2_max_pic_order_cnt_lsb_minus4");
-#else
-  WRITE_UVLC( pcSPS->getBitsForPOC()-4,                 "log2_max_pic_order_cnt_lsb_minus4" );
-#endif
   // KJS: Marakech decision: sub-layers added back
   const bool subLayerOrderingInfoPresentFlag = 1;
   if (pcSPS->getMaxTLayers() > 1)

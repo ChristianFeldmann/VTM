@@ -155,7 +155,6 @@
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
-#define JVET_P0181                                        1 // JVET-P0181 : Modifications to HRD information signalling
 
 #define JVET_P0183                                        1 // JVET-P0183 : conditionally signal cpb_removal_delay_delta_enabled_flag
 

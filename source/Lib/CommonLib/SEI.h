@@ -355,9 +355,7 @@ public:
   , m_bpMaxSubLayers (0)
   , m_bpDecodingUnitHrdParamsPresentFlag (false)
   , m_decodingUnitCpbParamsInPicTimingSeiFlag (false)
-#if JVET_P0181
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
-#endif
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
     , m_altCpbParamsPresentFlag (false)
@@ -391,9 +389,7 @@ public:
   uint32_t m_cpbRemovalDelayDelta    [15];
   bool m_bpDecodingUnitHrdParamsPresentFlag;
   bool m_decodingUnitCpbParamsInPicTimingSeiFlag;
-#if JVET_P0181
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
-#endif
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
   bool     m_altCpbParamsPresentFlag;

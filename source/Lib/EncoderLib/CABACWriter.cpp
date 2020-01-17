@@ -1349,11 +1349,7 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
 
   residual_lfnst_mode( cu, cuCtx );
 #if JVET_P1026_MTS_SIGNALLING
-#if JVET_P1026_ISP_LFNST_COMBINATION
   mts_idx            ( cu, &cuCtx );
-#else
-  mts_idx            ( cu, cuCtx );
-#endif
 #endif
 }
 
@@ -3080,11 +3076,7 @@ void CABACWriter::ts_flag( const TransformUnit& tu, ComponentID compID )
   DTRACE( g_trace_ctx, D_SYNTAX, "ts_flag() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tsFlag );
 }
 
-#if JVET_P1026_ISP_LFNST_COMBINATION
 void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx* cuCtx )
-#else
-void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
-#endif
 {
   TransformUnit &tu = *cu.firstTU;
 #if JVET_P0058_CHROMA_TS
@@ -3093,13 +3085,8 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx& cuCtx )
   int        mtsIdx = tu.mtsIdx;
 #endif
   
-#if JVET_P1026_ISP_LFNST_COMBINATION
   if( CU::isMTSAllowed( cu, COMPONENT_Y ) && cuCtx && !cuCtx->violatesMtsCoeffConstraint &&
       cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
-#else
-  if( CU::isMTSAllowed( cu, COMPONENT_Y ) && !cuCtx.violatesMtsCoeffConstraint &&
-      cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
-#endif
   {
     int symbol = mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
     int ctxIdx = 0;
@@ -3246,11 +3233,7 @@ void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID comp
 void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 {
   int chIdx = cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA ? 1 : 0;
-#if JVET_P1026_ISP_LFNST_COMBINATION
   if( ( cu.ispMode && !CU::canUseLfnstWithISP( cu, cu.chType ) ) ||
-#else
-  if( cu.ispMode != NOT_INTRA_SUBPARTITIONS ||
-#endif
       (cu.cs->sps->getUseLFNST() && CU::isIntra(cu) && cu.mipFlag && !allowLfnstWithMip(cu.firstPU->lumaSize())) ||
     ( cu.isSepTree() && cu.chType == CHANNEL_TYPE_CHROMA && std::min( cu.blocks[ 1 ].width, cu.blocks[ 1 ].height ) < 4 )
     || ( cu.blocks[ chIdx ].lumaSize().width > cu.cs->sps->getMaxTbSize() || cu.blocks[ chIdx ].lumaSize().height > cu.cs->sps->getMaxTbSize() )
@@ -3271,22 +3254,14 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
 #else
     const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx == MTS_SKIP;
 #endif
-#if JVET_P1026_ISP_LFNST_COMBINATION
     if( (!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
-#else
-    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
-#endif
 #else
 #if JVET_P0058_CHROMA_TS
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx[COMPONENT_Y] != MTS_DCT2_DCT2);
 #else
     const bool isNonDCT2 = (TU::getCbf(*cu.firstTU, ComponentID(COMPONENT_Y)) && cu.firstTU->mtsIdx != MTS_DCT2_DCT2);
 #endif
-#if JVET_P1026_ISP_LFNST_COMBINATION
     if( (!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
-#else
-    if( !cuCtx.lfnstLastScanPos || nonZeroCoeffNonTsCorner8x8 || isNonDCT2 )
-#endif
 #endif
     {
       return;

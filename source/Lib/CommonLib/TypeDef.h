@@ -91,7 +91,6 @@
 
 
 
-#define JVET_P1026_ISP_LFNST_COMBINATION                  1 // JVET-P1026: Combination of ISP and LFNST
 
 #define JVET_P1026_MTS_SIGNALLING                         1 // JVET-P1026: CU level MTS signalling
 

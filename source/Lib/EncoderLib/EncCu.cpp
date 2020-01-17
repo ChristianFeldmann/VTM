@@ -1730,9 +1730,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
 
   double dct2Cost                =   MAX_DOUBLE;
-#if JVET_P1026_ISP_LFNST_COMBINATION
   double bestNonDCT2Cost         = MAX_DOUBLE;
-#endif
   double trGrpBestCost     [ 4 ] = { MAX_DOUBLE, MAX_DOUBLE, MAX_DOUBLE, MAX_DOUBLE };
   double globalBestCost          =   MAX_DOUBLE;
   bool   bestSelFlag       [ 4 ] = { false, false, false, false };
@@ -1754,9 +1752,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 #else
   int grpNumMax = sps.getUseLFNST() ? 4 : 1;
 #endif
-#if JVET_P1026_ISP_LFNST_COMBINATION
   m_modeCtrl->setISPWasTested(false);
-#endif
   m_pcIntraSearch->invalidateBestModeCost();
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
   if (sps.getUseColorTrans() && !CS::isDualITree(*tempCS))
@@ -1847,7 +1843,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             {
               continue;
             }
-#if JVET_P1026_ISP_LFNST_COMBINATION 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
             if (m_pcEncCfg->getUseFastISP() && validCandRet && !mtsFlag && !lfnstIdx && !cu.colorTransform)
 #else
@@ -1860,7 +1855,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
               m_modeCtrl->setBestISPIntraModeRelCU(cu.ispMode ? PU::getFinalIntraMode(*cu.firstPU, CHANNEL_TYPE_LUMA) : UINT8_MAX);
               m_modeCtrl->setBestDCT2NonISPCostRelCU(m_modeCtrl->getMtsFirstPassNoIspCost());
             }
-#endif
 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
             if (sps.getUseColorTrans() && m_pcEncCfg->getRGBFormatFlag() && !CS::isDualITree(*tempCS) && !cu.colorTransform)
@@ -1972,9 +1966,6 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           tempCS->fracBits = m_CABACEstimator->getEstFracBits();
           tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
-#if !JVET_P1026_ISP_LFNST_COMBINATION
-          double bestIspCost = cu.ispMode ? cu.isSepTree() ? tempCS->cost : tempCS->lumaCost : MAX_DOUBLE;
-#endif
 
           const double tmpCostWithoutSplitFlags = tempCS->cost;
           xEncodeDontSplit( *tempCS, partitioner );
@@ -1982,11 +1973,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           xCheckDQP( *tempCS, partitioner );
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
-#if JVET_P1026_ISP_LFNST_COMBINATION
           if( lfnstIdx && !cuCtx.lfnstLastScanPos && !cu.ispMode )
-#else
-          if( lfnstIdx && !cuCtx.lfnstLastScanPos )
-#endif
           {
             bool cbfAtZeroDepth = cu.isSepTree() ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
             if( cbfAtZeroDepth )
@@ -1999,12 +1986,10 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
           {
             dct2Cost = tempCS->cost;
           }
-#if JVET_P1026_ISP_LFNST_COMBINATION
           else if (tmpCostWithoutSplitFlags < bestNonDCT2Cost)
           {
             bestNonDCT2Cost = tmpCostWithoutSplitFlags;
           }
-#endif
 
           if( tempCS->cost < bestCS->cost )
           {
@@ -2068,34 +2053,20 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
             }
 
             //we decide to skip the non-DCT-II transforms and LFNST according to the ISP results
-#if JVET_P1026_ISP_LFNST_COMBINATION
             if ((endMtsFlag > 0 || endLfnstIdx > 0) && (cu.ispMode || (bestCS && bestCS->cus[0]->ispMode)) && tempCS->slice->isIntra() && m_pcEncCfg->getUseFastISP())
-#else
-            if ((endMtsFlag > 0 || endLfnstIdx > 0) && cu.ispMode && !mtsFlag && !lfnstIdx && tempCS->slice->isIntra() && m_pcEncCfg->getUseFastISP())
-#endif
             {
               double bestCostDct2NoIsp = m_modeCtrl->getMtsFirstPassNoIspCost();
-#if JVET_P1026_ISP_LFNST_COMBINATION
               double bestIspCost       = m_modeCtrl->getIspCost();
-#endif
               CHECKD( bestCostDct2NoIsp <= bestIspCost, "wrong cost!" );
               double threshold = 1.4;
 
               double lfnstThreshold = 1.01 * threshold;
-#if JVET_P1026_ISP_LFNST_COMBINATION 
               if( m_modeCtrl->getStopNonDCT2Transforms() || bestCostDct2NoIsp > bestIspCost*lfnstThreshold )
-#else
-              if( bestCostDct2NoIsp > bestIspCost*lfnstThreshold )
-#endif
               {
                 endLfnstIdx = lfnstIdx;
               }
 
-#if JVET_P1026_ISP_LFNST_COMBINATION 
               if ( m_modeCtrl->getStopNonDCT2Transforms() || bestCostDct2NoIsp > bestIspCost*threshold )
-#else
-              if( bestCostDct2NoIsp > bestIspCost*threshold )
-#endif
               {
                 skipSecondMtsPass = true;
                 m_modeCtrl->setSkipSecondMTSPass( true );
@@ -2136,12 +2107,10 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
       }
     }
   } //trGrpIdx
-#if JVET_P1026_ISP_LFNST_COMBINATION 
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if(!adaptiveColorTrans)
 #endif
   m_modeCtrl->setBestNonDCT2Cost(bestNonDCT2Cost);
-#endif
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   return foundZeroRootCbf;
 #endif 

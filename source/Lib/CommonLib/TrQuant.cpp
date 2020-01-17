@@ -693,12 +693,10 @@ void TrQuant::getTrTypes(const TransformUnit tu, const ComponentID compID, int &
   trTypeHor = DCT2;
   trTypeVer = DCT2;
 
-#if JVET_P1026_ISP_LFNST_COMBINATION
   if (isISP && tu.cu->lfnstIdx)
   {
     return;
   }
-#endif
 
   if (!tu.cs->sps->getUseMTS())
     return;

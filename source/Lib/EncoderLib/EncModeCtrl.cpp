@@ -1584,7 +1584,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#if JVET_P1026_ISP_LFNST_COMBINATION
     if ( m_pcEncCfg->getUseFastISP() && relatedCU.relatedCuIsValid )
     {
       cuECtx.ispPredModeVal     = relatedCU.ispPredModeVal;
@@ -1593,7 +1592,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
       cuECtx.bestNonDCT2Cost    = relatedCU.bestNonDCT2Cost;
       cuECtx.bestISPIntraMode   = relatedCU.bestISPIntraMode;
     }
-#endif
     return true;
   }
   else if (encTestmode.type == ETM_PALETTE)
@@ -1960,7 +1958,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         else if( CU::isIntra( *bestCU ) )
         {
           relatedCU.isIntra   = true;
-#if JVET_P1026_ISP_LFNST_COMBINATION
           if ( m_pcEncCfg->getUseFastISP() && cuECtx.ispWasTested && ( !relatedCU.relatedCuIsValid || bestCS->cost < relatedCU.bestCost ) )
           {
             // Compact data
@@ -1987,7 +1984,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
             relatedCU.bestISPIntraMode   = cuECtx.bestISPIntraMode;
             relatedCU.relatedCuIsValid   = true;
           }
-#endif
         }
 #if ENABLE_SPLIT_PARALLELISM
 #if REUSE_CU_RESULTS

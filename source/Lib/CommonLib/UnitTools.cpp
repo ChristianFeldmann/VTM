@@ -325,7 +325,6 @@ bool CU::canUseISP( const int width, const int height, const int maxTrSize )
   return true;
 }
 
-#if JVET_P1026_ISP_LFNST_COMBINATION
 bool CU::canUseLfnstWithISP( const CompArea& cuArea, const ISPType ispSplitType )
 {
   if( ispSplitType == NOT_INTRA_SUBPARTITIONS )
@@ -347,7 +346,6 @@ bool CU::canUseLfnstWithISP( const CodingUnit& cu, const ChannelType chType )
   CHECK( !isLuma( chType ), "Wrong ISP mode!" );
   return CU::canUseLfnstWithISP( cu.blocks[chType == CHANNEL_TYPE_LUMA ? 0 : 1], (ISPType)cu.ispMode );
 }
-#endif
 
 uint32_t CU::getISPSplitDim( const int width, const int height, const PartSplit ispType )
 {

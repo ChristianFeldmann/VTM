@@ -200,7 +200,6 @@ struct ComprCUCtx
 #endif
     , bestCostWithoutSplitFlags( MAX_DOUBLE )
     , bestCostMtsFirstPassNoIsp( MAX_DOUBLE )
-#if JVET_P1026_ISP_LFNST_COMBINATION
     , bestCostIsp   ( MAX_DOUBLE )
     , ispWasTested  ( false )
     , bestPredModeDCT2
@@ -219,7 +218,6 @@ struct ComprCUCtx
     , ispLfnstIdx   ( 0 )
     , stopNonDCT2Transforms
                     ( false )
-#endif
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
     partIdx = ( ( cuX << 8 ) | cuY );
@@ -252,7 +250,6 @@ struct ComprCUCtx
 #endif
   double                            bestCostWithoutSplitFlags;
   double                            bestCostMtsFirstPassNoIsp;
-#if JVET_P1026_ISP_LFNST_COMBINATION
   double                            bestCostIsp;
   bool                              ispWasTested;
   uint16_t                          bestPredModeDCT2;
@@ -265,7 +262,6 @@ struct ComprCUCtx
   uint8_t                           ispMode;
   uint8_t                           ispLfnstIdx;
   bool                              stopNonDCT2Transforms;
-#endif
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
   template<typename T> void set( int ft, T val )      { extraFeatures [ft] = int64_t( val ); }
@@ -353,7 +349,6 @@ public:
   void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
   double getMtsFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp;         }
   void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
-#if JVET_P1026_ISP_LFNST_COMBINATION
   double getIspCost                   ()                  const { return m_ComprCUCtxList.back().bestCostIsp; }
   void   setIspCost                   ( double val )            { m_ComprCUCtxList.back().bestCostIsp = val; }
   bool   getISPWasTested              ()                  const { return m_ComprCUCtxList.back().ispWasTested; }
@@ -375,7 +370,6 @@ public:
   void   setISPLfnstIdx               ( uint8_t val )           { m_ComprCUCtxList.back().ispLfnstIdx = val; }
   bool   getStopNonDCT2Transforms     ()                  const { return m_ComprCUCtxList.back().stopNonDCT2Transforms; }
   void   setStopNonDCT2Transforms     ( bool val )              { m_ComprCUCtxList.back().stopNonDCT2Transforms = val; }
-#endif
   void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
   void   setPltEnc                    ( bool b )                { m_doPlt = b; }
   bool   getPltEnc()                                      const { return m_doPlt; }
@@ -441,14 +435,12 @@ struct CodedCUInfo
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
 #endif
-#if JVET_P1026_ISP_LFNST_COMBINATION
   uint16_t ispPredModeVal;
   double   bestDCT2NonISPCost;
   double   bestCost;
   double   bestNonDCT2Cost;
   bool     relatedCuIsValid;
   uint8_t  bestISPIntraMode;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
 

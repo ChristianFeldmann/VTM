@@ -705,7 +705,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
   WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
-#if JVET_P0171_SUBPICTURE_LAYOUT
   if(pcSPS->getSubPicPresentFlag())
   {
     WRITE_CODE(pcSPS->getNumSubPics() - 1, 8, "sps_num_subpics_minus1");
@@ -719,7 +718,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
     }
   }
-#endif
 
   WRITE_FLAG( pcSPS->getSubPicIdPresentFlag(), "sps_subpic_id_present_flag");
   if( pcSPS->getSubPicIdPresentFlag() )

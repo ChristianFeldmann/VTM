@@ -914,7 +914,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<unsigned> cfg_virtualBoundariesPosY       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
 
   SMultiValueInput<uint8_t> cfg_SubProfile(0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
-#if JVET_P0171_SUBPICTURE_LAYOUT
   SMultiValueInput<uint32_t>  cfg_subPicCtuTopLeftX(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_subPicCtuTopLeftY(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_subPicWidth(1, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
@@ -922,7 +921,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<uint32_t>  cfg_subPicTreatedAsPicFlag(0, 1, 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_loopFilterAcrossSubpicEnabledFlag(0, 1, 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_subPicId(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
-#endif
   int warnUnknowParameter = 0;
 
 #if ENABLE_TRACING
@@ -1042,7 +1040,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
-#if JVET_P0171_SUBPICTURE_LAYOUT
   ("SubPicPresentFlag",                               m_subPicPresentFlag,                              false, "equal to 1 specifies that subpicture parameters are present in in the SPS RBSP syntax")
   ("NumSubPics",                                      m_numSubPics,                                        0u, "specifies the number of subpictures")
   ("SubPicCtuTopLeftX",                               cfg_subPicCtuTopLeftX,            cfg_subPicCtuTopLeftX, "specifies horizontal position of top left CTU of i-th subpicture in unit of CtbSizeY")
@@ -1055,7 +1052,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SubPicIdSignallingPresentFlag",                   m_subPicIdSignallingPresentFlag,                  false, "equal to 1 specifies that subpicture ID mapping is signalled in the SPS")
   ("SubPicIdLen",                                     m_subPicIdLen,                                       0u, "specifies the number of bits used to represent the syntax element sps_subpic_id[ i ]. ")
   ("SubPicId",                                        cfg_subPicId,                              cfg_subPicId, "specifies that subpicture ID of the i-th subpicture")
-#endif
   ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
@@ -1737,7 +1733,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     //number of fields to encode
     m_framesToBeEncoded *= 2;
   }
-#if JVET_P0171_SUBPICTURE_LAYOUT
   if ( m_subPicPresentFlag )
   {
     CHECK( m_numSubPics > 255 || m_numSubPics < 1, "Number of subpicture must be within 1 to 255" );
@@ -1761,7 +1756,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       }
     }
   }
-#endif
   if( m_picPartitionFlag ) 
   {
     // store tile column widths
@@ -3886,7 +3880,6 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
   msg( DETAILS, "CU size / depth / total-depth          : %d / %d / %d\n", m_uiMaxCUWidth, m_uiMaxCUDepth, m_uiMaxCodingDepth );
-#if JVET_P0171_SUBPICTURE_LAYOUT
   msg(DETAILS, "subpicture present flag                            : %d\n", m_subPicPresentFlag);
   if (m_subPicPresentFlag) 
   {
@@ -3911,7 +3904,6 @@ void EncAppCfg::xPrintParameter()
 
     }
   }
-#endif
   msg( DETAILS, "Max TB size                            : %d \n", 1 << m_log2MaxTbSize );
   msg( DETAILS, "Motion search range                    : %d\n", m_iSearchRange );
   msg( DETAILS, "Intra period                           : %d\n", m_iIntraPeriod );

@@ -1240,7 +1240,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setRPL1CopyFromRPL0Flag( true );
   }
 
-#if JVET_P0171_SUBPICTURE_LAYOUT
   sps.setSubPicPresentFlag(m_subPicPresentFlag);
   if (m_subPicPresentFlag) 
   {
@@ -1255,7 +1254,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
       sps.setLoopFilterAcrossSubpicEnabledFlag(i, m_loopFilterAcrossSubpicEnabledFlag[i]);
     }
   }
-#endif
   sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
   if (m_subPicIdPresentFlag) 
   {

@@ -1064,7 +1064,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
   READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
 
-#if JVET_P0171_SUBPICTURE_LAYOUT
   if (pcSPS->getSubPicPresentFlag()) 
   {
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
@@ -1084,7 +1083,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
     }
   }
-#endif
   READ_FLAG(uiCode, "sps_subpic_id_present_flag");                           pcSPS->setSubPicIdPresentFlag( uiCode != 0 );
   if( pcSPS->getSubPicIdPresentFlag() )
   {

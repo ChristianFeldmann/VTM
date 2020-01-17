@@ -252,7 +252,6 @@ protected:
 
   int       m_maxTempLayer;                      ///< Max temporal layer
   unsigned  m_CTUSize;
-#if JVET_P0171_SUBPICTURE_LAYOUT
   bool                  m_subPicPresentFlag;
   unsigned              m_numSubPics;
   uint32_t              m_subPicCtuTopLeftX[MAX_NUM_SUB_PICS];
@@ -265,7 +264,6 @@ protected:
   bool                  m_subPicIdSignallingPresentFlag;
   unsigned              m_subPicIdLen;
   uint32_t              m_subPicId[MAX_NUM_SUB_PICS];
-#endif
   bool      m_useSplitConsOverride;
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
   unsigned  m_uiMaxMTTHierarchyDepth;
@@ -897,7 +895,6 @@ public:
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
-#if JVET_P0171_SUBPICTURE_LAYOUT
   void      setSubPicPresentFlag                        (bool b)                    { m_subPicPresentFlag = b; }
   void      setNumSubPics                               (uint32_t u)                { m_numSubPics = u; }
   void      setSubPicCtuTopLeftX                        (uint32_t u, int i)         { m_subPicCtuTopLeftX[i] = u; }
@@ -923,7 +920,6 @@ public:
   bool      getSubPicIdSignallingPresentFlag            ()                          { return m_subPicIdSignallingPresentFlag; }
   uint32_t  getSubPicIdLen                              ()                          { return m_subPicIdLen; }
   uint32_t  getSubPicId                                 (int i)                     { return m_subPicId[i]; }
-#endif
   void      setLFNST                        ( bool b )       { m_LFNST = b; }
   bool      getLFNST()                                 const { return m_LFNST; }
   void      setUseFastLFNST                 ( bool b )       { m_useFastLFNST = b; }

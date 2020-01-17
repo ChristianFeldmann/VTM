@@ -359,7 +359,6 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
-#if JVET_P0171_SUBPICTURE_LAYOUT
   m_cEncLib.setSubPicPresentFlag                                 ( m_subPicPresentFlag );
   if(m_subPicPresentFlag)
   {
@@ -387,7 +386,6 @@ void EncApp::xInitLibCfg()
       }
     }
   }
-#endif
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxMTTHierarchyDepth                              ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );

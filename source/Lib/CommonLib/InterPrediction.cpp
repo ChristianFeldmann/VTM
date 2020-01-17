@@ -990,11 +990,7 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
 
 #if JVET_P0653_BDOF_PROF_PARA_DEV
     const int mvShift  = 8;
-#if JVET_P0491_BDOFPROF_MVD_RANGE
     const int dmvLimit = ( 1 << 5 ) - 1;
-#else
-    const int dmvLimit = (1 << 5);
-#endif
 #else
 #if JVET_P0057_BDOF_PROF_HARMONIZATION 
     const int mvShift = shift + MV_FRACTIONAL_BITS_INTERNAL + 2 - std::max<int>(5, clpRng.bd - 7);
@@ -1014,13 +1010,8 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
 #else
         roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], shift);
 #endif
-#if JVET_P0491_BDOFPROF_MVD_RANGE
         dMvScaleHor[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleHor[idx] );
         dMvScaleVer[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleVer[idx] );
-#else
-        dMvScaleHor[idx] = Clip3(-dmvLimit, dmvLimit - 1, dMvScaleHor[idx]);
-        dMvScaleVer[idx] = Clip3(-dmvLimit, dmvLimit - 1, dMvScaleVer[idx]);
-#endif
       }
     }
     else
@@ -1335,11 +1326,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
 #if JVET_P0653_BDOF_PROF_PARA_DEV
-#if JVET_P0491_BDOFPROF_MVD_RANGE
   const int   limit = ( 1 << 4 ) - 1;
-#else
-  const int   limit = (1 << 5);
-#endif
 #else
   const int   limit = (1<<(std::max<int>(5, bitDepth - 7)));
 #endif
@@ -1368,22 +1355,14 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
 
       g_pelBufOP.calcBIOSums(SrcY0Tmp, SrcY1Tmp, pGradX0Tmp, pGradX1Tmp, pGradY0Tmp, pGradY1Tmp, xu, yu, src0Stride, src1Stride, widthG, bitDepth, &sumAbsGX, &sumAbsGY, &sumDIX, &sumDIY, &sumSignGY_GX);
       tmpx = (sumAbsGX == 0 ? 0 : rightShiftMSB(sumDIX << 2, sumAbsGX));
-#if JVET_P0057_BDOF_PROF_HARMONIZATION && !JVET_P0491_BDOFPROF_MVD_RANGE
-      tmpx = Clip3(-limit, limit - 1, tmpx);
-#else
       tmpx = Clip3(-limit, limit, tmpx);
-#endif
 
       int     mainsGxGy = sumSignGY_GX >> 12;
       int     secsGxGy = sumSignGY_GX & ((1 << 12) - 1);
       int     tmpData = tmpx * mainsGxGy;
       tmpData = ((tmpData << 12) + tmpx*secsGxGy) >> 1;
       tmpy = (sumAbsGY == 0 ? 0 : rightShiftMSB(((sumDIY << 2) - tmpData), sumAbsGY));
-#if JVET_P0057_BDOF_PROF_HARMONIZATION && !JVET_P0491_BDOFPROF_MVD_RANGE
-      tmpy = Clip3(-limit, limit - 1, tmpy);
-#else
       tmpy = Clip3(-limit, limit, tmpy);
-#endif
       srcY0Temp = srcY0 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
       srcY1Temp = srcY1 + (stridePredMC + 1) + ((yu*src0Stride + xu) << 2);
       gradX0 = m_gradX0 + offsetPos + ((yu*widthG + xu) << 2);
@@ -1541,11 +1520,7 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   const int bit = MAX_CU_DEPTH;
 #if JVET_P0653_BDOF_PROF_PARA_DEV
   const int mvShift  = 8;
-#if JVET_P0491_BDOFPROF_MVD_RANGE
   const int dmvLimit = ( 1 << 5 ) - 1;
-#else
-  const int dmvLimit = (1 << 5);
-#endif
 #else
   const int shift = bit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
 #if JVET_P0057_BDOF_PROF_HARMONIZATION 
@@ -1620,13 +1595,8 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
 #else
           roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], shift);
 #endif
-#if JVET_P0491_BDOFPROF_MVD_RANGE
           dMvScaleHor[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleHor[idx] );
           dMvScaleVer[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleVer[idx] );
-#else
-          dMvScaleHor[idx] = Clip3(-dmvLimit, dmvLimit - 1, dMvScaleHor[idx]);
-          dMvScaleVer[idx] = Clip3(-dmvLimit, dmvLimit - 1, dMvScaleVer[idx]);
-#endif
         }
       }
       else

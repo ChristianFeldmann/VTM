@@ -1336,11 +1336,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
 #if JVET_P0653_BDOF_PROF_PARA_DEV
 #if JVET_P0491_BDOFPROF_MVD_RANGE
-#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
   const int   limit = ( 1 << 4 ) - 1;
-#else
-  const int   limit = ( 1 << 5 ) - 1;
-#endif
 #else
   const int   limit = (1 << 5);
 #endif
@@ -1371,11 +1367,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
       const Pel* SrcY0Tmp = srcY0 + (xu << 2) + (yu << 2) * src0Stride;
 
       g_pelBufOP.calcBIOSums(SrcY0Tmp, SrcY1Tmp, pGradX0Tmp, pGradX1Tmp, pGradY0Tmp, pGradY1Tmp, xu, yu, src0Stride, src1Stride, widthG, bitDepth, &sumAbsGX, &sumAbsGY, &sumDIX, &sumDIY, &sumSignGY_GX);
-#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
       tmpx = (sumAbsGX == 0 ? 0 : rightShiftMSB(sumDIX << 2, sumAbsGX));
-#else
-      tmpx = (sumAbsGX == 0 ? 0 : rightShiftMSB(sumDIX << 3, sumAbsGX));
-#endif
 #if JVET_P0057_BDOF_PROF_HARMONIZATION && !JVET_P0491_BDOFPROF_MVD_RANGE
       tmpx = Clip3(-limit, limit - 1, tmpx);
 #else
@@ -1386,11 +1378,7 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
       int     secsGxGy = sumSignGY_GX & ((1 << 12) - 1);
       int     tmpData = tmpx * mainsGxGy;
       tmpData = ((tmpData << 12) + tmpx*secsGxGy) >> 1;
-#if JVET_P0091_REMOVE_BDOF_OFFSET_SHIFT
       tmpy = (sumAbsGY == 0 ? 0 : rightShiftMSB(((sumDIY << 2) - tmpData), sumAbsGY));
-#else
-      tmpy = (sumAbsGY == 0 ? 0 : rightShiftMSB(((sumDIY << 3) - tmpData), sumAbsGY));
-#endif
 #if JVET_P0057_BDOF_PROF_HARMONIZATION && !JVET_P0491_BDOFPROF_MVD_RANGE
       tmpy = Clip3(-limit, limit - 1, tmpy);
 #else

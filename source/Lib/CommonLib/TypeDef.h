@@ -75,7 +75,6 @@
 
 
 
-#define JVET_P0410_CHROMA_QP_MAPPING                      1 // JVET-P0410: Chroma QP Mapping signalling
 
 #define JVET_P0366_NUT_CONSTRAINT_FLAGS                   1 // JVET-P0366: Adding constraint flags for NAL unit types
 

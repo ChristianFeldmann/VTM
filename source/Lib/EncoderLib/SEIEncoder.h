@@ -85,9 +85,7 @@ public:
   void initSEISphereRotation(SEISphereRotation *sei);
   void initSEIOmniViewport(SEIOmniViewport *sei);
   void initSEIRegionWisePacking(SEIRegionWisePacking *sei);
-#if JVET_P0597_GCMP_SEI
   void initSEIGcmp(SEIGeneralizedCubemapProjection *sei);
-#endif
   void initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps);
   void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
   void initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *sei);

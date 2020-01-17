@@ -97,11 +97,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::REGION_WISE_PACKING:
     xWriteSEIRegionWisePacking(*static_cast<const SEIRegionWisePacking*>(&sei));
     break;
-#if JVET_P0597_GCMP_SEI
   case SEI::GENERALIZED_CUBEMAP_PROJECTION:
     xWriteSEIGeneralizedCubemapProjection(*static_cast<const SEIGeneralizedCubemapProjection*>(&sei));
     break;
-#endif
   case SEI::USER_DATA_REGISTERED_ITU_T_T35:
     xWriteSEIUserDataRegistered(*static_cast<const SEIUserDataRegistered*>(&sei));
     break;
@@ -600,7 +598,6 @@ void SEIWriter::xWriteSEIRegionWisePacking(const SEIRegionWisePacking &sei)
   }
 }
 
-#if JVET_P0597_GCMP_SEI
 void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubemapProjection &sei)
 {
   WRITE_FLAG( sei.m_gcmpCancelFlag,                           "gcmp_cancel_flag" );
@@ -630,7 +627,6 @@ void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubema
     }
   }
 }
-#endif
 
 void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, const SPS* sps)
 {

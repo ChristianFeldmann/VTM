@@ -175,9 +175,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::SPHERE_ROTATION:                      return "Sphere rotation";
     case SEI::REGION_WISE_PACKING:                  return "Region wise packing information";
     case SEI::OMNI_VIEWPORT:                        return "Omni viewport";
-#if JVET_P0597_GCMP_SEI
     case SEI::GENERALIZED_CUBEMAP_PROJECTION:       return "Generalized cubemap projection";
-#endif
     case SEI::SAMPLE_ASPECT_RATIO_INFO:             return "Sample aspect ratio information";
     case SEI::SUBPICTURE_LEVEL_INFO:                return "Subpicture level information";
     default:                                        return "Unknown";

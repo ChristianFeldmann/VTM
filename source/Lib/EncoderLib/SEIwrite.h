@@ -68,9 +68,7 @@ protected:
   void xWriteSEISphereRotation                    (const SEISphereRotation &sei);
   void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
   void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
-#if JVET_P0597_GCMP_SEI
   void xWriteSEIGeneralizedCubemapProjection      (const SEIGeneralizedCubemapProjection &sei);
-#endif
   void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei, const SPS* sps);
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 

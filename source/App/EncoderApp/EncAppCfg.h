@@ -554,7 +554,6 @@ protected:
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
 
-#if JVET_P0597_GCMP_SEI
   bool                 m_gcmpSEIEnabled;
   bool                 m_gcmpSEICancelFlag;
   bool                 m_gcmpSEIPersistenceFlag;
@@ -569,7 +568,6 @@ protected:
   bool                 m_gcmpSEIGuardBandFlag;
   bool                 m_gcmpSEIGuardBandBoundaryType;
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
-#endif
 
   bool m_subpicureLevelInfoSEIEnabled;
 

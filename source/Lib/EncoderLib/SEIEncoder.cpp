@@ -303,7 +303,6 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
   }
 }
 
-#if JVET_P0597_GCMP_SEI
 void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCubemapProjection)
 {
   CHECK(!(m_isInitialized), "seiGeneralizedCubemapProjection already initialized");
@@ -347,7 +346,6 @@ void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCube
     }
   }
 }
-#endif
 
 void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampleAspectRatioInfo)
 {

@@ -538,7 +538,6 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpBottomGuardBandHeight;
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
-#if JVET_P0597_GCMP_SEI
   bool                 m_gcmpSEIEnabled;
   bool                 m_gcmpSEICancelFlag;
   bool                 m_gcmpSEIPersistenceFlag;
@@ -553,7 +552,6 @@ protected:
   bool                 m_gcmpSEIGuardBandFlag;
   bool                 m_gcmpSEIGuardBandBoundaryType;
   uint8_t              m_gcmpSEIGuardBandSamplesMinus1;
-#endif
   bool m_subpicureLevelInfoSEIEnabled;
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
@@ -1481,7 +1479,6 @@ public:
   bool     getRwpSEIRwpGuardBandNotUsedForPredFlag(uint32_t idx) const                                      { return m_rwpSEIRwpGuardBandNotUsedForPredFlag[idx]; }
   void     setRwpSEIRwpGuardBandType(const std::vector<uint8_t>& rwpGuardBandType)                          { m_rwpSEIRwpGuardBandType = rwpGuardBandType; }
   uint8_t  getRwpSEIRwpGuardBandType(uint32_t idx) const                                                    { return m_rwpSEIRwpGuardBandType[idx]; }
-#if JVET_P0597_GCMP_SEI
   void    setGcmpSEIEnabled(bool b)                                                                 { m_gcmpSEIEnabled = b; }
   bool    getGcmpSEIEnabled()                                                                       { return m_gcmpSEIEnabled; }
   void    setGcmpSEICancelFlag(bool b)                                                              { m_gcmpSEICancelFlag = b; }
@@ -1510,7 +1507,6 @@ public:
   bool    getGcmpSEIGuardBandBoundaryType()                                                         { return m_gcmpSEIGuardBandBoundaryType; }
   void    setGcmpSEIGuardBandSamplesMinus1( uint8_t u )                                             { m_gcmpSEIGuardBandSamplesMinus1 = u; }
   uint8_t getGcmpSEIGuardBandSamplesMinus1()                                                        { return m_gcmpSEIGuardBandSamplesMinus1; }
-#endif
   bool    getSubpicureLevelInfoSEIEnabled() const { return m_subpicureLevelInfoSEIEnabled; }
   void    setSubpicureLevelInfoSEIEnabled(bool val) { m_subpicureLevelInfoSEIEnabled = val; }
   bool     getSampleAspectRatioInfoSEIEnabled() const                                                       { return m_sampleAspectRatioInfoSEIEnabled; }

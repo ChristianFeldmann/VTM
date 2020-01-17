@@ -165,7 +165,6 @@
 
 
 
-#define JVET_P0597_GCMP_SEI                               1 // JVET-P0597: generalized cubemap projection SEI message
 
 #define JVET_P2001E_PROFILES                              1 // Add profiles, as defined in JVET-P2001-E
 

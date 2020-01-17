@@ -75,9 +75,7 @@ public:
     SPHERE_ROTATION                      = 154,
     REGION_WISE_PACKING                  = 155,
     OMNI_VIEWPORT                        = 156,
-#if JVET_P0597_GCMP_SEI
     GENERALIZED_CUBEMAP_PROJECTION       = 153,
-#endif
     FRAME_FIELD_INFO                     = 168,
     SUBPICTURE_LEVEL_INFO                = 203,
     SAMPLE_ASPECT_RATIO_INFO             = 204,
@@ -183,7 +181,6 @@ public:
   std::vector<uint8_t>  m_rwpGuardBandType;
 };
 
-#if JVET_P0597_GCMP_SEI
 class SEIGeneralizedCubemapProjection : public SEI
 {
 public:
@@ -206,7 +203,6 @@ public:
   bool                 m_gcmpGuardBandBoundaryType;
   uint8_t              m_gcmpGuardBandSamplesMinus1;
 };
-#endif
 
 class SEISampleAspectRatioInfo : public SEI
 {

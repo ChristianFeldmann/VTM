@@ -658,14 +658,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEIRegionWisePacking(seiRegionWisePacking);
     seiMessages.push_back(seiRegionWisePacking);
   }
-#if JVET_P0597_GCMP_SEI
   if (m_pcCfg->getGcmpSEIEnabled())
   {
     SEIGeneralizedCubemapProjection *sei = new SEIGeneralizedCubemapProjection;
     m_seiEncoder.initSEIGcmp(sei);
     seiMessages.push_back(sei);
   }
-#endif
   if (m_pcCfg->getSubpicureLevelInfoSEIEnabled())
   {
     SEISubpicureLevelInfo *seiSubpicureLevelInfo = new SEISubpicureLevelInfo;

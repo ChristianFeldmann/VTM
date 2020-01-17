@@ -247,12 +247,10 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       sei = new SEIRegionWisePacking;
       xParseSEIRegionWisePacking((SEIRegionWisePacking&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#if JVET_P0597_GCMP_SEI
     case SEI::GENERALIZED_CUBEMAP_PROJECTION:
       sei = new SEIGeneralizedCubemapProjection;
       xParseSEIGeneralizedCubemapProjection((SEIGeneralizedCubemapProjection&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#endif
     case SEI::SUBPICTURE_LEVEL_INFO:
       sei = new SEISubpicureLevelInfo;
       xParseSEISubpictureLevelInfo((SEISubpicureLevelInfo&) *sei, sps, payloadSize, pDecodedMessageOutputStream);
@@ -1073,7 +1071,6 @@ void SEIReader::xParseSEIRegionWisePacking(SEIRegionWisePacking& sei, uint32_t p
   }
 }
 
-#if JVET_P0597_GCMP_SEI
 void SEIReader::xParseSEIGeneralizedCubemapProjection(SEIGeneralizedCubemapProjection& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;
@@ -1117,7 +1114,6 @@ void SEIReader::xParseSEIGeneralizedCubemapProjection(SEIGeneralizedCubemapProje
     }
   }
 }
-#endif
 
 void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, const SPS *sps, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {

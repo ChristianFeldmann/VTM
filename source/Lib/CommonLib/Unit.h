@@ -382,9 +382,7 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   bool      mipTransposedFlag;
-#endif
   int       multiRefIdx;
 };
 

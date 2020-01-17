@@ -199,34 +199,21 @@ private:
   struct ModeInfo
   {
     bool     mipFlg; // CU::mipFlag
-#if JVET_P0803_COMBINED_MIP_CLEANUP
     bool     mipTrFlg; // PU::mipTransposedFlag
-#endif
     int      mRefId; // PU::multiRefIdx
     uint8_t  ispMod; // CU::ispMode
     uint32_t modeId; // PU::intraDir[CHANNEL_TYPE_LUMA]
 
-#if JVET_P0803_COMBINED_MIP_CLEANUP
     ModeInfo() : mipFlg(false), mipTrFlg(false), mRefId(0), ispMod(NOT_INTRA_SUBPARTITIONS), modeId(0) {}
     ModeInfo(const bool mipf, const bool miptf, const int mrid, const uint8_t ispm, const uint32_t mode) : mipFlg(mipf), mipTrFlg(miptf), mRefId(mrid), ispMod(ispm), modeId(mode) {}
     bool operator==(const ModeInfo cmp) const { return (mipFlg == cmp.mipFlg && mipTrFlg == cmp.mipTrFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId); }
-#else
-    ModeInfo() : mipFlg(false), mRefId(0), ispMod(NOT_INTRA_SUBPARTITIONS), modeId(0) {}
-    ModeInfo(const bool mipf, const int mrid, const uint8_t ispm, const uint32_t mode) : mipFlg(mipf), mRefId(mrid), ispMod(ispm), modeId(mode) {}
-    bool operator==(const ModeInfo cmp) const { return (mipFlg == cmp.mipFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId); }
-#endif
   };
   struct ModeInfoWithCost : public ModeInfo
   {
     double rdCost;
     ModeInfoWithCost() : ModeInfo(), rdCost(MAX_DOUBLE) {}
-#if JVET_P0803_COMBINED_MIP_CLEANUP
     ModeInfoWithCost(const bool mipf, const bool miptf, const int mrid, const uint8_t ispm, const uint32_t mode, double cost) : ModeInfo(mipf, miptf, mrid, ispm, mode), rdCost(cost) {}
     bool operator==(const ModeInfoWithCost cmp) const { return (mipFlg == cmp.mipFlg && mipTrFlg == cmp.mipTrFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId && rdCost == cmp.rdCost); }
-#else
-    ModeInfoWithCost(const bool mipf, const int mrid, const uint8_t ispm, const uint32_t mode, double cost) : ModeInfo(mipf, mrid, ispm, mode), rdCost(cost) {}
-    bool operator==(const ModeInfoWithCost cmp) const { return (mipFlg == cmp.mipFlg && mRefId == cmp.mRefId && ispMod == cmp.ispMod && modeId == cmp.modeId && rdCost == cmp.rdCost); }
-#endif
     static bool compareModeInfoWithCost(ModeInfoWithCost a, ModeInfoWithCost b) { return a.rdCost < b.rdCost; }
   };
 

@@ -261,11 +261,7 @@ static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< 
 static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
-#if JVET_P0803_COMBINED_MIP_CLEANUP
 static const int MAX_NUM_MIP_MODE =                                32; ///< maximum number of MIP pred. modes
-#else
-static const int MAX_NUM_MIP_MODE =                                35; ///< maximum number of MIP modes
-#endif
 static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); ///< maximum number of RD comparison in fast-UDI estimation loop
 
 static const int MAX_LFNST_COEF_NUM =                              16;

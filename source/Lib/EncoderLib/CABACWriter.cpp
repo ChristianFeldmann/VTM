@@ -3966,16 +3966,6 @@ void CABACWriter::mip_flag( const CodingUnit& cu )
   {
     return;
   }
-#if !JVET_P0803_COMBINED_MIP_CLEANUP
-  if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
-  {
-    return;
-  }
-  if( !mipModesAvailable( cu.Y() ) )
-  {
-    return;
-  }
-#endif
 
   unsigned ctxId = DeriveCtx::CtxMipFlag( cu );
   m_BinEncoder.encodeBin( cu.mipFlag, Ctx::MipFlag( ctxId ) );
@@ -3996,7 +3986,6 @@ void CABACWriter::mip_pred_modes( const CodingUnit& cu )
 
 void CABACWriter::mip_pred_mode( const PredictionUnit& pu )
 {
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   m_BinEncoder.encodeBinEP( (pu.mipTransposedFlag ? 1 : 0) );
 
   const int numModes = getNumModesMip( pu.Y() );
@@ -4004,13 +3993,6 @@ void CABACWriter::mip_pred_mode( const PredictionUnit& pu )
   xWriteTruncBinCode( pu.intraDir[CHANNEL_TYPE_LUMA], numModes );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d transposed=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag ? 1 : 0 );
-#else
-  const int numModes = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
-
-  xWriteTruncBinCode( pu.intraDir[CHANNEL_TYPE_LUMA], numModes );
-
-  DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
-#endif
 }
 
 void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool alfEnableLuma)

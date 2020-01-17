@@ -82,7 +82,6 @@
 
 
 
-#define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups
 #define JVET_P0199_P0289_P0303_MIP_FULLMATRIX             1 // JVET-P0199/P0289/P0303: Full matrix multiplication for all MIP block shapes
 
 #define JVET_P0350_LFNST_IDX_CTX                          1 // JVET-P0350: Add one context for LFNST idx coding

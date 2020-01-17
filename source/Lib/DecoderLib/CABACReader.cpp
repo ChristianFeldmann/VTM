@@ -4267,18 +4267,6 @@ void CABACReader::mip_flag( CodingUnit& cu )
     return;
   }
 
-#if !JVET_P0803_COMBINED_MIP_CLEANUP
-  if( cu.lwidth() > cu.cs->sps->getMaxTbSize() || cu.lheight() > cu.cs->sps->getMaxTbSize())
-  {
-    cu.mipFlag = false;
-    return;
-  }
-  if( !mipModesAvailable( cu.Y() ) )
-  {
-    cu.mipFlag = false;
-    return;
-  }
-#endif
 
   unsigned ctxId = DeriveCtx::CtxMipFlag( cu );
   cu.mipFlag = m_BinDecoder.decodeBin( Ctx::MipFlag( ctxId ) );
@@ -4301,7 +4289,6 @@ void CABACReader::mip_pred_modes( CodingUnit &cu )
 
 void CABACReader::mip_pred_mode( PredictionUnit &pu )
 {
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   pu.mipTransposedFlag = bool(m_BinDecoder.decodeBinEP());
 
   uint32_t mipMode;
@@ -4311,16 +4298,4 @@ void CABACReader::mip_pred_mode( PredictionUnit &pu )
   CHECKD( pu.intraDir[CHANNEL_TYPE_LUMA] < 0 || pu.intraDir[CHANNEL_TYPE_LUMA] >= numModes, "Invalid MIP mode" );
 
   DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d transposed=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag ? 1 : 0 );
-#else
-  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported" );
-
-  const int numModes   = getNumModesMip( pu.Y() ); CHECKD( numModes > MAX_NUM_MIP_MODE, "Error: too many MIP modes" );
-
-  uint32_t mipMode;
-  xReadTruncBinCode( mipMode, numModes );
-  pu.intraDir[CHANNEL_TYPE_LUMA] = mipMode;
-  CHECKD(pu.intraDir[CHANNEL_TYPE_LUMA] < 0 || pu.intraDir[CHANNEL_TYPE_LUMA] >= numModes, "Invalid MIP mode");
-
-  DTRACE( g_trace_ctx, D_SYNTAX, "mip_pred_mode() pos=(%d,%d) mode=%d\n", pu.lumaPos().x, pu.lumaPos().y, pu.intraDir[CHANNEL_TYPE_LUMA] );
-#endif
 }

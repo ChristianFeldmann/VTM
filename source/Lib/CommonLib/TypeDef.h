@@ -80,7 +80,6 @@
 
 
 
-#define JVET_P0588_SUFFIX_APS                             1 // JVET-P0588/P0452: suffix APS NUT
 
 #define JVET_P0590_SCALING_WINDOW                         1 // JVET-P0590: scaling window for RPR
 #define JVET_P0592_CHROMA_PHASE                           1 // JVET-P0592: chroma phase for RPR
@@ -1003,12 +1002,8 @@ enum NalUnitType
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16
-#if JVET_P0588_SUFFIX_APS
   NAL_UNIT_PREFIX_APS,              // 17
   NAL_UNIT_SUFFIX_APS,              // 18
-#else
-  NAL_UNIT_APS,
-#endif
   NAL_UNIT_PH,                      // 19
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
   NAL_UNIT_EOS,                     // 21

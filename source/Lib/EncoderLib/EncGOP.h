@@ -322,11 +322,7 @@ protected:
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId = 0 );
   int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
-#if JVET_P0588_SUFFIX_APS
   int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );
-#else
-  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId );
-#endif
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
   int xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader );
 

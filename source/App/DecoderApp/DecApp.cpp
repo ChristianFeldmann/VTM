@@ -509,9 +509,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
         case NAL_UNIT_RESERVED_IRAP_VCL_12:
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
-#if JVET_P0588_SUFFIX_APS
         case NAL_UNIT_SUFFIX_APS:
-#endif
         case NAL_UNIT_SUFFIX_SEI:
         case NAL_UNIT_FD:
           ret = false;
@@ -519,11 +517,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
           break;
         
         // NUT that might indicate the start of a new picture - keep looking
-#if JVET_P0588_SUFFIX_APS
         case NAL_UNIT_PREFIX_APS:
-#else
-        case NAL_UNIT_APS:
-#endif
         case NAL_UNIT_PREFIX_SEI:
         case NAL_UNIT_RESERVED_NVCL_26:
         case NAL_UNIT_RESERVED_NVCL_27:
@@ -614,9 +608,7 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
         // NUT that are not the start of a new access unit
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
-#if JVET_P0588_SUFFIX_APS
         case NAL_UNIT_SUFFIX_APS:
-#endif
         case NAL_UNIT_SUFFIX_SEI:
         case NAL_UNIT_FD:
           ret = false;

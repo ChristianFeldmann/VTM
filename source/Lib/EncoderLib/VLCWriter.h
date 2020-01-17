@@ -49,9 +49,7 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define WRITE_SCODE( value, length, name)   xWriteSCodeTr ( value, length, name )
-#endif
 #define WRITE_CODE( value, length, name)    xWriteCodeTr ( value, length, name )
 #define WRITE_UVLC( value,         name)    xWriteUvlcTr ( value,         name )
 #define WRITE_SVLC( value,         name)    xWriteSvlcTr ( value,         name )
@@ -59,9 +57,7 @@
 
 extern bool g_HLSTraceEnable;
 #else
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define WRITE_SCODE( value, length, name)    xWriteSCode ( value, length )
-#endif
 #define WRITE_CODE( value, length, name)     xWriteCode ( value, length )
 #define WRITE_UVLC( value,         name)     xWriteUvlc ( value )
 #define WRITE_SVLC( value,         name)     xWriteSvlc ( value )
@@ -81,17 +77,13 @@ protected:
   virtual ~VLCWriter() {}
 
   void  setBitstream          ( OutputBitstream* p )  { m_pcBitIf = p;  }
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
   void  xWriteSCode           ( int  code,  uint32_t length );
-#endif
   void  xWriteCode            ( uint32_t uiCode, uint32_t uiLength );
   void  xWriteUvlc            ( uint32_t uiCode );
   void  xWriteSvlc            ( int  iCode   );
   void  xWriteFlag            ( uint32_t uiCode );
 #if ENABLE_TRACING
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
   void  xWriteSCodeTr         ( int value,  uint32_t  length, const char *pSymbolName);
-#endif
   void  xWriteCodeTr          ( uint32_t value, uint32_t  length, const char *pSymbolName);
   void  xWriteUvlcTr          ( uint32_t value,               const char *pSymbolName);
   void  xWriteSvlcTr          ( int  value,               const char *pSymbolName);

@@ -626,7 +626,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
 #endif
 #endif
-#if JVET_P0462_SEI360
   m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
   m_cEncLib.setErpSEICancelFlag                                  ( m_erpSEICancelFlag );        
   m_cEncLib.setErpSEIPersistenceFlag                             ( m_erpSEIPersistenceFlag );   
@@ -675,7 +674,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRwpSEIRwpBottomGuardBandHeight                    (m_rwpSEIRwpBottomGuardBandHeight);
   m_cEncLib.setRwpSEIRwpGuardBandNotUsedForPredFlag              (m_rwpSEIRwpGuardBandNotUsedForPredFlag);
   m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
-#endif
 #if JVET_P0597_GCMP_SEI
   m_cEncLib.setGcmpSEIEnabled                                    ( m_gcmpSEIEnabled );
   m_cEncLib.setGcmpSEICancelFlag                                 ( m_gcmpSEICancelFlag );

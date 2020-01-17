@@ -92,12 +92,10 @@ protected:
   void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
 #endif
 #endif
-#if JVET_P0462_SEI360
   void xWriteSEIEquirectangularProjection         (const SEIEquirectangularProjection &sei);
   void xWriteSEISphereRotation                    (const SEISphereRotation &sei);
   void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
   void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
-#endif
 #if JVET_P0597_GCMP_SEI
   void xWriteSEIGeneralizedCubemapProjection      (const SEIGeneralizedCubemapProjection &sei);
 #endif

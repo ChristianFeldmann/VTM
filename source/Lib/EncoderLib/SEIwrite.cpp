@@ -145,7 +145,6 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     break;
 #endif
 #endif
-#if JVET_P0462_SEI360
   case SEI::EQUIRECTANGULAR_PROJECTION:
     xWriteSEIEquirectangularProjection(*static_cast<const SEIEquirectangularProjection*>(&sei));
     break;
@@ -158,7 +157,6 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::REGION_WISE_PACKING:
     xWriteSEIRegionWisePacking(*static_cast<const SEIRegionWisePacking*>(&sei));
     break;
-#endif
 #if JVET_P0597_GCMP_SEI
   case SEI::GENERALIZED_CUBEMAP_PROJECTION:
     xWriteSEIGeneralizedCubemapProjection(*static_cast<const SEIGeneralizedCubemapProjection*>(&sei));
@@ -1001,7 +999,6 @@ void SEIWriter::xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo& sei)
 #endif
 #endif
 
-#if JVET_P0462_SEI360
 void SEIWriter::xWriteSEIEquirectangularProjection(const SEIEquirectangularProjection &sei)
 {
   WRITE_FLAG( sei.m_erpCancelFlag, "erp_cancel_flag" );
@@ -1095,7 +1092,6 @@ void SEIWriter::xWriteSEIRegionWisePacking(const SEIRegionWisePacking &sei)
     }
   }
 }
-#endif
 
 #if JVET_P0597_GCMP_SEI
 void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubemapProjection &sei)

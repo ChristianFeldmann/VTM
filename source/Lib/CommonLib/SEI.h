@@ -105,12 +105,10 @@ public:
 #endif
 #endif
     DEPENDENT_RAP_INDICATION             = 145,
-#if JVET_P0462_SEI360
     EQUIRECTANGULAR_PROJECTION           = 150,
     SPHERE_ROTATION                      = 154,
     REGION_WISE_PACKING                  = 155,
     OMNI_VIEWPORT                        = 156,
-#endif
 #if JVET_P0597_GCMP_SEI
     GENERALIZED_CUBEMAP_PROJECTION       = 153,
 #endif
@@ -139,7 +137,6 @@ public:
 };
 
 
-#if JVET_P0462_SEI360
 class SEIEquirectangularProjection : public SEI
 {
 public:
@@ -226,7 +223,6 @@ public:
   std::vector<bool>     m_rwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpGuardBandType;
 };
-#endif
 
 #if JVET_P0597_GCMP_SEI
 class SEIGeneralizedCubemapProjection : public SEI

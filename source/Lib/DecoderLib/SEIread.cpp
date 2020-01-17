@@ -50,7 +50,6 @@
 //! \ingroup DecoderLib
 //! \{
 
-#if JVET_P0462_SEI360
 void SEIReader::sei_read_scode(std::ostream *pOS, uint32_t length, int& code, const char *pSymbolName)
 {
   READ_SCODE(length, code, pSymbolName);
@@ -59,7 +58,6 @@ void SEIReader::sei_read_scode(std::ostream *pOS, uint32_t length, int& code, co
     (*pOS) << "  " << std::setw(55) << pSymbolName << ": " << code << "\n";
   }
 }
-#endif
 
 void SEIReader::sei_read_code(std::ostream *pOS, uint32_t uiLength, uint32_t& ruiCode, const char *pSymbolName)
 {
@@ -306,7 +304,6 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       break;
 #endif
 #endif
-#if JVET_P0462_SEI360
     case SEI::EQUIRECTANGULAR_PROJECTION:
       sei = new SEIEquirectangularProjection;
       xParseSEIEquirectangularProjection((SEIEquirectangularProjection&) *sei, payloadSize, pDecodedMessageOutputStream);
@@ -323,7 +320,6 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       sei = new SEIRegionWisePacking;
       xParseSEIRegionWisePacking((SEIRegionWisePacking&) *sei, payloadSize, pDecodedMessageOutputStream);
       break;
-#endif
 #if JVET_P0597_GCMP_SEI
     case SEI::GENERALIZED_CUBEMAP_PROJECTION:
       sei = new SEIGeneralizedCubemapProjection;
@@ -1544,7 +1540,6 @@ void SEIReader::xParseSEIContentColourVolume(SEIContentColourVolume& sei, uint32
   }
 }
 #endif
-#if JVET_P0462_SEI360
 void SEIReader::xParseSEIEquirectangularProjection(SEIEquirectangularProjection& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;
@@ -1674,7 +1669,6 @@ void SEIReader::xParseSEIRegionWisePacking(SEIRegionWisePacking& sei, uint32_t p
     }
   }
 }
-#endif
 
 #if JVET_P0597_GCMP_SEI
 void SEIReader::xParseSEIGeneralizedCubemapProjection(SEIGeneralizedCubemapProjection& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)

@@ -534,7 +534,6 @@ protected:
   bool      m_scalableNestingSEIEnabled;
   bool      m_tmctsSEIEnabled;
 #endif
-#if JVET_P0462_SEI360
   bool      m_erpSEIEnabled;
   bool      m_erpSEICancelFlag;
   bool      m_erpSEIPersistenceFlag;
@@ -583,7 +582,6 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpBottomGuardBandHeight;
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
-#endif
 #if JVET_P0597_GCMP_SEI
   bool                 m_gcmpSEIEnabled;
   bool                 m_gcmpSEICancelFlag;
@@ -1537,7 +1535,6 @@ public:
   bool  getTMCTSSEIEnabled()                                         { return m_tmctsSEIEnabled; }
 #endif
 
-#if JVET_P0462_SEI360
   void  setErpSEIEnabled(bool b)                                     { m_erpSEIEnabled = b; }
   bool  getErpSEIEnabled()                                           { return m_erpSEIEnabled; }
   void  setErpSEICancelFlag(bool b)                                  { m_erpSEICancelFlag = b; }
@@ -1634,7 +1631,6 @@ public:
   bool     getRwpSEIRwpGuardBandNotUsedForPredFlag(uint32_t idx) const                                      { return m_rwpSEIRwpGuardBandNotUsedForPredFlag[idx]; }
   void     setRwpSEIRwpGuardBandType(const std::vector<uint8_t>& rwpGuardBandType)                          { m_rwpSEIRwpGuardBandType = rwpGuardBandType; }
   uint8_t  getRwpSEIRwpGuardBandType(uint32_t idx) const                                                    { return m_rwpSEIRwpGuardBandType[idx]; }
-#endif
 #if JVET_P0597_GCMP_SEI
   void    setGcmpSEIEnabled(bool b)                                                                 { m_gcmpSEIEnabled = b; }
   bool    getGcmpSEIEnabled()                                                                       { return m_gcmpSEIEnabled; }

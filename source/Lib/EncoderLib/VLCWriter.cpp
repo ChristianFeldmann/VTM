@@ -50,7 +50,6 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 void  VLCWriter::xWriteSCodeTr (int value, uint32_t  length, const char *pSymbolName)
 {
   xWriteSCode (value,length);
@@ -66,7 +65,6 @@ void  VLCWriter::xWriteSCodeTr (int value, uint32_t  length, const char *pSymbol
     }
   }
 }
-#endif
 
 void  VLCWriter::xWriteCodeTr (uint32_t value, uint32_t  length, const char *pSymbolName)
 {
@@ -116,14 +114,12 @@ bool g_HLSTraceEnable = true;
 
 #endif
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 void VLCWriter::xWriteSCode    ( int code, uint32_t length )
 {
   assert ( length > 0 && length<=32 );
   assert( length==32 || (code>=-(1<<(length-1)) && code<(1<<(length-1))) );
   m_pcBitIf->write( length==32 ? uint32_t(code) : ( uint32_t(code)&((1<<length)-1) ), length );
 }
-#endif
 
 void VLCWriter::xWriteCode     ( uint32_t uiCode, uint32_t uiLength )
 {

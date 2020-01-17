@@ -103,7 +103,6 @@ void xTraceFillerData ()
 
 #endif
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
 void VLCReader::xReadSCode (uint32_t length, int& value, const char *pSymbolName)
 #else
@@ -129,7 +128,6 @@ void VLCReader::xReadSCode (uint32_t length, int& value)
   }
 #endif
 }
-#endif
 
 // ====================================================================================================================
 // Protected member functions

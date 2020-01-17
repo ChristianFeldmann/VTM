@@ -575,7 +575,6 @@ protected:
   double    m_ccvSEIAvgLuminanceValue;
 #endif
 
-#if JVET_P0462_SEI360
   bool      m_erpSEIEnabled;
   bool      m_erpSEICancelFlag;
   bool      m_erpSEIPersistenceFlag;
@@ -626,7 +625,6 @@ protected:
   std::vector<uint8_t>  m_rwpSEIRwpBottomGuardBandHeight;
   std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
   std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
-#endif
 
 #if JVET_P0597_GCMP_SEI
   bool                 m_gcmpSEIEnabled;

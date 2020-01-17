@@ -103,12 +103,10 @@ public:
   void initTemporalLevel0IndexSEI(SEITemporalLevel0Index *sei, Slice *slice);
   void initSEIGreenMetadataInfo(SEIGreenMetadataInfo *sei, uint32_t u);
 #endif
-#if JVET_P0462_SEI360
   void initSEIErp(SEIEquirectangularProjection *sei);
   void initSEISphereRotation(SEISphereRotation *sei);
   void initSEIOmniViewport(SEIOmniViewport *sei);
   void initSEIRegionWisePacking(SEIRegionWisePacking *sei);
-#endif
 #if JVET_P0597_GCMP_SEI
   void initSEIGcmp(SEIGeneralizedCubemapProjection *sei);
 #endif

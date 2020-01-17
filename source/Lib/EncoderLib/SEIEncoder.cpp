@@ -320,7 +320,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_useAltCpbParamsFlag = false;
 }
 
-#if JVET_P0462_SEI360
 void SEIEncoder::initSEIErp(SEIEquirectangularProjection* seiEquirectangularProjection)
 {
   CHECK(!(m_isInitialized), "seiEquirectangularProjection already initialized");
@@ -435,7 +434,6 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
     }
   }
 }
-#endif
 
 #if JVET_P0597_GCMP_SEI
 void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCubemapProjection)

@@ -148,7 +148,6 @@
 
 
 
-#define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
 
 

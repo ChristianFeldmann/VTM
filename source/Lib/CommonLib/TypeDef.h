@@ -123,7 +123,6 @@
 
 
 
-#define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 
 #define JVET_P0505_ALF_CLIP_VALUE                         1 // JVET-P0505: Modified non-linear ALF clipping value derivations
 

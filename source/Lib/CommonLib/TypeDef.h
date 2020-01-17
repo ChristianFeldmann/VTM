@@ -115,7 +115,6 @@
 
 
 
-#define JVET_P0092_SMVD_SPEED_UP                          1 // JVET-P0092: SMVD speed-up
 
 #define JVET_P0043_DEBLOCKING_CLEANUP                     1 // JVET-P0043: Fix deblocking design inconsistency in the affine and TPM mode
 

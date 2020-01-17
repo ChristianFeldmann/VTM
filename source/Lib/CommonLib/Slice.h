@@ -157,10 +157,8 @@ class ScalingList
 public:
              ScalingList();
   virtual    ~ScalingList()                                                 { }
-#if JVET_P0365_SCALING_MATRIX_LFNST
   bool       getDisableScalingMatrixForLfnstBlks() const     { return m_disableScalingMatrixForLfnstBlks;}
   void       setDisableScalingMatrixForLfnstBlks(bool flag)  { m_disableScalingMatrixForLfnstBlks = flag;}
-#endif
 #if JVET_P01034_PRED_1D_SCALING_LIST
   int*       getScalingListAddress(uint32_t scalingListId)                    { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
   const int* getScalingListAddress(uint32_t scalingListId) const              { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
@@ -243,9 +241,7 @@ public:
 
 private:
   void             outputScalingLists(std::ostream &os) const;
-#if JVET_P0365_SCALING_MATRIX_LFNST
   bool             m_disableScalingMatrixForLfnstBlks;
-#endif
 #if JVET_P01034_PRED_1D_SCALING_LIST
   bool             m_scalingListPredModeFlagIsCopy [30]; //!< reference list index
   int              m_scalingListDC                 [30]; //!< the DC value of the matrix coefficient for 16x16

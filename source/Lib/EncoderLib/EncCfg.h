@@ -711,9 +711,7 @@ protected:
   bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                      ///< code ALF parameters in slice headers rather than picture header
-#if JVET_P0365_SCALING_MATRIX_LFNST
   bool      m_disableScalingMatrixForLfnstBlks;
-#endif
   int       m_TMVPModeId;
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
@@ -1886,10 +1884,8 @@ public:
   bool         getSliceLevelSao  ()                                  { return m_sliceLevelSao;  }
   void         setSliceLevelAlf  ( bool b )                          { m_sliceLevelAlf = b;     }
   bool         getSliceLevelAlf  ()                                  { return m_sliceLevelAlf;  }
-#if JVET_P0365_SCALING_MATRIX_LFNST
   void         setDisableScalingMatrixForLfnstBlks(bool u)          { m_disableScalingMatrixForLfnstBlks = u;   }
   bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }
-#endif
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }

@@ -2373,9 +2373,7 @@ void HLSWriter::xCodePredWeightTable( Slice* pcSlice )
 void HLSWriter::codeScalingList( const ScalingList &scalingList )
 {
   //for each size
-#if JVET_P0365_SCALING_MATRIX_LFNST
   WRITE_FLAG(scalingList.getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag"); 
-#endif
 #if JVET_P01034_PRED_1D_SCALING_LIST
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {

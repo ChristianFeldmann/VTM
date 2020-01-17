@@ -133,14 +133,10 @@ public:
   int* getDequantCoeff           ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_dequantCoef          [sizeX][sizeY][list][qp]; };  //!< get DeQuant Coefficent
 
   void setUseScalingList         ( bool bUseScalingList){ m_scalingListEnabledFlag = bUseScalingList; };
-#if JVET_P0365_SCALING_MATRIX_LFNST
   bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks) 
   { 
     return (m_scalingListEnabledFlag && !isTransformSkip && (!lfnstApplied || !disableScalingMatrixForLFNSTBlks));
   }
-#else
-  bool getUseScalingList         ( const uint32_t width, const uint32_t height, const bool isTransformSkip) { return (m_scalingListEnabledFlag && !isTransformSkip); };
-#endif
   void setScalingListDec         ( const ScalingList &scalingList);
   void processScalingListEnc     ( int *coeff, int *quantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
   void processScalingListDec     ( const int *coeff, int *dequantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);

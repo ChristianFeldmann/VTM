@@ -724,9 +724,7 @@ protected:
 #endif
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
-#if JVET_P0365_SCALING_MATRIX_LFNST
   bool      m_disableScalingMatrixForLfnstBlks;
-#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value

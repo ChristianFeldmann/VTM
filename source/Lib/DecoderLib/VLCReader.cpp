@@ -3496,9 +3496,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
 #if JVET_P01034_PRED_1D_SCALING_LIST
   uint32_t  code;
   bool scalingListCopyModeFlag;
-#if JVET_P0365_SCALING_MATRIX_LFNST
   READ_FLAG(code, "scaling_matrix_for_lfnst_disabled_flag"); scalingList->setDisableScalingMatrixForLfnstBlks(code ? true : false);
-#endif
   for (int scalingListId = 0; scalingListId < 28; scalingListId++)
   {
     READ_FLAG(code, "scaling_list_copy_mode_flag");

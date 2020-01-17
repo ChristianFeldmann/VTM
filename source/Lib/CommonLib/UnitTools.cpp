@@ -872,7 +872,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   const Position posLB = pu.Y().bottomLeft();
   MotionInfo miAbove, miLeft, miAboveLeft, miAboveRight, miBelowLeft;
 
-#if JVET_P0325_CHANGE_MERGE_CANDIDATE_ORDER
   // above
   const PredictionUnit *puAbove = cs.getPURestricted(posRT.offset(0, -1), pu, pu.chType);
 
@@ -937,75 +936,6 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
       cnt++;
     }
   }
-#else
-  //left
-  const PredictionUnit* puLeft = cs.getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
-
-  const bool isAvailableA1 = puLeft && isDiffMER( pu, *puLeft ) && pu.cu != puLeft->cu && CU::isInter( *puLeft->cu );
-
-  if( isAvailableA1 )
-  {
-    miLeft = puLeft->getMotionInfo( posLB.offset(-1, 0) );
-
-
-    // get Inter Dir
-    mrgCtx.interDirNeighbours[cnt] = miLeft.interDir;
-    mrgCtx.useAltHpelIf[cnt] = miLeft.useAltHpelIf;
-    mrgCtx.BcwIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puLeft->cu->BcwIdx : BCW_DEFAULT;
-    // get Mv from Left
-    mrgCtx.mvFieldNeighbours[cnt << 1].setMvField(miLeft.mv[0], miLeft.refIdx[0]);
-
-    if (slice.isInterB())
-    {
-      mrgCtx.mvFieldNeighbours[(cnt << 1) + 1].setMvField(miLeft.mv[1], miLeft.refIdx[1]);
-    }
-    if (mrgCandIdx == cnt)
-    {
-      return;
-    }
-
-    cnt++;
-  }
-
-  // early termination
-  if (cnt == maxNumMergeCand)
-  {
-    return;
-  }
-
-
-  // above
-  const PredictionUnit *puAbove = cs.getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
-
-  bool isAvailableB1 = puAbove && isDiffMER( pu, *puAbove ) && pu.cu != puAbove->cu && CU::isInter( *puAbove->cu );
-
-  if( isAvailableB1 )
-  {
-    miAbove = puAbove->getMotionInfo( posRT.offset( 0, -1 ) );
-
-    if( !isAvailableA1 || ( miAbove != miLeft ) )
-    {
-
-      // get Inter Dir
-      mrgCtx.interDirNeighbours[cnt] = miAbove.interDir;
-      mrgCtx.useAltHpelIf[cnt] = miAbove.useAltHpelIf;
-      // get Mv from Above
-      mrgCtx.BcwIdx[cnt] = (mrgCtx.interDirNeighbours[cnt] == 3) ? puAbove->cu->BcwIdx : BCW_DEFAULT;
-      mrgCtx.mvFieldNeighbours[cnt << 1].setMvField( miAbove.mv[0], miAbove.refIdx[0] );
-
-      if( slice.isInterB() )
-      {
-        mrgCtx.mvFieldNeighbours[( cnt << 1 ) + 1].setMvField( miAbove.mv[1], miAbove.refIdx[1] );
-      }
-      if (mrgCandIdx == cnt)
-      {
-        return;
-      }
-
-      cnt++;
-    }
-  }
-#endif
 
   // early termination
   if( cnt == maxNumMergeCand )

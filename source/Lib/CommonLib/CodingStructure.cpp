@@ -200,13 +200,8 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
 
 const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
 {
-#if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
   if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 || partitioner.currArea().chromaFormat == CHROMA_400 )
-#else
-  if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
-#endif
     return LDT_MODE_TYPE_INHERIT;
-#if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
   int minLumaArea = partitioner.currArea().lumaSize().area();
   if (split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT) // the area is split into 3 or 4 parts
   {
@@ -219,26 +214,6 @@ const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &p
   int minChromaBlock = minLumaArea >> (getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat) + getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat));
   bool is2xNChroma = (partitioner.currArea().chromaSize().width == 4 && split == CU_VERT_SPLIT) || (partitioner.currArea().chromaSize().width == 8 && split == CU_TRIV_SPLIT);
   return minChromaBlock >= 16 && !is2xNChroma ? LDT_MODE_TYPE_INHERIT : ((minLumaArea < 32) || slice->isIntra()) ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-#else
-  int width = partitioner.currArea().lwidth();
-  int height = partitioner.currArea().lheight();
-
-  if( width * height == 64 )
-  {
-    if( split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // qt or tt
-      return LDT_MODE_TYPE_INFER; //only intra mode allowed for child nodes (have 4x4)
-    else // bt
-      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-  }
-  else if (((width * height == 128) && (split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT)) || (width == 8 && split == CU_VERT_SPLIT) || (width == 16 && split == CU_TRIV_SPLIT))
-  {
-    return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-  }
-  else
-  {
-    return LDT_MODE_TYPE_INHERIT;
-  }
-#endif
 }
 
 void CodingStructure::clearCuPuTuIdxMap( const UnitArea &_area, uint32_t numCu, uint32_t numPu, uint32_t numTu, uint32_t* pOffset )

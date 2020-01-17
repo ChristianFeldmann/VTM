@@ -108,7 +108,6 @@
 
 
 
-#define JVET_P0406_YUV_FMT_GENERALIZATION_LDT             1 // JVET-P0406: Generalization of local dual tree (LDT) for different YUV formats
 
 #define JVET_P0578_MINIMUM_CU_SIZE_CONSTRAINT             1 // JVET-P0578: minimum CU size constraint
 

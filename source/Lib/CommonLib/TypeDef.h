@@ -131,7 +131,6 @@
 
 
 
-#define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
 
 

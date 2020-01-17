@@ -1285,11 +1285,7 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfParam& alfParam, AlfFilter
 
 int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfParam& alfParam )
 {
-#if JVET_P0164_ALF_SYNTAX_SIMP
   int len = 0   // alf_coefficients_delta_flag
-#else
-  int len = 1   // alf_coefficients_delta_flag
-#endif
           + 2                                          // slice_alf_chroma_idc                     u(2)
           + lengthUvlc (alfParam.numLumaFilters - 1);  // alf_luma_num_filters_signalled_minus1   ue(v)
 
@@ -1307,11 +1303,7 @@ int EncAdaptiveLoopFilter::getNonFilterCoeffRate( AlfParam& alfParam )
 
 int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters, bool* codedVarBins )
 {
-#if JVET_P0164_ALF_SYNTAX_SIMP
   int len = 0;
-#else
-  int len = numFilters; //filter_coefficient_flag[i]
-#endif
   // Filter coefficients
   for( int ind = 0; ind < numFilters; ++ind )
   {
@@ -1322,7 +1314,6 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
         len += lengthGolomb( abs( pDiffQFilterCoeffIntPP[ind][i] ), 3 ); // alf_coeff_luma_delta[i][j]
       }
     }
-#if JVET_P0164_ALF_SYNTAX_SIMP
     else
     {
       for (int i = 0; i < alfShape.numCoeff - 1; i++)
@@ -1330,7 +1321,6 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
         len += lengthGolomb(0, 3); // alf_coeff_luma_delta[i][j]
       }
     }
-#endif
   }
 
   if( m_alfParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA][0] )
@@ -1404,13 +1394,11 @@ double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int
     }
   }
 
-#if JVET_P0164_ALF_SYNTAX_SIMP
   static int zeroBitsVarBin = 0;
   for (int i = 0; i < alfShape.numCoeff - 1; i++)
   {
     zeroBitsVarBin += lengthGolomb(0, 3);
   }
-#endif
   if( m_alfParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA][0] )
   {
     for (int ind = 0; ind < numFilters; ++ind)
@@ -1425,30 +1413,18 @@ double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int
     }
   }
 
-#if JVET_P0164_ALF_SYNTAX_SIMP
   double distForce0 = getDistCoeffForce0( codedVarBins, errorTabForce0Coeff, bitsVarBin, zeroBitsVarBin, numFilters);
-#else
-  double distForce0 = getDistCoeffForce0( codedVarBins, errorTabForce0Coeff, bitsVarBin, numFilters );
-#endif
 
   return distForce0;
 }
-#if JVET_P0164_ALF_SYNTAX_SIMP
 double EncAdaptiveLoopFilter::getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, int zeroBitsVarBin, const int numFilters)
-#else
-double EncAdaptiveLoopFilter::getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, const int numFilters )
-#endif
 {
   double distForce0 = 0;
   std::memset( codedVarBins, 0, sizeof( *codedVarBins ) * MAX_NUM_ALF_CLASSES );
 
   for( int filtIdx = 0; filtIdx < numFilters; filtIdx++ )
   {
-#if JVET_P0164_ALF_SYNTAX_SIMP
     double costDiff = (errorForce0CoeffTab[filtIdx][0] + m_lambda[COMPONENT_Y] * zeroBitsVarBin) - (errorForce0CoeffTab[filtIdx][1] + m_lambda[COMPONENT_Y] * bitsVarBin[filtIdx]);
-#else
-    double costDiff = errorForce0CoeffTab[filtIdx][0] - ( errorForce0CoeffTab[filtIdx][1] + m_lambda[COMPONENT_Y] * bitsVarBin[filtIdx] );
-#endif
     codedVarBins[filtIdx] = costDiff > 0 ? true : false;
     distForce0 += errorForce0CoeffTab[filtIdx][codedVarBins[filtIdx] ? 1 : 0];
   }

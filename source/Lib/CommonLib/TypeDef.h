@@ -136,7 +136,6 @@
 
 
 
-#define JVET_P0111_CHROMA_422_FIX                         1 // JVET-P0422: Bug fix of chroma 422 intra mode mapping
 
 #define JVET_P0063_LDT_SPLIT_FIX                          1 // JVET-P0063: Fix local dual tree on BT/TT split conditions in inter coding region
 

@@ -138,7 +138,6 @@
 
 
 
-#define JVET_P0329_PLANAR_SIMPLIFICATION                  1 // JVET-P0329: simplify planar prediction by comparison removal
 
 #define JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX             1 // JVET-P0081: Apply asymmetric long tap deblocking (1 + 3) filter at horizontal CTB boundaries for Chroma
 

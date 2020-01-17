@@ -291,13 +291,8 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
   const uint32_t width  = pDst.width;
   const uint32_t height = pDst.height;
 
-#if JVET_P0329_PLANAR_SIMPLIFICATION
   const uint32_t log2W = floorLog2( width );
   const uint32_t log2H = floorLog2( height );
-#else
-  const uint32_t log2W  = floorLog2(width  < 2 ? 2 : width);
-  const uint32_t log2H  = floorLog2(height < 2 ? 2 : height);
-#endif
 
   int leftColumn[MAX_CU_SIZE + 1], topRow[MAX_CU_SIZE + 1], bottomRow[MAX_CU_SIZE], rightColumn[MAX_CU_SIZE];
   const uint32_t offset = 1 << (log2W + log2H);

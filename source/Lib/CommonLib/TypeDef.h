@@ -102,7 +102,6 @@
 
 
 
-#define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
 
 

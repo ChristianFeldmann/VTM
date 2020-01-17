@@ -231,9 +231,6 @@ private:
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
   bool   *m_runType[ MAX_NUM_CHANNEL_TYPE ];
-#if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *m_runLength[MAX_NUM_CHANNEL_TYPE];
-#endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;

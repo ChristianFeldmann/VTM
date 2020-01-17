@@ -1633,15 +1633,9 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   }
   uint32_t    indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
   //encode index map
-#if !JVET_P0077_LINE_CG_PALETTE
-  PLTtypeBuf  runType = tu.getrunType(compBegin);
-  PelBuf      runLength = tu.getrunLength(compBegin);
-  PelBuf      curPLTIdx = tu.getcurPLTIdx(compBegin);
-#endif
   uint32_t    height = cu.block(compBegin).height;
   uint32_t    width = cu.block(compBegin).width;
 
-#if JVET_P0077_LINE_CG_PALETTE
   uint32_t total = height * width;
   if (indexMaxSize > 1)
     parseScanRotationModeFlag(cu, compBegin);
@@ -1673,198 +1667,7 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   {
     cuPaletteSubblockInfo(cu, compBegin, numComp, subSetId, prevRunPos, prevRunType);
   }
-#else
-  int       numCopyIndexRuns = -1;
-  bool      lastRunType = 0;
-  uint32_t  numIndices = 0;
-  uint32_t  adjust = 0;
-  uint32_t  symbol = 0;
-  std::list<int> parsedIdxList;
-  if (indexMaxSize > 1)
-  {
-    uint32_t currParam = 3 + ((indexMaxSize) >> 3);
-    numIndices = m_BinDecoder.decodeRemAbsEP(currParam, COEF_REMAIN_BIN_REDUCTION, MAX_NUM_CHANNEL_TYPE); // JC: number of indices (INDEX RUN)
-    numIndices++;
-    numCopyIndexRuns = numIndices;
-    while (numIndices--)
-    {
-      xReadTruncBinCode(symbol, indexMaxSize - adjust);
-      adjust = 1;
-      parsedIdxList.push_back(symbol);
-    }
-    lastRunType = m_BinDecoder.decodeBin(Ctx::RunTypeFlag());
-    parseScanRotationModeFlag(cu, compBegin);
-    adjust = 0;
-  }
-  else
-  {
-    cu.useRotation[compBegin] = false;
-  }
-
-  if (cu.useEscape[compBegin] && cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded)
-  {
-    if (!cu.isSepTree() || isLuma(tu.chType))
-    {
-      cu_qp_delta(cu, cuCtx.qp, cu.qp);
-      cuCtx.qp = cu.qp;
-      cuCtx.isDQPCoded = true;
-    }
-  }
-  if (cu.useEscape[compBegin] && cu.cs->slice->getUseChromaQpAdj() && !cuCtx.isChromaQpAdjCoded)
-  {
-    if (!cu.isSepTree() || isChroma(tu.chType))
-    {
-      cu_chroma_qp_offset(cu);
-      cuCtx.isChromaQpAdjCoded = true;
-    }
-  }
-
-
-  m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
-  uint32_t strPos = 0;
-  uint32_t endPos = height * width;
-  while (strPos < endPos)
-  {
-    uint32_t posy = m_scanOrder[strPos].y;
-    uint32_t posx = m_scanOrder[strPos].x;
-    uint32_t posyprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].y;
-    uint32_t posxprev = strPos == 0 ? 0 : m_scanOrder[strPos - 1].x;
-
-    if (indexMaxSize > 1)
-    {
-      if (((posy == 0) && !cu.useRotation[compBegin]) || ((posx == 0) && cu.useRotation[compBegin]))
-      {
-        runType.at(posx, posy) = PLT_RUN_INDEX;
-      }
-      else if (strPos != 0 && runType.at(posxprev, posyprev) == PLT_RUN_COPY)
-      {
-        runType.at(posx, posy) = PLT_RUN_INDEX;
-      }
-      else
-      {
-        if (numCopyIndexRuns && strPos < endPos - 1) // JC: if numIndices (decoder will know this value) == 0 - > only CopyAbove, if strPos == endPos - 1, the last RunType was already coded
-        {
-          runType.at(posx, posy) = (m_BinDecoder.decodeBin(Ctx::RunTypeFlag()));
-        }
-        else
-        {
-          if (strPos == endPos - 1 && numCopyIndexRuns)
-          {
-            runType.at(posx, posy) = PLT_RUN_INDEX;
-          }
-          else
-          {
-            runType.at(posx, posy) = PLT_RUN_COPY;
-          }
-        }
-      }
-    }
-    else
-    {
-      runType.at(posx, posy) = PLT_RUN_INDEX;
-    }
-
-    Pel curLevel = 0;
-    if (runType.at(posx, posy) == PLT_RUN_INDEX)
-    {
-      if (!parsedIdxList.empty())
-      {
-        curLevel = parsedIdxList.front();
-        parsedIdxList.pop_front();
-      }
-      else
-      {
-        curLevel = 0;
-      }
-      xAdjustPLTIndex(cu, curLevel, strPos, curPLTIdx, runType, indexMaxSize, compBegin);
-    }
-
-    if (indexMaxSize > 1)
-    {
-      bool lastRun;
-      numCopyIndexRuns -= (runType.at(posx, posy) == PLT_RUN_INDEX);
-      lastRun = numCopyIndexRuns == 0 && runType.at(posx, posy) == lastRunType;
-      if (!lastRun)
-      {
-        runLength.at(posx, posy) = cu_run_val((PLTRunMode)runType.at(posx, posy), curLevel, endPos - strPos - numCopyIndexRuns - 1 - lastRunType) + 1;
-      }
-      else
-      {
-        runLength.at(posx, posy) = endPos - strPos;
-      }
-
-    }
-    else
-    {
-      runLength.at(posx, posy) = endPos - strPos;
-    }
-
-    //assign run information
-    for (int runidx = 1; runidx < runLength.at(posx, posy); runidx++)
-    {
-      int posYrun, posXrun;
-      posYrun = m_scanOrder[strPos + runidx].y;
-      posXrun = m_scanOrder[strPos + runidx].x;
-      runType.at(posXrun, posYrun) = runType.at(posx, posy);
-      runLength.at(posXrun, posYrun) = runLength.at(posx, posy);
-    }
-
-    uint32_t posYrun;
-    uint32_t posXrun;
-    if (runType.at(posx, posy) == PLT_RUN_INDEX)
-    {
-      for (uint32_t idx = 1; idx < runLength.at(posx, posy); idx++)
-      {
-        posYrun = m_scanOrder[strPos + idx].y;
-        posXrun = m_scanOrder[strPos + idx].x;
-        curPLTIdx.at(posXrun, posYrun) = curPLTIdx.at(posx, posy);
-      }
-    }
-    else if (runType.at(posx, posy) == PLT_RUN_COPY)
-    {
-      for (uint32_t idx = 0; idx < runLength.at(posx, posy); idx++)
-      {
-        posYrun = m_scanOrder[strPos + idx].y;
-        posXrun = m_scanOrder[strPos + idx].x;
-        curPLTIdx.at(posXrun, posYrun) = (cu.useRotation[compBegin]) ? curPLTIdx.at(posXrun - 1, posYrun) : curPLTIdx.at(posXrun, posYrun - 1);
-      }
-    }
-    strPos += (runLength.at(posx, posy));
-  }
-  assert(strPos == endPos);
-
-  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, sps.getChromaFormatIdc());
-  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, sps.getChromaFormatIdc());
-  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-  {
-    ComponentID compID = (ComponentID)comp;
-    for (strPos = 0; strPos < endPos; strPos++)
-    {
-      uint32_t posy = m_scanOrder[strPos].y;
-      uint32_t posx = m_scanOrder[strPos].x;
-      if (curPLTIdx.at(posx, posy) == cu.curPLTSize[compBegin])
-      {
-        {
-          PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
-          if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
-          {
-            escapeValue.at(posx, posy) = exp_golomb_eqprob(3);
-            assert(escapeValue.at(posx, posy) < (1 << (cu.cs->sps->getBitDepth(toChannelType((ComponentID)comp)) + 1)));
-          }
-          if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
-          {
-            uint32_t posxC = posx >> scaleX;
-            uint32_t posyC = posy >> scaleY;
-            escapeValue.at(posxC, posyC) = exp_golomb_eqprob(3);
-            assert(escapeValue.at(posxC, posyC) < (1 << (cu.cs->sps->getBitDepth(toChannelType(compID)) + 1)));
-          }
-        }
-      }
-    }
-  }
-#endif
 }
-#if JVET_P0077_LINE_CG_PALETTE
 void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType)
 {
   const SPS&      sps = *(cu.cs->sps);
@@ -2012,7 +1815,6 @@ void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, u
     }
   }
 }
-#endif
 void CABACReader::parseScanRotationModeFlag(CodingUnit& cu, ComponentID compBegin)
 {
   cu.useRotation[compBegin] = m_BinDecoder.decodeBin(Ctx::RotationFlag());
@@ -2094,75 +1896,6 @@ void CABACReader::xAdjustPLTIndex(CodingUnit& cu, Pel curLevel, uint32_t idx, Pe
   }
   paletteIdx.at(posx, posy) = symbol;
 }
-#if !JVET_P0077_LINE_CG_PALETTE
-uint32_t  CABACReader::cu_run_val(PLTRunMode runtype, const uint32_t paletteIdx, const uint32_t maxRun)
-{
-  uint32_t symbol = 0;
-  if (runtype == PLT_RUN_COPY)
-  {
-  }
-  else
-  {
-    g_paletteRunLeftLut[0] = (paletteIdx < PLT_RUN_MSB_IDX_CTX_T1 ? 0 : (paletteIdx < PLT_RUN_MSB_IDX_CTX_T2 ? 1 : 2));
-  }
-  symbol = xReadTruncMsbP1RefinementBits(runtype, maxRun, PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE);
-  return symbol;
-}
-uint32_t CABACReader::xReadTruncUnarySymbol(PLTRunMode runtype, uint32_t maxVal, uint32_t ctxT)
-{
-  if (maxVal == 0)
-    return 0;
-
-  uint8_t *ctxLut;
-  ctxLut = (runtype == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
-  uint32_t bin, idx = 0;
-  do
-  {
-    if (idx > ctxT)
-      bin = m_BinDecoder.decodeBinEP();
-    else
-    {
-      bin = m_BinDecoder.decodeBin(
-        (idx <= ctxT)
-        ? ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ctxLut[idx]) : Ctx::CopyRunModel(ctxLut[idx]))
-        : ((runtype == PLT_RUN_INDEX) ? Ctx::IdxRunModel(ctxLut[ctxT]) : Ctx::CopyRunModel(ctxLut[ctxT])));
-      //        idx <= ctxT? pcSCModel[ctxLut[idx]] : pcSCModel[ctxLut[ctxT]] RExt__DECODER_DEBUG_BIT_STATISTICS_PASS_OPT_ARG(whichStat) );
-    }
-    idx++;
-  } while (bin && idx < maxVal);
-
-  return (bin && idx == maxVal) ? maxVal : idx - 1;
-}
-uint32_t CABACReader::xReadTruncMsbP1RefinementBits(PLTRunMode runtype, uint32_t maxVal, uint32_t ctxT)
-{
-  if (maxVal == 0)
-  {
-    return 0;
-  }
-  uint32_t symbol;
-  uint32_t msbP1 = xReadTruncUnarySymbol(runtype, floorLog2(maxVal) + 1, ctxT);
-  if (msbP1 > 1)
-  {
-    uint32_t numBins = floorLog2(maxVal) + 1;
-    if (msbP1 < numBins)
-    {
-      uint32_t bits = msbP1 - 1;
-      symbol = m_BinDecoder.decodeBinsEP(bits);
-      symbol |= (1 << bits);
-    }
-    else
-    {
-      uint32_t curValue = 1 << (numBins - 1);
-      xReadTruncBinCode(symbol, maxVal + 1 - curValue);
-      symbol += curValue;
-    }
-  }
-  else
-    symbol = msbP1;
-
-  return symbol;
-}
-#endif
 
 //================================================================================
 //  clause 7.3.8.6

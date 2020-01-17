@@ -742,13 +742,6 @@ void BestEncInfoCache::destroy()
     delete[] m_runType;
     m_runType = nullptr;
   }
-#if !JVET_P0077_LINE_CG_PALETTE
-  if (m_runLength != nullptr)
-  {
-    delete[] m_runLength;
-    m_runLength = nullptr;
-  }
-#endif
 }
 
 void BestEncInfoCache::init( const Slice &slice )
@@ -792,9 +785,6 @@ void BestEncInfoCache::init( const Slice &slice )
   if (slice.getSPS()->getPLTMode())
   {
     m_runType   = new bool[numCoeff*MAX_NUM_TUS];
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength = new Pel [numCoeff*MAX_NUM_TUS];
-#endif
   }
 #else
   m_pCoeff  = new TCoeff[numCoeff];
@@ -802,18 +792,12 @@ void BestEncInfoCache::init( const Slice &slice )
   if (slice.getSPS()->getPLTMode())
   {
     m_runType   = new bool[numCoeff];
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength = new Pel [numCoeff];
-#endif
   }
 #endif
 
   TCoeff *coeffPtr = m_pCoeff;
   Pel    *pcmPtr   = m_pPcmBuf;
   bool   *runTypePtr   = m_runType;
-#if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *runLengthPtr = m_runLength;
-#endif
   m_dummyCS.pcv = m_slice_bencinf->getPPS()->pcv;
 
   for( unsigned x = 0; x < numPos; x++ )
@@ -829,9 +813,6 @@ void BestEncInfoCache::init( const Slice &slice )
             TCoeff *coeff[MAX_NUM_TBLOCKS] = { 0, };
             Pel    *pcmbf[MAX_NUM_TBLOCKS] = { 0, };
             bool   *runType[MAX_NUM_TBLOCKS - 1] = { 0, };
-#if !JVET_P0077_LINE_CG_PALETTE
-            Pel    *runLength[MAX_NUM_TBLOCKS - 1] = { 0, };
-#endif
 
 #if REUSE_CU_RESULTS_WITH_MULTIPLE_TUS
             for( int i = 0; i < MAX_NUM_TUS; i++ )
@@ -846,18 +827,11 @@ void BestEncInfoCache::init( const Slice &slice )
                 if (i < 2)
                 {
                   runType[i]   = runTypePtr;   runTypePtr   += area.blocks[i].area();
-#if !JVET_P0077_LINE_CG_PALETTE
-                  runLength[i] = runLengthPtr; runLengthPtr += area.blocks[i].area();
-#endif
                 }
               }
 
               tu.cs = &m_dummyCS;
-#if JVET_P0077_LINE_CG_PALETTE
               tu.init(coeff, pcmbf, runType);
-#else
-              tu.init(coeff, pcmbf, runLength, runType);
-#endif
             }
 #else
             const UnitArea &area = m_bestEncInfo[x][y][wIdx][hIdx]->tu;

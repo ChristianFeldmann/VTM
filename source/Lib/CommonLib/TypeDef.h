@@ -130,7 +130,6 @@
 
 
 
-#define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 

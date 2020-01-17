@@ -513,9 +513,7 @@ unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
 unsigned CtxMipFlag   ( const CodingUnit& cu );
-#if JVET_P0077_LINE_CG_PALETTE
 unsigned CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist );
-#endif
 }
 
 #endif // __CONTEXTMODELLING__

@@ -539,7 +539,6 @@ unsigned DeriveCtx::CtxMipFlag( const CodingUnit& cu )
   return ctxId;
 }
 
-#if JVET_P0077_LINE_CG_PALETTE
 unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist )
 {
   uint8_t *ucCtxLut = (prevRunType == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
@@ -552,4 +551,3 @@ unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned d
     return ucCtxLut[RUN_IDX_THRE];
   }
 }
-#endif

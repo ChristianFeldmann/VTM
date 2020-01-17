@@ -466,22 +466,15 @@ static const int FP_PREC =                                       11;
 static const int CSCALE_FP_PREC =                                11;
 static const int  NEIG_NUM_LOG  =                                 6;
 static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
-#if JVET_P0077_LINE_CG_PALETTE
 static const int LOG2_PALETTE_CG_SIZE =                           4;
 static const int RUN_IDX_THRE =                                   4;
 static const int MAX_CU_BLKSIZE_PLT =                            64;
 static const int NUM_TRELLIS_STATE =                              3;
 static const double ENC_CHROMA_WEIGHTING =                      0.8;
-#endif
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
 static const double PLT_CHROMA_WEIGHTING =                      0.8;
 static const int PLT_ENCBITDEPTH = 8;
-#if !JVET_P0077_LINE_CG_PALETTE
-static const int PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE = 4;
-static const int PLT_RUN_MSB_IDX_CTX_T1 = 1;
-static const int PLT_RUN_MSB_IDX_CTX_T2 = 3;
-#endif
 static const int PLT_FAST_RATIO = 100;
 #if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 static const int  EPBIN_WEIGHT_FACTOR =                           4;

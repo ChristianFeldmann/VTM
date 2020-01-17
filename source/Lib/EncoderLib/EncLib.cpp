@@ -340,9 +340,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               cabacEstimator,
                               getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
                             , &m_cReshaper[jId]
-#if JVET_P0077_LINE_CG_PALETTE
                             , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
-#endif
     );
     m_cInterSearch[jId].init( this,
                               &m_cTrQuant[jId],
@@ -379,9 +377,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        cabacEstimator,
                        getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
                      , &m_cReshaper
-#if JVET_P0077_LINE_CG_PALETTE
                      , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
-#endif
   );
   m_cInterSearch.init( this,
                        &m_cTrQuant,

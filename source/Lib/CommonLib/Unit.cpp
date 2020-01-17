@@ -709,9 +709,6 @@ TransformUnit::TransformUnit(const UnitArea& unit) : UnitArea(unit), cu(nullptr)
   for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
   {
     m_runType[i] = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = nullptr;
-#endif
   }
 
   initData();
@@ -728,9 +725,6 @@ TransformUnit::TransformUnit(const ChromaFormat _chromaFormat, const Area &_area
   for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
   {
     m_runType[i] = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = nullptr;
-#endif
   }
 
   initData();
@@ -750,11 +744,7 @@ void TransformUnit::initData()
   jointCbCr          = 0;
   m_chromaResScaleInv = 0;
 }
-#if JVET_P0077_LINE_CG_PALETTE
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, bool **runType)
-#else
-void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType)
-#endif
 {
   uint32_t numBlocks = getNumberValidTBlocks(*cs->pcv);
 
@@ -767,9 +757,6 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **
   for (uint32_t i = 0; i < numBlocks - 1; i++)
   {
     m_runType[i] = runType[i];
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = runLength[i];
-#endif
   }
 }
 
@@ -789,9 +776,6 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     if (cu->slice->getSPS()->getPLTMode() && i < 2)
     {
       if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
-#if !JVET_P0077_LINE_CG_PALETTE
-      if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
-#endif
     }
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
@@ -817,9 +801,6 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   if ((i == COMPONENT_Y || i == COMPONENT_Cb))
   {
     if (m_runType[i] && other.m_runType[i] && m_runType[i] != other.m_runType[i])   memcpy(m_runType[i], other.m_runType[i], sizeof(bool) * area);
-#if !JVET_P0077_LINE_CG_PALETTE
-    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area);
-#endif
   }
 
   cbf[i]           = other.cbf[i];
@@ -841,10 +822,6 @@ const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CP
        PelBuf       TransformUnit::getcurPLTIdx(const ComponentID id)         { return        PelBuf(m_pcmbuf[id], blocks[id]); }
 const CPelBuf       TransformUnit::getcurPLTIdx(const ComponentID id)   const { return       CPelBuf(m_pcmbuf[id], blocks[id]); }
 
-#if !JVET_P0077_LINE_CG_PALETTE
-       PelBuf       TransformUnit::getrunLength(const ComponentID id)         { return     PelBuf(m_runLength[id], blocks[id]); }
-const CPelBuf       TransformUnit::getrunLength(const ComponentID id)   const { return    CPelBuf(m_runLength[id], blocks[id]); }
-#endif
        PLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)         { return   PLTtypeBuf(m_runType[id], blocks[id]); }
 const CPLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)   const { return  CPLTtypeBuf(m_runType[id], blocks[id]); }
 
@@ -852,9 +829,6 @@ const CPLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)   const { 
 const CPLTescapeBuf TransformUnit::getescapeValue(const ComponentID id) const { return CPLTescapeBuf(m_coeffs[id], blocks[id]); }
 
       Pel*          TransformUnit::getPLTIndex   (const ComponentID id)       { return  m_pcmbuf[id];    }
-#if !JVET_P0077_LINE_CG_PALETTE
-      Pel*          TransformUnit::getRunLens    (const ComponentID id)       { return  m_runLength[id]; }
-#endif
       bool*         TransformUnit::getRunTypes   (const ComponentID id)       { return  m_runType[id];   }
 
 void TransformUnit::checkTuNoResidual( unsigned idx )

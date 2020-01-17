@@ -68,7 +68,6 @@ IntraSearch::IntraSearch()
   {
     m_pSharedPredTransformSkip[ch] = nullptr;
   }
-#if JVET_P0077_LINE_CG_PALETTE
   m_truncBinBits = nullptr;
   m_escapeNumBins = nullptr;
   m_minErrorIndexMap = nullptr;
@@ -80,7 +79,6 @@ IntraSearch::IntraSearch()
   {
     m_statePtRDOQ[i] = nullptr;
   }
-#endif
 }
 
 
@@ -165,7 +163,6 @@ void IntraSearch::destroy()
   m_tmpStorageLCU.destroy();
   m_colorTransResiBuf.destroy();
   m_isInitialized = false;
-#if JVET_P0077_LINE_CG_PALETTE
   if (m_truncBinBits != nullptr)
   {
     for (unsigned i = 0; i < m_symbolSize; i++)
@@ -202,7 +199,6 @@ void IntraSearch::destroy()
       m_statePtRDOQ[i] = nullptr;
     }
   }
-#endif
 }
 
 IntraSearch::~IntraSearch()
@@ -222,9 +218,7 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
                         const uint32_t     maxCUHeight,
                         const uint32_t     maxTotalCUDepth
                        , EncReshape*   pcReshape
-#if JVET_P0077_LINE_CG_PALETTE
                        , const unsigned bitDepthY
-#endif
 )
 {
   CHECK(m_isInitialized, "Already initialized");
@@ -314,7 +308,6 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
   }
 
   m_isInitialized = true;
-#if JVET_P0077_LINE_CG_PALETTE
   if (pcEncCfg->getPLTMode())
   {
     m_symbolSize = (1 << bitDepthY); // pixel values are within [0, SymbolSize-1] with size SymbolSize
@@ -350,7 +343,6 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
       }
     }
   }
-#endif
 }
 
 
@@ -1532,25 +1524,17 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   TransformUnit &tu = *cs.getTU(partitioner.chType);
   uint32_t height = cu.block(compBegin).height;
   uint32_t width = cu.block(compBegin).width;
-#if !JVET_P0077_LINE_CG_PALETTE
-  m_orgCtxRD = PLTCtx(m_CABACEstimator->getCtx());
-#endif
 
   if (m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
   {
     cs.getPredBuf().copyFrom(cs.getOrgBuf());
     cs.getPredBuf().Y().rspSignal(m_pcReshape->getFwdLUT());
   }
-#if !JVET_P0077_LINE_CG_PALETTE
-  Pel  *runLength = tu.getRunLens (compBegin);
-  bool *runType   = tu.getRunTypes(compBegin);
-#endif
   cu.lastPLTSize[compBegin] = cs.prevPLT.curPLTSize[compBegin];
   //derive palette
   derivePLTLossy(cs, partitioner, compBegin, numComp);
   reorderPLT(cs, partitioner, compBegin, numComp);
 
-#if JVET_P0077_LINE_CG_PALETTE
   preCalcPLTIndexRD(cs, partitioner, compBegin, numComp); // Pre-calculate distortions for each pixel 
   double rdCost = MAX_DOUBLE;
   deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, rdCost); // Optimize palette index map (horizontal scan)
@@ -1558,28 +1542,12 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   {
     deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, rdCost); // Optimize palette index map (vertical scan)
   }
-#else
-  //calculate palette index
-  preCalcPLTIndex(cs, partitioner, compBegin, numComp);
-  //derive run
-  uint64_t bits = MAX_UINT64;
-  deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, bits);
-  if ((cu.curPLTSize[compBegin] + cu.useEscape[compBegin]) > 1)
-  {
-    deriveRunAndCalcBits(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, bits);
-  }
-#endif
   cu.useRotation[compBegin] = m_bestScanRotationMode;
-#if JVET_P0077_LINE_CG_PALETTE
   int indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
   if (indexMaxSize <= 1)
   {
     cu.useRotation[compBegin] = false;
   }
-#else
-  memcpy(runType, m_runTypeRD, sizeof(bool)*width*height);
-  memcpy(runLength, m_runLengthRD, sizeof(Pel)*width*height);
-#endif
   //reconstruct pixel
   PelBuf    curPLTIdx = tu.getcurPLTIdx(compBegin);
   for (uint32_t y = 0; y < height; y++)
@@ -1588,9 +1556,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     {
       if (curPLTIdx.at(x, y) == cu.curPLTSize[compBegin])
       {
-#if JVET_P0077_LINE_CG_PALETTE
         calcPixelPred(cs, partitioner, y, x, compBegin, numComp);
-#endif
       }
       else
       {
@@ -1655,7 +1621,6 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   cs.setDecomp(area);
   cs.picture->getRecoBuf(area).copyFrom(cs.getRecoBuf(area));
 }
-#if JVET_P0077_LINE_CG_PALETTE
 void IntraSearch::calcPixelPredRD(CodingStructure& cs, Partitioner& partitioner, Pel* orgBuf, Pel* paPixelValue, Pel* paRecoValue, ComponentID compBegin, uint32_t numComp)
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);
@@ -2163,210 +2128,6 @@ void IntraSearch::initTBCTable(int bitDepth)
     m_escapeNumBins[i] = getEpExGolombNumBins(i, 3);
   }
 }
-#else
-void IntraSearch::deriveRunAndCalcBits(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, uint64_t& minBits)
-{
-  CodingUnit    &cu = *cs.getCU(partitioner.chType);
-  TransformUnit &tu = *cs.getTU(partitioner.chType);
-  uint32_t height = cu.block(compBegin).height;
-  uint32_t width = cu.block(compBegin).width;
-  Pel  *runLength = tu.getRunLens (compBegin);
-  bool *runType   = tu.getRunTypes(compBegin);
-
-  cu.useRotation[compBegin] = (pltScanMode == PLT_SCAN_VERTRAV);
-  m_scanOrder = g_scanOrder[SCAN_UNGROUPED][(cu.useRotation[compBegin]) ? SCAN_TRAV_VER : SCAN_TRAV_HOR][gp_sizeIdxInfo->idxFrom(width)][gp_sizeIdxInfo->idxFrom(height)];
-  deriveRun(cs, partitioner, compBegin);
-
-  m_CABACEstimator->getCtx() = PLTCtx(m_orgCtxRD);
-  m_CABACEstimator->resetBits();
-  CUCtx cuCtx;
-  cuCtx.isDQPCoded = true;
-  cuCtx.isChromaQpAdjCoded = true;
-  m_CABACEstimator->cu_palette_info(cu, compBegin, numComp, cuCtx);
-  uint64_t bitsTemp = m_CABACEstimator->getEstFracBits();
-  if (minBits > bitsTemp)
-  {
-    m_bestScanRotationMode = pltScanMode;
-    memcpy(m_runTypeRD, runType, sizeof(bool)*width*height);
-    memcpy(m_runLengthRD, runLength, sizeof(Pel)*width*height);
-    minBits = bitsTemp;
-  }
-}
-void IntraSearch::deriveRun(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin)
-{
-  CodingUnit    &cu = *cs.getCU(partitioner.chType);
-  TransformUnit &tu = *cs.getTU(partitioner.chType);
-  uint32_t height = cu.block(compBegin).height;
-  uint32_t width = cu.block(compBegin).width;
-  uint32_t total = height * width, idx = 0;
-  uint32_t startPos = 0;
-  uint64_t indexBits = 0, runBitsIndex = 0, runBitsCopy = 0;
-  m_storeCtxRun = PLTCtx(m_orgCtxRD);
-
-  PLTtypeBuf  runType = tu.getrunType(compBegin);
-  PelBuf      runLength = tu.getrunLength(compBegin);
-  while (idx < total)
-  {
-    startPos = idx;
-    double aveBitsPerPix[NUM_PLT_RUN];
-    uint32_t indexRun = 0;
-    bool runValid = calIndexRun(cs, partitioner, startPos, total, indexRun, compBegin);
-    m_CABACEstimator->getCtx() = PLTCtx(m_storeCtxRun);
-    aveBitsPerPix[PLT_RUN_INDEX] = runValid ? getRunBits(cu, indexRun, startPos, PLT_RUN_INDEX, &indexBits, &runBitsIndex, compBegin) : MAX_DOUBLE;
-    m_storeCtxRunIndex = PLTCtx(m_CABACEstimator->getCtx());
-
-    uint32_t copyRun = 0;
-    bool copyValid = calCopyRun(cs, partitioner, startPos, total, copyRun, compBegin);
-    m_CABACEstimator->getCtx() = PLTCtx(m_storeCtxRun);
-    aveBitsPerPix[PLT_RUN_COPY] = copyValid ? getRunBits(cu, copyRun, startPos, PLT_RUN_COPY, &indexBits, &runBitsCopy, compBegin) : MAX_DOUBLE;
-    m_storeCtxRunCopy = PLTCtx(m_CABACEstimator->getCtx());
-
-    if (copyValid == 0 && runValid == 0)
-    {
-      assert(0);
-    }
-    else
-    {
-      if (aveBitsPerPix[PLT_RUN_COPY] <= aveBitsPerPix[PLT_RUN_INDEX])
-      {
-        for (int runidx = 0; runidx <copyRun; runidx++)
-        {
-          uint32_t posy = m_scanOrder[idx + runidx].y;
-          uint32_t posx = m_scanOrder[idx + runidx].x;
-          runType.at(posx, posy) = PLT_RUN_COPY;
-          runLength.at(posx, posy) = copyRun;
-        }
-        idx += copyRun;
-        m_storeCtxRun = PLTCtx(m_storeCtxRunCopy);
-
-      }
-      else
-      {
-        for (int runidx = 0; runidx <indexRun; runidx++)
-        {
-          uint32_t posy = m_scanOrder[idx + runidx].y;
-          uint32_t posx = m_scanOrder[idx + runidx].x;
-          runType.at(posx, posy) = PLT_RUN_INDEX;
-          runLength.at(posx, posy) = indexRun;
-        }
-        idx += indexRun;
-        m_storeCtxRun = PLTCtx(m_storeCtxRunIndex);
-
-      }
-    }
-  }
-  assert(idx == total);
-}
-double IntraSearch::getRunBits(const CodingUnit&  cu, uint32_t run, uint32_t strPos, PLTRunMode paletteRunMode, uint64_t* indexBits, uint64_t* runBits, ComponentID compBegin)
-{
-  TransformUnit&   tu = *cu.firstTU;
-  uint32_t height = cu.block(compBegin).height;
-  uint32_t width  = cu.block(compBegin).width;
-  uint32_t endPos = height*width;
-  PLTtypeBuf runType   = tu.getrunType(compBegin);
-  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
-  uint32_t   indexMaxSize = (cu.useEscape[compBegin]) ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
-
-  m_CABACEstimator->resetBits();
-  ///////////////// encode Run Type
-  m_CABACEstimator->encodeRunType(cu, runType, strPos, m_scanOrder, compBegin);
-  uint64_t runTypeBits = m_CABACEstimator->getEstFracBits();
-  uint32_t curLevel = 0;
-  switch (paletteRunMode)
-  {
-  case PLT_RUN_INDEX:
-    curLevel = m_CABACEstimator->writePLTIndex(cu, strPos, curPLTIdx, runType, indexMaxSize, compBegin);
-    *indexBits = m_CABACEstimator->getEstFracBits() - runTypeBits;
-    m_CABACEstimator->cu_run_val(run - 1, PLT_RUN_INDEX, curLevel, endPos - strPos - 1);
-    *runBits = m_CABACEstimator->getEstFracBits() - runTypeBits - (*indexBits);
-    break;
-  case PLT_RUN_COPY:
-    m_CABACEstimator->cu_run_val(run - 1, PLT_RUN_COPY, curLevel, endPos - strPos - 1);
-    *runBits = m_CABACEstimator->getEstFracBits() - runTypeBits;
-    break;
-  default:
-    assert(0);
-  }
-  assert(run >= 1);
-  double costPerPixel = (double)m_CABACEstimator->getEstFracBits() / (double)run;
-  return costPerPixel;
-}
-void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
-{
-  CodingUnit &cu = *cs.getCU(partitioner.chType);
-  TransformUnit &tu = *cs.getTU(partitioner.chType);
-  const int  channelBitDepth_L = cs.sps->getBitDepth(CHANNEL_TYPE_LUMA);
-  const int  channelBitDepth_C = cs.sps->getBitDepth(CHANNEL_TYPE_CHROMA);
-  const int  pcmShiftRight_L = (channelBitDepth_L - PLT_ENCBITDEPTH);
-  const int  pcmShiftRight_C = (channelBitDepth_C - PLT_ENCBITDEPTH);
-
-  uint32_t height = cu.block(compBegin).height;
-  uint32_t width = cu.block(compBegin).width;
-
-  CPelBuf   orgBuf[3];
-  for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-  {
-    CompArea  area = cu.blocks[comp];
-    if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
-    {
-      orgBuf[comp] = cs.getPredBuf(area);
-    }
-    else
-    {
-      orgBuf[comp] = cs.getOrgBuf(area);
-    }
-  }
-
-  PelBuf   curPLTIdx = tu.getcurPLTIdx(compBegin);
-  int      errorLimit = numComp * g_paletteQuant[cu.qp];
-  uint32_t bestIdx = 0;
-  uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
-  uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
-  for (uint32_t y = 0; y < height; y++)
-  {
-    for (uint32_t x = 0; x < width; x++)
-    {
-      uint32_t pltIdx = 0;
-      uint32_t minError = MAX_UINT;
-      while (pltIdx < cu.curPLTSize[compBegin])
-      {
-        uint32_t absError = 0, pX, pY;
-        for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-        {
-          pX = (comp > 0 && compBegin == COMPONENT_Y) ? (x >> scaleX) : x;
-          pY = (comp > 0 && compBegin == COMPONENT_Y) ? (y >> scaleY) : y;
-          if (isChroma((ComponentID) comp))
-          {
-            absError += int(double(abs(cu.curPLT[comp][pltIdx] - orgBuf[comp].at(pX, pY))) * PLT_CHROMA_WEIGHTING) >> pcmShiftRight_C;
-          }
-          else
-          {
-            absError += abs(cu.curPLT[comp][pltIdx] - orgBuf[comp].at(pX, pY)) >> pcmShiftRight_L;
-          }
-        }
-
-        if (absError < minError)
-        {
-          bestIdx = pltIdx;
-          minError = absError;
-          if (minError == 0)
-          {
-            break;
-          }
-        }
-        pltIdx++;
-      }
-      curPLTIdx.at(x, y) = bestIdx;
-      if (minError > errorLimit)
-      {
-        curPLTIdx.at(x, y) = cu.curPLTSize[compBegin];
-        cu.useEscape[compBegin] = true;
-        calcPixelPred(cs, partitioner, y, x, compBegin, numComp);
-      }
-    }
-  }
-}
-#endif
 void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t yPos, uint32_t xPos, ComponentID compBegin, uint32_t numComp)
 {
   CodingUnit    &cu = *cs.getCU(partitioner.chType);

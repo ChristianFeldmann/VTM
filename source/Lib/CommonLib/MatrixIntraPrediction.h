@@ -64,11 +64,7 @@ public:
     Size m_blockSize;
     int  m_sizeId;
     int  m_reducedBdrySize;
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
     int  m_reducedPredSize;
-#else
-    Size m_reducedPredictionSize;
-#endif
     unsigned int m_upsmpFactorHor;
     unsigned int m_upsmpFactorVer;
 
@@ -76,11 +72,7 @@ public:
 
     static void boundaryDownsampling1D(int* reducedDst, const int* const fullSrc, const SizeType srcLen, const SizeType dstLen);
 
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
     void predictionUpsampling( int* const dst, const int* const src ) const;
-#else
-    void predictionUpsampling( int* const dst, const int* const src, const bool transpose ) const;
-#endif
     static void predictionUpsampling1D( int* const dst, const int* const src, const int* const bndry,
                                         const SizeType srcSizeUpsmpDim, const SizeType srcSizeOrthDim,
                                         const SizeType srcStep, const SizeType srcStride,
@@ -91,16 +83,9 @@ public:
     void getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const;
 
 
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
     void computeReducedPred( int*const result, const int* const input, 
                              const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
                              const bool transpose, const int bitDepth );
-#else
-    void computeReducedPred( int*const result, const int* const input, const uint8_t*matrix,
-                             const bool leaveHorOut, const bool leaveVerOut,
-                             const int shiftMatrix, const int offsetMatrix,
-                             const bool transpose, const int bitDepth );
-#endif
   };
 
 #endif //__MATRIXINTRAPPREDICTION__

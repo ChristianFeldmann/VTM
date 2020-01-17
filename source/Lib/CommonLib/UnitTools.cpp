@@ -3925,11 +3925,7 @@ int getMipSizeId(const Size& block)
   {
     return 0;
   }
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   else if( block.width == 4 || block.height == 4 || (block.width == 8 && block.height == 8) )
-#else
-  else if( block.width <= 8 && block.height <= 8 )
-#endif
   {
     return 1;
   }

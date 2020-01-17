@@ -52,11 +52,7 @@ MatrixIntraPrediction::MatrixIntraPrediction():
   m_blockSize( 0, 0 ),
   m_sizeId( 0 ),
   m_reducedBdrySize( 0 ),
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   m_reducedPredSize( 0 ),
-#else
-  m_reducedPredictionSize( 0, 0 ),
-#endif
   m_upsmpFactorHor( 0 ),
   m_upsmpFactorVer( 0 )
 {
@@ -126,36 +122,14 @@ void MatrixIntraPrediction::predBlock(int* const result, const int modeIdx, cons
   int shiftMatrix = 0, offsetMatrix = 0;
   getMatrixData(matrix, shiftMatrix, offsetMatrix, modeIdx);
 
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   static_vector<int, MIP_MAX_REDUCED_OUTPUT_SAMPLES> bufReducedPred( m_reducedPredSize * m_reducedPredSize );
-#else
-  bool leaveHorOut = ( m_blockSize.width == 4 && m_blockSize.height >= 16 );
-  bool leaveVerOut = ( m_blockSize.height == 4 && m_blockSize.width >= 16 );
-  if (transpose)
-  {
-    std::swap(leaveHorOut, leaveVerOut);
-  }
-  static_vector<int, MIP_MAX_REDUCED_OUTPUT_SAMPLES> bufReducedPred( m_reducedPredictionSize.area() );
-#endif
   int* const       reducedPred     = needUpsampling ? bufReducedPred.data() : result;
   const int* const reducedBoundary = transpose ? m_reducedBoundaryTransposed.data() : m_reducedBoundary.data();
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   computeReducedPred( reducedPred, reducedBoundary, matrix, shiftMatrix, offsetMatrix, transpose, bitDepth );
-#else
-  computeReducedPred( reducedPred, reducedBoundary, matrix, leaveHorOut, leaveVerOut, shiftMatrix, offsetMatrix,
-                      transpose, bitDepth );
-#endif
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   if( needUpsampling )
   {
     predictionUpsampling( result, reducedPred );
   }
-#else
-  if( needUpsampling )
-  {
-    predictionUpsampling( result, reducedPred, false );
-  }
-#endif
 }
 
 
@@ -169,30 +143,15 @@ void MatrixIntraPrediction::initPredBlockParams(const Size& block)
   m_reducedBdrySize = (m_sizeId == 0) ? 2 : 4;
 
   // init reduced prediction size
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   m_reducedPredSize = ( m_sizeId < 2 ) ? 4 : 8;
-#else
-  if( m_sizeId < 2 ) { m_reducedPredictionSize = Size(4, 4); }
-  else               { m_reducedPredictionSize = Size(std::min<SizeType>(m_blockSize.width, 8), std::min<SizeType>(m_blockSize.height, 8)); }
-#endif
 
 
   // init upsampling factors
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
   m_upsmpFactorHor = m_blockSize.width  / m_reducedPredSize;
   m_upsmpFactorVer = m_blockSize.height / m_reducedPredSize;
 
   CHECKD( (m_upsmpFactorHor < 1) || ((m_upsmpFactorHor & (m_upsmpFactorHor - 1)) != 0), "Need power of two horizontal upsampling factor." );
   CHECKD( (m_upsmpFactorVer < 1) || ((m_upsmpFactorVer & (m_upsmpFactorVer - 1)) != 0), "Need power of two vertical upsampling factor." );
-#else
-  m_upsmpFactorHor = m_blockSize.width / m_reducedPredictionSize.width;
-  CHECKD(m_reducedPredictionSize.width * m_upsmpFactorHor != m_blockSize.width, "Need integer horizontal upsampling factor.");
-  CHECKD((m_upsmpFactorHor < 1) || ((m_upsmpFactorHor & (m_upsmpFactorHor - 1)) != 0), "Need power of two horizontal upsampling factor.");
-
-  m_upsmpFactorVer = m_blockSize.height / m_reducedPredictionSize.height;
-  CHECKD(m_reducedPredictionSize.height * m_upsmpFactorVer != m_blockSize.height, "Need integer vertical upsampling factor.");
-  CHECKD((m_upsmpFactorVer < 1) || ((m_upsmpFactorVer & (m_upsmpFactorVer - 1)) != 0), "Need power of two vertical upsampling factor.");
-#endif
 }
 
 
@@ -277,7 +236,6 @@ void MatrixIntraPrediction::predictionUpsampling1D(int* const dst, const int* co
 }
 
 
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
 void MatrixIntraPrediction::predictionUpsampling( int* const dst, const int* const src ) const
 {
   const int* verSrc     = src;
@@ -303,61 +261,6 @@ void MatrixIntraPrediction::predictionUpsampling( int* const dst, const int* con
                             1, m_upsmpFactorVer );
   }
 }
-#else
-void MatrixIntraPrediction::predictionUpsampling(int* const dst, const int* const src, const bool transpose) const
-{
-    const int* verSrc       = nullptr;
-    SizeType   verSrcStep   = 0;
-    SizeType   verSrcStride = 0;
-    if( m_upsmpFactorHor > 1 )
-    {
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
-      const SizeType horSrcStep   = transpose ? m_reducedPredSize : 1;
-      const SizeType horSrcStride = transpose ? 1 : m_reducedPredSize;
-#else
-      const SizeType horSrcStep   = transpose ? m_reducedPredictionSize.height : 1;
-      const SizeType horSrcStride = transpose ? 1 : m_reducedPredictionSize.width;
-#endif
-
-      int* const     horDst       = dst + ( m_upsmpFactorVer - 1 ) * m_blockSize.width;
-      const SizeType horDstStride = m_upsmpFactorVer * m_blockSize.width;
-
-     predictionUpsampling1D( horDst, src, m_refSamplesLeft.data(),
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
-                             m_reducedPredSize, m_reducedPredSize,
-#else
-                             m_reducedPredictionSize.width, m_reducedPredictionSize.height,
-#endif
-                             horSrcStep, horSrcStride, 1, horDstStride,
-                             m_upsmpFactorVer, m_upsmpFactorHor );
-
-      verSrc       = horDst;
-      verSrcStep   = horDstStride;
-      verSrcStride = 1;
-    }
-    else
-    {
-      verSrc       = src;
-      verSrcStep   = transpose ? 1 : m_blockSize.width;
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
-      verSrcStride = transpose ? m_reducedPredSize : 1;
-#else
-      verSrcStride = transpose ? m_reducedPredictionSize.height : 1;
-#endif
-    }
-  if( m_upsmpFactorVer > 1 )
-  {
-    predictionUpsampling1D( dst, verSrc, m_refSamplesTop.data(),
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
-                            m_reducedPredSize, m_blockSize.width,
-#else
-                            m_reducedPredictionSize.height, m_blockSize.width,
-#endif
-                            verSrcStep, verSrcStride, m_blockSize.width, 1,
-                            1, m_upsmpFactorVer );
-  }
-}
-#endif
 
 void MatrixIntraPrediction::getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const
 {
@@ -382,7 +285,6 @@ void MatrixIntraPrediction::getMatrixData(const uint8_t*& matrix, int &shiftMatr
   }
 }
 
-#if JVET_P0199_P0289_P0303_MIP_FULLMATRIX
 void MatrixIntraPrediction::computeReducedPred( int*const result, const int* const input, 
                                                 const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
                                                 const bool transpose, const int bitDepth )
@@ -436,66 +338,3 @@ void MatrixIntraPrediction::computeReducedPred( int*const result, const int* con
     }
   }
 }
-#else
-void MatrixIntraPrediction::computeReducedPred(int*const result, const int* const input, const uint8_t*matrix,
-                                               const bool leaveHorOut, const bool leaveVerOut,
-                                               const int shiftMatrix, const int offsetMatrix,
-                                               const bool transpose, const int bitDepth )
-{
-  const int inputSize = 2 * m_reducedBdrySize;
-
-  static_vector<int, MIP_MAX_REDUCED_OUTPUT_SAMPLES> resBufTransposed(m_reducedPredictionSize.area());
-  int* const resPtr = (transpose) ? resBufTransposed.data() : result;
-
-  int sum = 0;
-  for (int i = 0; i < inputSize; i++) { sum += input[i]; }
-  const int offset = (1 << (shiftMatrix - 1)) - offsetMatrix * sum;
-  CHECK(inputSize != 4 * (inputSize >> 2), "Error, input size not divisible by four");
-
-  const uint8_t *weight = matrix;
-  const int   inputOffset = transpose ? m_inputOffsetTransp : m_inputOffset;
-
-  const int intermediateWidth  = transpose ? m_reducedPredictionSize.height : m_reducedPredictionSize.width;
-  const int intermediateHeight = transpose ? m_reducedPredictionSize.width : m_reducedPredictionSize.height;
-  const int xStep = leaveHorOut ? 2 : 1;
-  const int yStep = leaveVerOut ? intermediateWidth : 0;
-
-  const int redSize = (m_sizeId == 2) ? 1 : 0;
-  if ( redSize ) weight += xStep-1;
-  int posRes  = 0;
-  for (int y = 0; y < intermediateHeight; y++)
-  {
-    for (int x = 0; x < intermediateWidth; x++)
-    {
-      if(redSize) weight -= xStep;
-      int tmp0 = redSize ? 0 : (input[0] * weight[0]);
-      int tmp1 = input[1] * weight[1];
-      int tmp2 = input[2] * weight[2];
-      int tmp3 = input[3] * weight[3];
-      for (int i = 4; i < inputSize; i += 4)
-      {
-        tmp0 += input[i]     * weight[i];
-        tmp1 += input[i + 1] * weight[i + 1];
-        tmp2 += input[i + 2] * weight[i + 2];
-        tmp3 += input[i + 3] * weight[i + 3];
-      }
-      resPtr[posRes++] = ClipBD<int>( ((tmp0 + tmp1 + tmp2 + tmp3 + offset) >> shiftMatrix) + inputOffset, bitDepth );
-
-      weight  += xStep * inputSize;
-    }
-    weight  += yStep * (inputSize - redSize);
-  }
-
-  if( transpose )
-  {
-    for( int y = 0; y < m_reducedPredictionSize.height; y++ )
-    {
-      for( int x = 0; x < m_reducedPredictionSize.width; x++ )
-      {
-        CHECKD( x * m_reducedPredictionSize.height + y >= m_reducedPredictionSize.area(), "error" );
-        result[ y * m_reducedPredictionSize.width + x ] = resPtr[ x * m_reducedPredictionSize.height + y ];
-      }
-    }
-  }
-}
-#endif

@@ -115,11 +115,7 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
     const bool useJQP = ( abs(TU::getICTMode(tu)) == 2 );
 
     chromaQpOffset += tu.cs->pps->getQpOffset            ( useJQP ? JOINT_CbCr : compID );
-#if JVET_P1004_REMOVE_BRICKS
     chromaQpOffset += tu.cu->slice->getSliceChromaQpDelta( useJQP ? JOINT_CbCr : compID );
-#else
-    chromaQpOffset += tu.cs->slice->getSliceChromaQpDelta( useJQP ? JOINT_CbCr : compID );
-#endif
 
     chromaQpOffset += tu.cs->pps->getChromaQpOffsetListEntry( tu.cu->chromaQpAdj ).u.offset[int( useJQP ? JOINT_CbCr : compID ) - 1];
   }

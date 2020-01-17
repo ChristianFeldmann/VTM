@@ -161,8 +161,6 @@ bool CU::isSameTile(const CodingUnit& cu, const CodingUnit& cu2)
   return cu.tileIdx == cu2.tileIdx;
 }
 
-#if !JVET_P1004_REMOVE_BRICKS
-#endif
 
 bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)
 {
@@ -197,7 +195,6 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
 {
   const CodingStructure &cs = *cu.cs;
 
-#if JVET_P1004_REMOVE_BRICKS
   uint32_t  ctuRsAddr       = getCtuAddr( cu );
   uint32_t  ctuXPosInCtus   = ctuRsAddr % cs.pcv->widthInCtus;
   uint32_t  tileColIdx      = cu.slice->getPPS()->ctuToTileCol( ctuXPosInCtus );
@@ -207,9 +204,6 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
       !( cu.blocks[cu.chType].y & ( cs.pcv->maxCUHeightMask >> getChannelTypeScaleY( cu.chType, cu.chromaFormat ) ) ) && 
       ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType) != NULL ) && 
       CU::isSameSliceAndTile( *cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType), cu ) )
-#else
-  if ( !cu.blocks[cu.chType].x && !( cu.blocks[cu.chType].y & ( cs.pcv->maxCUHeightMask >> getChannelTypeScaleY( cu.chType, cu.chromaFormat ) ) ) && ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType) != NULL ) && CU::isSameSliceAndTile( *cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType), cu ) )
-#endif
   {
     return ( ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType ) )->qp );
   }

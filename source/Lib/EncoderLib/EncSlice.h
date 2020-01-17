@@ -104,13 +104,6 @@ public:
 #endif
   void    setUpLambda( Slice* slice, const double dLambda, int iQP );
 
-#if !JVET_P1004_REMOVE_BRICKS
-private:
-  void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, bool &haveReachedTileBoundary, Picture* pcPic, const int sliceMode, const int sliceArgument );
-
-
-public:
-#endif
 #if ENABLE_QPA
   int                     m_adaptedLumaQP;
 
@@ -136,11 +129,7 @@ public:
   void    calCostSliceI       ( Picture* pcPic );
 
   void    encodeSlice         ( Picture* pcPic, OutputBitstream* pcSubstreams, uint32_t &numBinsCoded );
-#if JVET_P1004_REMOVE_BRICKS
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pcEncLib );
-#else
-  void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
-#endif
   void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
 #if JVET_P1006_PICTURE_HEADER
   void    setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma );
@@ -150,9 +139,6 @@ public:
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively
 
   EncCu*  getCUEncoder        ()                    { return m_pcCuEncoder; }                        ///< CU encoder
-#if !JVET_P1004_REMOVE_BRICKS
-  void    xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, uint32_t& boundingCtuTsAddr, Picture* pcPic );
-#endif
   uint32_t    getSliceSegmentIdx  ()                    { return m_uiSliceSegmentIdx;       }
   void    setSliceSegmentIdx  (uint32_t i)              { m_uiSliceSegmentIdx = i;          }
 

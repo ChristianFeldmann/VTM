@@ -548,7 +548,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
   m_cEncLib.setWPBiPred                                          ( m_useWeightedBiPred   );
 
-#if JVET_P1004_REMOVE_BRICKS
   //====== Tiles and Slices ========
   m_cEncLib.setNoPicPartitionFlag( !m_picPartitionFlag );
   if( m_picPartitionFlag )
@@ -571,18 +570,6 @@ void EncApp::xInitLibCfg()
     m_cEncLib.setLFCrossTileBoundaryFlag( true );
     m_cEncLib.setLFCrossSliceBoundaryFlag( true );
   }
-#else
-  //====== Slice ========
-  m_cEncLib.setSliceMode                                         ( m_sliceMode );
-  m_cEncLib.setSliceArgument                                     ( m_sliceArgument );
-
-
-  if(m_sliceMode == NO_SLICES )
-  {
-    m_bLFCrossSliceBoundaryFlag = true;
-  }
-  m_cEncLib.setLFCrossSliceBoundaryFlag                          ( m_bLFCrossSliceBoundaryFlag );
-#endif
 
   //====== Sub-picture and Slices ========
   m_cEncLib.setSingleSlicePerSubPicFlagFlag                      ( m_singleSlicePerSubPicFlag );
@@ -809,38 +796,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCcvSEIMinLuminanceValue                           (m_ccvSEIMinLuminanceValue);
   m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
   m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
-#endif
-#if !JVET_P1004_REMOVE_BRICKS
-  m_cEncLib.setTileUniformSpacingFlag                            ( m_tileUniformSpacingFlag );
-  if (m_tileUniformSpacingFlag)
-  {
-    m_cEncLib.setUniformTileColsWidthMinus1                      ( m_uniformTileColsWidthMinus1 );
-    m_cEncLib.setUniformTileRowHeightMinus1                      ( m_uniformTileRowHeightMinus1 );
-  }
-  m_cEncLib.setNumColumnsMinus1                                  ( m_numTileColumnsMinus1 );
-  m_cEncLib.setNumRowsMinus1                                     ( m_numTileRowsMinus1 );
-  if(!m_tileUniformSpacingFlag)
-  {
-    m_cEncLib.setColumnWidth                                     ( m_tileColumnWidth );
-    m_cEncLib.setRowHeight                                       ( m_tileRowHeight );
-  }
-  m_cEncLib.setRectSliceFlag                                     ( m_rectSliceFlag );
-  m_cEncLib.setNumSlicesInPicMinus1                              ( m_numSlicesInPicMinus1 );
-  m_cEncLib.setTopLeftBrickIdx                                   ( m_topLeftBrickIdx );
-  m_cEncLib.setBottomRightBrickIdx                               ( m_bottomRightBrickIdx);
-  m_cEncLib.setLoopFilterAcrossSlicesEnabledFlag                 ( m_loopFilterAcrossSlicesEnabledFlag );
-  m_cEncLib.setSignalledSliceIdFlag                              ( m_signalledSliceIdFlag ),
-  m_cEncLib.setSignalledSliceIdLengthMinus1                      ( m_signalledSliceIdLengthMinus1 );
-  m_cEncLib.setSliceId                                           ( m_sliceId );
-  m_cEncLib.setBrickSplitMap                                     (m_brickSplitMap);
-
-  m_cEncLib.xCheckGSParameters();
-  int uiTilesCount = (m_numTileRowsMinus1+1) * (m_numTileColumnsMinus1+1);
-  if(uiTilesCount == 1)
-  {
-    m_bLFCrossTileBoundaryFlag = true;
-  }
-  m_cEncLib.setLFCrossTileBoundaryFlag                           ( m_bLFCrossTileBoundaryFlag );
 #endif
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );

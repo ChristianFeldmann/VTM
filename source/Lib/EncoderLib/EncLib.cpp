@@ -295,10 +295,8 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     pps.setScalingWindow( scalingWindow );
 #endif
 
-#if JVET_P1004_REMOVE_BRICKS
     // disable picture partitioning for scaled RPR pictures (slice/tile config only provided for the original resolution)
     m_noPicPartitionFlag = true;
-#endif
 
     xInitPPS( pps, sps0 ); // will allocate memory for and initialize pps.pcv inside
   }
@@ -438,9 +436,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->finalInit( &m_cVPS, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
     picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
-#if !JVET_P1004_REMOVE_BRICKS
-    pps0.setNumBricksInPic((int)picBg->brickMap->bricks.size());
 #endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
@@ -723,10 +718,6 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     pcPicCurr->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
 #else
     pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
-#if !JVET_P1004_REMOVE_BRICKS
-    PPS *ptrPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
-    ptrPPS->setNumBricksInPic( (int)pcPicCurr->brickMap->bricks.size() );
 #endif
 
     pcPicCurr->poc = m_iPOCLast;
@@ -1624,7 +1615,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 
   pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
 
-#if JVET_P1004_REMOVE_BRICKS
   pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
   if( m_noPicPartitionFlag == false )
   {
@@ -1666,9 +1656,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setLoopFilterAcrossTilesEnabledFlag( true );
     pps.setLoopFilterAcrossSlicesEnabledFlag( true );
   }
-#else
-  pps.setSingleTileInPicFlag((m_iNumColumnsMinus1 == 0 && m_iNumRowsMinus1 == 0));
-#endif
 
   pps.setUseWP( m_useWeightedPred );
   pps.setWPBiPred( m_useWeightedBiPred );
@@ -1733,12 +1720,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
-#if !JVET_P1004_REMOVE_BRICKS
-
-
-  xInitPPSforTiles(pps);
-
-#endif
 #if JVET_P1006_PICTURE_HEADER
   pps.setPictureHeaderExtensionPresentFlag(false);
 #else
@@ -2125,238 +2106,6 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   slice->setRPL1(rpl1);
 }
 
-#if !JVET_P1004_REMOVE_BRICKS
-void  EncLib::xInitPPSforTiles(PPS &pps)
-{
-  if ( (m_iNumColumnsMinus1==0) && (m_iNumRowsMinus1==0) )
-  {
-    // one, no bricks
-    pps.setSingleTileInPicFlag(true);
-    pps.setSingleBrickPerSliceFlag(true);
-    pps.setRectSliceFlag(true);
-  }
-  else
-  {
-    pps.setSingleTileInPicFlag(false);
-    pps.setSingleBrickPerSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
-    pps.setRectSliceFlag( m_sliceMode==SINGLE_BRICK_PER_SLICE );
-    if (m_rectSliceFlag)
-      pps.setRectSliceFlag(m_rectSliceFlag);
-  }
-  pps.setUniformTileSpacingFlag( m_tileUniformSpacingFlag );
-  pps.setNumTileColumnsMinus1( m_iNumColumnsMinus1 );
-  pps.setNumTileRowsMinus1( m_iNumRowsMinus1 );
-  if( !m_tileUniformSpacingFlag )
-  {
-    pps.setTileColumnWidth( m_tileColumnWidth );
-    pps.setTileRowHeight( m_tileRowHeight );
-  }
-  else
-  {
-    pps.setTileColsWidthMinus1(m_uniformTileColsWidthMinus1);
-    pps.setTileRowsHeightMinus1(m_uniformTileRowHeightMinus1);
-  }
-  pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
-
-  //pps.setRectSliceFlag( m_rectSliceFlag );
-  pps.setNumSlicesInPicMinus1( m_numSlicesInPicMinus1 );
-  pps.setTopLeftBrickIdx(m_topLeftBrickIdx);
-  pps.setBottomRightBrickIdx(m_bottomRightBrickIdx);
-  if (m_numSlicesInPicMinus1 > 0)
-  {
-    std::vector<int> bottomrightdelta(m_numSlicesInPicMinus1 + 1);
-    for (int i = 0; i < m_numSlicesInPicMinus1 + 1; i++)
-    {
-      bottomrightdelta[i] = (i == 0) ? m_bottomRightBrickIdx[i] : m_bottomRightBrickIdx[i] - m_bottomRightBrickIdx[i - 1];
-    }
-    pps.setBottomRightBrickIdxDelta(bottomrightdelta);
-  }
-
-  pps.setLoopFilterAcrossBricksEnabledFlag( m_loopFilterAcrossBricksEnabledFlag );
-  pps.setLoopFilterAcrossSlicesEnabledFlag( m_loopFilterAcrossSlicesEnabledFlag );
-  pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
-  pps.setSignalledSliceIdLengthMinus1( m_signalledSliceIdLengthMinus1 );
-  pps.setSignalledSliceIdFlag( m_signalledSliceIdFlag );
-  pps.setSignalledSliceIdLengthMinus1( m_signalledSliceIdLengthMinus1 );
-  pps.setSliceId( m_sliceId );
-
-  int numTiles= (m_iNumColumnsMinus1 + 1) * (m_iNumRowsMinus1 + 1);
-  pps.setNumTilesInPic(numTiles);
-  std::vector<int> tileHeight(numTiles);
-
-  if (m_brickSplitMap.empty())
-  {
-    pps.setBrickSplittingPresentFlag(false);
-  }
-  else
-  {
-    pps.setBrickSplittingPresentFlag(true);
-
-    std::vector<bool> brickSplitFlag (numTiles, false);
-    std::vector<bool> uniformBrickSpacingFlag (numTiles, false);
-    std::vector<int>  brickHeightMinus1 (numTiles, 0);
-    std::vector<int> numBrickRowsMinus2(numTiles, 0);
-    std::vector<std::vector<int>>  brickRowHeightMinus1 (numTiles);
-
-    for (auto &brickSplit: m_brickSplitMap)
-    {
-      int tileIdx = brickSplit.first;
-      CHECK ( tileIdx >= numTiles, "Brick split specified for undefined tile");
-
-      brickSplitFlag[tileIdx]           = true;
-      uniformBrickSpacingFlag [tileIdx] = brickSplit.second.m_uniformSplit;
-      if (uniformBrickSpacingFlag [tileIdx])
-      {
-        brickHeightMinus1[tileIdx]=brickSplit.second.m_uniformHeight - 1;
-      }
-      else
-      {
-        numBrickRowsMinus2[tileIdx] = brickSplit.second.m_numSplits - 1;
-        brickRowHeightMinus1[tileIdx].resize(brickSplit.second.m_numSplits);
-        for (int i=0; i<brickSplit.second.m_numSplits; i++)
-        {
-          brickRowHeightMinus1[tileIdx][i]=brickSplit.second.m_brickHeight[i] - 1;
-        }
-      }
-    }
-    pps.setBrickSplitFlag(brickSplitFlag);
-    pps.setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
-    pps.setBrickHeightMinus1(brickHeightMinus1);
-    pps.setNumBrickRowsMinus2(numBrickRowsMinus2);
-    pps.setBrickRowHeightMinus1(brickRowHeightMinus1);
-
-    // check brick dimensions
-    std::vector<uint32_t> tileRowHeight (m_iNumRowsMinus1+1);
-    int picHeightInCtus = (getSourceHeight() + m_maxCUHeight - 1) / m_maxCUHeight;
-
-    // calculate all tile row heights
-    if( pps.getUniformTileSpacingFlag() )
-    {
-      //set width and height for each (uniform) tile
-      for(int row=0; row < m_iNumRowsMinus1 + 1; row++)
-      {
-        tileRowHeight[row] = (row+1)*picHeightInCtus/(m_iNumRowsMinus1+1)   - (row*picHeightInCtus)/(m_iNumRowsMinus1 + 1);
-      }
-    }
-    else
-    {
-      tileRowHeight[ m_iNumRowsMinus1 ] = picHeightInCtus;
-      for( int j = 0; j < m_iNumRowsMinus1; j++ )
-      {
-        tileRowHeight[ j ] = pps.getTileRowHeight( j );
-        tileRowHeight[ m_iNumRowsMinus1 ]  =  tileRowHeight[ m_iNumRowsMinus1 ] - pps.getTileRowHeight( j );
-      }
-    }
-
-    // check brick splits for each tile
-    for (int tileIdx=0; tileIdx < numTiles; tileIdx++)
-    {
-      const int tileY = tileIdx / (m_iNumColumnsMinus1 + 1);
-
-      tileHeight[tileIdx] = tileRowHeight[tileY];
-
-      if (tileHeight[tileIdx] <= 1)
-      {
-        CHECK(pps.getBrickSplitFlag(tileIdx) != 0, "The value of brick_split_flag[ i ] shall be 0 if tileHeight <= 1");
-      }
-      if (pps.getBrickSplitFlag(tileIdx))
-      {
-        if (tileHeight[tileIdx] <= 2)
-        {
-          CHECK(pps.getUniformBrickSpacingFlag(tileIdx) != 1, "The value of uniform_brick_spacing_flag[ i ] shall be 1 if tileHeight <= 2");
-        }
-        if (pps.getUniformBrickSpacingFlag(tileIdx))
-        {
-          CHECK((pps.getBrickHeightMinus1(tileIdx) + 1) >= tileHeight[tileIdx], "Brick height larger than or equal to tile height");
-        }
-        else
-        {
-          int cumulativeHeight=0;
-          for (int i = 0; i <= pps.getNumBrickRowsMinus2(tileIdx); i++)
-          {
-            cumulativeHeight += pps.getBrickRowHeightMinus1(tileIdx, i) + 1;
-          }
-          CHECK(cumulativeHeight >= tileHeight[tileIdx], "Cumulative brick height larger than or equal to tile height");
-        }
-      }
-    }
-  }
-  pps.setTileHeight(tileHeight);
-}
-
-void  EncCfg::xCheckGSParameters()
-{
-  int   iWidthInCU = ( m_iSourceWidth%m_maxCUWidth ) ? m_iSourceWidth/m_maxCUWidth + 1 : m_iSourceWidth/m_maxCUWidth;
-  int   iHeightInCU = ( m_iSourceHeight%m_maxCUHeight ) ? m_iSourceHeight/m_maxCUHeight + 1 : m_iSourceHeight/m_maxCUHeight;
-  uint32_t  uiCummulativeColumnWidth = 0;
-  uint32_t  uiCummulativeRowHeight = 0;
-
-  if (m_tileUniformSpacingFlag && m_uniformTileColsWidthMinus1 == -1)
-  {
-    EXIT("Uniform tiles specified with unspecified or invalid UniformTileColsWidthMinus1 value");
-  }
-  if (m_tileUniformSpacingFlag && m_uniformTileRowHeightMinus1 == -1)
-  {
-    EXIT("Uniform tiles specified with unspecified or invalid UniformTileRowHeightMinus1 value");
-  }
-  if (m_tileUniformSpacingFlag && m_uniformTileColsWidthMinus1 >= iWidthInCU)
-  {
-    EXIT("UniformTileColsWidthMinus1 too large");
-  }
-  if (m_tileUniformSpacingFlag && m_uniformTileRowHeightMinus1 >= iHeightInCU)
-  {
-    EXIT("UniformTileRowHeightMinus1 too large");
-  }
-
-  //check the column relative parameters
-  if( m_iNumColumnsMinus1 >= (1<<(LOG2_MAX_NUM_COLUMNS_MINUS1+1)) )
-  {
-    EXIT( "The number of columns is larger than the maximum allowed number of columns." );
-  }
-
-  if( m_iNumColumnsMinus1 >= iWidthInCU )
-  {
-    EXIT( "The current picture can not have so many columns." );
-  }
-
-  if( m_iNumColumnsMinus1 && !m_tileUniformSpacingFlag )
-  {
-    for(int i=0; i<m_iNumColumnsMinus1; i++)
-    {
-      uiCummulativeColumnWidth += m_tileColumnWidth[i];
-    }
-
-    if( uiCummulativeColumnWidth >= iWidthInCU )
-    {
-      EXIT( "The width of the column is too large." );
-    }
-  }
-
-  //check the row relative parameters
-  if( m_iNumRowsMinus1 >= (1<<(LOG2_MAX_NUM_ROWS_MINUS1+1)) )
-  {
-    EXIT( "The number of rows is larger than the maximum allowed number of rows." );
-  }
-
-  if( m_iNumRowsMinus1 >= iHeightInCU )
-  {
-    EXIT( "The current picture can not have so many rows." );
-  }
-
-  if( m_iNumRowsMinus1 && !m_tileUniformSpacingFlag )
-  {
-    for(int i=0; i<m_iNumRowsMinus1; i++)
-    {
-      uiCummulativeRowHeight += m_tileRowHeight[i];
-    }
-
-    if( uiCummulativeRowHeight >= iHeightInCU )
-    {
-      EXIT( "The height of the row is too large." );
-    }
-  }
-}
-#endif
 
 void EncLib::setParamSetChanged(int spsId, int ppsId)
 {

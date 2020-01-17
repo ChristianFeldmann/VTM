@@ -650,7 +650,6 @@ struct ChromaQpMappingTable : ChromaQpMappingTableParams
   void      derivedChromaQPMappingTables();
   void      setParams(const ChromaQpMappingTableParams &params, const int qpBdOffset);
 };
-#if JVET_P1004_REMOVE_BRICKS
 
 class SliceMap
 {
@@ -721,7 +720,6 @@ public:
   uint32_t         getTileIdx( ) const                  { return  m_tileIdx;            }
 
 };
-#endif
 
 class DPS
 {
@@ -1629,7 +1627,6 @@ private:
   uint32_t         m_subPicIdLen;                       //!< sub-picture ID length in bits
   uint8_t          m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
 #endif
-#if JVET_P1004_REMOVE_BRICKS
   bool             m_noPicPartitionFlag;                //!< no picture partitioning flag - single slice, single tile
   uint8_t          m_log2CtuSize;                       //!< log2 of the CTU size - required to match corresponding value in SPS
   uint8_t          m_ctuSize;                           //!< CTU size
@@ -1654,41 +1651,9 @@ private:
   std::vector<SliceMap>  m_sliceMap;                    //!< list of CTU maps for each slice in the picture
   bool             m_loopFilterAcrossTilesEnabledFlag;  //!< loop filtering applied across tiles flag
   bool             m_loopFilterAcrossSlicesEnabledFlag; //!< loop filtering applied across slices flag
-#endif
   int              m_log2MaxTransformSkipBlockSize;
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
-#if !JVET_P1004_REMOVE_BRICKS
-  bool             m_loopFilterAcrossBricksEnabledFlag;
-  bool             m_uniformTileSpacingFlag;
-  int              m_numTileColumnsMinus1;
-  int              m_numTileRowsMinus1;
-  std::vector<int> m_tileColumnWidth;
-  std::vector<int> m_tileRowHeight;
-  std::vector<int> m_tileHeight;
-
-  bool             m_singleTileInPicFlag;
-  int              m_tileColsWidthMinus1;
-  int              m_tileRowsHeightMinus1;
-  bool             m_brickSplittingPresentFlag;
-  std::vector<bool> m_brickSplitFlag;
-  std::vector<bool> m_uniformBrickSpacingFlag;
-  std::vector<int> m_brickHeightMinus1;
-  std::vector<int> m_numBrickRowsMinus2;
-  std::vector<std::vector<int>> m_brickRowHeightMinus1;
-  bool             m_singleBrickPerSliceFlag;
-  bool             m_rectSliceFlag;
-  int              m_numSlicesInPicMinus1;
-  std::vector<int> m_topLeftBrickIdx;
-  std::vector<int> m_bottomRightBrickIdx;
-  std::vector<int> m_bottomRightBrickIdxDelta;
-  int              m_numTilesInPic;
-  int              m_numBricksInPic;
-  bool             m_signalledSliceIdFlag;
-  int              m_signalledSliceIdLengthMinus1;
-  std::vector<int> m_sliceId;
-
-#endif
   bool              m_constantSliceHeaderParamsEnabledFlag;
   int               m_PPSDepQuantEnabledIdc;
   int               m_PPSRefPicListSPSIdc0;
@@ -1710,9 +1675,6 @@ private:
   bool             m_pictureHeaderExtensionPresentFlag;   //< picture header extension flags present in picture headers or not
 #endif
   bool             m_sliceHeaderExtensionPresentFlag;
-#if !JVET_P1004_REMOVE_BRICKS
-  bool             m_loopFilterAcrossSlicesEnabledFlag;
-#endif
   bool             m_deblockingFilterControlPresentFlag;
   bool             m_deblockingFilterOverrideEnabledFlag;
   bool             m_ppsDeblockingFilterDisabledFlag;
@@ -1844,7 +1806,6 @@ public:
   void                   setSubPicId( int i, uint8_t u )                                  { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
   uint8_t                getSubPicId( int i ) const                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
 #endif
-#if JVET_P1004_REMOVE_BRICKS
   void                   setNoPicPartitionFlag( bool b )                                  { m_noPicPartitionFlag = b;                     }
   bool                   getNoPicPartitionFlag( ) const                                   { return  m_noPicPartitionFlag;                 }
   void                   setLog2CtuSize( uint8_t u )                                      { m_log2CtuSize = u; m_ctuSize = 1 << m_log2CtuSize; 
@@ -1911,73 +1872,13 @@ public:
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
   void                   checkSliceMap(); 
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }
-#endif
 
   uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }
   void                   setLog2MaxTransformSkipBlockSize(uint32_t u)                     { m_log2MaxTransformSkipBlockSize = u; }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  void                   setLoopFilterAcrossBricksEnabledFlag(bool b)                     { m_loopFilterAcrossBricksEnabledFlag = b;      }
-  bool                   getLoopFilterAcrossBricksEnabledFlag() const                     { return m_loopFilterAcrossBricksEnabledFlag;   }
-#endif
   bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  void                   setUniformTileSpacingFlag(bool b)                                { m_uniformTileSpacingFlag = b;                 }
-  bool                   getUniformTileSpacingFlag() const                                { return m_uniformTileSpacingFlag;              }
-  void                   setNumTileColumnsMinus1(int i)                                   { m_numTileColumnsMinus1 = i;                   }
-  int                    getNumTileColumnsMinus1() const                                  { return m_numTileColumnsMinus1;                }
-  void                   setTileColumnWidth(const std::vector<int>& columnWidth )         { m_tileColumnWidth = columnWidth;              }
-  uint32_t               getTileColumnWidth(uint32_t columnIdx) const                     { return  m_tileColumnWidth[columnIdx];         }
-  void                   setNumTileRowsMinus1(int i)                                      { m_numTileRowsMinus1 = i;                      }
-  int                    getNumTileRowsMinus1() const                                     { return m_numTileRowsMinus1;                   }
-  void                   setTileRowHeight(const std::vector<int>& rowHeight)              { m_tileRowHeight = rowHeight;                  }
-  uint32_t               getTileRowHeight(uint32_t rowIdx) const                          { return m_tileRowHeight[rowIdx];               }
-  void                   setTileHeight(const std::vector<int>& tileHeight)                { m_tileHeight = tileHeight;                    }
-  uint32_t               getTileHeight(uint32_t tileIdx) const                            { return m_tileHeight[tileIdx];                 }
-
-  bool                   getSingleTileInPicFlag() const                                   { return m_singleTileInPicFlag;                 }
-  void                   setSingleTileInPicFlag(bool val)                                 { m_singleTileInPicFlag = val;                  }
-  int                    getTileColsWidthMinus1() const                                   { return m_tileColsWidthMinus1;                 }
-  void                   setTileColsWidthMinus1(int w)                                    { m_tileColsWidthMinus1 = w;                    }
-  int                    getTileRowsHeightMinus1() const                                  { return m_tileRowsHeightMinus1;                }
-  void                   setTileRowsHeightMinus1(int h)                                   { m_tileRowsHeightMinus1 = h;                   }
-  bool                   getBrickSplittingPresentFlag() const                             { return m_brickSplittingPresentFlag;           }
-  void                   setBrickSplittingPresentFlag(bool b)                             { m_brickSplittingPresentFlag = b;              }
-  bool                   getBrickSplitFlag(int i) const                                   { return m_brickSplitFlag[i];                   }
-  void                   setBrickSplitFlag(std::vector<bool>& val)                        { m_brickSplitFlag = val;                       }
-  bool                   getUniformBrickSpacingFlag(int i) const                          { return m_uniformBrickSpacingFlag[i];          }
-  void                   setUniformBrickSpacingFlag(std::vector<bool>& val)               { m_uniformBrickSpacingFlag = val;              }
-  int                    getBrickHeightMinus1(int i) const                                { return m_brickHeightMinus1[i];                }
-  void                   setBrickHeightMinus1(std::vector<int>& val)                      { m_brickHeightMinus1 = val;                    }
-  int                    getNumBrickRowsMinus2(int i) const { return m_numBrickRowsMinus2[i]; }
-  void                   setNumBrickRowsMinus2(std::vector<int> &val) { m_numBrickRowsMinus2 = val; }
-  int                    getBrickRowHeightMinus1(int i, int j) const                      { return m_brickRowHeightMinus1[i][j];          }
-  void                   setBrickRowHeightMinus1(std::vector<std::vector<int>>& val)      { m_brickRowHeightMinus1 = val;                 }
-  bool                   getSingleBrickPerSliceFlag() const                               { return m_singleBrickPerSliceFlag;             }
-  void                   setSingleBrickPerSliceFlag(bool val)                             { m_singleBrickPerSliceFlag = val;              }
-  bool                   getRectSliceFlag() const                                         { return m_rectSliceFlag;                       }
-  void                   setRectSliceFlag(bool val)                                       { m_rectSliceFlag = val;                        }
-  int                    getNumSlicesInPicMinus1() const                                  { return m_numSlicesInPicMinus1;                }
-  void                   setNumSlicesInPicMinus1(int val)                                 { m_numSlicesInPicMinus1 = val;                 }
-  int                    getTopLeftBrickIdx(uint32_t columnIdx) const                     { return  m_topLeftBrickIdx[columnIdx];         }
-  void                   setTopLeftBrickIdx(const std::vector<int>& val)                  { m_topLeftBrickIdx = val;                      }
-  int                    getBottomRightBrickIdx(uint32_t columnIdx) const                 { return  m_bottomRightBrickIdx[columnIdx];     }
-  void                   setBottomRightBrickIdx(const std::vector<int>& val)              { m_bottomRightBrickIdx = val;                  }
-  int                    getBottomRightBrickIdxDelta(uint32_t delta) const                { return  m_bottomRightBrickIdxDelta[delta];    }
-  void                   setBottomRightBrickIdxDelta(const std::vector<int>& val)         { m_bottomRightBrickIdxDelta = val;             }
-  int                    getNumTilesInPic() const                                         { return m_numTilesInPic;                       }
-  void                   setNumTilesInPic(int val)                                        { m_numTilesInPic = val;                        }
-  int                    getNumBricksInPic() const                                        { return m_numBricksInPic;                      }
-  void                   setNumBricksInPic(int val)                                       { m_numBricksInPic = val;                       }
-  bool                   getSignalledSliceIdFlag() const                                  { return m_signalledSliceIdFlag;                }
-  void                   setSignalledSliceIdFlag(bool val)                                { m_signalledSliceIdFlag = val;                 }
-  int                    getSignalledSliceIdLengthMinus1() const                          { return m_signalledSliceIdLengthMinus1;        }
-  void                   setSignalledSliceIdLengthMinus1(int val)                         { m_signalledSliceIdLengthMinus1 = val;         }
-  int                    getSliceId(uint32_t columnIdx) const                             { return  m_sliceId[columnIdx];                 }
-  void                   setSliceId(const std::vector<int>& val)                          { m_sliceId = val;                              }
-#endif
 
   bool                    getConstantSliceHeaderParamsEnabledFlag() const                 { return m_constantSliceHeaderParamsEnabledFlag; }
   void                    setConstantSliceHeaderParamsEnabledFlag(bool b)                 { m_constantSliceHeaderParamsEnabledFlag = b;   }
@@ -2021,10 +1922,6 @@ public:
   int                    getDeblockingFilterTcOffsetDiv2() const                          { return m_deblockingFilterTcOffsetDiv2;        } //!< get tc offset for deblocking filter
   bool                   getListsModificationPresentFlag() const                          { return m_listsModificationPresentFlag;        }
   void                   setListsModificationPresentFlag( bool b )                        { m_listsModificationPresentFlag = b;           }
-#if !JVET_P1004_REMOVE_BRICKS
-  void                   setLoopFilterAcrossSlicesEnabledFlag( bool bValue )              { m_loopFilterAcrossSlicesEnabledFlag = bValue; }
-  bool                   getLoopFilterAcrossSlicesEnabledFlag() const                     { return m_loopFilterAcrossSlicesEnabledFlag;   }
-#endif
 #if JVET_P1006_PICTURE_HEADER
   bool                   getPictureHeaderExtensionPresentFlag() const                     { return m_pictureHeaderExtensionPresentFlag;     }
   void                   setPictureHeaderExtensionPresentFlag(bool val)                   { m_pictureHeaderExtensionPresentFlag = val;      }
@@ -2464,25 +2361,12 @@ private:
   uint32_t                       m_uiTLayer;
   bool                       m_bTLayerSwitchingFlag;
 
-#if JVET_P1004_REMOVE_BRICKS
   SliceMap                   m_sliceMap;                     //!< list of CTUs in current slice - raster scan CTU addresses
-#else
-  SliceConstraint            m_sliceMode;
-  uint32_t                       m_sliceArgument;
-  uint32_t                       m_sliceCurStartCtuTsAddr;
-  uint32_t                       m_sliceCurEndCtuTsAddr;
-#endif
   uint32_t                       m_independentSliceIdx;
   bool                       m_nextSlice;
   uint32_t                       m_sliceBits;
   bool                       m_bFinalized;
 
-#if !JVET_P1004_REMOVE_BRICKS
-  uint32_t                   m_sliceCurStartBrickIdx;
-  uint32_t                   m_sliceCurEndBrickIdx;
-  uint32_t                   m_sliceNumBricks;
-  uint32_t                   m_sliceIdx;
-#endif
 
   bool                       m_bTestWeightPred;
   bool                       m_bTestWeightBiPred;
@@ -2490,9 +2374,7 @@ private:
   WPACDCParam                m_weightACDCParam[MAX_NUM_COMPONENT];
   ClpRngs                    m_clpRngs;
   std::vector<uint32_t>          m_substreamSizes;
-#if JVET_P1004_REMOVE_BRICKS
   uint32_t                   m_numEntryPoints;
-#endif
 
   bool                       m_cabacInitFlag;
 
@@ -2795,7 +2677,6 @@ public:
   void                        setHandleCraAsCvsStartFlag( bool val )                 { m_handleCraAsCvsStartFlag = val;                                   }
   bool                        getHandleCraAsCvsStartFlag() const                     { return m_handleCraAsCvsStartFlag;                                  }
 
-#if JVET_P1004_REMOVE_BRICKS
   void                        setNumTilesInSlice( uint32_t u )                       { m_sliceMap.setNumTilesInSlice( u );                                       }
   uint32_t                    getNumTilesInSlice() const                             { return m_sliceMap.getNumTilesInSlice();                                   }
   void                        setSliceMap( SliceMap map )                            { m_sliceMap = map;                                                         }
@@ -2808,16 +2689,6 @@ public:
   void                        addCtusToSlice( uint32_t startX, uint32_t stopX, 
                                               uint32_t startY, uint32_t stopY, 
                                               uint32_t picWidthInCtbsY )             { m_sliceMap.addCtusToSlice(startX, stopX, startY, stopY, picWidthInCtbsY); }
-#else
-  void                        setSliceMode( SliceConstraint mode )                   { m_sliceMode = mode;                                           }
-  SliceConstraint             getSliceMode() const                                   { return m_sliceMode;                                           }
-  void                        setSliceArgument( uint32_t uiArgument )                    { m_sliceArgument = uiArgument;                                 }
-  uint32_t                        getSliceArgument() const                               { return m_sliceArgument;                                       }
-  void                        setSliceCurStartCtuTsAddr( uint32_t ctuTsAddr )            { m_sliceCurStartCtuTsAddr = ctuTsAddr;                         } // CTU Tile-scan address (as opposed to raster-scan)
-  uint32_t                        getSliceCurStartCtuTsAddr() const                      { return m_sliceCurStartCtuTsAddr;                              } // CTU Tile-scan address (as opposed to raster-scan)
-  void                        setSliceCurEndCtuTsAddr( uint32_t ctuTsAddr )              { m_sliceCurEndCtuTsAddr = ctuTsAddr;                           } // CTU Tile-scan address (as opposed to raster-scan)
-  uint32_t                        getSliceCurEndCtuTsAddr() const                        { return m_sliceCurEndCtuTsAddr;                                } // CTU Tile-scan address (as opposed to raster-scan)
-#endif
   void                        setIndependentSliceIdx( uint32_t i)                        { m_independentSliceIdx = i;                                    }
   uint32_t                        getIndependentSliceIdx() const                         { return  m_independentSliceIdx;                                }
   void                        copySliceInfo(Slice *pcSliceSrc, bool cpyAlmostAll = true);
@@ -2825,16 +2696,6 @@ public:
   uint32_t                        getSliceBits() const                                   { return m_sliceBits;                                           }
   void                        setFinalized( bool uiVal )                             { m_bFinalized = uiVal;                                         }
   bool                        getFinalized() const                                   { return m_bFinalized;                                          }
-#if !JVET_P1004_REMOVE_BRICKS
-  void                        setSliceCurStartBrickIdx(uint32_t brickIdx)            { m_sliceCurStartBrickIdx = brickIdx;                           }
-  uint32_t                    getSliceCurStartBrickIdx() const                       { return m_sliceCurStartBrickIdx;                               }
-  void                        setSliceCurEndBrickIdx(uint32_t brickIdx)              { m_sliceCurEndBrickIdx = brickIdx;                             }
-  uint32_t                    getSliceCurEndBrickIdx() const                         { return m_sliceCurEndBrickIdx;                                 }
-  void                        setSliceNumBricks(uint32_t numBricks)                  { m_sliceNumBricks = numBricks;                                 }
-  uint32_t                    getSliceNumBricks() const                              { return m_sliceNumBricks;                                      }
-  void                        setSliceIndex(uint32_t idx)                            { m_sliceIdx = idx;                                             }
-  uint32_t                    getSliceIndex() const                                  { return m_sliceIdx;                                            }
-#endif
   bool                        testWeightPred( ) const                                { return m_bTestWeightPred;                                     }
   void                        setTestWeightPred( bool bValue )                       { m_bTestWeightPred = bValue;                                   }
   bool                        testWeightBiPred( ) const                              { return m_bTestWeightBiPred;                                   }
@@ -2923,10 +2784,8 @@ public:
   void                        setNonRefPictFlag(bool value) { m_nonReferencePicFlag = value; }
   bool                        getNonRefPictFlag() const { return m_nonReferencePicFlag;  }
 #endif
-#if JVET_P1004_REMOVE_BRICKS
   void                        setNumEntryPoints( const PPS *pps );
   uint32_t                    getNumEntryPoints( ) const { return m_numEntryPoints;  }
-#endif
 
 protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );

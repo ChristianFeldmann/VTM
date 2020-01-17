@@ -1029,11 +1029,7 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
 #endif
   if (bestCS->cus.size() == 1) // no partition
   {
-#if JVET_P1004_REMOVE_BRICKS
     CHECK(bestCS->cus[0]->tileIdx != bestCS->pps->getTileIdx(bestCS->area.lumaPos()), "Wrong tile index!");
-#else
-    CHECK(bestCS->cus[0]->tileIdx != bestCS->picture->brickMap->getBrickIdxRsMap(bestCS->area.lumaPos()), "Wrong tile index!");
-#endif
     if (bestCS->cus[0]->predMode == MODE_PLT)
     {
       for (int i = compBegin; i < (compBegin + numComp); i++)
@@ -1684,19 +1680,6 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
   // The exception is each slice / slice-segment must have at least one CTU.
   if (bestCS->cost != MAX_DOUBLE)
   {
-#if !JVET_P1004_REMOVE_BRICKS
-    const BrickMap& tileMap = *tempCS->picture->brickMap;
-    const uint32_t CtuAddr  = CU::getCtuAddr( *bestCS->getCU( partitioner.chType ) );
-    const bool isEndOfSlice = slice.getSliceMode() == FIXED_NUMBER_OF_BYTES
-                              && ((slice.getSliceBits() + CS::getEstBits(*bestCS)) > slice.getSliceArgument() << 3)
-                              && CtuAddr != tileMap.getCtuBsToRsAddrMap(slice.getSliceCurStartCtuTsAddr());
-
-    if(isEndOfSlice)
-    {
-      bestCS->cost = MAX_DOUBLE;
-      bestCS->costDbOffset = 0;
-    }
-#endif
   }
   else
   {
@@ -1834,11 +1817,7 @@ void EncCu::xCheckRDCostIntra( CodingStructure *&tempCS, CodingStructure *&bestC
 
           partitioner.setCUData( cu );
           cu.slice            = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
           cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-          cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
           cu.skip             = false;
           cu.mmvdSkip = false;
           cu.predMode         = MODE_INTRA;
@@ -2183,11 +2162,7 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   CodingUnit &cu = tempCS->addCU(CS::getArea(*tempCS, tempCS->area, partitioner.chType), partitioner.chType);
   partitioner.setCUData(cu);
   cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
   cu.tileIdx = tempCS->pps->getTileIdx(tempCS->area.lumaPos());
-#else
-  cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap(tempCS->area.lumaPos());
-#endif
   cu.skip = false;
   cu.mmvdSkip = false;
   cu.predMode = MODE_PLT;
@@ -2379,11 +2354,7 @@ void EncCu::xCheckRDCostHashInter( CodingStructure *&tempCS, CodingStructure *&b
 
   partitioner.setCUData(cu);
   cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
   cu.tileIdx = tempCS->pps->getTileIdx(tempCS->area.lumaPos());
-#else
-  cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap(tempCS->area.lumaPos());
-#endif
   cu.skip = false;
   cu.predMode = MODE_INTER;
   cu.chromaQpAdj = m_cuChromaQpOffsetIdxPlus1;
@@ -2443,11 +2414,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
     cu.cs       = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
     cu.tileIdx  = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-    cu.tileIdx  = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
 
     PredictionUnit pu( tempCS->area );
     pu.cu = &cu;
@@ -2568,11 +2535,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
       const double sqrtLambdaForFirstPassIntra = m_pcRdCost->getMotionLambda( ) * FRAC_BITS_SCALE;
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
       cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-      cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
       cu.skip             = false;
       cu.mmvdSkip = false;
       cu.triangle         = false;
@@ -2845,11 +2808,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       partitioner.setCUData( cu );
       cu.slice            = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
       cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-      cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
       cu.skip             = false;
       cu.mmvdSkip = false;
       cu.triangle         = false;
@@ -3072,11 +3031,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     cu.cs       = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice    = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
     cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-    cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
     cu.triangle = true;
     cu.mmvdSkip = false;
     cu.BcwIdx   = BCW_DEFAULT;
@@ -3114,11 +3069,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
     partitioner.setCUData( cu );
     cu.slice            = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
     cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-    cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
     cu.skip             = false;
     cu.predMode         = MODE_INTER;
     cu.chromaQpAdj      = m_cuChromaQpOffsetIdxPlus1;
@@ -3224,11 +3175,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 
         partitioner.setCUData(cu);
         cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
         cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-        cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
         cu.skip = false;
         cu.predMode = MODE_INTER;
         cu.chromaQpAdj = m_cuChromaQpOffsetIdxPlus1;
@@ -3303,11 +3250,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
     cu.cs = tempCS;
     cu.predMode = MODE_INTER;
     cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
     cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-    cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
     cu.mmvdSkip = false;
 
     PredictionUnit pu( tempCS->area );
@@ -3362,11 +3305,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
       partitioner.setCUData( cu );
       cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
       cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-      cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
       cu.skip = false;
       cu.affine = true;
       cu.predMode = MODE_INTER;
@@ -3471,11 +3410,7 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
       partitioner.setCUData( cu );
       cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
       cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-      cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
       cu.skip = false;
       cu.affine = true;
       cu.predMode = MODE_INTER;
@@ -3597,11 +3532,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
     cu.cs = tempCS;
     cu.predMode = MODE_IBC;
     cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
     cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-    cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
     PredictionUnit pu(tempCS->area);
     pu.cu = &cu;
     pu.cs = tempCS;
@@ -3640,11 +3571,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
       partitioner.setCUData(cu);
       cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
       cu.tileIdx = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-      cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
       cu.skip = false;
       cu.predMode = MODE_IBC;
       cu.chromaQpAdj = m_cuChromaQpOffsetIdxPlus1;
@@ -3762,11 +3689,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
             partitioner.setCUData(cu);
             cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
             cu.tileIdx = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-            cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
             cu.skip = false;
             cu.predMode = MODE_IBC;
             cu.chromaQpAdj = m_cuChromaQpOffsetIdxPlus1;
@@ -3849,11 +3772,7 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
 
     partitioner.setCUData(cu);
     cu.slice = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
     cu.tileIdx = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-    cu.tileIdx = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
     cu.skip = false;
     cu.predMode = MODE_IBC;
     cu.chromaQpAdj = m_cuChromaQpOffsetIdxPlus1;
@@ -3990,11 +3909,7 @@ void EncCu::xCheckRDCostInter( CodingStructure *&tempCS, CodingStructure *&bestC
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
   cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-  cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
   cu.skip             = false;
   cu.mmvdSkip = false;
 //cu.affine
@@ -4130,11 +4045,7 @@ bool EncCu::xCheckRDCostInterIMV(CodingStructure *&tempCS, CodingStructure *&bes
 
   partitioner.setCUData( cu );
   cu.slice            = tempCS->slice;
-#if JVET_P1004_REMOVE_BRICKS
   cu.tileIdx          = tempCS->pps->getTileIdx( tempCS->area.lumaPos() );
-#else
-  cu.tileIdx          = tempCS->picture->brickMap->getBrickIdxRsMap( tempCS->area.lumaPos() );
-#endif
   cu.skip             = false;
   cu.mmvdSkip = false;
 //cu.affine

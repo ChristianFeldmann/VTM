@@ -100,28 +100,14 @@ Slice::Slice()
 #endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
-#if !JVET_P1004_REMOVE_BRICKS
-, m_sliceMode                     ( NO_SLICES )
-, m_sliceArgument                 ( 0 )
-, m_sliceCurStartCtuTsAddr        ( 0 )
-, m_sliceCurEndCtuTsAddr          ( 0 )
-#endif
 , m_independentSliceIdx           ( 0 )
 , m_nextSlice                     ( false )
 , m_sliceBits                     ( 0 )
 , m_bFinalized                    ( false )
-#if !JVET_P1004_REMOVE_BRICKS
-, m_sliceCurStartBrickIdx         ( 0 )
-, m_sliceCurEndBrickIdx           ( 0 )
-, m_sliceNumBricks                ( 0 )
-, m_sliceIdx                      ( 0 )
-#endif
 , m_bTestWeightPred               ( false )
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )
-#if JVET_P1004_REMOVE_BRICKS
 , m_numEntryPoints                ( 0 )
-#endif
 , m_cabacInitFlag                 ( false )
  , m_sliceSubPicId               ( 0 )
 #if !JVET_P1006_PICTURE_HEADER
@@ -190,17 +176,13 @@ Slice::Slice()
   }
 
   memset(m_alfApss, 0, sizeof(m_alfApss));
-#if JVET_P1004_REMOVE_BRICKS
 
   m_sliceMap.initSliceMap();
-#endif
 }
 
 Slice::~Slice()
 {
-#if JVET_P1004_REMOVE_BRICKS
   m_sliceMap.initSliceMap();
-#endif
 }
 
 
@@ -296,7 +278,6 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
 }
 
 #endif
-#if JVET_P1004_REMOVE_BRICKS
 void  Slice::setNumEntryPoints( const PPS *pps ) 
 {
   uint32_t ctuAddr, ctuX, ctuY;
@@ -316,7 +297,6 @@ void  Slice::setNumEntryPoints( const PPS *pps )
   }
 }
 
-#endif
 void Slice::setDefaultClpRng( const SPS& sps )
 {
   m_clpRngs.comp[COMPONENT_Y].min = m_clpRngs.comp[COMPONENT_Cb].min  = m_clpRngs.comp[COMPONENT_Cr].min = 0;
@@ -856,14 +836,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_uiTLayer                      = pSrc->m_uiTLayer;
   m_bTLayerSwitchingFlag          = pSrc->m_bTLayerSwitchingFlag;
 
-#if JVET_P1004_REMOVE_BRICKS
   m_sliceMap                      = pSrc->m_sliceMap;
-#else
-  m_sliceMode                     = pSrc->m_sliceMode;
-  m_sliceArgument                 = pSrc->m_sliceArgument;
-  m_sliceCurStartCtuTsAddr        = pSrc->m_sliceCurStartCtuTsAddr;
-  m_sliceCurEndCtuTsAddr          = pSrc->m_sliceCurEndCtuTsAddr;
-#endif
   m_independentSliceIdx           = pSrc->m_independentSliceIdx;
   m_nextSlice                     = pSrc->m_nextSlice;
   m_clpRngs                       = pSrc->m_clpRngs;
@@ -2140,7 +2113,6 @@ void ChromaQpMappingTable::derivedChromaQPMappingTables()
   }
 }
 
-#if JVET_P1004_REMOVE_BRICKS
 SliceMap::SliceMap()
 : m_sliceID              (0)
 , m_numTilesInSlice      (0)
@@ -2168,7 +2140,6 @@ RectSlice::~RectSlice()
 {
 }
 
-#endif
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
 // m_log2SaoOffsetScale initialized below
@@ -2203,7 +2174,6 @@ PPS::PPS()
 , m_subPicIdSignallingPresentFlag    (0)
 , m_subPicIdLen                      (16)
 #endif
-#if JVET_P1004_REMOVE_BRICKS
 , m_noPicPartitionFlag               (1)
 , m_log2CtuSize                      (0)
 , m_ctuSize                          (0)
@@ -2217,26 +2187,8 @@ PPS::PPS()
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
 , m_loopFilterAcrossSlicesEnabledFlag(0)
-#endif
 , m_log2MaxTransformSkipBlockSize    (2)
 , m_entropyCodingSyncEnabledFlag     (false)
-#if !JVET_P1004_REMOVE_BRICKS
-, m_loopFilterAcrossBricksEnabledFlag (true)
-, m_uniformTileSpacingFlag           (false)
-, m_numTileColumnsMinus1             (0)
-, m_numTileRowsMinus1                (0)
-, m_singleTileInPicFlag              (true)
-, m_tileColsWidthMinus1              (0)
-, m_tileRowsHeightMinus1             (0)
-, m_brickSplittingPresentFlag        (false)
-, m_singleBrickPerSliceFlag          (true)
-, m_rectSliceFlag                    (true)
-, m_numSlicesInPicMinus1             (0)
-, m_numTilesInPic                    (1)
-, m_numBricksInPic                   (1)
-, m_signalledSliceIdFlag             (false)
-,m_signalledSliceIdLengthMinus1      (0)
-#endif
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
 , m_PPSRefPicListSPSIdc0             (0)
@@ -2256,9 +2208,6 @@ PPS::PPS()
 , m_pictureHeaderExtensionPresentFlag(0)
 #endif
 , m_sliceHeaderExtensionPresentFlag  (false)
-#if !JVET_P1004_REMOVE_BRICKS
-, m_loopFilterAcrossSlicesEnabledFlag(false)
-#endif
 , m_listsModificationPresentFlag     (0)
 #if !JVET_P1006_PICTURE_HEADER
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
@@ -2277,7 +2226,6 @@ PPS::PPS()
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
 #endif
-#if JVET_P1004_REMOVE_BRICKS
   m_tileColWidth.clear();
   m_tileRowHeight.clear();
   m_tileColBd.clear();
@@ -2287,12 +2235,10 @@ PPS::PPS()
   m_ctuToSubPicIdx.clear();
   m_rectSlices.clear();
   m_sliceMap.clear();
-#endif
 }
 
 PPS::~PPS()
 {
-#if JVET_P1004_REMOVE_BRICKS
   m_tileColWidth.clear();
   m_tileRowHeight.clear();
   m_tileColBd.clear();
@@ -2303,11 +2249,9 @@ PPS::~PPS()
   m_rectSlices.clear();
   m_sliceMap.clear();
 
-#endif
   delete pcv;
 }
 
-#if JVET_P1004_REMOVE_BRICKS
 /**
  - reset tile and slice parameters and lists
  */
@@ -2563,7 +2507,6 @@ void PPS::checkSliceMap()
   }
 }
 
-#endif
 APS::APS()
 : m_APSId(0)
 , m_temporalId( 0 )

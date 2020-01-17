@@ -133,29 +133,6 @@ struct RPLEntry
 
 std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry);     //input
 
-#if !JVET_P1004_REMOVE_BRICKS
-struct BrickSplit
-{
-  int     m_tileIdx;
-  bool    m_uniformSplit;
-  int     m_uniformHeight;
-  int     m_numSplits;
-  int     m_brickHeight[MAX_NUM_BRICKS_PER_TILE];
-  BrickSplit()
-    : m_tileIdx(-1)
-    , m_uniformSplit(true)
-    , m_uniformHeight(0)
-    , m_numSplits(0)
-  {
-    ::memset( m_brickHeight, 0, sizeof(m_brickHeight) );
-  }
-};
-
-typedef std::map<int, BrickSplit> BrickSplitMap;
-
-std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry);     //input
-
-#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -504,7 +481,6 @@ protected:
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
   bool      m_gopBasedTemporalFilterEnabled;
-#if JVET_P1004_REMOVE_BRICKS
   bool      m_noPicPartitionFlag;                             ///< no picture partitioning flag (single tile, single slice)
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
@@ -515,42 +491,12 @@ protected:
   std::vector<uint32_t> m_rasterSliceSize;                    ///< raster-scan slice sizes in units of tiles
   bool      m_bLFCrossTileBoundaryFlag;                       ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
   bool      m_bLFCrossSliceBoundaryFlag;                      ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
-#else
-  //====== Slice ========
-  SliceConstraint m_sliceMode;
-  int       m_sliceArgument;
-  //====== Dependent Slice ========
-  SliceConstraint m_sliceSegmentMode;
-  int       m_sliceSegmentArgument;
-  bool      m_bLFCrossSliceBoundaryFlag;
-#endif
 
   bool      m_intraSmoothingDisabledFlag;
-#if !JVET_P1004_REMOVE_BRICKS
-  bool      m_loopFilterAcrossBricksEnabledFlag;
-  bool      m_tileUniformSpacingFlag;
-  int       m_iNumColumnsMinus1;
-  int       m_iNumRowsMinus1;
-  int       m_uniformTileColsWidthMinus1;
-  int       m_uniformTileRowHeightMinus1;
-  std::vector<int> m_tileColumnWidth;
-  std::vector<int> m_tileRowHeight;
-#endif
   //====== Sub-picture and Slices ========
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
 
-#if !JVET_P1004_REMOVE_BRICKS
-  bool      m_rectSliceFlag;
-  int       m_numSlicesInPicMinus1;
-  std::vector<int> m_topLeftBrickIdx;
-  std::vector<int> m_bottomRightBrickIdx;
-  bool      m_loopFilterAcrossSlicesEnabledFlag;
-  bool      m_signalledSliceIdFlag;
-  int       m_signalledSliceIdLengthMinus1;
-  std::vector<int> m_sliceId;
-  BrickSplitMap m_brickSplitMap;
-#endif
 
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
@@ -879,10 +825,6 @@ protected:
 
 public:
   EncCfg()
-#if !JVET_P1004_REMOVE_BRICKS
-  : m_tileColumnWidth()
-  , m_tileRowHeight()
-#endif
   {
   }
 
@@ -1510,7 +1452,6 @@ public:
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }
   bool      getFastDeltaQp                  () const { return m_bFastDeltaQP; }
 
-#if JVET_P1004_REMOVE_BRICKS
   //====== Tiles and Slices ========
   void      setNoPicPartitionFlag( bool b )                                { m_noPicPartitionFlag = b;              }
   bool      getNoPicPartitionFlag()                                        { return m_noPicPartitionFlag;           }
@@ -1532,20 +1473,6 @@ public:
   bool      getLFCrossTileBoundaryFlag()                                   { return m_bLFCrossTileBoundaryFlag;     }
   void      setLFCrossSliceBoundaryFlag( bool b )                          { m_bLFCrossSliceBoundaryFlag = b;       }
   bool      getLFCrossSliceBoundaryFlag()                                  { return m_bLFCrossSliceBoundaryFlag;    }
-#else
-  //====== Slice ========
-  void  setSliceMode                   ( SliceConstraint  i )        { m_sliceMode = i;              }
-  void  setSliceArgument               ( int  i )                    { m_sliceArgument = i;          }
-  SliceConstraint getSliceMode         () const                      { return m_sliceMode;           }
-  int   getSliceArgument               ()                            { return m_sliceArgument;       }
-  //====== Dependent Slice ========
-  void  setSliceSegmentMode            ( SliceConstraint  i )        { m_sliceSegmentMode = i;       }
-  void  setSliceSegmentArgument        ( int  i )                    { m_sliceSegmentArgument = i;   }
-  SliceConstraint getSliceSegmentMode  () const                      { return m_sliceSegmentMode;    }
-  int   getSliceSegmentArgument        ()                            { return m_sliceSegmentArgument;}
-  void      setLFCrossSliceBoundaryFlag     ( bool   bValue  )       { m_bLFCrossSliceBoundaryFlag = bValue; }
-  bool      getLFCrossSliceBoundaryFlag     ()                       { return m_bLFCrossSliceBoundaryFlag;   }
-#endif
   //====== Sub-picture and Slices ========
   void      setSingleSlicePerSubPicFlagFlag( bool b )                { m_singleSlicePerSubPicFlag = b;    }
   bool      getSingleSlicePerSubPicFlagFlag( )                       { return m_singleSlicePerSubPicFlag;    }
@@ -1565,45 +1492,6 @@ public:
 
   void  setSaoGreedyMergeEnc           (bool val)                    { m_saoGreedyMergeEnc = val; }
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
-#if !JVET_P1004_REMOVE_BRICKS
-  void  setLFCrossTileBoundaryFlag               ( bool   val  )     { m_loopFilterAcrossBricksEnabledFlag = val; }
-  bool  getLFCrossTileBoundaryFlag               ()                  { return m_loopFilterAcrossBricksEnabledFlag;   }
-  void  setTileUniformSpacingFlag      ( bool b )                    { m_tileUniformSpacingFlag = b; }
-  bool  getTileUniformSpacingFlag      ()                            { return m_tileUniformSpacingFlag; }
-  void  setNumColumnsMinus1            ( int i )                     { m_iNumColumnsMinus1 = i; }
-  int   getNumColumnsMinus1            ()                            { return m_iNumColumnsMinus1; }
-  void  setUniformTileColsWidthMinus1  (int i)                       { m_uniformTileColsWidthMinus1 = i; }
-  int   getUniformTileColsWidthMinus1  ()                            { return m_uniformTileColsWidthMinus1; }
-  void  setUniformTileRowHeightMinus1  (int i)                       { m_uniformTileRowHeightMinus1 = i; }
-  int   getUniformTileRowHeightMinus1  ()                            { return m_uniformTileRowHeightMinus1; }
-  void  setColumnWidth ( const std::vector<int>& columnWidth )       { m_tileColumnWidth = columnWidth; }
-  uint32_t  getColumnWidth                 ( uint32_t columnIdx )            { return m_tileColumnWidth[columnIdx]; }
-  void  setNumRowsMinus1               ( int i )                     { m_iNumRowsMinus1 = i; }
-  int   getNumRowsMinus1               ()                            { return m_iNumRowsMinus1; }
-  void  setRowHeight ( const std::vector<int>& rowHeight)            { m_tileRowHeight = rowHeight; }
-  uint32_t  getRowHeight                   ( uint32_t rowIdx )               { return m_tileRowHeight[rowIdx]; }
-
-  bool  getRectSliceFlag() const                                     { return m_rectSliceFlag; }
-  void  setRectSliceFlag(bool val)                                   { m_rectSliceFlag = val; }
-  int   getNumSlicesInPicMinus1() const                              { return m_numSlicesInPicMinus1; }
-  void  setNumSlicesInPicMinus1(int val)                             { m_numSlicesInPicMinus1 = val; }
-  int   getTopLeftBrickIdx(uint32_t columnIdx) const                 { return  m_topLeftBrickIdx[columnIdx]; }
-  void  setTopLeftBrickIdx(const std::vector<int>& val)              { m_topLeftBrickIdx = val; }
-  int   getBottomeRightBrickIdx(uint32_t columnIdx) const            { return  m_bottomRightBrickIdx[columnIdx]; }
-  void  setBottomRightBrickIdx(const std::vector<int>& val)          { m_bottomRightBrickIdx = val; }
-  bool  getLoopFilterAcrossSlicesEnabledFlag() const                 { return m_loopFilterAcrossSlicesEnabledFlag; }
-  void  setLoopFilterAcrossSlicesEnabledFlag(bool val)               { m_loopFilterAcrossSlicesEnabledFlag = val; }
-  bool  getSignalledSliceIdFlag() const                              { return m_signalledSliceIdFlag; }
-  void  setSignalledSliceIdFlag(bool val)                            { m_signalledSliceIdFlag = val; }
-  int   getSignalledSliceIdLengthMinus1() const                      { return m_signalledSliceIdLengthMinus1; }
-  void  setSignalledSliceIdLengthMinus1(int val)                     { m_signalledSliceIdLengthMinus1 = val; }
-  int   getSliceId(uint32_t columnIdx) const                         { return  m_sliceId[columnIdx]; }
-  void  setSliceId(const std::vector<int>& val)                      { m_sliceId = val; }
-  BrickSplitMap getBrickSplitMap() const                             { return  m_brickSplitMap; }
-  void  setBrickSplitMap(const BrickSplitMap& val)                   { m_brickSplitMap = val; }
-
-  void  xCheckGSParameters();
-#endif
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }

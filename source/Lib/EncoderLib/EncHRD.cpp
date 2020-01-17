@@ -57,11 +57,7 @@ int EncHRD::xCalcScale(int x)
 
 void EncHRD::initHRDParameters (EncCfg* encCfg)
 {
-#if JVET_P1004_REMOVE_BRICKS
   bool useSubCpbParams = encCfg->getNoPicPartitionFlag() == false;
-#else
-  bool useSubCpbParams = (encCfg->getSliceMode() > 0) || (encCfg->getSliceSegmentMode() > 0);
-#endif
   int  bitRate         = encCfg->getTargetBitrate();
 # if U0132_TARGET_BITS_SATURATION
   int cpbSize          = encCfg->getCpbSize();

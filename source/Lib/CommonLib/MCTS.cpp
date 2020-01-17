@@ -90,7 +90,6 @@ void MCTSHelper::clipMvToArea( Mv& rcMv, const Area& block, const Area& clipArea
 
 Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
 {
-#if JVET_P1004_REMOVE_BRICKS
   const PPS *pps = cs->pps;
   const int  maxCUWidth  = cs->pcv->maxCUWidth;
   const int  maxCUHeight = cs->pcv->maxCUHeight;
@@ -108,27 +107,6 @@ Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
   const int tileLeftTopPelPosY = maxCUHeight * tileYPosInCtus;
   const int tileRightBottomPelPosX = std::min<int>( ( ( tileWidthtInCtus + tileXPosInCtus ) * maxCUWidth ), (int)cs->picture->lwidth() ) - 1;
   const int tileRightBottomPelPosY = std::min<int>( ( ( tileHeightInCtus + tileYPosInCtus ) * maxCUHeight ), (int)cs->picture->lheight() ) - 1;
-#else
-  const BrickMap* tileMap = cs->picture->brickMap;
-  const int       tileIdx = tileMap->getBrickIdxRsMap( ctuAddr );
-  const Brick&  currentTile = tileMap->bricks[tileIdx];
-
-  const int      frameWidthInCtus = cs->pcv->widthInCtus;
-  const int  firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
-
-  const int tileXPosInCtus = firstCtuRsAddrOfTile % frameWidthInCtus;
-  const int tileYPosInCtus = firstCtuRsAddrOfTile / frameWidthInCtus;
-  const int tileWidthtInCtus = currentTile.getWidthInCtus();
-  const int tileHeightInCtus = currentTile.getHeightInCtus();
-
-  const int  maxCUWidth  = cs->pcv->maxCUWidth;
-  const int  maxCUHeight = cs->pcv->maxCUHeight;
-
-  const int tileLeftTopPelPosX = maxCUWidth  * tileXPosInCtus;
-  const int tileLeftTopPelPosY = maxCUHeight * tileYPosInCtus;
-  const int tileRightBottomPelPosX = std::min<int>( ( ( tileWidthtInCtus + tileXPosInCtus ) * maxCUWidth ), (int)cs->picture->lwidth() ) - 1;
-  const int tileRightBottomPelPosY = std::min<int>( ( ( tileHeightInCtus + tileYPosInCtus ) * maxCUHeight ), (int)cs->picture->lheight() ) - 1;
-#endif
 
   return Area( tileLeftTopPelPosX, tileLeftTopPelPosY, tileRightBottomPelPosX - tileLeftTopPelPosX + 1, tileRightBottomPelPosY - tileLeftTopPelPosY + 1 );
 }

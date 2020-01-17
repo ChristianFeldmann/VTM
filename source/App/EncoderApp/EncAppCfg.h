@@ -199,10 +199,6 @@ protected:
   RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
   bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
-#if !JVET_P1004_REMOVE_BRICKS
-  BrickSplit    m_brickSplits[MAX_TILES];
-  BrickSplitMap m_brickSplitMap;
-#endif
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
@@ -456,7 +452,6 @@ protected:
   bool      m_useFastDecisionForMerge;                        ///< flag for using Fast Decision Merge RD-Cost
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
-#if JVET_P1004_REMOVE_BRICKS
   bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
@@ -472,35 +467,10 @@ protected:
   std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
   uint32_t  m_numTileCols;                                    ///< derived number of tile columns
   uint32_t  m_numTileRows;                                    ///< derived number of tile rows
-#else
-  SliceConstraint m_sliceMode;
-  int             m_sliceArgument;                            ///< argument according to selected slice mode
-
-  bool      m_bLFCrossSliceBoundaryFlag;  ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
-
-  bool      m_bLFCrossTileBoundaryFlag;   ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
-  bool      m_tileUniformSpacingFlag;
-  int       m_numTileColumnsMinus1;
-  int       m_numTileRowsMinus1;
-  int       m_uniformTileColsWidthMinus1;
-  int       m_uniformTileRowHeightMinus1;
-  std::vector<int> m_tileColumnWidth;
-  std::vector<int> m_tileRowHeight;
-#endif
   bool      m_subPicPartitionFlag;
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
 
-#if !JVET_P1004_REMOVE_BRICKS
-  bool      m_rectSliceFlag;
-  int       m_numSlicesInPicMinus1;
-  std::vector<int> m_topLeftBrickIdx;
-  std::vector<int> m_bottomRightBrickIdx;
-  bool      m_loopFilterAcrossSlicesEnabledFlag;
-  bool      m_signalledSliceIdFlag;
-  int       m_signalledSliceIdLengthMinus1;
-  std::vector<int> m_sliceId;
-#endif
 
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;

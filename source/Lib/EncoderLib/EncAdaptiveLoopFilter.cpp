@@ -817,11 +817,7 @@ double EncAdaptiveLoopFilter::deriveCtbAlfEnableFlags( CodingStructure& cs, cons
 
   setEnableFlag(m_alfParamTemp, channel, true);
 #if ENABLE_QPA
-#if JVET_P1004_REMOVE_BRICKS
   CHECK ((chromaWeight > 0.0) && (cs.slice->getFirstCtuRsAddrInSlice() != 0), "incompatible start CTU address, must be 0");
-#else
-  CHECK ((chromaWeight > 0.0) && (cs.slice->getSliceCurStartCtuTsAddr() != 0), "incompatible start CTU address, must be 0");
-#endif
 #endif
 
   reconstructCoeff(m_alfParamTemp, channel, true, isLuma(channel));

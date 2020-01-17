@@ -60,7 +60,6 @@
 
 
 
-#define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks
 
 #define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
 
@@ -845,18 +844,6 @@ enum ScalingList1dStartIdx
   SCALING_LIST_1D_START_16x16  = 14,
   SCALING_LIST_1D_START_32x32  = 20,
   SCALING_LIST_1D_START_64x64  = 26,
-};
-#endif
-#if !JVET_P1004_REMOVE_BRICKS
-// Slice / Slice segment encoding modes
-enum SliceConstraint
-{
-  NO_SLICES              = 0,          ///< don't use slices / slice segments
-  FIXED_NUMBER_OF_CTU    = 1,          ///< Limit maximum number of largest coding tree units in a slice / slice segments
-  FIXED_NUMBER_OF_BYTES  = 2,          ///< Limit maximum number of bytes in a slice / slice segment
-  FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
-  SINGLE_BRICK_PER_SLICE = 4,          ///< each brick is coded as separate NAL unit (slice)
-  NUMBER_OF_SLICE_CONSTRAINT_MODES = 5
 };
 #endif
 

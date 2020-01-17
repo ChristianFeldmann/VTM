@@ -480,7 +480,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
 #endif
 
-#if JVET_P1004_REMOVE_BRICKS
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
   {
@@ -579,7 +578,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
 
-#endif
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -696,269 +694,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG( uiCode, "weighted_bipred_flag" );         // Use of Bi-Directional Weighting Prediction (B_SLICE)
   pcPPS->setWPBiPred( uiCode==1 );
 
-#if !JVET_P1004_REMOVE_BRICKS
-  READ_FLAG( uiCode, "single_tile_in_pic_flag" );                 pcPPS->setSingleTileInPicFlag(uiCode == 1);
-
-  if(!pcPPS->getSingleTileInPicFlag())
-  {
-    READ_FLAG ( uiCode, "uniform_tile_spacing_flag" );            pcPPS->setUniformTileSpacingFlag( uiCode == 1 );
-    if (pcPPS->getUniformTileSpacingFlag())
-    {
-      READ_UVLC ( uiCode, "tile_cols_width_minus1" );               pcPPS->setTileColsWidthMinus1( uiCode );
-      READ_UVLC ( uiCode, "tile_rows_height_minus1" );              pcPPS->setTileRowsHeightMinus1( uiCode );
-    }
-    else
-    {
-      READ_UVLC ( uiCode, "num_tile_columns_minus1" );                pcPPS->setNumTileColumnsMinus1( uiCode );
-      READ_UVLC ( uiCode, "num_tile_rows_minus1" );                   pcPPS->setNumTileRowsMinus1( uiCode );
-
-      const int tileColumnsMinus1 = pcPPS->getNumTileColumnsMinus1();
-      const int tileRowsMinus1    = pcPPS->getNumTileRowsMinus1();
-      CHECK( ((tileColumnsMinus1 + 1) * (tileRowsMinus1 + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
-
-      if (tileColumnsMinus1 > 0)
-      {
-        std::vector<int> columnWidth(tileColumnsMinus1);
-        for(int i = 0; i < tileColumnsMinus1; i++)
-        {
-          READ_UVLC( uiCode, "tile_column_width_minus1" );
-          columnWidth[i] = uiCode+1;
-        }
-        pcPPS->setTileColumnWidth(columnWidth);
-      }
-
-      if (tileRowsMinus1 > 0)
-      {
-        std::vector<int> rowHeight (tileRowsMinus1);
-        for(int i = 0; i < tileRowsMinus1; i++)
-        {
-          READ_UVLC( uiCode, "tile_row_height_minus1" );
-          rowHeight[i] = uiCode + 1;
-        }
-        pcPPS->setTileRowHeight(rowHeight);
-      }
-      CHECK( ( tileColumnsMinus1 + tileRowsMinus1 ) == 0, "Invalid tile configuration" );
-    }
-
-    READ_FLAG( uiCode, "brick_splitting_present_flag" );                 pcPPS->setBrickSplittingPresentFlag(uiCode == 1);
-
-    int numTilesInPic = 0;
-    if (pcPPS->getUniformTileSpacingFlag())
-    {
-      if (pcPPS->getBrickSplittingPresentFlag())
-      {
-        READ_UVLC(uiCode, "num_tiles_in_pic_minus1");
-        numTilesInPic = uiCode + 1;
-      }
-    }
-    else
-    {
-      numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
-    }
-
-    pcPPS->setNumTilesInPic(numTilesInPic);
-
-    if (pcPPS->getBrickSplittingPresentFlag())
-    {
-      std::vector<bool> brickSplitFlag (numTilesInPic);
-      std::vector<bool> uniformBrickSpacingFlag (numTilesInPic);
-      std::vector<int>  brickHeightMinus1 (numTilesInPic);
-      std::vector<int> numBrickRowsMinus2(numTilesInPic);
-      std::vector<std::vector<int>>  brickRowHeightMinus1 (numTilesInPic);
-      int m_maxCUHeight = parameterSetManager->getSPS(pcPPS->getSPSId())->getMaxCUHeight();
-      int m_maxCUWidth = parameterSetManager->getSPS(pcPPS->getSPSId())->getMaxCUWidth();
-      int picHeightInCtus = (pcPPS->getPicHeightInLumaSamples() + m_maxCUHeight - 1) / m_maxCUHeight;
-      int picWidthInCtus = (pcPPS->getPicWidthInLumaSamples() + m_maxCUWidth - 1) / m_maxCUWidth;
-
-      if (pcPPS->getUniformTileSpacingFlag())
-      {
-        int numTileRow = 1;
-        int lastTileRowHeight = picHeightInCtus;
-        while (lastTileRowHeight > (pcPPS->getTileRowsHeightMinus1() + 1))
-        {
-          numTileRow++;
-          lastTileRowHeight = lastTileRowHeight - (pcPPS->getTileRowsHeightMinus1() + 1);
-        }
-        int numTileColumn = 1;
-        int lastTileColumnWidth = picWidthInCtus;
-        while (lastTileColumnWidth > (pcPPS->getTileColsWidthMinus1() + 1))
-        {
-          numTileColumn++;
-          lastTileColumnWidth = lastTileColumnWidth - (pcPPS->getTileColsWidthMinus1() + 1);
-        }
-
-        std::vector<int> tileHeight(numTileRow * numTileColumn);
-        for (int tileIdx = 0; tileIdx < (numTileRow - 1) * numTileColumn; tileIdx++)
-        {
-          tileHeight[tileIdx] = pcPPS->getTileRowsHeightMinus1() + 1;
-        }
-        for (int tileIdx = (numTileRow - 1) * numTileColumn; tileIdx < numTileRow * numTileColumn; tileIdx++)
-        {
-          tileHeight[tileIdx] = lastTileRowHeight;
-        }
-        pcPPS->setTileHeight(tileHeight);
-      }
-      else
-      {
-        int tileIdx = 0;
-        int lastTileRowHeight = picHeightInCtus;
-        std::vector<int> tileHeight(numTilesInPic);
-        for (int row = 0; row < pcPPS->getNumTileRowsMinus1(); row++)
-        {
-          for (int col = 0; col <= pcPPS->getNumTileColumnsMinus1(); col++)
-          {
-            tileHeight[tileIdx++] = pcPPS->getTileRowHeight(row);
-          }
-          lastTileRowHeight = lastTileRowHeight - pcPPS->getTileRowHeight(row);
-        }
-        for (int col = 0; col <= pcPPS->getNumTileColumnsMinus1(); col++)
-        {
-          tileHeight[tileIdx++] = lastTileRowHeight;
-        }
-        pcPPS->setTileHeight(tileHeight);
-      }
-      for( int i = 0; i < numTilesInPic; i++ )
-      {
-        if (pcPPS->getTileHeight(i) > 1)
-        {
-          READ_FLAG(uiCode, "brick_split_flag [i]");
-          brickSplitFlag[i] = (uiCode == 1);
-        }
-        else
-        {
-          brickSplitFlag[i] = 0;
-        }
-
-        if( brickSplitFlag[i] )
-        {
-          if (pcPPS->getTileHeight(i) > 2)
-          {
-            READ_FLAG(uiCode, "uniform_brick_spacing_flag [i]");
-            uniformBrickSpacingFlag[i] = (uiCode == 1);
-          }
-          else
-          {
-            uniformBrickSpacingFlag[i] = 1;
-          }
-          if( uniformBrickSpacingFlag[i] )
-          {
-            READ_UVLC( uiCode, "brick_height_minus1" );
-            brickHeightMinus1[i] = uiCode;
-          }
-          else
-          {
-            READ_UVLC(uiCode, "num_brick_rows_minus2 [i]");
-            numBrickRowsMinus2[i] = uiCode;
-            for (int j = 0; j < numBrickRowsMinus2[i] + 1; j++)
-            {
-              brickRowHeightMinus1[i].resize(numBrickRowsMinus2[i] + 1);
-              READ_UVLC(uiCode, "brick_row_height_minus1 [i][j]");
-              brickRowHeightMinus1[i][j] = uiCode;
-            }
-          }
-        }
-      }
-      pcPPS->setBrickSplitFlag(brickSplitFlag);
-      pcPPS->setUniformBrickSpacingFlag(uniformBrickSpacingFlag);
-      pcPPS->setBrickHeightMinus1(brickHeightMinus1);
-      pcPPS->setNumBrickRowsMinus2(numBrickRowsMinus2);
-      pcPPS->setBrickRowHeightMinus1(brickRowHeightMinus1);
-    }
-    READ_FLAG (uiCode, "single_brick_per_slice_flag" );         pcPPS->setSingleBrickPerSliceFlag(uiCode == 1);
-    if (!pcPPS->getSingleBrickPerSliceFlag())
-    {
-      READ_FLAG( uiCode, "rect_slice_flag" );                  pcPPS->setRectSliceFlag(uiCode == 1);
-    }
-    else
-    {
-      pcPPS->setRectSliceFlag(true);
-    }
-
-    if(pcPPS->getRectSliceFlag() && !pcPPS->getSingleBrickPerSliceFlag())
-    {
-      READ_UVLC (uiCode, "num_slices_in_pic_minus1" );          pcPPS->setNumSlicesInPicMinus1(uiCode);
-      const uint32_t numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
-      uint32_t codeLen;
-      READ_UVLC(codeLen, "bottom_right_brick_idx_length_minus1 ");
-      if (numSlicesInPic > 0)
-      {
-        std::vector<int> bottomRightBrickIdxDelta(numSlicesInPic);
-        for (uint32_t i = 0; i < numSlicesInPic; i++)
-        {
-          READ_CODE(codeLen, uiCode, "bottom_right_brick_idx_delta");
-          int delta = uiCode;
-          READ_FLAG(uiCode, "brick_idx_delta_sign_flag");
-          int sign = uiCode;
-          if (sign == 0)
-          {
-            delta = -delta;
-          }
-          bottomRightBrickIdxDelta[i] = delta;
-        }
-        pcPPS->setBottomRightBrickIdxDelta(bottomRightBrickIdxDelta);
-      }
-    }
-    if (pcPPS->getRectSliceFlag() && pcPPS->getSingleBrickPerSliceFlag())
-    {
-      std::vector<int> bottomRightBrickIdxDelta(numTilesInPic);  //TODO: this should be numBricksInPic. Fix it when the bricks codes have been updated
-      for (uint32_t i = 0; i < numTilesInPic; i++)
-      {
-        bottomRightBrickIdxDelta[i] = i == 0 ? 0 : 1;
-      }
-      pcPPS->setBottomRightBrickIdxDelta(bottomRightBrickIdxDelta);
-      pcPPS->setNumSlicesInPicMinus1(numTilesInPic - 1);
-    }
-
-    READ_FLAG( uiCode, "loop_filter_across_bricks_enabled_flag ");        pcPPS->setLoopFilterAcrossBricksEnabledFlag(uiCode ? true : false);
-    if (pcPPS->getLoopFilterAcrossBricksEnabledFlag())
-    {
-      READ_FLAG( uiCode, "loop_filter_across_slices_enabled_flag" );      pcPPS->setLoopFilterAcrossSlicesEnabledFlag(uiCode == 1);
-    }
-  }
-  else
-  {
-    pcPPS->setSingleBrickPerSliceFlag(true);
-    pcPPS->setRectSliceFlag(true);
-    std::vector<int> topLeft(1);
-    topLeft[0] = 0;
-    std::vector<int> bottomRight(1);
-    bottomRight[0] = 0;
-    pcPPS->setTopLeftBrickIdx(topLeft);
-    pcPPS->setBottomRightBrickIdx(bottomRight);
-  }
-
-  if (pcPPS->getRectSliceFlag())
-  {
-    READ_FLAG( uiCode, "signalled_slice_id_flag ");                        pcPPS->setSignalledSliceIdFlag(uiCode == 1);
-    if (pcPPS->getSignalledSliceIdFlag())
-    {
-      READ_UVLC( uiCode, "signalled_slice_id_length_minus1" );             pcPPS->setSignalledSliceIdLengthMinus1(uiCode);
-      const uint32_t numSlices = pcPPS->getNumSlicesInPicMinus1() + 1;
-      int codeLength = pcPPS->getSignalledSliceIdLengthMinus1() + 1;
-      if (numSlices > 0)
-      {
-        std::vector<int> sliceID(numSlices);
-        for (uint32_t i = 0; i < numSlices; i++)
-        {
-          READ_CODE(codeLength, uiCode, "slice_id");
-          sliceID[i] = uiCode;
-        }
-        pcPPS->setSliceId(sliceID);
-      }
-    }
-    else
-    {
-      std::vector<int> sliceID(pcPPS->getNumSlicesInPicMinus1() + 1);
-      for (uint32_t i = 0; i <= pcPPS->getNumSlicesInPicMinus1(); i++)
-      {
-        sliceID[i] = i;
-      }
-      pcPPS->setSliceId(sliceID);
-    }
-  }
-
-
-#endif
   READ_FLAG( uiCode, "deblocking_filter_control_present_flag" );       pcPPS->setDeblockingFilterControlPresentFlag( uiCode ? true : false );
   if(pcPPS->getDeblockingFilterControlPresentFlag())
   {
@@ -2181,7 +1916,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   sps = parameterSetManager->getSPS(picHeader->getSPSId());
   CHECK(sps==0, "Invalid SPS");
   
-#if JVET_P1004_REMOVE_BRICKS
   // initialize tile/slice info for no partitioning case
   if( pps->getNoPicPartitionFlag() )
   {
@@ -2204,7 +1938,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     CHECK(pps->getCtuSize() != sps->getCTUSize(), "PPS CTU size does not match CTU size in SPS");
   }
 
-#endif
   // sub-picture IDs
   if( sps->getSubPicIdPresentFlag() ) 
   {
@@ -2955,7 +2688,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     READ_CODE(bitsSubPicId, uiCode, "slice_subpic_id");    pcSlice->setSliceSubPicId(uiCode);
   }
-#if JVET_P1004_REMOVE_BRICKS
 
   // raster scan slices
   if(pps->getRectSliceFlag() == 0) 
@@ -3006,68 +2738,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     pcSlice->setSliceID(sliceAddr);
   }
 
-#else
-    int bitsSliceAddress = 1;
-    if (!pps->getRectSliceFlag())
-    {
-      while (pps->getNumTilesInPic() > (1 << bitsSliceAddress))  //TODO: use the correct one
-      {
-         bitsSliceAddress++;
-      }
-    }
-    else
-    {
-      if (pps->getSignalledSliceIdFlag())
-      {
-        bitsSliceAddress = pps->getSignalledSliceIdLengthMinus1() + 1;
-      }
-      else
-      {
-        while ((pps->getNumSlicesInPicMinus1() + 1) > (1 << bitsSliceAddress))
-        {
-          bitsSliceAddress++;
-        }
-      }
-    }
-    if (pps->getRectSliceFlag() || pps->getNumTilesInPic() > 1)   //TODO: change it to getNumBricksInPic when Tile/Brick is updated.
-    {
-      if (pps->getRectSliceFlag())
-      {
-        READ_CODE(bitsSliceAddress, uiCode, "slice_address");
-        int sliceIdx = 0;
-        while (pps->getSliceId(sliceIdx) != uiCode && sliceIdx <= pps->getNumSlicesInPicMinus1())
-        {
-          sliceIdx++;
-        }
-        pcSlice->setSliceIndex(sliceIdx);
-      }
-      else
-      {
-        READ_CODE(bitsSliceAddress, uiCode, "slice_address");
-        pcSlice->setSliceCurStartBrickIdx(uiCode);
-      }
-    }
-    if (!pps->getRectSliceFlag() && !pps->getSingleBrickPerSliceFlag())
-    {
-      READ_UVLC(uiCode, "num_bricks_in_slice_minus1");
-      pcSlice->setSliceNumBricks(uiCode + 1);
-      pcSlice->setSliceCurEndBrickIdx(pcSlice->getSliceCurStartBrickIdx() + uiCode);
-    }
-    else if (pps->getSingleBrickPerSliceFlag())
-    {
-      pcSlice->setSliceNumBricks(1);
-    }
-    if (pps->getRectSliceFlag())
-    {
-      if (pcSlice->getSliceIndex() != 0)
-      {
-        pcSlice->setSliceCurStartBrickIdx(pcSlice->getPic()->brickMap->getTopLeftBrickIdx(pcSlice->getSliceIndex()));
-        pcSlice->setSliceCurEndBrickIdx(pcSlice->getPic()->brickMap->getBottomRightBrickIdx(pcSlice->getSliceIndex()));
-      }
-    }
-    pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
-
-#endif
 #if !JVET_P1006_PICTURE_HEADER
     READ_FLAG(uiCode, "non_reference_picture_flag");  pcSlice->setNonRefPictFlag(uiCode);
 #endif
@@ -3885,11 +3555,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 #endif
 
 
-#if JVET_P1004_REMOVE_BRICKS
   if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
-#else
-    if( pcSlice->getSliceCurStartBrickIdx() == 0 )
-#endif
   {
     pcSlice->setDefaultClpRng( *sps );
 
@@ -3907,7 +3573,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
   std::vector<uint32_t> entryPointOffset;
 
-#if JVET_P1004_REMOVE_BRICKS
   pcSlice->setNumEntryPoints( pps );
   if( pcSlice->getNumEntryPoints() > 0 )
   {
@@ -3920,24 +3585,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
       entryPointOffset[idx] = uiCode + 1;
     }
   }
-#else
-  if( !pps->getSingleTileInPicFlag() || pps->getEntropyCodingSyncEnabledFlag() )
-  {
-    uint32_t numEntryPointOffsets;
-    uint32_t offsetLenMinus1;
-    READ_UVLC( numEntryPointOffsets, "num_entry_point_offsets" );
-    if( numEntryPointOffsets > 0 )
-    {
-      READ_UVLC( offsetLenMinus1, "offset_len_minus1" );
-      entryPointOffset.resize( numEntryPointOffsets );
-      for( uint32_t idx = 0; idx < numEntryPointOffsets; idx++ )
-      {
-        READ_CODE( offsetLenMinus1 + 1, uiCode, "entry_point_offset_minus1" );
-        entryPointOffset[idx] = uiCode + 1;
-      }
-    }
-  }
-#endif
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatistics::IncrementStatisticEP(STATS__BYTE_ALIGNMENT_BITS,m_pcBitstream->readByteAlignment(),0);
@@ -3947,11 +3594,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
 
   pcSlice->clearSubstreamSizes();
 
-#if JVET_P1004_REMOVE_BRICKS
   if( pcSlice->getNumEntryPoints() > 0 )
-#else
-  if( !pps->getSingleTileInPicFlag() || pps->getEntropyCodingSyncEnabledFlag() )
-#endif
   {
     int endOfSliceHeaderLocation = m_pcBitstream->getByteLocation();
 

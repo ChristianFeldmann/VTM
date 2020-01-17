@@ -583,17 +583,10 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
-#if !JVET_P1004_REMOVE_BRICKS
-    if (cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
-    {
-#endif
       // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
       // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
       // copy in case the APS gets used more than once.
       m_cALF.ALFProcess(cs);
-#if !JVET_P1004_REMOVE_BRICKS
-    }
-#endif
 
   }
 
@@ -1072,13 +1065,6 @@ void DecLib::xActivateParameterSets( const int layerId )
 #else
     m_pcPic->finalInit( *sps, *pps, apss, lmcsAPS, scalinglistAPS );
 #endif
-#if !JVET_P1004_REMOVE_BRICKS
-#if JVET_P1006_PICTURE_HEADER
-    m_parameterSetManager.getPPS(m_picHeader.getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
-#else
-    m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
-#endif
-#endif
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs((bool)m_pcPic->cs->sps->getPLTMode());
 
@@ -1325,12 +1311,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  m_apcSlicePilot->setSliceCurStartCtuTsAddr(0);
-  m_apcSlicePilot->setSliceCurEndCtuTsAddr(0);
-  m_apcSlicePilot->setSliceCurStartBrickIdx(0);
-  m_apcSlicePilot->setSliceCurEndBrickIdx(0);
-#endif
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
@@ -1488,11 +1468,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_prevSliceSkipped = false;
 
   //we should only get a different poc for a new picture (with CTU address==0)
-#if JVET_P1004_REMOVE_BRICKS
   if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
-#else
-  if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getSliceCurStartCtuTsAddr() != 0))
-#endif
   {
     msg( WARNING, "Warning, the first slice of a picture might have been lost!\n");
   }
@@ -1501,11 +1477,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
 
   // leave when a new picture is found
-#if JVET_P1004_REMOVE_BRICKS
   if(m_apcSlicePilot->getFirstCtuRsAddrInSlice() == 0 && !m_bFirstSliceInPicture)
-#else
-  if(m_apcSlicePilot->getSliceCurStartCtuTsAddr() == 0 && !m_bFirstSliceInPicture)
-#endif
   {
     if (m_prevPOC >= m_pocRandomAccess)
     {
@@ -1585,46 +1557,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->layerId    = nalu.m_nuhLayerId;
     m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
-#if !JVET_P1004_REMOVE_BRICKS
-  if (pcSlice->getPPS()->getRectSliceFlag())
-  {
-    int sliceIdx = pcSlice->getSliceIndex();
-    int topLeft = pcSlice->getPic()->brickMap->getTopLeftBrickIdx(sliceIdx);
-    int bottomRight = pcSlice->getPic()->brickMap->getBottomRightBrickIdx(sliceIdx);
-
-    pcSlice->setSliceCurStartBrickIdx(topLeft);
-    pcSlice->setSliceCurEndBrickIdx(bottomRight);
-    pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
-  }
-
-  // When decoding the slice header, the stored start and end addresses were actually RS addresses, not TS addresses.
-  // Now, having set up the maps, convert them to the correct form.
-  const BrickMap& tileMap = *(m_pcPic->brickMap);
-  const uint32_t numberOfCtusInFrame = m_pcPic->cs->pcv->sizeInCtus;
-
-  uint32_t startCtuIdx = 0;
-  while (pcSlice->getSliceCurStartBrickIdx() != tileMap.getBrickIdxBsMap(startCtuIdx) && startCtuIdx < numberOfCtusInFrame)
-  {
-    startCtuIdx++;
-  }
-  uint32_t endCtuIdx = startCtuIdx;
-  while (pcSlice->getSliceCurEndBrickIdx() != tileMap.getBrickIdxBsMap(endCtuIdx) && endCtuIdx < numberOfCtusInFrame)
-  {
-    endCtuIdx++;
-  }
-  if (endCtuIdx == numberOfCtusInFrame)
-    EXIT("Cannot find the last CTU index of the current slice");
-
-  while ( (endCtuIdx < numberOfCtusInFrame) && (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx)) )
-  {
-    endCtuIdx++;
-  }
-  if (pcSlice->getSliceCurEndBrickIdx() != tileMap.getBrickIdxBsMap(endCtuIdx - 1))
-    EXIT("Cannot find the last CTU index of the current slice");
-
-  pcSlice->setSliceCurStartCtuTsAddr(startCtuIdx);
-  pcSlice->setSliceCurEndCtuTsAddr(endCtuIdx);
-#endif
 
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
   pcSlice->constructRefPicList(m_cListPic);

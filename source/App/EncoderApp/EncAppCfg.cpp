@@ -238,26 +238,6 @@ std::istringstream &operator>>(std::istringstream &in, GOPEntry &entry)     //in
   return in;
 }
 
-#if !JVET_P1004_REMOVE_BRICKS
-std::istringstream &operator>>(std::istringstream &in, BrickSplit &entry)     //input
-{
-  in>>entry.m_tileIdx;
-  in>>entry.m_uniformSplit;
-  if (entry.m_uniformSplit)
-  {
-    in>>entry.m_uniformHeight;
-  }
-  else
-  {
-    in>>entry.m_numSplits;
-    for ( int i = 0; i < entry.m_numSplits; i++ )
-    {
-      in>>entry.m_brickHeight[i];
-    }
-  }
-  return in;
-}
-#endif
 
 
 bool confirmPara(bool bflag, const char* message);
@@ -738,7 +718,6 @@ automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
 }
 #endif
 
-#if JVET_P1004_REMOVE_BRICKS
 
 static uint32_t getMaxTileColsByLevel( Level::Name level )
 {
@@ -822,7 +801,6 @@ static uint32_t getMaxSlicesByLevel( Level::Name level )
   }
 }
 
-#endif
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
@@ -841,9 +819,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int tmpWeightedPredictionMethod;
   int tmpFastInterSearchMode;
   int tmpMotionEstimationSearchMethod;
-#if !JVET_P1004_REMOVE_BRICKS 
-  int tmpSliceMode;
-#endif
   int tmpDecodedPictureHashSEIMappedType;
   string inputColourSpaceConvert;
   string inputPathPrefix;
@@ -851,23 +826,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   int saoOffsetBitShift[MAX_NUM_CHANNEL_TYPE];
 
   // Multi-value input fields:                                // minval, maxval (incl), min_entries, max_entries (incl) [, default values, number of default values]
-#if JVET_P1004_REMOVE_BRICKS  
   SMultiValueInput<uint32_t>  cfgTileColumnWidth              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t>  cfgTileRowHeight                (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t>  cfgRectSlicePos                 (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   SMultiValueInput<uint32_t>  cfgRasterSliceSize              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
-#else  
-  SMultiValueInput<uint32_t> cfg_ColumnWidth                     (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
-  SMultiValueInput<uint32_t> cfg_RowHeight                       (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
-#endif
   SMultiValueInput<int>  cfg_startOfCodedInterval            (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
   SMultiValueInput<int>  cfg_codedPivotValue                 (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
   SMultiValueInput<int>  cfg_targetPivotValue                (std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 0, 1<<16);
 
-#if !JVET_P1004_REMOVE_BRICKS 
-  SMultiValueInput<uint32_t> cfg_SliceIdx                    (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
-  SMultiValueInput<uint32_t> cfg_SignalledSliceId            (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
-#endif
 
   SMultiValueInput<double> cfg_adIntraLambdaModifier         (0, std::numeric_limits<double>::max(), 0, MAX_TLAYER); ///< Lambda modifier for Intra pictures, one for each temporal layer. If size>temporalLayer, then use [temporalLayer], else if size>0, use [size()-1], else use m_adLambdaModifier.
 
@@ -1365,7 +1331,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxNumOffsetsPerPic",                             m_maxNumOffsetsPerPic,                             2048, "Max number of SAO offset per picture (Default: 2048)")
   ("SAOLcuBoundary",                                  m_saoCtuBoundary,                                 false, "0: right/bottom CTU boundary areas skipped from SAO parameter estimation, 1: non-deblocked pixels are used for those areas")
   ("SAOGreedyEnc",                                    m_saoGreedyMergeEnc,                              false, "SAO greedy merge encoding algorithm")
-#if JVET_P1004_REMOVE_BRICKS    
   ("EnablePicPartitioning",                           m_picPartitionFlag,                               false, "Enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)")
   ("TileColumnWidthArray",                            cfgTileColumnWidth,                  cfgTileColumnWidth, "Tile column widths in units of CTUs. Last column width in list will be repeated uniformly to cover any remaining picture width")
   ("TileRowHeightArray",                              cfgTileRowHeight,                      cfgTileRowHeight, "Tile row heights in units of CTUs. Last row height in list will be repeated uniformly to cover any remaining picture height")
@@ -1376,15 +1341,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("RasterSliceSizes",                                cfgRasterSliceSize,                  cfgRasterSliceSize, "Raster-scan slice sizes in units of tiles. Last size in list will be repeated uniformly to cover any remaining tiles in the picture")
   ("DisableLoopFilterAcrossTiles",                    m_disableLFCrossTileBoundaryFlag,                 false, "Loop filtering applied across tile boundaries or not (0: filter across tile boundaries  1: do not filter across tile boundaries)")
   ("DisableLoopFilterAcrossSlices",                   m_disableLFCrossSliceBoundaryFlag,                false, "Loop filtering applied across slice boundaries or not (0: filter across slice boundaries 1: do not filter across slice boundaries)")
-#else
-  ("SliceMode",                                       tmpSliceMode,                            int(NO_SLICES), "0: Disable all Recon slice limits, 1: (deprecated #CTU), 2: (deprecated #bytes), 3:specify tiles per slice, 4: one brick per slice")
-  ("SliceArgument",                                   m_sliceArgument,                                      0, "Depending on SliceMode being:"
-                                                                                                               "\t1: max number of CTUs per slice"
-                                                                                                               "\t2: max number of bytes per slice"
-                                                                                                               "\t3: max number of tiles per slice")
-  ("LFCrossSliceBoundaryFlag",                        m_bLFCrossSliceBoundaryFlag,                       true)
-
-#endif
   ("EnableSubPicPartitioning",                        m_subPicPartitionFlag,                             true, "Enable Sub-Picture partitioning (0: single slice per sub-picture, 1: multiple slices per sub-picture can be used)")
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
@@ -1393,30 +1349,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WeightedPredP,-wpP",                              m_useWeightedPred,                                false, "Use weighted prediction in P slices")
   ("WeightedPredB,-wpB",                              m_useWeightedBiPred,                              false, "Use weighted (bidirectional) prediction in B slices")
   ("WeightedPredMethod,-wpM",                         tmpWeightedPredictionMethod, int(WP_PER_PICTURE_WITH_SIMPLE_DC_COMBINED_COMPONENT), "Weighted prediction method")
-#if !JVET_P1004_REMOVE_BRICKS
-    //deprecated copies of renamed tile parameters
-  ("UniformSpacingIdc",                               m_tileUniformSpacingFlag,                         false,      "deprecated alias of TileUniformSpacing")
-  ("TileUniformSpacing",                              m_tileUniformSpacingFlag,                         false,      "Indicates that tile columns and rows are distributed uniformly")
-  ("NumTileColumnsMinus1",                            m_numTileColumnsMinus1,                               0,          "Number of tile columns in a picture minus 1")
-  ("NumTileRowsMinus1",                               m_numTileRowsMinus1,                                  0,          "Number of rows in a picture minus 1")
-  ("UniformTileColsWidthMinus1",                      m_uniformTileColsWidthMinus1,                        -1, "Tile width to use for uniform tiles minus 1")
-  ("UniformTileRowHeightMinus1",                      m_uniformTileRowHeightMinus1,                        -1, "Tile height to use for uniform tiles minus 1")
-  ("TileColumnWidthArray",                            cfg_ColumnWidth,                        cfg_ColumnWidth, "Array containing tile column width values in units of CTU")
-  ("TileRowHeightArray",                              cfg_RowHeight,                            cfg_RowHeight, "Array containing tile row height values in units of CTU")
-  ("LFCrossTileBoundaryFlag",                         m_bLFCrossTileBoundaryFlag,                        true, "1: cross-tile-boundary loop filtering. 0:non-cross-tile-boundary loop filtering")
-#endif
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
-#if !JVET_P1004_REMOVE_BRICKS
-
-  ("RectSliceFlag",                                   m_rectSliceFlag,                                  true, "Rectangular slice flag")
-  ("NumRectSlicesInPicMinus1",                        m_numSlicesInPicMinus1,                              0, "Number slices in pic minus 1")
-  ("LoopFilterAcrossTileGroupsEnabledFlag",           m_loopFilterAcrossSlicesEnabledFlag,              false, "Loop Filter Across Tile Groups Flag")
-  ("SignalledIdFlag",                                 m_signalledSliceIdFlag,                           false, "Signalled Slice ID Flag")
-  ("SignalledSliceIdLengthMinus1",                    m_signalledSliceIdLengthMinus1,                       0, "Signalled Tile Group Length minus 1")
-  ("RectSlicesBoundaryArray",                         cfg_SliceIdx,                              cfg_SliceIdx, "Rectangular slices boundaries in Pic")
-  ("SignalledSliceId",                                cfg_SignalledSliceId,                       cfg_SliceIdx, "Signalled rectangular slice ID")
-
-#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
 #if JVET_P0365_SCALING_MATRIX_LFNST
@@ -1792,15 +1725,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     opts.addOptions()(cOSS.str(), m_GOPList[i-1], GOPEntry());
   }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  for(int i=1; i<MAX_TILES+1; i++)
-  {
-    std::ostringstream cOSS;
-    cOSS<<"BrickSplit"<<i;
-    opts.addOptions()(cOSS.str(), m_brickSplits[i-1], BrickSplit());
-  }
-
-#endif
   po::setDefaults(opts);
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
@@ -1974,7 +1898,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 #endif
-#if JVET_P1004_REMOVE_BRICKS
   if( m_picPartitionFlag ) 
   {
     // store tile column widths
@@ -2021,55 +1944,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_rectSliceFixedHeight = 0;
   }
 
-#else
-  if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
-  {
-    if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)
-    {
-      EXIT( "Error: The number of columns whose width are defined is larger than the allowed number of columns." );
-    }
-    else if (cfg_ColumnWidth.values.size() < m_numTileColumnsMinus1)
-    {
-      EXIT( "Error: The width of some columns is not defined." );
-    }
-    else
-    {
-      m_tileColumnWidth.resize(m_numTileColumnsMinus1);
-      for(uint32_t i=0; i<cfg_ColumnWidth.values.size(); i++)
-      {
-        m_tileColumnWidth[i]=cfg_ColumnWidth.values[i];
-      }
-    }
-  }
-  else
-  {
-    m_tileColumnWidth.clear();
-  }
-
-  if( !m_tileUniformSpacingFlag && m_numTileRowsMinus1 > 0 )
-  {
-    if (cfg_RowHeight.values.size() > m_numTileRowsMinus1)
-    {
-      EXIT( "Error: The number of rows whose height are defined is larger than the allowed number of rows." );
-    }
-    else if (cfg_RowHeight.values.size() < m_numTileRowsMinus1)
-    {
-      EXIT( "Error: The height of some rows is not defined." );
-    }
-    else
-    {
-      m_tileRowHeight.resize(m_numTileRowsMinus1);
-      for(uint32_t i=0; i<cfg_RowHeight.values.size(); i++)
-      {
-        m_tileRowHeight[i]=cfg_RowHeight.values[i];
-      }
-    }
-  }
-  else
-  {
-    m_tileRowHeight.clear();
-  }
-#endif
   m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
   m_subProfile.resize(m_numSubProfile);
   for (uint8_t i = 0; i < m_numSubProfile; ++i)
@@ -2084,15 +1958,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_singleSlicePerSubPicFlag = true;
   }
-#if !JVET_P1004_REMOVE_BRICKS
-  if (m_tileUniformSpacingFlag)
-  {
-    int uniformTileHeight = ((m_uniformTileRowHeightMinus1 + 1) * m_uiCTUSize);
-    int uniformTileWidth = ((m_uniformTileColsWidthMinus1 + 1) * m_uiCTUSize);
-    m_numTileRowsMinus1 = ((m_iSourceHeight + uniformTileHeight - 1) / uniformTileHeight) - 1;
-    m_numTileColumnsMinus1 = ((m_iSourceWidth + uniformTileWidth - 1) / uniformTileWidth) - 1;
-  }
-#endif
   /* rules for input, output and internal bitdepths as per help text */
   if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
   {
@@ -2321,156 +2186,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  if (tmpSliceMode<0 || tmpSliceMode>=int(NUMBER_OF_SLICE_CONSTRAINT_MODES))
-  {
-    EXIT( "Error: bad slice mode");
-  }
-  m_sliceMode = SliceConstraint(tmpSliceMode);
-  if (m_sliceMode==FIXED_NUMBER_OF_CTU || m_sliceMode==FIXED_NUMBER_OF_BYTES)
-  {
-    // note: slice mode 2 can be re-enabled using scan order tiles
-    EXIT( "Error: slice mode 1 (fixed number of CTUs) and 2 (fixed number of bytes) are no longer supported");
-  }
-
-
-
-  m_topLeftBrickIdx.clear();
-  m_bottomRightBrickIdx.clear();
-  m_sliceId.clear();
-
-  bool singleTileInPicFlag = (m_numTileRowsMinus1 == 0 && m_numTileColumnsMinus1 == 0);
-
-  if (!singleTileInPicFlag)
-  {
-    //if (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
-    if ( (m_sliceMode != 0 && m_sliceMode != 4 && m_rectSliceFlag) ||
-         (m_numSlicesInPicMinus1 != 0 && m_rectSliceFlag) )
-    {
-      int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
-
-      if (cfg_SliceIdx.values.size() > numSlicesInPic * 2)
-      {
-        EXIT("Error: The number of slice indices (RectSlicesBoundaryInPic) is greater than the NumSlicesInPicMinus1.");
-      }
-      else if (cfg_SliceIdx.values.size() < numSlicesInPic * 2)
-      {
-        EXIT("Error: The number of slice indices (RectSlicesBoundaryInPic) is less than the NumSlicesInPicMinus1.");
-      }
-      else
-      {
-        m_topLeftBrickIdx.resize(numSlicesInPic);
-        m_bottomRightBrickIdx.resize(numSlicesInPic);
-        for (uint32_t i = 0; i < numSlicesInPic; ++i)
-        {
-          m_topLeftBrickIdx[i] = cfg_SliceIdx.values[i * 2];
-          m_bottomRightBrickIdx[i] = cfg_SliceIdx.values[i * 2 + 1];
-        }
-        //Validating the correctness of rectangular slice structure
-        int **brickToSlice = (int **)malloc(sizeof(int *) * (m_numTileRowsMinus1 + 1));
-        for (int i = 0; i <= m_numTileRowsMinus1; i++)
-        {
-          brickToSlice[i] = (int *)malloc(sizeof(int) * (m_numTileColumnsMinus1 + 1));
-          memset(brickToSlice[i], -1, sizeof(int) * ((m_numTileColumnsMinus1 + 1)));
-        }
-
-        //Check overlap case
-        for (int sliceIdx = 0; sliceIdx < numSlicesInPic; sliceIdx++)
-        {
-          int sliceStartRow = m_topLeftBrickIdx[sliceIdx] / (m_numTileColumnsMinus1 + 1);
-          int sliceEndRow   = m_bottomRightBrickIdx[sliceIdx] / (m_numTileColumnsMinus1 + 1);
-          int sliceStartCol = m_topLeftBrickIdx[sliceIdx] % (m_numTileColumnsMinus1 + 1);
-          int sliceEndCol   = m_bottomRightBrickIdx[sliceIdx] % (m_numTileColumnsMinus1 + 1);
-          for (int i = 0; i <= m_numTileRowsMinus1; i++)
-          {
-            for (int j = 0; j <= m_numTileColumnsMinus1; j++)
-            {
-              if (i >= sliceStartRow && i <= sliceEndRow && j >= sliceStartCol && j <= sliceEndCol)
-              {
-                if (brickToSlice[i][j] != -1)
-                {
-                  msg(ERROR, "Error: Values given in RectSlicesBoundaryInPic have conflict! Rectangular slice shall not have overlapped tile(s)\n");
-                  EXIT(1);
-                }
-                else
-                {
-                  brickToSlice[i][j] = sliceIdx;
-                }
-              }
-            }
-          }
-          //Check violation to number of tiles per slice
-          if (m_sliceMode == 3 && m_rectSliceFlag)
-          {
-            if ((sliceEndRow - sliceStartRow + 1) * (sliceEndCol - sliceStartCol + 1) > m_sliceArgument)
-            {
-              EXIT("Error: One or more slices contain more tiles than the defined number of tiles per slice");
-            }
-          }
-        }
-        //Check gap case
-        for (int i = 0; i <= m_numTileRowsMinus1; i++)
-        {
-          for (int j = 0; j <= m_numTileColumnsMinus1; j++)
-          {
-            if (brickToSlice[i][j] == -1)
-            {
-              EXIT("Error: Values given in RectSlicesBoundaryInPic have conflict! Rectangular slice shall not have gap");
-            }
-          }
-        }
-
-        for (int i = 0; i <= m_numTileRowsMinus1; i++)
-        {
-          free(brickToSlice[i]);
-          brickToSlice[i] = 0;
-        }
-        free(brickToSlice);
-        brickToSlice = 0;
-      }
-    }      // (!m_singleBrickPerSliceFlag && m_rectSliceFlag)
-    else // single slice in picture
-    {
-      const int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
-      int numTilesInPic = (m_numTileRowsMinus1 + 1) * (m_numTileColumnsMinus1 + 1);
-      m_topLeftBrickIdx.resize(numSlicesInPic);
-      m_bottomRightBrickIdx.resize(numSlicesInPic);
-      m_topLeftBrickIdx[0] = 0;
-      m_bottomRightBrickIdx[0] = numTilesInPic - 1;
-    }
-  }        // !singleTileInPicFlag
-
-  if (m_rectSliceFlag && m_signalledSliceIdFlag)
-  {
-    int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
-
-    if (cfg_SignalledSliceId.values.size() > numSlicesInPic)
-    {
-      EXIT("Error: The number of Slice Ids are greater than the m_signalledTileGroupIdLengthMinus1.");
-    }
-    else if (cfg_SignalledSliceId.values.size() < numSlicesInPic)
-    {
-      EXIT("Error: The number of Slice Ids are less than the m_signalledTileGroupIdLengthMinus1.");
-    }
-    else
-    {
-      m_sliceId.resize(numSlicesInPic);
-      for (uint32_t i = 0; i < cfg_SignalledSliceId.values.size(); ++i)
-      {
-        m_sliceId[i] = cfg_SignalledSliceId.values[i];
-      }
-    }
-  }
-  else if (m_rectSliceFlag)
-  {
-    int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
-    m_sliceId.resize(numSlicesInPic);
-    for (uint32_t i = 0; i < numSlicesInPic; ++i)
-    {
-      m_sliceId[i] = i;
-    }
-  }
-#endif
 
   if (tmpDecodedPictureHashSEIMappedType<0 || tmpDecodedPictureHashSEIMappedType>=int(NUMBER_OF_HASHTYPES))
   {
@@ -3470,21 +3185,8 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(!m_useTransformSkip, "BDPCM cannot be used when transform skip is disabled.");
   }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  if (m_sliceMode!=NO_SLICES)
-  {
-    xConfirmPara( m_sliceArgument < 1 ,         "SliceArgument should be larger than or equal to 1" );
-  }
-#endif
 
 
-#if !JVET_P1004_REMOVE_BRICKS
-  bool tileFlag = (m_numTileColumnsMinus1 > 0 || m_numTileRowsMinus1 > 0 );
-  if (m_profile!=Profile::HIGHTHROUGHPUTREXT)
-  {
-    xConfirmPara( tileFlag && m_entropyCodingSyncEnabledFlag, "Tiles and entropy-coding-sync (Wavefronts) can not be applied together, except in the High Throughput Intra 4:4:4 16 profile");
-  }
-#endif
 
   xConfirmPara( m_iSourceWidth  % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Picture width must be an integer multiple of the specified chroma subsampling");
   xConfirmPara( m_iSourceHeight % SPS::getWinUnitY(m_chromaFormatIDC) != 0, "Picture height must be an integer multiple of the specified chroma subsampling");
@@ -3911,7 +3613,6 @@ bool EncAppCfg::xCheckParameter()
     m_maxDecPicBuffering[MAX_TLAYER-1] = m_numReorderPics[MAX_TLAYER-1] + 1;
   }
 
-#if JVET_P1004_REMOVE_BRICKS
   if( m_picPartitionFlag ) 
   {
     PPS pps;
@@ -4168,30 +3869,11 @@ bool EncAppCfg::xCheckParameter()
     m_numTileRows = 1;
     m_numSlicesInPic = 1;
   }
-#else
 
-  for (int i=0; i<MAX_TILES; i++)
-  {
-    if (m_brickSplits[i].m_tileIdx>=0)
-    {
-      m_brickSplitMap[m_brickSplits[i].m_tileIdx] = m_brickSplits[i];
-      // ToDo: check that brick dimensions don't exceed tile dimensions
-    }
-  }
-#endif
-
-#if JVET_P1004_REMOVE_BRICKS
   if ((m_MCTSEncConstraint) && (!m_disableLFCrossTileBoundaryFlag))
-#else
-  if ((m_MCTSEncConstraint) && (m_bLFCrossTileBoundaryFlag))
-#endif
   {
     printf("Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling filtering across tile boundaries!\n");
-#if JVET_P1004_REMOVE_BRICKS
     m_disableLFCrossTileBoundaryFlag = true;
-#else
-    m_bLFCrossTileBoundaryFlag = false;
-#endif
   }
   if ((m_MCTSEncConstraint) && (m_TMVPModeId))
   {
@@ -4655,17 +4337,8 @@ void EncAppCfg::xPrintParameter()
   msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
 #endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
-#if JVET_P1004_REMOVE_BRICKS
   msg( VERBOSE, "Tiles: %dx%d ", m_numTileCols, m_numTileRows );
   msg( VERBOSE, "Slices: %d ", m_numSlicesInPic);
-#else
-  msg( VERBOSE, "Slice: M=%d ", int(m_sliceMode));
-  if (m_sliceMode!=NO_SLICES)
-  {
-    msg( VERBOSE, "A=%d ", m_sliceArgument);
-  }
-  msg( VERBOSE, "Tiles:%dx%d ", m_numTileColumnsMinus1 + 1, m_numTileRowsMinus1 + 1 );
-#endif
   msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );

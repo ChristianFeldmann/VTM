@@ -141,11 +141,7 @@ unsigned DeriveCtx::CtxModeConsFlag( const CodingStructure& cs, Partitioner& par
   assert( partitioner.chType == CHANNEL_TYPE_LUMA );
   const Position pos = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
   const unsigned curTileIdx = cs.pps->getTileIdx( partitioner.currArea().lumaPos() );
-#else
-  const unsigned curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
-#endif
 
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
   const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
@@ -159,11 +155,7 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 {
   const Position pos         = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
   const unsigned curTileIdx  = cs.pps->getTileIdx( partitioner.currArea().lumaPos() );
-#else
-  const unsigned curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
-#endif
 
   // get left depth
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );

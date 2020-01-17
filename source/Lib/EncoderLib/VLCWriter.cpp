@@ -299,7 +299,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     }
   }
 #endif
-#if JVET_P1004_REMOVE_BRICKS
 
   WRITE_FLAG( pcPPS->getNoPicPartitionFlag( ) ? 1 : 0, "no_pic_partition_flag" );
   if( !pcPPS->getNoPicPartitionFlag() )
@@ -370,7 +369,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_FLAG( pcPPS->getLoopFilterAcrossSlicesEnabledFlag(), "loop_filter_across_slices_enabled_flag");
   }
 
-#endif
   WRITE_FLAG( pcPPS->getEntropyCodingSyncEnabledFlag() ? 1 : 0, "entropy_coding_sync_enabled_flag" );
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
@@ -431,124 +429,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 
   WRITE_FLAG( pcPPS->getUseWP() ? 1 : 0,  "weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcPPS->getWPBiPred() ? 1 : 0, "weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
-#if !JVET_P1004_REMOVE_BRICKS
-  WRITE_FLAG( pcPPS->getSingleTileInPicFlag() ? 1 : 0, "single_tile_in_pic_flag" );
-  if (!pcPPS->getSingleTileInPicFlag())
-  {
-    WRITE_FLAG( pcPPS->getUniformTileSpacingFlag() ? 1 : 0, "uniform_tile_spacing_flag" );
-    if (pcPPS->getUniformTileSpacingFlag())
-    {
-      WRITE_UVLC( pcPPS->getTileColsWidthMinus1(),   "tile_cols_width_minus1" );
-      WRITE_UVLC( pcPPS->getTileRowsHeightMinus1(),  "tile_rows_height_minus1" );
-    }
-    else
-    {
-      WRITE_UVLC( pcPPS->getNumTileColumnsMinus1(), "num_tile_columns_minus1" );
-      WRITE_UVLC( pcPPS->getNumTileRowsMinus1(),    "num_tile_rows_minus1" );
-
-      CHECK( ((pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1)) < 2, "tile colums * rows must be > 1 when explicitly signalled.");
-
-      for (int i = 0; i < pcPPS->getNumTileColumnsMinus1(); i++)
-      {
-        WRITE_UVLC( pcPPS->getTileColumnWidth(i) - 1, "tile_column_width_minus1" );
-      }
-      for (int i = 0; i < pcPPS->getNumTileRowsMinus1(); i++)
-      {
-        WRITE_UVLC( pcPPS->getTileRowHeight(i) - 1, "tile_row_height_minus1" );
-      }
-    }
-    WRITE_FLAG( pcPPS->getBrickSplittingPresentFlag() ? 1 : 0, "brick_splitting_present_flag" );
-    if (pcPPS->getBrickSplittingPresentFlag())
-    {
-      CHECK(pcPPS->getRectSliceFlag() != true, "rect_slice_flag must be equal to 1 for brick_splitting_present_flag equal to 1");
-    }
-
-    int numTilesInPic = (pcPPS->getNumTileColumnsMinus1() + 1) * (pcPPS->getNumTileRowsMinus1() + 1);
-    if (pcPPS->getUniformTileSpacingFlag() && pcPPS->getBrickSplittingPresentFlag())
-    {
-      WRITE_UVLC(numTilesInPic - 1, "num_tiles_in_pic_minus1");
-    }
-
-    for( int i = 0; pcPPS->getBrickSplittingPresentFlag()  &&  i < numTilesInPic; i++ )
-    {
-      if (pcPPS->getTileHeight(i) > 1)
-      {
-        WRITE_FLAG(pcPPS->getBrickSplitFlag(i) ? 1 : 0, "brick_split_flag [i]");
-      }
-      if( pcPPS->getBrickSplitFlag(i) )
-      {
-        if (pcPPS->getTileHeight(i) > 2)
-        {
-          WRITE_FLAG(pcPPS->getUniformBrickSpacingFlag(i) ? 1 : 0, "uniform_brick_spacing_flag [i]");
-        }
-        if( pcPPS->getUniformBrickSpacingFlag(i) )
-          WRITE_UVLC( pcPPS->getBrickHeightMinus1(i), "brick_height_minus1" );
-        else
-        {
-          WRITE_UVLC(pcPPS->getNumBrickRowsMinus2(i), "num_brick_rows_minus2 [i]");
-          for (int j = 0; j <= pcPPS->getNumBrickRowsMinus2(i); j++)
-            WRITE_UVLC(pcPPS->getBrickRowHeightMinus1(i, j), "brick_row_height_minus1 [i][j]");
-        }
-      }
-    }
-
-    WRITE_FLAG( pcPPS->getSingleBrickPerSliceFlag() ? 1 : 0, "single_brick_per_slice_flag" );
-    if (!pcPPS->getSingleBrickPerSliceFlag())
-    {
-      WRITE_FLAG( pcPPS->getRectSliceFlag() ? 1 : 0, "rect_slice_flag" );
-    }
-    else
-    {
-      // make sure rect_slice_flag is set
-      CHECK (pcPPS->getRectSliceFlag()!=true, "RectSliceFlag must be equal to 1 for single_brick_per_slice_flag equal to 1");
-    }
-
-    if (pcPPS->getRectSliceFlag() && !pcPPS->getSingleBrickPerSliceFlag())
-    {
-      WRITE_UVLC( pcPPS->getNumSlicesInPicMinus1(), "num_slices_in_pic_minus1" );
-      int numSlicesInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
-      int codeLength = ceilLog2(numTilesInPic);
-      WRITE_UVLC(codeLength, "bottom_right_brick_idx_length_minus1 ");
-      for (int i = 0; i < numSlicesInPic; ++i)
-      {
-        int delta = (i == 0) ? pcPPS->getBottomRightBrickIdx(i) : pcPPS->getBottomRightBrickIdx(i) - pcPPS->getBottomRightBrickIdx(i - 1);
-        int sign = (delta > 0) ? 1 : 0;
-        WRITE_CODE(delta, codeLength, "bottom_right_brick_idx_delta");
-        WRITE_FLAG(sign, "brick_idx_delta_sign_flag");
-      }
-    }
-
-    WRITE_FLAG( pcPPS->getLoopFilterAcrossBricksEnabledFlag() ? 1 : 0, "loop_filter_across_bricks_enabled_flag" );
-    if (pcPPS->getLoopFilterAcrossBricksEnabledFlag())
-    {
-      WRITE_FLAG( pcPPS->getLoopFilterAcrossSlicesEnabledFlag() ? 1 : 0, "loop_filter_across_slices_enabled_flag" );
-    }
-  }
-  else
-  {
-    // make sure single brick per slice is set by encoder such that the behaviour is same as for setting it to true
-    CHECK(pcPPS->getSingleBrickPerSliceFlag() != true, "SingleBrickPerSliceFlag must be set to 1 when not present");
-    // make sure rect_slice_flag is set
-    CHECK (pcPPS->getRectSliceFlag()!=true, "RectSliceFlag must be equalt to 1 for single_tile_in_pic_flag equal to 1");
-  }
-
-  if (pcPPS->getRectSliceFlag())
-  {
-    WRITE_FLAG( pcPPS->getSignalledSliceIdFlag() ? 1 : 0, "signalled_slice_id_flag" );
-    if (pcPPS->getSignalledSliceIdFlag())
-    {
-      WRITE_UVLC( pcPPS->getSignalledSliceIdLengthMinus1(), "signalled_slice_id_length_minus1" );
-      int signalledTileGroupIdLength = pcPPS->getSignalledSliceIdLengthMinus1() + 1;
-      int numTileGroupsInPic = pcPPS->getNumSlicesInPicMinus1() + 1;
-      for (int i = 0; i < numTileGroupsInPic; ++i)
-      {
-        WRITE_CODE (pcPPS->getSliceId(i), signalledTileGroupIdLength, "slice_id" );
-      }
-    }
-  }
-
-
-#endif
 
   WRITE_FLAG( pcPPS->getDeblockingFilterControlPresentFlag()?1 : 0,       "deblocking_filter_control_present_flag");
   if(pcPPS->getDeblockingFilterControlPresentFlag())
@@ -2041,7 +1921,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     WRITE_CODE(pcSlice->getSliceSubPicId(), bitsSubPicId, "slice_subpic_id");
   }
 
-#if JVET_P1004_REMOVE_BRICKS
   // raster scan slices
   if( pcSlice->getPPS()->getRectSliceFlag() == 0 ) 
   {
@@ -2064,46 +1943,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     }
   }
 
-#else
-  int bitsSliceAddress = 1;
-  if (!pcSlice->getPPS()->getRectSliceFlag())
-  {
-    while (pcSlice->getPPS()->getNumBricksInPic() > (1 << bitsSliceAddress))
-    {
-      bitsSliceAddress++;
-    }
-  }
-  else
-  {
-    if (pcSlice->getPPS()->getSignalledSliceIdFlag())
-    {
-      bitsSliceAddress = pcSlice->getPPS()->getSignalledSliceIdLengthMinus1() + 1;
-    }
-    else
-    {
-      while ((pcSlice->getPPS()->getNumSlicesInPicMinus1() + 1) > (1 << bitsSliceAddress))
-      {
-        bitsSliceAddress++;
-      }
-    }
-  }
-  if (pcSlice->getPPS()->getRectSliceFlag() || pcSlice->getPPS()->getNumBricksInPic() > 1)
-  {
-    if (pcSlice->getPPS()->getRectSliceFlag())
-    {
-      WRITE_CODE(pcSlice->getPPS()->getSliceId(pcSlice->getSliceIndex()), bitsSliceAddress, "slice_address");
-    }
-    else
-    {
-      WRITE_CODE(pcSlice->getSliceCurStartBrickIdx(), bitsSliceAddress, "slice_address");
-    }
-  }
-  if (!pcSlice->getPPS()->getRectSliceFlag() && !pcSlice->getPPS()->getSingleBrickPerSliceFlag())
-  {
-    WRITE_UVLC(pcSlice->getSliceNumBricks() - 1, "num_bricks_in_slice_minus1");
-  }
-
-#endif
 #if !JVET_P1006_PICTURE_HEADER
     WRITE_FLAG(pcSlice->getNonRefPictFlag() ? 1 : 0, "non_reference_picture_flag");
 #endif
@@ -2707,12 +2546,8 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 */
 void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
 {
-#if JVET_P1004_REMOVE_BRICKS
   pSlice->setNumEntryPoints( pSlice->getPPS() );
   if( pSlice->getNumEntryPoints() == 0 )
-#else
-  if (pSlice->getPPS()->getSingleTileInPicFlag() && !pSlice->getPPS()->getEntropyCodingSyncEnabledFlag())
-#endif
   {
     return;
   }
@@ -2734,9 +2569,6 @@ void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
     CHECK(offsetLenMinus1 + 1 >= 32, "Invalid offset length minus 1");
   }
 
-#if !JVET_P1004_REMOVE_BRICKS
-  WRITE_UVLC(pSlice->getNumberOfSubstreamSizes(), "num_entry_point_offsets");
-#endif
   if (pSlice->getNumberOfSubstreamSizes()>0)
   {
     WRITE_UVLC(offsetLenMinus1, "offset_len_minus1");

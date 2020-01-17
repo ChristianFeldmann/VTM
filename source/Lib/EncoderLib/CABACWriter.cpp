@@ -246,11 +246,7 @@ void CABACWriter::sao( const Slice& slice, unsigned ctuRsAddr )
   int                 rx                      = ctuRsAddr - ry * frame_width_in_ctus;
   const Position      pos                     ( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
   const unsigned      curSliceIdx             = slice.getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
   const unsigned      curTileIdx              = cs.pps->getTileIdx( pos );
-#else
-  const unsigned      curTileIdx              = cs.picture->brickMap->getBrickIdxRsMap( pos );
-#endif
   bool                leftMergeAvail          = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0  ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
   bool                aboveMergeAvail         = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
   sao_block_pars( sao_ctu_pars, sps.getBitDepths(), sliceEnabled, leftMergeAvail, aboveMergeAvail, false );
@@ -1448,10 +1444,6 @@ void CABACWriter::sbt_mode( const CodingUnit& cu )
 
 void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
 {
- #if !JVET_P1004_REMOVE_BRICKS
-  const Slice*  slice             = cu.cs->slice;
-  const int     currentCTUTsAddr  = cu.cs->picture->brickMap->getCtuRsToBsAddrMap( CU::getCtuAddr( cu ) );
-#endif
   const bool    isLastSubCUOfCtu  = CU::isLastSubCUOfCtu( cu );
 
   if ( isLastSubCUOfCtu
@@ -1460,14 +1452,6 @@ void CABACWriter::end_of_ctu( const CodingUnit& cu, CUCtx& cuCtx )
   {
     cuCtx.isDQPCoded = ( cu.cs->pps->getUseDQP() && !cuCtx.isDQPCoded );
 
- #if !JVET_P1004_REMOVE_BRICKS
-    // The 1-terminating bit is added to all streams, so don't add it here when it's 1.
-    // i.e. when the slice segment CurEnd CTU address is the current CTU address+1.
-    if(slice->getSliceCurEndCtuTsAddr() != currentCTUTsAddr + 1)
-    {
-      m_BinEncoder.encodeBinTrm( 0 );
-    }
-#endif
   }
 }
 
@@ -3987,11 +3971,7 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
     int                 rx = ctuRsAddr - ry * frame_width_in_ctus;
     const Position      pos( rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight );
     const uint32_t          curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
     const uint32_t      curTileIdx = cs.pps->getTileIdx( pos );
-#else
-    const uint32_t      curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( pos );
-#endif
     bool                leftAvail = cs.getCURestricted( pos.offset( -(int)pcv.maxCUWidth, 0 ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
     bool                aboveAvail = cs.getCURestricted( pos.offset( 0, -(int)pcv.maxCUHeight ), pos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
 

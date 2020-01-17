@@ -90,7 +90,6 @@
 
 
 
-#define JVET_P0599_INTRA_SMOOTHING_INTERP_FILT            1 // JVET-P0599: Cleanup of interpolation filtering for intra prediction
 
 #define JVET_P1026_ISP_LFNST_COMBINATION                  1 // JVET-P1026: Combination of ISP and LFNST
 

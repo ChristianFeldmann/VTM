@@ -68,7 +68,6 @@
 
 
 
-#define JVET_P0243_SINGLE_BIT_DEPTH                       1 // JVET-P0243: Single bitdepth for luma and chroma
 
 #define JVET_P0244_SPS_CLEAN_UP                           1 // JVET-P0244/P0429: SPS cleanup changes
 

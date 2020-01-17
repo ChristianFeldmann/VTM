@@ -771,14 +771,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
 
-#if JVET_P0243_SINGLE_BIT_DEPTH
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_minus8" );
-#else
-  WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_luma_minus8" );
-
-  const bool         chromaEnabled         = isChromaEnabled(format);
-  WRITE_UVLC( chromaEnabled ? (pcSPS->getBitDepth(CHANNEL_TYPE_CHROMA) - 8):0,  "bit_depth_chroma_minus8" );
-#endif
 
   WRITE_UVLC( pcSPS->getMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA),                      "min_qp_prime_ts_minus4" );
   

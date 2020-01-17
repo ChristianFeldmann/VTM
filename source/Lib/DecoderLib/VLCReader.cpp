@@ -1149,25 +1149,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
 
-#if JVET_P0243_SINGLE_BIT_DEPTH
   READ_UVLC(     uiCode, "bit_depth_minus8" );
   CHECK(uiCode > 8, "Invalid bit depth signalled");
   pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
   pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
   pcSPS->setQpBDOffset(CHANNEL_TYPE_LUMA, (int) (6*uiCode) );
   pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA, (int) (6*uiCode) );
-#else
-  READ_UVLC(     uiCode, "bit_depth_luma_minus8" );
-  CHECK(uiCode > 8, "Invalid luma bit depth signalled");
-  pcSPS->setBitDepth(CHANNEL_TYPE_LUMA, 8 + uiCode);
-
-  pcSPS->setQpBDOffset(CHANNEL_TYPE_LUMA, (int) (6*uiCode) );
-
-  READ_UVLC( uiCode,    "bit_depth_chroma_minus8" );
-  CHECK(uiCode > 8, "Invalid chroma bit depth signalled");
-  pcSPS->setBitDepth(CHANNEL_TYPE_CHROMA, 8 + uiCode);
-  pcSPS->setQpBDOffset(CHANNEL_TYPE_CHROMA,  (int) (6*uiCode) );
-#endif
 
   READ_UVLC(     uiCode, "min_qp_prime_ts_minus4" );
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);

@@ -251,9 +251,7 @@ protected:
 #if SHARP_LUMA_DELTA_QP
   LumaLevelToDeltaQPMapping m_lumaLevelToDeltaQPMapping;      ///< mapping from luma level to Delta QP.
 #endif
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
   SEIMasteringDisplay m_masteringDisplay;
-#endif
 
   bool      m_bUseAdaptiveQP;                                 ///< Flag for enabling QP adaptation based on a psycho-visual model
   int       m_iQPAdaptationRange;                             ///< dQP range by QP adaptation
@@ -467,81 +465,14 @@ protected:
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
   bool      m_frameFieldInfoSEIEnabled;
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-  bool      m_toneMappingInfoSEIEnabled;
-  bool      m_chromaResamplingFilterSEIenabled;
-  int       m_chromaResamplingHorFilterIdc;
-  int       m_chromaResamplingVerFilterIdc;
-  int       m_toneMapId;
-  bool      m_toneMapCancelFlag;
-  bool      m_toneMapPersistenceFlag;
-  int       m_toneMapCodedDataBitDepth;
-  int       m_toneMapTargetBitDepth;
-  int       m_toneMapModelId;
-  int       m_toneMapMinValue;
-  int       m_toneMapMaxValue;
-  int       m_sigmoidMidpoint;
-  int       m_sigmoidWidth;
-  int       m_numPivots;
-  int       m_cameraIsoSpeedIdc;
-  int       m_cameraIsoSpeedValue;
-  int       m_exposureIndexIdc;
-  int       m_exposureIndexValue;
-  bool      m_exposureCompensationValueSignFlag;
-  int       m_exposureCompensationValueNumerator;
-  int       m_exposureCompensationValueDenomIdc;
-  int       m_refScreenLuminanceWhite;
-  int       m_extendedRangeWhiteLevel;
-  int       m_nominalBlackLevelLumaCodeValue;
-  int       m_nominalWhiteLevelLumaCodeValue;
-  int       m_extendedWhiteLevelLumaCodeValue;
-  int*      m_startOfCodedInterval;
-  int*      m_codedPivotValue;
-  int*      m_targetPivotValue;
-#endif
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
-#if !JVET_P0337_PORTING_SEI
-  bool      m_segmentedRectFramePackingSEIEnabled;
-  bool      m_segmentedRectFramePackingSEICancel;
-  int       m_segmentedRectFramePackingSEIType;
-  bool      m_segmentedRectFramePackingSEIPersistence;
-  int       m_displayOrientationSEIAngle;
-  bool      m_temporalLevel0IndexSEIEnabled;
-  bool      m_gradualDecodingRefreshInfoEnabled;
-  int       m_noDisplaySEITLayer;
-  bool      m_decodingUnitInfoSEIEnabled;
-  bool      m_SOPDescriptionSEIEnabled;
-  bool      m_scalableNestingSEIEnabled;
-  bool      m_tmctsSEIEnabled;
-  bool      m_timeCodeSEIEnabled;
-  int       m_timeCodeSEINumTs;
-  SEITimeSet m_timeSetArray[MAX_TIMECODE_SEI_SETS];
-  bool      m_kneeSEIEnabled;
-  int       m_kneeSEIId;
-  bool      m_kneeSEICancelFlag;
-  bool      m_kneeSEIPersistenceFlag;
-  int       m_kneeSEIInputDrange;
-  int       m_kneeSEIInputDispLuminance;
-  int       m_kneeSEIOutputDrange;
-  int       m_kneeSEIOutputDispLuminance;
-  int       m_kneeSEINumKneePointsMinus1;
-  int*      m_kneeSEIInputKneePoint;
-  int*      m_kneeSEIOutputKneePoint;
-#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   int       m_preferredTransferCharacteristics;
 #endif
-#if !JVET_P0337_PORTING_SEI
-  uint32_t      m_greenMetadataType;
-  uint32_t      m_xsdMetricType;
-#endif
-#endif
-#if JVET_P0337_PORTING_SEI
   // film grain characterstics sei
   bool      m_fgcSEIEnabled;
   bool      m_fgcSEICancelFlag;
@@ -573,7 +504,6 @@ protected:
   double    m_ccvSEIMinLuminanceValue;
   double    m_ccvSEIMaxLuminanceValue;
   double    m_ccvSEIAvgLuminanceValue;
-#endif
 
   bool      m_erpSEIEnabled;
   bool      m_erpSEICancelFlag;

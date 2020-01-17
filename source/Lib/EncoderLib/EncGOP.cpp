@@ -618,78 +618,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 {
   OutputNALUnit nalu(NAL_UNIT_PREFIX_SEI);
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-  if(m_pcCfg->getActiveParameterSetsSEIEnabled())
-  {
-    SEIActiveParameterSets *sei = new SEIActiveParameterSets;
-    m_seiEncoder.initSEIActiveParameterSets(sei, sps);
-    seiMessages.push_back(sei);
-  }
-#endif
   if(m_pcCfg->getFramePackingArrangementSEIEnabled())
   {
     SEIFramePacking *sei = new SEIFramePacking;
     m_seiEncoder.initSEIFramePacking (sei, m_iNumPicCoded);
     seiMessages.push_back(sei);
   }
-#if !JVET_P0337_PORTING_SEI
-  if(m_pcCfg->getSegmentedRectFramePackingArrangementSEIEnabled())
-  {
-    SEISegmentedRectFramePacking *sei = new SEISegmentedRectFramePacking;
-    m_seiEncoder.initSEISegmentedRectFramePacking(sei);
-    seiMessages.push_back(sei);
-  }
-
-  if (m_pcCfg->getDisplayOrientationSEIAngle())
-  {
-    SEIDisplayOrientation *sei = new SEIDisplayOrientation;
-    m_seiEncoder.initSEIDisplayOrientation(sei);
-    seiMessages.push_back(sei);
-  }
-
-  if(m_pcCfg->getToneMappingInfoSEIEnabled())
-  {
-    SEIToneMappingInfo *sei = new SEIToneMappingInfo;
-    m_seiEncoder.initSEIToneMappingInfo (sei);
-    seiMessages.push_back(sei);
-  }
-
-  if(m_pcCfg->getTMCTSSEIEnabled())
-  {
-    SEITempMotionConstrainedTileSets *sei = new SEITempMotionConstrainedTileSets;
-    m_seiEncoder.initSEITempMotionConstrainedTileSets(sei, pps);
-    seiMessages.push_back(sei);
-  }
-
-  if(m_pcCfg->getTimeCodeSEIEnabled())
-  {
-    SEITimeCode *seiTimeCode = new SEITimeCode;
-    m_seiEncoder.initSEITimeCode(seiTimeCode);
-    seiMessages.push_back(seiTimeCode);
-  }
-
-  if(m_pcCfg->getKneeSEIEnabled())
-  {
-    SEIKneeFunctionInfo *sei = new SEIKneeFunctionInfo;
-    m_seiEncoder.initSEIKneeFunctionInfo(sei);
-    seiMessages.push_back(sei);
-  }
-
-  if(m_pcCfg->getMasteringDisplaySEI().colourVolumeSEIEnabled)
-  {
-    const SEIMasteringDisplay &seiCfg=m_pcCfg->getMasteringDisplaySEI();
-    SEIMasteringDisplayColourVolume *sei = new SEIMasteringDisplayColourVolume;
-    sei->values = seiCfg;
-    seiMessages.push_back(sei);
-  }
-  if(m_pcCfg->getChromaResamplingFilterHintEnabled())
-  {
-    SEIChromaResamplingFilterHint *seiChromaResamplingFilterHint = new SEIChromaResamplingFilterHint;
-    m_seiEncoder.initSEIChromaResamplingFilterHint(seiChromaResamplingFilterHint, m_pcCfg->getChromaResamplingHorFilterIdc(), m_pcCfg->getChromaResamplingVerFilterIdc());
-    seiMessages.push_back(seiChromaResamplingFilterHint);
-  }
-#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   if(m_pcCfg->getSEIAlternativeTransferCharacteristicsSEIEnable())
   {
@@ -697,7 +631,6 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEIAlternativeTransferCharacteristics(seiAlternativeTransferCharacteristics);
     seiMessages.push_back(seiAlternativeTransferCharacteristics);
   }
-#endif
 #endif
   if (m_pcCfg->getErpSEIEnabled())
   {
@@ -745,7 +678,6 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEISampleAspectRatioInfo(seiSampleAspectRatioInfo);
     seiMessages.push_back(seiSampleAspectRatioInfo);
   }
-#if JVET_P0337_PORTING_SEI
   // film grain
   if (m_pcCfg->getFilmGrainCharactersticsSEIEnabled())
   {
@@ -785,7 +717,6 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEIContentColourVolume(seiContentColourVolume);
     seiMessages.push_back(seiContentColourVolume);
   }
-#endif
 }
 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)

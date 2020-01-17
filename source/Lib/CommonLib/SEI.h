@@ -60,50 +60,16 @@ public:
     PAN_SCAN_RECT                        = 2,
 #endif
     FILLER_PAYLOAD                       = 3,
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
     USER_DATA_REGISTERED_ITU_T_T35       = 4,
     USER_DATA_UNREGISTERED               = 5,
-#if !JVET_P0337_PORTING_SEI
-    RECOVERY_POINT                       = 6,
-    SCENE_INFO                           = 9,
-    FULL_FRAME_SNAPSHOT                  = 15,
-    PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
-    PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
-#endif
     FILM_GRAIN_CHARACTERISTICS           = 19,
-#if !JVET_P0337_PORTING_SEI
-    POST_FILTER_HINT                     = 22,
-    TONE_MAPPING_INFO                    = 23,
-#endif
     FRAME_PACKING                        = 45,
-#if !JVET_P0337_PORTING_SEI
-    DISPLAY_ORIENTATION                  = 47,
-    GREEN_METADATA                       = 56,
-    SOP_DESCRIPTION                      = 128,
-    ACTIVE_PARAMETER_SETS                = 129,
-#endif
-#endif
     DECODING_UNIT_INFO                   = 130,
 #if HEVC_SEI
     TEMPORAL_LEVEL0_INDEX                = 131,
 #endif
     DECODED_PICTURE_HASH                 = 132,
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-    SCALABLE_NESTING                     = 133,
-    REGION_REFRESH_INFO                  = 134,
-    NO_DISPLAY                           = 135,
-    TIME_CODE                            = 136,
-#endif
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
-#if !JVET_P0337_PORTING_SEI
-    SEGM_RECT_FRAME_PACKING              = 138,
-    TEMP_MOTION_CONSTRAINED_TILE_SETS    = 139,
-    CHROMA_RESAMPLING_FILTER_HINT        = 140,
-    KNEE_FUNCTION_INFO                   = 141,
-    COLOUR_REMAPPING_INFO                = 142,
-#endif
-#endif
     DEPENDENT_RAP_INDICATION             = 145,
     EQUIRECTANGULAR_PROJECTION           = 150,
     SPHERE_ROTATION                      = 154,
@@ -112,20 +78,13 @@ public:
 #if JVET_P0597_GCMP_SEI
     GENERALIZED_CUBEMAP_PROJECTION       = 153,
 #endif
-#if HEVC_SEI && !JVET_P0337_PORTING_SEI
-#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
-    ALTERNATIVE_TRANSFER_CHARACTERISTICS = 182,
-#endif
-#endif
     FRAME_FIELD_INFO                     = 168,
     SUBPICTURE_LEVEL_INFO                = 203,
     SAMPLE_ASPECT_RATIO_INFO             = 204,
-#if JVET_P0337_PORTING_SEI
     CONTENT_LIGHT_LEVEL_INFO             = 144,
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
     AMBIENT_VIEWING_ENVIRONMENT          = 148,
     CONTENT_COLOUR_VOLUME                = 149,
-#endif
   };
 
   SEI() {}
@@ -262,7 +221,6 @@ public:
   int                   m_sariSarHeight;
 };
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;
 
 class SEIuserDataUnregistered : public SEI
@@ -283,7 +241,6 @@ public:
   uint32_t  userDataLength;
   uint8_t *userData;
 };
-#endif
 
 class SEIDecodedPictureHash : public SEI
 {
@@ -483,21 +440,6 @@ public:
   bool m_duplicateFlag;
 };
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-class SEIRecoveryPoint : public SEI
-{
-public:
-  PayloadType payloadType() const { return RECOVERY_POINT; }
-
-  SEIRecoveryPoint() {}
-  virtual ~SEIRecoveryPoint() {}
-
-  int  m_recoveryPocCnt;
-  bool m_exactMatchingFlag;
-  bool m_brokenLinkFlag;
-};
-#endif
 
 class SEIFramePacking : public SEI
 {
@@ -527,211 +469,6 @@ public:
   bool m_upsampledAspectRatio;
 };
 
-#if !JVET_P0337_PORTING_SEI
-class SEISegmentedRectFramePacking : public SEI
-{
-public:
-  PayloadType payloadType() const { return SEGM_RECT_FRAME_PACKING; }
-
-  SEISegmentedRectFramePacking() {}
-  virtual ~SEISegmentedRectFramePacking() {}
-
-  bool m_arrangementCancelFlag;
-  int  m_contentInterpretationType;
-  bool m_arrangementPersistenceFlag;
-};
-
-class SEIDisplayOrientation : public SEI
-{
-public:
-  PayloadType payloadType() const { return DISPLAY_ORIENTATION; }
-
-  SEIDisplayOrientation()
-    : cancelFlag(true)
-    , persistenceFlag(0)
-    , extensionFlag(false)
-    {}
-  virtual ~SEIDisplayOrientation() {}
-
-  bool cancelFlag;
-  bool horFlip;
-  bool verFlip;
-
-  uint32_t anticlockwiseRotation;
-  bool persistenceFlag;
-  bool extensionFlag;
-};
-
-class SEITemporalLevel0Index : public SEI
-{
-public:
-  PayloadType payloadType() const { return TEMPORAL_LEVEL0_INDEX; }
-
-  SEITemporalLevel0Index()
-    : tl0Idx(0)
-    , rapIdx(0)
-    {}
-  virtual ~SEITemporalLevel0Index() {}
-
-  uint32_t tl0Idx;
-  uint32_t rapIdx;
-};
-
-class SEIGradualDecodingRefreshInfo : public SEI
-{
-public:
-  PayloadType payloadType() const { return REGION_REFRESH_INFO; }
-
-  SEIGradualDecodingRefreshInfo()
-    : m_gdrForegroundFlag(0)
-  {}
-  virtual ~SEIGradualDecodingRefreshInfo() {}
-
-  bool m_gdrForegroundFlag;
-};
-
-class SEINoDisplay : public SEI
-{
-public:
-  PayloadType payloadType() const { return NO_DISPLAY; }
-
-  SEINoDisplay()
-    : m_noDisplay(false)
-  {}
-  virtual ~SEINoDisplay() {}
-
-  bool m_noDisplay;
-};
-
-class SEISOPDescription : public SEI
-{
-public:
-  PayloadType payloadType() const { return SOP_DESCRIPTION; }
-
-  SEISOPDescription() {}
-  virtual ~SEISOPDescription() {}
-
-  uint32_t m_sopSeqParameterSetId;
-  uint32_t m_numPicsInSopMinus1;
-
-  uint32_t m_sopDescVclNaluType[MAX_NUM_PICS_IN_SOP];
-  uint32_t m_sopDescTemporalId[MAX_NUM_PICS_IN_SOP];
-  uint32_t m_sopDescStRpsIdx[MAX_NUM_PICS_IN_SOP];
-  int m_sopDescPocDelta[MAX_NUM_PICS_IN_SOP];
-};
-
-class SEIToneMappingInfo : public SEI
-{
-public:
-  PayloadType payloadType() const { return TONE_MAPPING_INFO; }
-  SEIToneMappingInfo() {}
-  virtual ~SEIToneMappingInfo() {}
-
-  int    m_toneMapId;
-  bool   m_toneMapCancelFlag;
-  bool   m_toneMapPersistenceFlag;
-  int    m_codedDataBitDepth;
-  int    m_targetBitDepth;
-  int    m_modelId;
-  int    m_minValue;
-  int    m_maxValue;
-  int    m_sigmoidMidpoint;
-  int    m_sigmoidWidth;
-  std::vector<int> m_startOfCodedInterval;
-  int    m_numPivots;
-  std::vector<int> m_codedPivotValue;
-  std::vector<int> m_targetPivotValue;
-  int    m_cameraIsoSpeedIdc;
-  int    m_cameraIsoSpeedValue;
-  int    m_exposureIndexIdc;
-  int    m_exposureIndexValue;
-  bool   m_exposureCompensationValueSignFlag;
-  int    m_exposureCompensationValueNumerator;
-  int    m_exposureCompensationValueDenomIdc;
-  int    m_refScreenLuminanceWhite;
-  int    m_extendedRangeWhiteLevel;
-  int    m_nominalBlackLevelLumaCodeValue;
-  int    m_nominalWhiteLevelLumaCodeValue;
-  int    m_extendedWhiteLevelLumaCodeValue;
-};
-
-class SEIKneeFunctionInfo : public SEI
-{
-public:
-  PayloadType payloadType() const { return KNEE_FUNCTION_INFO; }
-  SEIKneeFunctionInfo() {}
-  virtual ~SEIKneeFunctionInfo() {}
-
-  int   m_kneeId;
-  bool  m_kneeCancelFlag;
-  bool  m_kneePersistenceFlag;
-  int   m_kneeInputDrange;
-  int   m_kneeInputDispLuminance;
-  int   m_kneeOutputDrange;
-  int   m_kneeOutputDispLuminance;
-  int   m_kneeNumKneePointsMinus1;
-  std::vector<int> m_kneeInputKneePoint;
-  std::vector<int> m_kneeOutputKneePoint;
-};
-
-class SEIColourRemappingInfo : public SEI
-{
-public:
-
-  struct CRIlut
-  {
-    int codedValue;
-    int targetValue;
-    bool operator < (const CRIlut& a) const
-    {
-      return codedValue < a.codedValue;
-    }
-  };
-
-  PayloadType payloadType() const { return COLOUR_REMAPPING_INFO; }
-  SEIColourRemappingInfo() {}
-  ~SEIColourRemappingInfo() {}
-
-  void copyFrom( const SEIColourRemappingInfo &seiCriInput)
-  {
-    (*this) = seiCriInput;
-  }
-
-  uint32_t                m_colourRemapId;
-  bool                m_colourRemapCancelFlag;
-  bool                m_colourRemapPersistenceFlag;
-  bool                m_colourRemapVideoSignalInfoPresentFlag;
-  bool                m_colourRemapFullRangeFlag;
-  int                 m_colourRemapPrimaries;
-  int                 m_colourRemapTransferFunction;
-  int                 m_colourRemapMatrixCoefficients;
-  int                 m_colourRemapInputBitDepth;
-  int                 m_colourRemapBitDepth;
-  int                 m_preLutNumValMinus1[3];
-  std::vector<CRIlut> m_preLut[3];
-  bool                m_colourRemapMatrixPresentFlag;
-  int                 m_log2MatrixDenom;
-  int                 m_colourRemapCoeffs[3][3];
-  int                 m_postLutNumValMinus1[3];
-  std::vector<CRIlut> m_postLut[3];
-};
-
-class SEIChromaResamplingFilterHint : public SEI
-{
-public:
-  PayloadType payloadType() const {return CHROMA_RESAMPLING_FILTER_HINT;}
-  SEIChromaResamplingFilterHint() {}
-  virtual ~SEIChromaResamplingFilterHint() {}
-
-  int                            m_verChromaFilterIdc;
-  int                            m_horChromaFilterIdc;
-  bool                           m_verFilteringFieldProcessingFlag;
-  int                            m_targetFormatIdc;
-  bool                           m_perfectReconstructionFlag;
-  std::vector<std::vector<int> > m_verFilterCoeff;
-  std::vector<std::vector<int> > m_horFilterCoeff;
-};
-#endif
 class SEIMasteringDisplayColourVolume : public SEI
 {
 public:
@@ -741,7 +478,6 @@ public:
 
     SEIMasteringDisplay values;
 };
-#endif
 
 typedef std::list<SEI*> SEIMessages;
 
@@ -856,7 +592,6 @@ void xTraceSEIHeader();
 void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI 
 class SEIAlternativeTransferCharacteristics : public SEI
 {
@@ -871,22 +606,6 @@ public:
   uint32_t m_preferredTransferCharacteristics;
 };
 #endif
-#if !JVET_P0337_PORTING_SEI
-class SEIGreenMetadataInfo : public SEI
-{
-public:
-    PayloadType payloadType() const { return GREEN_METADATA; }
-    SEIGreenMetadataInfo() {}
-
-    virtual ~SEIGreenMetadataInfo() {}
-
-    uint32_t m_greenMetadataType;
-    uint32_t m_xsdMetricType;
-    uint32_t m_xsdMetricValue;
-};
-#endif
-#endif
-#if JVET_P0337_PORTING_SEI
 class SEIUserDataRegistered : public SEI
 {
 public:
@@ -982,7 +701,6 @@ public:
   uint32_t  m_ccvAvgLuminanceValue;
 };
 
-#endif
 #endif
 
 

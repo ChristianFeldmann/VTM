@@ -573,59 +573,11 @@ void EncApp::xInitLibCfg()
    m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
   m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-  m_cEncLib.setToneMappingInfoSEIEnabled                         ( m_toneMappingInfoSEIEnabled );
-  m_cEncLib.setTMISEIToneMapId                                   ( m_toneMapId );
-  m_cEncLib.setTMISEIToneMapCancelFlag                           ( m_toneMapCancelFlag );
-  m_cEncLib.setTMISEIToneMapPersistenceFlag                      ( m_toneMapPersistenceFlag );
-  m_cEncLib.setTMISEICodedDataBitDepth                           ( m_toneMapCodedDataBitDepth );
-  m_cEncLib.setTMISEITargetBitDepth                              ( m_toneMapTargetBitDepth );
-  m_cEncLib.setTMISEIModelID                                     ( m_toneMapModelId );
-  m_cEncLib.setTMISEIMinValue                                    ( m_toneMapMinValue );
-  m_cEncLib.setTMISEIMaxValue                                    ( m_toneMapMaxValue );
-  m_cEncLib.setTMISEISigmoidMidpoint                             ( m_sigmoidMidpoint );
-  m_cEncLib.setTMISEISigmoidWidth                                ( m_sigmoidWidth );
-  m_cEncLib.setTMISEIStartOfCodedInterva                         ( m_startOfCodedInterval );
-  m_cEncLib.setTMISEINumPivots                                   ( m_numPivots );
-  m_cEncLib.setTMISEICodedPivotValue                             ( m_codedPivotValue );
-  m_cEncLib.setTMISEITargetPivotValue                            ( m_targetPivotValue );
-  m_cEncLib.setTMISEICameraIsoSpeedIdc                           ( m_cameraIsoSpeedIdc );
-  m_cEncLib.setTMISEICameraIsoSpeedValue                         ( m_cameraIsoSpeedValue );
-  m_cEncLib.setTMISEIExposureIndexIdc                            ( m_exposureIndexIdc );
-  m_cEncLib.setTMISEIExposureIndexValue                          ( m_exposureIndexValue );
-  m_cEncLib.setTMISEIExposureCompensationValueSignFlag           ( m_exposureCompensationValueSignFlag );
-  m_cEncLib.setTMISEIExposureCompensationValueNumerator          ( m_exposureCompensationValueNumerator );
-  m_cEncLib.setTMISEIExposureCompensationValueDenomIdc           ( m_exposureCompensationValueDenomIdc );
-  m_cEncLib.setTMISEIRefScreenLuminanceWhite                     ( m_refScreenLuminanceWhite );
-  m_cEncLib.setTMISEIExtendedRangeWhiteLevel                     ( m_extendedRangeWhiteLevel );
-  m_cEncLib.setTMISEINominalBlackLevelLumaCodeValue              ( m_nominalBlackLevelLumaCodeValue );
-  m_cEncLib.setTMISEINominalWhiteLevelLumaCodeValue              ( m_nominalWhiteLevelLumaCodeValue );
-  m_cEncLib.setTMISEIExtendedWhiteLevelLumaCodeValue             ( m_extendedWhiteLevelLumaCodeValue );
-  m_cEncLib.setChromaResamplingFilterHintEnabled                 ( m_chromaResamplingFilterSEIenabled );
-  m_cEncLib.setChromaResamplingHorFilterIdc                      ( m_chromaResamplingHorFilterIdc );
-  m_cEncLib.setChromaResamplingVerFilterIdc                      ( m_chromaResamplingVerFilterIdc );
-#endif
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );
   m_cEncLib.setFramePackingArrangementSEIId                      ( m_framePackingSEIId );
   m_cEncLib.setFramePackingArrangementSEIQuincunx                ( m_framePackingSEIQuincunx );
   m_cEncLib.setFramePackingArrangementSEIInterpretation          ( m_framePackingSEIInterpretation );
-#if !JVET_P0337_PORTING_SEI
-  m_cEncLib.setSegmentedRectFramePackingArrangementSEIEnabled    ( m_segmentedRectFramePackingSEIEnabled );
-  m_cEncLib.setSegmentedRectFramePackingArrangementSEICancel     ( m_segmentedRectFramePackingSEICancel );
-  m_cEncLib.setSegmentedRectFramePackingArrangementSEIType       ( m_segmentedRectFramePackingSEIType );
-  m_cEncLib.setSegmentedRectFramePackingArrangementSEIPersistence( m_segmentedRectFramePackingSEIPersistence );
-  m_cEncLib.setDisplayOrientationSEIAngle                        ( m_displayOrientationSEIAngle );
-  m_cEncLib.setTemporalLevel0IndexSEIEnabled                     ( m_temporalLevel0IndexSEIEnabled );
-  m_cEncLib.setGradualDecodingRefreshInfoEnabled                 ( m_gradualDecodingRefreshInfoEnabled );
-  m_cEncLib.setNoDisplaySEITLayer                                ( m_noDisplaySEITLayer );
-  m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
-  m_cEncLib.setSOPDescriptionSEIEnabled                          ( m_SOPDescriptionSEIEnabled );
-  m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
-  m_cEncLib.setTMCTSSEIEnabled                                   ( m_tmctsSEIEnabled );
-#endif
-#endif
   m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
   m_cEncLib.setErpSEICancelFlag                                  ( m_erpSEICancelFlag );        
   m_cEncLib.setErpSEIPersistenceFlag                             ( m_erpSEIPersistenceFlag );   
@@ -698,39 +650,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSariSarWidth                                      (m_sariSarWidth);
   m_cEncLib.setSariSarHeight                                     (m_sariSarHeight);
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-  m_cEncLib.setTimeCodeSEIEnabled                                ( m_timeCodeSEIEnabled );
-  m_cEncLib.setNumberOfTimeSets                                  ( m_timeCodeSEINumTs );
-  for(int i = 0; i < m_timeCodeSEINumTs; i++)
-  {
-    m_cEncLib.setTimeSet(m_timeSetArray[i], i);
-  }
-  m_cEncLib.setKneeSEIEnabled                                    ( m_kneeSEIEnabled );
-  m_cEncLib.setKneeSEIId                                         ( m_kneeSEIId );
-  m_cEncLib.setKneeSEICancelFlag                                 ( m_kneeSEICancelFlag );
-  m_cEncLib.setKneeSEIPersistenceFlag                            ( m_kneeSEIPersistenceFlag );
-  m_cEncLib.setKneeSEIInputDrange                                ( m_kneeSEIInputDrange );
-  m_cEncLib.setKneeSEIInputDispLuminance                         ( m_kneeSEIInputDispLuminance );
-  m_cEncLib.setKneeSEIOutputDrange                               ( m_kneeSEIOutputDrange );
-  m_cEncLib.setKneeSEIOutputDispLuminance                        ( m_kneeSEIOutputDispLuminance );
-  m_cEncLib.setKneeSEINumKneePointsMinus1                        ( m_kneeSEINumKneePointsMinus1 );
-  m_cEncLib.setKneeSEIInputKneePoint                             ( m_kneeSEIInputKneePoint );
-  m_cEncLib.setKneeSEIOutputKneePoint                            ( m_kneeSEIOutputKneePoint );
-  m_cEncLib.setColourRemapInfoSEIFileRoot                        ( m_colourRemapSEIFileRoot );
-#endif
   m_cEncLib.setMasteringDisplaySEI                               ( m_masteringDisplay );
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   m_cEncLib.setSEIAlternativeTransferCharacteristicsSEIEnable    ( m_preferredTransferCharacteristics>=0     );
   m_cEncLib.setSEIPreferredTransferCharacteristics               ( uint8_t(m_preferredTransferCharacteristics) );
 #endif
-#if !JVET_P0337_PORTING_SEI
-  m_cEncLib.setSEIGreenMetadataInfoSEIEnable                     ( m_greenMetadataType > 0 );
-  m_cEncLib.setSEIGreenMetadataType                              ( uint8_t(m_greenMetadataType) );
-  m_cEncLib.setSEIXSDMetricType                                  ( uint8_t(m_xsdMetricType) );
-#endif
-#endif
-#if JVET_P0337_PORTING_SEI
   // film grain charcteristics
   m_cEncLib.setFilmGrainCharactersticsSEIEnabled                 (m_fgcSEIEnabled);
   m_cEncLib.setFilmGrainCharactersticsSEICancelFlag              (m_fgcSEICancelFlag);
@@ -769,7 +693,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCcvSEIMinLuminanceValue                           (m_ccvSEIMinLuminanceValue);
   m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
   m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
-#endif
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
   m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );

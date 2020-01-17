@@ -160,7 +160,6 @@
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
 
-#define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting several HEVC SEIs and add encoder control
 
 #define JVET_P0171_SUBPICTURE_LAYOUT                      1  //JVET-P0171: subpicture layout
 

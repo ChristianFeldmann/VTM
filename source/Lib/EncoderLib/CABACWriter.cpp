@@ -1536,11 +1536,7 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
     assert(numIndices);
     assert(numIndices > 0);
     mappedValue = numIndices - 1;
-#if JVET_P0090_32BIT_MVD
     m_BinEncoder.encodeRemAbsEP(mappedValue, currParam, COEF_REMAIN_BIN_REDUCTION, MAX_NUM_CHANNEL_TYPE); // JC: code number of indices (PLT_RUN_INDEX)
-#else
-    m_BinEncoder.encodeRemAbsEP(mappedValue, currParam, false, MAX_NUM_CHANNEL_TYPE); // JC: code number of indices (PLT_RUN_INDEX)
-#endif
     auto idxPosEnd = idxPos.end();
     for (auto iter = idxPos.begin(); iter != idxPosEnd; ++iter)
     {
@@ -2646,11 +2642,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
   {
     if( horAbs > 1 )
     {
-#if JVET_P0090_32BIT_MVD
       m_BinEncoder.encodeRemAbsEP(horAbs - 2, 1, 0, MV_BITS - 1);
-#else
-      exp_golomb_eqprob( horAbs - 2, 1 );
-#endif
     }
     m_BinEncoder.encodeBinEP( (horMvd < 0) );
   }
@@ -2658,11 +2650,7 @@ void CABACWriter::mvd_coding( const Mv &rMvd, int8_t imv )
   {
     if( verAbs > 1 )
     {
-#if JVET_P0090_32BIT_MVD
       m_BinEncoder.encodeRemAbsEP(verAbs - 2, 1, 0, MV_BITS - 1);
-#else
-      exp_golomb_eqprob( verAbs - 2, 1 );
-#endif
     }
     m_BinEncoder.encodeBinEP( (verMvd < 0) );
   }
@@ -3318,11 +3306,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
     if( absLevel >= 4 )
     {
       unsigned rem      = ( absLevel - 4 ) >> 1;
-#if JVET_P0090_32BIT_MVD
       m_BinEncoder.encodeRemAbsEP( rem, ricePar, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
-#else
-      m_BinEncoder.encodeRemAbsEP( rem, ricePar, cctx.extPrec(), cctx.maxLog2TrDRange() );
-#endif
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, ricePar );
     }
   }
@@ -3340,11 +3324,7 @@ void CABACWriter::residual_coding_subblock( CoeffCodingContext& cctx, const TCoe
     int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
 #endif
     unsigned  rem       = ( absLevel == 0 ? pos0 : absLevel <= pos0 ? absLevel-1 : absLevel );
-#if JVET_P0090_32BIT_MVD
     m_BinEncoder.encodeRemAbsEP( rem, rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
-#else
-    m_BinEncoder.encodeRemAbsEP( rem, rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
-#endif
     DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );
     state = ( stateTransTable >> ((state<<2)+((absLevel&1)<<1)) ) & 3;
     if( absLevel )
@@ -3598,11 +3578,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 #else
       unsigned  rem  = ( absLevel - cutoffVal ) >> 1;
 #endif
-#if JVET_P0090_32BIT_MVD
       m_BinEncoder.encodeRemAbsEP( rem, rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
-#else
-      m_BinEncoder.encodeRemAbsEP( rem, rice, cctx.extPrec(), cctx.maxLog2TrDRange() );
-#endif
       DTRACE( g_trace_ctx, D_SYNTAX_RESI, "ts_rem_val() bin=%d ctx=%d sp=%d\n", rem, rice, scanPos );
 
 #if JVET_P0072_SIMPLIFIED_TSRC

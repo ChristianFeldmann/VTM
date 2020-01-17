@@ -292,9 +292,7 @@ public:
   uint32_t depth;
   int      layerId;
 
-#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
   bool subLayerNonReferencePictureDueToSTSA;
-#endif
 
   int* m_spliceIdx;
   int  m_ctuNums;

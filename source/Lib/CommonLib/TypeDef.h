@@ -215,7 +215,6 @@
 
 #define JVET_P0164_ALF_SYNTAX_SIMP                        1 // JVET-p0164: simplify alf syntax with method2
 
-#define JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS              1 // JVET-O0235: NAL unit type constraints
 
 #define JVET_O0549_ENCODER_ONLY_FILTER                    1 // JVET-O0549: Encoder-only temporal filter, no decoder changes
 

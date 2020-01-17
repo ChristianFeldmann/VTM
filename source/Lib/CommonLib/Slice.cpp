@@ -627,7 +627,6 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
   }
 }
 
-#if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
 void Slice::checkSTSA(PicList& rcListPic)
 {
   int ii;
@@ -687,7 +686,6 @@ void Slice::checkSTSA(PicList& rcListPic)
     }
   }
 }
-#endif
 
 
 /** Function for marking the reference pictures when an IDR/CRA/CRANT/BLA/BLANT is encountered.

@@ -60,46 +60,10 @@ namespace po = df::program_options_lite;
 
 enum ExtendedProfileName // this is used for determining profile strings, where multiple profiles map to a single profile idc with various constraint flag combinations
 {
-#if JVET_P2001E_PROFILES
   NONE        = Profile::NONE,
   MAIN_10     = Profile::MAIN_10,
   MAIN_444_10 = Profile::MAIN_444_10,
   AUTO = -1
-#else
-  NONE = 0,
-  MAIN = 1,
-  MAIN10 = 2,
-  MAINSTILLPICTURE = 3,
-  MAINREXT = 4,
-  HIGHTHROUGHPUTREXT = 5, // Placeholder profile for development
-  // The following are RExt profiles, which would map to the MAINREXT profile idc.
-  // The enumeration indicates the bit-depth constraint in the bottom 2 digits
-  //                           the chroma format in the next digit
-  //                           the intra constraint in the next digit
-  //                           If it is a RExt still picture, there is a '1' for the top digit.
-  MONOCHROME_8      = 1008,
-  MONOCHROME_12     = 1012,
-  MONOCHROME_16     = 1016,
-  MAIN_12           = 1112,
-  MAIN_422_10       = 1210,
-  MAIN_422_12       = 1212,
-  MAIN_444          = 1308,
-  MAIN_444_10       = 1310,
-  MAIN_444_12       = 1312,
-  MAIN_444_16       = 1316, // non-standard profile definition, used for development purposes
-  MAIN_INTRA        = 2108,
-  MAIN_10_INTRA     = 2110,
-  MAIN_12_INTRA     = 2112,
-  MAIN_422_10_INTRA = 2210,
-  MAIN_422_12_INTRA = 2212,
-  MAIN_444_INTRA    = 2308,
-  MAIN_444_10_INTRA = 2310,
-  MAIN_444_12_INTRA = 2312,
-  MAIN_444_16_INTRA = 2316,
-  MAIN_444_STILL_PICTURE = 11308,
-  MAIN_444_16_STILL_PICTURE = 12316,
-  NEXT          = 6
-#endif
 };
 
 
@@ -260,17 +224,8 @@ static const struct MapStrToProfile
 strToProfile[] =
 {
   {"none",                 Profile::NONE               },
-#if JVET_P2001E_PROFILES
   {"main_10",              Profile::MAIN_10            },
   {"main_444_10",          Profile::MAIN_444_10        }
-#else
-  {"main",                 Profile::MAIN               },
-  {"main10",               Profile::MAIN10             },
-  {"main-still-picture",   Profile::MAINSTILLPICTURE   },
-  {"main-RExt",            Profile::MAINREXT           },
-  {"high-throughput-RExt", Profile::HIGHTHROUGHPUTREXT },
-  {"next",                 Profile::NEXT           }
-#endif
 };
 
 static const struct MapStrToExtendedProfile
@@ -281,65 +236,11 @@ static const struct MapStrToExtendedProfile
 strToExtendedProfile[] =
 {
     {"none",                      NONE             },
-#if JVET_P2001E_PROFILES
     {"main_10",                   MAIN_10          },
     {"main_444_10",               MAIN_444_10      },
     {"auto",                      AUTO             }
-#else
-    {"main",                      MAIN             },
-    {"main10",                    MAIN10           },
-    {"main_still_picture",        MAINSTILLPICTURE },
-    {"main-still-picture",        MAINSTILLPICTURE },
-    {"main_RExt",                 MAINREXT         },
-    {"main-RExt",                 MAINREXT         },
-    {"main_rext",                 MAINREXT         },
-    {"main-rext",                 MAINREXT         },
-    {"high_throughput_RExt",      HIGHTHROUGHPUTREXT },
-    {"high-throughput-RExt",      HIGHTHROUGHPUTREXT },
-    {"high_throughput_rext",      HIGHTHROUGHPUTREXT },
-    {"high-throughput-rext",      HIGHTHROUGHPUTREXT },
-    {"monochrome",                MONOCHROME_8     },
-    {"monochrome12",              MONOCHROME_12    },
-    {"monochrome16",              MONOCHROME_16    },
-    {"main12",                    MAIN_12          },
-    {"main_422_10",               MAIN_422_10      },
-    {"main_422_12",               MAIN_422_12      },
-    {"main_444",                  MAIN_444         },
-    {"main_444_10",               MAIN_444_10      },
-    {"main_444_12",               MAIN_444_12      },
-    {"main_444_16",               MAIN_444_16      },
-    {"main_intra",                MAIN_INTRA       },
-    {"main_10_intra",             MAIN_10_INTRA    },
-    {"main_12_intra",             MAIN_12_INTRA    },
-    {"main_422_10_intra",         MAIN_422_10_INTRA},
-    {"main_422_12_intra",         MAIN_422_12_INTRA},
-    {"main_444_intra",            MAIN_444_INTRA   },
-    {"main_444_still_picture",    MAIN_444_STILL_PICTURE },
-    {"main_444_10_intra",         MAIN_444_10_INTRA},
-    {"main_444_12_intra",         MAIN_444_12_INTRA},
-    {"main_444_16_intra",         MAIN_444_16_INTRA},
-    {"main_444_16_still_picture", MAIN_444_16_STILL_PICTURE },
-    {"next",                      NEXT }
-#endif
 };
 
-#if !JVET_P2001E_PROFILES
-static const ExtendedProfileName validRExtProfileNames[2/* intraConstraintFlag*/][4/* bit depth constraint 8=0, 10=1, 12=2, 16=3*/][4/*chroma format*/]=
-{
-    {
-        { MONOCHROME_8,  NONE,          NONE,              MAIN_444          }, // 8-bit  inter for 400, 420, 422 and 444
-        { NONE,          NONE,          MAIN_422_10,       MAIN_444_10       }, // 10-bit inter for 400, 420, 422 and 444
-        { MONOCHROME_12, MAIN_12,       MAIN_422_12,       MAIN_444_12       }, // 12-bit inter for 400, 420, 422 and 444
-        { MONOCHROME_16, NONE,          NONE,              MAIN_444_16       }  // 16-bit inter for 400, 420, 422 and 444 (the latter is non standard used for development)
-    },
-    {
-        { NONE,          MAIN_INTRA,    NONE,              MAIN_444_INTRA    }, // 8-bit  intra for 400, 420, 422 and 444
-        { NONE,          MAIN_10_INTRA, MAIN_422_10_INTRA, MAIN_444_10_INTRA }, // 10-bit intra for 400, 420, 422 and 444
-        { NONE,          MAIN_12_INTRA, MAIN_422_12_INTRA, MAIN_444_12_INTRA }, // 12-bit intra for 400, 420, 422 and 444
-        { NONE,          NONE,          NONE,              MAIN_444_16_INTRA }  // 16-bit intra for 400, 420, 422 and 444
-    }
-};
-#endif
 
 static const struct MapStrToTier
 {
@@ -638,83 +539,6 @@ static inline istream& operator >> (std::istream& in, std::map<T1, T2>& map)
   return in;
 }
 
-#if !JVET_P2001E_PROFILES
-static void
-automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
-                               const bool bUsingChromaQPAdjustment,
-                               const bool bUsingExtendedPrecision,
-                               const bool bIntraConstraintFlag,
-                               uint32_t &bitDepthConstraint,
-                               ChromaFormat &chromaFormatConstraint,
-                               const int  maxBitDepth,
-                               const ChromaFormat chromaFormat)
-{
-  // Try to choose profile, according to table in Q1013.
-  uint32_t trialBitDepthConstraint=maxBitDepth;
-  if (trialBitDepthConstraint<8)
-  {
-    trialBitDepthConstraint=8;
-  }
-  else if (trialBitDepthConstraint==9 || trialBitDepthConstraint==11)
-  {
-    trialBitDepthConstraint++;
-  }
-  else if (trialBitDepthConstraint>12)
-  {
-    trialBitDepthConstraint=16;
-  }
-
-  // both format and bit depth constraints are unspecified
-  if (bUsingExtendedPrecision || trialBitDepthConstraint==16)
-  {
-    bitDepthConstraint = 16;
-    chromaFormatConstraint = (!bIntraConstraintFlag && chromaFormat==CHROMA_400) ? CHROMA_400 : CHROMA_444;
-  }
-  else if (bUsingGeneralRExtTools)
-  {
-    if (chromaFormat == CHROMA_400 && !bIntraConstraintFlag)
-    {
-      bitDepthConstraint = 16;
-      chromaFormatConstraint = CHROMA_400;
-    }
-    else
-    {
-      bitDepthConstraint = trialBitDepthConstraint;
-      chromaFormatConstraint = CHROMA_444;
-    }
-  }
-  else if (chromaFormat == CHROMA_400)
-  {
-    if (bIntraConstraintFlag)
-    {
-      chromaFormatConstraint = CHROMA_420; // there is no intra 4:0:0 profile.
-      bitDepthConstraint     = trialBitDepthConstraint;
-    }
-    else
-    {
-      chromaFormatConstraint = CHROMA_400;
-      bitDepthConstraint     = trialBitDepthConstraint == 8 ? 8 : 12;
-    }
-  }
-  else
-  {
-    bitDepthConstraint = trialBitDepthConstraint;
-    chromaFormatConstraint = chromaFormat;
-    if (bUsingChromaQPAdjustment && chromaFormat == CHROMA_420)
-    {
-      chromaFormatConstraint = CHROMA_422; // 4:2:0 cannot use the chroma qp tool.
-    }
-    if (chromaFormatConstraint == CHROMA_422 && bitDepthConstraint == 8)
-    {
-      bitDepthConstraint = 10; // there is no 8-bit 4:2:2 profile.
-    }
-    if (chromaFormatConstraint == CHROMA_420 && !bIntraConstraintFlag)
-    {
-      bitDepthConstraint = 12; // there is no 8 or 10-bit 4:2:0 inter RExt profile.
-    }
-  }
-}
-#endif
 
 
 static uint32_t getMaxTileColsByLevel( Level::Name level )
@@ -1016,11 +840,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("HarmonizeGopFirstFieldCoupleEnabled",             m_bHarmonizeGopFirstFieldCoupleEnabled,            true, "Enables harmonization of Gop first field couple")
 
   // Profile and level
-#if JVET_P2001E_PROFILES
   ("Profile",                                         extendedProfile,              ExtendedProfileName::NONE, "Profile name to use for encoding. Use main_10, main_444_10, auto, or none")
-#else
-  ("Profile",                                         extendedProfile,                                   NONE, "Profile name to use for encoding. Use main (for main), main10 (for main10), main-still-picture, main-RExt (for Range Extensions profile), any of the RExt specific profile names, or none")
-#endif
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
   ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
@@ -1028,10 +848,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("IntraConstraintFlag",                             m_intraConstraintFlag,                            false, "Value of general_intra_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
-#if !JVET_P2001E_PROFILES
-  ("OnePictureOnlyConstraintFlag",                    m_onePictureOnlyConstraintFlag,                   false, "Value of general_one_picture_only_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
-  ("LowerBitRateConstraintFlag",                      m_lowerBitRateConstraintFlag,                      true, "Value of general_lower_bit_rate_constraint_flag to use for RExt profiles")
-#endif
 
   ("ProgressiveSource",                               m_progressiveSourceFlag,                          false, "Indicate that source is progressive")
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
@@ -1854,7 +1670,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   CHECK( tmpMotionEstimationSearchMethod < 0 || tmpMotionEstimationSearchMethod >= MESEARCH_NUMBER_OF_METHODS, "Error in cfg" );
   m_motionEstimationSearchMethod=MESearchMethod(tmpMotionEstimationSearchMethod);
 
-#if JVET_P2001E_PROFILES
   if (extendedProfile == ExtendedProfileName::AUTO)
   {
     if (xAutoDetermineProfile())
@@ -1862,32 +1677,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       EXIT( "Unable to determine profile from configured settings");
     }
   }
-#else
-  if (extendedProfile >= 1000 && extendedProfile <= 12316)
-  {
-    m_profile = Profile::MAINREXT;
-    if (m_bitDepthConstraint != 0 || tmpConstraintChromaFormat != 0)
-    {
-      EXIT( "Error: The bit depth and chroma format constraints are not used when an explicit RExt profile is specified");
-    }
-    m_bitDepthConstraint           = (extendedProfile%100);
-    m_intraConstraintFlag          = ((extendedProfile%10000)>=2000);
-    m_onePictureOnlyConstraintFlag = (extendedProfile >= 10000);
-    switch ((extendedProfile/100)%10)
-    {
-      case 0:  tmpConstraintChromaFormat=400; break;
-      case 1:  tmpConstraintChromaFormat=420; break;
-      case 2:  tmpConstraintChromaFormat=422; break;
-      default: tmpConstraintChromaFormat=444; break;
-    }
-  }
-#endif
   else
   {
     m_profile = Profile::Name(extendedProfile);
   }
 
-#if JVET_P2001E_PROFILES
   {
     m_chromaFormatConstraint       = (tmpConstraintChromaFormat == 0) ? m_chromaFormatIDC : numberToChromaFormat(tmpConstraintChromaFormat);
     if (m_bitDepthConstraint == 0)
@@ -1902,67 +1696,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       }
     }
   }
-#else
-  if (m_profile == Profile::HIGHTHROUGHPUTREXT )
-  {
-    if (m_bitDepthConstraint == 0)
-    {
-      m_bitDepthConstraint = 16;
-    }
-    m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? CHROMA_444 : numberToChromaFormat(tmpConstraintChromaFormat);
-  }
-  else if (m_profile == Profile::MAINREXT)
-  {
-    if (m_bitDepthConstraint == 0 && tmpConstraintChromaFormat == 0)
-    {
-      // produce a valid combination, if possible.
-      const bool bUsingGeneralRExtTools  = m_transformSkipRotationEnabledFlag        ||
-                                           m_transformSkipContextEnabledFlag         ||
-                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT] ||
-                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT] ||
-                                           !m_enableIntraReferenceSmoothing          ||
-                                           m_persistentRiceAdaptationEnabledFlag     ||
-                                           m_log2MaxTransformSkipBlockSize!=2;
-      const bool bUsingChromaQPAdjustment= m_cuChromaQpOffsetSubdiv >= 0;
-      const bool bUsingExtendedPrecision = m_extendedPrecisionProcessingFlag;
-      if (m_onePictureOnlyConstraintFlag)
-      {
-        m_chromaFormatConstraint = CHROMA_444;
-        if (m_intraConstraintFlag != true)
-        {
-          EXIT( "Error: Intra constraint flag must be true when one_picture_only_constraint_flag is true");
-        }
-        const int maxBitDepth = m_chromaFormatIDC==CHROMA_400 ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
-        m_bitDepthConstraint = maxBitDepth>8 ? 16:8;
-      }
-      else
-      {
-        m_chromaFormatConstraint = NUM_CHROMA_FORMAT;
-        automaticallySelectRExtProfile(bUsingGeneralRExtTools,
-                                       bUsingChromaQPAdjustment,
-                                       bUsingExtendedPrecision,
-                                       m_intraConstraintFlag,
-                                       m_bitDepthConstraint,
-                                       m_chromaFormatConstraint,
-                                       m_chromaFormatIDC==CHROMA_400 ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]),
-                                       m_chromaFormatIDC);
-      }
-    }
-    else if (m_bitDepthConstraint == 0 || tmpConstraintChromaFormat == 0)
-    {
-      EXIT( "Error: The bit depth and chroma format constraints must either both be specified or both be configured automatically");
-    }
-    else
-    {
-      m_chromaFormatConstraint = numberToChromaFormat(tmpConstraintChromaFormat);
-    }
-  }
-  else
-  {
-    m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? m_chromaFormatIDC : numberToChromaFormat(tmpConstraintChromaFormat);
-    m_bitDepthConstraint     = ( ( m_profile == Profile::MAIN10 || m_profile == Profile::NEXT ) ? 10 : 8 );
-  }
-#endif
 
 
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
@@ -2462,7 +2195,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 // Private member functions
 // ====================================================================================================================
 
-#if JVET_P2001E_PROFILES
 ///< auto determine the profile to use given the other configuration settings. Returns 1 if erred. Can select profile 'NONE'
 
 int EncAppCfg::xAutoDetermineProfile()
@@ -2490,7 +2222,6 @@ int EncAppCfg::xAutoDetermineProfile()
   }
   return 0;
 }
-#endif
 
 bool EncAppCfg::xCheckParameter()
 {
@@ -2520,46 +2251,11 @@ bool EncAppCfg::xCheckParameter()
 #define xConfirmPara(a,b) check_failed |= confirmPara(a,b)
 
 
-#if JVET_P2001E_PROFILES
   if( m_depQuantEnabledFlag )
   {
     xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
     xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
   }
-#else
-  if( m_profile != Profile::NEXT )
-  {
-    THROW( "Next profile with an alternative partitioner has to be enabled if HEVC_USE_RQT is off!" );
-    xConfirmPara( m_LMChroma, "LMChroma only allowed with NEXT profile" );
-    xConfirmPara( m_ImvMode, "IMV is only allowed with NEXT profile" );
-    xConfirmPara(m_useColorTrans, "ACT Mode only allowed with NEXT profile");
-    xConfirmPara( m_PLTMode, "PLT Mode only allowed with NEXT profile");
-    xConfirmPara(m_IBCMode, "IBC Mode only allowed with NEXT profile");
-    xConfirmPara( m_HashME, "Hash motion estimation only allowed with NEXT profile" );
-    xConfirmPara( m_useFastLCTU, "Fast large CTU can only be applied when encoding with NEXT profile" );
-    xConfirmPara( m_MTS, "MTS only allowed with NEXT profile" );
-    xConfirmPara( m_MTSIntraMaxCand, "MTS only allowed with NEXT profile" );
-    xConfirmPara( m_MTSInterMaxCand, "MTS only allowed with NEXT profile" );
-    xConfirmPara( m_SMVD, "SMVD is only allowed with NEXT profile" );
-    xConfirmPara( m_compositeRefEnabled, "Composite Reference Frame is only allowed with NEXT profile" );
-    xConfirmPara( m_bcw, "Bcw is only allowed with NEXT profile" );
-    xConfirmPara( m_BcwFast, "BcwFast is only allowed with NEXT profile" );
-    xConfirmPara( m_Triangle, "Triangle is only allowed with NEXT profile" );
-    xConfirmPara(m_DMVR, "DMVR only allowed with NEXT profile");
-    xConfirmPara(m_MmvdDisNum, "Number of distance MMVD entry setting only allowed with NEXT profile");
-    xConfirmPara(m_JointCbCrMode, "JointCbCr only allowed with NEXT profile");
-    // ADD_NEW_TOOL : (parameter check) add a check for next tools here
-  }
-  else
-  {
-    if( m_depQuantEnabledFlag )
-    {
-      xConfirmPara( !m_useRDOQ || !m_useRDOQTS, "RDOQ and RDOQTS must be equal to 1 if dependent quantization is enabled" );
-      xConfirmPara( m_signDataHidingEnabledFlag, "SignHideFlag must be equal to 0 if dependent quantization is enabled" );
-    }
-
-  }
-#endif
 
   if( m_wrapAround )
   {
@@ -2597,11 +2293,7 @@ bool EncAppCfg::xCheckParameter()
 
 
   xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
-#if !JVET_P2001E_PROFILES
-  const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
-#endif
   xConfirmPara(m_internalBitDepth[CHANNEL_TYPE_CHROMA] != m_internalBitDepth[CHANNEL_TYPE_LUMA], "The internalBitDepth must be the same for luma and chroma");
-#if JVET_P2001E_PROFILES
   if (m_profile==Profile::MAIN_10 || m_profile==Profile::MAIN_444_10)
   {
     xConfirmPara(m_crossComponentPredictionEnabledFlag==true, "CrossComponentPrediction must not be used for given profile.");
@@ -2616,76 +2308,6 @@ bool EncAppCfg::xCheckParameter()
     xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for given profile.");
     xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for given profile.");
   }
-#else
-  xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
-  xConfirmPara(m_chromaFormatConstraint<m_chromaFormatIDC, "The chroma format used must not be greater than the chromaFormatConstraint value");
-
-  if (m_profile==Profile::MAINREXT || m_profile==Profile::HIGHTHROUGHPUTREXT)
-  {
-    xConfirmPara(m_lowerBitRateConstraintFlag==false && m_intraConstraintFlag==false, "The lowerBitRateConstraint flag cannot be false when intraConstraintFlag is false");
-    xConfirmPara(m_cabacBypassAlignmentEnabledFlag && m_profile!=Profile::HIGHTHROUGHPUTREXT, "AlignCABACBeforeBypass must not be enabled unless the high throughput profile is being used.");
-    if (m_profile == Profile::MAINREXT)
-    {
-      const uint32_t intraIdx = m_intraConstraintFlag ? 1:0;
-      const uint32_t bitDepthIdx = (m_bitDepthConstraint == 8 ? 0 : (m_bitDepthConstraint ==10 ? 1 : (m_bitDepthConstraint == 12 ? 2 : (m_bitDepthConstraint == 16 ? 3 : 4 ))));
-      const uint32_t chromaFormatIdx = uint32_t(m_chromaFormatConstraint);
-      const bool bValidProfile = (bitDepthIdx > 3 || chromaFormatIdx>3) ? false : (validRExtProfileNames[intraIdx][bitDepthIdx][chromaFormatIdx] != NONE);
-      xConfirmPara(!bValidProfile, "Invalid intra constraint flag, bit depth constraint flag and chroma format constraint flag combination for a RExt profile");
-      const bool bUsingGeneralRExtTools  = m_transformSkipRotationEnabledFlag        ||
-                                           m_transformSkipContextEnabledFlag         ||
-                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT] ||
-                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT] ||
-                                           !m_enableIntraReferenceSmoothing          ||
-                                           m_persistentRiceAdaptationEnabledFlag     ||
-                                           m_log2MaxTransformSkipBlockSize!=2;
-      const bool bUsingChromaQPTool      = m_cuChromaQpOffsetSubdiv >= 0;
-      const bool bUsingExtendedPrecision = m_extendedPrecisionProcessingFlag;
-
-      xConfirmPara((m_chromaFormatConstraint==CHROMA_420 || m_chromaFormatConstraint==CHROMA_400) && bUsingChromaQPTool, "CU Chroma QP adjustment cannot be used for 4:0:0 or 4:2:0 RExt profiles");
-      xConfirmPara(m_bitDepthConstraint != 16 && bUsingExtendedPrecision, "Extended precision can only be used in 16-bit RExt profiles");
-      if (!(m_chromaFormatConstraint == CHROMA_400 && m_bitDepthConstraint == 16) && m_chromaFormatConstraint!=CHROMA_444)
-      {
-        xConfirmPara(bUsingGeneralRExtTools, "Combination of tools and profiles are not possible in the specified RExt profile.");
-      }
-      xConfirmPara( m_onePictureOnlyConstraintFlag && m_chromaFormatConstraint!=CHROMA_444, "chroma format constraint must be 4:4:4 when one-picture-only constraint flag is 1");
-      xConfirmPara( m_onePictureOnlyConstraintFlag && m_bitDepthConstraint != 8 && m_bitDepthConstraint != 16, "bit depth constraint must be 8 or 16 when one-picture-only constraint flag is 1");
-      xConfirmPara( m_onePictureOnlyConstraintFlag && m_framesToBeEncoded > 1, "Number of frames to be encoded must be 1 when one-picture-only constraint flag is 1.");
-
-      if (!m_intraConstraintFlag && m_bitDepthConstraint==16 && m_chromaFormatConstraint==CHROMA_444)
-      {
-        msg( WARNING, "********************************************************************************************************\n");
-        msg( WARNING, "** WARNING: The RExt constraint flags describe a non standard combination (used for development only) **\n");
-        msg( WARNING, "********************************************************************************************************\n");
-      }
-    }
-    else
-    {
-      xConfirmPara( m_chromaFormatConstraint != CHROMA_444, "chroma format constraint must be 4:4:4 in the High Throughput 4:4:4 16-bit Intra profile.");
-      xConfirmPara( m_bitDepthConstraint     != 16,         "bit depth constraint must be 4:4:4 in the High Throughput 4:4:4 16-bit Intra profile.");
-      xConfirmPara( m_intraConstraintFlag    != 1,          "intra constraint flag must be 1 in the High Throughput 4:4:4 16-bit Intra profile.");
-    }
-  }
-  else
-  {
-    xConfirmPara(m_bitDepthConstraint!=((m_profile==Profile::MAIN10 || m_profile==Profile::NEXT)?10:8), "BitDepthConstraint must be 8 for MAIN profile and 10 for MAIN10 profile.");
-    xConfirmPara(m_chromaFormatConstraint!=CHROMA_420 && m_profile!=Profile::NEXT, "ChromaFormatConstraint must be 420 for non main-RExt and non-Next profiles.");
-    xConfirmPara(m_intraConstraintFlag==true, "IntraConstraintFlag must be false for non main_RExt profiles.");
-    xConfirmPara(m_lowerBitRateConstraintFlag==false, "LowerBitrateConstraintFlag must be true for non main-RExt profiles.");
-    xConfirmPara(m_profile == Profile::MAINSTILLPICTURE && m_framesToBeEncoded > 1, "Number of frames to be encoded must be 1 when main still picture profile is used.");
-
-    xConfirmPara(m_crossComponentPredictionEnabledFlag==true, "CrossComponentPrediction must not be used for non main-RExt profiles.");
-    xConfirmPara(m_log2MaxTransformSkipBlockSize>=6, "Transform Skip Log2 Max Size must be less or equal to 5.");
-    xConfirmPara(m_transformSkipRotationEnabledFlag==true, "UseResidualRotation must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_transformSkipContextEnabledFlag==true, "UseSingleSignificanceMapContext must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT]==true, "ImplicitResidualDPCM must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT]==true, "ExplicitResidualDPCM must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_persistentRiceAdaptationEnabledFlag==true, "GolombRiceParameterAdaption must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_extendedPrecisionProcessingFlag==true, "UseExtendedPrecision must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_highPrecisionOffsetsEnabledFlag==true, "UseHighPrecisionPredictionWeighting must not be enabled for non main-RExt profiles.");
-    xConfirmPara(m_enableIntraReferenceSmoothing==false, "EnableIntraReferenceSmoothing must be enabled for non main-RExt profiles.");
-    xConfirmPara(m_cabacBypassAlignmentEnabledFlag, "AlignCABACBeforeBypass cannot be enabled for non main-RExt profiles.");
-  }
-#endif
 
 
   // check range of parameters
@@ -3840,34 +3462,6 @@ void EncAppCfg::xPrintParameter()
     msg( DETAILS, "Frame/Field                            : Frame based coding\n" );
     msg( DETAILS, "Frame index                            : %u - %d (%d frames)\n", m_FrameSkip, m_FrameSkip + m_framesToBeEncoded - 1, m_framesToBeEncoded );
   }
-#if !JVET_P2001E_PROFILES
-  if (m_profile == Profile::MAINREXT)
-  {
-    ExtendedProfileName validProfileName;
-    if (m_onePictureOnlyConstraintFlag)
-    {
-      validProfileName = m_bitDepthConstraint == 8 ? MAIN_444_STILL_PICTURE : (m_bitDepthConstraint == 16 ? MAIN_444_16_STILL_PICTURE : NONE);
-    }
-    else
-    {
-      const uint32_t intraIdx = m_intraConstraintFlag ? 1:0;
-      const uint32_t bitDepthIdx = (m_bitDepthConstraint == 8 ? 0 : (m_bitDepthConstraint ==10 ? 1 : (m_bitDepthConstraint == 12 ? 2 : (m_bitDepthConstraint == 16 ? 3 : 4 ))));
-      const uint32_t chromaFormatIdx = uint32_t(m_chromaFormatConstraint);
-      validProfileName = (bitDepthIdx > 3 || chromaFormatIdx>3) ? NONE : validRExtProfileNames[intraIdx][bitDepthIdx][chromaFormatIdx];
-    }
-    std::string rextSubProfile;
-    if (validProfileName!=NONE)
-    {
-      rextSubProfile=enumToString(strToExtendedProfile, sizeof(strToExtendedProfile)/sizeof(*strToExtendedProfile), validProfileName);
-    }
-    if (rextSubProfile == "main_444_16")
-    {
-      rextSubProfile="main_444_16 [NON STANDARD]";
-    }
-    msg( DETAILS, "Profile                                : %s (%s)\n", profileToString(m_profile), (rextSubProfile.empty())?"INVALID REXT PROFILE":rextSubProfile.c_str() );
-  }
-  else
-#endif
   {
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
@@ -4014,15 +3608,8 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, " SignBitHidingFlag:%d ", m_signDataHidingEnabledFlag);
   msg( VERBOSE, "RecalQP:%d ", m_recalculateQPAccordingToLambda ? 1 : 0 );
 
-#if !JVET_P2001E_PROFILES
-  if( m_profile == Profile::NEXT )
-#endif
   {
-#if JVET_P2001E_PROFILES
     msg( VERBOSE, "\nTOOL CFG: " );
-#else
-    msg( VERBOSE, "\nNEXT TOOL CFG: " );
-#endif
     msg( VERBOSE, "LFNST:%d ", m_LFNST );
     msg( VERBOSE, "MMVD:%d ", m_MMVD);
     msg( VERBOSE, "Affine:%d ", m_Affine );

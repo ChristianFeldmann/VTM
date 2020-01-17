@@ -212,15 +212,7 @@ protected:
   bool m_interlacedSourceFlag;
   bool m_nonPackedConstraintFlag;
   bool m_frameOnlyConstraintFlag;
-#if JVET_P2001E_PROFILES
   bool m_intraConstraintFlag;
-#else
-  uint32_t              m_bitDepthConstraintValue;
-  ChromaFormat      m_chromaFormatConstraintValue;
-  bool              m_intraConstraintFlag;
-  bool              m_onePictureOnlyConstraintFlag;
-  bool              m_lowerBitRateConstraintFlag;
-#endif
 
   //====== Coding Structure ========
   int       m_uiIntraPeriod;                        // needs to be signed to allow '-1' for no intra period
@@ -1731,24 +1723,10 @@ public:
   bool         getFrameOnlyConstraintFlag() const                    { return m_frameOnlyConstraintFlag; }
   void         setFrameOnlyConstraintFlag(bool b)                    { m_frameOnlyConstraintFlag = b; }
 
-#if !JVET_P2001E_PROFILES
-  uint32_t         getBitDepthConstraintValue() const                    { return m_bitDepthConstraintValue; }
-  void         setBitDepthConstraintValue(uint32_t v)                    { m_bitDepthConstraintValue=v; }
-
-  ChromaFormat getChromaFormatConstraintValue() const                { return m_chromaFormatConstraintValue; }
-  void         setChromaFormatConstraintValue(ChromaFormat v)        { m_chromaFormatConstraintValue=v; }
-#endif
 
   bool         getIntraConstraintFlag() const                        { return m_intraConstraintFlag; }
   void         setIntraConstraintFlag(bool b)                        { m_intraConstraintFlag=b; }
 
-#if !JVET_P2001E_PROFILES
-  bool         getOnePictureOnlyConstraintFlag() const               { return m_onePictureOnlyConstraintFlag; }
-  void         setOnePictureOnlyConstraintFlag(bool b)               { m_onePictureOnlyConstraintFlag=b; }
-
-  bool         getLowerBitRateConstraintFlag() const                 { return m_lowerBitRateConstraintFlag; }
-  void         setLowerBitRateConstraintFlag(bool b)                 { m_lowerBitRateConstraintFlag=b; }
-#endif
 
 #if HEVC_SEI
   bool         getChromaResamplingFilterHintEnabled()                { return m_chromaResamplingFilterHintEnabled;}

@@ -166,7 +166,6 @@
 
 
 
-#define JVET_P2001E_PROFILES                              1 // Add profiles, as defined in JVET-P2001-E
 
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
@@ -794,19 +793,9 @@ namespace Profile
 {
   enum Name
   {
-#if JVET_P2001E_PROFILES
     NONE        = 0,
     MAIN_10     = 1,
     MAIN_444_10 = 2
-#else
-    NONE = 0,
-    MAIN = 1,
-    MAIN10 = 2,
-    MAINSTILLPICTURE = 3,
-    MAINREXT = 4,
-    HIGHTHROUGHPUTREXT = 5,
-    NEXT = 6
-#endif
   };
 }
 
@@ -816,9 +805,7 @@ namespace Level
   {
     MAIN = 0,
     HIGH = 1,
-#if JVET_P2001E_PROFILES
     NUMBER_OF_TIERS=2
-#endif
   };
 
   enum Name

@@ -35,7 +35,6 @@
     \brief    Handle profile, level and tier information.
 */
 
-#if JVET_P2001E_PROFILES
 #ifndef __PROFILE_LEVEL_TIER__
 #define __PROFILE_LEVEL_TIER__
 
@@ -101,4 +100,3 @@ class ProfileLevelTierFeatures
 
 #endif
 
-#endif

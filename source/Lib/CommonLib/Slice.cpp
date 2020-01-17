@@ -2464,41 +2464,21 @@ void ReferencePictureList::printRefPicInfo() const
 ScalingList::ScalingList()
 {
   m_disableScalingMatrixForLfnstBlks = true;
-#if JVET_P01034_PRED_1D_SCALING_LIST
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
     int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
     m_scalingListCoef[scalingListId].resize(matrixSize*matrixSize);
   }
-#else
-  for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
-  {
-    for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
-    {
-      m_scalingListCoef[sizeId][listId].resize(std::min<int>(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]));
-    }
-  }
-#endif
 }
 
 /** set default quantization matrix to array
 */
 void ScalingList::setDefaultScalingList()
 {
-#if JVET_P01034_PRED_1D_SCALING_LIST
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
     processDefaultMatrix(scalingListId);
   }
-#else
-  for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
-  {
-    for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
-    {
-      processDefaultMatrix(sizeId, listId);
-    }
-  }
-#endif
 }
 /** check if use default quantization matrix
  * \returns true if the scaling list is not equal to the default quantization matrix
@@ -2506,7 +2486,6 @@ void ScalingList::setDefaultScalingList()
 bool ScalingList::isNotDefaultScalingList()
 {
   bool isAllDefault = true;
-#if JVET_P01034_PRED_1D_SCALING_LIST
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
     int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
@@ -2528,36 +2507,6 @@ bool ScalingList::isNotDefaultScalingList()
     }
     if (!isAllDefault) break;
   }
-#else
-  for ( uint32_t sizeId = SCALING_LIST_2x2; sizeId <= SCALING_LIST_64x64; sizeId++)
-  {
-    for(uint32_t listId=0;listId<SCALING_LIST_NUM;listId++)
-    {
-      if (((sizeId == SCALING_LIST_64x64) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))
-          || ((sizeId == SCALING_LIST_2x2) && (listId % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
-      {
-        continue;
-      }
-      if (sizeId < SCALING_LIST_16x16)
-      {
-        if (::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * (int)g_scalingListSize[sizeId]))
-        {
-          isAllDefault = false;
-          break;
-        }
-      }
-      else
-      {
-        if ((::memcmp(getScalingListAddress(sizeId, listId), getScalingListDefaultAddress(sizeId, listId), sizeof(int) * MAX_MATRIX_COEF_NUM)) || (getScalingListDC(sizeId, listId) != 16))
-        {
-          isAllDefault = false;
-          break;
-        }
-      }
-    }
-    if (!isAllDefault) break;
-  }
-#endif
 
   return !isAllDefault;
 }
@@ -2567,7 +2516,6 @@ bool ScalingList::isNotDefaultScalingList()
  * \param listId    index of input matrix
  * \param refListId index of reference matrix
  */
-#if JVET_P01034_PRED_1D_SCALING_LIST
 int ScalingList::lengthUvlc(int uiCode)
 {
   if (uiCode < 0) printf("Error UVLC! \n");
@@ -2730,29 +2678,6 @@ void ScalingList::checkPredMode(uint32_t scalingListId)
   }
   setScalingListCopyModeFlag(scalingListId, false);
 }
-#else
-void ScalingList::processRefMatrix(uint32_t sizeId, uint32_t listId, uint32_t refListId)
-{
-  ::memcpy(getScalingListAddress(sizeId, listId), ((listId == refListId) ? getScalingListDefaultAddress(sizeId, refListId) : getScalingListAddress(sizeId, refListId)), sizeof(int)*std::min(MAX_MATRIX_COEF_NUM, (int)g_scalingListSize[sizeId]));
-}
-void ScalingList::checkPredMode(uint32_t sizeId, uint32_t listId)
-{
-  for (int predListIdx = (int)listId; predListIdx >= 0; predListIdx--)
-  {
-    if ((sizeId == SCALING_LIST_64x64 && ((listId % 3) != 0 || (predListIdx % 3) != 0)) || (sizeId == SCALING_LIST_2x2 && ((listId % 3) == 0 || (predListIdx % 3) == 0)))
-      continue;
-    if( !::memcmp(getScalingListAddress(sizeId,listId),((listId == predListIdx) ?
-      getScalingListDefaultAddress(sizeId, predListIdx): getScalingListAddress(sizeId, predListIdx)),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId])) // check value of matrix
-      && ((sizeId < SCALING_LIST_16x16) || listId == predListIdx ? getScalingListDefaultAddress(sizeId, predListIdx)[0] == getScalingListDC(sizeId, predListIdx) : (getScalingListDC(sizeId, listId) == getScalingListDC(sizeId, predListIdx)))) // check DC value
-    {
-      setRefMatrixId(sizeId, listId, predListIdx);
-      setScalingListPredModeFlag(sizeId, listId, false);
-      return;
-    }
-  }
-  setScalingListPredModeFlag(sizeId, listId, true);
-}
-#endif
 
 static void outputScalingListHelp(std::ostream &os)
 {
@@ -2786,25 +2711,15 @@ static void outputScalingListHelp(std::ostream &os)
 
 void ScalingList::outputScalingLists(std::ostream &os) const
 {
-#if JVET_P01034_PRED_1D_SCALING_LIST
   int scalingListId = 0;
-#endif
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)
   {
     const uint32_t size = (sizeIdc == 1) ? 2 : ((sizeIdc == 2) ? 4 : 8);
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-#if JVET_P01034_PRED_1D_SCALING_LIST
       if (!((sizeIdc== SCALING_LIST_64x64 && listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) || (sizeIdc == SCALING_LIST_2x2 && listIdc < 4)))
-#else
-      if (!(((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0))))
-#endif
       {
-#if JVET_P01034_PRED_1D_SCALING_LIST
         const int *src = getScalingListAddress(scalingListId);
-#else
-        const int *src = getScalingListAddress(sizeIdc, listIdc);
-#endif
         os << (MatrixType[sizeIdc][listIdc]) << " =\n  ";
         for(uint32_t y=0; y<size; y++)
         {
@@ -2816,16 +2731,10 @@ void ScalingList::outputScalingLists(std::ostream &os) const
         }
         if(sizeIdc > SCALING_LIST_8x8)
         {
-#if JVET_P01034_PRED_1D_SCALING_LIST
           os << MatrixType_DC[sizeIdc][listIdc] << " = \n  " << std::setw(3) << getScalingListDC(scalingListId) << "\n";
-#else
-          os << MatrixType_DC[sizeIdc][listIdc] << " = \n  " << std::setw(3) << getScalingListDC(sizeIdc, listIdc) << "\n";
-#endif
         }
         os << "\n";
-#if JVET_P01034_PRED_1D_SCALING_LIST
         scalingListId++;
-#endif
       }
     }
   }
@@ -2851,32 +2760,21 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
     return true;
   }
 
-#if JVET_P01034_PRED_1D_SCALING_LIST
   int scalingListId = 0;
-#endif
   for (uint32_t sizeIdc = SCALING_LIST_2x2; sizeIdc <= SCALING_LIST_64x64; sizeIdc++)//2x2-128x128
   {
     const uint32_t size = std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeIdc]);
 
     for(uint32_t listIdc = 0; listIdc < SCALING_LIST_NUM; listIdc++)
     {
-#if !JVET_P01034_PRED_1D_SCALING_LIST
-      int * const src = getScalingListAddress(sizeIdc, listIdc);
-#endif
 
-#if JVET_P01034_PRED_1D_SCALING_LIST
       if ((sizeIdc == SCALING_LIST_64x64 && listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) || (sizeIdc == SCALING_LIST_2x2 && listIdc < 4))
-#else
-      if (((sizeIdc == SCALING_LIST_64x64) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0)) || ((sizeIdc == SCALING_LIST_2x2) && (listIdc % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) == 0)))
-#endif
       {
         continue;
       }
       else
       {
-#if JVET_P01034_PRED_1D_SCALING_LIST
         int * const src = getScalingListAddress(scalingListId);
-#endif
         {
           fseek(fp, 0, SEEK_SET);
           bool bFound=false;
@@ -2914,11 +2812,7 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
         }
 
         //set DC value for default matrix check
-#if JVET_P01034_PRED_1D_SCALING_LIST
         setScalingListDC(scalingListId, src[0]);
-#else
-        setScalingListDC(sizeIdc, listIdc, src[0]);
-#endif
 
         if(sizeIdc > SCALING_LIST_8x8)
         {
@@ -2953,16 +2847,10 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
             return true;
           }
           //overwrite DC value when size of matrix is larger than 16x16
-#if JVET_P01034_PRED_1D_SCALING_LIST
           setScalingListDC(scalingListId, data);
-#else
-          setScalingListDC(sizeIdc, listIdc, data);
-#endif
         }
       }
-#if JVET_P01034_PRED_1D_SCALING_LIST
       scalingListId++;
-#endif
     }
   }
 //  std::cout << "\n\nRead scaling lists of:\n\n";
@@ -2978,19 +2866,11 @@ bool ScalingList::xParseScalingList(const std::string &fileName)
  * \param listId list index
  * \returns pointer of quantization matrix
  */
-#if JVET_P01034_PRED_1D_SCALING_LIST
 const int* ScalingList::getScalingListDefaultAddress(uint32_t scalingListId)
-#else
-const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t listId)
-#endif
 {
   const int *src = 0;
-#if JVET_P01034_PRED_1D_SCALING_LIST
   int sizeId = (scalingListId < SCALING_LIST_1D_START_8x8) ? 2 : 3;
   switch (sizeId)
-#else
-  switch(sizeId)
-#endif
   {
     case SCALING_LIST_1x1:
     case SCALING_LIST_2x2:
@@ -3002,11 +2882,7 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
     case SCALING_LIST_32x32:
     case SCALING_LIST_64x64:
     case SCALING_LIST_128x128:
-#if JVET_P01034_PRED_1D_SCALING_LIST
       src = g_quantInterDefault8x8;
-#else
-      src = (listId < (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES)) ? g_quantIntraDefault8x8 : g_quantInterDefault8x8;
-#endif
       break;
     default:
       THROW( "Invalid scaling list" );
@@ -3020,7 +2896,6 @@ const int* ScalingList::getScalingListDefaultAddress(uint32_t sizeId, uint32_t l
  * \param sizeId size index
  * \param listId index of input matrix
  */
-#if JVET_P01034_PRED_1D_SCALING_LIST
 void ScalingList::processDefaultMatrix(uint32_t scalingListId)
 {
   int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
@@ -3041,30 +2916,6 @@ void ScalingList::checkDcOfMatrix()
     }
   }
 }
-#else
-void ScalingList::processDefaultMatrix(uint32_t sizeId, uint32_t listId)
-{
-  ::memcpy(getScalingListAddress(sizeId, listId),getScalingListDefaultAddress(sizeId,listId),sizeof(int)*std::min(MAX_MATRIX_COEF_NUM,(int)g_scalingListSize[sizeId]));
-  setScalingListDC(sizeId,listId,SCALING_LIST_DC);
-}
-
-/** check DC value of matrix for default matrix signaling
- */
-void ScalingList::checkDcOfMatrix()
-{
-  for(uint32_t sizeId = 0; sizeId < SCALING_LIST_SIZE_NUM; sizeId++)
-  {
-    for(uint32_t listId = 0; listId < SCALING_LIST_NUM; listId++)
-    {
-      //check default matrix?
-      if(getScalingListDC(sizeId,listId) == 0)
-      {
-        processDefaultMatrix(sizeId, listId);
-      }
-    }
-  }
-}
-#endif
 
 ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)

@@ -159,7 +159,6 @@ public:
   virtual    ~ScalingList()                                                 { }
   bool       getDisableScalingMatrixForLfnstBlks() const     { return m_disableScalingMatrixForLfnstBlks;}
   void       setDisableScalingMatrixForLfnstBlks(bool flag)  { m_disableScalingMatrixForLfnstBlks = flag;}
-#if JVET_P01034_PRED_1D_SCALING_LIST
   int*       getScalingListAddress(uint32_t scalingListId)                    { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
   const int* getScalingListAddress(uint32_t scalingListId) const              { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
   void       checkPredMode(uint32_t scalingListId);
@@ -184,24 +183,6 @@ public:
   void       codeScalingList(int* scalingList, int scalingListDC, int scalinListId, int& bitsCost);
   void       setScalingListPreditorModeFlag(uint32_t scalingListId, bool bIsPred) { m_scalingListPreditorModeFlag[scalingListId] = bIsPred; }
   bool       getScalingListPreditorModeFlag(uint32_t scalingListId) const { return m_scalingListPreditorModeFlag[scalingListId]; }
-#else
-  int*       getScalingListAddress(uint32_t sizeId, uint32_t listId)          { return &(m_scalingListCoef[sizeId][listId][0]);           } //!< get matrix coefficient
-  const int* getScalingListAddress(uint32_t sizeId, uint32_t listId) const    { return &(m_scalingListCoef[sizeId][listId][0]);           } //!< get matrix coefficient
-  void       checkPredMode(uint32_t sizeId, uint32_t listId);
-
-  void       setRefMatrixId(uint32_t sizeId, uint32_t listId, uint32_t u)                   { m_refMatrixId[sizeId][listId] = u;                         } //!< set reference matrix ID
-  uint32_t       getRefMatrixId(uint32_t sizeId, uint32_t listId) const                     { return m_refMatrixId[sizeId][listId];                      } //!< get reference matrix ID
-
-  const int* getScalingListDefaultAddress(uint32_t sizeId, uint32_t listId);                                                                           //!< get default matrix coefficient
-  void       processDefaultMatrix(uint32_t sizeId, uint32_t listId);
-
-  void       setScalingListDC(uint32_t sizeId, uint32_t listId, uint32_t u)                 { m_scalingListDC[sizeId][listId] = u;                       } //!< set DC value
-  int        getScalingListDC(uint32_t sizeId, uint32_t listId) const                   { return m_scalingListDC[sizeId][listId];                    } //!< get DC value
-
-  void       setScalingListPredModeFlag(uint32_t sizeId, uint32_t listId, bool bIsDPCM) { m_scalingListPredModeFlagIsDPCM[sizeId][listId] = bIsDPCM; }
-  bool       getScalingListPredModeFlag(uint32_t sizeId, uint32_t listId) const         { return m_scalingListPredModeFlagIsDPCM[sizeId][listId];    }
-  void       processRefMatrix(uint32_t sizeId, uint32_t listId , uint32_t refListId );
-#endif
 
   void       checkDcOfMatrix();
   bool       xParseScalingList(const std::string &fileName);
@@ -210,11 +191,7 @@ public:
 
   bool operator==( const ScalingList& other )
   {
-#if JVET_P01034_PRED_1D_SCALING_LIST
     if (memcmp(m_scalingListPredModeFlagIsCopy, other.m_scalingListPredModeFlagIsCopy, sizeof(m_scalingListPredModeFlagIsCopy)))
-#else
-    if( memcmp( m_scalingListPredModeFlagIsDPCM, other.m_scalingListPredModeFlagIsDPCM, sizeof( m_scalingListPredModeFlagIsDPCM ) ) )
-#endif
     {
       return false;
     }
@@ -242,18 +219,11 @@ public:
 private:
   void             outputScalingLists(std::ostream &os) const;
   bool             m_disableScalingMatrixForLfnstBlks;
-#if JVET_P01034_PRED_1D_SCALING_LIST
   bool             m_scalingListPredModeFlagIsCopy [30]; //!< reference list index
   int              m_scalingListDC                 [30]; //!< the DC value of the matrix coefficient for 16x16
   uint32_t         m_refMatrixId                   [30]; //!< RefMatrixID
   bool             m_scalingListPreditorModeFlag   [30]; //!< reference list index
   std::vector<int> m_scalingListCoef               [30]; //!< quantization matrix
-#else 
-  bool             m_scalingListPredModeFlagIsDPCM [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< reference list index
-  int              m_scalingListDC                 [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< the DC value of the matrix coefficient for 16x16
-  uint32_t         m_refMatrixId                   [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< RefMatrixID
-  std::vector<int> m_scalingListCoef               [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM]; //!< quantization matrix
-#endif
 };
 
 class ConstraintInfo

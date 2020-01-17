@@ -183,11 +183,7 @@ public:
 
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
   void  parseScalingList    ( ScalingList* scalingList );
-#if JVET_P01034_PRED_1D_SCALING_LIST
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
-#else
-  void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
-#endif
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
 

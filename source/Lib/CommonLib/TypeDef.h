@@ -83,7 +83,6 @@
 
 
 
-#define JVET_P0350_LFNST_IDX_CTX                          1 // JVET-P0350: Add one context for LFNST idx coding
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement

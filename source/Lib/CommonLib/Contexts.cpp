@@ -687,17 +687,10 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
-#if JVET_P0350_LFNST_IDX_CTX
   {  52,  37,  33, },
   {  45,  45,  18, },
   { CNU,  52,  33, },
   {   9,   9,   5, },
-#else
-  {  45,  37, },
-  {  38,  45, },
-  { CNU,  45, },
-  {   8,   8, },
-#endif
 });
 
 const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet
@@ -1462,17 +1455,10 @@ const CtxSet ContextSetCfg::SaoTypeIdx = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::LFNSTIdx = ContextSetCfg::addCtxSet
 ({
-#if JVET_P0350_LFNST_IDX_CTX
   {  45,  37, 32, },
   {  38,  45, 32, },
   { CNU,  45, 32, },
   {   8,   8, 1, },
-#else
-  {  45,  37, },
-  {  38,  45, },
-  { CNU,  45, },
-  {   8,   8, },
-#endif
 });
 
 const CtxSet ContextSetCfg::PLTFlag = ContextSetCfg::addCtxSet

@@ -677,7 +677,6 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
 {
   WRITE_FLAG( hrd->getNalHrdParametersPresentFlag() ? 1 : 0 ,  "general_nal_hrd_parameters_present_flag" );
   WRITE_FLAG( hrd->getVclHrdParametersPresentFlag() ? 1 : 0 ,  "general_vcl_hrd_parameters_present_flag" );
-#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI 
   WRITE_FLAG( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "general_decoding_unit_hrd_params_present_flag" );
   if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
   {
@@ -689,23 +688,6 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
   {
     WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
   }
-#else
-  if( hrd->getNalHrdParametersPresentFlag() || hrd->getVclHrdParametersPresentFlag() )
-  {
-    WRITE_FLAG( hrd->getDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "decoding_unit_hrd_params_present_flag" );
-    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
-    {
-      WRITE_CODE( hrd->getTickDivisorMinus2(), 8,            "tick_divisor_minus2" );
-      WRITE_FLAG( hrd->getDecodingUnitCpbParamsInPicTimingSeiFlag() ? 1 : 0, "decoding_unit_cpb_params_in_pic_timing_sei_flag" );
-    }
-    WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
-    WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
-    if( hrd->getDecodingUnitHrdParamsPresentFlag() )
-    {
-      WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
-    }
-  }
-#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {

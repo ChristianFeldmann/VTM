@@ -237,10 +237,8 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_maxInitialRemovalDelayForConcatenation = uiInitialCpbRemovalDelay;
 #endif
 
-#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   bufferingPeriodSEI->m_bpDecodingUnitHrdParamsPresentFlag = m_pcCfg->getNoPicPartitionFlag() == false;
   bufferingPeriodSEI->m_decodingUnitCpbParamsInPicTimingSeiFlag = !m_pcCfg->getDecodingUnitInfoSEIEnabled();
-#endif
 
   bufferingPeriodSEI->m_initialCpbRemovalDelayLength = 16;                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
   // Note: The following parameters require some knowledge about the GOP structure.

@@ -61,7 +61,6 @@
 
 
 
-#define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
 
 
 #define JVET_P0314_PROF_BDOF_DMVR_HLS                     1 // JVET-P0314: BDOF/DMVR/PROF high level flags

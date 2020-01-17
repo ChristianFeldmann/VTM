@@ -109,26 +109,12 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
   m_hrdParams.setNalHrdParametersPresentFlag( rateCnt );
   m_hrdParams.setVclHrdParametersPresentFlag( rateCnt );
   useSubCpbParams &= ( m_hrdParams.getNalHrdParametersPresentFlag() || m_hrdParams.getVclHrdParametersPresentFlag() );
-#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   m_hrdParams.setGeneralDecodingUnitHrdParamsPresentFlag( useSubCpbParams );
 
   if( m_hrdParams.getGeneralDecodingUnitHrdParamsPresentFlag() )
   {
     m_hrdParams.setTickDivisorMinus2( 100 - 2 );
   }
-#else
-  m_hrdParams.setDecodingUnitHrdParamsPresentFlag( useSubCpbParams );
-
-  if( m_hrdParams.getDecodingUnitHrdParamsPresentFlag() )
-  {
-    m_hrdParams.setTickDivisorMinus2( 100 - 2 );                          //
-    m_hrdParams.setDecodingUnitCpbParamsInPicTimingSeiFlag( !encCfg->getDecodingUnitInfoSEIEnabled() );
-  }
-  else
-  {
-    m_hrdParams.setDecodingUnitCpbParamsInPicTimingSeiFlag( false );
-  }
-#endif
 
 #if U0132_TARGET_BITS_SATURATION
   if (xCalcScale(bitRate) <= 6)

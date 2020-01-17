@@ -91,11 +91,6 @@ protected:
   void reconstructBlkSAOParam(SAOBlkParam& recParam, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   int  getMergeList(CodingStructure& cs, int ctuRsAddr, SAOBlkParam* blkParams, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   void offsetCTU(const UnitArea& area, const CPelUnitBuf& src, PelUnitBuf& res, SAOBlkParam& saoblkParam, CodingStructure& cs);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  void xLosslessDisableProcess(CodingStructure& cs);
-  void xLosslessCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
-  void xLosslessSampleRestoration(CodingUnit& cu, const ComponentID compID);
-#endif
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
 #if JVET_P1006_PICTURE_HEADER
   bool isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader);

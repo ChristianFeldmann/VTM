@@ -426,13 +426,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::QP), cu.qp);
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SplitSeries), (int)cu.splitSeries);
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-        if (cs.pps->getTransquantBypassEnabledFlag())
-        {
-          DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag), cu.transQuantBypass);
-        }
-
-#endif
         // skip flag
         if (!cs.slice->isIntra())
         {
@@ -458,12 +451,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
         DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::QP_Chroma), cu.qp);
         DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SplitSeries_Chroma), (int)cu.splitSeries);
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-        if (cs.pps->getTransquantBypassEnabledFlag())
-        {
-          DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
-        }
-#endif
 #if JVET_P0059_CHROMA_BDPCM
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::BDPCMChroma), cu.bdpcmModeChroma);
 #endif
@@ -733,11 +720,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
         }
 
 #if !JVET_P0058_CHROMA_TS
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
         if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP) )
-#else
-        if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP || cu.transQuantBypass ) )
-#endif
         {
           if (tu.Y().valid())
           {
@@ -801,13 +784,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::ChromaQPAdj), cu.chromaQpAdj);
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::QP), cu.qp);
         DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::SplitSeries), (int)cu.splitSeries);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-        // transquant bypass flag
-        if (cs.pps->getTransquantBypassEnabledFlag())
-        {
-          DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag), cu.transQuantBypass);
-        }
-#endif
         // skip flag
         if (!cs.slice->isIntra() && cu.Y().valid())
         {
@@ -831,13 +807,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
         DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::ChromaQPAdj_Chroma), cu.chromaQpAdj);
         DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::QP_Chroma), cu.qp);
         DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::SplitSeries_Chroma), (int)cu.splitSeries);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-        // transquant bypass flag
-        if (cs.pps->getTransquantBypassEnabledFlag())
-        {
-          DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TransQuantBypassFlag_Chroma), cu.transQuantBypass);
-        }
-#endif
 
       }
 

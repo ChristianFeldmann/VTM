@@ -150,12 +150,6 @@ bool CU::isRDPCMEnabled(const CodingUnit& cu)
   return cu.cs->sps->getSpsRangeExtension().getRdpcmEnabledFlag(cu.predMode == MODE_INTRA ? RDPCM_SIGNAL_IMPLICIT : RDPCM_SIGNAL_EXPLICIT);
 }
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-bool CU::isLosslessCoded(const CodingUnit &cu)
-{
-  return cu.cs->pps->getTransquantBypassEnabledFlag() && cu.transQuantBypass;
-}
-#endif
 
 bool CU::isSameSlice(const CodingUnit& cu, const CodingUnit& cu2)
 {
@@ -3884,9 +3878,6 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   bool tsAllowed = tu.cs->sps->getTransformSkipEnabledFlag();
 #else
   tsAllowed &= tu.cs->sps->getTransformSkipEnabledFlag();
-#endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  tsAllowed &= !tu.cu->transQuantBypass;
 #endif
   tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );
   SizeType transformSkipMaxSize = 1 << maxSize;

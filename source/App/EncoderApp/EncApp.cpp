@@ -885,10 +885,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCpbSize                                           ( m_RCCpbSize );
   m_cEncLib.setInitialCpbFullness                                ( m_RCInitialCpbFullness );
 #endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  m_cEncLib.setTransquantBypassEnabledFlag                       ( m_TransquantBypassEnabledFlag );
-  m_cEncLib.setCUTransquantBypassFlagForceValue                  ( m_CUTransquantBypassFlagForce );
-#endif
   m_cEncLib.setCostMode                                          ( m_costMode );
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );

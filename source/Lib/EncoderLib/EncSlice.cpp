@@ -469,13 +469,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   dQP = m_pcCfg->getBaseQP();
   if(eSliceType!=I_SLICE)
   {
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-#if SHARP_LUMA_DELTA_QP
-    if (!(( m_pcCfg->getMaxDeltaQP() == 0) && (!m_pcCfg->getLumaLevelToDeltaQPMapping().isEnabled()) && (dQP == -rpcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA) ) && (rpcSlice->getPPS()->getTransquantBypassEnabledFlag())))
-#else
-    if (!(( m_pcCfg->getMaxDeltaQP() == 0 ) && (dQP == -rpcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA) ) && (rpcSlice->getPPS()->getTransquantBypassEnabledFlag())))
-#endif
-#endif
     {
       dQP += m_pcCfg->getGOPEntry(iGOPid).m_QPOffset;
     }
@@ -1404,11 +1397,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   if( startCtuTsAddr == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
 #endif
   {
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     cs.initStructData (pcSlice->getSliceQp());
-#else
-    cs.initStructData (pcSlice->getSliceQp(), pcSlice->getPPS()->getTransquantBypassEnabledFlag());
-#endif
   }
 
 #if ENABLE_QPA

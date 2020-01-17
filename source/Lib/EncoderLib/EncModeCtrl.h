@@ -97,7 +97,6 @@ static void getAreaIdx(const Area& area, const PreCalcValues &pcv, unsigned &idx
 
 struct EncTestMode
 {
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   EncTestMode()
     : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ) {}
   EncTestMode( EncTestModeType _type )
@@ -106,23 +105,10 @@ struct EncTestMode
     : type( _type       ), opts( ETO_STANDARD ), qp( _qp ) {}
   EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp )
     : type( _type       ), opts( _opts        ), qp( _qp ) {}
-#else
-  EncTestMode()
-    : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ), lossless( false ) {}
-  EncTestMode( EncTestModeType _type )
-    : type( _type       ), opts( ETO_STANDARD ), qp( -1  ), lossless( false ) {}
-  EncTestMode( EncTestModeType _type, int _qp, bool _lossless )
-    : type( _type       ), opts( ETO_STANDARD ), qp( _qp ), lossless( _lossless ) {}
-  EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp, bool _lossless )
-    : type( _type       ), opts( _opts        ), qp( _qp ), lossless( _lossless ) {}
-#endif
 
   EncTestModeType type;
   EncTestModeOpts opts;
   int             qp;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool            lossless;
-#endif
   double          maxCostAllowed;
 };
 

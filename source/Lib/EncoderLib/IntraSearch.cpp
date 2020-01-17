@@ -391,11 +391,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
   const uint32_t             uiHeightBit   =                   floorLog2(partitioner.currArea().lheight());
 
   // Lambda calculation at equivalent Qp of 4 is recommended because at that Qp, the quantization divisor is 1.
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( ) * FRAC_BITS_SCALE;
-#else
-  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda(cu.transQuantBypass) * FRAC_BITS_SCALE;
-#endif
 
   //===== loop over partitions =====
 
@@ -621,18 +617,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             pu.intraDir[0] = modeIdx;
 
             initPredIntraParams(pu, pu.Y(), sps);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-            if( useDPCMForFirstPassIntraEstimation( pu, uiMode ) )
-            {
-              encPredIntraDPCM( COMPONENT_Y, piOrg, piPred, uiMode );
-            }
-            else
-            {
-#endif
               predIntraAng( COMPONENT_Y, piPred, pu);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-            }
-#endif
             // Use the min between SAD and HAD as the cost criterion
             // SAD is scaled by 2 to align with the scaling of HAD
             minSadHad += std::min(distParamSad.distFunc(distParamSad)*2, distParamHad.distFunc(distParamHad));
@@ -701,18 +686,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
                 pu.intraDir[0] = mode;
 
                 initPredIntraParams(pu, pu.Y(), sps);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-                if (useDPCMForFirstPassIntraEstimation(pu, mode))
-                {
-                  encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
-                }
-                else
-                {
-#endif
                   predIntraAng(COMPONENT_Y, piPred, pu );
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-                }
-#endif
 
                 // Use the min between SAD and SATD as the cost criterion
                 // SAD is scaled by 2 to align with the scaling of HAD
@@ -770,18 +744,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               pu.intraDir[0] = mode;
               initPredIntraParams(pu, pu.Y(), sps);
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-              if (useDPCMForFirstPassIntraEstimation(pu, mode))
-              {
-                encPredIntraDPCM(COMPONENT_Y, piOrg, piPred, mode);
-              }
-              else
-              {
-#endif
                 predIntraAng(COMPONENT_Y, piPred, pu);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-              }
-#endif
 
               // Use the min between SAD and SATD as the cost criterion
               // SAD is scaled by 2 to align with the scaling of HAD
@@ -1585,11 +1548,7 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
 #endif
 #if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
 #else
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
       const bool useHadamard = true;
-#else
-      const bool useHadamard = !cu.transQuantBypass;
-#endif
 #endif
       pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
 
@@ -3047,12 +3006,6 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       && cu.Y().valid()
       )
       {
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-        if( cs.pps->getTransquantBypassEnabledFlag() )
-        {
-          m_CABACEstimator->cu_transquant_bypass_flag( cu );
-        }
-#endif
         m_CABACEstimator->cu_skip_flag( cu );
         m_CABACEstimator->pred_mode   ( cu );
       }
@@ -5000,11 +4953,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
     saveChromaCS.pcv = csFull->pcv;
     saveChromaCS.picture = csFull->picture;
     saveChromaCS.area.repositionTo(csFull->area);
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     saveChromaCS.initStructData(MAX_INT, true);
-#else
-    saveChromaCS.initStructData(MAX_INT, false, true);
-#endif
     tmpTU = &saveChromaCS.addTU(currArea, partitioner.chType);
 
     CompArea&  cbArea = tu.blocks[COMPONENT_Cb];
@@ -5320,11 +5269,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     saveCS.pcv      = cs.pcv;
     saveCS.picture  = cs.picture;
     saveCS.area.repositionTo( cs.area );
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
     saveCS.initStructData( MAX_INT, true );
-#else
-    saveCS.initStructData( MAX_INT, false, true );
-#endif
 
     if( !currTU.cu->isSepTree() && currTU.cu->ispMode )
     {
@@ -5897,47 +5842,6 @@ void IntraSearch::invalidateBestRdModeFirstColorSpace()
 }
 #endif
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-void IntraSearch::encPredIntraDPCM( const ComponentID &compID, PelBuf &pOrg, PelBuf &pDst, const uint32_t &uiDirMode )
-{
-  CHECK( pOrg.buf == 0, "Encoder DPCM called without original buffer" );
-
-  const int srcStride = m_refBufferStride[compID];
-  CPelBuf   pSrc = CPelBuf(getPredictorPtr(compID), srcStride, m_leftRefLength + 1);
-
-  // Sample Adaptive intra-Prediction (SAP)
-  if( uiDirMode == HOR_IDX )
-  {
-    // left column filled with reference samples, remaining columns filled with pOrg data
-    for( int y = 0; y < pDst.height; y++ )
-    {
-      pDst.at(0, y) = pSrc.at(1 + y, 1);
-    }
-    CPelBuf orgRest  = pOrg.subBuf( 0, 0, pOrg.width - 1, pOrg.height );
-    PelBuf  predRest = pDst.subBuf( 1, 0, pDst.width - 1, pDst.height );
-
-    predRest.copyFrom( orgRest );
-  }
-  else // VER_IDX
-  {
-    // top row filled with reference samples, remaining rows filled with pOrg data
-    for( int x = 0; x < pDst.width; x++ )
-    {
-      pDst.at( x, 0 ) = pSrc.at( 1 + x, 0 );
-    }
-    CPelBuf orgRest  = pOrg.subBuf( 0, 0, pOrg.width, pOrg.height - 1 );
-    PelBuf  predRest = pDst.subBuf( 0, 1, pDst.width, pDst.height - 1 );
-
-    predRest.copyFrom( orgRest );
-  }
-}
-
-bool IntraSearch::useDPCMForFirstPassIntraEstimation( const PredictionUnit &pu, const uint32_t &uiDirMode )
-{
-  return CU::isRDPCMEnabled( *pu.cu ) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
-}
-
-#endif
 template<typename T, size_t N>
 void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip)
 {

@@ -512,24 +512,6 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
   const uint32_t uiHeight     = area.height;
 
   CHECK( uiWidth > tu.cs->sps->getMaxTbSize() || uiHeight > tu.cs->sps->getMaxTbSize(), "Maximal allowed transformation size exceeded!" );
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  if (tu.cu->transQuantBypass)
-  {
-    // where should this logic go?
-    const bool rotateResidual = TU::isNonTransformedResidualRotated(tu, compID);
-    const CCoeffBuf pCoeff    = tu.getCoeffs(compID);
-
-    for (uint32_t y = 0, coefficientIndex = 0; y < uiHeight; y++)
-    {
-      for (uint32_t x = 0; x < uiWidth; x++, coefficientIndex++)
-      {
-        pResi.at(x, y) = rotateResidual ? pCoeff.at(pCoeff.width - x - 1, pCoeff.height - y - 1) : pCoeff.at(x, y);
-      }
-    }
-  }
-  else
-  {
-#endif
     CoeffBuf tempCoeff = CoeffBuf(m_tempCoeff, area);
     xDeQuant( tu, tempCoeff, compID, cQP );
 
@@ -556,9 +538,6 @@ void TrQuant::invTransformNxN( TransformUnit &tu, const ComponentID &compID, Pel
     {
       xIT( tu, compID, tempCoeff, pResi );
     }
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  }
-#endif
 
   //DTRACE_BLOCK_COEFF(tu.getCoeffs(compID), tu, tu.cu->predMode, compID);
   DTRACE_PEL_BUF( D_RESIDUALS, pResi, tu, tu.cu->predMode, compID);
@@ -569,18 +548,10 @@ void TrQuant::invRdpcmNxN(TransformUnit& tu, const ComponentID &compID, PelBuf &
 {
   const CompArea &area    = tu.blocks[compID];
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P0058_CHROMA_TS
   if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx[compID] == MTS_SKIP))
 #else
   if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx==MTS_SKIP))
-#endif
-#else
-#if JVET_P0058_CHROMA_TS
-  if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx[compID] == MTS_SKIP || tu.cu->transQuantBypass))
-#else
-  if (CU::isRDPCMEnabled(*tu.cu) && (tu.mtsIdx==MTS_SKIP || tu.cu->transQuantBypass))
-#endif
 #endif
   {
     const uint32_t uiWidth  = area.width;
@@ -1132,9 +1103,6 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
   const uint32_t uiHeight       = rect.height;
 
   const CPelBuf resiBuf     = cs.getResiBuf(rect);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-        CoeffBuf rpcCoeff   = tu.getCoeffs(compID);
-#endif
 
   if( tu.noResidual )
   {
@@ -1164,33 +1132,6 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
     uiAbsSum = 0;
 
     // transform and quantize
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-    if (CU::isLosslessCoded(*tu.cu))
-    {
-      const bool rotateResidual = TU::isNonTransformedResidualRotated( tu, compID );
-
-      for( uint32_t y = 0; y < uiHeight; y++ )
-      {
-        for( uint32_t x = 0; x < uiWidth; x++ )
-        {
-          const Pel currentSample = resiBuf.at( x, y );
-
-          if( rotateResidual )
-          {
-            rpcCoeff.at( uiWidth - x - 1, uiHeight - y - 1 ) = currentSample;
-          }
-          else
-          {
-            rpcCoeff.at( x, y ) = currentSample;
-          }
-
-          uiAbsSum += TCoeff( abs( currentSample ) );
-        }
-      }
-    }
-    else
-    {
-#endif
       CHECK( cs.sps->getMaxTbSize() < uiWidth, "Unsupported transformation size" );
 
 
@@ -1229,9 +1170,6 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
       xQuant( tu, compID, tempCoeff, uiAbsSum, cQP, ctx );
 
       DTRACE_COEFF_BUF( D_TCOEFF, tu.getCoeffs( compID ), tu, tu.cu->predMode, compID );
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-    }
-#endif
   }
 
   // set coded block flag (CBF)
@@ -1241,9 +1179,6 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
 
 void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, const RDPCMMode &mode)
 {
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  const bool bLossless      = tu.cu->transQuantBypass;
-#endif
   const uint32_t uiWidth        = tu.blocks[compID].width;
   const uint32_t uiHeight       = tu.blocks[compID].height;
   const bool rotateResidual = TU::isNonTransformedResidualRotated(tu, compID);
@@ -1277,20 +1212,8 @@ void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, co
 
       Pel reconstructedDelta;
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-      if (bLossless)
-      {
-        pcCoeff.buf[coefficientIndex] = encoderSideDelta;
-        reconstructedDelta            = (Pel) encoderSideDelta;
-      }
-      else
-      {
-#endif
         m_quant->transformSkipQuantOneSample(tu, compID, encoderSideDelta, pcCoeff.buf[coefficientIndex],   coefficientIndex, cQP, bUseHalfRoundingPoint);
         m_quant->invTrSkipDeQuantOneSample  (tu, compID, pcCoeff.buf[coefficientIndex], reconstructedDelta, coefficientIndex, cQP);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-      }
-#endif
 
       uiAbsSum += abs(pcCoeff.buf[coefficientIndex]);
 
@@ -1304,18 +1227,10 @@ void TrQuant::applyForwardRDPCM(TransformUnit &tu, const ComponentID &compID, co
 
 void TrQuant::rdpcmNxN(TransformUnit &tu, const ComponentID &compID, const QpParam &cQP, TCoeff &uiAbsSum, RDPCMMode &rdpcmMode)
 {
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P0058_CHROMA_TS
   if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx[compID] != MTS_SKIP))
 #else
   if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx!=MTS_SKIP))
-#endif
-#else
-#if JVET_P0058_CHROMA_TS
-  if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx[compID] != MTS_SKIP && !tu.cu->transQuantBypass))
-#else
-  if (!CU::isRDPCMEnabled(*tu.cu) || (tu.mtsIdx!=MTS_SKIP && !tu.cu->transQuantBypass))
-#endif
 #endif
   {
     rdpcmMode = RDPCM_OFF;

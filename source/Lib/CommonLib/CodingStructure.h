@@ -89,9 +89,6 @@ public:
   Position    sharedBndPos;
   Size        sharedBndSize;
 #endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool        isLossless;
-#endif
   const SPS *sps;
   const PPS *pps;
 #if JVET_P1006_PICTURE_HEADER
@@ -176,11 +173,7 @@ public:
   TreeType    treeType; //because partitioner can not go deep to tu and cu coding (e.g., addCU()), need another variable for indicating treeType
   ModeType    modeType;
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void initStructData  (const int &QP = MAX_INT, const bool &skipMotBuf = false);
-#else
-  void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
-#endif
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);

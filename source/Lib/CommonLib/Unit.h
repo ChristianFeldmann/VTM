@@ -312,9 +312,6 @@ struct CodingUnit : public UnitArea
   bool           colorTransform;
 #endif
   bool           triangle;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool           transQuantBypass;
-#endif
   int            bdpcmMode;
 #if JVET_P0059_CHROMA_BDPCM
   int            bdpcmModeChroma;

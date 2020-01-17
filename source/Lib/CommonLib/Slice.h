@@ -1663,9 +1663,6 @@ private:
   bool             m_loopFilterAcrossTilesEnabledFlag;  //!< loop filtering applied across tiles flag
   bool             m_loopFilterAcrossSlicesEnabledFlag; //!< loop filtering applied across slices flag
 #endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool             m_TransquantBypassEnabledFlag;       //!< Indicates presence of cu_transquant_bypass_flag in CUs.
-#endif
   int              m_log2MaxTransformSkipBlockSize;
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
@@ -1922,10 +1919,6 @@ public:
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
   void                   checkSliceMap(); 
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }
-#endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  void                   setTransquantBypassEnabledFlag( bool b )                         { m_TransquantBypassEnabledFlag = b;            }
-  bool                   getTransquantBypassEnabledFlag() const                           { return m_TransquantBypassEnabledFlag;         }
 #endif
 
   uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }

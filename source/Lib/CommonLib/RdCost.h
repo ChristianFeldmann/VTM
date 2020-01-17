@@ -116,11 +116,7 @@ private:
   ChromaFormat            m_cf;
 #endif
   double                  m_DistScale;
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   double                  m_dLambdaMotionSAD;
-#else
-  double                  m_dLambdaMotionSAD[2 /* 0=standard, 1=for transquant bypass when mixed-lossless cost evaluation enabled*/];
-#endif
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   double                  m_lambdaStore[2][3];   // 0-org; 1-act
   double                  m_DistScaleStore[2][3]; // 0-org; 1-act
@@ -174,13 +170,8 @@ public:
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard = false );
   void           setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode = 0, int step = 1, bool useHadamard = false, bool bioApplied = false );
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   double         getMotionLambda          ( )  { return m_dLambdaMotionSAD; }
   void           selectMotionLambda       ( )  { m_motionLambda = getMotionLambda( ); }
-#else
-  double         getMotionLambda          ( bool bIsTransquantBypass ) { return m_dLambdaMotionSAD[(bIsTransquantBypass && m_costMode==COST_MIXED_LOSSLESS_LOSSY_CODING)?1:0]; }
-  void           selectMotionLambda       ( bool bIsTransquantBypass ) { m_motionLambda = getMotionLambda( bIsTransquantBypass ); }
-#endif
   void           setPredictor             ( const Mv& rcMv )
   {
     m_mvPredictor = rcMv;
@@ -188,11 +179,7 @@ public:
   void           setCostScale             ( int iCostScale )           { m_iCostScale = iCostScale; }
   Distortion     getCost                  ( uint32_t b )                   { return Distortion( m_motionLambda * b ); }
   // for ibc
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void           getMotionCost(int add) { m_dCost = m_dLambdaMotionSAD + add; }
-#else
-  void           getMotionCost(int add, bool isTransquantBypass) { m_dCost = m_dLambdaMotionSAD[(isTransquantBypass && m_costMode == COST_MIXED_LOSSLESS_LOSSY_CODING) ? 1 : 0] + add; }
-#endif
 
   void    setPredictors(Mv* pcMv)
   {

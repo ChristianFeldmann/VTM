@@ -1495,18 +1495,10 @@ namespace DQIntern
     bool zeroOut = false;
     bool zeroOutforThres = false;
     int effWidth = tuPars.m_width, effHeight = tuPars.m_height;
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P0058_CHROMA_TS
     if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32)) && compID == COMPONENT_Y)
 #else
     if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && compID == COMPONENT_Y )
-#endif
-#else
-#if JVET_P0058_CHROMA_TS
-    if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
-#else
-    if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tuPars.m_height <= 32 && tuPars.m_width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
 #endif
     {
       effHeight = (tuPars.m_height == 32) ? 16 : tuPars.m_height;

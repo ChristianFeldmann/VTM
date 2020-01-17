@@ -170,12 +170,6 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         break;
       }
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-      if( CU::isLosslessCoded( currCU ) )
-      {
-        xFillPCMBuffer( currCU );
-      }
-#endif
       m_pcInterPred->xFillIBCBuffer(currCU);
 
       DTRACE_BLOCK_REC( cs.picture->getRecoBuf( currCU ), currCU, currCU.predMode );

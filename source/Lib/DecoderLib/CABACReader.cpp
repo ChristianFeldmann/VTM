@@ -922,9 +922,6 @@ PartSplit CABACReader::split_cu_mode( CodingStructure& cs, Partitioner &partitio
 #else
 //    bool  coding_unit               ( cu, partitioner, cuCtx )
 #endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-//    void  cu_transquant_bypass_flag ( cu )
-#endif
 //    void  cu_skip_flag              ( cu )
 //    void  pred_mode                 ( cu )
 //    void  part_mode                 ( cu )
@@ -950,13 +947,6 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   CodingStructure& cs = *cu.cs;
   CHECK( cu.treeType != partitioner.treeType || cu.modeType != partitioner.modeType, "treeType or modeType mismatch" );
   DTRACE( g_trace_ctx, D_SYNTAX, "coding_unit() treeType=%d modeType=%d\n", cu.treeType, cu.modeType );
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  // transquant bypass flag
-  if( cs.pps->getTransquantBypassEnabledFlag() )
-  {
-    cu_transquant_bypass_flag( cu );
-  }
-#endif
   PredictionUnit&    pu = cs.addPU(cu, partitioner.chType);
   // skip flag
   if ((!cs.slice->isIntra() || cs.slice->getSPS()->getIBCFlag()) && cu.Y().valid())
@@ -1043,17 +1033,6 @@ bool CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 #endif
 }
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-
-void CABACReader::cu_transquant_bypass_flag( CodingUnit& cu )
-{
-  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TQ_BYPASS_FLAG );
-
-  cu.transQuantBypass = ( m_BinDecoder.decodeBin( Ctx::TransquantBypassFlag() ) );
-}
-
-
-#endif
 void CABACReader::cu_skip_flag( CodingUnit& cu )
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__SKIP_FLAG );
@@ -3471,18 +3450,10 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
   }
 
   // determine sign hiding
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P1006_PICTURE_HEADER
   bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
 #else
   bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
-#endif
-#else
-#if JVET_P1006_PICTURE_HEADER
-  bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
-#else
-  bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && !cu.transQuantBypass && tu.rdpcm[compID] == RDPCM_OFF );
-#endif
 #endif
 #if JVET_P0058_CHROMA_TS
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx[compID] == MTS_SKIP )
@@ -3544,7 +3515,6 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
     {
       cctx.initSubblock       ( subSetId );
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P1026_MTS_SIGNALLING
       if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 && compID == COMPONENT_Y )
 #else
@@ -3552,17 +3522,6 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
       if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].height <= 32 && tu.blocks[compID].width <= 32)) && compID == COMPONENT_Y)
 #else
       if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && compID == COMPONENT_Y )
-#endif
-#endif
-#else
-#if JVET_P1026_MTS_SIGNALLING
-      if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-#if JVET_P0058_CHROMA_TS
-      if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].height <= 32 && tu.blocks[compID].width <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
-#else
-      if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].height <= 32 && tu.blocks[ compID ].width <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
 #endif
 #endif
       {
@@ -3757,18 +3716,10 @@ void CABACReader::explicit_rdpcm_mode( TransformUnit& tu, ComponentID compID )
 
   tu.rdpcm[compID] = RDPCM_OFF;
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P0058_CHROMA_TS
   if (!CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx[compID] == MTS_SKIP))
 #else
   if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP ) )
-#endif
-#else
-#if JVET_P0058_CHROMA_TS
-  if (!CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx[compID] == MTS_SKIP || cu.transQuantBypass))
-#else
-  if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP || cu.transQuantBypass ) )
-#endif
 #endif
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE( STATS__EXPLICIT_RDPCM_BITS, tu.blocks[tu.chType].lumaSize() );
@@ -3806,11 +3757,7 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__LFNST );
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   if( cu.cs->sps->getUseLFNST() && CU::isIntra( cu ) )
-#else
-  if( cu.cs->sps->getUseLFNST() && CU::isIntra( cu ) && !CU::isLosslessCoded( cu ) )
-#endif
   {
     const bool lumaFlag              = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag            = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
@@ -3875,7 +3822,6 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, Co
   unsigned maxLastPosX = cctx.maxLastPosX();
   unsigned maxLastPosY = cctx.maxLastPosY();
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 #if JVET_P1026_MTS_SIGNALLING
   if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 && compID == COMPONENT_Y )
 #else
@@ -3883,17 +3829,6 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, Co
   if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].width <= 32 && tu.blocks[compID].height <= 32)) && compID == COMPONENT_Y)
 #else
   if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && compID == COMPONENT_Y )
-#endif
-#endif
-#else
-#if JVET_P1026_MTS_SIGNALLING
-  if( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-#if JVET_P0058_CHROMA_TS
-  if( ( tu.mtsIdx[compID] > MTS_SKIP || (tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[compID].width <= 32 && tu.blocks[compID].height <= 32)) && !tu.cu->transQuantBypass && compID == COMPONENT_Y)
-#else
-  if( ( tu.mtsIdx > MTS_SKIP || ( tu.cs->sps->getUseMTS() && tu.cu->sbtInfo != 0 && tu.blocks[ compID ].width <= 32 && tu.blocks[ compID ].height <= 32 ) ) && !tu.cu->transQuantBypass && compID == COMPONENT_Y )
-#endif
 #endif
 #endif
   {

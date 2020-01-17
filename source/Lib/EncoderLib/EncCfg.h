@@ -801,11 +801,6 @@ protected:
   uint32_t      m_RCCpbSize;
   double    m_RCInitialCpbFullness;
 #endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
-  bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
-
-#endif
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
 
   VPS       m_cVPS;
@@ -2068,12 +2063,6 @@ public:
   void         setCpbSize             ( uint32_t ui )                    { m_RCCpbSize = ui;   }
   double       getInitialCpbFullness  ()                             { return m_RCInitialCpbFullness;  }
   void         setInitialCpbFullness  (double f)                     { m_RCInitialCpbFullness = f;     }
-#endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool         getTransquantBypassEnabledFlag()                      { return m_TransquantBypassEnabledFlag; }
-  void         setTransquantBypassEnabledFlag(bool flag)             { m_TransquantBypassEnabledFlag = flag; }
-  bool         getCUTransquantBypassFlagForceValue() const           { return m_CUTransquantBypassFlagForce; }
-  void         setCUTransquantBypassFlagForceValue(bool flag)        { m_CUTransquantBypassFlagForce = flag; }
 #endif
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }

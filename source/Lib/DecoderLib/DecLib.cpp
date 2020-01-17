@@ -2091,13 +2091,16 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
-  m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 #if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   if (aps->getAPSType() == SCALING_LIST_APS)
   {
     setScalingListUpdateFlag(true);
   }
 #endif
+
+  // aps will be deleted if it was already stored (and did not changed),
+  // thus, storing it must be last action.
+  m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 {

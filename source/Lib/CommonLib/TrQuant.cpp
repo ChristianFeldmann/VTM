@@ -933,7 +933,6 @@ void TrQuant::xITransformSkip(const CCoeffBuf     &pCoeff,
   const int width           = area.width;
   const int height          = area.height;
 
-#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
   for (uint32_t y = 0; y < height; y++)
   {
       for (uint32_t x = 0; x < width; x++)
@@ -941,49 +940,6 @@ void TrQuant::xITransformSkip(const CCoeffBuf     &pCoeff,
           pResidual.at(x, y) = Pel(pCoeff.at(x, y));
       }
   }
-#else
-  const int maxLog2TrDynamicRange = tu.cs->sps->getMaxLog2TrDynamicRange(toChannelType(compID));
-  const int channelBitDepth = tu.cs->sps->getBitDepth(toChannelType(compID));
-
-#if JVET_P0058_CHROMA_TS && RExt__DECODER_DEBUG_TOOL_STATISTICS
-  CodingStatistics::IncrementStatisticTool(CodingStatisticsClassType{ STATS__TOOL_EMT, uint32_t(width), uint32_t(height), compID });
-#endif
-
-  int iTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
-  if( tu.cs->sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag() )
-  {
-    iTransformShift = std::max<int>( 0, iTransformShift );
-  }
-
-  int iWHScale = 1;
-
-  const bool rotateResidual = TU::isNonTransformedResidualRotated( tu, compID );
-
-  if( iTransformShift >= 0 )
-  {
-    const TCoeff offset = iTransformShift == 0 ? 0 : ( 1 << ( iTransformShift - 1 ) );
-
-    for( uint32_t y = 0; y < height; y++ )
-    {
-      for( uint32_t x = 0; x < width; x++ )
-      {
-        pResidual.at( x, y ) = Pel( ( ( rotateResidual ? pCoeff.at( pCoeff.width - x - 1, pCoeff.height - y - 1 ) : pCoeff.at( x, y ) ) * iWHScale + offset ) >> iTransformShift );
-      }
-    }
-  }
-  else //for very high bit depths
-  {
-    iTransformShift = -iTransformShift;
-
-    for( uint32_t y = 0; y < height; y++ )
-    {
-      for( uint32_t x = 0; x < width; x++ )
-      {
-        pResidual.at( x, y ) = Pel( ( rotateResidual ? pCoeff.at( pCoeff.width - x - 1, pCoeff.height - y - 1 ) : pCoeff.at( x, y ) )  * iWHScale << iTransformShift );
-      }
-    }
-  }
-#endif
 }
 
 void TrQuant::xQuant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx)
@@ -1058,7 +1014,6 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
     {
       scaleSAD=1.0/1.414213562; // compensate for not scaling transform skip coefficients by 1/sqrt(2)
     }
-#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
 #if JVET_P0058_CHROMA_TS
     if (tu.mtsIdx[compID] == MTS_SKIP)
 #else
@@ -1068,7 +1023,6 @@ void TrQuant::transformNxN( TransformUnit& tu, const ComponentID& compID, const 
         int trShift = getTransformShift(tu.cu->slice->getSPS()->getBitDepth(toChannelType(compID)), rect.size(), tu.cu->slice->getSPS()->getMaxLog2TrDynamicRange(toChannelType(compID)));
         scaleSAD *= pow(2, trShift);
     }
-#endif
 
     trCosts.push_back( TrCost( int(sumAbs*scaleSAD), pos++ ) );
     it++;
@@ -1293,7 +1247,6 @@ void TrQuant::rdpcmNxN(TransformUnit &tu, const ComponentID &compID, const QpPar
 
 void TrQuant::xTransformSkip(const TransformUnit &tu, const ComponentID &compID, const CPelBuf &resi, TCoeff* psCoeff)
 {
-#if JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE
   const CompArea &rect = tu.blocks[compID];
   const uint32_t width = rect.width;
   const uint32_t height = rect.height;
@@ -1305,50 +1258,6 @@ void TrQuant::xTransformSkip(const TransformUnit &tu, const ComponentID &compID,
           psCoeff[ coefficientIndex ] = TCoeff(resi.at(x, y));
       }
   }
-#else
-    const SPS &sps = *tu.cs->sps;
-    const CompArea &rect = tu.blocks[compID];
-    const uint32_t width = rect.width;
-    const uint32_t height = rect.height;
-    const ChannelType chType = toChannelType(compID);
-  const int channelBitDepth = sps.getBitDepth(chType);
-  const int maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(chType);
-  int iTransformShift       = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
-
-  if( sps.getSpsRangeExtension().getExtendedPrecisionProcessingFlag() )
-  {
-    iTransformShift = std::max<int>( 0, iTransformShift );
-  }
-
-  int iWHScale = 1;
-
-  const bool rotateResidual = TU::isNonTransformedResidualRotated( tu, compID );
-  const uint32_t uiSizeMinus1 = ( width * height ) - 1;
-
-  if( iTransformShift >= 0 )
-  {
-    for( uint32_t y = 0, coefficientIndex = 0; y < height; y++ )
-    {
-      for( uint32_t x = 0; x < width; x++, coefficientIndex++ )
-      {
-        psCoeff[rotateResidual ? uiSizeMinus1 - coefficientIndex : coefficientIndex] = ( TCoeff( resi.at( x, y ) ) * iWHScale ) << iTransformShift;
-      }
-    }
-  }
-  else //for very high bit depths
-  {
-    iTransformShift = -iTransformShift;
-    const TCoeff offset = 1 << ( iTransformShift - 1 );
-
-    for( uint32_t y = 0, coefficientIndex = 0; y < height; y++ )
-    {
-      for( uint32_t x = 0; x < width; x++, coefficientIndex++ )
-      {
-        psCoeff[rotateResidual ? uiSizeMinus1 - coefficientIndex : coefficientIndex] = ( TCoeff( resi.at( x, y ) ) * iWHScale + offset ) >> iTransformShift;
-      }
-    }
-  }
-#endif
 }
 
 //! \}

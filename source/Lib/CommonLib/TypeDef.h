@@ -98,7 +98,6 @@
 
 
 
-#define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode
 
 #define JVET_P0517_ADAPTIVE_COLOR_TRANSFORM               1 // JVET-P0517: adaptive color transform
 

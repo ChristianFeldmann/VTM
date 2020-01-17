@@ -360,10 +360,8 @@ public:
 #if JVET_P0181
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
 #endif
-#if JVET_P0446_CONCATENATION
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
-#endif
 #if JVET_P0446_ALT_CPB
     , m_altCpbParamsPresentFlag (false)
     , m_useAltCpbParamsFlag (false)
@@ -407,10 +405,8 @@ public:
 #if JVET_P0181
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
 #endif
-#if JVET_P0446_CONCATENATION
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
-#endif
 #if JVET_P0446_ALT_CPB
   bool     m_altCpbParamsPresentFlag;
   bool     m_useAltCpbParamsFlag;

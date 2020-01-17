@@ -229,13 +229,11 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
       bufferingPeriodSEI->m_initialCpbRemovalOffset[j][i][1] = uiInitialCpbRemovalDelay;
     }
   }
-#if JVET_P0446_CONCATENATION
   // We don't set concatenation_flag here. max_initial_removal_delay_for_concatenation depends on the usage scenario.
   // The parameters could be added to config file, but as long as the initialisation of generic buffering parameters is
   // not controllable, it does not seem to make sense to provide settings for these.
   bufferingPeriodSEI->m_concatenationFlag = false;
   bufferingPeriodSEI->m_maxInitialRemovalDelayForConcatenation = uiInitialCpbRemovalDelay;
-#endif
 
   bufferingPeriodSEI->m_bpDecodingUnitHrdParamsPresentFlag = m_pcCfg->getNoPicPartitionFlag() == false;
   bufferingPeriodSEI->m_decodingUnitCpbParamsInPicTimingSeiFlag = !m_pcCfg->getDecodingUnitInfoSEIEnabled();

@@ -361,13 +361,11 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
   }
 
   WRITE_FLAG( sei.m_concatenationFlag, "concatenation_flag");
-#if JVET_P0446_CONCATENATION
   WRITE_FLAG( sei.m_additionalConcatenationInfoPresentFlag, "additional_concatenation_info_present_flag");
   if (sei.m_additionalConcatenationInfoPresentFlag)
   {
     WRITE_CODE( sei.m_maxInitialRemovalDelayForConcatenation, sei.m_initialCpbRemovalDelayLength, "max_initial_removal_delay_for_concatenation" );
   }
-#endif
 
   CHECK (sei.m_auCpbRemovalDelayDelta < 1, "sei.m_auCpbRemovalDelayDelta must be > 0");
   WRITE_CODE( sei.m_auCpbRemovalDelayDelta - 1, sei.m_cpbRemovalDelayLength, "au_cpb_removal_delay_delta_minus1" );

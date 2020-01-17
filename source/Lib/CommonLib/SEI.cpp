@@ -123,10 +123,8 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
 #if JVET_P0181
   target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
 #endif
-#if JVET_P0446_CONCATENATION
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_maxInitialRemovalDelayForConcatenation = m_maxInitialRemovalDelayForConcatenation;
-#endif
 #if JVET_P0446_ALT_CPB
   target.m_altCpbParamsPresentFlag = m_altCpbParamsPresentFlag;
 #endif

@@ -152,7 +152,6 @@
 
 
 
-#define JVET_P0446_CONCATENATION                          1 // concatenation info in BP SEI
 #define JVET_P0446_ALT_CPB                                1 // alternative CPB parameters
 #define JVET_P0446_BP_CPB_CNT_FIX                         1 // bp_cpb_cnt is not an array according to the spec text
 #if JVET_P0446_ALT_CPB && !JVET_P0446_BP_CPB_CNT_FIX

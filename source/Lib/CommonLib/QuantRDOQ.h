@@ -137,9 +137,7 @@ private:
     bool               isLast,
     bool               useLimitedPrefixLength,
     const int          maxLog2TrDynamicRange
-#if JVET_P0072_SIMPLIFIED_TSRC
     , int&               numUsedCtxBins
-#endif
   ) const;
 
   inline int xGetICRateTS   ( const uint32_t            absLevel,
@@ -148,9 +146,7 @@ private:
                               const FracBitsAccess&     fracBitsAccess,
                               const BinFracBits&        fracBitsSign,
                               const BinFracBits&        fracBitsGt1,
-#if JVET_P0072_SIMPLIFIED_TSRC
                               int&                      numCtxBins,
-#endif
                               const uint8_t             sign,
                               const uint16_t            ricePar,
                               const bool                useLimitedPrefixLength,

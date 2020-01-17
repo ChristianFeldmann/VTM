@@ -129,7 +129,6 @@
 
 
 
-#define JVET_P0072_SIMPLIFIED_TSRC                        1 // JVET-P0072: Simplified transform-skip residual coding 
 
 #define JVET_P0077_LINE_CG_PALETTE                        1 // JVET-P0077: Line CG palette mode
 

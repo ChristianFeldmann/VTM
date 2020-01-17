@@ -1562,13 +1562,6 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   dps->setDecodingParameterSetId( symbol );
 
   READ_CODE( 3,  symbol,  "dps_max_sub_layers_minus1" );          dps->setMaxSubLayersMinus1( symbol );
-#if !JVET_P0478_PTL_DPS
-  READ_FLAG( symbol,      "dps_reserved_zero_bit" );              CHECK(symbol != 0, "dps_reserved_zero_bit must be equal to zero");
-
-  ProfileTierLevel ptl;
-  parseProfileTierLevel(&ptl, dps->getMaxSubLayersMinus1());
-  dps->setProfileTierLevel(ptl);
-#else
   READ_CODE( 5, symbol,       "dps_reserved_zero_5bits" );              CHECK(symbol != 0, "dps_reserved_zero_5bits must be equal to zero");
   
   uint32_t numPTLs;
@@ -1582,7 +1575,6 @@ void HLSyntaxReader::parseDPS(DPS* dps)
      parseProfileTierLevel(&ptls[i], dps->getMaxSubLayersMinus1());
   }
   dps->setProfileTierLevel(ptls);
-#endif
 
   READ_FLAG( symbol,      "dps_extension_flag" );
   if (symbol)

@@ -982,14 +982,10 @@ void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
   // set the DPS profile information.
   dps.setDecodingParameterSetId(dpsId);
   dps.setMaxSubLayersMinus1(sps.getMaxTLayers()-1);
-#if JVET_P0478_PTL_DPS
   std::vector<ProfileTierLevel> ptls;
   ptls.resize(1);
   ptls[0] = *sps.getProfileTierLevel();
   dps.setProfileTierLevel(ptls);
-#else
-  dps.setProfileTierLevel(sps.getProfileTierLevel());
-#endif
 }
 
 void EncLib::xInitSPS( SPS& sps, VPS& vps )

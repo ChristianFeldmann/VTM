@@ -151,7 +151,6 @@
 
 
 
-#define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
 
 #define JVET_P0446_CONCATENATION                          1 // concatenation info in BP SEI
 #define JVET_P0446_ALT_CPB                                1 // alternative CPB parameters

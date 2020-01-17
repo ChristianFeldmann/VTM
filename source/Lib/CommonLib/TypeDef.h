@@ -79,7 +79,6 @@
 
 
 
-#define JVET_P0469_QP_OUT_VAL                             1 // JVET-P0469: Coding delta_qp_diff_val instead of delta_qp_out_val
 
 #define JVET_P0588_SUFFIX_APS                             1 // JVET-P0588/P0452: suffix APS NUT
 

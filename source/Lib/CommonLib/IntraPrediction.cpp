@@ -67,42 +67,6 @@ const uint8_t IntraPrediction::m_aucIntraFilter[MAX_INTRA_FILTER_DEPTHS] =
   0   // 128xn
 };
 
-#if !JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
-const TFilterCoeff g_intraGaussFilter[32][4] = {
-  { 16, 32, 16, 0 },
-  { 15, 29, 17, 3 },
-  { 15, 29, 17, 3 },
-  { 14, 29, 18, 3 },
-  { 13, 29, 18, 4 },
-  { 13, 28, 19, 4 },
-  { 13, 28, 19, 4 },
-  { 12, 28, 20, 4 },
-  { 11, 28, 20, 5 },
-  { 11, 27, 21, 5 },
-  { 10, 27, 22, 5 },
-  { 9, 27, 22, 6 },
-  { 9, 26, 23, 6 },
-  { 9, 26, 23, 6 },
-  { 8, 25, 24, 7 },
-  { 8, 25, 24, 7 },
-  { 8, 24, 24, 8 },
-  { 7, 24, 25, 8 },
-  { 7, 24, 25, 8 },
-  { 6, 23, 26, 9 },
-  { 6, 23, 26, 9 },
-  { 6, 22, 27, 9 },
-  { 5, 22, 27, 10 },
-  { 5, 21, 27, 11 },
-  { 5, 20, 28, 11 },
-  { 4, 20, 28, 12 },
-  { 4, 19, 28, 13 },
-  { 4, 19, 28, 13 },
-  { 4, 18, 29, 13 },
-  { 3, 18, 29, 14 },
-  { 3, 17, 29, 15 },
-  { 3, 17, 29, 15 }
-};
-#endif //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
 // ====================================================================================================================
 // Constructor / destructor / initialize
@@ -122,10 +86,6 @@ IntraPrediction::IntraPrediction()
 
   m_piTemp = nullptr;
   m_pMdlmTemp = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-  m_runTypeRD   = nullptr;
-  m_runLengthRD = nullptr;
-#endif
 }
 
 IntraPrediction::~IntraPrediction()
@@ -148,10 +108,6 @@ void IntraPrediction::destroy()
   m_piTemp = nullptr;
   delete[] m_pMdlmTemp;
   m_pMdlmTemp = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-  if (m_runTypeRD)   { xFree( m_runTypeRD  );   m_runTypeRD = NULL; }
-  if (m_runLengthRD) { xFree( m_runLengthRD); m_runLengthRD = NULL; }
-#endif
 }
 
 void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepthY)
@@ -186,16 +142,6 @@ void IntraPrediction::init(ChromaFormat chromaFormatIDC, const unsigned bitDepth
   {
     m_pMdlmTemp = new Pel[(2 * MAX_CU_SIZE + 1)*(2 * MAX_CU_SIZE + 1)];//MDLM will use top-above and left-below samples.
   }
-#if !JVET_P0077_LINE_CG_PALETTE
-  if (m_runTypeRD == nullptr)
-  {
-    m_runTypeRD = (bool *) xMalloc(bool, MAX_CU_SIZE * MAX_CU_SIZE);
-  }
-  if (m_runLengthRD == nullptr)
-  {
-    m_runLengthRD = (Pel *) xMalloc(Pel, MAX_CU_SIZE * MAX_CU_SIZE);
-  }
-#endif
 }
 
 // ====================================================================================================================
@@ -270,14 +216,8 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const ChannelType    channelType  = toChannelType( compID );
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(iWidth == 2, "Width of 2 is not supported");
-#endif
-#if JVET_P0059_CHROMA_BDPCM
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : !isLuma(compId) && pu.cu->bdpcmModeChroma ? BDPCM_IDX : PU::getFinalIntraMode(pu, channelType);
-#else
-  const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : PU::getFinalIntraMode( pu, channelType );
-#endif
 
   CHECK( floorLog2(iWidth) < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
   CHECK( floorLog2(iWidth) > 7, "Size not allowed" );
@@ -292,11 +232,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   {
     case(PLANAR_IDX): xPredIntraPlanar(srcBuf, piPred); break;
     case(DC_IDX):     xPredIntraDc(srcBuf, piPred, channelType, false); break;
-#if JVET_P0059_CHROMA_BDPCM
     case(BDPCM_IDX):  xPredIntraBDPCM(srcBuf, piPred, isLuma(compID) ? pu.cu->bdpcmMode : pu.cu->bdpcmModeChroma, clpRng); break;
-#else
-    case(BDPCM_IDX):  xPredIntraBDPCM(srcBuf, piPred, pu.cu->bdpcmMode, clpRng); break;
-#endif
     default:          xPredIntraAng(srcBuf, piPred, channelType, clpRng); break;
   }
 
@@ -355,13 +291,8 @@ void IntraPrediction::xPredIntraPlanar( const CPelBuf &pSrc, PelBuf &pDst )
   const uint32_t width  = pDst.width;
   const uint32_t height = pDst.height;
 
-#if JVET_P0329_PLANAR_SIMPLIFICATION
   const uint32_t log2W = floorLog2( width );
   const uint32_t log2H = floorLog2( height );
-#else
-  const uint32_t log2W  = floorLog2(width  < 2 ? 2 : width);
-  const uint32_t log2H  = floorLog2(height < 2 ? 2 : height);
-#endif
 
   int leftColumn[MAX_CU_SIZE + 1], topRow[MAX_CU_SIZE + 1], bottomRow[MAX_CU_SIZE], rightColumn[MAX_CU_SIZE];
   const uint32_t offset = 1 << (log2W + log2H);
@@ -478,11 +409,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
     )
   {
   }
-#if JVET_P0059_CHROMA_BDPCM
   else if ((isLuma(chType) && pu.cu->bdpcmMode) || (!isLuma(chType) && pu.cu->bdpcmModeChroma)) // BDPCM
-#else
-  else if (isLuma( chType ) && pu.cu->bdpcmMode) // BDPCM
-#endif
   {
     m_ipaParam.refFilterFlag = false;
   }
@@ -640,13 +567,8 @@ void IntraPrediction::xPredIntraAng( const CPelBuf &pSrc, PelBuf &pDst, const Ch
         {
           const bool useCubicFilter = !m_ipaParam.interpolationFlag;
 
-#if JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
           const TFilterCoeff        intraSmoothingFilter[4] = {TFilterCoeff(16 - (deltaFract >> 1)), TFilterCoeff(32 - (deltaFract >> 1)), TFilterCoeff(16 + (deltaFract >> 1)), TFilterCoeff(deltaFract >> 1)};
           const TFilterCoeff* const f                       = (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : intraSmoothingFilter;
-#else //!JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
-          const TFilterCoeff *const f =
-            (useCubicFilter) ? InterpolationFilter::getChromaFilterTable(deltaFract) : g_intraGaussFilter[deltaFract];
-#endif //JVET_P0599_INTRA_SMOOTHING_INTERP_FILT
 
           for (int x = 0; x < width; x++)
           {
@@ -752,19 +674,10 @@ void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const u
   }
 }
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-bool IntraPrediction::useDPCMForFirstPassIntraEstimation(const PredictionUnit &pu, const uint32_t &uiDirMode)
-{
-  return CU::isRDPCMEnabled(*pu.cu) && pu.cu->transQuantBypass && (uiDirMode == HOR_IDX || uiDirMode == VER_IDX);
-}
-
-#endif
 void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
 {
   const int            width = pred.width;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(width == 2, "Width of 2 is not supported");
-#endif
   const int            height = pred.height;
   const int            srcStride = width;
   const int            dstStride = pred.stride;
@@ -826,24 +739,18 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   if (pu->chromaSize().width > 2)
   {
-#endif
     initIntraPatternChType(cu, pu->Cb());
     predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu);
 
     initIntraPatternChType(cu, pu->Cr());
     predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   }
-#endif
   for (int currCompID = 0; currCompID < 3; currCompID++)
   {
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
     if (pu->chromaSize().width <= 2 && currCompID > 0)
       continue;
-#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
@@ -858,9 +765,7 @@ inline int  isBelowLeftAvailable  ( const CodingUnit &cu, const ChannelType &chT
 
 void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag)
 {
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(area.width == 2, "Width of 2 is not supported");
-#endif
   const CodingStructure& cs   = *cu.cs;
 
   if (!forceRefFilterFlag)
@@ -892,13 +797,8 @@ void IntraPrediction::initIntraPatternChTypeISP(const CodingUnit& cu, const Comp
   }
 
   const Position posLT = area;
-#if JVET_P1004_REMOVE_BRICKS
   bool           isLeftAvail  = (cs.getCURestricted(posLT.offset(-1, 0), cu, CHANNEL_TYPE_LUMA) != NULL) && cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
   bool           isAboveAvail = (cs.getCURestricted(posLT.offset(0, -1), cu, CHANNEL_TYPE_LUMA) != NULL) && cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
-#else
-  bool           isLeftAvail = cs.isDecomp(posLT.offset(-1, 0), CHANNEL_TYPE_LUMA);
-  bool           isAboveAvail = cs.isDecomp(posLT.offset(0, -1), CHANNEL_TYPE_LUMA);
-#endif
   // ----- Step 1: unfiltered reference samples -----
   if (cu.blocks[area.compID].x == area.x && cu.blocks[area.compID].y == area.y)
   {
@@ -1297,11 +1197,7 @@ bool isAboveLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const
     return false;
   }
 
-#if JVET_P1004_REMOVE_BRICKS
   return (cs.getCURestricted(refPos, cu, chType) != NULL);
-#else
-  return true;
-#endif
 }
 
 int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Position &posLT, const uint32_t uiNumUnitsInPU, const uint32_t unitWidth, bool *bValidFlags)
@@ -1321,14 +1217,9 @@ int isAboveAvailable(const CodingUnit &cu, const ChannelType &chType, const Posi
       break;
     }
 
-#if JVET_P1004_REMOVE_BRICKS
     const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
-#else
-    ++numIntra;
-    *validFlags = true;
-#endif
 
     validFlags++;
   }
@@ -1353,14 +1244,9 @@ int isLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const Posit
       break;
     }
 
-#if JVET_P1004_REMOVE_BRICKS
     const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
-#else
-    ++numIntra;
-    *validFlags = true;
-#endif
 
     validFlags--;
   }
@@ -1385,14 +1271,9 @@ int isAboveRightAvailable(const CodingUnit &cu, const ChannelType &chType, const
       break;
     }
 
-#if JVET_P1004_REMOVE_BRICKS
     const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
-#else
-    ++numIntra;
-    *validFlags = true;
-#endif
 
     validFlags++;
   }
@@ -1417,14 +1298,9 @@ int isBelowLeftAvailable(const CodingUnit &cu, const ChannelType &chType, const 
       break;
     }
 
-#if JVET_P1004_REMOVE_BRICKS
     const bool valid = (cs.getCURestricted(refPos, cu, chType) != NULL);
     numIntra += valid ? 1 : 0;
     *validFlags = valid;
-#else
-    ++numIntra;
-    *validFlags = true;
-#endif
 
     validFlags--;
   }
@@ -1924,7 +1800,6 @@ void IntraPrediction::xGetLMParameters(const PredictionUnit &pu, const Component
   }
 }
 
-#if JVET_P0803_COMBINED_MIP_CLEANUP
 void IntraPrediction::initIntraMip( const PredictionUnit &pu, const CompArea &area )
 {
   CHECK( area.width > MIP_MAX_WIDTH || area.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
@@ -1937,25 +1812,10 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu, const CompArea &ar
 
   m_matrixIntraPred.prepareInputForPred( CPelBuf( ptrSrc, srcStride, srcHStride ), area, pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) );
 }
-#else
-void IntraPrediction::initIntraMip( const PredictionUnit &pu )
-{
-  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
-
-  // prepare input (boundary) data for prediction
-  CHECK(m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP");
-  Pel *ptrSrc = getPredictorPtr(COMPONENT_Y);
-  const int srcStride  = m_refBufferStride[COMPONENT_Y];
-  const int srcHStride = 2;
-
-  m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), pu.Y(), pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA));
-}
-#endif
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   CHECK( piPred.width > MIP_MAX_WIDTH || piPred.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
   CHECK( piPred.width != (1 << floorLog2(piPred.width)) || piPred.height != (1 << floorLog2(piPred.height)), "Error: expecting blocks of size 2^M x 2^N" );
 
@@ -1972,98 +1832,7 @@ void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, co
       piPred.at( x, y ) = Pel(predMip[y * piPred.width + x]);
     }
   }
-#else
-  CHECK( pu.lwidth() > pu.cs->sps->getMaxTbSize() || pu.lheight() > pu.cs->sps->getMaxTbSize(), "Error: block size not supported for MIP" );
-  CHECK( pu.lwidth() != (1 << floorLog2(pu.lwidth())) || pu.lheight() != (1 << floorLog2(pu.lheight())), "Error: expecting blocks of size 2^M x 2^N" );
-
-  // generate mode-specific prediction
-  const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
-  static_vector<int, MIP_MAX_WIDTH * MIP_MAX_HEIGHT> predMip(pu.Y().area());
-  m_matrixIntraPred.predBlock(predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], bitDepth);
-
-  for (int y = 0; y < pu.lheight(); y++)
-  {
-    for (int x = 0; x < pu.lwidth(); x++)
-    {
-      piPred.at(x, y) = Pel(predMip[y * pu.lwidth() + x]);
-    }
-  }
-#endif
 }
-#if !JVET_P0077_LINE_CG_PALETTE
-bool IntraPrediction::calCopyRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
-{
-  CodingUnit    &cu = *cs.getCU(partitioner.chType);
-  TransformUnit &tu = *cs.getTU(partitioner.chType);
-  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
-  PLTtypeBuf runType   = tu.getrunType(compBegin);
-
-  uint32_t idx = startPos;
-  uint32_t xPos;
-  uint32_t yPos;
-  bool valid = false;
-  run = 0;
-  while (idx < total)
-  {
-    xPos = m_scanOrder[idx].x;
-    yPos = m_scanOrder[idx].y;
-    runType.at(xPos, yPos) = PLT_RUN_COPY;
-
-    if (yPos == 0 && !cu.useRotation[compBegin])
-    {
-      return false;
-    }
-    if (xPos == 0 && cu.useRotation[compBegin])
-    {
-      return false;
-    }
-    if (!cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos, yPos - 1))
-    {
-      run++;
-      valid = true;
-    }
-    else if (cu.useRotation[compBegin] && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPos - 1, yPos))
-    {
-      run++;
-      valid = true;
-    }
-    else
-    {
-      break;
-    }
-    idx++;
-  }
-  return valid;
-}
-bool IntraPrediction::calIndexRun(CodingStructure &cs, Partitioner& partitioner, uint32_t startPos, uint32_t total, uint32_t &run, ComponentID compBegin)
-{
-  TransformUnit &tu = *cs.getTU(partitioner.chType);
-  PelBuf     curPLTIdx = tu.getcurPLTIdx(compBegin);
-  PLTtypeBuf runType   = tu.getrunType(compBegin);
-
-  run = 1;
-  uint32_t idx = startPos;
-  while (idx < total)
-  {
-    uint32_t xPos = m_scanOrder[idx].x;
-    uint32_t yPos = m_scanOrder[idx].y;
-    runType.at(xPos, yPos) = PLT_RUN_INDEX;
-
-    uint32_t xPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].x;
-    uint32_t yPrev = idx == 0 ? 0 : m_scanOrder[idx - 1].y;
-    if (idx > startPos && curPLTIdx.at(xPos, yPos) == curPLTIdx.at(xPrev, yPrev))
-    {
-      run++;
-    }
-    else if (idx > startPos)
-    {
-      break;
-    }
-    idx++;
-  }
-  return true;
-}
-#endif
 void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp)
 {
   CodingUnit &cu = *cs.getCU(partitioner.chType);

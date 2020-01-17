@@ -246,11 +246,7 @@ private:
   int**                  m_diffFilterCoeff;
   short                  m_filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES];
   unsigned               m_bitsNewFilter[MAX_NUM_CHANNEL_TYPE];
-#if JVET_N0278_FIXES
   int&                   m_apsIdStart;
-#else
-  int                    m_apsIdStart;
-#endif
   double                 *m_ctbDistortionFixedFilter;
   double                 *m_ctbDistortionUnfilter[MAX_NUM_COMPONENT];
   std::vector<short>     m_alfCtbFilterSetIndexTmp;
@@ -260,11 +256,7 @@ private:
   int                    m_clipTmp[MAX_NUM_ALF_LUMA_COEFF];
 
 public:
-#if JVET_N0278_FIXES
   EncAdaptiveLoopFilter( int& apsIdStart );
-#else
-  EncAdaptiveLoopFilter();
-#endif
   virtual ~EncAdaptiveLoopFilter() {}
   void  initDistortion();
   std::vector<int> getAvaiApsIdsLuma(CodingStructure& cs, int &newApsId);
@@ -298,15 +290,8 @@ private:
   void   getFrameStats( ChannelType channel, int iShapeIdx );
   void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, uint8_t* ctbAltIdx, const int numClasses, int altIdx );
   void   deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnitBuf& recYuv, CodingStructure& cs );
-#if JVET_O0625_ALF_PADDING
-  void   getBlkStats( AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec,
-    const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos, const int alfBryList[4] );
-  void   calcCovariance( int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride,
-    const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance, const int alfBryList[4] );
-#else
   void   getBlkStats(AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos);
   void   calcCovariance(int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance);
-#endif
   void   mergeClasses(const AlfFilterShape& alfShape, AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES]);
 
 
@@ -321,11 +306,7 @@ private:
                                   const int numClasses, const int numCoeff, double& distUnfilter );
   void   roundFiltCoeff( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
 
-#if JVET_P0164_ALF_SYNTAX_SIMP
   double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, int zeroBitsVarBin, const int numFilters);
-#else
-  double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, const int numFilters );
-#endif
   int    lengthUvlc( int uiCode );
   int    getNonFilterCoeffRate( AlfParam& alfParam );
 

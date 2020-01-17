@@ -308,17 +308,10 @@ struct CodingUnit : public UnitArea
   bool           mmvdSkip;
   bool           affine;
   int            affineType;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool           colorTransform;
-#endif
   bool           triangle;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool           transQuantBypass;
-#endif
   int            bdpcmMode;
-#if JVET_P0059_CHROMA_BDPCM
   int            bdpcmModeChroma;
-#endif
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;
@@ -331,10 +324,6 @@ struct CodingUnit : public UnitArea
 
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position       shareParentPos;
-  Size           shareParentSize;
-#endif
   uint8_t          smvdMode;
   uint8_t        ispMode;
   bool           useEscape[MAX_NUM_CHANNEL_TYPE];
@@ -385,9 +374,7 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   bool      mipTransposedFlag;
-#endif
   int       multiRefIdx;
 };
 
@@ -414,10 +401,6 @@ struct InterPredictionData
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
   bool      ciipFlag;
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position  shareParentPos;
-  Size      shareParentSize;
-#endif
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
   uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
@@ -442,10 +425,6 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   PredictionUnit& operator=(const MotionInfo& mi);
 
   unsigned        idx;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position shareParentPos;
-  Size     shareParentSize;
-#endif
 
   PredictionUnit *next;
 
@@ -474,11 +453,7 @@ struct TransformUnit : public UnitArea
   int              m_chromaResScaleInv;
 
   uint8_t        depth;
-#if JVET_P0058_CHROMA_TS
   uint8_t        mtsIdx     [ MAX_NUM_TBLOCKS ];
-#else
-  uint8_t        mtsIdx;
-#endif
   bool           noResidual;
   uint8_t        jointCbCr;
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
@@ -494,11 +469,7 @@ struct TransformUnit : public UnitArea
   unsigned       idx;
   TransformUnit *next;
   TransformUnit *prev;
-#if JVET_P0077_LINE_CG_PALETTE
   void init(TCoeff **coeffs, Pel **pcmbuf, bool **runType);
-#else
-  void init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType);
-#endif
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
@@ -513,18 +484,11 @@ struct TransformUnit : public UnitArea
         void      setChromaAdj(int i);
          PelBuf   getcurPLTIdx(const ComponentID id);
   const CPelBuf   getcurPLTIdx(const ComponentID id) const;
-#if !JVET_P0077_LINE_CG_PALETTE
-         PelBuf   getrunLength(const ComponentID id);
-  const CPelBuf   getrunLength(const ComponentID id) const;
-#endif
          PLTtypeBuf   getrunType(const ComponentID id);
   const CPLTtypeBuf   getrunType(const ComponentID id) const;
          PLTescapeBuf getescapeValue(const ComponentID id);
   const CPLTescapeBuf getescapeValue(const ComponentID id) const;
         Pel*      getPLTIndex(const ComponentID id);
-#if !JVET_P0077_LINE_CG_PALETTE
-        Pel*      getRunLens(const ComponentID id);
-#endif
         bool*     getRunTypes(const ComponentID id);
 
 #if ENABLE_SPLIT_PARALLELISM
@@ -536,9 +500,6 @@ private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
   bool   *m_runType[ MAX_NUM_TBLOCKS - 1 ];
-#if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *m_runLength[MAX_NUM_TBLOCKS - 1];
-#endif
 };
 
 // ---------------------------------------------------------------------------

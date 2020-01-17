@@ -35,7 +35,6 @@
     \brief    Handle profile, level and tier information.
 */
 
-#if JVET_P2001E_PROFILES
 
 #include "ProfileLevelTier.h"
 #include "CommonLib/Slice.h"
@@ -126,4 +125,3 @@ uint64_t ProfileLevelTierFeatures::getCpbSizeInBits() const
 {
   return (m_pLevelTier!=0 && m_pProfile!=0) ? uint64_t(m_pProfile->cpbVclFactor) * m_pLevelTier->maxCpb[m_tier?1:0] : uint64_t(0);
 }
-#endif

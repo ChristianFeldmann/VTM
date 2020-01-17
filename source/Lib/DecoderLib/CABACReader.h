@@ -48,11 +48,7 @@
 class CABACReader
 {
 public:
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   CABACReader(BinDecoderBase& binDecoder) : m_BinDecoder(binDecoder), m_Bitstream(0) {}
-#else
-  CABACReader(BinDecoderBase& binDecoder) : shareStateDec(0), m_BinDecoder(binDecoder), m_Bitstream(0) {}
-#endif
   virtual ~CABACReader() {}
 
 public:
@@ -67,11 +63,7 @@ public:
   void        remaining_bytes           ( bool                          noTrailingBytesExpected );
 
   // coding tree unit (clause 7.3.8.2)
-#if JVET_P1004_REMOVE_BRICKS
   void        coding_tree_unit          ( CodingStructure&              cs,     const UnitArea& area,     int (&qps)[2],   unsigned  ctuRsAddr );
-#else
-  bool        coding_tree_unit          ( CodingStructure&              cs,     const UnitArea& area,     int (&qps)[2],   unsigned  ctuRsAddr );
-#endif
 
   // sao (clause 7.3.8.3)
   void        sao                       ( CodingStructure&              cs,     unsigned        ctuRsAddr );
@@ -79,23 +71,12 @@ public:
   void        readAlfCtuFilterIndex(CodingStructure&              cs, unsigned        ctuRsAddr);
 
   // coding (quad)tree (clause 7.3.8.4)
-#if JVET_P1004_REMOVE_BRICKS
   void        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
-#else
-  bool        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
-#endif
   PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );
   ModeType    mode_constraint           ( CodingStructure&              cs,     Partitioner&    pm,       const PartSplit splitMode );
 
   // coding unit (clause 7.3.8.5)
-#if JVET_P1004_REMOVE_BRICKS
   void        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
-#else
-  bool        coding_unit               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
-#endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  void        cu_transquant_bypass_flag ( CodingUnit&                   cu );
-#endif
   void        cu_skip_flag              ( CodingUnit&                   cu );
   void        pred_mode                 ( CodingUnit&                   cu );
   void        bdpcm_mode                ( CodingUnit&                   cu,     const ComponentID compID );
@@ -108,22 +89,14 @@ public:
   void        intra_chroma_pred_mode    ( PredictionUnit&               pu );
   void        cu_residual               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
   void        rqt_root_cbf              ( CodingUnit&                   cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void        adaptive_color_transform(CodingUnit&             cu);
-#endif 
   void        sbt_mode                  ( CodingUnit&                   cu );
-#if JVET_P1004_REMOVE_BRICKS
   void        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
-#else
-  bool        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
-#endif
   void        mip_flag                  ( CodingUnit&                   cu );
   void        mip_pred_modes            ( CodingUnit&                   cu );
   void        mip_pred_mode             ( PredictionUnit&               pu );
   void        cu_palette_info           ( CodingUnit&                   cu,     ComponentID     compBegin, uint32_t numComp, CUCtx& cuCtx );
-#if JVET_P0077_LINE_CG_PALETTE
   void        cuPaletteSubblockInfo     ( CodingUnit&                   cu,     ComponentID     compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType );
-#endif
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( PredictionUnit&               pu,     MergeCtx&       mrgCtx );
   void        merge_flag                ( PredictionUnit&               pu );
@@ -155,12 +128,8 @@ public:
 
   // residual coding (clause 7.3.8.11)
   void        residual_coding           ( TransformUnit&                tu,     ComponentID     compID, CUCtx& cuCtx );
-#if JVET_P1026_MTS_SIGNALLING
   void        ts_flag                   ( TransformUnit&                tu,     ComponentID     compID );
   void        mts_idx                   ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
-#else
-  void        mts_coding                ( TransformUnit&                tu,     ComponentID     compID );
-#endif
   void        residual_lfnst_mode       ( CodingUnit&                   cu,     CUCtx&          cuCtx  );
   void        isp_mode                  ( CodingUnit&                   cu );
   void        explicit_rdpcm_mode       ( TransformUnit&                tu,     ComponentID     compID );
@@ -184,17 +153,7 @@ private:
   void        parseScanRotationModeFlag ( CodingUnit& cu,           ComponentID compBegin );
   void        xDecodePLTPredIndicator   ( CodingUnit& cu,           uint32_t maxPLTSize,   ComponentID compBegin );
   void        xAdjustPLTIndex           ( CodingUnit& cu,           Pel curLevel,          uint32_t idx, PelBuf& paletteIdx, PLTtypeBuf& paletteRunType, int maxSymbol, ComponentID compBegin );
-#if !JVET_P0077_LINE_CG_PALETTE
-  uint32_t    cu_run_val                ( PLTRunMode runtype, const uint32_t pltIdx, const uint32_t maxRun );
-  uint32_t    xReadTruncUnarySymbol     ( PLTRunMode runtype,       uint32_t maxVal,       uint32_t ctxT );
-  uint32_t    xReadTruncMsbP1RefinementBits( PLTRunMode runtype,    uint32_t maxVal,       uint32_t ctxT );
-#endif
 public:
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  int         shareStateDec;
-  Position    shareParentPos;
-  Size        shareParentSize;
-#endif
 private:
   BinDecoderBase& m_BinDecoder;
   InputBitstream* m_Bitstream;

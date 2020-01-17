@@ -77,26 +77,19 @@ private:
 
   PicList                 m_cListPic;         //  Dynamic buffer
   ParameterSetManager     m_parameterSetManager;  // storage for parameter sets
-#if JVET_P1006_PICTURE_HEADER
   PicHeader               m_picHeader;            // picture header
-#endif
   Slice*                  m_apcSlicePilot;
 
 
   SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices, excluding prefix SEIs...
 
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  int                     m_iTargetLayer;                       ///< target stream layer to be decoded
-#endif
 
   // functional classes
   IntraPrediction         m_cIntraPred;
   InterPrediction         m_cInterPred;
   TrQuant                 m_cTrQuant;
   DecSlice                m_cSliceDecoder;
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   TrQuant                 m_cTrQuantScalingList;
-#endif
   DecCu                   m_cCuDecoder;
   HLSyntaxReader          m_HLSReader;
   CABACDecoder            m_CABACDecoder;
@@ -114,9 +107,7 @@ private:
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
   uint32_t                    m_uiSliceSegmentIdx;
-#if JVET_P1006_PICTURE_HEADER
   uint32_t                m_prevLayerID;
-#endif
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
@@ -142,13 +133,9 @@ private:
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
   std::vector<int> m_accessUnitApsNals;
 
-#if JVET_N0278_FIXES
   VPS*                    m_vps;
-#endif
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
-#endif
 
 public:
   DecLib();
@@ -171,14 +158,8 @@ public:
   void  finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl = INFO);
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   void  checkNalUnitConstraints( uint32_t naluType );
-#endif
 
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  void  setTargetDecLayer(int val) { m_iTargetLayer = val; }
-  int   getTargetDecLayer() { return m_iTargetLayer; }
-#endif
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
@@ -193,16 +174,11 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
-#if JVET_P1006_PICTURE_HEADER
   void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
-#endif
 
-#if JVET_N0278_FIXES
   const VPS* getVPS()                     { return m_vps; }
-#endif
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   void  initScalingList()
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
@@ -211,33 +187,15 @@ public:
   void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
   int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
   void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
-#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);
 
-#if JVET_N0278_FIXES
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
-#if JVET_P0184
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
-#else
-  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId);
-#endif
   void  xActivateParameterSets( const int layerId );
-#else
-  Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
-  void  xCreateLostPicture (int iLostPOC);
-#if JVET_P0184
-  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const bool interLayerRefPicFlag);
-#else
-  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
-#endif
-  void      xActivateParameterSets();
-#endif
-#if JVET_P1006_PICTURE_HEADER
   void      xDecodePicHeader( InputNALUnit& nalu );
-#endif
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
   void      xDecodeDPS( InputNALUnit& nalu );
@@ -248,9 +206,7 @@ protected:
   void      xParsePrefixSEImessages();
   void      xParsePrefixSEIsForUnknownVCLNal();
 
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS && JVET_P0478_PTL_DPS
   void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
-#endif
 
 };// END CLASS DEFINITION DecLib
 

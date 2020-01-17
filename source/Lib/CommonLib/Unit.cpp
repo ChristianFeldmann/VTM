@@ -265,17 +265,10 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   mmvdSkip = other.mmvdSkip;
   affine            = other.affine;
   affineType        = other.affineType;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   colorTransform = other.colorTransform;
-#endif 
   triangle          = other.triangle;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  transQuantBypass  = other.transQuantBypass;
-#endif
   bdpcmMode         = other.bdpcmMode;
-#if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = other.bdpcmModeChroma;
-#endif
   qp                = other.qp;
   chromaQpAdj       = other.chromaQpAdj;
   rootCbf           = other.rootCbf;
@@ -289,10 +282,6 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   for (int i = 0; i<2; i++)
     refIdxBi[i] = other.refIdxBi[i];
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  shareParentPos    = other.shareParentPos;
-  shareParentSize   = other.shareParentSize;
-#endif
   smvdMode        = other.smvdMode;
   ispMode           = other.ispMode;
   mipFlag           = other.mipFlag;
@@ -336,17 +325,10 @@ void CodingUnit::initData()
   mmvdSkip = false;
   affine            = false;
   affineType        = 0;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   colorTransform = false;
-#endif 
   triangle          = false;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  transQuantBypass  = false;
-#endif
   bdpcmMode         = 0;
-#if JVET_P0059_CHROMA_BDPCM
   bdpcmModeChroma   = 0;
-#endif
   qp                = 0;
   chromaQpAdj       = 0;
   rootCbf           = true;
@@ -359,11 +341,6 @@ void CodingUnit::initData()
   BcwIdx            = BCW_DEFAULT;
   for (int i = 0; i < 2; i++)
     refIdxBi[i] = -1;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  shareParentPos = Position(-1, -1);
-  shareParentSize.width = -1;
-  shareParentSize.height = -1;
-#endif
   smvdMode        = 0;
   ispMode           = 0;
   mipFlag           = false;
@@ -493,11 +470,7 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
 
   //parameter
-#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   int maxSbtCUSize = cs->sps->getMaxTbSize();
-#else
-  int maxSbtCUSize = cs->sps->getMaxSbtSize();
-#endif
   int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
 
   //check on size
@@ -548,9 +521,7 @@ void PredictionUnit::initData()
   // intra data - need this default initialization for PCM
   intraDir[0] = DC_IDX;
   intraDir[1] = PLANAR_IDX;
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   mipTransposedFlag = false;
-#endif
   multiRefIdx = 0;
 
   // inter data
@@ -588,11 +559,6 @@ void PredictionUnit::initData()
     }
   }
   ciipFlag = false;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  shareParentPos = Position(-1, -1);
-  shareParentSize.width = -1;
-  shareParentSize.height = -1;
-#endif
   mmvdEncOptMode = 0;
 }
 
@@ -602,9 +568,7 @@ PredictionUnit& PredictionUnit::operator=(const IntraPredictionData& predData)
   {
     intraDir[i] = predData.intraDir[i];
   }
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   mipTransposedFlag = predData.mipTransposedFlag;
-#endif
   multiRefIdx = predData.multiRefIdx;
 
   return *this;
@@ -646,10 +610,6 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
     }
   }
   ciipFlag = predData.ciipFlag;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  shareParentPos = predData.shareParentPos;
-  shareParentSize = predData.shareParentSize;
-#endif
   return *this;
 }
 
@@ -659,9 +619,7 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   {
     intraDir[ i ] = other.intraDir[ i ];
   }
-#if JVET_P0803_COMBINED_MIP_CLEANUP
   mipTransposedFlag = other.mipTransposedFlag;
-#endif
   multiRefIdx = other.multiRefIdx;
 
   mergeFlag   = other.mergeFlag;
@@ -698,10 +656,6 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
     }
   }
   ciipFlag = other.ciipFlag;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  shareParentPos = other.shareParentPos;
-  shareParentSize = other.shareParentSize;
-#endif
   return *this;
 }
 
@@ -755,9 +709,6 @@ TransformUnit::TransformUnit(const UnitArea& unit) : UnitArea(unit), cu(nullptr)
   for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
   {
     m_runType[i] = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = nullptr;
-#endif
   }
 
   initData();
@@ -774,9 +725,6 @@ TransformUnit::TransformUnit(const ChromaFormat _chromaFormat, const Area &_area
   for (unsigned i = 0; i < MAX_NUM_TBLOCKS - 1; i++)
   {
     m_runType[i] = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = nullptr;
-#endif
   }
 
   initData();
@@ -789,23 +737,14 @@ void TransformUnit::initData()
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
     compAlpha[i]     = 0;
-#if JVET_P0058_CHROMA_TS
     mtsIdx[i]        = MTS_DCT2_DCT2;
-#endif
   }
   depth              = 0;
-#if !JVET_P0058_CHROMA_TS
-  mtsIdx             = MTS_DCT2_DCT2;
-#endif
   noResidual         = false;
   jointCbCr          = 0;
   m_chromaResScaleInv = 0;
 }
-#if JVET_P0077_LINE_CG_PALETTE
 void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, bool **runType)
-#else
-void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **runType)
-#endif
 {
   uint32_t numBlocks = getNumberValidTBlocks(*cs->pcv);
 
@@ -818,9 +757,6 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, Pel **runLength, bool **
   for (uint32_t i = 0; i < numBlocks - 1; i++)
   {
     m_runType[i] = runType[i];
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = runLength[i];
-#endif
   }
 }
 
@@ -840,21 +776,13 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     if (cu->slice->getSPS()->getPLTMode() && i < 2)
     {
       if (m_runType[i]   && other.m_runType[i]   && m_runType[i]   != other.m_runType[i]  ) memcpy(m_runType[i],   other.m_runType[i],   sizeof(bool) * area);
-#if !JVET_P0077_LINE_CG_PALETTE
-      if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area );
-#endif
     }
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
     compAlpha[i]     = other.compAlpha[i];
-#if JVET_P0058_CHROMA_TS
     mtsIdx[i] = other.mtsIdx[i];
-#endif
   }
   depth              = other.depth;
-#if !JVET_P0058_CHROMA_TS
-  mtsIdx             = other.mtsIdx;
-#endif
   noResidual         = other.noResidual;
   jointCbCr          = other.jointCbCr;
   return *this;
@@ -873,9 +801,6 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   if ((i == COMPONENT_Y || i == COMPONENT_Cb))
   {
     if (m_runType[i] && other.m_runType[i] && m_runType[i] != other.m_runType[i])   memcpy(m_runType[i], other.m_runType[i], sizeof(bool) * area);
-#if !JVET_P0077_LINE_CG_PALETTE
-    if (m_runLength[i] && other.m_runLength[i] && m_runLength[i] != other.m_runLength[i]) memcpy(m_runLength[i], other.m_runLength[i], sizeof(Pel) * area);
-#endif
   }
 
   cbf[i]           = other.cbf[i];
@@ -883,11 +808,7 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
   compAlpha[i]     = other.compAlpha[i];
 
   depth            = other.depth;
-#if JVET_P0058_CHROMA_TS
   mtsIdx[i]        = other.mtsIdx[i];
-#else
-  mtsIdx           = isLuma( i ) ? other.mtsIdx : mtsIdx;
-#endif
   noResidual       = other.noResidual;
   jointCbCr        = isChroma( i ) ? other.jointCbCr : jointCbCr;
 }
@@ -901,10 +822,6 @@ const CPelBuf   TransformUnit::getPcmbuf(const ComponentID id) const { return CP
        PelBuf       TransformUnit::getcurPLTIdx(const ComponentID id)         { return        PelBuf(m_pcmbuf[id], blocks[id]); }
 const CPelBuf       TransformUnit::getcurPLTIdx(const ComponentID id)   const { return       CPelBuf(m_pcmbuf[id], blocks[id]); }
 
-#if !JVET_P0077_LINE_CG_PALETTE
-       PelBuf       TransformUnit::getrunLength(const ComponentID id)         { return     PelBuf(m_runLength[id], blocks[id]); }
-const CPelBuf       TransformUnit::getrunLength(const ComponentID id)   const { return    CPelBuf(m_runLength[id], blocks[id]); }
-#endif
        PLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)         { return   PLTtypeBuf(m_runType[id], blocks[id]); }
 const CPLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)   const { return  CPLTtypeBuf(m_runType[id], blocks[id]); }
 
@@ -912,9 +829,6 @@ const CPLTtypeBuf   TransformUnit::getrunType  (const ComponentID id)   const { 
 const CPLTescapeBuf TransformUnit::getescapeValue(const ComponentID id) const { return CPLTescapeBuf(m_coeffs[id], blocks[id]); }
 
       Pel*          TransformUnit::getPLTIndex   (const ComponentID id)       { return  m_pcmbuf[id];    }
-#if !JVET_P0077_LINE_CG_PALETTE
-      Pel*          TransformUnit::getRunLens    (const ComponentID id)       { return  m_runLength[id]; }
-#endif
       bool*         TransformUnit::getRunTypes   (const ComponentID id)       { return  m_runType[id];   }
 
 void TransformUnit::checkTuNoResidual( unsigned idx )
@@ -936,27 +850,7 @@ int TransformUnit::getTbAreaAfterCoefZeroOut(ComponentID compID) const
   int tbZeroOutWidth = blocks[compID].width;
   int tbZeroOutHeight = blocks[compID].height;
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-#if JVET_P1026_MTS_SIGNALLING
   if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && compID == COMPONENT_Y )
-#else
-#if JVET_P0058_CHROMA_TS
-  if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
-#else
-  if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && compID == COMPONENT_Y)
-#endif
-#endif
-#else
-#if JVET_P1026_MTS_SIGNALLING
-  if ( cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32 && !cu->transQuantBypass && compID == COMPONENT_Y )
-#else
-#if JVET_P0058_CHROMA_TS
-  if ((mtsIdx[compID] > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
-#else
-  if ((mtsIdx > MTS_SKIP || (cs->sps->getUseMTS() && cu->sbtInfo != 0 && blocks[compID].width <= 32 && blocks[compID].height <= 32)) && !cu->transQuantBypass && compID == COMPONENT_Y)
-#endif
-#endif
-#endif
   {
     tbZeroOutWidth = (blocks[compID].width == 32) ? 16 : tbZeroOutWidth;
     tbZeroOutHeight = (blocks[compID].height == 32) ? 16 : tbZeroOutHeight;

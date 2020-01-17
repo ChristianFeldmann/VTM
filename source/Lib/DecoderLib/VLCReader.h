@@ -46,9 +46,7 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define READ_SCODE(length, code, name)    xReadSCode  ( length, code, name )
-#endif
 #define READ_CODE(length, code, name)     xReadCodeTr ( length, code, name )
 #define READ_UVLC(        code, name)     xReadUvlcTr (         code, name )
 #define READ_SVLC(        code, name)     xReadSvlcTr (         code, name )
@@ -58,9 +56,7 @@
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define READ_SCODE(length, code, name)    xReadSCode( length, code, name )
-#endif
 #define READ_CODE(length, code, name)     xReadCode ( length, code, name )
 #define READ_UVLC(        code, name)     xReadUvlc (         code, name )
 #define READ_SVLC(        code, name)     xReadSvlc (         code, name )
@@ -68,9 +64,7 @@
 
 #else
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define READ_SCODE(length, code, name)    xReadSCode ( length, code )
-#endif
 #define READ_CODE(length, code, name)     xReadCode ( length, code )
 #define READ_UVLC(        code, name)     xReadUvlc (         code )
 #define READ_SVLC(        code, name)     xReadSvlc (         code )
@@ -112,12 +106,10 @@ protected:
   void  xReadSvlcTr  (                int& rValue, const char *pSymbolName );
   void  xReadFlagTr  (               uint32_t& rValue, const char *pSymbolName );
 #endif
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
   void  xReadSCode   ( uint32_t  length, int& val, const char *pSymbolName );
 #else
   void  xReadSCode   ( uint32_t  length, int& val );
-#endif
 #endif
 
 public:
@@ -175,23 +167,15 @@ public:
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
   void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
-#if JVET_P1006_PICTURE_HEADER
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#else
-  void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#endif
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
   void  parseScalingList    ( ScalingList* scalingList );
-#if JVET_P01034_PRED_1D_SCALING_LIST
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
-#else
-  void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
-#endif
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
 

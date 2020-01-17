@@ -63,20 +63,11 @@ enum class BlockStatistic {
   ChromaQPAdj,
   QP,
   SplitSeries,
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  TransQuantBypassFlag,
-#endif
-#if JVET_P0058_CHROMA_TS
   MTSIdx_Y,
   MTSIdx_Cb,
   MTSIdx_Cr,
-#else
-  MTSIdx,
-#endif
   BDPCM,
-#if JVET_P0059_CHROMA_BDPCM
   BDPCMChroma,
-#endif
   TileIdx,
   IndependentSliceIdx,
   LFNSTIdx,
@@ -140,9 +131,6 @@ enum class BlockStatistic {
   ChromaQPAdj_Chroma,
   QP_Chroma,
   SplitSeries_Chroma,
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  TransQuantBypassFlag_Chroma,
-#endif
 
   // intra
 
@@ -172,17 +160,11 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::Luma_IntraMode,         std::tuple<std::string, BlockStatisticType, std::string>{"Luma_IntraMode",              BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::Chroma_IntraMode,       std::tuple<std::string, BlockStatisticType, std::string>{"Chroma_IntraMode",            BlockStatisticType::Integer,                "[0, " + std::to_string(NUM_INTRA_MODE) + "]"}},
   { BlockStatistic::SkipFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SkipFlag",                    BlockStatisticType::Flag,                   ""}},
-#if JVET_P0058_CHROMA_TS
   { BlockStatistic::MTSIdx_Y,               std::tuple<std::string, BlockStatisticType, std::string> {"MTS_Y",                      BlockStatisticType::Integer,                ""} },
   { BlockStatistic::MTSIdx_Cb,               std::tuple<std::string, BlockStatisticType, std::string>{"MTS_Cb",                     BlockStatisticType::Integer,                ""} },
   { BlockStatistic::MTSIdx_Cr,               std::tuple<std::string, BlockStatisticType, std::string>{"MTS_Cr",                     BlockStatisticType::Integer,                ""} },
-#else
-  { BlockStatistic::MTSIdx,                 std::tuple<std::string, BlockStatisticType, std::string>{"TransformSkipFlag_Y",         BlockStatisticType::Integer,                ""}},
-#endif
   { BlockStatistic::BDPCM,                  std::tuple<std::string, BlockStatisticType, std::string>{"BDPCM",                       BlockStatisticType::Flag,                   ""}},    // called bdpcmMode, but used like a flag in the software? related to intra, but signalled always?
-#if JVET_P0059_CHROMA_BDPCM
   { BlockStatistic::BDPCMChroma,            std::tuple<std::string, BlockStatisticType, std::string>{"BDPCMChroma",                 BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::TileIdx,                std::tuple<std::string, BlockStatisticType, std::string>{"TileIdx",                     BlockStatisticType::Integer,                ""}},
   { BlockStatistic::IndependentSliceIdx,    std::tuple<std::string, BlockStatisticType, std::string>{"IndependentSliceIdx",         BlockStatisticType::Integer,                ""}},
   { BlockStatistic::LFNSTIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"LFNSTIdx",                    BlockStatisticType::Integer,                "[0, 3]"}},
@@ -208,9 +190,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::Cbf_Y,                  std::tuple<std::string, BlockStatisticType, std::string>{"Cbf_Y",                       BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::Cbf_Cb,                 std::tuple<std::string, BlockStatisticType, std::string>{"Cbf_Cb",                      BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::Cbf_Cr,                 std::tuple<std::string, BlockStatisticType, std::string>{"Cbf_Cr",                      BlockStatisticType::Flag,                   ""}},
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  { BlockStatistic::TransQuantBypassFlag,   std::tuple<std::string, BlockStatisticType, std::string>{"TransQuantBypassFlag",        BlockStatisticType::Flag,                   ""}},
-#endif
   { BlockStatistic::MergeIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"MergeIdx",                    BlockStatisticType::Integer,                "[0, 7]"}},
   { BlockStatistic::InterDir,               std::tuple<std::string, BlockStatisticType, std::string>{"InterDir",                    BlockStatisticType::Integer,                "[1, 3]"}},
   { BlockStatistic::MergeType,              std::tuple<std::string, BlockStatisticType, std::string>{"MergeType",                   BlockStatisticType::Integer,                "[0, 2]"}},
@@ -245,9 +224,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::ChromaQPAdj_Chroma,            std::tuple<std::string, BlockStatisticType, std::string>{"ChromaQPAdj_Chroma",                 BlockStatisticType::Integer,                "[-10, 10]"}}, // todo: actual limits?
   { BlockStatistic::QP_Chroma,                     std::tuple<std::string, BlockStatisticType, std::string>{"QP_Chroma",                          BlockStatisticType::Integer,                "[0, 51]"}},
   { BlockStatistic::SplitSeries_Chroma,            std::tuple<std::string, BlockStatisticType, std::string>{"SplitSeries_Chroma",                 BlockStatisticType::Integer,                "[0, " + std::to_string(std::numeric_limits<SplitSeries>::max()) + "]"}},
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  { BlockStatistic::TransQuantBypassFlag_Chroma,   std::tuple<std::string, BlockStatisticType, std::string>{"TransQuantBypassFlag_Chroma",        BlockStatisticType::Flag,                   ""}},
-#endif
 
 };
 

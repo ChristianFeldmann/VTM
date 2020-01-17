@@ -68,10 +68,8 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   , m_puCache ( puCache )
   , m_tuCache ( tuCache )
   , bestParent ( nullptr )
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   , tmpColorSpaceCost(MAX_DOUBLE)
   , firstColorSpaceSelected(true)
-#endif
   , resetIBCBuffer (false)
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
@@ -84,9 +82,6 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   for (uint32_t i = 0; i < MAX_NUM_CHANNEL_TYPE; i++)
   {
     m_runType[i] = nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-    m_runLength[i] = nullptr;
-#endif
   }
 
   for( uint32_t i = 0; i < MAX_NUM_CHANNEL_TYPE; i++ )
@@ -101,11 +96,9 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   features.resize( NUM_ENC_FEATURES );
   treeType = TREE_D;
   modeType = MODE_TYPE_ALL;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
   tmpColorSpaceIntraCost[0] = MAX_DOUBLE;
   tmpColorSpaceIntraCost[1] = MAX_DOUBLE;
   firstColorSpaceTestOnly = false;
-#endif
 }
 
 void CodingStructure::destroy()
@@ -204,13 +197,8 @@ void CodingStructure::setDecomp(const UnitArea &_area, const bool _isCoded /*= t
 
 const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const
 {
-#if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
   if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 || partitioner.currArea().chromaFormat == CHROMA_400 )
-#else
-  if (CS::isDualITree(*this) || modeTypeParent != MODE_TYPE_ALL || partitioner.currArea().chromaFormat == CHROMA_444 )
-#endif
     return LDT_MODE_TYPE_INHERIT;
-#if JVET_P0406_YUV_FMT_GENERALIZATION_LDT
   int minLumaArea = partitioner.currArea().lumaSize().area();
   if (split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT) // the area is split into 3 or 4 parts
   {
@@ -221,42 +209,8 @@ const int CodingStructure::signalModeCons( const PartSplit split, Partitioner &p
     minLumaArea = minLumaArea >> 1;
   }
   int minChromaBlock = minLumaArea >> (getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat) + getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, partitioner.currArea().chromaFormat));
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   bool is2xNChroma = (partitioner.currArea().chromaSize().width == 4 && split == CU_VERT_SPLIT) || (partitioner.currArea().chromaSize().width == 8 && split == CU_TRIV_SPLIT);
   return minChromaBlock >= 16 && !is2xNChroma ? LDT_MODE_TYPE_INHERIT : ((minLumaArea < 32) || slice->isIntra()) ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-#else
-  return minChromaBlock >= 16 ? LDT_MODE_TYPE_INHERIT : ((minLumaArea < 32) || slice->isIntra()) ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-#endif
-#else
-  int width = partitioner.currArea().lwidth();
-  int height = partitioner.currArea().lheight();
-
-  if( width * height == 64 )
-  {
-    if( split == CU_QUAD_SPLIT || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT ) // qt or tt
-      return LDT_MODE_TYPE_INFER; //only intra mode allowed for child nodes (have 4x4)
-    else // bt
-      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-  }
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
-  else if (((width * height == 128) && (split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT)) || (width == 8 && split == CU_VERT_SPLIT) || (width == 16 && split == CU_TRIV_SPLIT))
-  {
-    return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-  }
-#else
-  else if (width * height == 128)
-  {
-    if (split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT) // tt
-      return slice->isIntra() ? LDT_MODE_TYPE_INFER : LDT_MODE_TYPE_SIGNAL;
-    else // bt
-      return LDT_MODE_TYPE_INHERIT;
-  }
-#endif
-  else
-  {
-    return LDT_MODE_TYPE_INHERIT;
-  }
-#endif
 }
 
 void CodingStructure::clearCuPuTuIdxMap( const UnitArea &_area, uint32_t numCu, uint32_t numPu, uint32_t numTu, uint32_t* pOffset )
@@ -653,9 +607,6 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   TCoeff *coeffs[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   Pel    *pcmbuf[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
   bool   *runType[5]   = { nullptr, nullptr, nullptr, nullptr, nullptr };
-#if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *runLength[5] = { nullptr, nullptr, nullptr, nullptr, nullptr };
-#endif
 
   uint32_t numCh = ::getNumberValidComponents( area.chromaFormat );
 
@@ -696,19 +647,12 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
     if (i < MAX_NUM_CHANNEL_TYPE)
     {
       if (m_runType[i] != nullptr) runType[i] = m_runType[i] + m_offsets[i];
-#if !JVET_P0077_LINE_CG_PALETTE
-      if (m_runLength[i] != nullptr) runLength[i] = m_runLength[i] + m_offsets[i];
-#endif
     }
 
     unsigned areaSize = tu->blocks[i].area();
     m_offsets[i] += areaSize;
   }
-#if JVET_P0077_LINE_CG_PALETTE
   tu->init(coeffs, pcmbuf, runType);
-#else
-  tu->init( coeffs, pcmbuf, runLength, runType);
-#endif
 
   return *tu;
 }
@@ -1000,9 +944,6 @@ void CodingStructure::createCoeffs(const bool isPLTused)
       unsigned _area = area.blocks[i].area();
 
       m_runType[i] = _area > 0 ? (bool*)xMalloc(bool, _area) : nullptr;
-#if !JVET_P0077_LINE_CG_PALETTE
-      m_runLength[i] = _area > 0 ? (Pel*)xMalloc(Pel, _area) : nullptr;
-#endif
     }
   }
 }
@@ -1018,9 +959,6 @@ void CodingStructure::destroyCoeffs()
   for (uint32_t i = 0; i < MAX_NUM_CHANNEL_TYPE; i++)
   {
     if (m_runType[i]) { xFree(m_runType[i]);   m_runType[i] = nullptr; }
-#if !JVET_P0077_LINE_CG_PALETTE
-    if (m_runLength[i]) { xFree(m_runLength[i]); m_runLength[i] = nullptr; }
-#endif
   }
 }
 
@@ -1050,9 +988,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.sps       = sps;
   subStruct.vps       = vps;
   subStruct.pps       = pps;
-#if JVET_P1006_PICTURE_HEADER
   subStruct.picHeader = picHeader;
-#endif
   memcpy(subStruct.alfApss, alfApss, sizeof(alfApss));
 
   subStruct.lmcsAps = lmcsAps;
@@ -1073,11 +1009,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   subStruct.treeType  = treeType;
   subStruct.modeType  = modeType;
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   subStruct.initStructData( currQP[_chType] );
-#else
-  subStruct.initStructData( currQP[_chType], isLossless );
-#endif
 
   if( isTuEnc )
   {
@@ -1304,11 +1236,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
   }
 }
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
 void CodingStructure::initStructData( const int &QP, const bool &skipMotBuf )
-#else
-void CodingStructure::initStructData( const int &QP, const bool &_isLosses, const bool &skipMotBuf )
-#endif
 {
   clearPUs();
   clearTUs();
@@ -1317,9 +1245,6 @@ void CodingStructure::initStructData( const int &QP, const bool &_isLosses, cons
   if( QP < MAX_INT )
   {
     currQP[0] = currQP[1] = QP;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-    isLossless            = _isLosses;
-#endif
   }
 
   if (!skipMotBuf && (!parent || ((!slice->isIntra() || slice->getSPS()->getIBCFlag()) && !m_isTuEnc)))

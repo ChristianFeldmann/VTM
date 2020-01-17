@@ -38,7 +38,6 @@
 #include "EncTemporalFilter.h"
 #include <math.h>
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
 
 // ====================================================================================================================
 // Constructor / destructor / initialization / destroy
@@ -625,4 +624,3 @@ void EncTemporalFilter::bilateralFilter(const PelStorage &orgPic,
 
 //! \}
 
-#endif

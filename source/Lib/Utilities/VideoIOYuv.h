@@ -95,9 +95,7 @@ public:
 
   bool  isEof ();                                           ///< check for end-of-file
   bool  isFail();                                           ///< check for failure
-#if JVET_N0278_FIXES
   bool  isOpen() { return m_cHandle.is_open(); }
-#endif
 
   bool  writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPelUnitBuf& pic,
     const InputColourSpaceConversion ipCSC, const bool bPackedYUVOutputMode, int outputChoice = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one upsaled YUV frame

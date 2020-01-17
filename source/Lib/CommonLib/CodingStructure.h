@@ -85,18 +85,9 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position    sharedBndPos;
-  Size        sharedBndSize;
-#endif
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool        isLossless;
-#endif
   const SPS *sps;
   const PPS *pps;
-#if JVET_P1006_PICTURE_HEADER
   PicHeader *picHeader;
-#endif
   APS*       alfApss[ALF_CTB_MAX_NUM_APS];
   APS *      lmcsAps;
   APS *      scalinglistAps;
@@ -176,11 +167,7 @@ public:
   TreeType    treeType; //because partitioner can not go deep to tu and cu coding (e.g., addCU()), need another variable for indicating treeType
   ModeType    modeType;
 
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   void initStructData  (const int &QP = MAX_INT, const bool &skipMotBuf = false);
-#else
-  void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
-#endif
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);
@@ -244,21 +231,16 @@ private:
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
   bool   *m_runType[ MAX_NUM_CHANNEL_TYPE ];
-#if !JVET_P0077_LINE_CG_PALETTE
-  Pel    *m_runLength[MAX_NUM_CHANNEL_TYPE];
-#endif
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;
 
 public:
   CodingStructure *bestParent;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   double        tmpColorSpaceCost;
   bool          firstColorSpaceSelected;
   double        tmpColorSpaceIntraCost[2];
   bool          firstColorSpaceTestOnly;
-#endif
   bool resetIBCBuffer;
 
   MotionBuf getMotionBuf( const     Area& _area );

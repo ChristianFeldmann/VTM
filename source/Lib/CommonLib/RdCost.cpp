@@ -82,21 +82,9 @@ void RdCost::setLambda( double dLambda, const BitDepths &bitDepths )
 {
   m_dLambda             = dLambda;
   m_DistScale           = double(1<<SCALE_BITS) / m_dLambda;
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   m_dLambdaMotionSAD    = sqrt(m_dLambda);
-#else
-  m_dLambdaMotionSAD[0] = sqrt(m_dLambda);
-  dLambda = 0.57
-            * pow(2.0, ((LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME - 12
-                         + 6
-                             * ((bitDepths.recon[CHANNEL_TYPE_LUMA] - 8)
-                                - DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[CHANNEL_TYPE_LUMA])))
-                        / 3.0));
-  m_dLambdaMotionSAD[1] = sqrt(dLambda);
-#endif
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
 {
   if (m_resetStore)
@@ -134,7 +122,6 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
     CHECK(m_DistScale != m_DistScaleUnadjusted, "lambda should be adjusted to the original value");
   }
 }
-#endif
 
 // Initialize Function Pointer by [eDFunc]
 void RdCost::init()
@@ -224,10 +211,8 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   m_resetStore = true;
   m_pairCheck    = 0;
-#endif 
 }
 
 
@@ -242,11 +227,7 @@ void RdCost::copyState( const RdCost& other )
   m_mvPredictor   = other.m_mvPredictor;
   m_motionLambda  = other.m_motionLambda;
   m_iCostScale    = other.m_iCostScale;
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
   m_dLambdaMotionSAD = other.m_dLambdaMotionSAD;
-#else
-  memcpy( m_dLambdaMotionSAD, other.m_dLambdaMotionSAD, sizeof( m_dLambdaMotionSAD ) );
-#endif
 #if WCG_EXT
   m_dLambda_unadjusted  = other.m_dLambda_unadjusted ;
   m_DistScaleUnadjusted = other.m_DistScaleUnadjusted;

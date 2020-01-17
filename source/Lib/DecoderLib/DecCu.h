@@ -73,18 +73,10 @@ public:
   void initDecCuReshaper  ( Reshape* pcReshape, ChromaFormat chromaFormatIDC) ;
   void destoryDecCuReshaprBuf();
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  void setShareStateDec (int shareStateDecIn)  { m_shareStateDec = shareStateDecIn; }
-#if ENABLE_SPLIT_PARALLELISM
-  int  getShareStateDec () const { return m_shareStateDec; }
-#endif
-#endif
   /// reconstruct Ctu information
 protected:
   void xIntraRecQT        ( CodingUnit&      cu, const ChannelType chType );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void xIntraRecACTQT(CodingUnit&      cu);
-#endif
 
   void xReconInter        ( CodingUnit&      cu );
   void xDecodeInterTexture( CodingUnit&      cu );
@@ -92,9 +84,7 @@ protected:
   void xFillPCMBuffer     ( CodingUnit&      cu );
 
   void xIntraRecBlk       ( TransformUnit&   tu, const ComponentID compID );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void xIntraRecACTBlk(TransformUnit&   tu);
-#endif
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );
@@ -105,9 +95,6 @@ private:
   IntraPrediction*  m_pcIntraPred;
   InterPrediction*  m_pcInterPred;
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  int               m_shareStateDec;
-#endif
 
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
 

@@ -225,9 +225,7 @@ void Reshape::copySliceReshaperInfo(SliceReshapeInfo& tInfo, SliceReshapeInfo& s
     tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
     memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
     tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
-#if JVET_P0371_CHROMA_SCALING_OFFSET
     tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
-#endif
   }
   tInfo.sliceReshaperEnableFlag = sInfo.sliceReshaperEnableFlag;
   if (sInfo.sliceReshaperEnableFlag)
@@ -265,11 +263,7 @@ void Reshape::constructReshaper()
     else
     {
       m_invScaleCoef[i] = (int32_t)(m_initCW * (1 << FP_PREC) / m_binCW[i]);
-#if JVET_P0371_CHROMA_SCALING_OFFSET
       m_chromaAdjHelpLUT[i] = (int32_t)(m_initCW * (1 << FP_PREC) / ( m_binCW[i] + m_sliceReshapeInfo.chrResScalingOffset ) );
-#else
-      m_chromaAdjHelpLUT[i] = m_invScaleCoef[i];
-#endif
     }
   }
   for (int lumaSample = 0; lumaSample < m_reshapeLUTSize; lumaSample++)

@@ -208,9 +208,7 @@ public:
   static const CtxSet   IntraLumaMpmFlag;
   static const CtxSet   IntraLumaPlanarFlag;
   static const CtxSet   CclmModeFlag;
-#if JVET_P0615_CHROMAMODE_CLEANUP
   static const CtxSet   CclmModeIdx;
-#endif
   static const CtxSet   IntraChromaPredMode;
   static const CtxSet   MipFlag;
   static const CtxSet   DeltaQP;
@@ -226,9 +224,7 @@ public:
   static const CtxSet   Mvd;
   static const CtxSet   BDPCMMode;
   static const CtxSet   QtRootCbf;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   static const CtxSet   ACTFlag;
-#endif
   static const CtxSet   QtCbf           [3];    // [ channel ]
   static const CtxSet   SigCoeffGroup   [2];    // [ ChannelType ]
   static const CtxSet   LastX           [2];    // [ ChannelType ]
@@ -247,9 +243,6 @@ public:
   static const CtxSet   SaoTypeIdx;
   static const CtxSet   TransformSkipFlag;
   static const CtxSet   MTSIdx;
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  static const CtxSet   TransquantBypassFlag;
-#endif
   static const CtxSet   LFNSTIdx;
   static const CtxSet   PLTFlag;
   static const CtxSet   RotationFlag;
@@ -269,9 +262,6 @@ public:
   static const CtxSet   BcwIdx;
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   ctbAlfAlternative;
-#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
-  static const CtxSet   AlfUseLatestFilt;
-#endif
   static const CtxSet   AlfUseTemporalFilt;
   static const CtxSet   CiipFlag;
   static const CtxSet   SmvdFlag;

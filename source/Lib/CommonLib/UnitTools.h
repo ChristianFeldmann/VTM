@@ -61,9 +61,6 @@ namespace CU
   bool isIBC                          (const CodingUnit &cu);
   bool isPLT                          (const CodingUnit &cu);
   bool isRDPCMEnabled                 (const CodingUnit &cu);
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  bool isLosslessCoded                (const CodingUnit &cu);
-#endif
 
   bool isSameCtu                      (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSlice                    (const CodingUnit &cu, const CodingUnit &cu2);
@@ -71,11 +68,6 @@ namespace CU
   bool isSameSliceAndTile             (const CodingUnit &cu, const CodingUnit &cu2);
   bool isLastSubCUOfCtu               (const CodingUnit &cu);
   uint32_t getCtuAddr                     (const CodingUnit &cu);
-#if JVET_O0625_ALF_PADDING || JVET_P0551_ALF_SLICE_BOUNDARY
-#if !JVET_P1004_REMOVE_BRICKS
-  bool isSameBrick                    ( const CodingUnit& cu, const CodingUnit& cu2 );
-#endif
-#endif
   int  predictQP                      (const CodingUnit& cu, const int prevQP );
 
   uint32_t getNumPUs                      (const CodingUnit& cu);
@@ -96,9 +88,7 @@ namespace CU
   void  setBcwIdx                     (CodingUnit& cu, uint8_t uh);
   uint8_t deriveBcwIdx                (uint8_t bcwLO, uint8_t bcwL1);
   bool bdpcmAllowed                   (const CodingUnit& cu, const ComponentID compID);
-#if JVET_P1026_MTS_SIGNALLING
   bool isMTSAllowed                   (const CodingUnit& cu, const ComponentID compID);
-#endif
 
 
   bool      divideTuInRows            ( const CodingUnit &cu );
@@ -107,10 +97,8 @@ namespace CU
   bool      isISPFirst                ( const CodingUnit &cu, const CompArea &tuArea, const ComponentID compID );
   bool      canUseISP                 ( const CodingUnit &cu,                         const ComponentID compID );
   bool      canUseISP                 ( const int width, const int height, const int maxTrSize = MAX_TB_SIZEY );
-#if JVET_P1026_ISP_LFNST_COMBINATION
   bool      canUseLfnstWithISP        ( const CompArea& cuArea, const ISPType ispSplitType );
   bool      canUseLfnstWithISP        ( const CodingUnit& cu, const ChannelType chType );
-#endif
   uint32_t  getISPSplitDim            ( const int width, const int height, const PartSplit ispType );
   bool      allLumaCBFsAreZero        ( const CodingUnit& cu );
 
@@ -161,12 +149,7 @@ namespace PU
   bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
     , const bool isAvailableA1, const MotionInfo miLeft, const bool isAvailableB1, const MotionInfo miAbove
     , const bool ibcFlag
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    , const bool isShared
-#endif
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     , const bool isGt4x4
-#endif
   );
   void addAMVPHMVPCand                (const PredictionUnit &pu, const RefPicList eRefPicList, const int currRefPOC, AMVPInfo &info);
   bool addAffineMVPCandUnscaled       ( const PredictionUnit &pu, const RefPicList &refPicList, const int &refIdx, const Position &pos, const MvpDir &dir, AffineAMVPInfo &affiAmvpInfo );
@@ -179,9 +162,6 @@ namespace PU
   void setAllAffineMv                 (      PredictionUnit &pu, Mv affLT, Mv affRT, Mv affLB, RefPicList eRefList, bool clipCPMVs = false );
   bool getInterMergeSubPuMvpCand(const PredictionUnit &pu, MergeCtx &mrgCtx, bool& LICFlag, const int count, int mmvdList);
   bool getInterMergeSubPuRecurCand(const PredictionUnit &pu, MergeCtx &mrgCtx, const int count);
-#if !JVET_P1023_DMVR_BDOF_RP_CONDITION
-  bool isBiPredFromDifferentDir       (const PredictionUnit &pu);
-#endif
   bool isBiPredFromDifferentDirEqDistPoc(const PredictionUnit &pu);
   void restrictBiPredMergeCandsOne    (PredictionUnit &pu);
 
@@ -196,9 +176,6 @@ namespace PU
   bool getDerivedBV(PredictionUnit &pu, const Mv& currentMv, Mv& derivedMv);
   bool checkDMVRCondition(const PredictionUnit& pu);
 
-#if !JVET_P0590_SCALING_WINDOW && !JVET_O1159_SCALABILITY
-  bool isRefPicSameSize( const PredictionUnit& pu );
-#endif
 }
 
 // TU tools
@@ -210,9 +187,6 @@ namespace TU
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
   bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
-#if !JVET_P1026_MTS_SIGNALLING
-  bool isMTSAllowed                   (const TransformUnit &tu, const ComponentID  compID);
-#endif
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
 
 
@@ -225,12 +199,7 @@ namespace TU
 
 uint32_t getCtuAddr        (const Position& pos, const PreCalcValues &pcv);
 int  getNumModesMip   (const Size& block);
-#if JVET_P0803_COMBINED_MIP_CLEANUP || JVET_P0199_P0289_P0303_MIP_FULLMATRIX
 int getMipSizeId      (const Size& block);
-#endif
-#if !JVET_P0803_COMBINED_MIP_CLEANUP
-bool mipModesAvailable(const Size& block);
-#endif
 bool allowLfnstWithMip(const Size& block);
 
 template<typename T, size_t N>

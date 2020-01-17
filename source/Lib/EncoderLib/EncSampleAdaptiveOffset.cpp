@@ -246,9 +246,6 @@ void EncSampleAdaptiveOffset::SAOProcess( CodingStructure& cs, bool* sliceEnable
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
-#if !JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-  xLosslessDisableProcess(cs);
-#endif
 }
 
 
@@ -311,11 +308,7 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
       int verVirBndryPos[] = { -1,-1,-1 };
       int horVirBndryPosComp[] = { -1,-1,-1 };
       int verVirBndryPosComp[] = { -1,-1,-1 };
-#if JVET_P1006_PICTURE_HEADER
       bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader );
-#else
-      bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
-#endif
 
       for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
       {
@@ -840,11 +833,7 @@ void EncSampleAdaptiveOffset::decideBlkParams(CodingStructure& cs, bool* sliceEn
 
   int ctuRsAddr = 0;
 #if ENABLE_QPA
-#if JVET_P1004_REMOVE_BRICKS
   CHECK ((chromaWeight > 0.0) && (cs.slice->getFirstCtuRsAddrInSlice() != 0), "incompatible start CTU address, must be 0");
-#else
-  CHECK ((chromaWeight > 0.0) && (cs.slice->getSliceCurStartCtuTsAddr() != 0), "incompatible start CTU address, must be 0");
-#endif
 #endif
 
   for( uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
@@ -1551,14 +1540,8 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
 
 void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos, bool& isLeftAvail, bool& isAboveAvail, bool& isAboveLeftAvail) const
 {
-#if JVET_P1006_PICTURE_HEADER
   bool isLoopFiltAcrossSlicePPS = cs.pps->getLoopFilterAcrossSlicesEnabledFlag();
-#endif
-#if JVET_P1004_REMOVE_BRICKS
   bool isLoopFiltAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
-#else
-  bool isLoopFiltAcrossTilePPS = cs.pps->getLoopFilterAcrossBricksEnabledFlag();
-#endif
 
   const int width = cs.pcv->maxCUWidth;
   const int height = cs.pcv->maxCUHeight;
@@ -1567,7 +1550,6 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
   const CodingUnit* cuAbove = cs.getCU(pos.offset(0, -height), CH_L);
   const CodingUnit* cuAboveLeft = cs.getCU(pos.offset(-width, -height), CH_L);
 
-#if JVET_P1006_PICTURE_HEADER
   if (!isLoopFiltAcrossSlicePPS)
   {
     isLeftAvail      = (cuLeft == NULL)      ? false : CU::isSameTile(*cuCurr, *cuLeft);
@@ -1580,13 +1562,6 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
     isAboveAvail     = (cuAbove != NULL);
     isAboveLeftAvail = (cuAboveLeft != NULL);
   }
-#else
-  {
-    isLeftAvail      = (cuLeft != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuLeft)      ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-    isAboveAvail     = (cuAbove != NULL)     ? ( !CU::isSameSlice(*cuCurr, *cuAbove)     ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-    isAboveLeftAvail = (cuAboveLeft != NULL) ? ( !CU::isSameSlice(*cuCurr, *cuAboveLeft) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-  }
-#endif
 
   if (!isLoopFiltAcrossTilePPS)
   {

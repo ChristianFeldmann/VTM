@@ -44,21 +44,6 @@ std::string hashToString(const PictureHash &digest, int numChar);
 //! \ingroup EncoderLib
 //! \{
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-void SEIEncoder::initSEIActiveParameterSets (SEIActiveParameterSets *seiActiveParameterSets, const SPS *sps)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiActiveParameterSets!=NULL), "Unspecified error");
-  CHECK(!(sps!=NULL), "Unspecified error");
-
-  seiActiveParameterSets->m_selfContainedCvsFlag = false;
-  seiActiveParameterSets->m_noParameterSetUpdateFlag = false;
-  seiActiveParameterSets->numSpsIdsMinus1 = 0;
-  seiActiveParameterSets->activeSeqParameterSetId.resize(seiActiveParameterSets->numSpsIdsMinus1 + 1);
-  seiActiveParameterSets->activeSeqParameterSetId[0] = sps->getSPSId();
-}
-#endif
 void SEIEncoder::initSEIFramePacking(SEIFramePacking *seiFramePacking, int currPicNum)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -85,123 +70,6 @@ void SEIEncoder::initSEIFramePacking(SEIFramePacking *seiFramePacking, int currP
   seiFramePacking->m_upsampledAspectRatio = 0;
 }
 
-#if !JVET_P0337_PORTING_SEI
-void SEIEncoder::initSEISegmentedRectFramePacking(SEISegmentedRectFramePacking *seiSegmentedRectFramePacking)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiSegmentedRectFramePacking!=NULL), "Unspecified error");
-
-  seiSegmentedRectFramePacking->m_arrangementCancelFlag = m_pcCfg->getSegmentedRectFramePackingArrangementSEICancel();
-  seiSegmentedRectFramePacking->m_contentInterpretationType = m_pcCfg->getSegmentedRectFramePackingArrangementSEIType();
-  seiSegmentedRectFramePacking->m_arrangementPersistenceFlag = m_pcCfg->getSegmentedRectFramePackingArrangementSEIPersistence();
-}
-
-void SEIEncoder::initSEIDisplayOrientation(SEIDisplayOrientation* seiDisplayOrientation)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiDisplayOrientation!=NULL), "Unspecified error");
-
-  seiDisplayOrientation->cancelFlag = false;
-  seiDisplayOrientation->horFlip = false;
-  seiDisplayOrientation->verFlip = false;
-  seiDisplayOrientation->anticlockwiseRotation = m_pcCfg->getDisplayOrientationSEIAngle();
-}
-
-void SEIEncoder::initSEIToneMappingInfo(SEIToneMappingInfo *seiToneMappingInfo)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiToneMappingInfo!=NULL), "Unspecified error");
-
-  seiToneMappingInfo->m_toneMapId = m_pcCfg->getTMISEIToneMapId();
-  seiToneMappingInfo->m_toneMapCancelFlag = m_pcCfg->getTMISEIToneMapCancelFlag();
-  seiToneMappingInfo->m_toneMapPersistenceFlag = m_pcCfg->getTMISEIToneMapPersistenceFlag();
-
-  seiToneMappingInfo->m_codedDataBitDepth = m_pcCfg->getTMISEICodedDataBitDepth();
-  CHECK(!(seiToneMappingInfo->m_codedDataBitDepth >= 8 && seiToneMappingInfo->m_codedDataBitDepth <= 14), "Unspecified error");
-  seiToneMappingInfo->m_targetBitDepth = m_pcCfg->getTMISEITargetBitDepth();
-  CHECK(!(seiToneMappingInfo->m_targetBitDepth >= 1 && seiToneMappingInfo->m_targetBitDepth <= 17), "Unspecified error");
-  seiToneMappingInfo->m_modelId = m_pcCfg->getTMISEIModelID();
-  CHECK(!(seiToneMappingInfo->m_modelId >=0 &&seiToneMappingInfo->m_modelId<=4), "Unspecified error");
-
-  switch( seiToneMappingInfo->m_modelId)
-  {
-  case 0:
-    {
-      seiToneMappingInfo->m_minValue = m_pcCfg->getTMISEIMinValue();
-      seiToneMappingInfo->m_maxValue = m_pcCfg->getTMISEIMaxValue();
-      break;
-    }
-  case 1:
-    {
-      seiToneMappingInfo->m_sigmoidMidpoint = m_pcCfg->getTMISEISigmoidMidpoint();
-      seiToneMappingInfo->m_sigmoidWidth = m_pcCfg->getTMISEISigmoidWidth();
-      break;
-    }
-  case 2:
-    {
-      uint32_t num = 1u<<(seiToneMappingInfo->m_targetBitDepth);
-      seiToneMappingInfo->m_startOfCodedInterval.resize(num);
-      int* ptmp = m_pcCfg->getTMISEIStartOfCodedInterva();
-      if(ptmp)
-      {
-        for(int i=0; i<num;i++)
-        {
-          seiToneMappingInfo->m_startOfCodedInterval[i] = ptmp[i];
-        }
-      }
-      break;
-    }
-  case 3:
-    {
-      seiToneMappingInfo->m_numPivots = m_pcCfg->getTMISEINumPivots();
-      seiToneMappingInfo->m_codedPivotValue.resize(seiToneMappingInfo->m_numPivots);
-      seiToneMappingInfo->m_targetPivotValue.resize(seiToneMappingInfo->m_numPivots);
-      int* ptmpcoded = m_pcCfg->getTMISEICodedPivotValue();
-      int* ptmptarget = m_pcCfg->getTMISEITargetPivotValue();
-      if(ptmpcoded&&ptmptarget)
-      {
-        for(int i=0; i<(seiToneMappingInfo->m_numPivots);i++)
-        {
-          seiToneMappingInfo->m_codedPivotValue[i]=ptmpcoded[i];
-          seiToneMappingInfo->m_targetPivotValue[i]=ptmptarget[i];
-        }
-      }
-      break;
-    }
-  case 4:
-    {
-      seiToneMappingInfo->m_cameraIsoSpeedIdc = m_pcCfg->getTMISEICameraIsoSpeedIdc();
-      seiToneMappingInfo->m_cameraIsoSpeedValue = m_pcCfg->getTMISEICameraIsoSpeedValue();
-      CHECK(!( seiToneMappingInfo->m_cameraIsoSpeedValue !=0 ), "Unspecified error");
-      seiToneMappingInfo->m_exposureIndexIdc = m_pcCfg->getTMISEIExposurIndexIdc();
-      seiToneMappingInfo->m_exposureIndexValue = m_pcCfg->getTMISEIExposurIndexValue();
-      CHECK(!( seiToneMappingInfo->m_exposureIndexValue !=0 ), "Unspecified error");
-      seiToneMappingInfo->m_exposureCompensationValueSignFlag = m_pcCfg->getTMISEIExposureCompensationValueSignFlag();
-      seiToneMappingInfo->m_exposureCompensationValueNumerator = m_pcCfg->getTMISEIExposureCompensationValueNumerator();
-      seiToneMappingInfo->m_exposureCompensationValueDenomIdc = m_pcCfg->getTMISEIExposureCompensationValueDenomIdc();
-      seiToneMappingInfo->m_refScreenLuminanceWhite = m_pcCfg->getTMISEIRefScreenLuminanceWhite();
-      seiToneMappingInfo->m_extendedRangeWhiteLevel = m_pcCfg->getTMISEIExtendedRangeWhiteLevel();
-      CHECK(!( seiToneMappingInfo->m_extendedRangeWhiteLevel >= 100 ), "Unspecified error");
-      seiToneMappingInfo->m_nominalBlackLevelLumaCodeValue = m_pcCfg->getTMISEINominalBlackLevelLumaCodeValue();
-      seiToneMappingInfo->m_nominalWhiteLevelLumaCodeValue = m_pcCfg->getTMISEINominalWhiteLevelLumaCodeValue();
-      CHECK(!( seiToneMappingInfo->m_nominalWhiteLevelLumaCodeValue > seiToneMappingInfo->m_nominalBlackLevelLumaCodeValue ), "Unspecified error");
-      seiToneMappingInfo->m_extendedWhiteLevelLumaCodeValue = m_pcCfg->getTMISEIExtendedWhiteLevelLumaCodeValue();
-      CHECK(!( seiToneMappingInfo->m_extendedWhiteLevelLumaCodeValue >= seiToneMappingInfo->m_nominalWhiteLevelLumaCodeValue ), "Unspecified error");
-      break;
-    }
-  default:
-    {
-      CHECK(!(!"Undefined SEIToneMapModelId"), "Unspecified error");
-      break;
-    }
-  }
-}
-
-void SEIEncoder::initSEISOPDescription(SEISOPDescription *sopDescriptionSEI, Slice *slice, int picInGOP, int lastIdr, int currGOPSize)
-{
-}
-#endif
-#endif
 void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, bool noLeadingPictures)
 {
   CHECK(!(m_isInitialized), "bufferingPeriodSEI already initialized");
@@ -211,17 +79,10 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   bufferingPeriodSEI->m_bpNalCpbParamsPresentFlag = true;
   bufferingPeriodSEI->m_bpVclCpbParamsPresentFlag = true;
   bufferingPeriodSEI->m_bpMaxSubLayers = m_pcCfg->getMaxTempLayer() ;
-#if JVET_P0446_BP_CPB_CNT_FIX
   bufferingPeriodSEI->m_bpCpbCnt = 1;
-#endif
   for(int i=0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
   {
-#if !JVET_P0446_BP_CPB_CNT_FIX
-    bufferingPeriodSEI->m_bpCpbCnt[i] = 1;
-    for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt[i]; j++)
-#else
     for(int j=0; j < bufferingPeriodSEI->m_bpCpbCnt; j++)
-#endif
     {
       bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][0] = uiInitialCpbRemovalDelay;
       bufferingPeriodSEI->m_initialCpbRemovalDelay[j][i][1] = uiInitialCpbRemovalDelay;
@@ -229,22 +90,14 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
       bufferingPeriodSEI->m_initialCpbRemovalOffset[j][i][1] = uiInitialCpbRemovalDelay;
     }
   }
-#if JVET_P0446_CONCATENATION
   // We don't set concatenation_flag here. max_initial_removal_delay_for_concatenation depends on the usage scenario.
   // The parameters could be added to config file, but as long as the initialisation of generic buffering parameters is
   // not controllable, it does not seem to make sense to provide settings for these.
   bufferingPeriodSEI->m_concatenationFlag = false;
   bufferingPeriodSEI->m_maxInitialRemovalDelayForConcatenation = uiInitialCpbRemovalDelay;
-#endif
 
-#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
-#if JVET_P1004_REMOVE_BRICKS
   bufferingPeriodSEI->m_bpDecodingUnitHrdParamsPresentFlag = m_pcCfg->getNoPicPartitionFlag() == false;
-#else
-  bufferingPeriodSEI->m_bpDecodingUnitHrdParamsPresentFlag = (m_pcCfg->getSliceMode() > 0) || (m_pcCfg->getSliceSegmentMode() > 0);
-#endif
   bufferingPeriodSEI->m_decodingUnitCpbParamsInPicTimingSeiFlag = !m_pcCfg->getDecodingUnitInfoSEIEnabled();
-#endif
 
   bufferingPeriodSEI->m_initialCpbRemovalDelayLength = 16;                  // assuming 0.5 sec, log2( 90,000 * 0.5 ) = 16-bit
   // Note: The following parameters require some knowledge about the GOP structure.
@@ -326,7 +179,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
     }
   }
-#if JVET_P0446_ALT_CPB
   // A commercial encoder should track the buffer state for all layers and sub-layers
   // to ensure CPB conformance. Such tracking is required for calculating alternative
   // CPB parameters.
@@ -334,10 +186,8 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   // CPB parameters here.
   bufferingPeriodSEI->m_altCpbParamsPresentFlag = false;
   bufferingPeriodSEI->m_useAltCpbParamsFlag = false;
-#endif
 }
 
-#if JVET_P0462_SEI360
 void SEIEncoder::initSEIErp(SEIEquirectangularProjection* seiEquirectangularProjection)
 {
   CHECK(!(m_isInitialized), "seiEquirectangularProjection already initialized");
@@ -452,9 +302,7 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
     }
   }
 }
-#endif
 
-#if JVET_P0597_GCMP_SEI
 void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCubemapProjection)
 {
   CHECK(!(m_isInitialized), "seiGeneralizedCubemapProjection already initialized");
@@ -498,9 +346,7 @@ void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCube
     }
   }
 }
-#endif
 
-#if JVET_P0450_SEI_SARI
 void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampleAspectRatioInfo)
 {
   CHECK(!(m_isInitialized), "seiSampleAspectRatioInfo already initialized");
@@ -523,7 +369,6 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
     }
   }
 }
-#endif
 
 
 #if HEVC_SEI
@@ -764,188 +609,6 @@ static void readTokenValueAndValidate(T            &returnedValue, /// value ret
   }
 }
 
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-// bool version does not have maximum and minimum values.
-static void readTokenValueAndValidate(bool         &returnedValue, /// value returned
-                                      bool         &failed,        /// used and updated
-                                      std::istream &is,            /// stream to read token from
-                                      const char  *pToken)        /// token string
-{
-  readTokenValue(returnedValue, failed, is, pToken);
-}
-
-bool SEIEncoder::initSEIColourRemappingInfo(SEIColourRemappingInfo* seiColourRemappingInfo, int currPOC) // returns true on success, false on failure.
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiColourRemappingInfo!=NULL), "Unspecified error");
-
-  // reading external Colour Remapping Information SEI message parameters from file
-  if( !m_pcCfg->getColourRemapInfoSEIFileRoot().empty())
-  {
-    bool failed=false;
-
-    // building the CRI file name with poc num in prefix "_poc.txt"
-    std::string colourRemapSEIFileWithPoc(m_pcCfg->getColourRemapInfoSEIFileRoot());
-    {
-      std::stringstream suffix;
-      suffix << "_" << currPOC << ".txt";
-      colourRemapSEIFileWithPoc+=suffix.str();
-    }
-
-    std::ifstream fic(colourRemapSEIFileWithPoc.c_str());
-    if (!fic.good() || !fic.is_open())
-    {
-      std::cerr <<  "No Colour Remapping Information SEI parameters file " << colourRemapSEIFileWithPoc << " for POC " << currPOC << std::endl;
-      return false;
-    }
-
-    // TODO: identify and remove duplication with decoder parsing through abstraction.
-
-    readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapId,         failed, fic, "colour_remap_id",        uint32_t(0), uint32_t(0x7fffffff) );
-    readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapCancelFlag, failed, fic, "colour_remap_cancel_flag" );
-    if( !seiColourRemappingInfo->m_colourRemapCancelFlag )
-    {
-      readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapPersistenceFlag,            failed, fic, "colour_remap_persistence_flag" );
-      readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapVideoSignalInfoPresentFlag, failed, fic, "colour_remap_video_signal_info_present_flag");
-      if( seiColourRemappingInfo->m_colourRemapVideoSignalInfoPresentFlag )
-      {
-        readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapFullRangeFlag,      failed, fic, "colour_remap_full_range_flag" );
-        readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapPrimaries,          failed, fic, "colour_remap_primaries",           int(0), int(255) );
-        readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapTransferFunction,   failed, fic, "colour_remap_transfer_function",   int(0), int(255) );
-        readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapMatrixCoefficients, failed, fic, "colour_remap_matrix_coefficients", int(0), int(255) );
-      }
-      readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapInputBitDepth, failed, fic, "colour_remap_input_bit_depth",            int(8), int(16) );
-      readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapBitDepth,      failed, fic, "colour_remap_bit_depth",                  int(8), int(16) );
-
-      const int maximumInputValue    = (1 << (((seiColourRemappingInfo->m_colourRemapInputBitDepth + 7) >> 3) << 3)) - 1;
-      const int maximumRemappedValue = (1 << (((seiColourRemappingInfo->m_colourRemapBitDepth      + 7) >> 3) << 3)) - 1;
-
-      for( int c=0 ; c<3 ; c++ )
-      {
-        readTokenValueAndValidate(seiColourRemappingInfo->m_preLutNumValMinus1[c],         failed, fic, "pre_lut_num_val_minus1[c]",        int(0), int(32) );
-        if( seiColourRemappingInfo->m_preLutNumValMinus1[c]>0 )
-        {
-          seiColourRemappingInfo->m_preLut[c].resize(seiColourRemappingInfo->m_preLutNumValMinus1[c]+1);
-          for( int i=0 ; i<=seiColourRemappingInfo->m_preLutNumValMinus1[c] ; i++ )
-          {
-            readTokenValueAndValidate(seiColourRemappingInfo->m_preLut[c][i].codedValue,   failed, fic, "pre_lut_coded_value[c][i]",  int(0), maximumInputValue    );
-            readTokenValueAndValidate(seiColourRemappingInfo->m_preLut[c][i].targetValue,  failed, fic, "pre_lut_target_value[c][i]", int(0), maximumRemappedValue );
-          }
-        }
-      }
-      readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapMatrixPresentFlag, failed, fic, "colour_remap_matrix_present_flag" );
-      if( seiColourRemappingInfo->m_colourRemapMatrixPresentFlag )
-      {
-        readTokenValueAndValidate(seiColourRemappingInfo->m_log2MatrixDenom, failed, fic, "log2_matrix_denom", int(0), int(15) );
-        for( int c=0 ; c<3 ; c++ )
-        {
-          for( int i=0 ; i<3 ; i++ )
-          {
-            readTokenValueAndValidate(seiColourRemappingInfo->m_colourRemapCoeffs[c][i], failed, fic, "colour_remap_coeffs[c][i]", -32768, 32767 );
-          }
-        }
-      }
-      for( int c=0 ; c<3 ; c++ )
-      {
-        readTokenValueAndValidate(seiColourRemappingInfo->m_postLutNumValMinus1[c], failed, fic, "post_lut_num_val_minus1[c]", int(0), int(32) );
-        if( seiColourRemappingInfo->m_postLutNumValMinus1[c]>0 )
-        {
-          seiColourRemappingInfo->m_postLut[c].resize(seiColourRemappingInfo->m_postLutNumValMinus1[c]+1);
-          for( int i=0 ; i<=seiColourRemappingInfo->m_postLutNumValMinus1[c] ; i++ )
-          {
-            readTokenValueAndValidate(seiColourRemappingInfo->m_postLut[c][i].codedValue,  failed, fic, "post_lut_coded_value[c][i]",  int(0), maximumRemappedValue );
-            readTokenValueAndValidate(seiColourRemappingInfo->m_postLut[c][i].targetValue, failed, fic, "post_lut_target_value[c][i]", int(0), maximumRemappedValue );
-          }
-        }
-      }
-    }
-
-    if( failed )
-    {
-      EXIT( "Error while reading Colour Remapping Information SEI parameters file '" << colourRemapSEIFileWithPoc << "'" );
-    }
-  }
-  return true;
-}
-
-void SEIEncoder::initSEIChromaResamplingFilterHint(SEIChromaResamplingFilterHint *seiChromaResamplingFilterHint, int iHorFilterIndex, int iVerFilterIndex)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiChromaResamplingFilterHint!=NULL), "Unspecified error");
-
-  seiChromaResamplingFilterHint->m_verChromaFilterIdc = iVerFilterIndex;
-  seiChromaResamplingFilterHint->m_horChromaFilterIdc = iHorFilterIndex;
-  seiChromaResamplingFilterHint->m_verFilteringFieldProcessingFlag = 1;
-  seiChromaResamplingFilterHint->m_targetFormatIdc = 3;
-  seiChromaResamplingFilterHint->m_perfectReconstructionFlag = false;
-
-  // this creates some example filter values, if explicit filter definition is selected
-  if (seiChromaResamplingFilterHint->m_verChromaFilterIdc == 1)
-  {
-    const int numVerticalFilters = 3;
-    const int verTapLengthMinus1[] = {5,3,3};
-
-    seiChromaResamplingFilterHint->m_verFilterCoeff.resize(numVerticalFilters);
-    for(int i = 0; i < numVerticalFilters; i ++)
-    {
-      seiChromaResamplingFilterHint->m_verFilterCoeff[i].resize(verTapLengthMinus1[i]+1);
-    }
-    // Note: C++11 -> seiChromaResamplingFilterHint->m_verFilterCoeff[0] = {-3,13,31,23,3,-3};
-    seiChromaResamplingFilterHint->m_verFilterCoeff[0][0] = -3;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[0][1] = 13;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[0][2] = 31;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[0][3] = 23;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[0][4] = 3;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[0][5] = -3;
-
-    seiChromaResamplingFilterHint->m_verFilterCoeff[1][0] = -1;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[1][1] = 25;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[1][2] = 247;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[1][3] = -15;
-
-    seiChromaResamplingFilterHint->m_verFilterCoeff[2][0] = -20;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[2][1] = 186;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[2][2] = 100;
-    seiChromaResamplingFilterHint->m_verFilterCoeff[2][3] = -10;
-  }
-  else
-  {
-    seiChromaResamplingFilterHint->m_verFilterCoeff.resize(0);
-  }
-
-  if (seiChromaResamplingFilterHint->m_horChromaFilterIdc == 1)
-  {
-    int const numHorizontalFilters = 1;
-    const int horTapLengthMinus1[] = {3};
-
-    seiChromaResamplingFilterHint->m_horFilterCoeff.resize(numHorizontalFilters);
-    for(int i = 0; i < numHorizontalFilters; i ++)
-    {
-      seiChromaResamplingFilterHint->m_horFilterCoeff[i].resize(horTapLengthMinus1[i]+1);
-    }
-    seiChromaResamplingFilterHint->m_horFilterCoeff[0][0] = 1;
-    seiChromaResamplingFilterHint->m_horFilterCoeff[0][1] = 6;
-    seiChromaResamplingFilterHint->m_horFilterCoeff[0][2] = 1;
-  }
-  else
-  {
-    seiChromaResamplingFilterHint->m_horFilterCoeff.resize(0);
-  }
-}
-
-void SEIEncoder::initSEITimeCode(SEITimeCode *seiTimeCode)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiTimeCode!=NULL), "Unspecified error");
-  //  Set data as per command line options
-  seiTimeCode->numClockTs = m_pcCfg->getNumberOfTimesets();
-  for(int i = 0; i < seiTimeCode->numClockTs; i++)
-  {
-    seiTimeCode->timeSetArray[i] = m_pcCfg->getTimeSet(i);
-  }
-}
-#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 void SEIEncoder::initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *seiAltTransCharacteristics)
 {
@@ -955,19 +618,6 @@ void SEIEncoder::initSEIAlternativeTransferCharacteristics(SEIAlternativeTransfe
   seiAltTransCharacteristics->m_preferredTransferCharacteristics = m_pcCfg->getSEIPreferredTransferCharacteristics();
 }
 #endif
-#if !JVET_P0337_PORTING_SEI
-void SEIEncoder::initSEIGreenMetadataInfo(SEIGreenMetadataInfo *seiGreenMetadataInfo, uint32_t u)
-{
-    CHECK(!(m_isInitialized), "Unspecified error");
-    CHECK(!(seiGreenMetadataInfo!=NULL), "Unspecified error");
-
-    seiGreenMetadataInfo->m_greenMetadataType = m_pcCfg->getSEIGreenMetadataType();
-    seiGreenMetadataInfo->m_xsdMetricType = m_pcCfg->getSEIXSDMetricType();
-    seiGreenMetadataInfo->m_xsdMetricValue = u;
-}
-#endif
-#endif
-#if JVET_P0337_PORTING_SEI
 void SEIEncoder::initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *seiFilmGrain)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -1057,8 +707,6 @@ void SEIEncoder::initSEIContentColourVolume(SEIContentColourVolume *seiContentCo
     seiContentColourVolume->m_ccvAvgLuminanceValue = (uint32_t)(10000000 * m_pcCfg->getCcvSEIAvgLuminanceValue());
   }
 }
-#endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
 void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps)
 {
   // subpicture level information should be specified via config file
@@ -1073,7 +721,6 @@ void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SP
   sei->m_refLevelIdc[1] = Level::LEVEL8_5;
   sei->m_explicitFractionPresentFlag = false;
 }
-#endif
 
 
 //! \}

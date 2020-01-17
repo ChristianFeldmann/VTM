@@ -58,16 +58,10 @@ struct OutputNALUnit : public NALUnit
    */
   OutputNALUnit(
     NalUnitType nalUnitType,
-#if JVET_N0278_FIXES
     uint32_t layerId = 0,
-#endif
     uint32_t temporalID = 0,
     uint32_t reserved_zero_6bits = 0)
-#if JVET_N0278_FIXES
   : NALUnit( nalUnitType, temporalID, reserved_zero_6bits, 0, layerId )
-#else
-  : NALUnit(nalUnitType, temporalID, reserved_zero_6bits)
-#endif
   , m_Bitstream()
   {}
 

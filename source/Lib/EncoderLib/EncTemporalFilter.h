@@ -43,7 +43,6 @@
 #include <map>
 #include <deque>
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
 
 //! \ingroup EncoderLib
 //! \{
@@ -162,6 +161,5 @@ private:
 
    //! \}
 
-#endif
 
 #endif // __TEMPORAL_FILTER__

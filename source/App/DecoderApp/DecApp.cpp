@@ -111,18 +111,12 @@ uint32_t DecApp::decode()
   }
 
   // main decoder loop
-#if !JVET_N0278_FIXES
-  bool openedReconFile = false; // reconstruction file not yet opened. (must be performed after SPS is seen)
-#endif
   bool loopFiltered = false;
 
-#if JVET_P1019_OUTPUT_LAYER_SET
   bool bPicSkipped = false;
-#endif
 
   while (!!bitstreamFile)
   {
-#if JVET_P1006_PICTURE_HEADER
     InputNALUnit nalu;
     nalu.m_nalUnitType = NAL_UNIT_INVALID;
 
@@ -154,21 +148,12 @@ uint32_t DecApp::decode()
             (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
              nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
         {
-#if JVET_N0278_FIXES
           xFlushOutput(pcListPic, nalu.m_nuhLayerId);
-#else
-          xFlushOutput(pcListPic);
-#endif
         }
 
         // parse NAL unit syntax if within target decoding layer
-#if JVET_P1019_OUTPUT_LAYER_SET
         if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu))
-#else
-        if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu) && isNaluTheTargetLayer(&nalu))
-#endif
         {
-#if JVET_P1019_OUTPUT_LAYER_SET
           if (bPicSkipped)
           {
             if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
@@ -181,130 +166,26 @@ uint32_t DecApp::decode()
               bPicSkipped = false;
             }
           }
-#endif
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-#if JVET_P1019_OUTPUT_LAYER_SET
           if (nalu.m_nalUnitType == NAL_UNIT_VPS)
           {
             deriveOutputLayerSet();
           }
-#endif
         }
-#if JVET_P1019_OUTPUT_LAYER_SET
         else
         {
           bPicSkipped = true;
         }
-#endif
-      }
-    }
-#else 
-    /* location serves to work around a design fault in the decoder, whereby
-     * the process of reading a new slice that is the first slice of a new frame
-     * requires the DecApp::decode() method to be called again with the same
-     * nal unit. */
-#if RExt__DECODER_DEBUG_STATISTICS
-    CodingStatistics& stat = CodingStatistics::GetSingletonInstance();
-    CHECK(m_statMode < STATS__MODE_NONE || m_statMode > STATS__MODE_ALL, "Wrong coding statistics output mode");
-    stat.m_mode = m_statMode;
-
-    CodingStatistics::CodingStatisticsData* backupStats = new CodingStatistics::CodingStatisticsData(CodingStatistics::GetStatistics());
-#endif
-
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-    streampos location = bitstreamFile.tellg() - streampos(bytestream.GetNumBufferedBytes());
-#else
-    streampos location = bitstreamFile.tellg();
-#endif
-    AnnexBStats stats = AnnexBStats();
-
-    InputNALUnit nalu;
-    byteStreamNALUnit(bytestream, nalu.getBitstream().getFifo(), stats);
-
-    // call actual decoding function
-    bool bNewPicture = false;
-    if (nalu.getBitstream().getFifo().empty())
-    {
-      /* this can happen if the following occur:
-       *  - empty input file
-       *  - two back-to-back start_code_prefixes
-       *  - start_code_prefix immediately followed by EOF
-       */
-      msg( ERROR, "Warning: Attempt to decode an empty NAL unit\n");
-    }
-    else
-    {
-      read(nalu);
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
-      m_cDecLib.checkNalUnitConstraints(nalu.m_nalUnitType);
-#endif
-
-      if(m_cDecLib.getFirstSliceInPicture() &&
-          (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
-           nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
-      {
-#if JVET_N0278_FIXES
-        xFlushOutput( pcListPic, nalu.m_nuhLayerId );
-#else
-        xFlushOutput(pcListPic);
-#endif
-      }
-
-#if JVET_P1019_OUTPUT_LAYER_SET
-      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu))
-#else
-      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
-#endif
-      {
-        bNewPicture = false;
-      }
-      else
-      {
-        bNewPicture = m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-        if (bNewPicture)
-        {
-          // check if new picture was detected at an access unit delimiter NALU
-#if !JVET_N0278_FIXES
-          if(nalu.m_nalUnitType != NAL_UNIT_ACCESS_UNIT_DELIMITER)
-          {
-            msg( ERROR, "Error: New picture detected without access unit delimiter. VVC requires the presence of access unit delimiters.\n");
-          }
-#endif
-          bitstreamFile.clear();
-          /* location points to the current nalunit payload[1] due to the
-           * need for the annexB parser to read three extra bytes.
-           * [1] except for the first NAL unit in the file
-           *     (but bNewPicture doesn't happen then) */
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-          bitstreamFile.seekg(location);
-          bytestream.reset();
-          CodingStatistics::SetStatistics(*backupStats);
-#else
-          bitstreamFile.seekg(location-streamoff(3));
-          bytestream.reset();
-#endif
-        }
       }
     }
 
-#endif
 
-
-#if JVET_P1019_OUTPUT_LAYER_SET
     if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
-#else
-    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence())
-#endif
     {
       if (!loopFiltered || bitstreamFile)
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
-#if !JVET_P1006_PICTURE_HEADER
-#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
-        CodingStatistics::UpdateMaxStat(backupStats);
-#endif
-#endif
       }
       loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
@@ -321,11 +202,7 @@ uint32_t DecApp::decode()
 
     if( pcListPic )
     {
-#if JVET_N0278_FIXES
       if( !m_reconFileName.empty() && !m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].isOpen() )
-#else
-      if ( (!m_reconFileName.empty()) && (!openedReconFile) )
-#endif
       {
         const BitDepths &bitDepths=pcListPic->front()->cs->sps->getBitDepths(); // use bit depths of first reconstructed picture.
         for( uint32_t channelType = 0; channelType < MAX_NUM_CHANNEL_TYPE; channelType++ )
@@ -341,13 +218,8 @@ uint32_t DecApp::decode()
           EXIT ("Invalid output bit-depth for packed YUV output, aborting\n");
         }
 
-#if JVET_N0278_FIXES
         std::string reconFileName = m_reconFileName;
-#if JVET_P1019_OUTPUT_LAYER_SET
         if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu)))
-#else
-        if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (m_iTargetLayer == -1))
-#endif
         {
           size_t pos = reconFileName.find_last_of('.');
           if (pos != string::npos)
@@ -359,16 +231,10 @@ uint32_t DecApp::decode()
             reconFileName.append( std::to_string( nalu.m_nuhLayerId ) );
           }
         }
-#if JVET_P1019_OUTPUT_LAYER_SET
         if(((m_cDecLib.getVPS() != nullptr) &&
               ((m_cDecLib.getVPS()->getMaxLayers() == 1) || (isNaluWithinTargetOutputLayerIdSet(&nalu)))) ||
             (m_cDecLib.getVPS() == nullptr))
-#endif
         m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open(reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon); // write mode
-#else
-        m_cVideoIOYuvReconFile.open( m_reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
-        openedReconFile = true;
-#endif
       }
       // write reconstruction to file
       if( bNewPicture )
@@ -381,28 +247,17 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInPicture (false);
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
-#if JVET_P0363_CLEANUP_NUT_TABLE
       if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)
-#else
-      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_VCL_15)
-#endif
         || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GDR)))
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
-#if JVET_P1006_PICTURE_HEADER
     if(bNewAccessUnit) 
     {
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
     }
-#endif
-#if !JVET_P1006_PICTURE_HEADER
-#if RExt__DECODER_DEBUG_STATISTICS
-    delete backupStats;
-#endif
-#endif
   }
 
   xFlushOutput( pcListPic );
@@ -424,7 +279,6 @@ uint32_t DecApp::decode()
   return nRet;
 }
 
-#if JVET_P1019_OUTPUT_LAYER_SET
 bool DecApp::deriveOutputLayerSet()
 {
   int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
@@ -589,9 +443,7 @@ bool DecApp::deriveOutputLayerSet()
 
   return true;
 }
-#endif
 
-#if JVET_P1006_PICTURE_HEADER
 /**
  - lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new picture
  */
@@ -657,9 +509,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
         case NAL_UNIT_RESERVED_IRAP_VCL_12:
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
-#if JVET_P0588_SUFFIX_APS
         case NAL_UNIT_SUFFIX_APS:
-#endif
         case NAL_UNIT_SUFFIX_SEI:
         case NAL_UNIT_FD:
           ret = false;
@@ -667,11 +517,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
           break;
         
         // NUT that might indicate the start of a new picture - keep looking
-#if JVET_P0588_SUFFIX_APS
         case NAL_UNIT_PREFIX_APS:
-#else
-        case NAL_UNIT_APS:
-#endif
         case NAL_UNIT_PREFIX_SEI:
         case NAL_UNIT_RESERVED_NVCL_26:
         case NAL_UNIT_RESERVED_NVCL_27:
@@ -762,9 +608,7 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
         // NUT that are not the start of a new access unit
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
-#if JVET_P0588_SUFFIX_APS
         case NAL_UNIT_SUFFIX_APS:
-#endif
         case NAL_UNIT_SUFFIX_SEI:
         case NAL_UNIT_FD:
           ret = false;
@@ -794,7 +638,6 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
   // return TRUE if next NAL unit is the start of a new picture
   return ret;
 }
-#endif
 
 // ====================================================================================================================
 // Protected member functions
@@ -815,23 +658,17 @@ void DecApp::xCreateDecLib()
   );
   m_cDecLib.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
 
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  m_cDecLib.setTargetDecLayer(m_iTargetLayer);
-#endif
 
   if (!m_outputDecodedSEIMessagesFilename.empty())
   {
     std::ostream &os=m_seiMessageFileStream.is_open() ? m_seiMessageFileStream : std::cout;
     m_cDecLib.setDecodedSEIMessageOutputStream(&os);
   }
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   m_cDecLib.initScalingList();
-#endif
 }
 
 void DecApp::xDestroyDecLib()
 {
-#if JVET_N0278_FIXES
   if( !m_reconFileName.empty() )
   {
     for( auto & recFile : m_cVideoIOYuvReconFile )
@@ -839,12 +676,6 @@ void DecApp::xDestroyDecLib()
       recFile.second.close();
     }
   }
-#else
-  if ( !m_reconFileName.empty() )
-  {
-    m_cVideoIOYuvReconFile.close();
-  }
-#endif
 
   // destroy decoder class
   m_cDecLib.destroy();
@@ -941,11 +772,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 
           if (display)
           {
-#if JVET_N0278_FIXES
             m_cVideoIOYuvReconFile[pcPicTop->layerId].write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
-#else
-            m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
-#endif
                                           m_outputColourSpaceConvert,
                                           false, // TODO: m_packedYUVMode,
                                           conf.getWindowLeftOffset() * SPS::getWinUnitX( pcPicTop->cs->sps->getChromaFormatIdc() ),
@@ -999,19 +826,11 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           ChromaFormat chromaFormatIDC = sps->getChromaFormatIdc();
           if( m_upscaledOutput )
           {
-#if JVET_N0278_FIXES
             m_cVideoIOYuvReconFile[pcPic->layerId].writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
-#else
-            m_cVideoIOYuvReconFile.writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
-#endif
           }
           else
           {
-#if JVET_N0278_FIXES
             m_cVideoIOYuvReconFile[pcPic->layerId].write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
-#else
-            m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
-#endif
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
                                         conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
@@ -1046,11 +865,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
 
 /** \param pcListPic list of pictures to be written to file
  */
-#if JVET_N0278_FIXES
 void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
-#else
-void DecApp::xFlushOutput( PicList* pcListPic )
-#endif
 {
   if(!pcListPic || pcListPic->empty())
   {
@@ -1072,12 +887,10 @@ void DecApp::xFlushOutput( PicList* pcListPic )
       iterPic++;
       pcPicBottom = *(iterPic);
 
-#if JVET_N0278_FIXES
       if( pcPicTop->layerId != layerId && layerId != NOT_VALID )
       {
         continue;
       }
-#endif
 
       if ( pcPicTop->neededForOutput && pcPicBottom->neededForOutput && !(pcPicTop->getPOC()%2) && (pcPicBottom->getPOC() == pcPicTop->getPOC()+1) )
       {
@@ -1087,11 +900,7 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           const Window &conf = pcPicTop->cs->pps->getConformanceWindow();
           const bool    isTff   = pcPicTop->topField;
 
-#if JVET_N0278_FIXES
           m_cVideoIOYuvReconFile[pcPicTop->layerId].write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
-#else
-          m_cVideoIOYuvReconFile.write( pcPicTop->getRecoBuf(), pcPicBottom->getRecoBuf(),
-#endif
                                         m_outputColourSpaceConvert,
                                         false, // TODO: m_packedYUVMode,
                                         conf.getWindowLeftOffset() * SPS::getWinUnitX( pcPicTop->cs->sps->getChromaFormatIdc() ),
@@ -1137,13 +946,11 @@ void DecApp::xFlushOutput( PicList* pcListPic )
     {
       pcPic = *(iterPic);
 
-#if JVET_N0278_FIXES
       if( pcPic->layerId != layerId && layerId != NOT_VALID )
       {
         iterPic++;
         continue;
       }
-#endif
 
       if (pcPic->neededForOutput)
       {
@@ -1156,19 +963,11 @@ void DecApp::xFlushOutput( PicList* pcListPic )
           ChromaFormat chromaFormatIDC = sps->getChromaFormatIdc();
           if( m_upscaledOutput )
           {
-#if JVET_N0278_FIXES
             m_cVideoIOYuvReconFile[pcPic->layerId].writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
-#else
-            m_cVideoIOYuvReconFile.writeUpscaledPicture( *sps, *pcPic->cs->pps, pcPic->getRecoBuf(), m_outputColourSpaceConvert, m_packedYUVMode, m_upscaledOutput, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
-#endif
           }
           else
           {
-#if JVET_N0278_FIXES
             m_cVideoIOYuvReconFile[pcPic->layerId].write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
-#else
-            m_cVideoIOYuvReconFile.write( pcPic->getRecoBuf().get( COMPONENT_Y ).width, pcPic->getRecoBuf().get( COMPONENT_Y ).height, pcPic->getRecoBuf(),
-#endif
                                         m_outputColourSpaceConvert,
                                         m_packedYUVMode,
                                         conf.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ),
@@ -1201,21 +1000,17 @@ void DecApp::xFlushOutput( PicList* pcListPic )
         pcPic->destroy();
         delete pcPic;
         pcPic = NULL;
-#if JVET_N0278_FIXES
         *iterPic = nullptr;
-#endif
       }
       iterPic++;
     }
   }
 
-#if JVET_N0278_FIXES
   if( layerId != NOT_VALID )
   {
     pcListPic->remove_if([](Picture* p) { return p == nullptr; });
   }
   else
-#endif
   pcListPic->clear();
   m_iPOCLastDisplay = -MAX_INT;
 }
@@ -1238,7 +1033,6 @@ bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
   return false;
 }
 
-#if JVET_P1019_OUTPUT_LAYER_SET
 /** \param nalu Input nalu to check whether its LayerId is within targetOutputLayerIdSet
  */
 bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
@@ -1257,16 +1051,5 @@ bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
   return false;
 }
 
-#else
-/** \param nalu Input nalu to check whether its LayerId is the specified target layer
-*/
-bool DecApp::isNaluTheTargetLayer(InputNALUnit* nalu)
-{
-  if (nalu->m_nuhLayerId == m_iTargetLayer || m_iTargetLayer < 0)
-    return true;
-
-  return false;
-}
-#endif
 
 //! \}

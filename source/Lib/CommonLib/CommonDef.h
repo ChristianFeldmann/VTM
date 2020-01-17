@@ -145,10 +145,6 @@ static const int MAX_NUM_REF =                                     16; ///< max.
 static const int MAX_QP =                                          63;
 static const int NOT_VALID =                                       -1;
 
-#if !JVET_P1004_REMOVE_BRICKS
-static const int MAX_TILES =                                      128; ///< max. number of tiles for which a brick configuration can be read
-static const int MAX_NUM_BRICKS_PER_TILE =                          8; ///< max. number brick per tile, for which a configuration can be read
-#endif
 
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
@@ -173,15 +169,11 @@ static const int MAX_NESTING_NUM_OPS =                           1024;
 static const int MAX_NESTING_NUM_LAYER =                           64;
 
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
-#if JVET_O1159_SCALABILITY
 static const int MAX_VPS_LAYERS =                                  64;
 static const int MAX_VPS_SUBLAYERS =                                7;
 static const int MAX_NUM_REF_LAYERS =                               7;
 static const int MAX_NUM_OLSS =                                   256;
 static const int MAX_VPS_OLS_MODE_IDC =                             2;
-#else
-static const int MAX_VPS_LAYERS =                                 256;
-#endif
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
@@ -201,9 +193,6 @@ static const int ALF_CTB_MAX_NUM_APS         =                      8;
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
 
-#if JVET_O0625_ALF_PADDING
-static const int ALF_NONE_BOUNDARY           =                     -128;
-#endif
 
 static const int MAX_BDOF_APPLICATION_REGION =                     16;
 
@@ -223,12 +212,10 @@ static const int MAX_NUM_APS =                                     32;  //Curren
 static const int NUM_APS_TYPE_LEN =                                 3;  //Currently APS Type has 3 bits
 static const int MAX_NUM_APS_TYPE =                                 8;  //Currently APS Type has 3 bits so the max type is 8
 
-#if JVET_P1004_REMOVE_BRICKS
 static const int MAX_TILE_COLS =                                   20;  ///< Maximum number of tile columns
 static const int MAX_TILE_ROWS =                                   22;  ///< Maximum number of tile rows
 static const int MAX_TILES =            MAX_TILE_COLS * MAX_TILE_ROWS;  ///< Maximum number of tiles
 static const int MAX_SLICES =                                     600;  ///< Maximum number of slices per picture
-#endif
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 
 static const int MLS_CG_SIZE =                                      4; ///< Coefficient group size of 4x4; = MLS_CG_LOG2_WIDTH + MLS_CG_LOG2_HEIGHT
@@ -238,11 +225,7 @@ static const int RVM_VCEGAM10_M =                                   4;
 
 static const int MAX_REF_LINE_IDX =                                 3; //highest refLine offset in the list
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
-#if JVET_P0418_ALIGN_MLRP_CCLM
 static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 2, 0 };
-#else
-static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
-#endif
 
 static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
 
@@ -274,11 +257,7 @@ static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< 
 static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
-#if JVET_P0803_COMBINED_MIP_CLEANUP
 static const int MAX_NUM_MIP_MODE =                                32; ///< maximum number of MIP pred. modes
-#else
-static const int MAX_NUM_MIP_MODE =                                35; ///< maximum number of MIP modes
-#endif
 static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); ///< maximum number of RD comparison in fast-UDI estimation loop
 
 static const int MAX_LFNST_COEF_NUM =                              16;
@@ -300,9 +279,7 @@ static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL = 1 << MV
 static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << MV_FRACTIONAL_BITS_INTERNAL;
 static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << (MV_FRACTIONAL_BITS_INTERNAL + 1);
 
-#if JVET_P1006_PICTURE_HEADER
 static const int MAX_NUM_SUB_PICS =                               255;
-#endif
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
@@ -485,24 +462,15 @@ static const int FP_PREC =                                       11;
 static const int CSCALE_FP_PREC =                                11;
 static const int  NEIG_NUM_LOG  =                                 6;
 static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
-#if JVET_P0077_LINE_CG_PALETTE
 static const int LOG2_PALETTE_CG_SIZE =                           4;
 static const int RUN_IDX_THRE =                                   4;
 static const int MAX_CU_BLKSIZE_PLT =                            64;
 static const int NUM_TRELLIS_STATE =                              3;
 static const double ENC_CHROMA_WEIGHTING =                      0.8;
-#endif
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
-#if JVET_P0526_PLT_ENCODER
 static const double PLT_CHROMA_WEIGHTING =                      0.8;
-#endif
 static const int PLT_ENCBITDEPTH = 8;
-#if !JVET_P0077_LINE_CG_PALETTE
-static const int PLT_RUN_MSB_IDX_CABAC_BYPASS_THRE = 4;
-static const int PLT_RUN_MSB_IDX_CTX_T1 = 1;
-static const int PLT_RUN_MSB_IDX_CTX_T2 = 3;
-#endif
 static const int PLT_FAST_RATIO = 100;
 #if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
 static const int  EPBIN_WEIGHT_FACTOR =                           4;
@@ -511,10 +479,8 @@ static const int ENC_PPS_ID_RPR =                                 3;
 static const int SCALE_RATIO_BITS =                              14;
 static const int MAX_SCALING_RATIO =                              2;  // max downsampling ratio for RPR
 static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 static const int DELTA_QP_FOR_Y_Cg =                             -5;
 static const int DELTA_QP_FOR_Co =                               -3;
-#endif
 
 // ====================================================================================================================
 // Macro functions

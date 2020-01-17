@@ -180,7 +180,6 @@ unsigned BinDecoderBase::decodeBinsEP( unsigned numBins )
   return bins;
 }
 
-#if JVET_P0090_32BIT_MVD
 unsigned BinDecoderBase::decodeRemAbsEP(unsigned goRicePar, unsigned cutoff, int maxLog2TrDynamicRange)
 {
   unsigned prefix = 0;
@@ -209,51 +208,6 @@ unsigned BinDecoderBase::decodeRemAbsEP(unsigned goRicePar, unsigned cutoff, int
   }
   return offset + decodeBinsEP(length);
 }
-#else
-unsigned BinDecoderBase::decodeRemAbsEP( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
-{
-  unsigned cutoff = COEF_REMAIN_BIN_REDUCTION;
-  unsigned prefix = 0;
-  useLimitedPrefixLength = true;
-  if( useLimitedPrefixLength )
-  {
-    const unsigned  maxPrefix = 32 - maxLog2TrDynamicRange;
-    unsigned        codeWord  = 0;
-    do
-    {
-      prefix++;
-      codeWord = decodeBinEP();
-    }
-    while( codeWord && prefix < maxPrefix );
-    prefix -= 1 - codeWord;
-  }
-  else
-  {
-    while( decodeBinEP() )
-    {
-      prefix++;
-    }
-  }
-  unsigned length = goRicePar, offset;
-  if( prefix < cutoff )
-  {
-    offset    = prefix << goRicePar;
-  }
-  else
-  {
-    offset    = ( ( ( 1 << ( prefix - cutoff ) ) + cutoff - 1 ) << goRicePar );
-    if( useLimitedPrefixLength )
-    {
-      length += ( prefix == ( 32 - maxLog2TrDynamicRange ) ? maxLog2TrDynamicRange - goRicePar : prefix - COEF_REMAIN_BIN_REDUCTION );
-    }
-    else
-    {
-      length += ( prefix - cutoff );
-    }
-  }
-  return offset + decodeBinsEP( length );
-}
-#endif
 
 
 unsigned BinDecoderBase::decodeBinTrm()

@@ -113,58 +113,34 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   ::memcpy(target.m_initialCpbRemovalDelay, m_initialCpbRemovalDelay, sizeof(m_initialCpbRemovalDelay));
   ::memcpy(target.m_initialCpbRemovalOffset, m_initialCpbRemovalOffset, sizeof(m_initialCpbRemovalOffset));
   ::memcpy(target.m_cpbRemovalDelayDelta, m_cpbRemovalDelayDelta, sizeof(m_cpbRemovalDelayDelta));
-#if !JVET_P0446_BP_CPB_CNT_FIX
-  ::memcpy(target.m_bpCpbCnt, m_bpCpbCnt, sizeof(m_bpCpbCnt));
-#else
   target.m_bpCpbCnt = m_bpCpbCnt;
-#endif
-#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   target.m_bpDecodingUnitHrdParamsPresentFlag = m_bpDecodingUnitHrdParamsPresentFlag;
   target.m_decodingUnitCpbParamsInPicTimingSeiFlag = m_decodingUnitCpbParamsInPicTimingSeiFlag;
-#endif
-#if JVET_P0181
   target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
-#endif
-#if JVET_P0446_CONCATENATION
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_maxInitialRemovalDelayForConcatenation = m_maxInitialRemovalDelayForConcatenation;
-#endif
-#if JVET_P0446_ALT_CPB
   target.m_altCpbParamsPresentFlag = m_altCpbParamsPresentFlag;
-#endif
 }
 
 void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
 {
   ::memcpy(target.m_auCpbRemovalDelay, m_auCpbRemovalDelay, sizeof(m_auCpbRemovalDelay));
-#if JVET_P0202_P0203_FIX_HRD_RELATED_SEI
   ::memcpy(target.m_ptSubLayerDelaysPresentFlag, m_ptSubLayerDelaysPresentFlag, sizeof(m_ptSubLayerDelaysPresentFlag));
   ::memcpy(target.m_duCommonCpbRemovalDelayMinus1, m_duCommonCpbRemovalDelayMinus1, sizeof(m_duCommonCpbRemovalDelayMinus1));
-#else
-  ::memcpy(target.m_subLayerDelaysPresentFlag, m_subLayerDelaysPresentFlag, sizeof(m_subLayerDelaysPresentFlag));
-#endif
   ::memcpy(target.m_cpbRemovalDelayDeltaEnabledFlag, m_cpbRemovalDelayDeltaEnabledFlag, sizeof(m_cpbRemovalDelayDeltaEnabledFlag));
   ::memcpy(target.m_cpbRemovalDelayDeltaIdx, m_cpbRemovalDelayDeltaIdx, sizeof(m_cpbRemovalDelayDeltaIdx));
-#if !JVET_P0202_P0203_FIX_HRD_RELATED_SEI
-  target.m_ptMaxSubLayers = m_ptMaxSubLayers;
-#endif
   target.m_picDpbOutputDelay = m_picDpbOutputDelay;
   target.m_picDpbOutputDuDelay = m_picDpbOutputDuDelay;
   target.m_numDecodingUnitsMinus1 = m_numDecodingUnitsMinus1;
   target.m_duCommonCpbRemovalDelayFlag = m_duCommonCpbRemovalDelayFlag;
-#if !JVET_P0202_P0203_FIX_HRD_RELATED_SEI
-  target.m_duCommonCpbRemovalDelayMinus1 = m_duCommonCpbRemovalDelayMinus1;
-#endif
 
   target.m_numNalusInDuMinus1 = m_numNalusInDuMinus1;
   target.m_duCpbRemovalDelayMinus1 = m_duCpbRemovalDelayMinus1;
-#if JVET_P0446_ALT_CPB
   target.m_cpbAltTimingInfoPresentFlag = m_cpbAltTimingInfoPresentFlag;
   target.m_cpbAltInitialCpbRemovalDelayDelta = m_cpbAltInitialCpbRemovalDelayDelta;
   target.m_cpbAltInitialCpbRemovalOffsetDelta = m_cpbAltInitialCpbRemovalOffsetDelta;
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
-#endif
 }
 
 // Static member
@@ -178,74 +154,30 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::PAN_SCAN_RECT:                        return "Pan-scan rectangle";                   // not currently decoded
 #endif
     case SEI::FILLER_PAYLOAD:                       return "Filler payload";                       // not currently decoded
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";                 // not currently decoded
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
-#if !JVET_P0337_PORTING_SEI
-    case SEI::RECOVERY_POINT:                       return "Recovery point";
-    case SEI::SCENE_INFO:                           return "Scene information";                    // not currently decoded
-    case SEI::FULL_FRAME_SNAPSHOT:                  return "Picture snapshot";                     // not currently decoded
-    case SEI::PROGRESSIVE_REFINEMENT_SEGMENT_START: return "Progressive refinement segment start"; // not currently decoded
-    case SEI::PROGRESSIVE_REFINEMENT_SEGMENT_END:   return "Progressive refinement segment end";   // not currently decoded
-#endif
     case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
-#if !JVET_P0337_PORTING_SEI
-    case SEI::POST_FILTER_HINT:                     return "Post filter hint";                     // not currently decoded
-    case SEI::TONE_MAPPING_INFO:                    return "Tone mapping information";
-    case SEI::KNEE_FUNCTION_INFO:                   return "Knee function information";
-#endif
     case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
-#if !JVET_P0337_PORTING_SEI
-    case SEI::DISPLAY_ORIENTATION:                  return "Display orientation";
-    case SEI::GREEN_METADATA:                       return "Green metadata information";
-    case SEI::SOP_DESCRIPTION:                      return "Structure of pictures information";
-    case SEI::ACTIVE_PARAMETER_SETS:                return "Active parameter sets";
-#endif
-#endif
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
 #if HEVC_SEI
     case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
 #endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
     case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
-#if HEVC_SEI || JVET_P0337_PORTING_SEI
-#if !JVET_P0337_PORTING_SEI
-    case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
-    case SEI::REGION_REFRESH_INFO:                  return "Region refresh information";
-    case SEI::NO_DISPLAY:                           return "No display";
-    case SEI::TIME_CODE:                            return "Time code";
-#endif
     case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";
-#if !JVET_P0337_PORTING_SEI
-    case SEI::SEGM_RECT_FRAME_PACKING:              return "Segmented rectangular frame packing arrangement";
-    case SEI::TEMP_MOTION_CONSTRAINED_TILE_SETS:    return "Temporal motion constrained tile sets";
-    case SEI::CHROMA_RESAMPLING_FILTER_HINT:        return "Chroma sampling filter hint";
-    case SEI::COLOUR_REMAPPING_INFO:                return "Colour remapping info";
-#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
     case SEI::ALTERNATIVE_TRANSFER_CHARACTERISTICS: return "Alternative transfer characteristics";
 #endif
-#endif
-#if JVET_P0337_PORTING_SEI
     case SEI::CONTENT_LIGHT_LEVEL_INFO:             return "Content light level information";
     case SEI::AMBIENT_VIEWING_ENVIRONMENT:          return "Ambient viewing environment";
     case SEI::CONTENT_COLOUR_VOLUME:                return "Content colour volume";
-#endif
-#if JVET_P0462_SEI360
     case SEI::EQUIRECTANGULAR_PROJECTION:           return "Equirectangular projection";
     case SEI::SPHERE_ROTATION:                      return "Sphere rotation";
     case SEI::REGION_WISE_PACKING:                  return "Region wise packing information";
     case SEI::OMNI_VIEWPORT:                        return "Omni viewport";
-#endif
-#if JVET_P0597_GCMP_SEI
     case SEI::GENERALIZED_CUBEMAP_PROJECTION:       return "Generalized cubemap projection";
-#endif
-#if JVET_P0450_SEI_SARI
     case SEI::SAMPLE_ASPECT_RATIO_INFO:             return "Sample aspect ratio information";
-#endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
     case SEI::SUBPICTURE_LEVEL_INFO:                return "Subpicture level information";
-#endif
     default:                                        return "Unknown";
   }
 }

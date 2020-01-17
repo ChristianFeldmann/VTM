@@ -114,7 +114,6 @@ int main(int argc, char* argv[])
 #endif
   fprintf( stdout, "\n" );
 
-#if JVET_N0278_FIXES
   std::fstream bitstream;
   EncLibCommon encLibCommon;
 
@@ -181,26 +180,6 @@ int main(int argc, char* argv[])
   } while( layerIdx < pcEncApp.size() );
 
   delete[] layerArgv;
-#else
-  EncApp* pcEncApp = new EncApp;
-  // create application encoder class
-  pcEncApp->create();
-
-  // parse configuration
-  try
-  {
-    if(!pcEncApp->parseCfg( argc, argv ))
-    {
-      pcEncApp->destroy();
-      return 1;
-    }
-  }
-  catch (df::program_options_lite::ParseFailure &e)
-  {
-    std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
-    return 1;
-  }
-#endif
 
 #if PRINT_MACRO_VALUES
   printMacroSettings();
@@ -212,7 +191,6 @@ int main(int argc, char* argv[])
   fprintf(stdout, " started @ %s", std::ctime(&startTime2) );
   clock_t startClock = clock();
 
-#if JVET_N0278_FIXES
   // call encoding function per layer
   bool eos = false;
 
@@ -272,42 +250,17 @@ int main(int argc, char* argv[])
       }
     }
   }
-#else
-  // call encoding function
-#ifndef _DEBUG
-  try
-  {
-#endif
-    pcEncApp->encode();
-#ifndef _DEBUG
-  }
-  catch( Exception &e )
-  {
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
-  catch (const std::bad_alloc &e)
-  {
-    std::cout << "Memory allocation failed: " << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
-#endif
-#endif
   // ending time
   clock_t endClock = clock();
   auto endTime = std::chrono::steady_clock::now();
   std::time_t endTime2 = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 #if JVET_O0756_CALCULATE_HDRMETRICS
-#if JVET_N0278_FIXES
   auto metricTime = pcEncApp[0]->getMetricTime();
 
   for( int layerIdx = 1; layerIdx < pcEncApp.size(); layerIdx++ )
   {
     metricTime += pcEncApp[layerIdx]->getMetricTime();
   }
-#else
-  auto metricTime     = pcEncApp->getMetricTime();
-#endif
   auto totalTime      = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime ).count();
   auto encTime        = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime - metricTime ).count();
   auto metricTimeuser = std::chrono::duration_cast<std::chrono::milliseconds>( metricTime ).count();
@@ -315,7 +268,6 @@ int main(int argc, char* argv[])
   auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime).count();
 #endif
 
-#if JVET_N0278_FIXES
   for( auto & encApp : pcEncApp )
   {
     encApp->destroyLib();
@@ -330,12 +282,6 @@ int main(int argc, char* argv[])
   destroyROM();
 
   pcEncApp.clear();
-#else
-  // destroy application encoder class
-  pcEncApp->destroy();
-
-  delete pcEncApp;
-#endif
 
   printf( "\n finished @ %s", std::ctime(&endTime2) );
 

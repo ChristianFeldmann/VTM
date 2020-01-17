@@ -62,7 +62,6 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
-#if JVET_P0363_CLEANUP_NUT_TABLE
   case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
   case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
   case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
@@ -75,12 +74,8 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_VPS:                    return "VPS";
   case NAL_UNIT_SPS:                    return "SPS";
   case NAL_UNIT_PPS:                    return "PPS";
-#if JVET_P0588_SUFFIX_APS
   case NAL_UNIT_PREFIX_APS:             return "Prefix APS";
   case NAL_UNIT_SUFFIX_APS:             return "Suffix APS";
-#else
-  case NAL_UNIT_APS:                    return "APS";
-#endif
   case NAL_UNIT_PH:                     return "PH";
   case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
   case NAL_UNIT_EOS:                    return "EOS";
@@ -90,32 +85,6 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_FD:                     return "FD";
   default:                              return "UNK";
 
-#else
-  case NAL_UNIT_PPS:                    return "PPS";
-  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
-  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
-  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
-#if JVET_P0588_SUFFIX_APS
-  case NAL_UNIT_PREFIX_APS:             return "Prefix APS";
-  case NAL_UNIT_SUFFIX_APS:             return "Suffix APS";
-#else
-  case NAL_UNIT_APS:                    return "APS";
-#endif
-  case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
-  case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
-  case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
-  case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
-  case NAL_UNIT_DPS:                    return "DPS";
-  case NAL_UNIT_SPS:                    return "SPS";
-  case NAL_UNIT_EOS:                    return "EOS";
-  case NAL_UNIT_EOB:                    return "EOB";
-  case NAL_UNIT_VPS:                    return "VPS";
-  case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
-  case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
-  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
-  case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
-  default:                              return "UNK";
-#endif
   }
 }
 
@@ -465,28 +434,14 @@ void initROM()
       const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
 
       // let SIMD can read at least 64-bit when at last row
-#if JVET_P0530_TPM_WEIGHT_ALIGN
       g_triangleWeights[0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       g_triangleWeights[1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-#else
-      g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-#endif
       for (int y = 0; y < nCbH; y++)
       {
         for (int x = 0; x < nCbW; x++)
         {
-#if JVET_P0530_TPM_WEIGHT_ALIGN
           g_triangleWeights[0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
           g_triangleWeights[1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
-#else
-          g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
-          g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
-          g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
-          g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
-#endif
         }
       }
     }
@@ -522,21 +477,10 @@ void destroyROM()
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
     {
-#if JVET_P0530_TPM_WEIGHT_ALIGN
       delete[] g_triangleWeights[0][idxH][idxW];
       delete[] g_triangleWeights[1][idxH][idxW];
       g_triangleWeights[0][idxH][idxW] = nullptr;
       g_triangleWeights[1][idxH][idxW] = nullptr;
-#else
-      delete[] g_triangleWeights[0][0][idxH][idxW];
-      delete[] g_triangleWeights[0][1][idxH][idxW];
-      delete[] g_triangleWeights[1][0][idxH][idxW];
-      delete[] g_triangleWeights[1][1][idxH][idxW];
-      g_triangleWeights[0][0][idxH][idxW] = nullptr;
-      g_triangleWeights[0][1][idxH][idxW] = nullptr;
-      g_triangleWeights[1][0][idxH][idxW] = nullptr;
-      g_triangleWeights[1][1][idxH][idxW] = nullptr;
-#endif
     }
   }
 }
@@ -598,15 +542,9 @@ const uint8_t g_aucIntraModeNumFast_NotUseMPM[MAX_CU_DEPTH] =
 };
 
 const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
-#if JVET_P0111_CHROMA_422_FIX
 //                                    *                                H                              *                                D      *   *   *   *       *   *   *                   *        V       *                   *   *   *      *   *   *   *
 //0, 1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
 { 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  5,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 41, 42, 43, 43, 44, 44, 45, 45, 46, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59, 60, DM_CHROMA_IDX };
-#else
-//                                                                     H                                                               D                                                               V
-//0, 1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
-{ 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
-#endif
 
 
 
@@ -634,14 +572,6 @@ const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
 };
-#if !JVET_P0170_ZERO_POS_SIMPLIFICATION
-const uint32_t g_auiGoRicePosCoeff0[3][32] =
-{
-  {0, 0, 0, 0, 0, 1, 2,    2, 2, 2, 2, 2, 4, 4,    4, 4, 4, 4,  4,  4,  4,  4,  4,  8,  8,  8,  8,  8,     8,  8,  8,  8},
-  {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
-  {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
-};
-#endif
 const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
 {
   {
@@ -694,21 +624,11 @@ const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA",
-#if JVET_P01034_PRED_1D_SCALING_LIST
     "INTRA64X64_CHROMAU",
     "INTRA64X64_CHROMAV",
-#else
-    "INTRA64X64_CHROMAU_FROM16x16_CHROMAU",
-    "INTRA64X64_CHROMAV_FROM16x16_CHROMAV",
-#endif
     "INTER64X64_LUMA",
-#if JVET_P01034_PRED_1D_SCALING_LIST
     "INTER64X64_CHROMAU",
     "INTER64X64_CHROMAV"
-#else
-    "INTER64X64_CHROMAU_FROM16x16_CHROMAU",
-    "INTER64X64_CHROMAV_FROM16x16_CHROMAV"
-#endif
   },
   {
   },
@@ -742,21 +662,11 @@ const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA_DC",
-#if JVET_P01034_PRED_1D_SCALING_LIST
     "INTRA64X64_CHROMAU_DC",
     "INTRA64X64_CHROMAV_DC",
-#else
-    "INTRA64X64_CHROMAU_DC_FROM16x16_CHROMAU",
-    "INTRA64X64_CHROMAV_DC_FROM16x16_CHROMAV",
-#endif
     "INTER64X64_LUMA_DC",
-#if JVET_P01034_PRED_1D_SCALING_LIST
     "INTER64X64_CHROMAU_DC",
     "INTER64X64_CHROMAV_DC"
-#else
-    "INTER64X64_CHROMAU_DC_FROM16x16_CHROMAU",
-    "INTER64X64_CHROMAV_DC_FROM16x16_CHROMAV"
-#endif
   },
   {
   },
@@ -799,19 +709,11 @@ const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16, 
 
 
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-#if JVET_P0530_TPM_WEIGHT_ALIGN
 int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-#else
-int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-#endif
 Mv   g_reusedUniMVs[32][32][8][8][2][33];
 bool g_isReusedUniMVsFilled[32][32][8][8];
 
 const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
 uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
-#if JVET_P0077_LINE_CG_PALETTE
 uint8_t g_paletteRunLeftLut[5] = { 0, 1, 2, 3, 4 };
-#else
-uint8_t g_paletteRunLeftLut[5] = { 0, 3, 3, 4, 4 };
-#endif
 //! \}

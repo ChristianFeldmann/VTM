@@ -68,19 +68,7 @@ CoeffCodingContext::CoeffCodingContext( const TransformUnit& tu, ComponentID com
   , m_lastOffsetY               (0)
   , m_lastShiftX                (0)
   , m_lastShiftY                (0)
-#if JVET_P2001_REMOVE_TRANSQUANT_BYPASS
-#if JVET_P0058_CHROMA_TS
   , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() && (tu.mtsIdx[m_compID] == MTS_SKIP))
-#else
-  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() && (tu.mtsIdx==MTS_SKIP))
-#endif
-#else
-#if JVET_P0058_CHROMA_TS
-  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() && (tu.cu->transQuantBypass || tu.mtsIdx[m_compID] == MTS_SKIP))
-#else
-  , m_TrafoBypass               (tu.cs->sps->getSpsRangeExtension().getTransformSkipContextEnabledFlag() &&  (tu.cu->transQuantBypass || tu.mtsIdx==MTS_SKIP))
-#endif
-#endif
   , m_scanPosLast               (-1)
   , m_subSetId                  (-1)
   , m_subSetPos                 (-1)
@@ -149,11 +137,7 @@ unsigned DeriveCtx::CtxModeConsFlag( const CodingStructure& cs, Partitioner& par
   assert( partitioner.chType == CHANNEL_TYPE_LUMA );
   const Position pos = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
   const unsigned curTileIdx = cs.pps->getTileIdx( partitioner.currArea().lumaPos() );
-#else
-  const unsigned curTileIdx = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
-#endif
 
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
   const CodingUnit* cuAbove = cs.getCURestricted( pos.offset( 0, -1 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
@@ -167,11 +151,7 @@ void DeriveCtx::CtxSplit( const CodingStructure& cs, Partitioner& partitioner, u
 {
   const Position pos         = partitioner.currArea().blocks[partitioner.chType];
   const unsigned curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
   const unsigned curTileIdx  = cs.pps->getTileIdx( partitioner.currArea().lumaPos() );
-#else
-  const unsigned curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( partitioner.currArea().lumaPos() );
-#endif
 
   // get left depth
   const CodingUnit* cuLeft = cs.getCURestricted( pos.offset( -1, 0 ), pos, curSliceIdx, curTileIdx, partitioner.chType );
@@ -388,11 +368,7 @@ void MergeCtx::setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx)
   fPosStep = tempIdx / 4;
   fPosPosition = tempIdx - fPosStep * (4);
   int offset = refMvdCands[fPosStep];
-#if JVET_P1006_PICTURE_HEADER
   if ( pu.cu->slice->getPicHeader()->getDisFracMMVD() )
-#else
-  if ( pu.cu->slice->getDisFracMMVD() )
-#endif
   {
     offset <<= 2;
   }
@@ -563,7 +539,6 @@ unsigned DeriveCtx::CtxMipFlag( const CodingUnit& cu )
   return ctxId;
 }
 
-#if JVET_P0077_LINE_CG_PALETTE
 unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist )
 {
   uint8_t *ucCtxLut = (prevRunType == PLT_RUN_INDEX) ? g_paletteRunLeftLut : g_paletteRunTopLut;
@@ -576,4 +551,3 @@ unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned d
     return ucCtxLut[RUN_IDX_THRE];
   }
 }
-#endif

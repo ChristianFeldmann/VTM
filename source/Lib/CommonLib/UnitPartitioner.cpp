@@ -169,11 +169,7 @@ void AdaptiveDepthPartitioner::setMaxMinDepth( unsigned& minDepth, unsigned& max
   unsigned          stdMaxDepth = ( floorLog2(cs.sps->getCTUSize()) - floorLog2(cs.sps->getMinQTSize( cs.slice->getSliceType(), chType )));
   const Position    pos         = currArea().blocks[chType].pos();
   const unsigned    curSliceIdx = cs.slice->getIndependentSliceIdx();
-#if JVET_P1004_REMOVE_BRICKS
   const unsigned    curTileIdx  = cs.pps->getTileIdx( currArea().lumaPos() );
-#else
-  const unsigned    curTileIdx  = cs.picture->brickMap->getBrickIdxRsMap( currArea().lumaPos() );
-#endif
 
   const CodingUnit* cuLeft        = cs.getCURestricted( pos.offset( -1,                               0 ), pos, curSliceIdx, curTileIdx, chType );
   const CodingUnit* cuBelowLeft   = cs.getCURestricted( pos.offset( -1, currArea().blocks[chType].height), pos, curSliceIdx, curTileIdx, chType );
@@ -352,13 +348,8 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     currQtDepth++;
     currSubdiv++;
   }
-#if JVET_P1006_PICTURE_HEADER
   qgEnable       &= (currSubdiv <= cs.slice->getCuQpDeltaSubdiv());
   qgChromaEnable &= (currSubdiv <= cs.slice->getCuChromaQpOffsetSubdiv());
-#else
-  qgEnable       &= (currSubdiv <= cs.pps->getCuQpDeltaSubdiv());
-  qgChromaEnable &= (currSubdiv <= cs.pps->getCuChromaQpOffsetSubdiv());
-#endif
   m_partStack.back().qgEnable       = qgEnable;
   m_partStack.back().qgChromaEnable = qgChromaEnable;
   if (qgEnable)
@@ -404,9 +395,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
     canBh = implicitSplit == CU_HORZ_SPLIT;
     canBv = implicitSplit == CU_VERT_SPLIT;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
     if (chType == CHANNEL_TYPE_CHROMA && areaC.width == 4) canBv = false;
-#endif
     return;
   }
 
@@ -445,14 +434,8 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
   if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE || areaC.width == 4))     canBv = false;
-#else
-  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBv = false;
-#endif
-#if JVET_P0063_LDT_SPLIT_FIX
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 32 )  canBv = canBh = false;
-#endif
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
@@ -460,14 +443,8 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE * 2 || areaC.width == 8))     canTv = false;
-#else
-  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTv = false;
-#endif
-#if JVET_P0063_LDT_SPLIT_FIX
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 64 )  canTv = canTh = false;
-#endif
 }
 
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )

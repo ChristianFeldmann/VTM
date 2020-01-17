@@ -49,9 +49,7 @@
 
 #if ENABLE_TRACING
 
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define WRITE_SCODE( value, length, name)   xWriteSCodeTr ( value, length, name )
-#endif
 #define WRITE_CODE( value, length, name)    xWriteCodeTr ( value, length, name )
 #define WRITE_UVLC( value,         name)    xWriteUvlcTr ( value,         name )
 #define WRITE_SVLC( value,         name)    xWriteSvlcTr ( value,         name )
@@ -59,9 +57,7 @@
 
 extern bool g_HLSTraceEnable;
 #else
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
 #define WRITE_SCODE( value, length, name)    xWriteSCode ( value, length )
-#endif
 #define WRITE_CODE( value, length, name)     xWriteCode ( value, length )
 #define WRITE_UVLC( value,         name)     xWriteUvlc ( value )
 #define WRITE_SVLC( value,         name)     xWriteSvlc ( value )
@@ -81,17 +77,13 @@ protected:
   virtual ~VLCWriter() {}
 
   void  setBitstream          ( OutputBitstream* p )  { m_pcBitIf = p;  }
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
   void  xWriteSCode           ( int  code,  uint32_t length );
-#endif
   void  xWriteCode            ( uint32_t uiCode, uint32_t uiLength );
   void  xWriteUvlc            ( uint32_t uiCode );
   void  xWriteSvlc            ( int  iCode   );
   void  xWriteFlag            ( uint32_t uiCode );
 #if ENABLE_TRACING
-#if JVET_P0462_SEI360 || JVET_P0337_PORTING_SEI
   void  xWriteSCodeTr         ( int value,  uint32_t  length, const char *pSymbolName);
-#endif
   void  xWriteCodeTr          ( uint32_t value, uint32_t  length, const char *pSymbolName);
   void  xWriteUvlcTr          ( uint32_t value,               const char *pSymbolName);
   void  xWriteSvlcTr          ( int  value,               const char *pSymbolName);
@@ -124,11 +116,7 @@ private:
   void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
-#if  JVET_P01034_PRED_1D_SCALING_LIST
   void xCodeScalingList         ( const ScalingList* scalingList, uint32_t scalinListId, bool isPredictor);
-#else
-  void xCodeScalingList         ( const ScalingList* scalingList, uint32_t sizeId, uint32_t listId);
-#endif
 public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
@@ -141,9 +129,7 @@ public:
   void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
   void  codeDPS                 ( const DPS* dps );
-#if JVET_P1006_PICTURE_HEADER
   void  codePictureHeader       ( PicHeader* picHeader );
-#endif
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );

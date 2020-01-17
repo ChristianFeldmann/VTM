@@ -679,9 +679,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
-#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
-    READ_UVLC( uiCode, "pps_five_minus_max_num_subblock_merge_cand_plus1"); pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(uiCode);
-#endif
     READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode);
   }
   else
@@ -692,9 +689,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSMvdL1ZeroIdc(0);
     pcPPS->setPPSCollocatedFromL0Idc(0);
     pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
-#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
-    pcPPS->setPPSFiveMinusMaxNumSubblockMergeCandPlus1(0);
-#endif
     pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0);
   }
 
@@ -2065,18 +2059,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // subblock merge candidate list size
   if ( sps->getUseAffine() )
   {
-#if JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
     READ_UVLC(uiCode, "pic_five_minus_max_num_subblock_merge_cand");
-#else
-    if (!pps->getPPSFiveMinusMaxNumSubblockMergeCandPlus1())
-    {
-      READ_UVLC(uiCode, "five_minus_max_num_subblock_merge_cand");
-    }
-    else
-    {
-      uiCode = pps->getPPSFiveMinusMaxNumSubblockMergeCandPlus1() - 1;
-    }
-#endif
     CHECK(AFFINE_MRG_MAX_NUM_CANDS < uiCode, "Incorrrect max number of affine merge candidates!");
     picHeader->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
   }

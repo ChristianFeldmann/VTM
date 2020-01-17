@@ -681,9 +681,6 @@ protected:
   int       m_PPSMvdL1ZeroIdc;
   int       m_PPSCollocatedFromL0Idc;
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
-#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
-  uint32_t  m_PPSFiveMinusMaxNumSubblockMergeCandPlus1;
-#endif
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;

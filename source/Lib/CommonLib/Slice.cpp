@@ -2004,9 +2004,6 @@ PPS::PPS()
 , m_PPSMvdL1ZeroIdc                  (0)
 , m_PPSCollocatedFromL0Idc           (0)
 , m_PPSSixMinusMaxNumMergeCandPlus1  (0)
-#if !JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND
-, m_PPSFiveMinusMaxNumSubblockMergeCandPlus1 (0)
-#endif
 , m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
 , m_cabacInitPresentFlag             (false)
 , m_pictureHeaderExtensionPresentFlag(0)

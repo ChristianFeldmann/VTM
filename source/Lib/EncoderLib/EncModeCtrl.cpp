@@ -143,11 +143,7 @@ void EncModeCtrl::xGetMinMaxQP( int& minQP, int& maxQP, const CodingStructure& c
 
   const unsigned subdivIncr = (splitMode == CU_QUAD_SPLIT) ? 2 : (splitMode == CU_BT_SPLIT) ? 1 : 0;
   const bool qgEnable = partitioner.currQgEnable(); // QG possible at current level
-#if JVET_P1006_PICTURE_HEADER
   const bool qgEnableChildren = qgEnable && ((partitioner.currSubdiv + subdivIncr) <= cs.slice->getCuQpDeltaSubdiv()) && (subdivIncr > 0); // QG possible at next level
-#else
-  const bool qgEnableChildren = qgEnable && ((partitioner.currSubdiv + subdivIncr) <= pps.getCuQpDeltaSubdiv()) && (subdivIncr > 0); // QG possible at next level
-#endif
   const bool isLeafQG = (qgEnable && !qgEnableChildren);
 
   if( isLeafQG ) // QG at deepest level
@@ -1215,11 +1211,7 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       baseQP = Clip3(-cs.sps->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, baseQP + xComputeDQP(cs, partitioner));
     }
 #if ENABLE_QPA_SUB_CTU
-#if JVET_P1006_PICTURE_HEADER
     else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.slice->getCuQpDeltaSubdiv() > 0)
-#else
-    else if (m_pcEncCfg->getUsePerceptQPA() && !m_pcEncCfg->getUseRateCtrl() && cs.pps->getUseDQP() && cs.pps->getCuQpDeltaSubdiv() > 0)
-#endif
     {
       const PreCalcValues &pcv = *cs.pcv;
 

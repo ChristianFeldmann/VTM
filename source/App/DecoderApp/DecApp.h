@@ -84,10 +84,8 @@ private:
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
   bool  isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu); ///< check whether given Nalu is within targetOutputLayerIdSet
   bool  deriveOutputLayerSet(); ///< derive OLS and layer sets
-#if JVET_P1006_PICTURE_HEADER
   bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
   bool  isNewAccessUnit(bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new access unit
-#endif
 };
 
 //! \}

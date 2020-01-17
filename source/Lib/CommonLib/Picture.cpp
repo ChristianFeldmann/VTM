@@ -323,11 +323,7 @@ const CPelUnitBuf Picture::getRecoBuf(const UnitArea &unit, bool wrap)     const
        PelUnitBuf Picture::getRecoBuf(bool wrap)                                 { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 const CPelUnitBuf Picture::getRecoBuf(bool wrap)                           const { return M_BUFS(scheduler.getSplitPicId(), wrap ? PIC_RECON_WRAP : PIC_RECONSTRUCTION); }
 
-#if JVET_P1006_PICTURE_HEADER
 void Picture::finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
-#else
-void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps )
-#endif
 {
   for( auto &sei : SEIs )
   {
@@ -356,11 +352,9 @@ void Picture::finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmc
   cs->picture = this;
   cs->slice   = nullptr;  // the slices for this picture have not been set at this point. update cs->slice after swapSliceObject()
   cs->pps     = &pps;
-#if JVET_P1006_PICTURE_HEADER
   picHeader->setSPSId( sps.getSPSId() );
   picHeader->setPPSId( pps.getPPSId() );
   cs->picHeader = picHeader;
-#endif
   memcpy(cs->alfApss, alfApss, sizeof(cs->alfApss));
   cs->lmcsAps = lmcsAps;
   cs->scalinglistAps = scalingListAps;
@@ -384,10 +378,6 @@ void Picture::allocateNewSlice()
   Slice& slice = *slices.back();
   memcpy(slice.getAlfAPSs(), cs->alfApss, sizeof(cs->alfApss));
 
-#if !JVET_P1006_PICTURE_HEADER
-  slice.setLmcsAPS(cs->lmcsAps);
-  slice.setscalingListAPS( cs->scalinglistAps );
-#endif
 
   slice.setPPS( cs->pps);
   slice.setSPS( cs->sps);
@@ -410,12 +400,6 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 #endif
   p->setAlfAPSs(cs->alfApss);
 
-#if !JVET_P1006_PICTURE_HEADER
-  if(cs->lmcsAps != nullptr)
-    p->setLmcsAPS(cs->lmcsAps);
-  if(cs->scalinglistAps != nullptr)
-    p->setscalingListAPS( cs->scalinglistAps );
-#endif
 
   Slice * pTmp = slices[i];
   slices[i] = p;
@@ -426,10 +410,6 @@ Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 #endif
   memset(pTmp->getAlfAPSs(), 0, sizeof(*pTmp->getAlfAPSs())*ALF_CTB_MAX_NUM_APS);
 
-#if !JVET_P1006_PICTURE_HEADER
-  pTmp->setLmcsAPS(0);
-  pTmp->setscalingListAPS( 0 );
-#endif
   return pTmp;
 }
 

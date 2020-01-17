@@ -47,13 +47,7 @@
 //! \{
 
 Slice::Slice()
-#if !JVET_P1006_PICTURE_HEADER
-: m_iPPSId                        ( -1 )
-, m_PicOutputFlag                 ( true )
-, m_iPOC                          ( 0 )
-#else
 : m_iPOC                          ( 0 )
-#endif
 , m_iLastIDR                      ( 0 )
 , m_iAssociatedIRAP               ( 0 )
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
@@ -68,10 +62,6 @@ Slice::Slice()
 , m_deblockingFilterBetaOffsetDiv2( 0 )
 , m_deblockingFilterTcOffsetDiv2  ( 0 )
 , m_pendingRasInit                ( false )
-#if !JVET_P1006_PICTURE_HEADER
-, m_depQuantEnabledFlag           ( false )
-, m_signDataHidingEnabledFlag     ( false )
-#endif
 , m_bCheckLDC                     ( false )
 , m_biDirPred                    ( false )
 , m_iSliceQpDelta                 ( 0 )
@@ -80,24 +70,11 @@ Slice::Slice()
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
-#if JVET_P1006_PICTURE_HEADER
 , m_pcPicHeader                   ( NULL )
-#endif
 , m_colFromL0Flag                 ( true )
-#if !JVET_P1006_PICTURE_HEADER
-, m_noOutputPriorPicsFlag         ( false )
-#endif
 , m_noIncorrectPicOutputFlag      ( false )
 , m_handleCraAsCvsStartFlag            ( false )
 , m_colRefIdx                     ( 0 )
-#if !JVET_P1006_PICTURE_HEADER
-, m_maxNumMergeCand               ( 0 )
-, m_maxNumAffineMergeCand         ( 0 )
-, m_maxNumTriangleCand            ( 0 )
-, m_maxNumIBCMergeCand            ( 0 )
-, m_disFracMMVD                   ( false )
-, m_disBdofDmvrFlag               ( false )
-#endif
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
 , m_independentSliceIdx           ( 0 )
@@ -110,34 +87,9 @@ Slice::Slice()
 , m_numEntryPoints                ( 0 )
 , m_cabacInitFlag                 ( false )
  , m_sliceSubPicId               ( 0 )
-#if !JVET_P1006_PICTURE_HEADER
-, m_jointCbCrSignFlag             ( false )
-, m_bLMvdL1Zero                   ( false )
-, m_LFCrossSliceBoundaryFlag      ( false )
-, m_enableTMVPFlag                ( true )
-#endif
 , m_encCABACTableIdx              (I_SLICE)
 , m_iProcessingStartTime          ( 0 )
 , m_dProcessingTime               ( 0 )
-#if !JVET_P1006_PICTURE_HEADER
-, m_splitConsOverrideFlag         ( false )
-, m_uiMinQTSize                   ( 0 )
-, m_uiMaxMTTHierarchyDepth                  ( 0 )
-, m_uiMaxTTSize                   ( 0 )
-, m_uiMinQTSizeIChroma            ( 0 )
-, m_uiMaxMTTHierarchyDepthIChroma           ( 0 )
-, m_uiMaxBTSizeIChroma            ( 0 )
-, m_uiMaxTTSizeIChroma            ( 0 )
-, m_uiMaxBTSize                   ( 0 )
-, m_lmcsApsId                    ( -1 )
-, m_lmcsAps                      (nullptr)
-, m_tileGroupLmcsEnabledFlag     (false)
-, m_tileGroupLmcsChromaResidualScaleFlag (false)
-, m_scalingListApsId             ( -1 )
-, m_scalingListAps               ( nullptr )
-, m_tileGroupscalingListPresentFlag ( false )
-, m_nonReferencePicFlag          ( 0 )
-#endif
 {
   for(uint32_t i=0; i<NUM_REF_PIC_LIST_01; i++)
   {
@@ -209,24 +161,11 @@ void Slice::initSlice()
   }
   m_iSliceChromaQpDelta[JOINT_CbCr] = 0;
 
-#if !JVET_P1006_PICTURE_HEADER
-  m_maxNumMergeCand = MRG_MAX_NUM_CANDS;
-  m_maxNumAffineMergeCand = AFFINE_MRG_MAX_NUM_CANDS;
-  m_maxNumIBCMergeCand = IBC_MRG_MAX_NUM_CANDS;
-#endif
 
   m_bFinalized=false;
 
-#if !JVET_P1006_PICTURE_HEADER
-  m_disFracMMVD          = false;
-  m_disBdofDmvrFlag      = false;
-#endif
   m_substreamSizes.clear();
   m_cabacInitFlag        = false;
-#if !JVET_P1006_PICTURE_HEADER
-  m_jointCbCrSignFlag    = false;
-  m_enableTMVPFlag       = true;
-#endif
   m_enableDRAPSEI        = false;
   m_useLTforDRAP         = false;
   m_isDRAP               = false;
@@ -234,7 +173,6 @@ void Slice::initSlice()
   resetTileGroupAlfEnabledFlag();
 }
 
-#if JVET_P1006_PICTURE_HEADER
 void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SPS *sps )
 { 
   if(picHeader->getPicRplPresentFlag())
@@ -277,7 +215,6 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setTileGroupApsIdChroma(picHeader->getAlfApsIdChroma());   
 }
 
-#endif
 void  Slice::setNumEntryPoints( const PPS *pps ) 
 {
   uint32_t ctuAddr, ctuX, ctuY;
@@ -814,9 +751,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 
   if( cpyAlmostAll ) m_pcPic  = pSrc->m_pcPic;
 
-#if JVET_P1006_PICTURE_HEADER
   m_pcPicHeader          = pSrc->m_pcPicHeader;
-#endif
   m_colFromL0Flag        = pSrc->m_colFromL0Flag;
   m_colRefIdx            = pSrc->m_colRefIdx;
 
@@ -856,9 +791,6 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   }
 
   m_cabacInitFlag                 = pSrc->m_cabacInitFlag;
-#if !JVET_P1006_PICTURE_HEADER
-  m_jointCbCrSignFlag             = pSrc->m_jointCbCrSignFlag;
-#endif
   memcpy(m_alfApss, pSrc->m_alfApss, sizeof(m_alfApss)); // this might be quite unsafe
   memcpy( m_tileGroupAlfEnabledFlag, pSrc->m_tileGroupAlfEnabledFlag, sizeof(m_tileGroupAlfEnabledFlag));
   m_tileGroupNumAps               = pSrc->m_tileGroupNumAps;
@@ -866,41 +798,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;
 
-#if !JVET_P1006_PICTURE_HEADER
-  m_bLMvdL1Zero                   = pSrc->m_bLMvdL1Zero;
-  m_LFCrossSliceBoundaryFlag      = pSrc->m_LFCrossSliceBoundaryFlag;
-  m_enableTMVPFlag                = pSrc->m_enableTMVPFlag;
-  m_maxNumMergeCand               = pSrc->m_maxNumMergeCand;
-  m_maxNumAffineMergeCand         = pSrc->m_maxNumAffineMergeCand;
-  m_maxNumTriangleCand            = pSrc->m_maxNumTriangleCand;
-  m_maxNumIBCMergeCand            = pSrc->m_maxNumIBCMergeCand;
-  m_disFracMMVD                   = pSrc->m_disFracMMVD;
-  m_disBdofDmvrFlag               = pSrc->m_disBdofDmvrFlag;
-#endif
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
-#if !JVET_P1006_PICTURE_HEADER
-  m_splitConsOverrideFlag         = pSrc->m_splitConsOverrideFlag;
-  m_uiMinQTSize                   = pSrc->m_uiMinQTSize;
-  m_uiMaxMTTHierarchyDepth                  = pSrc->m_uiMaxMTTHierarchyDepth;
-  m_uiMaxTTSize                   = pSrc->m_uiMaxTTSize;
-  m_uiMinQTSizeIChroma            = pSrc->m_uiMinQTSizeIChroma;
-  m_uiMaxMTTHierarchyDepthIChroma           = pSrc->m_uiMaxMTTHierarchyDepthIChroma;
-  m_uiMaxBTSizeIChroma            = pSrc->m_uiMaxBTSizeIChroma;
-  m_uiMaxTTSizeIChroma            = pSrc->m_uiMaxTTSizeIChroma;
-  m_uiMaxBTSize                   = pSrc->m_uiMaxBTSize;
-
-  m_depQuantEnabledFlag           = pSrc->m_depQuantEnabledFlag;
-  m_signDataHidingEnabledFlag     = pSrc->m_signDataHidingEnabledFlag;
-
-  m_tileGroupLmcsEnabledFlag = pSrc->m_tileGroupLmcsEnabledFlag;
-  m_tileGroupLmcsChromaResidualScaleFlag = pSrc->m_tileGroupLmcsChromaResidualScaleFlag;
-  m_lmcsAps = pSrc->m_lmcsAps;
-  m_lmcsApsId = pSrc->m_lmcsApsId;
-
-  m_tileGroupscalingListPresentFlag = pSrc->m_tileGroupscalingListPresentFlag;
-  m_scalingListAps                  = pSrc->m_scalingListAps;
-  m_scalingListApsId                = pSrc->m_scalingListApsId;
-#endif
   for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
   {
     for (int j = 0; j < MAX_NUM_REF_PICS; j ++ )
@@ -1010,11 +908,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // Any picture that has PicOutputFlag equal to 1 that precedes an IRAP picture
     // in decoding order shall precede the IRAP picture in output order.
     // (Note that any picture following in output order would be present in the DPB)
-#if JVET_P1006_PICTURE_HEADER
     if(pcSlice->getPicHeader()->getPicOutputFlag() == 1 && !this->getPicHeader()->getNoOutputOfPriorPicsFlag())
-#else
-    if(pcSlice->getPicOutputFlag() == 1 && !this->getNoOutputPriorPicsFlag())
-#endif
     {
       if (nalUnitType == NAL_UNIT_CODED_SLICE_CRA ||
           nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP ||
@@ -1027,11 +921,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
     // Any picture that has PicOutputFlag equal to 1 that precedes an IRAP picture
     // in decoding order shall precede any RADL picture associated with the IRAP
     // picture in output order.
-#if JVET_P1006_PICTURE_HEADER
     if(pcSlice->getPicHeader()->getPicOutputFlag() == 1)
-#else
-    if(pcSlice->getPicOutputFlag() == 1)
-#endif
     {
       if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
       {
@@ -1650,7 +1540,6 @@ VPS::~VPS()
 {
 }
 
-#if JVET_P1006_PICTURE_HEADER
 // ------------------------------------------------------------------------------------------------
 // Picture Header
 // ------------------------------------------------------------------------------------------------
@@ -1822,7 +1711,6 @@ void PicHeader::initPicHeader()
   m_alfApsId.resize(0);
 }
 
-#endif
 // ------------------------------------------------------------------------------------------------
 // Sequence parameter set (SPS)
 // ------------------------------------------------------------------------------------------------
@@ -1856,20 +1744,16 @@ SPS::SPS()
 #endif
 , m_ISP                       ( false )
 , m_chromaFormatIdc           (CHROMA_420)
-#if JVET_P1006_PICTURE_HEADER
 , m_separateColourPlaneFlag(0)
-#endif
 , m_uiMaxTLayers              (  1)
 // Structure
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
 , m_subPicPresentFlag         (0)
-#if JVET_P1006_PICTURE_HEADER
 , m_numSubPics(1)
 , m_subPicIdPresentFlag(0)
 , m_subPicIdSignallingPresentFlag(0)
 , m_subPicIdLen(16)
-#endif
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
 , m_CTUSize(0)
@@ -1908,11 +1792,9 @@ SPS::SPS()
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
-#if JVET_P1006_PICTURE_HEADER
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(0)
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
-#endif
 , m_hrdParametersPresentFlag  (false)
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
@@ -1967,10 +1849,8 @@ SPS::SPS()
 
   ::memset(m_ltRefPicPocLsbSps, 0, sizeof(m_ltRefPicPocLsbSps));
   ::memset(m_usedByCurrPicLtSPSFlag, 0, sizeof(m_usedByCurrPicLtSPSFlag));
-#if JVET_P1006_PICTURE_HEADER
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
-#endif
 }
 
 SPS::~SPS()
@@ -2142,24 +2022,16 @@ PPS::PPS()
 , m_picInitQPMinus26                 (0)
 , m_useDQP                           (false)
 , m_bSliceChromaQpFlag               (false)
-#if !JVET_P1006_PICTURE_HEADER
-, m_cuQpDeltaSubdiv                  (0)
-#endif
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)
 , m_chromaCbCrQpOffset               (0)
-#if !JVET_P1006_PICTURE_HEADER
-, m_cuChromaQpOffsetSubdiv             (0)
-#endif
 , m_chromaQpOffsetListLen              (0)
 , m_numRefIdxL0DefaultActive         (1)
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
-#if JVET_P1006_PICTURE_HEADER
 , m_numSubPics                       (1)
 , m_subPicIdSignallingPresentFlag    (0)
 , m_subPicIdLen                      (16)
-#endif
 , m_noPicPartitionFlag               (1)
 , m_log2CtuSize                      (0)
 , m_ctuSize                          (0)
@@ -2190,16 +2062,9 @@ PPS::PPS()
 #endif
 , m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
 , m_cabacInitPresentFlag             (false)
-#if JVET_P1006_PICTURE_HEADER
 , m_pictureHeaderExtensionPresentFlag(0)
-#endif
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_listsModificationPresentFlag     (0)
-#if !JVET_P1006_PICTURE_HEADER
-, m_loopFilterAcrossVirtualBoundariesDisabledFlag(false)
-, m_numVerVirtualBoundaries          (0)
-, m_numHorVirtualBoundaries          (0)
-#endif
 , m_picWidthInLumaSamples( 352 )
 , m_picHeightInLumaSamples( 288 )
 , m_ppsRangeExtension                ()
@@ -2208,10 +2073,6 @@ PPS::PPS()
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CrOffset = 0;
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.JointCbCrOffset = 0;
-#if !JVET_P1006_PICTURE_HEADER
-  ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
-  ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
-#endif
   m_tileColWidth.clear();
   m_tileRowHeight.clear();
   m_tileColBd.clear();
@@ -3436,13 +3297,8 @@ uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType 
 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_P1006_PICTURE_HEADER
   if ( slice.getPicHeader()->getSplitConsOverrideFlag() )    
     return slice.getPicHeader()->getMaxMTTHierarchyDepth( slice.getSliceType(), ISingleTree ? CHANNEL_TYPE_LUMA : chType);
-#else
-  if ( slice.getSplitConsOverrideFlag() )
-    return (!slice.isIntra() || isLuma(chType) || ISingleTree) ? slice.getMaxMTTHierarchyDepth() : slice.getMaxMTTHierarchyDepthIChroma();
-#endif
   else
   return maxBtDepth[getValIdx( slice, chType )];
 }
@@ -3454,13 +3310,8 @@ uint32_t PreCalcValues::getMinBtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxBtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_P1006_PICTURE_HEADER
   if (slice.getPicHeader()->getSplitConsOverrideFlag())
     return slice.getPicHeader()->getMaxBTSize( slice.getSliceType(), ISingleTree ? CHANNEL_TYPE_LUMA : chType);
-#else
-  if (slice.getSplitConsOverrideFlag())
-    return (!slice.isIntra() || isLuma(chType) || ISingleTree) ? slice.getMaxBTSize() : slice.getMaxBTSizeIChroma();
-#endif
   else
     return maxBtSize[getValIdx(slice, chType)];
 }
@@ -3472,34 +3323,20 @@ uint32_t PreCalcValues::getMinTtSize( const Slice &slice, const ChannelType chTy
 
 uint32_t PreCalcValues::getMaxTtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_P1006_PICTURE_HEADER
   if (slice.getPicHeader()->getSplitConsOverrideFlag())
     return slice.getPicHeader()->getMaxTTSize( slice.getSliceType(), ISingleTree ? CHANNEL_TYPE_LUMA : chType);
-#else
-  if ( slice.getSplitConsOverrideFlag() )
-    return (!slice.isIntra() || isLuma(chType) || ISingleTree) ? slice.getMaxTTSize() : slice.getMaxTTSizeIChroma();
-#endif
   else
   return maxTtSize[getValIdx( slice, chType )];
 }
 uint32_t PreCalcValues::getMinQtSize( const Slice &slice, const ChannelType chType ) const
 {
-#if JVET_P1006_PICTURE_HEADER
   if (slice.getPicHeader()->getSplitConsOverrideFlag())
     return slice.getPicHeader()->getMinQTSize( slice.getSliceType(), ISingleTree ? CHANNEL_TYPE_LUMA : chType);
-#else
-  if ( slice.getSplitConsOverrideFlag() )
-    return (!slice.isIntra() || isLuma(chType) || ISingleTree) ? slice.getMinQTSize() : slice.getMinQTSizeIChroma();
-#endif
   else
   return minQtSize[getValIdx( slice, chType )];
 }
 
-#if JVET_P1006_PICTURE_HEADER
 void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder )
-#else
-void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder )
-#endif
 {
   int i;
   const SPS* sps = getSPS();
@@ -3589,11 +3426,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
             scaledRefPic[j]->reconstructed = false;
             scaledRefPic[j]->referenced = true;
 
-#if JVET_P1006_PICTURE_HEADER
             scaledRefPic[j]->finalInit( m_pcPic->cs->vps, *sps, *pps, picHeader, apss, lmcsAps, scalingListAps );
-#else
-            scaledRefPic[ j ]->finalInit( *sps, *pps, apss, lmcsAps, scalingListAps );
-#endif
 
             scaledRefPic[j]->poc = -1;
 
@@ -3658,11 +3491,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], APS** apss, APS* lmcsAps,
   //Make sure that TMVP is disabled when there are no reference pictures with the same resolution
   if(!refPicIsSameRes)
   {
-#if JVET_P1006_PICTURE_HEADER
     CHECK(getPicHeader()->getEnableTMVPFlag() != 0, "TMVP cannot be enabled in pictures that have no reference pictures with the same resolution")
-#else
-    CHECK(m_enableTMVPFlag != 0, "TMVP cannot be enabled in slices that have no reference pictures with the same resolution")
-#endif
   }
 #endif
 }
@@ -3733,13 +3562,11 @@ void xTraceAPSHeader()
   DTRACE(g_trace_ctx, D_HEADER, "=========== Adaptation Parameter Set  ===========\n");
 }
 
-#if JVET_P1006_PICTURE_HEADER
 void xTracePictureHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Picture Header ===========\n" );
 }
 
-#endif
 void xTraceSliceHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Slice ===========\n" );

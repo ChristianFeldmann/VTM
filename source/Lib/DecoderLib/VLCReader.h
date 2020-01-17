@@ -175,13 +175,9 @@ public:
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
   void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
-#if JVET_P1006_PICTURE_HEADER
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#else
-  void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#endif
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 

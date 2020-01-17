@@ -117,7 +117,6 @@ uint32_t DecApp::decode()
 
   while (!!bitstreamFile)
   {
-#if JVET_P1006_PICTURE_HEADER
     InputNALUnit nalu;
     nalu.m_nalUnitType = NAL_UNIT_INVALID;
 
@@ -179,82 +178,6 @@ uint32_t DecApp::decode()
         }
       }
     }
-#else 
-    /* location serves to work around a design fault in the decoder, whereby
-     * the process of reading a new slice that is the first slice of a new frame
-     * requires the DecApp::decode() method to be called again with the same
-     * nal unit. */
-#if RExt__DECODER_DEBUG_STATISTICS
-    CodingStatistics& stat = CodingStatistics::GetSingletonInstance();
-    CHECK(m_statMode < STATS__MODE_NONE || m_statMode > STATS__MODE_ALL, "Wrong coding statistics output mode");
-    stat.m_mode = m_statMode;
-
-    CodingStatistics::CodingStatisticsData* backupStats = new CodingStatistics::CodingStatisticsData(CodingStatistics::GetStatistics());
-#endif
-
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-    streampos location = bitstreamFile.tellg() - streampos(bytestream.GetNumBufferedBytes());
-#else
-    streampos location = bitstreamFile.tellg();
-#endif
-    AnnexBStats stats = AnnexBStats();
-
-    InputNALUnit nalu;
-    byteStreamNALUnit(bytestream, nalu.getBitstream().getFifo(), stats);
-
-    // call actual decoding function
-    bool bNewPicture = false;
-    if (nalu.getBitstream().getFifo().empty())
-    {
-      /* this can happen if the following occur:
-       *  - empty input file
-       *  - two back-to-back start_code_prefixes
-       *  - start_code_prefix immediately followed by EOF
-       */
-      msg( ERROR, "Warning: Attempt to decode an empty NAL unit\n");
-    }
-    else
-    {
-      read(nalu);
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
-      m_cDecLib.checkNalUnitConstraints(nalu.m_nalUnitType);
-#endif
-
-      if(m_cDecLib.getFirstSliceInPicture() &&
-          (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
-           nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
-      {
-        xFlushOutput( pcListPic, nalu.m_nuhLayerId );
-      }
-
-      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu))
-      {
-        bNewPicture = false;
-      }
-      else
-      {
-        bNewPicture = m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-        if (bNewPicture)
-        {
-          // check if new picture was detected at an access unit delimiter NALU
-          bitstreamFile.clear();
-          /* location points to the current nalunit payload[1] due to the
-           * need for the annexB parser to read three extra bytes.
-           * [1] except for the first NAL unit in the file
-           *     (but bNewPicture doesn't happen then) */
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-          bitstreamFile.seekg(location);
-          bytestream.reset();
-          CodingStatistics::SetStatistics(*backupStats);
-#else
-          bitstreamFile.seekg(location-streamoff(3));
-          bytestream.reset();
-#endif
-        }
-      }
-    }
-
-#endif
 
 
     if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
@@ -263,11 +186,6 @@ uint32_t DecApp::decode()
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
-#if !JVET_P1006_PICTURE_HEADER
-#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
-        CodingStatistics::UpdateMaxStat(backupStats);
-#endif
-#endif
       }
       loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
@@ -339,18 +257,11 @@ uint32_t DecApp::decode()
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
-#if JVET_P1006_PICTURE_HEADER
     if(bNewAccessUnit) 
     {
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
     }
-#endif
-#if !JVET_P1006_PICTURE_HEADER
-#if RExt__DECODER_DEBUG_STATISTICS
-    delete backupStats;
-#endif
-#endif
   }
 
   xFlushOutput( pcListPic );
@@ -537,7 +448,6 @@ bool DecApp::deriveOutputLayerSet()
   return true;
 }
 
-#if JVET_P1006_PICTURE_HEADER
 /**
  - lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new picture
  */
@@ -740,7 +650,6 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
   // return TRUE if next NAL unit is the start of a new picture
   return ret;
 }
-#endif
 
 // ====================================================================================================================
 // Protected member functions

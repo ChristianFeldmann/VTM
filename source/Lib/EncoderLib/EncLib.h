@@ -120,9 +120,7 @@ private:
   ParameterSetMap<SPS>&     m_spsMap;                             ///< SPS. This is the base value. This is copied to PicSym
   ParameterSetMap<PPS>&     m_ppsMap;                             ///< PPS. This is the base value. This is copied to PicSym
   ParameterSetMap<APS>&     m_apsMap;                             ///< APS. This is the base value. This is copied to PicSym
-#if JVET_P1006_PICTURE_HEADER
   PicHeader                 m_picHeader;                          ///< picture header
-#endif
   // RD cost computation
 #if ENABLE_SPLIT_PARALLELISM
   RdCost                   *m_cRdCost;                            ///< RD cost computation class
@@ -172,9 +170,7 @@ protected:
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
   void  xInitSPS          ( SPS& sps, VPS& vps );       ///< initialize SPS from encoder options
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options
-#if JVET_P1006_PICTURE_HEADER
   void  xInitPicHeader    (PicHeader &picHeader, const SPS &sps, const PPS &pps); ///< initialize Picture Header from encoder options
-#endif
   void  xInitAPS          (APS &aps);                 ///< initialize APS from encoder options
   void  xInitScalingLists ( SPS &sps, APS &aps );     ///< initialize scaling lists
   void  xInitPPSforLT(PPS& pps);

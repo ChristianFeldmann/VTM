@@ -91,9 +91,7 @@ public:
 #endif
   const SPS *sps;
   const PPS *pps;
-#if JVET_P1006_PICTURE_HEADER
   PicHeader *picHeader;
-#endif
   APS*       alfApss[ALF_CTB_MAX_NUM_APS];
   APS *      lmcsAps;
   APS *      scalinglistAps;

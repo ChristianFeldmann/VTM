@@ -729,11 +729,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 {
   const CodingStructure &cs = *pu.cs;
   const Slice &slice = *pu.cs->slice;
-#if JVET_P1006_PICTURE_HEADER
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumIBCMergeCand();
-#else
-  const uint32_t maxNumMergeCand = slice.getMaxNumIBCMergeCand();
-#endif
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {
@@ -865,11 +861,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 {
   const CodingStructure &cs  = *pu.cs;
   const Slice &slice         = *pu.cs->slice;
-#if JVET_P1006_PICTURE_HEADER
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
-#else
-  const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
-#endif
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {
@@ -1150,11 +1142,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     return;
   }
 
-#if JVET_P1006_PICTURE_HEADER
   if (slice.getPicHeader()->getEnableTMVPFlag() && (pu.lumaSize().width + pu.lumaSize().height > 12))
-#else
-  if (slice.getEnableTMVPFlag() && (pu.lumaSize().width + pu.lumaSize().height > 12))
-#endif
   {
     //>> MTK colocated-RightBottom
     // offset the pos to be sure to "point" to the same position the uiAbsPartIdx would've pointed to
@@ -1359,11 +1347,7 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
   int refIdx1 = pu.refIdx[REF_PIC_LIST_1];
   pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
   pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
-#if JVET_P1006_PICTURE_HEADER
   if (pu.cs->sps->getUseDMVR() && (!pu.cs->picHeader->getDisDmvrFlag()))
-#else
-  if (pu.cs->sps->getUseDMVR() && (!pu.cs->slice->getDisBdofDmvrFlag()))
-#endif
   {
     return pu.mergeFlag
       && pu.mergeType == MRG_TYPE_DEFAULT_N
@@ -1844,11 +1828,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     }
   }
 
-#if JVET_P1006_PICTURE_HEADER
   if (cs.picHeader->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS && (pu.lumaSize().width + pu.lumaSize().height > 12))
-#else
-  if (cs.slice->getEnableTMVPFlag() && pInfo->numCand < AMVP_MAX_NUM_CANDS && (pu.lumaSize().width + pu.lumaSize().height > 12))
-#endif
   {
     // Get Temporal Motion Predictor
     const int refIdx_Col = refIdx;
@@ -2165,11 +2145,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
     }
 
     // Get Temporal Motion Predictor
-#if JVET_P1006_PICTURE_HEADER
     if ( affiAMVPInfo.numCand < 2 && pu.cs->picHeader->getEnableTMVPFlag() )
-#else
-    if ( affiAMVPInfo.numCand < 2 && pu.cs->slice->getEnableTMVPFlag() )
-#endif
     {
       const int refIdxCol = refIdx;
 
@@ -2535,11 +2511,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 {
   const CodingStructure &cs = *pu.cs;
   const Slice &slice = *pu.cs->slice;
-#if JVET_P1006_PICTURE_HEADER
   const uint32_t maxNumAffineMergeCand = slice.getPicHeader()->getMaxNumAffineMergeCand();
-#else
-  const uint32_t maxNumAffineMergeCand = slice.getMaxNumAffineMergeCand();
-#endif
 
   for ( int i = 0; i < maxNumAffineMergeCand; i++ )
   {
@@ -2559,11 +2531,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
   bool enableSubPuMvp = slice.getSPS()->getSBTMVPEnabledFlag() && !(slice.getPOC() == slice.getRefPic(REF_PIC_LIST_0, 0)->getPOC() && slice.isIRAP());
   bool isAvailableSubPu = false;
-#if JVET_P1006_PICTURE_HEADER
   if ( enableSubPuMvp && slice.getPicHeader()->getEnableTMVPFlag() )
-#else
-  if ( enableSubPuMvp && slice.getEnableTMVPFlag() )
-#endif
   {
     MergeCtx mrgCtx = *affMrgCtx.mrgCtx;
     bool tmpLICFlag = false;
@@ -2732,11 +2700,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
       }
 
       // control point: RB
-#if JVET_P1006_PICTURE_HEADER
       if ( slice.getPicHeader()->getEnableTMVPFlag() )
-#else
-      if ( slice.getEnableTMVPFlag() )
-#endif
       {
         //>> MTK colocated-RightBottom
         // offset the pos to be sure to "point" to the same position the uiAbsPartIdx would've pointed to
@@ -3215,11 +3179,7 @@ void PU::applyImv( PredictionUnit& pu, MergeCtx &mrgCtx, InterPrediction *interP
 
     if (pu.interDir != 1 /* PRED_L0 */)
     {
-#if JVET_P1006_PICTURE_HEADER
       if( !( pu.cu->cs->picHeader->getMvdL1ZeroFlag() && pu.interDir == 3 ) && pu.cu->imv )/* PRED_BI */
-#else
-      if( !( pu.cu->cs->slice->getMvdL1ZeroFlag() && pu.interDir == 3 ) && pu.cu->imv )/* PRED_BI */
-#endif
       {
         pu.mvd[1].changeTransPrecAmvr2Internal(pu.cu->imv);
       }
@@ -3308,11 +3268,7 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
   MergeCtx tmpMergeCtx;
 
   const Slice &slice = *pu.cs->slice;
-#if JVET_P1006_PICTURE_HEADER
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
-#else
-  const uint32_t maxNumMergeCand = slice.getMaxNumMergeCand();
-#endif
 
   triangleMrgCtx.numValidMergeCand = 0;
 
@@ -3479,11 +3435,7 @@ bool CU::hasSubCUNonZeroMVd( const CodingUnit& cu )
       }
       if( pu.interDir != 1 /* PRED_L0 */ )
       {
-#if JVET_P1006_PICTURE_HEADER
         if( !pu.cu->cs->picHeader->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
-#else
-        if( !pu.cu->cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
-#endif
         {
           bNonZeroMvd |= pu.mvd[REF_PIC_LIST_1].getHor() != 0;
           bNonZeroMvd |= pu.mvd[REF_PIC_LIST_1].getVer() != 0;
@@ -3519,11 +3471,7 @@ bool CU::hasSubCUNonZeroAffineMVd( const CodingUnit& cu )
 
       if ( pu.interDir != 1 /* PRED_L0 */ )
       {
-#if JVET_P1006_PICTURE_HEADER
         if ( !pu.cu->cs->picHeader->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
-#else
-        if ( !pu.cu->cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
-#endif
         {
           for ( int i = 0; i < ( cu.affineType == AFFINEMODEL_6PARAM ? 3 : 2 ); i++ )
           {
@@ -3916,11 +3864,7 @@ int TU::getICTMode( const TransformUnit& tu, int jointCbCr )
   {
     jointCbCr = tu.jointCbCr;
   }
-#if JVET_P1006_PICTURE_HEADER
   return g_ictModes[ tu.cs->picHeader->getJointCbCrSignFlag() ][ jointCbCr ];
-#else
-  return g_ictModes[ tu.cs->slice->getJointCbCrSignFlag() ][ jointCbCr ];
-#endif
 }
 
 bool TU::hasCrossCompPredInfo( const TransformUnit &tu, const ComponentID &compID )

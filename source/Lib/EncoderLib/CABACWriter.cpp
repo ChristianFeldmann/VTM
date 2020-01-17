@@ -2027,11 +2027,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     Mv mvd = pu.mvd[REF_PIC_LIST_0];
     mvd.changeIbcPrecInternal2Amvr(pu.cu->imv);
     mvd_coding(mvd, 0); // already changed to signaling precision
-#if JVET_P1006_PICTURE_HEADER
     if ( pu.cu->slice->getPicHeader()->getMaxNumIBCMergeCand() == 1 )
-#else
-    if ( pu.cu->slice->getMaxNumIBCMergeCand() == 1 )
-#endif
     {
       CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
     }
@@ -2074,11 +2070,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
       if ( pu.cu->smvdMode != 1 )
       {
       ref_idx     ( pu, REF_PIC_LIST_1 );
-#if JVET_P1006_PICTURE_HEADER
       if( !pu.cs->picHeader->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
-#else
-      if( !pu.cs->slice->getMvdL1ZeroFlag() || pu.interDir != 3 /* PRED_BI */ )
-#endif
       {
         if ( pu.cu->affine )
         {
@@ -2128,11 +2120,7 @@ void CABACWriter::smvd_mode( const PredictionUnit& pu )
 void CABACWriter::subblock_merge_flag( const CodingUnit& cu )
 {
 
- #if JVET_P1006_PICTURE_HEADER
   if ( !cu.cs->slice->isIntra() && (cu.slice->getPicHeader()->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
-#else
-  if ( !cu.cs->slice->isIntra() && (cu.slice->getMaxNumAffineMergeCand() > 0) && cu.lumaSize().width >= 8 && cu.lumaSize().height >= 8 )
-#endif
   {
     unsigned ctxId = DeriveCtx::CtxAffineFlag( cu );
     m_BinEncoder.encodeBin( cu.affine, Ctx::SubblockMergeFlag( ctxId ) );
@@ -2178,11 +2166,7 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
     merge_idx(pu);
     return;
   }
-#if JVET_P1006_PICTURE_HEADER
   const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->picHeader->getMaxNumTriangleCand() > 1;
-#else
-  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->slice->getMaxNumTriangleCand() > 1;
-#endif
   const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
@@ -2285,11 +2269,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
 
   if ( pu.cu->affine )
   {
-#if JVET_P1006_PICTURE_HEADER
     int numCandminus1 = int( pu.cs->picHeader->getMaxNumAffineMergeCand() ) - 1;
-#else
-    int numCandminus1 = int( pu.cs->slice->getMaxNumAffineMergeCand() ) - 1;
-#endif
     if ( numCandminus1 > 0 )
     {
       if ( pu.mergeIdx == 0 )
@@ -2350,11 +2330,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
         }
       };
       m_BinEncoder.encodeBinEP(splitDir);
-#if JVET_P1006_PICTURE_HEADER
       const int maxNumTriangleCand = pu.cs->picHeader->getMaxNumTriangleCand();
-#else
-      const int maxNumTriangleCand = pu.cs->slice->getMaxNumTriangleCand();
-#endif
       CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
       CHECK(candIdx0 >= maxNumTriangleCand, "Incorrect candIdx0");
       CHECK(candIdx1 >= maxNumTriangleCand, "Incorrect candIdx1");
@@ -2364,17 +2340,9 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
     }
     int numCandminus1;
     if (pu.cu->predMode == MODE_IBC)
-#if JVET_P1006_PICTURE_HEADER
       numCandminus1 = int(pu.cs->picHeader->getMaxNumIBCMergeCand()) - 1;
-#else
-      numCandminus1 = int(pu.cs->slice->getMaxNumIBCMergeCand()) - 1;
-#endif
     else
-#if JVET_P1006_PICTURE_HEADER
       numCandminus1 = int(pu.cs->picHeader->getMaxNumMergeCand()) - 1;
-#else
-      numCandminus1 = int(pu.cs->slice->getMaxNumMergeCand()) - 1;
-#endif
   if( numCandminus1 > 0 )
   {
     if( pu.mergeIdx == 0 )
@@ -2407,11 +2375,7 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   var1 = (mvpIdx - (var0 * MMVD_MAX_REFINE_NUM)) / 4;
   var2 = mvpIdx - (var0 * MMVD_MAX_REFINE_NUM) - var1 * 4;
 
-#if JVET_P1006_PICTURE_HEADER
   if (pu.cs->picHeader->getMaxNumMergeCand() > 1)
-#else
-  if (pu.cs->slice->getMaxNumMergeCand() > 1)
-#endif
   {
     static_assert(MMVD_BASE_MV_NUM == 2, "");
     assert(var0 < 2);
@@ -3005,11 +2969,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   }
 
   // determine sign hiding
-#if JVET_P1006_PICTURE_HEADER
   bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
-#else
-  bool signHiding  = ( cu.cs->slice->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
-#endif
 #if JVET_P0058_CHROMA_TS
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx[compID] == MTS_SKIP)
 #else
@@ -3072,11 +3032,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   last_sig_coeff( cctx, tu, compID );
 
   // code subblocks
-#if JVET_P1006_PICTURE_HEADER
   const int stateTab  = ( tu.cs->picHeader->getDepQuantEnabledFlag() ? 32040 : 0 );
-#else
-  const int stateTab  = ( tu.cs->slice->getDepQuantEnabledFlag() ? 32040 : 0 );
-#endif
   int       state     = 0;
 
   int ctxBinSampleRatio = (compID == COMPONENT_Y) ? MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA : MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA;

@@ -145,11 +145,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-#if JVET_P1006_PICTURE_HEADER
   void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
-#else
-  void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
-#endif
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}

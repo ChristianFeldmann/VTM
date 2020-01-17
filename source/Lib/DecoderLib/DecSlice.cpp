@@ -86,13 +86,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   cs.pps              = slice->getPPS();
   memcpy(cs.alfApss, slice->getAlfAPSs(), sizeof(cs.alfApss));
 
- #if JVET_P1006_PICTURE_HEADER
   cs.lmcsAps          = slice->getPicHeader()->getLmcsAPS();
   cs.scalinglistAps   = slice->getPicHeader()->getScalingListAPS();
-#else
-  cs.lmcsAps = slice->getLmcsAPS();
-  cs.scalinglistAps   = slice->getscalingListAPS();
-#endif
 
   cs.pcv              = slice->getPPS()->pcv;
   cs.chromaQpAdj      = 0;

@@ -579,11 +579,7 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
   int verVirBndryPos[] = { -1,-1,-1 };
   int horVirBndryPosComp[] = { -1,-1,-1 };
   int verVirBndryPosComp[] = { -1,-1,-1 };
-#if JVET_P1006_PICTURE_HEADER
   bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader );
-#else
-  bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
-#endif
   for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
   {
     const ComponentID compID = ComponentID(compIdx);
@@ -693,7 +689,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
   const CodingUnit* cuBelowRight = cs.getCU(pos.offset(width, height), CH_L);
 
   // check cross slice flags
-#if JVET_P1006_PICTURE_HEADER
   const bool isLoopFilterAcrossSlicePPS = cs.pps->getLoopFilterAcrossSlicesEnabledFlag();
   if (!isLoopFilterAcrossSlicePPS)
   {
@@ -717,43 +712,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
     isBelowLeftAvail  = (cuBelowLeft != NULL);
     isBelowRightAvail = (cuBelowRight != NULL);
   }
-#else
-  {
-    //left
-    isLeftAvail       = (cuLeft != NULL)       ? ( !CU::isSameSlice(*cuCurr, *cuLeft)       ? cuCurr->slice->getLFCrossSliceBoundaryFlag()       : true ) : false;
-
-    //above
-    isAboveAvail      = (cuAbove != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuAbove)      ? cuCurr->slice->getLFCrossSliceBoundaryFlag()       : true ) : false;
-
-    //right
-    isRightAvail      = (cuRight != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuRight)      ? cuRight->slice->getLFCrossSliceBoundaryFlag()      : true ) : false;
-
-    //below
-    isBelowAvail      = (cuBelow != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuBelow)      ? cuBelow->slice->getLFCrossSliceBoundaryFlag()      : true ) : false;
-
-    //above-left
-    isAboveLeftAvail  = (cuAboveLeft != NULL)  ? ( !CU::isSameSlice(*cuCurr, *cuAboveLeft)  ? cuCurr->slice->getLFCrossSliceBoundaryFlag()       : true ) : false;
-
-    //below-right
-    isBelowRightAvail = (cuBelowRight != NULL) ? ( !CU::isSameSlice(*cuCurr, *cuBelowRight) ? cuBelowRight->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-
-    //above-right
-    isAboveRightAvail = false;
-    if (cuAboveRight != NULL)
-    {
-      const bool bLFCrossSliceBoundaryFlag = (cuCurr->slice->getSliceCurStartCtuTsAddr() > cuAboveRight->slice->getSliceCurStartCtuTsAddr()) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : cuAboveRight->slice->getLFCrossSliceBoundaryFlag();
-      isAboveRightAvail = ( !CU::isSameSlice(*cuCurr, *cuAboveRight) ) ? bLFCrossSliceBoundaryFlag : true;
-    }
-
-    //below-left
-    isBelowLeftAvail = false;
-    if (cuBelowLeft != NULL)
-    {
-      const bool bLFCrossSliceBoundaryFlag = (cuCurr->slice->getSliceCurStartCtuTsAddr() > cuBelowLeft->slice->getSliceCurStartCtuTsAddr()) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : cuBelowLeft->slice->getLFCrossSliceBoundaryFlag();
-      isBelowLeftAvail = ( !CU::isSameSlice(*cuCurr, *cuBelowLeft) ) ? bLFCrossSliceBoundaryFlag : true;
-    }
-  }
-#endif
 
   // check cross tile flags
   const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
@@ -770,7 +728,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
   }
 }
 
-#if JVET_P1006_PICTURE_HEADER
 bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader )
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
@@ -793,28 +750,4 @@ bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const in
   }
   return numHorVirBndry > 0 || numVerVirBndry > 0 ;
 }
-#else
-bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
-{
-  numHorVirBndry = 0; numVerVirBndry = 0;
-  if (pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag())
-  {
-    for (int i = 0; i < pps->getNumHorVirtualBoundaries(); i++)
-    {
-     if (yPos <= pps->getVirtualBoundariesPosY(i) && pps->getVirtualBoundariesPosY(i) <= yPos + height)
-      {
-        horVirBndryPos[numHorVirBndry++] = pps->getVirtualBoundariesPosY(i);
-      }
-    }
-    for (int i = 0; i < pps->getNumVerVirtualBoundaries(); i++)
-    {
-      if (xPos <= pps->getVirtualBoundariesPosX(i) && pps->getVirtualBoundariesPosX(i) <= xPos + width)
-      {
-        verVirBndryPos[numVerVirBndry++] = pps->getVirtualBoundariesPosX(i);
-      }
-    }
-  }
-  return numHorVirBndry > 0 || numVerVirBndry > 0 ;
-}
-#endif
 //! \}

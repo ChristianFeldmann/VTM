@@ -78,11 +78,8 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   clipTop = false; clipBottom = false; clipLeft = false; clipRight = false;
   numHorVirBndry = 0; numVerVirBndry = 0;
   const PPS*   pps = cs.pps;
-#if JVET_P1006_PICTURE_HEADER
   const PicHeader* picHeader = cs.picHeader;
-#endif
 
-#if JVET_P1006_PICTURE_HEADER
   if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     for( int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++ )
@@ -116,41 +113,6 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
       }
     }
   }
-#else
-  if( pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
-  {
-    for( int i = 0; i < pps->getNumHorVirtualBoundaries(); i++ )
-    {
-      if( pps->getVirtualBoundariesPosY(i) == yPos )
-      {
-        clipTop = true;
-      }
-      else if( pps->getVirtualBoundariesPosY(i) == yPos + height )
-      {
-        clipBottom = true;
-      }
-      else if( yPos < pps->getVirtualBoundariesPosY(i) && pps->getVirtualBoundariesPosY(i) < yPos + height )
-      {
-        horVirBndryPos[numHorVirBndry++] = pps->getVirtualBoundariesPosY(i);
-      }
-    }
-    for( int i = 0; i < pps->getNumVerVirtualBoundaries(); i++ )
-    {
-      if( pps->getVirtualBoundariesPosX(i) == xPos )
-      {
-        clipLeft = true;
-      }
-      else if( pps->getVirtualBoundariesPosX(i) == xPos + width )
-      {
-        clipRight = true;
-      }
-      else if( xPos < pps->getVirtualBoundariesPosX(i) && pps->getVirtualBoundariesPosX(i) < xPos + width )
-      {
-        verVirBndryPos[numVerVirBndry++] = pps->getVirtualBoundariesPosX(i);
-      }
-    }
-  }
-#endif
 
   const Slice& slice = *(cs.slice);
   int   ctuSize = slice.getSPS()->getCTUSize();
@@ -161,12 +123,8 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   {
     const Position prevCtuPos(xPos, yPos - ctuSize);
     const CodingUnit *prevCtu = cs.getCU(prevCtuPos, CHANNEL_TYPE_LUMA);
-#if JVET_P1006_PICTURE_HEADER
     if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu)) || 
         (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *prevCtu)))
-#else
-    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
-#endif
     {
       clipTop = true;
     }
@@ -177,12 +135,8 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   {
     const Position nextCtuPos(xPos, yPos + ctuSize);
     const CodingUnit *nextCtu = cs.getCU(nextCtuPos, CHANNEL_TYPE_LUMA);
-#if JVET_P1006_PICTURE_HEADER
     if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu)) || 
         (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *nextCtu)))
-#else
-    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
-#endif
     {
       clipBottom = true;
     }
@@ -193,12 +147,8 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   {
     const Position prevCtuPos(xPos - ctuSize, yPos);
     const CodingUnit *prevCtu = cs.getCU(prevCtuPos, CHANNEL_TYPE_LUMA);
-#if JVET_P1006_PICTURE_HEADER
     if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *prevCtu)) || 
         (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *prevCtu)))
-#else
-    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
-#endif
     {
       clipLeft = true;
     }
@@ -209,12 +159,8 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   {
     const Position nextCtuPos(xPos + ctuSize, yPos);
     const CodingUnit *nextCtu = cs.getCU(nextCtuPos, CHANNEL_TYPE_LUMA);
-#if JVET_P1006_PICTURE_HEADER
     if ((!pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice(*currCtu, *nextCtu)) || 
         (!pps->getLoopFilterAcrossTilesEnabledFlag()  && !CU::isSameTile(*currCtu,  *nextCtu)))
-#else
-    if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
-#endif
     {
       clipRight = true;
     }
@@ -228,11 +174,7 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
     {
       const Position prevCtuPos( xPos - ctuSize, yPos - ctuSize );
       const CodingUnit *prevCtu = cs.getCU( prevCtuPos, CHANNEL_TYPE_LUMA );
-#if JVET_P1006_PICTURE_HEADER
       if ( !pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice( *currCtu, *prevCtu ) )
-#else
-      if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *prevCtu))
-#endif
       {
         rasterSliceAlfPad = 1;
       }
@@ -246,11 +188,7 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
     {
       const Position nextCtuPos( xPos + ctuSize, yPos + ctuSize );
       const CodingUnit *nextCtu = cs.getCU( nextCtuPos, CHANNEL_TYPE_LUMA );
-#if JVET_P1006_PICTURE_HEADER
       if ( !pps->getLoopFilterAcrossSlicesEnabledFlag() && !CU::isSameSlice( *currCtu, *nextCtu ) )
-#else
-      if ((!slice.getLFCrossSliceBoundaryFlag() || !pps->getLoopFilterAcrossBricksEnabledFlag()) && !CU::isSameSlice(*currCtu, *nextCtu))
-#endif
       {
         rasterSliceAlfPad += 2;
       }

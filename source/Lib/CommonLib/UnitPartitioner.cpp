@@ -348,13 +348,8 @@ void QTBTPartitioner::splitCurrArea( const PartSplit split, const CodingStructur
     currQtDepth++;
     currSubdiv++;
   }
-#if JVET_P1006_PICTURE_HEADER
   qgEnable       &= (currSubdiv <= cs.slice->getCuQpDeltaSubdiv());
   qgChromaEnable &= (currSubdiv <= cs.slice->getCuChromaQpOffsetSubdiv());
-#else
-  qgEnable       &= (currSubdiv <= cs.pps->getCuQpDeltaSubdiv());
-  qgChromaEnable &= (currSubdiv <= cs.pps->getCuChromaQpOffsetSubdiv());
-#endif
   m_partStack.back().qgEnable       = qgEnable;
   m_partStack.back().qgChromaEnable = qgChromaEnable;
   if (qgEnable)

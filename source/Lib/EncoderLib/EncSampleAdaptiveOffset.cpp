@@ -308,11 +308,7 @@ void EncSampleAdaptiveOffset::getStatistics(std::vector<SAOStatData**>& blkStats
       int verVirBndryPos[] = { -1,-1,-1 };
       int horVirBndryPosComp[] = { -1,-1,-1 };
       int verVirBndryPosComp[] = { -1,-1,-1 };
-#if JVET_P1006_PICTURE_HEADER
       bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader );
-#else
-      bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(xPos, yPos, width, height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
-#endif
 
       for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
       {
@@ -1544,9 +1540,7 @@ void EncSampleAdaptiveOffset::getBlkStats(const ComponentID compIdx, const int c
 
 void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos, bool& isLeftAvail, bool& isAboveAvail, bool& isAboveLeftAvail) const
 {
-#if JVET_P1006_PICTURE_HEADER
   bool isLoopFiltAcrossSlicePPS = cs.pps->getLoopFilterAcrossSlicesEnabledFlag();
-#endif
   bool isLoopFiltAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
 
   const int width = cs.pcv->maxCUWidth;
@@ -1556,7 +1550,6 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
   const CodingUnit* cuAbove = cs.getCU(pos.offset(0, -height), CH_L);
   const CodingUnit* cuAboveLeft = cs.getCU(pos.offset(-width, -height), CH_L);
 
-#if JVET_P1006_PICTURE_HEADER
   if (!isLoopFiltAcrossSlicePPS)
   {
     isLeftAvail      = (cuLeft == NULL)      ? false : CU::isSameTile(*cuCurr, *cuLeft);
@@ -1569,13 +1562,6 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
     isAboveAvail     = (cuAbove != NULL);
     isAboveLeftAvail = (cuAboveLeft != NULL);
   }
-#else
-  {
-    isLeftAvail      = (cuLeft != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuLeft)      ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-    isAboveAvail     = (cuAbove != NULL)     ? ( !CU::isSameSlice(*cuCurr, *cuAbove)     ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-    isAboveLeftAvail = (cuAboveLeft != NULL) ? ( !CU::isSameSlice(*cuCurr, *cuAboveLeft) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-  }
-#endif
 
   if (!isLoopFiltAcrossTilePPS)
   {

@@ -314,9 +314,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     xInitPPS(pps2, sps0);
     xInitPPSforLT(pps2);
   }
-#if JVET_P1006_PICTURE_HEADER
   xInitPicHeader(m_picHeader, sps0, pps0);
-#endif
 
   // initialize processing unit classes
   m_cGOPEncoder.  init( this );
@@ -432,11 +430,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     Picture *picBg = new Picture;
     picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
     picBg->getRecoBuf().fill(0);
-#if JVET_P1006_PICTURE_HEADER
     picBg->finalInit( &m_cVPS, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-    picBg->finalInit( sps0, pps0, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -582,11 +576,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     const SPS *sps = m_spsMap.getPS( pps->getSPSId() );
 
     picCurr->M_BUFS( 0, PIC_ORIGINAL ).copyFrom( m_cGOPEncoder.getPicBg()->getRecoBuf() );
-#if JVET_P1006_PICTURE_HEADER
     picCurr->finalInit( &m_cVPS, *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-    picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if( getUseAdaptiveQP() )
@@ -714,11 +704,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
     }
-#if JVET_P1006_PICTURE_HEADER
     pcPicCurr->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-    pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
 
     pcPicCurr->poc = m_iPOCLast;
 
@@ -855,11 +841,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
         int ppsID = -1; // Use default PPS ID
         const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
         const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
-#if JVET_P1006_PICTURE_HEADER
         pcField->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-        pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
       }
 
       pcField->poc = m_iPOCLast;
@@ -1022,11 +1004,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     }
     if ( getUseAdaptiveQP() )
     {
-#if JVET_P1006_PICTURE_HEADER
       const uint32_t iMaxDQPLayer = m_picHeader.getCuQpDeltaSubdivIntra()/2+1;
-#else
-      const uint32_t iMaxDQPLayer = pps.getCuQpDeltaSubdiv()/2+1;
-#endif
       rpcPic->aqlayer.resize( iMaxDQPLayer );
       for (uint32_t d = 0; d < iMaxDQPLayer; d++)
       {
@@ -1351,7 +1329,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setRPL1CopyFromRPL0Flag( true );
   }
 
-#if JVET_P1006_PICTURE_HEADER
 #if JVET_P0171_SUBPICTURE_LAYOUT
   sps.setSubPicPresentFlag(m_subPicPresentFlag);
   if (m_subPicPresentFlag) 
@@ -1393,7 +1370,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   {
     sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
   }
-#endif
 
   sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
 #if JVET_P0182
@@ -1437,7 +1413,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #endif
   pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
 
-#if JVET_P1006_PICTURE_HEADER
   pps.setNumSubPics(sps.getNumSubPics());
   pps.setSubPicIdSignallingPresentFlag(false);
   pps.setSubPicIdLen(sps.getSubPicIdLen());
@@ -1445,7 +1420,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.setSubPicId(picIdx, sps.getSubPicId(picIdx));
   }
-#endif
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if((getMaxDeltaQP() != 0 )|| getUseAdaptiveQP())
@@ -1476,39 +1450,24 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   if ( m_RCEnableRateControl )
   {
     pps.setUseDQP(true);
-#if !JVET_P1006_PICTURE_HEADER
-    pps.setCuQpDeltaSubdiv( 0 );
-#endif
   }
   else if(bUseDQP)
   {
     pps.setUseDQP(true);
-#if !JVET_P1006_PICTURE_HEADER
-    pps.setCuQpDeltaSubdiv( m_cuQpDeltaSubdiv );
-#endif
   }
   else
   {
     pps.setUseDQP(false);
-#if !JVET_P1006_PICTURE_HEADER
-    pps.setCuQpDeltaSubdiv( 0 );
-#endif
   }
 
   if ( m_cuChromaQpOffsetSubdiv >= 0 )
   {
-#if !JVET_P1006_PICTURE_HEADER
-    pps.setCuChromaQpOffsetSubdiv(m_cuChromaQpOffsetSubdiv);
-#endif
     pps.clearChromaQpOffsetList();
     pps.setChromaQpOffsetListEntry(1, 6, 6, 6);
     /* todo, insert table entries from command line (NB, 0 should not be touched) */
   }
   else
   {
-#if !JVET_P1006_PICTURE_HEADER
-    pps.setCuChromaQpOffsetSubdiv(0);
-#endif
     pps.clearChromaQpOffsetList();
   }
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
@@ -1716,27 +1675,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
-#if JVET_P1006_PICTURE_HEADER
   pps.setPictureHeaderExtensionPresentFlag(false);
-#else
-  pps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
-  pps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
-  pps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
-  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
-  {
-    pps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
-  }
-  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
-  {
-    pps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
-  }
-#endif
 
   pps.pcv = new PreCalcValues( sps, pps, true );
   pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());
 }
 
-#if JVET_P1006_PICTURE_HEADER
 void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps)
 {
   int i;
@@ -1841,7 +1785,6 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setDisProfFlag(false);
 }
 
-#endif
 void EncLib::xInitAPS(APS &aps)
 {
   //Do nothing now

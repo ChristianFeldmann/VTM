@@ -104,11 +104,7 @@ private:
   inline unsigned BsSet(unsigned val, const ComponentID compIdx) const;
   inline unsigned BsGet(unsigned val, const ComponentID compIdx) const;
 
-#if JVET_P1006_PICTURE_HEADER
   inline bool isCrossedByVirtualBoundaries ( const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader );
-#else
-  inline bool isCrossedByVirtualBoundaries ( const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps );
-#endif
   inline void xDeriveEdgefilterParam       ( const int xPos, const int yPos, const int numVerVirBndry, const int numHorVirBndry, const int verVirBndryPos[], const int horVirBndryPos[], bool &verEdgeFilter, bool &horEdgeFilter );
 
 #if  JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX

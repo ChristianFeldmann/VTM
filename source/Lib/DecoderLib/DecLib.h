@@ -77,9 +77,7 @@ private:
 
   PicList                 m_cListPic;         //  Dynamic buffer
   ParameterSetManager     m_parameterSetManager;  // storage for parameter sets
-#if JVET_P1006_PICTURE_HEADER
   PicHeader               m_picHeader;            // picture header
-#endif
   Slice*                  m_apcSlicePilot;
 
 
@@ -109,9 +107,7 @@ private:
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
   uint32_t                    m_uiSliceSegmentIdx;
-#if JVET_P1006_PICTURE_HEADER
   uint32_t                m_prevLayerID;
-#endif
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
@@ -180,11 +176,9 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
-#if JVET_P1006_PICTURE_HEADER
   void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
-#endif
 
   const VPS* getVPS()                     { return m_vps; }
   void  initScalingList()
@@ -207,9 +201,7 @@ protected:
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId);
 #endif
   void  xActivateParameterSets( const int layerId );
-#if JVET_P1006_PICTURE_HEADER
   void      xDecodePicHeader( InputNALUnit& nalu );
-#endif
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
   void      xDecodeDPS( InputNALUnit& nalu );

@@ -658,12 +658,7 @@ int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, co
 bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
   , const bool isAvailableA1, const MotionInfo miLeft, const bool isAvailableB1, const MotionInfo miAbove
   , const bool ibcFlag
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  , const bool isShared
-#endif
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   , const bool isGt4x4
-#endif
   )
 {
   const Slice& slice = *cs.slice;
@@ -676,11 +671,7 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, const int
   {
     miNeighbor = lut[num_avai_candInLUT - mrgIdx];
 
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     if ( mrgIdx > 2 || ((mrgIdx > 1 || !isGt4x4) && ibcFlag)
-#else
-    if ( mrgIdx > 2 || (mrgIdx > 1 && ibcFlag)
-#endif
       || ((!isAvailableA1 || (miLeft != miNeighbor)) && (!isAvailableB1 || (miAbove != miNeighbor))) )
     {
       mrgCtx.interDirNeighbours[cnt] = miNeighbor.interDir;
@@ -735,27 +726,16 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   int cnt = 0;
 
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   const Position posRT = pu.Y().topRight();
   const Position posLB = pu.Y().bottomLeft();
-#else
-  const Position posRT = pu.shareParentPos.offset(pu.shareParentSize.width - 1, 0);
-  const Position posLB = pu.shareParentPos.offset(0, pu.shareParentSize.height - 1);
-#endif
 
   MotionInfo miAbove, miLeft, miAboveLeft, miAboveRight, miBelowLeft;
 
   //left
   const PredictionUnit* puLeft = cs.getPURestricted(posLB.offset(-1, 0), pu, pu.chType);
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   bool isGt4x4 = pu.lwidth() * pu.lheight() > 16;
-#endif
   const bool isAvailableA1 = puLeft && isDiffMER(pu, *puLeft) && pu.cu != puLeft->cu && CU::isIBC(*puLeft->cu);
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   if (isGt4x4 && isAvailableA1)
-#else
-  if (isAvailableA1)
-#endif
   {
     miLeft = puLeft->getMotionInfo(posLB.offset(-1, 0));
 
@@ -779,11 +759,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
   // above
   const PredictionUnit *puAbove = cs.getPURestricted(posRT.offset(0, -1), pu, pu.chType);
   bool isAvailableB1 = puAbove && isDiffMER(pu, *puAbove) && pu.cu != puAbove->cu && CU::isIBC(*puAbove->cu);
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   if (isGt4x4 && isAvailableB1)
-#else
-  if (isAvailableB1)
-#endif
   {
     miAbove = puAbove->getMotionInfo(posRT.offset(0, -1));
 
@@ -810,18 +786,10 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   if (cnt != maxNumMergeCand)
   {
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    bool  isShared = ((pu.Y().lumaSize().width != pu.shareParentSize.width) || (pu.Y().lumaSize().height != pu.shareParentSize.height));
-#endif
     bool bFound = addMergeHMVPCand(cs, mrgCtx, mrgCandIdx, maxNumMergeCand, cnt
       , isAvailableA1, miLeft, isAvailableB1, miAbove
       , true
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-      , isShared
-#endif
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
       , isGt4x4
-#endif
       );
 
     if (bFound)
@@ -1131,21 +1099,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   int maxNumMergeCandMin1 = maxNumMergeCand - 1;
   if (cnt != maxNumMergeCandMin1)
   {
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    bool isShared = false;
-#endif
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isGt4x4 = true;
-#endif
     bool bFound = addMergeHMVPCand(cs, mrgCtx, mrgCandIdx, maxNumMergeCandMin1, cnt
       , isAvailableA1, miLeft, isAvailableB1, miAbove
       , CU::isIBC(*pu.cu)
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-      , isShared
-#endif
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
       , isGt4x4
-#endif
       );
 
     if (bFound)

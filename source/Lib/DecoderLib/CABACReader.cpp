@@ -469,9 +469,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       pCuCtxChroma->isChromaQpAdjCoded = false;
     }
   }
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  int startShareThisLevel = 0;
-#endif
 
   const PartSplit splitMode = split_cu_mode( cs, partitioner );
 
@@ -479,33 +476,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
 
   if( splitMode != CU_DONT_SPLIT )
   {
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-      const PartSplit split = splitMode;
-      int splitRatio = 1;
-      CHECK(!(split == CU_QUAD_SPLIT || split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT
-        || split == CU_TRIH_SPLIT || split == CU_TRIV_SPLIT), "invalid split type");
-      splitRatio = (split == CU_HORZ_SPLIT || split == CU_VERT_SPLIT) ? 1 : 2;
-
-      bool isOneChildSmall = (((partitioner.currArea().lwidth())*(partitioner.currArea().lheight())) >> splitRatio) < MRG_SHARELIST_SHARSIZE;
-
-      if ((((partitioner.currArea().lwidth())*(partitioner.currArea().lheight())) > (MRG_SHARELIST_SHARSIZE * 1)))
-      {
-        shareStateDec = NO_SHARE;
-      }
-
-      if (shareStateDec == NO_SHARE)//init state
-      {
-        if (isOneChildSmall)
-        {
-          shareStateDec = SHARING;//share start state
-          startShareThisLevel = 1;
-
-          shareParentPos = partitioner.currArea().lumaPos();
-          shareParentSize.width = partitioner.currArea().lwidth();
-          shareParentSize.height = partitioner.currArea().lheight();
-        }
-      }
-#endif
       if (CS::isDualITree(cs) && pPartitionerChroma != nullptr && (partitioner.currArea().lwidth() >= 64 || partitioner.currArea().lheight() >= 64))
       {
         partitioner.splitCurrArea(CU_QUAD_SPLIT, cs);
@@ -620,10 +590,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       //recover ModeType
       cs.modeType = partitioner.modeType = modeTypeParent;
       }
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-      if (startShareThisLevel == 1)
-        shareStateDec = NO_SHARE;
-#endif
       return;
   }
 
@@ -659,10 +625,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   cu.chromaQpAdj = cs.chromaQpAdj;  //NOTE: CU chroma QP adjustment can be changed by adjustment signaling at TU level
 
   // coding unit
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    cu.shareParentPos = (shareStateDec == SHARING) ? shareParentPos : partitioner.currArea().lumaPos();
-    cu.shareParentSize = (shareStateDec == SHARING) ? shareParentSize : partitioner.currArea().lumaSize();
-#endif
 
   coding_unit( cu, partitioner, cuCtx );
   //recover cuCtx.qp to luma qp after decoding the chroma CU
@@ -705,10 +667,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   {
   DTRACE( g_trace_ctx, D_QP, "x=%d, y=%d, w=%d, h=%d, qp=%d\n", cu.Y().x, cu.Y().y, cu.Y().width, cu.Y().height, cu.qp );
   }
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  if (startShareThisLevel == 1)
-    shareStateDec = NO_SHARE;
-#endif
 }
 
 ModeType CABACReader::mode_constraint( CodingStructure& cs, Partitioner &partitioner, PartSplit splitMode )
@@ -834,10 +792,6 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   {
     cu.colorTransform = false;
     cs.addTU         ( cu, partitioner.chType );
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    pu.shareParentPos = cu.shareParentPos;
-    pu.shareParentSize = cu.shareParentSize;
-#endif
     MergeCtx           mrgCtx;
     prediction_unit  ( pu, mrgCtx );
     end_of_ctu( cu, cuCtx );
@@ -1226,10 +1180,6 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 
   for( auto &pu : CU::traversePUs( cu ) )
   {
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    pu.shareParentPos = cu.shareParentPos;
-    pu.shareParentSize = cu.shareParentSize;
-#endif
     prediction_unit( pu, mrgCtx );
   }
 

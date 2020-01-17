@@ -48,11 +48,7 @@
 class CABACReader
 {
 public:
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
   CABACReader(BinDecoderBase& binDecoder) : m_BinDecoder(binDecoder), m_Bitstream(0) {}
-#else
-  CABACReader(BinDecoderBase& binDecoder) : shareStateDec(0), m_BinDecoder(binDecoder), m_Bitstream(0) {}
-#endif
   virtual ~CABACReader() {}
 
 public:
@@ -165,11 +161,6 @@ private:
   uint32_t    xReadTruncMsbP1RefinementBits( PLTRunMode runtype,    uint32_t maxVal,       uint32_t ctxT );
 #endif
 public:
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  int         shareStateDec;
-  Position    shareParentPos;
-  Size        shareParentSize;
-#endif
 private:
   BinDecoderBase& m_BinDecoder;
   InputBitstream* m_Bitstream;

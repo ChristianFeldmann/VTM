@@ -326,10 +326,6 @@ struct CodingUnit : public UnitArea
 
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position       shareParentPos;
-  Size           shareParentSize;
-#endif
   uint8_t          smvdMode;
   uint8_t        ispMode;
   bool           useEscape[MAX_NUM_CHANNEL_TYPE];
@@ -407,10 +403,6 @@ struct InterPredictionData
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
   bool      ciipFlag;
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position  shareParentPos;
-  Size      shareParentSize;
-#endif
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
   uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
@@ -435,10 +427,6 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   PredictionUnit& operator=(const MotionInfo& mi);
 
   unsigned        idx;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  Position shareParentPos;
-  Size     shareParentSize;
-#endif
 
   PredictionUnit *next;
 

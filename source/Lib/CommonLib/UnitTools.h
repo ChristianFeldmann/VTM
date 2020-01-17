@@ -149,12 +149,7 @@ namespace PU
   bool addMergeHMVPCand               (const CodingStructure &cs, MergeCtx& mrgCtx, const int& mrgCandIdx, const uint32_t maxNumMergeCandMin1, int &cnt
     , const bool isAvailableA1, const MotionInfo miLeft, const bool isAvailableB1, const MotionInfo miAbove
     , const bool ibcFlag
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-    , const bool isShared
-#endif
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     , const bool isGt4x4
-#endif
   );
   void addAMVPHMVPCand                (const PredictionUnit &pu, const RefPicList eRefPicList, const int currRefPOC, AMVPInfo &info);
   bool addAffineMVPCandUnscaled       ( const PredictionUnit &pu, const RefPicList &refPicList, const int &refIdx, const Position &pos, const MvpDir &dir, AffineAMVPInfo &affiAmvpInfo );

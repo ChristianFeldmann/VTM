@@ -103,13 +103,6 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
 {
 
   const int maxNumChannelType = cs.pcv->chrFormat != CHROMA_400 && CS::isDualITree( cs ) ? 2 : 1;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-  if (!cs.pcv->isEncoder)
-  {
-    m_shareStateDec = NO_SHARE;
-  }
-  bool sharePrepareCondition = ((!cs.pcv->isEncoder) && (!(cs.slice->isIntra()) || cs.slice->getSPS()->getIBCFlag()));
-#endif
 
   if (cs.resetIBCBuffer)
   {
@@ -132,21 +125,6 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
           m_pcInterPred->resetVPDUforIBC(cs.pcv->chrFormat, cs.slice->getSPS()->getMaxCUHeight(), vSize, currCU.Y().x  + g_IBCBufferSize / cs.slice->getSPS()->getMaxCUHeight() / 2, currCU.Y().y);
         }
       }
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-      if(sharePrepareCondition)
-      {
-        if ((currCU.shareParentPos.x >= 0) && (!(currCU.shareParentPos.x == prevTmpPos.x && currCU.shareParentPos.y == prevTmpPos.y)))
-        {
-          m_shareStateDec = GEN_ON_SHARED_BOUND;
-        }
-
-        if (currCU.shareParentPos.x < 0)
-        {
-          m_shareStateDec = 0;
-        }
-        prevTmpPos = currCU.shareParentPos;
-      }
-#endif
       if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
       {
         xDeriveCUMV(currCU);
@@ -688,13 +666,8 @@ void DecCu::xReconInter(CodingUnit &cu)
   }
   if (cu.Y().valid())
   {
-#if JVET_P0400_REMOVE_SHARED_MERGE_LIST
     bool isIbcSmallBlk = CU::isIBC(cu) && (cu.lwidth() * cu.lheight() <= 16);
     CU::saveMotionInHMVP( cu, isIbcSmallBlk );
-#else
-    bool isShare = ((CU::isIBC(cu) && (cu.shareParentSize.width != cu.Y().lumaSize().width || cu.shareParentSize.height != cu.Y().lumaSize().height)) ? true : false);
-    CU::saveMotionInHMVP( cu, isShare );
-#endif
   }
 
   if (cu.firstPU->ciipFlag)
@@ -899,10 +872,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
 
         int   fPosBaseIdx = pu.mmvdMergeIdx / MMVD_MAX_REFINE_NUM;
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-          pu.shareParentPos = cu.shareParentPos;
-          pu.shareParentSize = cu.shareParentSize;
-#endif
         PU::getInterMergeCandidates(pu, mrgCtx, 1, fPosBaseIdx + 1);
         PU::getInterMMVDMergeCandidates(pu, mrgCtx,
           pu.mmvdMergeIdx
@@ -957,10 +926,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         }
         else
         {
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-          pu.shareParentPos = cu.shareParentPos;
-          pu.shareParentSize = cu.shareParentSize;
-#endif
           if (CU::isIBC(*pu.cu))
             PU::getIBCMergeCandidates(pu, mrgCtx, pu.mergeIdx);
           else
@@ -975,10 +940,6 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
     }
     else
     {
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-      pu.shareParentPos = cu.shareParentPos;
-      pu.shareParentSize = cu.shareParentSize;
-#endif
 #if REUSE_CU_RESULTS
       if ( cu.imv && !pu.cu->affine && !cu.cs->pcv->isEncoder )
 #else

@@ -120,7 +120,6 @@
 
 
 
-#define JVET_P0400_REMOVE_SHARED_MERGE_LIST               1 // JVET-P0400: removeal of shared merge list
 
 #define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
 
@@ -182,9 +181,6 @@
 #define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-#define MRG_SHARELIST_SHARSIZE                            32
-#endif
 
 #define JVET_P0478_PTL_DPS                                1 // JVET-P0478: allow multiple PTL in DPS
 
@@ -1008,14 +1004,6 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
-#if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
-enum SharedMrgState
-{
-  NO_SHARE            = 0,
-  GEN_ON_SHARED_BOUND = 1,
-  SHARING             = 2
-};
-#endif
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////

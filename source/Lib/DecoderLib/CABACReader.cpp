@@ -3593,11 +3593,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
   {
     int       sumAll = cctx.templateAbsSum(scanPos, coeff, 0);
     int       rice      = g_auiGoRiceParsCoeff                        [sumAll];
-#if JVET_P0170_ZERO_POS_SIMPLIFICATION
     int       pos0      = g_auiGoRicePosCoeff0(state, rice);
-#else
-    int       pos0      = g_auiGoRicePosCoeff0[std::max(0, state - 1)][sumAll];
-#endif
     RExt__DECODER_DEBUG_BIT_STATISTICS_SET(ctype_escs);
     int       rem       = m_BinDecoder.decodeRemAbsEP( rice, COEF_REMAIN_BIN_REDUCTION, cctx.maxLog2TrDRange() );
     DTRACE( g_trace_ctx, D_SYNTAX_RESI, "rem_val() bin=%d ctx=%d\n", rem, rice );

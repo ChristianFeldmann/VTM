@@ -1024,9 +1024,6 @@ namespace DQIntern
     const int8_t              m_stateId;
     const BinFracBits*const   m_sigFracBitsArray;
     const CoeffFracBits*const m_gtxFracBitsArray;
-#if !JVET_P0170_ZERO_POS_SIMPLIFICATION
-    const uint32_t*const      m_goRiceZeroArray;
-#endif
     CommonCtx&                m_commonCtx;
   public:
     unsigned                  effWidth;
@@ -1039,9 +1036,6 @@ namespace DQIntern
     , m_stateId         ( stateId )
     , m_sigFracBitsArray( rateEst.sigFlagBits(stateId) )
     , m_gtxFracBitsArray( rateEst.gtxFracBits(stateId) )
-#if !JVET_P0170_ZERO_POS_SIMPLIFICATION
-    , m_goRiceZeroArray ( g_auiGoRicePosCoeff0[std::max(0,stateId-1)] )
-#endif
     , m_commonCtx       ( commonCtx )
   {
   }
@@ -1192,11 +1186,7 @@ namespace DQIntern
 #undef UPDATE
         sumAbs = std::min<TCoeff>(31, sumAbs);
         m_goRicePar = g_auiGoRiceParsCoeff[sumAbs];
-#if JVET_P0170_ZERO_POS_SIMPLIFICATION
         m_goRiceZero = g_auiGoRicePosCoeff0(m_stateId, m_goRicePar);
-#else
-        m_goRiceZero = m_goRiceZeroArray[sumAbs];
-#endif
       }
     }
   }

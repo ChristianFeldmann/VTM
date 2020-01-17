@@ -121,7 +121,6 @@
 
 
 
-#define JVET_P0170_ZERO_POS_SIMPLIFICATION                1 // JVET-P0170: Simplification of deriving ZeroPos
 
 #define JVET_P0058_CHROMA_TS                              1 // JVET-P0058: Enable Transform skip for chroma
 #if JVET_AHG14_LOSSLESS && !JVET_P0058_CHROMA_TS

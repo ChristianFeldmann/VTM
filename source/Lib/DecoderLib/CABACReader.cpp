@@ -231,7 +231,6 @@ void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
   uint32_t filtIndex = 0;
   if (numAvailableFiltSets > NUM_FIXED_FILTER_SETS)
   {
-#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
     unsigned usePrevFilt = m_BinDecoder.decodeBin(Ctx::AlfUseTemporalFilt());
     if (usePrevFilt)
     {
@@ -245,36 +244,6 @@ void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
     {
       xReadTruncBinCode(filtIndex, NUM_FIXED_FILTER_SETS);
     }
-#else
-    int useLatestFilt = m_BinDecoder.decodeBin(Ctx::AlfUseLatestFilt());
-    if (useLatestFilt)
-    {
-      filtIndex = NUM_FIXED_FILTER_SETS;
-    }
-    else
-    {
-      if (numAps == 1)
-      {
-        xReadTruncBinCode(filtIndex, NUM_FIXED_FILTER_SETS);
-      }
-      else
-      {
-        unsigned usePrevFilt = m_BinDecoder.decodeBin(Ctx::AlfUseTemporalFilt());
-        if (usePrevFilt)
-        {
-          if (numAps > 2)
-          {
-            xReadTruncBinCode(filtIndex, numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
-          }
-          filtIndex += (unsigned)(NUM_FIXED_FILTER_SETS + 1);
-        }
-        else
-        {
-          xReadTruncBinCode(filtIndex, NUM_FIXED_FILTER_SETS);
-        }
-      }
-    }
-#endif
   }
   else
   {

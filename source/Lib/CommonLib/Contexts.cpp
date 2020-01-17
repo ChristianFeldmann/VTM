@@ -841,15 +841,6 @@ const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
   {   0,   0, },
 });
 
-#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
-const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
-({
-  {  58, },
-  {  50, },
-  {  31, },
-  {   0, },
-});
-#endif
 
 const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 ({
@@ -1590,15 +1581,6 @@ const CtxSet ContextSetCfg::ctbAlfAlternative = ContextSetCfg::addCtxSet
   {   0,   0, },
 });
 
-#if !JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
-const CtxSet ContextSetCfg::AlfUseLatestFilt = ContextSetCfg::addCtxSet
-({
-  {  58, },
-  {  50, },
-  {  31, },
-  {   0, },
-});
-#endif
 
 const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
 ({
@@ -1689,11 +1671,7 @@ const unsigned ContextSetCfg::NumberOfContexts = (unsigned)ContextSetCfg::sm_Ini
 const CtxSet ContextSetCfg::Palette = { ContextSetCfg::RotationFlag, ContextSetCfg::RunTypeFlag, ContextSetCfg::IdxRunModel, ContextSetCfg::CopyRunModel };
 const CtxSet ContextSetCfg::Sao = { ContextSetCfg::SaoMergeFlag, ContextSetCfg::SaoTypeIdx };
 
-#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
 const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseTemporalFilt };
-#else
-const CtxSet ContextSetCfg::Alf = { ContextSetCfg::ctbAlfFlag, ContextSetCfg::ctbAlfAlternative, ContextSetCfg::AlfUseLatestFilt, ContextSetCfg::AlfUseTemporalFilt };
-#endif
 
 template <class BinProbModel>
 CtxStore<BinProbModel>::CtxStore()

@@ -3771,7 +3771,6 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
   unsigned numAvailableFiltSets = numAps + NUM_FIXED_FILTER_SETS;
   if (numAvailableFiltSets > NUM_FIXED_FILTER_SETS)
   {
-#if JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG
     int useTemporalFilt = (filterSetIdx >= NUM_FIXED_FILTER_SETS) ? 1 : 0;
     m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
     if (useTemporalFilt)
@@ -3787,38 +3786,6 @@ void CABACWriter::codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr,
       CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set larger than temporal");
       xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
     }
-#else
-    int useLatestFilt = (filterSetIdx == NUM_FIXED_FILTER_SETS) ? 1 : 0;
-    m_BinEncoder.encodeBin(useLatestFilt, Ctx::AlfUseLatestFilt());
-    if (!useLatestFilt)
-    {
-
-      if (numAps == 1)
-      {
-        CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set numavail < num_fixed");
-        xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
-      }
-      else
-      {
-        int useTemporalFilt = (filterSetIdx > NUM_FIXED_FILTER_SETS) ? 1 : 0;
-        m_BinEncoder.encodeBin(useTemporalFilt, Ctx::AlfUseTemporalFilt());
-
-        if (useTemporalFilt)
-        {
-          CHECK((filterSetIdx - (NUM_FIXED_FILTER_SETS + 1)) >= (numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1)), "temporal non-latest set");
-          if (numAps > 2)
-          {
-            xWriteTruncBinCode(filterSetIdx - (NUM_FIXED_FILTER_SETS + 1), numAvailableFiltSets - (NUM_FIXED_FILTER_SETS + 1));
-          }
-        }
-        else
-        {
-          CHECK(filterSetIdx >= NUM_FIXED_FILTER_SETS, "fixed set larger than temporal");
-          xWriteTruncBinCode(filterSetIdx, NUM_FIXED_FILTER_SETS);
-        }
-      }
-    }
-#endif
   }
   else
   {

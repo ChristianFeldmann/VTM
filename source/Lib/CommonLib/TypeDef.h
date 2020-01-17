@@ -127,7 +127,6 @@
 
 
 
-#define JVET_P0162_REMOVE_ALF_CTB_FIRST_USE_APS_FLAG      1 // JVET-P0162: Removal of alf_ctb_use_first_aps_flag
 
 #define JVET_P0059_CHROMA_BDPCM                           1 // JVET-P0059: Enable BDPCM for chroma
 

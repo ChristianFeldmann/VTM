@@ -1307,16 +1307,8 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
       {
         modeIsEnable[i] = 1;
       }
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
       DistParam distParamSad;
       DistParam distParamSatd;
-#else
-      DistParam distParam;
-#endif
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
-#else
-      const bool useHadamard = true;
-#endif
       pu.intraDir[1] = MDLM_L_IDX; // temporary assigned, just to indicate this is a MDLM mode. for luma down-sampling operation.
 
       initIntraPatternChType(cu, pu.Cb());
@@ -1337,32 +1329,20 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         }
         pu.intraDir[1] = mode; // temporary assigned, for SATD checking.
 
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         int64_t sad = 0;
         int64_t sadCb = 0;
         int64_t satdCb = 0;
         int64_t sadCr = 0;
         int64_t satdCr = 0;
-#else
-        int64_t sad = 0;
-#endif
         CodingStructure& cs = *(pu.cs);
 
         CompArea areaCb = pu.Cb();
         PelBuf orgCb = cs.getOrgBuf(areaCb);
         PelBuf predCb = cs.getPredBuf(areaCb);
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         m_pcRdCost->setDistParam(distParamSad, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, false);
         m_pcRdCost->setDistParam(distParamSatd, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, true);
-#else
-        m_pcRdCost->setDistParam(distParam, orgCb, predCb, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cb, useHadamard);
-#endif
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         distParamSad.applyWeight = false;
         distParamSatd.applyWeight = false;
-#else
-        distParam.applyWeight = false;
-#endif
         if (PU::isLMCMode(mode))
         {
           predIntraChromaLM(COMPONENT_Cb, predCb, pu, areaCb, mode);
@@ -1372,28 +1352,16 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           initPredIntraParams(pu, pu.Cb(), *pu.cs->sps);
           predIntraAng(COMPONENT_Cb, predCb, pu);
         }
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         sadCb = distParamSad.distFunc(distParamSad) * 2;
         satdCb = distParamSatd.distFunc(distParamSatd);
         sad += std::min(sadCb, satdCb);
-#else
-        sad += distParam.distFunc(distParam);
-#endif
         CompArea areaCr = pu.Cr();
         PelBuf orgCr = cs.getOrgBuf(areaCr);
         PelBuf predCr = cs.getPredBuf(areaCr);
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         m_pcRdCost->setDistParam(distParamSad, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, false);
         m_pcRdCost->setDistParam(distParamSatd, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, true);
-#else
-        m_pcRdCost->setDistParam(distParam, orgCr, predCr, pu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA), COMPONENT_Cr, useHadamard);
-#endif
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         distParamSad.applyWeight = false;
         distParamSatd.applyWeight = false;
-#else
-        distParam.applyWeight = false;
-#endif
         if (PU::isLMCMode(mode))
         {
           predIntraChromaLM(COMPONENT_Cr, predCr, pu, areaCr, mode);
@@ -1403,13 +1371,9 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
           initPredIntraParams(pu, pu.Cr(), *pu.cs->sps);
           predIntraAng(COMPONENT_Cr, predCr, pu);
         }
-#if JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD
         sadCr = distParamSad.distFunc(distParamSad) * 2;
         satdCr = distParamSatd.distFunc(distParamSatd);
         sad += std::min(sadCr, satdCr);
-#else
-        sad += distParam.distFunc(distParam);
-#endif
         satdSortedCost[idx] = sad;
       }
       // sort the mode based on the cost from small to large.

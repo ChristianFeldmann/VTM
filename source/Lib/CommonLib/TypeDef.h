@@ -122,7 +122,6 @@
 
 
 
-#define JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD        1 // Modified cost criterion for chroma intra encoder search
 
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 

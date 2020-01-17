@@ -270,9 +270,7 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const ChannelType    channelType  = toChannelType( compID );
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(iWidth == 2, "Width of 2 is not supported");
-#endif
 #if JVET_P0059_CHROMA_BDPCM
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : !isLuma(compId) && pu.cu->bdpcmModeChroma ? BDPCM_IDX : PU::getFinalIntraMode(pu, channelType);
 #else
@@ -755,9 +753,7 @@ void IntraPrediction::xPredIntraBDPCM(const CPelBuf &pSrc, PelBuf &pDst, const u
 void IntraPrediction::geneWeightedPred(const ComponentID compId, PelBuf &pred, const PredictionUnit &pu, Pel *srcBuf)
 {
   const int            width = pred.width;
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(width == 2, "Width of 2 is not supported");
-#endif
   const int            height = pred.height;
   const int            srcStride = width;
   const int            dstStride = pred.stride;
@@ -819,24 +815,18 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   if (pu->chromaSize().width > 2)
   {
-#endif
     initIntraPatternChType(cu, pu->Cb());
     predIntraAng(COMPONENT_Cb, cu.cs->getPredBuf(*pu).Cb(), *pu);
 
     initIntraPatternChType(cu, pu->Cr());
     predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   }
-#endif
   for (int currCompID = 0; currCompID < 3; currCompID++)
   {
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
     if (pu->chromaSize().width <= 2 && currCompID > 0)
       continue;
-#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
@@ -851,9 +841,7 @@ inline int  isBelowLeftAvailable  ( const CodingUnit &cu, const ChannelType &chT
 
 void IntraPrediction::initIntraPatternChType(const CodingUnit &cu, const CompArea &area, const bool forceRefFilterFlag)
 {
-#if JVET_P0641_REMOVE_2xN_CHROMA_INTRA
   CHECK(area.width == 2, "Width of 2 is not supported");
-#endif
   const CodingStructure& cs   = *cu.cs;
 
   if (!forceRefFilterFlag)

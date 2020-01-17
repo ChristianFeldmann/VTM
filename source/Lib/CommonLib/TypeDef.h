@@ -87,7 +87,6 @@
 
 
 
-#define JVET_P0641_REMOVE_2xN_CHROMA_INTRA                1 // JVET-P0641: removing 2xN chroma intra blocks
 
 #define JVET_P0445_SUBBLOCK_MERGE_ENC_SPEEDUP             1 // JVET-P0445: encoder speed up for sub-block based merge candidate search
 

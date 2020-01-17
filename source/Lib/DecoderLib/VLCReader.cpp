@@ -870,10 +870,8 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   READ_FLAG(code, "alf_chroma_new_filter");
   param.newFilterFlag[CHANNEL_TYPE_CHROMA] = code;
 
-#if JVET_P0438_ALF_APS_CONSTRAINT
   CHECK(param.newFilterFlag[CHANNEL_TYPE_LUMA] == 0 && param.newFilterFlag[CHANNEL_TYPE_CHROMA] == 0,
     "bitstream conformance error, alf_luma_filter_signal_flag and alf_chroma_filter_signal_flag shall not equal to zero at the same time");
-#endif
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
@@ -3359,10 +3357,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           READ_CODE(3, uiCode, "slice_alf_aps_id_luma");
           apsId[i] = uiCode;
-#if JVET_P0438_ALF_APS_CONSTRAINT
           APS* APStoCheckLuma = parameterSetManager->getAPS(apsId[i], ALF_APS);
           CHECK(APStoCheckLuma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] != 1, "bitstream conformance error, alf_luma_filter_signal_flag shall be equal to 1");
-#endif
         }
 
 
@@ -3379,10 +3375,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
         {
           READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
           pcSlice->setTileGroupApsIdChroma(uiCode);
-#if JVET_P0438_ALF_APS_CONSTRAINT
           APS* APStoCheckChroma = parameterSetManager->getAPS(uiCode, ALF_APS);
           CHECK(APStoCheckChroma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] != 1, "bitstream conformance error, alf_chroma_filter_signal_flag shall be equal to 1");
-#endif
         }
       }
       else

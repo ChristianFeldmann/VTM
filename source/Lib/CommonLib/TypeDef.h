@@ -143,7 +143,6 @@
 
 
 
-#define JVET_P0418_ALIGN_MLRP_CCLM                        1 // JVET-P0418: Align MLRP with CCLM in terms of reference lines/columns
 
 #define JVET_P0335_HDRCTC_CHANGE                          1 // JVET-P0335: change of HDR PQ CTC: enable LMCS and use QPc table in P0335, and disable lumaDQP and WCGPPSOffset
 

@@ -232,7 +232,6 @@ namespace df
         parent.addOption(new Option<T>(name, storage, default_val, desc));
         return *this;
       }
-#if 1 //JVET_O1159_SCALABILITY
       template<typename T>
       OptionSpecific&
         operator()(const std::string& name, T* storage, T default_val, unsigned uiMaxNum, const std::string& desc = "")
@@ -288,7 +287,6 @@ namespace df
 
         return *this;
       }
-#endif
       /**
        * Add option described by name to the parent Options list,
        *   with desc as an optional help description

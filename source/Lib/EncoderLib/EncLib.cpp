@@ -46,9 +46,7 @@
 #if ENABLE_SPLIT_PARALLELISM
 #include <omp.h>
 #endif
-#if JVET_N0278_FIXES
 #include "EncLibCommon.h"
-#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -57,7 +55,6 @@
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
 
-#if JVET_N0278_FIXES
 EncLib::EncLib( EncLibCommon* encLibCommon )
   : m_cListPic( encLibCommon->getPictureBuffer() )
   , m_cEncALF( encLibCommon->getApsIdStart() )
@@ -65,13 +62,6 @@ EncLib::EncLib( EncLibCommon* encLibCommon )
   , m_ppsMap( encLibCommon->getPpsMap() )
   , m_apsMap( encLibCommon->getApsMap() )
   , m_AUWriterIf( nullptr )
-#else
-EncLib::EncLib()
-  : m_spsMap( MAX_NUM_SPS )
-  , m_ppsMap( MAX_NUM_PPS )
-  , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
-  , m_AUWriterIf( nullptr )
-#endif
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   , m_cacheModel()
 #endif
@@ -95,29 +85,17 @@ EncLib::EncLib()
 
   memset(m_apss, 0, sizeof(m_apss));
 
-#if JVET_N0278_FIXES
   m_layerId = NOT_VALID;
   m_picIdInGOP = NOT_VALID;
-#endif
 }
 
 EncLib::~EncLib()
 {
 }
 
-#if JVET_N0278_FIXES
 void EncLib::create( const int layerId )
-#else
-void EncLib::create ()
-#endif
 {
-#if JVET_N0278_FIXES
   m_layerId = layerId;
-#else
-  // initialize global variables
-  initROM();
-  TComHash::initBlockSizeToIndex();
-#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -221,10 +199,6 @@ void EncLib::destroy ()
   delete[] m_CtxCache;
 #endif
 
-#if !JVET_N0278_FIXES
-  // destroy ROM
-  destroyROM();
-#endif
   return;
 }
 
@@ -233,11 +207,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   m_AUWriterIf = auWriterIf;
 
   SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
-#if JVET_N0278_FIXES
   PPS &pps0 = *( m_ppsMap.allocatePS( m_layerId ) );
-#else
-  PPS &pps0=*(m_ppsMap.allocatePS(0));
-#endif
   APS &aps0 = *( m_apsMap.allocatePS( SCALING_LIST_APS ) );
   aps0.setAPSId( 0 );
   aps0.setAPSType( SCALING_LIST_APS );
@@ -466,11 +436,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   if (getUseCompositeRef())
   {
     Picture *picBg = new Picture;
-#if JVET_N0278_FIXES
     picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
-#else
-    picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
-#endif
     picBg->getRecoBuf().fill(0);
 #if JVET_P1006_PICTURE_HEADER
 #if JVET_O1159_SCALABILITY
@@ -488,11 +454,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
     Picture *picOrig = new Picture;
-#if JVET_N0278_FIXES
     picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
-#else
-    picOrig->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false );
-#endif
     picOrig->getOrigBuf().fill(0);
     m_cGOPEncoder.setPicOrig(picOrig);
   }
@@ -620,12 +582,9 @@ void EncLib::deletePicBuffer()
     pcPic = NULL;
   }
 
-#if JVET_N0278_FIXES
   m_cListPic.clear();
-#endif
 }
 
-#if JVET_N0278_FIXES
 bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut, int& iNumEncoded )
 {
   if( m_compositeRefEnabled && m_cGOPEncoder.getPicBg()->getSpliceFull() && m_iPOCLast >= 10 && m_iNumPicRcvd == 0 && m_cGOPEncoder.getEncodedLTRef() == false )
@@ -700,12 +659,10 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       }
     }
 
-#if JVET_N0278_FIXES
     if( m_cVPS.getMaxLayers() > 1 )
     {
       ppsID = m_layerId;
     }
-#endif
 
     xGetNewPicBuffer( rcListPicYuvRecOut, pcPicCurr, ppsID );
 
@@ -856,206 +813,6 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
 
   return false;
 }
-#else
-/**
- - Application has picture buffer list with size of GOP + 1
- - Picture buffer list acts like as ring buffer
- - End of the list has the latest picture
- .
- \param   flush               cause encoder to encode a partial GOP
- \param   pcPicYuvOrg         original YUV picture
- \param   pcPicYuvTrueOrg
- \param   snrCSC
- \retval  rcListPicYuvRecOut  list of reconstruction YUV pictures
- \retval  accessUnitsOut      list of output access units
- \retval  iNumEncoded         number of encoded pictures
- */
-void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
-                     int& iNumEncoded )
-{
-  if (m_compositeRefEnabled && m_cGOPEncoder.getPicBg()->getSpliceFull() && m_iPOCLast >= 10 && m_iNumPicRcvd == 0 && m_cGOPEncoder.getEncodedLTRef() == false)
-  {
-    Picture* picCurr = NULL;
-    xGetNewPicBuffer(rcListPicYuvRecOut, picCurr, 2);
-    const PPS *pps = m_ppsMap.getPS(2);
-    const SPS *sps = m_spsMap.getPS(pps->getSPSId());
-
-    picCurr->M_BUFS(0, PIC_ORIGINAL).copyFrom(m_cGOPEncoder.getPicBg()->getRecoBuf());
-#if JVET_P1006_PICTURE_HEADER
-    picCurr->finalInit( *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-    picCurr->finalInit( *sps, *pps, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
-    picCurr->poc = m_iPOCLast - 1;
-    m_iPOCLast -= 2;
-    if (getUseAdaptiveQP())
-    {
-      AQpPreanalyzer::preanalyze(picCurr);
-    }
-    if (m_RCEnableRateControl)
-    {
-      m_cRateCtrl.initRCGOP(m_iNumPicRcvd);
-    }
-
-    m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
-      false, false, snrCSC, m_printFrameMSE, true);
-
-#if JVET_O0756_CALCULATE_HDRMETRICS
-    m_metricTime = m_cGOPEncoder.getMetricTime();
-#endif
-    m_cGOPEncoder.setEncodedLTRef(true);
-    if (m_RCEnableRateControl)
-    {
-      m_cRateCtrl.destroyRCGOP();
-    }
-
-    iNumEncoded = 0;
-    m_iNumPicRcvd = 0;
-  }
-  //PROF_ACCUM_AND_START_NEW_SET( getProfilerPic(), P_GOP_LEVEL );
-  if (pcPicYuvOrg != NULL)
-  {
-    // get original YUV
-    Picture* pcPicCurr = NULL;
-
-    int ppsID=-1; // Use default PPS ID
-#if ER_CHROMA_QP_WCG_PPS
-    if (getWCGChromaQPControl().isEnabled())
-    {
-      ppsID = getdQPs()[m_iPOCLast / (m_compositeRefEnabled ? 2 : 1) + 1];
-      ppsID+=(getSwitchPOC() != -1 && (m_iPOCLast+1 >= getSwitchPOC())?1:0);
-    }
-#endif
-
-    if( m_rprEnabled && m_uiIntraPeriod == -1 )
-    {
-      const int poc = m_iPOCLast + ( m_compositeRefEnabled ? 2 : 1 );
-
-      if( poc / m_switchPocPeriod % 2 )
-      {
-        ppsID = ENC_PPS_ID_RPR;
-      }
-      else
-      {
-        ppsID = 0;
-      }
-    }
-    xGetNewPicBuffer( rcListPicYuvRecOut, pcPicCurr, ppsID );
-
-    const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
-    const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
-
-    if( m_rprEnabled )
-    {
-      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
-      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
-      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cr ) );
-
-      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Y ) );
-      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cb ) );
-      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).getBuf( COMPONENT_Cr ).copyFrom( cPicYuvTrueOrg->getBuf( COMPONENT_Cr ) );
-
-      const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
-
-      const PPS *refPPS = m_ppsMap.getPS( 0 );
-#if JVET_P0590_SCALING_WINDOW
-      const Window& curScalingWindow = pPPS->getScalingWindow();
-      int curPicWidth = pPPS->getPicWidthInLumaSamples() - curScalingWindow.getWindowLeftOffset() - curScalingWindow.getWindowRightOffset();
-      int curPicHeight = pPPS->getPicHeightInLumaSamples() - curScalingWindow.getWindowTopOffset() - curScalingWindow.getWindowBottomOffset();
-
-      const Window& refScalingWindow = refPPS->getScalingWindow();
-      int refPicWidth = refPPS->getPicWidthInLumaSamples() - refScalingWindow.getWindowLeftOffset() - refScalingWindow.getWindowRightOffset();
-      int refPicHeight = refPPS->getPicHeightInLumaSamples() - refScalingWindow.getWindowTopOffset() - refScalingWindow.getWindowBottomOffset();
-
-      int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
-      int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
-      std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
-
-#if JVET_P0592_CHROMA_PHASE
-      Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getScalingWindow(), pcPicCurr->getOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
-          pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-      Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getScalingWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
-          pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-#else
-      Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getScalingWindow(), pcPicCurr->getOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-      Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getScalingWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-#endif
-#elif JVET_P0592_CHROMA_PHASE
-      const Window& curWindow = pPPS->getConformanceWindow();
-      int curPicWidth = pPPS->getPicWidthInLumaSamples() - ( curWindow.getWindowLeftOffset() + curWindow.getWindowRightOffset() ) * SPS::getWinUnitX( chromaFormatIDC );
-      int curPicHeight = pPPS->getPicHeightInLumaSamples() - ( curWindow.getWindowTopOffset() + curWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( chromaFormatIDC );
-
-      const Window& refWindow = refPPS->getConformanceWindow();
-      int refPicWidth = refPPS->getPicWidthInLumaSamples() - ( refWindow.getWindowLeftOffset() + refWindow.getWindowRightOffset() ) * SPS::getWinUnitX( chromaFormatIDC );
-      int refPicHeight = refPPS->getPicHeightInLumaSamples() - ( refWindow.getWindowTopOffset() + refWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( chromaFormatIDC );
-
-      int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
-      int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
-      std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
-
-      Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
-          pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-      Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
-          pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-#else
-      Picture::rescalePicture( *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-      Picture::rescalePicture( *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-#endif
-    }
-    else
-    {
-      pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
-      pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
-    }
-
-#if JVET_P1006_PICTURE_HEADER
-    pcPicCurr->finalInit( *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-    pcPicCurr->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
-    PPS *ptrPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
-    ptrPPS->setNumBricksInPic( (int)pcPicCurr->brickMap->bricks.size() );
-
-    pcPicCurr->poc = m_iPOCLast;
-
-    // compute image characteristics
-    if ( getUseAdaptiveQP() )
-    {
-      AQpPreanalyzer::preanalyze( pcPicCurr );
-    }
-  }
-
-  if ((m_iNumPicRcvd == 0) || (!flush && (m_iPOCLast != 0) && (m_iNumPicRcvd != m_iGOPSize) && (m_iGOPSize != 0)))
-  {
-    iNumEncoded = 0;
-    return;
-  }
-
-  if ( m_RCEnableRateControl )
-  {
-    m_cRateCtrl.initRCGOP( m_iNumPicRcvd );
-  }
-
-  // compress GOP
-  m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
-                            false, false, snrCSC, m_printFrameMSE
-    , false
-  );
-
-#if JVET_O0756_CALCULATE_HDRMETRICS
-  m_metricTime = m_cGOPEncoder.getMetricTime();
-#endif
-
-  if ( m_RCEnableRateControl )
-  {
-    m_cRateCtrl.destroyRCGOP();
-  }
-
-  iNumEncoded         = m_iNumPicRcvd;
-  m_iNumPicRcvd       = 0;
-  m_uiNumAllPicCoded += iNumEncoded;
-}
-#endif
 
 /**------------------------------------------------
  Separate interlaced frame into two fields
@@ -1079,7 +836,6 @@ void separateFields(Pel* org, Pel* dstField, uint32_t stride, uint32_t width, ui
 
 }
 
-#if JVET_N0278_FIXES
 bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
   int& iNumEncoded, bool isTff )
 {
@@ -1223,88 +979,6 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
   return false;
 #endif
 }
-#else
-void EncLib::encode( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicYuvTrueOrg, const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
-                     int& iNumEncoded, bool isTff )
-{
-  iNumEncoded = 0;
-
-  for (int fieldNum=0; fieldNum<2; fieldNum++)
-  {
-    if (pcPicYuvOrg)
-    {
-      /* -- field initialization -- */
-      const bool isTopField=isTff==(fieldNum==0);
-
-      Picture *pcField;
-      xGetNewPicBuffer( rcListPicYuvRecOut, pcField, -1 );
-
-      for (uint32_t comp = 0; comp < ::getNumberValidComponents(pcPicYuvOrg->chromaFormat); comp++)
-      {
-        const ComponentID compID = ComponentID(comp);
-        {
-          PelBuf compBuf = pcPicYuvOrg->get( compID );
-          separateFields( compBuf.buf,
-                         pcField->getOrigBuf().get(compID).buf,
-                         compBuf.stride,
-                         compBuf.width,
-                         compBuf.height,
-                         isTopField);
-#if FIELD_CODING_FIX
-          // to get fields of true original buffer to avoid wrong PSNR calculation in summary
-          compBuf = pcPicYuvTrueOrg->get( compID );
-          separateFields( compBuf.buf,
-                         pcField->getTrueOrigBuf().get(compID).buf,
-                         compBuf.stride,
-                         compBuf.width,
-                         compBuf.height,
-                         isTopField);
-#endif
-        }
-      }
-
-      {
-        int ppsID=-1; // Use default PPS ID
-        const PPS *pPPS=(ppsID<0) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS(ppsID);
-        const SPS *pSPS=m_spsMap.getPS(pPPS->getSPSId());
-
-#if JVET_P1006_PICTURE_HEADER
-        pcField->finalInit( *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#else
-        pcField->finalInit( *pSPS, *pPPS, m_apss, m_lmcsAPS, m_scalinglistAPS );
-#endif
-      }
-
-      pcField->poc = m_iPOCLast;
-      pcField->reconstructed = false;
-
-      pcField->setBorderExtension(false);// where is this normally?
-
-      pcField->topField = isTopField;                  // interlaced requirement
-
-      // compute image characteristics
-      if ( getUseAdaptiveQP() )
-      {
-        AQpPreanalyzer::preanalyze( pcField );
-      }
-    }
-
-    if ( m_iNumPicRcvd && ((flush&&fieldNum==1) || (m_iPOCLast/2)==0 || m_iNumPicRcvd==m_iGOPSize ) )
-    {
-      // compress GOP
-      m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE
-                              , false
-      );
-#if JVET_O0756_CALCULATE_HDRMETRICS
-      m_metricTime = m_cGOPEncoder.getMetricTime();
-#endif
-      iNumEncoded += m_iNumPicRcvd;
-      m_uiNumAllPicCoded += m_iNumPicRcvd;
-      m_iNumPicRcvd = 0;
-    }
-  }
-}
-#endif
 
 // ====================================================================================================================
 // Protected member functions
@@ -1343,7 +1017,6 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     for( int i = 0; i < iSize; i++ )
     {
       rpcPic = *iterPic;
-#if JVET_N0278_FIXES
       if( !rpcPic->referenced && rpcPic->layerId == m_layerId )
       {
         break;
@@ -1352,22 +1025,12 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
       {
         rpcPic = nullptr;
       }
-#else
-      if( !rpcPic->referenced )
-      {
-        break;
-      }
-#endif
       iterPic++;
     }
 
     // If PPS ID is the same, we will assume that it has not changed since it was last used
     // and return the old object.
-#if JVET_N0278_FIXES
     if( rpcPic && pps.getPPSId() != rpcPic->cs->pps->getPPSId() )
-#else
-    if (pps.getPPSId() != rpcPic->cs->pps->getPPSId())
-#endif
     {
       // the IDs differ - free up an entry in the list, and then create a new one, as with the case where the max buffering state has not been reached.
       rpcPic->destroy();
@@ -1380,11 +1043,7 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   if (rpcPic==0)
   {
     rpcPic = new Picture;
-#if JVET_N0278_FIXES
     rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerId );
-#else
-    rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false );
-#endif
     if( m_rprEnabled )
     {
       rpcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
@@ -1424,9 +1083,6 @@ void EncLib::xInitVPS(VPS& vps)
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
-#if !JVET_N0278_FIXES  
-  vps.setMaxLayers(1);
-#endif
 #if !JVET_O1159_SCALABILITY
   for (uint32_t i = 0; i < vps.getMaxLayers(); i++)
   {

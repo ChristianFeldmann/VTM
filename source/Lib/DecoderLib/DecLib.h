@@ -142,9 +142,7 @@ private:
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
   std::vector<int> m_accessUnitApsNals;
 
-#if JVET_N0278_FIXES
   VPS*                    m_vps;
-#endif
 #if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
@@ -199,9 +197,7 @@ public:
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 #endif
 
-#if JVET_N0278_FIXES
   const VPS* getVPS()                     { return m_vps; }
-#endif
 #if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   void  initScalingList()
   {
@@ -216,7 +212,6 @@ public:
 protected:
   void  xUpdateRasInit(Slice* slice);
 
-#if JVET_N0278_FIXES
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
 #if JVET_P0184
@@ -225,16 +220,6 @@ protected:
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId);
 #endif
   void  xActivateParameterSets( const int layerId );
-#else
-  Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
-  void  xCreateLostPicture (int iLostPOC);
-#if JVET_P0184
-  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const bool interLayerRefPicFlag);
-#else
-  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag);
-#endif
-  void      xActivateParameterSets();
-#endif
 #if JVET_P1006_PICTURE_HEADER
   void      xDecodePicHeader( InputNALUnit& nalu );
 #endif

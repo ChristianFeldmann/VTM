@@ -153,7 +153,6 @@
 
 #define JVET_P0347_MAX_MTT_DEPTH_CONSTRAINT               1 // JVET-P0347: Max MTT Depth constraint
 
-#define JVET_N0278_FIXES                                  1 // Working draft 5 independent layers
 
 #define JVET_O1159_SCALABILITY                            1 // JVET-O1159: Scalability
 

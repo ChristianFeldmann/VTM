@@ -832,7 +832,6 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 #endif
 
-#if JVET_N0278_FIXES
   int         m_maxLayers;
 
 #if JVET_O1159_SCALABILITY
@@ -847,7 +846,6 @@ protected:
   int         m_olsModeIdc;
   int         m_numOutputLayerSets;
   std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
-#endif
 #endif
 
 #if EXTENSION_360_VIDEO

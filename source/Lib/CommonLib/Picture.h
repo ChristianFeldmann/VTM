@@ -168,11 +168,7 @@ struct Picture : public UnitArea
   uint32_t margin;
   Picture();
 
-#if JVET_N0278_FIXES
   void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerId );
-#else
-  void create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder);
-#endif
   void destroy();
 
   void createTempBuffers( const unsigned _maxCUSize );
@@ -298,9 +294,7 @@ public:
   int  poc;
   uint32_t layer;
   uint32_t depth;
-#if JVET_N0278_FIXES
   int      layerId;
-#endif
 
 #if JVET_O0235_NAL_UNIT_TYPE_CONSTRAINTS
   bool subLayerNonReferencePictureDueToSTSA;

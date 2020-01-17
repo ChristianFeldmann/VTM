@@ -45,22 +45,18 @@
 #include "Utilities/VideoIOYuv.h"
 #include "CommonLib/NAL.h"
 #include "EncAppCfg.h"
-#if JVET_N0278_FIXES
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncTop.h"
 #endif
 #if JVET_O0549_ENCODER_ONLY_FILTER
 #include "EncoderLib/EncTemporalFilter.h"
 #endif
-#endif
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include <chrono>
 #endif
 
-#if JVET_N0278_FIXES
 class EncAppCommon;
-#endif
 
 //! \ingroup EncoderApp
 //! \{
@@ -80,22 +76,14 @@ private:
   int               m_iFrameRcvd;                 ///< number of received frames
   uint32_t          m_essentialBytes;
   uint32_t          m_totalBytes;
-#if JVET_N0278_FIXES
   fstream&          m_bitstream;
-#else
-  fstream           m_bitstream;
-#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 
 private:
   // initialization
-#if JVET_N0278_FIXES
   void xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId );         ///< create files & encoder class
-#else
-  void xCreateLib  ( std::list<PelUnitBuf*>& recBufList );                           ///< create files & encoder class
-#endif
   void xInitLibCfg ();                           ///< initialize internal variables
   void xInitLib    (bool isFieldCoding);         ///< initialize encoder class
   void xDestroyLib ();                           ///< destroy encoder class
@@ -107,7 +95,6 @@ private:
   void printRateSummary ();
   void printChromaFormat();
 
-#if JVET_N0278_FIXES
   std::list<PelUnitBuf*> m_recBufList;
   int                    m_numEncoded;
   PelStorage*            m_trueOrgPic;
@@ -119,25 +106,16 @@ private:
   EncTemporalFilter      m_temporalFilter;
 #endif
   bool m_flush;
-#endif
 
 public:
-#if JVET_N0278_FIXES
   EncApp( fstream& bitStream, EncLibCommon* encLibCommon );
-#else
-  EncApp();
-#endif
   virtual ~EncApp();
 
-#if JVET_N0278_FIXES
   int   getMaxLayers() const { return m_maxLayers; }
   void  createLib( int layerId );
   void  destroyLib();
   bool  encodePrep( bool& eos );
   bool  encode();                               ///< main encoding function
-#else
-  void  encode();                               ///< main encoding function
-#endif
 
   void  outputAU( const AccessUnit& au );
 

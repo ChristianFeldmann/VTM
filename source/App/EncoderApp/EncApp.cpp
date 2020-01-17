@@ -962,9 +962,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCropOffsetBottom                                  (m_cropOffsetBottom);
   m_cEncLib.setCalculateHdrMetrics                               (m_calculateHdrMetrics);
 #endif
-#if JVET_O0549_ENCODER_ONLY_FILTER
   m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
-#endif
   m_cEncLib.setNumRefLayers                                       ( m_numRefLayers );
 }
 
@@ -1070,7 +1068,6 @@ void EncApp::createLib( const int layerId )
   m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), *m_orgPic );
 #endif
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
   if( m_gopBasedTemporalFilterEnabled )
   {
     m_temporalFilter.init( m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
@@ -1078,7 +1075,6 @@ void EncApp::createLib( const int layerId )
       m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
       m_gopBasedTemporalFilterFutureReference );
   }
-#endif
 }
 
 void EncApp::destroyLib()
@@ -1134,12 +1130,10 @@ bool EncApp::encodePrep( bool& eos )
   m_cVideoIOYuvInputFile.read( *m_orgPic, *m_trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
 #endif
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
   if( m_gopBasedTemporalFilterEnabled )
   {
     m_temporalFilter.filter( m_orgPic, m_iFrameRcvd );
   }
-#endif
 
   // increase number of received frames
   m_iFrameRcvd++;

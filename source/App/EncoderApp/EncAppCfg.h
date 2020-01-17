@@ -39,14 +39,12 @@
 #define __ENCAPPCFG__
 
 #include "CommonLib/CommonDef.h"
-#if JVET_O0549_ENCODER_ONLY_FILTER
 
 #include <map>
 template <class T1, class T2>
 static inline std::istream& operator >> (std::istream &in, std::map<T1, T2> &map);
 
 #include "Utilities/program_options_lite.h"
-#endif
 
 #include "EncoderLib/EncCfg.h"
 #if EXTENSION_360_VIDEO
@@ -56,9 +54,7 @@ static inline std::istream& operator >> (std::istream &in, std::map<T1, T2> &map
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/DistortionMetric.H"
 #endif
-#if JVET_O0549_ENCODER_ONLY_FILTER
 namespace po = df::program_options_lite;
-#endif
 
 #include <sstream>
 #include <vector>
@@ -826,11 +822,9 @@ protected:
   int         m_switchPocPeriod;
   int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
   bool                  m_gopBasedTemporalFilterEnabled;               ///< GOP-based Temporal Filter enable/disable
   bool                  m_gopBasedTemporalFilterFutureReference;       ///< Enable/disable future frame references in the GOP-based Temporal Filter
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
-#endif
 
   int         m_maxLayers;
 

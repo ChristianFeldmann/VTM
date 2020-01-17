@@ -122,9 +122,7 @@ struct AreaBuf : public Size
   void subtract             ( const AreaBuf<const T> &other );
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
-#if JVET_O0549_ENCODER_ONLY_FILTER
   void extendBorderPel(unsigned marginX, unsigned marginY);
-#endif
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
   void padBorderPel         ( unsigned marginX, unsigned marginY, int dir );
 #endif
@@ -536,7 +534,6 @@ void AreaBuf<T>::updateHistogram( std::vector<int32_t>& hist ) const
   }
 }
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
 template<typename T>
 void AreaBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
 {
@@ -573,7 +570,6 @@ void AreaBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
     ::memcpy(p - (y + 1) * s, p, sizeof(T) * (w + (marginX << 1)));
   }
 }
-#endif
 
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
 template<typename T>
@@ -791,9 +787,7 @@ struct UnitBuf
   void addWeightedAvg       ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const uint8_t bcwIdx = BCW_DEFAULT, const bool chromaOnly = false, const bool lumaOnly = false);
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
   void extendSingleBorderPel();
-#if JVET_O0549_ENCODER_ONLY_FILTER
   void extendBorderPel(unsigned marginX, unsigned marginY);
-#endif
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
   void padBorderPel         ( unsigned margin, int dir );
 #endif
@@ -942,7 +936,6 @@ void UnitBuf<T>::extendSingleBorderPel()
   }
 }
 
-#if JVET_O0549_ENCODER_ONLY_FILTER
 template<typename T>
 void UnitBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
 {
@@ -951,7 +944,6 @@ void UnitBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
     bufs[i].extendBorderPel(marginX >> getComponentScaleX(ComponentID(i), chromaFormat), marginY >> getComponentScaleY(ComponentID(i), chromaFormat));
   }
 }
-#endif
 
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
 template<typename T>

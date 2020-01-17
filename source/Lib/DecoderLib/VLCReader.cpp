@@ -1469,7 +1469,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode,  "sps_amvr_enabled_flag" );                     pcSPS->setAMVREnabledFlag ( uiCode != 0 );
 
   READ_FLAG( uiCode, "sps_bdof_enabled_flag" );                      pcSPS->setBDOFEnabledFlag ( uiCode != 0 );
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
   if (pcSPS->getBDOFEnabledFlag())
   {
     READ_FLAG(uiCode, "sps_bdof_pic_present_flag");                 pcSPS->setBdofControlPresentFlag( uiCode != 0 );
@@ -1477,10 +1476,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   else {
     pcSPS->setBdofControlPresentFlag( false );
   }
-#endif
   READ_FLAG(uiCode, "sps_smvd_enabled_flag");                       pcSPS->setUseSMVD( uiCode != 0 );
   READ_FLAG(uiCode, "sps_dmvr_enabled_flag");                        pcSPS->setUseDMVR(uiCode != 0);
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
   if (pcSPS->getUseDMVR())
   {
     READ_FLAG(uiCode, "sps_dmvr_pic_present_flag");                 pcSPS->setDmvrControlPresentFlag( uiCode != 0 );
@@ -1488,7 +1485,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   else {
     pcSPS->setDmvrControlPresentFlag( false );
   }
-#endif
   READ_FLAG(uiCode, "sps_mmvd_enabled_flag");                        pcSPS->setUseMMVD(uiCode != 0);
   READ_FLAG(uiCode, "sps_isp_enabled_flag");                        pcSPS->setUseISP( uiCode != 0 );
   READ_FLAG(uiCode, "sps_mrl_enabled_flag");                        pcSPS->setUseMRL( uiCode != 0 );
@@ -1527,7 +1523,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,  "sps_affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
     READ_FLAG( uiCode, "sps_affine_amvr_enabled_flag" );            pcSPS->setAffineAmvrEnabledFlag  ( uiCode != 0 );
     READ_FLAG( uiCode, "sps_affine_prof_enabled_flag" );            pcSPS->setUsePROF                ( uiCode != 0 );
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
     if (pcSPS->getUsePROF())
     {
       READ_FLAG(uiCode, "sps_prof_pic_present_flag");               pcSPS->setProfControlPresentFlag ( uiCode != 0 );
@@ -1535,7 +1530,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     else {
       pcSPS->setProfControlPresentFlag( false );
     }
-#endif
   }
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
@@ -1564,13 +1558,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
-#else
-  if (pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
-  {
-    READ_FLAG(uiCode, "sps_bdof_dmvr_slice_level_present_flag");             pcSPS->setBdofDmvrSlicePresentFlag(uiCode != 0);
-  }
-#endif
 
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
 
@@ -2272,7 +2259,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setDisFracMMVD(false);
   }
   
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
   // picture level BDOF disable flags
   if (sps->getBdofControlPresentFlag())
   {
@@ -2302,17 +2288,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setDisProfFlag(0);
   }
-#else
-  // picture level BDOF/DMVR/PROF disable flags
-  if (sps->getBdofDmvrSlicePresentFlag())
-  {
-    READ_FLAG(uiCode, "pic_disable_bdof_dmvr_flag");  picHeader->setDisBdofDmvrFlag( uiCode != 0 );
-  }
-  else
-  {
-    picHeader->setDisBdofDmvrFlag(0);
-  }
-#endif
 
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)

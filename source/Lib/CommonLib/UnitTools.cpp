@@ -1360,11 +1360,7 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
   pu.cu->slice->getWpScaling(REF_PIC_LIST_0, refIdx0, wp0);
   pu.cu->slice->getWpScaling(REF_PIC_LIST_1, refIdx1, wp1);
 #if JVET_P1006_PICTURE_HEADER
-#if  JVET_P0314_PROF_BDOF_DMVR_HLS
   if (pu.cs->sps->getUseDMVR() && (!pu.cs->picHeader->getDisDmvrFlag()))
-#else
-  if (pu.cs->sps->getUseDMVR() && (!pu.cs->picHeader->getDisBdofDmvrFlag()))
-#endif
 #else
   if (pu.cs->sps->getUseDMVR() && (!pu.cs->slice->getDisBdofDmvrFlag()))
 #endif

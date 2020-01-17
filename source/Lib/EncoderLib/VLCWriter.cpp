@@ -982,20 +982,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getAMVREnabledFlag() ? 1 : 0,                                   "sps_amvr_enabled_flag" );
 
   WRITE_FLAG( pcSPS->getBDOFEnabledFlag() ? 1 : 0,                                   "sps_bdof_enabled_flag" );
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
   if (pcSPS->getBDOFEnabledFlag())
   {
     WRITE_FLAG(pcSPS->getBdofControlPresentFlag() ? 1 : 0,                           "sps_bdof_pic_present_flag");
   }
-#endif
   WRITE_FLAG( pcSPS->getUseSMVD() ? 1 : 0,                                            "sps_smvd_enabled_flag" );
   WRITE_FLAG( pcSPS->getUseDMVR() ? 1 : 0,                                            "sps_dmvr_enabled_flag" );
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
   if (pcSPS->getUseDMVR())
   {
     WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                            "sps_dmvr_pic_present_flag");
   }
-#endif
   WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enabled_flag");
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "sps_isp_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMRL() ? 1 : 0,                                             "sps_mrl_enabled_flag");
@@ -1030,12 +1026,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "sps_affine_type_flag" );
     WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
     WRITE_FLAG( pcSPS->getUsePROF() ? 1 : 0,                                                   "sps_affine_prof_enabled_flag" );
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
     if (pcSPS->getUsePROF())
     {
       WRITE_FLAG(pcSPS->getProfControlPresentFlag() ? 1 : 0,                                   "sps_prof_pic_present_flag" );
     }
-#endif
   }
 #if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
@@ -1057,13 +1051,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
-#else
-  if(pcSPS->getBDOFEnabledFlag() || pcSPS->getUseDMVR())
-  {
-    WRITE_FLAG(pcSPS->getBdofDmvrSlicePresentFlag() ? 1 : 0,                            "sps_bdof_dmvr_slice_level_present_flag");
-  }
-#endif
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "sps_triangle_enabled_flag" );
 
 #if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
@@ -1608,7 +1595,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setDisFracMMVD(false);
   }
   
-#if JVET_P0314_PROF_BDOF_DMVR_HLS
   // picture level BDOF disable flags
   if (sps->getBdofControlPresentFlag())
   {
@@ -1638,17 +1624,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setDisProfFlag(0);
   }
-#else
-  // picture level BDOF/DMVR/PROF disable flags
-  if (sps->getBdofDmvrSlicePresentFlag())
-  {
-    WRITE_FLAG(picHeader->getDisBdofDmvrFlag(), "pic_disable_bdof_dmvr_flag");
-  }
-  else
-  {
-    picHeader->setDisBdofDmvrFlag(0);
-  }
-#endif
 
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)

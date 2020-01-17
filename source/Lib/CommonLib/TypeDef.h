@@ -63,7 +63,6 @@
 
 
 
-#define JVET_P0314_PROF_BDOF_DMVR_HLS                     1 // JVET-P0314: BDOF/DMVR/PROF high level flags
 
 #define JVET_P0438_ALF_APS_CONSTRAINT                     1 // JVET-P0438: add bitstream constraint for ALF APS 
 

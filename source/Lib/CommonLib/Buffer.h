@@ -123,9 +123,7 @@ struct AreaBuf : public Size
   void extendSingleBorderPel();
   void extendBorderPel      (  unsigned margin );
   void extendBorderPel(unsigned marginX, unsigned marginY);
-#if JVET_P1038_ALF_PAD_RASTER_SLICE
   void padBorderPel         ( unsigned marginX, unsigned marginY, int dir );
-#endif
   void addWeightedAvg       ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng, const int8_t bcwIdx);
   void removeWeightHighFreq ( const AreaBuf<T>& other, const bool bClip, const ClpRng& clpRng, const int8_t iBcwWeight);
   void addAvg               ( const AreaBuf<const T> &other1, const AreaBuf<const T> &other2, const ClpRng& clpRng );
@@ -571,7 +569,6 @@ void AreaBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
   }
 }
 
-#if JVET_P1038_ALF_PAD_RASTER_SLICE
 template<typename T>
 void AreaBuf<T>::padBorderPel( unsigned marginX, unsigned marginY, int dir )
 {
@@ -610,7 +607,6 @@ void AreaBuf<T>::padBorderPel( unsigned marginX, unsigned marginY, int dir )
     }
   }
 }
-#endif
 
 template<typename T>
 void AreaBuf<T>::extendBorderPel( unsigned margin )
@@ -788,9 +784,7 @@ struct UnitBuf
   void addAvg               ( const UnitBuf<const T> &other1, const UnitBuf<const T> &other2, const ClpRngs& clpRngs, const bool chromaOnly = false, const bool lumaOnly = false);
   void extendSingleBorderPel();
   void extendBorderPel(unsigned marginX, unsigned marginY);
-#if JVET_P1038_ALF_PAD_RASTER_SLICE
   void padBorderPel         ( unsigned margin, int dir );
-#endif
   void extendBorderPel      ( unsigned margin );
   void removeHighFreq       ( const UnitBuf<T>& other, const bool bClip, const ClpRngs& clpRngs
                             , const int8_t bcwWeight = g_BcwWeights[BCW_DEFAULT]
@@ -945,7 +939,6 @@ void UnitBuf<T>::extendBorderPel(unsigned marginX, unsigned marginY)
   }
 }
 
-#if JVET_P1038_ALF_PAD_RASTER_SLICE
 template<typename T>
 void UnitBuf<T>::padBorderPel( unsigned margin, int dir )
 {
@@ -954,7 +947,6 @@ void UnitBuf<T>::padBorderPel( unsigned margin, int dir )
     bufs[i].padBorderPel( margin >> getComponentScaleX( ComponentID( i ), chromaFormat ), margin >> getComponentScaleY( ComponentID( i ), chromaFormat ), dir );
   }
 }
-#endif
 
 template<typename T>
 void UnitBuf<T>::extendBorderPel( unsigned margin )

@@ -54,7 +54,6 @@
 
 
 
-#define JVET_P1038_ALF_PAD_RASTER_SLICE                   1 // JVET-P1038, handle ALF padding in raster scan slice
 
 #define JVET_P1019_OUTPUT_LAYER_SET                       1 // JVET-P1019: Signaling of output layer set (OLS) and its output process
 

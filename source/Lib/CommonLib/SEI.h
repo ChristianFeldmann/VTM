@@ -362,10 +362,8 @@ public:
 #endif
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
-#if JVET_P0446_ALT_CPB
     , m_altCpbParamsPresentFlag (false)
     , m_useAltCpbParamsFlag (false)
-#endif
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
@@ -407,10 +405,8 @@ public:
 #endif
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
-#if JVET_P0446_ALT_CPB
   bool     m_altCpbParamsPresentFlag;
   bool     m_useAltCpbParamsFlag;
-#endif
 };
 
 class SEIPictureTiming : public SEI
@@ -424,11 +420,9 @@ public:
   , m_picDpbOutputDuDelay (0)
   , m_numDecodingUnitsMinus1 (0)
   , m_duCommonCpbRemovalDelayFlag (false)
-#if JVET_P0446_ALT_CPB
   , m_cpbAltTimingInfoPresentFlag (false)
   , m_cpbDelayOffset (0)
   , m_dpbDelayOffset (0)
-#endif
   {
     ::memset(m_ptSubLayerDelaysPresentFlag, 0, sizeof(m_ptSubLayerDelaysPresentFlag));
     ::memset(m_duCommonCpbRemovalDelayMinus1, 0, sizeof(m_duCommonCpbRemovalDelayMinus1));
@@ -452,13 +446,11 @@ public:
   uint32_t  m_duCommonCpbRemovalDelayMinus1[MAX_TLAYER];
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
-#if JVET_P0446_ALT_CPB
   bool     m_cpbAltTimingInfoPresentFlag;
   std::vector<uint32_t> m_cpbAltInitialCpbRemovalDelayDelta;
   std::vector<uint32_t> m_cpbAltInitialCpbRemovalOffsetDelta;
   uint32_t m_cpbDelayOffset;
   uint32_t m_dpbDelayOffset;
-#endif
 };
 
 class SEIDecodingUnitInfo : public SEI

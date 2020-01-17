@@ -613,9 +613,7 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
   sei_read_code( pDecodedMessageOutputStream, 5, code, "initial_cpb_removal_delay_length_minus1" );     sei.m_initialCpbRemovalDelayLength = code + 1;
   sei_read_code( pDecodedMessageOutputStream, 5, code, "cpb_removal_delay_length_minus1" );             sei.m_cpbRemovalDelayLength        = code + 1;
   sei_read_code( pDecodedMessageOutputStream, 5, code, "dpb_output_delay_length_minus1" );              sei.m_dpbOutputDelayLength         = code + 1;
-#if JVET_P0446_ALT_CPB
   sei_read_flag( pDecodedMessageOutputStream, code, "alt_cpb_params_present_flag");                     sei.m_altCpbParamsPresentFlag      = code;
-#endif
   sei_read_flag( pDecodedMessageOutputStream, code, "bp_decoding_unit_hrd_params_present_flag" );       sei.m_bpDecodingUnitHrdParamsPresentFlag = code;
   if( sei.m_bpDecodingUnitHrdParamsPresentFlag )
   {
@@ -687,12 +685,10 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
       }
     }
   }
-#if JVET_P0446_ALT_CPB
   if (sei.m_altCpbParamsPresentFlag)
   {
     sei_read_flag(pDecodedMessageOutputStream, code, "use_alt_cpb_params_flag"); sei.m_useAltCpbParamsFlag = code;
   }
-#endif
 
 }
 
@@ -705,7 +701,6 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   sei_read_code( pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, symbol, "cpb_removal_delay_minus1[bp_max_sub_layers_minus1]" );
   sei.m_auCpbRemovalDelay[bp.m_bpMaxSubLayers - 1] = symbol + 1;
 
-#if JVET_P0446_ALT_CPB
   if( bp.m_altCpbParamsPresentFlag ) 
   {
     sei_read_flag( pDecodedMessageOutputStream, symbol, "cpb_alt_timing_info_present_flag" ); sei.m_cpbAltTimingInfoPresentFlag = symbol;
@@ -729,7 +724,6 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     sei.m_cpbAltTimingInfoPresentFlag = false;
     sei.m_cpbDelayOffset = sei.m_dpbDelayOffset = 0;
   }
-#endif
 
   for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
   {

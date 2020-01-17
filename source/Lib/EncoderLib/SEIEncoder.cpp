@@ -318,7 +318,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
     }
   }
-#if JVET_P0446_ALT_CPB
   // A commercial encoder should track the buffer state for all layers and sub-layers
   // to ensure CPB conformance. Such tracking is required for calculating alternative
   // CPB parameters.
@@ -326,7 +325,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   // CPB parameters here.
   bufferingPeriodSEI->m_altCpbParamsPresentFlag = false;
   bufferingPeriodSEI->m_useAltCpbParamsFlag = false;
-#endif
 }
 
 #if JVET_P0462_SEI360

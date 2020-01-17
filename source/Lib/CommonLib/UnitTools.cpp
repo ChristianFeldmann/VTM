@@ -168,17 +168,6 @@ bool CU::isSameTile(const CodingUnit& cu, const CodingUnit& cu2)
 }
 
 #if !JVET_P1004_REMOVE_BRICKS
-#if JVET_O0625_ALF_PADDING
-bool CU::isSameBrick( const CodingUnit& cu, const CodingUnit& cu2 )
-{
-  const Picture&  pcPic    = *( cu.cs->picture );
-  const BrickMap& tileMap  = *( pcPic.brickMap );
-  const uint32_t brickIdx  = tileMap.getBrickIdxRsMap( cu.lumaPos() );
-  const uint32_t brickIdx2 = tileMap.getBrickIdxRsMap( cu2.lumaPos() );
-
-  return brickIdx == brickIdx2;
-}
-#endif
 #endif
 
 bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)

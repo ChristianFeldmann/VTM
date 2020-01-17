@@ -197,9 +197,6 @@ static const int ALF_CTB_MAX_NUM_APS         =                      8;
 static const int NUM_FIXED_FILTER_SETS       =                     16;
 static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
 
-#if JVET_O0625_ALF_PADDING
-static const int ALF_NONE_BOUNDARY           =                     -128;
-#endif
 
 static const int MAX_BDOF_APPLICATION_REGION =                     16;
 

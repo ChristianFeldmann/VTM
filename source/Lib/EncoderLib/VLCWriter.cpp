@@ -2835,9 +2835,7 @@ void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
   }
 
 #if !JVET_P1004_REMOVE_BRICKS
-#if !JVET_O0145_ENTRYPOINT_SIGNALLING
   WRITE_UVLC(pSlice->getNumberOfSubstreamSizes(), "num_entry_point_offsets");
-#endif
 #endif
   if (pSlice->getNumberOfSubstreamSizes()>0)
   {

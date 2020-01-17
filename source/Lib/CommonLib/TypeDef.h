@@ -243,7 +243,6 @@
 
 #define JVET_P0152_REMOVE_PPS_NUM_SUBBLOCK_MERGE_CAND     1 // JVET-P0152: remove pps_five_minus_max_num_subblock_merge_cand_plus1
 
-#define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
 
 #define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 

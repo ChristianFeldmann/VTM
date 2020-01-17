@@ -122,13 +122,7 @@
 
 
 
-#define JVET_P0058_CHROMA_TS                              1 // JVET-P0058: Enable Transform skip for chroma
-#if JVET_AHG14_LOSSLESS && !JVET_P0058_CHROMA_TS
-#define JVET_P0058_CHROMA_TS                              1
-#endif
-#if JVET_P0058_CHROMA_TS
 #define JVET_P0058_CHROMA_TS_ENCODER_INTRA_SAD_MOD        1 // Modified cost criterion for chroma intra encoder search
-#endif
 
 #define JVET_P0436_CQP_OFFSET_SIGNALLING                  1 // JVET_P0436: CU chroma QP offset signalling consistent with VPDU and bugfix 
 

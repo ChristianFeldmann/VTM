@@ -1288,9 +1288,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkip",                                   m_useTransformSkip,                               false, "Intra transform skipping")
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
-#if JVET_P0058_CHROMA_TS
   ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
-#endif
 #if JVET_P0059_CHROMA_BDPCM
   ("BDPCM",                                           m_useBDPCM,                                           0, "BDPCM (0:off, 1:lumaonly, 2:lumachroma")
 #else
@@ -4239,9 +4237,7 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "TransformSkip:%d ",     m_useTransformSkip     );
   msg( VERBOSE, "TransformSkipFast:%d ", m_useTransformSkipFast );
   msg( VERBOSE, "TransformSkipLog2MaxSize:%d ", m_log2MaxTransformSkipBlockSize);
-#if JVET_P0058_CHROMA_TS
   msg(VERBOSE, "ChromaTS:%d ", m_useChromaTS);
-#endif
   msg( VERBOSE, "BDPCM:%d ", m_useBDPCM                         );
   msg( VERBOSE, "Tiles: %dx%d ", m_numTileCols, m_numTileRows );
   msg( VERBOSE, "Slices: %d ", m_numSlicesInPic);

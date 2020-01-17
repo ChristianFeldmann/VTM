@@ -370,11 +370,7 @@ void Quant::dequant(const TransformUnit &tu,
   const int             maxLog2TrDynamicRange = sps->getMaxLog2TrDynamicRange(toChannelType(compID));
   const TCoeff          transformMinimum   = -(1 << maxLog2TrDynamicRange);
   const TCoeff          transformMaximum   =  (1 << maxLog2TrDynamicRange) - 1;
-#if JVET_P0058_CHROMA_TS
   const bool            isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
-#else
-  const bool            isTransformSkip = tu.mtsIdx==MTS_SKIP && isLuma(compID);
-#endif
 
   const bool            disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
   const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
@@ -400,11 +396,7 @@ void Quant::dequant(const TransformUnit &tu,
   CHECK(uiWidth > m_uiMaxTrSize, "Unsupported transformation size");
 
   // Represents scaling through forward transform
-#if JVET_P0058_CHROMA_TS
   const bool bClipTransformShiftTo0 = tu.mtsIdx[compID] != MTS_SKIP && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
-#else
-  const bool bClipTransformShiftTo0 = tu.mtsIdx!=MTS_SKIP && sps->getSpsRangeExtension().getExtendedPrecisionProcessingFlag();
-#endif
   const int  originalTransformShift = getTransformShift(channelBitDepth, area.size(), maxLog2TrDynamicRange);
   const bool needSqrtAdjustment     = TU::needsBlockSizeTrafoScale( tu, compID );
   const int  iTransformShift        = (bClipTransformShiftTo0 ? std::max<int>(0, originalTransformShift) : originalTransformShift) + (needSqrtAdjustment?-1:0);
@@ -970,15 +962,7 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
   const CCoeffBuf &piCoef   = pSrc;
         CoeffBuf   piQCoef  = tu.getCoeffs(compID);
 
-#if JVET_P0058_CHROMA_TS
   const bool useTransformSkip      = (tu.mtsIdx[compID] == MTS_SKIP);
-#else
-#if JVET_P0059_CHROMA_BDPCM
-  const bool useTransformSkip      = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID) );
-#else
-  const bool useTransformSkip      = tu.mtsIdx==MTS_SKIP && isLuma(compID);
-#endif
-#endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   {
@@ -1062,11 +1046,7 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const CCoeffBuf piCoef    = pSrc;
 
-#if JVET_P0058_CHROMA_TS
   const bool useTransformSkip      = (tu.mtsIdx[compID] == MTS_SKIP);
-#else
-  const bool useTransformSkip      = tu.mtsIdx == MTS_SKIP && isLuma(compID);
-#endif
   const int  maxLog2TrDynamicRange = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
 
   int scalingListType = getScalingListType(tu.cu->predMode, compID);
@@ -1128,11 +1108,7 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
   const int            scalingListType                = getScalingListType(tu.cu->predMode, compID);
   const bool           disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, tu.cu->lfnstIdx > 0, disableSMForLFNST);
-#if JVET_P0058_CHROMA_TS
   const bool           useTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
-#else
-  const bool useTransformSkip      = tu.mtsIdx == MTS_SKIP && isLuma(compID);
-#endif
   const int            defaultQuantisationCoefficient = g_quantScales[0][cQP.rem(useTransformSkip)];
 
   CHECK( scalingListType >= SCALING_LIST_NUM, "Invalid scaling list" );
@@ -1183,19 +1159,8 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   const CompArea      &rect                   = tu.blocks[compID];
   const uint32_t           uiWidth                = rect.width;
   const uint32_t           uiHeight               = rect.height;
-#if JVET_P0058_CHROMA_TS
   const int            QP_per                 = cQP.per(tu.mtsIdx[compID] == MTS_SKIP);
   const int            QP_rem                 = cQP.rem(tu.mtsIdx[compID] == MTS_SKIP);
-#else
-#if JVET_P0059_CHROMA_BDPCM
-  const bool           isTransformSkip        = (tu.mtsIdx == MTS_SKIP && isLuma(compID)) || (tu.cu->bdpcmModeChroma && isChroma(compID));
-  const int            QP_per                 = cQP.per(isTransformSkip);
-  const int            QP_rem                 = cQP.rem(isTransformSkip);
-#else
-  const int            QP_per                 = cQP.per(tu.mtsIdx==MTS_SKIP && isLuma(compID));
-  const int            QP_rem                 = cQP.rem(tu.mtsIdx==MTS_SKIP && isLuma(compID));
-#endif
-#endif
   const int            maxLog2TrDynamicRange  = sps.getMaxLog2TrDynamicRange(toChannelType(compID));
   const int            channelBitDepth        = sps.getBitDepth(toChannelType(compID));
   const int            iTransformShift        = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
@@ -1205,11 +1170,7 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
 
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
 
-#if JVET_P0058_CHROMA_TS
   const bool isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
-#else
-  const bool isTransformSkip = (tu.mtsIdx == MTS_SKIP && isLuma(compID));
-#endif
   const int rightShift = (IQUANT_SHIFT - ((isTransformSkip ? 0 : iTransformShift) + QP_per)) + (enableScalingLists ? LOG2_SCALING_LIST_NEUTRAL_VALUE : 0);
 
   const TCoeff transformMinimum = -(1 << maxLog2TrDynamicRange);

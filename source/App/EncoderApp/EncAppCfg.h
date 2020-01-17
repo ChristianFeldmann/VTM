@@ -329,9 +329,7 @@ protected:
   bool      m_useColorTrans;
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
-#if JVET_P0058_CHROMA_TS
   bool      m_useChromaTS;
-#endif
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;

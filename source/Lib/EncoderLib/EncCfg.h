@@ -437,9 +437,7 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
-#if JVET_P0058_CHROMA_TS
   bool      m_useChromaTS;
-#endif
 #if JVET_P0059_CHROMA_BDPCM
   int       m_useBDPCM;
 #else
@@ -1370,10 +1368,8 @@ public:
   void setTransformSkipRotationEnabledFlag             (const bool value)  { m_transformSkipRotationEnabledFlag = value; }
   bool getTransformSkipContextEnabledFlag              ()            const { return m_transformSkipContextEnabledFlag;  }
   void setTransformSkipContextEnabledFlag              (const bool value)  { m_transformSkipContextEnabledFlag = value; }
-#if JVET_P0058_CHROMA_TS
   bool getUseChromaTS                                  ()       { return m_useChromaTS; }
   void setUseChromaTS                                  (bool b) { m_useChromaTS = b; }
-#endif
 #if JVET_P0059_CHROMA_BDPCM
   int  getUseBDPCM                                     ()         { return m_useBDPCM; }
   void setUseBDPCM                                     ( int b )  { m_useBDPCM = b;    }

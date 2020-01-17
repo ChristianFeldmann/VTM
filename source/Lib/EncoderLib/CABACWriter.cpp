@@ -2902,18 +2902,10 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   ts_flag            ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
-#if JVET_P0058_CHROMA_TS
 #if JVET_P0059_CHROMA_BDPCM
   if (tu.mtsIdx[compID] == MTS_SKIP)
 #else
   if (tu.mtsIdx[compID] == MTS_SKIP || (tu.cu->bdpcmMode && isLuma(compID)))
-#endif
-#else
-#if JVET_P0059_CHROMA_BDPCM
-  if ((isLuma(compID) && (tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode)) || (isChroma(compID) && tu.cu->bdpcmModeChroma) )
-#else
-  if( isLuma( compID ) && ( tu.mtsIdx == MTS_SKIP || tu.cu->bdpcmMode ) )
-#endif
 #endif
   {
     residual_codingTS( tu, compID );
@@ -2922,11 +2914,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
 
   // determine sign hiding
   bool signHiding  = ( cu.cs->picHeader->getSignDataHidingEnabledFlag() && tu.rdpcm[compID] == RDPCM_OFF );
-#if JVET_P0058_CHROMA_TS
   if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx[compID] == MTS_SKIP)
-#else
-  if(  signHiding && CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && tu.mtsIdx==MTS_SKIP )
-#endif
   {
     const ChannelType chType    = toChannelType( compID );
     const unsigned    intraMode = PU::getFinalIntraMode( *cu.cs->getPU( tu.blocks[compID].pos(), chType ), chType );
@@ -2955,20 +2943,12 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   CHECK( scanPosLast < 0, "Coefficient coding called for empty TU" );
   cctx.setScanPosLast(scanPosLast);
 
-#if JVET_P0058_CHROMA_TS
   if (cuCtx && tu.mtsIdx[compID] != MTS_SKIP && tu.blocks[compID].height >= 4 && tu.blocks[compID].width >= 4)
-#else
-  if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
-#endif
   {
     const int maxLfnstPos = ((tu.blocks[compID].height == 4 && tu.blocks[compID].width == 4) || (tu.blocks[compID].height == 8 && tu.blocks[compID].width == 8)) ? 7 : 15;
     cuCtx->violatesLfnstConstrained[ toChannelType(compID) ] |= cctx.scanPosLast() > maxLfnstPos;
   }
-#if JVET_P0058_CHROMA_TS
   if (cuCtx && tu.mtsIdx[compID] != MTS_SKIP && tu.blocks[compID].height >= 4 && tu.blocks[compID].width >= 4)
-#else
-  if( cuCtx && tu.mtsIdx != MTS_SKIP && tu.blocks[ compID ].height >= 4 && tu.blocks[ compID ].width >= 4 )
-#endif
   {
     const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
     cuCtx->lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
@@ -3006,13 +2986,8 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
 
 void CABACWriter::ts_flag( const TransformUnit& tu, ComponentID compID )
 {
-#if JVET_P0058_CHROMA_TS
   int tsFlag = tu.mtsIdx[compID] == MTS_SKIP ? 1 : 0;
   int ctxIdx = isLuma(compID) ? 0 : 1;
-#else
-  int tsFlag = tu.mtsIdx == MTS_SKIP ? 1 : 0;
-  int ctxIdx = 0;
-#endif
   
   if( TU::isTSAllowed ( tu, compID ) )
   {
@@ -3024,11 +2999,7 @@ void CABACWriter::ts_flag( const TransformUnit& tu, ComponentID compID )
 void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx* cuCtx )
 {
   TransformUnit &tu = *cu.firstTU;
-#if JVET_P0058_CHROMA_TS
   int        mtsIdx = tu.mtsIdx[COMPONENT_Y];
-#else
-  int        mtsIdx = tu.mtsIdx;
-#endif
   
   if( CU::isMTSAllowed( cu, COMPONENT_Y ) && cuCtx && !cuCtx->violatesMtsCoeffConstraint &&
       cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
@@ -3078,11 +3049,7 @@ void CABACWriter::isp_mode( const CodingUnit& cu )
 void CABACWriter::explicit_rdpcm_mode( const TransformUnit& tu, ComponentID compID )
 {
   const CodingUnit& cu = *tu.cu;
-#if JVET_P0058_CHROMA_TS
   if (!CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && (tu.mtsIdx[compID] == MTS_SKIP))
-#else
-  if( !CU::isIntra(cu) && CU::isRDPCMEnabled(cu) && ( tu.mtsIdx==MTS_SKIP ) )
-#endif
   {
     ChannelType chType = toChannelType( compID );
     switch( tu.rdpcm[compID] )
@@ -3119,11 +3086,7 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     const bool chromaFlag                 = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
           bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
 
-#if JVET_P0058_CHROMA_TS
     const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx[COMPONENT_Y] == MTS_SKIP;
-#else
-    const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx == MTS_SKIP;
-#endif
     if( (!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
     {
       return;

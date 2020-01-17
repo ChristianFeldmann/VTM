@@ -739,17 +739,10 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 ({
-#if JVET_P0058_CHROMA_TS
     { 25,  17, },
     { 25,  17, },
     { 25,   1, },
     {  1,   1, },
-#else
-    { 25, },
-    { 25, },
-    { 25, },
-    {  1, },
-#endif
 });
 
 const CtxSet ContextSetCfg::MTSIdx = ContextSetCfg::addCtxSet
@@ -1495,17 +1488,10 @@ const CtxSet ContextSetCfg::RdpcmDir = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::TransformSkipFlag = ContextSetCfg::addCtxSet
 ({
-#if JVET_P0058_CHROMA_TS
     { 33, CNU },
     { 18, CNU },
     { 33, CNU },
     {  1,   1 },
-#else
-    { 33, },
-    { 18, },
-    { 33, },
-    {  1, },
-#endif
 });
 
 const CtxSet ContextSetCfg::MTSIdx = ContextSetCfg::addCtxSet

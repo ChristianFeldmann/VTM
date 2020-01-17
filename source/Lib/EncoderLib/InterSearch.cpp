@@ -6583,11 +6583,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #else
       const bool tsAllowed  = TU::isTSAllowed ( tu, compID );
 #endif
-#if JVET_P1026_MTS_SIGNALLING
       const bool mtsAllowed = CU::isMTSAllowed( *tu.cu, compID );
-#else
-      const bool mtsAllowed = TU::isMTSAllowed( tu, compID );
-#endif
       
       uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
       std::vector<TrMode> trModes;

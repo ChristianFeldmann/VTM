@@ -3749,7 +3749,6 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
   return bdpcmAllowed;
 }
 
-#if JVET_P1026_MTS_SIGNALLING
 bool CU::isMTSAllowed(const CodingUnit &cu, const ComponentID compID)
 {
   SizeType tsMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
@@ -3765,7 +3764,6 @@ bool CU::isMTSAllowed(const CodingUnit &cu, const ComponentID compID)
   mtsAllowed &= !(cu.bdpcmMode && cuWidth <= tsMaxSize && cuHeight <= tsMaxSize);
   return mtsAllowed;
 }
-#endif
 
 // TU tools
 
@@ -3831,21 +3829,6 @@ bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
   return tsAllowed;
 }
 
-#if !JVET_P1026_MTS_SIGNALLING
-bool TU::isMTSAllowed(const TransformUnit &tu, const ComponentID compID)
-{
-  bool   mtsAllowed = compID == COMPONENT_Y;
-  const int maxSize = CU::isIntra( *tu.cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
-
-  mtsAllowed &= CU::isIntra( *tu.cu ) ? tu.cs->sps->getUseIntraMTS() : tu.cs->sps->getUseInterMTS() && CU::isInter( *tu.cu );
-  mtsAllowed &= ( tu.lwidth() <= maxSize && tu.lheight() <= maxSize );
-  mtsAllowed &= !tu.cu->ispMode;
-  mtsAllowed &= !tu.cu->sbtInfo;
-  SizeType transformSkipMaxSize = 1 << tu.cs->pps->getLog2MaxTransformSkipBlockSize();
-  mtsAllowed &= !( tu.cu->bdpcmMode && tu.lwidth() <= transformSkipMaxSize && tu.lheight() <= transformSkipMaxSize);
-  return mtsAllowed;
-}
-#endif
 
 int TU::getICTMode( const TransformUnit& tu, int jointCbCr )
 {

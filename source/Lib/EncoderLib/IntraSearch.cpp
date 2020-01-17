@@ -2987,14 +2987,12 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
     }
     if( TU::getCbf( currTU, compID ) )
     {
-#if JVET_P1026_MTS_SIGNALLING
       if( isLuma(compID) )
       {
         m_CABACEstimator->residual_coding( currTU, compID, cuCtx );
         m_CABACEstimator->mts_idx( *currTU.cu, cuCtx );
       }
       else
-#endif
       m_CABACEstimator->residual_coding( currTU, compID );
     }
   }
@@ -3832,11 +3830,7 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
     tu.depth = currDepth;
 
     const bool tsAllowed  = TU::isTSAllowed( tu, COMPONENT_Y );
-#if JVET_P1026_MTS_SIGNALLING
     const bool mtsAllowed = CU::isMTSAllowed( cu, COMPONENT_Y );
-#else
-    const bool mtsAllowed = TU::isMTSAllowed( tu, COMPONENT_Y );
-#endif
     std::vector<TrMode> trModes;
 
     if( sps.getUseLFNST() )
@@ -4267,9 +4261,7 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] = false;
       cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
       cuCtx.lfnstLastScanPos = false;
-#if JVET_P1026_MTS_SIGNALLING
       cuCtx.violatesMtsCoeffConstraint = false;
-#endif
 
       //----- determine rate and r-d cost -----
       csSplit->fracBits = xGetIntraFracBitsQT( *csSplit, partitioner, true, false, cu.ispMode ? 0 : -1, ispType, &cuCtx );
@@ -4395,11 +4387,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
     uint8_t    numTransformIndexCands = nNumTransformCands;
 
     const bool tsAllowed = TU::isTSAllowed(tu, COMPONENT_Y);
-#if JVET_P1026_MTS_SIGNALLING
     const bool mtsAllowed = CU::isMTSAllowed(cu, COMPONENT_Y);
-#else
-    const bool mtsAllowed = TU::isMTSAllowed(tu, COMPONENT_Y);
-#endif
     std::vector<TrMode> trModes;
 
     if (sps.getUseLFNST())

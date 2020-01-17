@@ -768,11 +768,7 @@ void DecLib::xCreateLostPicture( int iLostPoc, const int layerId )
 
 }
 
-#if JVET_P0184
 void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag)
-#else
-void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId)
-#endif
 {
   msg(INFO, "\ninserting unavailable poc : %d\n", iUnavailablePoc);
   Picture* cFillPic = xGetNewPicBuffer( *( m_parameterSetManager.getFirstSPS() ), *( m_parameterSetManager.getFirstPPS() ), 0, layerId );
@@ -789,9 +785,7 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, c
 
   //  for(int ctuRsAddr=0; ctuRsAddr<cFillPic->getNumberOfCtusInFrame(); ctuRsAddr++)  { cFillPic->getCtu(ctuRsAddr)->initCtu(cFillPic, ctuRsAddr); }
   cFillPic->referenced = true;
-#if JVET_P0184
   cFillPic->interLayerRefPicFlag = interLayerRefPicFlag;
-#endif
   cFillPic->longTerm = longTermFlag;
   cFillPic->slices[0]->setPOC(iUnavailablePoc);
   xUpdatePreviousTid0POC(cFillPic->slices[0]);
@@ -1370,14 +1364,10 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       if ( ( (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) ) && m_apcSlicePilot->getNoIncorrectPicOutputFlag() )
       {
-#if JVET_P0184
         if (m_apcSlicePilot->getRPL0()->isInterLayerRefPic(refPicIndex) == 0)
         {
           xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex), m_apcSlicePilot->getPic()->layerId, m_apcSlicePilot->getRPL0()->isInterLayerRefPic(refPicIndex));
         }
-#else
-        xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex), m_apcSlicePilot->getPic()->layerId);
-#endif
       }
       else
       {
@@ -1388,14 +1378,10 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
       {
-#if JVET_P0184
         if (m_apcSlicePilot->getRPL1()->isInterLayerRefPic(refPicIndex) == 0)
         {
           xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL1()->isRefPicLongterm(refPicIndex), m_apcSlicePilot->getPic()->layerId, m_apcSlicePilot->getRPL1()->isInterLayerRefPic(refPicIndex));
         }
-#else
-        xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL1()->isRefPicLongterm(refPicIndex), m_apcSlicePilot->getPic()->layerId);
-#endif
       }
       else
       {

@@ -193,11 +193,7 @@ protected:
 
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
-#if JVET_P0184
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
-#else
-  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId);
-#endif
   void  xActivateParameterSets( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

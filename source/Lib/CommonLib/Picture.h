@@ -193,9 +193,7 @@ public:
   int* m_spliceIdx;
   int  m_ctuNums;
 
-#if JVET_P0184
   bool interLayerRefPicFlag;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];

@@ -116,7 +116,6 @@ int find_nal_unit(const uint8_t* buf, int size, int* nal_start, int* nal_end)
 
 const bool verbose = false;
 
-#if JVET_P0363_CLEANUP_NUT_TABLE
 const char * NALU_TYPE[] =
 {
     "NAL_UNIT_CODED_SLICE_TRAIL",
@@ -156,43 +155,6 @@ const char * NALU_TYPE[] =
     "NAL_UNIT_UNSPECIFIED_30",
     "NAL_UNIT_UNSPECIFIED_31"
 };
-#else
-const char * NALU_TYPE[] =
-{
-    "NAL_UNIT_CODED_SLICE_TRAIL",
-    "NAL_UNIT_CODED_SLICE_STSA",
-    "NAL_UNIT_CODED_SLICE_RASL",
-    "NAL_UNIT_CODED_SLICE_RADL",
-    "NAL_UNIT_RESERVED_VCL_4",
-    "NAL_UNIT_RESERVED_VCL_5",
-    "NAL_UNIT_RESERVED_VCL_6",
-    "NAL_UNIT_RESERVED_VCL_7",
-    "NAL_UNIT_CODED_SLICE_IDR_W_RADL",
-    "NAL_UNIT_CODED_SLICE_IDR_N_LP",
-    "NAL_UNIT_CODED_SLICE_CRA",
-     "NAL_UNIT_CODED_SLICE_GDR",
-    "NAL_UNIT_RESERVED_IRAP_VCL12",
-    "NAL_UNIT_RESERVED_IRAP_VCL13",
-    "NAL_UNIT_RESERVED_VCL14",
-    "NAL_UNIT_RESERVED_VCL15",
-    "NAL_UNIT_SPS",
-    "NAL_UNIT_PPS",
-    "NAL_UNIT_APS",
-    "NAL_UNIT_ACCESS_UNIT_DELIMITER",
-    "NAL_UNIT_EOS",
-    "NAL_UNIT_EOB",
-    "NAL_UNIT_PREFIX_SEI",
-    "NAL_UNIT_SUFFIX_SEI",
-    "NAL_UNIT_DBS",
-    "NAL_UNIT_RESERVED_NVCL25",
-    "NAL_UNIT_RESERVED_NVCL26",
-    "NAL_UNIT_RESERVED_NVCL27",
-    "NAL_UNIT_UNSPECIFIED_28",
-    "NAL_UNIT_UNSPECIFIED_29",
-    "NAL_UNIT_UNSPECIFIED_30",
-    "NAL_UNIT_UNSPECIFIED_31"
-};
-#endif
 
 int calc_poc(int iPOClsb, int prevTid0POC, int getBitsForPOC, int nalu_type)
 {
@@ -290,11 +252,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       new_poc = *poc_base + poc;
       first_slice_segment_in_pic_flag = false;
     }
-#if JVET_P0363_CLEANUP_NUT_TABLE
     if((nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL_12) )
-#else
-    if((nalu_type < 7) || (nalu_type > 9 && nalu_type < 15) )
-#endif
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
       

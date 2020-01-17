@@ -1815,24 +1815,14 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_EOB:
       return false;
 
-#if JVET_P0363_CLEANUP_NUT_TABLE
     case NAL_UNIT_RESERVED_IRAP_VCL_11:
     case NAL_UNIT_RESERVED_IRAP_VCL_12:
-#else
-    case NAL_UNIT_RESERVED_IRAP_VCL_12:
-    case NAL_UNIT_RESERVED_IRAP_VCL_13:
-    case NAL_UNIT_RESERVED_VCL_14:
-    case NAL_UNIT_RESERVED_VCL_15:
-#endif
       msg( NOTICE, "Note: found reserved VCL NAL unit.\n");
       xParsePrefixSEIsForUnknownVCLNal();
       return false;
     case NAL_UNIT_RESERVED_VCL_4:
     case NAL_UNIT_RESERVED_VCL_5:
     case NAL_UNIT_RESERVED_VCL_6:
-#if !JVET_P0363_CLEANUP_NUT_TABLE
-    case NAL_UNIT_RESERVED_VCL_7:
-#endif
     case NAL_UNIT_RESERVED_NVCL_26:
     case NAL_UNIT_RESERVED_NVCL_27:
       msg( NOTICE, "Note: found reserved NAL unit.\n");

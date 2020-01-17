@@ -62,7 +62,6 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
-#if JVET_P0363_CLEANUP_NUT_TABLE
   case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
   case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
   case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
@@ -90,32 +89,6 @@ const char* nalUnitTypeToString(NalUnitType type)
   case NAL_UNIT_FD:                     return "FD";
   default:                              return "UNK";
 
-#else
-  case NAL_UNIT_PPS:                    return "PPS";
-  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
-  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
-  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
-#if JVET_P0588_SUFFIX_APS
-  case NAL_UNIT_PREFIX_APS:             return "Prefix APS";
-  case NAL_UNIT_SUFFIX_APS:             return "Suffix APS";
-#else
-  case NAL_UNIT_APS:                    return "APS";
-#endif
-  case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
-  case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
-  case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
-  case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
-  case NAL_UNIT_DPS:                    return "DPS";
-  case NAL_UNIT_SPS:                    return "SPS";
-  case NAL_UNIT_EOS:                    return "EOS";
-  case NAL_UNIT_EOB:                    return "EOB";
-  case NAL_UNIT_VPS:                    return "VPS";
-  case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
-  case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
-  case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
-  case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
-  default:                              return "UNK";
-#endif
   }
 }
 

@@ -72,7 +72,6 @@
 
 #define JVET_P0202_P0203_FIX_HRD_RELATED_SEI              1 // JVET-P0202 and JVET-P0203: CPB timing for sub-layers with DU and parsing independency to SPS
 
-#define JVET_P0551_ALF_SLICE_BOUNDARY                     1 // JVET-P0053/P0157/P0551: Applying picturce boundary padding to slice boundaries
 
 #define JVET_P0314_PROF_BDOF_DMVR_HLS                     1 // JVET-P0314: BDOF/DMVR/PROF high level flags
 
@@ -246,11 +245,7 @@
 
 #define JVET_P0088_P0353_RPR_FILTERS                      1 // JVET-P0088 and JVET-P0353 Filters to use for downsampling in RPR
 
-#if JVET_P0551_ALF_SLICE_BOUNDARY
 #define JVET_O0625_ALF_PADDING                            0 // JVET-O0625/O0654/O0662: Unified padding method in ALF
-#else
-#define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
-#endif
 
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
 #define MRG_SHARELIST_SHARSIZE                            32

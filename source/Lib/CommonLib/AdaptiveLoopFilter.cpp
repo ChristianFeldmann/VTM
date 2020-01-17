@@ -301,23 +301,17 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
 }
 #endif
 #else
-#if JVET_P0551_ALF_SLICE_BOUNDARY
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
 bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], int& rasterSliceAlfPad )
 #else
 bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[] )
 #endif
-#else
-bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
-#endif
 {
   clipTop = false; clipBottom = false; clipLeft = false; clipRight = false;
   numHorVirBndry = 0; numVerVirBndry = 0;
-#if JVET_P0551_ALF_SLICE_BOUNDARY
   const PPS*   pps = cs.pps;
 #if JVET_P1006_PICTURE_HEADER
   const PicHeader* picHeader = cs.picHeader;
-#endif
 #endif
 
 #if JVET_P1006_PICTURE_HEADER
@@ -390,7 +384,6 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
   }
 #endif
 
-#if JVET_P0551_ALF_SLICE_BOUNDARY
   const Slice& slice = *(cs.slice);
   int   ctuSize = slice.getSPS()->getCTUSize();
   const Position currCtuPos(xPos, yPos);
@@ -474,7 +467,6 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const int xPos, const int
       clipRight = true;
     }
   }
-#endif
 
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
   rasterSliceAlfPad = 0;
@@ -699,15 +691,13 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 #else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, alfBryList[0], alfBryList[1], alfBryList[2], alfBryList[3], numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
-#elif JVET_P0551_ALF_SLICE_BOUNDARY
+#else
 #if JVET_P1038_ALF_PAD_RASTER_SLICE
       int rasterSliceAlfPad = 0;
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, rasterSliceAlfPad ) )
 #else
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos ) )
 #endif
-#else
-      if( ctuEnableFlag && isCrossedByVirtualBoundaries( xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS() ) )
 #endif
       {
         int yStart = yPos;

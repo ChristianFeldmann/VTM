@@ -637,15 +637,10 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
       std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
 
-#if JVET_P0592_CHROMA_PHASE
       Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getScalingWindow(), pcPicCurr->getOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
         pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
       Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getScalingWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
         pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-#else
-      Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getScalingWindow(), pcPicCurr->getOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-      Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getScalingWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-#endif
     }
     else
     {
@@ -1101,12 +1096,8 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setUseAffineType         ( m_AffineType );
   sps.setUsePROF               ( m_PROF );
   sps.setUseLMChroma           ( m_LMChroma ? true : false );
-#if JVET_P0592_CHROMA_PHASE
   sps.setHorCollocatedChromaFlag( m_horCollocatedChromaFlag );
   sps.setVerCollocatedChromaFlag( m_verCollocatedChromaFlag );
-#else
-  sps.setCclmCollocatedChromaFlag( m_cclmCollocatedChromaFlag );
-#endif
   sps.setUseMTS                ( m_IntraMTS || m_InterMTS || m_ImplicitMTS );
   sps.setUseIntraMTS           ( m_IntraMTS );
   sps.setUseInterMTS           ( m_InterMTS );

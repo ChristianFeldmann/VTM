@@ -1805,12 +1805,8 @@ SPS::SPS()
 , m_lmcsEnabled               (false)
 , m_AMVREnabledFlag                       ( false )
 , m_LMChroma                  ( false )
-#if JVET_P0592_CHROMA_PHASE
 , m_horCollocatedChromaFlag   ( true )
 , m_verCollocatedChromaFlag   ( false )
-#else
-, m_cclmCollocatedChromaFlag  ( false )
-#endif
 , m_IntraMTS                  ( false )
 , m_InterMTS                  ( false )
 , m_LFNST                     ( false )
@@ -3250,15 +3246,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
 
           // rescale the reference picture
           const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
-#if JVET_P0592_CHROMA_PHASE
           Picture::rescalePicture( m_scalingRatio[refList][rIdx], 
                                    m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), 
                                    scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(), 
                                    sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
                                    sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
-#else
-          Picture::rescalePicture( m_scalingRatio[refList][rIdx], m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
-#endif
           scaledRefPic[j]->extendPicBorder();
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];

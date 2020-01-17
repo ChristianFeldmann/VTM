@@ -1110,12 +1110,8 @@ private:
   bool              m_lmcsEnabled;
   bool              m_AMVREnabledFlag;
   bool              m_LMChroma;
-#if JVET_P0592_CHROMA_PHASE
   bool              m_horCollocatedChromaFlag;
   bool              m_verCollocatedChromaFlag;
-#else
-  bool              m_cclmCollocatedChromaFlag;
-#endif
   bool              m_MTS;
   bool              m_IntraMTS;                   // 18
   bool              m_InterMTS;                   // 19
@@ -1403,16 +1399,11 @@ public:
   bool      getUsePROF            ()                                      const     { return m_PROF; }
   void      setUseLMChroma        ( bool b )                                        { m_LMChroma = b; }
   bool      getUseLMChroma        ()                                      const     { return m_LMChroma; }
-#if JVET_P0592_CHROMA_PHASE
   void      setHorCollocatedChromaFlag( bool b )                                    { m_horCollocatedChromaFlag = b;    }
   bool      getHorCollocatedChromaFlag()                                  const     { return m_horCollocatedChromaFlag; }
   void      setVerCollocatedChromaFlag( bool b )                                    { m_verCollocatedChromaFlag = b;    }
   bool      getVerCollocatedChromaFlag()                                  const     { return m_verCollocatedChromaFlag; }
   bool      getCclmCollocatedChromaFlag()                                 const     { return m_verCollocatedChromaFlag; }
-#else
-  void      setCclmCollocatedChromaFlag( bool b )                                   { m_cclmCollocatedChromaFlag = b; }
-  bool      getCclmCollocatedChromaFlag()                                 const     { return m_cclmCollocatedChromaFlag; }
-#endif
   void      setUseMTS             ( bool b )                                        { m_MTS = b; }
   bool      getUseMTS             ()                                      const     { return m_MTS; }
   bool      getUseImplicitMTS     ()                                      const     { return m_MTS && !m_IntraMTS; }

@@ -3899,11 +3899,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     CU::getRprScaling( &sps, pps, pcPic, xScale, yScale );
     std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
 
-#if JVET_P0592_CHROMA_PHASE
     Picture::rescalePicture( scalingRatio, picC, pcPic->getScalingWindow(), upscaledRec, pps->getScalingWindow(), format, sps.getBitDepths(), false, false, sps.getHorCollocatedChromaFlag(), sps.getVerCollocatedChromaFlag() );
-#else
-    Picture::rescalePicture( scalingRatio, picC, pcPic->getScalingWindow(), upscaledRec, pps->getScalingWindow(), format, sps.getBitDepths(), false );
-#endif
   }
 
   for (int comp = 0; comp < ::getNumberValidComponents(formatD); comp++)

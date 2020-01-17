@@ -1083,18 +1083,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LMChroma",                                        m_LMChroma,                                           1, " LMChroma prediction "
                                                                                                                "\t0:  Disable LMChroma\n"
                                                                                                                "\t1:  Enable LMChroma\n")
-#if JVET_P0592_CHROMA_PHASE
   ("HorCollocatedChroma",                             m_horCollocatedChromaFlag,                         true, "Specifies location of a chroma sample relatively to the luma sample in horizontal direction in the reference picture resampling\n"
                                                                                                                "\t0:  horizontally shifted by 0.5 units of luma samples\n"
                                                                                                                "\t1:  collocated (default)\n")
   ("VerCollocatedChroma",                             m_verCollocatedChromaFlag,                        false, "Specifies location of a chroma sample relatively to the luma sample in vertical direction in the cross-component linear model intra prediction and the reference picture resampling\n"
                                                                                                                "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
                                                                                                                "\t1:  collocated\n")
-#else
-  ("CclmCollocatedChroma",                            m_cclmCollocatedChromaFlag,                       false, "Specifies the location of the top-left downsampled luma sample in cross-component linear model intra prediction relative to the top-left luma sample\n"
-                                                                                                               "\t0:  horizontally co-sited, vertically shifted by 0.5 units of luma samples\n"
-                                                                                                               "\t1:  collocated\n")
-#endif
   ("MTS",                                             m_MTS,                                                0, "Multiple Transform Set (MTS)\n"
     "\t0:  Disable MTS\n"
     "\t1:  Enable only Intra MTS\n"
@@ -4309,15 +4303,8 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "IMV:%d ", m_ImvMode );
     msg( VERBOSE, "BIO:%d ", m_BIO );
     msg( VERBOSE, "LMChroma:%d ", m_LMChroma );
-#if JVET_P0592_CHROMA_PHASE
     msg( VERBOSE, "HorCollocatedChroma:%d ", m_horCollocatedChromaFlag );
     msg( VERBOSE, "VerCollocatedChroma:%d ", m_verCollocatedChromaFlag );
-#else
-    if( m_LMChroma && m_chromaFormatIDC == CHROMA_420 )
-    {
-      msg( VERBOSE, "CclmCollocatedChroma:%d ", m_cclmCollocatedChromaFlag );
-    }
-#endif
     msg( VERBOSE, "MTS: %1d(intra) %1d(inter) ", m_MTS & 1, ( m_MTS >> 1 ) & 1 );
     msg( VERBOSE, "SBT:%d ", m_SBT );
     msg( VERBOSE, "ISP:%d ", m_ISP );

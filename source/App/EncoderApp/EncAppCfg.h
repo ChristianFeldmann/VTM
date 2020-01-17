@@ -297,12 +297,8 @@ protected:
   bool      m_PROF;
   bool      m_BIO;
   int       m_LMChroma;
-#if JVET_P0592_CHROMA_PHASE
   bool      m_horCollocatedChromaFlag;
   bool      m_verCollocatedChromaFlag;
-#else
-  bool      m_cclmCollocatedChromaFlag;
-#endif
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test

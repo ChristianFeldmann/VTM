@@ -155,28 +155,17 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
-#if JVET_P0592_CHROMA_PHASE
   static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
                                 const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
                                 const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
                                 const int bitDepth, const bool useLumaFilter, const bool downsampling,
                                 const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
-#else
-  static void   sampleRateConv( const std::pair<int, int> scalingRatio, 
-                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
-                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
-                                const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
-#endif
 
   static void   rescalePicture( const std::pair<int, int> scalingRatio, 
                                 const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
                                 const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
-#if JVET_P0592_CHROMA_PHASE
                                 const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
                                 const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
-#else
-                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false );
-#endif
 
 private:
   Window        m_conformanceWindow;

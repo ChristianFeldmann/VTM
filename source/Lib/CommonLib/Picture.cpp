@@ -592,18 +592,11 @@ const TFilterCoeff DownsamplingFilterSRC[8][16][12] =
     }
 };
 
-#if JVET_P0592_CHROMA_PHASE
 void Picture::sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
                               const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
                               const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
                               const int bitDepth, const bool useLumaFilter, const bool downsampling,
                               const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag )
-#else
-void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
-                              const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
-                              const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
-                              const int bitDepth, const bool useLumaFilter, const bool downsampling )
-#endif
 {
   const Pel* orgSrc = beforeScale.buf;
   const int orgWidth = beforeScale.width;
@@ -631,13 +624,8 @@ void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
   const int numFracShift = useLumaFilter ? 4 : 5;
   const int posShiftX = SCALE_RATIO_BITS - numFracShift + compScale.first;
   const int posShiftY = SCALE_RATIO_BITS - numFracShift + compScale.second;
-#if JVET_P0592_CHROMA_PHASE
   int addX = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << SCALE_RATIO_BITS ) + ( ( int( 1 - horCollocatedPositionFlag ) * 8 * ( scalingRatio.first - SCALE_1X.first ) + ( 1 << ( 2 + compScale.first ) ) ) >> ( 3 + compScale.first ) );
   int addY = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << SCALE_RATIO_BITS ) + ( ( int( 1 - verCollocatedPositionFlag ) * 8 * ( scalingRatio.second - SCALE_1X.second ) + ( 1 << ( 2 + compScale.second ) ) ) >> ( 3 + compScale.second ) );
-#else
-  int addX = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << SCALE_RATIO_BITS );
-  int addY = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << SCALE_RATIO_BITS );
-#endif
 
   if( downsampling )
   {
@@ -730,12 +718,8 @@ void Picture::sampleRateConv( const std::pair<int, int> scalingRatio,
 void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
                               const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore,
                               const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
-#if JVET_P0592_CHROMA_PHASE
                               const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
                               const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag )
-#else
-                              const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling )
-#endif
 {
   for( int comp = 0; comp < ::getNumberValidComponents( chromaFormatIDC ); comp++ )
   {
@@ -743,18 +727,11 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
     const CPelBuf& beforeScale = beforeScaling.get( compID );
     const PelBuf& afterScale = afterScaling.get( compID );
 
-#if JVET_P0592_CHROMA_PHASE
     sampleRateConv( scalingRatio, std::pair<int, int>( ::getComponentScaleX( compID, chromaFormatIDC ), ::getComponentScaleY( compID, chromaFormatIDC ) ),
                     beforeScale, scalingWindowBefore.getWindowLeftOffset(), scalingWindowBefore.getWindowTopOffset(), 
                     afterScale, scalingWindowAfter.getWindowLeftOffset(), scalingWindowAfter.getWindowTopOffset(), 
                     bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
                     isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
-#else
-    Picture::sampleRateConv( scalingRatio, 
-                             beforeScale, scalingWindowBefore.getWindowLeftOffset(), scalingWindowBefore.getWindowTopOffset(), 
-                             afterScale, scalingWindowAfter.getWindowLeftOffset(), scalingWindowAfter.getWindowTopOffset(), 
-                             bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling );
-#endif
   }
 }
 

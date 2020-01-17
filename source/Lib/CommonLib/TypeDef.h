@@ -70,7 +70,6 @@
 
 
 
-#define JVET_P0362_RESERVE_NUH_LAYER_ID_VALUES            1 // JVET-P0362: Reserve nuh_layer_id values 56 to 63, inclusive
 
 #define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
 

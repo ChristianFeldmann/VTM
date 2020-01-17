@@ -97,7 +97,6 @@
 
 
 
-#define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
 
 #define JVET_P1000_REMOVE_TRANFORMSHIFT_IN_TS_MODE        1 // JVET-P1000: Remove Transformshift in TS mode
 

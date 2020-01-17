@@ -1880,9 +1880,7 @@ void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, c
 {
   m_qpBdOffset = qpBdOffset;
   m_sameCQPTableForAllChromaFlag = params.m_sameCQPTableForAllChromaFlag;
-#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   m_numQpTables = params.m_numQpTables;
-#endif
 
   for (int i = 0; i < MAX_NUM_CQP_MAPPING_TABLES; i++)
   {
@@ -1894,11 +1892,7 @@ void ChromaQpMappingTable::setParams(const ChromaQpMappingTableParams &params, c
 }
 void ChromaQpMappingTable::derivedChromaQPMappingTables()
 {
-#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   for (int i = 0; i < getNumQpTables(); i++)
-#else
-  for (int i = 0; i < (getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
-#endif
   {
     const int qpBdOffsetC = m_qpBdOffset;
     const int numPtsInCQPTableMinus1 = getNumPtsInCQPTableMinus1(i);

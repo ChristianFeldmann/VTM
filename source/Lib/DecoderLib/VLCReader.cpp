@@ -599,7 +599,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) < -12, "Invalid Cr QP offset" );
   CHECK( pcPPS->getQpOffset(COMPONENT_Cr) >  12, "Invalid Cr QP offset" );
 
-#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   READ_FLAG(uiCode, "pps_joint_cbcr_qp_offset_present_flag");
   pcPPS->setJointCbCrQpOffsetPresentFlag(uiCode ? true : false);
 
@@ -611,9 +610,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   {
     iCode = 0;
   }
-#else
-  READ_SVLC( iCode, "pps_joint_cbcr_qp_offset");
-#endif
   pcPPS->setQpOffset(JOINT_CbCr, iCode);
 
   CHECK( pcPPS->getQpOffset(JOINT_CbCr) < -12, "Invalid CbCr QP offset" );
@@ -644,7 +640,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       CHECK(cbOffset < -12 || cbOffset > 12, "Invalid chroma QP offset");
       READ_SVLC(crOffset, "cr_qp_offset_list[i]");
       CHECK(crOffset < -12 || crOffset > 12, "Invalid chroma QP offset");
-#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
       if (pcPPS->getJointCbCrQpOffsetPresentFlag())
       {
         READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
@@ -653,9 +648,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       {
         jointCbCrOffset = 0;
       }
-#else
-      READ_SVLC(jointCbCrOffset, "joint_cbcr_qp_offset_list[i]");
-#endif
       CHECK(jointCbCrOffset < -12 || jointCbCrOffset > 12, "Invalid chroma QP offset");
       // table uses +1 for index (see comment inside the function)
       pcPPS->setChromaQpOffsetListEntry(cuChromaQpOffsetIdx + 1, cbOffset, crOffset, jointCbCrOffset);
@@ -1294,20 +1286,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
-#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
   READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
-#endif
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
-#if JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
     int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
     chromaQpMappingTableParams.setNumQpTables(numQpTables);
     for (int i = 0; i < numQpTables; i++)
-#else
-    for (int i = 0; i < (chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : 3); i++)
-#endif
     {
       int32_t qpTableStart = 0;
       READ_SVLC(qpTableStart, "qp_table_starts_minus26"); chromaQpMappingTableParams.setQpTableStartMinus26(i, qpTableStart);
@@ -1346,9 +1332,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
 #endif
   }
-#if !JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR
-  READ_FLAG( uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag (uiCode ? true : false);
-#endif
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
 

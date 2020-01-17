@@ -322,7 +322,6 @@ const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
   {   4, },
 });
 
-#if JVET_P0615_CHROMAMODE_CLEANUP
 const CtxSet ContextSetCfg::CclmModeIdx = ContextSetCfg::addCtxSet
 ({
   {  27, },
@@ -338,15 +337,6 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   {  34, },
   {   5, },
 });
-#else
-const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
-({
-  {  25, },
-  {  33, },
-  {  19, },
-  {   6, },
-});
-#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({
@@ -1086,7 +1076,6 @@ const CtxSet ContextSetCfg::CclmModeFlag = ContextSetCfg::addCtxSet
   {   4, },
 });
 
-#if JVET_P0615_CHROMAMODE_CLEANUP
 const CtxSet ContextSetCfg::CclmModeIdx = ContextSetCfg::addCtxSet
 ({
   {  27, },
@@ -1102,15 +1091,6 @@ const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
   {  34, },
   {   5, },
   });
-#else
-const CtxSet ContextSetCfg::IntraChromaPredMode = ContextSetCfg::addCtxSet
-({
-  {  25, },
-  {  33, },
-  {  19, },
-  {   6, },
-});
-#endif
 
 const CtxSet ContextSetCfg::MipFlag = ContextSetCfg::addCtxSet
 ({

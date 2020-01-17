@@ -96,7 +96,6 @@
 
 
 
-#define JVET_P0615_CHROMAMODE_CLEANUP                     1 // JVET-P0615: intra chroma mode coding cleanup
 
 #define JVET_P0667_QP_OFFSET_TABLE_SIGNALING_JCCR         1 // JVET-P0667: removing signaling of qp offset table for JCCR, at SPS and PPS, when JCCR is disabled. 
 

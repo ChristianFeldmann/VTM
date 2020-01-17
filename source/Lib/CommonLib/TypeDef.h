@@ -50,7 +50,6 @@
 #include <assert.h>
 #include <cassert>
 
-#define FIELD_CODING_FIX                                  1 // Fix field coding 
 
 
 

@@ -1739,9 +1739,6 @@ SPS::SPS()
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )
 , m_SBT                       ( false )
-#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-, m_MaxSbtSize                ( 32 )
-#endif
 , m_ISP                       ( false )
 , m_chromaFormatIdc           (CHROMA_420)
 , m_separateColourPlaneFlag(0)

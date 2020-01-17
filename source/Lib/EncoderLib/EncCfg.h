@@ -291,9 +291,7 @@ protected:
 #endif
   int       m_ImplicitMTS;
   bool      m_SBT;                                ///< Sub-Block Transform for inter blocks
-#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   int       m_SBTFast64WidthTh;                   ///< Enable size-64 SBT in encoder RDO check for HD and above sequences
-#endif
 
   bool      m_LFNST;
   bool      m_useFastLFNST;
@@ -1060,10 +1058,8 @@ public:
   void      setUseSBT                       ( bool b )       { m_SBT = b; }
   bool      getUseSBT                       ()         const { return m_SBT; }
 
-#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   void      setSBTFast64WidthTh             ( int  b )       { m_SBTFast64WidthTh = b; }
   int       getSBTFast64WidthTh             ()         const { return m_SBTFast64WidthTh; }
-#endif
 
   void      setUseCompositeRef              (bool b)         { m_compositeRefEnabled = b; }
   bool      getUseCompositeRef              ()         const { return m_compositeRefEnabled; }

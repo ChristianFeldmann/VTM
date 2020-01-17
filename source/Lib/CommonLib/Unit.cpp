@@ -487,11 +487,7 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   memset( allow_type, false, NUMBER_SBT_IDX * sizeof( bool ) );
 
   //parameter
-#if JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
   int maxSbtCUSize = cs->sps->getMaxTbSize();
-#else
-  int maxSbtCUSize = cs->sps->getMaxSbtSize();
-#endif
   int minSbtCUSize = 1 << ( MIN_CU_LOG2 + 1 );
 
   //check on size

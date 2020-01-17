@@ -985,9 +985,6 @@ private:
   bool              m_DMVR;
   bool              m_MMVD;
   bool              m_SBT;
-#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  uint8_t           m_MaxSbtSize;
-#endif
   bool              m_ISP;
   ChromaFormat      m_chromaFormatIdc;
   bool              m_separateColourPlaneFlag;     //!< separate colour plane flag
@@ -1380,10 +1377,6 @@ public:
   bool                    getUseSBT() const                                                               { return m_SBT; }
   void                    setUseISP( bool b )                                                             { m_ISP = b; }
   bool                    getUseISP() const                                                               { return m_ISP; }
-#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  void                    setMaxSbtSize( uint8_t val )                                                    { m_MaxSbtSize = val; }
-  uint8_t                 getMaxSbtSize() const                                                           { return m_MaxSbtSize; }
-#endif
 
   void      setAMVREnabledFlag    ( bool b )                                        { m_AMVREnabledFlag = b; }
   bool      getAMVREnabledFlag    ()                                      const     { return m_AMVREnabledFlag; }

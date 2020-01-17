@@ -975,12 +975,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "sps_triangle_enabled_flag" );
 
-#if !JVET_P0983_REMOVE_SPS_SBT_MAX_SIZE_FLAG
-  if( pcSPS->getUseSBT() )
-  {
-    WRITE_FLAG(pcSPS->getMaxSbtSize() == 64 ? 1 : 0,                                  "max_sbt_size_64_flag");
-  }
-#endif
   WRITE_FLAG(pcSPS->getUseLmcs() ? 1 : 0, "sps_lmcs_enable_flag");
   WRITE_FLAG( pcSPS->getUseLFNST() ? 1 : 0,                                                    "sps_lfnst_enabled_flag" );
 

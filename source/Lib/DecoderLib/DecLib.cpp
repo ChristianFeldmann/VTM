@@ -1609,9 +1609,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
       memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
       tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
-#if JVET_P0371_CHROMA_SCALING_OFFSET
       tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
-#endif
       tInfo.setUseSliceReshaper(pcSlice->getPicHeader()->getLmcsEnabledFlag());
       tInfo.setSliceReshapeChromaAdj(pcSlice->getPicHeader()->getLmcsChromaResidualScaleFlag());
       tInfo.setSliceReshapeModelPresentFlag(true);

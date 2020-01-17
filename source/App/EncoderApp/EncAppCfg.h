@@ -364,9 +364,7 @@ protected:
   int       m_updateCtrl;
   int       m_adpOption;
   uint32_t  m_initialCW;
-#if JVET_P0371_CHROMA_SCALING_OFFSET
   int       m_CSoffset;
-#endif
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel

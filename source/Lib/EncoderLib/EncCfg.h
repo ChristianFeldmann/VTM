@@ -354,9 +354,7 @@ protected:
   unsigned  m_reshapeSignalType;
   unsigned  m_intraCMD;
   ReshapeCW m_reshapeCW;
-#if JVET_P0371_CHROMA_SCALING_OFFSET
   int       m_CSoffset;
-#endif
   bool      m_encDbOpt;
   bool      m_useFastLCTU;
   bool      m_useFastMrg;
@@ -1169,10 +1167,8 @@ public:
   uint32_t  getReshapeIntraCMD              ()                           { return m_intraCMD; }
   void      setReshapeCW                    (const ReshapeCW &reshapeCW) { m_reshapeCW = reshapeCW; }
   const ReshapeCW& getReshapeCW             ()                           { return m_reshapeCW; }
-#if JVET_P0371_CHROMA_SCALING_OFFSET
   void      setReshapeCSoffset              (int CSoffset)          { m_CSoffset = CSoffset; }
   int       getReshapeCSoffset              ()                      { return m_CSoffset; }
-#endif
   void      setMaxCUWidth                   ( uint32_t  u )      { m_maxCUWidth  = u; }
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }

@@ -78,7 +78,6 @@
 
 
 
-#define JVET_P0371_CHROMA_SCALING_OFFSET                  1 // JVET-P0371: Signalling offset for chroma residual scaling
 
 #define JVET_P0469_QP_OUT_VAL                             1 // JVET-P0469: Coding delta_qp_diff_val instead of delta_qp_out_val
 

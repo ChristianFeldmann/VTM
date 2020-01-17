@@ -244,12 +244,10 @@ private:
 
 public:
   CodingStructure *bestParent;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   double        tmpColorSpaceCost;
   bool          firstColorSpaceSelected;
   double        tmpColorSpaceIntraCost[2];
   bool          firstColorSpaceTestOnly;
-#endif
   bool resetIBCBuffer;
 
   MotionBuf getMotionBuf( const     Area& _area );

@@ -115,10 +115,8 @@ public:
   double getLambda   () const                                      { return m_quant->getLambda(); }
 
   DepQuant* getQuant() { return m_quant; }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void   lambdaAdjustColorTrans(bool forward) { m_quant->lambdaAdjustColorTrans(forward); }
   void   resetStore() { m_quant->resetStore(); }
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   void    copyState( const TrQuant& other );

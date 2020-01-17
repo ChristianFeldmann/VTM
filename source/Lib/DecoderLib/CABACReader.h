@@ -93,9 +93,7 @@ public:
   void        intra_chroma_pred_mode    ( PredictionUnit&               pu );
   void        cu_residual               ( CodingUnit&                   cu,     Partitioner&    pm,       CUCtx& cuCtx );
   void        rqt_root_cbf              ( CodingUnit&                   cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void        adaptive_color_transform(CodingUnit&             cu);
-#endif 
   void        sbt_mode                  ( CodingUnit&                   cu );
   void        end_of_ctu                ( CodingUnit&                   cu,     CUCtx&          cuCtx );
   void        mip_flag                  ( CodingUnit&                   cu );

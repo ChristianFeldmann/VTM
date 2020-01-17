@@ -354,7 +354,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #endif
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void DecCu::xIntraRecACTBlk(TransformUnit& tu)
 {
   CodingStructure      &cs = *tu.cs;
@@ -482,7 +481,6 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
     }
   }
 }
-#endif
 
 void DecCu::xReconIntraQT( CodingUnit &cu )
 {
@@ -507,14 +505,12 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
     return;
   }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (cu.colorTransform)
   {
     xIntraRecACTQT(cu);
   }
   else
   {
-#endif
   const uint32_t numChType = ::getNumberValidChannels( cu.chromaFormat );
 
   for( uint32_t chType = CHANNEL_TYPE_LUMA; chType < numChType; chType++ )
@@ -524,9 +520,7 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
       xIntraRecQT( cu, ChannelType( chType ) );
     }
   }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   }
-#endif
 }
 
 void DecCu::xReconPLT(CodingUnit &cu, ComponentID compBegin, uint32_t numComp)
@@ -640,7 +634,6 @@ DecCu::xIntraRecQT(CodingUnit &cu, const ChannelType chType)
   }
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void DecCu::xIntraRecACTQT(CodingUnit &cu)
 {
   for (auto &currTU : CU::traverseTUs(cu))
@@ -648,7 +641,6 @@ void DecCu::xIntraRecACTQT(CodingUnit &cu)
     xIntraRecACTBlk(currTU);
   }
 }
-#endif
 
 /** Function for filling the PCM buffer of a CU using its reconstructed sample array
 * \param pCU   pointer to current CU
@@ -738,12 +730,10 @@ void DecCu::xReconInter(CodingUnit &cu)
 
   if (cu.rootCbf)
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     if (cu.colorTransform)
     {
       cs.getResiBuf(cu).colorSpaceConvert(cs.getResiBuf(cu), false);
     }
-#endif
 #if REUSE_CU_RESULTS
     const CompArea &area = cu.blocks[COMPONENT_Y];
     CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
@@ -803,7 +793,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
   //===== inverse transform =====
   PelBuf resiBuf  = cs.getResiBuf(area);
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   QpParam cQP(currTU, compID);
   if (currTU.cu->colorTransform)
   {
@@ -814,9 +803,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
       cQP.rems[qpIdx] = cQP.Qps[qpIdx] % 6;
     }
   }
-#else
-  const QpParam cQP(currTU, compID);
-#endif
 
   if( currTU.jointCbCr && isChroma(compID) )
   {
@@ -829,7 +815,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
       }
       else
       {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         QpParam qpCr(currTU, COMPONENT_Cr);
         if (currTU.cu->colorTransform)
         {
@@ -840,9 +825,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
             qpCr.rems[qpIdx] = qpCr.Qps[qpIdx] % 6;
           }
         }
-#else
-        const QpParam qpCr( currTU, COMPONENT_Cr );
-#endif
         m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, qpCr );
       }
       m_pcTrQuant->invTransformICT( currTU, resiBuf, resiCr );

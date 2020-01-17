@@ -99,7 +99,6 @@
 
 
 
-#define JVET_P0517_ADAPTIVE_COLOR_TRANSFORM               1 // JVET-P0517: adaptive color transform
 
 #define JVET_P0090_32BIT_MVD                              1 // JVET-P0090: Limitation of abs_mvd_min2 binarization within 32-bit
 

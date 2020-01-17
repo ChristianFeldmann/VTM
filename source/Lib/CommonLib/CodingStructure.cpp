@@ -68,10 +68,8 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   , m_puCache ( puCache )
   , m_tuCache ( tuCache )
   , bestParent ( nullptr )
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   , tmpColorSpaceCost(MAX_DOUBLE)
   , firstColorSpaceSelected(true)
-#endif
   , resetIBCBuffer (false)
 {
   for( uint32_t i = 0; i < MAX_NUM_COMPONENT; i++ )
@@ -101,11 +99,9 @@ CodingStructure::CodingStructure(CUCache& cuCache, PUCache& puCache, TUCache& tu
   features.resize( NUM_ENC_FEATURES );
   treeType = TREE_D;
   modeType = MODE_TYPE_ALL;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
   tmpColorSpaceIntraCost[0] = MAX_DOUBLE;
   tmpColorSpaceIntraCost[1] = MAX_DOUBLE;
   firstColorSpaceTestOnly = false;
-#endif
 }
 
 void CodingStructure::destroy()

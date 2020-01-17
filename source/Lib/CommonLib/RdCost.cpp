@@ -85,7 +85,6 @@ void RdCost::setLambda( double dLambda, const BitDepths &bitDepths )
   m_dLambdaMotionSAD    = sqrt(m_dLambda);
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
 {
   if (m_resetStore)
@@ -123,7 +122,6 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
     CHECK(m_DistScale != m_DistScaleUnadjusted, "lambda should be adjusted to the original value");
   }
 }
-#endif
 
 // Initialize Function Pointer by [eDFunc]
 void RdCost::init()
@@ -213,10 +211,8 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   m_resetStore = true;
   m_pairCheck    = 0;
-#endif 
 }
 
 

@@ -636,9 +636,7 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
   if( cu.skip )
   {
     CHECK( !cu.firstPU->mergeFlag, "Merge flag has to be on!" );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     CHECK(cu.colorTransform, "ACT should not be enabled for skip mode");
-#endif
     PredictionUnit&   pu = *cu.firstPU;
     prediction_unit ( pu );
     end_of_ctu      ( cu, cuCtx );
@@ -648,17 +646,13 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
 
   // prediction mode and partitioning data
   pred_mode ( cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (CU::isIntra(cu))
   {
     adaptive_color_transform(cu);
   }
-#endif
   if (CU::isPLT(cu))
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     CHECK(cu.colorTransform, "ACT should not be enabled for PLT mode");
-#endif
     if (cu.isSepTree())
     {
       if (isLuma(partitioner.chType))
@@ -1252,13 +1246,11 @@ void CABACWriter::intra_chroma_pred_mode(const PredictionUnit& pu)
 #endif
 
   const unsigned intraDir = pu.intraDir[1];
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pu.cu->colorTransform)
   {
     CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "chroma should use DM for adaptive color transform");
     return;
   }
-#endif
   if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
   {
     m_BinEncoder.encodeBin(PU::isLMCMode(intraDir) ? 1 : 0, Ctx::CclmModeFlag(0));
@@ -1312,19 +1304,15 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
 
     if( !cu.rootCbf )
     {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       CHECK(cu.colorTransform, "ACT should not be enabled for root_cbf = 0");
-#endif
       return;
     }
   }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (CU::isInter(cu) || CU::isIBC(cu))
   {
     adaptive_color_transform(cu);
   }
-#endif
 
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
@@ -1352,7 +1340,6 @@ void CABACWriter::rqt_root_cbf( const CodingUnit& cu )
   DTRACE( g_trace_ctx, D_SYNTAX, "rqt_root_cbf() ctx=0 root_cbf=%d pos=(%d,%d)\n", cu.rootCbf ? 1 : 0, cu.lumaPos().x, cu.lumaPos().y );
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void CABACWriter::adaptive_color_transform(const CodingUnit& cu)
 {
   if (!cu.slice->getSPS()->getUseColorTrans())
@@ -1371,7 +1358,6 @@ void CABACWriter::adaptive_color_transform(const CodingUnit& cu)
     m_BinEncoder.encodeBin(cu.colorTransform, Ctx::ACTFlag());
   }
 }
-#endif
 
 void CABACWriter::sbt_mode( const CodingUnit& cu )
 {
@@ -2744,17 +2730,11 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     }
     else
     {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
       CHECK(lumaCbfIsInferredACT && !TU::getCbfAtDepth(tu, COMPONENT_Y, trDepth), "adaptive color transform cannot have all zero coefficients");
       bool lastCbfIsInferred    = lumaCbfIsInferredACT; // ISP and ACT are mutually exclusive
       bool previousCbf          = false;
       bool rootCbfSoFar         = false;
-#else
-      bool previousCbf = false;
-      bool rootCbfSoFar = false;
-      bool lastCbfIsInferred = false;    
-#endif
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -3090,11 +3070,7 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx* cuCtx )
 
 void CABACWriter::isp_mode( const CodingUnit& cu )
 {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) || cu.colorTransform )
-#else
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
-#endif
   {
     CHECK( cu.ispMode != NOT_INTRA_SUBPARTITIONS, "cu.ispMode != 0" );
     return;

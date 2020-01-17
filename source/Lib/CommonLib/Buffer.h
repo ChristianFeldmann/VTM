@@ -784,9 +784,7 @@ struct UnitBuf
 
         UnitBuf<      T> subBuf (const UnitArea& subArea);
   const UnitBuf<const T> subBuf (const UnitArea& subArea) const;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void colorSpaceConvert(const UnitBuf<T> &other, const bool forward);
-#endif
 };
 
 typedef UnitBuf<      Pel>  PelUnitBuf;
@@ -886,7 +884,6 @@ void UnitBuf<T>::addAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &
   }
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 template<typename T>
 void UnitBuf<T>::colorSpaceConvert(const UnitBuf<T> &other, const bool forward)
 {
@@ -895,7 +892,6 @@ void UnitBuf<T>::colorSpaceConvert(const UnitBuf<T> &other, const bool forward)
 
 template<>
 void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward);
-#endif
 
 template<typename T>
 void UnitBuf<T>::extendSingleBorderPel()

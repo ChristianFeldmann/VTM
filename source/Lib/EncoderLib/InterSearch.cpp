@@ -6463,9 +6463,7 @@ uint8_t InterSearch::skipSbtByRDCost( int width, int height, int mtDepth, uint8_
 
 void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist /*= NULL*/
   , const bool luma, const bool chroma
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   , PelUnitBuf* orgResi
-#endif
 )
 {
   const UnitArea& currArea = partitioner.currArea();
@@ -6476,9 +6474,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
   const uint32_t numTBlocks    = getNumberValidTBlocks   ( *cs.pcv );
   const CodingUnit &cu = *cs.getCU(partitioner.chType);
   const unsigned currDepth = partitioner.currTrDepth;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   const bool colorTransFlag = cs.cus[0]->colorTransform;
-#endif
 
   bool bCheckFull  = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
   if( cu.sbtInfo && partitioner.canSplit( PartSplit( cu.getSbtTuSplit() ), cs ) )
@@ -6501,9 +6497,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
   Distortion uiSingleDist         = 0;
   Distortion uiSingleDistComp [3] = { 0, 0, 0 };
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   uint64_t   uiSingleFracBits[3] = { 0, 0, 0 };
-#endif
   TCoeff     uiAbsSum         [3] = { 0, 0, 0 };
 
   const TempCtx ctxStart  ( m_CtxCache, m_CABACEstimator->getCtx() );
@@ -6519,11 +6513,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     tu.mtsIdx         = MTS_DCT2_DCT2;
 #endif
     tu.checkTuNoResidual( partitioner.currPartIdx() );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     Position tuPos = tu.Y();
     tuPos.relativeTo(cu.Y());
     const UnitArea relativeUnitArea(tu.chromaFormat, Area(tuPos, tu.Y().size()));
-#endif
 
     const Slice           &slice = *cs.slice;
     if (slice.getPicHeader()->getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && !(CS::isDualITree(cs) && slice.isIntra() && tu.cu->predMode==MODE_IBC ))
@@ -6618,13 +6610,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         }
       }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       if (colorTransFlag)
       {
         m_pcTrQuant->lambdaAdjustColorTrans(true);
         m_pcRdCost->lambdaAdjustColorTrans(true, compID);
       }
-#endif
 
       const int crossCPredictionModesToTest = preCalcAlpha != 0 ? 2 : 1;
       const int numTransformCandidates = nNumTransformCands;
@@ -6677,7 +6667,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           }
           tu.compAlpha[compID]      = bUseCrossCPrediction ? preCalcAlpha : 0;
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           QpParam cQP(tu, compID);  // note: uses tu.transformSkip[compID]
           if (colorTransFlag)
           {
@@ -6688,9 +6677,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               cQP.rems[qpIdx] = cQP.Qps[qpIdx] % 6;
             }
           }
-#else
-          const QpParam cQP(tu, compID);  // note: uses tu.transformSkip[compID]
-#endif
 
 #if RDOQ_CHROMA_LAMBDA
           m_pcTrQuant->selectLambda(compID);
@@ -6787,7 +6773,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             }
             else
 #endif
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
               if (cs.slice->getSPS()->getUseColorTrans())
               {
                 nonCoeffCost = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist, false);
@@ -6796,9 +6781,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               {
                 nonCoeffCost = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist);
               }
-#else
-            nonCoeffCost     = m_pcRdCost->calcRdCost(nonCoeffFracBits, nonCoeffDist);
-#endif
           }
 
           if ((puiZeroDist != NULL) && isFirstMode)
@@ -6890,9 +6872,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
             uiAbsSum[compID]         = currAbsSum;
             uiSingleDistComp[compID] = currCompDist;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
             uiSingleFracBits[compID] = currCompFracBits;
-#endif
             minCost[compID]          = currCompCost;
 
             if (uiAbsSum[compID] == 0)
@@ -6928,17 +6908,14 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         csFull->getResiBuf( compArea ).copyFrom( saveCS.getResiBuf( compArea ) );
       }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       if (colorTransFlag)
       {
         m_pcTrQuant->lambdaAdjustColorTrans(false);
         m_pcRdCost->lambdaAdjustColorTrans(false, compID);
       }
-#endif 
 
     } // component loop
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     if (colorTransFlag)
     {
       PelUnitBuf     orgResidual = orgResi->subBuf(relativeUnitArea);
@@ -6952,7 +6929,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         minCost[c] = m_pcRdCost->calcRdCost(uiSingleFracBits[c], uiSingleDistComp[c]);
       }
     }
-#endif
 
     if ( chroma && tu.blocks[COMPONENT_Cb].valid() )
     {
@@ -6963,12 +6939,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       bool      reshape         = slice.getPicHeader()->getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag()
                                && tu.blocks[COMPONENT_Cb].width * tu.blocks[COMPONENT_Cb].height > 4;
       double minCostCbCr = minCost[COMPONENT_Cb] + minCost[COMPONENT_Cr];
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       if (colorTransFlag)
       {
         minCostCbCr += minCost[COMPONENT_Y];  // ACT should consider three-component cost
       }
-#endif
       bool   isLastBest  = false;
 
       CompStorage      orgResiCb[4], orgResiCr[4];   // 0:std, 1-3:jointCbCr
@@ -7001,7 +6975,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         // encoder bugfix: initialize mtsIdx for chroma under JointCbCrMode.
         tu.mtsIdx[COMPONENT_Cb] = tu.mtsIdx[COMPONENT_Cr] = MTS_DCT2_DCT2;
 #endif
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         int         codedCbfMask = 0;
         ComponentID codeCompId = (tu.jointCbCr >> 1 ? COMPONENT_Cb : COMPONENT_Cr);
         ComponentID otherCompId = (codeCompId == COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr);
@@ -7015,13 +6988,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         {
           m_pcTrQuant->selectLambda(codeCompId);
         }
-#else
-        const QpParam cQP(tu, COMPONENT_Cb);  // note: uses tu.transformSkip[compID]
-
-#if RDOQ_CHROMA_LAMBDA
-        m_pcTrQuant->selectLambda(COMPONENT_Cb);
-#endif
-#endif
         // Lambda is loosened for the joint mode with respect to single modes as the same residual is used for both chroma blocks
         const int    absIct = abs( TU::getICTMode(tu) );
         const double lfact  = ( absIct == 1 || absIct == 3 ? 0.8 : 0.5 );
@@ -7045,7 +7011,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
         }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         Distortion currCompDistY = MAX_UINT64;
         QpParam qpCbCr(tu, codeCompId);
         if (colorTransFlag)
@@ -7057,12 +7022,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             qpCbCr.rems[qpIdx] = qpCbCr.Qps[qpIdx] % 6;
           }
         }
-#else
-        int         codedCbfMask = 0;
-        ComponentID codeCompId   = (tu.jointCbCr >> 1 ? COMPONENT_Cb : COMPONENT_Cr);
-        ComponentID otherCompId  = (codeCompId == COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr);
-        const QpParam qpCbCr(tu, codeCompId);
-#endif
 
         tu.getCoeffs(otherCompId).fill(0);   // do we need that?
         TU::setCbfAtDepth(tu, otherCompId, tu.depth, false);
@@ -7109,7 +7068,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             crResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(COMPONENT_Cr));
           }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if (colorTransFlag)
           {
             PelUnitBuf     orgResidual = orgResi->subBuf(relativeUnitArea);
@@ -7123,7 +7081,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           }
           else
           {
-#endif
           currCompDistCb = m_pcRdCost->getDistPart(csFull->getOrgResiBuf(cbArea), cbResi, channelBitDepth, COMPONENT_Cb, DF_SSE);
           currCompDistCr = m_pcRdCost->getDistPart(csFull->getOrgResiBuf(crArea), crResi, channelBitDepth, COMPONENT_Cr, DF_SSE);
 #if WCG_EXT
@@ -7131,9 +7088,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #else
           currCompCost   = m_pcRdCost->calcRdCost(currCompFracBits, currCompDistCr + currCompDistCb);
 #endif
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           }
-#endif
         }
         else
           currCompCost = MAX_DOUBLE;
@@ -7145,12 +7100,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           uiAbsSum[COMPONENT_Cr]         = currAbsSum;
           uiSingleDistComp[COMPONENT_Cb] = currCompDistCb;
           uiSingleDistComp[COMPONENT_Cr] = currCompDistCr;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if (colorTransFlag)
           {
             uiSingleDistComp[COMPONENT_Y] = currCompDistY;
           }
-#endif
           minCostCbCr                    = currCompCost;
           isLastBest = (cbfMask == jointCbfMasksToTest.back());
           if (!isLastBest)
@@ -7170,12 +7123,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           csFull->getResiBuf( cbArea ).copyFrom( saveCS.getResiBuf( cbArea ) );
           csFull->getResiBuf( crArea ).copyFrom( saveCS.getResiBuf( crArea ) );
         }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         if (colorTransFlag)
         {
           m_pcTrQuant->lambdaAdjustColorTrans(false);
         }
-#endif
       }
     }
 
@@ -7264,9 +7215,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     {
       xEstimateInterResidualQT(*csSplit, partitioner, bCheckFull ? nullptr : puiZeroDist
         , luma, chroma
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         , orgResi
-#endif
       );
 
       csSplit->cost = m_pcRdCost->calcRdCost( csSplit->fracBits, csSplit->dist );
@@ -7355,22 +7304,18 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   const int  numValidComponents = getNumberValidComponents(format);
   const SPS &sps                = *cs.sps;
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool colorTransAllowed = cs.slice->getSPS()->getUseColorTrans() && luma && chroma;
   if (cs.slice->getSPS()->getUseColorTrans())
   {
     CHECK(cu.treeType != TREE_D || partitioner.treeType != TREE_D, "localtree should not be applied when adaptive color transform is enabled");
     CHECK(cu.modeType != MODE_TYPE_ALL || partitioner.modeType != MODE_TYPE_ALL, "localtree should not be applied when adaptive color transform is enabled");
   }
-#endif 
 
   if( skipResidual ) //  No residual coding : SKIP mode
   {
     cu.skip    = true;
     cu.rootCbf = false;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     cu.colorTransform = false;
-#endif 
     CHECK( cu.sbtInfo != 0, "sbtInfo shall be 0 if CU has no residual" );
     cs.getResiBuf().fill(0);
     {
@@ -7457,7 +7402,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     cs.getResiBuf().bufs[1].subtract(cs.getPredBuf().bufs[1]);
     cs.getResiBuf().bufs[2].subtract(cs.getPredBuf().bufs[2]);
   }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   const UnitArea curUnitArea = partitioner.currArea();
   CodingStructure &saveCS = *m_pSaveCS[1];
   saveCS.pcv = cs.pcv;
@@ -7554,13 +7498,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     cs.fracBits = 0;
     cs.dist = 0;
     cs.cost = 0;
-#else
-  Distortion zeroDistortion = 0;
 
-  const TempCtx ctxStart( m_CtxCache, m_CABACEstimator->getCtx() );
-#endif
-
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (colorTransFlag)
   {
     cs.getOrgResiBuf().bufs[0].copyFrom(colorTransResidual.bufs[0]);
@@ -7580,29 +7518,17 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   else
   {
     zeroDistortion = 0;
-#endif
   if (luma)
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     cs.getOrgResiBuf().bufs[0].copyFrom(orgResidual.bufs[0]);
-#else
-    cs.getOrgResiBuf().bufs[0].copyFrom(cs.getResiBuf().bufs[0]);
-#endif
   }
   if (chroma)
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     cs.getOrgResiBuf().bufs[1].copyFrom(orgResidual.bufs[1]);
     cs.getOrgResiBuf().bufs[2].copyFrom(orgResidual.bufs[2]);
-#else
-    cs.getOrgResiBuf().bufs[1].copyFrom(cs.getResiBuf().bufs[1]);
-    cs.getOrgResiBuf().bufs[2].copyFrom(cs.getResiBuf().bufs[2]);
-#endif
   }
   xEstimateInterResidualQT(cs, partitioner, &zeroDistortion, luma, chroma);
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   }
-#endif
   TransformUnit &firstTU = *cs.getTU( partitioner.chType );
 
   cu.rootCbf = false;
@@ -7633,10 +7559,8 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
   if (zeroCost < cs.cost || !cu.rootCbf)
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     cs.cost = zeroCost;
     cu.colorTransform = false;
-#endif
     cu.sbtInfo = 0;
     cu.rootCbf = false;
 
@@ -7651,7 +7575,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     }
     cu.firstTU = cu.lastTU = &tu;
   }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (!iter)
   {
     rootCbfFirstColorSpace = cu.rootCbf;
@@ -7696,7 +7619,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     }
     cs.getResiBuf(curUnitArea).copyFrom(saveCS.getResiBuf(curUnitArea));
   }
-#endif
 
   // all decisions now made. Fully encode the CU, including the headers:
   m_CABACEstimator->getCtx() = ctxStart;
@@ -7785,7 +7707,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   cs.dist     = finalDistortion;
   cs.fracBits = finalFracBits;
   cs.cost     = m_pcRdCost->calcRdCost(cs.fracBits, cs.dist);
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (cs.slice->getSPS()->getUseColorTrans())
   {
     if (cs.cost < cs.tmpColorSpaceCost)
@@ -7801,7 +7722,6 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       }
     }
   }
-#endif
 
   CHECK(cs.tus.size() == 0, "No TUs present");
 }
@@ -7816,9 +7736,7 @@ uint64_t InterSearch::xGetSymbolFracBitsInter(CodingStructure &cs, Partitioner &
   if( cu.firstPU->mergeFlag && !cu.rootCbf )
   {
     cu.skip = true;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     CHECK(cu.colorTransform, "ACT should not be enabled for skip mode");
-#endif
     m_CABACEstimator->cu_skip_flag  ( cu );
     if (cu.firstPU->ciipFlag)
     {

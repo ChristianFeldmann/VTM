@@ -321,10 +321,8 @@ protected:
   bool      m_DMVR;
   bool      m_MMVD;
   int       m_MmvdDisNum;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool      m_rgbFormat;
   bool      m_useColorTrans;
-#endif
   unsigned  m_PLTMode;
   bool      m_JointCbCrMode;
   unsigned  m_IBCMode;
@@ -1100,12 +1098,10 @@ public:
   bool      getMMVD                         ()         const { return m_MMVD; }
   void      setMmvdDisNum                   ( int b )        { m_MmvdDisNum = b; }
   int       getMmvdDisNum                   ()         const { return m_MmvdDisNum; }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void      setRGBFormatFlag(bool value) { m_rgbFormat = value; }
   bool      getRGBFormatFlag()                         const { return m_rgbFormat; }
   void      setUseColorTrans(bool value) { m_useColorTrans = value; }
   bool      getUseColorTrans()                         const { return m_useColorTrans; }
-#endif
   void      setPLTMode                   ( unsigned n)    { m_PLTMode = n; }
   unsigned  getPLTMode                   ()         const { return m_PLTMode; }
   void      setJointCbCr                    ( bool b )       { m_JointCbCrMode = b; }

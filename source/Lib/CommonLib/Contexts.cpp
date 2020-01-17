@@ -441,7 +441,6 @@ const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
   {   4, },
 });
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 const CtxSet ContextSetCfg::ACTFlag = ContextSetCfg::addCtxSet
 ({
   {  CNU, },
@@ -449,7 +448,6 @@ const CtxSet ContextSetCfg::ACTFlag = ContextSetCfg::addCtxSet
   {  CNU, },
   {  DWS, },
   });
-#endif
 
 const CtxSet ContextSetCfg::QtCbf[] =
 {
@@ -1199,7 +1197,6 @@ const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet
   {   4, },
 });
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 const CtxSet ContextSetCfg::ACTFlag = ContextSetCfg::addCtxSet
 ({
   {  CNU, },
@@ -1207,7 +1204,6 @@ const CtxSet ContextSetCfg::ACTFlag = ContextSetCfg::addCtxSet
   {  CNU, },
   {  DWS, },
   });
-#endif
 
 const CtxSet ContextSetCfg::QtCbf[] =
 {

@@ -337,13 +337,11 @@ private:
   ModeInfo   m_savedRdModeList[ NUM_LFNST_NUM_PER_SET ][ NUM_LUMA_MODE ];
   int32_t    m_savedNumRdModes[ NUM_LFNST_NUM_PER_SET ];
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   ModeInfo                                           m_savedRdModeFirstColorSpace[4 * NUM_LFNST_NUM_PER_SET * 2][FAST_UDI_MAX_RDMODE_NUM];
   char                                               m_savedBDPCMModeFirstColorSpace[4 * NUM_LFNST_NUM_PER_SET * 2][FAST_UDI_MAX_RDMODE_NUM];
   double                                             m_savedRdCostFirstColorSpace[4 * NUM_LFNST_NUM_PER_SET * 2][FAST_UDI_MAX_RDMODE_NUM];
   int                                                m_numSavedRdModeFirstColorSpace[4 * NUM_LFNST_NUM_PER_SET * 2];
   int                                                m_savedRdModeIdx;
-#endif
 
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_uiSavedRdModeListLFNST;
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> m_uiSavedHadModeListLFNST;
@@ -352,9 +350,7 @@ private:
   static_vector<double,   FAST_UDI_MAX_RDMODE_NUM> m_dSavedHadListLFNST;
 
   PelStorage      m_tmpStorageLCU;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   PelStorage      m_colorTransResiBuf;
-#endif 
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -418,11 +414,7 @@ public:
   double findInterCUCost          ( CodingUnit &cu );
 
 public:
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool estIntraPredLumaQT(CodingUnit &cu, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false, CodingStructure* bestCS = NULL);
-#else
-  bool estIntraPredLumaQT         ( CodingUnit &cu, Partitioner& pm, const double bestCostSoFar  = MAX_DOUBLE, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
-#endif
   void estIntraPredChromaQT       ( CodingUnit &cu, Partitioner& pm, const double maxCostAllowed = MAX_DOUBLE );
   void PLTSearch                  ( CodingStructure &cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
 #if !JVET_P0077_LINE_CG_PALETTE
@@ -431,11 +423,9 @@ public:
   uint64_t xFracModeBitsIntra     (PredictionUnit &pu, const uint32_t &uiMode, const ChannelType &compID);
   void invalidateBestModeCost     () { for( int i = 0; i < NUM_LFNST_NUM_PER_SET; i++ ) m_bestModeCostValid[ i ] = false; };
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
   void sortRdModeListFirstColorSpace(ModeInfo mode, double cost, char bdpcmMode, ModeInfo* rdModeList, double* rdCostList, char* bdpcmModeList, int& candNum);
   void invalidateBestRdModeFirstColorSpace();
   void setSavedRdModeIdx(int idx) { m_savedRdModeIdx = idx; }
-#endif
 
 protected:
 
@@ -457,15 +447,11 @@ protected:
   void xEncCoeffQT                                 ( CodingStructure &cs, Partitioner& pm, const ComponentID compID, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, CUCtx * cuCtx = nullptr );
 
   void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   void xIntraCodingACTTUBlock(TransformUnit &tu, const ComponentID &compID, Distortion& ruiDist, std::vector<TrMode>* trModes = nullptr, const bool loadTr = false);
-#endif
 
   ChromaCbfs xRecurIntraChromaCodingQT( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE,                          const PartSplit ispType = TU_NO_ISP );
   bool       xRecurIntraCodingLumaQT  ( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, const bool ispIsCurrentWinner = false, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool       xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner& pm, bool mtsCheckRangeFlag = false, int mtsFirstCheckId = 0, int mtsLastCheckId = 0, bool moreProbMTSIdxFirst = false);
-#endif
   bool       xIntraCodingLumaISP      ( CodingStructure& cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE );
 
   template<typename T, size_t N>

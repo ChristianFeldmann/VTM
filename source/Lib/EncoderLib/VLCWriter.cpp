@@ -936,12 +936,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_FLAG(pcSPS->getProfControlPresentFlag() ? 1 : 0,                                   "sps_prof_pic_present_flag" );
     }
   }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "sps_act_enabled_flag");
   }
-#endif
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0,                                                    "sps_palette_enabled_flag" );

@@ -163,9 +163,7 @@ void IntraSearch::destroy()
   }
 
   m_tmpStorageLCU.destroy();
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   m_colorTransResiBuf.destroy();
-#endif 
   m_isInitialized = false;
 #if JVET_P0077_LINE_CG_PALETTE
   if (m_truncBinBits != nullptr)
@@ -241,9 +239,7 @@ void IntraSearch::init( EncCfg*        pcEncCfg,
 
   IntraPrediction::init( cform, pcEncCfg->getBitDepth( CHANNEL_TYPE_LUMA ) );
   m_tmpStorageLCU.create(UnitArea(cform, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   m_colorTransResiBuf.create(UnitArea(cform, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
-#endif
 
   for( uint32_t ch = 0; ch < MAX_NUM_TBLOCKS; ch++ )
   {
@@ -379,11 +375,7 @@ double IntraSearch::findInterCUCost( CodingUnit &cu )
   return COST_UNKNOWN;
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
 bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, const double bestCostSoFar, bool mtsCheckRangeFlag, int mtsFirstCheckId, int mtsLastCheckId, bool moreProbMTSIdxFirst, CodingStructure* bestCS)
-#else
-bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, const double bestCostSoFar, bool mtsCheckRangeFlag, int mtsFirstCheckId, int mtsLastCheckId, bool moreProbMTSIdxFirst )
-#endif
 {
   CodingStructure       &cs            = *cu.cs;
   const SPS             &sps           = *cs.sps;
@@ -434,36 +426,24 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     mtsUsageFlag = 0;
   }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
   const bool colorTransformIsEnabled = sps.getUseColorTrans() && !CS::isDualITree(cs);
   const bool isFirstColorSpace       = colorTransformIsEnabled && ((m_pcEncCfg->getRGBFormatFlag() && cu.colorTransform) || (!m_pcEncCfg->getRGBFormatFlag() && !cu.colorTransform));
   const bool isSecondColorSpace      = colorTransformIsEnabled && ((m_pcEncCfg->getRGBFormatFlag() && !cu.colorTransform) || (!m_pcEncCfg->getRGBFormatFlag() && cu.colorTransform));
-#endif
 
   double bestCurrentCost = bestCostSoFar;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   bool ispCanBeUsed   = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP(width, height, cu.cs->sps->getMaxTbSize());
   bool saveDataForISP = ispCanBeUsed && (!colorTransformIsEnabled || isFirstColorSpace);
   bool testISP        = ispCanBeUsed && (!colorTransformIsEnabled || !cu.colorTransform);
-#else
-  bool testISP = sps.getUseISP() && cu.mtsFlag == 0 && cu.lfnstIdx == 0 && CU::canUseISP( width, height, cu.cs->sps->getMaxTbSize() );
-#endif
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if ( saveDataForISP )
   {
     //reset the intra modes lists variables
     m_ispCandListHor.clear();
     m_ispCandListVer.clear();
   }
-#endif
   if( testISP )
   {
     //reset the variables used for the tests
-#if !JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-    m_ispCandListHor.clear();
-    m_ispCandListVer.clear();
-#endif
     m_regIntraRDListWithCosts.clear();
     int numTotalPartsHor = (int)width  >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_VERT_SPLIT));
     int numTotalPartsVer = (int)height >> floorLog2(CU::getISPSplitDim(width, height, TU_1D_HORZ_SPLIT));
@@ -512,7 +492,6 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     numModesForFullRD = numModesAvailable;
 #endif
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
     if (isSecondColorSpace)
     {
       uiRdModeList.clear();
@@ -530,7 +509,6 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     }
     else
     {
-#endif
     if( mtsUsageFlag != 2 )
     {
       // this should always be true
@@ -689,11 +667,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             }
           }
         }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         if ( saveDataForISP )
-#else
-        if ( testISP )
-#endif
         {
           // we save the regular intra modes list
           m_ispCandListHor = uiRdModeList;
@@ -862,11 +836,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
               CandCostList.push_back(0);
             }
           }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if ( saveDataForISP )
-#else
-          if ( testISP )
-#endif
           {
             // we add the MPMs to the list that contains only regular intra modes
             for (int j = 0; j < numCand; j++)
@@ -960,11 +930,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             uiRdModeList.push_back(bestMipMode);
           }
         }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         if ( saveDataForISP )
-#else
-        if ( testISP )
-#endif
         {
           m_ispCandListHor.resize(std::min<size_t>(m_ispCandListHor.size(), maxSize));
         }
@@ -984,9 +950,7 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
         return false;
       }
     }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
     }
-#endif
 
     int numNonISPModes = (int)uiRdModeList.size();
 
@@ -1025,15 +989,10 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
     }
     int bestLfnstIdx = cu.lfnstIdx;
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
     for (int mode = isSecondColorSpace ? 0 : -2 * int(testBDPCM); mode < (int)uiRdModeList.size(); mode++)
-#else
-    for (int mode = -2 * int(testBDPCM); mode < (int)uiRdModeList.size(); mode++)
-#endif
     {
       // set CU/PU to luma prediction mode
       ModeInfo uiOrgMode;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
       if (sps.getUseColorTrans() && !m_pcEncCfg->getRGBFormatFlag() && isSecondColorSpace && mode)
       {
         continue;
@@ -1042,30 +1001,14 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       if (mode < 0 || (isSecondColorSpace && m_savedBDPCMModeFirstColorSpace[m_savedRdModeIdx][mode]))
       {
         cu.bdpcmMode = mode < 0 ? -mode : m_savedBDPCMModeFirstColorSpace[m_savedRdModeIdx][mode];
-#else
-      if ( mode < 0 )
-      {
-        cu.bdpcmMode = -mode;
-#endif
         uiOrgMode = ModeInfo( false, false, 0, NOT_INTRA_SUBPARTITIONS, cu.bdpcmMode == 2 ? VER_IDX : HOR_IDX );
-#if !JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
-        cu.mipFlag                     = uiOrgMode.mipFlg;
-        pu.mipTransposedFlag           = uiOrgMode.mipTrFlg;
-        cu.ispMode                     = uiOrgMode.ispMod;
-        pu.multiRefIdx                 = uiOrgMode.mRefId;
-        pu.intraDir[CHANNEL_TYPE_LUMA] = uiOrgMode.modeId;
-#endif
       }
       else
       {
         cu.bdpcmMode = 0;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         uiOrgMode = uiRdModeList[mode];
       }
       if (!cu.bdpcmMode && uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
-#else      
-        if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
-#endif
         {
           if (mode == numNonISPModes) // the list needs to be sorted only once
           {
@@ -1080,13 +1023,8 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           if (uiRdModeList[mode].ispMod == INTRA_SUBPARTITIONS_RESERVED)
             continue;
           cu.lfnstIdx = m_curIspLfnstIdx;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
           uiOrgMode = uiRdModeList[mode];
         }
-#else
-        }
-        uiOrgMode = uiRdModeList[mode];
-#endif
       cu.mipFlag                     = uiOrgMode.mipFlg;
       pu.mipTransposedFlag           = uiOrgMode.mipTrFlg;
       cu.ispMode                     = uiOrgMode.ispMod;
@@ -1097,13 +1035,9 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       CHECK(pu.multiRefIdx && (pu.intraDir[0] == PLANAR_IDX), "Error: combination of MRL and Planar mode not supported");
       CHECK(cu.ispMode && cu.mipFlag, "Error: combination of ISP and MIP not supported");
       CHECK(cu.ispMode && pu.multiRefIdx, "Error: combination of ISP and MRL not supported");
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       CHECK(cu.ispMode&& cu.colorTransform, "Error: combination of ISP and ACT not supported");
 
       pu.intraDir[CHANNEL_TYPE_CHROMA] = cu.colorTransform ? DM_CHROMA_IDX : pu.intraDir[CHANNEL_TYPE_CHROMA];
-#else
-      }
-#endif
 
       // set context models
       m_CABACEstimator->getCtx() = ctxStart;
@@ -1131,13 +1065,11 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       }
       else
       {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
         if (cu.colorTransform)
         {
           tmpValidReturn = xRecurIntraCodingACTQT(*csTemp, partitioner, mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst);
         }
         else
-#endif
         tmpValidReturn = xRecurIntraCodingLumaQT( *csTemp, partitioner, uiBestPUMode.ispMod ? bestCurrentCost : MAX_DOUBLE, -1, TU_NO_ISP, uiBestPUMode.ispMod,
                                                   mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst );
       }
@@ -1167,7 +1099,6 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
 
       if( tmpValidReturn )
       {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
         if (isFirstColorSpace)
         {
           if (m_pcEncCfg->getRGBFormatFlag() || !cu.ispMode)
@@ -1175,7 +1106,6 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
             sortRdModeListFirstColorSpace(uiOrgMode, csTemp->cost, cu.bdpcmMode, m_savedRdModeFirstColorSpace[m_savedRdModeIdx], m_savedRdCostFirstColorSpace[m_savedRdModeIdx], m_savedBDPCMModeFirstColorSpace[m_savedRdModeIdx], m_numSavedRdModeFirstColorSpace[m_savedRdModeIdx]);
           }
         }
-#endif
         // check r-d cost
         if( csTemp->cost < csBest->cost )
         {
@@ -1227,7 +1157,6 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           }
         }
       }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       if (sps.getUseColorTrans() && !CS::isDualITree(cs))
       {
         if ((m_pcEncCfg->getRGBFormatFlag() && !cu.colorTransform) && csBest->cost != MAX_DOUBLE && bestCS->cost != MAX_DOUBLE && mode >= 0)
@@ -1238,20 +1167,17 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
           }
         }
       }
-#endif
     } // Mode loop
     cu.ispMode = uiBestPUMode.ispMod;
     cu.lfnstIdx = bestLfnstIdx;
 
     if( validReturn )
     {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       if (cu.colorTransform)
       {
         cs.useSubStructure(*csBest, partitioner.chType, pu, true, true, keepResi, keepResi);
       }
       else
-#endif
       cs.useSubStructure( *csBest, partitioner.chType, pu.singleChan( CHANNEL_TYPE_LUMA ), true, true, keepResi, keepResi );
     }
     csBest->releaseIntermediateData();
@@ -1263,12 +1189,10 @@ bool IntraSearch::estIntraPredLumaQT( CodingUnit &cu, Partitioner &partitioner, 
       pu.multiRefIdx = uiBestPUMode.mRefId;
       pu.intraDir[ CHANNEL_TYPE_LUMA ] = uiBestPUMode.modeId;
       cu.bdpcmMode = bestBDPCMMode;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       if (cu.colorTransform)
       {
         CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "chroma should use DM mode for adaptive color transform");
       }
-#endif
     }
   }
 
@@ -3498,7 +3422,6 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   }
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void IntraSearch::xIntraCodingACTTUBlock(TransformUnit &tu, const ComponentID &compID, Distortion& ruiDist, std::vector<TrMode>* trModes, const bool loadTr)
 {
   if (!tu.blocks[compID].valid())
@@ -3656,7 +3579,6 @@ void IntraSearch::xIntraCodingACTTUBlock(TransformUnit &tu, const ComponentID &c
     ruiDist += m_pcRdCost->getDistPart(crOrgResi, crResi, sps.getBitDepth(toChannelType(COMPONENT_Cr)), COMPONENT_Cr, DF_SSE);
   }
 }
-#endif
 
 bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitioner, const double bestCostSoFar)
 {
@@ -4298,7 +4220,6 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
   return retVal;
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &partitioner, bool mtsCheckRangeFlag, int mtsFirstCheckId, int mtsLastCheckId, bool moreProbMTSIdxFirst)
 {
   const UnitArea &currArea = partitioner.currArea();
@@ -4926,7 +4847,6 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
   }
   return retVal;
 }
-#endif
 
 ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitioner& partitioner, const double bestCostSoFar, const PartSplit ispType )
 {
@@ -5455,7 +5375,6 @@ uint64_t IntraSearch::xFracModeBitsIntra(PredictionUnit &pu, const uint32_t &uiM
   return m_CABACEstimator->getEstFracBits();
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
 void IntraSearch::sortRdModeListFirstColorSpace(ModeInfo mode, double cost, char bdpcmMode, ModeInfo* rdModeList, double* rdCostList, char* bdpcmModeList, int& candNum)
 {
   if (candNum == 0)
@@ -5518,7 +5437,6 @@ void IntraSearch::invalidateBestRdModeFirstColorSpace()
     }
   }
 }
-#endif
 
 template<typename T, size_t N>
 void IntraSearch::reduceHadCandList(static_vector<T, N>& candModeList, static_vector<double, N>& candCostList, int& numModesForFullRD, const double thresholdHadCost, const double* mipHadCost, const PredictionUnit &pu, const bool fastMip)

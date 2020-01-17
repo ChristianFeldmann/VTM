@@ -920,7 +920,6 @@ const CPelUnitBuf PelStorage::getBuf( const UnitArea &unit ) const
   return ( chromaFormat == CHROMA_400 ) ? CPelUnitBuf( chromaFormat, getBuf( unit.Y() ) ) : CPelUnitBuf( chromaFormat, getBuf( unit.Y() ), getBuf( unit.Cb() ), getBuf( unit.Cr() ) );
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM 
 template<>
 void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward)
 {
@@ -992,4 +991,3 @@ void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forwa
       }
     }
 }
-#endif 

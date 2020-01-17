@@ -1409,7 +1409,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setProfControlPresentFlag( false );
     }
   }
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     READ_FLAG(uiCode, "sps_act_enabled_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);
@@ -1418,7 +1417,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     pcSPS->setUseColorTrans(false);
   }
-#endif 
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );

@@ -832,9 +832,7 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   // skip data
   if( cu.skip )
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     cu.colorTransform = false;
-#endif 
     cs.addTU         ( cu, partitioner.chType );
 #if !JVET_P0400_REMOVE_SHARED_MERGE_LIST
     pu.shareParentPos = cu.shareParentPos;
@@ -848,17 +846,13 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
 
   // prediction mode and partitioning data
   pred_mode ( cu );
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (CU::isIntra(cu))
   {
     adaptive_color_transform(cu);
   }
-#endif
   if (CU::isPLT(cu))
   {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
     cu.colorTransform = false;
-#endif 
     cs.addTU(cu, partitioner.chType);
     if (cu.isSepTree())
     {
@@ -1494,13 +1488,11 @@ bool CABACReader::intra_chroma_lmc_mode(PredictionUnit& pu)
 void CABACReader::intra_chroma_pred_mode(PredictionUnit& pu)
 {
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__INTRA_DIR_ANG, pu.cu->blocks[pu.chType].lumaSize(), CHANNEL_TYPE_CHROMA);
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (pu.cu->colorTransform)
   {
     pu.intraDir[CHANNEL_TYPE_CHROMA] = DM_CHROMA_IDX;
     return;
   }
-#endif
 
   // LM chroma mode
 
@@ -1560,9 +1552,7 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
     }
     if( !cu.rootCbf )
     {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       cu.colorTransform = false;
-#endif 
       TransformUnit& tu = cu.cs->addTU(cu, partitioner.chType);
       tu.depth = 0;
       for( unsigned c = 0; c < tu.blocks.size(); c++ )
@@ -1576,12 +1566,10 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
     }
   }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if (CU::isInter(cu) || CU::isIBC(cu))
   {
     adaptive_color_transform(cu);
   }
-#endif
 
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA]   = false;
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
@@ -1612,7 +1600,6 @@ void CABACReader::rqt_root_cbf( CodingUnit& cu )
   DTRACE( g_trace_ctx, D_SYNTAX, "rqt_root_cbf() ctx=0 root_cbf=%d pos=(%d,%d)\n", cu.rootCbf ? 1 : 0, cu.lumaPos().x, cu.lumaPos().y );
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 void CABACReader::adaptive_color_transform(CodingUnit& cu)
 {
   if (!cu.slice->getSPS()->getUseColorTrans())
@@ -1630,7 +1617,6 @@ void CABACReader::adaptive_color_transform(CodingUnit& cu)
     cu.colorTransform = (m_BinDecoder.decodeBin(Ctx::ACTFlag()));
   }
 }
-#endif
 
 void CABACReader::sbt_mode( CodingUnit& cu )
 {
@@ -3054,16 +3040,10 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
     }
     else
     {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
       bool lumaCbfIsInferredACT = (cu.colorTransform && cu.predMode == MODE_INTRA && trDepth == 0 && !chromaCbfs.sigChroma(area.chromaFormat));
       bool lastCbfIsInferred    = lumaCbfIsInferredACT; // ISP and ACT are mutually exclusive
       bool previousCbf          = false;
       bool rootCbfSoFar         = false;
-#else
-      bool previousCbf = false;
-      bool rootCbfSoFar = false;
-      bool lastCbfIsInferred = false;    
-#endif
       if (cu.ispMode)
       {
         uint32_t nTus = cu.ispMode == HOR_INTRA_SUBPARTITIONS ? cu.lheight() >> floorLog2(tu.lheight()) : cu.lwidth() >> floorLog2(tu.lwidth());
@@ -3392,11 +3372,7 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
   
 void CABACReader::isp_mode( CodingUnit& cu )
 {
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) || cu.colorTransform )
-#else
-  if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) )
-#endif
   {
     cu.ispMode = NOT_INTRA_SUBPARTITIONS;
     return;

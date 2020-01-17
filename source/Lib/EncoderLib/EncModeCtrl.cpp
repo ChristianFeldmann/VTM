@@ -436,7 +436,6 @@ bool CacheBlkInfoCtrl::isSkip( const UnitArea& area )
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->isSkip;
 }
 
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
 char CacheBlkInfoCtrl::getSelectColorSpaceOption(const UnitArea& area)
 {
   unsigned idx1, idx2, idx3, idx4;
@@ -444,7 +443,6 @@ char CacheBlkInfoCtrl::getSelectColorSpaceOption(const UnitArea& area)
 
   return m_codedCUInfo[idx1][idx2][idx3][idx4]->selectColorSpaceOption;
 }
-#endif
 
 bool CacheBlkInfoCtrl::isMMVDSkip(const UnitArea& area)
 {
@@ -1895,7 +1893,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
           relatedCU.isSkip   |= bestCU->skip;
           relatedCU.isMMVDSkip |= bestCU->mmvdSkip;
           relatedCU.BcwIdx    = bestCU->BcwIdx;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if (bestCU->slice->getSPS()->getUseColorTrans())
           {
             if (m_pcEncCfg->getRGBFormatFlag())
@@ -1921,13 +1918,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
               }
             }
           }
-#endif
         }
         else if (CU::isIBC(*bestCU))
         {
           relatedCU.isIBC = true;
           relatedCU.isSkip |= bestCU->skip;
-#if JVET_P0517_ADAPTIVE_COLOR_TRANSFORM
           if (bestCU->slice->getSPS()->getUseColorTrans())
           {
             if (m_pcEncCfg->getRGBFormatFlag())
@@ -1953,7 +1948,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
               }
             }
           }
-#endif
         }
         else if( CU::isIntra( *bestCU ) )
         {

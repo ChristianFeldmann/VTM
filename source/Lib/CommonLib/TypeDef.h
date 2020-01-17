@@ -76,7 +76,6 @@
 
 
 
-#define JVET_P0366_NUT_CONSTRAINT_FLAGS                   1 // JVET-P0366: Adding constraint flags for NAL unit types
 
 #define JVET_P0345_LD_GOP_8                               1 // JVET-P0345: low-delay gop size 8
 

@@ -145,7 +145,6 @@ EncAppCfg::EncAppCfg()
 , m_bNoQpDeltaConstraintFlag(false)
 , m_bNoDepQuantConstraintFlag(false)
 , m_bNoSignDataHidingConstraintFlag(false)
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
 , m_noTrailConstraintFlag(false)
 , m_noStsaConstraintFlag(false)
 , m_noRaslConstraintFlag(false)
@@ -154,7 +153,6 @@ EncAppCfg::EncAppCfg()
 , m_noCraConstraintFlag(false)
 , m_noGdrConstraintFlag(false)
 , m_noApsConstraintFlag(false)
-#endif
 
 #if EXTENSION_360_VIDEO
 , m_ext360(*this)
@@ -4434,7 +4432,6 @@ void EncAppCfg::xPrintParameter()
   fflush( stdout );
 }
 
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
 bool EncAppCfg::xHasNonZeroTemporalID ()
 {
   for (unsigned int i = 0; i < m_iGOPSize; i++)
@@ -4468,7 +4465,6 @@ bool EncAppCfg::xHasLeadingPicture ()
   }
   return false;
 }
-#endif
 
 
 bool confirmPara(bool bflag, const char* message)

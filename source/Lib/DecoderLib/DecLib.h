@@ -158,9 +158,7 @@ public:
   void  finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl = INFO);
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   void  checkNalUnitConstraints( uint32_t naluType );
-#endif
 
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
@@ -212,7 +210,7 @@ protected:
   void      xParsePrefixSEImessages();
   void      xParsePrefixSEIsForUnknownVCLNal();
 
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS && JVET_P0478_PTL_DPS
+#if JVET_P0478_PTL_DPS
   void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
 #endif
 

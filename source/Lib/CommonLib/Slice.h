@@ -264,7 +264,6 @@ class ConstraintInfo
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
   bool              m_noSignDataHidingConstraintFlag;
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool              m_noTrailConstraintFlag;
   bool              m_noStsaConstraintFlag;
   bool              m_noRaslConstraintFlag;
@@ -273,7 +272,6 @@ class ConstraintInfo
   bool              m_noCraConstraintFlag;
   bool              m_noGdrConstraintFlag;
   bool              m_noApsConstraintFlag;
-#endif
 
 public:
   ConstraintInfo()
@@ -310,7 +308,6 @@ public:
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
     , m_noTrailConstraintFlag (false)
     , m_noStsaConstraintFlag (false)
     , m_noRaslConstraintFlag (false)
@@ -319,7 +316,6 @@ public:
     , m_noCraConstraintFlag (false)
     , m_noGdrConstraintFlag (false)
     , m_noApsConstraintFlag (false)
-#endif
   {}
 
   bool          getProgressiveSourceFlag() const { return m_progressiveSourceFlag; }
@@ -401,7 +397,6 @@ public:
   void          setNoDepQuantConstraintFlag(bool bVal) { m_noDepQuantConstraintFlag = bVal; }
   bool          getNoSignDataHidingConstraintFlag() const { return m_noSignDataHidingConstraintFlag; }
   void          setNoSignDataHidingConstraintFlag(bool bVal) { m_noSignDataHidingConstraintFlag = bVal; }
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool          getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
   void          setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
   bool          getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
@@ -418,7 +413,6 @@ public:
   void          setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
   bool          getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
-#endif
 };
 
 class ProfileTierLevel

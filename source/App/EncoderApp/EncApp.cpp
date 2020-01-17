@@ -246,7 +246,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);
   m_cEncLib.setNoSignDataHidingConstraintFlag                    ( !m_signDataHidingEnabledFlag );
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   m_cEncLib.setNoTrailConstraintFlag                             ( m_iIntraPeriod == 1 );
   m_cEncLib.setNoStsaConstraintFlag                              ( m_iIntraPeriod == 1 || !xHasNonZeroTemporalID() );
   m_cEncLib.setNoRaslConstraintFlag                              ( m_iIntraPeriod == 1 || !xHasLeadingPicture() );
@@ -255,7 +254,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoCraConstraintFlag                               ( m_iDecodingRefreshType != 1 );
   m_cEncLib.setNoGdrConstraintFlag                               ( false ); // Not yet possible to encode GDR using config parameters
   m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lmcsEnabled && m_useScalingListId == SCALING_LIST_OFF);
-#endif
 
   //====== Coding Structure ========
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );

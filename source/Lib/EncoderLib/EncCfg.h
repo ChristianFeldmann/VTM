@@ -193,7 +193,6 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool      m_noTrailConstraintFlag;
   bool      m_noStsaConstraintFlag;
   bool      m_noRaslConstraintFlag;
@@ -202,7 +201,6 @@ protected:
   bool      m_noCraConstraintFlag;
   bool      m_noGdrConstraintFlag;
   bool      m_noApsConstraintFlag;
-#endif
 
   /* profile & level */
   Profile::Name m_profile;
@@ -891,7 +889,6 @@ public:
   void      setNoDepQuantConstraintFlag(bool bVal) { m_bNoDepQuantConstraintFlag = bVal; }
   bool      getNoSignDataHidingConstraintFlag() const { return m_bNoSignDataHidingConstraintFlag; }
   void      setNoSignDataHidingConstraintFlag(bool bVal) { m_bNoSignDataHidingConstraintFlag = bVal; }
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool      getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
   void      setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
   bool      getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
@@ -908,7 +905,6 @@ public:
   void      setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
   bool      getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void      setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
-#endif
 
 
   void      setFrameRate                    ( int   i )      { m_iFrameRate = i; }

@@ -1071,7 +1071,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   cinfo->setNoQpDeltaConstraintFlag(m_bNoQpDeltaConstraintFlag);
   cinfo->setNoDepQuantConstraintFlag(m_bNoDepQuantConstraintFlag);
   cinfo->setNoSignDataHidingConstraintFlag(m_bNoSignDataHidingConstraintFlag);
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   cinfo->setNoTrailConstraintFlag(m_noTrailConstraintFlag);
   cinfo->setNoStsaConstraintFlag(m_noStsaConstraintFlag);
   cinfo->setNoRaslConstraintFlag(m_noRaslConstraintFlag);
@@ -1080,7 +1079,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   cinfo->setNoCraConstraintFlag(m_noCraConstraintFlag);
   cinfo->setNoGdrConstraintFlag(m_noGdrConstraintFlag);
   cinfo->setNoApsConstraintFlag(m_noApsConstraintFlag);
-#endif
 
   profileTierLevel->setLevelIdc                    (m_level);
   profileTierLevel->setTierFlag                    (m_levelTier);

@@ -1890,7 +1890,6 @@ bool DecLib::isRandomAccessSkipPicture( int& iSkipFrame, int& iPOCLastDisplay )
 }
 
 #if !JVET_P0478_PTL_DPS
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
 void DecLib::checkNalUnitConstraints( uint32_t naluType )
 {
   const ConstraintInfo *cInfo = NULL;
@@ -1931,9 +1930,7 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
 #endif
   }
 }
-#endif
 #else
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
 void DecLib::checkNalUnitConstraints( uint32_t naluType )
 {
   if (m_parameterSetManager.getActiveSPS() != NULL && m_parameterSetManager.getActiveSPS()->getProfileTierLevel() != NULL)
@@ -1983,7 +1980,6 @@ void DecLib::xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t
 #endif
   }
 }
-#endif
 #endif
 
 //! \}

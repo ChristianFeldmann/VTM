@@ -159,7 +159,6 @@ protected:
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool      m_noTrailConstraintFlag;
   bool      m_noStsaConstraintFlag;
   bool      m_noRaslConstraintFlag;
@@ -168,7 +167,6 @@ protected:
   bool      m_noCraConstraintFlag;
   bool      m_noGdrConstraintFlag;
   bool      m_noApsConstraintFlag;
-#endif
 
   // profile/level
   Profile::Name m_profile;
@@ -827,10 +825,8 @@ protected:
   bool  xCheckParameter ();                                   ///< check validity of configuration values
   void  xPrintParameter ();                                   ///< print configuration values
   void  xPrintUsage     ();                                   ///< print usage
-#if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool  xHasNonZeroTemporalID();                             ///< check presence of constant temporal ID in GOP structure
   bool  xHasLeadingPicture();                                 ///< check presence of leading pictures in GOP structure
-#endif
 #if JVET_P2001E_PROFILES
   int   xAutoDetermineProfile();                              ///< auto determine the profile to use given the other configuration settings. Returns 1 if erred. Can select profile 'NONE'
 #endif

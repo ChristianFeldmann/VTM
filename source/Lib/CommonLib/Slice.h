@@ -425,11 +425,7 @@ class ProfileTierLevel
 
   ConstraintInfo    m_constraintInfo;
   bool              m_subLayerLevelPresentFlag[MAX_TLAYER - 1];
-#if JVET_P0217_PTL_SYNTAX_CLEANUP
   Level::Name       m_subLayerLevelIdc[MAX_TLAYER];
-#else
-  Level::Name       m_subLayerLevelIdc[MAX_TLAYER - 1];
-#endif
 
 public:
                 ProfileTierLevel();

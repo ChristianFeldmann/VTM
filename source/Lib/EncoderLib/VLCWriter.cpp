@@ -2156,11 +2156,9 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
 
-#if JVET_P0217_PTL_SYNTAX_CLEANUP
   codeConstraintInfo( ptl->getConstraintInfo() );
 
   WRITE_CODE( int( ptl->getLevelIdc() ), 8, "general_level_idc" );
-#endif
 
   WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
   for (int i = 0; i < ptl->getNumSubProfile(); i++)
@@ -2168,11 +2166,6 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
     WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
   }
 
-#if !JVET_P0217_PTL_SYNTAX_CLEANUP
-  codeConstraintInfo(ptl->getConstraintInfo());
-
-  WRITE_CODE( int(ptl->getLevelIdc()), 8 ,     "general_level_idc"                     );
-#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {

@@ -3220,11 +3220,9 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
 
-#if JVET_P0217_PTL_SYNTAX_CLEANUP
   parseConstraintInfo( ptl->getConstraintInfo() );
 
   READ_CODE( 8, symbol, "general_level_idc" ); ptl->setLevelIdc( Level::Name( symbol ) );
-#endif
 
   READ_CODE(8, symbol, "num_sub_profiles");
   uint8_t numSubProfiles = symbol;
@@ -3234,11 +3232,6 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
     READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
   }
 
-#if !JVET_P0217_PTL_SYNTAX_CLEANUP
-  parseConstraintInfo( ptl->getConstraintInfo() );
-
-  READ_CODE(8 , symbol,   "general_level_idc"                ); ptl->setLevelIdc    (Level::Name(symbol));
-#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {
@@ -3257,7 +3250,6 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
       READ_CODE(8 , symbol,   "sub_layer_level_idc"                ); ptl->setSubLayerLevelIdc    (i, Level::Name(symbol));
     }
   }
-#if JVET_P0217_PTL_SYNTAX_CLEANUP
   ptl->setSubLayerLevelIdc(maxNumSubLayersMinus1, ptl->getLevelIdc());
   for( int i = maxNumSubLayersMinus1 - 1; i >= 0; i-- )
   {
@@ -3266,7 +3258,6 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
       ptl->setSubLayerLevelIdc( i, ptl->getSubLayerLevelIdc( i + 1 ) );
     }
   }
-#endif
 }
 
 

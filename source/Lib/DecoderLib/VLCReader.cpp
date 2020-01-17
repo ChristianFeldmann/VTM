@@ -300,9 +300,7 @@ void HLSyntaxReader::copyRefPicList(SPS* sps, ReferencePictureList* source_rpl, 
 {
   dest_rp->setNumberOfShorttermPictures(source_rpl->getNumberOfShorttermPictures());
 
-#if JVET_O1159_SCALABILITY
   dest_rp->setNumberOfInterLayerPictures( sps->getInterLayerPresentFlag() ? dest_rp->getNumberOfInterLayerPictures() : 0 );
-#endif
 
   if( sps->getLongTermRefsPresent() )
   {
@@ -315,11 +313,7 @@ void HLSyntaxReader::copyRefPicList(SPS* sps, ReferencePictureList* source_rpl, 
 
   for( int ii = 0; ii < numRefPic; ii++ )
   {
-#if JVET_O1159_SCALABILITY
     dest_rp->setRefPicIdentifier( ii, source_rpl->getRefPicIdentifier( ii ), source_rpl->isRefPicLongterm( ii ), source_rpl->isInterLayerRefPic( ii ), source_rpl->getInterLayerRefPicIdx( ii ) );
-#else
-    dest_rp->setRefPicIdentifier( ii, source_rpl->getRefPicIdentifier( ii ), source_rpl->isRefPicLongterm( ii ) );
-#endif
   }
 }
 
@@ -330,9 +324,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   uint32_t numRefPic = code;
   uint32_t numStrp = 0;
   uint32_t numLtrp = 0;
-#if JVET_O1159_SCALABILITY
   uint32_t numIlrp = 0;
-#endif
 
   if (sps->getLongTermRefsPresent())
   {
@@ -345,13 +337,10 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   int deltaValue = 0;
   bool firstSTRP = true;
 
-#if JVET_O1159_SCALABILITY
   rpl->setInterLayerPresentFlag( sps->getInterLayerPresentFlag() );
-#endif
 
   for (int ii = 0; ii < numRefPic; ii++)
   {
-#if JVET_O1159_SCALABILITY
     uint32_t isInterLayerRefPic = 0;
 
     if( rpl->getInterLayerPresentFlag() )
@@ -368,7 +357,6 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
 
     if( !isInterLayerRefPic )
     {
-#endif
     isLongTerm = false;
     if (sps->getLongTermRefsPresent())
     {
@@ -402,33 +390,21 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
         prevDelta = deltaValue;
       }
 
-#if JVET_O1159_SCALABILITY
       rpl->setRefPicIdentifier( ii, deltaValue, isLongTerm, false, 0 );
-#else
-      rpl->setRefPicIdentifier(ii, deltaValue, isLongTerm);
-#endif
       numStrp++;
     }
     else
     {
       if (!rpl->getLtrpInSliceHeaderFlag())
         READ_CODE(sps->getBitsForPOC(), code, "poc_lsb_lt[listIdx][rplsIdx][j]");
-#if JVET_O1159_SCALABILITY
       rpl->setRefPicIdentifier( ii, code, isLongTerm, false, 0 );
-#else
-      rpl->setRefPicIdentifier(ii, code, isLongTerm);
-#endif 
       numLtrp++;
     }
-#if JVET_O1159_SCALABILITY
     }
-#endif
   }
   rpl->setNumberOfShorttermPictures(numStrp);
   rpl->setNumberOfLongtermPictures(numLtrp);
-#if JVET_O1159_SCALABILITY
   rpl->setNumberOfInterLayerPictures( numIlrp );
-#endif
 }
 
 void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetManager )
@@ -1635,9 +1611,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
   READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
-#if JVET_O1159_SCALABILITY
   READ_FLAG( uiCode, "inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
-#endif 
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   READ_FLAG( uiCode, "sps_idr_rpl_present_flag" );       pcSPS->setIDRRefParamListPresent( (bool) uiCode );
 #endif
@@ -2207,7 +2181,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   READ_CODE(4, uiCode, "vps_video_parameter_set_id");         pcVPS->setVPSId(uiCode);
 #endif
 
-#if JVET_O1159_SCALABILITY
   READ_CODE(6, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
   if (pcVPS->getMaxLayers() - 1 == 0)
   {
@@ -2291,17 +2264,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       }
     }
   }
-#else
-  READ_CODE(8, uiCode, "vps_max_layers_minus1");              pcVPS->setMaxLayers(uiCode + 1);    CHECK(uiCode + 1 > MAX_VPS_LAYERS, "Invalid code");
-#if JVET_P0185
-  READ_CODE(3, uiCode, "vps_max_sub_layers_minus1");          pcVPS->setMaxSubLayers(uiCode + 1);
-#endif
-  for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
-  {
-    READ_CODE(7, uiCode, "vps_included_layer_id");          pcVPS->setVPSIncludedLayerId(uiCode, i);
-    READ_FLAG(uiCode, "vps_reserved_zero_1bit");
-  }
-#endif
   READ_FLAG(uiCode, "vps_extension_flag");
   if (uiCode)
   {
@@ -2538,11 +2500,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
             if (picHeader->getRPL( listIdx )->getLtrpInSliceHeaderFlag())
             {
               READ_CODE(sps->getBitsForPOC(), uiCode, "pic_poc_lsb_lt[i][j]");
-#if JVET_O1159_SCALABILITY
               picHeader->getLocalRPL( listIdx )->setRefPicIdentifier( i, uiCode, true, false, 0 );
-#else
-              picHeader->getLocalRPL( listIdx )->setRefPicIdentifier(i, uiCode, true);
-#endif
             }
             READ_FLAG(uiCode, "pic_delta_poc_msb_present_flag[i][j]");
             picHeader->getLocalRPL( listIdx )->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
@@ -3388,11 +3346,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
             if (pcSlice->getRPL0()->getLtrpInSliceHeaderFlag())
             {
               READ_CODE(sps->getBitsForPOC(), uiCode, "slice_poc_lsb_lt[i][j]");
-#if JVET_O1159_SCALABILITY
               pcSlice->getLocalRPL0()->setRefPicIdentifier( i, uiCode, true, false, 0 );
-#else
-              pcSlice->getLocalRPL0()->setRefPicIdentifier(i, uiCode, true);
-#endif
             }
             READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
             pcSlice->getLocalRPL0()->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
@@ -3477,11 +3431,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
             if (pcSlice->getRPL1()->getLtrpInSliceHeaderFlag())
             {
               READ_CODE(sps->getBitsForPOC(), uiCode, "slice_poc_lsb_lt[i][j]");
-#if JVET_O1159_SCALABILITY
               pcSlice->getLocalRPL1()->setRefPicIdentifier( i, uiCode, true, false, 0 );
-#else
-              pcSlice->getLocalRPL1()->setRefPicIdentifier(i, uiCode, true);
-#endif
             }
             READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
             pcSlice->getLocalRPL1()->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);

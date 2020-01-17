@@ -79,7 +79,6 @@ void EncApp::xInitLibCfg()
 
   vps.setMaxLayers( m_maxLayers );
 
-#if JVET_O1159_SCALABILITY
   if (vps.getMaxLayers() > 1)
   {
     vps.setVPSId(1);  //JVET_P0205 vps_video_parameter_set_id shall be greater than 0 for multi-layer coding
@@ -171,13 +170,6 @@ void EncApp::xInitLibCfg()
       }
     }
   }
-#endif
-#if !JVET_O1159_SCALABILITY
-  for(int i = 0; i < MAX_TLAYER; i++)
-  {
-    vps.setVPSIncludedLayerId                                    ( 0, i );
-  }
-#endif
   vps.setVPSExtensionFlag                                        ( false );
   m_cEncLib.setVPS(&vps);
   m_cEncLib.setProfile                                           ( m_profile);
@@ -973,9 +965,7 @@ void EncApp::xInitLibCfg()
 #if JVET_O0549_ENCODER_ONLY_FILTER
   m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
 #endif
-#if JVET_O1159_SCALABILITY
   m_cEncLib.setNumRefLayers                                       ( m_numRefLayers );
-#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId )

@@ -173,15 +173,11 @@ static const int MAX_NESTING_NUM_OPS =                           1024;
 static const int MAX_NESTING_NUM_LAYER =                           64;
 
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
-#if JVET_O1159_SCALABILITY
 static const int MAX_VPS_LAYERS =                                  64;
 static const int MAX_VPS_SUBLAYERS =                                7;
 static const int MAX_NUM_REF_LAYERS =                               7;
 static const int MAX_NUM_OLSS =                                   256;
 static const int MAX_VPS_OLS_MODE_IDC =                             2;
-#else
-static const int MAX_VPS_LAYERS =                                 256;
-#endif
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 

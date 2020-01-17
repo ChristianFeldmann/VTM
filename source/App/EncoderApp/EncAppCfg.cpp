@@ -1770,7 +1770,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
   ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
-#if JVET_O1159_SCALABILITY
 
   ;
   opts.addOptions()
@@ -1784,7 +1783,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "OlsModeIdc",                                     m_olsModeIdc,                                 0, "Output layer set mode")
   ( "NumOutputLayerSets",                             m_numOutputLayerSets,                         1, "Number of output layer sets")
   ( "OlsOutputLayer%d",                               m_olsOutputLayerStr, string(""), MAX_VPS_LAYERS, "Output layer index of i-th OLS")
-#endif
     ;
 
 #if JVET_O0549_ENCODER_ONLY_FILTER

@@ -886,9 +886,7 @@ protected:
   bool        m_rprEnabled;
   int         m_switchPocPeriod;
   int         m_upscaledOutput;
-#if JVET_O1159_SCALABILITY
   int         m_numRefLayers[MAX_VPS_LAYERS];
-#endif
 
 public:
   EncCfg()
@@ -2255,10 +2253,8 @@ public:
   void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
   int         getUpscaledOutput()                              const { return m_upscaledOutput; }
 
-#if JVET_O1159_SCALABILITY
   void        setNumRefLayers( int* numRefLayers )                   { std::memcpy( m_numRefLayers, numRefLayers, sizeof( m_numRefLayers ) ); }
   int         getNumRefLayers( int layerIdx )                  const { return m_numRefLayers[layerIdx];  }
-#endif
 };
 
 //! \}

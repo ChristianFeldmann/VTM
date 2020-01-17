@@ -640,11 +640,7 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #endif
                                       )
 {
-#if JVET_O1159_SCALABILITY
   int layerIdx = cs.vps == nullptr ? 0 : cs.vps->getGeneralLayerIdx( cs.slice->getPic()->layerId );
-#else
-  int layerIdx = cs.slice->getPic()->layerId; //VS: layerId should be converted to layerIdx
-#endif
 
    // IRAP AU is assumed
   if( !layerIdx && ( cs.slice->getPendingRasInit() || cs.slice->isIDRorBLA() ) )

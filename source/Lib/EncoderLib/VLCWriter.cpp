@@ -185,13 +185,8 @@ void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
 
 void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc )
 {
-#if JVET_O1159_SCALABILITY
   uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures() + rpl->getNumberOfInterLayerPictures();
   WRITE_UVLC( numRefPic, "num_ref_entries[ listIdx ][ rplsIdx ]" );
-#else
-  WRITE_UVLC(rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures(), "num_ref_entries[ listIdx ][ rplsIdx ]");
-  uint32_t numRefPic = rpl->getNumberOfShorttermPictures() + rpl->getNumberOfLongtermPictures();
-#endif
 
   if (isLongTermPresent)
   {
@@ -202,7 +197,6 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
   bool firstSTRP = true;
   for (int ii = 0; ii < numRefPic; ii++)
   {
-#if JVET_O1159_SCALABILITY
     if( rpl->getInterLayerPresentFlag() )
     {
       WRITE_FLAG( rpl->isInterLayerRefPic( ii ), "inter_layer_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]" );
@@ -216,7 +210,6 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
 
     if( !rpl->isInterLayerRefPic( ii ) )
     {
-#endif
     if( isLongTermPresent )
     {
       WRITE_FLAG( !rpl->isRefPicLongterm( ii ), "st_ref_pic_flag[ listIdx ][ rplsIdx ][ i ]" );
@@ -249,9 +242,7 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
     {
       WRITE_CODE(rpl->getRefPicIdentifier(ii), ltLsbBitsCount, "poc_lsb_lt[listIdx][rplsIdx][i]");
     }
-#if JVET_O1159_SCALABILITY
     }
-#endif
   }
 }
 
@@ -1033,9 +1024,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
   WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
-#if JVET_O1159_SCALABILITY
   WRITE_FLAG( pcSPS->getInterLayerPresentFlag() ? 1 : 0, "inter_layer_ref_pics_present_flag" );
-#endif 
 #if JVET_P2001_SYNTAX_ORDER_MISMATCHES
   WRITE_FLAG(pcSPS->getIDRRefParamListPresent() ? 1 : 0, "sps_idr_rpl_present_flag" );
 #endif
@@ -1480,7 +1469,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   xTraceVPSHeader();
 #endif
   WRITE_CODE(pcVPS->getVPSId(), 4, "vps_video_parameter_set_id");
-#if JVET_O1159_SCALABILITY
   WRITE_CODE(pcVPS->getMaxLayers() - 1, 6, "vps_max_layers_minus1");
   WRITE_CODE(pcVPS->getMaxSubLayers() - 1, 3, "vps_max_sublayers_minus1");
   if (pcVPS->getMaxLayers() > 1 && pcVPS->getMaxSubLayers() > 1) 
@@ -1530,18 +1518,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       }
     }
   }
-#else
-  WRITE_CODE(pcVPS->getMaxLayers() - 1, 8, "vps_max_layers_minus1");
-#if JVET_P0185
-  CHECK(pcVPS->getMaxSubLayers() < 1 || pcVPS->getMaxSubLayers() > 7, "vps_max_sub_layers_minus1 must be in range 0..6");
-  WRITE_CODE(pcVPS->getMaxSubLayers() - 1, 3, "vps_max_sub_layers_minus1");
-#endif
-  for (uint32_t i = 0; i <= pcVPS->getMaxLayers() - 1; i++)
-  {
-    WRITE_CODE(pcVPS->getVPSIncludedLayerId(i), 7, "vps_included_layer_id");
-    WRITE_FLAG(0, "vps_reserved_zero_1bit");
-  }
-#endif
   WRITE_FLAG(0, "vps_extension_flag");
 
   //future extensions here..

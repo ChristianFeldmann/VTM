@@ -332,17 +332,11 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
   }
 }
 
-#if JVET_O1159_SCALABILITY
 int EncGOP::xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId )
-#else
-int EncGOP::xWriteSPS (AccessUnit &accessUnit, const SPS *sps)
-#endif
 {
   OutputNALUnit nalu(NAL_UNIT_SPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-#if JVET_O1159_SCALABILITY
   nalu.m_nuhLayerId = layerId;
-#endif
   CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
   m_HLSWriter->codeSPS( sps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
@@ -399,11 +393,7 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
-#if JVET_O1159_SCALABILITY
       actualTotalBits += xWriteSPS( accessUnit, slice->getSPS(), m_pcEncLib->getLayerId() );
-#else
-      actualTotalBits += xWriteSPS( accessUnit, slice->getSPS() );
-#endif
     }
   }
 
@@ -443,11 +433,7 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   }
   else
   {
-#if JVET_O1159_SCALABILITY
     nalu.m_nuhLayerId = slice->getVPS()->getLayerId(0);
-#else
-    nalu.m_nuhLayerId = slice->getVPS()->getVPSIncludedLayerId(0);
-#endif
   }
   CHECK( nalu.m_temporalId != accessUnit.temporalId, "TemporalId shall be equal to the TemporalId of the AU containing the NAL unit" );
 #else
@@ -2072,11 +2058,7 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
 #endif
     if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
     {
-#if JVET_O1159_SCALABILITY
       int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
-#else
-      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
-#endif
 #if JVET_P1006_PICTURE_HEADER
       picHeader->setLmcsAPSId(apsId);
       APS* lmcsAPS = picHeader->getLmcsAPS();
@@ -2120,11 +2102,7 @@ void EncGOP::xPicInitLMCS(Picture *pic, Slice *slice)
     if (slice->getLmcsEnabledFlag())
 #endif
     {
-#if JVET_O1159_SCALABILITY
       int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
-#else
-      int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
-#endif
 #if JVET_P1006_PICTURE_HEADER
       picHeader->setLmcsAPSId(apsId);
 #else
@@ -2409,23 +2387,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0 ||
         (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && !pcSlice->isIRAP() && ( pcSlice->isDRAP() || !pcSlice->isPOCInRefPicList(pcSlice->getRPL0(), pcSlice->getAssociatedIRAPPOC())) )
-#if JVET_O1159_SCALABILITY
       || ( !pcSlice->isIRAP() && pcSlice->getPic()->cs->vps && m_pcEncLib->getNumRefLayers( pcSlice->getPic()->cs->vps->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) ) )
-#endif
       )
     {
-#if JVET_O1159_SCALABILITY
       xCreateExplicitReferencePictureSetFromReference( pcSlice, rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1() );
-#else
-      pcSlice->createExplicitReferencePictureSetFromReference(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
-#endif
     }
 
-#if JVET_O1159_SCALABILITY
     pcSlice->applyReferencePictureListBasedMarking( rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1(), pcSlice->getPic()->layerId );
-#else
-    pcSlice->applyReferencePictureListBasedMarking(rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1());
-#endif
 
     if(pcSlice->getTLayer() > 0
       && !(pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL     // Check if not a leading picture
@@ -2436,12 +2404,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         bool isSTSA=true;
 
-#if JVET_O1159_SCALABILITY
         if( !m_pcEncLib->getVPS()->getAllIndependentLayersFlag() && m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) )
         {
           isSTSA = false;
         }
-#endif
 
         for(int ii=iGOPid+1;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
         {
@@ -2986,11 +2952,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       pcSlice->setscalingListPresentFlag( true );
 #endif
 
-#if JVET_O1159_SCALABILITY
       int apsId = std::min<int>( 7, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
-#else
-      int apsId = std::min<int>( 7, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
-#endif
 #if JVET_P1006_PICTURE_HEADER
       picHeader->setScalingListAPSId( apsId );
 #else
@@ -3099,11 +3061,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setLmcsEnabledFlag(true);
 #endif
 
-#if JVET_O1159_SCALABILITY
         int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
-#else
-        int apsId = std::min<int>( 3, m_pcEncLib->getLayerId() ); //VS: layerId should be converted to laeyrIdx
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
         picHeader->setLmcsAPSId(apsId);
@@ -3306,11 +3264,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_pcEncLib->setParamSetChanged(pcSlice->getSPS()->getSPSId(), pcSlice->getPPS()->getPPSId());
       }
 
-#if JVET_O1159_SCALABILITY
       int layerIdx = m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() );
-#else
-      int layerIdx = m_pcEncLib->getLayerId(); //VS: convert layerId to layerIdx after VPS is implemented
-#endif
 
       // it is assumed that layerIdx equal to 0 is always present
       actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, writePS && !layerIdx );
@@ -4639,12 +4593,10 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
             msg( NOTICE, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
         }
 
-#if JVET_O1159_SCALABILITY
         if( pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) == pcSlice->getPOC() )
         {
           msg( NOTICE, ".%d", pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->layerId );
         }
-#endif
 
         msg( NOTICE, " " );
       }
@@ -5452,7 +5404,6 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
 }
 #endif
 
-#if JVET_O1159_SCALABILITY
 void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 )
 {
   Picture* rpcPic;
@@ -5721,5 +5672,4 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   slice->setRPL1idx( -1 );
   slice->setRPL1( pLocalRPL1 );
 }
-#endif
 //! \}

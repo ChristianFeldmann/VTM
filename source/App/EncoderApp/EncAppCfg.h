@@ -834,7 +834,6 @@ protected:
 
   int         m_maxLayers;
 
-#if JVET_O1159_SCALABILITY
   int         m_layerId[MAX_VPS_LAYERS];
   int         m_layerIdx;
   int         m_maxSublayers;
@@ -846,7 +845,6 @@ protected:
   int         m_olsModeIdc;
   int         m_numOutputLayerSets;
   std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
-#endif
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

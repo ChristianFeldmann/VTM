@@ -441,13 +441,6 @@ DecLib::~DecLib()
     m_prefixSEINALUs.pop_front();
   }
 
-#if !JVET_O1159_SCALABILITY
-  if( m_vps != nullptr )
-  {
-    delete m_vps;
-    m_vps = nullptr;
-  }
-#endif
 }
 
 void DecLib::create()
@@ -678,12 +671,10 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
           msg( msgl, "%d ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
       }
 
-#if JVET_O1159_SCALABILITY
       if( pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) == pcSlice->getPOC() )
       {
         msg( msgl, ".%d", pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->layerId );
       }   
-#endif
 
       msg( msgl, " " );
     }
@@ -1029,9 +1020,7 @@ void DecLib::xActivateParameterSets( const int layerId )
     const SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());             // this is a temporary SPS object. Do not store this value
     CHECK(sps == 0, "No SPS present");
 
-#if JVET_O1159_SCALABILITY
     const VPS *vps = sps->getVPSId() ? m_parameterSetManager.getVPS( sps->getVPSId() ) : nullptr;
-#endif
 
     if (NULL == pps->pcv)
     {
@@ -1081,17 +1070,9 @@ void DecLib::xActivateParameterSets( const int layerId )
     //  Get a new picture buffer. This will also set up m_pcPic, and therefore give us a SPS and PPS pointer that we can use.
     m_pcPic = xGetNewPicBuffer( *sps, *pps, m_apcSlicePilot->getTLayer(), layerId );
 
-#if JVET_O1159_SCALABILITY
     m_apcSlicePilot->applyReferencePictureListBasedMarking( m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1(), layerId );
-#else
-    m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
-#endif
 #if JVET_P1006_PICTURE_HEADER
-#if JVET_O1159_SCALABILITY
     m_pcPic->finalInit( vps, *sps, *pps, &m_picHeader, apss, lmcsAPS, scalinglistAPS );
-#else
-    m_pcPic->finalInit( *sps, *pps, &m_picHeader, apss, lmcsAPS, scalinglistAPS );
-#endif
 #else
     m_pcPic->finalInit( *sps, *pps, apss, lmcsAPS, scalinglistAPS );
 #endif
@@ -1121,9 +1102,7 @@ void DecLib::xActivateParameterSets( const int layerId )
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
-#if JVET_O1159_SCALABILITY
     m_pcPic->cs->vps = vps;
-#endif
 
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
@@ -1936,22 +1915,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {
-#if JVET_O1159_SCALABILITY
   m_vps = new VPS();
-#else
-  if( m_vps == nullptr )
-  {
-    m_vps = new VPS();
-  }
-#endif
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 
   CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
 
   m_HLSReader.parseVPS( m_vps );
-#if JVET_O1159_SCALABILITY
   m_parameterSetManager.storeVPS( m_vps, nalu.getBitstream().getFifo());
-#endif
 }
 
 void DecLib::xDecodeDPS( InputNALUnit& nalu )

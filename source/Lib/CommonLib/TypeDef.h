@@ -55,7 +55,6 @@
 
 
 
-#define JVET_P1019_OUTPUT_LAYER_SET                       1 // JVET-P1019: Signaling of output layer set (OLS) and its output process
 
 #define JVET_P0257_SCALING_LISTS_SPEEDUP_DEC              1 // JVET-P0257: Decoder speed-up for handling scaling matrices
 

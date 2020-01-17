@@ -113,9 +113,7 @@ uint32_t DecApp::decode()
   // main decoder loop
   bool loopFiltered = false;
 
-#if JVET_P1019_OUTPUT_LAYER_SET
   bool bPicSkipped = false;
-#endif
 
   while (!!bitstreamFile)
   {
@@ -155,13 +153,8 @@ uint32_t DecApp::decode()
         }
 
         // parse NAL unit syntax if within target decoding layer
-#if JVET_P1019_OUTPUT_LAYER_SET
         if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu))
-#else
-        if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu) && isNaluTheTargetLayer(&nalu))
-#endif
         {
-#if JVET_P1019_OUTPUT_LAYER_SET
           if (bPicSkipped)
           {
             if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
@@ -174,21 +167,16 @@ uint32_t DecApp::decode()
               bPicSkipped = false;
             }
           }
-#endif
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-#if JVET_P1019_OUTPUT_LAYER_SET
           if (nalu.m_nalUnitType == NAL_UNIT_VPS)
           {
             deriveOutputLayerSet();
           }
-#endif
         }
-#if JVET_P1019_OUTPUT_LAYER_SET
         else
         {
           bPicSkipped = true;
         }
-#endif
       }
     }
 #else 
@@ -239,11 +227,7 @@ uint32_t DecApp::decode()
         xFlushOutput( pcListPic, nalu.m_nuhLayerId );
       }
 
-#if JVET_P1019_OUTPUT_LAYER_SET
       if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu))
-#else
-      if ((m_iMaxTemporalLayer >= 0 && nalu.m_temporalId > m_iMaxTemporalLayer) || !isNaluWithinTargetDecLayerIdSet(&nalu) || !isNaluTheTargetLayer(&nalu))
-#endif
       {
         bNewPicture = false;
       }
@@ -273,11 +257,7 @@ uint32_t DecApp::decode()
 #endif
 
 
-#if JVET_P1019_OUTPUT_LAYER_SET
     if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
-#else
-    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence())
-#endif
     {
       if (!loopFiltered || bitstreamFile)
       {
@@ -321,11 +301,7 @@ uint32_t DecApp::decode()
         }
 
         std::string reconFileName = m_reconFileName;
-#if JVET_P1019_OUTPUT_LAYER_SET
         if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu)))
-#else
-        if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (m_iTargetLayer == -1))
-#endif
         {
           size_t pos = reconFileName.find_last_of('.');
           if (pos != string::npos)
@@ -337,11 +313,9 @@ uint32_t DecApp::decode()
             reconFileName.append( std::to_string( nalu.m_nuhLayerId ) );
           }
         }
-#if JVET_P1019_OUTPUT_LAYER_SET
         if(((m_cDecLib.getVPS() != nullptr) &&
               ((m_cDecLib.getVPS()->getMaxLayers() == 1) || (isNaluWithinTargetOutputLayerIdSet(&nalu)))) ||
             (m_cDecLib.getVPS() == nullptr))
-#endif
         m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open(reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon); // write mode
       }
       // write reconstruction to file
@@ -398,7 +372,6 @@ uint32_t DecApp::decode()
   return nRet;
 }
 
-#if JVET_P1019_OUTPUT_LAYER_SET
 bool DecApp::deriveOutputLayerSet()
 {
   int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
@@ -563,7 +536,6 @@ bool DecApp::deriveOutputLayerSet()
 
   return true;
 }
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
 /**
@@ -789,9 +761,6 @@ void DecApp::xCreateDecLib()
   );
   m_cDecLib.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
 
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  m_cDecLib.setTargetDecLayer(m_iTargetLayer);
-#endif
 
   if (!m_outputDecodedSEIMessagesFilename.empty())
   {
@@ -1169,7 +1138,6 @@ bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
   return false;
 }
 
-#if JVET_P1019_OUTPUT_LAYER_SET
 /** \param nalu Input nalu to check whether its LayerId is within targetOutputLayerIdSet
  */
 bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
@@ -1188,16 +1156,5 @@ bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
   return false;
 }
 
-#else
-/** \param nalu Input nalu to check whether its LayerId is the specified target layer
-*/
-bool DecApp::isNaluTheTargetLayer(InputNALUnit* nalu)
-{
-  if (nalu->m_nuhLayerId == m_iTargetLayer || m_iTargetLayer < 0)
-    return true;
-
-  return false;
-}
-#endif
 
 //! \}

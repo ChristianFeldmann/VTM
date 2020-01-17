@@ -61,12 +61,8 @@ protected:
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
   InputColourSpaceConversion m_outputColourSpaceConvert;
-#if JVET_P1019_OUTPUT_LAYER_SET
   int           m_iTargetOLS;                         ///< target output layer set
   std::vector<int> m_targetOutputLayerIdSet;          ///< set of LayerIds to be outputted           
-#else
-  int           m_iTargetLayer;                       ///< target stream layer to be decoded
-#endif
   int           m_iMaxTemporalLayer;                  ///< maximum temporal layer to be decoded
   int           m_decodedPictureHashSEIEnabled;       ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
   bool          m_decodedNoDisplaySEIEnabled;         ///< Enable(true)/disable(false) writing only pictures that get displayed based on the no display SEI message

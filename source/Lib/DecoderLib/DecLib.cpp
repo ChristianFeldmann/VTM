@@ -1974,13 +1974,6 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 {
   bool ret;
   // ignore all NAL units of layers > 0
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  if (getTargetDecLayer() >= 0 && nalu.m_nuhLayerId != getTargetDecLayer()) //TBC: ignore bitstreams whose nuh_layer_id is not the target layer id
-  {
-    msg( WARNING, "Warning: found NAL unit with nuh_layer_id equal to %d. Ignoring.\n", nalu.m_nuhLayerId);
-    return false;
-  }
-#endif
 
   m_accessUnitNals.push_back( std::pair<NalUnitType, int>( nalu.m_nalUnitType, nalu.m_temporalId ) );
 

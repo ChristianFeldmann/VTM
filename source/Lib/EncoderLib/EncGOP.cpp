@@ -411,9 +411,7 @@ int EncGOP::xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader )
   OutputNALUnit nalu(NAL_UNIT_PH);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
   nalu.m_temporalId = accessUnit.temporalId;
-#if JVET_P1019_OUTPUT_LAYER_SET
   nalu.m_nuhLayerId = m_pcEncLib->getLayerId();
-#endif
   m_HLSWriter->codePictureHeader( picHeader );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;

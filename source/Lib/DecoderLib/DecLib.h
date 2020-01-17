@@ -85,9 +85,6 @@ private:
 
   SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices, excluding prefix SEIs...
 
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  int                     m_iTargetLayer;                       ///< target stream layer to be decoded
-#endif
 
   // functional classes
   IntraPrediction         m_cIntraPred;
@@ -173,10 +170,6 @@ public:
   void  checkNalUnitConstraints( uint32_t naluType );
 #endif
 
-#if !JVET_P1019_OUTPUT_LAYER_SET
-  void  setTargetDecLayer(int val) { m_iTargetLayer = val; }
-  int   getTargetDecLayer() { return m_iTargetLayer; }
-#endif
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }

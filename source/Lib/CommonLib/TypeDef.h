@@ -159,7 +159,6 @@
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
-#define JVET_P0450_SEI_SARI                               1 // Sample aspect ratio information SEI
 #define JVET_P0462_SEI360                                 1 // 360-degree video related SEI messages
 
 #define JVET_P0337_PORTING_SEI                            1 // JVET-P0337: porting several HEVC SEIs and add encoder control

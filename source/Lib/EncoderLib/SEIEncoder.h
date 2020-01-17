@@ -113,9 +113,7 @@ public:
   void initSEIGcmp(SEIGeneralizedCubemapProjection *sei);
 #endif
   void initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps);
-#if JVET_P0450_SEI_SARI
   void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
-#endif
 #if JVET_P0337_PORTING_SEI
   void initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *sei);
   void initSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume *sei);

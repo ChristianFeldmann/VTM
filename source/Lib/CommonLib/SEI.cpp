@@ -216,9 +216,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
 #if JVET_P0597_GCMP_SEI
     case SEI::GENERALIZED_CUBEMAP_PROJECTION:       return "Generalized cubemap projection";
 #endif
-#if JVET_P0450_SEI_SARI
     case SEI::SAMPLE_ASPECT_RATIO_INFO:             return "Sample aspect ratio information";
-#endif
     case SEI::SUBPICTURE_LEVEL_INFO:                return "Subpicture level information";
     default:                                        return "Unknown";
   }

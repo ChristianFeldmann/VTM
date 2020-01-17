@@ -121,9 +121,7 @@ public:
 #endif
     FRAME_FIELD_INFO                     = 168,
     SUBPICTURE_LEVEL_INFO                = 203,
-#if JVET_P0450_SEI_SARI
     SAMPLE_ASPECT_RATIO_INFO             = 204,
-#endif
 #if JVET_P0337_PORTING_SEI
     CONTENT_LIGHT_LEVEL_INFO             = 144,
     ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
@@ -255,7 +253,6 @@ public:
 };
 #endif
 
-#if JVET_P0450_SEI_SARI
 class SEISampleAspectRatioInfo : public SEI
 {
 public:
@@ -268,7 +265,6 @@ public:
   int                   m_sariSarWidth;
   int                   m_sariSarHeight;
 };
-#endif
 
 #if HEVC_SEI || JVET_P0337_PORTING_SEI
 static const uint32_t ISO_IEC_11578_LEN=16;

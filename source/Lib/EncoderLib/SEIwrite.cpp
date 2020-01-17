@@ -184,11 +184,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
   case SEI::SUBPICTURE_LEVEL_INFO:
     xWriteSEISubpictureLevelInfo(*static_cast<const SEISubpicureLevelInfo*>(&sei), sps);
     break;
-#if JVET_P0450_SEI_SARI
   case SEI::SAMPLE_ASPECT_RATIO_INFO:
     xWriteSEISampleAspectRatioInfo(*static_cast<const SEISampleAspectRatioInfo*>(&sei));
     break;
-#endif
   default:
     THROW("Trying to write unhandled SEI message");
     break;
@@ -1157,7 +1155,6 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, c
   }
 }
 
-#if JVET_P0450_SEI_SARI
 void SEIWriter::xWriteSEISampleAspectRatioInfo(const SEISampleAspectRatioInfo &sei)
 {
   WRITE_FLAG( sei.m_sariCancelFlag,                                           "sari_cancel_flag" );
@@ -1172,7 +1169,6 @@ void SEIWriter::xWriteSEISampleAspectRatioInfo(const SEISampleAspectRatioInfo &s
     }
   }
 }
-#endif
 
 #if JVET_P0337_PORTING_SEI
 void SEIWriter::xWriteSEIUserDataRegistered(const SEIUserDataRegistered &sei)

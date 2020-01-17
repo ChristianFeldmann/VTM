@@ -741,14 +741,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEISubpictureLevelInfo(seiSubpicureLevelInfo, sps);
     seiMessages.push_back(seiSubpicureLevelInfo);
   }
-#if JVET_P0450_SEI_SARI
   if (m_pcCfg->getSampleAspectRatioInfoSEIEnabled())
   {
     SEISampleAspectRatioInfo *seiSampleAspectRatioInfo = new SEISampleAspectRatioInfo;
     m_seiEncoder.initSEISampleAspectRatioInfo(seiSampleAspectRatioInfo);
     seiMessages.push_back(seiSampleAspectRatioInfo);
   }
-#endif
 #if JVET_P0337_PORTING_SEI
   // film grain
   if (m_pcCfg->getFilmGrainCharactersticsSEIEnabled())

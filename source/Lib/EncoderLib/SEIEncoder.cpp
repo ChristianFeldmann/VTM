@@ -483,7 +483,6 @@ void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCube
 }
 #endif
 
-#if JVET_P0450_SEI_SARI
 void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampleAspectRatioInfo)
 {
   CHECK(!(m_isInitialized), "seiSampleAspectRatioInfo already initialized");
@@ -506,7 +505,6 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
     }
   }
 }
-#endif
 
 
 #if HEVC_SEI

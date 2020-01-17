@@ -102,9 +102,7 @@ protected:
   void xWriteSEIGeneralizedCubemapProjection      (const SEIGeneralizedCubemapProjection &sei);
 #endif
   void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei, const SPS* sps);
-#if JVET_P0450_SEI_SARI
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
-#endif
 
 #if JVET_P0337_PORTING_SEI
   void xWriteSEIUserDataRegistered(const SEIUserDataRegistered& sei);

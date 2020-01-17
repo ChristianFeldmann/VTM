@@ -693,14 +693,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setGcmpSEIGuardBandSamplesMinus1                     ( (uint8_t)m_gcmpSEIGuardBandSamplesMinus1 );
 #endif
   m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
-#if JVET_P0450_SEI_SARI
   m_cEncLib.setSampleAspectRatioInfoSEIEnabled                   (m_sampleAspectRatioInfoSEIEnabled);
   m_cEncLib.setSariCancelFlag                                    (m_sariCancelFlag);
   m_cEncLib.setSariPersistenceFlag                               (m_sariPersistenceFlag);
   m_cEncLib.setSariAspectRatioIdc                                (m_sariAspectRatioIdc);
   m_cEncLib.setSariSarWidth                                      (m_sariSarWidth);
   m_cEncLib.setSariSarHeight                                     (m_sariSarHeight);
-#endif
   m_cEncLib.setMCTSEncConstraint                                 ( m_MCTSEncConstraint);
 #if HEVC_SEI || JVET_P0337_PORTING_SEI
 #if !JVET_P0337_PORTING_SEI

@@ -358,9 +358,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 
 #ifdef USE_AVX2
   __m256i mm_dmvx, mm_dmvy, mm_gradx, mm_grady, mm_dI, mm_dI0, mm_src;
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-  __m256i mm_dIoffset = _mm256_set1_epi32(1);
-#endif
   __m256i mm_offset = _mm256_set1_epi16(offset);
   __m256i vibdimin = _mm256_set1_epi16(clpRng.min);
   __m256i vibdimax = _mm256_set1_epi16(clpRng.max);
@@ -368,9 +365,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
   __m256i mm_dimax = _mm256_set1_epi32(dILimit - 1);
 #else
   __m128i mm_dmvx, mm_dmvy, mm_gradx, mm_grady, mm_dI, mm_dI0;
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-  __m128i mm_dIoffset = _mm_set1_epi32(1);
-#endif
   __m128i mm_offset = _mm_set1_epi16(offset);
   __m128i vibdimin = _mm_set1_epi16(clpRng.min);
   __m128i vibdimax = _mm_set1_epi16(clpRng.max);
@@ -385,9 +379,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 #endif
 #else
   __m128i mm_dmvx, mm_dmvy, mm_gradx, mm_grady, mm_dI, mm_src;
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-  __m128i mm_dIoffset = _mm_set1_epi32(1);
-#endif
   __m128i mm_offset = _mm_set1_epi32(offset);
   __m128i vibdimin  = _mm_set1_epi32(clpRng.min);
   __m128i vibdimax  = _mm_set1_epi32(clpRng.max);
@@ -420,9 +411,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
         _mm256_castsi128_si256(_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0))),
         _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(gY0 + gradStride))), 1);
       mm_dI0 = _mm256_add_epi32(_mm256_mullo_epi32(mm_dmvx, mm_gradx), _mm256_mullo_epi32(mm_dmvy, mm_grady));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-      mm_dI0 = _mm256_srai_epi32(_mm256_add_epi32(mm_dI0, mm_dIoffset), 1);
-#endif
       mm_dI0 = _mm256_min_epi32(mm_dimax, _mm256_max_epi32(mm_dimin, mm_dI0));
 
       // next two rows
@@ -436,9 +424,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
         _mm256_castsi128_si256(_mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0))),
         _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(gY0 + gradStride))), 1);
       mm_dI = _mm256_add_epi32(_mm256_mullo_epi32(mm_dmvx, mm_gradx), _mm256_mullo_epi32(mm_dmvy, mm_grady));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-      mm_dI = _mm256_srai_epi32(_mm256_add_epi32(mm_dI, mm_dIoffset), 1);
-#endif
       mm_dI = _mm256_min_epi32(mm_dimax, _mm256_max_epi32(mm_dimin, mm_dI));
 
       // combine four rows
@@ -470,9 +455,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_gradx = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX));
       mm_grady = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY));
       mm_dI0 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-      mm_dI0 = _mm_srai_epi32(_mm_add_epi32(mm_dI0, mm_dIoffset), 1);
-#endif
       mm_dI0 = _mm_min_epi32(mm_dimax, _mm_max_epi32(mm_dimin, mm_dI0));
 
       // second row
@@ -481,9 +463,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_gradx = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(gX + gradStride)));
       mm_grady = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)(gY + gradStride)));
       mm_dI = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION
-      mm_dI = _mm_srai_epi32(_mm_add_epi32(mm_dI, mm_dIoffset), 1);
-#endif
       mm_dI = _mm_min_epi32(mm_dimax, _mm_max_epi32(mm_dimin, mm_dI));
 
       // combine both rows
@@ -506,9 +485,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       mm_src = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)src));
 
       mm_dI = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
-      mm_dI = _mm_srai_epi32(_mm_add_epi32(mm_dI, mm_dIoffset), 1);
-#endif
 
       mm_dI = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mm_dI, mm_src), mm_offset), shiftNum);
       mm_dI = _mm_packs_epi32(_mm_min_epi32(vibdimax, _mm_max_epi32(vibdimin, mm_dI)), vzero);
@@ -569,9 +545,6 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
 
   __m128i mm_dmvx0, mm_dmvy0, mm_dmvx1, mm_dmvy1, mm_gradx0, mm_grady0, mm_gradx1, mm_grady1, mm_src0, mm_src1;
   __m128i mm_dI0, mm_dI1, mm_dI;
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
-  __m128i mm_dIoffset = _mm_set1_epi32(1);
-#endif
   const int *mmMvX0, *mmMvY0, *mmMvX1, *mmMvY1;
   const Pel *gX0, *gY0, *gX1, *gY1;
 
@@ -612,9 +585,6 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
       mm_gradx0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX0));
       mm_grady0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0));
       mm_dI0 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx0, mm_gradx0), _mm_mullo_epi32(mm_dmvy0, mm_grady0));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
-      mm_dI0 = _mm_srai_epi32(_mm_add_epi32(mm_dI0, mm_dIoffset), 1);
-#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       mm_dI0 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI0));
 #endif
@@ -626,9 +596,6 @@ void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, 
         mm_gradx1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX1));
         mm_grady1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY1));
         mm_dI1 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx1, mm_gradx1), _mm_mullo_epi32(mm_dmvy1, mm_grady1));
-#if !JVET_P0057_BDOF_PROF_HARMONIZATION 
-        mm_dI1 = _mm_srai_epi32(_mm_add_epi32(mm_dI1, mm_dIoffset), 1);
-#endif
 #if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
         mm_dI1 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI1));
 #endif

@@ -992,24 +992,15 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
     const int mvShift  = 8;
     const int dmvLimit = ( 1 << 5 ) - 1;
 #else
-#if JVET_P0057_BDOF_PROF_HARMONIZATION 
     const int mvShift = shift + MV_FRACTIONAL_BITS_INTERNAL + 2 - std::max<int>(5, clpRng.bd - 7);
     const int dmvLimit = (1 << (std::max<int>(5, clpRng.bd - 7)));
-#else
-    const int bdlimit = std::max<int>(6, clpRng.bd - 6);
-    const int dmvLimit = 1 << bdlimit;
-#endif
 #endif
 
     if (!g_pelBufOP.roundIntVector)
     {
       for (int idx = 0; idx < blockWidth * blockHeight; idx++)
       {
-#if JVET_P0057_BDOF_PROF_HARMONIZATION 
         roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], mvShift);
-#else
-        roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], shift);
-#endif
         dMvScaleHor[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleHor[idx] );
         dMvScaleVer[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleVer[idx] );
       }
@@ -1017,13 +1008,8 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
     else
     {
       int sz = blockWidth * blockHeight;
-#if JVET_P0057_BDOF_PROF_HARMONIZATION 
       g_pelBufOP.roundIntVector(dMvScaleHor, sz, mvShift, dmvLimit);
       g_pelBufOP.roundIntVector(dMvScaleVer, sz, mvShift, dmvLimit);
-#else
-      g_pelBufOP.roundIntVector(dMvScaleHor, sz, shift, dmvLimit);
-      g_pelBufOP.roundIntVector(dMvScaleVer, sz, shift, dmvLimit);
-#endif
     }
   }
   int scaleXLuma = ::getComponentScaleX(COMPONENT_Y, chFmt);
@@ -1523,13 +1509,8 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
   const int dmvLimit = ( 1 << 5 ) - 1;
 #else
   const int shift = bit - 4 + MV_FRACTIONAL_BITS_INTERNAL;
-#if JVET_P0057_BDOF_PROF_HARMONIZATION 
   const int mvShift = shift + MV_FRACTIONAL_BITS_INTERNAL + 2 - std::max<int>(5, clpRng.bd - 7);
   const int dmvLimit = (1 << (std::max<int>(5, clpRng.bd - 7)));
-#else
-  const int bdlimit = std::max<int>(6, clpRng.bd - 6);
-  const int dmvLimit = 1 << bdlimit;
-#endif
 #endif
 
   for (int list = 0; list < 2; list++)
@@ -1590,11 +1571,7 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
       {
         for (int idx = 0; idx < blockWidth * blockHeight; idx++)
         {
-#if JVET_P0057_BDOF_PROF_HARMONIZATION 
           roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], mvShift);
-#else
-          roundAffineMv(dMvScaleHor[idx], dMvScaleVer[idx], shift);
-#endif
           dMvScaleHor[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleHor[idx] );
           dMvScaleVer[idx] = Clip3( -dmvLimit, dmvLimit, dMvScaleVer[idx] );
         }
@@ -1602,13 +1579,8 @@ void InterPrediction::xApplyBiPROF(const PredictionUnit &pu, const CPelBuf& pcYu
       else
       {
         int sz = blockWidth * blockHeight;
-#if JVET_P0057_BDOF_PROF_HARMONIZATION 
         g_pelBufOP.roundIntVector(dMvScaleHor, sz, mvShift, dmvLimit);
         g_pelBufOP.roundIntVector(dMvScaleVer, sz, mvShift, dmvLimit);
-#else
-        g_pelBufOP.roundIntVector(dMvScaleHor, sz, shift, dmvLimit);
-        g_pelBufOP.roundIntVector(dMvScaleVer, sz, shift, dmvLimit);
-#endif
       }
     }
   }

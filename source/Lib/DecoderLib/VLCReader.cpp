@@ -1125,9 +1125,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(     uiCode, "min_qp_prime_ts_minus4" );
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
   CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
-#if JVET_P0460_PLT_TS_MIN_QP
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
-#endif  
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 

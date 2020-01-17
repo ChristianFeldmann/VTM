@@ -91,14 +91,7 @@ QpParam::QpParam(const int           qpy,
   rems[0]=baseQp%6;
 
   int baseQpTS = baseQp;
-#if !JVET_P0460_PLT_TS_MIN_QP
-  if (isLuma(compID))
-  {
-    baseQpTS = std::max(baseQpTS , 4 + minQpPrimeTsMinus4);
-  }
-#else
   baseQpTS = std::max(baseQpTS, 4 + minQpPrimeTsMinus4);
-#endif
 
   Qps[1]  = baseQpTS;
   pers[1] = baseQpTS / 6;

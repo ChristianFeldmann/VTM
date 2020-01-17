@@ -1735,11 +1735,7 @@ void IntraSearch::calcPixelPredRD(CodingStructure& cs, Partitioner& partitioner,
   for (uint32_t ch = compBegin; ch < (compBegin + numComp); ch++)
   {
     QpParam cQP(tu, ComponentID(ch));
-#if JVET_P0460_PLT_TS_MIN_QP
     qp[ch] = cQP.Qp(true);
-#else
-    qp[ch] = cQP.Qp(false);
-#endif
     qpRem[ch] = qp[ch] % 6;
     qpPer[ch] = qp[ch] / 6;
     quantiserScale[ch] = g_quantScales[0][qpRem[ch]];
@@ -2464,11 +2460,7 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
   for (uint32_t ch = compBegin; ch < (compBegin + numComp); ch++)
   {
     QpParam cQP(tu, ComponentID(ch));
-#if JVET_P0460_PLT_TS_MIN_QP
     qp[ch] = cQP.Qp(true);
-#else
-    qp[ch] = cQP.Qp(false);
-#endif
     qpRem[ch] = qp[ch] % 6;
     qpPer[ch] = qp[ch] / 6;
     quantiserScale[ch] = g_quantScales[0][qpRem[ch]];

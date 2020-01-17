@@ -639,21 +639,17 @@ void LoopFilter::xSetEdgefilterMultiple( const CodingUnit&    cu,
   for( int ui = 0; ui < uiNumElem; ui++ )
   {
     m_aapbEdgeFilter[edgeDir][uiBsIdx] = bValue;
-#if JVET_P0043_DEBLOCKING_CLEANUP 
     if ( m_aapucBS[edgeDir][uiBsIdx] && bValue ) 
     {
       m_aapucBS[edgeDir][uiBsIdx] = 3;  // both the TU and PU edge
     }
     else 
     {
-#endif 
       if( ! EdgeIdx )
       {
         m_aapucBS[edgeDir][uiBsIdx] = bValue;
       }
-#if JVET_P0043_DEBLOCKING_CLEANUP 
     }
-#endif 
     uiBsIdx += uiAdd;
   }
 }
@@ -743,9 +739,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   }
 
   // and now the pred
-#if JVET_P0043_DEBLOCKING_CLEANUP 
   if ( m_aapucBS[edgeDir][rasterIdx] != 0 && m_aapucBS[edgeDir][rasterIdx] != 3 ) return tmpBs;
-#endif
   const Position& lumaPosQ  = Position{ localPos.x,  localPos.y };
   const Position  lumaPosP  = ( edgeDir == EDGE_VER ) ? lumaPosQ.offset( -1, 0 ) : lumaPosQ.offset( 0, -1 );
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( lumaPosQ );

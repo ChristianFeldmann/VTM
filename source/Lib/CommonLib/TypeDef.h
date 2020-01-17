@@ -59,7 +59,6 @@
 
 
 
-#define JVET_P0126_SIGNALLING_SUBPICID                    1 // JVET-P0126: Signalling of subpicture IDs
 
 #define JVET_P1004_REMOVE_BRICKS                          1 // JVET-P1004: Removal of bricks
 

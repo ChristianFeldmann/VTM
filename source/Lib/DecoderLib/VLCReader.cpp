@@ -1431,9 +1431,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode+3);
   pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
   pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
-#if JVET_P0126_SIGNALLING_SUBPICID
   READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
 #if JVET_P0171_SUBPICTURE_LAYOUT
@@ -2936,7 +2934,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
   }
 #endif
 
-#if JVET_P0126_SIGNALLING_SUBPICID
   if (sps->getSubPicPresentFlag())
   {
     uint32_t bitsSubPicId;
@@ -2958,7 +2955,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, ParameterSetManager *para
     }
     READ_CODE(bitsSubPicId, uiCode, "slice_subpic_id");    pcSlice->setSliceSubPicId(uiCode);
   }
-#endif
 #if JVET_P1004_REMOVE_BRICKS
 
   // raster scan slices

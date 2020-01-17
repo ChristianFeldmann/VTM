@@ -909,7 +909,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
-#if JVET_P0126_SIGNALLING_SUBPICID
   WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
 #if JVET_P0171_SUBPICTURE_LAYOUT
   if(pcSPS->getSubPicPresentFlag())
@@ -925,7 +924,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
     }
   }
-#endif
 #endif
 
 #if JVET_P1006_PICTURE_HEADER
@@ -2021,7 +2019,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   WRITE_UVLC( pcSlice->getPPS()->getPPSId(), "slice_pic_parameter_set_id" );
 #endif
 
- #if JVET_P0126_SIGNALLING_SUBPICID
   if (pcSlice->getSPS()->getSubPicPresentFlag())
   {
     uint32_t bitsSubPicId;
@@ -2043,7 +2040,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     }
     WRITE_CODE(pcSlice->getSliceSubPicId(), bitsSubPicId, "slice_subpic_id");
   }
-#endif
 
 #if JVET_P1004_REMOVE_BRICKS
   // raster scan slices

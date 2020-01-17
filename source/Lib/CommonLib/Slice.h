@@ -1057,9 +1057,7 @@ private:
   // Structure
   uint32_t              m_maxWidthInLumaSamples;
   uint32_t              m_maxHeightInLumaSamples;
-#if JVET_P0126_SIGNALLING_SUBPICID
   bool                  m_subPicPresentFlag;                    // indicates the presence of sub-pictures
-  #endif
 #if JVET_P1006_PICTURE_HEADER
   uint8_t               m_numSubPics;                        //!< number of sub-pictures used
 #if JVET_P0171_SUBPICTURE_LAYOUT
@@ -1240,10 +1238,8 @@ public:
   void                    setMaxPicHeightInLumaSamples( uint32_t u )                                      { m_maxHeightInLumaSamples = u; }
   uint32_t                getMaxPicHeightInLumaSamples() const                                            { return  m_maxHeightInLumaSamples; }
 
-#if JVET_P0126_SIGNALLING_SUBPICID
   void                    setSubPicPresentFlag(bool b)                                                    { m_subPicPresentFlag = b;                }
   bool                    getSubPicPresentFlag() const                                                    { return m_subPicPresentFlag;             }
-#endif
 
 #if JVET_P1006_PICTURE_HEADER
   void                    setNumSubPics( uint8_t u )                                                      { m_numSubPics = u;                        }
@@ -2500,9 +2496,7 @@ private:
 
   bool                       m_cabacInitFlag;
 
-#if JVET_P0126_SIGNALLING_SUBPICID
   uint32_t                   m_sliceSubPicId;
-#endif
 
 #if !JVET_P1006_PICTURE_HEADER
   bool                       m_jointCbCrSignFlag;
@@ -2741,10 +2735,8 @@ public:
   void                        setSignDataHidingEnabledFlag( bool b )                 { m_signDataHidingEnabledFlag = b;              }
   bool                        getSignDataHidingEnabledFlag() const                   { return m_signDataHidingEnabledFlag;           }
 #endif
-#if JVET_P0126_SIGNALLING_SUBPICID
   void                        setSliceSubPicId(int i)                               { m_sliceSubPicId = i;   }
   uint32_t                    getSliceSubPicId() const                              { return m_sliceSubPicId; }
-#endif
 #if JVET_P1006_PICTURE_HEADER
   uint32_t                    getCuQpDeltaSubdiv() const                             { return this->isIntra() ? m_pcPicHeader->getCuQpDeltaSubdivIntra() : m_pcPicHeader->getCuQpDeltaSubdivInter(); }
   uint32_t                    getCuChromaQpOffsetSubdiv() const                      { return this->isIntra() ? m_pcPicHeader->getCuChromaQpOffsetSubdivIntra() : m_pcPicHeader->getCuChromaQpOffsetSubdivInter(); }

@@ -398,11 +398,7 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
               }
               m_filter7x7Blk(m_classifier, recYuv, buf, blkDst, blkSrc, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
                 , m_alfVBLumaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
                 , m_alfVBLumaPos
-#else
-                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
-#endif
               );
             }
 
@@ -419,11 +415,7 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                 uint8_t alt_num = m_ctuAlternative[compIdx][ctuIdx];
                 m_filter5x5Blk(m_classifier, recYuv, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
                   , m_alfVBChmaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
                    , m_alfVBChmaPos );
-#else
-                  , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
-#endif
               }
             }
 
@@ -455,11 +447,7 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
         }
         m_filter7x7Blk(m_classifier, recYuv, tmpYuv, blk, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
           , m_alfVBLumaPos
-#else
-          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
-#endif
         );
       }
 
@@ -475,11 +463,7 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
           uint8_t alt_num = m_ctuAlternative[compIdx][ctuIdx];
           m_filter5x5Blk(m_classifier, recYuv, tmpYuv, blk, blk, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
             , m_alfVBChmaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
             , m_alfVBChmaPos);
-#else
-            , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos));
-#endif
         }
       }
       }
@@ -685,11 +669,7 @@ void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const
       int nWidth = std::min( j + m_CLASSIFICATION_BLK_SIZE, width ) - j;
       m_deriveClassificationBlk(classifier, m_laplacian, srcLuma, Area( j - blk.pos().x + blkDst.pos().x, i - blk.pos().y + blkDst.pos().y, nWidth, nHeight ), Area(j, i, nWidth, nHeight), m_inputBitDepth[CHANNEL_TYPE_LUMA] + 4
         , m_alfVBLumaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
         , m_alfVBLumaPos
-#else
-        , ((i - blk.pos().y + blkDst.pos().y + nHeight >= m_picHeight) ? m_picHeight : m_alfVBLumaPos)
-#endif
       );
     }
   }

@@ -1843,11 +1843,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
               const CompArea& compAreaDst = areaDst.block( compID );
                 getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compAreaDst, compArea, chType
                   , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-#if JVET_P0158_ALIGN_ALF_VB
                   , (compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos
-#else
-                  , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
-#endif
                 );
               }
             }
@@ -1896,11 +1892,7 @@ void EncAdaptiveLoopFilter::deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnit
         {
           getBlkStats(m_alfCovariance[compIdx][shape][ctuRsAddr], m_filterShapes[chType][shape], compIdx ? nullptr : m_classifier, org, orgStride, rec, recStride, compArea, compArea, chType
             , ((compIdx == 0) ? m_alfVBLumaCTUHeight : m_alfVBChmaCTUHeight)
-#if JVET_P0158_ALIGN_ALF_VB
             , (compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos
-#else
-            , ((yPos + m_maxCUHeight >= m_picHeight) ? m_picHeight : ((compIdx == 0) ? m_alfVBLumaPos : m_alfVBChmaPos))
-#endif
           );
 
 
@@ -2802,11 +2794,7 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
               }
               m_filter7x7Blk(m_classifier, recBuf, buf, blkDst, blkSrc, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
                 , m_alfVBLumaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
                 , m_alfVBLumaPos
-#else
-                , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
-#endif
               );
             }
 
@@ -2822,11 +2810,7 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
                 const int alt_num = m_ctuAlternative[compID][ctuIdx];
                 m_filter5x5Blk(m_classifier, recBuf, buf, blkDst, blkSrc, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
                   , m_alfVBChmaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
                   , m_alfVBChmaPos
-#else
-                  , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
-#endif
                 );
               }
             }
@@ -2859,11 +2843,7 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
         }
         m_filter7x7Blk(m_classifier, recBuf, recExtBuf, blk, blk, COMPONENT_Y, coeff, clip, m_clpRngs.comp[COMPONENT_Y], cs
           , m_alfVBLumaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
           , m_alfVBLumaPos
-#else
-          , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBLumaPos)
-#endif
         );
       }
 
@@ -2878,11 +2858,7 @@ void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitB
           const int alt_num = m_ctuAlternative[compID][ctuIdx];
           m_filter5x5Blk(m_classifier, recBuf, recExtBuf, blk, blk, compID, m_chromaCoeffFinal[alt_num], m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs
             , m_alfVBChmaCTUHeight
-#if JVET_P0158_ALIGN_ALF_VB
             , m_alfVBChmaPos
-#else
-            , ((yPos + pcv.maxCUHeight >= pcv.lumaHeight) ? pcv.lumaHeight : m_alfVBChmaPos)
-#endif
           );
         }
       }

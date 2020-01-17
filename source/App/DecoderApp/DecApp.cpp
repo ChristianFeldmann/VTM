@@ -767,9 +767,7 @@ void DecApp::xCreateDecLib()
     std::ostream &os=m_seiMessageFileStream.is_open() ? m_seiMessageFileStream : std::cout;
     m_cDecLib.setDecodedSEIMessageOutputStream(&os);
   }
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   m_cDecLib.initScalingList();
-#endif
 }
 
 void DecApp::xDestroyDecLib()

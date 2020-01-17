@@ -942,7 +942,6 @@ void Quant::processScalingListEnc( int *coeff, int *quantcoeff, int quantScales,
   }
 }
 
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
 void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizeNum, uint32_t dc)
 {
   if (height != width)
@@ -1004,53 +1003,6 @@ void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQ
     dequantcoeff[0] = invQuantScales * dc;
   }
 }
-#else
-void Quant::processScalingListDec( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc)
-{
-  if (height != width)
-  {
-    for (uint32_t j = 0; j<height; j++)
-    {
-      for (uint32_t i = 0; i<width; i++)
-      {
-        if (i >= JVET_C0024_ZERO_OUT_TH || j >= JVET_C0024_ZERO_OUT_TH)
-        {
-          dequantcoeff[j*width + i] = 0;
-          continue;
-        }
-        int ratioWH = (height>width) ? height / width : width / height;
-        int ratioH = (height / sizuNum) ? (height / sizuNum) : (sizuNum / height);
-        int ratioW = (width / sizuNum) ? (width / sizuNum) : (sizuNum / width);
-        //sizeNum = 8/4
-        if (height > width)
-        {
-          dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * (j / ratioH) + ((i * ratioWH) / ratioH)];
-        }
-        else //ratioH < ratioW
-        {
-          dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * ((j * ratioWH) / ratioW) + (i / ratioW)];
-        }
-        int largeOne = (width > height) ? width : height;
-        if (largeOne > 8)
-          dequantcoeff[0] = invQuantScales * dc;
-      }
-    }
-    return;
-  }
-  for(uint32_t j=0;j<height;j++)
-  {
-    for(uint32_t i=0;i<width;i++)
-    {
-      dequantcoeff[j*width + i] = invQuantScales * coeff[sizuNum * (j / ratio) + i / ratio];
-    }
-  }
-
-  if(ratio > 1)
-  {
-    dequantcoeff[0] = invQuantScales * dc;
-  }
-}
-#endif
 
 /** initialization process of scaling list array
  */

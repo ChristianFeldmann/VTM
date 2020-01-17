@@ -91,9 +91,7 @@ private:
   InterPrediction         m_cInterPred;
   TrQuant                 m_cTrQuant;
   DecSlice                m_cSliceDecoder;
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   TrQuant                 m_cTrQuantScalingList;
-#endif
   DecCu                   m_cCuDecoder;
   HLSyntaxReader          m_HLSReader;
   CABACDecoder            m_CABACDecoder;
@@ -140,10 +138,8 @@ private:
   std::vector<int> m_accessUnitApsNals;
 
   VPS*                    m_vps;
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
-#endif
 
 public:
   DecLib();
@@ -191,7 +187,6 @@ public:
 #endif
 
   const VPS* getVPS()                     { return m_vps; }
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   void  initScalingList()
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
@@ -200,7 +195,6 @@ public:
   void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
   int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
   void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
-#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);

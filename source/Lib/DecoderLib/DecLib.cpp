@@ -388,9 +388,7 @@ DecLib::DecLib()
   , m_cInterPred()
   , m_cTrQuant()
   , m_cSliceDecoder()
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   , m_cTrQuantScalingList()
-#endif
   , m_cCuDecoder()
   , m_HLSReader()
   , m_seiReader()
@@ -423,10 +421,8 @@ DecLib::DecLib()
   , m_debugPOC( -1 )
   , m_debugCTU( -1 )
   , m_vps( nullptr )
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
-#endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -1149,11 +1145,7 @@ void DecLib::xActivateParameterSets( const int layerId )
     {
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
     m_cTrQuant.init(m_cTrQuantScalingList.getQuant(), sps->getMaxTbSize(), false, false, false, false);
-#else
-    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false );
-#endif
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
@@ -1791,7 +1783,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       scalingList.setDefaultScalingList();
     }
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
     int scalingListAPSId = pcSlice->getPicHeader()->getScalingListAPSId();
     if (getScalingListUpdateFlag() || (scalingListAPSId != getPreScalingListAPSId()))
     {
@@ -1799,9 +1790,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       setScalingListUpdateFlag(false);
       setPreScalingListAPSId(scalingListAPSId);
     }
-#else
-    quant->setScalingListDec( scalingList );
-#endif
     quant->setUseScalingList( true );
   }
   else
@@ -1959,12 +1947,10 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
-#if JVET_P0257_SCALING_LISTS_SPEEDUP_DEC
   if (aps->getAPSType() == SCALING_LIST_APS)
   {
     setScalingListUpdateFlag(true);
   }
-#endif
 
   // aps will be deleted if it was already stored (and did not changed),
   // thus, storing it must be last action.

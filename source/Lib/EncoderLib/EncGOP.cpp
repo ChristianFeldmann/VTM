@@ -380,14 +380,10 @@ int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const boo
 
   if( bSeqFirst )
   {
-#if JVET_P0205_VPS_ID_0
     if (slice->getSPS()->getVPSId() != 0)
     {
       actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
     }
-#else
-    actualTotalBits += xWriteVPS( accessUnit, m_pcEncLib->getVPS() );
-#endif
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).

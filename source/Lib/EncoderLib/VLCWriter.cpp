@@ -734,9 +734,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   xTraceSPSHeader ();
 #endif
   WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
-#if JVET_P0205_VPS_ID_0
   WRITE_CODE( pcSPS->getVPSId(), 4, "sps_video_parameter_set_id" );
-#endif
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");

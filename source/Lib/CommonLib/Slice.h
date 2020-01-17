@@ -1033,9 +1033,7 @@ class SPS
 private:
   int               m_SPSId;
   int               m_decodingParameterSetId;
-#if JVET_P0205_VPS_ID_0
   int               m_VPSId;
-#endif
 
   bool              m_affineAmvrEnabledFlag;
   bool              m_DMVR;
@@ -1211,10 +1209,8 @@ public:
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
   int                     getDecodingParameterSetId() const                                               { return m_decodingParameterSetId; }
-#if JVET_P0205_VPS_ID_0
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
-#endif
 
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
   void                    setChromaFormatIdc (ChromaFormat i)                                             { m_chromaFormatIdc = i;                                               }
@@ -3011,17 +3007,13 @@ protected:
   ParameterSetMap<PPS> m_ppsMap;
   ParameterSetMap<APS> m_apsMap;
   ParameterSetMap<DPS> m_dpsMap;
-#if JVET_P0205_VPS_ID_0
   ParameterSetMap<VPS> m_vpsMap;
-#endif
 
   APS* m_apss[ALF_CTB_MAX_NUM_APS];
 
   int m_activeDPSId; // -1 for nothing active
   int m_activeSPSId; // -1 for nothing active
-#if JVET_P0205_VPS_ID_0
   int m_activeVPSId; // -1 for nothing active
-#endif
 };
 
 class PreCalcValues

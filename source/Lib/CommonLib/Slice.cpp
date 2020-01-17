@@ -1846,9 +1846,7 @@ SPSRExt::SPSRExt()
 SPS::SPS()
 : m_SPSId                     (  0)
 , m_decodingParameterSetId    (  0 )
-#if JVET_P0205_VPS_ID_0
 , m_VPSId                     ( 0 )
-#endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )
@@ -3214,14 +3212,10 @@ ParameterSetManager::ParameterSetManager()
 , m_ppsMap(MAX_NUM_PPS)
 , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
 , m_dpsMap(MAX_NUM_DPS)
-#if JVET_P0205_VPS_ID_0
 , m_vpsMap(MAX_NUM_VPS)
-#endif
 , m_activeDPSId(-1)
 , m_activeSPSId(-1)
-#if JVET_P0205_VPS_ID_0
 , m_activeVPSId(-1)
-#endif
 {
 }
 
@@ -3302,7 +3296,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
           }
         }
 
-#if JVET_P0205_VPS_ID_0
         int vpsId = sps->getVPSId();
         if(vpsId != 0)
         {
@@ -3330,7 +3323,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
           m_vpsMap.clear();
 #endif
         }
-#endif
 
           m_spsMap.clear();
           m_spsMap.setActive(spsId);

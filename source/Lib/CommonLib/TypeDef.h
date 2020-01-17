@@ -139,7 +139,6 @@
 
 
 
-#define JVET_P0081_CHROMA_LONG_DEBLOCKING_FIX             1 // JVET-P0081: Apply asymmetric long tap deblocking (1 + 3) filter at horizontal CTB boundaries for Chroma
 
 #define JVET_P0516_PLT_BINARIZATION                       1 // JVET-P0516: PLT is always signaled when pred mode is euqal to 1 (intra mode) 
 

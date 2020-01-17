@@ -267,7 +267,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_UVLC( conf.getWindowTopOffset(),    "conf_win_top_offset" );
     WRITE_UVLC( conf.getWindowBottomOffset(), "conf_win_bottom_offset" );
   }
-#if JVET_P0590_SCALING_WINDOW
   Window scalingWindow = pcPPS->getScalingWindow();
 
   WRITE_FLAG( scalingWindow.getWindowEnabledFlag(), "scaling_window_flag" );
@@ -278,7 +277,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_UVLC( scalingWindow.getWindowTopOffset(), "scaling_win_top_offset" );
     WRITE_UVLC( scalingWindow.getWindowBottomOffset(), "scaling_win_bottom_offset" );
   }
-#endif
 
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
   WRITE_FLAG(pcPPS->getSubPicIdSignallingPresentFlag(), "pps_subpic_id_signalling_present_flag");
@@ -718,9 +716,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( 0,                                  "separate_colour_plane_flag");
   }
 
-#if JVET_P0590_SCALING_WINDOW
   WRITE_FLAG( pcSPS->getRprEnabledFlag(), "ref_pic_resampling_enabled_flag" );
-#endif
 
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );

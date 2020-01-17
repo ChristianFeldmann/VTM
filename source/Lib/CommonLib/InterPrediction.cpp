@@ -592,11 +592,7 @@ void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred, Pe
   bool dmvrApplied = false;
   dmvrApplied = (pu.mvRefine) && PU::checkDMVRCondition(pu);
 
-#if JVET_P0590_SCALING_WINDOW
   bool samePicSize = ( refIdx0 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_0, refIdx0 ) == SCALE_1X ) && ( refIdx1 < 0 ? true : pu.cu->slice->getScalingRatio( REF_PIC_LIST_1, refIdx1 ) == SCALE_1X );
-#else
-  bool samePicSize = PU::isRefPicSameSize( pu );
-#endif
   dmvrApplied = dmvrApplied && samePicSize;
   bioApplied = bioApplied && samePicSize;
 
@@ -2742,7 +2738,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
     int offX = 1 << ( posShift - shiftHor - 1 );
     int offY = 1 << ( posShift - shiftVer - 1 );
 
-#if JVET_P0590_SCALING_WINDOW
     const int64_t posX = ( ( blk.pos().x << ::getComponentScaleX( compID, chFmt ) ) - pps.getScalingWindow().getWindowLeftOffset() ) >> ::getComponentScaleX( compID, chFmt );
     const int64_t posY = ( ( blk.pos().y << ::getComponentScaleY( compID, chFmt ) ) - pps.getScalingWindow().getWindowTopOffset() ) >> ::getComponentScaleY( compID, chFmt );
 
@@ -2761,22 +2756,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
 
     y0Int = ( ( posY << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() ) * (int64_t)scalingRatio.second;
     y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) ) + ( refPic->getScalingWindow().getWindowTopOffset() << ( ( posShift - ::getComponentScaleY( compID, chFmt ) ) ) );
-#endif
-#elif JVET_P0592_CHROMA_PHASE
-    int addX = isLuma( compID ) ? 0 : int( 1 - refPic->cs->sps->getHorCollocatedChromaFlag() ) * 8 * ( scalingRatio.first - SCALE_1X.first );
-    int addY = isLuma( compID ) ? 0 : int( 1 - refPic->cs->sps->getVerCollocatedChromaFlag() ) * 8 * ( scalingRatio.second - SCALE_1X.second );
-
-    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* (int64_t)scalingRatio.first + addX;
-    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
-
-    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* (int64_t)scalingRatio.second + addY;
-    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
-#else
-    x0Int = ( ( blk.pos().x << ( 4 + ::getComponentScaleX( compID, chFmt ) ) ) + mv.getHor() )* (int64_t)scalingRatio.first;
-    x0Int = SIGN( x0Int ) * ( ( llabs( x0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleX( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleX( compID, chFmt ) ) );
-
-    y0Int = ( ( blk.pos().y << ( 4 + ::getComponentScaleY( compID, chFmt ) ) ) + mv.getVer() )* (int64_t)scalingRatio.second;
-    y0Int = SIGN( y0Int ) * ( ( llabs( y0Int ) + ( (long long)1 << ( 7 + ::getComponentScaleY( compID, chFmt ) ) ) ) >> ( 8 + ::getComponentScaleY( compID, chFmt ) ) );
 #endif
 
     const int extSize = isLuma( compID ) ? 1 : 2;

@@ -1139,9 +1139,7 @@ private:
   bool m_GDREnabledFlag;
   bool              m_SubLayerCbpParametersPresentFlag;
 
-#if JVET_P0590_SCALING_WINDOW
   bool              m_rprEnabledFlag;
-#endif
   bool              m_interLayerPresentFlag;
 
 public:
@@ -1461,10 +1459,8 @@ public:
   void      setSubLayerParametersPresentFlag(bool flag)                             { m_SubLayerCbpParametersPresentFlag = flag; }
   bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
 
-#if JVET_P0590_SCALING_WINDOW
   bool      getRprEnabledFlag()                                           const     { return m_rprEnabledFlag; }
   void      setRprEnabledFlag( bool flag )                                          { m_rprEnabledFlag = flag; }
-#endif
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
 
@@ -1597,9 +1593,7 @@ private:
   uint32_t         m_picWidthInLumaSamples;
   uint32_t         m_picHeightInLumaSamples;
   Window           m_conformanceWindow;
-#if JVET_P0590_SCALING_WINDOW
   Window           m_scalingWindow;
-#endif
 
   PPSRExt          m_ppsRangeExtension;
 
@@ -1831,11 +1825,9 @@ public:
   const Window&           getConformanceWindow() const                                    { return  m_conformanceWindow; }
   void                    setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }
 
-#if JVET_P0590_SCALING_WINDOW
   Window&                 getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&           getScalingWindow()                                        const { return  m_scalingWindow; }
   void                    setScalingWindow( Window& scalingWindow )                       { m_scalingWindow = scalingWindow; }
-#endif
 };
 
 class APS

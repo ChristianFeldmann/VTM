@@ -436,7 +436,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_UVLC( uiCode, "conf_win_bottom_offset" );             conf.setWindowBottomOffset( uiCode );
   }
 
-#if JVET_P0590_SCALING_WINDOW
   READ_FLAG( uiCode, "scaling_window_flag" );
   if( uiCode != 0 )
   {
@@ -446,7 +445,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_UVLC( uiCode, "scaling_win_top_offset" );                scalingWindow.setWindowTopOffset( uiCode );
     READ_UVLC( uiCode, "scaling_win_bottom_offset" );             scalingWindow.setWindowBottomOffset( uiCode );
   }
-#endif
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 
@@ -1074,9 +1072,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSeparateColourPlaneFlag( uiCode != 0 );
   }
 
-#if JVET_P0590_SCALING_WINDOW
   READ_FLAG( uiCode, "ref_pic_resampling_enabled_flag" );        pcSPS->setRprEnabledFlag( uiCode );
-#endif
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );

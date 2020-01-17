@@ -263,22 +263,13 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   if( m_rprEnabled )
   {
     PPS &pps = *( m_ppsMap.allocatePS( ENC_PPS_ID_RPR ) );
-#if JVET_P0590_SCALING_WINDOW
     Window& inputScalingWindow = pps0.getScalingWindow();
     int scaledWidth = int( ( pps0.getPicWidthInLumaSamples() - inputScalingWindow.getWindowLeftOffset() - inputScalingWindow.getWindowRightOffset() ) / m_scalingRatioHor );
-#else
-    Window& inputConfWindow = pps0.getConformanceWindow();
-    int scaledWidth = int((pps0.getPicWidthInLumaSamples() - (inputConfWindow.getWindowLeftOffset() + inputConfWindow.getWindowRightOffset()) * SPS::getWinUnitX(sps0.getChromaFormatIdc())) / m_scalingRatioHor);
-#endif
     int minSizeUnit = std::max(8, (int)(sps0.getMaxCUHeight() >> (sps0.getMaxCodingDepth() - 1)));
     int temp = scaledWidth / minSizeUnit;
     int width = ( scaledWidth - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
-#if JVET_P0590_SCALING_WINDOW
     int scaledHeight = int( ( pps0.getPicHeightInLumaSamples() - inputScalingWindow.getWindowTopOffset() - inputScalingWindow.getWindowBottomOffset() ) / m_scalingRatioVer );
-#else
-    int scaledHeight = int((pps0.getPicHeightInLumaSamples() - (inputConfWindow.getWindowTopOffset() + inputConfWindow.getWindowBottomOffset()) * SPS::getWinUnitY(sps0.getChromaFormatIdc())) / m_scalingRatioVer);
-#endif
     temp = scaledHeight / minSizeUnit;
     int height = ( scaledHeight - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
@@ -289,11 +280,9 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     conformanceWindow.setWindow( 0, ( width - scaledWidth ) / SPS::getWinUnitX( sps0.getChromaFormatIdc() ), 0, ( height - scaledHeight ) / SPS::getWinUnitY( sps0.getChromaFormatIdc() ) );
     pps.setConformanceWindow( conformanceWindow );
 
-#if JVET_P0590_SCALING_WINDOW
     Window scalingWindow;
     scalingWindow.setWindow( 0, width - scaledWidth, 0, height - scaledHeight );
     pps.setScalingWindow( scalingWindow );
-#endif
 
     // disable picture partitioning for scaled RPR pictures (slice/tile config only provided for the original resolution)
     m_noPicPartitionFlag = true;
@@ -636,7 +625,6 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       const ChromaFormat chromaFormatIDC = pSPS->getChromaFormatIdc();
 
       const PPS *refPPS = m_ppsMap.getPS( 0 );
-#if JVET_P0590_SCALING_WINDOW
       const Window& curScalingWindow = pPPS->getScalingWindow();
       int curPicWidth = pPPS->getPicWidthInLumaSamples() - curScalingWindow.getWindowLeftOffset() - curScalingWindow.getWindowRightOffset();
       int curPicHeight = pPPS->getPicHeightInLumaSamples() - curScalingWindow.getWindowTopOffset() - curScalingWindow.getWindowBottomOffset();
@@ -657,27 +645,6 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
 #else
       Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getScalingWindow(), pcPicCurr->getOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
       Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getScalingWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getScalingWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-#endif
-#elif JVET_P0592_CHROMA_PHASE
-      const Window& curWindow = pPPS->getConformanceWindow();
-      int curPicWidth = pPPS->getPicWidthInLumaSamples() - ( curWindow.getWindowLeftOffset() + curWindow.getWindowRightOffset() ) * SPS::getWinUnitX( chromaFormatIDC );
-      int curPicHeight = pPPS->getPicHeightInLumaSamples() - ( curWindow.getWindowTopOffset() + curWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( chromaFormatIDC );
-
-      const Window& refWindow = refPPS->getConformanceWindow();
-      int refPicWidth = refPPS->getPicWidthInLumaSamples() - ( refWindow.getWindowLeftOffset() + refWindow.getWindowRightOffset() ) * SPS::getWinUnitX( chromaFormatIDC );
-      int refPicHeight = refPPS->getPicHeightInLumaSamples() - ( refWindow.getWindowTopOffset() + refWindow.getWindowBottomOffset() ) * SPS::getWinUnitY( chromaFormatIDC );
-
-      int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
-      int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
-      std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
-
-      Picture::rescalePicture( scalingRatio, *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
-        pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-      Picture::rescalePicture( scalingRatio, *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true,
-        pSPS->getHorCollocatedChromaFlag(), pSPS->getVerCollocatedChromaFlag() );
-#else
-      Picture::rescalePicture( *pcPicYuvOrg, refPPS->getConformanceWindow(), pcPicCurr->getOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
-      Picture::rescalePicture( *cPicYuvTrueOrg, refPPS->getConformanceWindow(), pcPicCurr->getTrueOrigBuf(), pPPS->getConformanceWindow(), chromaFormatIDC, pSPS->getBitDepths(), true, true );
 #endif
     }
     else

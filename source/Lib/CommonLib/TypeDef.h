@@ -81,7 +81,6 @@
 
 
 
-#define JVET_P0590_SCALING_WINDOW                         1 // JVET-P0590: scaling window for RPR
 #define JVET_P0592_CHROMA_PHASE                           1 // JVET-P0592: chroma phase for RPR
 
 #define JVET_P0803_COMBINED_MIP_CLEANUP                   1 // JVET-P0803: Several MIP cleanups

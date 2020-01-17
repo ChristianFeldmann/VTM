@@ -3893,7 +3893,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
 
-#if JVET_P0590_SCALING_WINDOW
     int xScale, yScale;
     // it is assumed that full resolution picture PPS has ppsId 0
     const PPS* pps = m_pcEncLib->getPPS(0);
@@ -3904,19 +3903,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     Picture::rescalePicture( scalingRatio, picC, pcPic->getScalingWindow(), upscaledRec, pps->getScalingWindow(), format, sps.getBitDepths(), false, false, sps.getHorCollocatedChromaFlag(), sps.getVerCollocatedChromaFlag() );
 #else
     Picture::rescalePicture( scalingRatio, picC, pcPic->getScalingWindow(), upscaledRec, pps->getScalingWindow(), format, sps.getBitDepths(), false );
-#endif
-#elif JVET_P0592_CHROMA_PHASE
-    int xScale, yScale;
-    // it is assumed that full resolution picture PPS has ppsId 0
-    const PPS* pps = m_pcEncLib->getPPS( 0 );
-    CU::getRprScaling( &sps, pps, pcPic, xScale, yScale );
-    std::pair<int, int> scalingRatio = std::pair<int, int>( xScale, yScale );
-
-    Picture::rescalePicture( scalingRatio, picC, pcPic->getConformanceWindow(), upscaledRec, m_pcEncLib->getConformanceWindow(), format, sps.getBitDepths(), false, false, sps.getHorCollocatedChromaFlag(), sps.getVerCollocatedChromaFlag() );
-#else
-    // the input source picture has a conformance window derived at encoder
-    Window& conformanceWindow = m_pcEncLib->getConformanceWindow();
-    Picture::rescalePicture( picC, pcPic->cs->pps->getConformanceWindow(), upscaledRec, conformanceWindow, format, sps.getBitDepths(), false );
 #endif
   }
 
@@ -3929,7 +3915,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     CHECK(!( p.width  == o.width), "Unspecified error");
     CHECK(!( p.height == o.height), "Unspecified error");
 
-#if JVET_P0590_SCALING_WINDOW
     int padX = m_pcEncLib->getPad( 0 );
     int padY = m_pcEncLib->getPad( 1 );
 
@@ -3944,10 +3929,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
     const uint32_t width = p.width - ( padX >> ::getComponentScaleX( compID, format ) );
     const uint32_t height = p.height - ( padY >> ( !!bPicIsField + ::getComponentScaleY( compID, format ) ) );
-#else
-    const uint32_t   width  = p.width  - (m_pcEncLib->getPad(0) >> ::getComponentScaleX(compID, format));
-    const uint32_t   height = p.height - (m_pcEncLib->getPad(1) >> (!!bPicIsField+::getComponentScaleY(compID,format)));
-#endif
 
     // create new buffers with correct dimensions
     const CPelBuf recPB(p.bufAt(0, 0), p.stride, width, height);
@@ -3976,7 +3957,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     {
       const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
-#if JVET_P0590_SCALING_WINDOW
       const uint32_t upscaledWidth = upscaledOrg.width - ( m_pcEncLib->getPad( 0 ) >> ::getComponentScaleX( compID, format ) );
       const uint32_t upscaledHeight = upscaledOrg.height - ( m_pcEncLib->getPad( 1 ) >> ( !!bPicIsField + ::getComponentScaleY( compID, format ) ) );
 
@@ -3991,15 +3971,6 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 #endif
 
       upscaledPSNR[comp] = upscaledSSD ? 10.0 * log10( (double)maxval * maxval * upscaledWidth * upscaledHeight / (double)upscaledSSD ) : 999.99;
-#else
-#if ENABLE_QPA
-      const uint64_t upscaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, useWPSNR ? bitDepth : 0, ::getComponentScaleX( compID, format ), ::getComponentScaleY( compID, format ) );
-#else
-      const uint64_t scaledSSD = xFindDistortionPlane( upscaledRec.get( compID ), upscaledOrg, 0 );
-#endif
-
-      upscaledPSNR[comp] = upscaledSSD ? 10.0 * log10( (double)maxval * maxval * upscaledOrg.width * upscaledOrg.height / (double)upscaledSSD ) : 999.99;
-#endif
     }
   }
 

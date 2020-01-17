@@ -1829,9 +1829,7 @@ SPS::SPS()
 , m_MIP                       ( false )
 , m_GDREnabledFlag            ( true )
 , m_SubLayerCbpParametersPresentFlag ( true )
-#if JVET_P0590_SCALING_WINDOW
 , m_rprEnabledFlag            ( false )
-#endif
 
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
@@ -3191,11 +3189,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
       m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
 
 #if JVET_P0206_TMVP_flags
-#if JVET_P0590_SCALING_WINDOW
       if( m_scalingRatio[refList][rIdx] == SCALE_1X && pps->getPicWidthInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicWidthInLumaSamples() && pps->getPicHeightInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicHeightInLumaSamples() )
-#else
-      if( m_scalingRatio[refList][rIdx] == SCALE_1X )
-#endif
       {
         refPicIsSameRes = true;
       }
@@ -3256,7 +3250,6 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
 
           // rescale the reference picture
           const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
-#if JVET_P0590_SCALING_WINDOW
 #if JVET_P0592_CHROMA_PHASE
           Picture::rescalePicture( m_scalingRatio[refList][rIdx], 
                                    m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), 
@@ -3265,15 +3258,6 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
                                    sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
 #else
           Picture::rescalePicture( m_scalingRatio[refList][rIdx], m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
-#endif
-#elif JVET_P0592_CHROMA_PHASE
-          Picture::rescalePicture( m_scalingRatio[refList][rIdx], m_apcRefPicList[refList][rIdx]->getRecoBuf(),
-                                   m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getConformanceWindow(),
-                                   scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(),
-                                   sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
-                                   sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
-#else
-          Picture::rescalePicture( m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getConformanceWindow(), scaledRefPic[j]->getRecoBuf(), pps->getConformanceWindow(), sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling );
 #endif
           scaledRefPic[j]->extendPicBorder();
 

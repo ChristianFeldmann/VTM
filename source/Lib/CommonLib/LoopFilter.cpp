@@ -1230,12 +1230,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         if ((bS[chromaIdx] == 2) || (largeBoundary && (bS[chromaIdx] == 1)))
         {
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
-#if !JVET_P1001_DEBLOCKING_CHROMAQP_FIX
-        const int chromaQPOffset = pps.getQpOffset( ComponentID( chromaIdx + 1 ) );
-#endif
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
-#if JVET_P1001_DEBLOCKING_CHROMAQP_FIX
         int shiftHorP = cuP.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuP.firstPU->chromaFormat);
         int shiftVerP = cuP.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuP.firstPU->chromaFormat);
         int shiftHorQ = cuQ.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
@@ -1253,10 +1249,6 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         int baseQp_P = cQP.Qp(0) - qpBdOffset;
         int baseQp_Q = cQQ.Qp(0) - qpBdOffset;
         int iQP = ((baseQp_Q + baseQp_P + 1) >> 1);
-#else
-        int iQP = sps.getMappedChromaQpValue(ComponentID(chromaIdx + 1), ((cuP.qp + cuQ.qp + 1) >> 1));
-        iQP = Clip3(0, MAX_QP, iQP + chromaQPOffset);
-#endif
 
 
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));

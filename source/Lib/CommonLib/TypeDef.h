@@ -114,7 +114,6 @@
 
 
 
-#define JVET_P1001_DEBLOCKING_CHROMAQP_FIX                1 //JVET-P1001/P1002: Align Chroma QP used in deblocking with the one used in Transform/invTransform
 
 #define JVET_P0092_SMVD_SPEED_UP                          1 // JVET-P0092: SMVD speed-up
 

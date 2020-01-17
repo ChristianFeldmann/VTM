@@ -690,9 +690,6 @@ protected:
   int       m_PPSDepQuantEnabledIdc;
   int       m_PPSRefPicListSPSIdc0;
   int       m_PPSRefPicListSPSIdc1;
-#if !JVET_P0206_TMVP_flags
-  int       m_PPSTemporalMVPEnabledIdc;
-#endif
   int       m_PPSMvdL1ZeroIdc;
   int       m_PPSCollocatedFromL0Idc;
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;

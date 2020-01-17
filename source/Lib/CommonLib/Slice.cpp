@@ -2014,9 +2014,6 @@ PPS::PPS()
 , m_PPSDepQuantEnabledIdc            (0)
 , m_PPSRefPicListSPSIdc0             (0)
 , m_PPSRefPicListSPSIdc1             (0)
-#if !JVET_P0206_TMVP_flags
-, m_PPSTemporalMVPEnabledIdc         (0)
-#endif
 , m_PPSMvdL1ZeroIdc                  (0)
 , m_PPSCollocatedFromL0Idc           (0)
 , m_PPSSixMinusMaxNumMergeCandPlus1  (0)
@@ -3154,9 +3151,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
   const SPS* sps = getSPS();
   const PPS* pps = getPPS();
 
-#if JVET_P0206_TMVP_flags
   bool refPicIsSameRes = false;
-#endif
    
   // this is needed for IBC
   m_pcPic->unscaledPic = m_pcPic;
@@ -3184,12 +3179,10 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
       CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx], xScale, yScale );
       m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
 
-#if JVET_P0206_TMVP_flags
       if( m_scalingRatio[refList][rIdx] == SCALE_1X && pps->getPicWidthInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicWidthInLumaSamples() && pps->getPicHeightInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicHeightInLumaSamples() )
       {
         refPicIsSameRes = true;
       }
-#endif
 
       if( m_scalingRatio[refList][rIdx] == SCALE_1X || isDecoder )
       {
@@ -3281,13 +3274,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
     }
   }
   
-#if JVET_P0206_TMVP_flags
   //Make sure that TMVP is disabled when there are no reference pictures with the same resolution
   if(!refPicIsSameRes)
   {
     CHECK(getPicHeader()->getEnableTMVPFlag() != 0, "TMVP cannot be enabled in pictures that have no reference pictures with the same resolution")
   }
-#endif
 }
 
 void Slice::freeScaledRefPicList( Picture *scaledRefPic[] )

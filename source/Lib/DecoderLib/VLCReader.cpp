@@ -684,9 +684,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_dep_quant_enabled_idc");        pcPPS->setPPSDepQuantEnabledIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[0]");      pcPPS->setPPSRefPicListSPSIdc0(uiCode);
     READ_CODE( 2, uiCode, "pps_ref_pic_list_sps_idc[1]");      pcPPS->setPPSRefPicListSPSIdc1(uiCode);
-#if !JVET_P0206_TMVP_flags
-    READ_CODE( 2, uiCode, "pps_temporal_mvp_enabled_idc");     pcPPS->setPPSTemporalMVPEnabledIdc(uiCode);
-#endif
     READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
@@ -700,9 +697,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSDepQuantEnabledIdc(0);
     pcPPS->setPPSRefPicListSPSIdc0(0);
     pcPPS->setPPSRefPicListSPSIdc1(0);
-#if !JVET_P0206_TMVP_flags
-    pcPPS->setPPSTemporalMVPEnabledIdc(0);
-#endif
     pcPPS->setPPSMvdL1ZeroIdc(0);
     pcPPS->setPPSCollocatedFromL0Idc(0);
     pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
@@ -2076,20 +2070,8 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // temporal motion vector prediction
   if (sps->getSPSTemporalMVPEnabledFlag())
   {
-#if JVET_P0206_TMVP_flags
     READ_FLAG( uiCode, "pic_temporal_mvp_enabled_flag" );
     picHeader->setEnableTMVPFlag( uiCode != 0 );
-#else
-    if (!pps->getPPSTemporalMVPEnabledIdc()) 
-    {
-      READ_FLAG( uiCode, "pic_temporal_mvp_enabled_flag" );
-      picHeader->setEnableTMVPFlag( uiCode != 0 );
-    }
-    else 
-    {
-      pcSlice->setEnableTMVPFlag((pps->getPPSTemporalMVPEnabledIdc() - 1) == 1 ? true : false);
-    }
-#endif
   }
   else
   {

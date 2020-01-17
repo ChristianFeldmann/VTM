@@ -70,7 +70,6 @@
 
 
 
-#define RETRAIN_CABAC                                     1 // Retrained CABAC probabilities
 
 
 

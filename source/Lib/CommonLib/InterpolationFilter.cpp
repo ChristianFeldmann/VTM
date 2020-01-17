@@ -864,7 +864,6 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
   const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
   const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
   const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
-#if JVET_P0530_TPM_WEIGHT_ALIGN
   int32_t stepX = 1 << getComponentScaleX(compIdx, pu.chromaFormat);
   int32_t stepY = 1 << getComponentScaleY(compIdx, pu.chromaFormat);
 
@@ -876,21 +875,12 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
 
   int32_t weightedLength = 7;
   int32_t weightedStartPos = (splitDir == 0) ? (0 - (weightedLength >> 1) * ratioWH) : (widthY - ((weightedLength + 1) >> 1) * ratioWH);
-#else
-  const int32_t ratioWH           = (width > height) ? (width / height) : 1;
-  const int32_t ratioHW           = (width > height) ? 1 : (height / width);
-
-  const bool    longWeight        = (compIdx == COMPONENT_Y);
-  const int32_t weightedLength    = longWeight ? 7 : 3;
-        int32_t weightedStartPos  = ( splitDir == 0 ) ? ( 0 - (weightedLength >> 1) * ratioWH ) : ( width - ((weightedLength + 1) >> 1) * ratioWH );
-#endif       
         int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
         int32_t weightedPosoffset = ( splitDir == 0 ) ? ratioWH : -ratioWH;
 
         Pel     tmpPelWeighted;
         int32_t weightIdx;
         int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
-#if JVET_P0530_TPM_WEIGHT_ALIGN
   for (y = 0; y < heightY; y += ratioHW)
   {
     if (y % stepY != 0)
@@ -903,25 +893,13 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
     {
       for (x = 0; x < weightedStartPos; x += stepX)
       {
-#else
-  for( y = 0; y < height; y+= ratioHW )
-  {
-    for( tmpY = ratioHW; tmpY > 0; tmpY-- )
-    {
-      for( x = 0; x < weightedStartPos; x++ )
-      {
-#endif
         *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src1 : *src0) + offsetDefault, shiftDefault), clipRng );
         src0++;
         src1++;
       }
 
       tmpWeightedStart = std::max((int32_t)0, weightedStartPos);
-#if JVET_P0530_TPM_WEIGHT_ALIGN
       tmpWeightedEnd = std::min(weightedEndPos, (int32_t)(widthY - 1));
-#else
-      tmpWeightedEnd   = std::min(weightedEndPos, (int32_t)(width - 1));
-#endif
       weightIdx        = 1;
       if( weightedStartPos < 0 )
       {
@@ -929,7 +907,6 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
       }
       for( x = tmpWeightedStart; x <= tmpWeightedEnd; x+= ratioWH )
       {
-#if JVET_P0530_TPM_WEIGHT_ALIGN
         if (x % stepX != 0)
         {
           weightIdx++;
@@ -939,25 +916,15 @@ void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const 
         for (tmpX = ratioWH; tmpX > 0; tmpX -= stepX)
         {
           tmpPelWeighted = Clip3(1, 7, weightIdx);
-#else
-        for( tmpX = ratioWH; tmpX > 0; tmpX-- )
-        {
-          tmpPelWeighted = Clip3( 1, 7, longWeight ? weightIdx : (weightIdx * 2));
-#endif
           tmpPelWeighted = splitDir ? ( 8 - tmpPelWeighted ) : tmpPelWeighted;
           *dst++         = ClipPel( rightShift( (tmpPelWeighted*(*src0++) + ((8 - tmpPelWeighted) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
         }
         weightIdx ++;
       }
 
-#if JVET_P0530_TPM_WEIGHT_ALIGN
       int32_t start = ((weightedEndPos + 1) % stepX != 0) ? (weightedEndPos + 2) : (weightedEndPos + 1);
       for (x = start; x < widthY; x += stepX)
       {
-#else
-      for( x = weightedEndPos + 1; x < width; x++ )
-      {
-#endif
         *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src0 : *src1) + offsetDefault, shiftDefault ), clipRng );
         src0++;
         src1++;

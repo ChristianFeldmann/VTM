@@ -739,14 +739,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(sei);
   }
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   if (m_pcCfg->getSubpicureLevelInfoSEIEnabled())
   {
     SEISubpicureLevelInfo *seiSubpicureLevelInfo = new SEISubpicureLevelInfo;
     m_seiEncoder.initSEISubpictureLevelInfo(seiSubpicureLevelInfo, sps);
     seiMessages.push_back(seiSubpicureLevelInfo);
   }
-#endif
 #if JVET_P0450_SEI_SARI
   if (m_pcCfg->getSampleAspectRatioInfoSEIEnabled())
   {

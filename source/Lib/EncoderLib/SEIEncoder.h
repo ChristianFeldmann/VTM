@@ -112,9 +112,7 @@ public:
 #if JVET_P0597_GCMP_SEI
   void initSEIGcmp(SEIGeneralizedCubemapProjection *sei);
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   void initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps);
-#endif
 #if JVET_P0450_SEI_SARI
   void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
 #endif

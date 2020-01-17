@@ -120,9 +120,7 @@ public:
 #endif
 #endif
     FRAME_FIELD_INFO                     = 168,
-#if JVET_P0984_SEI_SUBPIC_LEVEL
     SUBPICTURE_LEVEL_INFO                = 203,
-#endif
 #if JVET_P0450_SEI_SARI
     SAMPLE_ASPECT_RATIO_INFO             = 204,
 #endif
@@ -1020,7 +1018,6 @@ public:
 #endif
 #endif
 
-#if JVET_P0984_SEI_SUBPIC_LEVEL
 
 class SEISubpicureLevelInfo : public SEI
 {
@@ -1041,7 +1038,6 @@ public:
 };
 
 
-#endif
 
 
 //! \}

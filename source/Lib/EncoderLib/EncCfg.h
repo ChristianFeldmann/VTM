@@ -611,9 +611,7 @@ protected:
   bool                 m_gcmpSEIGuardBandBoundaryType;
   uint8_t              m_gcmpSEIGuardBandSamplesMinus1;
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   bool m_subpicureLevelInfoSEIEnabled;
-#endif
 #if JVET_P0450_SEI_SARI
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
@@ -1697,10 +1695,8 @@ public:
   void    setGcmpSEIGuardBandSamplesMinus1( uint8_t u )                                             { m_gcmpSEIGuardBandSamplesMinus1 = u; }
   uint8_t getGcmpSEIGuardBandSamplesMinus1()                                                        { return m_gcmpSEIGuardBandSamplesMinus1; }
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   bool    getSubpicureLevelInfoSEIEnabled() const { return m_subpicureLevelInfoSEIEnabled; }
   void    setSubpicureLevelInfoSEIEnabled(bool val) { m_subpicureLevelInfoSEIEnabled = val; }
-#endif
 #if JVET_P0450_SEI_SARI
   bool     getSampleAspectRatioInfoSEIEnabled() const                                                       { return m_sampleAspectRatioInfoSEIEnabled; }
   void     setSampleAspectRatioInfoSEIEnabled(const bool val)                                               { m_sampleAspectRatioInfoSEIEnabled = val; }

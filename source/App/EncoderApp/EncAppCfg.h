@@ -651,9 +651,7 @@ protected:
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 #endif
 
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   bool m_subpicureLevelInfoSEIEnabled;
-#endif
 
 #if JVET_P0450_SEI_SARI
   bool                  m_sampleAspectRatioInfoSEIEnabled;

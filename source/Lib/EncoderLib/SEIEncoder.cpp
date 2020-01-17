@@ -1052,7 +1052,6 @@ void SEIEncoder::initSEIContentColourVolume(SEIContentColourVolume *seiContentCo
   }
 }
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
 void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps)
 {
   // subpicture level information should be specified via config file
@@ -1067,7 +1066,6 @@ void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SP
   sei->m_refLevelIdc[1] = Level::LEVEL8_5;
   sei->m_explicitFractionPresentFlag = false;
 }
-#endif
 
 
 //! \}

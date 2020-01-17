@@ -106,7 +106,6 @@
 
 
 
-#define JVET_P0984_SEI_SUBPIC_LEVEL                       1 // JVET-P0984: Subpicture level information SEI
 
 #define JVET_P1018_IBC_NO_WRAPAROUND                      1 // JVET-P1018: Disable reference sample wrapping around
 

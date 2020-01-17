@@ -101,9 +101,7 @@ protected:
 #if JVET_P0597_GCMP_SEI
   void xWriteSEIGeneralizedCubemapProjection      (const SEIGeneralizedCubemapProjection &sei);
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei, const SPS* sps);
-#endif
 #if JVET_P0450_SEI_SARI
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 #endif

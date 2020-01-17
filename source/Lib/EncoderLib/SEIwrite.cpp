@@ -181,11 +181,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     xWriteSEIContentColourVolume(*static_cast<const SEIContentColourVolume*>(&sei));
     break;
 #endif
-#if JVET_P0984_SEI_SUBPIC_LEVEL
   case SEI::SUBPICTURE_LEVEL_INFO:
     xWriteSEISubpictureLevelInfo(*static_cast<const SEISubpicureLevelInfo*>(&sei), sps);
     break;
-#endif
 #if JVET_P0450_SEI_SARI
   case SEI::SAMPLE_ASPECT_RATIO_INFO:
     xWriteSEISampleAspectRatioInfo(*static_cast<const SEISampleAspectRatioInfo*>(&sei));
@@ -1161,7 +1159,6 @@ void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubema
 }
 #endif
 
-#if JVET_P0984_SEI_SUBPIC_LEVEL
 void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, const SPS* sps)
 {
   WRITE_CODE( (uint32_t)sei.m_sliSeqParameterSetId, 4,                        "sli_seq_parameter_set_id");
@@ -1187,7 +1184,6 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, c
     }
   }
 }
-#endif
 
 #if JVET_P0450_SEI_SARI
 void SEIWriter::xWriteSEISampleAspectRatioInfo(const SEISampleAspectRatioInfo &sei)

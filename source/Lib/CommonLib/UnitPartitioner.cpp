@@ -435,9 +435,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
   if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE || areaC.width == 4))     canBv = false;
-#if JVET_P0063_LDT_SPLIT_FIX
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 32 )  canBv = canBh = false;
-#endif
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
@@ -446,9 +444,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
                                                                                        canTv = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
   if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE * 2 || areaC.width == 8))     canTv = false;
-#if JVET_P0063_LDT_SPLIT_FIX
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 64 )  canTv = canTh = false;
-#endif
 }
 
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )

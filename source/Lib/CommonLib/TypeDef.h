@@ -137,7 +137,6 @@
 
 
 
-#define JVET_P0063_LDT_SPLIT_FIX                          1 // JVET-P0063: Fix local dual tree on BT/TT split conditions in inter coding region
 
 #define JVET_P0329_PLANAR_SIMPLIFICATION                  1 // JVET-P0329: simplify planar prediction by comparison removal
 

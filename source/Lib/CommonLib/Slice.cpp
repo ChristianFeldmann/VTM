@@ -1506,9 +1506,7 @@ unsigned Slice::getMinPictureDistance() const
 VPS::VPS()
   : m_VPSId(0)
   , m_uiMaxLayers(1)
-#if JVET_P0185
   , m_vpsMaxSubLayers(1)
-#endif
   , m_vpsAllLayersSameNumSubLayersFlag (true)
   , m_vpsAllIndependentLayersFlag(true)
   , m_vpsEachLayerIsAnOlsFlag (1)
@@ -2966,16 +2964,10 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         }
         else
         {
-#if JVET_P0185
           m_vpsMap.clear();
           m_vpsMap.allocatePS(0);
           m_activeVPSId = 0;
           m_vpsMap.setActive(0);
-#else
-          //No actual VPS
-          m_activeVPSId = -1;
-          m_vpsMap.clear();
-#endif
         }
 
           m_spsMap.clear();
@@ -3034,13 +3026,11 @@ void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
   parameterSet->setSPSId(psId);
 }
 
-#if JVET_P0185
 template <>
 void ParameterSetMap<VPS>::setID(VPS* parameterSet, const int psId)
 {
   parameterSet->setVPSId(psId);
 }
-#endif
 
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)

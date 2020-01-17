@@ -694,9 +694,7 @@ private:
   int                   m_VPSId;
   uint32_t              m_uiMaxLayers;
 
-#if JVET_P0185
   uint32_t              m_vpsMaxSubLayers;
-#endif
   uint32_t              m_vpsLayerId[MAX_VPS_LAYERS];
   bool                  m_vpsAllLayersSameNumSubLayersFlag;
   bool                  m_vpsAllIndependentLayersFlag;
@@ -724,10 +722,8 @@ public:
   uint32_t          getMaxLayers() const                                 { return m_uiMaxLayers;                                            }
   void              setMaxLayers(uint32_t l)                             { m_uiMaxLayers = l;                                               }
 
-#if JVET_P0185
   uint32_t          getMaxSubLayers() const                              { return m_vpsMaxSubLayers;                                        }
   void              setMaxSubLayers(uint32_t value)                      { m_vpsMaxSubLayers = value;                                       }
-#endif
   bool              getAllLayersSameNumSublayersFlag() const { return m_vpsAllLayersSameNumSubLayersFlag; }
   void              setAllLayersSameNumSublayersFlag(bool t) { m_vpsAllLayersSameNumSubLayersFlag = t; }
 

@@ -214,11 +214,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
   // initialize SPS
   xInitSPS( sps0, m_cVPS );
-#if JVET_P0185
   xInitVPS(m_cVPS, sps0);
-#else
-  xInitVPS(m_cVPS);
-#endif
 
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
@@ -963,17 +959,11 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   m_iNumPicRcvd++;
 }
 
-#if JVET_P0185
 void EncLib::xInitVPS(VPS& vps, const SPS& sps)
-#else
-void EncLib::xInitVPS(VPS& vps)
-#endif
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
-#if JVET_P0185
   vps.setMaxSubLayers(sps.getMaxTLayers());
-#endif
 }
 
 void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)

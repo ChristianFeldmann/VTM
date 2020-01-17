@@ -180,11 +180,14 @@ protected:
   Level::Name   m_level;
   std::vector<uint32_t>  m_subProfile;
   uint8_t      m_numSubProfile;
+
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
+#if !JVET_P2001E_PROFILES
   bool          m_onePictureOnlyConstraintFlag;
   bool          m_lowerBitRateConstraintFlag;
+#endif
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
   bool          m_nonPackedConstraintFlag;
@@ -879,6 +882,9 @@ protected:
 #if JVET_P0366_NUT_CONSTRAINT_FLAGS
   bool  xHasNonZeroTemporalID();                             ///< check presence of constant temporal ID in GOP structure
   bool  xHasLeadingPicture();                                 ///< check presence of leading pictures in GOP structure
+#endif
+#if JVET_P2001E_PROFILES
+  int   xAutoDetermineProfile();                              ///< auto determine the profile to use given the other configuration settings. Returns 1 if erred. Can select profile 'NONE'
 #endif
 public:
   EncAppCfg();

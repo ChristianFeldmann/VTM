@@ -210,11 +210,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
   m_cEncLib.setFrameOnlyConstraintFlag                           ( m_frameOnlyConstraintFlag);
+#if !JVET_P2001E_PROFILES
   m_cEncLib.setBitDepthConstraintValue                           ( m_bitDepthConstraint );
   m_cEncLib.setChromaFormatConstraintValue                       ( m_chromaFormatConstraint );
+#endif
   m_cEncLib.setIntraConstraintFlag                               ( m_intraConstraintFlag );
+#if !JVET_P2001E_PROFILES
   m_cEncLib.setOnePictureOnlyConstraintFlag                      ( m_onePictureOnlyConstraintFlag );
   m_cEncLib.setLowerBitRateConstraintFlag                        ( m_lowerBitRateConstraintFlag );
+#endif
 
   m_cEncLib.setPrintMSEBasedSequencePSNR                         ( m_printMSEBasedSequencePSNR);
   m_cEncLib.setPrintFrameMSE                                     ( m_printFrameMSE);

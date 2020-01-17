@@ -134,7 +134,6 @@
 
 
 
-#define JVET_P0042_FIX_INTER_DIR_CTX                      1 // JVET-P0042: Fix overlap in context between the bi-pred flag for 8x8 CUs and the L0/L1 flag for all size CUs
 
 #define JVET_P0218_AUD_TID_AND_LAYERID                    1 // JVET-P0218: Set temporal ID and layer ID of Access Unit Delimiter
 

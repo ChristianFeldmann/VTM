@@ -356,17 +356,10 @@ const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
 ({
-#if JVET_P0042_FIX_INTER_DIR_CTX
   {  14,   6,   5,   4,   3,  40, },
   {   7,   6,   5,   4,  11,  40, },
   { CNU, CNU, CNU, CNU, CNU, CNU, },
   {   0,   0,   1,   4,   1,   0, },
-#else
-  {   6,  13,   5,   4,  25, },
-  {   7,   6,   5,   4,  33, },
-  { CNU, CNU, CNU, CNU, CNU, },
-  {   0,   0,   1,   4,   0, },
-#endif
 });
 
 const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
@@ -1074,7 +1067,6 @@ const CtxSet ContextSetCfg::DeltaQP = ContextSetCfg::addCtxSet
   { DWS, DWS, },
 });
 
-#if JVET_P0042_FIX_INTER_DIR_CTX 
 const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
 ({
   {   6,  13,   5,   4,  25,  48, },
@@ -1082,15 +1074,6 @@ const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
   { CNU, CNU, CNU, CNU, CNU, CNU, },
   {   0,   0,   1,   4,   0,   0, },
 });
-#else
-const CtxSet ContextSetCfg::InterDir = ContextSetCfg::addCtxSet
-({
-  {   6,  13,   5,   4,  25, },
-  {   7,   6,   5,   4,  33, },
-  { CNU, CNU, CNU, CNU, CNU, },
-  {   0,   0,   1,   4,   0, },
-});
-#endif
 
 const CtxSet ContextSetCfg::RefPic = ContextSetCfg::addCtxSet
 ({

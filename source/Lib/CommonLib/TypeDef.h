@@ -85,7 +85,6 @@
 
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
-#define JVET_P0526_PLT_ENCODER                            1 // JVET-P0526: PLT encoder improvement
 
 #define JVET_P0217_PTL_SYNTAX_CLEANUP                     1 // JVET-P0217: On Profile, tier, and level syntax structure
 

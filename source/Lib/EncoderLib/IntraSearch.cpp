@@ -2518,7 +2518,6 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
         {
           pX = (comp > 0 && compBegin == COMPONENT_Y) ? (x >> scaleX) : x;
           pY = (comp > 0 && compBegin == COMPONENT_Y) ? (y >> scaleY) : y;
-#if JVET_P0526_PLT_ENCODER
           if (isChroma((ComponentID) comp))
           {
             absError += int(double(abs(cu.curPLT[comp][pltIdx] - orgBuf[comp].at(pX, pY))) * PLT_CHROMA_WEIGHTING) >> pcmShiftRight_C;
@@ -2527,10 +2526,6 @@ void IntraSearch::preCalcPLTIndex(CodingStructure& cs, Partitioner& partitioner,
           {
             absError += abs(cu.curPLT[comp][pltIdx] - orgBuf[comp].at(pX, pY)) >> pcmShiftRight_L;
           }
-#else
-          int shift = (comp > 0) ? pcmShiftRight_C : pcmShiftRight_L;
-          absError += abs(cu.curPLT[comp][pltIdx] - orgBuf[comp].at(pX, pY)) >> shift;
-#endif
         }
 
         if (absError < minError)
@@ -2737,12 +2732,8 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   {
     numColorBits += (comp > 0) ? channelBitDepth_C : channelBitDepth_L;
   }
-#if JVET_P0526_PLT_ENCODER
   const int plt_lambda_shift = (compBegin > 0) ? pcmShiftRight_C : pcmShiftRight_L;
   double    bitCost          = m_pcRdCost->getLambda() / (double) (1 << (2 * plt_lambda_shift)) * numColorBits;
-#else
-  double bitCost = m_pcRdCost->getLambda()*numColorBits;
-#endif
   for (int i = 0; i < MAXPLTSIZE; i++)
   {
     if (pelListSort[i].getCnt())
@@ -2759,12 +2750,8 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
         double pal[MAX_NUM_COMPONENT], err = 0.0, bestCost = 0.0;
         for (int comp = compBegin; comp < (compBegin + numComp); comp++)
         {
-#if !JVET_P0526_PLT_ENCODER
-          const int shift = (comp > 0) ? pcmShiftRight_C : pcmShiftRight_L;
-#endif
           pal[comp] = pelListSort[i].getSumData(comp) / (double)pelListSort[i].getCnt();
           err = pal[comp] - cu.curPLT[comp][paletteSize];
-#if JVET_P0526_PLT_ENCODER
           if (isChroma((ComponentID) comp))
           {
             bestCost += (err * err * PLT_CHROMA_WEIGHTING) / (1 << (2 * pcmShiftRight_C));
@@ -2773,9 +2760,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
           {
             bestCost += (err * err) / (1 << (2 * pcmShiftRight_L));
           }
-#else
-          bestCost += (err*err) / (1 << (2 * shift));
-#endif
         }
         bestCost = bestCost * pelListSort[i].getCnt() + bitCost;
 
@@ -2784,11 +2768,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
           double cost = 0.0;
           for (int comp = compBegin; comp < (compBegin + numComp); comp++)
           {
-#if !JVET_P0526_PLT_ENCODER
-            const int shift = (comp > 0) ? pcmShiftRight_C : pcmShiftRight_L;
-#endif
             err = pal[comp] - cs.prevPLT.curPLT[comp][t];
-#if JVET_P0526_PLT_ENCODER
             if (isChroma((ComponentID) comp))
             {
               cost += (err * err * PLT_CHROMA_WEIGHTING) / (1 << (2 * pcmShiftRight_C));
@@ -2797,9 +2777,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
             {
               cost += (err * err) / (1 << (2 * pcmShiftRight_L));
             }
-#else
-            cost += (err*err) / (1 << (2 * shift));
-#endif
           }
           cost *= pelListSort[i].getCnt();
           if (cost < bestCost)

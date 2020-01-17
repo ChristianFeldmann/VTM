@@ -101,7 +101,6 @@ public:
     bool almostEqual = true;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
-#if JVET_P0526_PLT_ENCODER
       uint32_t absError = 0;
       if (isChroma((ComponentID) comp))
       {
@@ -112,10 +111,6 @@ public:
         absError += (std::abs(data[comp] - element.data[comp]))>> (bitDepths.recon[CHANNEL_TYPE_LUMA] - PLT_ENCBITDEPTH);
       }
       if (absError > errorLimit)
-#else
-      ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
-      if ((std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH)) > errorLimit)
-#endif
       {
         almostEqual = false;
         break;

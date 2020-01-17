@@ -144,7 +144,6 @@
 
 
 
-#define JVET_P0335_HDRCTC_CHANGE                          1 // JVET-P0335: change of HDR PQ CTC: enable LMCS and use QPc table in P0335, and disable lumaDQP and WCGPPSOffset
 
 #define JVET_P0158_ALIGN_ALF_VB                           1 // JVET-P0158: Apply ALF VB on the bottom CTU row
 

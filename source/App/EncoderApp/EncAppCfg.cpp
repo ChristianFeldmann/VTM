@@ -2989,13 +2989,8 @@ bool EncAppCfg::xCheckParameter()
 #endif
   if (m_lumaLevelToDeltaQPMapping.mode && m_lmcsEnabled)
   {
-#if !JVET_P0335_HDRCTC_CHANGE
-    msg(WARNING, "For HDR-PQ, reshaper should be used mutual-exclusively with Luma-level-based Delta QP. If use luma DQP, turn reshaper off.\n");
-    m_lmcsEnabled = false;
-#else
     msg(WARNING, "For HDR-PQ, LMCS should be used mutual-exclusively with Luma-level-based Delta QP. If use LMCS, turn lumaDQP off.\n");
     m_lumaLevelToDeltaQPMapping.mode = LUMALVL_TO_DQP_DISABLED;
-#endif
   }
   if (!m_lmcsEnabled)
   {

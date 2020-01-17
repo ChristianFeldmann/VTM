@@ -42,23 +42,16 @@
 #include "Buffer.h"
 #include "InterpolationFilter.h"
 
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
 void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, const bool& bi, int shiftNum, Pel offset, const ClpRng& clpRng)
-#else
-void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
-#endif
 {
   int idx = 0;
 
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
-#endif
   for (int h = 0; h < height; h++)
   {
     for (int w = 0; w < width; w++)
     {
       int32_t dI = dMvX[idx] * gradX[w] + dMvY[idx] * gradY[w];
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
       dI = Clip3(-dILimit, dILimit - 1, dI);
       dst[w] = src[w] + dI;
       if (!bi)
@@ -66,10 +59,6 @@ void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int w
         dst[w] = (dst[w] + offset) >> shiftNum;
         dst[w] = ClipPel(dst[w], clpRng);
       }
-#else
-      dI = (src[w] + dI + offset) >> shiftNum;
-      dst[w] = (Pel)ClipPel(dI, clpRng);
-#endif
 
       idx++;
     }
@@ -80,63 +69,6 @@ void applyPROFCore(Pel* dst, int dstStride, const Pel* src, int srcStride, int w
   }
 }
 
-#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-template<bool l1PROFEnabled = true>
-void applyBiPROFCore (Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t w0, const ClpRng& clpRng)
-{
-  int idx = 16;
-  int32_t dI0 = 0;
-  int32_t dI1 = 0;
-
-  const int clipbd = clpRng.bd;
-  const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + g_BcwLog2WeightBase;
-  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_BcwLog2WeightBase);
-
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-  const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
-#endif
-
-  const int8_t w1 = g_BcwWeightBase - w0;
-
-  for (int h = 0; h < height; h++)
-  {
-    if (!(h & 3)) idx -= 16;
-    idx += 4;
-
-    for (int w = 0; w < width; w++)
-    {
-      if (!(w & 3)) idx -= 4;
-      dI0 = dMvX0[idx] * gradX0[w] + dMvY0[idx] * gradY0[w];
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-      dI0 = Clip3(-dILimit, dILimit - 1, dI0);
-#endif
-      if (l1PROFEnabled)
-      {
-        dI1 = dMvX1[idx] * gradX1[w] + dMvY1[idx] * gradY1[w];
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-        dI1 = Clip3(-dILimit, dILimit - 1, dI1);
-#endif
-        dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + (src1[w] + dI1) * w1 + offset), shiftNum), clpRng);
-      }
-      else
-        dst[w] = (Pel)ClipPel(rightShift(((src0[w] + dI0) * w0 + src1[w] * w1 + offset), shiftNum), clpRng);
-
-      idx++;
-    }
-
-    gradX0 += gradStride;
-    gradY0 += gradStride;
-    if (l1PROFEnabled)
-    {
-      gradX1 += gradStride;
-      gradY1 += gradStride;
-    }
-    dst += dstStride;
-    src0 += srcStride;
-    src1 += srcStride;
-  }
-}
-#endif
 
 template< typename T >
 void addAvgCore( const T* src1, int src1Stride, const T* src2, int src2Stride, T* dest, int dstStride, int width, int height, int rshift, int offset, const ClpRng& clpRng )
@@ -375,10 +307,6 @@ PelBufferOps::PelBufferOps()
 
   profGradFilter = gradFilterCore <false>;
   applyPROF      = applyPROFCore;
-#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-  applyBiPROF[1] = applyBiPROFCore;
-  applyBiPROF[0] = applyBiPROFCore <false>;
-#endif
   roundIntVector = nullptr;
 }
 

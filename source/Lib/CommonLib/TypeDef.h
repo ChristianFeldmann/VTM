@@ -125,7 +125,6 @@
 
 
 
-#define JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING            1 // JVET-P0154/P0094/P0172/P0413/P0518/P0281: Clip the PROF sample offset to 14-bit
 
 #define JVET_P1023_DMVR_BDOF_RP_CONDITION                 1 // JVET_P1023: Reference picture conditions in DMVR and BDOF
 

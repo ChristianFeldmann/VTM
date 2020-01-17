@@ -340,15 +340,10 @@ void calcBIOSums_SSE(const Pel* srcY0Tmp, const Pel* srcY1Tmp, Pel* gradX0, Pel*
 }
 
 template< X86_VEXT vext >
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
 void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, const bool& bi, int shiftNum, Pel offset, const ClpRng& clpRng)
-#else
-void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride, int width, int height, const Pel* gradX, const Pel* gradY, int gradStride, const int* dMvX, const int* dMvY, int dMvStride, int shiftNum, Pel offset, const ClpRng& clpRng)
-#endif
 {
   CHECKD((width & 3), "block width error!");
 
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
   const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
 
 #ifdef USE_AVX2
@@ -372,15 +367,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 #else
   for (int h = 0; h < height; h += 2)
 #endif
-#else
-  __m128i mm_dmvx, mm_dmvy, mm_gradx, mm_grady, mm_dI, mm_src;
-  __m128i mm_offset = _mm_set1_epi32(offset);
-  __m128i vibdimin  = _mm_set1_epi32(clpRng.min);
-  __m128i vibdimax  = _mm_set1_epi32(clpRng.max);
-  __m128i vzero     = _mm_setzero_si128();
-
-  for (int h = 0; h < height; h++)
-#endif
   {
     const int* vX = dMvX;
     const int* vY = dMvY;
@@ -391,7 +377,6 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
 
     for (int w = 0; w < width; w += 4)
     {
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
 #if USE_AVX2
       const int *vX0 = vX, *vY0 = vY;
       const Pel *gX0 = gX, *gY0 = gY;
@@ -472,24 +457,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
       _mm_storel_epi64((__m128i *)dst, mm_dI);
       _mm_storel_epi64((__m128i *)(dst + dstStride), _mm_unpackhi_epi64(mm_dI, mm_dI));
 #endif
-#else
-      mm_dmvx = _mm_loadu_si128((const __m128i *)vX);
-      mm_dmvy = _mm_loadu_si128((const __m128i *)vY);
-      mm_gradx = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX));
-      mm_grady = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY));
-      mm_src = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)src));
-
-      mm_dI = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx, mm_gradx), _mm_mullo_epi32(mm_dmvy, mm_grady));
-
-      mm_dI = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mm_dI, mm_src), mm_offset), shiftNum);
-      mm_dI = _mm_packs_epi32(_mm_min_epi32(vibdimax, _mm_max_epi32(vibdimin, mm_dI)), vzero);
-      _mm_storel_epi64((__m128i *)dst, mm_dI);
-
-#endif
       vX += 4; vY += 4; gX += 4; gY += 4; src += 4; dst += 4;
     }
 
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
 #if USE_AVX2
     dMvX += (dMvStride << 2);
     dMvY += (dMvStride << 2);
@@ -505,127 +475,9 @@ void applyPROF_SSE(Pel* dstPel, int dstStride, const Pel* srcPel, int srcStride,
     srcPel += (srcStride << 1);
     dstPel += (dstStride << 1);
 #endif
-#else
-    dMvX += dMvStride;
-    dMvY += dMvStride;
-    gradX += gradStride;
-    gradY += gradStride;
-    srcPel += srcStride;
-    dstPel += dstStride;
-#endif
   }
 }
 
-#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-template< X86_VEXT vext, bool l1PROFEnabled = true>
-void applyBiPROF_SSE(Pel* dst, int dstStride, const Pel* src0, const Pel* src1, int srcStride, int width, int height, const Pel* gradX0, const Pel* gradY0, const Pel* gradX1, const Pel* gradY1, int gradStride, const int* dMvX0, const int* dMvY0, const int* dMvX1, const int* dMvY1, int dMvStride, const int8_t w0, const ClpRng& clpRng)
-{
-  const int rShift = IF_INTERNAL_PREC - clpRng.bd;
-  const int shiftNum = (rShift > 2 ? rShift : 2) + g_BcwLog2WeightBase;
-  const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << g_BcwLog2WeightBase);
-  const int8_t w1 = g_BcwWeightBase - w0;
-
-  __m128i mm_offset = _mm_set1_epi32(offset);
-  __m128i mm_w0 = _mm_set1_epi32(w0);
-  __m128i mm_w1 = _mm_set1_epi32(w1);
-  __m128i vibdimin = _mm_set1_epi32(clpRng.min);
-  __m128i vibdimax = _mm_set1_epi32(clpRng.max);
-  __m128i vzero = _mm_setzero_si128();
-
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-  const int dILimit = 1 << std::max<int>(clpRng.bd + 1, 13);
-  __m128i vdImin = _mm_set1_epi32(-dILimit);
-  __m128i vdImax = _mm_set1_epi32(dILimit - 1);
-#endif
-
-  __m128i mm_dmvx0, mm_dmvy0, mm_dmvx1, mm_dmvy1, mm_gradx0, mm_grady0, mm_gradx1, mm_grady1, mm_src0, mm_src1;
-  __m128i mm_dI0, mm_dI1, mm_dI;
-  const int *mmMvX0, *mmMvY0, *mmMvX1, *mmMvY1;
-  const Pel *gX0, *gY0, *gX1, *gY1;
-
-  for (int h = 0; h < height; h++)
-  {
-    if (!(h & 3))
-    {
-      mmMvX0 = dMvX0;
-      mmMvY0 = dMvY0;
-      if (l1PROFEnabled)
-      {
-        mmMvX1 = dMvX1;
-        mmMvY1 = dMvY1;
-      }
-    }
-
-    mm_dmvx0 = _mm_loadu_si128((const __m128i *)mmMvX0);
-    mm_dmvy0 = _mm_loadu_si128((const __m128i *)mmMvY0);
-    gX0 = gradX0;
-    gY0 = gradY0;
-
-    if (l1PROFEnabled)
-    {
-      mm_dmvx1 = _mm_loadu_si128((const __m128i *)mmMvX1);
-      mm_dmvy1 = _mm_loadu_si128((const __m128i *)mmMvY1);
-      gX1 = gradX1;
-      gY1 = gradY1;
-    }
-
-    const Pel* pSrc0 = src0;
-    const Pel* pSrc1 = src1;
-    Pel*       pDst = dst;
-
-    for (int w = 0; w < width; w += 4)
-    {
-      mm_src0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)pSrc0));
-      mm_src1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)pSrc1));
-      mm_gradx0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX0));
-      mm_grady0 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY0));
-      mm_dI0 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx0, mm_gradx0), _mm_mullo_epi32(mm_dmvy0, mm_grady0));
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-      mm_dI0 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI0));
-#endif
-      mm_dI0 = _mm_mullo_epi32(_mm_add_epi32(mm_src0, mm_dI0), mm_w0);
-      gX0 += 4; gY0 += 4;
-
-      if (l1PROFEnabled)
-      {
-        mm_gradx1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gX1));
-        mm_grady1 = _mm_cvtepi16_epi32(_mm_loadl_epi64((__m128i*)gY1));
-        mm_dI1 = _mm_add_epi32(_mm_mullo_epi32(mm_dmvx1, mm_gradx1), _mm_mullo_epi32(mm_dmvy1, mm_grady1));
-#if JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-        mm_dI1 = _mm_min_epi32(vdImax, _mm_max_epi32(vdImin, mm_dI1));
-#endif
-        mm_dI1 = _mm_mullo_epi32(_mm_add_epi32(mm_src1, mm_dI1), mm_w1);
-        gX1 += 4; gY1 += 4;
-      }
-      else
-        mm_dI1 = _mm_mullo_epi32(mm_src1, mm_w1);
-
-      mm_dI = _mm_srai_epi32(_mm_add_epi32(_mm_add_epi32(mm_dI0, mm_dI1), mm_offset), shiftNum);
-      mm_dI = _mm_packs_epi32(_mm_min_epi32(vibdimax, _mm_max_epi32(vibdimin, mm_dI)), vzero);
-      _mm_storel_epi64((__m128i *)pDst, mm_dI);
-
-      pSrc0 += 4; pSrc1 += 4; pDst += 4;
-    }
-
-    mmMvX0 += dMvStride;
-    mmMvY0 += dMvStride;
-    gradX0 += gradStride;
-    gradY0 += gradStride;
-
-    if (l1PROFEnabled)
-    {
-      mmMvX1 += dMvStride;
-      mmMvY1 += dMvStride;
-      gradX1 += gradStride;
-      gradY1 += gradStride;
-    }
-
-    src0 += srcStride;
-    src1 += srcStride;
-    dst += dstStride;
-  }
-}
-#endif
 
 template< X86_VEXT vext >
 void roundIntVector_SIMD(int* v, int size, unsigned int nShift, const int dmvLimit)
@@ -1221,10 +1073,6 @@ void PelBufferOps::_initPelBufOpsX86()
 #endif
   profGradFilter = gradFilter_SSE<vext, false>;
   applyPROF      = applyPROF_SSE<vext>;
-#if !JVET_P0154_PROF_SAMPLE_OFFSET_CLIPPING
-  applyBiPROF[1] = applyBiPROF_SSE<vext>;
-  applyBiPROF[0] = applyBiPROF_SSE<vext, false>;
-#endif
   roundIntVector = roundIntVector_SIMD<vext>;
 }
 

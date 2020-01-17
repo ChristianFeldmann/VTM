@@ -141,7 +141,6 @@
 
 
 
-#define JVET_P0562_TS_RESIDUAL_CODING_SIMP                1 // JVET-P0562: Fix the Rice parameter equal to 1 for the remainder of TS residual coding
 
 #define JVET_P0385_UNIFIED_MV_ROUNDING                    1
 

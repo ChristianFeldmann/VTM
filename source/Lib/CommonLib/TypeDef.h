@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
+
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication

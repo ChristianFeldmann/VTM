@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
+
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication

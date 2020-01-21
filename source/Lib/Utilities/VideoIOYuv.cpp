@@ -1241,12 +1241,22 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
       PelStorage upscaledPic;
       upscaledPic.create( chromaFormatIDC, Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
 
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+      int curPicWidth = sps.getMaxPicWidthInLumaSamples()   - SPS::getWinUnitX( sps.getChromaFormatIdc() ) * ( afterScaleWindowFullResolution.getWindowLeftOffset() + afterScaleWindowFullResolution.getWindowRightOffset() );
+      int curPicHeight = sps.getMaxPicHeightInLumaSamples() - SPS::getWinUnitY( sps.getChromaFormatIdc() ) * ( afterScaleWindowFullResolution.getWindowTopOffset()  + afterScaleWindowFullResolution.getWindowBottomOffset() );
+#else
       int curPicWidth = sps.getMaxPicWidthInLumaSamples() - afterScaleWindowFullResolution.getWindowLeftOffset() - afterScaleWindowFullResolution.getWindowRightOffset();
       int curPicHeight = sps.getMaxPicHeightInLumaSamples() - afterScaleWindowFullResolution.getWindowTopOffset() - afterScaleWindowFullResolution.getWindowBottomOffset();
+#endif
 
       const Window& beforeScalingWindow = pps.getScalingWindow();
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+      int refPicWidth = pps.getPicWidthInLumaSamples()   - SPS::getWinUnitX( sps.getChromaFormatIdc() ) * ( beforeScalingWindow.getWindowLeftOffset() + beforeScalingWindow.getWindowRightOffset() );
+      int refPicHeight = pps.getPicHeightInLumaSamples() - SPS::getWinUnitY( sps.getChromaFormatIdc() ) * ( beforeScalingWindow.getWindowTopOffset()  + beforeScalingWindow.getWindowBottomOffset() );
+#else
       int refPicWidth = pps.getPicWidthInLumaSamples() - beforeScalingWindow.getWindowLeftOffset() - beforeScalingWindow.getWindowRightOffset();
       int refPicHeight = pps.getPicHeightInLumaSamples() - beforeScalingWindow.getWindowTopOffset() - beforeScalingWindow.getWindowBottomOffset();
+#endif
 
       int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
       int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;

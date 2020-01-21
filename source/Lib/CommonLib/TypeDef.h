@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0784_LFNST_COMBINATION                      1 // lfnst signaling, latency reduction and a bugfix for scaling from Q0106, Q0686, Q0133
+
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication

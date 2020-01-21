@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
+
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication

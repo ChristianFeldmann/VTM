@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
+
 #define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
 
 #define JVET_AHG14_LOSSLESS                               1 // TS with lossless support

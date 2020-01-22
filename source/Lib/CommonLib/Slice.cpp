@@ -553,7 +553,11 @@ void Slice::checkSTSA(PicList& rcListPic)
     pcRefPic = m_apcRefPicList[REF_PIC_LIST_0][ii];
 
     // Checking this: "When the current picture is an STSA picture, there shall be no active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that has TemporalId equal to that of the current picture"
+#if JVET_Q0156_STSA
+    if( m_eNalUnitType == NAL_UNIT_CODED_SLICE_STSA && pcRefPic->layerId == m_pcPic->layerId )
+#else
     if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+#endif
     {
       CHECK(pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture");
     }
@@ -569,7 +573,11 @@ void Slice::checkSTSA(PicList& rcListPic)
     pcRefPic = m_apcRefPicList[REF_PIC_LIST_1][ii];
 
     // Checking this: "When the current picture is an STSA picture, there shall be no active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that has TemporalId equal to that of the current picture"
+#if JVET_Q0156_STSA
+    if( m_eNalUnitType == NAL_UNIT_CODED_SLICE_STSA && pcRefPic->layerId == m_pcPic->layerId )
+#else
     if (getNalUnitType() == NAL_UNIT_CODED_SLICE_STSA)
+#endif
     {
       CHECK(pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture");
     }

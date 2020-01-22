@@ -1937,7 +1937,11 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
   if (getCostMode()==COST_LOSSLESS_CODING)
   {
 #if JVET_AHG14_LOSSLESS
+#if JVET_AHG14_LOSSLESS_ENC_QP_FIX
+    qp = getBaseQP();
+#else
     qp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( pSlice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) - 8 ) * 6 );
+#endif
 #else
     qp=LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP;
 #endif

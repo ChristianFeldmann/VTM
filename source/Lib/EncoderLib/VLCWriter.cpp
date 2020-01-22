@@ -510,7 +510,11 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip" );
+#else
     WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA][0], "alf_luma_clip" );
+#endif
 
     WRITE_UVLC(param.numLumaFilters - 1, "alf_luma_num_filters_signalled_minus1");
     if (param.numLumaFilters > 1)
@@ -526,11 +530,16 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_nonlinear_enable_flag_chroma");
+#endif
     if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
       WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
     {
+#if !JVET_Q0249_ALF_CHROMA_CLIPFLAG
       WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx], "alf_nonlinear_enable_flag_chroma" );
+#endif
       alfFilter(param, true, altIdx);
     }
   }
@@ -2402,7 +2411,11 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
   }
 
   // Clipping values coding
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+  if( alfParam.nonLinearFlag[isChroma] )
+#else
   if( alfParam.nonLinearFlag[isChroma][altIdx] )
+#endif
   {
     for (int ind = 0; ind < numFilters; ++ind)
     {

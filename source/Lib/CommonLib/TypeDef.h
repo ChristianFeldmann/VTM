@@ -50,6 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
+#define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing
+#define JVET_Q0054                                        1 // fix for long luma deblocking decision
 
 #define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
 #define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
@@ -64,7 +67,7 @@
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
-#define MAX_TB_SIZE_SIGNALLING                            0
+
 #define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;
@@ -76,6 +79,8 @@ typedef std::pair<int, int>  TrCost;
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
 #endif
 // clang-format on
+
+
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
 #endif
@@ -92,6 +97,7 @@ typedef std::pair<int, int>  TrCost;
 #if EXTENSION_HDRTOOLS
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif
+
 #ifndef ENABLE_SPLIT_PARALLELISM
 #define ENABLE_SPLIT_PARALLELISM                          0
 #endif
@@ -123,6 +129,7 @@ typedef std::pair<int, int>  TrCost;
 #define WCG_WPSNR                                         WCG_EXT
 
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
+
 // ====================================================================================================================
 // Debugging
 // ====================================================================================================================
@@ -315,7 +322,7 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
-  NUM_INTRA_SUBPARTITIONS_MODES = 3,  
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,
   INTRA_SUBPARTITIONS_RESERVED  = 4
 };
 
@@ -618,6 +625,7 @@ enum ScalingListSize
   SCALING_LIST_FIRST_CODED = SCALING_LIST_2x2,
   SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
 };
+
 enum ScalingList1dStartIdx
 {
   SCALING_LIST_1D_START_2x2    = 0,
@@ -777,6 +785,7 @@ enum NalUnitType
   NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
+
   NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 7
   NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 8
   NAL_UNIT_CODED_SLICE_CRA,         // 9
@@ -797,7 +806,6 @@ enum NalUnitType
   NAL_UNIT_EOB,                     // 22
   NAL_UNIT_PREFIX_SEI,              // 23
   NAL_UNIT_SUFFIX_SEI,              // 24
-
   NAL_UNIT_FD,                      // 25
 
   NAL_UNIT_RESERVED_NVCL_26,
@@ -1322,7 +1330,6 @@ struct XUCache
 };
 
 #define SIGN(x) ( (x) >= 0 ? 1 : -1 )
-
 
 //! \}
 

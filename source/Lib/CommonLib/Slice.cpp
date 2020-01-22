@@ -3153,7 +3153,11 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
       CU::getRprScaling( sps, pps, m_apcRefPicList[refList][rIdx], xScale, yScale );
       m_scalingRatio[refList][rIdx] = std::pair<int, int>( xScale, yScale );
 
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+      if( m_apcRefPicList[refList][rIdx]->isRefScaled( pps ) == false )
+#else
       if( m_scalingRatio[refList][rIdx] == SCALE_1X && pps->getPicWidthInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicWidthInLumaSamples() && pps->getPicHeightInLumaSamples() == m_apcRefPicList[refList][rIdx]->getPicHeightInLumaSamples() )
+#endif
       {
         refPicIsSameRes = true;
       }

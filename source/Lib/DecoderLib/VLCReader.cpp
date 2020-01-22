@@ -518,7 +518,18 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
         // complete tiles within a single slice
         READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+#if JVET_Q0480_RASTER_RECT_SLICES
+        if( pcPPS->getTileIdxDeltaPresentFlag() || ( (tileIdx % pcPPS->getNumTileColumns()) == 0 ) )
+        {
+          READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );     pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+        }
+        else 
+        {
+          pcPPS->setSliceHeightInTiles( i, pcPPS->getSliceHeightInTiles(i-1) );
+        }
+#else
         READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );       pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
@@ -810,7 +821,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
     READ_FLAG(code, "alf_luma_clip");
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+#else
     param.nonLinearFlag[CHANNEL_TYPE_LUMA][0] = code ? true : false;
+#endif
     READ_UVLC(code, "alf_luma_num_filters_signalled_minus1");
     param.numLumaFilters = code + 1;
     if (param.numLumaFilters > 1)
@@ -830,6 +845,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    READ_FLAG(code, "alf_nonlinear_enable_flag_chroma");
+    param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
+#endif
+
     if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
       READ_UVLC( code, "alf_chroma_num_alts_minus1" );
     else
@@ -839,8 +859,10 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
 
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
     {
-      READ_FLAG( code, "alf_nonlinear_enable_flag_chroma" );
+#if !JVET_Q0249_ALF_CHROMA_CLIPFLAG
+      READ_FLAG(code, "alf_nonlinear_enable_flag_chroma");
       param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx] = code ? true : false;
+#endif
       alfFilter( param, true, altIdx );
     }
   }
@@ -3514,7 +3536,11 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
   }
 
   // Clipping values coding
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+  if ( alfParam.nonLinearFlag[isChroma] )
+#else
   if ( alfParam.nonLinearFlag[isChroma][altIdx] )
+#endif
   {
 
     // Filter coefficients

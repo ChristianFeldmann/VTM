@@ -1092,6 +1092,54 @@ Defines the depth of the TU tree for intra CUs.
 Defines the depth of the TU tree for inter CUs.
 \\
 
+\Option{MaxMTTHierarchyDepth} &
+%\ShortOption{\None} &
+\Default{3} &
+Defines the maximum depth of the multi-type tree for inter slices.
+\\
+
+\Option{MaxMTTHierarchyDepthI} &
+%\ShortOption{\None} &
+\Default{3} &
+Defines the maximum depth of the multi-type tree for intra slices.
+\\
+
+\Option{MaxMTTHierarchyDepthISliceC} &
+%\ShortOption{\None} &
+\Default{3} &
+Defines the maximum depth of the multi-type tree in dual tree for chroma components.
+\\
+
+\Option{MaxMTTHierarchyDepthISliceL} &
+%\ShortOption{\None} &
+\Default{3} &
+Defines the maximum depth of the multi-type tree in dual tree for luma component.
+\\
+
+\Option{MinQTChromaISlice} &
+%\ShortOption{\None} &
+\Default{4} &
+Defines the minimum size of the quad tree in dual tree for chroma components.
+\\
+
+\Option{MinQTISlice} &
+%\ShortOption{\None} &
+\Default{8} &
+Defines the minimum size of the quad tree for intra slices.
+\\
+
+\Option{MinQTLumaISlice} &
+%\ShortOption{\None} &
+\Default{8} &
+Defines the minimum size of the quad tree in dual tree for luma component.
+\\
+
+\Option{MinQTNonISlice} &
+%\ShortOption{\None} &
+\Default{8} &
+Defines the minimum size of the quad tree for inter slices.
+\\
+
 \end{OptionTableNoShorthand}
 
 
@@ -1263,6 +1311,12 @@ Enables or disables the merge mode with motion vector difference (MMVD).
 %\ShortOption{\None} &
 \Default{6} &
 Specifies the number of MMVD distance entries used from the distance table at encoder.
+\\
+
+\Option{CIIP} &
+%\ShortOption{\None} &
+\Default{1} &
+Enables or disables the merge mode with combined inter merge and intra prediction (CIIP).
 \\
 \end{OptionTableNoShorthand}
 

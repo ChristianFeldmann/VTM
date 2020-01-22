@@ -1050,7 +1050,10 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
           pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
         }
-
+#if JVET_Q0150
+        bool isNearVBabove = yVb < vbPos && (yVb >= vbPos - 1);
+        bool isNearVBbelow = yVb >= vbPos && (yVb <= vbPos);
+#endif
         for( int jj = 0; jj < clsSizeX; jj++ )
         {
 
@@ -1086,7 +1089,18 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
             sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg0[+2], pImg0[-2]) );
             sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg0[+1], pImg0[-1]) );
           }
+#if JVET_Q0150
+          if (!(isNearVBabove || isNearVBbelow))
+          {
+            sum = (sum + offset) >> shift;
+          }
+          else
+          {
+            sum = (sum + offset) >> (shift + 3);
+          }
+#else
           sum = ( sum + offset ) >> shift;
+#endif
           sum += curr;
           pRec1[jj] = ClipPel( sum, clpRng );
 

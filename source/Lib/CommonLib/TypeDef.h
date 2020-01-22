@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing
 #define JVET_Q0054                                        1 // fix for long luma deblocking decision
 
 #define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area

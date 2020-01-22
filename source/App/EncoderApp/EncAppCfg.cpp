@@ -2167,6 +2167,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 #endif // ENABLE_QPA
 
+#if JVET_AHG14_LOSSLESS_ENC_QP_FIX
+  if( m_costMode == COST_LOSSLESS_CODING )
+  {
+    m_iQP = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8 ) * 6 );
+  }
+#endif
+
   const int minCuSize = 1 << MIN_CU_LOG2;
   m_uiMaxCodingDepth = 0;
   while( ( m_uiCTUSize >> m_uiMaxCodingDepth ) > minCuSize )

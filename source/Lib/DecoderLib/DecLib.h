@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -77,16 +77,19 @@ private:
 
   PicList                 m_cListPic;         //  Dynamic buffer
   ParameterSetManager     m_parameterSetManager;  // storage for parameter sets
+  PicHeader               m_picHeader;            // picture header
   Slice*                  m_apcSlicePilot;
 
 
   SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices, excluding prefix SEIs...
+
 
   // functional classes
   IntraPrediction         m_cIntraPred;
   InterPrediction         m_cInterPred;
   TrQuant                 m_cTrQuant;
   DecSlice                m_cSliceDecoder;
+  TrQuant                 m_cTrQuantScalingList;
   DecCu                   m_cCuDecoder;
   HLSyntaxReader          m_HLSReader;
   CABACDecoder            m_CABACDecoder;
@@ -95,17 +98,16 @@ private:
   SampleAdaptiveOffset    m_cSAO;
   AdaptiveLoopFilter      m_cALF;
   Reshape                 m_cReshaper;                        ///< reshaper class
+  HRD                     m_HRD;
   // decoder side RD cost computation
   RdCost                  m_cRdCost;                      ///< RD cost computation class
 #if JVET_J0090_MEMORY_BANDWITH_MEASURE
   CacheModel              m_cacheModel;
 #endif
-#if !JVET_M0101_HLS
-  bool isSkipPictureForBLA(int& iPOCLastDisplay);
-#endif
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
   uint32_t                    m_uiSliceSegmentIdx;
+  uint32_t                m_prevLayerID;
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
@@ -115,7 +117,8 @@ private:
   bool                    m_bFirstSliceInBitstream;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-  bool                    m_craNoRaslOutputFlag;    //value of variable NoRaslOutputFlag of the last CRA pic
+  bool                    m_lastNoIncorrectPicOutputFlag;    //value of variable NoIncorrectPicOutputFlag of the last CRA / GDR pic
+  int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
   int                     m_decodedPictureHashSEIEnabled;  ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
@@ -126,6 +129,14 @@ private:
   std::list<InputNALUnit*> m_prefixSEINALUs; /// Buffered up prefix SEI NAL Units.
   int                     m_debugPOC;
   int                     m_debugCTU;
+
+  std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  std::vector<int> m_accessUnitApsNals;
+
+  VPS*                    m_vps;
+  bool                    m_scalingListUpdateFlag;
+  int                     m_PreScalingListAPSId;
+
 public:
   DecLib();
   virtual ~DecLib();
@@ -147,10 +158,13 @@ public:
   void  finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl = INFO);
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
+  void  checkNalUnitConstraints( uint32_t naluType );
+
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
+  bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
@@ -160,27 +174,39 @@ public:
   void setDebugCTU( int debugCTU )        { m_debugCTU = debugCTU; }
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
+  void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
+  void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
+  bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
+
+  const VPS* getVPS()                     { return m_vps; }
+  void  initScalingList()
+  {
+    m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
+  }
+  bool  getScalingListUpdateFlag() { return m_scalingListUpdateFlag; }
+  void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
+  int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
+  void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
+
 protected:
   void  xUpdateRasInit(Slice* slice);
 
-  Picture * xGetNewPicBuffer(const SPS &sps, const PPS &pps, const uint32_t temporalLayer);
-  void  xCreateLostPicture (int iLostPOC);
-
-  void      xActivateParameterSets();
+  Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
+  void  xCreateLostPicture( int iLostPOC, const int layerId );
+  void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
+  void  xActivateParameterSets( const int layerId );
+  void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
-#if HEVC_VPS
   void      xDecodeVPS( InputNALUnit& nalu );
-#endif
+  void      xDecodeDPS( InputNALUnit& nalu );
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);
-#if !JVET_M0101_HLS
-  void      xUpdatePreviousTid0POC( Slice *pSlice ) { if ((pSlice->getTLayer()==0) && (pSlice->isReferenceNalu() && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL_R)&& (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL_R))) { m_prevTid0POC=pSlice->getPOC(); } }
-#else
   void      xUpdatePreviousTid0POC(Slice *pSlice) { if ((pSlice->getTLayer() == 0) && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RASL) && (pSlice->getNalUnitType()!=NAL_UNIT_CODED_SLICE_RADL))  { m_prevTid0POC = pSlice->getPOC(); }  }
-#endif
   void      xParsePrefixSEImessages();
   void      xParsePrefixSEIsForUnknownVCLNal();
+
+  void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
 
 };// END CLASS DEFINITION DecLib
 

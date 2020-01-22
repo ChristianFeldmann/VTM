@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,46 +50,32 @@
 #include <assert.h>
 #include <cassert>
 
-#define MMVD_LTRP                                         1 // MVD scaling for MMVD considering LTRP from JVET-N0332
 
-#define JCTVC_Y0038_PARAMS                                1
+#define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
+#define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
 
-#define JVET_MMVD_OFF_MACRO                               0
+#define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
 
-#define FIX_DB_MAX_TRANSFORM_SIZE                         1
+#define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
 
-#define MRG_SHARELIST_SHARSIZE                            32
+#define JVET_AHG14_LOSSLESS                               1
+#define JVET_AHG14_LOSSLESS_ENC_QP_FIX                    1 && JVET_AHG14_LOSSLESS
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
-#define FIX_PCM                                           1 // Fix PCM bugs in VTM3
-
 #define MAX_TB_SIZE_SIGNALLING                            0
+#define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 
 // clang-format off
-#define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
-#define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
-#define REUSE_CU_RESULTS                                  1
+#define REUSE_CU_RESULTS                                  1 
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
-#define MAX_NUM_TUS                                       4
 #endif
 // clang-format on
-
-#ifndef JVET_B0051_NON_MPM_MODE
-#define JVET_B0051_NON_MPM_MODE                         ( 1 && JEM_TOOLS )
-#endif
-#ifndef QTBT_AS_IN_JEM
-#define QTBT_AS_IN_JEM                                    1
-#endif
-#ifndef HEVC_TOOLS
-#define HEVC_TOOLS                                        0
-#endif
-
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
 #endif
@@ -98,15 +84,13 @@ typedef std::pair<int, int>  TrCost;
 #define EXTENSION_360_VIDEO                               0   ///< extension for 360/spherical video coding support; this macro should be controlled by makefile, as it would be used to control whether the library is built and linked
 #endif
 
-#ifndef ENABLE_WPP_PARALLELISM
-#define ENABLE_WPP_PARALLELISM                            0
+#ifndef EXTENSION_HDRTOOLS
+#define EXTENSION_HDRTOOLS                                0 //< extension for HDRTools/Metrics support; this macro should be controlled by makefile, as it would be used to control whether the library is built and linked
 #endif
-#if ENABLE_WPP_PARALLELISM
-#ifndef ENABLE_WPP_STATIC_LINK
-#define ENABLE_WPP_STATIC_LINK                            0 // bug fix static link
-#endif
-#define PARL_WPP_MAX_NUM_THREADS                         16
 
+#define JVET_O0756_CONFIG_HDRMETRICS                      1
+#if EXTENSION_HDRTOOLS
+#define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif
 #ifndef ENABLE_SPLIT_PARALLELISM
 #define ENABLE_SPLIT_PARALLELISM                          0
@@ -121,9 +105,8 @@ typedef std::pair<int, int>  TrCost;
 
 
 // ====================================================================================================================
-// NEXT software switches
+// General settings
 // ====================================================================================================================
-#define K0238_SAO_GREEDY_MERGE_ENCODING                   1
 
 #ifndef ENABLE_TRACING
 #define ENABLE_TRACING                                    0 // DISABLE by default (enable only when debugging, requires 15% run-time in decoding) -- see documentation in 'doc/DTrace for NextSoftware.pdf'
@@ -139,49 +122,7 @@ typedef std::pair<int, int>  TrCost;
 #define WCG_EXT                                           1
 #define WCG_WPSNR                                         WCG_EXT
 
-#if HEVC_TOOLS
-#define HEVC_USE_INTRA_SMOOTHING_T32                      1
-#define HEVC_USE_INTRA_SMOOTHING_T64                      1
-#define HEVC_USE_DC_PREDFILTERING                         1
-#define HEVC_USE_HOR_VER_PREDFILTERING                    1
-#define HEVC_USE_MDCS                                     1
-#define HEVC_USE_SIGN_HIDING                              1
-#define HEVC_USE_SCALING_LISTS                            1
-#define HEVC_VPS                                          1
-#define HEVC_DEPENDENT_SLICES                             1
-#define HEVC_TILES_WPP                                    1
-#else
-#define HEVC_USE_SIGN_HIDING                              1
-#define HEVC_TILES_WPP                                    1
-#endif
-
-#ifndef HEVC_TILES_WPP
-#define HEVC_TILES_WPP                                    1
-#endif
-#if !HEVC_TILES_WPP
-#error JVET_M0445_MCTS_NEEDS_TILES_ENABLED
-#endif
-
-#define JVET_M0101_HLS                                    1  // joint HLS syntax
-
 #define KEEP_PRED_AND_RESI_SIGNALS                        0
-
-
-#if QTBT_AS_IN_JEM // macros which will cause changes in the decoder behavior ara marked with *** - keep them on to retain compatibility with JEM-toolcheck
-#define HM_QTBT_AS_IN_JEM                                 1   // ***
-#if     HM_QTBT_AS_IN_JEM
-#define HM_QTBT_AS_IN_JEM_QUANT                           1   // ***
-#define HM_QTBT_REPRODUCE_FAST_LCTU_BUG                   1
-#endif
-#define HM_CODED_CU_INFO                                  1   // like in JEM, when related CU is skipped, it stays like this even if a non skip mode wins...
-#define HM_4TAPIF_AS_IN_JEM                               1   // *** - PM: condition not well suited for 4-tap interpolation filters
-#define HM_MDIS_AS_IN_JEM                                 1   // *** - PM: not filtering ref. samples for 64xn case and using Planar MDIS condition at encoder
-#define HM_JEM_CLIP_PEL                                   1   // ***
-#define HM_JEM_MERGE_CANDS                                0   // ***
-
-
-#endif//JEM_COMP
-
 // ====================================================================================================================
 // Debugging
 // ====================================================================================================================
@@ -197,6 +138,13 @@ typedef std::pair<int, int>  TrCost;
 #ifndef RExt__DECODER_DEBUG_BIT_STATISTICS
 #define RExt__DECODER_DEBUG_BIT_STATISTICS                0 ///< 0 (default) = decoder reports as normal, 1 = decoder produces bit usage statistics (will impact decoder run time by up to ~10%)
 #endif
+
+#ifndef RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+#define RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS         (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 (default) = decoder reports as normal, 1 = decoder produces max frame bit usage statistics
+#endif
+
+#define TR_ONLY_COEFF_STATS                              (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 combine TS and non-TS decoder debug statistics. 1 = separate TS and non-TS decoder debug statistics.
+#define EPBINCOUNT_FIX                                   (1 && RExt__DECODER_DEBUG_BIT_STATISTICS )   ///< 0 use count to represent number of calls to decodeBins. 1 = count and bins for EP bins are the same.
 
 #ifndef RExt__DECODER_DEBUG_TOOL_STATISTICS
 #define RExt__DECODER_DEBUG_TOOL_STATISTICS               0 ///< 0 (default) = decoder reports as normal, 1 = decoder produces tool usage statistics
@@ -236,7 +184,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
+#define ENABLE_SIMD_OPT_BCW                               1                                                 ///< SIMD optimization for Bcw
 #endif
 
 // End of SIMD optimizations
@@ -312,12 +260,28 @@ typedef       uint32_t            Intermediate_UInt; ///< used as intermediate v
 #endif
 
 typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
+typedef       uint64_t          ModeTypeSeries;    ///< used to encoded the ModeType at different split depth
 
 typedef       uint64_t        Distortion;        ///< distortion measurement
 
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
+
+enum BDPCMControl
+{
+  BDPCM_INACTIVE = 0,
+  BDPCM_LUMAONLY = 1,
+  BDPCM_LUMACHROMA = 2,
+};
+
+enum ApsType
+{
+  ALF_APS = 0,
+  LMCS_APS = 1,
+  SCALING_LIST_APS = 2,
+};
+
 enum QuantFlags
 {
   Q_INIT           = 0x0,
@@ -336,13 +300,23 @@ enum TransType
   DCT2_EMT = 4
 };
 
+enum MTSIdx
+{
+  MTS_DCT2_DCT2 = 0,
+  MTS_SKIP = 1,
+  MTS_DST7_DST7 = 2,
+  MTS_DCT8_DST7 = 3,
+  MTS_DST7_DCT8 = 4,
+  MTS_DCT8_DCT8 = 5
+};
+
 enum ISPType
 {
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
-  NUM_INTRA_SUBPARTITIONS_MODES = 3,
-  CAN_USE_VER_AND_HORL_SPLITS   = 4
+  NUM_INTRA_SUBPARTITIONS_MODES = 3,  
+  INTRA_SUBPARTITIONS_RESERVED  = 4
 };
 
 enum SbtIdx
@@ -417,6 +391,20 @@ enum ChannelType
   MAX_NUM_CHANNEL_TYPE = 2
 };
 
+enum TreeType
+{
+  TREE_D = 0, //default tree status (for single-tree slice, TREE_D means joint tree; for dual-tree I slice, TREE_D means TREE_L for luma and TREE_C for chroma)
+  TREE_L = 1, //separate tree only contains luma (may split)
+  TREE_C = 2, //separate tree only contains chroma (not split), to avoid small chroma block
+};
+
+enum ModeType
+{
+  MODE_TYPE_ALL = 0, //all modes can try
+  MODE_TYPE_INTER = 1, //can try inter
+  MODE_TYPE_INTRA = 2, //can try intra, ibc, palette
+};
+
 #define CH_L CHANNEL_TYPE_LUMA
 #define CH_C CHANNEL_TYPE_CHROMA
 
@@ -426,6 +414,7 @@ enum ComponentID
   COMPONENT_Cb        = 1,
   COMPONENT_Cr        = 2,
   MAX_NUM_COMPONENT   = 3,
+  JOINT_CbCr          = MAX_NUM_COMPONENT,
   MAX_NUM_TBLOCKS     = MAX_NUM_COMPONENT
 };
 
@@ -468,7 +457,8 @@ enum PredMode
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
-  NUMBER_OF_PREDICTION_MODES = 3,
+  MODE_PLT                   = 3,     ///< plt-prediction mode
+  NUMBER_OF_PREDICTION_MODES = 4,
 };
 
 /// reference list index
@@ -573,13 +563,6 @@ enum MvpDir
   MD_ABOVE_LEFT         ///< MVP of above left block
 };
 
-enum StoredResidualType
-{
-  RESIDUAL_RECONSTRUCTED          = 0,
-  RESIDUAL_ENCODER_SIDE           = 1,
-  NUMBER_OF_STORED_RESIDUAL_TYPES = 2
-};
-
 enum TransformDirection
 {
   TRANSFORM_FORWARD              = 0,
@@ -601,10 +584,8 @@ enum MESearchMethod
 enum CoeffScanType
 {
   SCAN_DIAG = 0,        ///< up-right diagonal scan
-#if HEVC_USE_MDCS
-  SCAN_HOR  = 1,        ///< horizontal first scan
-  SCAN_VER  = 2,        ///< vertical first scan
-#endif
+  SCAN_TRAV_HOR = 1,
+  SCAN_TRAV_VER = 2,
   SCAN_NUMBER_OF_TYPES
 };
 
@@ -615,16 +596,6 @@ enum CoeffScanGroupType
   SCAN_NUMBER_OF_GROUP_TYPES = 2
 };
 
-enum SignificanceMapContextType
-{
-  CONTEXT_TYPE_4x4    = 0,
-  CONTEXT_TYPE_8x8    = 1,
-  CONTEXT_TYPE_NxN    = 2,
-  CONTEXT_TYPE_SINGLE = 3,
-  CONTEXT_NUMBER_OF_TYPES = 4
-};
-
-#if HEVC_USE_SCALING_LISTS
 enum ScalingListMode
 {
   SCALING_LIST_OFF,
@@ -634,7 +605,8 @@ enum ScalingListMode
 
 enum ScalingListSize
 {
-  SCALING_LIST_2x2 = 0,
+  SCALING_LIST_1x1 = 0,
+  SCALING_LIST_2x2,
   SCALING_LIST_4x4,
   SCALING_LIST_8x8,
   SCALING_LIST_16x16,
@@ -642,23 +614,18 @@ enum ScalingListSize
   SCALING_LIST_64x64,
   SCALING_LIST_128x128,
   SCALING_LIST_SIZE_NUM,
-  SCALING_LIST_FIRST_CODED = SCALING_LIST_4x4, // smallest scaling coded as High Level Parameter
-  SCALING_LIST_LAST_CODED  = SCALING_LIST_32x32
+  //for user define matrix
+  SCALING_LIST_FIRST_CODED = SCALING_LIST_2x2,
+  SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
 };
-#endif
-
-// Slice / Slice segment encoding modes
-enum SliceConstraint
+enum ScalingList1dStartIdx
 {
-  NO_SLICES              = 0,          ///< don't use slices / slice segments
-  FIXED_NUMBER_OF_CTU    = 1,          ///< Limit maximum number of largest coding tree units in a slice / slice segments
-  FIXED_NUMBER_OF_BYTES  = 2,          ///< Limit maximum number of bytes in a slice / slice segment
-#if HEVC_TILES_WPP
-  FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
-  NUMBER_OF_SLICE_CONSTRAINT_MODES = 4
-#else
-  NUMBER_OF_SLICE_CONSTRAINT_MODES = 3
-#endif
+  SCALING_LIST_1D_START_2x2    = 0,
+  SCALING_LIST_1D_START_4x4    = 2,
+  SCALING_LIST_1D_START_8x8    = 8,
+  SCALING_LIST_1D_START_16x16  = 14,
+  SCALING_LIST_1D_START_32x32  = 20,
+  SCALING_LIST_1D_START_64x64  = 26,
 };
 
 // For use with decoded picture hash SEI messages, generated by encoder.
@@ -719,13 +686,9 @@ namespace Profile
 {
   enum Name
   {
-    NONE = 0,
-    MAIN = 1,
-    MAIN10 = 2,
-    MAINSTILLPICTURE = 3,
-    MAINREXT = 4,
-    HIGHTHROUGHPUTREXT = 5,
-    NEXT = 6
+    NONE        = 0,
+    MAIN_10     = 1,
+    MAIN_444_10 = 2
   };
 }
 
@@ -735,6 +698,7 @@ namespace Level
   {
     MAIN = 0,
     HIGH = 1,
+    NUMBER_OF_TIERS=2
   };
 
   enum Name
@@ -805,135 +769,45 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
-#if JVET_M0101_HLS
-  NAL_UNIT_CODED_SLICE_TRAIL = 0, // 0
-  NAL_UNIT_CODED_SLICE_STSA,      // 1
+  NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
+  NAL_UNIT_CODED_SLICE_STSA,        // 1
+  NAL_UNIT_CODED_SLICE_RADL,        // 2
+  NAL_UNIT_CODED_SLICE_RASL,        // 3
 
-  //KJS: keep RADL/RASL since there is no real decision on these types yet
-  NAL_UNIT_CODED_SLICE_RADL,      // 2   should be NAL_UNIT_RESERVED_VCL_2,
-  NAL_UNIT_CODED_SLICE_RASL,      // 3   should be NAL_UNIT_RESERVED_VCL_3,
-  
   NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
-  NAL_UNIT_RESERVED_VCL_7,
-  
-  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
-  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
-  NAL_UNIT_CODED_SLICE_CRA,         // 10
-  
-  NAL_UNIT_RESERVED_IRAP_VCL11,
-  NAL_UNIT_RESERVED_IRAP_VCL12,
-  NAL_UNIT_RESERVED_IRAP_VCL13,
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 7
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 8
+  NAL_UNIT_CODED_SLICE_CRA,         // 9
+  NAL_UNIT_CODED_SLICE_GDR,         // 10
 
-  NAL_UNIT_RESERVED_VCL14,
+  NAL_UNIT_RESERVED_IRAP_VCL_11,
+  NAL_UNIT_RESERVED_IRAP_VCL_12,
 
-#if HEVC_VPS
-  NAL_UNIT_VPS,                     // probably not coming back
-#else
-  NAL_UNIT_RESERVED_VCL15,
-#endif
-
-  NAL_UNIT_RESERVED_NVCL16,         // probably DPS
-
-  NAL_UNIT_SPS,                     // 17
-  NAL_UNIT_PPS,                     // 18
-  NAL_UNIT_APS,                     // 19 NAL unit type number needs to be reaaranged.
+  NAL_UNIT_DPS,                     // 13
+  NAL_UNIT_VPS,                     // 14
+  NAL_UNIT_SPS,                     // 15
+  NAL_UNIT_PPS,                     // 16
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+  NAL_UNIT_PH,                      // 19
   NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
   NAL_UNIT_EOS,                     // 21
   NAL_UNIT_EOB,                     // 22
   NAL_UNIT_PREFIX_SEI,              // 23
   NAL_UNIT_SUFFIX_SEI,              // 24
-  NAL_UNIT_FILLER_DATA,             // 25  keep: may be added with HRD 
 
-  NAL_UNIT_RESERVED_NVCL26,
-  NAL_UNIT_RESERVED_NVCL27,
+  NAL_UNIT_FD,                      // 25
+
+  NAL_UNIT_RESERVED_NVCL_26,
+  NAL_UNIT_RESERVED_NVCL_27,
+
   NAL_UNIT_UNSPECIFIED_28,
   NAL_UNIT_UNSPECIFIED_29,
   NAL_UNIT_UNSPECIFIED_30,
   NAL_UNIT_UNSPECIFIED_31,
-  NAL_UNIT_INVALID,
-#else
-  NAL_UNIT_CODED_SLICE_TRAIL_N = 0, // 0
-  NAL_UNIT_CODED_SLICE_TRAIL_R,     // 1
-
-  NAL_UNIT_CODED_SLICE_TSA_N,       // 2
-  NAL_UNIT_CODED_SLICE_TSA_R,       // 3
-
-  NAL_UNIT_CODED_SLICE_STSA_N,      // 4
-  NAL_UNIT_CODED_SLICE_STSA_R,      // 5
-
-  NAL_UNIT_CODED_SLICE_RADL_N,      // 6
-  NAL_UNIT_CODED_SLICE_RADL_R,      // 7
-
-  NAL_UNIT_CODED_SLICE_RASL_N,      // 8
-  NAL_UNIT_CODED_SLICE_RASL_R,      // 9
-
-  NAL_UNIT_RESERVED_VCL_N10,
-  NAL_UNIT_RESERVED_VCL_R11,
-  NAL_UNIT_RESERVED_VCL_N12,
-  NAL_UNIT_RESERVED_VCL_R13,
-  NAL_UNIT_RESERVED_VCL_N14,
-  NAL_UNIT_RESERVED_VCL_R15,
-
-  NAL_UNIT_CODED_SLICE_BLA_W_LP,    // 16
-  NAL_UNIT_CODED_SLICE_BLA_W_RADL,  // 17
-  NAL_UNIT_CODED_SLICE_BLA_N_LP,    // 18
-  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 19
-  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 20
-  NAL_UNIT_CODED_SLICE_CRA,         // 21
-  NAL_UNIT_RESERVED_IRAP_VCL22,
-  NAL_UNIT_RESERVED_IRAP_VCL23,
-
-  NAL_UNIT_RESERVED_VCL24,
-  NAL_UNIT_RESERVED_VCL25,
-  NAL_UNIT_RESERVED_VCL26,
-  NAL_UNIT_RESERVED_VCL27,
-  NAL_UNIT_RESERVED_VCL28,
-  NAL_UNIT_RESERVED_VCL29,
-  NAL_UNIT_RESERVED_VCL30,
-  NAL_UNIT_RESERVED_VCL31,
-
-#if HEVC_VPS
-  NAL_UNIT_VPS,                     // 32
-#else
-  NAL_UNIT_RESERVED_32,
-#endif
-  NAL_UNIT_SPS,                     // 33
-  NAL_UNIT_PPS,                     // 34
-  NAL_UNIT_APS,                     //NAL unit type number needs to be reaaranged.
-  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 35
-  NAL_UNIT_EOS,                     // 36
-  NAL_UNIT_EOB,                     // 37
-  NAL_UNIT_FILLER_DATA,             // 38
-  NAL_UNIT_PREFIX_SEI,              // 39
-  NAL_UNIT_SUFFIX_SEI,              // 40
-
-  NAL_UNIT_RESERVED_NVCL41,
-  NAL_UNIT_RESERVED_NVCL42,
-  NAL_UNIT_RESERVED_NVCL43,
-  NAL_UNIT_RESERVED_NVCL44,
-  NAL_UNIT_RESERVED_NVCL45,
-  NAL_UNIT_RESERVED_NVCL46,
-  NAL_UNIT_RESERVED_NVCL47,
-  NAL_UNIT_UNSPECIFIED_48,
-  NAL_UNIT_UNSPECIFIED_49,
-  NAL_UNIT_UNSPECIFIED_50,
-  NAL_UNIT_UNSPECIFIED_51,
-  NAL_UNIT_UNSPECIFIED_52,
-  NAL_UNIT_UNSPECIFIED_53,
-  NAL_UNIT_UNSPECIFIED_54,
-  NAL_UNIT_UNSPECIFIED_55,
-  NAL_UNIT_UNSPECIFIED_56,
-  NAL_UNIT_UNSPECIFIED_57,
-  NAL_UNIT_UNSPECIFIED_58,
-  NAL_UNIT_UNSPECIFIED_59,
-  NAL_UNIT_UNSPECIFIED_60,
-  NAL_UNIT_UNSPECIFIED_61,
-  NAL_UNIT_UNSPECIFIED_62,
-  NAL_UNIT_UNSPECIFIED_63,
-  NAL_UNIT_INVALID,
-#endif
+  NAL_UNIT_INVALID
 };
 
 #if SHARP_LUMA_DELTA_QP
@@ -944,13 +818,6 @@ enum LumaLevelToDQPMode
   LUMALVL_TO_DQP_NUM_MODES  = 2
 };
 #endif
-
-enum SaveLoadTag
-{
-  SAVE_LOAD_INIT = 0,
-  SAVE_ENC_INFO  = 1,
-  LOAD_ENC_INFO  = 2
-};
 
 enum MergeType
 {
@@ -967,12 +834,6 @@ enum TriangleSplit
   TRIANGLE_DIR_NUM
 };
 
-enum SharedMrgState
-{
-  NO_SHARE            = 0,
-  GEN_ON_SHARED_BOUND = 1,
-  SHARING             = 2
-};
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////
@@ -991,8 +852,9 @@ enum EncModeFeature
 enum ImvMode
 {
   IMV_OFF = 0,
-  IMV_DEFAULT,
+  IMV_FPEL,
   IMV_4PEL,
+  IMV_HPEL,
   NUM_IMV_MODES
 };
 
@@ -1041,6 +903,12 @@ struct BitDepths
   int recon[MAX_NUM_CHANNEL_TYPE]; ///< the bit depth as indicated in the SPS
 };
 
+enum PLTRunMode
+{
+  PLT_RUN_INDEX = 0,
+  PLT_RUN_COPY  = 1,
+  NUM_PLT_RUN   = 2
+};
 /// parameters for deblocking filter
 struct LFCUParam
 {
@@ -1357,13 +1225,13 @@ template<typename T>
 class dynamic_cache
 {
   std::vector<T*> m_cache;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t         m_cacheId;
 #endif
 
 public:
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   dynamic_cache()
   {
     static int cacheId = 0;
@@ -1395,7 +1263,7 @@ public:
     {
       ret = m_cache.back();
       m_cache.pop_back();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       CHECK( ret->cacheId != m_cacheId, "Putting item into wrong cache!" );
       CHECK( !ret->cacheUsed,           "Fetched an element that should've been in cache!!" );
 #endif
@@ -1405,7 +1273,7 @@ public:
       ret = new T;
     }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     ret->cacheId   = m_cacheId;
     ret->cacheUsed = false;
 
@@ -1415,7 +1283,7 @@ public:
 
   void cache( T* el )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );
     CHECK( el->cacheUsed,            "Putting cached item back into cache!" );
 
@@ -1427,7 +1295,7 @@ public:
 
   void cache( std::vector<T*>& vel )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( auto el : vel )
     {
       CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );
@@ -1455,137 +1323,6 @@ struct XUCache
 
 #define SIGN(x) ( (x) >= 0 ? 1 : -1 )
 
-#define MAX_NUM_ALF_CLASSES             25
-#define MAX_NUM_ALF_LUMA_COEFF          13
-#define MAX_NUM_ALF_CHROMA_COEFF        7
-#define MAX_ALF_FILTER_LENGTH           7
-#define MAX_NUM_ALF_COEFF               (MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1)
-
-enum AlfFilterType
-{
-  ALF_FILTER_5,
-  ALF_FILTER_7,
-  ALF_NUM_OF_FILTER_TYPES
-};
-
-struct AlfFilterShape
-{
-  AlfFilterShape( int size )
-    : filterLength( size ),
-    numCoeff( size * size / 4 + 1 ),
-    filterSize( size * size / 2 + 1 )
-  {
-    if( size == 5 )
-    {
-      pattern = {
-                 0,
-             1,  2,  3,
-         4,  5,  6,  5,  4,
-             3,  2,  1,
-                 0
-      };
-
-      weights = {
-                 2,
-              2, 2, 2,
-           2, 2, 1, 1
-      };
-
-      golombIdx = {
-                 0,
-              0, 1, 0,
-           0, 1, 2, 2
-      };
-
-      filterType = ALF_FILTER_5;
-    }
-    else if( size == 7 )
-    {
-      pattern = {
-                     0,
-                 1,  2,  3,
-             4,  5,  6,  7,  8,
-         9, 10, 11, 12, 11, 10, 9,
-             8,  7,  6,  5,  4,
-                 3,  2,  1,
-                     0
-      };
-
-      weights = {
-                    2,
-                2,  2,  2,
-            2,  2,  2,  2,  2,
-        2,  2,  2,  1,  1
-      };
-
-      golombIdx = {
-                    0,
-                 0, 1, 0,
-              0, 1, 2, 1, 0,
-           0, 1, 2, 3, 3
-      };
-
-      filterType = ALF_FILTER_7;
-    }
-    else
-    {
-      filterType = ALF_NUM_OF_FILTER_TYPES;
-      CHECK( 0, "Wrong ALF filter shape" );
-    }
-  }
-
-  AlfFilterType filterType;
-  int filterLength;
-  int numCoeff;      //TO DO: check whether we need both numCoeff and filterSize
-  int filterSize;
-  std::vector<int> pattern;
-  std::vector<int> weights;
-  std::vector<int> golombIdx;
-};
-
-struct AlfSliceParam
-{
-  bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
-  short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
-  short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
-  short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
-  bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
-  int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
-  bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
-  bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
-  std::vector<AlfFilterShape>* filterShapes;
-
-  AlfSliceParam()
-  {
-    reset();
-  }
-
-  void reset()
-  {
-    std::memset( enabledFlag, false, sizeof( enabledFlag ) );
-    std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
-    std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
-    std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
-    std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
-    numLumaFilters = 1;
-    alfLumaCoeffDeltaFlag = false;
-    alfLumaCoeffDeltaPredictionFlag = false;
-  }
-
-  const AlfSliceParam& operator = ( const AlfSliceParam& src )
-  {
-    std::memcpy( enabledFlag, src.enabledFlag, sizeof( enabledFlag ) );
-    std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
-    std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
-    std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
-    std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
-    numLumaFilters = src.numLumaFilters;
-    alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
-    alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
-    filterShapes = src.filterShapes;
-    return *this;
-  }
-};
 
 //! \}
 

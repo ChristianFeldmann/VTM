@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,10 +44,6 @@
 #include "CommonLib/dtrace_blockstatistics.h"
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-extern recursive_mutex g_cache_mutex;
-#endif
 
 #include <math.h>
 
@@ -107,6 +103,8 @@ void EncSlice::init( EncLib* pcEncLib, const SPS& sps )
 void
 EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
 {
+  m_pcRdCost->resetStore();
+  m_pcTrQuant->resetStore();
   // store lambda
   m_pcRdCost ->setLambda( dLambda, slice->getSPS()->getBitDepths() );
 
@@ -117,19 +115,17 @@ EncSlice::setUpLambda( Slice* slice, const double dLambda, int iQP)
   {
     const ComponentID compID = ComponentID( compIdx );
     int chromaQPOffset       = slice->getPPS()->getQpOffset( compID ) + slice->getSliceChromaQpDelta( compID );
-    int qpc                  = ( iQP + chromaQPOffset < 0 ) ? iQP : getScaledChromaQP( iQP + chromaQPOffset, m_pcCfg->getChromaFormatIdc() );
+    int qpc = slice->getSPS()->getMappedChromaQpValue(compID, iQP) + chromaQPOffset;
     double tmpWeight         = pow( 2.0, ( iQP - qpc ) / 3.0 );  // takes into account of the chroma qp mapping and chroma qp Offset
-    if( m_pcCfg->getDepQuantEnabledFlag() )
+#if JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT
+    if( m_pcCfg->getDepQuantEnabledFlag()  )
+#else
+    if( m_pcCfg->getDepQuantEnabledFlag() && !( m_pcCfg->getLFNST() ) )
+#endif
     {
       tmpWeight *= ( m_pcCfg->getGOPSize() >= 8 ? pow( 2.0, 0.1/3.0 ) : pow( 2.0, 0.2/3.0 ) );  // increase chroma weight for dependent quantization (in order to reduce bit rate shift from chroma to luma)
     }
     m_pcRdCost->setDistortionWeight( compID, tmpWeight );
-#if ENABLE_WPP_PARALLELISM
-    for( int jId = 1; jId < ( m_pcLib->getNumWppThreads() + m_pcLib->getNumWppExtraLines() ); jId++ )
-    {
-      m_pcLib->getRdCost( slice->getPic()->scheduler.getWppDataId( jId ) )->setDistortionWeight( compID, tmpWeight );
-    }
-#endif
     dLambdas[compIdx] = dLambda / tmpWeight;
   }
 
@@ -199,7 +195,7 @@ static double getAveragePictureEnergy (const CPelBuf picOrig, const uint32_t uBi
 }
 #endif
 
-static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, const uint32_t startAddr, const uint32_t boundingAddr,
+static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, Slice* const pcSlice,
                                     const int bitDepth,   uint32_t &avgLumaValue)
 {
   const PreCalcValues& pcv  = *pcPic->cs->pcv;
@@ -208,25 +204,20 @@ static int getGlaringColorQPOffset (Picture* const pcPic, const int ctuAddr, con
   const uint32_t chrHeight  = pcv.maxCUHeight >> getChannelTypeScaleY (CH_C, chrFmt);
   const int      midLevel   = 1 << (bitDepth - 1);
   int chrValue = MAX_INT;
-  avgLumaValue = (startAddr < boundingAddr) ? 0 : (uint32_t)pcPic->getOrigBuf().Y().computeAvg();
+  avgLumaValue = (pcSlice != nullptr) ? 0 : (uint32_t)pcPic->getOrigBuf().Y().computeAvg();
 
   if (ctuAddr >= 0) // luma
   {
     avgLumaValue = (uint32_t)pcPic->m_iOffsetCtu[ctuAddr];
   }
-  else if (startAddr < boundingAddr)
+  else if (pcSlice != nullptr)
   {
-    for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+    for (uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++)
     {
-#if HEVC_TILES_WPP
-      const uint32_t ctuRsAddr = pcPic->tileMap->getCtuTsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr = ctuTsAddr;
-#endif
-
+      uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
       avgLumaValue += pcPic->m_iOffsetCtu[ctuRsAddr];
     }
-    avgLumaValue = (avgLumaValue + ((boundingAddr - startAddr) >> 1)) / (boundingAddr - startAddr);
+    avgLumaValue = (avgLumaValue + (pcSlice->getNumCtuInSlice() >> 1)) / pcSlice->getNumCtuInSlice();
   }
 
   for (uint32_t comp = COMPONENT_Cb; comp < MAX_NUM_COMPONENT; comp++)
@@ -280,7 +271,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
         int     averageAdaptedLumaQP = Clip3 (0, MAX_QP, sliceQP); // mean slice QP
 #endif
 
-        averageAdaptedLumaQP += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, 0 /*startAddr*/, 0 /*boundingAddr*/, bitDepth, meanLuma);
+        averageAdaptedLumaQP += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, nullptr /*pcSlice*/, bitDepth, meanLuma);
 
         if (averageAdaptedLumaQP > MAX_QP
 #if SHARP_LUMA_DELTA_QP
@@ -301,7 +292,7 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
         savedLumaQP = averageAdaptedLumaQP;
       } // savedLumaQP < 0
 
-      const int lumaChromaMappingDQP = savedLumaQP - getScaledChromaQP (savedLumaQP, pcEncCfg->getChromaFormatIdc());
+      const int lumaChromaMappingDQP = savedLumaQP - pcSlice->getSPS()->getMappedChromaQpValue(compID, savedLumaQP);
 
       optSliceChromaQpOffset[comp-1] = std::min (3 + lumaChromaMappingDQP, adaptChromaQPOffset + lumaChromaMappingDQP);
     }
@@ -334,25 +325,24 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 {
   double dQP;
   double dLambda;
+  PicHeader *picHeader = pcPic->cs->picHeader;
+  pcPic->cs->resetPrevPLT(pcPic->cs->prevPLT);
 
   rpcSlice = pcPic->slices[0];
   rpcSlice->setSliceBits(0);
   rpcSlice->setPic( pcPic );
+  rpcSlice->setPicHeader( picHeader );
   rpcSlice->initSlice();
   int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
   if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
   {
-    rpcSlice->setPicOutputFlag(false);
+    picHeader->setPicOutputFlag(false);
   }
   else
   {
-    rpcSlice->setPicOutputFlag(true);
+    picHeader->setPicOutputFlag(true);
   }
   rpcSlice->setPOC( pocCurr );
-  rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
-#if HEVC_USE_SIGN_HIDING
-  rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
-#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;
@@ -420,22 +410,13 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     }
   }
 
+  rpcSlice->setDepth        ( depth );
   rpcSlice->setSliceType    ( eSliceType );
 
   // ------------------------------------------------------------------------------------------------------------------
   // Non-referenced frame marking
   // ------------------------------------------------------------------------------------------------------------------
 
-#if !JVET_M0101_HLS
-  if(pocLast == 0)
-  {
-    rpcSlice->setTemporalLayerNonReferenceFlag(false);
-  }
-  else
-  {
-    rpcSlice->setTemporalLayerNonReferenceFlag(!m_pcCfg->getGOPEntry(iGOPid).m_refPic);
-  }
-#endif
   pcPic->referenced = true;
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -448,11 +429,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   dQP = m_pcCfg->getBaseQP();
   if(eSliceType!=I_SLICE)
   {
-#if SHARP_LUMA_DELTA_QP
-    if (!(( m_pcCfg->getMaxDeltaQP() == 0) && (!m_pcCfg->getLumaLevelToDeltaQPMapping().isEnabled()) && (dQP == -rpcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA) ) && (rpcSlice->getPPS()->getTransquantBypassEnabledFlag())))
-#else
-    if (!(( m_pcCfg->getMaxDeltaQP() == 0 ) && (dQP == -rpcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA) ) && (rpcSlice->getPPS()->getTransquantBypassEnabledFlag())))
-#endif
     {
       dQP += m_pcCfg->getGOPEntry(iGOPid).m_QPOffset;
     }
@@ -490,89 +466,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     // compute QP value
     dQP = dOrigQP + ((iDQpIdx+1)>>1)*(iDQpIdx%2 ? -1 : 1);
-#if SHARP_LUMA_DELTA_QP
-    dLambda = calculateLambda(rpcSlice, iGOPid, depth, dQP, dQP, iQP );
-#else
     // compute lambda value
-    int    NumberBFrames = ( m_pcCfg->getGOPSize() - 1 );
-    int    SHIFT_QP = 12;
-
-    int    bitdepth_luma_qp_scale =
-      6
-      * (rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
-         - DISTORTION_PRECISION_ADJUSTMENT(rpcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-    double qp_temp = (double) dQP + bitdepth_luma_qp_scale - SHIFT_QP;
-#if FULL_NBIT
-    double qp_temp_orig = (double) dQP - SHIFT_QP;
-#endif
-    // Case #1: I or P-slices (key-frame)
-    double dQPFactor = m_pcCfg->getGOPEntry(iGOPid).m_QPFactor;
-    if ( eSliceType==I_SLICE )
-    {
-      if (m_pcCfg->getIntraQpFactor()>=0.0 && m_pcCfg->getGOPEntry(iGOPid).m_sliceType != I_SLICE)
-      {
-        dQPFactor=m_pcCfg->getIntraQpFactor();
-      }
-      else
-      {
-#if X0038_LAMBDA_FROM_QP_CAPABILITY
-        if(m_pcCfg->getLambdaFromQPEnable())
-        {
-          dQPFactor=0.57;
-        }
-        else
-        {
-#endif
-        double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(isField ? NumberBFrames/2 : NumberBFrames) );
-
-        dQPFactor=0.57*dLambda_scale;
-#if X0038_LAMBDA_FROM_QP_CAPABILITY
-        }
-#endif
-      }
-    }
-#if X0038_LAMBDA_FROM_QP_CAPABILITY
-    else if( m_pcCfg->getLambdaFromQPEnable() )
-    {
-      dQPFactor=0.57;
-    }
-#endif
-
-    dLambda = dQPFactor*pow( 2.0, qp_temp/3.0 );
-
-#if X0038_LAMBDA_FROM_QP_CAPABILITY
-    if(!m_pcCfg->getLambdaFromQPEnable() && depth>0)
+#if SHARP_LUMA_DELTA_QP
+    dLambda = calculateLambda (rpcSlice, iGOPid, dQP, dQP, iQP);
 #else
-    if ( depth>0 )
-#endif
-    {
-#if FULL_NBIT
-        dLambda *= Clip3( 2.00, 4.00, (qp_temp_orig / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
-#else
-        dLambda *= Clip3( 2.00, 4.00, (qp_temp / 6.0) ); // (j == B_SLICE && p_cur_frm->layer != 0 )
-#endif
-    }
-
-    // if hadamard is used in ME process
-    if ( !m_pcCfg->getUseHADME() && rpcSlice->getSliceType( ) != I_SLICE )
-    {
-      dLambda *= 0.95;
-    }
-
-#if X0038_LAMBDA_FROM_QP_CAPABILITY
-    double lambdaModifier;
-    if( rpcSlice->getSliceType( ) != I_SLICE || intraLambdaModifiers.empty())
-    {
-      lambdaModifier = m_pcCfg->getLambdaModifier( temporalId );
-    }
-    else
-    {
-      lambdaModifier = intraLambdaModifiers[ (temporalId < intraLambdaModifiers.size()) ? temporalId : (intraLambdaModifiers.size()-1) ];
-    }
-    dLambda *= lambdaModifier;
-#endif
-
-    iQP = Clip3( -rpcSlice->getSPS()->getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, (int) floor( dQP + 0.5 ) );
+    dLambda = initializeLambda (rpcSlice, iGOPid, int (dQP + 0.5), dQP);
+    iQP = Clip3 (-rpcSlice->getSPS()->getQpBDOffset (CHANNEL_TYPE_LUMA), MAX_QP, int (dQP + 0.5));
 #endif
 
     m_vdRdPicLambda[iDQpIdx] = dLambda;
@@ -605,6 +504,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     const bool bUseIntraOrPeriodicOffset = (rpcSlice->isIntra() && !rpcSlice->getSPS()->getIBCFlag()) || (m_pcCfg->getSliceChromaOffsetQpPeriodicity() > 0 && (rpcSlice->getPOC() % m_pcCfg->getSliceChromaOffsetQpPeriodicity()) == 0);
     int cbQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(false) : m_pcCfg->getGOPEntry(iGOPid).m_CbQPoffset;
     int crQP = bUseIntraOrPeriodicOffset ? m_pcCfg->getSliceChromaOffsetQpIntraOrPeriodic(true)  : m_pcCfg->getGOPEntry(iGOPid).m_CrQPoffset;
+    int cbCrQP = (cbQP + crQP) >> 1; // use floor of average chroma QP offset for joint-Cb/Cr coding
 
     cbQP = Clip3( -12, 12, cbQP + rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb) ) - rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb);
     crQP = Clip3( -12, 12, crQP + rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr) ) - rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr);
@@ -612,11 +512,17 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     CHECK(!(rpcSlice->getSliceChromaQpDelta(COMPONENT_Cb)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb)<=12 && rpcSlice->getSliceChromaQpDelta(COMPONENT_Cb)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cb)>=-12), "Unspecified error");
     rpcSlice->setSliceChromaQpDelta(COMPONENT_Cr, Clip3( -12, 12, crQP));
     CHECK(!(rpcSlice->getSliceChromaQpDelta(COMPONENT_Cr)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr)<=12 && rpcSlice->getSliceChromaQpDelta(COMPONENT_Cr)+rpcSlice->getPPS()->getQpOffset(COMPONENT_Cr)>=-12), "Unspecified error");
+    if (rpcSlice->getSPS()->getJointCbCrEnabledFlag())
+    {
+      cbCrQP = Clip3(-12, 12, cbCrQP + rpcSlice->getPPS()->getQpOffset(JOINT_CbCr)) - rpcSlice->getPPS()->getQpOffset(JOINT_CbCr);
+      rpcSlice->setSliceChromaQpDelta(JOINT_CbCr, Clip3( -12, 12, cbCrQP ));
+    }
   }
   else
   {
     rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
     rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
+    rpcSlice->setSliceChromaQpDelta( JOINT_CbCr, 0 );
   }
 #endif
 
@@ -634,6 +540,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   dLambda *= lambdaModifier;
 #endif
 
+#if RDOQ_CHROMA_LAMBDA
+  m_pcRdCost->setDistortionWeight (COMPONENT_Y, 1.0); // no chroma weighting for luma
+#endif
   setUpLambda(rpcSlice, dLambda, iQP);
 
 #if WCG_EXT
@@ -675,10 +584,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
+  rpcSlice->setSliceChromaQpDelta( JOINT_CbCr,   0 );
 #endif
-  rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getPpsRangeExtension().getChromaQpOffsetListEnabledFlag() );
-  rpcSlice->setNumRefIdx(REF_PIC_LIST_0,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
-  rpcSlice->setNumRefIdx(REF_PIC_LIST_1,m_pcCfg->getGOPEntry(iGOPid).m_numRefPicsActive);
+  rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag() );
+  rpcSlice->setNumRefIdx(REF_PIC_LIST_0, m_pcCfg->getRPLEntry(0, iGOPid).m_numRefPicsActive);
+  rpcSlice->setNumRefIdx(REF_PIC_LIST_1, m_pcCfg->getRPLEntry(1, iGOPid).m_numRefPicsActive);
 
   if ( m_pcCfg->getDeblockingFilterMetric() )
   {
@@ -713,8 +623,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setDeblockingFilterTcOffsetDiv2( 0 );
   }
 
-  rpcSlice->setDepth            ( depth );
-
   pcPic->layer =  temporalId;
   if(eSliceType==I_SLICE)
   {
@@ -722,114 +630,93 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   }
   rpcSlice->setTLayer( pcPic->layer );
 
-  rpcSlice->setSliceMode            ( m_pcCfg->getSliceMode()            );
-  rpcSlice->setSliceArgument        ( m_pcCfg->getSliceArgument()        );
-#if HEVC_DEPENDENT_SLICES
-  rpcSlice->setSliceSegmentMode     ( m_pcCfg->getSliceSegmentMode()     );
-  rpcSlice->setSliceSegmentArgument ( m_pcCfg->getSliceSegmentArgument() );
-#endif
-  rpcSlice->setMaxNumMergeCand      ( m_pcCfg->getMaxNumMergeCand()      );
-  rpcSlice->setMaxNumAffineMergeCand( m_pcCfg->getMaxNumAffineMergeCand() );
-  rpcSlice->setSplitConsOverrideFlag(false);
-  rpcSlice->setMinQTSize( rpcSlice->getSPS()->getMinQTSize(eSliceType));
-  rpcSlice->setMaxBTDepth( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxBTDepthI() : rpcSlice->getSPS()->getMaxBTDepth() );
-  rpcSlice->setMaxBTSize( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxBTSizeI() : rpcSlice->getSPS()->getMaxBTSize() );
-  rpcSlice->setMaxTTSize( rpcSlice->isIntra() ? rpcSlice->getSPS()->getMaxTTSizeI() : rpcSlice->getSPS()->getMaxTTSize() );
-  if ( eSliceType == I_SLICE && rpcSlice->getSPS()->getUseDualITree() )
+  rpcSlice->setDisableSATDForRD(false);
+
+  if( ( m_pcCfg->getIBCHashSearch() && m_pcCfg->getIBCMode() ) || m_pcCfg->getAllowDisFracMMVD() )
   {
-    rpcSlice->setMinQTSizeIChroma( rpcSlice->getSPS()->getMinQTSize(eSliceType, CHANNEL_TYPE_CHROMA) );
-    rpcSlice->setMaxBTDepthIChroma( rpcSlice->getSPS()->getMaxBTDepthIChroma() );
-    rpcSlice->setMaxBTSizeIChroma( rpcSlice->getSPS()->getMaxBTSizeIChroma() );
-    rpcSlice->setMaxTTSizeIChroma( rpcSlice->getSPS()->getMaxTTSizeIChroma() );
+    m_pcCuEncoder->getIbcHashMap().destroy();
+    m_pcCuEncoder->getIbcHashMap().init( pcPic->cs->pps->getPicWidthInLumaSamples(), pcPic->cs->pps->getPicHeightInLumaSamples() );
   }
 }
 
-
-#if SHARP_LUMA_DELTA_QP
-double EncSlice::calculateLambda( const Slice*     slice,
-                                  const int        GOPid, // entry in the GOP table
-                                  const int        depth, // slice GOP hierarchical depth.
-                                  const double     refQP, // initial slice-level QP
-                                  const double     dQP,   // initial double-precision QP
-                                        int       &iQP )  // returned integer QP.
+double EncSlice::initializeLambda(const Slice* slice, const int GOPid, const int refQP, const double dQP)
 {
-  enum   SliceType eSliceType    = slice->getSliceType();
-  const  bool      isField       = slice->getPic()->fieldPic;
-  const  int       NumberBFrames = ( m_pcCfg->getGOPSize() - 1 );
-  const  int       SHIFT_QP      = 12;
+  const int   bitDepthLuma  = slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA);
+  const int   bitDepthShift = 6 * (bitDepthLuma - 8 - DISTORTION_PRECISION_ADJUSTMENT(bitDepthLuma)) - 12;
+  const int   numberBFrames = m_pcCfg->getGOPSize() - 1;
+  const SliceType sliceType = slice->getSliceType();
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
-  const int temporalId=m_pcCfg->getGOPEntry(GOPid).m_temporalId;
-  const std::vector<double> &intraLambdaModifiers=m_pcCfg->getIntraLambdaModifier();
+  const int      temporalId = m_pcCfg->getGOPEntry(GOPid).m_temporalId;
+  const std::vector<double> &intraLambdaModifiers = m_pcCfg->getIntraLambdaModifier();
 #endif
-
-  int bitdepth_luma_qp_scale = 6
-                               * (slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8
-                                  - DISTORTION_PRECISION_ADJUSTMENT(slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA)));
-  double qp_temp = dQP + bitdepth_luma_qp_scale - SHIFT_QP;
-  // Case #1: I or P-slices (key-frame)
+  // case #1: I or P slices (key-frame)
   double dQPFactor = m_pcCfg->getGOPEntry(GOPid).m_QPFactor;
-  if ( eSliceType==I_SLICE )
+  double dLambda, lambdaModifier;
+
+  if (sliceType == I_SLICE)
   {
-    if (m_pcCfg->getIntraQpFactor()>=0.0 && m_pcCfg->getGOPEntry(GOPid).m_sliceType != I_SLICE)
+    if ((m_pcCfg->getIntraQpFactor() >= 0.0) && (m_pcCfg->getGOPEntry(GOPid).m_sliceType != I_SLICE))
     {
-      dQPFactor=m_pcCfg->getIntraQpFactor();
+      dQPFactor = m_pcCfg->getIntraQpFactor();
     }
     else
     {
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
-      if(m_pcCfg->getLambdaFromQPEnable())
+      if (m_pcCfg->getLambdaFromQPEnable())
       {
-        dQPFactor=0.57;
+        dQPFactor = 0.57;
       }
       else
-      {
 #endif
-        double dLambda_scale = 1.0 - Clip3( 0.0, 0.5, 0.05*(double)(isField ? NumberBFrames/2 : NumberBFrames) );
-        dQPFactor=0.57*dLambda_scale;
-#if X0038_LAMBDA_FROM_QP_CAPABILITY
-      }
-#endif
+      dQPFactor = 0.57 * (1.0 - Clip3(0.0, 0.5, 0.05 * double (slice->getPic()->fieldPic ? numberBFrames >> 1 : numberBFrames)));
     }
   }
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
-  else if( m_pcCfg->getLambdaFromQPEnable() )
+  else if (m_pcCfg->getLambdaFromQPEnable())
   {
-    dQPFactor=0.57;
+    dQPFactor = 0.57;
   }
 #endif
 
-  double dLambda = dQPFactor*pow( 2.0, qp_temp/3.0 );
+  dLambda = dQPFactor * pow(2.0, (dQP + bitDepthShift) / 3.0);
 
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
-  if( !(m_pcCfg->getLambdaFromQPEnable()) && depth>0 )
+  if (slice->getDepth() > 0 && !m_pcCfg->getLambdaFromQPEnable())
 #else
-  if ( depth>0 )
+  if (slice->getDepth() > 0)
 #endif
   {
-    double qp_temp_ref = refQP + bitdepth_luma_qp_scale - SHIFT_QP;
-    dLambda *= Clip3(2.00, 4.00, (qp_temp_ref / 6.0));   // (j == B_SLICE && p_cur_frm->layer != 0 )
+    dLambda *= Clip3(2.0, 4.0, ((refQP + bitDepthShift) / 6.0));
   }
-
-  // if hadamard is used in ME process
-  if ( !m_pcCfg->getUseHADME() && slice->getSliceType( ) != I_SLICE )
+  // if Hadamard is used in motion estimation process
+  if (!m_pcCfg->getUseHADME() && (sliceType != I_SLICE))
   {
     dLambda *= 0.95;
   }
-
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
-  double lambdaModifier;
-  if( eSliceType != I_SLICE || intraLambdaModifiers.empty())
+  if ((sliceType != I_SLICE) || intraLambdaModifiers.empty())
   {
-    lambdaModifier = m_pcCfg->getLambdaModifier( temporalId );
+    lambdaModifier = m_pcCfg->getLambdaModifier(temporalId);
   }
   else
   {
-    lambdaModifier = intraLambdaModifiers[ (temporalId < intraLambdaModifiers.size()) ? temporalId : (intraLambdaModifiers.size()-1) ];
+    lambdaModifier = intraLambdaModifiers[temporalId < intraLambdaModifiers.size() ? temporalId : intraLambdaModifiers.size() - 1];
   }
   dLambda *= lambdaModifier;
 #endif
 
-  iQP = Clip3( -slice->getSPS()->getQpBDOffset( CHANNEL_TYPE_LUMA ), MAX_QP, (int) floor( dQP + 0.5 ) );
+  return dLambda;
+}
+
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+double EncSlice::calculateLambda( const Slice*     slice,
+                                  const int        GOPid, // entry in the GOP table
+                                  const double     refQP, // initial slice-level QP
+                                  const double     dQP,   // initial double-precision QP
+                                        int       &iQP )  // returned integer QP.
+{
+  double dLambda = initializeLambda (slice, GOPid, int (refQP + 0.5), dQP);
+  iQP = Clip3 (-slice->getSPS()->getQpBDOffset (CHANNEL_TYPE_LUMA), MAX_QP, int (dQP + 0.5));
 
   if( m_pcCfg->getDepQuantEnabledFlag() )
   {
@@ -847,19 +734,22 @@ void EncSlice::resetQP( Picture* pic, int sliceQP, double lambda )
 
   // store lambda
   slice->setSliceQp( sliceQP );
+#if RDOQ_CHROMA_LAMBDA
+  m_pcRdCost->setDistortionWeight (COMPONENT_Y, 1.0); // no chroma weighting for luma
+#endif
   setUpLambda(slice, lambda, sliceQP);
+#if WCG_EXT
+  m_pcRdCost->saveUnadjustedLambda();
+#endif
 }
 
 #if ENABLE_QPA
 static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,        const PreCalcValues& pcv,
-                               const uint32_t startAddr,   const uint32_t boundingAddr, const bool useSharpLumaDQP,
+                               const bool useSharpLumaDQP,
                                const bool useFrameWiseQPA, const int previouslyAdaptedLumaQP = -1)
 {
   const int  bitDepth    = pcSlice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA);
   const int  iQPIndex    = pcSlice->getSliceQp(); // initial QP index for current slice, used in following loops
-#if HEVC_TILES_WPP
-  const TileMap& tileMap = *pcPic->tileMap;
-#endif
   bool   sliceQPModified = false;
   uint32_t   meanLuma    = MAX_UINT;
   double     hpEnerAvg   = 0.0;
@@ -868,13 +758,9 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
   if (!useFrameWiseQPA || previouslyAdaptedLumaQP < 0)  // mean visual activity value and luma value in each CTU
 #endif
   {
-    for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+    for (uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++)
     {
-#if HEVC_TILES_WPP
-      const uint32_t ctuRsAddr  = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr  = ctuTsAddr;
-#endif
+      uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
       const Position pos ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight);
       const CompArea ctuArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
       const CompArea fltArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x > 0 ? pos.x - 1 : 0, pos.y > 0 ? pos.y - 1 : 0, pcv.maxCUWidth + (pos.x > 0 ? 2 : 1), pcv.maxCUHeight + (pos.y > 0 ? 2 : 1))), pcPic->Y());
@@ -888,7 +774,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       pcPic->m_iOffsetCtu[ctuRsAddr] = pcPic->getOrigBuf (ctuArea).computeAvg();
     }
 
-    hpEnerAvg /= double (boundingAddr - startAddr);
+    hpEnerAvg /= double (pcSlice->getNumCtuInSlice());
   }
 #if GLOBAL_AVERAGING
   const double hpEnerPic = 1.0 / getAveragePictureEnergy (pcPic->getOrigBuf().Y(), bitDepth);  // inverse, speed
@@ -902,7 +788,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
     if (isChromaEnabled (pcPic->chromaFormat) && (iQPIndex < MAX_QP) && (previouslyAdaptedLumaQP < 0))
     {
-      iQPFixed += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, startAddr, boundingAddr, bitDepth, meanLuma);
+      iQPFixed += getGlaringColorQPOffset (pcPic, -1 /*ctuRsAddr*/, pcSlice, bitDepth, meanLuma);
 
       if (iQPFixed > MAX_QP
 #if SHARP_LUMA_DELTA_QP
@@ -919,17 +805,13 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       {
         meanLuma = 0;
 
-        for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+        for (uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++)
         {
- #if HEVC_TILES_WPP
-          const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
- #else
-          const uint32_t ctuRsAddr = ctuTsAddr;
- #endif
+          uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
 
           meanLuma += pcPic->m_iOffsetCtu[ctuRsAddr];  // CTU mean
         }
-        meanLuma = (meanLuma + ((boundingAddr - startAddr) >> 1)) / (boundingAddr - startAddr);
+        meanLuma = (meanLuma + (pcSlice->getNumCtuInSlice() >> 1)) / pcSlice->getNumCtuInSlice();
       }
       iQPFixed = Clip3 (0, MAX_QP, iQPFixed + lumaDQPOffset (meanLuma, bitDepth));
     }
@@ -951,26 +833,18 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       sliceQPModified = true;
     }
 
-    for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+    for (uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++)
     {
-#if HEVC_TILES_WPP
-      const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr = ctuTsAddr;
-#endif
+      uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
 
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPFixed; // fixed QPs
     }
   }
   else // CTU-wise QPA
   {
-    for (uint32_t ctuTsAddr = startAddr; ctuTsAddr < boundingAddr; ctuTsAddr++)
+    for (uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++)
     {
-#if HEVC_TILES_WPP
-      const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#else
-      const uint32_t ctuRsAddr = ctuTsAddr;
-#endif
+      uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
 
       int iQPAdapt = Clip3 (0, MAX_QP, iQPIndex + apprI3Log2 (pcPic->m_uEnerHpCtu[ctuRsAddr] * hpEnerPic));
 
@@ -980,7 +854,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
 
         if (isChromaEnabled (pcPic->chromaFormat))
         {
-          iQPAdapt += getGlaringColorQPOffset (pcPic, (int)ctuRsAddr, startAddr, boundingAddr, bitDepth, meanLuma);
+          iQPAdapt += getGlaringColorQPOffset (pcPic, (int)ctuRsAddr, nullptr, bitDepth, meanLuma);
 
           if (iQPAdapt > MAX_QP
 #if SHARP_LUMA_DELTA_QP
@@ -1001,7 +875,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
         }
 
 #endif
-        const uint32_t uRefScale  = g_invQuantScales[iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
+        const uint32_t uRefScale  = g_invQuantScales[0][iQPAdapt % 6] << ((iQPAdapt / 6) + bitDepth - 4);
         const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
         const Pel*     pSrc       = pcPic->getOrigBuf (subArea).buf;
         const SizeType iSrcStride = pcPic->getOrigBuf (subArea).stride;
@@ -1041,7 +915,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
       pcPic->m_iOffsetCtu[ctuRsAddr] = (Pel)iQPAdapt; // adapted QPs
 
 #if ENABLE_QPA_SUB_CTU
-      if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
+      if (pcv.widthInCtus > 1 && pcSlice->getCuQpDeltaSubdiv() == 0)  // reduce local DQP rate peaks
 #elif ENABLE_QPA_SUB_CTU
       if (pcv.widthInCtus > 1 && pcSlice->getPPS()->getMaxCuDQPDepth() == 0)  // reduce local DQP rate peaks
 #else
@@ -1065,7 +939,7 @@ static bool applyQPAdaptation (Picture* const pcPic,       Slice* const pcSlice,
         {
           pcPic->m_iOffsetCtu[ctuRsAddr - 1] = (Pel)iQPAdapt;
         }
-        if ((ctuTsAddr == boundingAddr - 1) && (ctuRsAddr > pcv.widthInCtus)) // last CTU in the given slice
+        if ((ctuIdx == pcSlice->getNumCtuInSlice() - 1) && (ctuRsAddr > pcv.widthInCtus)) // last CTU in the given slice
         {
           iQPAdapt = std::min (pcPic->m_iOffsetCtu[ctuRsAddr - 1], pcPic->m_iOffsetCtu[ctuRsAddr - pcv.widthInCtus]);
           if (pcPic->m_iOffsetCtu[ctuRsAddr] < (Pel)iQPAdapt)
@@ -1088,7 +962,7 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
   const int       bitDepth = cs.slice->getSPS()->getBitDepth (CHANNEL_TYPE_LUMA); // overall image bit-depth
   const int   adaptedCtuQP = pcPic ? pcPic->m_iOffsetCtu[ctuAddr] : cs.slice->getSliceQpBase();
 
-  if (!pcPic || cs.pps->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
+  if (!pcPic || cs.slice->getCuQpDeltaSubdiv() == 0) return adaptedCtuQP;
 
   for (unsigned addr = 0; addr < cs.picture->m_subCtuQP.size(); addr++)
   {
@@ -1099,12 +973,8 @@ static int applyQPAdaptationSubCtu (CodingStructure &cs, const UnitArea ctuArea,
 #if SHARP_LUMA_DELTA_QP
     const int   lumaCtuDQP = useSharpLumaDQP ? lumaDQPOffset ((uint32_t)pcPic->m_uEnerHpCtu[ctuAddr], bitDepth) : 0;
 #endif
-#if MAX_TB_SIZE_SIGNALLING
     const unsigned     mts = std::min (cs.sps->getMaxTbSize(), pcv.maxCUWidth);
-#else
-    const unsigned     mts = std::min<uint32_t> (MAX_TB_SIZEY, pcv.maxCUWidth);
-#endif
-    const unsigned mtsLog2 = (unsigned)g_aucLog2[mts];
+    const unsigned mtsLog2 = (unsigned)floorLog2(mts);
     const unsigned  stride = pcv.maxCUWidth >> mtsLog2;
     unsigned numAct = 0;    // number of block activities
     double   sumAct = 0.0; // sum of all block activities
@@ -1198,12 +1068,6 @@ void EncSlice::setSearchRange( Slice* pcSlice )
       iRefPOC = pcSlice->getRefPic(e, iRefIdx)->getPOC();
       int newSearchRange = Clip3(m_pcCfg->getMinSearchWindow(), iMaxSR, (iMaxSR*ADAPT_SR_SCALE*abs(iCurrPOC - iRefPOC)+iOffset)/iGOPSize);
       m_pcInterSearch->setAdaptiveSearchRange(iDir, iRefIdx, newSearchRange);
-#if ENABLE_WPP_PARALLELISM
-      for( int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++ )
-      {
-        m_pcLib->getInterSearch( jId )->setAdaptiveSearchRange( iDir, iRefIdx, newSearchRange );
-      }
-#endif
     }
   }
 }
@@ -1228,20 +1092,7 @@ void EncSlice::precompressSlice( Picture* pcPic )
 
   Slice* pcSlice        = pcPic->slices[getSliceSegmentIdx()];
 
-#if HEVC_DEPENDENT_SLICES
-  if (pcSlice->getDependentSliceSegmentFlag())
-  {
-    // if this is a dependent slice segment, then it was optimised
-    // when analysing the entire slice.
-    return;
-  }
-#endif
 
-  if (pcSlice->getSliceMode()==FIXED_NUMBER_OF_BYTES)
-  {
-    // TODO: investigate use of average cost per CTU so that this Slice Mode can be used.
-    THROW( "Unable to optimise Slice-level QP if Slice Mode is set to FIXED_NUMBER_OF_BYTES\n" );
-  }
 
   double     dPicRdCostBest = MAX_DOUBLE;
   uint32_t       uiQpIdxBest = 0;
@@ -1298,31 +1149,15 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
 {
   double         iSumHadSlice      = 0;
   Slice * const  pcSlice           = pcPic->slices[getSliceSegmentIdx()];
-#if HEVC_TILES_WPP
-  const TileMap &tileMap           = *pcPic->tileMap;
-#endif
   const PreCalcValues& pcv         = *pcPic->cs->pcv;
   const SPS     &sps               = *(pcSlice->getSPS());
   const int      shift             = sps.getBitDepth(CHANNEL_TYPE_LUMA)-8;
   const int      offset            = (shift>0)?(1<<(shift-1)):0;
 
-#if HEVC_DEPENDENT_SLICES
-  pcSlice->setSliceSegmentBits(0);
-#endif
 
-  uint32_t startCtuTsAddr, boundingCtuTsAddr;
-  xDetermineStartAndBoundingCtuTsAddr ( startCtuTsAddr, boundingCtuTsAddr, pcPic );
-
-#if HEVC_TILES_WPP
-  for( uint32_t ctuTsAddr = startCtuTsAddr, ctuRsAddr = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr);
-       ctuTsAddr < boundingCtuTsAddr;
-       ctuRsAddr = tileMap.getCtuTsToRsAddrMap(++ctuTsAddr) )
-#else
-  for( uint32_t ctuTsAddr = startCtuTsAddr, ctuRsAddr = startCtuTsAddr;
-       ctuTsAddr < boundingCtuTsAddr;
-       ctuRsAddr = ++ctuTsAddr )
-#endif
+  for( uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++ )
   {
+    uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
     Position pos( (ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight);
 
     const int height  = std::min( pcv.maxCUHeight, pcv.lumaHeight - pos.y );
@@ -1345,20 +1180,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   //   effectively disabling the slice-segment-mode.
 
   Slice* const pcSlice    = pcPic->slices[getSliceSegmentIdx()];
-  uint32_t  startCtuTsAddr;
-  uint32_t  boundingCtuTsAddr;
-
-#if HEVC_DEPENDENT_SLICES
-  pcSlice->setSliceSegmentBits(0);
-#endif
-  xDetermineStartAndBoundingCtuTsAddr ( startCtuTsAddr, boundingCtuTsAddr, pcPic );
-  if (bCompressEntireSlice)
-  {
-    boundingCtuTsAddr = pcSlice->getSliceCurEndCtuTsAddr();
-#if HEVC_DEPENDENT_SLICES
-    pcSlice->setSliceSegmentCurEndCtuTsAddr(boundingCtuTsAddr);
-#endif
-  }
 
   // initialize cost values - these are used by precompressSlice (they should be parameters).
   m_uiPicTotalBits  = 0;
@@ -1368,7 +1189,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
   m_CABACEstimator->initCtxModels( *pcSlice );
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   for( int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++ )
   {
     CABACWriter* cw = m_pcLib->getCABACEncoder( jId )->getCABACEstimator( pcSlice->getSPS() );
@@ -1392,17 +1213,6 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
 
   if ( bWp_explicit )
   {
-    //------------------------------------------------------------------------------
-    //  Weighted Prediction implemented at Slice level. SliceMode=2 is not supported yet.
-    //------------------------------------------------------------------------------
-#if HEVC_DEPENDENT_SLICES
-    if ( pcSlice->getSliceMode()==FIXED_NUMBER_OF_BYTES || pcSlice->getSliceSegmentMode()==FIXED_NUMBER_OF_BYTES )
-#else
-    if(pcSlice->getSliceMode() == FIXED_NUMBER_OF_BYTES)
-#endif
-    {
-      EXIT("Weighted Prediction is not yet supported with slice mode determined by max number of bins.");
-    }
 
     xEstimateWPParamSlice( pcSlice, m_pcCfg->getWeightedPredictionMethod() );
     pcSlice->initWpScaling(pcSlice->getSPS());
@@ -1412,45 +1222,8 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   }
 
 
-#if HEVC_DEPENDENT_SLICES
-#if HEVC_TILES_WPP
-  // Adjust initial state if this is the start of a dependent slice.
-  {
-    const TileMap&  tileMap                 = *pcPic->tileMap;
-    const uint32_t      ctuRsAddr               = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr);
-    const uint32_t      currentTileIdx          = tileMap.getTileIdxMap(ctuRsAddr);
-    const Tile&     currentTile             = tileMap.tiles[currentTileIdx];
-    const uint32_t      firstCtuRsAddrOfTile    = currentTile.getFirstCtuRsAddr();
-    if( pcSlice->getDependentSliceSegmentFlag() && ctuRsAddr != firstCtuRsAddrOfTile )
-    {
-      // This will only occur if dependent slice-segments (m_entropyCodingSyncContextState=true) are being used.
-      if( currentTile.getTileWidthInCtus() >= 2 || !m_pcCfg->getEntropyCodingSyncEnabledFlag() )
-      {
-        m_CABACEstimator->getCtx() = m_lastSliceSegmentEndContextState;
-        m_CABACEstimator->start();
-      }
-    }
-  }
-#else
-  // KJS: not sure if this works (but both dep slices and tiles shall be removed in VTM, so this code should not be used)
-  if( pcSlice->getDependentSliceSegmentFlag() && ctuRsAddr != startCtuTsAddr )
-  {
-    if( pcPic->cs->pcv->widthInCtus >= 2 || !m_pcCfg->getEntropyCodingSyncEnabledFlag() )
-    {
-      m_CABACEstimator->getCtx() = m_lastSliceSegmentEndContextState;
-      m_CABACEstimator->start();
-    }
-#endif
-#endif
 
-#if HEVC_DEPENDENT_SLICES
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     pcPic->m_prevQP[0] = pcPic->m_prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   CHECK( pcPic->m_prevQP[0] == std::numeric_limits<int>::max(), "Invalid previous QP" );
 
@@ -1459,34 +1232,27 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   cs.pcv      = pcSlice->getPPS()->pcv;
   cs.fracBits = 0;
 
-  if( startCtuTsAddr == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
+  if( pcSlice->getFirstCtuRsAddrInSlice() == 0 && ( pcSlice->getPOC() != m_pcCfg->getSwitchPOC() || -1 == m_pcCfg->getDebugCTU() ) )
   {
-    cs.initStructData (pcSlice->getSliceQp(), pcSlice->getPPS()->getTransquantBypassEnabledFlag());
+    cs.initStructData (pcSlice->getSliceQp());
   }
 
 #if ENABLE_QPA
-  if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && (boundingCtuTsAddr > startCtuTsAddr))
+  if (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl())
   {
-    if (applyQPAdaptation (pcPic, pcSlice, *cs.pcv, startCtuTsAddr, boundingCtuTsAddr, m_pcCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES,
+    if (applyQPAdaptation (pcPic, pcSlice, *cs.pcv, m_pcCfg->getLumaLevelToDeltaQPMapping().mode == LUMALVL_TO_DQP_NUM_MODES,
                            (m_pcCfg->getBaseQP() >= 38) || (m_pcCfg->getSourceWidth() <= 512 && m_pcCfg->getSourceHeight() <= 320), m_adaptedLumaQP))
     {
       m_CABACEstimator->initCtxModels (*pcSlice);
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       for (int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++)
       {
         CABACWriter* cw = m_pcLib->getCABACEncoder (jId)->getCABACEstimator (pcSlice->getSPS());
         cw->initCtxModels (*pcSlice);
       }
 #endif
-#if HEVC_DEPENDENT_SLICES
-      if (!pcSlice->getDependentSliceSegmentFlag())
-      {
-#endif
         pcPic->m_prevQP[0] = pcPic->m_prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-      }
-#endif
-      if (startCtuTsAddr == 0)
+      if (pcSlice->getFirstCtuRsAddrInSlice() == 0)
       {
         cs.currQP[0] = cs.currQP[1] = pcSlice->getSliceQp(); // cf code above
       }
@@ -1494,46 +1260,27 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
   }
 #endif // ENABLE_QPA
 
-#if ENABLE_WPP_PARALLELISM
-  bool bUseThreads = m_pcCfg->getNumWppThreads() > 1;
-  if( bUseThreads )
+  bool checkPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
+  if (checkPLTRatio)
   {
-    CHECK( startCtuTsAddr != 0 || boundingCtuTsAddr != pcPic->cs->pcv->sizeInCtus, "not intended" );
-
-    pcPic->cs->allocateVectorsAtPicLevel();
-
-    omp_set_num_threads( m_pcCfg->getNumWppThreads() + m_pcCfg->getNumWppExtraLines() );
-
-    #pragma omp parallel for schedule(static,1) if(bUseThreads)
-    for( int ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr += widthInCtus )
-    {
-      // wpp thread start
-      pcPic->scheduler.setWppThreadId();
-#if ENABLE_SPLIT_PARALLELISM
-      pcPic->scheduler.setSplitThreadId( 0 );
-#endif
-      encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, ctuTsAddr, ctuTsAddr + widthInCtus, m_pcLib );
-      // wpp thread stop
-    }
+    m_pcCuEncoder->getModeCtrl()->setPltEnc(true);
   }
   else
-#endif
+  {
+    bool doPlt = m_pcLib->getPltEnc();
+    m_pcCuEncoder->getModeCtrl()->setPltEnc(doPlt);
+  }
+
 #if K0149_BLOCK_STATISTICS
   const SPS *sps = pcSlice->getSPS();
   CHECK(sps == 0, "No SPS present");
   writeBlockStatisticsHeader(sps);
 #endif
   m_pcInterSearch->resetAffineMVList();
-  encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, startCtuTsAddr, boundingCtuTsAddr, m_pcLib );
-
-#if HEVC_DEPENDENT_SLICES
-  // store context state at the end of this slice-segment, in case the next slice is a dependent slice and continues using the CABAC contexts.
-  if( pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag() )
-  {
-    m_lastSliceSegmentEndContextState = m_CABACEstimator->getCtx();//ctx end of dep.slice
-  }
-#endif
-
+  m_pcInterSearch->resetUniMvList();
+  ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
+  encodeCtus( pcPic, bCompressEntireSlice, bFastDeltaQP, m_pcLib );
+  if (checkPLTRatio) m_pcLib->checkPltStats( pcPic );
 }
 
 void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr )
@@ -1542,25 +1289,18 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
   Slice* pcSlice                  = cs.slice;
   const PreCalcValues& pcv        = *cs.pcv;
   const uint32_t    widthInCtus   = pcv.widthInCtus;
-#if HEVC_TILES_WPP
-  const TileMap&  tileMap         = *pcPic->tileMap;
-#endif
   const uint32_t hashThreshold    = 20;
   uint32_t totalCtu               = 0;
   uint32_t hashRatio              = 0;
 
-  if ( !pcSlice->getSPS()->getDisFracMmvdEnabledFlag() )
+  if ( !pcSlice->getSPS()->getFpelMmvdEnabledFlag() )
   {
     return;
   }
 
-  for ( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
+  for ( uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++ )
   {
-#if HEVC_TILES_WPP
-    const uint32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
-#else
-    const uint32_t ctuRsAddr = ctuTsAddr;
-#endif
+    const uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
 
@@ -1573,32 +1313,64 @@ void EncSlice::checkDisFracMmvd( Picture* pcPic, uint32_t startCtuTsAddr, uint32
 
   if ( hashRatio > totalCtu * hashThreshold )
   {
-    pcSlice->setDisFracMMVD( true );
+    pcPic->cs->picHeader->setDisFracMMVD( true );
   }
-  if (!pcSlice->getDisFracMMVD()) {
+  if (!pcPic->cs->picHeader->getDisFracMMVD()) {
     bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
-    pcSlice->setDisFracMMVD( useIntegerMVD );
+    pcPic->cs->picHeader->setDisFracMMVD( useIntegerMVD );
   }
 }
 
-void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pEncLib )
+
+void EncSlice::setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma )
 {
-  //PROF_ACCUM_AND_START_NEW_SET( getProfilerCTU( pcPic, 0, 0 ), P_PIC_LEVEL );
-  //PROF_START( getProfilerCTU( cs.slice->isIntra(), pcPic->scheduler.getWppThreadId() ), P_PIC_LEVEL, toWSizeIdx( cs.pcv->maxCUWidth ), toHSizeIdx( cs.pcv->maxCUHeight ) );
+  bool              sgnFlag = true;
+
+  if( isChromaEnabled( cs.picture->chromaFormat) )
+  {
+    const CompArea  cbArea  = CompArea( COMPONENT_Cb, cs.picture->chromaFormat, Area(topLeftLuma,sizeLuma), true );
+    const CompArea  crArea  = CompArea( COMPONENT_Cr, cs.picture->chromaFormat, Area(topLeftLuma,sizeLuma), true );
+    const CPelBuf   orgCb   = cs.picture->getOrigBuf( cbArea );
+    const CPelBuf   orgCr   = cs.picture->getOrigBuf( crArea );
+    const int       x0      = ( cbArea.x > 0 ? 0 : 1 );
+    const int       y0      = ( cbArea.y > 0 ? 0 : 1 );
+    const int       x1      = ( cbArea.x + cbArea.width  < cs.picture->Cb().width  ? cbArea.width  : cbArea.width  - 1 );
+    const int       y1      = ( cbArea.y + cbArea.height < cs.picture->Cb().height ? cbArea.height : cbArea.height - 1 );
+    const int       cbs     = orgCb.stride;
+    const int       crs     = orgCr.stride;
+    const Pel*      pCb     = orgCb.buf + y0 * cbs;
+    const Pel*      pCr     = orgCr.buf + y0 * crs;
+    int64_t         sumCbCr = 0;
+
+    // determine inter-chroma transform sign from correlation between high-pass filtered (i.e., zero-mean) Cb and Cr planes
+    for( int y = y0; y < y1; y++, pCb += cbs, pCr += crs )
+    {
+      for( int x = x0; x < x1; x++ )
+      {
+        int cb = ( 12*(int)pCb[x] - 2*((int)pCb[x-1] + (int)pCb[x+1] + (int)pCb[x-cbs] + (int)pCb[x+cbs]) - ((int)pCb[x-1-cbs] + (int)pCb[x+1-cbs] + (int)pCb[x-1+cbs] + (int)pCb[x+1+cbs]) );
+        int cr = ( 12*(int)pCr[x] - 2*((int)pCr[x-1] + (int)pCr[x+1] + (int)pCr[x-crs] + (int)pCr[x+crs]) - ((int)pCr[x-1-crs] + (int)pCr[x+1-crs] + (int)pCr[x-1+crs] + (int)pCr[x+1+crs]) );
+        sumCbCr += cb*cr;
+      }
+    }
+
+    sgnFlag = ( sumCbCr < 0 );
+  }
+
+  cs.picHeader->setJointCbCrSignFlag( sgnFlag );
+}
+
+
+void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pEncLib )
+{
   CodingStructure&  cs            = *pcPic->cs;
   Slice* pcSlice                  = cs.slice;
   const PreCalcValues& pcv        = *cs.pcv;
   const uint32_t        widthInCtus   = pcv.widthInCtus;
-#if HEVC_TILES_WPP
-  const TileMap&  tileMap         = *pcPic->tileMap;
-#endif
 #if ENABLE_QPA
   const int iQPIndex              = pcSlice->getSliceQpBase();
 #endif
 
-#if ENABLE_WPP_PARALLELISM
-  const int       dataId          = pcPic->scheduler.getWppDataId();
-#elif ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   const int       dataId          = 0;
 #endif
   CABACWriter*    pCABACWriter    = pEncLib->getCABACEncoder( PARL_PARAM0( dataId ) )->getCABACEstimator( pcSlice->getSPS() );
@@ -1606,54 +1378,42 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   RdCost*         pRdCost         = pEncLib->getRdCost( PARL_PARAM0( dataId ) );
   EncCfg*         pCfg            = pEncLib;
   RateCtrl*       pRateCtrl       = pEncLib->getRateCtrl();
-#if ENABLE_WPP_PARALLELISM
-  // first version dont use ctx from above
-  pCABACWriter->initCtxModels( *pcSlice );
-#endif
 #if RDOQ_CHROMA_LAMBDA
   pTrQuant    ->setLambdas( pcSlice->getLambdas() );
 #else
   pTrQuant    ->setLambda ( pcSlice->getLambdas()[0] );
 #endif
   pRdCost     ->setLambda ( pcSlice->getLambdas()[0], pcSlice->getSPS()->getBitDepths() );
+#if WCG_EXT && ER_CHROMA_QP_WCG_PPS && ENABLE_QPA
+  if (!pCfg->getWCGChromaQPControl().isEnabled() && pCfg->getUsePerceptQPA() && !pCfg->getUseRateCtrl())
+  {
+    pRdCost->saveUnadjustedLambda();
+  }
+#endif
 
   int prevQP[2];
   int currQP[2];
   prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
   currQP[0] = currQP[1] = pcSlice->getSliceQp();
 
-#if HEVC_DEPENDENT_SLICES
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
-  if ( pcSlice->getSPS()->getDisFracMmvdEnabledFlag() ||
+  if ( pcSlice->getSPS()->getFpelMmvdEnabledFlag() ||
       (pcSlice->getSPS()->getIBCFlag() && m_pcCuEncoder->getEncCfg()->getIBCHashSearch()))
   {
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
-      cs.picture->getOrigBuf(COMPONENT_Y).rspSignal(m_pcLib->getReshaper()->getFwdLUT());
-    m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap( cs.picture->getOrigBuf() );
-    if (pcSlice->getSPS()->getUseReshaper() && m_pcLib->getReshaper()->getCTUFlag() && pcSlice->getSPS()->getIBCFlag())
-      cs.picture->getOrigBuf().copyFrom(cs.picture->getTrueOrigBuf());
+    m_pcCuEncoder->getIbcHashMap().rebuildPicHashMap(cs.picture->getTrueOrigBuf());
+    if (m_pcCfg->getIntraPeriod() != -1)
+    {
+      int hashBlkHitPerc = m_pcCuEncoder->getIbcHashMap().calHashBlkMatchPerc(cs.area.Y());
+      cs.slice->setDisableSATDForRD(hashBlkHitPerc > 59);
+    }
   }
-  checkDisFracMmvd( pcPic, startCtuTsAddr, boundingCtuTsAddr );
-  // for every CTU in the slice segment (may terminate sooner if there is a byte limit on the slice-segment)
-  for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
-  {
-#if HEVC_TILES_WPP
-    const int32_t ctuRsAddr = tileMap.getCtuTsToRsAddrMap( ctuTsAddr );
-#else
-    const int32_t ctuRsAddr = ctuTsAddr;
-#endif
 
-#if HEVC_TILES_WPP
+  // for every CTU in the slice
+  for( uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++ )
+  {
+    const int32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
+
     // update CABAC state
-    const uint32_t firstCtuRsAddrOfTile = tileMap.tiles[tileMap.getTileIdxMap(ctuRsAddr)].getFirstCtuRsAddr();
-    const uint32_t tileXPosInCtus       = firstCtuRsAddrOfTile % widthInCtus;
-#endif
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
 
@@ -1662,44 +1422,32 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
     if( pCfg->getSwitchPOC() != pcPic->poc || -1 == pCfg->getDebugCTU() )
-    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && ctuXPosInCtus == 0)
+    if ((cs.slice->getSliceType() != I_SLICE || cs.sps->getIBCFlag()) && cs.pps->ctuIsTileColBd( ctuXPosInCtus ))
     {
       cs.motionLut.lut.resize(0);
       cs.motionLut.lutIbc.resize(0);
-      cs.motionLut.lutShare.resize(0);
-      cs.motionLut.lutShareIbc.resize(0);
     }
 
-#if ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.wait( ctuXPosInCtus, ctuYPosInCtus );
-#endif
 
-#if HEVC_TILES_WPP
-    if (ctuRsAddr == firstCtuRsAddrOfTile)
+    if (cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && cs.pps->ctuIsTileRowBd( ctuYPosInCtus ))
     {
       pCABACWriter->initCtxModels( *pcSlice );
+      cs.resetPrevPLT(cs.prevPLT);
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
-    else if (ctuXPosInCtus == tileXPosInCtus && pEncLib->getEntropyCodingSyncEnabledFlag())
+    else if (cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && pEncLib->getEntropyCodingSyncEnabledFlag())
     {
-      // reset and then update contexts to the state at the end of the top-right CTU (if within current slice and tile).
+      // reset and then update contexts to the state at the end of the top CTU (if within current slice and tile).
       pCABACWriter->initCtxModels( *pcSlice );
-      if( cs.getCURestricted( pos.offset(pcv.maxCUWidth, -1), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+      cs.resetPrevPLT(cs.prevPLT);
+      if( cs.getCURestricted( pos.offset(0, -1), pos, pcSlice->getIndependentSliceIdx(), cs.pps->getTileIdx( pos ), CH_L ) )
       {
-        // Top-right is available, we use it.
+        // Top is available, we use it.
         pCABACWriter->getCtx() = pEncLib->m_entropyCodingSyncContextState;
       }
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
-#endif
 
-#if ENABLE_WPP_PARALLELISM
-    if( ctuXPosInCtus == 0 && ctuYPosInCtus > 0 && widthInCtus > 1 && ( pEncLib->getNumWppThreads() > 1 || pEncLib->getEnsureWppBitEqual() ) )
-    {
-      pCABACWriter->getCtx() = pEncLib->m_entropyCodingSyncContextStateVec[ctuYPosInCtus-1];  // last line
-    }
-#else
-#endif
 
 #if RDOQ_CHROMA_LAMBDA && ENABLE_QPA && !ENABLE_QPA_SUB_CTU
     double oldLambdaArray[MAX_NUM_COMPONENT] = {0.0};
@@ -1731,11 +1479,14 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         estQP     = Clip3( -pcSlice->getSPS()->getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, estQP );
 
         pRdCost->setLambda(estLambda, pcSlice->getSPS()->getBitDepths());
+#if WCG_EXT
+        pRdCost->saveUnadjustedLambda();
+#endif
 
 #if RDOQ_CHROMA_LAMBDA
-        // set lambda for RDOQ
-        const double chromaLambda = estLambda / pRdCost->getChromaWeight();
-        const double lambdaArray[MAX_NUM_COMPONENT] = { estLambda, chromaLambda, chromaLambda };
+        const double lambdaArray[MAX_NUM_COMPONENT] = {estLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Y),
+                                                       estLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cb),
+                                                       estLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cr)};
         pTrQuant->setLambdas( lambdaArray );
 #else
         pTrQuant->setLambda( estLambda );
@@ -1757,8 +1508,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if !ENABLE_QPA_SUB_CTU
 #if RDOQ_CHROMA_LAMBDA
       pTrQuant->getLambdas (oldLambdaArray); // save the old lambdas
-      const double chromaLambda = newLambda / pRdCost->getChromaWeight();
-      const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda, chromaLambda, chromaLambda};
+      const double lambdaArray[MAX_NUM_COMPONENT] = {newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Y),
+                                                     newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cb),
+                                                     newLambda / m_pcRdCost->getDistortionWeight (COMPONENT_Cr)};
       pTrQuant->setLambdas (lambdaArray);
 #else
       pTrQuant->setLambda (newLambda);
@@ -1769,17 +1521,17 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 #endif
 
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
-    if( updateGbiCodingOrder )
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    if( updateBcwCodingOrder )
     {
-      resetGbiCodingOrder(false, cs);
+      resetBcwCodingOrder(false, cs);
       m_pcInterSearch->initWeightIdxBits();
     }
-    if (pcSlice->getSPS()->getUseReshaper())
+    if (pcSlice->getSPS()->getUseLmcs())
     {
       m_pcCuEncoder->setDecCuReshaperInEncCU(m_pcLib->getReshaper(), pcSlice->getSPS()->getChromaFormatIdc());
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       for (int jId = 1; jId < m_pcLib->getNumCuEncStacks(); jId++)
       {
         m_pcLib->getCuEncoder(jId)->setDecCuReshaperInEncCU(m_pcLib->getReshaper(jId), pcSlice->getSPS()->getChromaFormatIdc());
@@ -1792,79 +1544,34 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 
   if (pCfg->getSwitchPOC() != pcPic->poc || ctuRsAddr >= pCfg->getDebugCTU())
-#if ENABLE_WPP_PARALLELISM
-    pEncLib->getCuEncoder( dataId )->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
-#else
     m_pcCuEncoder->compressCtu( cs, ctuArea, ctuRsAddr, prevQP, currQP );
-#endif
 
 #if K0149_BLOCK_STATISTICS
     getAndStoreBlockStatistics(cs, ctuArea);
 #endif
 
     pCABACWriter->resetBits();
-    pCABACWriter->coding_tree_unit( cs, ctuArea, prevQP, ctuRsAddr, true );
+    pCABACWriter->coding_tree_unit( cs, ctuArea, prevQP, ctuRsAddr, true, true );
     const int numberOfWrittenBits = int( pCABACWriter->getEstFracBits() >> SCALE_BITS );
 
-    // Calculate if this CTU puts us over slice bit size.
-    // cannot terminate if current slice/slice-segment would be 0 Ctu in size,
-    const uint32_t validEndOfSliceCtuTsAddr = ctuTsAddr + (ctuTsAddr == startCtuTsAddr ? 1 : 0);
-    // Set slice end parameter
-    if(pcSlice->getSliceMode()==FIXED_NUMBER_OF_BYTES && pcSlice->getSliceBits()+numberOfWrittenBits > (pcSlice->getSliceArgument()<<3))
-    {
-#if HEVC_DEPENDENT_SLICES
-      pcSlice->setSliceSegmentCurEndCtuTsAddr(validEndOfSliceCtuTsAddr);
-#endif
-      pcSlice->setSliceCurEndCtuTsAddr(validEndOfSliceCtuTsAddr);
-      boundingCtuTsAddr=validEndOfSliceCtuTsAddr;
-    }
-#if HEVC_DEPENDENT_SLICES
-    else if((!bCompressEntireSlice) && pcSlice->getSliceSegmentMode()==FIXED_NUMBER_OF_BYTES && pcSlice->getSliceSegmentBits()+numberOfWrittenBits > (pcSlice->getSliceSegmentArgument()<<3))
-    {
-      pcSlice->setSliceSegmentCurEndCtuTsAddr(validEndOfSliceCtuTsAddr);
-      boundingCtuTsAddr=validEndOfSliceCtuTsAddr;
-    }
-#endif
-    if (boundingCtuTsAddr <= ctuTsAddr)
-    {
-      break;
-    }
-
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #pragma omp critical
 #endif
     pcSlice->setSliceBits( ( uint32_t ) ( pcSlice->getSliceBits() + numberOfWrittenBits ) );
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #pragma omp critical
 #endif
-#if HEVC_DEPENDENT_SLICES
-    pcSlice->setSliceSegmentBits( pcSlice->getSliceSegmentBits() + numberOfWrittenBits );
-#endif
 
-#if HEVC_TILES_WPP
-    // Store probabilities of second CTU in line into buffer - used only if wavefront-parallel-processing is enabled.
-    if( ctuXPosInCtus == tileXPosInCtus + 1 && pEncLib->getEntropyCodingSyncEnabledFlag() )
+    // Store probabilities of first CTU in line into buffer - used only if wavefront-parallel-processing is enabled.
+    if( cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && pEncLib->getEntropyCodingSyncEnabledFlag() )
     {
       pEncLib->m_entropyCodingSyncContextState = pCABACWriter->getCtx();
     }
-#endif
-#if ENABLE_WPP_PARALLELISM
-    if( ctuXPosInCtus == 1 && ( pEncLib->getNumWppThreads() > 1 || pEncLib->getEnsureWppBitEqual() ) )
-    {
-      pEncLib->m_entropyCodingSyncContextStateVec[ctuYPosInCtus] = pCABACWriter->getCtx();
-    }
-#endif
 
-#if !ENABLE_WPP_PARALLELISM
     int actualBits = int(cs.fracBits >> SCALE_BITS);
     actualBits    -= (int)m_uiPicTotalBits;
-#endif
     if ( pCfg->getUseRateCtrl() )
     {
-#if ENABLE_WPP_PARALLELISM
-      int actualBits      = int( cs.fracBits >> SCALE_BITS );
-      actualBits         -= (int)m_uiPicTotalBits;
-#endif
       int actualQP        = g_RCInvalidQPValue;
       double actualLambda = pRdCost->getLambda();
       int numberOfEffectivePixels    = 0;
@@ -1910,13 +1617,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 #endif
 
-#if !ENABLE_WPP_PARALLELISM
     m_uiPicTotalBits += actualBits;
     m_uiPicDist       = cs.dist;
-#endif
-#if ENABLE_WPP_PARALLELISM
-    pcPic->scheduler.setReady( ctuXPosInCtus, ctuYPosInCtus );
-#endif
   }
 
   // this is wpp exclusive section
@@ -1930,20 +1632,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 {
 
   Slice *const pcSlice               = pcPic->slices[getSliceSegmentIdx()];
-#if HEVC_TILES_WPP
-  const TileMap& tileMap             = *pcPic->tileMap;
-#endif
-#if HEVC_DEPENDENT_SLICES
-  const uint32_t startCtuTsAddr          = pcSlice->getSliceSegmentCurStartCtuTsAddr();
-  const uint32_t boundingCtuTsAddr       = pcSlice->getSliceSegmentCurEndCtuTsAddr();
-  const bool depSliceSegmentsEnabled = pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag();
-#else
-  const uint32_t startCtuTsAddr          = pcSlice->getSliceCurStartCtuTsAddr();
-  const uint32_t boundingCtuTsAddr       = pcSlice->getSliceCurEndCtuTsAddr();
-#endif
-#if HEVC_TILES_WPP
   const bool wavefrontsEnabled       = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag();
-#endif
 
 
   // setup coding structure
@@ -1954,65 +1643,18 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   DTRACE( g_trace_ctx, D_HEADER, "=========== POC: %d ===========\n", pcSlice->getPOC() );
 
-#if HEVC_DEPENDENT_SLICES
-  if (depSliceSegmentsEnabled)
-  {
-#if HEVC_TILES_WPP
-    // modify initial contexts with previous slice segment if this is a dependent slice.
-    const uint32_t ctuRsAddr            = tileMap.getCtuTsToRsAddrMap( startCtuTsAddr );
-    const uint32_t currentTileIdx       = tileMap.getTileIdxMap(ctuRsAddr);
-    const Tile& currentTile         = tileMap.tiles[currentTileIdx];
-    const uint32_t firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
-
-    if( pcSlice->getDependentSliceSegmentFlag() && ctuRsAddr != firstCtuRsAddrOfTile )
-    {
-      if( currentTile.getTileWidthInCtus() >= 2 || !wavefrontsEnabled )
-      {
-        m_CABACWriter->getCtx() = m_lastSliceSegmentEndContextState;
-      }
-    }
-#else
-  // KJS: not sure if this works (but both dep slices and tiles shall be removed in VTM, so this code should not be used)
-  if( pcSlice->getDependentSliceSegmentFlag() && ctuRsAddr != startCtuTsAddr )
-  {
-    if( pcPic->cs->pcv->widthInCtus >= 2 || !m_pcCfg->getEntropyCodingSyncEnabledFlag() )
-    {
-        m_CABACWriter->getCtx() = m_lastSliceSegmentEndContextState;
-    }
-#endif
-  }
-
-  if( !pcSlice->getDependentSliceSegmentFlag() )
-  {
-#endif
     pcPic->m_prevQP[0] = pcPic->m_prevQP[1] = pcSlice->getSliceQp();
-#if HEVC_DEPENDENT_SLICES
-  }
-#endif
 
   const PreCalcValues& pcv = *cs.pcv;
   const uint32_t widthInCtus   = pcv.widthInCtus;
+  uint32_t uiSubStrm = 0;
 
-  // for every CTU in the slice segment...
-
-  for( uint32_t ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
+  // for every CTU in the slice...
+  for( uint32_t ctuIdx = 0; ctuIdx < pcSlice->getNumCtuInSlice(); ctuIdx++ )
   {
-#if HEVC_TILES_WPP
-    const uint32_t ctuRsAddr            = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
-    const Tile& currentTile         = tileMap.tiles[tileMap.getTileIdxMap(ctuRsAddr)];
-    const uint32_t firstCtuRsAddrOfTile = currentTile.getFirstCtuRsAddr();
-    const uint32_t tileXPosInCtus       = firstCtuRsAddrOfTile % widthInCtus;
-    const uint32_t tileYPosInCtus       = firstCtuRsAddrOfTile / widthInCtus;
-#else
-    const uint32_t ctuRsAddr            = ctuTsAddr;
-#endif
+    const uint32_t ctuRsAddr = pcSlice->getCtuAddrInSlice( ctuIdx );
     const uint32_t ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const uint32_t ctuYPosInCtus        = ctuRsAddr / widthInCtus;
-#if HEVC_TILES_WPP
-    const uint32_t uiSubStrm            = tileMap.getSubstreamForCtuAddr(ctuRsAddr, true, pcSlice);
-#else
-    const uint32_t uiSubStrm            = 0;
-#endif
 
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
@@ -2020,82 +1662,66 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     const UnitArea ctuArea (cs.area.chromaFormat, Area(pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight));
     m_CABACWriter->initBitstream( &pcSubstreams[uiSubStrm] );
 
-#if HEVC_TILES_WPP
     // set up CABAC contexts' state for this CTU
-    if (ctuRsAddr == firstCtuRsAddrOfTile)
+    if ( cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && cs.pps->ctuIsTileRowBd( ctuYPosInCtus ) )
     {
-      if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
+      if (ctuIdx != 0) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
+        cs.resetPrevPLT(cs.prevPLT);
       }
     }
-    else if (ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled)
+    else if (cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && wavefrontsEnabled)
     {
-      // Synchronize cabac probabilities with upper-right CTU if it's available and at the start of a line.
-      if (ctuTsAddr != startCtuTsAddr) // if it is the first CTU, then the entropy coder has already been reset
+      // Synchronize cabac probabilities with upper CTU if it's available and at the start of a line.
+      if (ctuIdx != 0) // if it is the first CTU, then the entropy coder has already been reset
       {
         m_CABACWriter->initCtxModels( *pcSlice );
+        cs.resetPrevPLT(cs.prevPLT);
       }
-      if( cs.getCURestricted( pos.offset( pcv.maxCUWidth, -1 ), pcSlice->getIndependentSliceIdx(), tileMap.getTileIdxMap( pos ), CH_L ) )
+      if( cs.getCURestricted( pos.offset( 0, -1 ), pos, pcSlice->getIndependentSliceIdx(), cs.pps->getTileIdx( pos ), CH_L ) )
       {
-        // Top-right is available, so use it.
+        // Top is available, so use it.
         m_CABACWriter->getCtx() = m_entropyCodingSyncContextState;
       }
     }
-#endif
 
-    bool updateGbiCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuTsAddr == startCtuTsAddr;
-    if( updateGbiCodingOrder )
+    bool updateBcwCodingOrder = cs.slice->getSliceType() == B_SLICE && ctuIdx == 0;
+    if( updateBcwCodingOrder )
     {
-      resetGbiCodingOrder(false, cs);
+      resetBcwCodingOrder(false, cs);
     }
 
     m_CABACWriter->coding_tree_unit( cs, ctuArea, pcPic->m_prevQP, ctuRsAddr );
 
-#if HEVC_TILES_WPP
-    // store probabilities of second CTU in line into buffer
-    if( ctuXPosInCtus == tileXPosInCtus + 1 && wavefrontsEnabled )
+    // store probabilities of first CTU in line into buffer
+    if( cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && wavefrontsEnabled )
     {
       m_entropyCodingSyncContextState = m_CABACWriter->getCtx();
     }
-#endif
 
     // terminate the sub-stream, if required (end of slice-segment, end of tile, end of wavefront-CTU-row):
-#if HEVC_TILES_WPP
-    if( ctuTsAddr + 1 == boundingCtuTsAddr ||
-         (  ctuXPosInCtus + 1 == tileXPosInCtus + currentTile.getTileWidthInCtus () &&
-          ( ctuYPosInCtus + 1 == tileYPosInCtus + currentTile.getTileHeightInCtus() || wavefrontsEnabled )
-         )
-       )
-#else
-    if( ctuTsAddr + 1 == boundingCtuTsAddr )
-#endif
+    bool isLastCTUsinSlice = ctuIdx == pcSlice->getNumCtuInSlice()-1;
+    bool isLastCTUinTile  = !isLastCTUsinSlice && cs.pps->getTileIdx( ctuRsAddr ) != cs.pps->getTileIdx( pcSlice->getCtuAddrInSlice( ctuIdx + 1 ) );
+    bool isLastCTUinWPP    = !isLastCTUsinSlice && !isLastCTUinTile && wavefrontsEnabled && cs.pps->ctuIsTileColBd( pcSlice->getCtuAddrInSlice( ctuIdx + 1 ) % cs.pps->getPicWidthInCtu() );
+    if (isLastCTUsinSlice || isLastCTUinTile || isLastCTUinWPP )         // this the the last CTU of the slice, tile, or WPP
     {
-      m_CABACWriter->end_of_slice();
+      m_CABACWriter->end_of_slice();  // end_of_slice_one_bit, end_of_tile_one_bit, or end_of_subset_one_bit
 
       // Byte-alignment in slice_data() when new tile
       pcSubstreams[uiSubStrm].writeByteAlignment();
 
-      // write sub-stream size
-      if( ctuTsAddr + 1 != boundingCtuTsAddr )
+      if (!isLastCTUsinSlice) //Byte alignment only when it is not the last substream in the slice
       {
-        pcSlice->addSubstreamSize( (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations() );
+        // write sub-stream size
+        pcSlice->addSubstreamSize((pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations());
       }
+      uiSubStrm++;
     }
   } // CTU-loop
 
-#if HEVC_DEPENDENT_SLICES
-  if( depSliceSegmentsEnabled )
-  {
-    m_lastSliceSegmentEndContextState = m_CABACWriter->getCtx();//ctx end of dep.slice
-  }
-#endif
 
-#if HEVC_DEPENDENT_SLICES
-  if (pcSlice->getPPS()->getCabacInitPresentFlag() && !pcSlice->getPPS()->getDependentSliceSegmentsEnabledFlag())
-#else
   if(pcSlice->getPPS()->getCabacInitPresentFlag())
-#endif
   {
     m_encCABACTableIdx = m_CABACWriter->getCtxInitId( *pcSlice );
   }
@@ -2107,160 +1733,6 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
 }
 
-#if HEVC_TILES_WPP
-void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, bool &haveReachedTileBoundary,
-                                                   Picture* pcPic, const int sliceMode, const int sliceArgument)
-#else
-void EncSlice::calculateBoundingCtuTsAddrForSlice(uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice,
-                                                   Picture* pcPic, const int sliceMode, const int sliceArgument)
-#endif
-{
-#if HEVC_TILES_WPP
-  Slice* pcSlice = pcPic->slices[getSliceSegmentIdx()];
-  const TileMap& tileMap = *( pcPic->tileMap );
-  const PPS &pps         = *( pcSlice->getPPS() );
-#endif
-  const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
-  boundingCtuTSAddrSlice=0;
-#if HEVC_TILES_WPP
-  haveReachedTileBoundary=false;
-#endif
-
-  switch (sliceMode)
-  {
-    case FIXED_NUMBER_OF_CTU:
-      {
-        uint32_t ctuAddrIncrement    = sliceArgument;
-        boundingCtuTSAddrSlice  = ((startCtuTSAddrSlice + ctuAddrIncrement) < numberOfCtusInFrame) ? (startCtuTSAddrSlice + ctuAddrIncrement) : numberOfCtusInFrame;
-      }
-      break;
-    case FIXED_NUMBER_OF_BYTES:
-      boundingCtuTSAddrSlice  = numberOfCtusInFrame; // This will be adjusted later if required.
-      break;
-#if HEVC_TILES_WPP
-    case FIXED_NUMBER_OF_TILES:
-      {
-        const uint32_t tileIdx        = tileMap.getTileIdxMap( tileMap.getCtuTsToRsAddrMap(startCtuTSAddrSlice) );
-        const uint32_t tileTotalCount = (pps.getNumTileColumnsMinus1()+1) * (pps.getNumTileRowsMinus1()+1);
-        uint32_t ctuAddrIncrement   = 0;
-
-        for(uint32_t tileIdxIncrement = 0; tileIdxIncrement < sliceArgument; tileIdxIncrement++)
-        {
-          if((tileIdx + tileIdxIncrement) < tileTotalCount)
-          {
-            uint32_t tileWidthInCtus    = tileMap.tiles[tileIdx + tileIdxIncrement].getTileWidthInCtus();
-            uint32_t tileHeightInCtus   = tileMap.tiles[tileIdx + tileIdxIncrement].getTileHeightInCtus();
-            ctuAddrIncrement       += (tileWidthInCtus * tileHeightInCtus);
-          }
-        }
-
-        boundingCtuTSAddrSlice  = ((startCtuTSAddrSlice + ctuAddrIncrement) < numberOfCtusInFrame) ? (startCtuTSAddrSlice + ctuAddrIncrement) : numberOfCtusInFrame;
-      }
-      break;
-#endif
-    default:
-      boundingCtuTSAddrSlice    = numberOfCtusInFrame;
-      break;
-  }
-
-#if HEVC_TILES_WPP
-  // Adjust for tiles and wavefronts.
-  const bool wavefrontsAreEnabled = pps.getEntropyCodingSyncEnabledFlag();
-
-  if ((sliceMode == FIXED_NUMBER_OF_CTU || sliceMode == FIXED_NUMBER_OF_BYTES) &&
-      (pps.getNumTileRowsMinus1() > 0 || pps.getNumTileColumnsMinus1() > 0))
-  {
-    const uint32_t ctuRsAddr                   = tileMap.getCtuTsToRsAddrMap(startCtuTSAddrSlice);
-    const uint32_t startTileIdx                = tileMap.getTileIdxMap(ctuRsAddr);
-    const Tile& startingTile               = tileMap.tiles[startTileIdx];
-    const uint32_t  tileStartTsAddr            = tileMap.getCtuRsToTsAddrMap(startingTile.getFirstCtuRsAddr());
-    const uint32_t  tileStartWidth             = startingTile.getTileWidthInCtus();
-    const uint32_t  tileStartHeight            = startingTile.getTileHeightInCtus();
-    const uint32_t tileLastTsAddr_excl        = tileStartTsAddr + tileStartWidth*tileStartHeight;
-    const uint32_t tileBoundingCtuTsAddrSlice = tileLastTsAddr_excl;
-    const uint32_t ctuColumnOfStartingTile     = ((startCtuTSAddrSlice-tileStartTsAddr)%tileStartWidth);
-    if (wavefrontsAreEnabled && ctuColumnOfStartingTile!=0)
-    {
-      // WPP: if a slice does not start at the beginning of a CTB row, it must end within the same CTB row
-      const uint32_t numberOfCTUsToEndOfRow            = tileStartWidth - ctuColumnOfStartingTile;
-      const uint32_t wavefrontTileBoundingCtuAddrSlice = startCtuTSAddrSlice + numberOfCTUsToEndOfRow;
-      if (wavefrontTileBoundingCtuAddrSlice < boundingCtuTSAddrSlice)
-      {
-        boundingCtuTSAddrSlice = wavefrontTileBoundingCtuAddrSlice;
-      }
-    }
-
-    if (tileBoundingCtuTsAddrSlice < boundingCtuTSAddrSlice)
-    {
-      boundingCtuTSAddrSlice = tileBoundingCtuTsAddrSlice;
-      haveReachedTileBoundary = true;
-    }
-  }
-  else if ((sliceMode == FIXED_NUMBER_OF_CTU || sliceMode == FIXED_NUMBER_OF_BYTES) && wavefrontsAreEnabled && ((startCtuTSAddrSlice % pcPic->cs->pcv->widthInCtus) != 0))
-  {
-    // Adjust for wavefronts (no tiles).
-    // WPP: if a slice does not start at the beginning of a CTB row, it must end within the same CTB row
-    boundingCtuTSAddrSlice = std::min(boundingCtuTSAddrSlice, startCtuTSAddrSlice - (startCtuTSAddrSlice % pcPic->cs->pcv->widthInCtus) + (pcPic->cs->pcv->widthInCtus));
-  }
-#endif
-}
-
-/** Determines the starting and bounding CTU address of current slice / dependent slice
- * \param [out] startCtuTsAddr
- * \param [out] boundingCtuTsAddr
- * \param [in]  pcPic
-
- * Updates startCtuTsAddr, boundingCtuTsAddr with appropriate CTU address
- */
-void EncSlice::xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, uint32_t& boundingCtuTsAddr, Picture* pcPic )
-{
-  Slice* pcSlice                 = pcPic->slices[getSliceSegmentIdx()];
-
-  // Non-dependent slice
-  uint32_t startCtuTsAddrSlice           = pcSlice->getSliceCurStartCtuTsAddr();
-#if HEVC_TILES_WPP
-  bool haveReachedTileBoundarySlice  = false;
-#endif
-  uint32_t boundingCtuTsAddrSlice;
-#if HEVC_TILES_WPP
-  calculateBoundingCtuTsAddrForSlice(startCtuTsAddrSlice, boundingCtuTsAddrSlice, haveReachedTileBoundarySlice, pcPic,
-                                     m_pcCfg->getSliceMode(), m_pcCfg->getSliceArgument());
-#else
-  calculateBoundingCtuTsAddrForSlice(startCtuTsAddrSlice, boundingCtuTsAddrSlice, pcPic,
-                                     m_pcCfg->getSliceMode(), m_pcCfg->getSliceArgument());
-#endif
-  pcSlice->setSliceCurEndCtuTsAddr(   boundingCtuTsAddrSlice );
-  pcSlice->setSliceCurStartCtuTsAddr( startCtuTsAddrSlice    );
-
-#if HEVC_DEPENDENT_SLICES
-  // Dependent slice
-  uint32_t startCtuTsAddrSliceSegment          = pcSlice->getSliceSegmentCurStartCtuTsAddr();
-#if HEVC_TILES_WPP
-  bool haveReachedTileBoundarySliceSegment = false;
-#endif
-  uint32_t boundingCtuTsAddrSliceSegment;
-#if HEVC_TILES_WPP
-  calculateBoundingCtuTsAddrForSlice(startCtuTsAddrSliceSegment, boundingCtuTsAddrSliceSegment, haveReachedTileBoundarySliceSegment, pcPic,
-                                     m_pcCfg->getSliceSegmentMode(), m_pcCfg->getSliceSegmentArgument());
-#else
-  calculateBoundingCtuTsAddrForSlice(startCtuTsAddrSliceSegment, boundingCtuTsAddrSliceSegment, pcPic,
-                                     m_pcCfg->getSliceSegmentMode(), m_pcCfg->getSliceSegmentArgument());
-#endif
-  if (boundingCtuTsAddrSliceSegment>boundingCtuTsAddrSlice)
-  {
-    boundingCtuTsAddrSliceSegment = boundingCtuTsAddrSlice;
-  }
-  pcSlice->setSliceSegmentCurEndCtuTsAddr( boundingCtuTsAddrSliceSegment );
-  pcSlice->setSliceSegmentCurStartCtuTsAddr(startCtuTsAddrSliceSegment);
-
-  // Make a joint decision based on reconstruction and dependent slice bounds
-  startCtuTsAddr    = std::max(startCtuTsAddrSlice, startCtuTsAddrSliceSegment);
-  boundingCtuTsAddr = boundingCtuTsAddrSliceSegment;
-#else
-  startCtuTsAddr = startCtuTsAddrSlice;
-  boundingCtuTsAddr = boundingCtuTsAddrSlice;
-#endif
-}
 
 double EncSlice::xGetQPValueAccordingToLambda ( double lambda )
 {

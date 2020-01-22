@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,9 +78,15 @@ struct AffineMVInfo
   int x, y, w, h;
 };
 
+struct BlkUniMvInfo
+{
+  Mv uniMvs[2][33];
+  int x, y, w, h;
+};
+
 typedef struct
 {
-  Mv acMvAffine4Para[2][2];
+  Mv acMvAffine4Para[2][3];
   Mv acMvAffine6Para[2][3];
   int16_t affine4ParaRefIdx[2];
   int16_t affine6ParaRefIdx[2];
@@ -108,16 +114,21 @@ private:
   CodingStructure **m_pSaveCS;
 
   ClpRng          m_lumaClpRng;
-  uint32_t        m_estWeightIdxBits[GBI_NUM];
-  GBiMotionParam  m_uniMotions;
+  uint32_t        m_estWeightIdxBits[BCW_NUM];
+  BcwMotionParam  m_uniMotions;
   bool            m_affineModeSelected;
   std::unordered_map< Position, std::unordered_map< Size, BlkRecord> > m_ctuRecord;
   AffineMVInfo       *m_affMVList;
   int             m_affMVListIdx;
   int             m_affMVListSize;
   int             m_affMVListMaxSize;
+  BlkUniMvInfo*   m_uniMvList;
+  int             m_uniMvListIdx;
+  int             m_uniMvListSize;
+  int             m_uniMvListMaxSize;
   Distortion      m_hevcCost;
   EncAffineMotion m_affineMotion;
+  PatentBvCand    m_defaultCachedBvs;
 protected:
   // interface to option
   EncCfg*         m_pcEncCfg;
@@ -140,6 +151,8 @@ protected:
   RefPicList      m_currRefPicList;
   int             m_currRefPicIndex;
   bool            m_skipFracME;
+  int             m_numHashMVStoreds[NUM_REF_PIC_LIST_01][MAX_NUM_REF];
+  Mv              m_hashMVStoreds[NUM_REF_PIC_LIST_01][MAX_NUM_REF][5];
 
   // Misc.
   Pel            *m_pTempPel;
@@ -150,8 +163,9 @@ protected:
   Mv              m_integerMv2Nx2N              [NUM_REF_PIC_LIST_01][MAX_NUM_REF];
 
   bool            m_isInitialized;
-  unsigned int    m_numBVs, m_numBV16s;
-  Mv              m_acBVs[IBC_NUM_CANDIDATES];
+
+  Mv              m_acBVs[2 * IBC_NUM_CANDIDATES];
+  unsigned int    m_numBVs;
   bool            m_useCompositeRef;
   Distortion      m_estMinDistSbt[NUMBER_SBT_MODE + 1]; // estimated minimum SSE value of the PU if using a SBT mode
   uint8_t         m_sbtRdoOrder[NUMBER_SBT_MODE];       // order of SBT mode in RDO
@@ -228,8 +242,81 @@ public:
       m_affMVListSize = std::min(m_affMVListSize + 1, m_affMVListMaxSize);
     }
   }
+  void resetUniMvList() { m_uniMvListIdx = 0; m_uniMvListSize = 0; }
+  void insertUniMvCands(CompArea blkArea, Mv cMvTemp[2][33])
+  {
+    BlkUniMvInfo* curMvInfo = m_uniMvList + m_uniMvListIdx;
+    int j = 0;
+    for (; j < m_uniMvListSize; j++)
+    {
+      BlkUniMvInfo* prevMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((blkArea.x == prevMvInfo->x) && (blkArea.y == prevMvInfo->y) && (blkArea.width == prevMvInfo->w) && (blkArea.height == prevMvInfo->h))
+      {
+        break;
+      }
+    }
+
+    if (j < m_uniMvListSize)
+    {
+      curMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+    }
+
+    ::memcpy(curMvInfo->uniMvs, cMvTemp, 2 * 33 * sizeof(Mv));
+    if (j == m_uniMvListSize)  // new element
+    {
+      curMvInfo->x = blkArea.x;
+      curMvInfo->y = blkArea.y;
+      curMvInfo->w = blkArea.width;
+      curMvInfo->h = blkArea.height;
+      m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
+      m_uniMvListIdx = (m_uniMvListIdx + 1) % (m_uniMvListMaxSize);
+    }
+  }
+  void savePrevUniMvInfo(CompArea blkArea, BlkUniMvInfo &tmpUniMvInfo, bool& isUniMvInfoSaved)
+  {
+    int j = 0;
+    BlkUniMvInfo* curUniMvInfo = nullptr;
+    for (; j < m_uniMvListSize; j++)
+    {
+      curUniMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((blkArea.x == curUniMvInfo->x) && (blkArea.y == curUniMvInfo->y) && (blkArea.width == curUniMvInfo->w) && (blkArea.height == curUniMvInfo->h))
+      {
+        break;
+      }
+    }
+
+    if (j < m_uniMvListSize)
+    {
+      isUniMvInfoSaved = true;
+      tmpUniMvInfo = *curUniMvInfo;
+    }
+  }
+  void addUniMvInfo(BlkUniMvInfo &tmpUniMVInfo)
+  {
+    int j = 0;
+    BlkUniMvInfo* prevUniMvInfo = nullptr;
+    for (; j < m_uniMvListSize; j++)
+    {
+      prevUniMvInfo = m_uniMvList + ((m_uniMvListIdx - 1 - j + m_uniMvListMaxSize) % (m_uniMvListMaxSize));
+      if ((tmpUniMVInfo.x == prevUniMvInfo->x) && (tmpUniMVInfo.y == prevUniMvInfo->y) && (tmpUniMVInfo.w == prevUniMvInfo->w) && (tmpUniMVInfo.h == prevUniMvInfo->h))
+      {
+        break;
+      }
+    }
+    if (j < m_uniMvListSize)
+    {
+      *prevUniMvInfo = tmpUniMVInfo;
+    }
+    else
+    {
+      m_uniMvList[m_uniMvListIdx] = tmpUniMVInfo;
+      m_uniMvListIdx = (m_uniMvListIdx + 1) % m_uniMvListMaxSize;
+      m_uniMvListSize = std::min(m_uniMvListSize + 1, m_uniMvListMaxSize);
+    }
+  }
   void resetSavedAffineMotion();
-  void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int gbiIdx );
+  void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int bcwIdx );
+  bool searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize);
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy
@@ -257,6 +344,7 @@ protected:
     uint8_t       ucPointNr;
     int         subShiftMode;
     unsigned    imvShift;
+    bool        useAltHpelIf;
     bool        inCtuSearch;
     bool        zeroMV;
   } IntTZSearchStruct;
@@ -281,14 +369,22 @@ public:
   bool  predIBCSearch           ( CodingUnit& cu, Partitioner& partitioner, const int localSearchRangeX, const int localSearchRangeY, IbcHashMap& ibcHashMap);
   void  xIntraPatternSearch         ( PredictionUnit& pu, IntTZSearchStruct&  cStruct, Mv& rcMv, Distortion&  ruiCost, Mv* cMvSrchRngLT, Mv* cMvSrchRngRB, Mv* pcMvPred);
   void  xSetIntraSearchRange        ( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, const int localSearchRangeX, const int localSearchRangeY, Mv& rcMvSrchRngLT, Mv& rcMvSrchRngRB);
-  void  resetIbcSearch() { m_numBVs = m_numBV16s = 0; }
+  void  resetIbcSearch()
+  {
+    for (int i = 0; i < IBC_NUM_CANDIDATES; i++)
+    {
+      m_defaultCachedBvs.m_bvCands[i].setZero();
+    }
+    m_defaultCachedBvs.currCnt = 0;
+  }
   void  xIBCEstimation   ( PredictionUnit& pu, PelUnitBuf& origBuf, Mv     *pcMvPred, Mv     &rcMv, Distortion &ruiCost, const int localSearchRangeX, const int localSearchRangeY);
   void  xIBCSearchMVCandUpdate  ( Distortion  uiSad, int x, int y, Distortion* uiSadBestCand, Mv* cMVCand);
   int   xIBCSearchMVChromaRefine( PredictionUnit& pu, int iRoiWidth, int iRoiHeight, int cuPelX, int cuPelY, Distortion* uiSadBestCand, Mv*     cMVCand);
   void addToSortList(std::list<BlockHash>& listBlockHash, std::list<int>& listCost, int cost, const BlockHash& blockHash);
   bool predInterHashSearch(CodingUnit& cu, Partitioner& partitioner, bool& isPerfectMatch);
   bool xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
-  int  xHashInterPredME(const PredictionUnit& pu, RefPicList currRefPicList, int currRefPicIndex, Mv bestMv[5]);
+  bool xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPicList, int& bestRefIndex, Mv& bestMv, Mv& bestMvd, int& bestMVPIndex, bool& isPerfectMatch);
+  void selectRectangleMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& listBlockHash, const BlockHash& currBlockHash, int width, int height, int idxNonSimple, unsigned int* &hashValues, int baseNum, int picWidth, int picHeight, bool isHorizontal, uint16_t* curHashPic);
   void selectMatchesInter(const MapIterator& itBegin, int count, std::list<BlockHash>& vecBlockHash, const BlockHash& currBlockHash);
 protected:
 
@@ -326,7 +422,7 @@ protected:
                                     RefPicList            eRefPicList,
                                     int                   iRefIdx
                                   );
-  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3], bool mvHighPrec = false );
+  uint32_t xCalcAffineMVBits      ( PredictionUnit& pu, Mv mvCand[3], Mv mvPred[3] );
 
   void xCopyAMVPInfo              ( AMVPInfo*   pSrc, AMVPInfo* pDst );
   uint32_t xGetMvpIdxBits             ( int iIdx, int iNum );
@@ -352,6 +448,8 @@ protected:
                                   );
 
   void xTZSearch                  ( const PredictionUnit& pu,
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -361,6 +459,8 @@ protected:
                                   );
 
   void xTZSearchSelective         ( const PredictionUnit& pu,
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -375,6 +475,8 @@ protected:
                                   );
 
   void xPatternSearchFast         ( const PredictionUnit& pu,
+                                    RefPicList            eRefPicList,
+                                    int                   iRefIdxPred,
                                     IntTZSearchStruct&    cStruct,
                                     Mv&                   rcMv,
                                     Distortion&           ruiSAD,
@@ -415,9 +517,9 @@ protected:
                                     Mv                    hevcMv[2][33]
                                   , Mv                    mvAffine4Para[2][33][3]
                                   , int                   refIdx4Para[2]
-                                  , uint8_t               gbiIdx = GBI_DEFAULT
-                                  , bool                  enforceGBiPred = false
-                                  , uint32_t              gbiIdxBits = 0
+                                  , uint8_t               bcwIdx = BCW_DEFAULT
+                                  , bool                  enforceBcwPred = false
+                                  , uint32_t              bcwIdxBits = 0
                                   );
 
   void xAffineMotionEstimation    ( PredictionUnit& pu,
@@ -447,24 +549,24 @@ protected:
   void xCopyAffineAMVPInfo        ( AffineAMVPInfo& src, AffineAMVPInfo& dst );
   void xCheckBestAffineMVP        ( PredictionUnit &pu, AffineAMVPInfo &affineAMVPInfo, RefPicList eRefPicList, Mv acMv[3], Mv acMvPred[3], int& riMVPIdx, uint32_t& ruiBits, Distortion& ruiCost );
 
-  Distortion xGetSymmetricCost( PredictionUnit& pu, PelUnitBuf& origBuf, RefPicList eCurRefPicList, const MvField& cCurMvField, MvField& cTarMvField , int gbiIdx );
+  Distortion xGetSymmetricCost( PredictionUnit& pu, PelUnitBuf& origBuf, RefPicList eCurRefPicList, const MvField& cCurMvField, MvField& cTarMvField , int bcwIdx );
 
   Distortion xSymmeticRefineMvSearch( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred
-    , RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion uiMinCost, int searchPattern, int nSearchStepShift, uint32_t uiMaxSearchRounds , int gbiIdx );
+    , RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion uiMinCost, int searchPattern, int nSearchStepShift, uint32_t uiMaxSearchRounds , int bcwIdx );
 
-  void xSymmetricMotionEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred, RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion& ruiCost, int gbiIdx );
+  void xSymmetricMotionEstimation( PredictionUnit& pu, PelUnitBuf& origBuf, Mv& rcMvCurPred, Mv& rcMvTarPred, RefPicList eRefPicList, MvField& rCurMvField, MvField& rTarMvField, Distortion& ruiCost, int bcwIdx );
 
   bool xReadBufferedAffineUniMv   ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv acMvPred[3], Mv acMv[3], uint32_t& ruiBits, Distortion& ruiCost
                                     , int& mvpIdx, const AffineAMVPInfo& aamvpi
   );
-  double xGetMEDistortionWeight   ( uint8_t gbiIdx, RefPicList eRefPicList);
+  double xGetMEDistortionWeight   ( uint8_t bcwIdx, RefPicList eRefPicList);
   bool xReadBufferedUniMv         ( PredictionUnit& pu, RefPicList eRefPicList, int32_t iRefIdx, Mv& pcMvPred, Mv& rcMv, uint32_t& ruiBits, Distortion& ruiCost);
 
-  void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps );
+  void xClipMv                    ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
 
 public:
   void resetBufferedUniMotions    () { m_uniMotions.reset(); }
-  uint32_t getWeightIdxBits       ( uint8_t gbiIdx ) { return m_estWeightIdxBits[gbiIdx]; }
+  uint32_t getWeightIdxBits       ( uint8_t bcwIdx ) { return m_estWeightIdxBits[bcwIdx]; }
   void initWeightIdxBits          ();
   void symmvdCheckBestMvp(
     PredictionUnit& pu,
@@ -472,7 +574,7 @@ public:
     Mv curMv,
     RefPicList curRefList,
     AMVPInfo amvpInfo[2][33],
-    int32_t gbiIdx,
+    int32_t bcwIdx,
     Mv cMvPredSym[2],
     int32_t mvpIdxSym[2],
     Distortion& bestCost,
@@ -480,7 +582,7 @@ public:
     );
 protected:
 
-  void xExtDIFUpSamplingH         ( CPelBuf* pcPattern );
+  void xExtDIFUpSamplingH(CPelBuf* pcPattern, bool useAltHpelIf);
   void xExtDIFUpSamplingQ         ( CPelBuf* pcPatternKey, Mv halfPelRef );
   uint32_t xDetermineBestMvp      ( PredictionUnit& pu, Mv acMvTemp[3], int& mvpIdx, const AffineAMVPInfo& aamvpi );
   // -------------------------------------------------------------------------------------------------------------------
@@ -498,8 +600,10 @@ public:
   void xEncodeInterResidualQT     (CodingStructure &cs, Partitioner &partitioner, const ComponentID &compID);
   void xEstimateInterResidualQT   (CodingStructure &cs, Partitioner &partitioner, Distortion *puiZeroDist = NULL
     , const bool luma = true, const bool chroma = true
+    , PelUnitBuf* orgResi = NULL
   );
   uint64_t xGetSymbolFracBitsInter  (CodingStructure &cs, Partitioner &partitioner);
+  uint64_t xCalcPuMeBits            (PredictionUnit& pu);
 
 };// END CLASS DEFINITION EncSearch
 

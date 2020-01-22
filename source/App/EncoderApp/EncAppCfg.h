@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,10 +40,22 @@
 
 #include "CommonLib/CommonDef.h"
 
+#include <map>
+template <class T1, class T2>
+static inline std::istream& operator >> (std::istream &in, std::map<T1, T2> &map);
+
+#include "Utilities/program_options_lite.h"
+
 #include "EncoderLib/EncCfg.h"
 #if EXTENSION_360_VIDEO
 #include "AppEncHelper360/TExt360AppEncCfg.h"
 #endif
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/DistortionMetric.H"
+#endif
+namespace po = df::program_options_lite;
+
 #include <sstream>
 #include <vector>
 //! \ingroup EncoderApp
@@ -122,35 +134,50 @@ protected:
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
+  bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
-  bool      m_bNoPcmConstraintFlag;
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
   bool      m_bNoAmvrConstraintFlag;
   bool      m_bNoBdofConstraintFlag;
+  bool      m_noDmvrConstraintFlag;
   bool      m_bNoCclmConstraintFlag;
   bool      m_bNoMtsConstraintFlag;
+  bool      m_noSbtConstraintFlag;
   bool      m_bNoAffineMotionConstraintFlag;
-  bool      m_bNoGbiConstraintFlag;
-  bool      m_bNoMhIntraConstraintFlag;
+  bool      m_bNoBcwConstraintFlag;
+  bool      m_noIbcConstraintFlag;
+  bool      m_bNoCiipConstraintFlag;
+  bool      m_noFPelMmvdConstraintFlag;
   bool      m_bNoTriangleConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
-  bool      m_bNoCurrPicRefConstraintFlag;
+  bool      m_noTransformSkipConstraintFlag;
+  bool      m_noBDPCMConstraintFlag;
+  bool      m_noJointCbCrConstraintFlag;
   bool      m_bNoQpDeltaConstraintFlag;
   bool      m_bNoDepQuantConstraintFlag;
   bool      m_bNoSignDataHidingConstraintFlag;
+  bool      m_noTrailConstraintFlag;
+  bool      m_noStsaConstraintFlag;
+  bool      m_noRaslConstraintFlag;
+  bool      m_noRadlConstraintFlag;
+  bool      m_noIdrConstraintFlag;
+  bool      m_noCraConstraintFlag;
+  bool      m_noGdrConstraintFlag;
+  bool      m_noApsConstraintFlag;
 
   // profile/level
   Profile::Name m_profile;
   Level::Tier   m_levelTier;
   Level::Name   m_level;
+  std::vector<uint32_t>  m_subProfile;
+  uint8_t      m_numSubProfile;
+
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
-  bool          m_onePictureOnlyConstraintFlag;
-  bool          m_lowerBitRateConstraintFlag;
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
   bool          m_nonPackedConstraintFlag;
@@ -160,10 +187,11 @@ protected:
   int       m_iIntraPeriod;                                   ///< period of I-slice (random access period)
   int       m_iDecodingRefreshType;                           ///< random access type
   int       m_iGOPSize;                                       ///< GOP size of hierarchical structure
-#if JCTVC_Y0038_PARAMS
+  int       m_drapPeriod;                                     ///< period of dependent RAP pictures
   bool      m_rewriteParamSets;                              ///< Flag to enable rewriting of parameter sets at random access points
-#endif
-  int       m_extraRPSs;                                      ///< extra RPSs added to handle CRA
+  RPLEntry  m_RPLList0[MAX_GOP];                               ///< the RPL entries from the config file
+  RPLEntry  m_RPLList1[MAX_GOP];                               ///< the RPL entries from the config file
+  bool      m_idrRefParamList;                                ///< indicates if reference picture list syntax elements are present in slice headers of IDR pictures
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
@@ -172,12 +200,14 @@ protected:
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
+  int       m_useBDPCM;
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
   bool      m_rdpcmEnabledFlag[NUMBER_OF_RDPCM_SIGNALLING_MODES];///< control flags for residual DPCM
   bool      m_persistentRiceAdaptationEnabledFlag;            ///< control flag for Golomb-Rice parameter adaptation over each slice
   bool      m_cabacBypassAlignmentEnabledFlag;
+  bool      m_ISP;
   bool      m_useFastISP;                                    ///< flag for enabling fast methods for ISP
 
   // coding quality
@@ -187,6 +217,8 @@ protected:
   double    m_fQP;                                            ///< QP value of key-picture (floating point)
 #endif
   int       m_iQP;                                            ///< QP value of key-picture (integer)
+  bool      m_useIdentityTableForNon420Chroma;
+  ChromaQpMappingTableParams m_chromaQpMappingTableParams;
 #if X0038_LAMBDA_FROM_QP_CAPABILITY
   int       m_intraQPOffset;                                  ///< QP offset for intra slice (integer)
   bool      m_lambdaFromQPEnable;                             ///< enable flag for QP:lambda fix
@@ -203,6 +235,8 @@ protected:
   int       m_crQpOffset;                                     ///< Chroma Cr QP Offset (0:default)
   int       m_cbQpOffsetDualTree;                             ///< Chroma Cb QP Offset for dual tree (overwrite m_cbQpOffset for dual tree)
   int       m_crQpOffsetDualTree;                             ///< Chroma Cr QP Offset for dual tree (overwrite m_crQpOffset for dual tree)
+  int       m_cbCrQpOffset;                                   ///< QP Offset for joint Cb-Cr mode
+  int       m_cbCrQpOffsetDualTree;                           ///< QP Offset for joint Cb-Cr mode (overwrite m_cbCrQpOffset for dual tree)
 #if ER_CHROMA_QP_WCG_PPS
   WCGChromaQPControl m_wcgChromaQpControl;                    ///< Wide-colour-gamut chroma QP control.
 #endif
@@ -225,27 +259,44 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
+  bool m_subPicPresentFlag;
+  unsigned m_numSubPics;
+  std::vector<uint32_t> m_subPicCtuTopLeftX;
+  std::vector<uint32_t> m_subPicCtuTopLeftY;
+  std::vector<uint32_t> m_subPicWidth;
+  std::vector<uint32_t> m_subPicHeight;
+  std::vector<uint32_t> m_subPicTreatedAsPicFlag;
+  std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
+  bool m_subPicIdPresentFlag;
+  bool m_subPicIdSignallingPresentFlag;
+  unsigned m_subPicIdLen;
+  std::vector<uint32_t> m_subPicId;
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
-  unsigned  m_uiMaxBTDepth;
-  unsigned  m_uiMaxBTDepthI;
-  unsigned  m_uiMaxBTDepthIChroma;
+  unsigned  m_uiMaxMTTHierarchyDepth;
+  unsigned  m_uiMaxMTTHierarchyDepthI;
+  unsigned  m_uiMaxMTTHierarchyDepthIChroma;
   bool      m_dualTree;
+  bool      m_LFNST;
+  bool      m_useFastLFNST;
   int       m_SubPuMvpMode;
   bool      m_Affine;
   bool      m_AffineType;
+  bool      m_PROF;
   bool      m_BIO;
   int       m_LMChroma;
-  bool      m_cclmCollocatedChromaFlag;
+  bool      m_horCollocatedChromaFlag;
+  bool      m_verCollocatedChromaFlag;
   int       m_MTS;                                            ///< XZ: Multiple Transform Set
   int       m_MTSIntraMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSInterMaxCand;                                ///< XZ: Number of additional candidates to test
   int       m_MTSImplicit;
   bool      m_SBT;                                            ///< Sub-Block Transform for inter blocks
-
+  int       m_SBTFast64WidthTh;
+  bool      m_SMVD;
   bool      m_compositeRefEnabled;
-  bool      m_GBi;
-  bool      m_GBiFast;
+  bool      m_bcw;
+  bool      m_BcwFast;
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool      m_LadfEnabed;
   int       m_LadfNumIntervals;
@@ -253,14 +304,20 @@ protected:
   int       m_LadfIntervalLowerBound[MAX_LADF_INTERVALS];
 #endif
 
-  bool      m_MHIntra;
+  bool      m_ciip;
   bool      m_Triangle;
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
   bool      m_AffineAmvrEncOpt;
   bool      m_DMVR;
-
+  bool      m_MMVD;
+  int       m_MmvdDisNum;
+  bool      m_rgbFormat;
+  bool      m_useColorTrans;
+  unsigned  m_PLTMode;
+  bool      m_JointCbCrMode;
+  bool      m_useChromaTS;
   unsigned  m_IBCMode;
   unsigned  m_IBCLocalSearchRangeX;
   unsigned  m_IBCLocalSearchRangeY;
@@ -273,10 +330,19 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-  bool      m_lumaReshapeEnable;
+  bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+  unsigned  m_numVerVirtualBoundaries;
+  unsigned  m_numHorVirtualBoundaries;
+  std::vector<unsigned> m_virtualBoundariesPosX;
+  std::vector<unsigned> m_virtualBoundariesPosY;
+  bool      m_lmcsEnabled;
   uint32_t  m_reshapeSignalType;
   uint32_t  m_intraCMD;
   ReshapeCW m_reshapeCW;
+  int       m_updateCtrl;
+  int       m_adpOption;
+  uint32_t  m_initialCW;
+  int       m_CSoffset;
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
@@ -290,6 +356,13 @@ protected:
   bool      m_useFastMrg;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
+  bool      m_useNonLinearAlfLuma;
+  bool      m_useNonLinearAlfChroma;
+  unsigned  m_maxNumAlfAlternativesChroma;
+  bool      m_MRL;
+  bool      m_MIP;
+  bool      m_useFastMIP;
+  int       m_fastLocalDualTreeMode;
 
 
   int       m_numSplitThreads;
@@ -298,9 +371,7 @@ protected:
   int       m_numWppExtraLines;
   bool      m_ensureWppBitEqual;
 
-#if MAX_TB_SIZE_SIGNALLING
   int       m_log2MaxTbSize;
-#endif
   // coding tools (bit-depth)
   int       m_inputBitDepth   [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of input file
   int       m_outputBitDepth  [MAX_NUM_CHANNEL_TYPE];         ///< bit-depth of output file
@@ -312,8 +383,6 @@ protected:
   //coding tools (chroma format)
   ChromaFormat m_chromaFormatIDC;
 
-  // coding tools (PCM bit-depth)
-  bool      m_bPCMInputBitDepthFlag;                          ///< 0: PCM bit-depth is internal bit-depth. 1: PCM bit-depth is input bit-depth.
 
   // coding tool (SAO)
   bool      m_bUseSAO;
@@ -322,9 +391,7 @@ protected:
   double    m_saoEncodingRateChroma;                          ///< The SAO early picture termination rate to use for chroma (when m_SaoEncodingRate is >0). If <=0, use results for luma.
   int       m_maxNumOffsetsPerPic;                            ///< SAO maximun number of offset per picture
   bool      m_saoCtuBoundary;                                 ///< SAO parameter estimation using non-deblocked pixels for CTU bottom and right boundary areas
-#if K0238_SAO_GREEDY_MERGE_ENCODING
   bool      m_saoGreedyMergeEnc;                              ///< SAO greedy merge encoding algorithm
-#endif
   // coding tools (loop filter)
   bool      m_bLoopFilterDisable;                             ///< flag for using deblocking filter
   bool      m_loopFilterOffsetInPPS;                         ///< offset for deblocking filter in 0 = slice header, 1 = PPS
@@ -335,11 +402,6 @@ protected:
 #else
   bool      m_DeblockingFilterMetric;                         ///< blockiness metric in encoder
 #endif
-  // coding tools (PCM)
-  bool      m_usePCM;                                         ///< flag for using IPCM
-  uint32_t      m_pcmLog2MaxSize;                                 ///< log2 of maximum PCM block size
-  uint32_t      m_uiPCMLog2MinSize;                               ///< log2 of minimum PCM block size
-  bool      m_bPCMFilterDisableFlag;                          ///< PCM filter disable flag
   bool      m_enableIntraReferenceSmoothing;                  ///< flag for enabling(default)/disabling intra reference smoothing/filtering
 
   // coding tools (encoder-only parameters)
@@ -364,99 +426,153 @@ protected:
   bool      m_useFastDecisionForMerge;                        ///< flag for using Fast Decision Merge RD-Cost
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
-  SliceConstraint m_sliceMode;
-  int             m_sliceArgument;                            ///< argument according to selected slice mode
-#if HEVC_DEPENDENT_SLICES
-  SliceConstraint m_sliceSegmentMode;
-  int             m_sliceSegmentArgument;                     ///< argument according to selected slice segment mode
-#endif
-
-  bool      m_bLFCrossSliceBoundaryFlag;  ///< 1: filter across slice boundaries 0: do not filter across slice boundaries
-#if HEVC_TILES_WPP
-  bool      m_bLFCrossTileBoundaryFlag;   ///< 1: filter across tile boundaries  0: do not filter across tile boundaries
-  bool      m_tileUniformSpacingFlag;
-  int       m_numTileColumnsMinus1;
-  int       m_numTileRowsMinus1;
-  std::vector<int> m_tileColumnWidth;
-  std::vector<int> m_tileRowHeight;
+  bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
+  std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
+  std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
+  bool      m_rasterSliceFlag;                                ///< indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)
+  std::vector<uint32_t> m_rectSlicePos;                       ///< rectangular slice positions (pairs of top-left CTU address followed by bottom-right CTU address)
+  int       m_rectSliceFixedWidth;                            ///< fixed rectangular slice width in units of tiles (0: disable this feature and use RectSlicePositions instead)
+  int       m_rectSliceFixedHeight;                           ///< fixed rectangular slice height in units of tiles (0: disable this feature and use RectSlicePositions instead)
+  std::vector<uint32_t> m_rasterSliceSize;                    ///< raster-scan slice sizes in units of tiles (last size will be repeated uniformly to cover any remaining tiles in the picture)
+  bool      m_disableLFCrossTileBoundaryFlag;                 ///< 0: filter across tile boundaries  1: do not filter across tile boundaries
+  bool      m_disableLFCrossSliceBoundaryFlag;                ///< 0: filter across slice boundaries 1: do not filter across slice boundaries
+  uint32_t  m_numSlicesInPic;                                 ///< derived number of rectangular slices in the picture (raster-scan slice specified at slice level)
+  bool      m_tileIdxDeltaPresentFlag;                        ///< derived tile index delta present flag
+  std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
+  uint32_t  m_numTileCols;                                    ///< derived number of tile columns
+  uint32_t  m_numTileRows;                                    ///< derived number of tile rows
+  bool      m_subPicPartitionFlag;
+  bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-#endif
 
-  bool      m_bUseConstrainedIntraPred;                       ///< flag for using constrained intra prediction
+
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
 
   HashType  m_decodedPictureHashSEIType;                      ///< Checksum mode for decoded picture hash SEI message
+#if HEVC_SEI
   bool      m_recoveryPointSEIEnabled;
+#endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
-  bool      m_toneMappingInfoSEIEnabled;
-  bool      m_chromaResamplingFilterSEIenabled;
-  int       m_chromaResamplingHorFilterIdc;
-  int       m_chromaResamplingVerFilterIdc;
-  int       m_toneMapId;
-  bool      m_toneMapCancelFlag;
-  bool      m_toneMapPersistenceFlag;
-  int       m_toneMapCodedDataBitDepth;
-  int       m_toneMapTargetBitDepth;
-  int       m_toneMapModelId;
-  int       m_toneMapMinValue;
-  int       m_toneMapMaxValue;
-  int       m_sigmoidMidpoint;
-  int       m_sigmoidWidth;
-  int       m_numPivots;
-  int       m_cameraIsoSpeedIdc;
-  int       m_cameraIsoSpeedValue;
-  int       m_exposureIndexIdc;
-  int       m_exposureIndexValue;
-  bool      m_exposureCompensationValueSignFlag;
-  int       m_exposureCompensationValueNumerator;
-  int       m_exposureCompensationValueDenomIdc;
-  int       m_refScreenLuminanceWhite;
-  int       m_extendedRangeWhiteLevel;
-  int       m_nominalBlackLevelLumaCodeValue;
-  int       m_nominalWhiteLevelLumaCodeValue;
-  int       m_extendedWhiteLevelLumaCodeValue;
-  int*      m_startOfCodedInterval;
-  int*      m_codedPivotValue;
-  int*      m_targetPivotValue;
+  bool      m_bpDeltasGOPStructure;
+  bool      m_decodingUnitInfoSEIEnabled;
+  bool      m_frameFieldInfoSEIEnabled;
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
-  bool      m_segmentedRectFramePackingSEIEnabled;
-  bool      m_segmentedRectFramePackingSEICancel;
-  int       m_segmentedRectFramePackingSEIType;
-  bool      m_segmentedRectFramePackingSEIPersistence;
-  int       m_displayOrientationSEIAngle;
-  bool      m_temporalLevel0IndexSEIEnabled;
-  bool      m_gradualDecodingRefreshInfoEnabled;
-  int       m_noDisplaySEITLayer;
-  bool      m_decodingUnitInfoSEIEnabled;
-  bool      m_SOPDescriptionSEIEnabled;
-  bool      m_scalableNestingSEIEnabled;
-  bool      m_tmctsSEIEnabled;
-  bool      m_timeCodeSEIEnabled;
-  int       m_timeCodeSEINumTs;
-  SEITimeSet m_timeSetArray[MAX_TIMECODE_SEI_SETS];
-  bool      m_kneeSEIEnabled;
-  int       m_kneeSEIId;
-  bool      m_kneeSEICancelFlag;
-  bool      m_kneeSEIPersistenceFlag;
-  int       m_kneeSEIInputDrange;
-  int       m_kneeSEIInputDispLuminance;
-  int       m_kneeSEIOutputDrange;
-  int       m_kneeSEIOutputDispLuminance;
-  int       m_kneeSEINumKneePointsMinus1;
-  int*      m_kneeSEIInputKneePoint;
-  int*      m_kneeSEIOutputKneePoint;
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   int       m_preferredTransferCharacteristics;
 #endif
-  uint32_t      m_greenMetadataType;
-  uint32_t      m_xsdMetricType;
+  // film grain characterstics sei
+  bool      m_fgcSEIEnabled;
+  bool      m_fgcSEICancelFlag;
+  bool      m_fgcSEIPersistenceFlag;
+  uint32_t  m_fgcSEIModelID;
+  bool      m_fgcSEISepColourDescPresentFlag;
+  uint32_t  m_fgcSEIBlendingModeID;
+  uint32_t  m_fgcSEILog2ScaleFactor;
+  bool      m_fgcSEICompModelPresent[MAX_NUM_COMPONENT];
+  // content light level SEI
+  bool      m_cllSEIEnabled;
+  uint32_t  m_cllSEIMaxContentLevel;
+  uint32_t  m_cllSEIMaxPicAvgLevel;
+  // ambient viewing environment sei
+  bool      m_aveSEIEnabled;
+  uint32_t  m_aveSEIAmbientIlluminance;
+  uint32_t  m_aveSEIAmbientLightX;
+  uint32_t  m_aveSEIAmbientLightY;
+  // content colour volume sei
+  bool      m_ccvSEIEnabled;
+  bool      m_ccvSEICancelFlag;
+  bool      m_ccvSEIPersistenceFlag;
+  bool      m_ccvSEIPrimariesPresentFlag;
+  bool      m_ccvSEIMinLuminanceValuePresentFlag;
+  bool      m_ccvSEIMaxLuminanceValuePresentFlag;
+  bool      m_ccvSEIAvgLuminanceValuePresentFlag;
+  double    m_ccvSEIPrimariesX[MAX_NUM_COMPONENT];
+  double    m_ccvSEIPrimariesY[MAX_NUM_COMPONENT];
+  double    m_ccvSEIMinLuminanceValue;
+  double    m_ccvSEIMaxLuminanceValue;
+  double    m_ccvSEIAvgLuminanceValue;
+
+  bool      m_erpSEIEnabled;
+  bool      m_erpSEICancelFlag;
+  bool      m_erpSEIPersistenceFlag;
+  bool      m_erpSEIGuardBandFlag;
+  uint32_t  m_erpSEIGuardBandType;
+  uint32_t  m_erpSEILeftGuardBandWidth;
+  uint32_t  m_erpSEIRightGuardBandWidth;
+
+  bool      m_sphereRotationSEIEnabled;
+  bool      m_sphereRotationSEICancelFlag;
+  bool      m_sphereRotationSEIPersistenceFlag;
+  int       m_sphereRotationSEIYaw;
+  int       m_sphereRotationSEIPitch;
+  int       m_sphereRotationSEIRoll;
+
+  bool      m_omniViewportSEIEnabled;
+  uint32_t  m_omniViewportSEIId;
+  bool      m_omniViewportSEICancelFlag;
+  bool      m_omniViewportSEIPersistenceFlag;
+  uint32_t  m_omniViewportSEICntMinus1;
+  std::vector<int>      m_omniViewportSEIAzimuthCentre;
+  std::vector<int>      m_omniViewportSEIElevationCentre;
+  std::vector<int>      m_omniViewportSEITiltCentre;
+  std::vector<uint32_t> m_omniViewportSEIHorRange;
+  std::vector<uint32_t> m_omniViewportSEIVerRange;
+  bool                  m_rwpSEIEnabled;
+  bool                  m_rwpSEIRwpCancelFlag;
+  bool                  m_rwpSEIRwpPersistenceFlag;
+  bool                  m_rwpSEIConstituentPictureMatchingFlag;
+  int                   m_rwpSEINumPackedRegions;
+  int                   m_rwpSEIProjPictureWidth;
+  int                   m_rwpSEIProjPictureHeight;
+  int                   m_rwpSEIPackedPictureWidth;
+  int                   m_rwpSEIPackedPictureHeight;
+  std::vector<uint8_t>  m_rwpSEIRwpTransformType;
+  std::vector<bool>     m_rwpSEIRwpGuardBandFlag;
+  std::vector<uint32_t> m_rwpSEIProjRegionWidth;
+  std::vector<uint32_t> m_rwpSEIProjRegionHeight;
+  std::vector<uint32_t> m_rwpSEIRwpSEIProjRegionTop;
+  std::vector<uint32_t> m_rwpSEIProjRegionLeft;
+  std::vector<uint16_t> m_rwpSEIPackedRegionWidth;
+  std::vector<uint16_t> m_rwpSEIPackedRegionHeight;
+  std::vector<uint16_t> m_rwpSEIPackedRegionTop;
+  std::vector<uint16_t> m_rwpSEIPackedRegionLeft;
+  std::vector<uint8_t>  m_rwpSEIRwpLeftGuardBandWidth;
+  std::vector<uint8_t>  m_rwpSEIRwpRightGuardBandWidth;
+  std::vector<uint8_t>  m_rwpSEIRwpTopGuardBandHeight;
+  std::vector<uint8_t>  m_rwpSEIRwpBottomGuardBandHeight;
+  std::vector<bool>     m_rwpSEIRwpGuardBandNotUsedForPredFlag;
+  std::vector<uint8_t>  m_rwpSEIRwpGuardBandType;
+
+  bool                 m_gcmpSEIEnabled;
+  bool                 m_gcmpSEICancelFlag;
+  bool                 m_gcmpSEIPersistenceFlag;
+  uint32_t             m_gcmpSEIPackingType;
+  uint32_t             m_gcmpSEIMappingFunctionType;
+  std::vector<uint8_t> m_gcmpSEIFaceIndex;
+  std::vector<uint8_t> m_gcmpSEIFaceRotation;
+  std::vector<double>  m_gcmpSEIFunctionCoeffU;
+  std::vector<bool>    m_gcmpSEIFunctionUAffectedByVFlag;
+  std::vector<double>  m_gcmpSEIFunctionCoeffV;
+  std::vector<bool>    m_gcmpSEIFunctionVAffectedByUFlag;
+  bool                 m_gcmpSEIGuardBandFlag;
+  bool                 m_gcmpSEIGuardBandBoundaryType;
+  uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
+
+  bool m_subpicureLevelInfoSEIEnabled;
+
+  bool                  m_sampleAspectRatioInfoSEIEnabled;
+  bool                  m_sariCancelFlag;
+  bool                  m_sariPersistenceFlag;
+  int                   m_sariAspectRatioIdc;
+  int                   m_sariSarWidth;
+  int                   m_sariSarHeight;
 
   bool      m_MCTSEncConstraint;
 
@@ -465,15 +581,27 @@ protected:
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
   WeightedPredictionMethod m_weightedPredictionMethod;
 
-  uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
+  uint32_t      m_maxNumTriangleCand;
+  uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
+  bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header
+  bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
+  bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
+  bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
   int       m_TMVPModeId;
+  int       m_PPSorSliceMode;
+  bool      m_constantSliceHeaderParamsEnabledFlag;
+  int       m_PPSDepQuantEnabledIdc;
+  int       m_PPSRefPicListSPSIdc0;
+  int       m_PPSRefPicListSPSIdc1;
+  int       m_PPSMvdL1ZeroIdc;
+  int       m_PPSCollocatedFromL0Idc;
+  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
+  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
   bool      m_depQuantEnabledFlag;
-#if HEVC_USE_SIGN_HIDING
   bool      m_signDataHidingEnabledFlag;
-#endif
   bool      m_RCEnableRateControl;                ///< enable rate control or not
   int       m_RCTargetBitrate;                    ///< target bitrate when rate control is enabled
   int       m_RCKeepHierarchicalBit;              ///< 0: equal bit allocation; 1: fixed ratio bit allocation; 2: adaptive ratio bit allocation
@@ -486,30 +614,23 @@ protected:
   uint32_t      m_RCCpbSize;                          ///< CPB size
   double    m_RCInitialCpbFullness;               ///< initial CPB fullness
 #endif
-#if HEVC_USE_SCALING_LISTS
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
-#endif
-  bool      m_TransquantBypassEnabledFlag;                    ///< transquant_bypass_enabled_flag setting in PPS.
-  bool      m_CUTransquantBypassFlagForce;                    ///< if transquant_bypass_enabled_flag, then, if true, all CU transquant bypass flags will be set to true.
+  bool      m_disableScalingMatrixForLfnstBlks;
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_USE_INTRA_SMOOTHING_T32 || HEVC_USE_INTRA_SMOOTHING_T64
-  bool      m_useStrongIntraSmoothing;                        ///< enable strong intra smoothing for 32x32 blocks where the reference samples are flat
-#endif
+#if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;
+#endif
+  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
+  bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
   int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
-  bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
-  bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
-  bool      m_videoSignalTypePresentFlag;                     ///< Signals whether video_format, video_full_range_flag, and colour_description_present_flag are present
-  int       m_videoFormat;                                    ///< Indicates representation of pictures
-  bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
   bool      m_colourDescriptionPresentFlag;                   ///< Signals whether colour_primaries, transfer_characteristics and matrix_coefficients are present
   int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
   int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
@@ -517,28 +638,15 @@ protected:
   bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
   int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
-  bool      m_neutralChromaIndicationFlag;                    ///< Indicates that the value of all decoded chroma samples is equal to 1<<(BitDepthCr-1)
-  bool      m_defaultDisplayWindowFlag;                       ///< Indicates the presence of the default window parameters
-  int       m_defDispWinLeftOffset;                           ///< Specifies the left offset from the conformance window of the default window
-  int       m_defDispWinRightOffset;                          ///< Specifies the right offset from the conformance window of the default window
-  int       m_defDispWinTopOffset;                            ///< Specifies the top offset from the conformance window of the default window
-  int       m_defDispWinBottomOffset;                         ///< Specifies the bottom offset from the conformance window of the default window
-  bool      m_frameFieldInfoPresentFlag;                      ///< Indicates that pic_struct values are present in picture timing SEI messages
-  bool      m_pocProportionalToTimingFlag;                    ///< Indicates that the POC value is proportional to the output time w.r.t. first picture in CVS
-  int       m_numTicksPocDiffOneMinus1;                       ///< Number of ticks minus 1 that for a POC difference of one
-  bool      m_bitstreamRestrictionFlag;                       ///< Signals whether bitstream restriction parameters are present
-#if HEVC_TILES_WPP
-  bool      m_tilesFixedStructureFlag;                        ///< Indicates that each active picture parameter set has the same values of the syntax elements related to tiles
-#endif
-  bool      m_motionVectorsOverPicBoundariesFlag;             ///< Indicates that no samples outside the picture boundaries are used for inter prediction
-  int       m_minSpatialSegmentationIdc;                      ///< Indicates the maximum size of the spatial segments in the pictures in the coded video sequence
-  int       m_maxBytesPerPicDenom;                            ///< Indicates a number of bytes not exceeded by the sum of the sizes of the VCL NAL units associated with any coded picture
-  int       m_maxBitsPerMinCuDenom;                           ///< Indicates an upper bound for the number of bits of coding_unit() data
-  int       m_log2MaxMvLengthHorizontal;                      ///< Indicate the maximum absolute value of a decoded horizontal MV component in quarter-pel luma units
-  int       m_log2MaxMvLengthVertical;                        ///< Indicate the maximum absolute value of a decoded vertical MV component in quarter-pel luma units
+  int       m_chromaSampleLocType;                            ///< Specifies the location of chroma samples for progressive content
+  bool      m_overscanInfoPresentFlag;                        ///< Signals whether overscan_appropriate_flag is present
+  bool      m_overscanAppropriateFlag;                        ///< Indicates whether conformant decoded pictures are suitable for display using overscan
+  bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
+#if HEVC_SEI
   std::string m_colourRemapSEIFileRoot;
+#endif
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.
@@ -555,7 +663,32 @@ protected:
   bool        m_bs2ModPOCAndType;
   bool        m_forceDecodeBitstream1;
 
-  bool        m_alf;                                          ///> Adaptive Loop Filter
+  bool        m_alf;                                          ///< Adaptive Loop Filter
+
+  double      m_scalingRatioHor;
+  double      m_scalingRatioVer;
+  bool        m_rprEnabled;
+  double      m_fractionOfFrames;                             ///< encode a fraction of the frames as specified in FramesToBeEncoded
+  int         m_switchPocPeriod;
+  int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
+
+  bool                  m_gopBasedTemporalFilterEnabled;               ///< GOP-based Temporal Filter enable/disable
+  bool                  m_gopBasedTemporalFilterFutureReference;       ///< Enable/disable future frame references in the GOP-based Temporal Filter
+  std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
+
+  int         m_maxLayers;
+
+  int         m_layerId[MAX_VPS_LAYERS];
+  int         m_layerIdx;
+  int         m_maxSublayers;
+  bool        m_allLayersSameNumSublayersFlag;
+  bool        m_allIndependentLayersFlag;
+  int         m_numRefLayers[MAX_VPS_LAYERS];
+  std::string m_refLayerIdxStr[MAX_VPS_LAYERS];
+  bool        m_eachLayerIsAnOlsFlag;
+  int         m_olsModeIdc;
+  int         m_numOutputLayerSets;
+  std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;
@@ -563,11 +696,32 @@ protected:
   friend class TExt360AppEncTop;
 #endif
 
+#if JVET_O0756_CONFIG_HDRMETRICS || JVET_O0756_CALCULATE_HDRMETRICS
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  double      m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
+#else
+  double      m_whitePointDeltaE[3];
+#endif
+  double      m_maxSampleValue;
+  int         m_sampleRange;
+  int         m_colorPrimaries;
+  bool        m_enableTFunctionLUT;
+  int         m_chromaLocation;
+  int         m_chromaUPFilter;
+  int         m_cropOffsetLeft;
+  int         m_cropOffsetTop;
+  int         m_cropOffsetRight;
+  int         m_cropOffsetBottom;
+  bool        m_calculateHdrMetrics;
+#endif
 
   // internal member functions
   bool  xCheckParameter ();                                   ///< check validity of configuration values
   void  xPrintParameter ();                                   ///< print configuration values
   void  xPrintUsage     ();                                   ///< print usage
+  bool  xHasNonZeroTemporalID();                             ///< check presence of constant temporal ID in GOP structure
+  bool  xHasLeadingPicture();                                 ///< check presence of leading pictures in GOP structure
+  int   xAutoDetermineProfile();                              ///< auto determine the profile to use given the other configuration settings. Returns 1 if erred. Can select profile 'NONE'
 public:
   EncAppCfg();
   virtual ~EncAppCfg();

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,7 @@
 
 #if ENABLE_TRACING
 
+#define WRITE_SCODE( value, length, name)   xWriteSCodeTr ( value, length, name )
 #define WRITE_CODE( value, length, name)    xWriteCodeTr ( value, length, name )
 #define WRITE_UVLC( value,         name)    xWriteUvlcTr ( value,         name )
 #define WRITE_SVLC( value,         name)    xWriteSvlcTr ( value,         name )
@@ -56,7 +57,7 @@
 
 extern bool g_HLSTraceEnable;
 #else
-
+#define WRITE_SCODE( value, length, name)    xWriteSCode ( value, length )
 #define WRITE_CODE( value, length, name)     xWriteCode ( value, length )
 #define WRITE_UVLC( value,         name)     xWriteUvlc ( value )
 #define WRITE_SVLC( value,         name)     xWriteSvlc ( value )
@@ -76,21 +77,20 @@ protected:
   virtual ~VLCWriter() {}
 
   void  setBitstream          ( OutputBitstream* p )  { m_pcBitIf = p;  }
-
+  void  xWriteSCode           ( int  code,  uint32_t length );
   void  xWriteCode            ( uint32_t uiCode, uint32_t uiLength );
   void  xWriteUvlc            ( uint32_t uiCode );
   void  xWriteSvlc            ( int  iCode   );
   void  xWriteFlag            ( uint32_t uiCode );
 #if ENABLE_TRACING
+  void  xWriteSCodeTr         ( int value,  uint32_t  length, const char *pSymbolName);
   void  xWriteCodeTr          ( uint32_t value, uint32_t  length, const char *pSymbolName);
   void  xWriteUvlcTr          ( uint32_t value,               const char *pSymbolName);
   void  xWriteSvlcTr          ( int  value,               const char *pSymbolName);
   void  xWriteFlagTr          ( uint32_t value,               const char *pSymbolName);
 #endif
   void  xWriteRbspTrailingBits();
-#if JVET_M0101_HLS
   bool isByteAligned()      { return (m_pcBitIf->getNumBitsUntilByteAligned() == 0); } ;
-#endif
 };
 
 
@@ -113,46 +113,35 @@ public:
   virtual ~HLSWriter() {}
 
 private:
-  void xCodeShortTermRefPicSet  ( const ReferencePictureSet* pcRPS, bool calledFromSliceHeader, int idx );
+  void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
-#if HEVC_USE_SCALING_LISTS
-  void xCodeScalingList         ( const ScalingList* scalingList, uint32_t sizeId, uint32_t listId);
-#endif
+  void xCodeScalingList         ( const ScalingList* scalingList, uint32_t scalinListId, bool isPredictor);
 public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
   uint32_t  getNumberOfWrittenBits  ()                      { return m_pcBitIf->getNumberOfWrittenBits();  }
   void  codeVUI                 ( const VUI *pcVUI, const SPS* pcSPS );
   void  codeSPS                 ( const SPS* pcSPS );
-  void  codePPS                 ( const PPS* pcPPS );
-  void  codeAPS                 ( APS* pcAPS);
-#if HEVC_VPS
+  void  codePPS                 ( const PPS* pcPPS, const SPS* pcSPS );
+  void  codeAPS                 ( APS* pcAPS );
+  void  codeAlfAps              ( APS* pcAPS );
+  void  codeLmcsAps             ( APS* pcAPS );
+  void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
-#endif
+  void  codeDPS                 ( const DPS* dps );
+  void  codePictureHeader       ( PicHeader* picHeader );
   void  codeSliceHeader         ( Slice* pcSlice );
-#if !JVET_M0101_HLS
-  void  codePTL                 ( const PTL* pcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1);
-  void  codeProfileTier         ( const ProfileTierLevel* ptl, const bool bIsSubLayer );
-#else
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
-#endif
-  void  codeHrdParameters       ( const HRD *hrd, bool commonInfPresentFlag, uint32_t maxNumSubLayersMinus1 );
-#if HEVC_TILES_WPP
-  void  codeTilesWPPEntryPoint  ( Slice* pSlice );
-#endif
-#if HEVC_USE_SCALING_LISTS
-  void  codeScalingList         ( const ScalingList &scalingList );
-#endif
+  void  codeHrdParameters       ( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
 
-  void alfFilter( const AlfSliceParam& alfSliceParam, const bool isChroma );
+  void  codeTilesWPPEntryPoint  ( Slice* pSlice );
+  void  codeScalingList         ( const ScalingList &scalingList );
+
+  void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
 
 private:
-  void xWriteTruncBinCode( uint32_t uiSymbol, const int uiMaxSymbol );
-  void alfGolombEncode( const int coeff, const int k );
-  void truncatedUnaryEqProb( int symbol, int maxSymbol );
-
-  void  codeReshaper            ( const SliceReshapeInfo& pSliceReshaperInfo, const SPS* pcSPS, const bool isIntra);
+  void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
 };
 
 //! \}

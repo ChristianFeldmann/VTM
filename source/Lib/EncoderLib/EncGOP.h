@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,16 @@
 #include "Analyze.h"
 #include "RateCtrl.h"
 #include <vector>
+#include "EncHRD.h"
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include "HDRLib/inc/ConvertColorFormat.H"
+#include "HDRLib/inc/Convert.H"
+#include "HDRLib/inc/ColorTransform.H"
+#include "HDRLib/inc/TransferFunction.H"
+#include "HDRLib/inc/DistortionMetricDeltaE.H"
+#include <chrono>
+#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -117,6 +127,7 @@ private:
   int                     m_iNumPicCoded;
   bool                    m_bFirst;
   int                     m_iLastRecoveryPicPOC;
+  int                     m_latestDRAPPOC;
   int                     m_lastRasPoc;
 
   //  Access channel
@@ -145,6 +156,8 @@ private:
   // indicate sequence first
   bool                    m_bSeqFirst;
 
+  EncHRD*                 m_HRD;
+
   // clean decoding refresh
   bool                    m_bRefreshPending;
   int                     m_pocCRA;
@@ -152,8 +165,9 @@ private:
   int                     m_associatedIRAPPOC;
 
   std::vector<int>        m_vRVM_RP;
-  uint32_t                    m_lastBPSEI;
-  uint32_t                    m_totalCoded;
+  uint32_t                    m_lastBPSEI[MAX_TLAYER];
+  uint32_t                    m_totalCoded[MAX_TLAYER];
+  bool                        m_rapWithLeading;
   bool                    m_bufferingPeriodSEIPresentInAU;
   SEIEncoder              m_seiEncoder;
 #if W0038_DB_OPT
@@ -169,6 +183,23 @@ private:
 
   AUWriterIf*             m_AUWriterIf;
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+
+  hdrtoolslib::Frame **m_ppcFrameOrg;
+  hdrtoolslib::Frame **m_ppcFrameRec;
+
+  hdrtoolslib::ConvertColorFormat     *m_pcConvertFormat;
+  hdrtoolslib::Convert                *m_pcConvertIQuantize;
+  hdrtoolslib::ColorTransform         *m_pcColorTransform;
+  hdrtoolslib::DistortionMetricDeltaE *m_pcDistortionDeltaE;
+  hdrtoolslib::TransferFunction       *m_pcTransferFct;
+
+  hdrtoolslib::ColorTransformParams   *m_pcColorTransformParams;
+  hdrtoolslib::FrameFormat            *m_pcFrameFormat;
+
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
+
 public:
   EncGOP();
   virtual ~EncGOP();
@@ -177,9 +208,11 @@ public:
   void  destroy     ();
 
   void  init        ( EncLib* pcEncLib );
+
   void  compressGOP ( int iPOCLast, int iNumPicRcvd, PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRec,
                       bool isField, bool isTff, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE
                     , bool isEncodeLtRef
+                    , const int picIdInGOP
   );
   void  xAttachSliceDataToNalUnit (OutputNALUnit& rNalu, OutputBitstream* pcBitstreamRedirect);
 
@@ -202,13 +235,12 @@ public:
   void      setLastLTRefPoc(int iLastLTRefPoc) { m_lastLTRefPoc = iLastLTRefPoc; }
   int       getLastLTRefPoc() const { return m_lastLTRefPoc; }
 
-  void  printOutSummary      ( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths );
+  void  printOutSummary( uint32_t uiNumAllPicCoded, bool isField, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths );
 #if W0038_DB_OPT
   uint64_t  preLoopFilterPicAndCalcDist( Picture* pcPic );
 #endif
   EncSlice*  getSliceEncoder()   { return m_pcSliceEncoder; }
   NalUnitType getNalUnitType( int pocCurr, int lastIdr, bool isField );
-  void arrangeLongtermPicturesInRPS(Slice *, PicList& );
   void arrangeCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
   void updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int pocCurr);
 
@@ -217,6 +249,9 @@ public:
   Analyze& getAnalyzeIData() { return m_gcAnalyzeI; }
   Analyze& getAnalyzePData() { return m_gcAnalyzeP; }
   Analyze& getAnalyzeBData() { return m_gcAnalyzeB; }
+#endif
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
 
 protected:
@@ -227,8 +262,16 @@ protected:
   void  xInitGOP          ( int iPOCLast, int iNumPicRcvd, bool isField
     , bool isEncodeLtRef
   );
+  void  xPicInitHashME( Picture *pic, const PPS *pps, PicList &rcListPic );
+  void  xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, Picture *pic, Slice *slice);
+  void  xPicInitLMCS       (Picture *pic, PicHeader *picHeader, Slice *slice);
   void  xGetBuffer        ( PicList& rcListPic, std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                             int iNumPicRcvd, int iTimeOffset, Picture*& rpcPic, int pocCurr, bool isField );
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  void xCalculateHDRMetrics ( Picture* pcPic, double deltaE[hdrtoolslib::NB_REF_WHITE], double psnrL[hdrtoolslib::NB_REF_WHITE]);
+  void copyBuftoFrame       ( Picture* pcPic );
+#endif
 
   void  xCalculateAddPSNRs(const bool isField, const bool isFieldTopFieldFirst, const int iGOPid, Picture* pcPic, const AccessUnit&accessUnit, PicList &rcListPic, int64_t dEncTime, const InputColourSpaceConversion snr_conversion, const bool printFrameMSE, double* PSNR_Y
     , bool isEncodeLtRef
@@ -244,7 +287,7 @@ protected:
 
   uint64_t xFindDistortionPlane(const CPelBuf& pic0, const CPelBuf& pic1, const uint32_t rshift
 #if ENABLE_QPA
-                            , const uint32_t chromaShift = 0
+                            , const uint32_t chromaShiftHor = 0, const uint32_t chromaShiftVer = 0
 #endif
                              );
 #if WCG_WPSNR
@@ -258,12 +301,15 @@ protected:
 
   void xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS *sps, const PPS *pps);
   void xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice);
+  void xCreateFrameFieldInfoSEI (SEIMessages& seiMessages, Slice *slice, bool isField);
   void xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, SEIMessages& duInfoSeiMessages, Slice *slice, bool isField, std::deque<DUData> &duData);
   void xUpdateDuData(AccessUnit &testAU, std::deque<DUData> &duData);
   void xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUData> &duData, const SPS *sps);
-  void xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI);
+  void xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI, int maxSubLayers);
 
+#if HEVC_SEI
   void xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& nestedSeiMessages);
+#endif
   void xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xClearSEIs(SEIMessages& seiMessages, bool deleteMessages);
@@ -272,18 +318,19 @@ protected:
   void xWriteTrailingSEIMessages (SEIMessages& seiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps);
   void xWriteDuSEIMessages       (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData);
 
-#if HEVC_VPS
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
-#endif
-  int xWriteSPS (AccessUnit &accessUnit, const SPS *sps);
-  int xWritePPS (AccessUnit &accessUnit, const PPS *pps);
-  int xWriteAPS(AccessUnit &accessUnit, APS *aps);
+  int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
+  int xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId = 0 );
+  int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
+  int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );
   int xWriteParameterSets (AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
+  int xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader );
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );
 #if W0038_DB_OPT
   void applyDeblockingFilterParameterSelection( Picture* pcPic, const uint32_t numSlices, const int gopID );
 #endif
+  void xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 );
 };// END CLASS DEFINITION EncGOP
 
 //! \}

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,11 +49,14 @@ static const uint8_t emulation_prevention_three_byte = 3;
 void writeNalUnitHeader(ostream& out, OutputNALUnit& nalu)       // nal_unit_header()
 {
 OutputBitstream bsNALUHeader;
-
-  bsNALUHeader.write(0,1);                    // forbidden_zero_bit
-  bsNALUHeader.write(nalu.m_nalUnitType, 6);  // nal_unit_type
-  bsNALUHeader.write(nalu.m_nuhLayerId, 6);   // nuh_layer_id
-  bsNALUHeader.write(nalu.m_temporalId+1, 3); // nuh_temporal_id_plus1
+  int forbiddenZero = 0;
+  bsNALUHeader.write(forbiddenZero, 1);   // forbidden_zero_bit
+  int nuhReservedZeroBit = 0;
+  bsNALUHeader.write(nuhReservedZeroBit, 1);   // nuh_reserved_zero_bit
+  CHECK(nalu.m_nuhLayerId > 55, "The value of nuh_layer_id shall be in the range of 0 to 55, inclusive");
+  bsNALUHeader.write(nalu.m_nuhLayerId, 6);       // nuh_layer_id
+  bsNALUHeader.write(nalu.m_nalUnitType, 5);      // nal_unit_type
+  bsNALUHeader.write(nalu.m_temporalId + 1, 3);   // nuh_temporal_id_plus1
 
   out.write(reinterpret_cast<const char*>(bsNALUHeader.getByteStream()), bsNALUHeader.getByteStreamLength());
 }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -100,9 +100,9 @@ int main(int argc, char* argv[])
     std::cerr << e.what() << std::endl;
     returnCode = EXIT_FAILURE;
   }
-  catch( ... )
+  catch (const std::bad_alloc &e)
   {
-    std::cerr << "Unspecified error occurred" << std::endl;
+    std::cout << "Memory allocation failed: " << e.what() << std::endl;
     returnCode = EXIT_FAILURE;
   }
 #endif

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -205,56 +205,41 @@ void BinEncoderBase::encodeBinsEP( unsigned bins, unsigned numBins )
   }
 }
 
-void BinEncoderBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
+void BinEncoderBase::encodeRemAbsEP(unsigned bins, unsigned goRicePar, unsigned cutoff, int maxLog2TrDynamicRange)
 {
-  const unsigned threshold = COEF_REMAIN_BIN_REDUCTION << goRicePar;
-  useLimitedPrefixLength = true;
-  if( bins < threshold )
+  const unsigned threshold = cutoff << goRicePar;
+  if (bins < threshold)
   {
-    const unsigned bitMask  = ( 1 << goRicePar ) - 1;
-    const unsigned length   = ( bins >> goRicePar ) + 1;
-    encodeBinsEP( ( 1 << length ) - 2,  length );
-    encodeBinsEP( bins & bitMask,       goRicePar);
+    const unsigned bitMask = (1 << goRicePar) - 1;
+    const unsigned length = (bins >> goRicePar) + 1;
+    encodeBinsEP((1 << length) - 2, length);
+    encodeBinsEP(bins & bitMask, goRicePar);
   }
-  else if (useLimitedPrefixLength)
+  else 
   {
-    const unsigned  maxPrefixLength = 32 - COEF_REMAIN_BIN_REDUCTION - maxLog2TrDynamicRange;
-    unsigned        prefixLength    = 0;
-    unsigned        codeValue       = ( bins >> goRicePar ) - COEF_REMAIN_BIN_REDUCTION;
+    const unsigned  maxPrefixLength = 32 - cutoff - maxLog2TrDynamicRange;
+    unsigned        prefixLength = 0;
+    unsigned        codeValue = (bins >> goRicePar) - cutoff;
     unsigned        suffixLength;
-    if( codeValue >=  ( ( 1 << maxPrefixLength ) - 1 ) )
+    if (codeValue >= ((1 << maxPrefixLength) - 1))
     {
       prefixLength = maxPrefixLength;
       suffixLength = maxLog2TrDynamicRange;
     }
     else
     {
-      while( codeValue > ( ( 2 << prefixLength ) - 2 ) )
+      while (codeValue > ((2 << prefixLength) - 2))
       {
         prefixLength++;
       }
       suffixLength = prefixLength + goRicePar + 1; //+1 for the separator bit
     }
-    const unsigned totalPrefixLength  = prefixLength + COEF_REMAIN_BIN_REDUCTION;
-    const unsigned bitMask            = ( 1 << goRicePar ) - 1;
-    const unsigned prefix             = ( 1 << totalPrefixLength ) - 1;
-    const unsigned suffix             = ( ( codeValue - ( (1 << prefixLength ) - 1 ) ) << goRicePar ) | ( bins & bitMask );
-    encodeBinsEP( prefix, totalPrefixLength ); //prefix
-    encodeBinsEP( suffix, suffixLength      ); //separator, suffix, and rParam bits
-  }
-  else
-  {
-    unsigned length = goRicePar;
-    unsigned delta  = 1 << length;
-    bins           -= threshold;
-    while (bins >= delta )
-    {
-      bins -= delta;
-      delta = 1 << (++length);
-    }
-    unsigned numBin = COEF_REMAIN_BIN_REDUCTION + length + 1 - goRicePar;
-    encodeBinsEP( ( 1 << numBin ) - 2, numBin );
-    encodeBinsEP( bins,                length );
+    const unsigned totalPrefixLength = prefixLength + cutoff;
+    const unsigned bitMask = (1 << goRicePar) - 1;
+    const unsigned prefix = (1 << totalPrefixLength) - 1;
+    const unsigned suffix = ((codeValue - ((1 << prefixLength) - 1)) << goRicePar) | (bins & bitMask);
+    encodeBinsEP(prefix, totalPrefixLength); //prefix
+    encodeBinsEP(suffix, suffixLength); //separator, suffix, and rParam bits
   }
 }
 
@@ -285,22 +270,12 @@ void BinEncoderBase::encodeBinTrm( unsigned bin )
   }
 }
 
-void BinEncoderBase::encodeBinsPCM( unsigned bins, unsigned numBins )
-{
-  m_Bitstream->write( bins, numBins );
-}
 
 void BinEncoderBase::align()
 {
   m_Range = 256;
 }
 
-void BinEncoderBase::pcmAlignBits()
-{
-  finish();
-  m_Bitstream->write( 1, 1 );
-  m_Bitstream->writeAlignZero(); // pcm align zero
-}
 
 void BinEncoderBase::encodeAlignedBinsEP( unsigned bins, unsigned numBins )
 {
@@ -437,46 +412,33 @@ BitEstimatorBase::BitEstimatorBase( const BinProbModel* dummy )
   m_EstFracBits = 0;
 }
 
-void BitEstimatorBase::encodeRemAbsEP( unsigned bins, unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange )
+void BitEstimatorBase::encodeRemAbsEP(unsigned bins, unsigned goRicePar, unsigned cutoff, int maxLog2TrDynamicRange)
 {
-  const unsigned threshold = COEF_REMAIN_BIN_REDUCTION << goRicePar;
-  useLimitedPrefixLength = true;
-  if( bins < threshold )
+  const unsigned threshold = cutoff << goRicePar;
+  if (bins < threshold)
   {
-    m_EstFracBits += BinProbModelBase::estFracBitsEP( ( bins >> goRicePar ) + 1 + goRicePar );
+    m_EstFracBits += BinProbModelBase::estFracBitsEP((bins >> goRicePar) + 1 + goRicePar);
   }
-  else if (useLimitedPrefixLength)
+  else 
   {
-    const unsigned  maxPrefixLength = 32 - COEF_REMAIN_BIN_REDUCTION - maxLog2TrDynamicRange;
-    unsigned        prefixLength    = 0;
-    unsigned        codeValue       = ( bins >> goRicePar ) - COEF_REMAIN_BIN_REDUCTION;
+    const unsigned  maxPrefixLength = 32 - cutoff - maxLog2TrDynamicRange;
+    unsigned        prefixLength = 0;
+    unsigned        codeValue = (bins >> goRicePar) - cutoff;
     unsigned        suffixLength;
-    if( codeValue >=  ( ( 1 << maxPrefixLength ) - 1 ) )
+    if (codeValue >= ((1 << maxPrefixLength) - 1))
     {
       prefixLength = maxPrefixLength;
       suffixLength = maxLog2TrDynamicRange;
     }
     else
     {
-      while( codeValue > ( ( 2 << prefixLength ) - 2 ) )
+      while (codeValue > ((2 << prefixLength) - 2))
       {
         prefixLength++;
       }
       suffixLength = prefixLength + goRicePar + 1; //+1 for the separator bit
     }
-    m_EstFracBits += BinProbModelBase::estFracBitsEP( COEF_REMAIN_BIN_REDUCTION + prefixLength + suffixLength );
-  }
-  else
-  {
-    unsigned length = goRicePar;
-    unsigned delta  = 1 << length;
-    bins           -= threshold;
-    while (bins >= delta )
-    {
-      bins -= delta;
-      delta = 1 << (++length);
-    }
-    m_EstFracBits += BinProbModelBase::estFracBitsEP(COEF_REMAIN_BIN_REDUCTION + 1 + (length << 1) - goRicePar);
+    m_EstFracBits += BinProbModelBase::estFracBitsEP(cutoff + prefixLength + suffixLength);
   }
 }
 
@@ -488,13 +450,6 @@ void BitEstimatorBase::align()
   m_EstFracBits &= mask;
 }
 
-void BitEstimatorBase::pcmAlignBits()
-{
-  uint64_t  numCurrBits = ( m_EstFracBits >> SCALE_BITS );
-  uint64_t  filledBytes = ( numCurrBits + 8 ) >> 3; // including aligned_one_bit and aligned_zero_bits
-  unsigned  bitsToAdd   = unsigned( ( filledBytes << 3 ) - numCurrBits );
-  m_EstFracBits        += BinProbModelBase::estFracBitsEP( bitsToAdd );
-}
 
 
 

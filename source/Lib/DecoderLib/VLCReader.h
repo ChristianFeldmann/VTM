@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,7 @@
 
 #if ENABLE_TRACING
 
+#define READ_SCODE(length, code, name)    xReadSCode  ( length, code, name )
 #define READ_CODE(length, code, name)     xReadCodeTr ( length, code, name )
 #define READ_UVLC(        code, name)     xReadUvlcTr (         code, name )
 #define READ_SVLC(        code, name)     xReadSvlcTr (         code, name )
@@ -55,6 +56,7 @@
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 
+#define READ_SCODE(length, code, name)    xReadSCode( length, code, name )
 #define READ_CODE(length, code, name)     xReadCode ( length, code, name )
 #define READ_UVLC(        code, name)     xReadUvlc (         code, name )
 #define READ_SVLC(        code, name)     xReadSvlc (         code, name )
@@ -62,6 +64,7 @@
 
 #else
 
+#define READ_SCODE(length, code, name)    xReadSCode ( length, code )
 #define READ_CODE(length, code, name)     xReadCode ( length, code )
 #define READ_UVLC(        code, name)     xReadUvlc (         code )
 #define READ_SVLC(        code, name)     xReadSvlc (         code )
@@ -103,15 +106,19 @@ protected:
   void  xReadSvlcTr  (                int& rValue, const char *pSymbolName );
   void  xReadFlagTr  (               uint32_t& rValue, const char *pSymbolName );
 #endif
+#if RExt__DECODER_DEBUG_BIT_STATISTICS || ENABLE_TRACING
+  void  xReadSCode   ( uint32_t  length, int& val, const char *pSymbolName );
+#else
+  void  xReadSCode   ( uint32_t  length, int& val );
+#endif
+
 public:
   void  setBitstream ( InputBitstream* p )   { m_pcBitstream = p; }
   InputBitstream* getBitstream() { return m_pcBitstream; }
 
 protected:
   void xReadRbspTrailingBits();
-#if JVET_M0101_HLS
   bool isByteAligned() { return (m_pcBitstream->getNumBitsUntilByteAligned() == 0 ); }
-#endif
 };
 
 
@@ -143,41 +150,37 @@ public:
   virtual ~HLSyntaxReader();
 
 protected:
-  void  parseShortTermRefPicSet            (SPS* pcSPS, ReferencePictureSet* pcRPS, int idx);
+  void  copyRefPicList(SPS* pcSPS, ReferencePictureList* source_rpl, ReferencePictureList* dest_rpl);
+  void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl);
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
-#if HEVC_VPS
   void  parseVPS            ( VPS* pcVPS );
-#endif
+  void  parseDPS            ( DPS* dps );
   void  parseSPS            ( SPS* pcSPS );
-  void  parsePPS            ( PPS* pcPPS );
-  void  parseAPS            ( APS* pcAPS);
+  void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
+  void  parseAPS            ( APS* pcAPS );
+  void  parseAlfAps         ( APS* pcAPS );
+  void  parseLmcsAps        ( APS* pcAPS );
+  void  parseScalingListAps ( APS* pcAPS );
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
-#if !JVET_M0101_HLS
-  void  parsePTL            ( PTL *rpcPTL, bool profilePresentFlag, int maxNumSubLayersMinus1 );
-  void  parseProfileTier    ( ProfileTierLevel *ptl, const bool bIsSubLayer );
-#else
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
-#endif
-  void  parseHrdParameters  ( HRD *hrd, bool cprms_present_flag, uint32_t tempLevelHigh );
-  void  parseSliceHeader    ( Slice* pcSlice, ParameterSetManager *parameterSetManager, const int prevTid0POC );
+  void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
+  void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
+  void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
+  void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
-#if HEVC_USE_SCALING_LISTS
   void  parseScalingList    ( ScalingList* scalingList );
-  void  decodeScalingList   ( ScalingList *scalingList, uint32_t sizeId, uint32_t listId);
-#endif
+  void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
-  void alfFilter( AlfSliceParam& alfSliceParam, const bool isChroma );
+  void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
 
 private:
-  int truncatedUnaryEqProb( const int maxSymbol );
-  void xReadTruncBinCode( uint32_t& ruiSymbol, const int uiMaxSymbol );
-  int  alfGolombDecode( const int k );
+  int  alfGolombDecode( const int k, const bool signed_val=true );
 
 protected:
   bool  xMoreRbspData();

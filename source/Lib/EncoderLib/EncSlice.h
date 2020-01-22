@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,33 +90,20 @@ private:
   std::vector<int>        m_viRdPicQp;                          ///< array of picture QP candidates (int-type)
   RateCtrl*               m_pcRateCtrl;                         ///< Rate control manager
   uint32_t                    m_uiSliceSegmentIdx;
-#if HEVC_DEPENDENT_SLICES
-  Ctx                     m_lastSliceSegmentEndContextState;    ///< context storage for state at the end of the previous slice-segment (used for dependent slices only).
-#endif
-#if HEVC_TILES_WPP
   Ctx                     m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#endif
   SliceType               m_encCABACTableIdx;
-#if SHARP_LUMA_DELTA_QP
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   int                     m_gopID;
 #endif
 
-#if SHARP_LUMA_DELTA_QP
 public:
-  int getGopId()        const { return m_gopID; }
-  double  calculateLambda( const Slice* slice, const int GOPid, const int depth, const double refQP, const double dQP, int &iQP );
+  double  initializeLambda(const Slice* slice, const int GOPid, const int refQP, const double dQP); // called by calculateLambda() and updateLambda()
+#if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
+  int     getGopId() const { return m_gopID; }
+  double  calculateLambda( const Slice* slice, const int GOPid, const double refQP, const double dQP, int &iQP );
+#endif
   void    setUpLambda( Slice* slice, const double dLambda, int iQP );
 
-private:
-#endif
-#if HEVC_TILES_WPP
-  void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, bool &haveReachedTileBoundary, Picture* pcPic, const int sliceMode, const int sliceArgument );
-#else
-  void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, Picture* pcPic, const int sliceMode, const int sliceArgument );
-#endif
-
-
-public:
 #if ENABLE_QPA
   int                     m_adaptedLumaQP;
 
@@ -142,17 +129,14 @@ public:
   void    calCostSliceI       ( Picture* pcPic );
 
   void    encodeSlice         ( Picture* pcPic, OutputBitstream* pcSubstreams, uint32_t &numBinsCoded );
-#if ENABLE_WPP_PARALLELISM
-  static
-#endif
-  void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
+  void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pcEncLib );
   void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
+  void    setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma );
 
   // misc. functions
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively
 
   EncCu*  getCUEncoder        ()                    { return m_pcCuEncoder; }                        ///< CU encoder
-  void    xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, uint32_t& boundingCtuTsAddr, Picture* pcPic );
   uint32_t    getSliceSegmentIdx  ()                    { return m_uiSliceSegmentIdx;       }
   void    setSliceSegmentIdx  (uint32_t i)              { m_uiSliceSegmentIdx = i;          }
 

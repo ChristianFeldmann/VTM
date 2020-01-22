@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,6 @@ class ProbModelTables
 {
 protected:
   static const BinFracBits m_binFracBits[256];
-  static const uint16_t    m_inistateToCount[128];
   static const uint8_t      m_RenormTable_32  [ 32];          // Std         MP   MPI
 };
 
@@ -199,37 +198,57 @@ public:
   static const CtxSet   SplitQtFlag;
   static const CtxSet   SplitHvFlag;
   static const CtxSet   Split12Flag;
+  static const CtxSet   ModeConsFlag;
   static const CtxSet   SkipFlag;
   static const CtxSet   MergeFlag;
+  static const CtxSet   RegularMergeFlag;
   static const CtxSet   MergeIdx;
-  static const CtxSet   PartSize;
   static const CtxSet   PredMode;
   static const CtxSet   MultiRefLineIdx;
   static const CtxSet   IntraLumaMpmFlag;
+  static const CtxSet   IntraLumaPlanarFlag;
+  static const CtxSet   CclmModeFlag;
+  static const CtxSet   CclmModeIdx;
   static const CtxSet   IntraChromaPredMode;
+  static const CtxSet   MipFlag;
   static const CtxSet   DeltaQP;
   static const CtxSet   InterDir;
   static const CtxSet   RefPic;
   static const CtxSet   MmvdFlag;
   static const CtxSet   MmvdMergeIdx;
   static const CtxSet   MmvdStepMvpIdx;
+  static const CtxSet   SubblockMergeFlag;
   static const CtxSet   AffineFlag;
   static const CtxSet   AffineType;
   static const CtxSet   AffMergeIdx;
   static const CtxSet   Mvd;
+  static const CtxSet   BDPCMMode;
   static const CtxSet   QtRootCbf;
+  static const CtxSet   ACTFlag;
   static const CtxSet   QtCbf           [3];    // [ channel ]
-  static const CtxSet   SigCoeffGroup   [4];    // [ ChannelType ]
+  static const CtxSet   SigCoeffGroup   [2];    // [ ChannelType ]
   static const CtxSet   LastX           [2];    // [ ChannelType ]
   static const CtxSet   LastY           [2];    // [ ChannelType ]
   static const CtxSet   SigFlag         [6];    // [ ChannelType + State ]
   static const CtxSet   ParFlag         [2];    // [ ChannelType ]
   static const CtxSet   GtxFlag         [4];    // [ ChannelType + x ]
+  static const CtxSet   TsSigCoeffGroup;
+  static const CtxSet   TsSigFlag;
+  static const CtxSet   TsParFlag;
+  static const CtxSet   TsGtxFlag;
+  static const CtxSet   TsLrg1Flag;
+  static const CtxSet   TsResidualSign;
   static const CtxSet   MVPIdx;
   static const CtxSet   SaoMergeFlag;
   static const CtxSet   SaoTypeIdx;
-  static const CtxSet   MTSIndex;
-  static const CtxSet   TransquantBypassFlag;
+  static const CtxSet   TransformSkipFlag;
+  static const CtxSet   MTSIdx;
+  static const CtxSet   LFNSTIdx;
+  static const CtxSet   PLTFlag;
+  static const CtxSet   RotationFlag;
+  static const CtxSet   RunTypeFlag;
+  static const CtxSet   IdxRunModel;
+  static const CtxSet   CopyRunModel;
   static const CtxSet   RdpcmFlag;
   static const CtxSet   RdpcmDir;
   static const CtxSet   SbtFlag;
@@ -240,21 +259,23 @@ public:
   static const CtxSet   ChromaQpAdjFlag;
   static const CtxSet   ChromaQpAdjIdc;
   static const CtxSet   ImvFlag;
-  static const CtxSet   GBiIdx;
+  static const CtxSet   BcwIdx;
   static const CtxSet   ctbAlfFlag;
-  static const CtxSet   MHIntraFlag;
-  static const CtxSet   MHIntraPredMode;
-  static const CtxSet   TriangleFlag;
-  static const CtxSet   TriangleIdx;
+  static const CtxSet   ctbAlfAlternative;
+  static const CtxSet   AlfUseTemporalFilt;
+  static const CtxSet   CiipFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;
   static const CtxSet   ISPMode;
+  static const CtxSet   JointCbCrFlag;
   static const unsigned NumberOfContexts;
 
   // combined sets for less complex copying
   // NOTE: The contained CtxSet's should directly follow each other in the initalization list;
   //       otherwise, you will copy more elements than you want !!!
   static const CtxSet   Sao;
+  static const CtxSet   Alf;
+  static const CtxSet   Palette;
 
 public:
   static const std::vector<uint8_t>&  getInitTable( unsigned initId );
@@ -419,7 +440,7 @@ private:
   CtxStore<BinProbModel_Std>    m_CtxStore_Std;
 protected:
   unsigned                      m_GRAdaptStats[RExt__GOLOMB_RICE_ADAPTATION_STATISTICS_SETS];
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
 public:
   int64_t cacheId;

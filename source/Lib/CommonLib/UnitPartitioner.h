@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -94,6 +94,7 @@ struct PartLevel
   bool         canQtSplit;
   bool         qgEnable;
   bool         qgChromaEnable;
+  int          modeType;
 
   PartLevel();
   PartLevel( const PartSplit _split, const Partitioning&  _parts );
@@ -123,6 +124,8 @@ public:
 
   unsigned currImplicitBtDepth;
   ChannelType chType;
+  TreeType treeType;
+  ModeType modeType;
 
   virtual ~Partitioner                    () { }
 
@@ -134,6 +137,7 @@ public:
   const bool currQgChromaEnable           () const { return currPartLevel().qgChromaEnable; }
 
   SplitSeries getSplitSeries              () const;
+  ModeTypeSeries getModeTypeSeries        () const;
 
   virtual void initCtu                    ( const UnitArea& ctuArea, const ChannelType _chType, const Slice& slice )    = 0;
   virtual void splitCurrArea              ( const PartSplit split, const CodingStructure &cs )                          = 0;
@@ -150,6 +154,9 @@ public:
   virtual bool canSplit                   ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual PartSplit getImplicitSplit      (                                                 const CodingStructure &cs ) = 0;
+  bool isSepTree                          ( const CodingStructure &cs );
+  bool isConsInter                        () { return modeType == MODE_TYPE_INTER; }
+  bool isConsIntra                        () { return modeType == MODE_TYPE_INTRA; }
 };
 
 class AdaptiveDepthPartitioner : public Partitioner
@@ -190,6 +197,8 @@ public:
 #if _DEBUG
     m_currArea   = _initialState.currArea();
 #endif
+    treeType     = _initialState.treeType;
+    modeType     = _initialState.modeType;
   }
 
   void initCtu               (const UnitArea& ctuArea, const ChannelType chType, const Slice& slice) {}; // not needed
@@ -201,14 +210,6 @@ public:
   bool canSplit              (const PartSplit split, const CodingStructure &cs);
   bool isSplitImplicit       (const PartSplit split, const CodingStructure &cs) { return false; }; //not needed
   PartSplit getImplicitSplit (const CodingStructure &cs) { return CU_DONT_SPLIT; }; //not needed
-};
-
-
-
-
-namespace PartitionerFactory
-{
-  Partitioner* get( const Slice& slice );
 };
 
 //////////////////////////////////////////////////////////////////////////

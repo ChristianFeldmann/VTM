@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -274,6 +274,7 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
   // find the block with least candidates
   size_t minSize = MAX_UINT;
   unsigned int targetHashOneBlock = 0;
+  Position targetBlockOffsetInCu(0, 0);
   for (SizeType y = 0; y < lumaArea.height && minSize > 1; y += MIN_PU_SIZE)
   {
     for (SizeType x = 0; x < lumaArea.width && minSize > 1; x += MIN_PU_SIZE)
@@ -283,6 +284,7 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
       {
         minSize = m_hash2Pos[hash].size();
         targetHashOneBlock = hash;
+        targetBlockOffsetInCu.repositionTo(Position(x, y));
       }
     }
   }
@@ -294,11 +296,12 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
     // check whether whole block match
     for (std::vector<Position>::iterator refBlockPos = candOneBlock.begin(); refBlockPos != candOneBlock.end(); refBlockPos++)
     {
-      Position bottomRight = refBlockPos->offset(lumaArea.width - 1, lumaArea.height - 1);
+      Position topLeft = refBlockPos->offset(-targetBlockOffsetInCu.x, -targetBlockOffsetInCu.y);
+      Position bottomRight = topLeft.offset(lumaArea.width - 1, lumaArea.height - 1);
       bool wholeBlockMatch = true;
       if (lumaArea.width > MIN_PU_SIZE || lumaArea.height > MIN_PU_SIZE)
       {
-        if (!cs.isDecomp(bottomRight, cs.chType) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight)
+        if (!cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight || topLeft.x < 0 || topLeft.y < 0)
         {
           continue;
         }
@@ -307,20 +310,21 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
           for (SizeType x = 0; x < lumaArea.width && wholeBlockMatch; x += MIN_PU_SIZE)
           {
             // whether the reference block and current block has the same hash
-            wholeBlockMatch &= (m_pos2Hash[lumaArea.pos().y + y][lumaArea.pos().x + x] == m_pos2Hash[refBlockPos->y + y][refBlockPos->x + x]);
+            wholeBlockMatch &= (m_pos2Hash[lumaArea.pos().y + y][lumaArea.pos().x + x] == m_pos2Hash[topLeft.y + y][topLeft.x + x]);
           }
         }
       }
       else
       {
-        if (abs(refBlockPos->x - lumaArea.x) > searchRange4SmallBlk || abs(refBlockPos->y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, cs.chType))
+        CHECK(topLeft != *refBlockPos, "4x4 target block should not have offset!");
+        if (abs(topLeft.x - lumaArea.x) > searchRange4SmallBlk || abs(topLeft.y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA))
         {
           continue;
         }
       }
       if (wholeBlockMatch)
       {
-        cand.push_back(*refBlockPos);
+        cand.push_back(topLeft);
         if (cand.size() > maxCand)
         {
           break;
@@ -349,5 +353,82 @@ int IbcHashMap::getHashHitRatio(const Area& lumaArea)
   return 100 * hit / total;
 }
 
+int IbcHashMap::calHashBlkMatchPerc(const Area& lumaArea)
+{
+  int maxX = std::min((int)(lumaArea.x + lumaArea.width), m_picWidth);
+  int maxY = std::min((int)(lumaArea.y + lumaArea.height), m_picHeight);
+  int          maxUsage[100];
+  unsigned int mostSelHash[100];
 
+  static   int numExcludedHashValue = 36;
+
+  for (int i = 0; i < numExcludedHashValue; i++)
+  {
+    maxUsage[i] = 0;
+    mostSelHash[i] = 0;
+  }
+
+  for (std::unordered_map<unsigned int, std::vector<Position>>::iterator it = m_hash2Pos.begin(); it != m_hash2Pos.end(); ++it)
+  {
+    unsigned int hash = it->first;
+    int usage = (int)it->second.size();
+    assert(usage == m_hash2Pos[hash].size());
+
+    int insertPos = -1;
+    for (insertPos = 0; insertPos < numExcludedHashValue; insertPos++)
+    {
+      if (usage > maxUsage[insertPos])
+      {
+        break;
+      }
+    }
+    assert(insertPos <= numExcludedHashValue);
+
+    if (insertPos < numExcludedHashValue)
+    {
+      for (int i = (numExcludedHashValue - 1); i >= (insertPos + 1); i--)
+      {
+        maxUsage[i] = maxUsage[i - 1];
+        mostSelHash[i] = mostSelHash[i - 1];
+      }
+      maxUsage[insertPos] = usage;
+      mostSelHash[insertPos] = hash;
+    }
+  }
+
+  int hit = 0, total = 0;
+  for (int y = lumaArea.y; y < maxY; y += MIN_PU_SIZE)
+  {
+    for (int x = lumaArea.x; x < maxX; x += MIN_PU_SIZE)
+    {
+      unsigned int hash = m_pos2Hash[y][x];
+
+      bool excludedHash = false;
+      for (int i = 0; i < numExcludedHashValue && !excludedHash; i++)
+      {
+        if (hash == mostSelHash[i])
+        {
+          excludedHash = true;
+        }
+      }
+
+      if (excludedHash)
+      {
+        continue;
+      }
+
+      hit += (m_hash2Pos[hash].size() > 1);
+      total++;
+    }
+  }
+
+  if (total == 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return 100 * hit / total;
+  }
+}
 //! \}

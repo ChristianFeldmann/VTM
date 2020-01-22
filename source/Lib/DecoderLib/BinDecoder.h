@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,8 @@ public:
 public:
   unsigned          decodeBinEP         ();
   unsigned          decodeBinsEP        ( unsigned numBins  );
-  unsigned          decodeRemAbsEP      ( unsigned goRicePar, bool useLimitedPrefixLength, int maxLog2TrDynamicRange );
+  unsigned          decodeRemAbsEP      ( unsigned goRicePar, unsigned cutoff, int maxLog2TrDynamicRange );
   unsigned          decodeBinTrm        ();
-  unsigned          decodeBinsPCM       ( unsigned numBins  );
   void              align               ();
   unsigned          getNumBitsRead      () { return m_Bitstream->getNumBitsRead() + m_bitsNeeded; }
 private:

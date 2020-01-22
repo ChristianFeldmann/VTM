@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,8 @@
 #if _MSC_VER < 1900
 #error "MS Visual Studio version not supported. Please upgrade to Visual Studio 2015 or higher (or use other compilers)"
 #endif
+
+#include <intrin.h>
 #endif
 
 //! \ingroup CommonLib
@@ -143,11 +145,13 @@ static const int MAX_NUM_REF =                                     16; ///< max.
 static const int MAX_QP =                                          63;
 static const int NOT_VALID =                                       -1;
 
+
 static const int AMVP_MAX_NUM_CANDS =                               2; ///< AMVP: advanced motion vector prediction - max number of final candidates
 static const int AMVP_MAX_NUM_CANDS_MEM =                           3; ///< AMVP: advanced motion vector prediction - max number of candidates
 static const int AMVP_DECIMATION_FACTOR =                           2;
 static const int MRG_MAX_NUM_CANDS =                                6; ///< MERGE
 static const int AFFINE_MRG_MAX_NUM_CANDS =                         5; ///< AFFINE MERGE
+static const int IBC_MRG_MAX_NUM_CANDS =                            6; ///< IBC MERGE
 
 static const int MAX_TLAYER =                                       7; ///< Explicit temporal layer QP offset - max number of temporal layer
 
@@ -164,15 +168,33 @@ static const int MAX_NUM_PICS_IN_SOP =                           1024;
 static const int MAX_NESTING_NUM_OPS =                           1024;
 static const int MAX_NESTING_NUM_LAYER =                           64;
 
-#if HEVC_VPS
 static const int MAX_VPS_NUM_HRD_PARAMETERS =                       1;
-static const int MAX_VPS_OP_SETS_PLUS1 =                         1024;
-static const int MAX_VPS_NUH_RESERVED_ZERO_LAYER_ID_PLUS1 =         1;
-#endif
-
+static const int MAX_VPS_LAYERS =                                  64;
+static const int MAX_VPS_SUBLAYERS =                                7;
+static const int MAX_NUM_REF_LAYERS =                               7;
+static const int MAX_NUM_OLSS =                                   256;
+static const int MAX_VPS_OLS_MODE_IDC =                             2;
 static const int MAXIMUM_INTRA_FILTERED_WIDTH =                    16;
 static const int MAXIMUM_INTRA_FILTERED_HEIGHT =                   16;
 
+static const int MIP_MAX_WIDTH =                                   MAX_TB_SIZEY;
+static const int MIP_MAX_HEIGHT =                                  MAX_TB_SIZEY;
+
+static const int MAX_NUM_ALF_ALTERNATIVES_CHROMA =                  8;
+static const int MAX_NUM_ALF_CLASSES         =                     25;
+static const int MAX_NUM_ALF_LUMA_COEFF      =                     13;
+static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
+static const int MAX_ALF_FILTER_LENGTH       =                      7;
+static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
+static const int MAX_ALF_PADDING_SIZE        =                      4;
+
+static const int ALF_FIXED_FILTER_NUM        =                     64;
+static const int ALF_CTB_MAX_NUM_APS         =                      8;
+static const int NUM_FIXED_FILTER_SETS       =                     16;
+static const int NUM_TOTAL_FILTER_SETS       =                     NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS;
+
+
+static const int MAX_BDOF_APPLICATION_REGION =                     16;
 
 static const int MAX_CPB_CNT =                                     32; ///< Upper bound of (cpb_cnt_minus1 + 1)
 static const int MAX_NUM_LAYER_IDS =                               64;
@@ -182,30 +204,36 @@ static const int CU_DQP_EG_k =                                      0; ///< expg
 
 static const int SBH_THRESHOLD =                                    4; ///< value of the fixed SBH controlling threshold
 
-static const int C1FLAG_NUMBER =                                    8; ///< maximum number of largerThan1 flag coded in one chunk: 16 in HM5
-static const int C2FLAG_NUMBER =                                    1; ///< maximum number of largerThan2 flag coded in one chunk: 16 in HM5
-
 static const int MAX_NUM_VPS =                                     16;
+static const int MAX_NUM_DPS =                                     16;
 static const int MAX_NUM_SPS =                                     16;
 static const int MAX_NUM_PPS =                                     64;
 static const int MAX_NUM_APS =                                     32;  //Currently APS ID has 5 bits
+static const int NUM_APS_TYPE_LEN =                                 3;  //Currently APS Type has 3 bits
+static const int MAX_NUM_APS_TYPE =                                 8;  //Currently APS Type has 3 bits so the max type is 8
 
+static const int MAX_TILE_COLS =                                   20;  ///< Maximum number of tile columns
+static const int MAX_TILE_ROWS =                                   22;  ///< Maximum number of tile rows
+static const int MAX_TILES =            MAX_TILE_COLS * MAX_TILE_ROWS;  ///< Maximum number of tiles
+static const int MAX_SLICES =                                     600;  ///< Maximum number of slices per picture
 static const int MLS_GRP_NUM =                                   1024; ///< Max number of coefficient groups, max(16, 256)
 
 static const int MLS_CG_SIZE =                                      4; ///< Coefficient group size of 4x4; = MLS_CG_LOG2_WIDTH + MLS_CG_LOG2_HEIGHT
 
-static const int ADJ_QUANT_SHIFT =                                  7;
-static const int ADJ_DEQUANT_SHIFT =            ( ADJ_QUANT_SHIFT + 1 );
 
 static const int RVM_VCEGAM10_M =                                   4;
 
 static const int MAX_REF_LINE_IDX =                                 3; //highest refLine offset in the list
 static const int MRL_NUM_REF_LINES =                                3; //number of candidates in the array
-static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 3, 0 };
+static const int MULTI_REF_LINE_IDX[4] =               { 0, 1, 2, 0 };
+
+static const int PRED_REG_MIN_WIDTH =                               4;  // Minimum prediction region width for ISP subblocks
 
 static const int NUM_LUMA_MODE =                                   67; ///< Planar + DC + 65 directional mode (4*16 + 1)
 static const int NUM_LMC_MODE =                                    1 + 2; ///< LMC + MDLM_T + MDLM_L
 static const int NUM_INTRA_MODE = (NUM_LUMA_MODE + NUM_LMC_MODE);
+
+static const int NUM_EXT_LUMA_MODE =                               28;
 
 static const int NUM_DIR =           (((NUM_LUMA_MODE - 3) >> 2) + 1);
 static const int PLANAR_IDX =                                       0; ///< index for intra PLANAR mode
@@ -214,6 +242,7 @@ static const int HOR_IDX =                    (1 * (NUM_DIR - 1) + 2); ///< inde
 static const int DIA_IDX =                    (2 * (NUM_DIR - 1) + 2); ///< index for intra DIAGONAL   mode
 static const int VER_IDX =                    (3 * (NUM_DIR - 1) + 2); ///< index for intra VERTICAL   mode
 static const int VDIA_IDX =                   (4 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
+static const int BDPCM_IDX =                  (5 * (NUM_DIR - 1) + 2); ///< index for intra VDIAGONAL  mode
 static const int NOMODE_IDX =                               MAX_UCHAR; ///< indicating uninitialized elements
 
 static const int NUM_CHROMA_MODE = (5 + NUM_LMC_MODE); ///< total number of chroma modes
@@ -222,21 +251,21 @@ static const int MDLM_L_IDX =                          LM_CHROMA_IDX + 1; ///< M
 static const int MDLM_T_IDX =                          LM_CHROMA_IDX + 2; ///< MDLM_T
 static const int DM_CHROMA_IDX =                       NUM_INTRA_MODE; ///< chroma mode index for derived from luma intra mode
 
-static const uint8_t INTER_MODE_IDX =                               255; ///< index for inter modes
-
 static const uint32_t  NUM_TRAFO_MODES_MTS =                            6; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTRA_MAX_CU_SIZE =                         32; ///< Max Intra CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const uint32_t  MTS_INTER_MAX_CU_SIZE =                         32; ///< Max Inter CU size applying EMT, supported values: 8, 16, 32, 64, 128
 static const int NUM_MOST_PROBABLE_MODES = 6;
 static const int LM_SYMBOL_NUM = (1 + NUM_LMC_MODE);
 
-static const int FAST_UDI_MAX_RDMODE_NUM =              NUM_LUMA_MODE; ///< maximum number of RD comparison in fast-UDI estimation loop
+static const int MAX_NUM_MIP_MODE =                                32; ///< maximum number of MIP pred. modes
+static const int FAST_UDI_MAX_RDMODE_NUM = (NUM_LUMA_MODE + MAX_NUM_MIP_MODE); ///< maximum number of RD comparison in fast-UDI estimation loop
 
-static const int MDCS_ANGLE_LIMIT =                                 9; ///< 0 = Horizontal/vertical only, 1 = Horizontal/vertical +/- 1, 2 = Horizontal/vertical +/- 2 etc...
+static const int MAX_LFNST_COEF_NUM =                              16;
 
-static const int MDCS_MAXIMUM_WIDTH =                               8; ///< (measured in pixels) TUs with width greater than this can only use diagonal scan
-static const int MDCS_MAXIMUM_HEIGHT =                              8; ///< (measured in pixels) TUs with height greater than this can only use diagonal scan
+static const int LFNST_LAST_SIG_LUMA =                              1;
+static const int LFNST_LAST_SIG_CHROMA =                            1;
 
+static const int NUM_LFNST_NUM_PER_SET =                            3;
 
 static const int LOG2_MAX_NUM_COLUMNS_MINUS1 =                      7;
 static const int LOG2_MAX_NUM_ROWS_MINUS1 =                         7;
@@ -250,17 +279,19 @@ static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL = 1 << MV
 static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << MV_FRACTIONAL_BITS_INTERNAL;
 static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << (MV_FRACTIONAL_BITS_INTERNAL + 1);
 
+static const int MAX_NUM_SUB_PICS =                               255;
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 
 
 static const int MAX_QP_OFFSET_LIST_SIZE =                          6; ///< Maximum size of QP offset list is 6 entries
+static const int MAX_NUM_CQP_MAPPING_TABLES =                       3; ///< Maximum number of chroma QP mapping tables (Cb, Cr and joint Cb-Cr)
+static const int MIN_QP_VALUE_FOR_16_BIT   =                      -48; ////< Minimum value for QP (-6*(bitdepth - 8) ) for bit depth 16 ; actual minimum QP value is bit depth dependent
+static const int MAX_NUM_QP_VALUES =    MAX_QP + 1 - MIN_QP_VALUE_FOR_16_BIT; ////< Maximum number of QP values possible - bit depth dependent
 
 // Cost mode support
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP =      0; ///< QP to use for lossless coding.
 static const int LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME =4; ///< QP' to use for mixed_lossy_lossless coding.
-
-static const int CR_FROM_CB_REG_COST_SHIFT                        = 9;
 
 static const int RExt__GOLOMB_RICE_ADAPTATION_STATISTICS_SETS =     4;
 
@@ -273,7 +304,8 @@ static const int MAX_CU_SIZE =                        1<<MAX_CU_DEPTH;
 static const int MIN_CU_LOG2 =                                      2;
 static const int MIN_PU_SIZE =                                      4;
 static const int MAX_NUM_PARTS_IN_CTU =                         ( ( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 ) );
-static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         2;
+static const int MAX_NUM_TUS =                                     16; ///< Maximum number of TUs within one CU. When max TB size is 32x32, up to 16 TUs within one CU (128x128) is supported
+static const int MAX_LOG2_DIFF_CU_TR_SIZE =                         3;
 static const int MAX_CU_TILING_PARTITIONS = 1 << ( MAX_LOG2_DIFF_CU_TR_SIZE << 1 );
 
 static const int JVET_C0024_ZERO_OUT_TH =                          32;
@@ -283,9 +315,12 @@ static const int SCALING_LIST_REM_NUM =                             6;
 
 static const int QUANT_SHIFT =                                     14; ///< Q(4) = 2^14
 static const int IQUANT_SHIFT =                                     6;
-static const int SCALE_BITS =                                      15; ///< Precision for fractional bit estimates
 
-static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * NUMBER_OF_PREDICTION_MODES; ///< list number for quantization matrix
+static constexpr int    SCALE_BITS      = 15;   // Precision for fractional bit estimates
+static constexpr double FRAC_BITS_SCALE = 1.0 / (1 << SCALE_BITS);
+
+static constexpr int SCALING_LIST_PRED_MODES = 2;
+static const int SCALING_LIST_NUM = MAX_NUM_COMPONENT * SCALING_LIST_PRED_MODES; ///< list number for quantization matrix
 
 static const int SCALING_LIST_START_VALUE =                         8; ///< start value for dpcm mode
 static const int MAX_MATRIX_COEF_NUM =                             64; ///< max coefficient number for quantization matrix
@@ -294,12 +329,9 @@ static const int SCALING_LIST_BITS =                                8; ///< bit 
 static const int LOG2_SCALING_LIST_NEUTRAL_VALUE =                  4; ///< log2 of the value that, when used in a scaling list, has no effect on quantisation
 static const int SCALING_LIST_DC =                                 16; ///< default DC value
 
-static const int CONTEXT_STATE_BITS =                               6;
 static const int LAST_SIGNIFICANT_GROUPS =                         14;
-static const int MAX_GR_ORDER_RESIDUAL =                           10;
 
 static const int AFFINE_MIN_BLOCK_SIZE =                            4; ///< Minimum affine MC block size
-
 
 static const int MMVD_REFINE_STEP =                                 8; ///< max number of distance step
 static const int MMVD_MAX_REFINE_NUM =                              (MMVD_REFINE_STEP * 4); ///< max number of candidate from a base candidate
@@ -308,19 +340,22 @@ static const int MMVD_ADD_NUM =                                     (MMVD_MAX_RE
 static const int MMVD_MRG_MAX_RD_NUM =                              MRG_MAX_NUM_CANDS;
 static const int MMVD_MRG_MAX_RD_BUF_NUM =                          (MMVD_MRG_MAX_RD_NUM + 1);///< increase buffer size by 1
 
-static const int MAX_NUM_REG_BINS_4x4SUBBLOCK =                    32; ///< max number of context-coded bins (incl. gt2 bins) per 4x4 subblock
-static const int MAX_NUM_GT2_BINS_4x4SUBBLOCK =                     4; ///< max number of gt2 bins per 4x4 subblock
-static const int MAX_NUM_REG_BINS_2x2SUBBLOCK =                     8; ///< max number of context-coded bins (incl. gt2 bins) per 2x2 subblock (chroma)
-static const int MAX_NUM_GT2_BINS_2x2SUBBLOCK =                     2; ///< max number of gt2 bins per 2x2 subblock (chroma)
+static const int MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_LUMA =      28;
+static const int MAX_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT_CHROMA =    28;
 
 static const int BIO_EXTEND_SIZE              =                     1;
 static const int BIO_TEMP_BUFFER_SIZE         =                     (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE) * (MAX_CU_SIZE + 2 * BIO_EXTEND_SIZE);
 
-static const int GBI_NUM =                                          5; ///< the number of weight options
-static const int GBI_DEFAULT =                                      ((uint8_t)(GBI_NUM >> 1)); ///< Default weighting index representing for w=0.5
-static const int GBI_SIZE_CONSTRAINT =                            256; ///< disabling GBi if cu size is smaller than 256
+static const int PROF_BORDER_EXT_W            =                     1;
+static const int PROF_BORDER_EXT_H            =                     1;
+static const int BCW_NUM =                                          5; ///< the number of weight options
+static const int BCW_DEFAULT =                                      ((uint8_t)(BCW_NUM >> 1)); ///< Default weighting index representing for w=0.5
+static const int BCW_SIZE_CONSTRAINT =                            256; ///< disabling Bcw if cu size is smaller than 256
 static const int MAX_NUM_HMVP_CANDS =                              (MRG_MAX_NUM_CANDS-1); ///< maximum number of HMVP candidates to be stored and used in merge list
 static const int MAX_NUM_HMVP_AVMPCANDS =                          4; ///< maximum number of HMVP candidates to be used in AMVP list
+
+static const int ALF_VB_POS_ABOVE_CTUROW_LUMA = 4;
+static const int ALF_VB_POS_ABOVE_CTUROW_CHMA = 2;
 
 #if W0038_DB_OPT
 static const int MAX_ENCODER_DEBLOCKING_QUALITY_LAYERS =           8 ;
@@ -341,25 +376,20 @@ static const int DMVR_NUM_ITERATION = 2;
 //for I slice luma CTB configuration para.
 static const int    MAX_BT_DEPTH  =                                 4;      ///<  <=7
 static const int    MAX_BT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MIN_BT_SIZE   =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
 
 static const int    MAX_TT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
 static const int    MAX_TT_SIZE_C =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MIN_TT_SIZE   =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
-static const int    MIN_TT_SIZE_C =                                 4;      ///<  can be set down to 1<<MIN_CU_LOG2
                                                                             //for P/B slice CTU config. para.
 static const int    MAX_BT_DEPTH_INTER =                            4;      ///< <=7
 static const int    MAX_BT_SIZE_INTER  =                          128;      ///< for initialization, [1<<MIN_BT_SIZE_INTER, 1<<CTU_LOG2]
-static const int    MIN_BT_SIZE_INTER  =                            4;      ///<
 
                                                                             //for I slice chroma CTB configuration para. (in luma samples)
 static const int    MAX_BT_DEPTH_C      =                           0;      ///< <=7
 static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
-static const int    MIN_BT_SIZE_C       =                           4;      ///< can be set down to 4, in luma samples
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
-static const int    MIN_TT_SIZE_INTER  =                            4;      ///<
-
+static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
+static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;
 static const SplitSeries SPLIT_BITS         =                       5;
 static const SplitSeries SPLIT_DMULT        =                       5;
 static const SplitSeries SPLIT_MASK         =                      31;      ///< = (1 << SPLIT_BITS) - 1
@@ -382,11 +412,6 @@ static const int MAX_TESTED_QPs =   ( 1 + 1 + ( MAX_DELTA_QP << 1 ) );      ///<
 
 static const int COM16_C806_TRANS_PREC =                            0;
 
-static const int NUM_MERGE_IDX_EXT_CTX =                            5;
-static const unsigned E0104_ALF_MAX_TEMPLAYERID =                  5;       // define to zero to switch of  code
-static const unsigned C806_ALF_TEMPPRED_NUM =                      6;
-
-
 static const int NTAPS_LUMA               =                         8; ///< Number of taps for luma
 static const int NTAPS_CHROMA             =                         4; ///< Number of taps for chroma
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
@@ -396,15 +421,20 @@ static const int MAX_LADF_INTERVALS       =                         5; /// max n
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
 
 static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP
-static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       5;
+static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       6;
 static const int TRIANGLE_MAX_NUM_CANDS_MEM =                       7;
-static const int TRIANGLE_MAX_NUM_CANDS =                          40;
+static const int TRIANGLE_MAX_NUM_CANDS = TRIANGLE_MAX_NUM_UNI_CANDS * (TRIANGLE_MAX_NUM_UNI_CANDS - 1) * 2;
 static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
 static const int TRIANGLE_MIN_SIZE =                            8 * 8;
 
 static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
 static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
 static const int SBT_NUM_RDO =                                      2; ///< maximum number of SBT mode tried for a PU
+
+static const int NUM_INTER_CU_INFO_SAVE =                           8; ///< maximum number of inter cu information saved for fast algorithm
+static const int LDT_MODE_TYPE_INHERIT =                            0; ///< No need to signal mode_constraint_flag, and the modeType of the region is inherited from its parent node
+static const int LDT_MODE_TYPE_INFER =                              1; ///< No need to signal mode_constraint_flag, and the modeType of the region is inferred as MODE_TYPE_INTRA
+static const int LDT_MODE_TYPE_SIGNAL =                             2; ///< Need to signal mode_constraint_flag, and the modeType of the region is determined by the flag
 
 static const int IBC_MAX_CAND_SIZE = 16; // max block size for ibc search
 static const int IBC_NUM_CANDIDATES = 64; ///< Maximum number of candidates to store/test
@@ -417,10 +447,41 @@ static constexpr int MV_MANTISSA_BITCOUNT    = 6;
 static constexpr int MV_MANTISSA_UPPER_LIMIT = ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1);
 static constexpr int MV_MANTISSA_LIMIT       = (1 << (MV_MANTISSA_BITCOUNT - 1));
 static constexpr int MV_EXPONENT_MASK        = ((1 << MV_EXPONENT_BITCOUNT) - 1);
+
+static constexpr int MV_BITS =                                   18;
+static constexpr int MV_MAX =              (1 << (MV_BITS - 1)) - 1;
+static constexpr int MV_MIN =                 -(1 << (MV_BITS - 1));
+
+static const int MVD_MAX =                            (1 << 17) - 1;
+static const int MVD_MIN =                               -(1 << 17);
+
 static const int PIC_ANALYZE_CW_BINS =                           32;
 static const int PIC_CODE_CW_BINS =                              16;
-static const int FP_PREC =                                       14;
+static const int LMCS_SEG_NUM =                                  32;
+static const int FP_PREC =                                       11;
 static const int CSCALE_FP_PREC =                                11;
+static const int  NEIG_NUM_LOG  =                                 6;
+static const int  NEIG_NUM =                      1 << NEIG_NUM_LOG;
+static const int LOG2_PALETTE_CG_SIZE =                           4;
+static const int RUN_IDX_THRE =                                   4;
+static const int MAX_CU_BLKSIZE_PLT =                            64;
+static const int NUM_TRELLIS_STATE =                              3;
+static const double ENC_CHROMA_WEIGHTING =                      0.8;
+static const int MAXPLTPREDSIZE = 63;
+static const int MAXPLTSIZE = 31;
+static const double PLT_CHROMA_WEIGHTING =                      0.8;
+static const int PLT_ENCBITDEPTH = 8;
+static const int PLT_FAST_RATIO = 100;
+#if RExt__DECODER_DEBUG_TOOL_MAX_FRAME_STATS
+static const int  EPBIN_WEIGHT_FACTOR =                           4;
+#endif
+static const int ENC_PPS_ID_RPR =                                 3;
+static const int SCALE_RATIO_BITS =                              14;
+static const int MAX_SCALING_RATIO =                              2;  // max downsampling ratio for RPR
+static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
+static const int DELTA_QP_FOR_Y_Cg =                             -5;
+static const int DELTA_QP_FOR_Co =                               -3;
+
 // ====================================================================================================================
 // Macro functions
 // ====================================================================================================================
@@ -566,10 +627,16 @@ static inline int floorLog2(uint32_t x)
 {
   if (x == 0)
   {
+    // note: ceilLog2() expects -1 as return value
     return -1;
   }
 #ifdef __GNUC__
   return 31 - __builtin_clz(x);
+#else
+#ifdef _MSC_VER
+  unsigned long r = 0;
+  _BitScanReverse(&r, x);
+  return r;
 #else
   int result = 0;
   if (x & 0xffff0000)
@@ -599,7 +666,14 @@ static inline int floorLog2(uint32_t x)
   }
   return result;
 #endif
+#endif
 }
+
+static inline int ceilLog2(uint32_t x)
+{
+  return (x==0) ? -1 : floorLog2(x - 1) + 1;
+}
+
 
 //CASE-BREAK for breakpoints
 #if defined ( _MSC_VER ) && defined ( _DEBUG )
@@ -616,7 +690,7 @@ static inline int floorLog2(uint32_t x)
 #define _UNIT_AREA_AT(_a,_x,_y,_w,_h)
 #endif
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 #include <omp.h>
 
 #define PARL_PARAM(DEF) , DEF

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,7 @@ void         destroyROM();
 // Data structure related table & variable
 // ====================================================================================================================
 
+
 // flexible conversion from relative to absolute index
 struct ScanElement
 {
@@ -67,23 +68,16 @@ struct ScanElement
   uint16_t y;
 };
 
-extern       uint32_t   g_log2SbbSize   [2][MAX_CU_DEPTH+1][MAX_CU_DEPTH+1][2];
+extern       uint32_t   g_log2SbbSize[MAX_CU_DEPTH + 1][MAX_CU_DEPTH + 1][2];
 extern ScanElement
-  *g_scanOrder[2][SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+  *g_scanOrder[SCAN_NUMBER_OF_GROUP_TYPES][SCAN_NUMBER_OF_TYPES][MAX_CU_SIZE / 2 + 1][MAX_CU_SIZE / 2 + 1];
+extern       ScanElement   g_coefTopLeftDiagScan8x8[ MAX_CU_SIZE / 2 + 1 ][ 64 ];
 
-extern const int g_quantScales   [SCALING_LIST_REM_NUM];          // Q(QP%6)
-extern const int g_invQuantScales[SCALING_LIST_REM_NUM];          // IQ(QP%6)
+extern const int g_quantScales   [2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // Q(QP%6)
+extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // IQ(QP%6)
 
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
-
-
-// ====================================================================================================================
-// Luma QP to Chroma QP mapping
-// ====================================================================================================================
-static const int chromaQPMappingTableSize = (MAX_QP + 7);
-
-extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize];
 
 
 // ====================================================================================================================
@@ -93,8 +87,10 @@ extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSi
 extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
-extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
-extern const uint32_t   g_auiGoRiceRange[ MAX_GR_ORDER_RESIDUAL ];                  //!< maximum value coded with Rice codes
+inline uint32_t g_auiGoRicePosCoeff0(int st, uint32_t ricePar)
+{
+  return (st < 2 ? 1 : 2) << ricePar;
+}
 
 // ====================================================================================================================
 // Intra prediction table
@@ -129,33 +125,36 @@ extern const TMatrixCoeff g_trCoreDST7P8  [TRANSFORM_NUMBER_OF_DIRECTIONS][  8][
 extern const TMatrixCoeff g_trCoreDST7P16 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 16][ 16];
 extern const TMatrixCoeff g_trCoreDST7P32 [TRANSFORM_NUMBER_OF_DIRECTIONS][ 32][ 32];
 
+extern const     int8_t   g_lfnst8x8[ 4 ][ 2 ][ 16 ][ 48 ];
+extern const     int8_t   g_lfnst4x4[ 4 ][ 2 ][ 16 ][ 16 ];
+
+extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
 
 // ====================================================================================================================
 // Misc.
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
-extern int8_t          g_aucLog2                       [MAX_CU_SIZE + 1];
-extern int8_t          g_aucNextLog2        [MAX_CU_SIZE + 1];
-extern int8_t          g_aucPrevLog2        [MAX_CU_SIZE + 1];
+
+extern const int       g_ictModes[2][4];
 
 inline bool is34( const SizeType& size )
 {
-  return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 1 ) ) );
+  return ( size & ( ( int64_t ) 1 << ( floorLog2(size) - 1 ) ) );
 }
 
 inline bool is58( const SizeType& size )
 {
-  return ( size & ( ( int64_t ) 1 << ( g_aucLog2[size] - 2 ) ) );
+  return ( size & ( ( int64_t ) 1 << ( floorLog2(size) - 2 ) ) );
 }
 
 inline bool isNonLog2BlockSize( const Size& size )
 {
-  return ( ( 1 << g_aucLog2[size.width] ) != size.width ) || ( ( 1 << g_aucLog2[size.height] ) != size.height );
+  return ( ( 1 << floorLog2(size.width) ) != size.width ) || ( ( 1 << floorLog2(size.height) ) != size.height );
 }
 
 inline bool isNonLog2Size( const SizeType& size )
 {
-  return ( ( 1 << g_aucLog2[size] ) != size );
+  return ( ( 1 << floorLog2(size) ) != size );
 }
 
 extern UnitScale     g_miScaling; // scaling object for motion scaling
@@ -168,7 +167,6 @@ extern CDTrace* g_trace_ctx;
 
 const char* nalUnitTypeToString(NalUnitType type);
 
-#if HEVC_USE_SCALING_LISTS
 extern const char *MatrixType   [SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM];
 extern const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM];
 
@@ -178,22 +176,21 @@ extern const int g_quantInterDefault8x8[8*8];
 
 extern const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM];
 extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
-#endif
 
 extern MsgLevel g_verbosity;
 
 
-extern const int8_t g_GbiLog2WeightBase;
-extern const int8_t g_GbiWeightBase;
-extern const int8_t g_GbiWeights[GBI_NUM];
-extern const int8_t g_GbiSearchOrder[GBI_NUM];
-extern       int8_t g_GbiCodingOrder[GBI_NUM];
-extern       int8_t g_GbiParsingOrder[GBI_NUM];
+extern const int8_t g_BcwLog2WeightBase;
+extern const int8_t g_BcwWeightBase;
+extern const int8_t g_BcwWeights[BCW_NUM];
+extern const int8_t g_BcwSearchOrder[BCW_NUM];
+extern       int8_t g_BcwCodingOrder[BCW_NUM];
+extern       int8_t g_BcwParsingOrder[BCW_NUM];
 
 class CodingStructure;
-int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList);
-void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs);
-uint32_t deriveWeightIdxBits(uint8_t gbiIdx);
+int8_t getBcwWeight(uint8_t bcwIdx, uint8_t uhRefFrmList);
+void resetBcwCodingOrder(bool bRunDecoding, const CodingStructure &cs);
+uint32_t deriveWeightIdxBits(uint8_t bcwIdx);
 
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -209,8 +206,19 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 //! \}
 
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-
+// 7-tap/3-tap, direction, 2/4/8/16/32/64/128
+extern int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
 extern bool g_mctsDecCheckEnabled;
+
+class  Mv;
+extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
+extern bool g_isReusedUniMVsFilled[32][32][8][8];
+
+extern const uint8_t g_paletteQuant[52];
+extern uint8_t g_paletteRunTopLut[5];
+extern uint8_t g_paletteRunLeftLut[5];
+
+const int g_IBCBufferSize = 256 * 128;
 
 #endif  //__TCOMROM__
 

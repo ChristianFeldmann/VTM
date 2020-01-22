@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,10 @@
 // ---------------------------------------------------------------------------
 // tools
 // ---------------------------------------------------------------------------
-
+struct PLTBuf {
+  uint8_t        curPLTSize[MAX_NUM_CHANNEL_TYPE];
+  Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE];
+};
 inline Position recalcPosition(const ChromaFormat _cf, const ComponentID srcCId, const ComponentID dstCId, const Position &pos)
 {
   if( toChannelType( srcCId ) == toChannelType( dstCId ) )
@@ -267,9 +270,8 @@ struct UnitAreaRelative : public UnitArea
 };
 
 class SPS;
-#if HEVC_VPS
 class VPS;
-#endif
+class DPS;
 class PPS;
 class Slice;
 
@@ -299,27 +301,38 @@ struct CodingUnit : public UnitArea
   int8_t          chromaQpAdj;
   int8_t          qp;
   SplitSeries    splitSeries;
+  TreeType       treeType;
+  ModeType       modeType;
+  ModeTypeSeries modeTypeSeries;
   bool           skip;
   bool           mmvdSkip;
   bool           affine;
   int            affineType;
+  bool           colorTransform;
   bool           triangle;
-  bool           transQuantBypass;
-  bool           ipcm;
+  int            bdpcmMode;
+  int            bdpcmModeChroma;
   uint8_t          imv;
   bool           rootCbf;
   uint8_t        sbtInfo;
-#if HEVC_TILES_WPP
   uint32_t           tileIdx;
-#endif
-  uint8_t         GBiIdx;
+  uint8_t         mtsFlag;
+  uint32_t        lfnstIdx;
+  uint8_t         BcwIdx;
   int             refIdxBi[2];
+  bool           mipFlag;
+
   // needed for fast imv mode decisions
   int8_t          imvNumCand;
-  Position       shareParentPos;
-  Size           shareParentSize;
   uint8_t          smvdMode;
   uint8_t        ispMode;
+  bool           useEscape[MAX_NUM_CHANNEL_TYPE];
+  bool           useRotation[MAX_NUM_CHANNEL_TYPE];
+  bool           reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE];
+  uint8_t        lastPLTSize[MAX_NUM_CHANNEL_TYPE];
+  uint8_t        reusePLTSize[MAX_NUM_CHANNEL_TYPE];
+  uint8_t        curPLTSize[MAX_NUM_CHANNEL_TYPE];
+  Pel            curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE];
 
   CodingUnit() : chType( CH_L ) { }
   CodingUnit(const UnitArea &unit);
@@ -337,7 +350,7 @@ struct CodingUnit : public UnitArea
 
   TransformUnit *firstTU;
   TransformUnit *lastTU;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   int64_t cacheId;
   bool    cacheUsed;
@@ -348,6 +361,10 @@ struct CodingUnit : public UnitArea
   void              setSbtPos( uint8_t pos ) { CHECK( pos >= 4, "sbt_pos wrong" ); sbtInfo = ( pos << 4 ) + ( sbtInfo & 0xcf ); }
   uint8_t           getSbtTuSplit() const;
   const uint8_t     checkAllowedSbt() const;
+  const bool        checkCCLMAllowed() const;
+  const bool        isSepTree() const;
+  const bool        isConsInter() const { return modeType == MODE_TYPE_INTER; }
+  const bool        isConsIntra() const { return modeType == MODE_TYPE_INTRA; }
 };
 
 // ---------------------------------------------------------------------------
@@ -357,12 +374,14 @@ struct CodingUnit : public UnitArea
 struct IntraPredictionData
 {
   uint32_t  intraDir[MAX_NUM_CHANNEL_TYPE];
+  bool      mipTransposedFlag;
   int       multiRefIdx;
 };
 
 struct InterPredictionData
 {
   bool      mergeFlag;
+  bool      regularMergeFlag;
   uint8_t     mergeIdx;
   uint8_t     triangleSplitDir;
   uint8_t     triangleMergeIdx0;
@@ -380,10 +399,8 @@ struct InterPredictionData
   Mv        mvdL0SubPu[MAX_NUM_SUBCU_DMVR];
   Mv        mvdAffi [NUM_REF_PIC_LIST_01][3];
   Mv        mvAffi[NUM_REF_PIC_LIST_01][3];
-  bool      mhIntraFlag;
+  bool      ciipFlag;
 
-  Position  shareParentPos;
-  Size      shareParentSize;
   Mv        bv;                             // block vector for IBC
   Mv        bvd;                            // block vector difference for IBC
   uint8_t   mmvdEncOptMode;                  // 0: no action 1: skip chroma MC for MMVD candidate pre-selection 2: skip chroma MC and BIO for MMVD candidate pre-selection
@@ -408,8 +425,6 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   PredictionUnit& operator=(const MotionInfo& mi);
 
   unsigned        idx;
-  Position shareParentPos;
-  Size     shareParentSize;
 
   PredictionUnit *next;
 
@@ -419,7 +434,7 @@ struct PredictionUnit : public UnitArea, public IntraPredictionData, public Inte
   MotionBuf         getMotionBuf();
   CMotionBuf        getMotionBuf() const;
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 
   int64_t cacheId;
   bool    cacheUsed;
@@ -438,8 +453,9 @@ struct TransformUnit : public UnitArea
   int              m_chromaResScaleInv;
 
   uint8_t        depth;
-  uint8_t        mtsIdx;
+  uint8_t        mtsIdx     [ MAX_NUM_TBLOCKS ];
   bool           noResidual;
+  uint8_t        jointCbCr;
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
   int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
@@ -453,12 +469,12 @@ struct TransformUnit : public UnitArea
   unsigned       idx;
   TransformUnit *next;
   TransformUnit *prev;
-
-  void init(TCoeff **coeffs, Pel **pcmbuf);
+  void init(TCoeff **coeffs, Pel **pcmbuf, bool **runType);
 
   TransformUnit& operator=(const TransformUnit& other);
   void copyComponentFrom  (const TransformUnit& other, const ComponentID compID);
   void checkTuNoResidual( unsigned idx );
+  int  getTbAreaAfterCoefZeroOut(ComponentID compID) const;
 
          CoeffBuf getCoeffs(const ComponentID id);
   const CCoeffBuf getCoeffs(const ComponentID id) const;
@@ -466,8 +482,16 @@ struct TransformUnit : public UnitArea
   const CPelBuf   getPcmbuf(const ComponentID id) const;
         int       getChromaAdj( )                 const;
         void      setChromaAdj(int i);
+         PelBuf   getcurPLTIdx(const ComponentID id);
+  const CPelBuf   getcurPLTIdx(const ComponentID id) const;
+         PLTtypeBuf   getrunType(const ComponentID id);
+  const CPLTtypeBuf   getrunType(const ComponentID id) const;
+         PLTescapeBuf getescapeValue(const ComponentID id);
+  const CPLTescapeBuf getescapeValue(const ComponentID id) const;
+        Pel*      getPLTIndex(const ComponentID id);
+        bool*     getRunTypes(const ComponentID id);
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t cacheId;
   bool    cacheUsed;
 
@@ -475,6 +499,7 @@ struct TransformUnit : public UnitArea
 private:
   TCoeff *m_coeffs[ MAX_NUM_TBLOCKS ];
   Pel    *m_pcmbuf[ MAX_NUM_TBLOCKS ];
+  bool   *m_runType[ MAX_NUM_TBLOCKS - 1 ];
 };
 
 // ---------------------------------------------------------------------------

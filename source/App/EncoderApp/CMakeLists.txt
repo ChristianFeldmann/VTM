@@ -66,6 +66,10 @@ if( EXTENSION_360_VIDEO )
   target_link_libraries( ${EXE_NAME} Lib360 AppEncHelper360 )
 endif()
 
+if( EXTENSION_HDRTOOLS )
+  target_link_libraries( ${EXE_NAME} HDRLib )
+endif()
+
 # lldb custom data formatters
 if( XCODE )
   add_dependencies( ${EXE_NAME} Install${PROJECT_NAME}LldbFiles )

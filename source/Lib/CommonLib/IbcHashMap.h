@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -81,6 +81,8 @@ public:
   void    rebuildPicHashMap(const PelUnitBuf& pic);
   bool    ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand, const CodingStructure& cs, const int maxCand, const int searchRange4SmallBlk);
   int     getHashHitRatio(const Area& lumaArea);
+
+  int     calHashBlkMatchPerc(const Area& lumaArea);
 
 #ifdef TARGET_SIMD_X86
   void    initIbcHashMapX86();

@@ -11,6 +11,7 @@ import sys
 import pyhhi.build.common.system as system
 import pyhhi.build.common.util as util
 import pyhhi.build.common.ver as ver
+import pyhhi.build.common.bldtools as bldtools
 import pyhhi.build.cmksupp as cmksupp
 from pyhhi.build.common.bldtools import BuildScriptInstaller
 from pyhhi.build.common.error import InvalidCommandLineArgumentError
@@ -24,7 +25,7 @@ class CMakeLauncherApp(object):
         self._cmake_launcher = None
         self._dict_generator_choice = {'linux': ['umake', 'ninja'],
                                        'macosx': ['xcode', 'umake', 'ninja'],
-                                       'windows': ['vs15', 'vs14', 'vs12', 'vs11', 'vs10', 'umake', 'mgwmake', 'ninja']}
+                                       'windows': ['vs16', 'vs15', 'vs14', 'vs12', 'vs11', 'vs10', 'umake', 'mgwmake', 'ninja']}
         self._top_dir = None
         self._cmake_mod_list = ['pyhhi.build.app.cmk',
                                 'pyhhi.build.cmkfnd',
@@ -93,14 +94,14 @@ class CMakeLauncherApp(object):
 %(prog)s [options] [variant=debug,release,relwithdebinfo,minsizerel] [link=static,shared] [toolset=<toolset_spec>] [address-model=32]
 
 %(prog)s is a script front end to cmake to simplify its usage on Linux,
-Windows, MacOSX using cmake's generators "Unix Makefiles", "Xcode" and
-"Visual Studio 15 - Visual Studio 10" and its compilers.
+Windows, MacOSX using cmake's generators "Unix Makefiles", "Ninja", "Xcode" and
+"Visual Studio 16 - Visual Studio 10" and its compilers.
 
 arguments:
   variant:          debug if not specified
   link:             static if not specified
   toolset:          default c++ compiler if not specified
-                    examples/windows: msvc-19.13, msvc-19.0, msvc-18.0, msvc-17.0, msvc-16.0, intel, gcc
+                    examples/windows: msvc-19.1x, msvc-19.0, msvc-18.0, msvc-17.0, msvc-16.0, intel, gcc
                     examples/linux:   gcc-4.9, gcc-5, gcc-6, clang, intel
   address-model=32: windows: builds 32 bit binaries instead of 64 bit binaries
 
@@ -131,7 +132,7 @@ usage examples:
 
         parser.add_argument("-g", "-G", action="store", dest="generator", choices=self._dict_generator_choice[self._sys_info.get_platform()],
                             help="""specify a cmake generator the script has special support for.
-                                    Supported generators: ninja, umake, mgwmake, vs15, vs14, vs12, vs11, vs10, xcode.
+                                    Supported generators: ninja, umake, mgwmake, vs16, vs15, vs14, vs12, vs11, vs10, xcode.
                                     The choices accepted are platform and installation dependent. The environment variable
                                     DEFAULT_CMAKE_GENERATOR may be used to override the default value.""")
 
@@ -155,13 +156,14 @@ usage examples:
         parser.add_argument("--clean-first", action="store_true", dest="clean_first", default=False,
                             help="build target clean first, then build the active target.")
 
-        parser.add_argument("--verbosity", action="store", dest="build_verbosity", choices=['quiet', 'minimal', 'normal', 'detailed', 'diagnostic'], default='minimal',
-                            help="specify msbuild verbosity level [default: %(default)s].")
+        parser.add_argument("--verbosity", action="store", dest="build_verbosity", choices=['cmake', 'quiet', 'minimal', 'normal', 'detailed', 'diagnostic'], default='minimal',
+                            help="""specify (ms)build verbosity level [default: %(default)s]. 
+                                 The choice 'cmake' requires cmake 3.14.x or higher to increase build verbosity for Visual Studio and other generators.""")
 
         util.app_args_add_log_level(parser)
 
         g = parser.add_argument_group("advanced options")
-        g.add_argument("-i", action="store", dest="install_dir", nargs='?', const=os.path.join(self._sys_info.get_home_dir(), 'bin'),
+        g.add_argument("-i", action="store", dest="install_dir", nargs='?', const=os.path.join(self._sys_info.get_home_dir(native=True), 'bin'),
                        help="install this script and exit. The default destination directory is %(const)s.")
 
         g.add_argument("--py-cache-clean", action="store", dest="py_cache_dirs", nargs='+',
@@ -282,11 +284,26 @@ usage examples:
                 # looks like a cross compiler specification which requires a toolchain file matching the toolset spec and the linux system.
                 toolset_spec_norm = self._find_toolchain_file(toolset_spec_norm)
         elif self._sys_info.is_windows():
-            # msvc-19.00 -> normalized to 19.0
-            re_match = re.match(r'msvc-(\d+)\.(\d+)', toolset_spec)
-            if re_match:
-                minor_version = int(re_match.group(2))
-                toolset_spec_norm = "msvc-{0}.{1:d}".format(re_match.group(1), minor_version)
+            if toolset_spec.startswith('msvc-'):
+                msvc_registry = bldtools.MsvcRegistry()
+                if toolset_spec == 'msvc-19.2x':
+                    if msvc_registry.is_version_installed((14, 2)):
+                        cl_version = msvc_registry.get_compiler_version((14, 2))
+                        toolset_spec_norm = "msvc-{0:d}.{1:d}".format(cl_version[0], cl_version[1])
+                    else:
+                        raise InvalidCommandLineArgumentError("toolset={} not available.".format(toolset_spec))
+                elif toolset_spec == 'msvc-19.1x':
+                    if msvc_registry.is_version_installed((14, 1)):
+                        cl_version = msvc_registry.get_compiler_version((14, 1))
+                        toolset_spec_norm = "msvc-{0:d}.{1:d}".format(cl_version[0], cl_version[1])
+                    else:
+                        raise InvalidCommandLineArgumentError("toolset={} not available.".format(toolset_spec))
+                else:
+                    # msvc-19.00 -> normalized to 19.0
+                    re_match = re.match(r'msvc-(\d+)\.(\d+)', toolset_spec)
+                    if re_match:
+                        minor_version = int(re_match.group(2))
+                        toolset_spec_norm = "msvc-{0}.{1:d}".format(re_match.group(1), minor_version)
         elif self._sys_info.is_macosx():
             pass
         else:

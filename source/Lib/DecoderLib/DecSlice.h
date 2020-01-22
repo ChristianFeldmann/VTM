@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,12 +62,7 @@ private:
   CABACDecoder*   m_CABACDecoder;
   DecCu*          m_pcCuDecoder;
 
-#if HEVC_DEPENDENT_SLICES
-  Ctx             m_lastSliceSegmentEndContextState;    ///< context storage for state at the end of the previous slice-segment (used for dependent slices only).
-#endif
-#if HEVC_TILES_WPP
   Ctx             m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#endif
 
 public:
   DecSlice();

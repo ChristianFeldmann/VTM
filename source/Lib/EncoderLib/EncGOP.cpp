@@ -2406,12 +2406,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       for( int refIdx = 0; refIdx < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); refIdx++ )
       {
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+        if( pcSlice->getRefPic( REF_PIC_LIST_0, refIdx )->isRefScaled( pcSlice->getPPS() ) == false )
+#else
         int refPicWidth = pcSlice->getRefPic( REF_PIC_LIST_0, refIdx )->unscaledPic->cs->pps->getPicWidthInLumaSamples();
         int refPicHeight = pcSlice->getRefPic( REF_PIC_LIST_0, refIdx )->unscaledPic->cs->pps->getPicHeightInLumaSamples();
         int curPicWidth = pcSlice->getPPS()->getPicWidthInLumaSamples();
         int curPicHeight = pcSlice->getPPS()->getPicHeightInLumaSamples();
 
         if( refPicWidth == curPicWidth && refPicHeight == curPicHeight )
+#endif
         {
           colRefIdxL0 = refIdx;
           break;
@@ -2422,12 +2426,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         for( int refIdx = 0; refIdx < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); refIdx++ )
         {
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+          if( pcSlice->getRefPic( REF_PIC_LIST_1, refIdx )->isRefScaled( pcSlice->getPPS() ) == false )
+#else
           int refPicWidth = pcSlice->getRefPic( REF_PIC_LIST_1, refIdx )->unscaledPic->cs->pps->getPicWidthInLumaSamples();
           int refPicHeight = pcSlice->getRefPic( REF_PIC_LIST_1, refIdx )->unscaledPic->cs->pps->getPicHeightInLumaSamples();
           int curPicWidth = pcSlice->getPPS()->getPicWidthInLumaSamples();
           int curPicHeight = pcSlice->getPPS()->getPicHeightInLumaSamples();
 
           if( refPicWidth == curPicWidth && refPicHeight == curPicHeight )
+#endif
           {
             colRefIdxL1 = refIdx;
             break;

@@ -686,6 +686,8 @@ public:
   SubPic();
   virtual ~SubPic();
 
+  void             setSubPicID (uint32_t u)                {         m_subPicID = u;       }
+  uint32_t         getSubPicID   ()                  const { return  m_subPicID;           }
   void             setNumCTUsInSubPic   (uint32_t u)       {         m_numCTUsInSubPic = u;       }
   uint32_t         getNumCTUsInSubPic   ()           const { return  m_numCTUsInSubPic;           }
   void             setSubPicCtuTopLeftX (uint32_t u)       {         m_subPicCtuTopLeftX = u;     }

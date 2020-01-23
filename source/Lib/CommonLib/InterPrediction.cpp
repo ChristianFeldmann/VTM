@@ -475,7 +475,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   if( !pu.cu->affine )
   {
 #if JVET_Q0487_SCALING_WINDOW_ISSUES
-    if( pu.cu->slice->getRefPic( eRefPicList, iRefIdx )->isRefScaled( pu.cs->pps ) == false )
+    if( !isIBC && pu.cu->slice->getRefPic( eRefPicList, iRefIdx )->isRefScaled( pu.cs->pps ) == false )
 #else
     if( pu.cu->slice->getScalingRatio( eRefPicList, iRefIdx ) == SCALE_1X )
 #endif

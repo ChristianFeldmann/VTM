@@ -475,7 +475,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   if( !pu.cu->affine )
   {
 #if JVET_Q0487_SCALING_WINDOW_ISSUES
-    if( pu.cu->slice->getRefPic( eRefPicList, iRefIdx )->isRefScaled( pu.cs->pps ) == false )
+    if( !isIBC && pu.cu->slice->getRefPic( eRefPicList, iRefIdx )->isRefScaled( pu.cs->pps ) == false )
 #else
     if( pu.cu->slice->getScalingRatio( eRefPicList, iRefIdx ) == SCALE_1X )
 #endif
@@ -2378,6 +2378,51 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
         yFilter = 3;
       }
     }
+#if JVET_Q0517_RPR_AFFINE_DS 
+    if (filterIndex == 2)
+    {
+      if (isLuma(compID))
+      {
+        if (scalingRatio.first > rprThreshold2)
+        {
+          xFilter = 6;
+        }
+        else if (scalingRatio.first > rprThreshold1)
+        {
+          xFilter = 5;
+        }
+
+        if (scalingRatio.second > rprThreshold2)
+        {
+          yFilter = 6;
+        }
+        else if (scalingRatio.second > rprThreshold1)
+        {
+          yFilter = 5;
+        }
+      }
+      else
+      {
+        if (scalingRatio.first > rprThreshold2)
+        {
+          xFilter = 4;
+        }
+        else if (scalingRatio.first > rprThreshold1)
+        {
+          xFilter = 3;
+        }
+
+        if (scalingRatio.second > rprThreshold2)
+        {
+          yFilter = 4;
+        }
+        else if (scalingRatio.second > rprThreshold1)
+        {
+          yFilter = 3;
+        }
+      }
+    }
+#endif
 
     const int posShift = SCALE_RATIO_BITS - 4;
     int stepX = ( scalingRatio.first + 8 ) >> 4;

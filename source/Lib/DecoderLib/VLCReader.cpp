@@ -466,6 +466,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     {
       pcPPS->setSubPicId( picIdx, picIdx );
     }
+#if JVET_O1143_SUBPIC_BOUNDARY
+    // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
+    SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+    pcPPS->setNumSubPics(sps->getNumSubPics());
+#endif
   }
 
 
@@ -571,6 +576,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       
       // initialize mapping between rectangular slices and CTUs
       pcPPS->initRectSliceMap();
+#if JVET_O1143_SUBPIC_BOUNDARY
+      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+      CHECK(sps == 0, "Invalid SPS");
+      pcPPS->initSubPic(*sps);
+#endif
     }
 
     // loop filtering across slice/tile controls
@@ -1766,6 +1776,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     pps->setTileIdxDeltaPresentFlag( 0 );
     pps->setSliceTileIdx( 0, 0 );
     pps->initRectSliceMap( );
+#if JVET_O1143_SUBPIC_BOUNDARY
+    // when no Pic partition, number of sub picture shall be less than 2
+    CHECK(pps->getNumSubPics()>=2, "error, no picture partitions, but have equal to or more than 2 sub pictures");
+#endif
   }
   else 
   {

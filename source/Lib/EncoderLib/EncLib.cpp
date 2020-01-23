@@ -1476,6 +1476,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
       pps.setTileIdxDeltaPresentFlag( m_tileIdxDeltaPresentFlag );
       pps.setRectSlices( m_rectSlices );
       pps.initRectSliceMap( );
+#if JVET_O1143_SUBPIC_BOUNDARY
+      pps.initSubPic(sps);
+#endif
     }
     else
     {
@@ -1498,6 +1501,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setTileIdxDeltaPresentFlag( 0 );
     pps.setSliceTileIdx( 0, 0 );
     pps.initRectSliceMap( );
+#if JVET_O1143_SUBPIC_BOUNDARY
+    pps.initSubPic(sps);
+#endif
     pps.setLoopFilterAcrossTilesEnabledFlag( true );
     pps.setLoopFilterAcrossSlicesEnabledFlag( true );
   }

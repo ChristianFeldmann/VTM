@@ -2426,6 +2426,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   READ_FLAG(uiCode, "picture_header_in_slice_header_flag");
   if (uiCode)
   {
+    pcSlice->setPictureHeaderInSliceHeader(true);
     parsePictureHeader(picHeader, parameterSetManager, false);
     picHeader->setValid();
   }

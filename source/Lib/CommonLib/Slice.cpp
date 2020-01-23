@@ -54,6 +54,9 @@ Slice::Slice()
 , m_rpl0Idx                       ( -1 )
 , m_rpl1Idx                       ( -1 )
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
+#if JVET_Q0775_PH_IN_SH
+, m_bPictureHeaderInSliceHeader   ( false )
+#endif
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
 , m_ChromaQpAdjEnabled            ( false )

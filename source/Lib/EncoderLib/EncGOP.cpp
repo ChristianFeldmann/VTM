@@ -3083,6 +3083,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);
           }
+          else if (m_pcCfg->getEnablePictureHeaderInSliceHeader())
+          {
+            pcSlice->setPictureHeaderInSliceHeader(true);
+          }
 #else
           actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);
 #endif

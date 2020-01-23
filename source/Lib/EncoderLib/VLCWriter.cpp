@@ -1744,8 +1744,8 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   const uint32_t         numberValidComponents = getNumberValidComponents(format);
   const bool         chromaEnabled         = isChromaEnabled(format);
 #if JVET_Q0775_PH_IN_SH
-  WRITE_FLAG(cs.pps->getNumSlicesInPic() == 1 ? 1 : 0, "picture_header_in_slice_header_flag");
-  if (cs.pps->getNumSlicesInPic() == 1)
+  WRITE_FLAG(pcSlice->getPictureHeaderInSliceHeader() ? 1 : 0, "picture_header_in_slice_header_flag");
+  if (pcSlice->getPictureHeaderInSliceHeader())
   {
     codePictureHeader(picHeader, false);
   }

@@ -277,6 +277,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPad                                               ( m_aiPad );
 
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
+#if JVET_Q0775_PH_IN_SH
+  m_cEncLib.setEnablePictureHeaderInSliceHeader                  ( m_EnablePictureHeaderInSliceHeader );
+#endif
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );
 

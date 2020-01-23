@@ -346,9 +346,13 @@ protected:
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  unsigned m_log2MinCuSize;                                   ///< min. CU size log2
+#else
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
   unsigned  m_uiMaxCodingDepth;                               ///< max. total CU depth - includes depth of transform-block structure
   unsigned  m_uiLog2DiffMaxMinCodingBlockSize;                ///< difference between largest and smallest CU depth
+#endif
 
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;

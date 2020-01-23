@@ -789,16 +789,22 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
     }
     else
     {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+      const uint32_t minCUSize = 1 << cs.sps->getLog2MinCodingBlockSize();
+#else
       const uint32_t minCUSize = ( cs.sps->getMaxCUWidth() >> cs.sps->getMaxCodingDepth() );
+#endif
 
       bool canSplit = cuArea.lumaSize().width > minCUSize && cuArea.lumaSize().height > minCUSize;
 
       Partitioning ret;
 
+#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
       if( cs.slice->getSliceType() == I_SLICE )
       {
         canSplit &= cuArea.lumaSize().width > cs.pcv->minCUWidth && cuArea.lumaSize().height > cs.pcv->minCUHeight;
       }
+#endif
 
       if( canSplit )
       {

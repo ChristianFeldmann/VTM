@@ -1749,8 +1749,12 @@ SPS::SPS()
 , m_subPicIdPresentFlag(0)
 , m_subPicIdSignallingPresentFlag(0)
 , m_subPicIdLen(16)
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+, m_log2MinCodingBlockSize    (  2)
+#else
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
+#endif
 , m_CTUSize(0)
 , m_minQT{ 0, 0, 0 }
 , m_maxMTTHierarchyDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
@@ -1758,7 +1762,9 @@ SPS::SPS()
 , m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
+#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
 , m_uiMaxCodingDepth          (  3)
+#endif
 , m_numRPL0                   ( 0 )
 , m_numRPL1                   ( 0 )
 , m_rpl1CopyFromRpl0Flag      ( false )

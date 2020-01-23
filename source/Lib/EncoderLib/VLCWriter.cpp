@@ -1064,7 +1064,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   if (pcSPS->getUseDualITree())
   {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    const int minDiff = (int)floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - std::max(MIN_CU_LOG2, pcSPS->getLog2MinCodingBlockSize() - (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pcSPS->getChromaFormatIdc()));
+    CHECK(minDiff < 0, "Wrong min intra QT chroma");
+    WRITE_UVLC(minDiff, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#else
     WRITE_UVLC(floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#endif
     WRITE_UVLC(pcSPS->getMaxMTTHierarchyDepthIChroma(), "sps_max_mtt_hierarchy_depth_intra_slice_chroma");
     if (pcSPS->getMaxMTTHierarchyDepthIChroma() != 0)
     {
@@ -1786,7 +1792,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
       if (sps->getUseDualITree())
       {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+          const int minDiff = (int)floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - std::max(MIN_CU_LOG2, sps->getLog2MinCodingBlockSize() - (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, sps->getChromaFormatIdc()));
+          CHECK(minDiff < 0, "Wrong min intra QT chroma");
+          WRITE_UVLC(minDiff, "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#else
         WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#endif
         WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA), "pic_max_mtt_hierarchy_depth_intra_slice_chroma");
         if (picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA) != 0)
         {

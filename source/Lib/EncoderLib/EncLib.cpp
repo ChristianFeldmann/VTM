@@ -160,7 +160,11 @@ void EncLib::create( const int layerId )
   m_cInterSearch.cacheAssign( &m_cacheModel );
 #endif
 
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  m_cLoopFilter.create(floorLog2(m_maxCUWidth) - m_log2MinCUSize);
+#else
   m_cLoopFilter.create( m_maxTotalCUDepth );
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
@@ -309,7 +313,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #else
     int scaledWidth = int( ( pps0.getPicWidthInLumaSamples() - inputScalingWindow.getWindowLeftOffset() - inputScalingWindow.getWindowRightOffset() ) / m_scalingRatioHor );
 #endif
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    int minSizeUnit = std::max(8, 1 << sps0.getLog2MinCodingBlockSize());
+#else
     int minSizeUnit = std::max(8, (int)(sps0.getMaxCUHeight() >> (sps0.getMaxCodingDepth() - 1)));
+#endif
     int temp = scaledWidth / minSizeUnit;
     int width = ( scaledWidth - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
@@ -448,7 +456,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize
+#else
                        getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+#endif
                      , &m_cReshaper
                      , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
   );
@@ -458,7 +470,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
                        getUseCompositeRef(),
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize, &m_cRdCost, cabacEstimator, getCtxCache()
+#else
     m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
+#endif
                      , &m_cReshaper
   );
 
@@ -1224,9 +1240,15 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
   sps.setMaxCUWidth             ( m_maxCUWidth        );
   sps.setMaxCUHeight            ( m_maxCUHeight       );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  sps.setLog2MinCodingBlockSize ( m_log2MinCUSize );
+#else
   sps.setMaxCodingDepth         ( m_maxTotalCUDepth   );
+#endif
   sps.setChromaFormatIdc        ( m_chromaFormatIDC   );
+#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
+#endif
 
   sps.setCTUSize                             ( m_CTUSize );
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
@@ -1312,6 +1334,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setUseLmcs                            ( m_lmcsEnabled );
   sps.setUseMRL                ( m_MRL );
   sps.setUseMIP                ( m_MIP );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  CHECK(m_log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+#else
   int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
   int log2MinCUSize = 0;
   while(minCUSize > 1)
@@ -1322,6 +1347,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 
   sps.setLog2MinCodingBlockSize(log2MinCUSize);
   CHECK(log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+#endif
   CHECK(m_uiMaxMTTHierarchyDepth > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
   CHECK(m_uiMaxMTTHierarchyDepthI > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");

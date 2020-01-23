@@ -1946,6 +1946,32 @@ RectSlice::~RectSlice()
 {
 }
 
+#if JVET_O1143_SUBPIC_BOUNDARY
+SubPic::SubPic()
+: m_subPicID              (0)
+, m_numCTUsInSubPic       (0)
+, m_subPicCtuTopLeftX     (0)
+, m_subPicCtuTopLeftY     (0)
+, m_subPicWidth           (0)
+, m_subPicHeight          (0)
+, m_firstCtuInSubPic      (0)
+, m_lastCtuInSubPic       (0)
+, m_subPicLeft            (0)
+, m_subPicRight           (0)
+, m_subPicTop             (0)
+, m_subPicBottom          (0)
+, m_treatedAsPicFlag                  (false)
+, m_loopFilterAcrossSubPicEnabledFlag (false)
+{
+  m_ctuAddrInSubPic.clear();
+}
+
+SubPic::~SubPic()
+{
+  m_ctuAddrInSubPic.clear();
+}
+#endif
+
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
 // m_log2SaoOffsetScale initialized below
@@ -2016,6 +2042,9 @@ PPS::PPS()
   m_ctuToSubPicIdx.clear();
   m_rectSlices.clear();
   m_sliceMap.clear();
+#if JVET_O1143_SUBPIC_BOUNDARY
+  m_subPics.clear();
+#endif
 }
 
 PPS::~PPS()
@@ -2030,6 +2059,9 @@ PPS::~PPS()
   m_rectSlices.clear();
   m_sliceMap.clear();
 
+#if JVET_O1143_SUBPIC_BOUNDARY
+  m_subPics.clear();
+#endif
   delete pcv;
 }
 
@@ -2233,6 +2265,58 @@ void PPS::initRectSliceMap()
   // check for valid rectangular slice map
   checkSliceMap();
 }
+
+/**
+- initialize mapping between subpicture and CTUs
+*/
+#if JVET_O1143_SUBPIC_BOUNDARY
+void PPS::initSubPic(const SPS &sps)
+{
+  CHECK(getNumSubPics() > MAX_NUM_SUB_PICS, "Number of sub-pictures in picture exceeds valid range");
+  m_subPics.resize(getNumSubPics());
+  for (int i=0; i< getNumSubPics(); i++)
+  {
+    m_subPics[i].setSubPicCtuTopLeftX(sps.getSubPicCtuTopLeftX(i));
+    m_subPics[i].setSubPicCtuTopLeftY(sps.getSubPicCtuTopLeftY(i));
+    m_subPics[i].setSubPicWidthInCTUs(sps.getSubPicWidth(i));
+    m_subPics[i].setSubPicHeightInCTUs(sps.getSubPicHeight(i));
+    
+    uint32_t firstCTU = sps.getSubPicCtuTopLeftY(i) * m_picWidthInCtu + sps.getSubPicCtuTopLeftX(i); 	
+    m_subPics[i].setFirstCTUInSubPic(firstCTU);  
+    uint32_t lastCTU = (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i) - 1) * m_picWidthInCtu + sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i) - 1;
+    m_subPics[i].setLastCTUInSubPic(lastCTU);
+    
+    uint32_t left = sps.getSubPicCtuTopLeftX(i) * m_ctuSize;
+    m_subPics[i].setSubPicLeft(left);
+    
+    uint32_t right = std::min(m_picWidthInLumaSamples - 1, (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) * m_ctuSize - 1);
+    m_subPics[i].setSubPicRight(right);
+    
+    uint32_t top = sps.getSubPicCtuTopLeftY(i) * m_ctuSize;
+    m_subPics[i].setSubPicTop(top);
+    
+    uint32_t bottom = std::min(m_picHeightInLumaSamples - 1, (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)) * m_ctuSize - 1);
+    m_subPics[i].setSubPicBottom(bottom);
+    
+    for (int j = 0; j < m_numSlicesInPic; j++)
+    {
+      uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
+      uint32_t ctu_x = ctu % m_picWidthInCtu; 
+      uint32_t ctu_y = ctu / m_picWidthInCtu;
+      if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
+          ctu_x < (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) &&
+          ctu_y >= sps.getSubPicCtuTopLeftY(i) &&
+          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i))) 
+      {
+         // slice in the subpicture
+        m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+      }
+    }
+    m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));
+    m_subPics[i].setloopFilterAcrossEnabledFlag(sps.getLoopFilterAcrossSubpicEnabledFlag(i));
+  }
+}
+#endif
 
 void PPS::initRasterSliceMap( std::vector<uint32_t> numTilesInSlice )
 {

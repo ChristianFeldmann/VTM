@@ -103,6 +103,8 @@
 
 #define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
 
+#define JVET_Q0787_SUBPIC                                 1 // JVET-Q0787: fix subpicture location signalling
+
 #define JVET_AHG14_LOSSLESS                               1
 #define JVET_AHG14_LOSSLESS_ENC_QP_FIX                    1 && JVET_AHG14_LOSSLESS
 

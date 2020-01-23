@@ -1472,12 +1472,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setRectSliceFlag( 1 );
     pps.setNumSlicesInPic( 1 );
     pps.initRectSlices( );
-#if JVET_O1143_SUBPIC_BOUNDARY
-    pps.initSubPic(sps);
-#endif
     pps.setTileIdxDeltaPresentFlag( 0 );
     pps.setSliceTileIdx( 0, 0 );
     pps.initRectSliceMap( );
+#if JVET_O1143_SUBPIC_BOUNDARY
+    pps.initSubPic(sps);
+#endif
     pps.setLoopFilterAcrossTilesEnabledFlag( true );
     pps.setLoopFilterAcrossSlicesEnabledFlag( true );
   }

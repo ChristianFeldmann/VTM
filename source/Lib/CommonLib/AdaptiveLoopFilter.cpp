@@ -528,7 +528,11 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType chann
       for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
       {
         m_chromaCoeffFinal[altIdx][coeffIdx] = coeff[coeffIdx];
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+        int clipIdx = alfParam.nonLinearFlag[channel] ? clipp[coeffIdx] : 0;
+#else
         int clipIdx = alfParam.nonLinearFlag[channel][altIdx] ? clipp[coeffIdx] : 0;
+#endif
         m_chromaClippFinal[altIdx][coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
       }
       m_chromaCoeffFinal[altIdx][numCoeffMinus1] = factor;
@@ -548,7 +552,11 @@ void AdaptiveLoopFilter::reconstructCoeff( AlfParam& alfParam, ChannelType chann
       m_clippFinal[classIdx* MAX_NUM_ALF_LUMA_COEFF + numCoeffMinus1] = isRdo ? 0 : m_alfClippingValues[channel][0];
       for( int coeffIdx = 0; coeffIdx < numCoeffMinus1; ++coeffIdx )
       {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+        int clipIdx = alfParam.nonLinearFlag[channel] ? clipp[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] : 0;
+#else
         int clipIdx = alfParam.nonLinearFlag[channel][altIdx] ? clipp[filterIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] : 0;
+#endif
         CHECK(!(clipIdx >= 0 && clipIdx < MaxAlfNumClippingValues), "Bad clip idx in ALF");
         m_clippFinal[classIdx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = isRdo ? clipIdx : m_alfClippingValues[channel][clipIdx];
       }
@@ -582,17 +590,34 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_alfVBChmaCTUHeight = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0));
 
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_LUMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_LUMA] must be at least one" );
+#if JVET_Q0495_NLALF_CLIP_CLEANUP
+  m_alfClippingValues[CHANNEL_TYPE_LUMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_LUMA];
+  int shiftLuma = m_inputBitDepth[CHANNEL_TYPE_LUMA] - 8;
+  for (int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_LUMA]; ++i)
+  {
+    m_alfClippingValues[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shiftLuma);
+  }
+#else
   for( int i = 0; i < AlfNumClippingValues[CHANNEL_TYPE_LUMA]; ++i )
   {
     m_alfClippingValues[CHANNEL_TYPE_LUMA][i] = (Pel)std::round( std::pow(2., double(m_inputBitDepth[CHANNEL_TYPE_LUMA] - 2.35*i)) );
   }
+#endif
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_CHROMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_CHROMA] must be at least one" );
+#if JVET_Q0495_NLALF_CLIP_CLEANUP
+  m_alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_CHROMA];
+  int shiftChroma = m_inputBitDepth[CHANNEL_TYPE_CHROMA] - 8;
+  for (int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_CHROMA]; ++i)
+  {
+    m_alfClippingValues[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shiftChroma);
+  }
+#else
   m_alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_CHROMA];
   for( int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_CHROMA]; ++i )
   {
     m_alfClippingValues[CHANNEL_TYPE_CHROMA][i] = (Pel)std::round( std::pow(2., double(m_inputBitDepth[CHANNEL_TYPE_CHROMA] - 2.35*i)) );
   }
-
+#endif
   if (m_created)
   {
     return;
@@ -1050,7 +1075,10 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
           pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
           pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
         }
-
+#if JVET_Q0150
+        bool isNearVBabove = yVb < vbPos && (yVb >= vbPos - 1);
+        bool isNearVBbelow = yVb >= vbPos && (yVb <= vbPos);
+#endif
         for( int jj = 0; jj < clsSizeX; jj++ )
         {
 
@@ -1086,7 +1114,18 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
             sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg0[+2], pImg0[-2]) );
             sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg0[+1], pImg0[-1]) );
           }
+#if JVET_Q0150
+          if (!(isNearVBabove || isNearVBbelow))
+          {
+            sum = (sum + offset) >> shift;
+          }
+          else
+          {
+            sum = (sum + offset) >> (shift + 3);
+          }
+#else
           sum = ( sum + offset ) >> shift;
+#endif
           sum += curr;
           pRec1[jj] = ClipPel( sum, clpRng );
 

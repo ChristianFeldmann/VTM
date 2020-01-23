@@ -2831,10 +2831,12 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
     const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
     cuCtx.lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
   }
+#if !JVET_Q0055_MTS_SIGNALLING
   if( isLuma(compID) && ( cctx.posX(cctx.scanPosLast()) >= 16 || cctx.posY(cctx.scanPosLast()) >= 16 ) )
   {
     cuCtx.violatesMtsCoeffConstraint = true;
   }
+#endif
 
   // parse subblocks
   const int stateTransTab = ( tu.cs->picHeader->getDepQuantEnabledFlag() ? 32040 : 0 );
@@ -2855,6 +2857,13 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
         }
       }
       residual_coding_subblock( cctx, coeff, stateTransTab, state );
+
+#if JVET_Q0055_MTS_SIGNALLING
+      if ( isLuma(compID) && cctx.isSigGroup() && ( cctx.cgPosY() > 3 || cctx.cgPosX() > 3 ) )
+      {
+        cuCtx.violatesMtsCoeffConstraint = true;
+      }
+#endif
     }
 
 }

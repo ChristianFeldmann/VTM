@@ -365,7 +365,11 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;
   m_ipaParam.refFilterFlag        = false;
   m_ipaParam.interpolationFlag    = false;
+#if JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2
+  m_ipaParam.applyPDPC            = (puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) && m_ipaParam.multiRefIndex == 0;
+#else
   m_ipaParam.applyPDPC            = ((puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) || !isLuma(compId)) && m_ipaParam.multiRefIndex == 0;
+#endif
 
   const int    intraPredAngleMode = (m_ipaParam.isModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
 

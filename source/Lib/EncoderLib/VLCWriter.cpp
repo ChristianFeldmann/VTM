@@ -1162,7 +1162,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   xWriteRbspTrailingBits();
 }
 
+#if JVET_Q0775_PH_IN_SH
+void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingBits )
+#else
 void HLSWriter::codePictureHeader( PicHeader* picHeader )
+#endif
 {
   const PPS*  pps = NULL;
   const SPS*  sps = NULL;
@@ -1714,7 +1718,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     WRITE_UVLC(0,"pic_segment_header_extension_length");
   }
   
+#if JVET_Q0775_PH_IN_SH
+  if ( writeRbspTrailingBits )
+  {
+    xWriteRbspTrailingBits();
+  }
+#else
   xWriteRbspTrailingBits();
+#endif
 }
 
 void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
@@ -1724,11 +1735,21 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
 
   CodingStructure& cs = *pcSlice->getPic()->cs;
+#if JVET_Q0775_PH_IN_SH
+  PicHeader *picHeader = cs.picHeader;
+#else
   const PicHeader *picHeader = cs.picHeader;
+#endif
   const ChromaFormat format                = pcSlice->getSPS()->getChromaFormatIdc();
   const uint32_t         numberValidComponents = getNumberValidComponents(format);
   const bool         chromaEnabled         = isChromaEnabled(format);
-
+#if JVET_Q0775_PH_IN_SH
+  WRITE_FLAG(cs.pps->getNumSlicesInPic() == 1 ? 1 : 0, "picture_header_in_slice_header_flag");
+  if (cs.pps->getNumSlicesInPic() == 1)
+  {
+    codePictureHeader(picHeader, false);
+  }
+#endif
   int pocBits = pcSlice->getSPS()->getBitsForPOC();
   int pocMask = (1 << pocBits) - 1;
   WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");

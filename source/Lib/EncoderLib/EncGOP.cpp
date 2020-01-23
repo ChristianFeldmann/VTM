@@ -401,7 +401,11 @@ int EncGOP::xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader )
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
   nalu.m_temporalId = accessUnit.temporalId;
   nalu.m_nuhLayerId = m_pcEncLib->getLayerId();
+#if JVET_Q0775_PH_IN_SH
+  m_HLSWriter->codePictureHeader( picHeader, true );
+#else
   m_HLSWriter->codePictureHeader( picHeader );
+#endif
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
@@ -3074,7 +3078,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           pcPic->cs->picHeader->setPic(pcPic);
           pcPic->cs->picHeader->setValid();
+#if JVET_Q0775_PH_IN_SH
+          if (pcPic->cs->pps->getNumSlicesInPic() > 1)
+          {
+            actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);
+          }
+#else
           actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);
+#endif
         }
         pcSlice->setPicHeader( pcPic->cs->picHeader );
 

@@ -167,7 +167,11 @@ public:
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
   void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
+#if JVET_Q0775_PH_IN_SH
+  void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits );
+#else
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
+#endif
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );

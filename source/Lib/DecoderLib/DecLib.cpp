@@ -1205,15 +1205,21 @@ void DecLib::xParsePrefixSEImessages()
 void DecLib::xDecodePicHeader( InputNALUnit& nalu )
 {
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_Q0775_PH_IN_SH
+  m_HLSReader.parsePictureHeader( &m_picHeader, &m_parameterSetManager, true );
+#else
   m_HLSReader.parsePictureHeader( &m_picHeader, &m_parameterSetManager);
+#endif
   m_picHeader.setValid();
 }
 
 bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay )
 {
+#if !JVET_Q0775_PH_IN_SH
   if(m_picHeader.isValid() == false) {
     return false;
   }
+#endif
   m_apcSlicePilot->setPicHeader( &m_picHeader );
   m_apcSlicePilot->initSlice(); // the slice pilot is an object to prepare for a new slice
                                 // it is not associated with picture, sps or pps structures.

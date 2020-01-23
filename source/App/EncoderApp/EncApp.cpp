@@ -476,8 +476,12 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
   m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  m_cEncLib.setLog2MinCodingBlockSize                            ( m_log2MinCuSize );
+#else
   m_cEncLib.setMaxCodingDepth                                    ( m_uiMaxCodingDepth );
   m_cEncLib.setLog2DiffMaxMinCodingBlockSize                     ( m_uiLog2DiffMaxMinCodingBlockSize );
+#endif
   m_cEncLib.setLog2MaxTbSize                                     ( m_log2MaxTbSize );
   m_cEncLib.setUseEncDbOpt(m_encDbOpt);
   m_cEncLib.setUseFastLCTU                                       ( m_useFastLCTU );

@@ -286,8 +286,12 @@ protected:
   bool      m_dualITree;
   unsigned  m_maxCUWidth;
   unsigned  m_maxCUHeight;
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  unsigned m_log2MinCUSize;
+#else
   unsigned  m_maxTotalCUDepth;
   unsigned  m_log2DiffMaxMinCodingBlockSize;
+#endif
 
   int       m_LMChroma;
   bool      m_horCollocatedChromaFlag;
@@ -1101,9 +1105,14 @@ public:
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }
   uint32_t      getMaxCUHeight                  () const         { return m_maxCUHeight; }
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  void      setLog2MinCodingBlockSize       ( int n )        { m_log2MinCUSize = n;   }
+  int       getLog2MinCodingBlockSize       () const         { return m_log2MinCUSize;}
+#else
   void      setMaxCodingDepth               ( uint32_t  u )      { m_maxTotalCUDepth = u; }
   uint32_t      getMaxCodingDepth               () const         { return m_maxTotalCUDepth; }
   void      setLog2DiffMaxMinCodingBlockSize( uint32_t  u )      { m_log2DiffMaxMinCodingBlockSize = u; }
+#endif
   void      setUseEncDbOpt                  ( bool  n )          { m_encDbOpt = n; }
   bool      getUseEncDbOpt                  () const             { return m_encDbOpt; }
 

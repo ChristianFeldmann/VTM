@@ -137,6 +137,10 @@ private:
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
 
+#if SUBPIC_DECCHECK
+public:
+  int                     m_targetSubPicIdx;
+#endif
 public:
   DecLib();
   virtual ~DecLib();

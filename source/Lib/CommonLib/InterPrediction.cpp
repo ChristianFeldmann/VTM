@@ -539,7 +539,11 @@ void InterPrediction::xPredInterBi(PredictionUnit &pu, PelUnitBuf &pcYuvPred, co
     }
     else
     {
+#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
+      const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag) && slice.getSliceType() == B_SLICE);
+#else
       const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag) && slice.getSliceType() == B_SLICE);
+#endif
       const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
       if (biocheck0
         && biocheck1
@@ -1400,6 +1404,14 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
           yuvDstTmp->bufs[0].copyFrom(pcYuvDst.bufs[0]);
       }
     }
+#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
+    if (!bioApplied && (lumaOnly || chromaOnly))
+    {
+      pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, chromaOnly, lumaOnly);
+    }
+    else
+      pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
+#else
     if (pu.cs->pps->getWPBiPred())
     {
       const int iRefIdx0 = pu.refIdx[0];
@@ -1427,6 +1439,7 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
       else
       pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
     }
+#endif
     if (yuvDstTmp)
     {
       if (bioApplied)
@@ -1539,7 +1552,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       }
       else
       {
+#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
+        const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag) && slice.getSliceType() == B_SLICE);
+#else
         const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag) && slice.getSliceType() == B_SLICE);
+#endif
         const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
         if (biocheck0
           && biocheck1

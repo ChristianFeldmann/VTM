@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION           1 // JVET-Q0128: Cleanup of enabling condition for DMVR and BDOF 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF
 #define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
 #define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing

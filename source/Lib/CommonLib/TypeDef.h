@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT              1 // JVET-Q0471: Chroma QT split
+
 #define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
 
 #define JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2                1 // JVET-Q0293: Removal of chroma Nx2 blocks in PDPC 

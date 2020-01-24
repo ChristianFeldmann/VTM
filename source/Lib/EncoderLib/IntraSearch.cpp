@@ -2784,7 +2784,11 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   CHECK( tu.jointCbCr && compID == COMPONENT_Cr, "wrong combination of compID and jointCbCr" );
   bool jointCbCr = tu.jointCbCr && compID == COMPONENT_Cb;
 
+#if JVET_Q0695_CHROMA_TS_JCCR 
+  if (compID == COMPONENT_Y)
+#else
   if (compID == COMPONENT_Y || (isChroma(compID) && tu.cu->bdpcmModeChroma))
+#endif
   {
   PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
   if( default0Save1Load2 != 2 )
@@ -2989,8 +2993,17 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
     if (trModes)
     {
+#if JVET_Q0695_CHROMA_TS_JCCR 
+        m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, trModes, m_pcEncCfg->getMTSIntraMaxCand());
+        tu.mtsIdx[codeCompId] = trModes->at(0).first;
+        if (tu.jointCbCr)
+        {
+          tu.mtsIdx[(codeCompId == COMPONENT_Cr) ? COMPONENT_Cb : COMPONENT_Cr] = MTS_DCT2_DCT2;
+        }
+#else
         m_pcTrQuant->transformNxN(tu, compID, qpCbCr, trModes, m_pcEncCfg->getMTSIntraMaxCand());
         tu.mtsIdx[compID] = trModes->at(0).first;
+#endif
     }
     // encoder bugfix: Set loadTr to aovid redundant transform process
 #if JVET_AHG14_LOSSLESS
@@ -4823,25 +4836,86 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       double     bestCostCbCr   = bestCostCb + bestCostCr;
       Distortion bestDistCbCr   = bestDistCb + bestDistCr;
       int        bestJointCbCr  = 0;
+#if !JVET_Q0695_CHROMA_TS_JCCR
       bool       lastIsBest     = false;
+#endif
       std::vector<int>  jointCbfMasksToTest;
       if ( cs.sps->getJointCbCrEnabledFlag() && (TU::getCbf(tmpTU, COMPONENT_Cb) || TU::getCbf(tmpTU, COMPONENT_Cr)))
       {
         jointCbfMasksToTest = m_pcTrQuant->selectICTCandidates(currTU, orgResiCb, orgResiCr);
       }
+#if JVET_Q0695_CHROMA_TS_JCCR 
+      bool checkDCTOnly = (TU::getCbf(tmpTU, COMPONENT_Cb) && tmpTU.mtsIdx[COMPONENT_Cb] == MTS_DCT2_DCT2 && !TU::getCbf(tmpTU, COMPONENT_Cr)) ||
+                          (TU::getCbf(tmpTU, COMPONENT_Cr) && tmpTU.mtsIdx[COMPONENT_Cr] == MTS_DCT2_DCT2 && !TU::getCbf(tmpTU, COMPONENT_Cb)) ||
+                          (TU::getCbf(tmpTU, COMPONENT_Cb) && tmpTU.mtsIdx[COMPONENT_Cb] == MTS_DCT2_DCT2 && TU::getCbf(tmpTU, COMPONENT_Cr) && tmpTU.mtsIdx[COMPONENT_Cr] == MTS_DCT2_DCT2);
+
+      bool checkTSOnly = (TU::getCbf(tmpTU, COMPONENT_Cb) && tmpTU.mtsIdx[COMPONENT_Cb] == MTS_SKIP && !TU::getCbf(tmpTU, COMPONENT_Cr)) ||
+                         (TU::getCbf(tmpTU, COMPONENT_Cr) && tmpTU.mtsIdx[COMPONENT_Cr] == MTS_SKIP && !TU::getCbf(tmpTU, COMPONENT_Cb)) ||
+                         (TU::getCbf(tmpTU, COMPONENT_Cb) && tmpTU.mtsIdx[COMPONENT_Cb] == MTS_SKIP && TU::getCbf(tmpTU, COMPONENT_Cr) && tmpTU.mtsIdx[COMPONENT_Cr] == MTS_SKIP);
+
+      if (jointCbfMasksToTest.size() && currTU.cu->bdpcmModeChroma)
+      {
+        CHECK(!checkTSOnly || checkDCTOnly, "bdpcm only allows transform skip");
+      }
+#endif
       for( int cbfMask : jointCbfMasksToTest )
       {
+#if !JVET_Q0695_CHROMA_TS_JCCR
         Distortion distTmp = 0;
+#endif
 
         currTU.jointCbCr               = (uint8_t)cbfMask;
         currTU.compAlpha[COMPONENT_Cb] = 0;
         currTU.compAlpha[COMPONENT_Cr] = 0;
+#if JVET_Q0695_CHROMA_TS_JCCR
+        ComponentID codeCompId = ((currTU.jointCbCr >> 1) ? COMPONENT_Cb : COMPONENT_Cr);
+        ComponentID otherCompId = ((codeCompId == COMPONENT_Cb) ? COMPONENT_Cr : COMPONENT_Cb);
+        bool        tsAllowed = TU::isTSAllowed(currTU, codeCompId) && (m_pcEncCfg->getUseChromaTS());
+        uint8_t     numTransformCands = 1 + (tsAllowed ? 1 : 0); // DCT + TS = 2 tests
+        bool        cbfDCT2 = true;
+
+        std::vector<TrMode> trModes;
+        if (checkDCTOnly || checkTSOnly)
+        {
+          numTransformCands = 1;
+        }
+
+        if (!checkTSOnly || currTU.cu->bdpcmModeChroma)
+        {
+          trModes.push_back(TrMode(0, true)); // DCT2 
+        }
+        if (tsAllowed && !checkDCTOnly)
+        {
+          trModes.push_back(TrMode(1, true));//TS
+        }
+        for (int modeId = 0; modeId < numTransformCands; modeId++)
+        {
+          if (modeId && !cbfDCT2)
+          {
+            continue;
+          }
+          if (!trModes[modeId].second)
+          {
+            continue;
+          }
+          Distortion distTmp = 0;
+          currTU.mtsIdx[codeCompId] = currTU.cu->bdpcmModeChroma ? MTS_SKIP : trModes[modeId].first;
+          currTU.mtsIdx[otherCompId] = MTS_DCT2_DCT2;
+#else
         // encoder bugfix: initialize mtsIdx for chroma under JointCbCrMode.
         currTU.mtsIdx[COMPONENT_Cb] = currTU.mtsIdx[COMPONENT_Cr]  = MTS_DCT2_DCT2;
+#endif
         m_CABACEstimator->getCtx() = ctxStartTU;
 
         resiCb.copyFrom( orgResiCb[cbfMask] );
         resiCr.copyFrom( orgResiCr[cbfMask] );
+#if JVET_Q0695_CHROMA_TS_JCCR
+        if (numTransformCands > 1)
+        {
+          xIntraCodingTUBlock(currTU, COMPONENT_Cb, false, distTmp, 0, nullptr, modeId == 0 ? &trModes : nullptr, true);
+        }
+        else
+#endif
         xIntraCodingTUBlock( currTU, COMPONENT_Cb, false, distTmp, 0 );
 
         double costTmp = std::numeric_limits<double>::max();
@@ -4849,7 +4923,19 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
         {
           uint64_t bits  = xGetIntraFracBitsQTChroma( currTU, COMPONENT_Cb );
           costTmp = m_pcRdCost->calcRdCost( bits, distTmp );
+#if JVET_Q0695_CHROMA_TS_JCCR 
+          if (!currTU.mtsIdx[codeCompId])
+          {
+            cbfDCT2 = true;
+          }
+#endif
         }
+#if JVET_Q0695_CHROMA_TS_JCCR 
+        else if (!currTU.mtsIdx[codeCompId])
+        {
+          cbfDCT2 = false;
+        }
+#endif
 
         if( costTmp < bestCostCbCr )
         {
@@ -4858,7 +4944,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
           bestJointCbCr = currTU.jointCbCr;
 
           // store data
+#if !JVET_Q0695_CHROMA_TS_JCCR
           if( cbfMask != jointCbfMasksToTest.back() )
+#endif
           {
 #if KEEP_PRED_AND_RESI_SIGNALS
             saveCS.getOrgResiBuf(cbArea).copyFrom(cs.getOrgResiBuf(cbArea));
@@ -4879,15 +4967,22 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
             ctxBest = m_CABACEstimator->getCtx();
           }
+#if !JVET_Q0695_CHROMA_TS_JCCR
           else
           {
             lastIsBest = true;
           }
+#endif
         }
+#if JVET_Q0695_CHROMA_TS_JCCR
+        }
+#endif
       }
 
       // Retrieve the best CU data (unless it was the very last one tested)
+#if !JVET_Q0695_CHROMA_TS_JCCR
       if ( !( maxModesTested == 1 && jointCbfMasksToTest.empty() ) && !lastIsBest )
+#endif
       {
 #if KEEP_PRED_AND_RESI_SIGNALS
         cs.getPredBuf   (cbArea).copyFrom(saveCS.getPredBuf   (cbArea));

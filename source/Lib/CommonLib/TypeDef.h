@@ -50,7 +50,10 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_Q0481_PARTITION_CONSTRAINTS_ORDER            1 // JVET-Q0481: Ordering of partition constraints syntax elements in the SPS and PH
+
+#define JVET_Q0819_PH_CHANGES                             1 // JVET-Q0819: Combination of PH related syntax changes
+
+#define JVET_Q0481_PARTITION_CONSTRAINTS_ORDER            1 // JVET-Q0481: Ordering of partition constraints syntax elements in the SPS
 
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 

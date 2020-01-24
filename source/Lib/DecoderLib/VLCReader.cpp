@@ -466,6 +466,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     {
       pcPPS->setSubPicId( picIdx, picIdx );
     }
+#if JVET_O1143_SUBPIC_BOUNDARY
+    // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
+    SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+    pcPPS->setNumSubPics(sps->getNumSubPics());
+#endif
   }
 
 
@@ -571,6 +576,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       
       // initialize mapping between rectangular slices and CTUs
       pcPPS->initRectSliceMap();
+#if JVET_O1143_SUBPIC_BOUNDARY
+      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+      CHECK(sps == 0, "Invalid SPS");
+      pcPPS->initSubPic(*sps);
+#endif
     }
 
     // loop filtering across slice/tile controls
@@ -1288,9 +1298,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
+#if JVET_Q0147_JCCR_SIGNALLING
+  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
+#else
   READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
+#endif
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
     int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
@@ -1753,6 +1769,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     pps->setTileIdxDeltaPresentFlag( 0 );
     pps->setSliceTileIdx( 0, 0 );
     pps->initRectSliceMap( );
+#if JVET_O1143_SUBPIC_BOUNDARY
+    // when no Pic partition, number of sub picture shall be less than 2
+    CHECK(pps->getNumSubPics()>=2, "error, no picture partitions, but have equal to or more than 2 sub pictures");
+#endif
   }
   else 
   {

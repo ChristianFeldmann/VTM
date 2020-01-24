@@ -664,6 +664,9 @@ void DecApp::xCreateDecLib()
     std::ostream &os=m_seiMessageFileStream.is_open() ? m_seiMessageFileStream : std::cout;
     m_cDecLib.setDecodedSEIMessageOutputStream(&os);
   }
+#if SUBPIC_DECCHECK
+  m_cDecLib.m_targetSubPicIdx = this->m_targetSubPicIdx;
+#endif
   m_cDecLib.initScalingList();
 }
 

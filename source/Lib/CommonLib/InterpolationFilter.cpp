@@ -136,6 +136,50 @@ const TFilterCoeff InterpolationFilter::m_lumaFilterRPR2[LUMA_INTERPOLATION_FILT
   { -2, -4,  5, 21, 29, 19,  0, -4 }
 };
 
+#if JVET_Q0517_RPR_AFFINE_DS
+// 1.5x
+const TFilterCoeff InterpolationFilter::m_affineLumaFilterRPR1[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
+{
+  {  0, -6, 17, 42, 17, -5, -1,  0 },
+  {  0, -5, 15, 41, 19, -5, -1,  0 },
+  {  0, -5, 13, 40, 21, -4, -1,  0 },
+  {  0, -5, 11, 39, 24, -4, -1,  0 },
+  {  0, -5,  9, 38, 26, -3, -1,  0 },
+  {  0, -5,  7, 38, 28, -2, -2,  0 },
+  {  0, -4,  5, 36, 30, -1, -2,  0 },
+  {  0, -3,  3, 35, 32,  0, -3,  0 },
+  {  0, -3,  2, 33, 33,  2, -3,  0 },
+  {  0, -3,  0, 32, 35,  3, -3,  0 },
+  {  0, -2, -1, 30, 36,  5, -4,  0 },
+  {  0, -2, -2, 28, 38,  7, -5,  0 },
+  {  0, -1, -3, 26, 38,  9, -5,  0 },
+  {  0, -1, -4, 24, 39, 11, -5,  0 },
+  {  0, -1, -4, 21, 40, 13, -5,  0 },
+  {  0, -1, -5, 19, 41, 15, -5,  0 }
+};
+
+// 2x
+const TFilterCoeff InterpolationFilter::m_affineLumaFilterRPR2[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
+{
+  {  0, -2, 20, 28, 20,  2, -4,  0 },
+  {  0, -4, 19, 29, 21,  5, -6,  0 },
+  {  0, -5, 18, 29, 22,  6, -6,  0 },
+  {  0, -5, 16, 29, 23,  7, -6,  0 },
+  {  0, -5, 16, 28, 24,  7, -6,  0 },
+  {  0, -5, 14, 28, 25,  8, -6,  0 },
+  {  0, -6, 14, 27, 26,  9, -6,  0 },
+  {  0, -4, 12, 28, 25, 10, -7,  0 },
+  {  0, -6, 11, 27, 27, 11, -6,  0 },
+  {  0, -7, 10, 25, 28, 12, -4,  0 },
+  {  0, -6,  9, 26, 27, 14, -6,  0 },
+  {  0, -6,  8, 25, 28, 14, -5,  0 },
+  {  0, -6,  7, 24, 28, 16, -5,  0 },
+  {  0, -6,  7, 23, 29, 16, -5,  0 },
+  {  0, -6,  6, 22, 29, 18, -5,  0 },
+  {  0, -6,  5, 21, 29, 19, -4,  0 }
+};
+#endif
+
 const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
 const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
 {
@@ -717,6 +761,16 @@ void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, in
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
     }
+#if JVET_Q0517_RPR_AFFINE_DS
+    else if (nFilterIdx == 5)
+    {
+      filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_affineLumaFilterRPR1[frac], biMCForDMVR);
+    }
+    else if (nFilterIdx == 6)
+    {
+      filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_affineLumaFilterRPR2[frac], biMCForDMVR);
+    }
+#endif
     else if( frac == 8 && useAltHpelIf )
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR );
@@ -792,6 +846,16 @@ void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, in
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
     }
+#if JVET_Q0517_RPR_AFFINE_DS
+    else if (nFilterIdx == 5)
+    {
+      filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_affineLumaFilterRPR1[frac], biMCForDMVR);
+    }
+    else if (nFilterIdx == 6)
+    {
+      filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_affineLumaFilterRPR2[frac], biMCForDMVR);
+    }
+#endif
     else if( frac == 8 && useAltHpelIf )
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR );

@@ -649,7 +649,14 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
     // TODO M0133 : double check encoder decisions with respect to chroma QG detection and actual encode
     int lgMinCuSize = sps.getLog2MinCodingBlockSize() +
       std::max<int>( 0, sps.getLog2DiffMaxMinCodingBlockSize() - int( slice.getCuChromaQpOffsetSubdiv()/2 ) );
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+    if( partitioner.currQgChromaEnable() ) 
+    {
+      m_cuChromaQpOffsetIdxPlus1 = ( ( uiLPelX >> lgMinCuSize ) + ( uiTPelY >> lgMinCuSize ) ) % ( pps.getChromaQpOffsetListLen() + 1 );
+    }
+#else
     m_cuChromaQpOffsetIdxPlus1 = ( ( uiLPelX >> lgMinCuSize ) + ( uiTPelY >> lgMinCuSize ) ) % ( pps.getChromaQpOffsetListLen() + 1 );
+#endif
   }
 
   if( !m_modeCtrl->anyMode() )
@@ -1803,6 +1810,9 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
           xEncodeDontSplit( *tempCS, partitioner );
 
           xCheckDQP( *tempCS, partitioner );
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+          xCheckChromaQPOffset( *tempCS, partitioner );
+#endif
 
           // Check if low frequency non-separable transform (LFNST) is too expensive
           if( lfnstIdx && !cuCtx.lfnstLastScanPos && !cu.ispMode )
@@ -2008,6 +2018,9 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
 
   xEncodeDontSplit(*tempCS, partitioner);
   xCheckDQP(*tempCS, partitioner);
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+  xCheckChromaQPOffset( *tempCS, partitioner );
+#endif
   xCalDebCost(*tempCS, partitioner);
   tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 
@@ -2094,6 +2107,62 @@ void EncCu::xCheckDQP( CodingStructure& cs, Partitioner& partitioner, bool bKeep
   }
 }
 
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+void EncCu::xCheckChromaQPOffset( CodingStructure& cs, Partitioner& partitioner )
+{
+  // doesn't apply if CU chroma QP offset is disabled
+  if( !cs.slice->getUseChromaQpAdj() )
+  {
+    return;
+  }
+
+  // doesn't apply to luma CUs
+  if( partitioner.isSepTree(cs) && isLuma(partitioner.chType) )
+  {
+    return;
+  }
+
+  // not needed after the first coded TU in the chroma QG
+  if( !partitioner.currQgChromaEnable() ) 
+  {
+    return;
+  }
+  
+  CodingUnit& cu = *cs.getCU( partitioner.chType );
+  
+  // check if chroma is coded or not
+  bool hasResidual = false;
+  for( const TransformUnit &tu : CU::traverseTUs(cu) )
+  {
+    if( tu.cbf[COMPONENT_Cb] || tu.cbf[COMPONENT_Cr] )
+    {
+      hasResidual = true;
+      break;
+    }
+  }
+
+  if( hasResidual )
+  {
+    // estimate cost for coding cu_chroma_qp_offset
+    TempCtx ctxTempAdjFlag( m_CtxCache );
+    TempCtx ctxTempAdjIdc( m_CtxCache );
+    ctxTempAdjFlag = SubCtx( Ctx::ChromaQpAdjFlag, m_CABACEstimator->getCtx() );
+    ctxTempAdjIdc = SubCtx( Ctx::ChromaQpAdjIdc,   m_CABACEstimator->getCtx() );
+    m_CABACEstimator->resetBits();
+    m_CABACEstimator->cu_chroma_qp_offset( cu );
+    cs.fracBits += m_CABACEstimator->getEstFracBits();
+    cs.cost      = m_pcRdCost->calcRdCost(cs.fracBits, cs.dist);
+    m_CABACEstimator->getCtx() = SubCtx( Ctx::ChromaQpAdjFlag, ctxTempAdjFlag );
+    m_CABACEstimator->getCtx() = SubCtx( Ctx::ChromaQpAdjIdc,  ctxTempAdjIdc  );
+  }
+  else
+  {
+    // reset chroma QP offset to 0 if it will not be coded
+    cu.chromaQpAdj = 0;
+  }
+}
+
+#endif
 void EncCu::xFillPCMBuffer( CodingUnit &cu )
 {
   const ChromaFormat format        = cu.chromaFormat;
@@ -3447,6 +3516,9 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
               xCheckDQP(*tempCS, partitioner);
             }
 #endif
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+            xCheckChromaQPOffset( *tempCS, partitioner );
+#endif
 
 
             DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda());
@@ -3537,6 +3609,9 @@ void EncCu::xCheckRDCostIBCMode(CodingStructure *&tempCS, CodingStructure *&best
           {
             xCheckDQP(*tempCS, partitioner);
           }
+#endif
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+          xCheckChromaQPOffset( *tempCS, partitioner );
 #endif
 
           tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
@@ -4249,6 +4324,9 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
     xEncodeDontSplit( *tempCS, partitioner );
 
     xCheckDQP( *tempCS, partitioner );
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+    xCheckChromaQPOffset( *tempCS, partitioner );
+#endif
 
 
     if( NULL != bestHasNonResi && (bestCostInternal > tempCS->cost) )
@@ -4397,6 +4475,9 @@ void EncCu::xEncodeInterResidual(   CodingStructure *&tempCS
       xEncodeDontSplit( *tempCS, partitioner );
 
       xCheckDQP( *tempCS, partitioner );
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+      xCheckChromaQPOffset( *tempCS, partitioner );
+#endif
 
       if( NULL != bestHasNonResi && ( bestCostInternal > tempCS->cost ) )
       {
@@ -4565,6 +4646,9 @@ void EncCu::xReuseCachedResult( CodingStructure *&tempCS, CodingStructure *&best
 
     xEncodeDontSplit( *tempCS,         partitioner );
     xCheckDQP       ( *tempCS,         partitioner );
+#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
+    xCheckChromaQPOffset( *tempCS,     partitioner );
+#endif
     xCheckBestMode  (  tempCS, bestCS, partitioner, cachedMode );
   }
   else

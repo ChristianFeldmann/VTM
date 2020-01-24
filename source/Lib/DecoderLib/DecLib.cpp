@@ -536,7 +536,7 @@ Picture* DecLib::xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_
   }
   else
   {
-    if( !pcPic->Y().Size::operator==( Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ) ) || pcPic->cs->pcv->maxCUWidth != sps.getMaxCUWidth() || pcPic->cs->pcv->maxCUHeight != sps.getMaxCUHeight() )
+    if( !pcPic->Y().Size::operator==( Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ) ) || pps.pcv->maxCUWidth != sps.getMaxCUWidth() || pps.pcv->maxCUHeight != sps.getMaxCUHeight() )
     {
       pcPic->destroy();
       pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true, layerId );
@@ -585,6 +585,31 @@ void DecLib::executeLoopFilters()
       m_cALF.ALFProcess(cs);
 
   }
+
+#if SUBPIC_DECCHECK 
+  for (int i = 0; i < cs.pps->getNumSubPics(); i++)
+  {
+    // keep target subpic samples untouched, for other subpics mask their output sample value to 0
+    if (i != m_targetSubPicIdx)
+    {
+      SubPic SubPicNoUse = cs.pps->getSubPics()[i];
+      uint32_t left  = SubPicNoUse.getSubPicLeft();
+      uint32_t right = SubPicNoUse.getSubPicRight();
+      uint32_t top   = SubPicNoUse.getSubPicTop();
+      uint32_t bottom= SubPicNoUse.getSubPicBottom();
+      for (uint32_t row = top; row <= bottom; row++)
+      {
+        for (uint32_t col = left; col <= right; col++)
+        {
+          cs.getRecoBuf().Y().at(col, row) = 0;
+          // for test only, hard coding using 4:2:0 chroma format
+          cs.getRecoBuf().Cb().at(col>>1, row>>1) = 0;
+          cs.getRecoBuf().Cr().at(col>>1, row>>1) = 0;
+        }
+      }
+    } 
+  }
+#endif
 
   m_pcPic->cs->slice->stopProcessingTimer();
 }

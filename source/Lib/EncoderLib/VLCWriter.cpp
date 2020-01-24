@@ -326,7 +326,14 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
       {
         // complete tiles within a single slice
         WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
+#if JVET_Q0480_RASTER_RECT_SLICES
+        if( pcPPS->getTileIdxDeltaPresentFlag() || ( (pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns()) == 0 ) )
+        {
+          WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+        }
+#else
         WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
@@ -510,7 +517,11 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA], "alf_luma_clip" );
+#else
     WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_LUMA][0], "alf_luma_clip" );
+#endif
 
     WRITE_UVLC(param.numLumaFilters - 1, "alf_luma_num_filters_signalled_minus1");
     if (param.numLumaFilters > 1)
@@ -526,11 +537,16 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    WRITE_FLAG(param.nonLinearFlag[CHANNEL_TYPE_CHROMA], "alf_nonlinear_enable_flag_chroma");
+#endif
     if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
       WRITE_UVLC( param.numAlternativesChroma - 1, "alf_chroma_num_alts_minus1" );
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
     {
+#if !JVET_Q0249_ALF_CHROMA_CLIPFLAG
       WRITE_FLAG( param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx], "alf_nonlinear_enable_flag_chroma" );
+#endif
       alfFilter(param, true, altIdx);
     }
   }
@@ -825,9 +841,15 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 
+#if JVET_Q0147_JCCR_SIGNALLING
+  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    WRITE_FLAG(pcSPS->getJointCbCrEnabledFlag(), "sps_joint_cbcr_enabled_flag");
+#else
   WRITE_FLAG(pcSPS->getJointCbCrEnabledFlag(), "sps_joint_cbcr_enabled_flag");
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
+#endif
     const ChromaQpMappingTable& chromaQpMappingTable = pcSPS->getChromaQpMappingTable();
     WRITE_FLAG(chromaQpMappingTable.getSameCQPTableForAllChromaFlag(), "same_qp_table_for_chroma");
     int numQpTables = chromaQpMappingTable.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
@@ -2414,7 +2436,11 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
   }
 
   // Clipping values coding
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+  if( alfParam.nonLinearFlag[isChroma] )
+#else
   if( alfParam.nonLinearFlag[isChroma][altIdx] )
+#endif
   {
     for (int ind = 0; ind < numFilters; ++ind)
     {

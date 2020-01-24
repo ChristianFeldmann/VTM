@@ -217,6 +217,14 @@ public:
   const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
   Window&            getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+  bool               isRefScaled( const PPS* pps ) const                             { return  getPicWidthInLumaSamples()                 != pps->getPicWidthInLumaSamples()                ||
+                                                                                               getPicHeightInLumaSamples()                != pps->getPicHeightInLumaSamples()               ||
+                                                                                               getScalingWindow().getWindowLeftOffset()   != pps->getScalingWindow().getWindowLeftOffset()  ||
+                                                                                               getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
+                                                                                               getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||
+                                                                                               getScalingWindow().getWindowBottomOffset() != pps->getScalingWindow().getWindowBottomOffset(); }
+#endif
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

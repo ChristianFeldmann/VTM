@@ -2649,10 +2649,12 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
     const int lfnstLastScanPosTh = isLuma( compID ) ? LFNST_LAST_SIG_LUMA : LFNST_LAST_SIG_CHROMA;
     cuCtx->lfnstLastScanPos |= cctx.scanPosLast() >= lfnstLastScanPosTh;
   }
+#if !JVET_Q0055_MTS_SIGNALLING
   if( cuCtx && isLuma(compID) && ( cctx.posX(cctx.scanPosLast()) >= 16 || cctx.posY(cctx.scanPosLast()) >= 16 ) )
   {
     cuCtx->violatesMtsCoeffConstraint = true;
   }
+#endif
   
   // code last coeff position
   last_sig_coeff( cctx, tu, compID );
@@ -2677,6 +2679,13 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
       }
     }
     residual_coding_subblock( cctx, coeff, stateTab, state );
+    
+#if JVET_Q0055_MTS_SIGNALLING
+    if ( cuCtx && isLuma(compID) && cctx.isSigGroup() && ( cctx.cgPosY() > 3 || cctx.cgPosX() > 3 ) )
+    {
+      cuCtx->violatesMtsCoeffConstraint = true;
+    }
+#endif
   }
 }
 

@@ -466,6 +466,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     {
       pcPPS->setSubPicId( picIdx, picIdx );
     }
+#if JVET_O1143_SUBPIC_BOUNDARY
+    // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
+    SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+    pcPPS->setNumSubPics(sps->getNumSubPics());
+#endif
   }
 
 
@@ -518,7 +523,18 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
         // complete tiles within a single slice
         READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+#if JVET_Q0480_RASTER_RECT_SLICES
+        if( pcPPS->getTileIdxDeltaPresentFlag() || ( (tileIdx % pcPPS->getNumTileColumns()) == 0 ) )
+        {
+          READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );     pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+        }
+        else 
+        {
+          pcPPS->setSliceHeightInTiles( i, pcPPS->getSliceHeightInTiles(i-1) );
+        }
+#else
         READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );       pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
@@ -560,6 +576,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       
       // initialize mapping between rectangular slices and CTUs
       pcPPS->initRectSliceMap();
+#if JVET_O1143_SUBPIC_BOUNDARY
+      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+      CHECK(sps == 0, "Invalid SPS");
+      pcPPS->initSubPic(*sps);
+#endif
     }
 
     // loop filtering across slice/tile controls
@@ -810,7 +831,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
     READ_FLAG(code, "alf_luma_clip");
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    param.nonLinearFlag[CHANNEL_TYPE_LUMA] = code ? true : false;
+#else
     param.nonLinearFlag[CHANNEL_TYPE_LUMA][0] = code ? true : false;
+#endif
     READ_UVLC(code, "alf_luma_num_filters_signalled_minus1");
     param.numLumaFilters = code + 1;
     if (param.numLumaFilters > 1)
@@ -830,6 +855,11 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   }
   if (param.newFilterFlag[CHANNEL_TYPE_CHROMA])
   {
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+    READ_FLAG(code, "alf_nonlinear_enable_flag_chroma");
+    param.nonLinearFlag[CHANNEL_TYPE_CHROMA] = code ? true : false;
+#endif
+
     if( MAX_NUM_ALF_ALTERNATIVES_CHROMA > 1 )
       READ_UVLC( code, "alf_chroma_num_alts_minus1" );
     else
@@ -839,8 +869,10 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
 
     for( int altIdx=0; altIdx < param.numAlternativesChroma; ++altIdx )
     {
-      READ_FLAG( code, "alf_nonlinear_enable_flag_chroma" );
+#if !JVET_Q0249_ALF_CHROMA_CLIPFLAG
+      READ_FLAG(code, "alf_nonlinear_enable_flag_chroma");
       param.nonLinearFlag[CHANNEL_TYPE_CHROMA][altIdx] = code ? true : false;
+#endif
       alfFilter( param, true, altIdx );
     }
   }
@@ -1275,9 +1307,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
+#if JVET_Q0147_JCCR_SIGNALLING
+  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
+#else
   READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
+#endif
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
     int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);
@@ -1740,6 +1778,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     pps->setTileIdxDeltaPresentFlag( 0 );
     pps->setSliceTileIdx( 0, 0 );
     pps->initRectSliceMap( );
+#if JVET_O1143_SUBPIC_BOUNDARY
+    // when no Pic partition, number of sub picture shall be less than 2
+    CHECK(pps->getNumSubPics()>=2, "error, no picture partitions, but have equal to or more than 2 sub pictures");
+#endif
   }
   else 
   {
@@ -2751,14 +2793,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
       else
       {
-        if(!pcSlice->isIntra())
-        {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_0, pcSlice->getRPL0()->getNumRefEntries());
-        }
-        if(pcSlice->isInterB())
-        {
-          pcSlice->setNumRefIdx(REF_PIC_LIST_1, pcSlice->getRPL1()->getNumRefEntries());
-        }
+        pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
+        pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
       }
     }
 
@@ -3537,7 +3573,11 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
   }
 
   // Clipping values coding
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+  if ( alfParam.nonLinearFlag[isChroma] )
+#else
   if ( alfParam.nonLinearFlag[isChroma][altIdx] )
+#endif
   {
 
     // Filter coefficients

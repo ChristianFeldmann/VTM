@@ -115,7 +115,11 @@ struct AlfFilterShape
 struct AlfParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_[luma/chroma]_clip_flag
+#else
   bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE][MAX_NUM_ALF_ALTERNATIVES_CHROMA]; // alf_[luma/chroma]_clip_flag
+#endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
   int                          numAlternativesChroma;                                                  // alf_chroma_num_alts_minus_one + 1

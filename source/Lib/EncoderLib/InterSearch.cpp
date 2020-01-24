@@ -6764,11 +6764,26 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             {
               m_CABACEstimator->cross_comp_pred( tu, compID );
             }
-            m_CABACEstimator->residual_coding( tu, compID );
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+            CUCtx cuCtx;
+            cuCtx.isDQPCoded = true;
+            cuCtx.isChromaQpAdjCoded = true;
+            m_CABACEstimator->residual_coding(tu, compID, &cuCtx);
+            m_CABACEstimator->mts_idx(cu, &cuCtx);
+
+            if (compID == COMPONENT_Y && tu.mtsIdx[compID] > MTS_SKIP && !cuCtx.mtsLastScanPos)
+            {
+              currCompCost = MAX_DOUBLE;
+            }
+            else
+            {
+#else
+            m_CABACEstimator->residual_coding(tu, compID);
+#endif
 
             currCompFracBits = m_CABACEstimator->getEstFracBits();
 
-            PelBuf resiBuf     = csFull->getResiBuf(compArea);
+            PelBuf resiBuf = csFull->getResiBuf(compArea);
             CPelBuf orgResiBuf = csFull->getOrgResiBuf(compArea);
 
             m_pcTrQuant->invTransformNxN(tu, compID, resiBuf, cQP);
@@ -6779,7 +6794,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
             if (bUseCrossCPrediction)
             {
-              crossComponentPrediction( tu, compID, lumaResi, resiBuf, resiBuf, true );
+              crossComponentPrediction(tu, compID, lumaResi, resiBuf, resiBuf, true);
             }
 
             currCompDist = m_pcRdCost->getDistPart(orgResiBuf, resiBuf, channelBitDepth, compID, DF_SSE);
@@ -6788,6 +6803,9 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             currCompCost = m_pcRdCost->calcRdCost(currCompFracBits, currCompDist, false);
 #else
             currCompCost = m_pcRdCost->calcRdCost(currCompFracBits, currCompDist);
+#endif
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+            }
 #endif
           }
           else if( transformMode > 0 && !bUseCrossCPrediction )

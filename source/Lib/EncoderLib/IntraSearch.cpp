@@ -3637,6 +3637,9 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         }
       }
 
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+      cuCtx.mtsLastScanPos = false;
+#endif
       //----- determine rate and r-d cost -----
       if( ( sps.getUseLFNST() ? ( modeId == lastCheckId && modeId != 0 && checkTransformSkip ) : ( trModes[ modeId ].first != 0 ) ) && !TU::getCbfAtDepth( tu, COMPONENT_Y, currDepth ) )
       {
@@ -3653,6 +3656,20 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         {
           singleTmpFracBits = xGetIntraFracBitsQT( *csFull, partitioner, true, false, subTuCounter, ispType, &cuCtx );
         }
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND  
+        if (tu.mtsIdx[COMPONENT_Y] > MTS_SKIP)
+        {
+          if (!cuCtx.mtsLastScanPos)
+          {
+            singleCostTmp = MAX_DOUBLE;
+          }
+          else
+          {
+            singleCostTmp = m_pcRdCost->calcRdCost(singleTmpFracBits, singleDistTmpLuma);
+          }
+        }
+        else
+#endif
         singleCostTmp     = m_pcRdCost->calcRdCost( singleTmpFracBits, singleDistTmpLuma );
       }
 
@@ -3830,6 +3847,9 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
       cuCtx.lfnstLastScanPos = false;
       cuCtx.violatesMtsCoeffConstraint = false;
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+      cuCtx.mtsLastScanPos = false;
+#endif
 
       //----- determine rate and r-d cost -----
       csSplit->fracBits = xGetIntraFracBitsQT( *csSplit, partitioner, true, false, cu.ispMode ? 0 : -1, ispType, &cuCtx );
@@ -4123,6 +4143,11 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
         }
       }
 
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+      CUCtx cuCtx;
+      cuCtx.isDQPCoded = true;
+      cuCtx.isChromaQpAdjCoded = true;
+#endif
       //----- determine rate and r-d cost -----
       if ((sps.getUseLFNST() ? (modeId == lastCheckId && modeId != 0 && checkTransformSkip) : (trModes[modeId].first != 0)) && !TU::getCbfAtDepth(tu, COMPONENT_Y, currDepth))
       {
@@ -4131,7 +4156,24 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
       }
       else
       {
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+        singleTmpFracBits = xGetIntraFracBitsQT(*csFull, partitioner, true, false, -1, TU_NO_ISP, &cuCtx);
+        
+        if (tu.mtsIdx[COMPONENT_Y] > MTS_SKIP)
+        {
+          if (!cuCtx.mtsLastScanPos)
+          {
+            singleCostTmp = MAX_DOUBLE;
+          }
+          else
+          {
+            singleCostTmp = m_pcRdCost->calcRdCost(singleTmpFracBits, singleDistTmpLuma);
+          }
+        }
+        else
+#else
         singleTmpFracBits = xGetIntraFracBitsQT(*csFull, partitioner, true, false, -1, TU_NO_ISP);
+#endif
         singleCostTmp = m_pcRdCost->calcRdCost(singleTmpFracBits, singleDistTmpLuma);
       }
 
@@ -4617,7 +4659,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       Distortion singleDistCTmp = 0;
       double     singleCostTmp  = 0;
       const int  crossCPredictionModesToTest = checkCrossComponentPrediction ? 2 : 1;
+#if JVET_Q0784_LFNST_COMBINATION
+      const bool tsAllowed = TU::isTSAllowed(currTU, compID) && m_pcEncCfg->getUseChromaTS() && !currTU.cu->lfnstIdx;
+#else
       const bool tsAllowed = TU::isTSAllowed(currTU, compID) && (m_pcEncCfg->getUseChromaTS());
+#endif
       uint8_t nNumTransformCands = 1 + (tsAllowed ? 1 : 0); // DCT + TS = 2 tests
       std::vector<TrMode> trModes;
       trModes.push_back(TrMode(0, true)); // DCT2

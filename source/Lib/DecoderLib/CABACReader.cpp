@@ -1470,6 +1470,9 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
   cuCtx.lfnstLastScanPos                              = false;
   cuCtx.violatesMtsCoeffConstraint                    = false;
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+  cuCtx.mtsLastScanPos                                = false;
+#endif
 
   ChromaCbfs chromaCbfs;
   if( cu.ispMode && isLuma( partitioner.chType ) )
@@ -2837,6 +2840,12 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
     cuCtx.violatesMtsCoeffConstraint = true;
   }
 #endif
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+  if (isLuma(compID) && tu.mtsIdx[compID] != MTS_SKIP)
+  {
+    cuCtx.mtsLastScanPos |= cctx.scanPosLast() >= 1;
+  }
+#endif
 
   // parse subblocks
   const int stateTransTab = ( tu.cs->picHeader->getDepQuantEnabledFlag() ? 32040 : 0 );
@@ -2888,9 +2897,13 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
 {
   TransformUnit &tu = *cu.firstTU;
   int        mtsIdx = tu.mtsIdx[COMPONENT_Y]; // Transform skip flag has already been decoded
-  
+
   if( CU::isMTSAllowed( cu, COMPONENT_Y ) && !cuCtx.violatesMtsCoeffConstraint &&
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+      cuCtx.mtsLastScanPos && cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP)
+#else
       cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
+#endif
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[COMPONENT_Y], COMPONENT_Y );
     int ctxIdx = 0;
@@ -2982,7 +2995,23 @@ void CABACReader::residual_lfnst_mode( CodingUnit& cu,  CUCtx& cuCtx  )
     const bool lumaFlag              = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag            = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
     bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
+#if JVET_Q0784_LFNST_COMBINATION
+    bool isTrSkip = false;
+    for (auto &currTU : CU::traverseTUs(cu))
+    {
+      const uint32_t numValidComp = getNumberValidComponents(cu.chromaFormat);
+      for (uint32_t compID = COMPONENT_Y; compID < numValidComp; compID++)
+      {
+        if (currTU.blocks[compID].valid() && TU::getCbf(currTU, (ComponentID)compID) && currTU.mtsIdx[compID] == MTS_SKIP)
+        {
+          isTrSkip = true;
+          break;
+        }
+      }
+    }
+#else
     const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx[COMPONENT_Y] == MTS_SKIP;
+#endif
     if ((!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isTrSkip)
     {
       cu.lfnstIdx = 0;

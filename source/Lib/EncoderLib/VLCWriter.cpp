@@ -1272,6 +1272,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
   }
   
+#if !JVET_Q0155_COLOUR_ID
   // 4:4:4 colour plane ID
   if( sps->getSeparateColourPlaneFlag() )
   {
@@ -1281,6 +1282,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setColourPlaneId( 0 );
   }
+#endif
   
   // picture output flag
   if( pps->getOutputFlagPresentFlag() )
@@ -1787,7 +1789,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );
 
-
+#if JVET_Q0155_COLOUR_ID
+    // 4:4:4 colour plane ID
+    if( pcSlice->getSPS()->getSeparateColourPlaneFlag() )
+    {
+      WRITE_CODE( pcSlice->getColourPlaneId(), 2, "colour_plane_id" );
+    }
+#endif
 
     if( !picHeader->getPicRplPresentFlag() && (!pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent()) )
     {

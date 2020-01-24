@@ -53,6 +53,9 @@ Slice::Slice()
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
 , m_rpl0Idx                       ( -1 )
 , m_rpl1Idx                       ( -1 )
+#if JVET_Q0155_COLOUR_ID
+, m_colourPlaneId                 ( 0 )
+#endif
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
@@ -145,7 +148,9 @@ void Slice::initSlice()
     m_aiNumRefIdx[i]      = 0;
   }
   m_colFromL0Flag = true;
-
+#if JVET_Q0155_COLOUR_ID
+  m_colourPlaneId = 0;
+#endif
   m_colRefIdx = 0;
   initEqualRef();
 
@@ -1555,7 +1560,9 @@ PicHeader::PicHeader()
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag ( 0 )
 , m_numVerVirtualBoundaries                       ( 0 )
 , m_numHorVirtualBoundaries                       ( 0 )
+#if !JVET_Q0155_COLOUR_ID
 , m_colourPlaneId                                 ( 0 )
+#endif
 , m_picOutputFlag                                 ( true )
 , m_picRplPresentFlag                             ( 0 )
 , m_pRPL0                                         ( 0 )
@@ -1645,7 +1652,9 @@ void PicHeader::initPicHeader()
   m_loopFilterAcrossVirtualBoundariesDisabledFlag = 0;
   m_numVerVirtualBoundaries                       = 0;
   m_numHorVirtualBoundaries                       = 0;
+#if !JVET_Q0155_COLOUR_ID
   m_colourPlaneId                                 = 0;
+#endif
   m_picOutputFlag                                 = true;
   m_picRplPresentFlag                             = 0;
   m_pRPL0                                         = 0;
@@ -1739,7 +1748,7 @@ SPS::SPS()
 , m_SBT                       ( false )
 , m_ISP                       ( false )
 , m_chromaFormatIdc           (CHROMA_420)
-, m_separateColourPlaneFlag(0)
+, m_separateColourPlaneFlag   ( 0 )
 , m_uiMaxTLayers              (  1)
 // Structure
 , m_maxWidthInLumaSamples     (352)

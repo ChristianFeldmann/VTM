@@ -1298,9 +1298,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
+#if JVET_Q0147_JCCR_SIGNALLING
+  if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
+#else
   READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
+#endif
     ChromaQpMappingTableParams chromaQpMappingTableParams;
     READ_FLAG(uiCode, "same_qp_table_for_chroma");        chromaQpMappingTableParams.setSameCQPTableForAllChromaFlag(uiCode);
     int numQpTables = chromaQpMappingTableParams.getSameCQPTableForAllChromaFlag() ? 1 : (pcSPS->getJointCbCrEnabledFlag() ? 3 : 2);

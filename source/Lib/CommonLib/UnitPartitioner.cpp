@@ -390,7 +390,13 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
+#if JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT
+  SizeType side = chType == CHANNEL_TYPE_CHROMA ? areaC.height : area.height;
+  if (side <= minQtSize)                                     canQt = false;
+#else
   if( area.width <= minQtSize )                              canQt = false;
+#endif
+
 #if JVET_Q0438_MONOCHROME_BUGFIXES
   if( areaC && areaC->width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
 #else
@@ -563,7 +569,12 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     const bool isBtAllowed    = area.width <= maxBtSize && area.height <= maxBtSize;
 #endif
     const unsigned minQtSize  = cs.pcv->getMinQtSize( *cs.slice, chType );
+#if JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT
+    SizeType   side           = chType == CHANNEL_TYPE_CHROMA ? currArea().Cb().height : area.height;
+    const bool isQtAllowed    = side > minQtSize && currBtDepth == 0;
+#else
     const bool isQtAllowed    = area.width >  minQtSize && area.height >  minQtSize && currBtDepth == 0;
+#endif
 
     if( !isBlInPic && !isTrInPic && isQtAllowed )
     {

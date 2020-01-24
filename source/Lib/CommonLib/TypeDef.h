@@ -50,7 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move 
+#define JVET_Q0784_LFNST_COMBINATION                      1 // lfnst signaling, latency reduction and a bugfix for scaling from Q0106, Q0686, Q0133
+
+#define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move colour_plane_id from PH to SH
 
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 

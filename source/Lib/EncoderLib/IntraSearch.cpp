@@ -4617,7 +4617,11 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       Distortion singleDistCTmp = 0;
       double     singleCostTmp  = 0;
       const int  crossCPredictionModesToTest = checkCrossComponentPrediction ? 2 : 1;
+#if JVET_Q0784_LFNST_COMBINATION
+      const bool tsAllowed = TU::isTSAllowed(currTU, compID) && m_pcEncCfg->getUseChromaTS() && !currTU.cu->lfnstIdx;
+#else
       const bool tsAllowed = TU::isTSAllowed(currTU, compID) && (m_pcEncCfg->getUseChromaTS());
+#endif
       uint8_t nNumTransformCands = 1 + (tsAllowed ? 1 : 0); // DCT + TS = 2 tests
       std::vector<TrMode> trModes;
       trModes.push_back(TrMode(0, true)); // DCT2

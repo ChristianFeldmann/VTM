@@ -729,7 +729,7 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
                     beforeScale, scalingWindowBefore.getWindowLeftOffset(), scalingWindowBefore.getWindowTopOffset(), 
                     afterScale, scalingWindowAfter.getWindowLeftOffset(), scalingWindowAfter.getWindowTopOffset(), 
 #endif              
-                    bitDepths.recon[comp], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
+                    bitDepths.recon[toChannelType(compID)], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
                     isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
   }
 }

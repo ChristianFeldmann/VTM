@@ -908,6 +908,31 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
   }
 }
 
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+void CodingStructure::setPrevPLT(PLTBuf predictor)
+{
+  for (int comp = 0; comp < MAX_NUM_CHANNEL_TYPE; comp++)
+  {
+    prevPLT.curPLTSize[comp] = predictor.curPLTSize[comp];
+  }
+  for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
+  {
+    memcpy(prevPLT.curPLT[comp], predictor.curPLT[comp], MAXPLTPREDSIZE * sizeof(Pel));
+  }
+}
+void CodingStructure::storePrevPLT(PLTBuf& predictor)
+{
+  for (int comp = 0; comp < MAX_NUM_CHANNEL_TYPE; comp++)
+  {
+    predictor.curPLTSize[comp] = prevPLT.curPLTSize[comp];
+  }
+  for (int comp = 0; comp < MAX_NUM_COMPONENT; comp++)
+  {
+    memcpy(predictor.curPLT[comp], prevPLT.curPLT[comp], MAXPLTPREDSIZE * sizeof(Pel));
+  }
+}
+#endif
+
 void CodingStructure::rebindPicBufs()
 {
   CHECK( parent, "rebindPicBufs can only be used for the top level CodingStructure" );

@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF
 #define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
 #define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing

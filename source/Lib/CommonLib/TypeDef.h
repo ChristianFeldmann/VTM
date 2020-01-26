@@ -78,6 +78,9 @@
 #define JVET_Q0483_CLIP_TMVP                              1 // JVET-Q0483: Clip TMVP when no scaling is applied
 
 #define JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND            1 // JVET-Q0516/Q0685: disable MTS when there is only DC coefficient 
+
+#define JVET_Q0806                                        1 // Geo related adoptions (JVET-Q0059, JVET-Q0077, JVET-Q0123, JVET-Q0188, JVET-Q0242_GEO, JVET-Q0309, JVET-Q0365 and JVET-Q0370)
+
 #define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
 #define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
 
@@ -582,7 +585,12 @@ enum DFunc
 
   DF_SAD_INTERMEDIATE_BITDEPTH = 63,
 
+#if JVET_Q0806
+  DF_SAD_WITH_MASK   = 64,
+  DF_TOTAL_FUNCTIONS = 65
+#else
   DF_TOTAL_FUNCTIONS = 64
+#endif
 };
 
 /// motion vector predictor direction used in AMVP
@@ -860,12 +868,14 @@ enum MergeType
   NUM_MRG_TYPE                   // 5
 };
 
+#if !JVET_Q0806
 enum TriangleSplit
 {
   TRIANGLE_DIR_135 = 0,
   TRIANGLE_DIR_45,
   TRIANGLE_DIR_NUM
 };
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out

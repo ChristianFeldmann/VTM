@@ -201,6 +201,10 @@ void RdCost::init()
 
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD;
 
+#if JVET_Q0806
+  m_afpDistortFunc[DF_SAD_WITH_MASK] = RdCost::xGetSADwMask;
+#endif
+
 #if ENABLE_SIMD_OPT_DIST
 #ifdef TARGET_SIMD_X86
   initRdCostX86();
@@ -314,6 +318,15 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
       rcDP.subShift = 1;
     }
   }
+#if JVET_Q0806
+  else if( subShiftMode == 3 )
+  {
+    if (rcDP.org.height > 8 )
+    {
+      rcDP.subShift = 1;
+    }
+  }
+#endif
 }
 
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard )
@@ -3448,4 +3461,69 @@ Distortion RdCost::xGetMRHADs( const DistParam &rcDtParam )
 
   return m_afpDistortFunc[DF_HAD]( modDistParam );
 }
+
+#if JVET_Q0806
+void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY, int iRefStride, const Pel* mask, int iMaskStride, int stepX, int iMaskStride2, int bitDepth, ComponentID compID)
+{
+  rcDP.bitDepth     = bitDepth;
+  rcDP.compID       = compID;
+
+  // set Original & Curr Pointer / Stride
+  rcDP.org          = org;
+  rcDP.cur.buf      = piRefY;
+  rcDP.cur.stride   = iRefStride;
+
+  // set Mask
+  rcDP.mask         = mask;
+  rcDP.maskStride   = iMaskStride;
+  rcDP.stepX = stepX;
+  rcDP.maskStride2 = iMaskStride2;
+
+  // set Block Width / Height
+  rcDP.cur.width    = org.width;
+  rcDP.cur.height   = org.height;
+  rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
+
+  // set Cost function for motion estimation with Mask
+  rcDP.distFunc = m_afpDistortFunc[ DF_SAD_WITH_MASK ];
+}
+
+Distortion RdCost::xGetSADwMask( const DistParam& rcDtParam )
+{
+  if ( rcDtParam.applyWeight )
+  {
+    return RdCostWeightPrediction::xGetSADw( rcDtParam );
+  }
+
+  const Pel* org           = rcDtParam.org.buf;
+  const Pel* cur           = rcDtParam.cur.buf;
+  const Pel* mask          = rcDtParam.mask;
+  const int  cols           = rcDtParam.org.width;
+  int        rows           = rcDtParam.org.height;
+  const int  subShift       = rcDtParam.subShift;
+  const int  subStep        = ( 1 << subShift);
+  const int  strideCur      = rcDtParam.cur.stride * subStep;
+  const int  strideOrg      = rcDtParam.org.stride * subStep;
+  const int  strideMask     = rcDtParam.maskStride * subStep;
+  const int  stepX = rcDtParam.stepX;
+  const int  strideMask2 = rcDtParam.maskStride2;
+  const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
+
+  Distortion sum = 0;
+  for (; rows != 0; rows -= subStep)
+  {
+    for (int n = 0; n < cols; n++)
+    {
+      sum += abs(org[n] - cur[n]) * *mask;
+      mask += stepX;
+    }
+    org += strideOrg;
+    cur += strideCur;
+    mask += strideMask;
+    mask += strideMask2;
+  }
+  sum <<= subShift;
+  return (sum >> distortionShift );
+}
+#endif
 //! \}

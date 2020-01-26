@@ -1973,6 +1973,97 @@ static uint32_t xCalcHAD8x16_AVX2( const Pel* piOrg, const Pel* piCur, const int
   return (sad);
 }
 
+#if JVET_Q0806
+template< X86_VEXT vext >
+Distortion RdCost::xGetSADwMask_SIMD( const DistParam &rcDtParam )
+{
+  if (rcDtParam.org.width < 4  || rcDtParam.bitDepth > 10 || rcDtParam.applyWeight)
+    return RdCost::xGetSADwMask( rcDtParam );
+
+  const short* src1   = (const short*)rcDtParam.org.buf;
+  const short* src2   = (const short*)rcDtParam.cur.buf;
+  const short* weightMask   = (const short*)rcDtParam.mask;
+  int  rows           = rcDtParam.org.height;
+  int  cols           = rcDtParam.org.width;
+  int  subShift       = rcDtParam.subShift;
+  int  subStep        = ( 1 << subShift);
+  const int strideSrc1 = rcDtParam.org.stride * subStep;
+  const int strideSrc2 = rcDtParam.cur.stride * subStep;
+  const int strideMask = rcDtParam.maskStride * subStep;
+
+  Distortion sum = 0;
+  if( vext >= AVX2 && (cols & 15 ) == 0 )
+  {
+#ifdef USE_AVX2
+    // Do for width that multiple of 16
+    __m256i vzero = _mm256_setzero_si256();
+    __m256i vsum32 = vzero;
+    for( int y = 0; y < rows; y+= subStep)
+    {
+      for( int x = 0; x < cols; x+=16 )
+      {
+        __m256i vsrc1 = _mm256_lddqu_si256( ( __m256i* )( &src1[x] ) );
+        __m256i vsrc2 = _mm256_lddqu_si256( ( __m256i* )( &src2[x] ) );
+		    __m256i vmask;
+		    if ( rcDtParam.stepX == -1 )
+		    {
+			    vmask = _mm256_lddqu_si256((__m256i*)((&weightMask[x]) - (x << 1) - (16 - 1)));
+			    const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+			    vmask = _mm256_shuffle_epi8(vmask, shuffle_mask);
+			    vmask = _mm256_permute4x64_epi64 (vmask, _MM_SHUFFLE(1, 0, 3, 2));
+		    }
+		    else
+		    {
+			    vmask = _mm256_lddqu_si256((__m256i*)(&weightMask[x]));
+		    }
+        vsum32 = _mm256_add_epi32( vsum32, _mm256_madd_epi16( vmask, _mm256_abs_epi16( _mm256_sub_epi16( vsrc1, vsrc2 ) ) ) );
+      }
+      src1 += strideSrc1;
+      src2 += strideSrc2;
+      weightMask += strideMask;
+    }
+    vsum32 = _mm256_hadd_epi32( vsum32, vzero );
+    vsum32 = _mm256_hadd_epi32( vsum32, vzero );
+    sum =  _mm_cvtsi128_si32( _mm256_castsi256_si128( vsum32 ) ) + _mm_cvtsi128_si32( _mm256_castsi256_si128( _mm256_permute2x128_si256( vsum32, vsum32, 0x11 ) ) );
+#endif
+  }
+  else
+  {
+    // Do with step of 8
+    __m128i vzero = _mm_setzero_si128();
+    __m128i vsum32 = vzero;
+    for( int y = 0; y < rows; y+= subStep)
+    {
+      for( int x = 0; x < cols; x+=8 )
+      {
+        __m128i vsrc1 = _mm_loadu_si128( ( const __m128i* )( &src1[x] ) );
+        __m128i vsrc2 = _mm_lddqu_si128( ( const __m128i* )( &src2[x] ) );
+		    __m128i vmask;
+		    if (rcDtParam.stepX == -1)
+		    {
+			    vmask = _mm_lddqu_si128((__m128i*)((&weightMask[x]) - (x << 1) - (8 - 1)));
+			    const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+			    vmask = _mm_shuffle_epi8(vmask, shuffle_mask);
+		    }
+		    else
+		    {
+			    vmask = _mm_lddqu_si128((const __m128i*)(&weightMask[x]));
+		    }
+        vsum32 = _mm_add_epi32( vsum32, _mm_madd_epi16( vmask, _mm_abs_epi16( _mm_sub_epi16( vsrc1, vsrc2 ) ) ) );
+      }
+      src1 += strideSrc1;
+      src2 += strideSrc2;
+      weightMask += strideMask;
+    }
+    vsum32 = _mm_hadd_epi32( vsum32, vzero );
+    vsum32 = _mm_hadd_epi32( vsum32, vzero );
+    sum =  _mm_cvtsi128_si32( vsum32 );
+  }
+  sum <<= subShift;
+
+  return sum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
+}
+#endif
 
 template<X86_VEXT vext>
 Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
@@ -2150,6 +2241,10 @@ void RdCost::_initRdCostX86()
   m_afpDistortFunc[DF_HAD16N]  = RdCost::xGetHADs_SIMD<vext>;
 
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
+
+#if JVET_Q0806
+  m_afpDistortFunc[DF_SAD_WITH_MASK] = xGetSADwMask_SIMD<vext>;
+#endif
 }
 
 template void RdCost::_initRdCostX86<SIMDX86>();

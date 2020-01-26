@@ -698,7 +698,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
+#if !JVET_Q0806
     READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode);
+#else
+    READ_UVLC(uiCode, "pps_max_num_merge_cand_minus_max_num_gpm_cand_plus1"); pcPPS->setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(uiCode);
+#endif
   }
   else
   {
@@ -708,7 +712,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSMvdL1ZeroIdc(0);
     pcPPS->setPPSCollocatedFromL0Idc(0);
     pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
+#if !JVET_Q0806
     pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0);
+#else
+    pcPPS->setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(0);
+#endif
   }
 
 
@@ -1449,7 +1457,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
 
+#if !JVET_Q0806
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
+#else
+  READ_FLAG( uiCode,    "sps_gpm_enabled_flag" );                               pcSPS->setUseGeo                 ( uiCode != 0 );
+#endif
 
   READ_FLAG(uiCode, "sps_lmcs_enable_flag");                   pcSPS->setUseLmcs(uiCode == 1);
   READ_FLAG( uiCode, "sps_lfnst_enabled_flag" );                    pcSPS->setUseLFNST( uiCode != 0 );
@@ -2139,6 +2151,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setDisProfFlag(0);
   }
 
+#if !JVET_Q0806
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
   {
@@ -2157,6 +2170,26 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setMaxNumTriangleCand(0);
   }
+#else
+  // geometric merge candidate list size
+  if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
+  {
+    if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+    {
+      READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+    }
+    else
+    {
+      uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1;
+    }
+    CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of gpm candidates!");
+    picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
+  }
+  else
+  {
+    picHeader->setMaxNumGeoCand(0);
+  }
+#endif
 
   // ibc merge candidate list size
   if (sps->getIBCFlag())
@@ -3146,7 +3179,11 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_ibc_constraint_flag");                     cinfo->setNoIbcConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_ciip_constraint_flag");                    cinfo->setNoCiipConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_fpel_mmvd_constraint_flag");               cinfo->setNoFPelMmvdConstraintFlag(symbol > 0 ? true : false);
+#if !JVET_Q0806
   READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
+#else
+  READ_FLAG(symbol, "no_gpm_constraint_flag");                     cinfo->setNoGeoConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_transform_skip_constraint_flag");          cinfo->setNoTransformSkipConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_bdpcm_constraint_flag");                   cinfo->setNoBDPCMConstraintFlag(symbol > 0 ? true : false);

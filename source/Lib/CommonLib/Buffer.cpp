@@ -553,6 +553,38 @@ void AreaBuf<Pel>::copyClip( const AreaBuf<const Pel> &src, const ClpRng& clpRng
   }
 }
 
+#if JVET_Q0806
+template<>
+void AreaBuf<Pel>::roundToOutputBitdepth( const AreaBuf<const Pel> &src, const ClpRng& clpRng )
+{
+  const Pel* srcp = src.buf;
+        Pel* dest =     buf;
+  const unsigned srcStride  = src.stride;
+  const unsigned destStride = stride;
+
+  const int32_t clipbd            = clpRng.bd;
+  const int32_t shiftDefault      = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
+  const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
+   
+  if( width == 1 )
+  {
+    THROW( "Blocks of width = 1 not supported" );
+  }
+  else
+  {
+#define RND_OP( ADDR ) dest[ADDR] = ClipPel( rightShift( srcp[ADDR] + offsetDefault, shiftDefault), clpRng )
+#define RND_INC        \
+    srcp += srcStride;  \
+    dest += destStride; \
+
+    SIZE_AWARE_PER_EL_OP( RND_OP, RND_INC );
+
+#undef RND_OP
+#undef RND_INC
+  }
+}
+#endif
+
 
 template<>
 void AreaBuf<Pel>::reconstruct( const AreaBuf<const Pel> &pred, const AreaBuf<const Pel> &resi, const ClpRng& clpRng )

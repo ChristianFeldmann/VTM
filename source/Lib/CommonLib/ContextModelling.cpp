@@ -320,11 +320,19 @@ unsigned DeriveCtx::CtxIBCFlag(const CodingUnit& cu)
 void MergeCtx::setMergeInfo( PredictionUnit& pu, int candIdx )
 {
   CHECK( candIdx >= numValidMergeCand, "Merge candidate does not exist" );
+#if !JVET_Q0806
   pu.regularMergeFlag        = !(pu.ciipFlag || pu.cu->triangle);
+#else
+  pu.regularMergeFlag        = !(pu.ciipFlag || pu.cu->geoFlag);
+#endif
   pu.mergeFlag               = true;
   pu.mmvdMergeFlag = false;
   pu.interDir                = interDirNeighbours[candIdx];
+#if !JVET_Q0806
   pu.cu->imv = (!pu.cu->triangle && useAltHpelIf[candIdx]) ? IMV_HPEL : 0;
+#else
+  pu.cu->imv = (!pu.cu->geoFlag && useAltHpelIf[candIdx]) ? IMV_HPEL : 0;
+#endif
   pu.mergeIdx                = candIdx;
   pu.mergeType               = mrgTypeNeighbours[candIdx];
   pu.mv     [REF_PIC_LIST_0] = mvFieldNeighbours[(candIdx << 1) + 0].mv;

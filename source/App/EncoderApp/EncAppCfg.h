@@ -151,7 +151,11 @@ protected:
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
+#if !JVET_Q0806
   bool      m_bNoTriangleConstraintFlag;
+#else
+  bool      m_bNoGeoConstraintFlag;
+#endif
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
   bool      m_noBDPCMConstraintFlag;
@@ -305,7 +309,11 @@ protected:
 #endif
 
   bool      m_ciip;
+#if !JVET_Q0806
   bool      m_Triangle;
+#else
+  bool      m_Geo;
+#endif
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
@@ -583,7 +591,11 @@ protected:
 
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
+#if !JVET_Q0806
   uint32_t      m_maxNumTriangleCand;
+#else
+  uint32_t      m_maxNumGeoCand;
+#endif
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
   bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header
@@ -599,7 +611,11 @@ protected:
   int       m_PPSMvdL1ZeroIdc;
   int       m_PPSCollocatedFromL0Idc;
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
+#if !JVET_Q0806
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
+#else
+  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
+#endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;                ///< enable rate control or not

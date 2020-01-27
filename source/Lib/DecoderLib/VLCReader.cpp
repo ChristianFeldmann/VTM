@@ -1509,7 +1509,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
+#if JVET_Q0820_ACT
+    if (pcSPS->getLog2MaxTbSize() != 6)
+    {
+      READ_FLAG(uiCode, "sps_act_enabled_flag");                                pcSPS->setUseColorTrans(uiCode != 0);
+    }
+#else
     READ_FLAG(uiCode, "sps_act_enabled_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);
+#endif
   }
   else
   {

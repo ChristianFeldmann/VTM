@@ -1288,6 +1288,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getUseDualITree())
   {
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    // Since in software minQT[2] is in chroma samples, min CB size in luma samples is first converted into chroma samples for the calculation
     const int base = std::max(MIN_CU_LOG2, pcSPS->getLog2MinCodingBlockSize() - (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pcSPS->getChromaFormatIdc()));
     READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = 1 << (uiCode + base);
 #else

@@ -825,8 +825,17 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
   READ_FLAG(code, "alf_chroma_new_filter");
   param.newFilterFlag[CHANNEL_TYPE_CHROMA] = code;
 
-  CHECK(param.newFilterFlag[CHANNEL_TYPE_LUMA] == 0 && param.newFilterFlag[CHANNEL_TYPE_CHROMA] == 0,
-    "bitstream conformance error, alf_luma_filter_signal_flag and alf_chroma_filter_signal_flag shall not equal to zero at the same time");
+#if JVET_Q0795_CCALF
+  CcAlfFilterParam ccAlfParam = aps->getCcAlfAPSParam();
+  READ_FLAG(code, "alf_cc_cb_filter_signal_flag");
+  ccAlfParam.newCcAlfFilter[COMPONENT_Cb - 1] = code;
+  READ_FLAG(code, "alf_cc_cr_filter_signal_flag");
+  ccAlfParam.newCcAlfFilter[COMPONENT_Cr - 1] = code;
+  CHECK(param.newFilterFlag[CHANNEL_TYPE_LUMA] == 0 && param.newFilterFlag[CHANNEL_TYPE_CHROMA] == 0
+          && ccAlfParam.newCcAlfFilter[COMPONENT_Cb - 1] == 0 && ccAlfParam.newCcAlfFilter[COMPONENT_Cr - 1] == 0,
+        "bitstream conformance error: one of alf_luma_filter_signal_flag, alf_chroma_filter_signal_flag, "
+        "alf_cross_component_cb_filter_signal_flag, and alf_cross_component_cr_filter_signal_flag shall be nonzero");
+#endif
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
@@ -876,6 +885,62 @@ void HLSyntaxReader::parseAlfAps( APS* aps )
       alfFilter( param, true, altIdx );
     }
   }
+
+#if JVET_Q0795_CCALF
+  for (int ccIdx = 0; ccIdx < 2; ccIdx++)
+  {
+    if (ccAlfParam.newCcAlfFilter[ccIdx])
+    {
+      if (MAX_NUM_CC_ALF_FILTERS > 1)
+      {
+        READ_UVLC(code, ccIdx == 0 ? "alf_cc_cb_filters_signalled_minus1" : "alf_cc_cr_filters_signalled_minus1");
+      }
+      else
+      {
+        code = 0;
+      }
+      ccAlfParam.ccAlfFilterCount[ccIdx] = code + 1;
+
+      for (int filterIdx = 0; filterIdx < ccAlfParam.ccAlfFilterCount[ccIdx]; filterIdx++)
+      {
+        ccAlfParam.ccAlfFilterIdxEnabled[ccIdx][filterIdx] = true;
+        AlfFilterShape alfShape(size_CC_ALF);
+
+        short *coeff = ccAlfParam.ccAlfCoeff[ccIdx][filterIdx];
+        // Filter coefficients
+        for (int i = 0; i < alfShape.numCoeff - 1; i++)
+        {
+          READ_CODE(CCALF_BITS_PER_COEFF_LEVEL, code,
+                    ccIdx == 0 ? "alf_cc_cb_mapped_coeff_abs" : "alf_cc_cr_mapped_coeff_abs");
+          if (code == 0)
+          {
+            coeff[i] = 0;
+          }
+          else
+          {
+            coeff[i] = 1 << (code - 1);
+            READ_FLAG(code, ccIdx == 0 ? "alf_cc_cb_coeff_sign" : "alf_cc_cr_coeff_sign");
+            coeff[i] *= 1 - 2 * code;
+          }
+        }
+
+        DTRACE(g_trace_ctx, D_SYNTAX, "%s coeff filterIdx %d: ", ccIdx == 0 ? "Cb" : "Cr", filterIdx);
+        for (int i = 0; i < alfShape.numCoeff; i++)
+        {
+          DTRACE(g_trace_ctx, D_SYNTAX, "%d ", coeff[i]);
+        }
+        DTRACE(g_trace_ctx, D_SYNTAX, "\n");
+      }
+
+      for (int filterIdx = ccAlfParam.ccAlfFilterCount[ccIdx]; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++)
+      {
+        ccAlfParam.ccAlfFilterIdxEnabled[ccIdx][filterIdx] = false;
+      }
+    }
+  }
+  aps->setCcAlfAPSParam(ccAlfParam);
+#endif
+
   aps->setAlfAPSParam(param);
 }
 
@@ -1334,6 +1399,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_sao_enabled_flag" );                      pcSPS->setSAOEnabledFlag ( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_alf_enabled_flag" );                      pcSPS->setALFEnabledFlag ( uiCode ? true : false );
+#if JVET_Q0795_CCALF
+  if (pcSPS->getALFEnabledFlag() && pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    READ_FLAG( uiCode, "sps_ccalf_enabled_flag" );                      pcSPS->setCCALFEnabledFlag ( uiCode ? true : false );
+  }
+  else
+  {
+    pcSPS->setCCALFEnabledFlag(false);
+  }
+#endif
 
   READ_FLAG(uiCode, "sps_transform_skip_enabled_flag"); pcSPS->setTransformSkipEnabledFlag(uiCode ? true : false);
   if (pcSPS->getTransformSkipEnabledFlag())
@@ -2211,6 +2286,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
   
   // alf enable flags and aps IDs
+#if JVET_Q0795_CCALF
+  picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
+  picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
+#endif
   if( sps->getALFEnabledFlag() )
   {
     READ_FLAG(uiCode, "pic_alf_enabled_present_flag");  
@@ -2250,6 +2329,30 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
           READ_CODE(3, uiCode, "pic_alf_aps_id_chroma");
           picHeader->setAlfApsIdChroma(uiCode);
         }
+#if JVET_Q0795_CCALF
+        if (sps->getCCALFEnabledFlag())
+        {
+          READ_FLAG(uiCode, "ph_cc_alf_cb_enabled_flag");
+          picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, uiCode != 0);
+          picHeader->setCcAlfCbApsId(-1);
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cb))
+          {
+            // parse APS ID
+            READ_CODE(3, uiCode, "ph_cc_alf_cb_aps_id");
+            picHeader->setCcAlfCbApsId(uiCode);
+          }
+          // Cr
+          READ_FLAG(uiCode, "ph_cc_alf_cr_enabled_flag");
+          picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, uiCode != 0);
+          picHeader->setCcAlfCrApsId(-1);
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cr))
+          {
+            // parse APS ID
+            READ_CODE(3, uiCode, "ph_cc_alf_cr_aps_id");
+            picHeader->setCcAlfCrApsId(uiCode);
+          }
+        }
+#endif
       }
       else
       {
@@ -2951,6 +3054,39 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
       pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
       pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+
+#if JVET_Q0795_CCALF
+      CcAlfFilterParam &filterParam = pcSlice->m_ccAlfFilterParam;
+      if (sps->getCCALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
+      {
+        READ_FLAG(uiCode, "slice_cc_alf_cb_enabled_flag");
+        filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = (uiCode == 1) ? true : false;
+        pcSlice->setTileGroupCcAlfCbApsId(-1);
+        if (filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1])
+        {
+          // parse APS ID
+          READ_CODE(3, uiCode, "slice_cc_alf_cb_aps_id");
+          pcSlice->setTileGroupCcAlfCbApsId(uiCode);
+        }
+        // Cr
+        READ_FLAG(uiCode, "slice_cc_alf_cr_enabled_flag");
+        filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = (uiCode == 1) ? true : false;
+        pcSlice->setTileGroupCcAlfCrApsId(-1);
+        if (filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1])
+        {
+          // parse APS ID
+          READ_CODE(3, uiCode, "slice_cc_alf_cr_aps_id");
+          pcSlice->setTileGroupCcAlfCrApsId(uiCode);
+        }
+      }
+      else
+      {
+        filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = false;
+        filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = false;
+        pcSlice->setTileGroupCcAlfCbApsId(-1);
+        pcSlice->setTileGroupCcAlfCrApsId(-1);
+      }
+#endif
     }
 
 
@@ -3130,6 +3266,9 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_partition_constraints_override_constraint_flag"); cinfo->setNoPartitionConstraintsOverrideConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_sao_constraint_flag");                    cinfo->setNoSaoConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol,  "no_alf_constraint_flag");                    cinfo->setNoAlfConstraintFlag(symbol > 0 ? true : false);
+#if JVET_Q0795_CCALF
+  READ_FLAG(symbol,  "no_ccalf_constraint_flag");                  cinfo->setNoCCAlfConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol,  "no_joint_cbcr_constraint_flag");             cinfo->setNoJointCbCrConstraintFlag(symbol > 0 ? true : false);
 
   READ_FLAG(symbol,  "no_ref_wraparound_constraint_flag");         cinfo->setNoRefWraparoundConstraintFlag(symbol > 0 ? true : false);

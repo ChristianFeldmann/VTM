@@ -1001,7 +1001,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
+#if JVET_Q0820_ACT
+    if (pcSPS->getLog2MaxTbSize() != 6)
+    {
+      WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "sps_act_enabled_flag");
+    }
+#else
     WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "sps_act_enabled_flag");
+#endif
   }
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {

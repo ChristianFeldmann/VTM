@@ -419,7 +419,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               &m_cTrQuant[jId],
                               &m_cRdCost[jId],
                               cabacEstimator,
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize
+#else
                               getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+#endif
                             , &m_cReshaper[jId]
                             , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
     );
@@ -429,7 +433,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               m_bipredSearchRange,
                               m_motionEstimationSearchMethod,
                               getUseCompositeRef(),
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+                              m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
+#else
                               m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
+#endif
                            , &m_cReshaper[jId]
     );
 

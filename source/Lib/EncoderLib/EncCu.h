@@ -152,7 +152,7 @@ public:
   void insert(int geoIdx, int partIdx, int mergeIdx, double cost)
   {
     assert(geoIdx < numGeoTemplatesInitialized);
-	  singleDistList[partIdx][geoIdx][mergeIdx] = SingleGeoMergeEntry(mergeIdx, cost);
+    singleDistList[partIdx][geoIdx][mergeIdx] = SingleGeoMergeEntry(mergeIdx, cost);
   }
   int numGeoTemplatesInitialized;
 };

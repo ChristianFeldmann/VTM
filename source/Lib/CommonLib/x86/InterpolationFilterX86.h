@@ -1462,13 +1462,13 @@ void xWeightedGeoBlk_SSE(const PredictionUnit &pu, const uint32_t width, const u
   int32_t strideSrc1 = predSrc1.get(compIdx).stride;
 
   const char    log2WeightBase = 3;
-  const ClpRng  clpRng         = pu.cu->slice->clpRngs().comp[compIdx];
-  const int32_t shiftWeighted  = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;
+  const ClpRng  clpRng = pu.cu->slice->clpRngs().comp[compIdx];
+  const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;
   const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
 
-  int16_t wIdx    = floorLog2(pu.lwidth() ) - GEO_MIN_CU_LOG2;
-  int16_t hIdx    = floorLog2(pu.lheight()) - GEO_MIN_CU_LOG2;
-  int16_t angle   = g_GeoParams[splitDir][0];
+  int16_t wIdx = floorLog2(pu.lwidth()) - GEO_MIN_CU_LOG2;
+  int16_t hIdx = floorLog2(pu.lheight()) - GEO_MIN_CU_LOG2;
+  int16_t angle = g_GeoParams[splitDir][0];
   int16_t stepY = 0;
   int16_t* weight = nullptr;
   if (g_angle2mirror[angle] == 2)
@@ -1493,30 +1493,28 @@ void xWeightedGeoBlk_SSE(const PredictionUnit &pu, const uint32_t width, const u
   const __m128i mmMin = _mm_set1_epi16(clpRng.min);
   const __m128i mmMax = _mm_set1_epi16(clpRng.max);
 
-  if (compIdx != COMPONENT_Y && pu.chromaFormat== CHROMA_420)
-	  stepY <<= 1;
-  if( width == 4 )
+  if (compIdx != COMPONENT_Y && pu.chromaFormat == CHROMA_420)
+    stepY <<= 1;
+  if (width == 4)
   {
     // it will occur to chroma only
-    for( int y = 0; y < height; y++ )
+    for (int y = 0; y < height; y++)
     {
       __m128i s0 = _mm_loadl_epi64((__m128i *) (src0));
       __m128i s1 = _mm_loadl_epi64((__m128i *) (src1));
-      __m128i w0;	
-	    if (g_angle2mirror[angle] == 1)
-	    {
-		    w0 = _mm_loadu_si128((__m128i *) (weight - (8 - 1)));
-		    const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-		    w0 = _mm_shuffle_epi8(w0, shuffle_mask);
-	    }
-	    else
-	    {
-	      w0 = _mm_loadu_si128((__m128i *) (weight));
-	    }
-	    const __m128i mask = _mm_set_epi16(0, 1, 0, 1, 0, 1, 0, 1);
-	    w0 = _mm_mullo_epi16(w0, mask);
-	    w0 = _mm_packs_epi32(w0, _mm_setzero_si128());
-      __m128i w1 = _mm_sub_epi16(mmEight, w0);     	 
+      __m128i w0;
+      if (g_angle2mirror[angle] == 1)
+      {
+        w0 = _mm_loadu_si128((__m128i *) (weight - (8 - 1)));
+        const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+        w0 = _mm_shuffle_epi8(w0, shuffle_mask);
+      }
+      else
+      {
+        w0 = _mm_loadu_si128((__m128i *) (weight));
+      }
+      w0 = _mm_shuffle_epi8(w0, _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, 0, 0, 0, 0, 0, 0, 0, 0));
+      __m128i w1 = _mm_sub_epi16(mmEight, w0);
       s0 = _mm_unpacklo_epi16(s0, s1);
       w0 = _mm_unpacklo_epi16(w0, w1);
       s0 = _mm_add_epi32(_mm_madd_epi16(s0, w0), mmOffset);
@@ -1524,131 +1522,131 @@ void xWeightedGeoBlk_SSE(const PredictionUnit &pu, const uint32_t width, const u
       s0 = _mm_packs_epi32(s0, s0);
       s0 = _mm_min_epi16(mmMax, _mm_max_epi16(s0, mmMin));
       _mm_storel_epi64((__m128i *) (dst), s0);
-      dst    += strideDst;
-      src0   += strideSrc0;
-      src1   += strideSrc1;
+      dst += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
       weight += stepY;
     }
   }
 #if USE_AVX2
   else if (width >= 16)
   {
-	  const __m256i mmEightAVX2 = _mm256_set1_epi16(8);
-	  const __m256i mmOffsetAVX2 = _mm256_set1_epi32(offsetWeighted);
-	  const __m256i mmMinAVX2 = _mm256_set1_epi16(clpRng.min);
-	  const __m256i mmMaxAVX2 = _mm256_set1_epi16(clpRng.max);
-	  for (int y = 0; y < height; y++)
-	  {
-		  for (int x = 0; x < width; x += 16)
-		  {
-			  __m256i s0 = _mm256_lddqu_si256((__m256i *) (src0 + x)); // why not aligned with 128/256 bit boundaries
-			  __m256i s1 = _mm256_lddqu_si256((__m256i *) (src1 + x));
+    const __m256i mmEightAVX2 = _mm256_set1_epi16(8);
+    const __m256i mmOffsetAVX2 = _mm256_set1_epi32(offsetWeighted);
+    const __m256i mmMinAVX2 = _mm256_set1_epi16(clpRng.min);
+    const __m256i mmMaxAVX2 = _mm256_set1_epi16(clpRng.max);
+    for (int y = 0; y < height; y++)
+    {
+      for (int x = 0; x < width; x += 16)
+      {
+        __m256i s0 = _mm256_lddqu_si256((__m256i *) (src0 + x)); // why not aligned with 128/256 bit boundaries
+        __m256i s1 = _mm256_lddqu_si256((__m256i *) (src1 + x));
 
-			  __m256i w0 = _mm256_lddqu_si256((__m256i *) (weight + x));
-			  if (compIdx != COMPONENT_Y &&  pu.chromaFormat != CHROMA_444)
-			  {
-				  const __m256i mask = _mm256_set_epi16(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
-				  __m256i w0p0, w0p1;
-				  if (g_angle2mirror[angle] == 1)
-				  {
-					  w0p0 = _mm256_lddqu_si256((__m256i *) (weight - (x << 1) - (16 - 1))); // first sub-sample the required weights.
-					  w0p1 = _mm256_lddqu_si256((__m256i *) (weight - (x << 1) - 16 - (16 - 1)));
-					  const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-					  w0p0 = _mm256_shuffle_epi8(w0p0, shuffle_mask);
-					  w0p0 = _mm256_permute4x64_epi64(w0p0, _MM_SHUFFLE(1, 0, 3, 2));
-					  w0p1 = _mm256_shuffle_epi8(w0p1, shuffle_mask);
-					  w0p1 = _mm256_permute4x64_epi64(w0p1, _MM_SHUFFLE(1, 0, 3, 2));
-				  }
-				  else
-				  {
-					  w0p0 = _mm256_lddqu_si256((__m256i *) (weight + (x << 1))); // first sub-sample the required weights.
-					  w0p1 = _mm256_lddqu_si256((__m256i *) (weight + (x << 1) + 16));
-				  }
-				  w0p0 = _mm256_mullo_epi16(w0p0, mask);
-				  w0p1 = _mm256_mullo_epi16(w0p1, mask);
-				  w0 = _mm256_packs_epi16(w0p0, w0p1);
-				  w0 = _mm256_permute4x64_epi64(w0, _MM_SHUFFLE(3, 1, 2, 0));
-			  }
-			  else
-			  {
-				  if (g_angle2mirror[angle] == 1)
-				  {
-					  w0 = _mm256_lddqu_si256((__m256i *) (weight - x - (16 - 1)));
-					  const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-					  w0 = _mm256_shuffle_epi8(w0, shuffle_mask);
-					  w0 = _mm256_permute4x64_epi64(w0, _MM_SHUFFLE(1, 0, 3, 2));
-				  }
-				  else
-				  {
-					  w0 = _mm256_lddqu_si256((__m256i *) (weight + x));
-				  }
-			  }
-			  __m256i w1 = _mm256_sub_epi16(mmEightAVX2, w0);
+        __m256i w0 = _mm256_lddqu_si256((__m256i *) (weight + x));
+        if (compIdx != COMPONENT_Y &&  pu.chromaFormat != CHROMA_444)
+        {
+          const __m256i mask = _mm256_set_epi16(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+          __m256i w0p0, w0p1;
+          if (g_angle2mirror[angle] == 1)
+          {
+            w0p0 = _mm256_lddqu_si256((__m256i *) (weight - (x << 1) - (16 - 1))); // first sub-sample the required weights.
+            w0p1 = _mm256_lddqu_si256((__m256i *) (weight - (x << 1) - 16 - (16 - 1)));
+            const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+            w0p0 = _mm256_shuffle_epi8(w0p0, shuffle_mask);
+            w0p0 = _mm256_permute4x64_epi64(w0p0, _MM_SHUFFLE(1, 0, 3, 2));
+            w0p1 = _mm256_shuffle_epi8(w0p1, shuffle_mask);
+            w0p1 = _mm256_permute4x64_epi64(w0p1, _MM_SHUFFLE(1, 0, 3, 2));
+          }
+          else
+          {
+            w0p0 = _mm256_lddqu_si256((__m256i *) (weight + (x << 1))); // first sub-sample the required weights.
+            w0p1 = _mm256_lddqu_si256((__m256i *) (weight + (x << 1) + 16));
+          }
+          w0p0 = _mm256_mullo_epi16(w0p0, mask);
+          w0p1 = _mm256_mullo_epi16(w0p1, mask);
+          w0 = _mm256_packs_epi16(w0p0, w0p1);
+          w0 = _mm256_permute4x64_epi64(w0, _MM_SHUFFLE(3, 1, 2, 0));
+        }
+        else
+        {
+          if (g_angle2mirror[angle] == 1)
+          {
+            w0 = _mm256_lddqu_si256((__m256i *) (weight - x - (16 - 1)));
+            const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+            w0 = _mm256_shuffle_epi8(w0, shuffle_mask);
+            w0 = _mm256_permute4x64_epi64(w0, _MM_SHUFFLE(1, 0, 3, 2));
+          }
+          else
+          {
+            w0 = _mm256_lddqu_si256((__m256i *) (weight + x));
+          }
+        }
+        __m256i w1 = _mm256_sub_epi16(mmEightAVX2, w0);
 
-			  __m256i s0tmp = _mm256_unpacklo_epi16(s0, s1);
-			  __m256i w0tmp = _mm256_unpacklo_epi16(w0, w1);
-			  s0tmp = _mm256_add_epi32(_mm256_madd_epi16(s0tmp, w0tmp), mmOffsetAVX2);
-			  s0tmp = _mm256_sra_epi32(s0tmp, mmShift);
+        __m256i s0tmp = _mm256_unpacklo_epi16(s0, s1);
+        __m256i w0tmp = _mm256_unpacklo_epi16(w0, w1);
+        s0tmp = _mm256_add_epi32(_mm256_madd_epi16(s0tmp, w0tmp), mmOffsetAVX2);
+        s0tmp = _mm256_sra_epi32(s0tmp, mmShift);
 
-			  s0 = _mm256_unpackhi_epi16(s0, s1);
-			  w0 = _mm256_unpackhi_epi16(w0, w1);
-			  s0 = _mm256_add_epi32(_mm256_madd_epi16(s0, w0), mmOffsetAVX2);
-			  s0 = _mm256_sra_epi32(s0, mmShift);
+        s0 = _mm256_unpackhi_epi16(s0, s1);
+        w0 = _mm256_unpackhi_epi16(w0, w1);
+        s0 = _mm256_add_epi32(_mm256_madd_epi16(s0, w0), mmOffsetAVX2);
+        s0 = _mm256_sra_epi32(s0, mmShift);
 
-			  s0 = _mm256_packs_epi32(s0tmp, s0);
-			  s0 = _mm256_min_epi16(mmMaxAVX2, _mm256_max_epi16(s0, mmMinAVX2));
-			  _mm256_storeu_si256((__m256i *) (dst + x), s0);
-		  }
-		  dst += strideDst;
-		  src0 += strideSrc0;
-		  src1 += strideSrc1;
-		  weight += stepY;
-	  }
+        s0 = _mm256_packs_epi32(s0tmp, s0);
+        s0 = _mm256_min_epi16(mmMaxAVX2, _mm256_max_epi16(s0, mmMinAVX2));
+        _mm256_storeu_si256((__m256i *) (dst + x), s0);
+      }
+      dst += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
+      weight += stepY;
+    }
   }
 #endif
   else
   {
-    for( int y = 0; y < height; y++ )
+    for (int y = 0; y < height; y++)
     {
-      for( int x = 0; x < width; x += 8 )
+      for (int x = 0; x < width; x += 8)
       {
-        __m128i s0 = _mm_lddqu_si128 ((__m128i *) (src0 + x));
-        __m128i s1 = _mm_lddqu_si128 ((__m128i *) (src1 + x));
-		__m128i w0;
-		if (compIdx != COMPONENT_Y && pu.chromaFormat != CHROMA_444)
-		{
-			const __m128i mask = _mm_set_epi16(0, 1, 0, 1, 0, 1, 0, 1);
-			__m128i w0p0,w0p1;
-      if (g_angle2mirror[angle] == 1)
-			{
-				w0p0 = _mm_lddqu_si128 ((__m128i *) (weight - (x << 1) - (8 - 1))); // first sub-sample the required weights.
-				w0p1 = _mm_lddqu_si128 ((__m128i *) (weight - (x << 1) - 8 - (8 - 1)));
-				const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-				w0p0 = _mm_shuffle_epi8(w0p0, shuffle_mask);
-				w0p1 = _mm_shuffle_epi8(w0p1, shuffle_mask);
-			}
-			else
-			{				
-				w0p0 = _mm_lddqu_si128 ((__m128i *) (weight + (x << 1) ) ); // first sub-sample the required weights.
-				w0p1 = _mm_lddqu_si128 ((__m128i *) (weight + (x << 1) + 8) );
-			}
-			w0p0 = _mm_mullo_epi16(w0p0, mask);
-			w0p1 = _mm_mullo_epi16(w0p1, mask);
-			w0 = _mm_packs_epi32(w0p0, w0p1);
-		}
-		else
-		{
-      if ( g_angle2mirror[angle] == 1)
-			{
-				w0 = _mm_lddqu_si128 ((__m128i *) (weight - x - (8 - 1) ) );
-				const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-				w0 = _mm_shuffle_epi8(w0, shuffle_mask);
-			}
-			else
-			{
-				w0 = _mm_lddqu_si128((__m128i *) (weight + x));
-			}
-		}
+        __m128i s0 = _mm_lddqu_si128((__m128i *) (src0 + x));
+        __m128i s1 = _mm_lddqu_si128((__m128i *) (src1 + x));
+        __m128i w0;
+        if (compIdx != COMPONENT_Y && pu.chromaFormat != CHROMA_444)
+        {
+          const __m128i mask = _mm_set_epi16(0, 1, 0, 1, 0, 1, 0, 1);
+          __m128i w0p0, w0p1;
+          if (g_angle2mirror[angle] == 1)
+          {
+            w0p0 = _mm_lddqu_si128((__m128i *) (weight - (x << 1) - (8 - 1))); // first sub-sample the required weights.
+            w0p1 = _mm_lddqu_si128((__m128i *) (weight - (x << 1) - 8 - (8 - 1)));
+            const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+            w0p0 = _mm_shuffle_epi8(w0p0, shuffle_mask);
+            w0p1 = _mm_shuffle_epi8(w0p1, shuffle_mask);
+          }
+          else
+          {
+            w0p0 = _mm_lddqu_si128((__m128i *) (weight + (x << 1))); // first sub-sample the required weights.
+            w0p1 = _mm_lddqu_si128((__m128i *) (weight + (x << 1) + 8));
+          }
+          w0p0 = _mm_mullo_epi16(w0p0, mask);
+          w0p1 = _mm_mullo_epi16(w0p1, mask);
+          w0 = _mm_packs_epi32(w0p0, w0p1);
+        }
+        else
+        {
+          if (g_angle2mirror[angle] == 1)
+          {
+            w0 = _mm_lddqu_si128((__m128i *) (weight - x - (8 - 1)));
+            const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+            w0 = _mm_shuffle_epi8(w0, shuffle_mask);
+          }
+          else
+          {
+            w0 = _mm_lddqu_si128((__m128i *) (weight + x));
+          }
+        }
         __m128i w1 = _mm_sub_epi16(mmEight, w0);
 
         __m128i s0tmp = _mm_unpacklo_epi16(s0, s1);
@@ -1665,9 +1663,9 @@ void xWeightedGeoBlk_SSE(const PredictionUnit &pu, const uint32_t width, const u
         s0 = _mm_min_epi16(mmMax, _mm_max_epi16(s0, mmMin));
         _mm_storeu_si128((__m128i *) (dst + x), s0);
       }
-      dst    += strideDst;
-      src0   += strideSrc0;
-      src1   += strideSrc1;
+      dst += strideDst;
+      src0 += strideSrc0;
+      src1 += strideSrc1;
       weight += stepY;
     }
   }

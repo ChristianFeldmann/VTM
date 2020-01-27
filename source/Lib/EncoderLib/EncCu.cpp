@@ -3089,7 +3089,7 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
   MergeCtx mergeCtx;
   const SPS &sps = *tempCS->sps;
 
-  if( sps.getSBTMVPEnabledFlag() )
+  if (sps.getSBTMVPEnabledFlag())
   {
     Size bufSize = g_miScaling.scale(tempCS->area.lumaSize());
     mergeCtx.subPuMvpMiBuf = MotionBuf(m_SubPuMiBuf, bufSize);
@@ -3097,51 +3097,51 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
 
   CodingUnit &cu = tempCS->addCU(tempCS->area, pm.chType);
   pm.setCUData(cu);
-  cu.predMode  = MODE_INTER;
-  cu.slice     = tempCS->slice;
-  cu.tileIdx   = tempCS->pps->getTileIdx(tempCS->area.lumaPos());
-  cu.qp        = encTestMode.qp;
-  cu.affine    = false;
-  cu.mtsFlag   = false;
-  cu.BcwIdx    = BCW_DEFAULT;
-  cu.geoFlag   = true;
-  cu.imv       = 0;
-  cu.mmvdSkip  = false;
-  cu.skip      = false;
-  cu.mipFlag   = false;
+  cu.predMode = MODE_INTER;
+  cu.slice = tempCS->slice;
+  cu.tileIdx = tempCS->pps->getTileIdx(tempCS->area.lumaPos());
+  cu.qp = encTestMode.qp;
+  cu.affine = false;
+  cu.mtsFlag = false;
+  cu.BcwIdx = BCW_DEFAULT;
+  cu.geoFlag = true;
+  cu.imv = 0;
+  cu.mmvdSkip = false;
+  cu.skip = false;
+  cu.mipFlag = false;
   cu.bdpcmMode = 0;
- 
-  PredictionUnit &pu  = tempCS->addPU(cu, pm.chType);
-  pu.mergeFlag        = true;
+
+  PredictionUnit &pu = tempCS->addPU(cu, pm.chType);
+  pu.mergeFlag = true;
   pu.regularMergeFlag = false;
   PU::getGeoMergeCandidates(pu, mergeCtx);
 
   GeoComboCostList comboList;
-  int bitsCandTB = (int)std::floor(std::log2((double)GEO_NUM_PARTITION_MODE));
+  int bitsCandTB = floorLog2(GEO_NUM_PARTITION_MODE);
   PelUnitBuf geoBuffer[MRG_MAX_NUM_CANDS];
   PelUnitBuf geoTempBuf[MRG_MAX_NUM_CANDS];
   PelUnitBuf geoCombinations[GEO_MAX_TRY_WEIGHTED_SAD];
   DistParam distParam;
 
   const UnitArea localUnitArea(tempCS->area.chromaFormat, Area(0, 0, tempCS->area.Y().width, tempCS->area.Y().height));
-  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda( );
-  
+  const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda();
+
   uint8_t maxNumMergeCandidates = cu.cs->picHeader->getMaxNumGeoCand();
   DistParam distParamWholeBlk;
   m_pcRdCost->setDistParam(distParamWholeBlk, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y().buf, m_acMergeBuffer[0].Y().stride, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y);
   Distortion bestWholeBlkSad = MAX_UINT64;
   double bestWholeBlkCost = MAX_DOUBLE;
-  Distortion *uiSadWholeBlk;
-  uiSadWholeBlk = new Distortion[maxNumMergeCandidates];
+  Distortion *sadWholeBlk;
+  sadWholeBlk = new Distortion[maxNumMergeCandidates];
   int *pocMrg;
   Mv *MrgMv;
   bool *isSkipThisCand;
   pocMrg = new int[maxNumMergeCandidates];
   MrgMv = new Mv[maxNumMergeCandidates];
   isSkipThisCand = new bool[maxNumMergeCandidates];
-  for( int i = 0; i < maxNumMergeCandidates; i++ )
+  for (int i = 0; i < maxNumMergeCandidates; i++)
     isSkipThisCand[i] = false;
-  for( uint8_t mergeCand = 0; mergeCand < maxNumMergeCandidates; mergeCand++ )
+  for (uint8_t mergeCand = 0; mergeCand < maxNumMergeCandidates; mergeCand++)
   {
     geoBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
     mergeCtx.setMergeInfo(pu, mergeCand);
@@ -3150,9 +3150,9 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
     int MrgrefIdx = mergeCtx.mvFieldNeighbours[(mergeCand << 1) + MrgList].refIdx;
     pocMrg[mergeCand] = tempCS->slice->getRefPic(MrgeRefPicList, MrgrefIdx)->getPOC();
     MrgMv[mergeCand] = mergeCtx.mvFieldNeighbours[(mergeCand << 1) + MrgList].mv;
-    if( mergeCand )
+    if (mergeCand)
     {
-      for (int i = 0; i < mergeCand ; i++)
+      for (int i = 0; i < mergeCand; i++)
       {
         if (pocMrg[mergeCand] == pocMrg[i] && MrgMv[mergeCand] == MrgMv[i])
         {
@@ -3173,27 +3173,27 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
     geoTempBuf[mergeCand].Y().roundToOutputBitdepth(geoTempBuf[mergeCand].Y(), cu.slice->clpRng(COMPONENT_Y));
     distParamWholeBlk.cur.buf = geoTempBuf[mergeCand].Y().buf;
     distParamWholeBlk.cur.stride = geoTempBuf[mergeCand].Y().stride;
-    uiSadWholeBlk[mergeCand] = distParamWholeBlk.distFunc(distParamWholeBlk);
-    if( uiSadWholeBlk[mergeCand] < bestWholeBlkSad )
+    sadWholeBlk[mergeCand] = distParamWholeBlk.distFunc(distParamWholeBlk);
+    if (sadWholeBlk[mergeCand] < bestWholeBlkSad)
     {
-      bestWholeBlkSad = uiSadWholeBlk[mergeCand];
+      bestWholeBlkSad = sadWholeBlk[mergeCand];
       int bitsCand = mergeCand + 1;
       bestWholeBlkCost = (double)bestWholeBlkSad + (double)bitsCand * sqrtLambdaForFirstPass;
     }
   }
   bool isGeo = true;
-  for( uint8_t mergeCand = 1; mergeCand < maxNumMergeCandidates; mergeCand++ )
+  for (uint8_t mergeCand = 1; mergeCand < maxNumMergeCandidates; mergeCand++)
   {
     isGeo &= isSkipThisCand[mergeCand];
   }
-  if(isGeo)
+  if (isGeo)
   {
     return;
   }
 
-  int wIdx = floorLog2(cu.lwidth() ) - GEO_MIN_CU_LOG2;
+  int wIdx = floorLog2(cu.lwidth()) - GEO_MIN_CU_LOG2;
   int hIdx = floorLog2(cu.lheight()) - GEO_MIN_CU_LOG2;
-  for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
+  for (int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++)
   {
     int maskStride = 0, maskStride2 = 0;
     int stepX = 1;
@@ -3201,7 +3201,7 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
     int16_t angle = g_GeoParams[splitDir][0];
     if (g_angle2mirror[angle] == 2)
     {
-      maskStride = - GEO_WEIGHT_MASK_SIZE;
+      maskStride = -GEO_WEIGHT_MASK_SIZE;
       maskStride2 = -(int)cu.lwidth();
       SADmask = &g_globalGeoEncSADmask[g_angle2mask[g_GeoParams[splitDir][0]]][(GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[splitDir][hIdx][wIdx][1]) * GEO_WEIGHT_MASK_SIZE + g_weightOffset[splitDir][hIdx][wIdx][0]];
     }
@@ -3218,44 +3218,41 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
       maskStride2 = -(int)cu.lwidth();
       SADmask = &g_globalGeoEncSADmask[g_angle2mask[g_GeoParams[splitDir][0]]][g_weightOffset[splitDir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[splitDir][hIdx][wIdx][0]];
     }
-    Distortion uiSadSmall = 0, uiSadLarge = 0;
-    for( uint8_t mergeCand = 0; mergeCand < maxNumMergeCandidates; mergeCand++ )
+    Distortion sadSmall = 0, sadLarge = 0;
+    for (uint8_t mergeCand = 0; mergeCand < maxNumMergeCandidates; mergeCand++)
     {
       int bitsCand = mergeCand + 1;
 
       m_pcRdCost->setDistParam(distParam, tempCS->getOrgBuf().Y(), geoTempBuf[mergeCand].Y().buf, geoTempBuf[mergeCand].Y().stride, SADmask, maskStride, stepX, maskStride2, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y);
-      uiSadLarge = distParam.distFunc(distParam);
-      m_GeoCostList.insert(splitDir, 0, mergeCand, (double)uiSadLarge + (double)bitsCand * sqrtLambdaForFirstPass);
-      uiSadSmall = uiSadWholeBlk[mergeCand] - uiSadLarge;
-      m_GeoCostList.insert(splitDir, 1, mergeCand, (double)uiSadSmall + (double)bitsCand * sqrtLambdaForFirstPass);
+      sadLarge = distParam.distFunc(distParam);
+      m_GeoCostList.insert(splitDir, 0, mergeCand, (double)sadLarge + (double)bitsCand * sqrtLambdaForFirstPass);
+      sadSmall = sadWholeBlk[mergeCand] - sadLarge;
+      m_GeoCostList.insert(splitDir, 1, mergeCand, (double)sadSmall + (double)bitsCand * sqrtLambdaForFirstPass);
     }
   }
-  delete[] uiSadWholeBlk;
+  delete[] sadWholeBlk;
   delete[] pocMrg;
   delete[] MrgMv;
   delete[] isSkipThisCand;
 
-  for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
+  for (int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++)
   {
-	  for (int GeoMotionIdx = 0; GeoMotionIdx < maxNumMergeCandidates * (maxNumMergeCandidates - 1); GeoMotionIdx++)
-	  {
-		  unsigned int mergeCand0 = m_GeoModeTest[GeoMotionIdx].m_candIdx0;
-		  unsigned int mergeCand1 = m_GeoModeTest[GeoMotionIdx].m_candIdx1;
-	    double tempCost = m_GeoCostList.singleDistList[0][splitDir][mergeCand0].cost + m_GeoCostList.singleDistList[1][splitDir][mergeCand1].cost;
-	    if (tempCost > bestWholeBlkCost)
-		    continue;
-	    int bitsGeoPartNoPred = bitsCandTB;
-	    if(splitDir >= (1 << (bitsCandTB + 1)) - GEO_NUM_PARTITION_MODE)
-		    bitsGeoPartNoPred++;
-	    tempCost = tempCost + (double)bitsGeoPartNoPred * sqrtLambdaForFirstPass;
-	    comboList.list.push_back(GeoMergeCombo(splitDir, mergeCand0, mergeCand1, tempCost));
-	  }
+    for (int GeoMotionIdx = 0; GeoMotionIdx < maxNumMergeCandidates * (maxNumMergeCandidates - 1); GeoMotionIdx++)
+    {
+      unsigned int mergeCand0 = m_GeoModeTest[GeoMotionIdx].m_candIdx0;
+      unsigned int mergeCand1 = m_GeoModeTest[GeoMotionIdx].m_candIdx1;
+      double tempCost = m_GeoCostList.singleDistList[0][splitDir][mergeCand0].cost + m_GeoCostList.singleDistList[1][splitDir][mergeCand1].cost;
+      if (tempCost > bestWholeBlkCost)
+        continue;
+      tempCost = tempCost + (double)bitsCandTB * sqrtLambdaForFirstPass;
+      comboList.list.push_back(GeoMergeCombo(splitDir, mergeCand0, mergeCand1, tempCost));
+    }
   }
-  if( comboList.list.empty() )
+  if (comboList.list.empty())
     return;
   comboList.sortByCost();
   bool geocandHasNoResidual[GEO_MAX_TRY_WEIGHTED_SAD];
-  for( int mergeCand = 0; mergeCand < GEO_MAX_TRY_WEIGHTED_SAD; mergeCand++ )
+  for (int mergeCand = 0; mergeCand < GEO_MAX_TRY_WEIGHTED_SAD; mergeCand++)
   {
     geocandHasNoResidual[mergeCand] = false;
   }
@@ -3266,31 +3263,28 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
 
   DistParam distParamSAD2;
   const bool useHadamard = !tempCS->slice->getDisableSATDForRD();
-  m_pcRdCost->setDistParam(distParamSAD2, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, useHadamard);  
+  m_pcRdCost->setDistParam(distParamSAD2, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y(), sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, useHadamard);
   int geoNumMrgSATDCand = min(GEO_MAX_TRY_WEIGHTED_SATD, geoNumCobo);
 
-  for( uint8_t candidateIdx = 0; candidateIdx < min(geoNumCobo, GEO_MAX_TRY_WEIGHTED_SAD); candidateIdx++ )
+  for (uint8_t candidateIdx = 0; candidateIdx < min(geoNumCobo, GEO_MAX_TRY_WEIGHTED_SAD); candidateIdx++)
   {
-    int splitDir   = comboList.list[candidateIdx].splitDir;
+    int splitDir = comboList.list[candidateIdx].splitDir;
     int mergeCand0 = comboList.list[candidateIdx].mergeIdx0;
     int mergeCand1 = comboList.list[candidateIdx].mergeIdx1;
 
     geoCombinations[candidateIdx] = m_acGeoWeightedBuffer[candidateIdx].getBuf(localUnitArea);
     m_pcInterSearch->weightedGeoBlk(pu, splitDir, CHANNEL_TYPE_LUMA, geoCombinations[candidateIdx], geoBuffer[mergeCand0], geoBuffer[mergeCand1]);
     distParamSAD2.cur = geoCombinations[candidateIdx].Y();
-    Distortion uiSad = distParamSAD2.distFunc(distParamSAD2);
-    int bitsGeoPartNoPred = bitsCandTB;
-	if (splitDir >= (1 << (bitsCandTB + 1)) - GEO_NUM_PARTITION_MODE)
-      bitsGeoPartNoPred++;
+    Distortion sad = distParamSAD2.distFunc(distParamSAD2);
     int mvBits = 2;
     mergeCand1 -= mergeCand1 < mergeCand0 ? 0 : 1;
     mvBits += mergeCand0;
     mvBits += mergeCand1;
-    double updateCost = (double)uiSad + (double)(bitsGeoPartNoPred + mvBits) * sqrtLambdaForFirstPass;
+    double updateCost = (double)sad + (double)(bitsCandTB + mvBits) * sqrtLambdaForFirstPass;
     comboList.list[candidateIdx].cost = updateCost;
     updateCandList(candidateIdx, updateCost, geoRdModeList, geocandCostList, geoNumMrgSATDCand);
   }
-  for( uint8_t i = 0; i < geoNumMrgSATDCand; i++ )
+  for (uint8_t i = 0; i < geoNumMrgSATDCand; i++)
   {
     if (geocandCostList[i] > MRG_FAST_RATIO * geocandCostList[0] || geocandCostList[i] > getMergeBestSATDCost() || geocandCostList[i] > getAFFBestSATDCost())
     {
@@ -3301,8 +3295,8 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
   for (uint8_t i = 0; i < geoNumMrgSATDCand && isChromaEnabled(pu.chromaFormat); i++)
   {
     uint8_t candidateIdx = geoRdModeList[i];
-    int splitDir   = comboList.list[candidateIdx].splitDir;
-		int mergeCand0 = comboList.list[candidateIdx].mergeIdx0;
+    int splitDir = comboList.list[candidateIdx].splitDir;
+    int mergeCand0 = comboList.list[candidateIdx].mergeIdx0;
     int mergeCand1 = comboList.list[candidateIdx].mergeIdx1;
     geoCombinations[candidateIdx] = m_acGeoWeightedBuffer[candidateIdx].getBuf(localUnitArea);
     m_pcInterSearch->weightedGeoBlk(pu, splitDir, CHANNEL_TYPE_CHROMA, geoCombinations[candidateIdx], geoBuffer[mergeCand0], geoBuffer[mergeCand1]);
@@ -3318,30 +3312,30 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
     for (uint8_t mrgHADIdx = 0; mrgHADIdx < geoNumMrgSATDCand; mrgHADIdx++)
     {
       uint8_t candidateIdx = geoRdModeList[mrgHADIdx];
-      if(((noResidualPass != 0) && geocandHasNoResidual[candidateIdx])
+      if (((noResidualPass != 0) && geocandHasNoResidual[candidateIdx])
         || ((noResidualPass == 0) && bestIsSkip))
       {
         continue;
       }
       CodingUnit &cu = tempCS->addCU(tempCS->area, pm.chType);
       pm.setCUData(cu);
-      cu.predMode  = MODE_INTER;
-      cu.slice     = tempCS->slice;
-      cu.tileIdx   = tempCS->pps->getTileIdx(tempCS->area.lumaPos());
-      cu.qp        = encTestMode.qp;
-      cu.affine    = false;
-      cu.mtsFlag   = false;
-      cu.BcwIdx    = BCW_DEFAULT;
-      cu.geoFlag   = true;
-      cu.imv       = 0;
-      cu.mmvdSkip  = false;
-      cu.skip      = false;
-      cu.mipFlag   = false;
+      cu.predMode = MODE_INTER;
+      cu.slice = tempCS->slice;
+      cu.tileIdx = tempCS->pps->getTileIdx(tempCS->area.lumaPos());
+      cu.qp = encTestMode.qp;
+      cu.affine = false;
+      cu.mtsFlag = false;
+      cu.BcwIdx = BCW_DEFAULT;
+      cu.geoFlag = true;
+      cu.imv = 0;
+      cu.mmvdSkip = false;
+      cu.skip = false;
+      cu.mipFlag = false;
       cu.bdpcmMode = 0;
       PredictionUnit &pu = tempCS->addPU(cu, pm.chType);
       pu.mergeFlag = true;
       pu.regularMergeFlag = false;
-      pu.geoSplitDir  = comboList.list[candidateIdx].splitDir;
+      pu.geoSplitDir = comboList.list[candidateIdx].splitDir;
       pu.geoMergeIdx0 = comboList.list[candidateIdx].mergeIdx0;
       pu.geoMergeIdx1 = comboList.list[candidateIdx].mergeIdx1;
       pu.mmvdMergeFlag = false;
@@ -3352,16 +3346,16 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
 
       xEncodeInterResidual(tempCS, bestCS, pm, encTestMode, noResidualPass, (noResidualPass == 0 ? &geocandHasNoResidual[candidateIdx] : NULL));
 
-      if( m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip )
+      if (m_pcEncCfg->getUseFastDecisionForMerge() && !bestIsSkip)
       {
         bestIsSkip = bestCS->getCU(pm.chType)->rootCbf == 0;
       }
       tempCS->initStructData(encTestMode.qp);
     }
   }
-  if ( m_bestModeUpdated && bestCS->cost != MAX_DOUBLE )
+  if (m_bestModeUpdated && bestCS->cost != MAX_DOUBLE)
   {
-    xCalDebCost( *bestCS, pm );
+    xCalDebCost(*bestCS, pm);
   }
 }
 #endif

@@ -2133,7 +2133,6 @@ void CABACReader::merge_data( PredictionUnit& pu )
       if (cu.cs->slice->getSPS()->getUseMMVD())
       {
         cu.firstPU->mmvdMergeFlag = m_BinDecoder.decodeBin(Ctx::MmvdFlag(0));
-        DTRACE(g_trace_ctx, D_SYNTAX, "mmvd_merge_flag() mmvd_merge=%d pos=(%d,%d) size=%dx%d\n", pu.mmvdMergeFlag ? 1 : 0, pu.lumaPos().x, pu.lumaPos().y, pu.lumaSize().width, pu.lumaSize().height);
       }
       else
       {
@@ -2289,13 +2288,13 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     int mergeCand1 = 0;
     if( m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )
     {
-      mergeCand0 += unary_max_eqprob(numCandminus2) + 1;;
+      mergeCand0 += unary_max_eqprob(numCandminus2) + 1;
     }
     if (numCandminus2 > 0)
     {
       if (m_BinDecoder.decodeBin(Ctx::MergeIdx()))
       {
-        mergeCand1 += unary_max_eqprob(numCandminus2 - 1) + 1;;
+        mergeCand1 += unary_max_eqprob(numCandminus2 - 1) + 1;
       }
     }
     mergeCand1 += mergeCand1 >= mergeCand0 ? 1 : 0;

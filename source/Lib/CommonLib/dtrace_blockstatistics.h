@@ -122,12 +122,12 @@ enum class BlockStatistic {
   TrianglePartitioning,
   TriangleMVL0, //<< currently only uni-prediction enabled
   TriangleMVL1, //<< currently only uni-prediction enabled
-  BCWIndex,
 #else
   GeoPartitioning,
   GeoMVL0, //<< currently only uni-prediction enabled
   GeoMVL1, //<< currently only uni-prediction enabled
 #endif
+  BCWIndex,
 // for dual tree
   // general
   Depth_Chroma,
@@ -222,12 +222,12 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
   { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
   { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
-  { BlockStatistic::BCWIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"BCWIndex",                    BlockStatisticType::Integer,                "[0, 4]"}},
 #else
   { BlockStatistic::GeoPartitioning,        std::tuple<std::string, BlockStatisticType, std::string>{"GeoPartitioning",             BlockStatisticType::Line,                   ""} },
   { BlockStatistic::GeoMVL0,                std::tuple<std::string, BlockStatisticType, std::string>{"GeoMVL0",                     BlockStatisticType::VectorPolygon,          "Scale: 4"} },
   { BlockStatistic::GeoMVL1,                std::tuple<std::string, BlockStatisticType, std::string>{"GeoMVL1",                     BlockStatisticType::VectorPolygon,          "Scale: 4"} },
 #endif
+  { BlockStatistic::BCWIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"BCWIndex",                    BlockStatisticType::Integer,                "[0, 4]"} },
   // for dual tree
   { BlockStatistic::Depth_Chroma,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth_Chroma",                       BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
   { BlockStatistic::QT_Depth_Chroma,               std::tuple<std::string, BlockStatisticType, std::string>{"QT_Depth_Chroma",                    BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?

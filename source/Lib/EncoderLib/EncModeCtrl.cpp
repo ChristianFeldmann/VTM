@@ -1666,7 +1666,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
 #else
     if( encTestmode.type == ETM_MERGE_GEO && ( partitioner.currArea().lwidth() < GEO_MIN_CU_SIZE || partitioner.currArea().lheight() < GEO_MIN_CU_SIZE  
                                             || partitioner.currArea().lwidth() > GEO_MAX_CU_SIZE || partitioner.currArea().lheight() > GEO_MAX_CU_SIZE
-		                                        || partitioner.currArea().lwidth() >= 8 * partitioner.currArea().lheight()
+                                            || partitioner.currArea().lwidth() >= 8 * partitioner.currArea().lheight()
                                             || partitioner.currArea().lheight() >= 8 * partitioner.currArea().lwidth() ) )
     {
       return false;

@@ -1180,6 +1180,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
     }
   }
+  else
+  {
+    pcSPS->setNumSubPics(1);
+    pcSPS->setSubPicCtuTopLeftX(0, 0);
+    pcSPS->setSubPicCtuTopLeftY(0, 0);
+    pcSPS->setSubPicWidth(0, (pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()));
+    pcSPS->setSubPicHeight(0, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()));
+  }
+
   READ_FLAG(uiCode, "sps_subpic_id_present_flag");                           pcSPS->setSubPicIdPresentFlag( uiCode != 0 );
   if( pcSPS->getSubPicIdPresentFlag() )
   {

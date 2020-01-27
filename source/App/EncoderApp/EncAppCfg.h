@@ -137,6 +137,9 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
+#if JVET_Q0795_CCALF
+  bool      m_noCCAlfConstraintFlag;
+#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -664,6 +667,10 @@ protected:
   bool        m_forceDecodeBitstream1;
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
+#if JVET_Q0795_CCALF
+  bool        m_ccalf;
+  int         m_ccalfQpThreshold;
+#endif
 
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;

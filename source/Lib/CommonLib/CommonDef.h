@@ -187,6 +187,12 @@ static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
 static const int MAX_ALF_FILTER_LENGTH       =                      7;
 static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
 static const int MAX_ALF_PADDING_SIZE        =                      4;
+#if JVET_Q0795_CCALF
+#define MAX_NUM_CC_ALF_FILTERS                                      4
+static constexpr int MAX_NUM_CC_ALF_CHROMA_COEFF    =               8;
+static constexpr int CCALF_DYNAMIC_RANGE            =               6;
+static constexpr int CCALF_BITS_PER_COEFF_LEVEL     =               3;
+#endif
 
 static const int ALF_FIXED_FILTER_NUM        =                     64;
 static const int ALF_CTB_MAX_NUM_APS         =                      8;
@@ -698,6 +704,11 @@ static inline int ceilLog2(uint32_t x)
 #else
 #define PARL_PARAM(DEF)
 #define PARL_PARAM0(DEF)
+#endif
+
+#if JVET_Q0795_CCALF
+static const uint32_t CCALF_CANDS_COEFF_NR = 8;
+static const int CCALF_SMALL_TAB[CCALF_CANDS_COEFF_NR] = { 0, 1, 2, 4, 8, 16, 32, 64 };
 #endif
 
 //! \}

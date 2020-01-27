@@ -48,8 +48,16 @@ enum AlfFilterType
 {
   ALF_FILTER_5,
   ALF_FILTER_7,
+#if JVET_Q0795_CCALF
+  CC_ALF,
+#endif
   ALF_NUM_OF_FILTER_TYPES
 };
+
+
+#if JVET_Q0795_CCALF
+static const int size_CC_ALF = -1;
+#endif
 
 struct AlfFilterShape
 {
@@ -97,6 +105,16 @@ struct AlfFilterShape
 
       filterType = ALF_FILTER_7;
     }
+#if JVET_Q0795_CCALF
+    else if (size == size_CC_ALF)
+    {
+      size = 4;
+      filterLength = 8;
+      numCoeff = 8;
+      filterSize = 8;
+      filterType   = CC_ALF;
+    }
+#endif
     else
     {
       filterType = ALF_NUM_OF_FILTER_TYPES;
@@ -231,6 +249,43 @@ struct AlfParam
   }
 };
 
+#if JVET_Q0795_CCALF
+struct CcAlfFilterParam
+{
+  bool    ccAlfFilterEnabled[2];
+  bool    ccAlfFilterIdxEnabled[2][MAX_NUM_CC_ALF_FILTERS];
+  uint8_t ccAlfFilterCount[2];
+  short   ccAlfCoeff[2][MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
+  int     newCcAlfFilter[2];
+  int     numberValidComponents;
+  CcAlfFilterParam()
+  {
+    reset();
+  }
+  void reset()
+  {
+    std::memset( ccAlfFilterEnabled, false, sizeof( ccAlfFilterEnabled ) );
+    std::memset( ccAlfFilterIdxEnabled, false, sizeof( ccAlfFilterIdxEnabled ) );
+    std::memset( ccAlfCoeff, 0, sizeof( ccAlfCoeff ) );
+    ccAlfFilterCount[0] = ccAlfFilterCount[1] = MAX_NUM_CC_ALF_FILTERS;
+    numberValidComponents = 3;
+    newCcAlfFilter[0] = newCcAlfFilter[1] = 0;
+  }
+  const CcAlfFilterParam& operator = ( const CcAlfFilterParam& src )
+  {
+    std::memcpy( ccAlfFilterEnabled, src.ccAlfFilterEnabled, sizeof( ccAlfFilterEnabled ) );
+    std::memcpy( ccAlfFilterIdxEnabled, src.ccAlfFilterIdxEnabled, sizeof( ccAlfFilterIdxEnabled ) );
+    std::memcpy( ccAlfCoeff, src.ccAlfCoeff, sizeof( ccAlfCoeff ) );
+    ccAlfFilterCount[0] = src.ccAlfFilterCount[0];
+    ccAlfFilterCount[1] = src.ccAlfFilterCount[1];
+    numberValidComponents = src.numberValidComponents;
+    newCcAlfFilter[0] = src.newCcAlfFilter[0];
+    newCcAlfFilter[1] = src.newCcAlfFilter[1];
+
+    return *this;
+  }
+};
+#endif
 //! \}
 
 #endif  // end of #ifndef  __ALFPARAMETERS__

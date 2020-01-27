@@ -2788,7 +2788,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       m_pcLoopFilter->loopFilterPic( cs );
 
       CS::setRefinedMotionField(cs);
+#if !JVET_Q0795_CCALF
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
+#endif
 
       if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
@@ -2842,8 +2844,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
           pcPic->slices[s]->setAlfAPSs(cs.slice->getAlfAPSs());
           pcPic->slices[s]->setTileGroupApsIdChroma(cs.slice->getTileGroupApsIdChroma());
+#if JVET_Q0795_CCALF
+          pcPic->slices[s]->setTileGroupCcAlfCbApsId(cs.slice->getTileGroupCcAlfCbApsId());
+          pcPic->slices[s]->setTileGroupCcAlfCrApsId(cs.slice->getTileGroupCcAlfCrApsId());
+#endif
         }
       }
+#if JVET_Q0795_CCALF
+      DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 1 ) ) );
+#endif
       if (m_pcCfg->getUseCompositeRef() && getPrepareLTRef())
       {
         updateCompositeReference(pcSlice, rcListPic, pocCurr);
@@ -2949,7 +2958,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       }
 
+#if JVET_Q0795_CCALF
+      if (pcSlice->getSPS()->getALFEnabledFlag() && (pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y) || pcSlice->getTileGroupCcAlfCbEnabledFlag() || pcSlice->getTileGroupCcAlfCrEnabledFlag()))
+#else
       if (pcSlice->getSPS()->getALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
+#endif
       {
         for (int apsId = 0; apsId < ALF_CTB_MAX_NUM_APS; apsId++)
         {
@@ -2964,12 +2977,28 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             *apsMap->allocatePS(apsId) = *aps; //allocate and cpy
             m_pcALF->setApsIdStart( apsId );
           }
+#if JVET_Q0795_CCALF
+          else if (pcSlice->getTileGroupCcAlfCbEnabledFlag() && !aps && apsId == pcSlice->getTileGroupCcAlfCbApsId())
+          {
+            writeAPS = true;
+            aps = apsMap->getPS((pcSlice->getTileGroupCcAlfCbApsId() << NUM_APS_TYPE_LEN) + ALF_APS);
+          }
+          else if (pcSlice->getTileGroupCcAlfCrEnabledFlag() && !aps && apsId == pcSlice->getTileGroupCcAlfCrApsId())
+          {
+            writeAPS = true;
+            aps = apsMap->getPS((pcSlice->getTileGroupCcAlfCrApsId() << NUM_APS_TYPE_LEN) + ALF_APS);
+          }
+#endif
 
           if (writeAPS )
           {
             actualTotalBits += xWriteAPS( accessUnit, aps, m_pcEncLib->getLayerId(), true );
             apsMap->clearChangedFlag((apsId << NUM_APS_TYPE_LEN) + ALF_APS);
+#if JVET_Q0795_CCALF
+            CHECK(aps != pcSlice->getAlfAPSs()[apsId] && apsId != pcSlice->getTileGroupCcAlfCbApsId() && apsId != pcSlice->getTileGroupCcAlfCrApsId(), "Wrong APS pointer in compressGOP");
+#else
             CHECK(aps != pcSlice->getAlfAPSs()[apsId], "Wrong APS pointer in compressGOP");
+#endif
           }
         }
       }
@@ -3067,6 +3096,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setNumAlfAps(pcSlice->getTileGroupNumAps());
             picHeader->setAlfAPSs(pcSlice->getTileGroupApsIdLuma());
             picHeader->setAlfApsIdChroma(pcSlice->getTileGroupApsIdChroma());
+#if JVET_Q0795_CCALF
+            picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, pcSlice->getTileGroupCcAlfCbEnabledFlag());
+            picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, pcSlice->getTileGroupCcAlfCrEnabledFlag());
+            picHeader->setCcAlfCbApsId(pcSlice->getTileGroupCcAlfCbApsId());
+            picHeader->setCcAlfCrApsId(pcSlice->getTileGroupCcAlfCrApsId());
+#endif
           }
           else {
             picHeader->setAlfEnabledPresentFlag( false );
@@ -3089,6 +3124,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
 
         tmpBitsBeforeWriting = m_HLSWriter->getNumberOfWrittenBits();
+#if JVET_Q0795_CCALF
+        pcSlice->m_ccAlfFilterParam      = m_pcALF->getCcAlfFilterParam();
+        pcSlice->m_ccAlfFilterControl[0] = m_pcALF->getCcAlfControlIdc(COMPONENT_Cb);
+        pcSlice->m_ccAlfFilterControl[1] = m_pcALF->getCcAlfControlIdc(COMPONENT_Cr);
+#endif
         m_HLSWriter->codeSliceHeader( pcSlice );
         actualHeadBits += ( m_HLSWriter->getNumberOfWrittenBits() - tmpBitsBeforeWriting );
 

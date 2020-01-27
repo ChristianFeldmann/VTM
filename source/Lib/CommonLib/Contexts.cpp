@@ -825,6 +825,16 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
   {   0, },
 });
 
+#if JVET_Q0795_CCALF
+const CtxSet ContextSetCfg::CcAlfFilterControlFlag = ContextSetCfg::addCtxSet
+({
+  {  35,  35,  35,  35,  35,  35 },
+  {  35,  35,  35,  35,  35,  35 },
+  {  35,  35,  35,  35,  35,  35 },
+  { DWS, DWS, DWS, DWS, DWS, DWS },
+});
+#endif
+
 const CtxSet ContextSetCfg::CiipFlag = ContextSetCfg::addCtxSet
 ({
   {  50, },

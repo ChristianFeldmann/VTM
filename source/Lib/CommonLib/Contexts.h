@@ -263,6 +263,9 @@ public:
   static const CtxSet   ctbAlfFlag;
   static const CtxSet   ctbAlfAlternative;
   static const CtxSet   AlfUseTemporalFilt;
+#if JVET_Q0795_CCALF
+  static const CtxSet   CcAlfFilterControlFlag;
+#endif
   static const CtxSet   CiipFlag;
   static const CtxSet   SmvdFlag;
   static const CtxSet   IBCFlag;

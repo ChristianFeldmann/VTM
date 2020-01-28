@@ -1166,9 +1166,7 @@ void HLSWriter::codeDCI(const DCI* dci)
   WRITE_CODE(0, 1, "dci_reserved_zero_bit");
   uint32_t numPTLs = (uint32_t)dci->getNumPTLs();
   CHECK(numPTLs < 1, "At least one PTL must be available in DCI");
-
   WRITE_CODE(numPTLs - 1, 4, "dci_num_ptls_minus1");
-
   for (int i = 0; i < numPTLs; i++)
   {
     ProfileTierLevel ptl = dci->getProfileTierLevel(i);

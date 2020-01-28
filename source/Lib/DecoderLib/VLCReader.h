@@ -156,7 +156,11 @@ protected:
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
   void  parseVPS            ( VPS* pcVPS );
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void  parseDCI            ( DCI* dci );
+#else
   void  parseDPS            ( DPS* dps );
+#endif
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
   void  parseAPS            ( APS* pcAPS );

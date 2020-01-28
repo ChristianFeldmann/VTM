@@ -723,7 +723,7 @@ protected:
 >>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   DCI       m_dci;
-  bool      m_DCIEnabled;                                     ///< enable DCI
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
 #else
 <<<<<<< HEAD
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI

@@ -698,7 +698,7 @@ protected:
 #endif
 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-  bool      m_DCIEnabled;                                     ///< enable DCI
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
 #else
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 #endif

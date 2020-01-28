@@ -180,7 +180,7 @@ protected:
   void  xInitVPS(VPS& vps, const SPS& sps); ///< initialize VPS from encoder options
 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-  void  xInitDCI(DCI& dci, const SPS& sps); ///< initialize DPS from encoder options
+  void  xInitDCI(DCI& dci, const SPS& sps); ///< initialize Decoding Capability Information (DCI) from encoder options
 #else
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
 #endif

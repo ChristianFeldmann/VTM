@@ -1696,6 +1696,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     {
       if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
       {
+        CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumGeoCand(), "Incorrrect max number of gpm candidates!");
         WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
       }
       else

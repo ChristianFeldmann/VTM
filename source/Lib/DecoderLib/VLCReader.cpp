@@ -2409,6 +2409,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setMaxBTSizes(maxBTSize);
     picHeader->setMaxTTSizes(maxTTSize);
   }
+#endif
   // ibc merge candidate list size
   if (sps->getIBCFlag())
   {

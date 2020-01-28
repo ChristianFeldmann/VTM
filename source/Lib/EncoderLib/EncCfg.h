@@ -628,7 +628,9 @@ protected:
 #endif
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
 
+#if !JVET_Q0814_DPB
   VPS       m_cVPS;
+#endif
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
@@ -1652,8 +1654,10 @@ public:
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }
 
+#if !JVET_Q0814_DPB
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
+#endif
   void         setDPS(DPS *p)                                        { m_dps = *p; }
   DPS*         getDPS()                                              { return &m_dps; }
   void         setUseRecalculateQPAccordingToLambda (bool b)         { m_recalculateQPAccordingToLambda = b;    }

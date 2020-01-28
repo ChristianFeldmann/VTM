@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
 
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 

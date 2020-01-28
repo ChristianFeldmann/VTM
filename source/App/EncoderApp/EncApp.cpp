@@ -75,7 +75,12 @@ EncApp::~EncApp()
 
 void EncApp::xInitLibCfg()
 {
+#if JVET_Q0814_DPB
+  VPS& vps = *m_cEncLib.getVPS();
+  vps.m_targetOlsIdx = m_targetOlsIdx;
+#else
   VPS vps;
+#endif
 
   vps.setMaxLayers( m_maxLayers );
 
@@ -171,7 +176,9 @@ void EncApp::xInitLibCfg()
     }
   }
   vps.setVPSExtensionFlag                                        ( false );
+#if !JVET_Q0814_DPB
   m_cEncLib.setVPS(&vps);
+#endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
   m_cEncLib.setNumSubProfile                                     ( m_numSubProfile );

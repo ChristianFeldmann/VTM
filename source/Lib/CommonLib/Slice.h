@@ -71,6 +71,14 @@ typedef std::list<Picture*> PicList;
 // Class definition
 // ====================================================================================================================
 
+#if JVET_Q0814_DPB
+struct DpbParameters
+{
+  int m_maxDecPicBuffering[MAX_TLAYER] = { 0 };
+  int m_numReorderPics[MAX_TLAYER] = { 0 };
+  int m_maxLatencyIncreasePlus1[MAX_TLAYER] = { 0 };
+};
+#endif
 
 class ReferencePictureList
 {
@@ -748,8 +756,6 @@ public:
   const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
 };
 
-
-
 class VPS
 {
 private:
@@ -772,6 +778,24 @@ private:
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
+
+#if JVET_Q0814_DPB
+  std::vector<Size>             m_olsDpbPicSize;
+  std::vector<int>              m_olsDpbParamsIdx;
+  std::vector<std::vector<int>> m_outputLayerIdInOls;
+public:
+  int                           m_totalNumOLSs;
+  int                           m_numDpbParams;
+  std::vector<DpbParameters>    m_dpbParameters;
+  bool                          m_sublayerDpbParamsPresentFlag;
+  std::vector<int>              m_dpbMaxTemporalId;
+  std::vector<int>              m_targetOutputLayerIdSet;          ///< set of LayerIds to be outputted
+  std::vector<int>              m_targetLayerIdSet;                ///< set of LayerIds to be included in the sub-bitstream extraction process.
+  int                           m_targetOlsIdx;
+  std::vector<int>              m_numOutputLayersInOls;
+  std::vector<int>              m_numLayersInOls;
+  std::vector<std::vector<int>> m_layerIdInOls;
+#endif
 
 public:
                     VPS();
@@ -824,6 +848,22 @@ public:
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
+
+#if JVET_Q0814_DPB
+  int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
+  int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }
+  int               getTotalNumOLSs() const                              { return m_totalNumOLSs; }
+  Size              getOlsDpbPicSize( int olsIdx ) const                 { return m_olsDpbPicSize[olsIdx];          }
+  void              setOlsDpbPicSize( int olsIdx, Size size )            { m_olsDpbPicSize[olsIdx] = size;          }
+  void              setOlsDpbPicWidth( int olsIdx, int width )           { m_olsDpbPicSize[olsIdx].width = width;   }
+  void              setOlsDpbPicHeight( int olsIdx, int height )         { m_olsDpbPicSize[olsIdx].height = height; }
+
+  int               getOlsDpbParamsIdx( int olsIdx ) const               { return m_olsDpbParamsIdx[olsIdx];        }
+  void              setOlsDpbParamsIdx( int olsIdx, int paramIdx )       { m_olsDpbParamsIdx[olsIdx] = paramIdx;    }
+  
+  void              deriveOutputLayerSets();
+  void              deriveTargetOutputLayerSet( int targetOlsIdx );
+#endif
 };
 
 class Window
@@ -1092,13 +1132,13 @@ private:
   bool              m_BdofControlPresentFlag;
   bool              m_DmvrControlPresentFlag;
   bool              m_ProfControlPresentFlag;
-  uint32_t              m_uiBitsForPOC;
-  uint32_t              m_numLongTermRefPicSPS;
-  uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
+  uint32_t          m_uiBitsForPOC;
+  uint32_t          m_numLongTermRefPicSPS;
+  uint32_t          m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
   uint32_t          m_log2MaxTbSize;
-  bool             m_useWeightPred;                     //!< Use of Weighting Prediction (P_SLICE)
-  bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
+  bool              m_useWeightPred;                     //!< Use of Weighting Prediction (P_SLICE)
+  bool              m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
 
   bool              m_saoEnabledFlag;
 
@@ -1110,8 +1150,8 @@ private:
   unsigned          m_numHorVirtualBoundaries;                         //!< number of horizontal virtual boundaries
   unsigned          m_virtualBoundariesPosX[3];                        //!< horizontal position of each vertical virtual boundary
   unsigned          m_virtualBoundariesPosY[3];                        //!< vertical position of each horizontal virtual boundary
-  uint32_t              m_uiMaxDecPicBuffering[MAX_TLAYER];
-  uint32_t              m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
+  uint32_t          m_uiMaxDecPicBuffering[MAX_TLAYER];
+  uint32_t          m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 
 
   TimingInfo        m_timingInfo;
@@ -1364,10 +1404,10 @@ public:
   unsigned                getVirtualBoundariesPosX(unsigned idx) const                                    { CHECK( idx >= 3, "vitrual boundary index exceeds valid range" ); return m_virtualBoundariesPosX[idx]; }
   void                    setVirtualBoundariesPosY(unsigned u, unsigned idx)                              { CHECK( idx >= 3, "vitrual boundary index exceeds valid range" ); m_virtualBoundariesPosY[idx] = u;    }
   unsigned                getVirtualBoundariesPosY(unsigned idx) const                                    { CHECK( idx >= 3, "vitrual boundary index exceeds valid range" ); return m_virtualBoundariesPosY[idx]; }
-  uint32_t                    getMaxDecPicBuffering(uint32_t tlayer) const                                        { return m_uiMaxDecPicBuffering[tlayer];                               }
-  void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                                   { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
-  uint32_t                    getMaxLatencyIncreasePlus1(uint32_t tlayer) const                                   { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
-  void                    setMaxLatencyIncreasePlus1( uint32_t ui , uint32_t tlayer)                              { m_uiMaxLatencyIncreasePlus1[tlayer] = ui;                            }
+  uint32_t                getMaxDecPicBuffering(uint32_t tlayer) const                                    { return m_uiMaxDecPicBuffering[tlayer];                               }
+  void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                           { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
+  uint32_t                getMaxLatencyIncreasePlus1(uint32_t tlayer) const                               { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
+  void                    setMaxLatencyIncreasePlus1( uint32_t ui , uint32_t tlayer)                      { m_uiMaxLatencyIncreasePlus1[tlayer] = ui;                            }
 
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }

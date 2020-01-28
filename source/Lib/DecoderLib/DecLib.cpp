@@ -262,6 +262,15 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
             uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
             uint32_t numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
             uint32_t maxDecPicBufferingHighestTid =  activeSPS->getMaxDecPicBuffering(maxNrSublayers-1);
+#if JVET_Q0814_DPB
+            const VPS* referredVPS = pcListPic->front()->cs->vps;
+
+            if( referredVPS != nullptr && referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] > 1 )
+            {
+              numReorderPicsHighestTid = referredVPS->getNumReorderPics( maxNrSublayers - 1 );
+              maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( maxNrSublayers - 1 );
+            }
+#endif
 
             while (iterPic != pcListPic->end())
             {
@@ -491,7 +500,11 @@ void DecLib::deletePicBuffer ( )
 Picture* DecLib::xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId )
 {
   Picture * pcPic = nullptr;
+#if JVET_Q0814_DPB
+  m_iMaxRefPicNum = ( m_vps == nullptr || m_vps->m_numLayersInOls[m_vps->m_targetOlsIdx] == 1 ) ? sps.getMaxDecPicBuffering( temporalLayer ) : m_vps->getMaxDecPicBuffering( temporalLayer );     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
+#else
   m_iMaxRefPicNum = sps.getMaxDecPicBuffering(temporalLayer);     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
+#endif
   if (m_cListPic.size() < (uint32_t)m_iMaxRefPicNum)
   {
     pcPic = new Picture();
@@ -1151,6 +1164,9 @@ void DecLib::xActivateParameterSets( const int layerId )
   Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
   const SPS *sps = pSlice->getSPS();
   const PPS *pps = pSlice->getPPS();
+#if JVET_Q0814_DPB
+  const VPS *vps = pSlice->getVPS();
+#endif
 
   if( !sps->getUseWP() )
   {
@@ -1164,7 +1180,7 @@ void DecLib::xActivateParameterSets( const int layerId )
 
   CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, int( sps->getMaxCUWidth() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, int( sps->getMaxCUHeight() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
-  if( !sps->getRprEnabledFlag() ) // subpics_present_flag is equal to 1 condition shall be added
+  if( !sps->getRprEnabledFlag() && sps->getSubPicPresentFlag() )
   {
     CHECK( pps->getPicWidthInLumaSamples() != sps->getMaxPicWidthInLumaSamples(), "When subpics_present_flag is equal to 1 or ref_pic_resampling_enabled_flag equal to 0, the value of pic_width_in_luma_samples shall be equal to pic_width_max_in_luma_samples." );
     CHECK( pps->getPicHeightInLumaSamples() != sps->getMaxPicHeightInLumaSamples(), "When subpics_present_flag is equal to 1 or ref_pic_resampling_enabled_flag equal to 0, the value of pic_height_in_luma_samples shall be equal to pic_height_max_in_luma_samples." );
@@ -1176,6 +1192,14 @@ void DecLib::xActivateParameterSets( const int layerId )
   {
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
   }
+
+#if JVET_Q0814_DPB
+  if( vps->m_numOutputLayersInOls[vps->m_targetOlsIdx] > 1 )
+  {
+    CHECK( sps->getMaxPicWidthInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).width, "pic_width_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_width[ i ]" );
+    CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
+  }
+#endif
 }
 
 

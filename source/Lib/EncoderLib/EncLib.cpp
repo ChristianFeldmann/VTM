@@ -68,6 +68,9 @@ EncLib::EncLib( EncLibCommon* encLibCommon )
   , m_lmcsAPS(nullptr)
   , m_scalinglistAPS( nullptr )
   , m_doPlt( true )
+#if JVET_Q0814_DPB
+  , m_vps( encLibCommon->getVPS() )
+#endif
 {
   m_iPOCLast          = -1;
   m_iNumPicRcvd       =  0;
@@ -213,8 +216,13 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   aps0.setAPSType( SCALING_LIST_APS );
 
   // initialize SPS
+#if JVET_Q0814_DPB
+  xInitSPS( sps0 );
+  xInitVPS( sps0 );
+#else
   xInitSPS( sps0, m_cVPS );
   xInitVPS(m_cVPS, sps0);
+#endif
 
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
@@ -419,7 +427,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     Picture *picBg = new Picture;
     picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
     picBg->getRecoBuf().fill(0);
+#if JVET_Q0814_DPB
+    picBg->finalInit( m_vps, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
     picBg->finalInit( &m_cVPS, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -546,7 +558,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     const SPS *sps = m_spsMap.getPS( pps->getSPSId() );
 
     picCurr->M_BUFS( 0, PIC_ORIGINAL ).copyFrom( m_cGOPEncoder.getPicBg()->getRecoBuf() );
+#if JVET_Q0814_DPB
+    picCurr->finalInit( m_vps, *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
     picCurr->finalInit( &m_cVPS, *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if( getUseAdaptiveQP() )
@@ -602,7 +618,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       }
     }
 
+#if JVET_Q0814_DPB
+    if( m_vps->getMaxLayers() > 1 )
+#else
     if( m_cVPS.getMaxLayers() > 1 )
+#endif
     {
       ppsID = m_layerId;
     }
@@ -657,7 +677,12 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
     }
+
+#if JVET_Q0814_DPB
+    pcPicCurr->finalInit( m_vps, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
     pcPicCurr->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
 
     pcPicCurr->poc = m_iPOCLast;
 
@@ -788,12 +813,15 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
         }
       }
 
-      {
-        int ppsID = -1; // Use default PPS ID
-        const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
-        const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
-        pcField->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-      }
+      int ppsID = -1; // Use default PPS ID
+      const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
+      const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
+
+#if JVET_Q0814_DPB
+      pcField->finalInit( m_vps, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#else
+      pcField->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+#endif
 
       pcField->poc = m_iPOCLast;
       pcField->reconstructed = false;
@@ -881,7 +909,13 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   Slice::sortPicList(m_cListPic);
 
   // use an entry in the buffered list if the maximum number that need buffering has been reached:
+#if JVET_Q0814_DPB
+  int maxDecPicBuffering = ( m_vps == nullptr || m_vps->m_numLayersInOls[m_vps->m_targetOlsIdx] == 1 ) ? sps.getMaxDecPicBuffering( MAX_TLAYER - 1 ) : m_vps->getMaxDecPicBuffering( MAX_TLAYER - 1 );
+
+  if( m_cListPic.size() >= (uint32_t)( m_iGOPSize + maxDecPicBuffering + 2 ) )
+#else
   if( m_cListPic.size() >= (uint32_t)( m_iGOPSize + getMaxDecPicBuffering( MAX_TLAYER - 1 ) + 2 ) )
+#endif
   {
     PicList::iterator iterPic = m_cListPic.begin();
     int iSize = int( m_cListPic.size() );
@@ -942,12 +976,96 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   m_iNumPicRcvd++;
 }
 
+#if JVET_Q0814_DPB
+void EncLib::xInitVPS( const SPS& sps )
+{
+  // The SPS must have already been set up.
+  // set the VPS profile information.
+  m_vps->setMaxSubLayers( sps.getMaxTLayers() );
+
+  m_vps->deriveOutputLayerSets();
+  m_vps->deriveTargetOutputLayerSet( m_vps->m_targetOlsIdx );
+
+  if( !m_vps->getAllIndependentLayersFlag() )
+  {
+    m_vps->m_numDpbParams = m_vps->m_totalNumOLSs;
+  }
+
+  if( m_vps->m_dpbParameters.size() != m_vps->m_numDpbParams )
+  {
+    m_vps->m_dpbParameters.resize( m_vps->m_numDpbParams );
+  }
+
+  if( m_vps->m_dpbMaxTemporalId.size() != m_vps->m_numDpbParams )
+  {
+    m_vps->m_dpbMaxTemporalId.resize( m_vps->m_numDpbParams );
+  }
+
+  for( int i = 0; i < m_vps->m_numDpbParams; i++ )
+  {
+    if( m_vps->getMaxSubLayers() == 1 )
+    {
+      // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0.
+      m_vps->m_dpbMaxTemporalId[i] = 0;
+    }
+    else
+    {
+      if( m_vps->getAllLayersSameNumSublayersFlag() )
+      {
+        // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1.
+        m_vps->m_dpbMaxTemporalId[i] = m_vps->getMaxSubLayers() - 1;
+      }
+      else
+      {
+        m_vps->m_dpbMaxTemporalId[i] = m_maxTempLayer;
+      }
+    }
+
+    // accumulate DPB paramters from the SPS referring by each layer, inlucded into i-th OLS
+    if( std::find( m_vps->m_layerIdInOls[i].begin(), m_vps->m_layerIdInOls[i].end(), m_layerId ) != m_vps->m_layerIdInOls[i].end() )
+    {
+      for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[i] ); j <= m_vps->m_dpbMaxTemporalId[i]; j++ )
+      {
+        m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] += sps.getMaxDecPicBuffering( j );
+        m_vps->m_dpbParameters[i].m_numReorderPics[j] += sps.getNumReorderPics( j );
+        m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] += sps.getMaxLatencyIncreasePlus1( j );
+
+        CHECK( m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] >= MAX_NUM_REF_PICS, "max_dec_pic_buffering_minus1 exceeded MaxDpbSize" );
+      }
+
+      for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? m_vps->m_dpbMaxTemporalId[i] : 0 ); j < m_vps->m_dpbMaxTemporalId[i]; j++ )
+      {
+        // When max_dec_pic_buffering_minus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[m_vps->m_dpbMaxTemporalId[i]];
+
+        // When max_num_reorder_pics[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_numReorderPics[m_vps->m_dpbMaxTemporalId[i]];
+
+        // When max_latency_increase_plus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[m_vps->m_dpbMaxTemporalId[i]];
+      }
+    }
+  }
+
+  for( int olsIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
+  {
+    if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
+    {
+      m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
+      m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
+    }
+
+    m_vps->setOlsDpbParamsIdx( olsIdx, olsIdx );
+  }
+}
+#else
 void EncLib::xInitVPS(VPS& vps, const SPS& sps)
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
   vps.setMaxSubLayers(sps.getMaxTLayers());
 }
+#endif
 
 void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
 {
@@ -961,7 +1079,11 @@ void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
   dps.setProfileTierLevel(ptls);
 }
 
+#if JVET_Q0814_DPB
+void EncLib::xInitSPS( SPS& sps )
+#else
 void EncLib::xInitSPS( SPS& sps, VPS& vps )
+#endif
 {
   ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
   ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
@@ -1018,7 +1140,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */
+#if JVET_Q0814_DPB
+  sps.setVPSId( m_vps->getVPSId() );
+#else
   sps.setVPSId(m_cVPS.getVPSId());
+#endif
   sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
   sps.setMaxCUWidth             ( m_maxCUWidth        );
@@ -1253,11 +1379,20 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
   }
 
+#if JVET_Q0814_DPB
+  sps.setInterLayerPresentFlag( m_vps->getMaxLayers() > 1 && !m_vps->getAllIndependentLayersFlag() );
+  
+  for( int i = 0; i < m_vps->getMaxLayers(); ++i )
+  {
+    //CHECK((m_vps->getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
+  }
+#else
   sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
   for (unsigned int i = 0; i < vps.getMaxLayers(); ++i)
   {
     CHECK((vps.getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
+#endif
 
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
 }

@@ -1512,7 +1512,13 @@ VPS::VPS()
   , m_vpsEachLayerIsAnOlsFlag (1)
   , m_vpsOlsModeIdc (0)
   , m_vpsNumOutputLayerSets (1)
-, m_vpsExtensionFlag()
+  , m_vpsExtensionFlag()
+#if JVET_Q0814_DPB
+  , m_numDpbParams( 0 )
+  , m_sublayerDpbParamsPresentFlag( false )
+  , m_targetOlsIdx( -1 )
+  , m_totalNumOLSs( 0 )
+#endif
 {
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
@@ -1537,6 +1543,156 @@ VPS::VPS()
 VPS::~VPS()
 {
 }
+
+#if JVET_Q0814_DPB
+void VPS::deriveOutputLayerSets()
+{
+  if( m_uiMaxLayers == 1 )
+  {
+    m_totalNumOLSs = 1;
+  }
+  else if( m_vpsEachLayerIsAnOlsFlag || m_vpsOlsModeIdc < 2 )
+  {
+    m_totalNumOLSs = m_uiMaxLayers;
+  }
+  else if( m_vpsOlsModeIdc == 2 )
+  {
+    m_totalNumOLSs = m_vpsNumOutputLayerSets;
+  }
+
+  m_olsDpbParamsIdx.resize( m_totalNumOLSs );
+  m_olsDpbPicSize.resize( m_totalNumOLSs, Size(0, 0) );
+  m_numOutputLayersInOls.resize( m_totalNumOLSs );
+  m_numLayersInOls.resize( m_totalNumOLSs );
+  m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+  m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+
+  std::vector<int> numRefLayers( m_uiMaxLayers );
+  std::vector<std::vector<int>> outputLayerIdx( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+  std::vector<std::vector<int>> layerIncludedInOlsFlag( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, 0 ) );
+  std::vector<std::vector<int>> dependencyFlag( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+  std::vector<std::vector<int>> refLayerIdx( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+
+  for( int i = 0; i < m_uiMaxLayers; i++ )
+  {
+    int r = 0;
+
+    for( int j = 0; j < m_uiMaxLayers; j++ )
+    {
+      dependencyFlag[i][j] = m_vpsDirectRefLayerFlag[i][j];
+
+      for( int k = 0; k < i; k++ )
+      {
+        if( m_vpsDirectRefLayerFlag[i][k] && dependencyFlag[k][j] )
+        {
+          dependencyFlag[i][j] = 1;
+        }
+      }
+
+      if( dependencyFlag[i][j] )
+      {
+        refLayerIdx[i][r++] = j;
+      }
+    }
+
+    numRefLayers[i] = r;
+  }
+
+  m_numOutputLayersInOls[0] = 1;
+  m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
+
+  for( int i = 1; i < m_totalNumOLSs; i++ )
+  {
+    if( m_vpsEachLayerIsAnOlsFlag || m_vpsOlsModeIdc == 0 )
+    {
+      m_numOutputLayersInOls[i] = 1;
+      m_outputLayerIdInOls[i][0] = m_vpsLayerId[i];
+    }
+    else if( m_vpsOlsModeIdc == 1 )
+    {
+      m_numOutputLayersInOls[i] = i + 1;
+
+      for( int j = 0; j < m_numOutputLayersInOls[i]; j++ )
+      {
+        m_outputLayerIdInOls[i][j] = m_vpsLayerId[j];
+      }
+    }
+    else if( m_vpsOlsModeIdc == 2 )
+    {
+      int j = 0;
+      for( int k = 0; k < m_uiMaxLayers; k++ )
+      {
+        if( m_vpsOlsOutputLayerFlag[i][k] )
+        {
+          layerIncludedInOlsFlag[i][k] = 1;
+          outputLayerIdx[i][j] = k;
+          m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
+        }
+      }
+      m_numOutputLayersInOls[i] = j;
+
+      for( j = 0; j < m_numOutputLayersInOls[i]; j++ )
+      {
+        int idx = outputLayerIdx[i][j];
+        for( int k = 0; k < numRefLayers[idx]; k++ )
+        {
+          layerIncludedInOlsFlag[i][refLayerIdx[idx][k]] = 1;
+        }
+      }
+    }
+  }
+
+  m_numLayersInOls[0] = 1;
+  m_layerIdInOls[0][0] = m_vpsLayerId[0];
+
+  for( int i = 1; i < m_totalNumOLSs; i++ )
+  {
+    if( m_vpsEachLayerIsAnOlsFlag )
+    {
+      m_numLayersInOls[i] = 1;
+      m_layerIdInOls[i][0] = m_vpsLayerId[i];
+    }
+    else if( m_vpsOlsModeIdc == 0 || m_vpsOlsModeIdc == 1 )
+    {
+      m_numLayersInOls[i] = i + 1;
+      for( int j = 0; j < m_numLayersInOls[i]; j++ )
+      {
+        m_layerIdInOls[i][j] = m_vpsLayerId[j];
+      }
+    }
+    else if( m_vpsOlsModeIdc == 2 )
+    {
+      int j = 0;
+      for( int k = 0; k < m_uiMaxLayers; k++ )
+      {
+        if( layerIncludedInOlsFlag[i][k] )
+        {
+          m_layerIdInOls[i][j++] = m_vpsLayerId[k];
+        }
+      }
+
+      m_numLayersInOls[i] = j;
+    }
+  }
+}
+
+void VPS::deriveTargetOutputLayerSet( int targetOlsIdx )
+{
+  m_targetOlsIdx = targetOlsIdx < 0 ? m_uiMaxLayers - 1 : targetOlsIdx;
+  m_targetOutputLayerIdSet.clear();
+  m_targetLayerIdSet.clear();
+
+  for( int i = 0; i < m_numOutputLayersInOls[m_targetOlsIdx]; i++ )
+  {
+    m_targetOutputLayerIdSet.push_back( m_outputLayerIdInOls[m_targetOlsIdx][i] );
+  }
+
+  for( int i = 0; i < m_numLayersInOls[m_targetOlsIdx]; i++ )
+  {
+    m_targetLayerIdSet.push_back( m_layerIdInOls[m_targetOlsIdx][i] );
+  }
+}
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // Picture Header

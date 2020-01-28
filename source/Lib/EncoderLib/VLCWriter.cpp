@@ -1707,6 +1707,15 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
 #if JVET_Q0819_PH_CHANGES
   }
+  // inherit constraint values from SPS
+  if (!sps->getSplitConsOverrideEnabledFlag() || !picHeader->getSplitConsOverrideFlag())
+  {
+    picHeader->setMinQTSizes(sps->getMinQTSizes());
+    picHeader->setMaxMTTHierarchyDepths(sps->getMaxMTTHierarchyDepths());
+    picHeader->setMaxBTSizes(sps->getMaxBTSizes());
+    picHeader->setMaxTTSizes(sps->getMaxTTSizes());
+  }
+#endif
   // ibc merge candidate list size
   if (sps->getIBCFlag())
   {

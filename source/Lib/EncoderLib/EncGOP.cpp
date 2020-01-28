@@ -490,17 +490,23 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 {
   AccessUnit::iterator itNalu = accessUnit.begin();
 
-  while ( (itNalu!=accessUnit.end())&&
-    ( (*itNalu)->m_nalUnitType==NAL_UNIT_ACCESS_UNIT_DELIMITER
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_VPS
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_DCI
+  while ((itNalu != accessUnit.end()) &&
+    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_DCI
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
+      ))
 #else
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_DPS
+  while ((itNalu != accessUnit.end()) &&
+    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_DPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
+      ))
 #endif
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_SPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_PPS
-    ))
   {
     itNalu++;
   }
@@ -3972,13 +3978,11 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if( ( *it )->m_nalUnitType != NAL_UNIT_PREFIX_SEI && ( *it )->m_nalUnitType != NAL_UNIT_SUFFIX_SEI )
     {
       numRBSPBytes += numRBSPBytes_nal;
-      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-        || (*it)->m_nalUnitType == NAL_UNIT_DCI
+      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DCI || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
 #else
-        || (*it)->m_nalUnitType == NAL_UNIT_DPS 
+      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
 #endif
-        || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
       {
         numRBSPBytes += 4;
       }

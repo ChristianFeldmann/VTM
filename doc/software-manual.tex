@@ -962,10 +962,10 @@ NB: There is currently only limited validation that the encoder configuration co
 Indicates interoperability metadata registered as specified by X Recommendation ITU-T T.35.
 \\
 
-\Option{EnableDecodingParameterSet} &
+\Option{EnableDecodingCapabilityInformation} &
 %\ShortOption{\None} &
 \Default{false} &
-Enables writing of a decoding parameter set. If disabled, no parameter set will be written and the specical reserved ID zero will be used in the SPS indicating no constraint.
+Enables writing of a decoding capability information (DCI). If disabled, no DCI will be written.
 \\
 
 \Option{MaxBitDepthConstraint} &
@@ -1275,12 +1275,6 @@ between the current and the reference pictures.
                                  \mathrm{RateGOPSize}}\right)
 $}
 \end{displaymath}
-\\
-
-\Option{Log2ParallelMergeLevel} &
-%\ShortOption{\None} &
-\Default{2} &
-Defines the SPS-derived Log2ParallelMergeLevel variable.
 \\
 
 \Option{MaxNumMergeCand} &

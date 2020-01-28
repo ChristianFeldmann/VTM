@@ -637,7 +637,7 @@ protected:
   VPS       m_cVPS;
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   DCI       m_dci;
-  bool      m_DCIEnabled;                                     ///< enable DCI
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
 #else
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set

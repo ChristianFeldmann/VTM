@@ -1301,16 +1301,22 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   for( auto& naluTemporalId : m_accessUnitNals )
   {
-    if( 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    if (
       naluTemporalId.first != NAL_UNIT_DCI
+      && naluTemporalId.first != NAL_UNIT_VPS
+      && naluTemporalId.first != NAL_UNIT_SPS
+      && naluTemporalId.first != NAL_UNIT_EOS
+      && naluTemporalId.first != NAL_UNIT_EOB)
 #else
+    if (
       naluTemporalId.first != NAL_UNIT_DPS
-#endif
       && naluTemporalId.first != NAL_UNIT_VPS
       && naluTemporalId.first != NAL_UNIT_SPS
       && naluTemporalId.first != NAL_UNIT_EOS
       && naluTemporalId.first != NAL_UNIT_EOB )
+#endif
+
     {
       CHECK( naluTemporalId.second < nalu.m_temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
     }

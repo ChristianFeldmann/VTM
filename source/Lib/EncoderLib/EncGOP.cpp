@@ -2097,9 +2097,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if JVET_Q0819_PH_CHANGES
     // set two flags according to slice type presented in the picture
     if (pcSlice->getSliceType() != I_SLICE)
+    {
       picHeader->setPicInterSliceAllowedFlag(true);
+    }
     if (pcSlice->getSliceType() == I_SLICE)
+    {
       picHeader->setPicIntraSliceAllowedFlag(true);
+    }
 #endif
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));

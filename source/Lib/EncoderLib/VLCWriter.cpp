@@ -1260,7 +1260,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // Q0781, two-flags
   WRITE_FLAG(picHeader->getPicInterSliceAllowedFlag(), "pic_inter_slice_allowed_flag");
   if (picHeader->getPicInterSliceAllowedFlag())
+  {
     WRITE_FLAG(picHeader->getPicIntraSliceAllowedFlag(), "pic_intra_slice_allowed_flag");
+  }
 #endif
   WRITE_FLAG(picHeader->getNonReferencePictureFlag(), "non_reference_picture_flag");
   WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
@@ -1985,11 +1987,15 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
 #if JVET_Q0819_PH_CHANGES
   if (picHeader->getPicInterSliceAllowedFlag())
+  {
 #endif
-    WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );
+    WRITE_UVLC(pcSlice->getSliceType(), "slice_type");
 #if JVET_Q0819_PH_CHANGES
+  }
   if (!picHeader->getPicIntraSliceAllowedFlag())
+  {
     CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
+  }
 #endif
 #if JVET_Q0155_COLOUR_ID
     // 4:4:4 colour plane ID

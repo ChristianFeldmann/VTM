@@ -1848,7 +1848,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");       picHeader->setPicIntraSliceAllowedFlag(uiCode != 0);
   }
   else
+  {
     picHeader->setPicIntraSliceAllowedFlag(true);
+  }
   CHECK(picHeader->getPicInterSliceAllowedFlag() == 0 && picHeader->getPicIntraSliceAllowedFlag() == 0, "Invalid picture without intra or inter slice");
 #endif
   READ_FLAG(uiCode, "non_reference_picture_flag");       picHeader->setNonReferencePictureFlag( uiCode != 0 );
@@ -2803,9 +2805,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #if JVET_Q0819_PH_CHANGES
   }
   else
+  {
     pcSlice->setSliceType(I_SLICE);
+  }
   if (!picHeader->getPicIntraSliceAllowedFlag())
+  {
     CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
+  }
 #endif
 #if JVET_Q0155_COLOUR_ID
     // 4:4:4 colour plane ID

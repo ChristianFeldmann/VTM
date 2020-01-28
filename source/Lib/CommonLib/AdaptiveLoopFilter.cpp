@@ -474,13 +474,12 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 
                 if (filterIdx != 0)
                 {
-                  const Area blkSrc(0, 0, w >> chromaScaleX, h >> chromaScaleY);
-                  Area       blkDst(xPos >> chromaScaleX, yPos >> chromaScaleY, width >> chromaScaleX,
-                              height >> chromaScaleY);
+                  const Area blkSrc(0, 0, w, h);
+                  Area blkDst(xStart >> chromaScaleX, yStart >> chromaScaleY, w >> chromaScaleX, h >> chromaScaleY);
 
                   const int16_t *filterCoeff = m_ccAlfFilterParam.ccAlfCoeff[compIdx - 1][filterIdx - 1];
 
-                  m_filterCcAlf(recYuv.get(compID), tmpYuv, blkDst, blkSrc, compID, filterCoeff, m_clpRngs, cs,
+                  m_filterCcAlf(recYuv.get(compID), buf, blkDst, blkSrc, compID, filterCoeff, m_clpRngs, cs,
                                 m_alfVBLumaCTUHeight, m_alfVBLumaPos);
                 }
               }

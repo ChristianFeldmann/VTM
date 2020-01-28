@@ -3131,6 +3131,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       if (sps->getCCALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
       {
         READ_FLAG(uiCode, "slice_cc_alf_cb_enabled_flag");
+        pcSlice->setTileGroupCcAlfCbEnabledFlag(uiCode);
         filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = (uiCode == 1) ? true : false;
         pcSlice->setTileGroupCcAlfCbApsId(-1);
         if (filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1])
@@ -3141,6 +3142,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         }
         // Cr
         READ_FLAG(uiCode, "slice_cc_alf_cr_enabled_flag");
+        pcSlice->setTileGroupCcAlfCrEnabledFlag(uiCode);
         filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = (uiCode == 1) ? true : false;
         pcSlice->setTileGroupCcAlfCrApsId(-1);
         if (filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1])

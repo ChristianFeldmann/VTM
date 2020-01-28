@@ -205,9 +205,12 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 
 //! \}
 
+#if !JVET_Q0806
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 // 7-tap/3-tap, direction, 2/4/8/16/32/64/128
 extern int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
+
 extern bool g_mctsDecCheckEnabled;
 
 class  Mv;
@@ -220,5 +223,15 @@ extern uint8_t g_paletteRunLeftLut[5];
 
 const int g_IBCBufferSize = 256 * 128;
 
+#if JVET_Q0806
+void initGeoTemplate();
+extern int16_t** g_GeoParams;
+extern int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
+extern int16_t*  g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+extern int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
+extern int8_t    g_angle2mask         [GEO_NUM_ANGLES];
+extern int8_t    g_Dis[GEO_NUM_ANGLES];
+extern int8_t    g_angle2mirror[GEO_NUM_ANGLES];
+#endif
 #endif  //__TCOMROM__
 

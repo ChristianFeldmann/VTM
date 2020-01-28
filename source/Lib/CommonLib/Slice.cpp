@@ -1629,7 +1629,11 @@ PicHeader::PicHeader()
 , m_disBdofFlag                                   ( 0 )
 , m_disDmvrFlag                                   ( 0 )
 , m_disProfFlag                                   ( 0 )
+#if !JVET_Q0806
 , m_maxNumTriangleCand                            ( 0 )
+#else
+, m_maxNumGeoCand                                 ( 0 )
+#endif
 , m_maxNumIBCMergeCand                            ( IBC_MRG_MAX_NUM_CANDS )
 , m_jointCbCrSignFlag                             ( 0 )
 , m_saoEnabledPresentFlag                         ( 0 )
@@ -1721,7 +1725,11 @@ void PicHeader::initPicHeader()
   m_disBdofFlag                                   = 0;
   m_disDmvrFlag                                   = 0;
   m_disProfFlag                                   = 0;
+#if !JVET_Q0806
   m_maxNumTriangleCand                            = 0;
+#else
+  m_maxNumGeoCand                                 = 0;
+#endif
   m_maxNumIBCMergeCand                            = IBC_MRG_MAX_NUM_CANDS;
   m_jointCbCrSignFlag                             = 0;
   m_saoEnabledPresentFlag                         = 0;
@@ -1861,7 +1869,11 @@ SPS::SPS()
 , m_AffineType                ( false )
 , m_PROF                      ( false )
 , m_ciip                   ( false )
+#if !JVET_Q0806
 , m_Triangle                  ( false )
+#else
+, m_Geo                       ( false )
+#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
 , m_LadfEnabled               ( false )
 , m_LadfNumIntervals          ( 0 )
@@ -2076,7 +2088,11 @@ PPS::PPS()
 , m_PPSMvdL1ZeroIdc                  (0)
 , m_PPSCollocatedFromL0Idc           (0)
 , m_PPSSixMinusMaxNumMergeCandPlus1  (0)
+#if !JVET_Q0806
 , m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
+#else
+, m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 (0)
+#endif
 , m_cabacInitPresentFlag             (false)
 , m_pictureHeaderExtensionPresentFlag(0)
 , m_sliceHeaderExtensionPresentFlag  (false)

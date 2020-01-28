@@ -104,7 +104,11 @@ EncAppCfg::EncAppCfg()
 , m_noIbcConstraintFlag(false)
 , m_bNoCiipConstraintFlag(false)
 , m_noFPelMmvdConstraintFlag(false)
+#if !JVET_Q0806
 , m_bNoTriangleConstraintFlag(false)
+#else
+, m_noGeoConstraintFlag(false)
+#endif
 , m_bNoLadfConstraintFlag(false)
 , m_noTransformSkipConstraintFlag(false)
 , m_noBDPCMConstraintFlag(false)
@@ -925,7 +929,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("LadfIntervalLowerBound",                          cfg_LadfIntervalLowerBound,  cfg_LadfIntervalLowerBound, "LADF lower bound for 2nd lowest interval")
 #endif
   ("CIIP",                                            m_ciip,                                           false, "Enable CIIP mode")
+#if !JVET_Q0806
   ("Triangle",                                        m_Triangle,                                       false, "Enable triangular shape motion vector prediction (0:off, 1:on)")
+#else
+  ("Geo",                                             m_Geo,                                            false, "Enable geometric partitioning mode (0:off, 1:on)")
+#endif
   ("HashME",                                          m_HashME,                                         false, "Enable hash motion estimation (0:off, 1:on)")
 
   ("AllowDisFracMMVD",                                m_allowDisFracMMVD,                               false, "Disable fractional MVD in MMVD mode adaptively")
@@ -1147,7 +1155,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false,  "Enable sign hiding" )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
   ("MaxNumAffineMergeCand",                           m_maxNumAffineMergeCand,                             5u, "Maximum number of affine merge candidates")
+#if !JVET_Q0806
   ("MaxNumTriangleCand",                              m_maxNumTriangleCand,                                5u, "Maximum number of triangle candidates")
+#else
+  ("MaxNumGeoCand",                                   m_maxNumGeoCand,                                     5u, "Maximum number of geometric partitioning mode candidates")
+#endif
   ("MaxNumIBCMergeCand",                              m_maxNumIBCMergeCand,                                6u, "Maximum number of IBC merge candidates")
     /* Misc. */
   ("SEIDecodedPictureHash,-dph",                      tmpDecodedPictureHashSEIMappedType,                   0, "Control generation of decode picture hash SEI messages\n"
@@ -2521,9 +2533,15 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
   xConfirmPara( m_maxNumMergeCand > MRG_MAX_NUM_CANDS, "MaxNumMergeCand must be no more than MRG_MAX_NUM_CANDS." );
+#if !JVET_Q0806
   xConfirmPara( m_maxNumTriangleCand > TRIANGLE_MAX_NUM_UNI_CANDS, "MaxNumTriangleCand must be no more than TRIANGLE_MAX_NUM_UNI_CANDS." );
   xConfirmPara( m_maxNumTriangleCand > m_maxNumMergeCand, "MaxNumTriangleCand must be no more than MaxNumMergeCand." );
   xConfirmPara( 0 < m_maxNumTriangleCand && m_maxNumTriangleCand < 2, "MaxNumTriangleCand must be no less than 2 unless MaxNumTriangleCand is 0." );
+#else
+  xConfirmPara( m_maxNumGeoCand > GEO_MAX_NUM_UNI_CANDS, "MaxNumGeoCand must be no more than GEO_MAX_NUM_UNI_CANDS." );
+  xConfirmPara( m_maxNumGeoCand > m_maxNumMergeCand, "MaxNumGeoCand must be no more than MaxNumMergeCand." );
+  xConfirmPara( 0 < m_maxNumGeoCand && m_maxNumGeoCand < 2, "MaxNumGeoCand must be no less than 2 unless MaxNumGeoCand is 0." );
+#endif
   xConfirmPara( m_maxNumIBCMergeCand < 1, "MaxNumIBCMergeCand must be 1 or greater." );
   xConfirmPara( m_maxNumIBCMergeCand > IBC_MRG_MAX_NUM_CANDS, "MaxNumIBCMergeCand must be no more than IBC_MRG_MAX_NUM_CANDS." );
   xConfirmPara( m_maxNumAffineMergeCand < 1, "MaxNumAffineMergeCand must be 1 or greater." );
@@ -3271,7 +3289,11 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
+#if !JVET_Q0806
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
+#else
+    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = 0;
+#endif
     break;
   case 1: // RA setting
     m_constantSliceHeaderParamsEnabledFlag = 1;
@@ -3281,7 +3303,11 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_Q0806
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
+#else
+    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = m_maxNumMergeCand - m_maxNumGeoCand + 1;
+#endif
     break;
   case 2: // LDB setting
     m_constantSliceHeaderParamsEnabledFlag = 1;
@@ -3291,7 +3317,11 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 2;
     m_PPSCollocatedFromL0Idc = 1;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_Q0806
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
+#else
+    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = m_maxNumMergeCand - m_maxNumGeoCand + 1;
+#endif
     break;
   case 3: // LDP setting
     m_constantSliceHeaderParamsEnabledFlag = 1;
@@ -3301,7 +3331,11 @@ bool EncAppCfg::xCheckParameter()
     m_PPSMvdL1ZeroIdc = 0;
     m_PPSCollocatedFromL0Idc = 0;
     m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
+#if !JVET_Q0806
     m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
+#else
+    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = 0;
+#endif
     break;
   default:
     THROW("Invalid value for PPSorSliceMode");
@@ -3596,7 +3630,11 @@ void EncAppCfg::xPrintParameter()
 
   msg( DETAILS, "Max Num Merge Candidates               : %d\n", m_maxNumMergeCand );
   msg( DETAILS, "Max Num Affine Merge Candidates        : %d\n", m_maxNumAffineMergeCand );
+#if !JVET_Q0806
   msg( DETAILS, "Max Num Triangle Merge Candidates      : %d\n", m_maxNumTriangleCand );
+#else
+  msg( DETAILS, "Max Num Geo Merge Candidates           : %d\n", m_maxNumGeoCand );
+#endif
   msg( DETAILS, "Max Num IBC Merge Candidates           : %d\n", m_maxNumIBCMergeCand );
   msg( DETAILS, "\n");
 
@@ -3673,7 +3711,11 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "LADF:%d ", m_LadfEnabed );
 #endif
     msg(VERBOSE, "CIIP:%d ", m_ciip);
+#if !JVET_Q0806
     msg( VERBOSE, "Triangle:%d ", m_Triangle );
+#else
+    msg( VERBOSE, "Geo:%d ", m_Geo );
+#endif
     m_allowDisFracMMVD = m_MMVD ? m_allowDisFracMMVD : false;
     if ( m_MMVD )
       msg(VERBOSE, "AllowDisFracMMVD:%d ", m_allowDisFracMMVD);

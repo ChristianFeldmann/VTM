@@ -309,7 +309,11 @@ struct CodingUnit : public UnitArea
   bool           affine;
   int            affineType;
   bool           colorTransform;
+#if !JVET_Q0806
   bool           triangle;
+#else
+  bool           geoFlag;
+#endif
   int            bdpcmMode;
   int            bdpcmModeChroma;
   uint8_t          imv;
@@ -383,9 +387,15 @@ struct InterPredictionData
   bool      mergeFlag;
   bool      regularMergeFlag;
   uint8_t     mergeIdx;
+#if !JVET_Q0806
   uint8_t     triangleSplitDir;
   uint8_t     triangleMergeIdx0;
   uint8_t     triangleMergeIdx1;
+#else
+  uint8_t     geoSplitDir;
+  uint8_t     geoMergeIdx0;
+  uint8_t     geoMergeIdx1;
+#endif
   bool           mmvdMergeFlag;
   uint32_t       mmvdMergeIdx;
   uint8_t     interDir;

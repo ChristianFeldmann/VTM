@@ -244,7 +244,11 @@ void CU::saveMotionInHMVP( const CodingUnit& cu, const bool isToBeDone )
 {
   const PredictionUnit& pu = *cu.firstPU;
 
+#if !JVET_Q0806
   if (!cu.triangle && !cu.affine && !isToBeDone )
+#else
+  if (!cu.geoFlag && !cu.affine && !isToBeDone)
+#endif
   {
     MotionInfo mi = pu.getMotionInfo();
 
@@ -3192,6 +3196,7 @@ void PU::restrictBiPredMergeCandsOne(PredictionUnit &pu)
   }
 }
 
+#if !JVET_Q0806
 void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )
 {
   MergeCtx tmpMergeCtx;
@@ -3348,6 +3353,167 @@ int32_t PU::mappingRefPic( const PredictionUnit &pu, int32_t refPicPoc, bool tar
   }
   return -1;
 }
+#else
+void PU::getGeoMergeCandidates( const PredictionUnit &pu, MergeCtx& geoMrgCtx )
+{
+  MergeCtx tmpMergeCtx;
+
+  const Slice &slice = *pu.cs->slice;
+  const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
+
+  geoMrgCtx.numValidMergeCand = 0;
+
+  for (int32_t i = 0; i < GEO_MAX_NUM_UNI_CANDS; i++)
+  {
+    geoMrgCtx.BcwIdx[i] = BCW_DEFAULT;
+    geoMrgCtx.interDirNeighbours[i] = 0;
+    geoMrgCtx.mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N;
+    geoMrgCtx.mvFieldNeighbours[(i << 1)].refIdx = NOT_VALID;
+    geoMrgCtx.mvFieldNeighbours[(i << 1) + 1].refIdx = NOT_VALID;
+    geoMrgCtx.mvFieldNeighbours[(i << 1)].mv = Mv();
+    geoMrgCtx.mvFieldNeighbours[(i << 1) + 1].mv = Mv();
+    geoMrgCtx.useAltHpelIf[i] = false;
+  }
+
+  PU::getInterMergeCandidates(pu, tmpMergeCtx, 0);
+
+  for (int32_t i = 0; i < maxNumMergeCand; i++)
+  {
+    int parity = i & 1;
+    if( tmpMergeCtx.interDirNeighbours[i] & (0x01 + parity) )
+    {
+      geoMrgCtx.interDirNeighbours[geoMrgCtx.numValidMergeCand] = 1 + parity;
+      geoMrgCtx.mrgTypeNeighbours[geoMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].mv = Mv(0, 0);
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].refIdx = -1;
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].refIdx;
+      geoMrgCtx.numValidMergeCand++;
+      if (geoMrgCtx.numValidMergeCand == GEO_MAX_NUM_UNI_CANDS)
+      {
+        return;
+      }
+      continue;
+    }
+
+    if (tmpMergeCtx.interDirNeighbours[i] & (0x02 - parity))
+    {
+      geoMrgCtx.interDirNeighbours[geoMrgCtx.numValidMergeCand] = 2 - parity;
+      geoMrgCtx.mrgTypeNeighbours[geoMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].mv = Mv(0, 0);
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].refIdx;
+      geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].refIdx = -1;
+      geoMrgCtx.numValidMergeCand++;
+      if (geoMrgCtx.numValidMergeCand == GEO_MAX_NUM_UNI_CANDS)
+      {
+        return;
+      }
+    }
+  }
+}
+
+void PU::spanGeoMotionInfo( PredictionUnit &pu, MergeCtx &geoMrgCtx, const uint8_t splitDir, const uint8_t candIdx0, const uint8_t candIdx1)
+{
+  pu.geoSplitDir  = splitDir;
+  pu.geoMergeIdx0 = candIdx0;
+  pu.geoMergeIdx1 = candIdx1;
+  MotionBuf mb = pu.getMotionBuf();
+
+  MotionInfo biMv;
+  biMv.isInter  = true;
+  biMv.sliceIdx = pu.cs->slice->getIndependentSliceIdx();
+
+  if( geoMrgCtx.interDirNeighbours[candIdx0] == 1 && geoMrgCtx.interDirNeighbours[candIdx1] == 2 )
+  {
+    biMv.interDir  = 3;
+    biMv.mv[0]     = geoMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].mv;
+    biMv.mv[1]     = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
+    biMv.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].refIdx;
+    biMv.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+  }
+  else if( geoMrgCtx.interDirNeighbours[candIdx0] == 2 && geoMrgCtx.interDirNeighbours[candIdx1] == 1 )
+  {
+    biMv.interDir  = 3;
+    biMv.mv[0]     = geoMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].mv;
+    biMv.mv[1]     = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
+    biMv.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].refIdx;
+    biMv.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
+  }
+  else if( geoMrgCtx.interDirNeighbours[candIdx0] == 1 && geoMrgCtx.interDirNeighbours[candIdx1] == 1 )
+  {
+    biMv.interDir = 1;
+    biMv.mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
+    biMv.mv[1] = Mv(0, 0);
+    biMv.refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
+    biMv.refIdx[1] = -1;
+  }
+  else if( geoMrgCtx.interDirNeighbours[candIdx0] == 2 && geoMrgCtx.interDirNeighbours[candIdx1] == 2 )
+  {
+    biMv.interDir = 2;
+    biMv.mv[0] = Mv(0, 0);
+    biMv.mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
+    biMv.refIdx[0] = -1;
+    biMv.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+  }
+
+  int16_t angle = g_GeoParams[splitDir][0];
+  int tpmMask = 0;
+  int lookUpY = 0, motionIdx = 0;
+  bool isFlip = angle >= 13 && angle <= 27;
+  int distanceIdx = g_GeoParams[splitDir][1];
+  int distanceX = angle;
+  int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+  int offsetX = (-(int)pu.lwidth()) >> 1;
+  int offsetY = (-(int)pu.lheight()) >> 1;
+  if (distanceIdx > 0)
+  {
+    if (angle % 16 == 8 || (angle % 16 != 0 && pu.lheight() >= pu.lwidth()))
+      offsetY += angle < 16 ? ((distanceIdx * pu.lheight()) >> 3) : -(int)((distanceIdx * pu.lheight()) >> 3);
+    else
+      offsetX += angle < 16 ? ((distanceIdx * pu.lwidth()) >> 3) : -(int)((distanceIdx * pu.lwidth()) >> 3);
+  }
+  for (int y = 0; y < mb.height; y++)
+  {
+    lookUpY = (((4 * y + offsetY) << 1) + 5) * g_Dis[distanceY];
+    for (int x = 0; x < mb.width; x++)
+    {
+      motionIdx = (((4 * x + offsetX) << 1) + 5) * g_Dis[distanceX] + lookUpY;
+      tpmMask = abs(motionIdx) < 32 ? 2 : (motionIdx <= 0 ? (1 - isFlip) : isFlip);
+      if (tpmMask == 2)
+      {
+        mb.at(x, y).isInter = true;
+        mb.at(x, y).interDir = biMv.interDir;
+        mb.at(x, y).refIdx[0] = biMv.refIdx[0];
+        mb.at(x, y).refIdx[1] = biMv.refIdx[1];
+        mb.at(x, y).mv[0] = biMv.mv[0];
+        mb.at(x, y).mv[1] = biMv.mv[1];
+        mb.at(x, y).sliceIdx = biMv.sliceIdx;
+      }
+      else if (tpmMask == 0)
+      {
+        mb.at(x, y).isInter = true;
+        mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx0];
+        mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].refIdx;
+        mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
+        mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].mv;
+        mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
+        mb.at(x, y).sliceIdx = biMv.sliceIdx;
+      }
+      else
+      {
+        mb.at(x, y).isInter = true;
+        mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx1];
+        mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
+        mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+        mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
+        mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
+        mb.at(x, y).sliceIdx = biMv.sliceIdx;
+      }
+    }
+  }
+}
+#endif
 
 bool CU::hasSubCUNonZeroMVd( const CodingUnit& cu )
 {

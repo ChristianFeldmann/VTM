@@ -128,6 +128,12 @@ Slice::Slice()
   }
 
   memset(m_alfApss, 0, sizeof(m_alfApss));
+#if JVET_Q0795_CCALF
+  m_ccAlfFilterParam.reset();
+  resetTileGroupAlfEnabledFlag();
+  resetTileGroupCcAlCbfEnabledFlag();
+  resetTileGroupCcAlCrfEnabledFlag();
+#endif
 
   m_sliceMap.initSliceMap();
 }
@@ -171,6 +177,13 @@ void Slice::initSlice()
   m_isDRAP               = false;
   m_latestDRAPPOC        = MAX_INT;
   resetTileGroupAlfEnabledFlag();
+#if JVET_Q0795_CCALF
+  m_ccAlfFilterParam.reset();
+  m_tileGroupCcAlfCbEnabledFlag = 0;
+  m_tileGroupCcAlfCrEnabledFlag = 0;
+  m_tileGroupCcAlfCbApsId = -1;
+  m_tileGroupCcAlfCrApsId = -1;
+#endif
 }
 
 void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SPS *sps )
@@ -212,7 +225,15 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setTileGroupAlfEnabledFlag(COMPONENT_Cr, picHeader->getAlfEnabledFlag(COMPONENT_Cr));
   setTileGroupNumAps(picHeader->getNumAlfAps());
   setAlfAPSs(picHeader->getAlfAPSs());
-  setTileGroupApsIdChroma(picHeader->getAlfApsIdChroma());   
+  setTileGroupApsIdChroma(picHeader->getAlfApsIdChroma());
+#if JVET_Q0795_CCALF
+  setTileGroupCcAlfCbEnabledFlag(picHeader->getCcAlfEnabledFlag(COMPONENT_Cb));
+  setTileGroupCcAlfCrEnabledFlag(picHeader->getCcAlfEnabledFlag(COMPONENT_Cr));
+  setTileGroupCcAlfCbApsId(picHeader->getCcAlfCbApsId());
+  setTileGroupCcAlfCrApsId(picHeader->getCcAlfCrApsId());
+  m_ccAlfFilterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = picHeader->getCcAlfEnabledFlag(COMPONENT_Cb);
+  m_ccAlfFilterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = picHeader->getCcAlfEnabledFlag(COMPONENT_Cr);
+#endif
 }
 
 void  Slice::setNumEntryPoints( const PPS *pps ) 
@@ -806,6 +827,15 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
       m_scalingRatio[i][j]          = pSrc->m_scalingRatio[i][j];
     }
   }
+#if JVET_Q0795_CCALF
+  m_ccAlfFilterParam                        = pSrc->m_ccAlfFilterParam;
+  m_ccAlfFilterControl[0]                   = pSrc->m_ccAlfFilterControl[0];
+  m_ccAlfFilterControl[1]                   = pSrc->m_ccAlfFilterControl[1];
+  m_tileGroupCcAlfCbEnabledFlag             = pSrc->m_tileGroupCcAlfCbEnabledFlag;
+  m_tileGroupCcAlfCrEnabledFlag             = pSrc->m_tileGroupCcAlfCrEnabledFlag;
+  m_tileGroupCcAlfCbApsId                   = pSrc->m_tileGroupCcAlfCbApsId;
+  m_tileGroupCcAlfCrApsId                   = pSrc->m_tileGroupCcAlfCrApsId;
+#endif
 }
 
 

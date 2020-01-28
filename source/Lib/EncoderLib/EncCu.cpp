@@ -800,7 +800,12 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
       {
         bool skipSecColorSpace = false;
         skipSecColorSpace = xCheckRDCostIntra(tempCS, bestCS, partitioner, currTestMode, (m_pcEncCfg->getRGBFormatFlag() ? true : false));
-        
+#if JVET_Q0820_ACT
+        if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING) && !m_pcEncCfg->getRGBFormatFlag())
+        {
+          skipSecColorSpace = true;
+        }
+#endif 
         if (!skipSecColorSpace && !tempCS->firstColorSpaceTestOnly)
         {
           xCheckRDCostIntra(tempCS, bestCS, partitioner, currTestMode, (m_pcEncCfg->getRGBFormatFlag() ? false : true));
@@ -1823,6 +1828,13 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
               tempCS->cost = MAX_DOUBLE;
             }
           }
+
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
+          if (isLuma(partitioner.chType) && cu.firstTU->mtsIdx[COMPONENT_Y] > MTS_SKIP)
+          {
+            CHECK(!cuCtx.mtsLastScanPos, "MTS is disallowed to only contain DC coefficient");
+          }
+#endif 
 
           if( mtsFlag == 0 && lfnstIdx == 0 )
           {

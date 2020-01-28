@@ -178,6 +178,9 @@ public:
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
+#if JVET_Q0795_CCALF
+  void ccAlfFilter( Slice *pcSlice );
+#endif
 
 private:
   int  alfGolombDecode( const int k, const bool signed_val=true );

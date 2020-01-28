@@ -187,6 +187,26 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     }
   }
 
+#if JVET_Q0795_CCALF
+  if ( !skipAlf )
+  {
+    for ( int compIdx = 1; compIdx < getNumberValidComponents( cs.pcv->chrFormat ); compIdx++ )
+    {
+      if (cs.slice->m_ccAlfFilterParam.ccAlfFilterEnabled[compIdx - 1])
+      {
+        const int filterCount   = cs.slice->m_ccAlfFilterParam.ccAlfFilterCount[compIdx - 1];
+
+        const int      ry = ctuRsAddr / cs.pcv->widthInCtus;
+        const int      rx = ctuRsAddr % cs.pcv->widthInCtus;
+        const Position lumaPos(rx * cs.pcv->maxCUWidth, ry * cs.pcv->maxCUHeight);
+
+        codeCcAlfFilterControlIdc(cs.slice->m_ccAlfFilterControl[compIdx - 1][ctuRsAddr], cs, ComponentID(compIdx),
+                                  ctuRsAddr, cs.slice->m_ccAlfFilterControl[compIdx - 1], lumaPos, filterCount);
+      }
+    }
+  }
+#endif
+
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
   {
     CUCtx chromaCuCtx(qps[CH_C]);
@@ -1295,6 +1315,9 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
   cuCtx.lfnstLastScanPos                              = false;
   cuCtx.violatesMtsCoeffConstraint                    = false;
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+  cuCtx.mtsLastScanPos                                = false;
+#endif
 
   if( cu.ispMode && isLuma( partitioner.chType ) )
   {
@@ -2655,7 +2678,14 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
     cuCtx->violatesMtsCoeffConstraint = true;
   }
 #endif
-  
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+  if (cuCtx && isLuma(compID) && tu.mtsIdx[compID] != MTS_SKIP)
+  {
+    cuCtx->mtsLastScanPos |= cctx.scanPosLast() >= 1;
+  }
+#endif  
+
+
   // code last coeff position
   last_sig_coeff( cctx, tu, compID );
 
@@ -2706,8 +2736,12 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx* cuCtx )
   TransformUnit &tu = *cu.firstTU;
   int        mtsIdx = tu.mtsIdx[COMPONENT_Y];
   
-  if( CU::isMTSAllowed( cu, COMPONENT_Y ) && cuCtx && !cuCtx->violatesMtsCoeffConstraint &&
+  if( CU::isMTSAllowed( cu, COMPONENT_Y ) && cuCtx && !cuCtx->violatesMtsCoeffConstraint && 
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+      cuCtx->mtsLastScanPos && cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP)
+#else
       cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
+#endif
   {
     int symbol = mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
     int ctxIdx = 0;
@@ -2790,8 +2824,23 @@ void CABACWriter::residual_lfnst_mode( const CodingUnit& cu, CUCtx& cuCtx )
     const bool lumaFlag                   = cu.isSepTree() ? (   isLuma( cu.chType ) ? true : false ) : true;
     const bool chromaFlag                 = cu.isSepTree() ? ( isChroma( cu.chType ) ? true : false ) : true;
           bool nonZeroCoeffNonTsCorner8x8 = ( lumaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_LUMA] ) || (chromaFlag && cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] );
-
+#if JVET_Q0784_LFNST_COMBINATION
+    bool isTrSkip = false;
+    for (auto &currTU : CU::traverseTUs(cu))
+    {
+      const uint32_t numValidComp = getNumberValidComponents(cu.chromaFormat);
+      for (uint32_t compID = COMPONENT_Y; compID < numValidComp; compID++)
+      {
+        if (currTU.blocks[compID].valid() && TU::getCbf(currTU, (ComponentID)compID) && currTU.mtsIdx[compID] == MTS_SKIP)
+        {
+          isTrSkip = true;
+          break;
+        }
+      }
+    }
+#else
     const bool isTrSkip = TU::getCbf(*cu.firstTU, COMPONENT_Y) && cu.firstTU->mtsIdx[COMPONENT_Y] == MTS_SKIP;
+#endif
     if( (!cuCtx.lfnstLastScanPos && !cu.ispMode) || nonZeroCoeffNonTsCorner8x8 || isTrSkip )
     {
       return;
@@ -3321,6 +3370,49 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
     m_BinEncoder.encodeBin( ctbAlfFlag[ctuRsAddr], Ctx::ctbAlfFlag( compIdx * 3 + ctx ) );
   }
 }
+
+#if JVET_Q0795_CCALF
+void CABACWriter::codeCcAlfFilterControlIdc(uint8_t idcVal, CodingStructure &cs, const ComponentID compID,
+                                            const int curIdx, const uint8_t *filterControlIdc, Position lumaPos,
+                                            const int filterCount)
+{
+  CHECK(idcVal > filterCount, "Filter index is too large");
+
+  const uint32_t curSliceIdx    = cs.slice->getIndependentSliceIdx();
+  const uint32_t curTileIdx     = cs.pps->getTileIdx( lumaPos );
+  Position       leftLumaPos    = lumaPos.offset(-(int)cs.pcv->maxCUWidth, 0);
+  Position       aboveLumaPos   = lumaPos.offset(0, -(int)cs.pcv->maxCUWidth);
+  bool           leftAvail      = cs.getCURestricted( leftLumaPos,  lumaPos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+  bool           aboveAvail     = cs.getCURestricted( aboveLumaPos, lumaPos, curSliceIdx, curTileIdx, CH_L ) ? true : false;
+  int            ctxt           = 0;
+
+  if (leftAvail)
+  {
+    ctxt += ( filterControlIdc[curIdx - 1]) ? 1 : 0;
+  }
+  if (aboveAvail)
+  {
+    ctxt += (filterControlIdc[curIdx - cs.pcv->widthInCtus]) ? 1 : 0;
+  }
+  ctxt += ( compID == COMPONENT_Cr ) ? 3 : 0;
+
+  m_BinEncoder.encodeBin( ( idcVal == 0 ) ? 0 : 1, Ctx::CcAlfFilterControlFlag( ctxt ) ); // ON/OFF flag is context coded
+  if ( idcVal > 0 )
+  {
+    int val = (idcVal - 1);
+    while ( val )
+    {
+      m_BinEncoder.encodeBinEP( 1 );
+      val--;
+    }
+    if ( idcVal < filterCount )
+    {
+      m_BinEncoder.encodeBinEP( 0 );
+    }
+  }
+  DTRACE( g_trace_ctx, D_SYNTAX, "ccAlfFilterControlIdc() compID=%d pos=(%d,%d) ctxt=%d, filterCount=%d, idcVal=%d\n", compID, lumaPos.x, lumaPos.y, ctxt, filterCount, idcVal );
+}
+#endif
 
 void CABACWriter::code_unary_fixed( unsigned symbol, unsigned ctxId, unsigned unary_max, unsigned fixed )
 {

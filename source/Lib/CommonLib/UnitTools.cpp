@@ -1247,7 +1247,11 @@ bool PU::checkDMVRCondition(const PredictionUnit& pu)
       && (pu.lwidth() >= 8)
       && ((pu.lheight() * pu.lwidth()) >= 128)
       && (pu.cu->BcwIdx == BCW_DEFAULT)
+#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
+      && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp0[COMPONENT_Cb].bPresentFlag) && (!wp0[COMPONENT_Cr].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Cb].bPresentFlag) && (!wp1[COMPONENT_Cr].bPresentFlag))
+#else
       && ((!wp0[COMPONENT_Y].bPresentFlag) && (!wp1[COMPONENT_Y].bPresentFlag))
+#endif
 #if JVET_Q0487_SCALING_WINDOW_ISSUES
       && ( refIdx0 < 0 ? true : (pu.cu->slice->getRefPic( REF_PIC_LIST_0, refIdx0 )->isRefScaled( pu.cs->pps ) == false) )
       && ( refIdx1 < 0 ? true : (pu.cu->slice->getRefPic( REF_PIC_LIST_1, refIdx1 )->isRefScaled( pu.cs->pps ) == false) )
@@ -3619,7 +3623,11 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
        if (isLuma(compID))
            bdpcmAllowed &= (cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize);
        else
+#if JVET_Q0353_ACT_SW_FIX
+           bdpcmAllowed &= (cu.chromaSize().width <= transformSkipMaxSize && cu.chromaSize().height <= transformSkipMaxSize) && !cu.colorTransform;
+#else
            bdpcmAllowed &= (cu.chromaSize().width <= transformSkipMaxSize && cu.chromaSize().height <= transformSkipMaxSize);
+#endif
   return bdpcmAllowed;
 }
 

@@ -52,6 +52,19 @@
 
 #define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
 
+#define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
+
+#define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
+
+#define JVET_Q0695_CHROMA_TS_JCCR                         1 // JVET-Q0695: Enabling the RD checking of chroma transform-skip mode for JCCR at encoder
+#define JVET_Q0500_CCLM_REF_PADDING                       1 // JVET-Q0500: Reference samples padding for CCLM
+
+#define JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION           1 // JVET-Q0128: Cleanup of enabling condition for DMVR and BDOF 
+
+#define JVET_Q0784_LFNST_COMBINATION                      1 // lfnst signaling, latency reduction and a bugfix for scaling from Q0106, Q0686, Q0133
+
+#define JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU              1 // JVET-Q0501: Initialize palette predictor from above CTU row in WPP 
+
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 
 #define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
@@ -69,9 +82,11 @@
 #define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
 #define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing
 #define JVET_Q0054                                        1 // fix for long luma deblocking decision
+#define JVET_Q0795_CCALF                                  1 // Cross-component ALF
 
 #define JVET_Q0483_CLIP_TMVP                              1 // JVET-Q0483: Clip TMVP when no scaling is applied
 
+#define JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND            1 // JVET-Q0516/Q0685: disable MTS when there is only DC coefficient 
 #define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
 #define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
 

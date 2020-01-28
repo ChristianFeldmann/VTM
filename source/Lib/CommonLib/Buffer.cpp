@@ -779,7 +779,11 @@ const CPelUnitBuf PelStorage::getBuf( const UnitArea &unit ) const
 }
 
 template<>
+#if JVET_Q0820_ACT
+void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward, const ClpRng& clpRng)
+#else
 void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward)
+#endif
 {
   const Pel* pOrg0 = bufs[COMPONENT_Y].buf;
   const Pel* pOrg1 = bufs[COMPONENT_Cb].buf;
@@ -793,6 +797,9 @@ void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forwa
 
   int width = bufs[COMPONENT_Y].width;
   int height = bufs[COMPONENT_Y].height;
+#if JVET_Q0820_ACT
+  int maxAbsclipBD = (1 << (clpRng.bd + 1)) - 1;
+#endif
   int r, g, b;
   int y0, cg, co;
 
@@ -810,12 +817,21 @@ void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forwa
           g = pOrg0[x];
           b = pOrg1[x];
 
+#if JVET_Q0820_ACT
+          co = r - b;
+          int t = b + (co >> 1);
+          cg = g - t;
+          pDst0[x] = t + (cg >> 1);
+          pDst1[x] = cg;
+          pDst2[x] = co;
+#else
           pDst0[x] = (g << 1) + r + b;
           pDst1[x] = (g << 1) - r - b;
           pDst2[x] = ((r - b) << 1);
           pDst0[x] = (pDst0[x] + 2) >> 2;
           pDst1[x] = (pDst1[x] + 2) >> 2;
           pDst2[x] = (pDst2[x] + 2) >> 2;
+#endif
         }
         pOrg0 += strideOrg;
         pOrg1 += strideOrg;
@@ -835,9 +851,20 @@ void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forwa
           cg = pOrg1[x];
           co = pOrg2[x];
 
+#if JVET_Q0820_ACT
+          y0 = Clip3((-maxAbsclipBD - 1), maxAbsclipBD, y0);
+          cg = Clip3((-maxAbsclipBD - 1), maxAbsclipBD, cg);
+          co = Clip3((-maxAbsclipBD - 1), maxAbsclipBD, co);
+
+          int t = y0 - (cg >> 1);
+          pDst0[x] = cg + t;
+          pDst1[x] = t - (co >> 1);
+          pDst2[x] = co + pDst1[x];
+#else
           pDst0[x] = (y0 + cg);
           pDst1[x] = (y0 - cg - co);
           pDst2[x] = (y0 - cg + co);
+#endif
         }
 
         pOrg0 += strideOrg;

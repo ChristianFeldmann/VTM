@@ -117,6 +117,9 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__MULTI_REF_LINE,
   STATS__CABAC_BITS__SYMMVD_FLAG,
   STATS__CABAC_BITS__BDPCM_MODE,
+#if JVET_Q0795_CCALF
+  STATS__CABAC_BITS__CROSS_COMPONENT_ALF_BLOCK_LEVEL_IDC,
+#endif
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
   STATS__TOOL_AFF,
   STATS__TOOL_EMT,
@@ -209,6 +212,9 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__MULTI_REF_LINE",
     "CABAC_BITS__SYMMVD_FLAG",
     "CABAC_BITS__BDPCM_MODE",
+#if JVET_Q0795_CCALF
+    "CABAC_BITS__CROSS_COMPONENT_ALF_BLOCK_LEVEL_IDC",
+#endif
     "TOOL_FRAME",
     "TOOL_AFFINE",
     "TOOL_EMT",

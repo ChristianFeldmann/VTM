@@ -87,6 +87,9 @@ EncAppCfg::EncAppCfg()
 , m_noPartitionConstraintsOverrideConstraintFlag(false)
 , m_bNoSaoConstraintFlag(false)
 , m_bNoAlfConstraintFlag(false)
+#if JVET_Q0795_CCALF
+, m_noCCAlfConstraintFlag(false)
+#endif
 , m_bNoRefWraparoundConstraintFlag(false)
 , m_bNoTemporalMvpConstraintFlag(false)
 , m_bNoSbtmvpConstraintFlag(false)
@@ -1357,7 +1360,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("NumWppExtraLines",                                m_numWppExtraLines,                           0, "Number of additional wpp lines to switch when threads are blocked")
   ("DebugCTU",                                        m_debugCTU,                                  -1, "If DebugBitstream is present, load frames up to this POC from this bitstream. Starting with DebugPOC-frame at CTUline containin debug CTU.")
   ("EnsureWppBitEqual",                               m_ensureWppBitEqual,                      false, "Ensure the results are equal to results with WPP-style parallelism, even if WPP is off")
-  ( "ALF",                                             m_alf,                                    true, "Adpative Loop Filter\n" )
+  ( "ALF",                                             m_alf,                                    true, "Adaptive Loop Filter\n" )
+#if JVET_Q0795_CCALF
+  ( "CCALF",                                           m_ccalf,                                  true, "Cross-component Adaptive Loop Filter" )
+  ( "CCALFQpTh",                                       m_ccalfQpThreshold,                         37, "QP threshold above which encoder reduces CCALF usage")
+#endif
   ( "ScalingRatioHor",                                m_scalingRatioHor,                          1.0, "Scaling ratio in hor direction" )
   ( "ScalingRatioVer",                                m_scalingRatioVer,                          1.0, "Scaling ratio in ver direction" )
   ( "FractionNumFrames",                              m_fractionOfFrames,                         1.0, "Encode a fraction of the specified in FramesToBeEncoded frames" )
@@ -2535,6 +2542,12 @@ bool EncAppCfg::xCheckParameter()
   }
 
 
+#if JVET_Q0795_CCALF
+  if (!m_alf)
+  {
+    xConfirmPara( m_ccalf, "CCALF cannot be enabled when ALF is disabled" );
+  }
+#endif
 
 
   xConfirmPara( m_iSourceWidth  % SPS::getWinUnitX(m_chromaFormatIDC) != 0, "Picture width must be an integer multiple of the specified chroma subsampling");
@@ -3424,6 +3437,9 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
   xConfirmPara(m_useBDPCM < 0 || m_useBDPCM > 2, "BDPCM must be in range 0..2");
+#if JVET_Q0820_ACT
+  xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
+#endif
 
 #undef xConfirmPara
   return check_failed;
@@ -3606,6 +3622,9 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "MCTS:%d ", m_MCTSEncConstraint );
   msg( VERBOSE, "SAO:%d ", (m_bUseSAO)?(1):(0));
   msg( VERBOSE, "ALF:%d ", m_alf ? 1 : 0 );
+#if JVET_Q0795_CCALF
+  msg( VERBOSE, "CCALF:%d ", m_ccalf ? 1 : 0 );
+#endif
 
   msg( VERBOSE, "WPP:%d ", (int)m_useWeightedPred);
   msg( VERBOSE, "WPB:%d ", (int)m_useWeightedBiPred);
@@ -3656,7 +3675,11 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
   }
+#if JVET_Q0820_ACT
+  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444) ? m_useColorTrans : 0u;
+#else
   m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
+#endif
   msg(VERBOSE, "ACT:%d ", m_useColorTrans);
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
     msg(VERBOSE, "PLT:%d ", m_PLTMode);

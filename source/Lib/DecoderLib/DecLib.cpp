@@ -222,6 +222,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Y,  pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Y));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
+#if JVET_Q0795_CCALF
+                    pcEncPic->slices[i]->setTileGroupCcAlfCbApsId(pic->slices[i]->getTileGroupCcAlfCbApsId());
+                    pcEncPic->slices[i]->setTileGroupCcAlfCbEnabledFlag(pic->slices[i]->getTileGroupCcAlfCbEnabledFlag());
+                    pcEncPic->slices[i]->setTileGroupCcAlfCrApsId(pic->slices[i]->getTileGroupCcAlfCrApsId());
+                    pcEncPic->slices[i]->setTileGroupCcAlfCrEnabledFlag(pic->slices[i]->getTileGroupCcAlfCrEnabledFlag());
+#endif
                   }
                 }
 
@@ -592,11 +598,13 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
-      // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
-      // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
-      // copy in case the APS gets used more than once.
-      m_cALF.ALFProcess(cs);
-
+#if JVET_Q0795_CCALF
+    m_cALF.getCcAlfFilterParam() = cs.slice->m_ccAlfFilterParam;
+#endif
+    // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
+    // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
+    // copy in case the APS gets used more than once.
+    m_cALF.ALFProcess(cs);
   }
 
 #if SUBPIC_DECCHECK 
@@ -998,6 +1006,60 @@ void DecLib::xActivateParameterSets( const int layerId )
     APS* scalinglistAPS = nullptr;
     activateAPS(&m_picHeader, m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
 
+#if JVET_Q0795_CCALF
+    CcAlfFilterParam &filterParam = m_apcSlicePilot->m_ccAlfFilterParam;
+
+    // CC ALF Cb APS
+    int  apsCcAlfCbId = m_apcSlicePilot->getTileGroupCcAlfCbApsId();
+    APS *apsCcAlfCb   = m_parameterSetManager.getAPS(apsCcAlfCbId, ALF_APS);
+    if (apsCcAlfCb)
+    {
+      m_parameterSetManager.clearAPSChangedFlag(apsCcAlfCbId, ALF_APS);
+      apss[apsCcAlfCbId] = apsCcAlfCb;
+      if (false == m_parameterSetManager.activateAPS(apsCcAlfCbId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+      // cleanup before copying
+      for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
+      {
+        memset( filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]) );
+      }
+      memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1]) );
+      filterParam.ccAlfFilterCount[COMPONENT_Cb - 1] = apsCcAlfCb->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cb - 1];
+      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cb - 1]; filterIdx++ )
+      {
+        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx] = apsCcAlfCb->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx];
+        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], apsCcAlfCb->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], sizeof(apsCcAlfCb->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]));
+      }
+    }
+
+    // CC ALF Cr APS
+    int  apsCcAlfCrId = m_apcSlicePilot->getTileGroupCcAlfCrApsId();
+    APS *apsCcAlfCr   = m_parameterSetManager.getAPS(apsCcAlfCrId, ALF_APS);
+    if (apsCcAlfCr)
+    {
+      m_parameterSetManager.clearAPSChangedFlag(apsCcAlfCrId, ALF_APS);
+      apss[apsCcAlfCrId] = apsCcAlfCr;
+      if (false == m_parameterSetManager.activateAPS(apsCcAlfCrId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+      // cleanup before copying
+      for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
+      {
+        memset( filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]) );
+      }
+      memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1]) );
+      filterParam.ccAlfFilterCount[COMPONENT_Cr - 1] = apsCcAlfCr->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cr - 1];
+      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cr - 1]; filterIdx++ )
+      {
+        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx] = apsCcAlfCr->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx];
+        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], apsCcAlfCr->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], sizeof(apsCcAlfCr->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]));
+      }
+    }
+#endif
+
     xParsePrefixSEImessages();
 
 #if RExt__HIGH_BIT_DEPTH_SUPPORT==0
@@ -1089,6 +1151,10 @@ void DecLib::xActivateParameterSets( const int layerId )
     {
       m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
     }
+#if JVET_Q0795_CCALF
+    pSlice->m_ccAlfFilterControl[0] = m_cALF.getCcAlfControlIdc(COMPONENT_Cb);
+    pSlice->m_ccAlfFilterControl[1] = m_cALF.getCcAlfControlIdc(COMPONENT_Cr);
+#endif
   }
   else
   {
@@ -1273,6 +1339,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_Q0795_CCALF
+  m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();
+#endif
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
   // update independent slice index

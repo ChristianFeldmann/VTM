@@ -171,6 +171,9 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
+#if JVET_Q0795_CCALF
+  bool      m_noCCAlfConstraintFlag;
+#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -685,6 +688,10 @@ protected:
 #endif
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
+#if JVET_Q0795_CCALF
+  bool        m_ccalf;
+  int         m_ccalfQpThreshold;
+#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   double                       m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
   double                       m_maxSampleValue;
@@ -734,6 +741,10 @@ public:
   void      setNoSaoConstraintFlag(bool bVal) { m_bNoSaoConstraintFlag = bVal; }
   bool      getNoAlfConstraintFlag() const { return m_bNoAlfConstraintFlag; }
   void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
+#if JVET_Q0795_CCALF
+  bool      getNoCCAlfConstraintFlag() const { return m_noCCAlfConstraintFlag; }
+  void      setNoCCAlfConstraintFlag(bool bVal) { m_noCCAlfConstraintFlag = bVal; }
+#endif
   bool      getNoRefWraparoundConstraintFlag() const { return m_bNoRefWraparoundConstraintFlag; }
   void      setNoRefWraparoundConstraintFlag(bool bVal) { m_bNoRefWraparoundConstraintFlag = bVal; }
   bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
@@ -1774,7 +1785,12 @@ public:
 #endif
   void         setUseALF( bool b ) { m_alf = b; }
   bool         getUseALF()                                      const { return m_alf; }
-
+#if JVET_Q0795_CCALF
+  void         setUseCCALF( bool b )                                  { m_ccalf = b; }
+  bool         getUseCCALF()                                    const { return m_ccalf; }
+  void         setCCALFQpThreshold( int b )                           { m_ccalfQpThreshold = b; }
+  int          getCCALFQpThreshold()                            const { return m_ccalfQpThreshold; }
+#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
   double      getWhitePointDeltaE( uint32_t index )             const { return m_whitePointDeltaE[ index ]; }

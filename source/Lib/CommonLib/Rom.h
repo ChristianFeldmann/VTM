@@ -217,7 +217,11 @@ class  Mv;
 extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
 extern bool g_isReusedUniMVsFilled[32][32][8][8];
 
+#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
+extern uint16_t g_paletteQuant[57];
+#else
 extern const uint8_t g_paletteQuant[52];
+#endif
 extern uint8_t g_paletteRunTopLut[5];
 extern uint8_t g_paletteRunLeftLut[5];
 

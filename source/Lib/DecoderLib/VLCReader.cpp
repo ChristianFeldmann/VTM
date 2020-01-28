@@ -1962,6 +1962,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
   }
   
+#if !JVET_Q0155_COLOUR_ID
   // 4:4:4 colour plane ID
   if( sps->getSeparateColourPlaneFlag() )
   {
@@ -1972,6 +1973,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setColourPlaneId( 0 );
   }
+#endif
 
   // picture output flag
   if( pps->getOutputFlagPresentFlag() )
@@ -2694,10 +2696,22 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);
 
+#if JVET_Q0155_COLOUR_ID
+    // 4:4:4 colour plane ID
+    if( sps->getSeparateColourPlaneFlag() )
+    {
+      READ_CODE( 2, uiCode, "colour_plane_id" ); pcSlice->setColourPlaneId( uiCode );
+      CHECK( uiCode > 2, "colour_plane_id exceeds valid range" );
+    }
+    else
+    {
+      pcSlice->setColourPlaneId( 0 );
+    }
+#endif
+
     // inherit values from picture header
     //   set default values in case slice overrides are disabled
     pcSlice->inheritFromPicHeader( picHeader, pps, sps );
-
 
     if( picHeader->getPicRplPresentFlag() )
     {

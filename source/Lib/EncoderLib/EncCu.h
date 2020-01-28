@@ -89,13 +89,13 @@ struct GeoMergeCombo
 };
 struct GeoMotionInfo
 {
-	uint8_t   m_candIdx0;
-	uint8_t   m_candIdx1;
+  uint8_t   m_candIdx0;
+  uint8_t   m_candIdx1;
 
-	GeoMotionInfo(uint8_t candIdx0, uint8_t candIdx1) : m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
-	GeoMotionInfo() { m_candIdx0 = m_candIdx1 = 0; }
+  GeoMotionInfo(uint8_t candIdx0, uint8_t candIdx1) : m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
+  GeoMotionInfo() { m_candIdx0 = m_candIdx1 = 0; }
 };
-struct smaller_than_combo_cost
+struct SmallerThanComboCost
 {
   inline bool operator() (const GeoMergeCombo& first, const GeoMergeCombo& second)
   {
@@ -108,7 +108,7 @@ public:
   GeoComboCostList() {};
   ~GeoComboCostList() {};
   std::vector<GeoMergeCombo> list;
-  void sortByCost() { std::sort(list.begin(), list.end(), smaller_than_combo_cost()); };
+  void sortByCost() { std::sort(list.begin(), list.end(), SmallerThanComboCost()); };
 };
 struct SingleGeoMergeEntry
 {

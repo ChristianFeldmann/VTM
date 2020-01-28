@@ -3407,56 +3407,56 @@ void PU::spanGeoMotionInfo( PredictionUnit &pu, MergeCtx &geoMrgCtx, const uint8
   int tpmMask = 0;
   int lookUpY = 0, motionIdx = 0;
   bool isFlip = angle >= 13 && angle <= 27;
-	int distanceIdx = g_GeoParams[splitDir][1];
-	int distanceX = angle;
-	int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
-	int offsetX = ( - (int)pu.lwidth()) >> 1;
-	int offsetY = ( - (int)pu.lheight()) >> 1;
-	if (distanceIdx > 0)
-	{
-		if (angle % 16 == 8 || (angle % 16 != 0 && pu.lheight() >= pu.lwidth()))
+  int distanceIdx = g_GeoParams[splitDir][1];
+  int distanceX = angle;
+  int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+  int offsetX = (-(int)pu.lwidth()) >> 1;
+  int offsetY = (-(int)pu.lheight()) >> 1;
+  if (distanceIdx > 0)
+  {
+    if (angle % 16 == 8 || (angle % 16 != 0 && pu.lheight() >= pu.lwidth()))
       offsetY += angle < 16 ? ((distanceIdx * pu.lheight()) >> 3) : -(int)((distanceIdx * pu.lheight()) >> 3);
-		else
+    else
       offsetX += angle < 16 ? ((distanceIdx * pu.lwidth()) >> 3) : -(int)((distanceIdx * pu.lwidth()) >> 3);
-	}
+  }
   for (int y = 0; y < mb.height; y++)
   {
-		lookUpY = (((4*y + offsetY) << 1) + 5) * g_Dis[distanceY];
-	  for (int x = 0; x < mb.width; x++)
-	  {
-			motionIdx = (((4*x + offsetX) << 1) + 5) * g_Dis[distanceX] + lookUpY;
-			tpmMask = abs(motionIdx) < 32 ? 2 : ( motionIdx<=0 ? (1 - isFlip):isFlip);
-		  if (tpmMask == 2)
-		  {
-			  mb.at(x, y).isInter = true;
-			  mb.at(x, y).interDir = biMv.interDir;
-			  mb.at(x, y).refIdx[0] = biMv.refIdx[0];
-			  mb.at(x, y).refIdx[1] = biMv.refIdx[1];
-			  mb.at(x, y).mv[0] = biMv.mv[0];
-			  mb.at(x, y).mv[1] = biMv.mv[1];
-			  mb.at(x, y).sliceIdx = biMv.sliceIdx;
-		  }
-		  else if (tpmMask == 0)
-		  {
-			  mb.at(x, y).isInter = true;
-			  mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx0];
-			  mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].refIdx;
-			  mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
-			  mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].mv;
-			  mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
-			  mb.at(x, y).sliceIdx = biMv.sliceIdx;
-		  }
-		  else
-		  {
-			  mb.at(x, y).isInter = true;
-			  mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx1];
-			  mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
-			  mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
-			  mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
-			  mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
-			  mb.at(x, y).sliceIdx = biMv.sliceIdx;
-		  }
-	  }
+    lookUpY = (((4 * y + offsetY) << 1) + 5) * g_Dis[distanceY];
+    for (int x = 0; x < mb.width; x++)
+    {
+      motionIdx = (((4 * x + offsetX) << 1) + 5) * g_Dis[distanceX] + lookUpY;
+      tpmMask = abs(motionIdx) < 32 ? 2 : (motionIdx <= 0 ? (1 - isFlip) : isFlip);
+      if (tpmMask == 2)
+      {
+        mb.at(x, y).isInter = true;
+        mb.at(x, y).interDir = biMv.interDir;
+        mb.at(x, y).refIdx[0] = biMv.refIdx[0];
+        mb.at(x, y).refIdx[1] = biMv.refIdx[1];
+        mb.at(x, y).mv[0] = biMv.mv[0];
+        mb.at(x, y).mv[1] = biMv.mv[1];
+        mb.at(x, y).sliceIdx = biMv.sliceIdx;
+      }
+      else if (tpmMask == 0)
+      {
+        mb.at(x, y).isInter = true;
+        mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx0];
+        mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].refIdx;
+        mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
+        mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].mv;
+        mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
+        mb.at(x, y).sliceIdx = biMv.sliceIdx;
+      }
+      else
+      {
+        mb.at(x, y).isInter = true;
+        mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx1];
+        mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
+        mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+        mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
+        mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
+        mb.at(x, y).sliceIdx = biMv.sliceIdx;
+      }
+    }
   }
 }
 #endif

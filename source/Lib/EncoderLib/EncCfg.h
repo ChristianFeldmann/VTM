@@ -188,7 +188,7 @@ protected:
 #if !JVET_Q0806
   bool      m_bNoTriangleConstraintFlag;
 #else
-  bool      m_bNoGeoConstraintFlag;
+  bool      m_noGeoConstraintFlag;
 #endif
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;

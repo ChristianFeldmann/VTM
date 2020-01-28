@@ -2004,18 +2004,18 @@ Distortion RdCost::xGetSADwMask_SIMD( const DistParam &rcDtParam )
       {
         __m256i vsrc1 = _mm256_lddqu_si256( ( __m256i* )( &src1[x] ) );
         __m256i vsrc2 = _mm256_lddqu_si256( ( __m256i* )( &src2[x] ) );
-		    __m256i vmask;
-		    if ( rcDtParam.stepX == -1 )
-		    {
-			    vmask = _mm256_lddqu_si256((__m256i*)((&weightMask[x]) - (x << 1) - (16 - 1)));
-			    const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-			    vmask = _mm256_shuffle_epi8(vmask, shuffle_mask);
-			    vmask = _mm256_permute4x64_epi64 (vmask, _MM_SHUFFLE(1, 0, 3, 2));
-		    }
-		    else
-		    {
-			    vmask = _mm256_lddqu_si256((__m256i*)(&weightMask[x]));
-		    }
+        __m256i vmask;
+        if (rcDtParam.stepX == -1)
+        {
+          vmask = _mm256_lddqu_si256((__m256i*)((&weightMask[x]) - (x << 1) - (16 - 1)));
+          const __m256i shuffle_mask = _mm256_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+          vmask = _mm256_shuffle_epi8(vmask, shuffle_mask);
+          vmask = _mm256_permute4x64_epi64(vmask, _MM_SHUFFLE(1, 0, 3, 2));
+        }
+        else
+        {
+          vmask = _mm256_lddqu_si256((__m256i*)(&weightMask[x]));
+        }
         vsum32 = _mm256_add_epi32( vsum32, _mm256_madd_epi16( vmask, _mm256_abs_epi16( _mm256_sub_epi16( vsrc1, vsrc2 ) ) ) );
       }
       src1 += strideSrc1;
@@ -2038,17 +2038,17 @@ Distortion RdCost::xGetSADwMask_SIMD( const DistParam &rcDtParam )
       {
         __m128i vsrc1 = _mm_loadu_si128( ( const __m128i* )( &src1[x] ) );
         __m128i vsrc2 = _mm_lddqu_si128( ( const __m128i* )( &src2[x] ) );
-		    __m128i vmask;
-		    if (rcDtParam.stepX == -1)
-		    {
-			    vmask = _mm_lddqu_si128((__m128i*)((&weightMask[x]) - (x << 1) - (8 - 1)));
-			    const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
-			    vmask = _mm_shuffle_epi8(vmask, shuffle_mask);
-		    }
-		    else
-		    {
-			    vmask = _mm_lddqu_si128((const __m128i*)(&weightMask[x]));
-		    }
+        __m128i vmask;
+        if (rcDtParam.stepX == -1)
+        {
+          vmask = _mm_lddqu_si128((__m128i*)((&weightMask[x]) - (x << 1) - (8 - 1)));
+          const __m128i shuffle_mask = _mm_set_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+          vmask = _mm_shuffle_epi8(vmask, shuffle_mask);
+        }
+        else
+        {
+          vmask = _mm_lddqu_si128((const __m128i*)(&weightMask[x]));
+        }
         vsum32 = _mm_add_epi32( vsum32, _mm_madd_epi16( vmask, _mm_abs_epi16( _mm_sub_epi16( vsrc1, vsrc2 ) ) ) );
       }
       src1 += strideSrc1;

@@ -2132,12 +2132,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         READ_UVLC(uiCode, "pic_log2_diff_max_tt_min_qt_intra_slice_luma");       maxTTSize[0] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "Invalid code");
       }
-#if !JVET_Q0819_PH_CHANGES
-      READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_inter_slice");
-      unsigned minQtLog2SizeInterY = uiCode + sps->getLog2MinCodingBlockSize();
-      minQT[1] = 1 << minQtLog2SizeInterY;
-      READ_UVLC(uiCode, "pic_max_mtt_hierarchy_depth_inter_slice");              maxBTD[1] = uiCode;
-#endif
+
 #if !JVET_Q0819_PH_CHANGES
       maxTTSize[1] = maxBTSize[1] = minQT[1];
       if (maxBTD[1] != 0)

@@ -976,6 +976,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
+#if JVET_Q0795_CCALF
+  cinfo->setNoCCAlfConstraintFlag(m_noCCAlfConstraintFlag);
+#endif
   cinfo->setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
   cinfo->setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
   cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
@@ -1146,6 +1149,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
   sps.setALFEnabledFlag( m_alf );
+#if JVET_Q0795_CCALF
+  sps.setCCALFEnabledFlag( m_ccalf );
+#endif
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1260,6 +1266,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
 
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
+
+#if JVET_Q0297_MER
+  sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
+#endif
 }
 
 void EncLib::xInitHrdParameters(SPS &sps)

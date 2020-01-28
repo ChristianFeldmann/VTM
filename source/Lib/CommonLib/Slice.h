@@ -242,6 +242,9 @@ class ConstraintInfo
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
   bool              m_noAlfConstraintFlag;
+#if JVET_Q0795_CCALF
+  bool              m_noCCAlfConstraintFlag;
+#endif
   bool              m_noRefWraparoundConstraintFlag;
   bool              m_noTemporalMvpConstraintFlag;
   bool              m_noSbtmvpConstraintFlag;
@@ -286,6 +289,9 @@ public:
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
     , m_noAlfConstraintFlag      (false)
+#if JVET_Q0795_CCALF
+    , m_noCCAlfConstraintFlag      (false)
+#endif
     , m_noRefWraparoundConstraintFlag(false)
     , m_noTemporalMvpConstraintFlag(false)
     , m_noSbtmvpConstraintFlag   (false)
@@ -353,6 +359,10 @@ public:
   void          setNoSaoConstraintFlag(bool bVal) { m_noSaoConstraintFlag = bVal; }
   bool          getNoAlfConstraintFlag() const { return m_noAlfConstraintFlag; }
   void          setNoAlfConstraintFlag(bool bVal) { m_noAlfConstraintFlag = bVal; }
+#if JVET_Q0795_CCALF
+  bool          getNoCCAlfConstraintFlag() const { return m_noCCAlfConstraintFlag; }
+  void          setNoCCAlfConstraintFlag(bool val) { m_noCCAlfConstraintFlag = val; }
+#endif
   bool          getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
   void          setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
   bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
@@ -1128,7 +1138,9 @@ private:
   ProfileTierLevel  m_profileTierLevel;
 
   bool              m_alfEnabledFlag;
-
+#if JVET_Q0795_CCALF
+  bool              m_ccalfEnabledFlag;
+#endif
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
   unsigned          m_IBCFlag;
@@ -1165,6 +1177,10 @@ private:
 
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
+
+#if JVET_Q0297_MER
+  uint32_t          m_log2ParallelMergeLevelMinus2;
+#endif
 
 public:
 
@@ -1323,6 +1339,10 @@ public:
 
   bool                    getALFEnabledFlag() const                                                       { return m_alfEnabledFlag; }
   void                    setALFEnabledFlag( bool b )                                                     { m_alfEnabledFlag = b; }
+#if JVET_Q0795_CCALF
+bool                    getCCALFEnabledFlag() const                                                       { return m_ccalfEnabledFlag; }
+void                    setCCALFEnabledFlag( bool b )                                                     { m_ccalfEnabledFlag = b; }
+#endif
   void                    setJointCbCrEnabledFlag(bool bVal)                                              { m_JointCbCrEnabledFlag = bVal; }
   bool                    getJointCbCrEnabledFlag() const                                                 { return m_JointCbCrEnabledFlag; }
 
@@ -1470,6 +1490,10 @@ public:
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
 
+#if JVET_Q0297_MER
+  uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
+  void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }
+#endif
 };
 
 
@@ -1835,6 +1859,9 @@ private:
   AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
   ScalingList            m_scalingListApsInfo;
+#if JVET_Q0795_CCALF
+  CcAlfFilterParam       m_ccAlfAPSParam;
+#endif
 
 public:
   APS();
@@ -1857,6 +1884,10 @@ public:
   SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }
   void                   setScalingList( ScalingList& scalingListAPSInfo )                { m_scalingListApsInfo = scalingListAPSInfo;    }
   ScalingList&           getScalingList()                                                 { return m_scalingListApsInfo;                  }
+#if JVET_Q0795_CCALF
+  void                   setCcAlfAPSParam(CcAlfFilterParam& ccAlfAPSParam)                { m_ccAlfAPSParam = ccAlfAPSParam;              }
+  CcAlfFilterParam&      getCcAlfAPSParam()  { return m_ccAlfAPSParam; }
+#endif
 };
 struct WPScalingParam
 {
@@ -1901,7 +1932,9 @@ private:
   unsigned                    m_numHorVirtualBoundaries;                                //!< number of horizontal virtual boundaries
   unsigned                    m_virtualBoundariesPosX[3];                               //!< horizontal virtual boundary positions
   unsigned                    m_virtualBoundariesPosY[3];                               //!< vertical virtual boundary positions
+#if !JVET_Q0155_COLOUR_ID
   unsigned                    m_colourPlaneId;                                          //!< 4:4:4 colour plane ID
+#endif
   bool                        m_picOutputFlag;                                          //!< picture output flag
   bool                        m_picRplPresentFlag;                                      //!< reference lists present in picture header or not
   const ReferencePictureList* m_pRPL0;                                                  //!< pointer to RPL for L0, either in the SPS or the local RPS in the picture header
@@ -1933,6 +1966,11 @@ private:
   int                         m_numAlfAps;                                              //!< number of alf aps active for the picture
   std::vector<int>            m_alfApsId;                                               //!< list of alf aps for the picture
   int                         m_alfChromaApsId;                                         //!< chroma alf aps ID
+#if JVET_Q0795_CCALF
+  bool m_ccalfEnabledFlag[MAX_NUM_COMPONENT];
+  int  m_ccalfCbApsId;
+  int  m_ccalfCrApsId;
+#endif
   bool                        m_depQuantEnabledFlag;                                    //!< dependent quantization enabled flag
   bool                        m_signDataHidingEnabledFlag;                              //!< sign data hiding enabled flag
   bool                        m_deblockingFilterOverridePresentFlag;                    //!< deblocking filter override controls present in picture header
@@ -1989,8 +2027,10 @@ public:
   unsigned                    getVirtualBoundariesPosX(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosX[idx];}
   void                        setVirtualBoundariesPosY(unsigned u, unsigned idx)        { CHECK( idx >= 3, "boundary index exceeds valid range" ); m_virtualBoundariesPosY[idx] = u;   }
   unsigned                    getVirtualBoundariesPosY(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosY[idx];}
+#if !JVET_Q0155_COLOUR_ID
   void                        setColourPlaneId(unsigned u)                              { m_colourPlaneId = u;                                                                         }
   unsigned                    getColourPlaneId() const                                  { return m_colourPlaneId;                                                                      }
+#endif
   void                        setPicOutputFlag( bool b )                                { m_picOutputFlag = b;                                                                         }
   bool                        getPicOutputFlag() const                                  { return m_picOutputFlag;                                                                      }
   void                        setPicRplPresentFlag( bool b )                            { m_picRplPresentFlag = b;                                                                     }
@@ -2053,7 +2093,16 @@ public:
   void                        setNumAlfAps(int i)                                       { m_numAlfAps = i;                                                                             }
   int                         getNumAlfAps() const                                      { return m_numAlfAps;                                                                          }
   void                        setAlfApsIdChroma(int i)                                  { m_alfChromaApsId = i;                                                                        }
-  int                         getAlfApsIdChroma() const                                 { return m_alfChromaApsId;                                                                     }  
+  int                         getAlfApsIdChroma() const                                 { return m_alfChromaApsId;                                                                     }
+#if JVET_Q0795_CCALF
+  void setCcAlfEnabledFlag(ComponentID compId, bool b) { m_ccalfEnabledFlag[compId] = b; }
+  bool getCcAlfEnabledFlag(ComponentID compId) const { return m_ccalfEnabledFlag[compId]; }
+
+  void setCcAlfCbApsId(int i) { m_ccalfCbApsId = i; }
+  int  getCcAlfCbApsId() const { return m_ccalfCbApsId; }
+  void setCcAlfCrApsId(int i) { m_ccalfCrApsId = i; }
+  int  getCcAlfCrApsId() const { return m_ccalfCrApsId; }
+#endif
   void                        setDepQuantEnabledFlag( bool b )                          { m_depQuantEnabledFlag = b;                                                                   }
   bool                        getDepQuantEnabledFlag() const                            { return m_depQuantEnabledFlag;                                                                }  
   void                        setSignDataHidingEnabledFlag( bool b )                    { m_signDataHidingEnabledFlag = b;                                                             }
@@ -2142,7 +2191,13 @@ private:
   ReferencePictureList        m_localRPL1;            //< RPL for L1 when present in slice header
   int                         m_rpl0Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
   int                         m_rpl1Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
+#if JVET_Q0155_COLOUR_ID
+  int                        m_colourPlaneId;                         //!< 4:4:4 colour plane ID
+#endif
   NalUnitType                m_eNalUnitType;         ///< Nal unit type for the slice
+#if JVET_Q0775_PH_IN_SH
+  bool                       m_pictureHeaderInSliceHeader;
+#endif
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
@@ -2225,6 +2280,12 @@ private:
   int                        m_tileGroupNumAps;
   std::vector<int>           m_tileGroupLumaApsId;
   int                        m_tileGroupChromaApsId;
+#if JVET_Q0795_CCALF
+  bool                       m_tileGroupCcAlfCbEnabledFlag;
+  bool                       m_tileGroupCcAlfCrEnabledFlag;
+  int                        m_tileGroupCcAlfCbApsId;
+  int                        m_tileGroupCcAlfCrApsId;
+#endif
   bool                       m_disableSATDForRd;
 public:
                               Slice();
@@ -2286,13 +2347,17 @@ public:
   int                         getRefPOC( RefPicList e, int iRefIdx) const            { return m_aiRefPOCList[e][iRefIdx];                            }
   int                         getDepth() const                                       { return m_iDepth;                                              }
   bool                        getColFromL0Flag() const                               { return m_colFromL0Flag;                                       }
-  uint32_t                        getColRefIdx() const                                   { return m_colRefIdx;                                           }
+  uint32_t                    getColRefIdx() const                                   { return m_colRefIdx;                                           }
   void                        checkColRefIdx(uint32_t curSliceSegmentIdx, const Picture* pic);
   bool                        getIsUsedAsLongTerm(int i, int j) const                { return m_bIsUsedAsLongTerm[i][j];                             }
   void                        setIsUsedAsLongTerm(int i, int j, bool value)          { m_bIsUsedAsLongTerm[i][j] = value;                            }
   bool                        getCheckLDC() const                                    { return m_bCheckLDC;                                           }
   int                         getList1IdxToList0Idx( int list1Idx ) const            { return m_list1IdxToList0Idx[list1Idx];                        }
   void                        setPOC( int i )                                        { m_iPOC              = i;                                      }
+#if JVET_Q0775_PH_IN_SH
+  bool                        getPictureHeaderInSliceHeader() const                  { return m_pictureHeaderInSliceHeader;                         }
+  void                        setPictureHeaderInSliceHeader( bool e )                { m_pictureHeaderInSliceHeader = e;                            }
+#endif
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
   bool                        getRapPicFlag() const;
@@ -2343,6 +2408,10 @@ public:
   bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder );
   bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
   void                        checkConformanceForDRAP( uint32_t temporalId );
+#if JVET_Q0155_COLOUR_ID
+  void                        setColourPlaneId( int id )                             { m_colourPlaneId = id;                                         }
+  int                         getColourPlaneId() const                               { return m_colourPlaneId;                                       }
+#endif
 
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }
@@ -2468,6 +2537,20 @@ public:
       m_tileGroupLumaApsId[i] = ApsIDs[i];
     }
   }
+#if JVET_Q0795_CCALF
+  void resetTileGroupCcAlCbfEnabledFlag() { m_tileGroupCcAlfCbEnabledFlag = 0; }
+  void resetTileGroupCcAlCrfEnabledFlag() { m_tileGroupCcAlfCrEnabledFlag = 0; }
+
+  void setTileGroupCcAlfCbEnabledFlag(bool b) { m_tileGroupCcAlfCbEnabledFlag = b; }
+  void setTileGroupCcAlfCrEnabledFlag(bool b) { m_tileGroupCcAlfCrEnabledFlag = b; }
+  void setTileGroupCcAlfCbApsId(int i) { m_tileGroupCcAlfCbApsId = i; }
+  void setTileGroupCcAlfCrApsId(int i) { m_tileGroupCcAlfCrApsId = i; }
+
+  bool getTileGroupCcAlfCbEnabledFlag() { return m_tileGroupCcAlfCbEnabledFlag; }
+  bool getTileGroupCcAlfCrEnabledFlag() { return m_tileGroupCcAlfCrEnabledFlag; }
+  int  getTileGroupCcAlfCbApsId() { return m_tileGroupCcAlfCbApsId; }
+  int  getTileGroupCcAlfCrApsId() { return m_tileGroupCcAlfCrApsId; }
+#endif
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
   void                        scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
@@ -2476,6 +2559,11 @@ public:
   const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { CHECK( refIdx < 0, "Invalid reference index" ); return m_scalingRatio[refPicList][refIdx]; }
   void                        setNumEntryPoints( const PPS *pps );
   uint32_t                    getNumEntryPoints( ) const { return m_numEntryPoints;  }
+
+#if JVET_Q0795_CCALF
+  CcAlfFilterParam            m_ccAlfFilterParam;
+  uint8_t*                    m_ccAlfFilterControl[2];
+#endif
 
 protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );

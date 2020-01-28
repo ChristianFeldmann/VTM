@@ -70,6 +70,11 @@ public:
 
   void        readAlfCtuFilterIndex(CodingStructure&              cs, unsigned        ctuRsAddr);
 
+#if JVET_Q0795_CCALF
+  void ccAlfFilterControlIdc(CodingStructure &cs, const ComponentID compID, const int curIdx, uint8_t *filterControlIdc,
+                             Position lumaPos, int filterCount);
+#endif
+
   // coding (quad)tree (clause 7.3.8.4)
   void        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
   PartSplit   split_cu_mode             ( CodingStructure&              cs,     Partitioner&    pm );

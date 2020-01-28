@@ -212,6 +212,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoPartitionConstraintsOverrideConstraintFlag      ( !m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
+#if JVET_Q0795_CCALF
+  m_cEncLib.setNoAlfConstraintFlag                               ( !m_ccalf );
+#endif
   m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
   m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
@@ -277,6 +280,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPad                                               ( m_aiPad );
 
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
+#if JVET_Q0775_PH_IN_SH
+  m_cEncLib.setEnablePictureHeaderInSliceHeader                  ( m_enablePictureHeaderInSliceHeader );
+#endif
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );
 
@@ -517,6 +523,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
   m_cEncLib.setWPBiPred                                          ( m_useWeightedBiPred   );
 
+#if JVET_Q0297_MER
+  //====== Parallel Merge Estimation ========
+  m_cEncLib.setLog2ParallelMergeLevelMinus2(m_log2ParallelMergeLevel - 2);
+#endif
+
   //====== Tiles and Slices ========
   m_cEncLib.setNoPicPartitionFlag( !m_picPartitionFlag );
   if( m_picPartitionFlag )
@@ -755,6 +766,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
+#if JVET_Q0795_CCALF
+  m_cEncLib.setUseCCALF                                          ( m_ccalf );
+  m_cEncLib.setCCALFQpThreshold                                  ( m_ccalfQpThreshold );
+#endif
   m_cEncLib.setLmcs                                              ( m_lmcsEnabled );
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );

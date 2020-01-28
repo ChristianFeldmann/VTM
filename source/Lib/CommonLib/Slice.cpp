@@ -53,7 +53,13 @@ Slice::Slice()
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
 , m_rpl0Idx                       ( -1 )
 , m_rpl1Idx                       ( -1 )
+#if JVET_Q0155_COLOUR_ID
+, m_colourPlaneId                 ( 0 )
+#endif
 , m_eNalUnitType                  ( NAL_UNIT_CODED_SLICE_IDR_W_RADL )
+#if JVET_Q0775_PH_IN_SH
+, m_pictureHeaderInSliceHeader   ( false )
+#endif
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
 , m_ChromaQpAdjEnabled            ( false )
@@ -128,6 +134,12 @@ Slice::Slice()
   }
 
   memset(m_alfApss, 0, sizeof(m_alfApss));
+#if JVET_Q0795_CCALF
+  m_ccAlfFilterParam.reset();
+  resetTileGroupAlfEnabledFlag();
+  resetTileGroupCcAlCbfEnabledFlag();
+  resetTileGroupCcAlCrfEnabledFlag();
+#endif
 
   m_sliceMap.initSliceMap();
 }
@@ -145,7 +157,9 @@ void Slice::initSlice()
     m_aiNumRefIdx[i]      = 0;
   }
   m_colFromL0Flag = true;
-
+#if JVET_Q0155_COLOUR_ID
+  m_colourPlaneId = 0;
+#endif
   m_colRefIdx = 0;
   initEqualRef();
 
@@ -171,6 +185,13 @@ void Slice::initSlice()
   m_isDRAP               = false;
   m_latestDRAPPOC        = MAX_INT;
   resetTileGroupAlfEnabledFlag();
+#if JVET_Q0795_CCALF
+  m_ccAlfFilterParam.reset();
+  m_tileGroupCcAlfCbEnabledFlag = 0;
+  m_tileGroupCcAlfCrEnabledFlag = 0;
+  m_tileGroupCcAlfCbApsId = -1;
+  m_tileGroupCcAlfCrApsId = -1;
+#endif
 }
 
 void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SPS *sps )
@@ -212,7 +233,15 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setTileGroupAlfEnabledFlag(COMPONENT_Cr, picHeader->getAlfEnabledFlag(COMPONENT_Cr));
   setTileGroupNumAps(picHeader->getNumAlfAps());
   setAlfAPSs(picHeader->getAlfAPSs());
-  setTileGroupApsIdChroma(picHeader->getAlfApsIdChroma());   
+  setTileGroupApsIdChroma(picHeader->getAlfApsIdChroma());
+#if JVET_Q0795_CCALF
+  setTileGroupCcAlfCbEnabledFlag(picHeader->getCcAlfEnabledFlag(COMPONENT_Cb));
+  setTileGroupCcAlfCrEnabledFlag(picHeader->getCcAlfEnabledFlag(COMPONENT_Cr));
+  setTileGroupCcAlfCbApsId(picHeader->getCcAlfCbApsId());
+  setTileGroupCcAlfCrApsId(picHeader->getCcAlfCrApsId());
+  m_ccAlfFilterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = picHeader->getCcAlfEnabledFlag(COMPONENT_Cb);
+  m_ccAlfFilterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = picHeader->getCcAlfEnabledFlag(COMPONENT_Cr);
+#endif
 }
 
 void  Slice::setNumEntryPoints( const PPS *pps ) 
@@ -814,6 +843,15 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
       m_scalingRatio[i][j]          = pSrc->m_scalingRatio[i][j];
     }
   }
+#if JVET_Q0795_CCALF
+  m_ccAlfFilterParam                        = pSrc->m_ccAlfFilterParam;
+  m_ccAlfFilterControl[0]                   = pSrc->m_ccAlfFilterControl[0];
+  m_ccAlfFilterControl[1]                   = pSrc->m_ccAlfFilterControl[1];
+  m_tileGroupCcAlfCbEnabledFlag             = pSrc->m_tileGroupCcAlfCbEnabledFlag;
+  m_tileGroupCcAlfCrEnabledFlag             = pSrc->m_tileGroupCcAlfCrEnabledFlag;
+  m_tileGroupCcAlfCbApsId                   = pSrc->m_tileGroupCcAlfCbApsId;
+  m_tileGroupCcAlfCrApsId                   = pSrc->m_tileGroupCcAlfCrApsId;
+#endif
 }
 
 
@@ -1563,7 +1601,9 @@ PicHeader::PicHeader()
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag ( 0 )
 , m_numVerVirtualBoundaries                       ( 0 )
 , m_numHorVirtualBoundaries                       ( 0 )
+#if !JVET_Q0155_COLOUR_ID
 , m_colourPlaneId                                 ( 0 )
+#endif
 , m_picOutputFlag                                 ( true )
 , m_picRplPresentFlag                             ( 0 )
 , m_pRPL0                                         ( 0 )
@@ -1653,7 +1693,9 @@ void PicHeader::initPicHeader()
   m_loopFilterAcrossVirtualBoundariesDisabledFlag = 0;
   m_numVerVirtualBoundaries                       = 0;
   m_numHorVirtualBoundaries                       = 0;
+#if !JVET_Q0155_COLOUR_ID
   m_colourPlaneId                                 = 0;
+#endif
   m_picOutputFlag                                 = true;
   m_picRplPresentFlag                             = 0;
   m_pRPL0                                         = 0;
@@ -1747,7 +1789,7 @@ SPS::SPS()
 , m_SBT                       ( false )
 , m_ISP                       ( false )
 , m_chromaFormatIdc           (CHROMA_420)
-, m_separateColourPlaneFlag(0)
+, m_separateColourPlaneFlag   ( 0 )
 , m_uiMaxTLayers              (  1)
 // Structure
 , m_maxWidthInLumaSamples     (352)

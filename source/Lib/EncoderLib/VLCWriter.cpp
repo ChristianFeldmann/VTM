@@ -515,6 +515,12 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
   WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_LUMA], "alf_luma_new_filter");
   WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_new_filter");
 
+#if JVET_Q0795_CCALF
+  CcAlfFilterParam paramCcAlf = pcAPS->getCcAlfAPSParam();
+  WRITE_FLAG(paramCcAlf.newCcAlfFilter[COMPONENT_Cb - 1], "alf_cc_cb_filter_signal_flag");
+  WRITE_FLAG(paramCcAlf.newCcAlfFilter[COMPONENT_Cr - 1], "alf_cc_cr_filter_signal_flag");
+#endif
+
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
 #if JVET_Q0249_ALF_CHROMA_CLIPFLAG
@@ -550,6 +556,52 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
       alfFilter(param, true, altIdx);
     }
   }
+#if JVET_Q0795_CCALF
+  for (int ccIdx = 0; ccIdx < 2; ccIdx++)
+  {
+    if (paramCcAlf.newCcAlfFilter[ccIdx])
+    {
+      const int filterCount = paramCcAlf.ccAlfFilterCount[ccIdx];
+      CHECK(filterCount > MAX_NUM_CC_ALF_FILTERS, "CC ALF Filter count is too large");
+      CHECK(filterCount == 0, "CC ALF Filter count is too small");
+
+      if (MAX_NUM_CC_ALF_FILTERS > 1)
+      {
+        WRITE_UVLC(filterCount - 1,
+                   ccIdx == 0 ? "alf_cc_cb_filters_signalled_minus1" : "alf_cc_cr_filters_signalled_minus1");
+      }
+
+      for (int filterIdx = 0; filterIdx < filterCount; filterIdx++)
+      {
+        AlfFilterShape alfShape(size_CC_ALF);
+
+        const short *coeff = paramCcAlf.ccAlfCoeff[ccIdx][filterIdx];
+        // Filter coefficients
+        for (int i = 0; i < alfShape.numCoeff - 1; i++)
+        {
+          if (coeff[i] == 0)
+          {
+            WRITE_CODE(0, CCALF_BITS_PER_COEFF_LEVEL,
+                       ccIdx == 0 ? "alf_cc_cb_mapped_coeff_abs" : "alf_cc_cr_mapped_coeff_abs");
+          }
+          else
+          {
+            WRITE_CODE(1 + floorLog2(abs(coeff[i])), CCALF_BITS_PER_COEFF_LEVEL,
+                       ccIdx == 0 ? "alf_cc_cb_mapped_coeff_abs" : "alf_cc_cr_mapped_coeff_abs");
+            WRITE_FLAG(coeff[i] < 0 ? 1 : 0, ccIdx == 0 ? "alf_cc_cb_coeff_sign" : "alf_cc_cr_coeff_sign");
+          }
+        }
+
+        DTRACE(g_trace_ctx, D_SYNTAX, "%s coeff filterIdx %d: ", ccIdx == 0 ? "Cb" : "Cr", filterIdx);
+        for (int i = 0; i < alfShape.numCoeff; i++)
+        {
+          DTRACE(g_trace_ctx, D_SYNTAX, "%d ", coeff[i]);
+        }
+        DTRACE(g_trace_ctx, D_SYNTAX, "\n");
+      }
+    }
+  }
+#endif
 }
 
 void HLSWriter::codeLmcsAps( APS* pcAPS )
@@ -809,14 +861,20 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC(pcSPS->getLog2MinCodingBlockSize() - 2, "log2_min_luma_coding_block_size_minus2");
   WRITE_FLAG(pcSPS->getSplitConsOverrideEnabledFlag(), "partition_constraints_override_enabled_flag");
   WRITE_UVLC(floorLog2(pcSPS->getMinQTSize(I_SLICE)) - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_luma");
+#if !JVET_Q0481_PARTITION_CONSTRAINTS_ORDER
   WRITE_UVLC(floorLog2(pcSPS->getMinQTSize(B_SLICE)) - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_inter_slice");
   WRITE_UVLC(pcSPS->getMaxMTTHierarchyDepth(), "sps_max_mtt_hierarchy_depth_inter_slice");
+#endif
   WRITE_UVLC(pcSPS->getMaxMTTHierarchyDepthI(), "sps_max_mtt_hierarchy_depth_intra_slice_luma");
   if (pcSPS->getMaxMTTHierarchyDepthI() != 0)
   {
     WRITE_UVLC(floorLog2(pcSPS->getMaxBTSizeI()) - floorLog2(pcSPS->getMinQTSize(I_SLICE)), "sps_log2_diff_max_bt_min_qt_intra_slice_luma");
     WRITE_UVLC(floorLog2(pcSPS->getMaxTTSizeI()) - floorLog2(pcSPS->getMinQTSize(I_SLICE)), "sps_log2_diff_max_tt_min_qt_intra_slice_luma");
   }
+#if JVET_Q0481_PARTITION_CONSTRAINTS_ORDER
+  WRITE_UVLC(floorLog2(pcSPS->getMinQTSize(B_SLICE)) - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_inter_slice");
+  WRITE_UVLC(pcSPS->getMaxMTTHierarchyDepth(), "sps_max_mtt_hierarchy_depth_inter_slice");
+#endif
   if (pcSPS->getMaxMTTHierarchyDepth() != 0)
   {
     WRITE_UVLC(floorLog2(pcSPS->getMaxBTSize()) - floorLog2(pcSPS->getMinQTSize(B_SLICE)), "sps_log2_diff_max_bt_min_qt_inter_slice");
@@ -864,6 +922,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_FLAG( pcSPS->getSAOEnabledFlag(),                                            "sps_sao_enabled_flag");
   WRITE_FLAG( pcSPS->getALFEnabledFlag(),                                            "sps_alf_enabled_flag" );
+#if JVET_Q0795_CCALF
+  if (pcSPS->getALFEnabledFlag() && pcSPS->getChromaFormatIdc() != CHROMA_400)
+  {
+    WRITE_FLAG( pcSPS->getCCALFEnabledFlag(),                                            "sps_ccalf_enabled_flag" );
+  }
+#endif
 
   WRITE_FLAG(pcSPS->getTransformSkipEnabledFlag() ? 1 : 0, "sps_transform_skip_enabled_flag");
   if (pcSPS->getTransformSkipEnabledFlag())
@@ -943,7 +1007,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
+#if JVET_Q0820_ACT
+    if (pcSPS->getLog2MaxTbSize() != 6)
+    {
+      WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "sps_act_enabled_flag");
+    }
+#else
     WRITE_FLAG(pcSPS->getUseColorTrans() ? 1 : 0, "sps_act_enabled_flag");
+#endif
   }
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
@@ -976,6 +1047,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC( pcSPS->getLadfIntervalLowerBound( k ) - pcSPS->getLadfIntervalLowerBound( k - 1 ) - 1, "sps_ladf_delta_threshold_minus1" );
     }
   }
+#endif
+#if JVET_Q0297_MER
+  WRITE_UVLC(pcSPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
 #endif
 
   // KJS: reference picture sets to be replaced
@@ -1168,7 +1242,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   xWriteRbspTrailingBits();
 }
 
+#if JVET_Q0775_PH_IN_SH
+void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingBits )
+#else
 void HLSWriter::codePictureHeader( PicHeader* picHeader )
+#endif
 {
   const PPS*  pps = NULL;
   const SPS*  sps = NULL;
@@ -1272,6 +1350,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
   }
   
+#if !JVET_Q0155_COLOUR_ID
   // 4:4:4 colour plane ID
   if( sps->getSeparateColourPlaneFlag() )
   {
@@ -1281,6 +1360,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setColourPlaneId( 0 );
   }
+#endif
   
   // picture output flag
   if( pps->getOutputFlagPresentFlag() )
@@ -1374,14 +1454,20 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     if (picHeader->getSplitConsOverrideFlag())
     {
       WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_luma");
+#if !JVET_Q0819_PH_CHANGES
       WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_inter_slice");
       WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE),  "pic_max_mtt_hierarchy_depth_inter_slice");
+#endif
       WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE), "pic_max_mtt_hierarchy_depth_intra_slice_luma");
       if (picHeader->getMaxMTTHierarchyDepth(I_SLICE) != 0)
       {
         WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "pic_log2_diff_max_bt_min_qt_intra_slice_luma");
         WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "pic_log2_diff_max_tt_min_qt_intra_slice_luma");
       }
+#if JVET_Q0819_PH_CHANGES
+      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_inter_slice");
+      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE),  "pic_max_mtt_hierarchy_depth_inter_slice");
+#endif
       if (picHeader->getMaxMTTHierarchyDepth(P_SLICE) != 0)
       {
         WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_bt_min_qt_inter_slice");
@@ -1597,6 +1683,21 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
         {
           WRITE_CODE(picHeader->getAlfApsIdChroma(), 3, "pic_alf_aps_id_chroma");
         }
+#if JVET_Q0795_CCALF
+        if (sps->getCCALFEnabledFlag())
+        {
+          WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cb), "ph_cc_alf_cb_enabled_flag");
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cb))
+          {
+            WRITE_CODE(picHeader->getCcAlfCbApsId(), 3, "ph_cc_alf_cb_aps_id");
+          }
+          WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cr), "ph_cc_alf_cr_enabled_flag");
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cr))
+          {
+            WRITE_CODE(picHeader->getCcAlfCrApsId(), 3, "ph_cc_alf_cr_aps_id");
+          }
+        }
+#endif
       }
     }
     else 
@@ -1604,6 +1705,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setAlfEnabledFlag(COMPONENT_Y,  true);
       picHeader->setAlfEnabledFlag(COMPONENT_Cb, true);
       picHeader->setAlfEnabledFlag(COMPONENT_Cr, true);
+#if JVET_Q0795_CCALF
+      picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, sps->getCCALFEnabledFlag());
+      picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, sps->getCCALFEnabledFlag());
+#endif
     }
   }
   else 
@@ -1611,6 +1716,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setAlfEnabledFlag(COMPONENT_Y,  false);
     picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
     picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
+#if JVET_Q0795_CCALF
+    picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
+#endif
   }
 
   // dependent quantization
@@ -1720,7 +1829,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     WRITE_UVLC(0,"pic_segment_header_extension_length");
   }
   
+#if JVET_Q0775_PH_IN_SH
+  if ( writeRbspTrailingBits )
+  {
+    xWriteRbspTrailingBits();
+  }
+#else
   xWriteRbspTrailingBits();
+#endif
 }
 
 void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
@@ -1730,11 +1846,21 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
 
   CodingStructure& cs = *pcSlice->getPic()->cs;
+#if JVET_Q0775_PH_IN_SH
+  PicHeader *picHeader = cs.picHeader;
+#else
   const PicHeader *picHeader = cs.picHeader;
+#endif
   const ChromaFormat format                = pcSlice->getSPS()->getChromaFormatIdc();
   const uint32_t         numberValidComponents = getNumberValidComponents(format);
   const bool         chromaEnabled         = isChromaEnabled(format);
-
+#if JVET_Q0775_PH_IN_SH
+  WRITE_FLAG(pcSlice->getPictureHeaderInSliceHeader() ? 1 : 0, "picture_header_in_slice_header_flag");
+  if (pcSlice->getPictureHeaderInSliceHeader())
+  {
+    codePictureHeader(picHeader, false);
+  }
+#endif
   int pocBits = pcSlice->getSPS()->getBitsForPOC();
   int pocMask = (1 << pocBits) - 1;
   WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
@@ -1787,7 +1913,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );
 
-
+#if JVET_Q0155_COLOUR_ID
+    // 4:4:4 colour plane ID
+    if( pcSlice->getSPS()->getSeparateColourPlaneFlag() )
+    {
+      WRITE_CODE( pcSlice->getColourPlaneId(), 2, "colour_plane_id" );
+    }
+#endif
 
     if( !picHeader->getPicRplPresentFlag() && (!pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent()) )
     {
@@ -2030,6 +2162,26 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "slice_alf_aps_id_chroma");
         }
+
+#if JVET_Q0795_CCALF
+        if (pcSlice->getSPS()->getCCALFEnabledFlag())
+        {
+          CcAlfFilterParam &filterParam = pcSlice->m_ccAlfFilterParam;
+          WRITE_FLAG(filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] ? 1 : 0, "slice_cc_alf_cb_enabled_flag");
+          if (filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1])
+          {
+            // write CC ALF Cb APS ID
+            WRITE_CODE(pcSlice->getTileGroupCcAlfCbApsId(), 3, "slice_cc_alf_cb_aps_id");
+          }
+          // Cr
+          WRITE_FLAG(filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] ? 1 : 0, "slice_cc_alf_cr_enabled_flag");
+          if (filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1])
+          {
+            // write CC ALF Cr APS ID
+            WRITE_CODE(pcSlice->getTileGroupCcAlfCrApsId(), 3, "slice_cc_alf_cr_aps_id");
+          }
+        }
+#endif
       }
     }
 
@@ -2088,6 +2240,9 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoPartitionConstraintsOverrideConstraintFlag() ? 1 : 0, "no_partition_constraints_override_constraint_flag");
   WRITE_FLAG(cinfo->getNoSaoConstraintFlag() ? 1 : 0, "no_sao_constraint_flag");
   WRITE_FLAG(cinfo->getNoAlfConstraintFlag() ? 1 : 0, "no_alf_constraint_flag");
+#if JVET_Q0795_CCALF
+  WRITE_FLAG(cinfo->getNoCCAlfConstraintFlag() ? 1 : 0, "no_ccalf_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoJointCbCrConstraintFlag() ? 1 : 0, "no_joint_cbcr_constraint_flag");
   WRITE_FLAG(cinfo->getNoRefWraparoundConstraintFlag() ? 1 : 0, "no_ref_wraparound_constraint_flag");
   WRITE_FLAG(cinfo->getNoTemporalMvpConstraintFlag() ? 1 : 0, "no_temporal_mvp_constraint_flag");

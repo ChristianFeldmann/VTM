@@ -171,6 +171,9 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
+#if JVET_Q0795_CCALF
+  bool      m_noCCAlfConstraintFlag;
+#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -238,6 +241,9 @@ protected:
   int       m_aiPad[2];
 
   bool      m_AccessUnitDelimiter;               ///< add Access Unit Delimiter NAL units
+#if JVET_Q0775_PH_IN_SH
+  bool      m_enablePictureHeaderInSliceHeader;  ///< Enable Picture Header in Slice Header
+#endif
 
   int       m_iMaxRefPicNum;                     ///< this is used to mimic the sliding mechanism used by the decoder
                                                  // TODO: We need to have a common sliding mechanism used by both the encoder and decoder
@@ -592,6 +598,9 @@ protected:
   bool      m_useWeightedPred;       //< Use of Weighting Prediction (P_SLICE)
   bool      m_useWeightedBiPred;    //< Use of Bi-directional Weighting Prediction (B_SLICE)
   WeightedPredictionMethod m_weightedPredictionMethod;
+#if JVET_Q0297_MER
+  uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
+#endif
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;
@@ -683,6 +692,10 @@ protected:
 #endif
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
+#if JVET_Q0795_CCALF
+  bool        m_ccalf;
+  int         m_ccalfQpThreshold;
+#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   double                       m_whitePointDeltaE[hdrtoolslib::NB_REF_WHITE];
   double                       m_maxSampleValue;
@@ -732,6 +745,10 @@ public:
   void      setNoSaoConstraintFlag(bool bVal) { m_bNoSaoConstraintFlag = bVal; }
   bool      getNoAlfConstraintFlag() const { return m_bNoAlfConstraintFlag; }
   void      setNoAlfConstraintFlag(bool bVal) { m_bNoAlfConstraintFlag = bVal; }
+#if JVET_Q0795_CCALF
+  bool      getNoCCAlfConstraintFlag() const { return m_noCCAlfConstraintFlag; }
+  void      setNoCCAlfConstraintFlag(bool bVal) { m_noCCAlfConstraintFlag = bVal; }
+#endif
   bool      getNoRefWraparoundConstraintFlag() const { return m_bNoRefWraparoundConstraintFlag; }
   void      setNoRefWraparoundConstraintFlag(bool bVal) { m_bNoRefWraparoundConstraintFlag = bVal; }
   bool      getNoTemporalMvpConstraintFlag() const { return m_bNoTemporalMvpConstraintFlag; }
@@ -1183,6 +1200,10 @@ public:
 
   bool      getAccessUnitDelimiter() const  { return m_AccessUnitDelimiter; }
   void      setAccessUnitDelimiter(bool val){ m_AccessUnitDelimiter = val; }
+#if JVET_Q0775_PH_IN_SH
+  bool      getEnablePictureHeaderInSliceHeader() const { return m_enablePictureHeaderInSliceHeader; }
+  void      setEnablePictureHeaderInSliceHeader(bool val) { m_enablePictureHeaderInSliceHeader = val; }
+#endif
 
   //==== Loop/Deblock Filter ========
   bool      getLoopFilterDisable            ()      { return  m_bLoopFilterDisable;       }
@@ -1581,6 +1602,10 @@ public:
   void         setWPBiPred            ( bool b )                     { m_useWeightedBiPred = b;    }
   bool         getUseWP               ()                             { return m_useWeightedPred;   }
   bool         getWPBiPred            ()                             { return m_useWeightedBiPred; }
+#if JVET_Q0297_MER
+  void         setLog2ParallelMergeLevelMinus2(uint32_t u)           { m_log2ParallelMergeLevelMinus2 = u; }
+  uint32_t     getLog2ParallelMergeLevelMinus2()                     { return m_log2ParallelMergeLevelMinus2; }
+#endif
   void         setMaxNumMergeCand                ( uint32_t u )          { m_maxNumMergeCand = u;      }
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
   void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
@@ -1770,7 +1795,12 @@ public:
 #endif
   void         setUseALF( bool b ) { m_alf = b; }
   bool         getUseALF()                                      const { return m_alf; }
-
+#if JVET_Q0795_CCALF
+  void         setUseCCALF( bool b )                                  { m_ccalf = b; }
+  bool         getUseCCALF()                                    const { return m_ccalf; }
+  void         setCCALFQpThreshold( int b )                           { m_ccalfQpThreshold = b; }
+  int          getCCALFQpThreshold()                            const { return m_ccalfQpThreshold; }
+#endif
 #if JVET_O0756_CALCULATE_HDRMETRICS
   void        setWhitePointDeltaE( uint32_t index, double value )     { m_whitePointDeltaE[ index ] = value; }
   double      getWhitePointDeltaE( uint32_t index )             const { return m_whitePointDeltaE[ index ]; }

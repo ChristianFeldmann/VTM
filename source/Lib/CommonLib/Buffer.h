@@ -779,7 +779,11 @@ struct UnitBuf
 
         UnitBuf<      T> subBuf (const UnitArea& subArea);
   const UnitBuf<const T> subBuf (const UnitArea& subArea) const;
+#if JVET_Q0820_ACT
+  void colorSpaceConvert(const UnitBuf<T> &other, const bool forward, const ClpRng& clpRng);
+#else
   void colorSpaceConvert(const UnitBuf<T> &other, const bool forward);
+#endif
 };
 
 typedef UnitBuf<      Pel>  PelUnitBuf;
@@ -880,13 +884,21 @@ void UnitBuf<T>::addAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &
 }
 
 template<typename T>
+#if JVET_Q0820_ACT
+void UnitBuf<T>::colorSpaceConvert(const UnitBuf<T> &other, const bool forward, const ClpRng& clpRng)
+#else
 void UnitBuf<T>::colorSpaceConvert(const UnitBuf<T> &other, const bool forward)
+#endif
 {
   THROW("Type not supported");
 }
 
 template<>
+#if JVET_Q0820_ACT
+void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward, const ClpRng& clpRng);
+#else
 void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward);
+#endif
 
 template<typename T>
 void UnitBuf<T>::extendSingleBorderPel()

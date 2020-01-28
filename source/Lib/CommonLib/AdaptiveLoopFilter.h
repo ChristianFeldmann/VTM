@@ -91,6 +91,13 @@ public:
                                       const CPelBuf &srcLuma, const Area &blkDst, const Area &blk, const int shift,
                                       const int vbCTUHeight, int vbPos);
   void deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk );
+#if JVET_Q0795_CCALF
+  template<AlfFilterType filtTypeCcAlf>
+  static void filterBlkCcAlf(const PelBuf &dstBuf, const CPelUnitBuf &recSrc, const Area &blkDst, const Area &blkSrc,
+                             const ComponentID compId, const int16_t *filterCoeff, const ClpRngs &clpRngs,
+                             CodingStructure &cs, int vbCTUHeight, int vbPos);
+#endif
+
   template<AlfFilterType filtType>
   static void filterBlk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
                         const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
@@ -100,6 +107,17 @@ public:
                                     const Area &blkDst, const Area &blk, const int shift, const int vbCTUHeight,
                                     int vbPos);
 
+#if JVET_Q0795_CCALF
+  void (*m_filterCcAlf)(const PelBuf &dstBuf, const CPelUnitBuf &recSrc, const Area &blkDst, const Area &blkSrc,
+                        const ComponentID compId, const int16_t *filterCoeff, const ClpRngs &clpRngs,
+                        CodingStructure &cs, int vbCTUHeight, int vbPos);
+  void applyCcAlfFilter(CodingStructure &cs, ComponentID compID, const PelBuf &dstBuf, const PelUnitBuf &recYuvExt,
+                        uint8_t *   filterControl,
+                        const short filterSet[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF],
+                        const int   selectedFilterIdx);
+  CcAlfFilterParam &getCcAlfFilterParam() { return m_ccAlfFilterParam; }
+  uint8_t* getCcAlfControlIdc(const ComponentID compID)   { return m_ccAlfFilterControl[compID-1]; }
+#endif
   void (*m_filter5x5Blk)(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
                          const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
                          const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
@@ -117,6 +135,11 @@ public:
 
 protected:
   bool isCrossedByVirtualBoundaries( const CodingStructure& cs, const int xPos, const int yPos, const int width, const int height, bool& clipTop, bool& clipBottom, bool& clipLeft, bool& clipRight, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], int& rasterSliceAlfPad );
+#if JVET_Q0795_CCALF
+  static constexpr int   m_scaleBits = 7; // 8-bits
+  CcAlfFilterParam       m_ccAlfFilterParam;
+  uint8_t*               m_ccAlfFilterControl[2];
+#endif
   static const int             m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
   static const int             m_fixedFilterSetCoeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
   short                        m_fixedFilterSetCoeffDec[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
@@ -127,6 +150,9 @@ protected:
   short                        m_chromaCoeffFinal[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
   AlfParam*                    m_alfParamChroma;
   Pel                          m_alfClippingValues[MAX_NUM_CHANNEL_TYPE][MaxAlfNumClippingValues];
+#if JVET_Q0795_CCALF
+  std::vector<AlfFilterShape>  m_filterShapesCcAlf[2];
+#endif
   std::vector<AlfFilterShape>  m_filterShapes[MAX_NUM_CHANNEL_TYPE];
   AlfClassifier**              m_classifier;
   short                        m_coeffFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];

@@ -81,7 +81,9 @@ Slice::Slice()
 , m_biDirPred                    ( false )
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 , m_dps                           ( nullptr )
+#endif
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
@@ -3501,7 +3503,9 @@ ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 , m_ppsMap(MAX_NUM_PPS)
 , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 , m_dpsMap(MAX_NUM_DPS)
+#endif
 , m_vpsMap(MAX_NUM_VPS)
 , m_activeDPSId(-1)
 , m_activeSPSId(-1)
@@ -3558,8 +3562,10 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 #endif
     {
       SPS *sps = m_spsMap.getPS(spsId);
+
       if (sps)
       {
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
         int dpsId = sps->getDecodingParameterSetId();
         if ((m_activeDPSId!=-1) && (dpsId != m_activeDPSId ))
         {
@@ -3587,7 +3593,7 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
             m_dpsMap.setActive(dpsId);
           }
         }
-
+#endif
         int vpsId = sps->getVPSId();
         if(vpsId != 0)
         {

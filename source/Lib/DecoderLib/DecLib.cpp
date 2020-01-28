@@ -1573,7 +1573,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   for( auto& naluTemporalId : m_accessUnitNals )
   {
-    if( naluTemporalId.first != NAL_UNIT_DPS
+    if( 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      naluTemporalId.first != NAL_UNIT_DCI
+#else
+      naluTemporalId.first != NAL_UNIT_DPS
+#endif
       && naluTemporalId.first != NAL_UNIT_VPS
       && naluTemporalId.first != NAL_UNIT_SPS
       && naluTemporalId.first != NAL_UNIT_EOS
@@ -2139,6 +2144,17 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
   m_parameterSetManager.storeVPS( m_vps, nalu.getBitstream().getFifo());
 }
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void DecLib::xDecodeDCI(InputNALUnit& nalu)
+{
+  DCI* dci = new DCI();
+  m_HLSReader.setBitstream(&nalu.getBitstream());
+
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0");
+
+  m_HLSReader.parseDCI(dci);
+}
+#else
 void DecLib::xDecodeDPS( InputNALUnit& nalu )
 {
   DPS* dps = new DPS();
@@ -2149,6 +2165,7 @@ void DecLib::xDecodeDPS( InputNALUnit& nalu )
   m_HLSReader.parseDPS( dps );
   m_parameterSetManager.storeDPS( dps, nalu.getBitstream().getFifo() );
 }
+#endif
 
 void DecLib::xDecodeSPS( InputNALUnit& nalu )
 {
@@ -2208,11 +2225,15 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
       m_vps->m_targetOlsIdx = iTargetOlsIdx;
 #endif
       return false;
-
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    case NAL_UNIT_DCI:
+      xDecodeDCI( nalu );
+      return false;
+#else
     case NAL_UNIT_DPS:
       xDecodeDPS( nalu );
       return false;
-
+#endif
     case NAL_UNIT_SPS:
       xDecodeSPS( nalu );
       return false;
@@ -2362,6 +2383,8 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
     const ConstraintInfo *cInfo = m_parameterSetManager.getActiveSPS()->getProfileTierLevel()->getConstraintInfo();
     xCheckNalUnitConstraintFlags( cInfo, naluType );
   }
+
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   if (m_parameterSetManager.getActiveDPS() != NULL)
   {
     const DPS *dps = m_parameterSetManager.getActiveDPS();
@@ -2372,6 +2395,7 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
       xCheckNalUnitConstraintFlags( cInfo, naluType );
     }
   }
+#endif
 }
 void DecLib::xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType )
 {

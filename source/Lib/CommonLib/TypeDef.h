@@ -144,9 +144,13 @@
 
 #define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
 
+<<<<<<< HEAD
 #define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
 #define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
 #define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
+=======
+#define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
+>>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
 
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 
@@ -968,7 +972,11 @@ enum NalUnitType
   NAL_UNIT_RESERVED_IRAP_VCL_11,
   NAL_UNIT_RESERVED_IRAP_VCL_12,
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  NAL_UNIT_DCI,                     // 13
+#else
   NAL_UNIT_DPS,                     // 13
+#endif
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16

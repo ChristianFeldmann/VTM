@@ -238,12 +238,19 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #else
   xInitSPS( sps0, m_cVPS );
   xInitVPS(m_cVPS, sps0);
+<<<<<<< HEAD
 #endif
 
+=======
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  int dciId = getDCIEnabled() ? 1 : 0;
+  xInitDCI(m_dci, sps0);
+#else
+>>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
   sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -1142,6 +1149,16 @@ void EncLib::xInitVPS(VPS& vps, const SPS& sps)
 }
 #endif
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void EncLib::xInitDCI(DCI& dci, const SPS& sps)
+{
+  dci.setMaxSubLayersMinus1(sps.getMaxTLayers() - 1);
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(1);
+  ptls[0] = *sps.getProfileTierLevel();
+  dci.setProfileTierLevel(ptls);
+}
+#else
 void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
 {
   // The SPS must have already been set up.
@@ -1153,6 +1170,7 @@ void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
   ptls[0] = *sps.getProfileTierLevel();
   dps.setProfileTierLevel(ptls);
 }
+#endif
 
 #if JVET_Q0814_DPB
 void EncLib::xInitSPS( SPS& sps )

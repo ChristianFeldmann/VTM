@@ -216,7 +216,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitSPS( sps0, m_cVPS );
   xInitVPS(m_cVPS, sps0);
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-  int dciId = getDCIEnabled() ? 1 : 0;
   xInitDCI(m_dci, sps0);
 #else
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;

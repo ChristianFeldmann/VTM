@@ -2029,7 +2029,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     picHeader->setSPSId( pcPic->cs->pps->getSPSId() );
     picHeader->setPPSId( pcPic->cs->pps->getPPSId() );
     picHeader->setSplitConsOverrideFlag(false);
-
+#if JVET_Q0819_PH_CHANGES
+    // initial two flags to be false
+    picHeader->setPicInterSliceAllowedFlag(false);
+    picHeader->setPicIntraSliceAllowedFlag(false);
+#endif
 #if ER_CHROMA_QP_WCG_PPS
     // th this is a hot fix for the choma qp control
     if( m_pcEncLib->getWCGChromaQPControl().isEnabled() && m_pcEncLib->getSwitchPOC() != -1 )
@@ -2089,6 +2093,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
+
+#if JVET_Q0819_PH_CHANGES
+    // set two flags according to slice type presented in the picture
+    if (pcSlice->getSliceType() != I_SLICE)
+      picHeader->setPicInterSliceAllowedFlag(true);
+    if (pcSlice->getSliceType() == I_SLICE)
+      picHeader->setPicIntraSliceAllowedFlag(true);
+#endif
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
 

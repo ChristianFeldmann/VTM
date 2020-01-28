@@ -1830,6 +1830,20 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     if( split == CU_QUAD_SPLIT ) cuECtx.set( DID_QUAD_SPLIT, true );
+#if JVET_Q0297_MER
+    if (cs.sps->getLog2ParallelMergeLevelMinus2())
+    {
+      const CompArea& area = partitioner.currArea().Y();
+      const SizeType size = 1 << (cs.sps->getLog2ParallelMergeLevelMinus2() + 2);
+      if (!cs.slice->isIntra() && (area.width > size || area.height > size))
+      {
+        if (area.height <= size && split == CU_HORZ_SPLIT) return false;
+        if (area.width <= size && split == CU_VERT_SPLIT) return false;
+        if (area.height <= 2 * size && split == CU_TRIH_SPLIT) return false;
+        if (area.width <= 2 * size && split == CU_TRIV_SPLIT) return false;
+      }
+    }
+#endif
     return true;
   }
   else

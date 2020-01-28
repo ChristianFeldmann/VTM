@@ -1042,6 +1042,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
 #endif
+#if JVET_Q0297_MER
+  WRITE_UVLC(pcSPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
+#endif
 
   // KJS: reference picture sets to be replaced
 

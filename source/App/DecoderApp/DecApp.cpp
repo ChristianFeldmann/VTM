@@ -282,6 +282,12 @@ uint32_t DecApp::decode()
 bool DecApp::deriveOutputLayerSet()
 {
   int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
+  if(m_iTargetOLS == - 1 || vps_max_layers_minus1 == 0)
+  {
+    m_targetDecLayerIdSet.clear();
+    return true;
+  }
+
   int TotalNumOlss = 0;
   int each_layer_is_an_ols_flag = m_cDecLib.getVPS()->getEachLayerIsAnOlsFlag();
   int ols_mode_idc = m_cDecLib.getVPS()->getOlsModeIdc();

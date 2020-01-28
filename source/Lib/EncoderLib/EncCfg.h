@@ -239,7 +239,7 @@ protected:
 
   bool      m_AccessUnitDelimiter;               ///< add Access Unit Delimiter NAL units
 #if JVET_Q0775_PH_IN_SH
-  bool      m_EnablePictureHeaderInSliceHeader;  ///< Enable Picture Header in Slice Header
+  bool      m_enablePictureHeaderInSliceHeader;  ///< Enable Picture Header in Slice Header
 #endif
 
   int       m_iMaxRefPicNum;                     ///< this is used to mimic the sliding mechanism used by the decoder
@@ -1187,8 +1187,8 @@ public:
   bool      getAccessUnitDelimiter() const  { return m_AccessUnitDelimiter; }
   void      setAccessUnitDelimiter(bool val){ m_AccessUnitDelimiter = val; }
 #if JVET_Q0775_PH_IN_SH
-  bool      getEnablePictureHeaderInSliceHeader() const { return m_EnablePictureHeaderInSliceHeader; }
-  void      setEnablePictureHeaderInSliceHeader(bool val) { m_EnablePictureHeaderInSliceHeader = val; }
+  bool      getEnablePictureHeaderInSliceHeader() const { return m_enablePictureHeaderInSliceHeader; }
+  void      setEnablePictureHeaderInSliceHeader(bool val) { m_enablePictureHeaderInSliceHeader = val; }
 #endif
 
   //==== Loop/Deblock Filter ========

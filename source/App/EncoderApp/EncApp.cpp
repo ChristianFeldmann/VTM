@@ -278,7 +278,7 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
 #if JVET_Q0775_PH_IN_SH
-  m_cEncLib.setEnablePictureHeaderInSliceHeader                  ( m_EnablePictureHeaderInSliceHeader );
+  m_cEncLib.setEnablePictureHeaderInSliceHeader                  ( m_enablePictureHeaderInSliceHeader );
 #endif
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );

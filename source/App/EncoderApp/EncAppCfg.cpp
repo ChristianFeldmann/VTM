@@ -805,7 +805,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ConfWinBottom",                                   m_confWinBottom,                                      0, "Bottom offset for window conformance mode 3")
   ("AccessUnitDelimiter",                             m_AccessUnitDelimiter,                            false, "Enable Access Unit Delimiter NALUs")
 #if JVET_Q0775_PH_IN_SH
-  ("EnablePictureHeaderInSliceHeader",                m_EnablePictureHeaderInSliceHeader,                true, "Enable Picture Header in Slice Header")
+  ("EnablePictureHeaderInSliceHeader",                m_enablePictureHeaderInSliceHeader,                true, "Enable Picture Header in Slice Header")
 #endif
   ("FrameRate,-fr",                                   m_iFrameRate,                                         0, "Frame rate")
   ("FrameSkip,-fs",                                   m_FrameSkip,                                         0u, "Number of frames to skip at start of input YUV")

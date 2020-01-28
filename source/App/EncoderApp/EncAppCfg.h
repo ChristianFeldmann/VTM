@@ -116,7 +116,7 @@ protected:
   int       m_aiPad[2];                                       ///< number of padded pixels for width and height
   bool      m_AccessUnitDelimiter;                            ///< add Access Unit Delimiter NAL units
 #if JVET_Q0775_PH_IN_SH
-  bool      m_EnablePictureHeaderInSliceHeader;               ///< Enable Picture Header in Slice Header
+  bool      m_enablePictureHeaderInSliceHeader;               ///< Enable Picture Header in Slice Header
 #endif
   InputColourSpaceConversion m_inputColourSpaceConvert;       ///< colour space conversion to apply to input video
   bool      m_snrInternalColourSpace;                       ///< if true, then no colour space conversion is applied for snr calculation, otherwise inverse of input is applied.

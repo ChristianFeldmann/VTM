@@ -136,12 +136,16 @@ public:
 #else
   void  codeDPS                 ( const DPS* dps );
 <<<<<<< HEAD
+<<<<<<< HEAD
 #if JVET_Q0775_PH_IN_SH
   void  codePictureHeader       ( PicHeader* picHeader, bool writeRbspTrailingBits );
 #else
 =======
 #endif
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
+=======
+#endif
+>>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
   void  codePictureHeader       ( PicHeader* picHeader );
 #endif
   void  codeSliceHeader         ( Slice* pcSlice );

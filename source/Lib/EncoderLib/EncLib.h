@@ -184,7 +184,10 @@ protected:
 #else
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
 #endif
+<<<<<<< HEAD
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
+=======
+>>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
   void  xInitSPS          ( SPS& sps, VPS& vps );       ///< initialize SPS from encoder options
 #endif
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options

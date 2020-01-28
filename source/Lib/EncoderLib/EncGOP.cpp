@@ -412,9 +412,12 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 #endif
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
+=======
+>>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.

@@ -239,6 +239,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitSPS( sps0, m_cVPS );
   xInitVPS(m_cVPS, sps0);
 <<<<<<< HEAD
+<<<<<<< HEAD
 #endif
 
 =======
@@ -246,6 +247,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitDCI(m_dci, sps0);
 #else
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
+=======
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  int dciId = getDCIEnabled() ? 1 : 0;
+  xInitDCI(m_dci, sps0);
+#else
+>>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
   sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());

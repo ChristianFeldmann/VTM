@@ -880,10 +880,15 @@ public:
   const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
 };
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 #endif
 
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
+=======
+#endif
+
+>>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
 
 class VPS
 {

@@ -780,8 +780,8 @@ public:
   bool      getNoTriangleConstraintFlag() const { return m_bNoTriangleConstraintFlag; }
   void      setNoTriangleConstraintFlag(bool bVal) { m_bNoTriangleConstraintFlag = bVal; }
 #else
-  bool      getNoGeoConstraintFlag() const { return m_bNoGeoConstraintFlag; }
-  void      setNoGeoConstraintFlag(bool bVal) { m_bNoGeoConstraintFlag = bVal; }
+  bool      getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
+  void      setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
 #endif
   bool      getNoLadfConstraintFlag() const { return m_bNoLadfConstraintFlag; }
   void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }

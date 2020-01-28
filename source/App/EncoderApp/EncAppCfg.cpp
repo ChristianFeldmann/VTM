@@ -104,7 +104,7 @@ EncAppCfg::EncAppCfg()
 #if !JVET_Q0806
 , m_bNoTriangleConstraintFlag(false)
 #else
-, m_bNoGeoConstraintFlag(false)
+, m_noGeoConstraintFlag(false)
 #endif
 , m_bNoLadfConstraintFlag(false)
 , m_noTransformSkipConstraintFlag(false)

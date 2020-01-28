@@ -993,7 +993,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #if !JVET_Q0806
   cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
 #else
-  cinfo->setNoGeoConstraintFlag(m_bNoGeoConstraintFlag);
+  cinfo->setNoGeoConstraintFlag(m_noGeoConstraintFlag);
 #endif
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);

@@ -243,7 +243,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 
 =======
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-  int dciId = getDCIEnabled() ? 1 : 0;
   xInitDCI(m_dci, sps0);
 #else
 >>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI

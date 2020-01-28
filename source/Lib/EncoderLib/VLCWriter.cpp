@@ -1697,19 +1697,20 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 
 #else
   // geometric merge candidate list size
-  if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
-  {
-    if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+    if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
     {
+      if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+      {
 
-      WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
-    }
-
-    {
+        WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+      }
+      else
+      {
       picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - (pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1)));
+      }
     }
-  }
-#endif#if JVET_Q0819_PH_CHANGES
+#endif
+#if JVET_Q0819_PH_CHANGES
   }
   // ibc merge candidate list size
   if (sps->getIBCFlag())

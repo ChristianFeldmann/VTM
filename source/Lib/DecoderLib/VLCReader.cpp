@@ -2375,31 +2375,23 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
 #else
   // geometric merge candidate list size
-  if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
-  {
-    if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+    if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
     {
-      READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+      if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+      {
+        READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+      }
+      else
+      {
+        uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1;
+      }
+      CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of gpm candidates!");
+      picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
     }
     else
     {
-      uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1;
+      picHeader->setMaxNumGeoCand(0);
     }
-    CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of gpm candidates!");
-    picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
-  }
-  // inherit constraint values from SPS
-  if (!sps->getSplitConsOverrideEnabledFlag() || !picHeader->getSplitConsOverrideFlag())
-  {
-    picHeader->setMinQTSizes(sps->getMinQTSizes());
-    picHeader->setMaxMTTHierarchyDepths(sps->getMaxMTTHierarchyDepths());
-    picHeader->setMaxBTSizes(sps->getMaxBTSizes());
-    picHeader->setMaxTTSizes(sps->getMaxTTSizes());
-  }
-  else
-  {
-    picHeader->setMaxNumGeoCand(0);
-  }
 #endif
 #if JVET_Q0819_PH_CHANGES
   }

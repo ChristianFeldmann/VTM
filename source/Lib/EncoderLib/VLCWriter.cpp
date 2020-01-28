@@ -782,10 +782,29 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_CODE(pcSPS->getNumSubPics() - 1, 8, "sps_num_subpics_minus1");
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
+#if JVET_Q0787_SUBPIC
+      if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+      {
+        WRITE_CODE( pcSPS->getSubPicCtuTopLeftX(picIdx), ceilLog2(( pcSPS->getMaxPicWidthInLumaSamples()  +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_ctu_top_left_x[ i ]"  );
+      }
+      if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+      {
+        WRITE_CODE( pcSPS->getSubPicCtuTopLeftY(picIdx), ceilLog2(( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_ctu_top_left_y[ i ]"  );
+      }
+      if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+      {
+        WRITE_CODE( pcSPS->getSubPicWidth(picIdx) - 1,   ceilLog2(( pcSPS->getMaxPicWidthInLumaSamples()  +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_width_minus1[ i ]"    );
+      }
+      if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+      {
+        WRITE_CODE( pcSPS->getSubPicHeight(picIdx) - 1,  ceilLog2(( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_height_minus1[ i ]"   );
+      }
+#else
       WRITE_CODE( pcSPS->getSubPicCtuTopLeftX(picIdx), std::max(1, ceilLog2((( pcSPS->getMaxPicWidthInLumaSamples()  +  pcSPS->getCTUSize() - 1)  >> floorLog2( pcSPS->getCTUSize())))), "subpic_ctu_top_left_x[ i ]"  );
       WRITE_CODE( pcSPS->getSubPicCtuTopLeftY(picIdx), std::max(1, ceilLog2((( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  >> floorLog2( pcSPS->getCTUSize())))), "subpic_ctu_top_left_y[ i ]"  );
       WRITE_CODE( pcSPS->getSubPicWidth(picIdx) - 1,   std::max(1, ceilLog2((( pcSPS->getMaxPicWidthInLumaSamples()  +  pcSPS->getCTUSize() - 1)  >> floorLog2( pcSPS->getCTUSize())))), "subpic_width_minus1[ i ]"    );
       WRITE_CODE( pcSPS->getSubPicHeight(picIdx) - 1,  std::max(1, ceilLog2((( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  >> floorLog2( pcSPS->getCTUSize())))), "subpic_height_minus1[ i ]"   );
+#endif
       WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );
       WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
     }

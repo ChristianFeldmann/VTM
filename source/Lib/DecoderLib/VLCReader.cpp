@@ -2355,7 +2355,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
 #if !JVET_Q0806
   // triangle merge candidate list size
-
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
     {
       if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())

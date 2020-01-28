@@ -241,6 +241,9 @@ protected:
   int       m_aiPad[2];
 
   bool      m_AccessUnitDelimiter;               ///< add Access Unit Delimiter NAL units
+#if JVET_Q0775_PH_IN_SH
+  bool      m_enablePictureHeaderInSliceHeader;  ///< Enable Picture Header in Slice Header
+#endif
 
   int       m_iMaxRefPicNum;                     ///< this is used to mimic the sliding mechanism used by the decoder
                                                  // TODO: We need to have a common sliding mechanism used by both the encoder and decoder
@@ -1197,6 +1200,10 @@ public:
 
   bool      getAccessUnitDelimiter() const  { return m_AccessUnitDelimiter; }
   void      setAccessUnitDelimiter(bool val){ m_AccessUnitDelimiter = val; }
+#if JVET_Q0775_PH_IN_SH
+  bool      getEnablePictureHeaderInSliceHeader() const { return m_enablePictureHeaderInSliceHeader; }
+  void      setEnablePictureHeaderInSliceHeader(bool val) { m_enablePictureHeaderInSliceHeader = val; }
+#endif
 
   //==== Loop/Deblock Filter ========
   bool      getLoopFilterDisable            ()      { return  m_bLoopFilterDisable;       }

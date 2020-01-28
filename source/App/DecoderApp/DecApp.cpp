@@ -492,8 +492,12 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
           ret = true;
           finished = true;
           break;
-        
+
+#if JVET_Q0775_PH_IN_SH
+        // NUT that may be the start of a new picture - check first bit in slice header
+#else
         // NUT that are not the start of a new picture
+#endif
         case NAL_UNIT_CODED_SLICE_TRAIL:
         case NAL_UNIT_CODED_SLICE_STSA:
         case NAL_UNIT_CODED_SLICE_RASL:
@@ -507,6 +511,13 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
         case NAL_UNIT_CODED_SLICE_GDR:
         case NAL_UNIT_RESERVED_IRAP_VCL_11:
         case NAL_UNIT_RESERVED_IRAP_VCL_12:
+#if JVET_Q0775_PH_IN_SH
+          ret = checkPictureHeaderInSliceHeaderFlag(nalu);
+          finished = true;
+          break;
+
+        // NUT that are not the start of a new picture
+#endif
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
         case NAL_UNIT_SUFFIX_APS:

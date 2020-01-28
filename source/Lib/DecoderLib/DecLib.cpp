@@ -931,6 +931,66 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
     }
   }
 
+#if JVET_Q0795_CCALF
+  CcAlfFilterParam &filterParam = pSlice->m_ccAlfFilterParam;
+  // cleanup before copying
+  for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
+  {
+    memset( filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]) );
+    memset( filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]) );
+  }
+  memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1]) );
+  memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1]) );
+
+  if(pSlice->getTileGroupCcAlfCbEnabledFlag())
+  {
+    int apsId = pSlice->getTileGroupCcAlfCbApsId();
+    APS *aps = parameterSetManager.getAPS(apsId, ALF_APS);
+    if(aps)
+    {
+      apss[apsId] = aps;
+      if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+
+      CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+
+      filterParam.ccAlfFilterCount[COMPONENT_Cb - 1] = aps->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cb - 1];
+      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cb - 1]; filterIdx++ )
+      {
+        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx] = aps->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx];
+        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], sizeof(aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]));
+      }
+    }
+  }
+
+  if(pSlice->getTileGroupCcAlfCrEnabledFlag())
+  {
+    int apsId = pSlice->getTileGroupCcAlfCrApsId();
+    APS *aps = parameterSetManager.getAPS(apsId, ALF_APS);
+    if(aps)
+    {
+      apss[apsId] = aps;
+      if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+
+      CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+
+      filterParam.ccAlfFilterCount[COMPONENT_Cr - 1] = aps->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cr - 1];
+      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cr - 1]; filterIdx++ )
+      {
+        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx] = aps->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx];
+        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], sizeof(aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]));
+      }
+    }
+  }
+#endif
+
   if (picHeader->getLmcsEnabledFlag() && lmcsAPS == nullptr)
   {
     lmcsAPS = parameterSetManager.getAPS(picHeader->getLmcsAPSId(), LMCS_APS);
@@ -1005,60 +1065,6 @@ void DecLib::xActivateParameterSets( const int layerId )
     APS* lmcsAPS = nullptr;
     APS* scalinglistAPS = nullptr;
     activateAPS(&m_picHeader, m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
-
-#if JVET_Q0795_CCALF
-    CcAlfFilterParam &filterParam = m_apcSlicePilot->m_ccAlfFilterParam;
-
-    // CC ALF Cb APS
-    int  apsCcAlfCbId = m_apcSlicePilot->getTileGroupCcAlfCbApsId();
-    APS *apsCcAlfCb   = m_parameterSetManager.getAPS(apsCcAlfCbId, ALF_APS);
-    if (apsCcAlfCb)
-    {
-      m_parameterSetManager.clearAPSChangedFlag(apsCcAlfCbId, ALF_APS);
-      apss[apsCcAlfCbId] = apsCcAlfCb;
-      if (false == m_parameterSetManager.activateAPS(apsCcAlfCbId, ALF_APS))
-      {
-        THROW("APS activation failed!");
-      }
-      // cleanup before copying
-      for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
-      {
-        memset( filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]) );
-      }
-      memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1]) );
-      filterParam.ccAlfFilterCount[COMPONENT_Cb - 1] = apsCcAlfCb->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cb - 1];
-      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cb - 1]; filterIdx++ )
-      {
-        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx] = apsCcAlfCb->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx];
-        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], apsCcAlfCb->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], sizeof(apsCcAlfCb->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]));
-      }
-    }
-
-    // CC ALF Cr APS
-    int  apsCcAlfCrId = m_apcSlicePilot->getTileGroupCcAlfCrApsId();
-    APS *apsCcAlfCr   = m_parameterSetManager.getAPS(apsCcAlfCrId, ALF_APS);
-    if (apsCcAlfCr)
-    {
-      m_parameterSetManager.clearAPSChangedFlag(apsCcAlfCrId, ALF_APS);
-      apss[apsCcAlfCrId] = apsCcAlfCr;
-      if (false == m_parameterSetManager.activateAPS(apsCcAlfCrId, ALF_APS))
-      {
-        THROW("APS activation failed!");
-      }
-      // cleanup before copying
-      for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
-      {
-        memset( filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]) );
-      }
-      memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1]) );
-      filterParam.ccAlfFilterCount[COMPONENT_Cr - 1] = apsCcAlfCr->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cr - 1];
-      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cr - 1]; filterIdx++ )
-      {
-        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx] = apsCcAlfCr->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx];
-        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], apsCcAlfCr->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], sizeof(apsCcAlfCr->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]));
-      }
-    }
-#endif
 
     xParsePrefixSEImessages();
 
@@ -1295,15 +1301,21 @@ void DecLib::xParsePrefixSEImessages()
 void DecLib::xDecodePicHeader( InputNALUnit& nalu )
 {
   m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_Q0775_PH_IN_SH
+  m_HLSReader.parsePictureHeader( &m_picHeader, &m_parameterSetManager, true );
+#else
   m_HLSReader.parsePictureHeader( &m_picHeader, &m_parameterSetManager);
+#endif
   m_picHeader.setValid();
 }
 
 bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay )
 {
+#if !JVET_Q0775_PH_IN_SH
   if(m_picHeader.isValid() == false) {
     return false;
   }
+#endif
   m_apcSlicePilot->setPicHeader( &m_picHeader );
   m_apcSlicePilot->initSlice(); // the slice pilot is an object to prepare for a new slice
                                 // it is not associated with picture, sps or pps structures.

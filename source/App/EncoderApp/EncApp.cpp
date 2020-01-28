@@ -287,6 +287,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setPad                                               ( m_aiPad );
 
   m_cEncLib.setAccessUnitDelimiter                               ( m_AccessUnitDelimiter );
+#if JVET_Q0775_PH_IN_SH
+  m_cEncLib.setEnablePictureHeaderInSliceHeader                  ( m_enablePictureHeaderInSliceHeader );
+#endif
 
   m_cEncLib.setMaxTempLayer                                      ( m_maxTempLayer );
 
@@ -526,6 +529,11 @@ void EncApp::xInitLibCfg()
   //====== Weighted Prediction ========
   m_cEncLib.setUseWP                                             ( m_useWeightedPred     );
   m_cEncLib.setWPBiPred                                          ( m_useWeightedBiPred   );
+
+#if JVET_Q0297_MER
+  //====== Parallel Merge Estimation ========
+  m_cEncLib.setLog2ParallelMergeLevelMinus2(m_log2ParallelMergeLevel - 2);
+#endif
 
   //====== Tiles and Slices ========
   m_cEncLib.setNoPicPartitionFlag( !m_picPartitionFlag );

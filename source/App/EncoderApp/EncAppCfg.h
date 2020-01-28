@@ -115,6 +115,9 @@ protected:
   int       m_framesToBeEncoded;                              ///< number of encoded frames
   int       m_aiPad[2];                                       ///< number of padded pixels for width and height
   bool      m_AccessUnitDelimiter;                            ///< add Access Unit Delimiter NAL units
+#if JVET_Q0775_PH_IN_SH
+  bool      m_enablePictureHeaderInSliceHeader;               ///< Enable Picture Header in Slice Header
+#endif
   InputColourSpaceConversion m_inputColourSpaceConvert;       ///< colour space conversion to apply to input video
   bool      m_snrInternalColourSpace;                       ///< if true, then no colour space conversion is applied for snr calculation, otherwise inverse of input is applied.
   bool      m_outputInternalColourSpace;                    ///< if true, then no colour space conversion is applied for reconstructed video, otherwise inverse of input is applied.
@@ -584,6 +587,9 @@ protected:
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
   WeightedPredictionMethod m_weightedPredictionMethod;
 
+#if JVET_Q0297_MER
+  uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
+#endif
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
   uint32_t      m_maxNumTriangleCand;

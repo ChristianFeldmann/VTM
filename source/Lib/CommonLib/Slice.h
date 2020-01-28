@@ -1218,6 +1218,10 @@ private:
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
 
+#if JVET_Q0297_MER
+  uint32_t          m_log2ParallelMergeLevelMinus2;
+#endif
+
 public:
 
   SPS();
@@ -1526,6 +1530,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
 
+#if JVET_Q0297_MER
+  uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
+  void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }
+#endif
 };
 
 
@@ -1964,7 +1972,9 @@ private:
   unsigned                    m_numHorVirtualBoundaries;                                //!< number of horizontal virtual boundaries
   unsigned                    m_virtualBoundariesPosX[3];                               //!< horizontal virtual boundary positions
   unsigned                    m_virtualBoundariesPosY[3];                               //!< vertical virtual boundary positions
+#if !JVET_Q0155_COLOUR_ID
   unsigned                    m_colourPlaneId;                                          //!< 4:4:4 colour plane ID
+#endif
   bool                        m_picOutputFlag;                                          //!< picture output flag
   bool                        m_picRplPresentFlag;                                      //!< reference lists present in picture header or not
   const ReferencePictureList* m_pRPL0;                                                  //!< pointer to RPL for L0, either in the SPS or the local RPS in the picture header
@@ -2057,8 +2067,10 @@ public:
   unsigned                    getVirtualBoundariesPosX(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosX[idx];}
   void                        setVirtualBoundariesPosY(unsigned u, unsigned idx)        { CHECK( idx >= 3, "boundary index exceeds valid range" ); m_virtualBoundariesPosY[idx] = u;   }
   unsigned                    getVirtualBoundariesPosY(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosY[idx];}
+#if !JVET_Q0155_COLOUR_ID
   void                        setColourPlaneId(unsigned u)                              { m_colourPlaneId = u;                                                                         }
   unsigned                    getColourPlaneId() const                                  { return m_colourPlaneId;                                                                      }
+#endif
   void                        setPicOutputFlag( bool b )                                { m_picOutputFlag = b;                                                                         }
   bool                        getPicOutputFlag() const                                  { return m_picOutputFlag;                                                                      }
   void                        setPicRplPresentFlag( bool b )                            { m_picRplPresentFlag = b;                                                                     }
@@ -2219,7 +2231,13 @@ private:
   ReferencePictureList        m_localRPL1;            //< RPL for L1 when present in slice header
   int                         m_rpl0Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
   int                         m_rpl1Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
+#if JVET_Q0155_COLOUR_ID
+  int                        m_colourPlaneId;                         //!< 4:4:4 colour plane ID
+#endif
   NalUnitType                m_eNalUnitType;         ///< Nal unit type for the slice
+#if JVET_Q0775_PH_IN_SH
+  bool                       m_pictureHeaderInSliceHeader;
+#endif
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
@@ -2369,13 +2387,17 @@ public:
   int                         getRefPOC( RefPicList e, int iRefIdx) const            { return m_aiRefPOCList[e][iRefIdx];                            }
   int                         getDepth() const                                       { return m_iDepth;                                              }
   bool                        getColFromL0Flag() const                               { return m_colFromL0Flag;                                       }
-  uint32_t                        getColRefIdx() const                                   { return m_colRefIdx;                                           }
+  uint32_t                    getColRefIdx() const                                   { return m_colRefIdx;                                           }
   void                        checkColRefIdx(uint32_t curSliceSegmentIdx, const Picture* pic);
   bool                        getIsUsedAsLongTerm(int i, int j) const                { return m_bIsUsedAsLongTerm[i][j];                             }
   void                        setIsUsedAsLongTerm(int i, int j, bool value)          { m_bIsUsedAsLongTerm[i][j] = value;                            }
   bool                        getCheckLDC() const                                    { return m_bCheckLDC;                                           }
   int                         getList1IdxToList0Idx( int list1Idx ) const            { return m_list1IdxToList0Idx[list1Idx];                        }
   void                        setPOC( int i )                                        { m_iPOC              = i;                                      }
+#if JVET_Q0775_PH_IN_SH
+  bool                        getPictureHeaderInSliceHeader() const                  { return m_pictureHeaderInSliceHeader;                         }
+  void                        setPictureHeaderInSliceHeader( bool e )                { m_pictureHeaderInSliceHeader = e;                            }
+#endif
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
   bool                        getRapPicFlag() const;
@@ -2426,6 +2448,10 @@ public:
   bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder );
   bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
   void                        checkConformanceForDRAP( uint32_t temporalId );
+#if JVET_Q0155_COLOUR_ID
+  void                        setColourPlaneId( int id )                             { m_colourPlaneId = id;                                         }
+  int                         getColourPlaneId() const                               { return m_colourPlaneId;                                       }
+#endif
 
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }

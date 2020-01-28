@@ -129,7 +129,11 @@ public:
   void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
   void  codeDPS                 ( const DPS* dps );
+#if JVET_Q0775_PH_IN_SH
+  void  codePictureHeader       ( PicHeader* picHeader, bool writeRbspTrailingBits );
+#else
   void  codePictureHeader       ( PicHeader* picHeader );
+#endif
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );

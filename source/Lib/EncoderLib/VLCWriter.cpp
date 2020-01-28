@@ -746,7 +746,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  WRITE_CODE(pcSPS->getSPSId(), 4, "sps_seq_parameter_set_id");
+#else
   WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
+#endif
   WRITE_CODE( pcSPS->getVPSId(), 4, "sps_video_parameter_set_id" );
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
@@ -755,9 +759,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
-
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   WRITE_CODE( pcSPS->getSPSId (), 4, "sps_seq_parameter_set_id" );
-
+#endif
   WRITE_CODE(int(pcSPS->getChromaFormatIdc ()), 2, "chroma_format_idc");
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
@@ -1152,7 +1156,28 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   xWriteRbspTrailingBits();
 }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void HLSWriter::codeDCI(const DCI* dci)
+{
+#if ENABLE_TRACING
+  xTraceDPSHeader();
+#endif
+  WRITE_CODE(dci->getMaxSubLayersMinus1(), 3, "dci_max_sub_layers_minus1");
+  WRITE_CODE(0, 1, "dci_reserved_zero_bit");
+  uint32_t numPTLs = (uint32_t)dci->getNumPTLs();
+  CHECK(numPTLs < 1, "At least one PTL must be available in DCI");
 
+  WRITE_CODE(numPTLs - 1, 4, "dci_num_ptls_minus1");
+
+  for (int i = 0; i < numPTLs; i++)
+  {
+    ProfileTierLevel ptl = dci->getProfileTierLevel(i);
+    codeProfileTierLevel(&ptl, 0);
+  }
+  WRITE_FLAG(0, "dps_extension_flag");
+  xWriteRbspTrailingBits();
+}
+#else
 void HLSWriter::codeDPS( const DPS* dps )
 {
 #if ENABLE_TRACING
@@ -1174,7 +1199,7 @@ void HLSWriter::codeDPS( const DPS* dps )
   WRITE_FLAG( 0,                                              "dps_extension_flag" );
   xWriteRbspTrailingBits();
 }
-
+#endif
 void HLSWriter::codeVPS(const VPS* pcVPS)
 {
 #if ENABLE_TRACING

@@ -53,6 +53,8 @@
 
 #define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
 
+#define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
+
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 
 #define JVET_Q0695_CHROMA_TS_JCCR                         1 // JVET-Q0695: Enabling the RD checking of chroma transform-skip mode for JCCR at encoder
@@ -829,7 +831,11 @@ enum NalUnitType
   NAL_UNIT_RESERVED_IRAP_VCL_11,
   NAL_UNIT_RESERVED_IRAP_VCL_12,
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  NAL_UNIT_DCI,                     // 13
+#else
   NAL_UNIT_DPS,                     // 13
+#endif
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16

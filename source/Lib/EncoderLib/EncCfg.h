@@ -635,8 +635,13 @@ protected:
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
 
   VPS       m_cVPS;
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  DCI       m_dci;
+  bool      m_DCIEnabled;                                     ///< enable DCI
+#else
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
+#endif
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
 #if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
@@ -1672,8 +1677,14 @@ public:
 
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void         setDCI(DCI *p)                                        { m_dci = *p; }
+  DCI*         getDCI()                                              { return &m_dci; }
+#else
   void         setDPS(DPS *p)                                        { m_dps = *p; }
   DPS*         getDPS()                                              { return &m_dps; }
+#endif
   void         setUseRecalculateQPAccordingToLambda (bool b)         { m_recalculateQPAccordingToLambda = b;    }
   bool         getUseRecalculateQPAccordingToLambda ()               { return m_recalculateQPAccordingToLambda; }
 
@@ -1688,8 +1699,13 @@ public:
   int          getActiveParameterSetsSEIEnabled ()                   { return m_activeParameterSetsSEIEnabled; }
 #endif
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  bool         getDCIEnabled()                      { return m_DCIEnabled; }
+  void         setDCIEnabled(bool i)                { m_DCIEnabled = i; }
+#else
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
+#endif
   bool         getHrdParametersPresentFlag()                         { return m_hrdParametersPresentFlag; }
   void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }

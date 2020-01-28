@@ -128,7 +128,11 @@ public:
   void  codeLmcsAps             ( APS* pcAPS );
   void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void  codeDCI                 ( const DCI* dci );
+#else
   void  codeDPS                 ( const DPS* dps );
+#endif
   void  codePictureHeader       ( PicHeader* picHeader );
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );

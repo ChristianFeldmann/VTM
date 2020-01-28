@@ -722,7 +722,11 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setCostMode                                          ( m_costMode );
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  m_cEncLib.setDCIEnabled                                         ( m_DCIEnabled );
+#else
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
+#endif
 #if HEVC_SEI
   m_cEncLib.setActiveParameterSetsSEIEnabled                     ( m_activeParameterSetsSEIEnabled );
 #endif
@@ -1124,7 +1128,11 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_CODED_SLICE_GDR:
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    case NAL_UNIT_DCI:
+#else
     case NAL_UNIT_DPS:
+#endif
     case NAL_UNIT_VPS:
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:

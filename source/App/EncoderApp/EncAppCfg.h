@@ -629,8 +629,12 @@ protected:
 #if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;
 #endif
-  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  bool      m_DCIEnabled;                                     ///< enable DCI
+#else
+  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
+#endif
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present

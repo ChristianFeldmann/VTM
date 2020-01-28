@@ -170,6 +170,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       {
         // Top is available, so use it.
         cabacReader.getCtx() = m_entropyCodingSyncContextState;
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+        cs.setPrevPLT(m_palettePredictorSyncState);
+#endif
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
     }
@@ -203,6 +206,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
     {
       m_entropyCodingSyncContextState = cabacReader.getCtx();
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+      cs.storePrevPLT(m_palettePredictorSyncState);
+#endif
     }
 
 

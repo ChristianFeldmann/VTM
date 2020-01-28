@@ -1561,6 +1561,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 #endif
 
+#if JVET_Q0297_MER
+  READ_UVLC(uiCode, "log2_parallel_merge_level_minus2");
+  pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
+#endif
+
   // KJS: reference picture sets to be replaced
 
   // KJS: not found in draft -> does not exist

@@ -1178,6 +1178,10 @@ private:
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
 
+#if JVET_Q0297_MER
+  uint32_t          m_log2ParallelMergeLevelMinus2;
+#endif
+
 public:
 
   SPS();
@@ -1486,6 +1490,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
 
+#if JVET_Q0297_MER
+  uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
+  void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }
+#endif
 };
 
 

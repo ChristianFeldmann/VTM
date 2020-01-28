@@ -83,6 +83,8 @@
 #define JVET_Q0054                                        1 // fix for long luma deblocking decision
 #define JVET_Q0795_CCALF                                  1 // Cross-component ALF
 
+#define JVET_Q0297_MER                                    1 // JVET_Q0297: Merge estimation region
+
 #define JVET_Q0483_CLIP_TMVP                              1 // JVET-Q0483: Clip TMVP when no scaling is applied
 
 #define JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND            1 // JVET-Q0516/Q0685: disable MTS when there is only DC coefficient 

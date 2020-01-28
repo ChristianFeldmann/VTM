@@ -1266,6 +1266,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
 
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
+
+#if JVET_Q0297_MER
+  sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
+#endif
 }
 
 void EncLib::xInitHrdParameters(SPS &sps)

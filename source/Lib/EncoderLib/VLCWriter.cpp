@@ -1667,6 +1667,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 
   // picture level PROF disable flags
 
+
+
     if (sps->getProfControlPresentFlag())
     {
       WRITE_FLAG(picHeader->getDisProfFlag(), "pic_disable_prof_flag");
@@ -1678,6 +1680,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 
 #if !JVET_Q0806
   // triangle merge candidate list size
+
 
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
     {
@@ -1698,10 +1701,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
     {
-      CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumGeoCand(), "Incorrrect max number of gpm candidates!");
+
       WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
     }
-    else
+
     {
       picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - (pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1)));
     }

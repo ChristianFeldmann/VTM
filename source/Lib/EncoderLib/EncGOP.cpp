@@ -3122,7 +3122,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->cs->picHeader->setPic(pcPic);
           pcPic->cs->picHeader->setValid();
 #if JVET_Q0775_PH_IN_SH
-          if (pcPic->cs->pps->getNumSlicesInPic() > 1 || m_pcCfg->getEnablePictureHeaderInSliceHeader())
+          if (pcPic->cs->pps->getNumSlicesInPic() > 1 || !m_pcCfg->getEnablePictureHeaderInSliceHeader())
           {
             pcSlice->setPictureHeaderInSliceHeader(false);
             actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);

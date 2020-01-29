@@ -275,8 +275,13 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   }
 
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
+#if JVET_Q0119_CLEANUPS
+  WRITE_FLAG( pcPPS->getSubPicIdMappingInPpsFlag() ? 1 : 0, "subpic_id_mapping_in_pps_flag" );
+  if( pcPPS->getSubPicIdMappingInPpsFlag() )
+#else
   WRITE_FLAG(pcPPS->getSubPicIdSignallingPresentFlag(), "pps_subpic_id_signalling_present_flag");
   if( pcPPS->getSubPicIdSignallingPresentFlag() )
+#endif
   {
     WRITE_UVLC( pcPPS->getNumSubPics() - 1, "pps_num_subpics_minus1" );
 
@@ -838,14 +843,26 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
-#if JVET_Q0043_RPR_and_Subpics
+#if JVET_Q0043_RPR_and_Subpics | JVET_Q0119_CLEANUPS
+#if JVET_Q0119_CLEANUPS
+  WRITE_FLAG(pcSPS->getSubPicInfoPresentFlag(), "subpic_info_present_flag");
+#else
   WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpic_info_present_flag");
+#endif
 #else
   WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
 #endif
+#if JVET_Q0119_CLEANUPS
+  if (pcSPS->getSubPicInfoPresentFlag())
+#else
   if(pcSPS->getSubPicPresentFlag())
+#endif
   {
+#if JVET_Q0119_CLEANUPS
+    WRITE_UVLC(pcSPS->getNumSubPics() - 1, "sps_num_subpics_minus1");
+#else
     WRITE_CODE(pcSPS->getNumSubPics() - 1, 8, "sps_num_subpics_minus1");
+#endif
 #if JVET_Q0816
     if( pcSPS->getNumSubPics() > 1 )
     {
@@ -889,6 +906,23 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_Q0816
     }
 #endif
+
+#if JVET_Q0119_CLEANUPS
+    WRITE_UVLC(pcSPS->getSubPicIdLen() - 1, "sps_subpic_id_len_minus1");
+    WRITE_FLAG(pcSPS->getSubPicIdMappingExplicitlySignalledFlag(), "subpic_id_mapping_explicitly_signalled_flag");
+    if (pcSPS->getSubPicIdMappingExplicitlySignalledFlag())
+    {
+      WRITE_FLAG(pcSPS->getSubPicIdMappingInSpsFlag(), "subpic_id_mapping_in_sps_flag");
+      if (pcSPS->getSubPicIdMappingInSpsFlag())
+      {
+        for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
+        {
+          WRITE_CODE(pcSPS->getSubPicId(picIdx), pcSPS->getSubPicIdLen(), "sps_subpic_id[i]");
+        }
+      }
+    }
+  }
+#else
   }
 
   WRITE_FLAG( pcSPS->getSubPicIdPresentFlag(), "sps_subpic_id_present_flag");
@@ -907,6 +941,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       }
     }
   }
+#endif
 
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_minus8" );
 
@@ -1429,6 +1464,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
 
   
+#if !JVET_Q0119_CLEANUPS
   // sub-picture IDs
   if( sps->getSubPicIdPresentFlag() ) 
   {
@@ -1469,6 +1505,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setSubPicId( picIdx, picIdx );
     }
   }
+#endif
 
   // virtual boundaries
   if( !sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
@@ -2131,18 +2168,32 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
 #endif
 
+#if JVET_Q0119_CLEANUPS
+  if (pcSlice->getSPS()->getSubPicInfoPresentFlag())
+#else
   if (pcSlice->getSPS()->getSubPicPresentFlag())
+#endif
   {
     uint32_t bitsSubPicId;
+#if JVET_Q0119_CLEANUPS
+    if (pcSlice->getSPS()->getSubPicIdMappingExplicitlySignalledFlag())
+#else
     if (pcSlice->getSPS()->getSubPicIdSignallingPresentFlag())
+#endif
     {
       bitsSubPicId = pcSlice->getSPS()->getSubPicIdLen();
     }
+#if !JVET_Q0119_CLEANUPS
     else if (picHeader->getSubPicIdSignallingPresentFlag())
     {
       bitsSubPicId = picHeader->getSubPicIdLen();
     }
+#endif
+#if JVET_Q0119_CLEANUPS
+    else if (pcSlice->getPPS()->getSubPicIdMappingInPpsFlag())
+#else
     else if (pcSlice->getPPS()->getSubPicIdSignallingPresentFlag())
+#endif
     {
       bitsSubPicId = pcSlice->getPPS()->getSubPicIdLen();
     }

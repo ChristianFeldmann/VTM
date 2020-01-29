@@ -446,8 +446,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 
+#if JVET_Q0119_CLEANUPS
+  READ_FLAG( uiCode, "subpic_id_mapping_in_pps_flag" );           pcPPS->setSubPicIdMappingInPpsFlag( uiCode != 0 );
+  if( pcPPS->getSubPicIdMappingInPpsFlag() )
+#else
   READ_FLAG(uiCode, "pps_subpic_id_signalling_present_flag");              pcPPS->setSubPicIdSignallingPresentFlag( uiCode != 0 );
   if( pcPPS->getSubPicIdSignallingPresentFlag() )
+#endif
   {
     READ_UVLC( uiCode, "pps_num_subpics_minus1" );                         pcPPS->setNumSubPics( uiCode + 1 );
     CHECK( uiCode > MAX_NUM_SUB_PICS-1,  "Number of sub-pictures exceeds limit");
@@ -1255,15 +1260,30 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode+3);
   pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
   pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
-#if JVET_Q0043_RPR_and_Subpics
+
+#if JVET_Q0043_RPR_and_Subpics | JVET_Q0119_CLEANUPS
+#if JVET_Q0119_CLEANUPS
+  READ_FLAG( uiCode, "subpic_info_present_flag" );               pcSPS->setSubPicInfoPresentFlag(uiCode);
+#else
   READ_FLAG( uiCode, "subpic_info_present_flag" );               pcSPS->setSubPicPresentFlag(uiCode);
+#endif
 #else
   READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
 #endif
 
+#if JVET_Q0119_CLEANUPS
+  if (pcSPS->getSubPicInfoPresentFlag())
+#else
   if (pcSPS->getSubPicPresentFlag()) 
+#endif
   {
+#if JVET_Q0119_CLEANUPS
+    READ_UVLC(uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
+    CHECK(uiCode > (pcSPS->getMaxPicWidthInLumaSamples() / (1 << pcSPS->getCTUSize())) * (pcSPS->getMaxPicHeightInLumaSamples() / (1 << pcSPS->getCTUSize())) - 1, "Invalid sps_num_subpics_minus1 value");
+#else
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
+#endif
+
 #if JVET_Q0816
     if( pcSPS->getNumSubPics() == 1 )
     {
@@ -1350,9 +1370,30 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_Q0816
     }
 #endif
+
+#if JVET_Q0119_CLEANUPS
+    READ_UVLC( uiCode, "sps_subpic_id_len_minus1" );                       pcSPS->setSubPicIdLen( uiCode + 1 );
+    CHECK( uiCode > 15, "Invalid sps_subpic_id_len_minus1 value" );
+    CHECK( (1 << (uiCode + 1)) < pcSPS->getNumSubPics() + 1, "Invalid sps_subpic_id_len_minus1 value" );
+    READ_FLAG( uiCode, "subpic_id_mapping_explicitly_signalled_flag" );    pcSPS->setSubPicIdMappingExplicitlySignalledFlag( uiCode != 0 );
+    if (pcSPS->getSubPicIdMappingExplicitlySignalledFlag())
+    {
+      READ_FLAG( uiCode, "subpic_id_mapping_in_sps_flag" );                pcSPS->setSubPicIdMappingInSpsFlag( uiCode != 0 );
+      if (pcSPS->getSubPicIdMappingInSpsFlag())
+      {
+        for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
+        {
+          READ_CODE(pcSPS->getSubPicIdLen(), uiCode, "sps_subpic_id[i]");   pcSPS->setSubPicId(picIdx, uiCode);
+        }
+      }
+    }
+#endif
   }
   else
   {
+#if JVET_Q0119_CLEANUPS
+    pcSPS->setSubPicIdMappingExplicitlySignalledFlag(0);
+#endif
     pcSPS->setNumSubPics(1);
     pcSPS->setSubPicCtuTopLeftX(0, 0);
     pcSPS->setSubPicCtuTopLeftY(0, 0);
@@ -1360,6 +1401,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSubPicHeight(0, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize()));
   }
 
+#if !JVET_Q0119_CLEANUPS
   READ_FLAG(uiCode, "sps_subpic_id_present_flag");                           pcSPS->setSubPicIdPresentFlag( uiCode != 0 );
   if( pcSPS->getSubPicIdPresentFlag() )
   {
@@ -1378,6 +1420,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
   }
   if( pcSPS->getSubPicIdPresentFlag() == false || pcSPS->getSubPicIdSignallingPresentFlag() == false )
+#else
+  if( !pcSPS->getSubPicIdMappingExplicitlySignalledFlag() || !pcSPS->getSubPicIdMappingInSpsFlag() ) // is it correct???
+#endif
   {
     for( int picIdx = 0; picIdx < pcSPS->getNumSubPics( ); picIdx++ )
     {
@@ -2106,6 +2151,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     CHECK(pps->getCtuSize() != sps->getCTUSize(), "PPS CTU size does not match CTU size in SPS");
   }
 
+#if !JVET_Q0119_CLEANUPS
   // sub-picture IDs
   if( sps->getSubPicIdPresentFlag() ) 
   {
@@ -2147,6 +2193,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setSubPicId( picIdx, picIdx );
     }
   }
+#endif
 
   // virtual boundaries
   if( !sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
@@ -3005,18 +3052,32 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 
+#if JVET_Q0119_CLEANUPS
+  if (sps->getSubPicInfoPresentFlag())
+#else
   if (sps->getSubPicPresentFlag())
+#endif
   {
     uint32_t bitsSubPicId;
+#if JVET_Q0119_CLEANUPS
+    if (pcSlice->getSPS()->getSubPicIdMappingExplicitlySignalledFlag())
+#else
     if (sps->getSubPicIdSignallingPresentFlag())
+#endif
     {
       bitsSubPicId = sps->getSubPicIdLen();
     }
+#if !JVET_Q0119_CLEANUPS
     else if (picHeader->getSubPicIdSignallingPresentFlag())
     {
       bitsSubPicId = picHeader->getSubPicIdLen();
     }
+#endif
+#if JVET_Q0119_CLEANUPS
+    else if (pcSlice->getPPS()->getSubPicIdMappingInPpsFlag())
+#else
     else if (pps->getSubPicIdSignallingPresentFlag())
+#endif
     {
       bitsSubPicId = pps->getSubPicIdLen();
     }
@@ -3026,6 +3087,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     }
     READ_CODE(bitsSubPicId, uiCode, "slice_subpic_id");    pcSlice->setSliceSubPicId(uiCode);
   }
+#if JVET_Q0119_CLEANUPS
+  else
+  {
+    pcSlice->setSliceSubPicId(0);
+  }
+#endif
 
   // raster scan slices
   if(pps->getRectSliceFlag() == 0) 

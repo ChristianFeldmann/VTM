@@ -1258,7 +1258,11 @@ void DecLib::xActivateParameterSets( const int layerId )
   }
   if( sps->getRprEnabledFlag() )
   {
+#if JVET_Q0119_CLEANUPS
+    CHECK( sps->getSubPicInfoPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#else
     CHECK( sps->getSubPicPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#endif
   }
   CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When res_change_in_clvs_allowed_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
 #else

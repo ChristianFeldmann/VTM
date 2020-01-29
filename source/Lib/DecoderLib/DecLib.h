@@ -131,6 +131,16 @@ private:
   int                     m_debugCTU;
 
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  #if JVET_P0101_POC_MULTILAYER
+  struct AccessUnitPicInfo
+  {
+    NalUnitType     m_nalUnitType; ///< nal_unit_type
+    uint32_t        m_temporalId;  ///< temporal_id
+    uint32_t        m_nuhLayerId;  ///< nuh_layer_id
+    int             m_POC;
+  };
+  std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
+  #endif
   std::vector<int> m_accessUnitApsNals;
 
   VPS*                    m_vps;
@@ -179,6 +189,9 @@ public:
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
   void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
+#if JVET_P0101_POC_MULTILAYER
+  void resetAccessUnitPicInfo()              { m_accessUnitPicInfo.clear();    }
+#endif
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 

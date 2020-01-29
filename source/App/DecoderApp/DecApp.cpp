@@ -162,6 +162,9 @@ uint32_t DecApp::decode()
               {
                 m_cDecLib.resetAccessUnitNals();
                 m_cDecLib.resetAccessUnitApsNals();
+#if JVET_P0101_POC_MULTILAYER
+                m_cDecLib.resetAccessUnitPicInfo();
+#endif
               }
               bPicSkipped = false;
             }
@@ -257,6 +260,9 @@ uint32_t DecApp::decode()
     {
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
+#if JVET_P0101_POC_MULTILAYER
+        m_cDecLib.resetAccessUnitPicInfo();
+#endif
     }
   }
 

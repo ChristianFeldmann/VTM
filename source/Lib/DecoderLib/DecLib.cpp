@@ -1340,14 +1340,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 
 #if JVET_P0101_POC_MULTILAYER
-  PPS *pps = NULL;
-  SPS *sps = NULL;
-  VPS *vps = NULL;
-  pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
-  sps = m_parameterSetManager.getSPS(pps->getSPSId());
+  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
-  vps = m_parameterSetManager.getVPS(sps->getVPSId());
+  VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
   CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
   if (vps > 0 && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
   {

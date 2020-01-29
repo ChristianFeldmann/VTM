@@ -644,6 +644,7 @@ void DecCu::xFillPCMBuffer(CodingUnit &cu)
 
 void DecCu::xReconInter(CodingUnit &cu)
 {
+#if !JVET_Q0806
   if( cu.triangle )
   {
     const bool    splitDir = cu.firstPU->triangleSplitDir;
@@ -653,13 +654,25 @@ void DecCu::xReconInter(CodingUnit &cu)
     PU::spanTriangleMotionInfo( *cu.firstPU, m_triangleMrgCtx, splitDir, candIdx0, candIdx1 );
   }
   else
+#else
+  if( cu.geoFlag )
+  {
+    m_pcInterPred->motionCompensationGeo( cu, m_geoMrgCtx );
+    PU::spanGeoMotionInfo( *cu.firstPU, m_geoMrgCtx, cu.firstPU->geoSplitDir, cu.firstPU->geoMergeIdx0, cu.firstPU->geoMergeIdx1 );
+  }
+  else
+#endif
   {
   m_pcIntraPred->geneIntrainterPred(cu);
 
   // inter prediction
   CHECK(CU::isIBC(cu) && cu.firstPU->ciipFlag, "IBC and Ciip cannot be used together");
   CHECK(CU::isIBC(cu) && cu.affine, "IBC and Affine cannot be used together");
+#if !JVET_Q0806
   CHECK(CU::isIBC(cu) && cu.triangle, "IBC and triangle cannot be used together");
+#else
+  CHECK(CU::isIBC(cu) && cu.geoFlag, "IBC and geo cannot be used together");
+#endif
   CHECK(CU::isIBC(cu) && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
   const bool luma = cu.Y().valid();
   const bool chroma = cu.Cb().valid();
@@ -899,11 +912,19 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
       else
       {
       {
+#if !JVET_Q0806
         if( pu.cu->triangle )
         {
           PU::getTriangleMergeCandidates( pu, m_triangleMrgCtx );
         }
         else
+#else
+        if( pu.cu->geoFlag )
+        {
+          PU::getGeoMergeCandidates( pu, m_geoMrgCtx );
+        }
+        else
+#endif
         {
         if( pu.cu->affine )
         {
@@ -1047,6 +1068,7 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         PU::spanMotionInfo( pu, mrgCtx );
       }
     }
+#if !JVET_Q0806
     if( !cu.triangle )
     {
       if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
@@ -1054,6 +1076,15 @@ void DecCu::xDeriveCUMV( CodingUnit &cu )
         printf( "DECODER: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
       }
     }
+#else
+    if( !cu.geoFlag )
+    {
+      if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
+      {
+        printf( "DECODER: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
+      }
+    }
+#endif
     if (CU::isIBC(cu))
     {
       const int cuPelX = pu.Y().x;

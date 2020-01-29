@@ -403,6 +403,7 @@ void initROM()
     }
   }
 
+#if !JVET_Q0806
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
   {
     for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
@@ -446,8 +447,23 @@ void initROM()
       }
     }
   }
+#else
+  initGeoTemplate();
+#endif
 
   ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
+
+#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
+  for (int qp = 0; qp < 57; qp++)
+  {
+    int qpRem = (qp + 12) % 6;
+    int qpPer = (qp + 12) / 6;
+    int quantiserScale = g_quantScales[0][qpRem];
+    int quantiserRightShift = QUANT_SHIFT + qpPer;
+    double threshQP = ((double)(1 << quantiserRightShift)) / quantiserScale;
+    g_paletteQuant[qp] = (int)(threshQP*0.16 + 0.5);
+  }
+#endif
 }
 
 void destroyROM()
@@ -473,6 +489,7 @@ void destroyROM()
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
 
+#if !JVET_Q0806
   for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
@@ -483,6 +500,21 @@ void destroyROM()
       g_triangleWeights[1][idxH][idxW] = nullptr;
     }
   }
+#else
+  for( int modeIdx = 0; modeIdx < GEO_NUM_PARTITION_MODE; modeIdx++ )
+  {
+    delete[] g_GeoParams[modeIdx];
+    g_GeoParams[modeIdx] = nullptr;
+  }
+  delete[] g_GeoParams;
+  for( int i = 0; i < GEO_NUM_PRESTORED_MASK; i++ )
+  {
+    delete[] g_globalGeoWeights   [i];
+    delete[] g_globalGeoEncSADmask[i];
+    g_globalGeoWeights   [i] = nullptr;
+    g_globalGeoEncSADmask[i] = nullptr;
+  }
+#endif
 }
 
 // ====================================================================================================================
@@ -708,12 +740,102 @@ const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 1, 4, 16, 64, 256, 
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16,   32,   64,   128 };
 
 
+#if !JVET_Q0806
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
 int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+#endif
+
 Mv   g_reusedUniMVs[32][32][8][8][2][33];
 bool g_isReusedUniMVsFilled[32][32][8][8];
 
+#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
+uint16_t g_paletteQuant[57];
+#else
 const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
+#endif
 uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
 uint8_t g_paletteRunLeftLut[5] = { 0, 1, 2, 3, 4 };
+
+#if JVET_Q0806
+void initGeoTemplate()
+{
+  g_GeoParams = new int16_t*[GEO_NUM_PARTITION_MODE];
+  int modeIdx = 0;
+  for( int angleIdx = 0; angleIdx < GEO_NUM_ANGLES; angleIdx++ )
+  {
+    for( int distanceIdx = 0; distanceIdx < GEO_NUM_DISTANCES; distanceIdx++ )
+    {
+      if( (distanceIdx == 0 && angleIdx >= 16)
+        || ((distanceIdx == 2 || distanceIdx == 0) && (g_angle2mask[angleIdx] == 0 || g_angle2mask[angleIdx] == 5))
+        || g_angle2mask[angleIdx] == -1 )
+        continue;
+      g_GeoParams[modeIdx]    = new int16_t[2];
+      g_GeoParams[modeIdx][0] = (int16_t)angleIdx;
+      g_GeoParams[modeIdx][1] = (int16_t)distanceIdx;
+      modeIdx++;
+    }
+  }
+  for (int angleIdx = 0; angleIdx < (GEO_NUM_ANGLES >> 2) + 1; angleIdx++)
+  {
+    if (g_angle2mask[angleIdx] == -1)
+      continue;
+    g_globalGeoWeights[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+    g_globalGeoEncSADmask[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+  
+    int distanceX = angleIdx;
+    int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+    int16_t rho = (g_Dis[distanceX] << (GEO_MAX_CU_LOG2+1)) + (g_Dis[distanceY] << (GEO_MAX_CU_LOG2 + 1));
+    static const int16_t maskOffset = (2*GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
+    int index = 0;
+    for( int y = 0; y < GEO_WEIGHT_MASK_SIZE; y++ )
+    {
+      int16_t lookUpY = (((y + maskOffset) << 1) + 1) * g_Dis[distanceY];
+      for( int x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, index++ )
+      {
+        int16_t sx_i = ((x + maskOffset) << 1) + 1;
+        int16_t weightIdx = sx_i * g_Dis[distanceX] + lookUpY - rho;
+        int weightLinearIdx = 32 + weightIdx;
+        g_globalGeoWeights[g_angle2mask[angleIdx]][index] = Clip3(0, 8, (weightLinearIdx + 4) >> 3);
+        g_globalGeoEncSADmask[g_angle2mask[angleIdx]][index] = weightIdx > 0 ? 1 : 0;
+      }
+    }
+  }
+
+  for( int hIdx = 0; hIdx < GEO_NUM_CU_SIZE; hIdx++ )
+  {
+    int16_t height = 1 << ( hIdx + GEO_MIN_CU_LOG2);
+    for( int wIdx = 0; wIdx < GEO_NUM_CU_SIZE; wIdx++ )
+    {
+      int16_t width = 1 << (wIdx + GEO_MIN_CU_LOG2);
+      for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
+      {
+        int16_t angle         = g_GeoParams[splitDir][0];
+        int16_t distance      = g_GeoParams[splitDir][1];
+        int16_t offsetX       = (GEO_WEIGHT_MASK_SIZE - width) >> 1;
+        int16_t offsetY       = (GEO_WEIGHT_MASK_SIZE - height) >> 1;
+        if( distance > 0 )
+        {
+          if( angle % 16 == 8 || (angle % 16 != 0 && height >= width) )
+          {
+            offsetY += angle < 16 ? ((distance * (int32_t)height) >> 3) : -((distance * (int32_t)height) >> 3);
+          }
+          else
+          {
+            offsetX += angle < 16 ? ((distance * (int32_t)width) >> 3) : -((distance * (int32_t)width) >> 3);
+          }
+        }
+        g_weightOffset[splitDir][hIdx][wIdx][0] = offsetX;
+        g_weightOffset[splitDir][hIdx][wIdx][1] = offsetY;
+      }
+    }
+  }
+}
+int16_t** g_GeoParams;
+int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
+int16_t*  g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
+int8_t    g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1, 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1 };
+int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
+int8_t    g_angle2mirror[GEO_NUM_ANGLES] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
+#endif
 //! \}

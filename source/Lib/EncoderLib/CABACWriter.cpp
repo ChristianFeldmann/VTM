@@ -1884,10 +1884,19 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
     merge_idx(pu);
     return;
   }
+#if JVET_Q0806
+  const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE && pu.cu->lwidth() * pu.cu->lheight() >= 64;
+  const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() && pu.cu->cs->picHeader->getMaxNumGeoCand() > 1
+                                                                    && pu.cu->lwidth() >= GEO_MIN_CU_SIZE && pu.cu->lheight() >= GEO_MIN_CU_SIZE
+                                                                    && pu.cu->lwidth() <= GEO_MAX_CU_SIZE && pu.cu->lheight() <= GEO_MAX_CU_SIZE
+                                                                    && pu.cu->lwidth() < 8 * pu.cu->lheight() && pu.cu->lheight() < 8 * pu.cu->lwidth();
+  if (geoAvailable || ciipAvailable)
+#else
   const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->picHeader->getMaxNumTriangleCand() > 1;
   const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
+#endif
   {
     m_BinEncoder.encodeBin(pu.regularMergeFlag, Ctx::RegularMergeFlag(pu.cu->skip ? 0 : 1));
   }
@@ -1909,10 +1918,17 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
   }
   else
   {
+#if !JVET_Q0806
     if (triangleAvailable && ciipAvailable)
     {
       Ciip_flag(pu);
     }
+#else
+    if (geoAvailable && ciipAvailable)
+    {
+      Ciip_flag(pu);
+    }
+#endif
     merge_idx(pu);
   }
 }
@@ -2013,6 +2029,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
   }
   else
   {
+#if !JVET_Q0806
     if( pu.cu->triangle )
     {
       bool    splitDir = pu.triangleSplitDir;
@@ -2056,6 +2073,38 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       encodeOneIdx(candIdx1, maxNumTriangleCand - 2);
       return;
     }
+#else
+    if( pu.cu->geoFlag )
+    {
+      uint8_t splitDir = pu.geoSplitDir;
+      uint8_t candIdx0 = pu.geoMergeIdx0;
+      uint8_t candIdx1 = pu.geoMergeIdx1;
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() geo_split_dir=%d\n", splitDir );
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() geo_idx0=%d\n", candIdx0 );
+      DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() geo_idx1=%d\n", candIdx1 );
+      xWriteTruncBinCode(splitDir, GEO_NUM_PARTITION_MODE);
+      candIdx1 -= candIdx1 < candIdx0 ? 0 : 1;
+      const int maxNumGeoCand = pu.cs->picHeader->getMaxNumGeoCand();
+      CHECK(maxNumGeoCand < 2, "Incorrect max number of geo candidates");
+      CHECK(candIdx0 >= maxNumGeoCand, "Incorrect candIdx0");
+      CHECK(candIdx1 >= maxNumGeoCand, "Incorrect candIdx1");
+      int numCandminus2 = maxNumGeoCand - 2;
+      m_BinEncoder.encodeBin( candIdx0 == 0 ? 0 : 1, Ctx::MergeIdx() );
+      if( candIdx0 > 0 )
+      {
+        unary_max_eqprob(candIdx0 - 1, numCandminus2);
+      }
+      if (numCandminus2 > 0)
+      {
+        m_BinEncoder.encodeBin(candIdx1 == 0 ? 0 : 1, Ctx::MergeIdx());
+        if (candIdx1 > 0)
+        {
+          unary_max_eqprob(candIdx1 - 1, numCandminus2 - 1);
+        }
+      }
+      return;
+    }
+#endif
     int numCandminus1;
     if (pu.cu->predMode == MODE_IBC)
       numCandminus1 = int(pu.cs->picHeader->getMaxNumIBCMergeCand()) - 1;

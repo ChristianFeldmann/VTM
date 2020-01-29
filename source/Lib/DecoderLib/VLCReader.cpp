@@ -698,7 +698,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE( 2, uiCode, "pps_mvd_l1_zero_idc");              pcPPS->setPPSMvdL1ZeroIdc(uiCode);
     READ_CODE( 2, uiCode, "pps_collocated_from_l0_idc");       pcPPS->setPPSCollocatedFromL0Idc(uiCode);
     READ_UVLC( uiCode, "pps_six_minus_max_num_merge_cand_plus1"); pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(uiCode);
+#if !JVET_Q0806
     READ_UVLC( uiCode, "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uiCode);
+#else
+    READ_UVLC(uiCode, "pps_max_num_merge_cand_minus_max_num_gpm_cand_plus1"); pcPPS->setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(uiCode);
+#endif
   }
   else
   {
@@ -708,7 +712,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSMvdL1ZeroIdc(0);
     pcPPS->setPPSCollocatedFromL0Idc(0);
     pcPPS->setPPSSixMinusMaxNumMergeCandPlus1(0);
+#if !JVET_Q0806
     pcPPS->setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(0);
+#else
+    pcPPS->setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(0);
+#endif
   }
 
 
@@ -1166,6 +1174,44 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
+#if JVET_Q0787_SUBPIC
+      if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+      {
+        READ_CODE(ceilLog2((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_ctu_top_left_x[ i ]");
+        pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
+      }
+      else
+      {
+        pcSPS->setSubPicCtuTopLeftX(picIdx, 0);
+      }
+      if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+      {
+        READ_CODE(ceilLog2((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_ctu_top_left_y[ i ]");
+        pcSPS->setSubPicCtuTopLeftY(picIdx, uiCode);
+      }
+      else
+      {
+        pcSPS->setSubPicCtuTopLeftY(picIdx, 0);
+      }
+      if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+      {
+        READ_CODE(ceilLog2((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_width_minus1[ i ]");
+        pcSPS->setSubPicWidth(picIdx, uiCode + 1);
+      }
+      else
+      {
+        pcSPS->setSubPicWidth(picIdx, 1);
+      }
+      if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+      {
+        READ_CODE(ceilLog2((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_height_minus1[ i ]");
+        pcSPS->setSubPicHeight(picIdx, uiCode + 1);
+      }
+      else
+      {
+        pcSPS->setSubPicHeight(picIdx, 1);
+      }
+#else
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_x[ i ]");
       pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_y[ i ]");
@@ -1174,6 +1220,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setSubPicWidth(picIdx, uiCode + 1);
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_height_minus1[ i ]");
       pcSPS->setSubPicHeight(picIdx, uiCode + 1);
+#endif
       READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");
       pcSPS->setSubPicTreatedAsPicFlag(picIdx, uiCode);
       READ_FLAG(uiCode, "loop_filter_across_subpic_enabled_flag[ i ]");
@@ -1549,7 +1596,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
 
+#if !JVET_Q0806
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
+#else
+  READ_FLAG( uiCode,    "sps_gpm_enabled_flag" );                               pcSPS->setUseGeo                 ( uiCode != 0 );
+#endif
 
   READ_FLAG(uiCode, "sps_lmcs_enable_flag");                   pcSPS->setUseLmcs(uiCode == 1);
   READ_FLAG( uiCode, "sps_lfnst_enabled_flag" );                    pcSPS->setUseLFNST( uiCode != 0 );
@@ -2328,6 +2379,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setDisProfFlag(0);
   }
 
+#if !JVET_Q0806
   // triangle merge candidate list size
   if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
   {
@@ -2346,6 +2398,26 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setMaxNumTriangleCand(0);
   }
+#else
+  // geometric merge candidate list size
+  if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
+  {
+    if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+    {
+      READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+    }
+    else
+    {
+      uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1;
+    }
+    CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of gpm candidates!");
+    picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
+  }
+  else
+  {
+    picHeader->setMaxNumGeoCand(0);
+  }
+#endif
 
   // ibc merge candidate list size
   if (sps->getIBCFlag())
@@ -3428,7 +3500,11 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_ibc_constraint_flag");                     cinfo->setNoIbcConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_ciip_constraint_flag");                    cinfo->setNoCiipConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_fpel_mmvd_constraint_flag");               cinfo->setNoFPelMmvdConstraintFlag(symbol > 0 ? true : false);
+#if !JVET_Q0806
   READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
+#else
+  READ_FLAG(symbol, "no_gpm_constraint_flag");                     cinfo->setNoGeoConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_transform_skip_constraint_flag");          cinfo->setNoTransformSkipConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_bdpcm_constraint_flag");                   cinfo->setNoBDPCMConstraintFlag(symbol > 0 ? true : false);

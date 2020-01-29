@@ -1295,10 +1295,10 @@ Defines the SPS-derived Log2ParallelMergeLevel variable.
 Specifies the maximum number of merge candidates to use.
 \\
 
-\Option{MaxNumTriangleCand} &
+\Option{MaxNumGeoCand} &
 %\ShortOption{\None} &
 \Default{5} &
-Specifies the maximum number of triangle merge candidates to use.
+Specifies the maximum number of geometric partitioning mode candidates to use.
 \\
 
 \Option{MaxNumIBCMergeCand} &
@@ -2170,7 +2170,7 @@ Enables signaling the below parameters either in PPS or for each slice according
   collocated_from_l0_flag & s & s & p & s \\
   six_minus_max_num_merge_cand & s & p & p & p \\
   five_minus_max_num_subblock_merge_cand & s & p & p & p \\
-  max_num_merge_cand_minus_max_num_triangle_cand & s & p & p & s \\
+  max_num_merge_cand_minus_max_num_geo_cand & s & p & p & s \\
 \end{tabular}
 \\
 
@@ -2261,6 +2261,12 @@ QP threshold above which the encoder reduces cross-component ALF usage.
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables symmetric MVD mode.
+\\
+
+\Option{Geo} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables geometric partitioning mode.
 \\
 
 \Option{PLT} &

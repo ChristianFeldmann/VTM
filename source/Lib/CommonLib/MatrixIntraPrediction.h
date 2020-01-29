@@ -80,11 +80,19 @@ public:
                                         const SizeType bndryStep,
                                         const unsigned int upsmpFactor );
 
+#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
+    const uint8_t* getMatrixData(const int modeIdx) const;
+#else
     void getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const;
+#endif
 
 
     void computeReducedPred( int*const result, const int* const input, 
+#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
+                             const uint8_t* matrix,
+#else
                              const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
+#endif
                              const bool transpose, const int bitDepth );
   };
 

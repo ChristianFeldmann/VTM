@@ -1398,7 +1398,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   
   for( int i = 0; i < m_vps->getMaxLayers(); ++i )
   {
-    //CHECK((m_vps->getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
+    CHECK((m_vps->getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
 #else
   sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );

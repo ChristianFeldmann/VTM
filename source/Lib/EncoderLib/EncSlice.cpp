@@ -596,6 +596,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setDeblockingFilterDisable(false);
     rpcSlice->setDeblockingFilterBetaOffsetDiv2( 0 );
     rpcSlice->setDeblockingFilterTcOffsetDiv2( 0 );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+    rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterCbTcOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterCrTcOffsetDiv2( 0 );
+#endif
   }
   else if (rpcSlice->getPPS()->getDeblockingFilterControlPresentFlag())
   {
@@ -607,11 +613,23 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
       {
         rpcSlice->setDeblockingFilterBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_betaOffsetDiv2 + m_pcCfg->getLoopFilterBetaOffset()  );
         rpcSlice->setDeblockingFilterTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_tcOffsetDiv2 + m_pcCfg->getLoopFilterTcOffset() );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+        rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbBetaOffsetDiv2 + m_pcCfg->getLoopFilterCbBetaOffset()  );
+        rpcSlice->setDeblockingFilterCbTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbTcOffsetDiv2 + m_pcCfg->getLoopFilterCbTcOffset() );
+        rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrBetaOffsetDiv2 + m_pcCfg->getLoopFilterCrBetaOffset()  );
+        rpcSlice->setDeblockingFilterCrTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrTcOffsetDiv2 + m_pcCfg->getLoopFilterCrTcOffset() );
+#endif
       }
       else
       {
         rpcSlice->setDeblockingFilterBetaOffsetDiv2( m_pcCfg->getLoopFilterBetaOffset() );
         rpcSlice->setDeblockingFilterTcOffsetDiv2( m_pcCfg->getLoopFilterTcOffset() );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+        rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( m_pcCfg->getLoopFilterCbBetaOffset() );
+        rpcSlice->setDeblockingFilterCbTcOffsetDiv2( m_pcCfg->getLoopFilterCbTcOffset() );
+        rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( m_pcCfg->getLoopFilterCrBetaOffset() );
+        rpcSlice->setDeblockingFilterCrTcOffsetDiv2( m_pcCfg->getLoopFilterCrTcOffset() );
+#endif
       }
     }
   }
@@ -621,6 +639,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setDeblockingFilterDisable( false );
     rpcSlice->setDeblockingFilterBetaOffsetDiv2( 0 );
     rpcSlice->setDeblockingFilterTcOffsetDiv2( 0 );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+    rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterCbTcOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( 0 );
+    rpcSlice->setDeblockingFilterCrTcOffsetDiv2( 0 );
+#endif
   }
 
   pcPic->layer =  temporalId;

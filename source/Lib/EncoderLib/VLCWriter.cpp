@@ -417,6 +417,12 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     {
       WRITE_SVLC( pcPPS->getDeblockingFilterBetaOffsetDiv2(),             "pps_beta_offset_div2" );
       WRITE_SVLC( pcPPS->getDeblockingFilterTcOffsetDiv2(),               "pps_tc_offset_div2" );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+      WRITE_SVLC( pcPPS->getDeblockingFilterCbBetaOffsetDiv2(),           "pps_cb_beta_offset_div2" );
+      WRITE_SVLC( pcPPS->getDeblockingFilterCbTcOffsetDiv2(),             "pps_cb_tc_offset_div2" );
+      WRITE_SVLC( pcPPS->getDeblockingFilterCrBetaOffsetDiv2(),           "pps_cr_beta_offset_div2" );
+      WRITE_SVLC( pcPPS->getDeblockingFilterCrTcOffsetDiv2(),             "pps_cr_tc_offset_div2" );
+#endif
     }
   }
   WRITE_FLAG( pcPPS->getConstantSliceHeaderParamsEnabledFlag(),              "constant_slice_header_params_enabled_flag");
@@ -1809,18 +1815,37 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 
     if(picHeader->getDeblockingFilterOverrideFlag())
     {
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+      WRITE_FLAG( picHeader->getDeblockingFilterDisable(), "ph_deblocking_filter_disabled_flag" );
+      if( !picHeader->getDeblockingFilterDisable() )
+      {
+        WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_beta_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_tc_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_cb_beta_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_cb_tc_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_cr_beta_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_cr_tc_offset_div2" );
+      }
+#else
       WRITE_FLAG ( picHeader->getDeblockingFilterDisable(), "pic_deblocking_filter_disabled_flag" );
       if(!picHeader->getDeblockingFilterDisable())
       {
         WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "pic_beta_offset_div2" );
         WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "pic_tc_offset_div2" );
       }
+#endif
     }
     else
     {
       picHeader->setDeblockingFilterDisable       ( pps->getPPSDeblockingFilterDisabledFlag() );
       picHeader->setDeblockingFilterBetaOffsetDiv2( pps->getDeblockingFilterBetaOffsetDiv2() );
       picHeader->setDeblockingFilterTcOffsetDiv2  ( pps->getDeblockingFilterTcOffsetDiv2() );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+      picHeader->setDeblockingFilterCbBetaOffsetDiv2( pps->getDeblockingFilterCbBetaOffsetDiv2() );
+      picHeader->setDeblockingFilterCbTcOffsetDiv2  ( pps->getDeblockingFilterCbTcOffsetDiv2() );
+      picHeader->setDeblockingFilterCrBetaOffsetDiv2( pps->getDeblockingFilterCrBetaOffsetDiv2() );
+      picHeader->setDeblockingFilterCrTcOffsetDiv2  ( pps->getDeblockingFilterCrTcOffsetDiv2() );
+#endif
     }
   }
   else
@@ -1828,6 +1853,12 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setDeblockingFilterDisable       ( false );
     picHeader->setDeblockingFilterBetaOffsetDiv2( 0 );
     picHeader->setDeblockingFilterTcOffsetDiv2  ( 0 );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+    picHeader->setDeblockingFilterCbBetaOffsetDiv2( 0 );
+    picHeader->setDeblockingFilterCbTcOffsetDiv2  ( 0 );
+    picHeader->setDeblockingFilterCrBetaOffsetDiv2( 0 );
+    picHeader->setDeblockingFilterCrTcOffsetDiv2  ( 0 );
+#endif
   }
 
   // luma mapping / chroma scaling controls
@@ -2246,6 +2277,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           WRITE_SVLC (pcSlice->getDeblockingFilterBetaOffsetDiv2(), "slice_beta_offset_div2");
           WRITE_SVLC (pcSlice->getDeblockingFilterTcOffsetDiv2(),   "slice_tc_offset_div2");
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+          WRITE_SVLC (pcSlice->getDeblockingFilterCbBetaOffsetDiv2(), "slice_cb_beta_offset_div2");
+          WRITE_SVLC (pcSlice->getDeblockingFilterCbTcOffsetDiv2(),   "slice_cb_tc_offset_div2");
+          WRITE_SVLC (pcSlice->getDeblockingFilterCrBetaOffsetDiv2(), "slice_cr_beta_offset_div2");
+          WRITE_SVLC (pcSlice->getDeblockingFilterCrTcOffsetDiv2(),   "slice_cr_tc_offset_div2");
+#endif
         }
       }
       else
@@ -2253,6 +2290,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         pcSlice->setDeblockingFilterDisable       ( picHeader->getDeblockingFilterDisable() );
         pcSlice->setDeblockingFilterBetaOffsetDiv2( picHeader->getDeblockingFilterBetaOffsetDiv2() );
         pcSlice->setDeblockingFilterTcOffsetDiv2  ( picHeader->getDeblockingFilterTcOffsetDiv2() );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+        pcSlice->setDeblockingFilterCbBetaOffsetDiv2( picHeader->getDeblockingFilterCbBetaOffsetDiv2() );
+        pcSlice->setDeblockingFilterCbTcOffsetDiv2  ( picHeader->getDeblockingFilterCbTcOffsetDiv2() );
+        pcSlice->setDeblockingFilterCrBetaOffsetDiv2( picHeader->getDeblockingFilterCrBetaOffsetDiv2() );
+        pcSlice->setDeblockingFilterCrTcOffsetDiv2  ( picHeader->getDeblockingFilterCrTcOffsetDiv2() );
+#endif
       }
     }
     else
@@ -2260,6 +2303,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       pcSlice->setDeblockingFilterDisable       ( false );
       pcSlice->setDeblockingFilterBetaOffsetDiv2( 0 );
       pcSlice->setDeblockingFilterTcOffsetDiv2  ( 0 );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+      pcSlice->setDeblockingFilterCbBetaOffsetDiv2( 0 );
+      pcSlice->setDeblockingFilterCbTcOffsetDiv2  ( 0 );
+      pcSlice->setDeblockingFilterCrBetaOffsetDiv2( 0 );
+      pcSlice->setDeblockingFilterCrTcOffsetDiv2  ( 0 );
+#endif
     }
 
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())

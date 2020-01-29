@@ -79,6 +79,8 @@
 
 #define JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2                1 // JVET-Q0293: Removal of chroma Nx2 blocks in PDPC 
 
+#define JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS          1 // JVET-Q0121: Add deblocking control parameters for Cb and Cr and extend the parameter ranges
+
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as piucture boundary

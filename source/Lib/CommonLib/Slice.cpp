@@ -1566,10 +1566,10 @@ VPS::VPS()
   , m_vpsNumOutputLayerSets (1)
   , m_vpsExtensionFlag()
 #if JVET_Q0814_DPB
+  , m_totalNumOLSs( 0 )
   , m_numDpbParams( 0 )
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
-  , m_totalNumOLSs( 0 )
 #endif
 {
   for (int i = 0; i < MAX_VPS_LAYERS; i++)

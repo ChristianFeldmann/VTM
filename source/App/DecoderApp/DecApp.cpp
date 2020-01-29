@@ -304,7 +304,7 @@ uint32_t DecApp::decode()
 bool DecApp::deriveOutputLayerSet()
 {
   int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
-  if(m_iTargetOLS == - 1 || vps_max_layers_minus1 == 0)
+  if(m_targetOlsIdx == - 1 || vps_max_layers_minus1 == 0)
   {
     m_targetDecLayerIdSet.clear();
     return true;
@@ -414,8 +414,8 @@ bool DecApp::deriveOutputLayerSet()
   }
 
   m_targetOutputLayerIdSet.clear();
-  for (i = 0; i < NumOutputLayersInOls[m_iTargetOLS]; i++)
-    m_targetOutputLayerIdSet.push_back(OutputLayerIdInOls[m_iTargetOLS][i]);
+  for (i = 0; i < NumOutputLayersInOls[m_targetOlsIdx]; i++)
+    m_targetOutputLayerIdSet.push_back(OutputLayerIdInOls[m_targetOlsIdx][i]);
 
   NumLayersInOls[0] = 1;
   LayerIdInOls[0][0] = m_cDecLib.getVPS()->getLayerId(0);
@@ -442,8 +442,8 @@ bool DecApp::deriveOutputLayerSet()
   }
 
   m_targetDecLayerIdSet.clear();
-  for (i = 0; i < NumLayersInOls[m_iTargetOLS]; i++)
-    m_targetDecLayerIdSet.push_back(LayerIdInOls[m_iTargetOLS][i]);
+  for (i = 0; i < NumLayersInOls[m_targetOlsIdx]; i++)
+    m_targetDecLayerIdSet.push_back(LayerIdInOls[m_targetOlsIdx][i]);
 
   delete[] NumOutputLayersInOls;
   delete[] NumLayersInOls;

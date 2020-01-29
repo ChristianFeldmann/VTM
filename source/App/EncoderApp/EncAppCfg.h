@@ -191,6 +191,13 @@ protected:
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
   bool          m_nonPackedConstraintFlag;
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool          m_nonProjectedConstraintFlag;
+  bool          m_noResChangeInClvsConstraintFlag;
+  bool          m_oneTilePerPicConstraintFlag;
+  bool          m_oneSlicePerPicConstraintFlag;
+  bool          m_oneSubpicPerPicConstraintFlag;
+#endif
   bool          m_frameOnlyConstraintFlag;
 
   // coding structure

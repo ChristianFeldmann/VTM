@@ -231,10 +231,6 @@ class ConstraintInfo
   bool              m_progressiveSourceFlag;
   bool              m_interlacedSourceFlag;
   bool              m_nonPackedConstraintFlag;
-  bool              m_frameOnlyConstraintFlag;
-  bool              m_intraOnlyConstraintFlag;
-  uint32_t          m_maxBitDepthConstraintIdc;
-  ChromaFormat      m_maxChromaFormatConstraintIdc;
 #if JVET_Q0114_CONSTRAINT_FLAGS
   bool              m_nonProjectedConstraintFlag;
   bool              m_noResChangeInClvsConstraintFlag;
@@ -242,6 +238,10 @@ class ConstraintInfo
   bool              m_oneSlicePerPicConstraintFlag;
   bool              m_oneSubpicPerPicConstraintFlag;
 #endif
+  bool              m_frameOnlyConstraintFlag;
+  bool              m_intraOnlyConstraintFlag;
+  uint32_t          m_maxBitDepthConstraintIdc;
+  ChromaFormat      m_maxChromaFormatConstraintIdc;
   bool              m_onePictureOnlyConstraintFlag;
   bool              m_lowerBitRateConstraintFlag;
 

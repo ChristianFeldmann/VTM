@@ -4718,20 +4718,68 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
 
     for (int cbfMask : jointCbfMasksToTest)
     {
+#if !JVET_Q0512_ENC_CHROMA_TS_ACT
       m_CABACEstimator->getCtx() = ctxStart;
       m_CABACEstimator->resetBits();
 
       Distortion distTmp = 0;
+#endif
       tu.jointCbCr = (uint8_t)cbfMask;
 
+#if JVET_Q0512_ENC_CHROMA_TS_ACT
+      ComponentID codeCompId = ((cbfMask >> 1) ? COMPONENT_Cb : COMPONENT_Cr);
+      ComponentID otherCompId = ((codeCompId == COMPONENT_Cb) ? COMPONENT_Cr : COMPONENT_Cb);
+#if JVET_Q0784_LFNST_COMBINATION
+      bool        tsAllowed = TU::isTSAllowed(tu, codeCompId) && (m_pcEncCfg->getUseChromaTS()) && !cu.lfnstIdx;
+#else
+      bool        tsAllowed = TU::isTSAllowed(tu, codeCompId) && (m_pcEncCfg->getUseChromaTS());
+#endif
+      uint8_t     numTransformCands = 1 + (tsAllowed ? 1 : 0); // DCT + TS = 2 tests
+      bool        cbfDCT2 = true;
+
+      trModes.clear();
+      trModes.push_back(TrMode(0, true)); // DCT2 
+      if (tsAllowed)
+      {
+        trModes.push_back(TrMode(1, true));//TS
+      }
+
+      for (int modeId = 0; modeId < numTransformCands; modeId++)
+      {
+        if (modeId && !cbfDCT2)
+        {
+          continue;
+        }
+        if (!trModes[modeId].second)
+        {
+          continue;
+        }
+        Distortion distTmp = 0;
+        tu.mtsIdx[codeCompId] = trModes[modeId].first;
+        tu.mtsIdx[otherCompId] = MTS_DCT2_DCT2;
+        m_CABACEstimator->getCtx() = ctxStart;
+#endif
       csFull->getResiBuf(cbArea).copyFrom(orgResiCb[cbfMask]);
       csFull->getResiBuf(crArea).copyFrom(orgResiCr[cbfMask]);
+#if JVET_Q0512_ENC_CHROMA_TS_ACT
+      if (nNumTransformCands > 1)
+      {
+        xIntraCodingACTTUBlock(tu, COMPONENT_Cb, distTmp, modeId == 0 ? &trModes : nullptr, true);
+      }
+      else
+#endif
       xIntraCodingACTTUBlock(tu, COMPONENT_Cb, distTmp);
 
       double   costTmp = std::numeric_limits<double>::max();
       uint64_t bitsTmp = 0;
       if (distTmp < std::numeric_limits<Distortion>::max())
       {
+#if JVET_Q0512_ENC_CHROMA_TS_ACT
+        if (!tu.mtsIdx[codeCompId])
+        {
+          cbfDCT2 = true;
+        }
+#endif
 #if JVET_Q0820_ACT
         csFull->getResiBuf(tu).colorSpaceConvert(invColorTransResidual, false, csFull->slice->clpRng(COMPONENT_Y));
 #else
@@ -4774,6 +4822,12 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
         bitsTmp = xGetIntraFracBitsQT(*csFull, partitioner, true, true, -1, TU_NO_ISP);
         costTmp = m_pcRdCost->calcRdCost(bitsTmp, distTmp);
       }
+#if JVET_Q0512_ENC_CHROMA_TS_ACT
+      else if (!tu.mtsIdx[codeCompId])
+      {
+        cbfDCT2 = false;
+      }
+#endif 
 
       if (costTmp < bestCostJointCbCr)
       {
@@ -4781,7 +4835,11 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
         bestDistJointCbCr = distTmp;
         bestBitsJointCbCr = bitsTmp;
         bestJointCbCr = tu.jointCbCr;
+#if JVET_Q0512_ENC_CHROMA_TS_ACT
+        lastIsBest = (cbfMask == jointCbfMasksToTest.back() && modeId == (numTransformCands - 1));
+#else
         lastIsBest = (cbfMask == jointCbfMasksToTest.back());
+#endif
 
         // store data
         if (!lastIsBest)
@@ -4795,6 +4853,9 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
           ctxBest = m_CABACEstimator->getCtx();
         }
       }
+#if JVET_Q0512_ENC_CHROMA_TS_ACT
+    }
+#endif
     }
 
     if (!lastIsBest)

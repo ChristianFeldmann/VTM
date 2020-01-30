@@ -1678,6 +1678,12 @@ private:
   bool             m_ppsDeblockingFilterDisabledFlag;
   int              m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
   int              m_deblockingFilterTcOffsetDiv2;      //< tc offset for deblocking filter
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  int              m_deblockingFilterCbBetaOffsetDiv2;    //< beta offset for Cb deblocking filter
+  int              m_deblockingFilterCbTcOffsetDiv2;      //< tc offset for Cb deblocking filter
+  int              m_deblockingFilterCrBetaOffsetDiv2;    //< beta offset for Cr deblocking filter
+  int              m_deblockingFilterCrTcOffsetDiv2;      //< tc offset for Cr deblocking filter
+#endif
   bool             m_listsModificationPresentFlag;
 
 
@@ -1895,6 +1901,16 @@ public:
   int                    getDeblockingFilterBetaOffsetDiv2() const                        { return m_deblockingFilterBetaOffsetDiv2;      } //!< get beta offset for deblocking filter
   void                   setDeblockingFilterTcOffsetDiv2(int val)                         { m_deblockingFilterTcOffsetDiv2 = val;         } //!< set tc offset for deblocking filter
   int                    getDeblockingFilterTcOffsetDiv2() const                          { return m_deblockingFilterTcOffsetDiv2;        } //!< get tc offset for deblocking filter
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  void                   setDeblockingFilterCbBetaOffsetDiv2(int val)                     { m_deblockingFilterCbBetaOffsetDiv2 = val;     } //!< set beta offset for Cb deblocking filter
+  int                    getDeblockingFilterCbBetaOffsetDiv2() const                      { return m_deblockingFilterCbBetaOffsetDiv2;    } //!< get beta offset for Cb deblocking filter
+  void                   setDeblockingFilterCbTcOffsetDiv2(int val)                       { m_deblockingFilterCbTcOffsetDiv2 = val;       } //!< set tc offset for Cb deblocking filter
+  int                    getDeblockingFilterCbTcOffsetDiv2() const                        { return m_deblockingFilterCbTcOffsetDiv2;      } //!< get tc offset for Cb deblocking filter
+  void                   setDeblockingFilterCrBetaOffsetDiv2(int val)                     { m_deblockingFilterCrBetaOffsetDiv2 = val;     } //!< set beta offset for Cr deblocking filter
+  int                    getDeblockingFilterCrBetaOffsetDiv2() const                      { return m_deblockingFilterCrBetaOffsetDiv2;    } //!< get beta offset for Cr deblocking filter
+  void                   setDeblockingFilterCrTcOffsetDiv2(int val)                       { m_deblockingFilterCrTcOffsetDiv2 = val;       } //!< set tc offset for Cr deblocking filter
+  int                    getDeblockingFilterCrTcOffsetDiv2() const                        { return m_deblockingFilterCrTcOffsetDiv2;      } //!< get tc offset for Cr deblocking filter
+#endif
   bool                   getListsModificationPresentFlag() const                          { return m_listsModificationPresentFlag;        }
   void                   setListsModificationPresentFlag( bool b )                        { m_listsModificationPresentFlag = b;           }
   bool                   getPictureHeaderExtensionPresentFlag() const                     { return m_pictureHeaderExtensionPresentFlag;     }
@@ -2053,6 +2069,12 @@ private:
   bool                        m_deblockingFilterDisable;                                //!< deblocking filter disabled flag
   int                         m_deblockingFilterBetaOffsetDiv2;                         //!< beta offset for deblocking filter
   int                         m_deblockingFilterTcOffsetDiv2;                           //!< tc offset for deblocking filter
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  int                         m_deblockingFilterCbBetaOffsetDiv2;                       //!< beta offset for deblocking filter
+  int                         m_deblockingFilterCbTcOffsetDiv2;                         //!< tc offset for deblocking filter
+  int                         m_deblockingFilterCrBetaOffsetDiv2;                       //!< beta offset for deblocking filter
+  int                         m_deblockingFilterCrTcOffsetDiv2;                         //!< tc offset for deblocking filter
+#endif
   bool                        m_lmcsEnabledFlag;                                        //!< lmcs enabled flag
   int                         m_lmcsApsId;                                              //!< lmcs APS ID
   APS*                        m_lmcsAps;                                                //!< lmcs APS
@@ -2197,6 +2219,16 @@ public:
   int                         getDeblockingFilterBetaOffsetDiv2()const                  { return m_deblockingFilterBetaOffsetDiv2;                                                     }
   void                        setDeblockingFilterTcOffsetDiv2( int i )                  { m_deblockingFilterTcOffsetDiv2 = i;                                                          }  
   int                         getDeblockingFilterTcOffsetDiv2() const                   { return m_deblockingFilterTcOffsetDiv2;                                                       }    
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  void                        setDeblockingFilterCbBetaOffsetDiv2( int i )              { m_deblockingFilterCbBetaOffsetDiv2 = i;                                                      }
+  int                         getDeblockingFilterCbBetaOffsetDiv2()const                { return m_deblockingFilterCbBetaOffsetDiv2;                                                   }
+  void                        setDeblockingFilterCbTcOffsetDiv2( int i )                { m_deblockingFilterCbTcOffsetDiv2 = i;                                                        }
+  int                         getDeblockingFilterCbTcOffsetDiv2() const                 { return m_deblockingFilterCbTcOffsetDiv2;                                                     }
+  void                        setDeblockingFilterCrBetaOffsetDiv2( int i )              { m_deblockingFilterCrBetaOffsetDiv2 = i;                                                      }
+  int                         getDeblockingFilterCrBetaOffsetDiv2()const                { return m_deblockingFilterCrBetaOffsetDiv2;                                                   }
+  void                        setDeblockingFilterCrTcOffsetDiv2( int i )                { m_deblockingFilterCrTcOffsetDiv2 = i;                                                        }
+  int                         getDeblockingFilterCrTcOffsetDiv2() const                 { return m_deblockingFilterCrTcOffsetDiv2;                                                     }
+#endif
   void                        setLmcsEnabledFlag(bool b)                                { m_lmcsEnabledFlag = b;                                                                       }
   bool                        getLmcsEnabledFlag()                                      { return m_lmcsEnabledFlag;                                                                    }
   const bool                  getLmcsEnabledFlag() const                                { return m_lmcsEnabledFlag;                                                                    }
@@ -2286,6 +2318,12 @@ private:
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
   int                        m_deblockingFilterTcOffsetDiv2;      //< tc offset for deblocking filter
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  int                        m_deblockingFilterCbBetaOffsetDiv2;  //< beta offset for deblocking filter
+  int                        m_deblockingFilterCbTcOffsetDiv2;    //< tc offset for deblocking filter
+  int                        m_deblockingFilterCrBetaOffsetDiv2;  //< beta offset for deblocking filter
+  int                        m_deblockingFilterCrTcOffsetDiv2;    //< tc offset for deblocking filter
+#endif
   int                        m_list1IdxToList0Idx[MAX_NUM_REF];
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
   bool                       m_pendingRasInit;
@@ -2417,6 +2455,12 @@ public:
   bool                        getDeblockingFilterOverrideFlag() const                { return m_deblockingFilterOverrideFlag;                        }
   int                         getDeblockingFilterBetaOffsetDiv2()const               { return m_deblockingFilterBetaOffsetDiv2;                      }
   int                         getDeblockingFilterTcOffsetDiv2() const                { return m_deblockingFilterTcOffsetDiv2;                        }
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  int                         getDeblockingFilterCbBetaOffsetDiv2()const             { return m_deblockingFilterCbBetaOffsetDiv2;                    }
+  int                         getDeblockingFilterCbTcOffsetDiv2() const              { return m_deblockingFilterCbTcOffsetDiv2;                      }
+  int                         getDeblockingFilterCrBetaOffsetDiv2()const             { return m_deblockingFilterCrBetaOffsetDiv2;                    }
+  int                         getDeblockingFilterCrTcOffsetDiv2() const              { return m_deblockingFilterCrTcOffsetDiv2;                      }
+#endif
   bool                        getPendingRasInit() const                              { return m_pendingRasInit;                                      }
   void                        setPendingRasInit( bool val )                          { m_pendingRasInit = val;                                       }
 
@@ -2456,6 +2500,12 @@ public:
   void                        setDeblockingFilterOverrideFlag( bool b )              { m_deblockingFilterOverrideFlag = b;                           }
   void                        setDeblockingFilterBetaOffsetDiv2( int i )             { m_deblockingFilterBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterTcOffsetDiv2( int i )               { m_deblockingFilterTcOffsetDiv2 = i;                           }
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  void                        setDeblockingFilterCbBetaOffsetDiv2( int i )           { m_deblockingFilterCbBetaOffsetDiv2 = i;                         }
+  void                        setDeblockingFilterCbTcOffsetDiv2( int i )             { m_deblockingFilterCbTcOffsetDiv2 = i;                           }
+  void                        setDeblockingFilterCrBetaOffsetDiv2( int i )           { m_deblockingFilterCrBetaOffsetDiv2 = i;                         }
+  void                        setDeblockingFilterCrTcOffsetDiv2( int i )             { m_deblockingFilterCrTcOffsetDiv2 = i;                           }
+#endif
 
   void                        setNumRefIdx( RefPicList e, int i )                    { m_aiNumRefIdx[e]    = i;                                      }
   void                        setPic( Picture* p )                                   { m_pcPic             = p;                                      }

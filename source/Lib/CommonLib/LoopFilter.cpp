@@ -1108,8 +1108,13 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
   bool      bPartPNoFilter  = false;
   bool      bPartQNoFilter  = false;
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  const int tcOffsetDiv2[2]   = { slice.getDeblockingFilterCbTcOffsetDiv2(), slice.getDeblockingFilterCrTcOffsetDiv2() };
+  const int betaOffsetDiv2[2] = { slice.getDeblockingFilterCbBetaOffsetDiv2(), slice.getDeblockingFilterCrBetaOffsetDiv2() };
+#else
   const int tcOffsetDiv2    = slice.getDeblockingFilterTcOffsetDiv2();
   const int betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
+#endif
 
   // Vertical Position
   unsigned uiEdgeNumInCtuVert = rasterIdx % pcv.partsInCtuWidth + iEdge;
@@ -1240,12 +1245,20 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         int iQP = ((baseQp_Q + baseQp_P + 1) >> 1);
 
 
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+        const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2[chromaIdx] << 1));
+#else
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
+#endif
         const int iTc = sps.getBitDepth(CHANNEL_TYPE_CHROMA) < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - sps.getBitDepth(CHANNEL_TYPE_CHROMA))) : ((sm_tcTable[iIndexTC]) << (sps.getBitDepth(CHANNEL_TYPE_CHROMA) - 10));
         bool useLongFilter = false;
         if (largeBoundary)
         {
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+        const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2[chromaIdx] << 1));
+#else
         const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
+#endif
         const int beta = sm_betaTable[indexB] * iBitdepthScale;
 
         const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, isChromaHorCTBBoundary);

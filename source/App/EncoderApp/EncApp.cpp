@@ -304,6 +304,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setLoopFilterOffsetInPPS                             ( m_loopFilterOffsetInPPS );
   m_cEncLib.setLoopFilterBetaOffset                              ( m_loopFilterBetaOffsetDiv2  );
   m_cEncLib.setLoopFilterTcOffset                                ( m_loopFilterTcOffsetDiv2    );
+#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  m_cEncLib.setLoopFilterCbBetaOffset                            ( m_loopFilterCbBetaOffsetDiv2  );
+  m_cEncLib.setLoopFilterCbTcOffset                              ( m_loopFilterCbTcOffsetDiv2    );
+  m_cEncLib.setLoopFilterCrBetaOffset                            ( m_loopFilterCrBetaOffsetDiv2  );
+  m_cEncLib.setLoopFilterCrTcOffset                              ( m_loopFilterCrTcOffsetDiv2    );
+#endif
 #if W0038_DB_OPT
   m_cEncLib.setDeblockingFilterMetric                            ( m_deblockingFilterMetric );
 #else

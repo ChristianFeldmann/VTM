@@ -2826,8 +2826,9 @@ protected:
   ParameterSetMap<VPS> m_vpsMap;
 
   APS* m_apss[ALF_CTB_MAX_NUM_APS];
-
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   int m_activeDPSId; // -1 for nothing active
+#endif
   int m_activeSPSId; // -1 for nothing active
   int m_activeVPSId; // -1 for nothing active
 };

@@ -1172,7 +1172,7 @@ void HLSWriter::codeDCI(const DCI* dci)
     ProfileTierLevel ptl = dci->getProfileTierLevel(i);
     codeProfileTierLevel(&ptl, 0);
   }
-  WRITE_FLAG(0, "dps_extension_flag");
+  WRITE_FLAG(0, "dci_extension_flag");
   xWriteRbspTrailingBits();
 }
 #else

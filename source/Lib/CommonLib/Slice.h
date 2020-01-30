@@ -1102,7 +1102,11 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool              m_BDPCMEnabledFlag;
+#else
   int               m_BDPCMEnabled;
+#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
@@ -1310,8 +1314,13 @@ public:
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
+  void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
+#else
   int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
   void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
+#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
@@ -2274,6 +2283,9 @@ private:
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
   bool                       m_ChromaQpAdjEnabled;
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                       m_tsResidualCodingDisabledFlag;
+#endif
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
@@ -2456,6 +2468,10 @@ public:
   void                        setSliceQpDelta( int i )                               { m_iSliceQpDelta     = i;                                      }
   void                        setSliceChromaQpDelta( ComponentID compID, int i )     { m_iSliceChromaQpDelta[compID] = isLuma(compID) ? 0 : i;       }
   void                        setUseChromaQpAdj( bool b )                            { m_ChromaQpAdjEnabled = b;                                     }
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  void                        setTSResidualCodingDisabledFlag( bool b )              { m_tsResidualCodingDisabledFlag = b; }
+  bool                        getTSResidualCodingDisabledFlag() const                { return m_tsResidualCodingDisabledFlag; }
+#endif
   void                        setDeblockingFilterDisable( bool b )                   { m_deblockingFilterDisable= b;                                 }
   void                        setDeblockingFilterOverrideFlag( bool b )              { m_deblockingFilterOverrideFlag = b;                           }
   void                        setDeblockingFilterBetaOffsetDiv2( int i )             { m_deblockingFilterBetaOffsetDiv2 = i;                         }

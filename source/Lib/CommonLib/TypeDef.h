@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM     1 // JVET-Q0089: RRC slice-level switch for lossless coding and one SPS flag for luma and chroma BDPCM.
+
 #define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
 
 #define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT
@@ -334,12 +336,14 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // Enumeration
 // ====================================================================================================================
 
+#if !JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
 enum BDPCMControl
 {
   BDPCM_INACTIVE = 0,
   BDPCM_LUMAONLY = 1,
   BDPCM_LUMACHROMA = 2,
 };
+#endif
 
 enum ApsType
 {

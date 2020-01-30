@@ -97,8 +97,11 @@
 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF
 
+<<<<<<< HEAD
 #define JVET_Q0156_STSA                                   1 // JVET-Q0156: Enable inter-layer prediction for STSA pictures
 
+=======
+>>>>>>> 50a06132e2b11f7909abee189e3c0066c04d21e9
 #define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
 #define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing
 #define JVET_Q0054                                        1 // fix for long luma deblocking decision

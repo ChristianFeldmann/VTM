@@ -155,7 +155,11 @@ public:
     const std::string& cacheCfgFileName
 #endif
   );
+#if JVET_P0288_PIC_OUTPUT
+  bool  decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, int iTargetOlsIdx);
+#else
   bool  decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay);
+#endif
   void  deletePicBuffer();
 
   void  executeLoopFilters();

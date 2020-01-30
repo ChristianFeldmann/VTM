@@ -1333,6 +1333,24 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
   }
 
+#if JVET_P0288_PIC_OUTPUT
+  {
+    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    CHECK(pps == 0, "No PPS present");
+    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+    CHECK(sps == 0, "No SPS present");
+    if (sps->getVPSId() > 0)
+    {
+      VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+      CHECK(vps == 0, "No VPS present");
+      if ((vps->getOlsModeIdc() == 0 && vps->getGeneralLayerIdx(nalu.m_nuhLayerId) < (vps->getMaxLayers() - 1) && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getMaxLayers() - 1) == 1) || (vps->getOlsModeIdc() == 2 && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) == 0))
+      {
+        m_picHeader.setPicOutputFlag(false);
+      }
+    }
+  }
+#endif
+
   if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
       m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
   {
@@ -1734,7 +1752,11 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   // thus, storing it must be last action.
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }
+#if JVET_P0288_PIC_OUTPUT
+bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, int iTargetOlsIdx)
+#else
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
+#endif
 {
   bool ret;
   // ignore all NAL units of layers > 0
@@ -1745,6 +1767,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
   {
     case NAL_UNIT_VPS:
       xDecodeVPS( nalu );
+#if JVET_P0288_PIC_OUTPUT
+      m_vps->m_targetOlsIdx = iTargetOlsIdx;
+#endif
       return false;
 
     case NAL_UNIT_DPS:

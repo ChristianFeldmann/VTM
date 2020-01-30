@@ -1065,9 +1065,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (pcSPS->getUseDualITree())
   {
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-    // Since in software minQT[2] is in chroma samples, min CB size in luma samples is first converted into chroma samples for the calculation
-    const int minDiff = (int)floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - std::max(MIN_CU_LOG2, pcSPS->getLog2MinCodingBlockSize() - (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pcSPS->getChromaFormatIdc()));
-    CHECK(minDiff < 0, "Wrong min intra QT chroma");
+    // minQT[2] is in chroma sample unit, and the syntax signaled is in luma sample unit, a conversion is used here
+    const int minDiff = (int)floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) + (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pcSPS->getChromaFormatIdc()) - pcSPS->getLog2MinCodingBlockSize();
+    CHECK(minDiff < 0, "Intra chroma min QT size in luma samples cannot be smaller than min luma CB size");
     WRITE_UVLC(minDiff, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
 #else
     WRITE_UVLC(floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
@@ -1794,9 +1794,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       if (sps->getUseDualITree())
       {
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-          // Since in software minQT[2] is in chroma samples, min CB size in luma samples is first converted into chroma samples for the calculation
-          const int minDiff = (int)floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - std::max(MIN_CU_LOG2, sps->getLog2MinCodingBlockSize() - (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, sps->getChromaFormatIdc()));
-          CHECK(minDiff < 0, "Wrong min intra QT chroma");
+          // minQT[2] is in chroma sample unit, and the syntax signaled is in luma sample unit, a conversion is used here
+          const int minDiff = (int)floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) + (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, sps->getChromaFormatIdc()) - sps->getLog2MinCodingBlockSize();
+          CHECK(minDiff < 0, "Intra chroma min QT size in luma samples cannot be smaller than min luma CB size");
           WRITE_UVLC(minDiff, "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
 #else
         WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");

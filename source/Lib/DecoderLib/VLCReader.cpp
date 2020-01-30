@@ -704,8 +704,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
               pcPPS->getDeblockingFilterCbTcOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
 
       READ_SVLC( iCode, "pps_cr_beta_offset_div2");                   pcPPS->setDeblockingFilterCrBetaOffsetDiv2( iCode );
-      CHECK(  pcPPS->getDeblockingFilterCrTcOffsetDiv2() < -12 ||
-              pcPPS->getDeblockingFilterCrTcOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
+      CHECK(  pcPPS->getDeblockingFilterCrBetaOffsetDiv2() < -12 ||
+              pcPPS->getDeblockingFilterCrBetaOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
 
       READ_SVLC( iCode, "pps_cr_tc_offset_div2");                     pcPPS->setDeblockingFilterCrTcOffsetDiv2( iCode );
       CHECK(  pcPPS->getDeblockingFilterCrTcOffsetDiv2() < -12 ||

@@ -704,8 +704,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
               pcPPS->getDeblockingFilterCbTcOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
 
       READ_SVLC( iCode, "pps_cr_beta_offset_div2");                   pcPPS->setDeblockingFilterCrBetaOffsetDiv2( iCode );
-      CHECK(  pcPPS->getDeblockingFilterCrTcOffsetDiv2() < -12 ||
-              pcPPS->getDeblockingFilterCrTcOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
+      CHECK(  pcPPS->getDeblockingFilterCrBetaOffsetDiv2() < -12 ||
+              pcPPS->getDeblockingFilterCrBetaOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
 
       READ_SVLC( iCode, "pps_cr_tc_offset_div2");                     pcPPS->setDeblockingFilterCrTcOffsetDiv2( iCode );
       CHECK(  pcPPS->getDeblockingFilterCrTcOffsetDiv2() < -12 ||
@@ -1505,7 +1505,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getTransformSkipEnabledFlag())
   {
       READ_FLAG(uiCode, "sps_bdpcm_enabled_flag");
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
+      if( uiCode )
+#else
       if (uiCode && pcSPS->getChromaFormatIdc() == CHROMA_444 )
+#endif
       {
           READ_FLAG(uiCode, "sps_bdpcm_enabled_chroma_flag");
           uiCode++;

@@ -1426,7 +1426,11 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         if (uiMode < 0)
         {
             cu.bdpcmModeChroma = -uiMode;
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420 
+            chromaIntraMode = cu.bdpcmModeChroma == 2 ? chromaCandModes[1] : chromaCandModes[2];
+#else
             chromaIntraMode = chromaCandModes[0];
+#endif
         }
         else
         {
@@ -2590,9 +2594,11 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       {
         return;
       }
+#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
       if (!CS::isDualITree(cs) && isLuma(partitioner.chType))
           m_CABACEstimator->bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
+#endif
     }
 
     PredictionUnit &pu = *cs.getPU(partitioner.currArea().lumaPos(), partitioner.chType);
@@ -2602,6 +2608,9 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
     {
       if ( !cu.Y().valid())
         m_CABACEstimator->pred_mode( cu );
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
+      m_CABACEstimator->bdpcm_mode( cu, COMPONENT_Y );
+#endif
       m_CABACEstimator->intra_luma_pred_mode( pu );
     }
   }
@@ -2614,6 +2623,9 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
 
     if( isFirst )
     {
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
+      m_CABACEstimator->bdpcm_mode( cu, ComponentID(CHANNEL_TYPE_CHROMA) );
+#endif
       m_CABACEstimator->intra_chroma_pred_mode( pu );
     }
   }

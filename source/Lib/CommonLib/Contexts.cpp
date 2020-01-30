@@ -419,10 +419,17 @@ const CtxSet ContextSetCfg::Mvd = ContextSetCfg::addCtxSet
 
 const CtxSet ContextSetCfg::BDPCMMode = ContextSetCfg::addCtxSet
 ({
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
+  {  19,  28,  25,  51, },
+  {  40,  36,  17,  28, },
+  {  19,  35,   9,  44, },
+  {   4,   4,   1,   1, },
+#else
   {  19,  28, },
   {  40,  36, },
   {  19,  35, },
   {   4,   4, },
+#endif
 });
 
 const CtxSet ContextSetCfg::QtRootCbf = ContextSetCfg::addCtxSet

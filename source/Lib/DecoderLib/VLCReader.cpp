@@ -481,6 +481,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #endif
   }
 
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
+  {
+    CHECK(pcPPS->getNumTiles() != 1, "invalid number of tiles");
+  }
+#endif
 
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
@@ -520,6 +527,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       int32_t tileIdx = 0;
 
       READ_UVLC( uiCode, "num_slices_in_pic_minus1" );                pcPPS->setNumSlicesInPic( uiCode + 1 );
+#if JVET_Q0114_CONSTRAINT_FLAGS
+      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+      if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
+      {
+        CHECK(uiCode != 0, "invalid num_slices_in_pic_minus1 value");
+      }
+#endif
       CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
       READ_CODE(1, uiCode, "tile_idx_delta_present_flag");            pcPPS->setTileIdxDeltaPresentFlag( uiCode == 1 );
       pcPPS->initRectSlices();
@@ -585,8 +599,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       // initialize mapping between rectangular slices and CTUs
       pcPPS->initRectSliceMap();
 #if JVET_O1143_SUBPIC_BOUNDARY
+#if !JVET_Q0114_CONSTRAINT_FLAGS
       SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
       CHECK(sps == 0, "Invalid SPS");
+#endif
       pcPPS->initSubPic(*sps);
 #endif
     }
@@ -1328,6 +1344,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     CHECK(uiCode > (pcSPS->getMaxPicWidthInLumaSamples() / (1 << pcSPS->getCTUSize())) * (pcSPS->getMaxPicHeightInLumaSamples() / (1 << pcSPS->getCTUSize())) - 1, "Invalid sps_num_subpics_minus1 value");
 #else
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
+#endif
+#if JVET_Q0114_CONSTRAINT_FLAGS
+    if (pcSPS->getProfileTierLevel()->getConstraintInfo()->getOneSubpicPerPicConstraintFlag())
+    {
+      CHECK(uiCode != 0, "invalid sps_num_subpics_minus1 value");
+    }
 #endif
 
 #if JVET_Q0816
@@ -3215,6 +3237,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       int bitsSliceAddress = ceilLog2(pps->getNumTiles());
       READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
       READ_UVLC(uiCode, "num_tiles_in_slice_minus1");        numTilesInSlice = uiCode + 1;      
+#if JVET_Q0114_CONSTRAINT_FLAGS
+      if (!pps->getRectSliceFlag() && sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
+      {
+        CHECK(pps->getNumTiles() != uiCode + 1, "invalid num_tiles_in_slice_minus1 value");
+      }
+#endif
     }
     else {
       sliceAddr = 0;

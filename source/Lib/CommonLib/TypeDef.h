@@ -53,6 +53,8 @@
 #define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT
 #define JVET_Q0446_MIP_CONST_SHIFT_OFFSET                 1 // JVET-Q0446: MIP with constant shift and offset
 
+#define JVET_Q0447_WP_PARAM_ESTIM                         1 // JVET-Q0447: Add search iterations for method 2,3 and 4
+
 #define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
 
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 

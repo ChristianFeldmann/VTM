@@ -467,12 +467,28 @@ struct TierLevelLimits
   int                  maxTileRows;
   int                  maxTileColumns;
 };
+
+// drop gcc 5 support?
+#if defined( __GNUC__) && __GNUC__ < 6
+struct EnumHash
+{
+  template <typename T>
+  std::size_t operator()( T value ) const
+  {
+    return static_cast<std::size_t>( value );
+  }
+};
+#endif
 #endif
 
 class ProfileTierLevel
 {
 #if JVET_Q0814_DPB
+#if defined( __GNUC__) && __GNUC__ < 6
+  static std::unordered_map<Level::Name, TierLevelLimits, EnumHash> m_tierLevelLimits;
+#else
   static std::unordered_map<Level::Name, TierLevelLimits> m_tierLevelLimits;
+#endif
 #endif
   Level::Tier       m_tierFlag;
   Profile::Name     m_profileIdc;

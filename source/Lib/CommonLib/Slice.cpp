@@ -3367,7 +3367,11 @@ void ParameterSetMap<VPS>::setID(VPS* parameterSet, const int psId)
 }
 
 #if JVET_Q0814_DPB
+#if defined( __GNUC__) && __GNUC__ < 6
+std::unordered_map<Level::Name, TierLevelLimits, EnumHash> ProfileTierLevel::m_tierLevelLimits = {
+#else
 std::unordered_map<Level::Name, TierLevelLimits> ProfileTierLevel::m_tierLevelLimits = {
+#endif
   { Level::Name::LEVEL1,   TierLevelLimits( Level::Name::LEVEL1,   36864,    std::pair<int, int>( 350,    -1     ),  16,  1, 1  ) },
   { Level::Name::LEVEL2,   TierLevelLimits( Level::Name::LEVEL2,   122880,   std::pair<int, int>( 1500,   -1     ),  16,  1, 1  ) },
   { Level::Name::LEVEL2_1, TierLevelLimits( Level::Name::LEVEL2_1, 245760,   std::pair<int, int>( 3000,   -1     ),  20,  1, 1  ) },

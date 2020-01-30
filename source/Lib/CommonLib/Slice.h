@@ -2659,7 +2659,11 @@ protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );
   Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId );
 public:
+#if JVET_Q0504_PLT_NON444
+  std::unordered_map< bool, std::unordered_map< Position, std::unordered_map< Size, double> > > m_mapPltCost;
+#else
   std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
+#endif
 private:
 };// END CLASS DEFINITION Slice
 

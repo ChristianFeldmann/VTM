@@ -1927,6 +1927,10 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 
     for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
     {
+#if JVET_Q0504_PLT_NON444
+      if( curPLTpred[curidx] )
+        continue;
+#endif
       bool matchTmp = true;
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
@@ -1943,10 +1947,25 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     {
       cu.reuseflag[compBegin][predidx] = true;
       curPLTpred[curidx] = true;
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+      {
+        cu.reuseflag[COMPONENT_Y][predidx] = true;
+        for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
+        {
+          curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
+        }
+      }
+      else
+      {
+#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
       }
+#if JVET_Q0504_PLT_NON444
+      }
+#endif
       reusePLTSizetmp++;
       pltSizetmp++;
     }
@@ -1956,20 +1975,57 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
   {
     if (!curPLTpred[curidx])
     {
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+      {
+        for( int comp = compBegin; comp < (compBegin + numComp); comp++ )
+        {
+          curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
+        }
+        if( isLuma(partitioner.chType) )
+        {
+          curPLTtmp[COMPONENT_Cb][pltSizetmp] = 1 << (cs.sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+          curPLTtmp[COMPONENT_Cr][pltSizetmp] = 1 << (cs.sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+        }
+        else
+        {
+          curPLTtmp[COMPONENT_Y][pltSizetmp] = 1 << (cs.sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
+        }
+      }
+      else
+      {
+#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
       }
+#if JVET_Q0504_PLT_NON444
+      }
+#endif
       pltSizetmp++;
     }
   }
   assert(pltSizetmp == cu.curPLTSize[compBegin]);
   for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
   {
+#if JVET_Q0504_PLT_NON444
+    if( cu.isLocalSepTree() )
+    {
+      for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
+      {
+        cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
+      }
+    }
+    else
+    {
+#endif
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
     }
+#if JVET_Q0504_PLT_NON444
+    }
+#endif
   }
 }
 //! \}

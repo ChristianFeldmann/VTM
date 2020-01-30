@@ -482,7 +482,18 @@ void DecCu::xReconIntraQT( CodingUnit &cu )
     }
     else
     {
+#if JVET_Q0504_PLT_NON444
+      if( cu.chromaFormat != CHROMA_400 )
+      {
+        xReconPLT(cu, COMPONENT_Y, 3);
+      }
+      else
+      {
+        xReconPLT(cu, COMPONENT_Y, 1);
+      }
+#else
       xReconPLT(cu, COMPONENT_Y, 3);
+#endif
     }
     return;
   }

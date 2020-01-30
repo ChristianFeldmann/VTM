@@ -1604,6 +1604,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     pcSPS->setUseColorTrans(false);
   }
+#if JVET_Q0504_PLT_NON444
+  READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
+#else
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
   {
     READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
@@ -1612,6 +1615,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     pcSPS->setPLTMode(false);
   }
+#endif
   READ_FLAG( uiCode,    "sps_bcw_enabled_flag" );                   pcSPS->setUseBcw( uiCode != 0 );
   READ_FLAG(uiCode, "sps_ibc_enabled_flag");                                    pcSPS->setIBCFlag(uiCode);
   // KJS: sps_ciip_enabled_flag

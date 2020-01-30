@@ -610,6 +610,16 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
   bool jointPLT = false;
   if (partitioner.isSepTree( *tempCS ))
   {
+#if JVET_Q0504_PLT_NON444
+    if( !CS::isDualITree(*tempCS) && partitioner.treeType != TREE_D )
+    {
+      compBegin = COMPONENT_Y;
+      numComp = (tempCS->area.chromaFormat != CHROMA_400)?3: 1;
+      jointPLT = true;
+    }
+    else
+    {
+#endif
     if (isLuma(partitioner.chType))
     {
       compBegin = COMPONENT_Y;
@@ -620,11 +630,18 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
       compBegin = COMPONENT_Cb;
       numComp = 2;
     }
+#if JVET_Q0504_PLT_NON444
+    }
+#endif
   }
   else
   {
     compBegin = COMPONENT_Y;
+#if JVET_Q0504_PLT_NON444
+    numComp = (tempCS->area.chromaFormat != CHROMA_400) ? 3 : 1;
+#else
     numComp = 3;
+#endif
     jointPLT = true;
   }
   SplitSeries splitmode = -1;
@@ -2031,7 +2048,18 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   }
   else
   {
+#if JVET_Q0504_PLT_NON444
+    if( cu.chromaFormat != CHROMA_400 )
+    {
+      m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 3);
+    }
+    else
+    {
+      m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 1);
+    }
+#else
     m_pcIntraSearch->PLTSearch(*tempCS, partitioner, COMPONENT_Y, 3);
+#endif
   }
 
 
@@ -2061,7 +2089,18 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   }
   else
   {
+#if JVET_Q0504_PLT_NON444
+    if( cu.chromaFormat != CHROMA_400 )
+    {
+      m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+    }
+    else
+    {
+      m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
+    }
+#else
     m_CABACEstimator->cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+#endif
   }
   tempCS->fracBits = m_CABACEstimator->getEstFracBits();
   tempCS->cost = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
@@ -2075,7 +2114,11 @@ void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partit
   tempCS->useDbCost = m_pcEncCfg->getUseEncDbOpt();
 
   const Area currCuArea = cu.block(getFirstComponentOfChannel(partitioner.chType));
+#if JVET_Q0504_PLT_NON444
+  cu.slice->m_mapPltCost[isChroma(partitioner.chType)][currCuArea.pos()][currCuArea.size()] = tempCS->cost;
+#else
   cu.slice->m_mapPltCost[currCuArea.pos()][currCuArea.size()] = tempCS->cost;
+#endif
 #if WCG_EXT
   DTRACE_MODE_COST(*tempCS, m_pcRdCost->getLambda(true));
 #else

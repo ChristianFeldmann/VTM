@@ -1324,12 +1324,20 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     if( tryIntraRdo )
     {
+#if JVET_Q0504_PLT_NON444
+    if (cs.slice->getSPS()->getPLTMode() && (partitioner.treeType != TREE_D || cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4)) && getPltEnc())
+#else
     if (cs.slice->getSPS()->getPLTMode() && ( cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4) ) && getPltEnc() )
+#endif
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp });
     }
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp } );
+#if JVET_Q0504_PLT_NON444
+    if (cs.slice->getSPS()->getPLTMode() && partitioner.treeType == TREE_D && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc())
+#else
     if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc() )
+#endif
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp });
     }
@@ -1570,7 +1578,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         }
       }
     }
+#if JVET_Q0504_PLT_NON444
+    if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && partitioner.treeType == TREE_D && !(partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4)) // inter slice
+#else
     if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && !( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4) ) // inter slice
+#endif
     {
       return false;
     }
@@ -1593,7 +1605,11 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     const Area curr_cu = CS::getArea(cs, cs.area, partitioner.chType).blocks[getFirstComponentOfChannel(partitioner.chType)];
     try
     {
+#if JVET_Q0504_PLT_NON444
+      double stored_cost = slice.m_mapPltCost.at(isChroma(partitioner.chType)).at(curr_cu.pos()).at(curr_cu.size());
+#else
       double stored_cost = slice.m_mapPltCost.at(curr_cu.pos()).at(curr_cu.size());
+#endif
       if (bestMode.type != ETM_INVALID && stored_cost > cuECtx.bestCS->cost)
       {
         return false;

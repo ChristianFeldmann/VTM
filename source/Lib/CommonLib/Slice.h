@@ -446,8 +446,34 @@ public:
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
 };
 
+#if JVET_Q0814_DPB
+struct TierLevelLimits
+{
+  TierLevelLimits() {}
+
+  TierLevelLimits( Level::Name _level, uint32_t _maxLumaPs, std::pair<int, int> _maxCPBsize, int _maxSlicesPerPictue, int _maxTileRows, int _maxTileColumns )
+    : level( _level )
+    , maxLumaPs( _maxLumaPs )
+    , maxCPBsize( _maxCPBsize )
+    , maxSlicesPerPictue( _maxSlicesPerPictue )
+    , maxTileRows( _maxTileRows )
+    , maxTileColumns( _maxTileColumns )
+  { }
+
+  Level::Name          level;
+  uint32_t             maxLumaPs;
+  std::pair<int, int>  maxCPBsize; // main tiers, high tiers
+  int                  maxSlicesPerPictue;
+  int                  maxTileRows;
+  int                  maxTileColumns;
+};
+#endif
+
 class ProfileTierLevel
 {
+#if JVET_Q0814_DPB
+  static std::unordered_map<Level::Name, TierLevelLimits> m_tierLevelLimits;
+#endif
   Level::Tier       m_tierFlag;
   Profile::Name     m_profileIdc;
   uint8_t           m_numSubProfile;
@@ -486,6 +512,10 @@ public:
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
 
+
+#if JVET_Q0814_DPB
+  uint32_t getMaxDpbSize( uint32_t picSizeMaxInSamplesY ) const;
+#endif
 };
 
 

@@ -3507,7 +3507,9 @@ ParameterSetManager::ParameterSetManager()
 , m_dpsMap(MAX_NUM_DPS)
 #endif
 , m_vpsMap(MAX_NUM_VPS)
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 , m_activeDPSId(-1)
+#endif
 , m_activeSPSId(-1)
 , m_activeVPSId(-1)
 {
@@ -3636,7 +3638,9 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 
   // Failed to activate if reach here.
   m_activeSPSId=-1;
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   m_activeDPSId=-1;
+#endif
   return false;
 }
 

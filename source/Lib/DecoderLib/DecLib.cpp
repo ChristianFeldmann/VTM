@@ -2156,7 +2156,7 @@ void DecLib::xDecodeDCI(InputNALUnit& nalu)
   DCI* dci = new DCI();
   m_HLSReader.setBitstream(&nalu.getBitstream());
 
-  CHECK(nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0");
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
 
   m_HLSReader.parseDCI(dci);
 }

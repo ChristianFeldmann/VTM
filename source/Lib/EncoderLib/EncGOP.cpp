@@ -322,7 +322,7 @@ int EncGOP::xWriteDCI(AccessUnit& accessUnit, const DCI* dci)
 {
   OutputNALUnit nalu(NAL_UNIT_DCI);
   m_HLSWriter->setBitstream(&nalu.m_Bitstream);
-  CHECK(nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0");
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
   m_HLSWriter->codeDCI(dci);
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;

@@ -129,7 +129,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       {
         read( nalu );
         int iSkipFrame = 0;
-        bNewPicture = pcDecLib->decode( nalu, iSkipFrame, iPOCLastDisplay );
+
+#if JVET_P0288_PIC_OUTPUT
+        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay, 0);
+#else
+        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay);
+#endif
         if( bNewPicture )
         {
           bitstreamFile->clear();

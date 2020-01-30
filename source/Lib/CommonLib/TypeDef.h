@@ -50,11 +50,14 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0330_BLOCK_PARTITION                        1 // JVET-Q0330: fix the block partitioning at picture boundary
+
 #define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 //JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
 
 #define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization
 
 #define JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG              1  //JVET-Q0414: when gdr_enabled_flag is equal to 0, gdr_pic_flag shall be 0
+
 #define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
 
 #define JVET_Q0169_SUBPIC_LEN_CONFORM                     1 // JVET-Q0169: add bitstream conformance check on subpic length

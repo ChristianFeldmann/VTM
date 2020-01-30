@@ -1862,8 +1862,13 @@ SPS::SPS()
 , m_CTUSize(0)
 , m_minQT{ 0, 0, 0 }
 , m_maxMTTHierarchyDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
+#if JVET_Q0330_BLOCK_PARTITION
+, m_maxBTSize{ 0, 0, 0 }
+, m_maxTTSize{ 0, 0, 0 }
+#else
 , m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
 , m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
+#endif
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)

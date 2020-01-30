@@ -649,6 +649,54 @@ void HLSWriter::codeScalingListAps( APS* pcAPS )
   codeScalingList( param );
 }
 
+#if JVET_Q0042_VUI
+void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
+{
+#if ENABLE_TRACING
+  DTRACE( g_trace_ctx, D_HEADER, "----------- vui_parameters -----------\n");
+#endif
+
+
+  WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "vui_aspect_ratio_info_present_flag");
+  if (pcVUI->getAspectRatioInfoPresentFlag())
+  {
+    WRITE_FLAG(pcVUI->getAspectRatioConstantFlag(),             "vui_aspect_ratio_constant_flag");
+    WRITE_CODE(pcVUI->getAspectRatioIdc(), 8,                   "vui_aspect_ratio_idc" );
+    if (pcVUI->getAspectRatioIdc() == 255)
+    {
+      WRITE_CODE(pcVUI->getSarWidth(), 16,                      "vui_sar_width");
+      WRITE_CODE(pcVUI->getSarHeight(), 16,                     "vui_sar_height");
+    }
+  }
+  WRITE_FLAG(pcVUI->getOverscanInfoPresentFlag(),               "vui_overscan_info_present_flag");
+  if (pcVUI->getOverscanInfoPresentFlag())
+  {
+    WRITE_FLAG(pcVUI->getOverscanAppropriateFlag(),             "vui_overscan_appropriate_flag");
+  }
+  WRITE_FLAG(pcVUI->getColourDescriptionPresentFlag(),        "vui_colour_description_present_flag");
+  if (pcVUI->getColourDescriptionPresentFlag())
+  {
+    WRITE_CODE(pcVUI->getColourPrimaries(), 8,                "vui_colour_primaries");
+    WRITE_CODE(pcVUI->getTransferCharacteristics(), 8,        "vui_transfer_characteristics");
+    WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "vui_matrix_coeffs");
+    WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                "vui_video_full_range_flag");
+  }
+  WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "vui_chroma_loc_info_present_flag");
+  if (pcVUI->getChromaLocInfoPresentFlag())
+  {
+    if(pcSPS->getProfileTierLevel()->getConstraintInfo()->getProgressiveSourceFlag() &&
+       !pcSPS->getProfileTierLevel()->getConstraintInfo()->getInterlacedSourceFlag())
+    {
+      WRITE_UVLC(pcVUI->getChromaSampleLocType(),         "vui_chroma_sample_loc_type");
+    }
+    else 
+    {
+      WRITE_UVLC(pcVUI->getChromaSampleLocTypeTopField(),         "vui_chroma_sample_loc_type_top_field");
+      WRITE_UVLC(pcVUI->getChromaSampleLocTypeBottomField(),      "vui_chroma_sample_loc_type_bottom_field");
+    }
+  }
+}
+#else
 void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 {
 #if ENABLE_TRACING
@@ -695,6 +743,7 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_FLAG(pcVUI->getOverscanAppropriateFlag(),             "overscan_appropriate_flag");
   }
 }
+#endif
 
 void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1)
 {
@@ -1124,6 +1173,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
 
+#if JVET_Q0042_VUI
+  WRITE_FLAG(pcSPS->getFieldSeqFlag(),                          "field_seq_flag");
+#endif
   WRITE_FLAG( pcSPS->getVuiParametersPresentFlag(),            "vui_parameters_present_flag" );
   if (pcSPS->getVuiParametersPresentFlag())
   {

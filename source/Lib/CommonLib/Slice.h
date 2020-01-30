@@ -899,7 +899,9 @@ private:
   int        m_colourPrimaries;
   int        m_transferCharacteristics;
   int        m_matrixCoefficients;
+#if !JVET_Q0042_VUI
   bool       m_fieldSeqFlag;
+#endif
   bool       m_chromaLocInfoPresentFlag;
   int        m_chromaSampleLocTypeTopField;
   int        m_chromaSampleLocTypeBottomField;
@@ -919,7 +921,9 @@ public:
     , m_colourPrimaries                   (2)
     , m_transferCharacteristics           (2)
     , m_matrixCoefficients                (2)
+#if !JVET_Q0042_VUI
     , m_fieldSeqFlag                      (false)
+#endif
     , m_chromaLocInfoPresentFlag          (false)
     , m_chromaSampleLocTypeTopField       (0)
     , m_chromaSampleLocTypeBottomField    (0)
@@ -957,8 +961,10 @@ public:
   int               getMatrixCoefficients() const                          { return m_matrixCoefficients;                   }
   void              setMatrixCoefficients(int i)                           { m_matrixCoefficients = i;                      }
 
+#if !JVET_Q0042_VUI
   bool              getFieldSeqFlag() const                                { return m_fieldSeqFlag;                         }
   void              setFieldSeqFlag(bool i)                                { m_fieldSeqFlag = i;                            }
+#endif
 
   bool              getChromaLocInfoPresentFlag() const                    { return m_chromaLocInfoPresentFlag;             }
   void              setChromaLocInfoPresentFlag(bool i)                    { m_chromaLocInfoPresentFlag = i;                }
@@ -1141,6 +1147,9 @@ private:
   bool              m_hrdParametersPresentFlag;
   HRDParameters     m_hrdParameters;
 
+#if JVET_Q0042_VUI
+  bool              m_fieldSeqFlag;
+#endif
   bool              m_vuiParametersPresentFlag;
   VUI               m_vuiParameters;
 
@@ -1414,6 +1423,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   void                    setHrdParametersPresentFlag(bool b)                                             { m_hrdParametersPresentFlag = b; }
   HRDParameters*          getHrdParameters()                                                              { return &m_hrdParameters; }
   const HRDParameters*    getHrdParameters() const                                                        { return &m_hrdParameters; }
+#if JVET_Q0042_VUI
+  bool                    getFieldSeqFlag() const                                                         { return m_fieldSeqFlag;                         }
+  void                    setFieldSeqFlag(bool i)                                                         { m_fieldSeqFlag = i;                            }
+#endif
   bool                    getVuiParametersPresentFlag() const                                             { return m_vuiParametersPresentFlag;                                   }
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }
   VUI*                    getVuiParameters()                                                              { return &m_vuiParameters;                                             }

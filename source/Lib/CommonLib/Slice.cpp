@@ -1016,7 +1016,11 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
       {
         numLeadingPicsFound++;
         int limitNonLP = 0;
+#if JVET_Q0042_VUI
+        if (pcSlice->getSPS()->getFieldSeqFlag())
+#else
         if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
+#endif
           limitNonLP = 1;
         CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
       }
@@ -1881,6 +1885,9 @@ SPS::SPS()
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
 , m_hrdParametersPresentFlag  (false)
+#if JVET_Q0042_VUI
+, m_fieldSeqFlag              (false)
+#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)

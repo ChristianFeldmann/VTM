@@ -1285,8 +1285,8 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     }
   }
 #if JVET_Q0119_CLEANUPS
-  sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignaledFlag);
-  if (m_subPicIdMappingExplicitlySignaledFlag)
+  sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
+  if (m_subPicIdMappingExplicitlySignalledFlag)
   {
     sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
     if (m_subPicIdMappingInSpsFlag)

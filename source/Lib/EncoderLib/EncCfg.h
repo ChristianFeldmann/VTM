@@ -279,7 +279,7 @@ protected:
   uint32_t              m_subPicTreatedAsPicFlag[MAX_NUM_SUB_PICS];
   uint32_t              m_loopFilterAcrossSubpicEnabledFlag[MAX_NUM_SUB_PICS];
 #if JVET_Q0119_CLEANUPS
-  bool                  m_subPicIdMappingExplicitlySignaledFlag;
+  bool                  m_subPicIdMappingExplicitlySignalledFlag;
   bool                  m_subPicIdMappingInSpsFlag;
 #else
   bool                  m_subPicIdPresentFlag;
@@ -964,7 +964,7 @@ public:
   void      setLoopFilterAcrossSubpicEnabledFlag        (uint32_t u, int i)         { m_loopFilterAcrossSubpicEnabledFlag[i] = u; }
 
 #if JVET_Q0119_CLEANUPS
-  void      setSubPicIdMappingExplicitlySignaledFlag    (bool b)                    { m_subPicIdMappingExplicitlySignaledFlag = b; }
+  void      setSubPicIdMappingExplicitlySignalledFlag   (bool b)                    { m_subPicIdMappingExplicitlySignalledFlag = b; }
   void      setSubPicIdMappingInSpsFlag                 (bool b)                    { m_subPicIdMappingInSpsFlag = b; }
 #else
   void      setSubPicIdPresentFlag                      (bool b)                    { m_subPicIdPresentFlag = b; }
@@ -986,7 +986,7 @@ public:
   bool      getSubPicTreatedAsPicFlag                   (int i)                     { return m_subPicTreatedAsPicFlag[i]; }
   uint32_t  getLoopFilterAcrossSubpicEnabledFlag        (int i)                     { return m_loopFilterAcrossSubpicEnabledFlag[i]; }
 #if JVET_Q0119_CLEANUPS
-  bool      getSubPicIdMappingExplicitlySignaledFlag    ()                          { return m_subPicIdMappingExplicitlySignaledFlag; }
+  bool      getSubPicIdMappingExplicitlySignalledFlag   ()                          { return m_subPicIdMappingExplicitlySignalledFlag; }
   bool      getSubPicIdMappingInSpsFlag                 ()                          { return m_subPicIdMappingInSpsFlag; }
 #else
   bool      getSubPicIdPresentFlag                      ()                          { return m_subPicIdPresentFlag; }

@@ -392,8 +392,8 @@ void EncApp::xInitLibCfg()
   }
 
 #if JVET_Q0119_CLEANUPS
-  m_cEncLib.setSubPicIdMappingExplicitlySignaledFlag             ( m_subPicIdMappingExplicitlySignaledFlag );
-  if (m_subPicIdMappingExplicitlySignaledFlag)
+  m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag            ( m_subPicIdMappingExplicitlySignalledFlag );
+  if (m_subPicIdMappingExplicitlySignalledFlag)
   {
     m_cEncLib.setSubPicIdMappingInSpsFlag                        ( m_subPicIdMappingInSpsFlag );
     if(m_subPicIdMappingInSpsFlag)

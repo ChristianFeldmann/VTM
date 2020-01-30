@@ -286,7 +286,7 @@ protected:
   std::vector<uint32_t> m_subPicTreatedAsPicFlag;
   std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
 #if JVET_Q0119_CLEANUPS
-  bool m_subPicIdMappingExplicitlySignaledFlag;
+  bool m_subPicIdMappingExplicitlySignalledFlag;
   bool m_subPicIdMappingInSpsFlag;
 #else
   bool m_subPicIdPresentFlag;

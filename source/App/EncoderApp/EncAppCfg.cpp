@@ -883,7 +883,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SubPicTreatedAsPicFlag",                          cfg_subPicTreatedAsPicFlag,  cfg_subPicTreatedAsPicFlag, "equal to 1 specifies that the i-th subpicture of each coded picture in the CLVS is treated as a picture in the decoding process excluding in-loop filtering operations")
   ("LoopFilterAcrossSubpicEnabledFlag",               cfg_loopFilterAcrossSubpicEnabledFlag, cfg_loopFilterAcrossSubpicEnabledFlag, "equal to 1 specifies that in-loop filtering operations may be performed across the boundaries of the i-th subpicture in each coded picture in the CLVS")
 #if JVET_Q0119_CLEANUPS
-  ("SubPicIdPresentFlag",                             m_subPicIdMappingExplicitlySignaledFlag,          false, "equal to 1 specifies that subpicture ID mapping is present in the SPS")
+  ("SubPicIdMappingExplicitlySignalledFlag",          m_subPicIdMappingExplicitlySignalledFlag,          false, "equal to 1 specifies that subpicture ID mapping is present in the SPS")
   ("SubPicIdMappingInSpsFlag",                        m_subPicIdMappingInSpsFlag,                       false, "equal to 1 specifies that subpicture ID mapping is signalled in the SPS")
 #else
   ("SubPicIdPresentFlag",                             m_subPicIdPresentFlag,                            false, "equal to 1 specifies that subpicture ID mapping is present in the SPS")
@@ -1615,7 +1615,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       CHECK(m_subPicCtuTopLeftY[i] + m_subPicHeight[i] > (m_iSourceHeight + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
     }
 #if JVET_Q0119_CLEANUPS
-    if (m_subPicIdMappingExplicitlySignaledFlag)
+    if (m_subPicIdMappingExplicitlySignalledFlag)
     {
       if (m_subPicIdMappingInSpsFlag)
 #else
@@ -3631,8 +3631,8 @@ void EncAppCfg::xPrintParameter()
   }
 
 #if JVET_Q0119_CLEANUPS
-  msg(DETAILS, "subpicture ID present flag                            : %d\n", m_subPicIdMappingExplicitlySignaledFlag);
-  if (m_subPicIdMappingExplicitlySignaledFlag)
+  msg(DETAILS, "subpicture ID present flag                            : %d\n", m_subPicIdMappingExplicitlySignalledFlag);
+  if (m_subPicIdMappingExplicitlySignalledFlag)
   {
     msg(DETAILS, "subpicture ID signalling present flag                            : %d\n", m_subPicIdMappingInSpsFlag);
 #else

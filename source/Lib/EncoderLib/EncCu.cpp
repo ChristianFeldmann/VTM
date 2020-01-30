@@ -1835,9 +1835,11 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
           m_CABACEstimator->pred_mode      ( cu );
           m_CABACEstimator->adaptive_color_transform(cu);
           m_CABACEstimator->cu_pred_data   ( cu );
+#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
           m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
           if (!CS::isDualITree(*cu.cs) && isLuma(partitioner.chType))
               m_CABACEstimator->bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
+#endif
 
           // Encode Coefficients
           CUCtx cuCtx;

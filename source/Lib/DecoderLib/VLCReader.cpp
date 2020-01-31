@@ -1181,7 +1181,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSeparateColourPlaneFlag( uiCode != 0 );
   }
 
+#if JVET_Q0043_RPR_and_Subpics
+  READ_FLAG( uiCode, "res_change_in_clvs_allowed_flag" );        pcSPS->setRprEnabledFlag( uiCode );
+#else
   READ_FLAG( uiCode, "ref_pic_resampling_enabled_flag" );        pcSPS->setRprEnabledFlag( uiCode );
+#endif
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
@@ -1193,7 +1197,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2DiffMaxMinCodingBlockSize(uiCode+3);
   pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
   pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
+#if JVET_Q0043_RPR_and_Subpics
+  READ_FLAG( uiCode, "subpic_info_present_flag" );               pcSPS->setSubPicPresentFlag(uiCode);
+#else
   READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
+#endif
 
   if (pcSPS->getSubPicPresentFlag()) 
   {

@@ -77,6 +77,10 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   ("BitstreamFile,b",           m_bitstreamFileName,                   string(""), "bitstream input file name")
   ("ReconFile,o",               m_reconFileName,                       string(""), "reconstructed YUV output file name\n")
 
+#if JVET_P2008_OUTPUT_LOG
+  ("OplFile,-opl",              m_oplFilename ,                        string(""), "opl-file name without extension for conformance testing\n")
+#endif //JVET_P2008_OUTPUT_LOG
+
 #if ENABLE_SIMD_OPT
   ("SIMD",                      ignore,                                string(""), "SIMD extension to use (SCALAR, SSE41, SSE42, AVX, AVX2, AVX512), default: the highest supported extension\n")
 #endif
@@ -223,6 +227,10 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
 DecAppCfg::DecAppCfg()
 : m_bitstreamFileName()
 , m_reconFileName()
+#if JVET_P2008_OUTPUT_LOG
+, m_oplFilename()
+#endif //JVET_P2008_OUTPUT_LOG
+
 , m_iSkipFrame(0)
 // m_outputBitDepth array initialised below
 , m_outputColourSpaceConvert(IPCOLOURSPACE_UNCHANGED)

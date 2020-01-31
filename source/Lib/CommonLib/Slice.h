@@ -2283,9 +2283,6 @@ private:
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
   bool                       m_ChromaQpAdjEnabled;
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
-  bool                       m_tsResidualCodingDisabledFlag;
-#endif
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
@@ -2295,6 +2292,9 @@ private:
   int                        m_deblockingFilterCbTcOffsetDiv2;    //< tc offset for deblocking filter
   int                        m_deblockingFilterCrBetaOffsetDiv2;  //< beta offset for deblocking filter
   int                        m_deblockingFilterCrTcOffsetDiv2;    //< tc offset for deblocking filter
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                       m_tsResidualCodingDisabledFlag;
 #endif
   int                        m_list1IdxToList0Idx[MAX_NUM_REF];
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
@@ -2468,10 +2468,6 @@ public:
   void                        setSliceQpDelta( int i )                               { m_iSliceQpDelta     = i;                                      }
   void                        setSliceChromaQpDelta( ComponentID compID, int i )     { m_iSliceChromaQpDelta[compID] = isLuma(compID) ? 0 : i;       }
   void                        setUseChromaQpAdj( bool b )                            { m_ChromaQpAdjEnabled = b;                                     }
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
-  void                        setTSResidualCodingDisabledFlag( bool b )              { m_tsResidualCodingDisabledFlag = b; }
-  bool                        getTSResidualCodingDisabledFlag() const                { return m_tsResidualCodingDisabledFlag; }
-#endif
   void                        setDeblockingFilterDisable( bool b )                   { m_deblockingFilterDisable= b;                                 }
   void                        setDeblockingFilterOverrideFlag( bool b )              { m_deblockingFilterOverrideFlag = b;                           }
   void                        setDeblockingFilterBetaOffsetDiv2( int i )             { m_deblockingFilterBetaOffsetDiv2 = i;                         }
@@ -2481,6 +2477,10 @@ public:
   void                        setDeblockingFilterCbTcOffsetDiv2( int i )             { m_deblockingFilterCbTcOffsetDiv2 = i;                           }
   void                        setDeblockingFilterCrBetaOffsetDiv2( int i )           { m_deblockingFilterCrBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterCrTcOffsetDiv2( int i )             { m_deblockingFilterCrTcOffsetDiv2 = i;                           }
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  void                        setTSResidualCodingDisabledFlag(bool b) { m_tsResidualCodingDisabledFlag = b; }
+  bool                        getTSResidualCodingDisabledFlag() const { return m_tsResidualCodingDisabledFlag; }
 #endif
 
   void                        setNumRefIdx( RefPicList e, int i )                    { m_aiNumRefIdx[e]    = i;                                      }

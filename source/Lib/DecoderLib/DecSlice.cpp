@@ -143,6 +143,31 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     const unsigned  maxCUSize             = sps->getMaxCUWidth();
     Position pos( ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize) ;
     UnitArea ctuArea(cs.area.chromaFormat, Area( pos.x, pos.y, maxCUSize, maxCUSize ) );
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+    SubPic curSubPic = slice->getPPS()->getSubPicFromPos(pos);
+    // padding/restore at slice level
+    if (curSubPic.getTreatedAsPicFlag() && ctuIdx==0)
+    {
+      int subPicX      = (int)curSubPic.getSubPicLeft();
+      int subPicY      = (int)curSubPic.getSubPicTop();
+      int subPicWidth  = (int)curSubPic.getSubPicWidthInLumaSample();
+      int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      {
+        int n = slice->getNumRefIdx((RefPicList)rlist);
+        for (int idx = 0; idx < n; idx++) 
+        {
+          Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
+          refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+          refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+          if (!refPic->getSubPicSaved()) 
+          {
+            refPic->setSubPicSaved(true);
+          }
+        }
+      }
+    }
+#endif
 
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
@@ -232,6 +257,30 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #endif
       subStrmId++;
     }
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+    if (curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
+    // for last Ctu in the slice
+    {
+      int subPicX = (int)curSubPic.getSubPicLeft();
+      int subPicY = (int)curSubPic.getSubPicTop();
+      int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
+      int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      {
+        int n = slice->getNumRefIdx((RefPicList)rlist);
+        for (int idx = 0; idx < n; idx++) 
+        {
+          Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
+          refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+
+          if (refPic->getSubPicSaved()) 
+          {
+            refPic->setSubPicSaved(false);
+          }
+        }
+      }
+    }
+#endif
   }
 
   // deallocate all created substreams, including internal buffers.

@@ -92,7 +92,9 @@
 
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as piucture boundary
 #if JVET_O1143_SUBPIC_BOUNDARY
-#define SUBPIC_DECCHECK                                   0
+#define JVET_O1143_SUBPIC_DECCHECK                        1
+#define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
+#define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 #endif
 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF

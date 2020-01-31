@@ -113,7 +113,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
   ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
-#if SUBPIC_DECCHECK
+#if JVET_O1143_SUBPIC_DECCHECK
   ("targetSubPicIdx",          m_targetSubPicIdx,                     0,           "Specify which subpicture shall be written to output, using subpic index\n" )
 #endif
   ( "UpscaledOutput",          m_upscaledOutput,                          0,       "Upscaled output for RPR" )

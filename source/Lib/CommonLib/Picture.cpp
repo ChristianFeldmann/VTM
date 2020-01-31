@@ -173,6 +173,9 @@ int Scheduler::getNumPicInstances() const
 Picture::Picture()
 {
   cs                   = nullptr;
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+  m_bIsSubPicBorderSaved = false;
+#endif
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
   longTerm             = false;
@@ -733,6 +736,303 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
                     isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
   }
 }
+
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
+{
+  // 1.0 check border was extended
+  if (getSubPicSaved()) 
+  {
+    return;
+  }
+
+  // 1.1 set up margin for back up memory allocation
+  int xMargin = margin >> getComponentScaleX(COMPONENT_Y, cs->area.chromaFormat);
+  int yMargin = margin >> getComponentScaleY(COMPONENT_Y, cs->area.chromaFormat);
+
+  // 1.2 measure the size of back up memory
+  Area areaAboveBelow(0, 0, subPicWidth + 2 * xMargin, yMargin);
+  Area areaLeftRight(0, 0, xMargin, subPicHeight);
+  UnitArea unitAreaAboveBelow(cs->area.chromaFormat, areaAboveBelow);
+  UnitArea unitAreaLeftRight(cs->area.chromaFormat, areaLeftRight);
+
+  // 1.3 create back up memory
+  m_bufSubPicAbove.create(unitAreaAboveBelow);
+  m_bufSubPicBelow.create(unitAreaAboveBelow);
+  m_bufSubPicLeft.create(unitAreaLeftRight);
+  m_bufSubPicRight.create(unitAreaLeftRight);
+
+  Pel *ss0;
+  Pel *ss1;
+  Pel *dd0;
+  Pel *dd1;
+  int copylen;
+
+  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
+  {
+    ComponentID compID = ComponentID(comp);
+
+    // 2.1 measure the margin for each component
+    int xmargin = margin >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int ymargin = margin >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 2.2 calculate the origin of the subpicture
+    int tx0 = subPicX0 >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int ty0 = subPicY0 >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 2.3 calculate the width/height of the subPic
+    int tww = subPicWidth >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int thh = subPicHeight >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+
+    // 3.1.1 set reconstructed picture
+    PelBuf s = M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
+    Pel *siTxt = s.bufAt(tx0, ty0);
+    Pel*  si = siTxt;
+
+    // 3.2.1 set back up buffer for left
+    PelBuf d0 = m_bufSubPicLeft.getBuf(compID);
+    Pel *diTxt0 = d0.bufAt(0, 0);
+    Pel *di0 = diTxt0;
+
+    // 3.2.2 set back up buffer for right
+    PelBuf d1 = m_bufSubPicRight.getBuf(compID);
+    Pel *diTxt1 = d1.bufAt(0, 0);
+    Pel *di1 = diTxt1;
+
+
+    // 3.2.3 copy to recon picture to back up buffer
+    ss0 = si - xmargin;
+    ss1 = si + tww;
+    dd0 = di0;
+    dd1 = di1;
+    copylen = sizeof(Pel) * xmargin;
+    for (int y = 0; y < thh; y++) 
+    {
+      ::memcpy(dd0, ss0, copylen);
+      ::memcpy(dd1, ss1, copylen);
+      ss0 += s.stride;
+      ss1 += s.stride;
+      dd0 += d0.stride;
+      dd1 += d1.stride;
+    }
+
+
+    // 3.3.1 set back up buffer for above
+    d0 = m_bufSubPicAbove.getBuf(compID);
+    diTxt0 = d0.bufAt(0, 0);
+    di0 = diTxt0;
+
+    // 3.3.2 set back up buffer for below
+    d1 = m_bufSubPicBelow.getBuf(compID);
+    diTxt1 = d1.bufAt(0, 0);
+    di1 = diTxt1;
+
+    // 3.3.3 copy to recon picture to back up buffer
+    ss0 = si - xmargin - ymargin * s.stride;
+    ss1 = si - xmargin + thh * s.stride;
+    dd0 = di0;
+    dd1 = di1;
+    copylen = sizeof(Pel) * (2 * xmargin + tww);
+    for (int y = 0; y < ymargin; y++) 
+    {
+      ::memcpy(dd0, ss0, copylen);
+      ::memcpy(dd1, ss1, copylen);
+      ss0 += s.stride;
+      ss1 += s.stride;
+      dd0 += d0.stride;
+      dd1 += d1.stride;
+    }
+  }
+}
+
+void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
+{
+  // 1.0 check border was extended
+  if (getSubPicSaved()) 
+  {
+    return;
+  }
+
+  Pel *ss0 = 0;
+  Pel *ss1 = 0;
+  Pel *dd0 = 0;
+  Pel *dd1 = 0;
+  int copylen;
+
+  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
+  {
+    ComponentID compID = ComponentID(comp);
+
+    // 2.1 measure the margin for each component
+    int xmargin = margin >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int ymargin = margin >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 2.2 calculate the origin of the Subpicture
+    int tx0 = subPicX0 >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int ty0 = subPicY0 >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 2.3 calculate the width/height of the Subpicture
+    int tww = subPicWidth >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int thh = subPicHeight >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 3.1 set reconstructed picture
+    PelBuf s = M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
+    Pel *siTxt = s.bufAt(tx0, ty0);
+    Pel*  si = siTxt;
+
+    // 4.1 apply padding for left and right
+    {
+      Pel *xx0, *xx1;
+      ss0 = si - xmargin;
+      ss1 = si + tww;
+      xx0 = si + 0;
+      xx1 = si + tww - 1;
+
+      for (int y = 0; y < thh; y++) 
+      {
+        dd0 = ss0;
+        dd1 = ss1;
+        for (int x = 0; x < xmargin; x++) 
+        {
+          *dd0++ = *xx0;
+          *dd1++ = *xx1;
+        }
+
+        ss0 += s.stride;
+        ss1 += s.stride;
+        xx0 += s.stride;
+        xx1 += s.stride;
+      }
+    }
+
+    // 4.2 apply padding on bottom 
+    // si is now the (0, SubpictureHeight) (bottom left of image within bigger picture
+    si += s.stride * (thh - 1) - xmargin;
+
+    // si is now the (-marginX, SubpictureHeight-1)
+    ss0 = si + s.stride;
+    copylen = sizeof(Pel)*(tww + (xmargin << 1));
+    for (int y = 0; y < ymargin; y++)
+    {
+      ::memcpy(ss0, si, copylen);
+      ss0 += s.stride;
+    }
+
+    // 4.3 apply padding for top
+    // si is still (-marginX, SubpictureHeight-1)
+    si -= ((thh - 1) * s.stride);
+
+    // si is now (-marginX, 0)
+    ss0 = si - s.stride;
+    copylen = sizeof(Pel)*(tww + (xmargin << 1));
+    for (int y = 0; y < ymargin; y++)
+    {
+      ::memcpy(ss0, si, copylen);
+      ss0 -= s.stride;
+    }
+  } // end of for  
+}
+
+void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
+{
+  // 1.0 check border was extended
+  if (!getSubPicSaved()) 
+  {
+    return;
+  }
+
+  Pel *ss0;
+  Pel *ss1;
+  Pel *dd0;
+  Pel *dd1;
+  int copylen;
+
+  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
+  {
+    ComponentID compID = ComponentID(comp);
+
+    // 2.1 measure the margin for each component
+    int xmargin = margin >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int ymargin = margin >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 2.2 calculate the origin of the subpicture
+    int tx0 = subPicX0 >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int ty0 = subPicY0 >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 2.3 calculate the width/height of the subpicture
+    int tww = subPicWidth >> getComponentScaleX(compID, cs->area.chromaFormat);
+    int thh = subPicHeight >> getComponentScaleY(compID, cs->area.chromaFormat);
+
+    // 3.1 set reconstructed picture
+    PelBuf s = M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
+    Pel *siTxt = s.bufAt(tx0, ty0);
+    Pel*  si = siTxt;
+
+
+    // 4.2.1 copy from back up buffer to recon picture
+    PelBuf d0 = m_bufSubPicLeft.getBuf(compID);
+    Pel *diTxt0 = d0.bufAt(0, 0);
+    Pel *di0 = diTxt0;
+
+    // 4.2.2 set back up buffer for right
+    PelBuf d1 = m_bufSubPicRight.getBuf(compID);
+    Pel *diTxt1 = d1.bufAt(0, 0);
+    Pel *di1 = diTxt1;
+
+    // 4.2.3 copy to recon picture to back up buffer
+    ss0 = si - xmargin;
+    ss1 = si + tww;
+    dd0 = di0;
+    dd1 = di1;
+    copylen = sizeof(Pel) * xmargin;
+
+    for (int y = 0; y < thh; y++) 
+    {
+      ::memcpy(ss0, dd0, copylen);
+      ::memcpy(ss1, dd1, copylen);
+      ss0 += s.stride;
+      ss1 += s.stride;
+      dd0 += d0.stride;
+      dd1 += d1.stride;
+    }
+
+
+    // 4.3.1 copy from back up buffer to recon picture
+    d0 = m_bufSubPicAbove.getBuf(compID);
+    diTxt0 = d0.bufAt(0, 0);
+    di0 = diTxt0;
+
+    // 4.3.2 set back up buffer for below
+    d1 = m_bufSubPicBelow.getBuf(compID);
+    diTxt1 = d1.bufAt(0, 0);
+    di1 = diTxt1;
+
+    // 4.3.3 copy to recon picture to back up buffer
+    ss0 = si - xmargin - ymargin * s.stride;
+    ss1 = si - xmargin + thh * s.stride;
+    dd0 = di0;
+    dd1 = di1;
+    copylen = sizeof(Pel) * (2 * xmargin + tww);
+
+    for (int y = 0; y < ymargin; y++) 
+    {
+      ::memcpy(ss0, dd0, copylen);
+      ::memcpy(ss1, dd1, copylen);
+      ss0 += s.stride;
+      ss1 += s.stride;
+      dd0 += d0.stride;
+      dd1 += d1.stride;
+    }
+  }
+
+  // 5.0 destroy the back up memory
+  m_bufSubPicAbove.destroy();
+  m_bufSubPicBelow.destroy();
+  m_bufSubPicLeft.destroy();
+  m_bufSubPicRight.destroy();
+}
+#endif
 
 void Picture::extendPicBorder()
 {

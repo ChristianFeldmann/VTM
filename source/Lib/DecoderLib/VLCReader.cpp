@@ -1181,6 +1181,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setSeparateColourPlaneFlag( uiCode != 0 );
   }
 
+#if JVET_Q0265
+  const uint32_t chromaArrayType = (int) pcSPS->getSeparateColourPlaneFlag() ? 0 : pcSPS->getChromaFormatIdc();
+#endif
+
   READ_FLAG( uiCode, "ref_pic_resampling_enabled_flag" );        pcSPS->setRprEnabledFlag( uiCode );
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
@@ -1455,7 +1459,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
 
 #if JVET_Q0147_JCCR_SIGNALLING
+#if JVET_Q0265
+  if (chromaArrayType != 0)
+#else
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+#endif
   {
     READ_FLAG(uiCode, "sps_joint_cbcr_enabled_flag");                pcSPS->setJointCbCrEnabledFlag(uiCode ? true : false);
 #else
@@ -1593,7 +1601,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setProfControlPresentFlag( false );
     }
   }
+#if JVET_Q0265
+  if (chromaArrayType == 3)
+#else
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
+#endif
   {
 #if JVET_Q0820_ACT
     if (pcSPS->getLog2MaxTbSize() != 6)

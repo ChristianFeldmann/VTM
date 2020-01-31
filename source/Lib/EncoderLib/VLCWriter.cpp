@@ -771,10 +771,21 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(int(pcSPS->getChromaFormatIdc ()), 2, "chroma_format_idc");
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
+#if JVET_Q0265
+  const uint32_t  separate_colour_plane_flag = pcSPS->getSeparateColourPlaneFlag();
+  if( format == CHROMA_444 )
+  {
+     CHECK(separate_colour_plane_flag != 0,         "separate_colour_plane_flag is not '0'");
+     WRITE_FLAG( separate_colour_plane_flag,        "separate_colour_plane_flag");
+  }
+
+  const uint32_t chromaArrayType = separate_colour_plane_flag ? 0 : format;
+#else
   if( format == CHROMA_444 )
   {
     WRITE_FLAG( 0,                                  "separate_colour_plane_flag");
   }
+#endif
 
   WRITE_FLAG( pcSPS->getRprEnabledFlag(), "ref_pic_resampling_enabled_flag" );
 
@@ -923,7 +934,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 
 #if JVET_Q0147_JCCR_SIGNALLING
+#if JVET_Q0265
+  if (chromaArrayType != 0)
+#else
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
+#endif
   {
     WRITE_FLAG(pcSPS->getJointCbCrEnabledFlag(), "sps_joint_cbcr_enabled_flag");
 #else

@@ -1512,6 +1512,10 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     tempCS->picture->cs->getNumCuPuTuOffset( numCuPuTu );
     tempCS->picture->cs->useSubStructure( *tempCS, partitioner.chType, CS::getArea( *tempCS, partitioner.currArea(), partitioner.chType ), false, true, false, false );
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    if (isChromaEnabled(tempCS->pcv->chrFormat))
+    {
+#endif
     partitioner.chType = CHANNEL_TYPE_CHROMA;
     tempCS->treeType = partitioner.treeType = TREE_C;
 
@@ -1536,9 +1540,15 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     tempCSChroma->releaseIntermediateData();
     bestCSChroma->releaseIntermediateData();
     //tempCS->picture->cs->releaseIntermediateData();
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+      m_CurrCtx--;
+    }
+#endif
     tempCS->picture->cs->clearCuPuTuIdxMap( partitioner.currArea(), numCuPuTu[0], numCuPuTu[1], numCuPuTu[2], numCuPuTu + 3 );
 
+#if !JVET_Q0438_MONOCHROME_BUGFIXES
     m_CurrCtx--;
+#endif
 
     //recover luma tree status
     partitioner.chType = CHANNEL_TYPE_LUMA;
@@ -1837,7 +1847,11 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
           m_CABACEstimator->cu_pred_data   ( cu );
 #if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
           m_CABACEstimator->bdpcm_mode     ( cu, ComponentID(partitioner.chType) );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+          if (!CS::isDualITree(*cu.cs) && isLuma(partitioner.chType) && isChromaEnabled(cu.chromaFormat))
+#else
           if (!CS::isDualITree(*cu.cs) && isLuma(partitioner.chType))
+#endif
               m_CABACEstimator->bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
 #endif
 
@@ -1862,7 +1876,15 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
           // Check if low frequency non-separable transform (LFNST) is too expensive
           if( lfnstIdx && !cuCtx.lfnstLastScanPos && !cu.ispMode )
           {
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+            bool cbfAtZeroDepth = cu.isSepTree() ?
+                                       cu.rootCbf
+                                     : (tempCS->area.chromaFormat != CHROMA_400 && std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4) ?
+                                            TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 )
+                                          : cu.rootCbf;
+#else
             bool cbfAtZeroDepth = cu.isSepTree() ? cu.rootCbf : std::min( cu.firstTU->blocks[ 1 ].width, cu.firstTU->blocks[ 1 ].height ) < 4 ? TU::getCbfAtDepth( *cu.firstTU, COMPONENT_Y, 0 ) : cu.rootCbf;
+#endif
             if( cbfAtZeroDepth )
             {
               tempCS->cost = MAX_DOUBLE;
@@ -2626,7 +2648,11 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
       setMergeBestSATDCost( candCostList[0] );
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+      if (isIntrainterEnabled && isChromaEnabled(pu.cs->pcv->chrFormat))
+#else
       if (isIntrainterEnabled)
+#endif
       {
         pu.ciipFlag = true;
         for (uint32_t mergeCnt = 0; mergeCnt < uiNumMrgSATDCand; mergeCnt++)
@@ -2771,6 +2797,10 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             tmpBuf.rspSignal(m_pcReshape->getFwdLUT());
           }
           m_pcIntraSearch->geneWeightedPred(COMPONENT_Y, tmpBuf, pu, m_pcIntraSearch->getPredictorPtr2(COMPONENT_Y, bufIdx));
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+          if (isChromaEnabled(pu.chromaFormat))
+          {
+#endif
           if (pu.chromaSize().width > 2)
           {
           tmpBuf = tempCS->getPredBuf(pu).Cb();
@@ -2787,6 +2817,9 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
             tmpBuf = tempCS->getPredBuf(pu).Cr();
             tmpBuf.copyFrom(acMergeTmpBuffer[uiMergeCand].Cr());
           }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+          }
+#endif
         }
         else
         {
@@ -3001,6 +3034,10 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     }
 
     // perform chroma weighting process
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    if (isChromaEnabled(pu.chromaFormat))
+    {
+#endif
     for( uint8_t i = 0; i < triangleNumMrgSATDCand; i++ )
     {
       uint8_t  mergeCand = triangleRdModeList[i];
@@ -3015,6 +3052,9 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
       pu.regularMergeFlag = false;
       m_pcInterSearch->weightedTriangleBlk( pu, splitDir, CHANNEL_TYPE_CHROMA, triangleWeightedBuffer[mergeCand], triangleBuffer[candIdx0], triangleBuffer[candIdx1] );
     }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    }
+#endif
 
     tempCS->initStructData( encTestMode.qp );
   }

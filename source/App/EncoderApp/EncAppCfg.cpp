@@ -2516,6 +2516,22 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_cbQpOffsetDualTree >  12,   "Max. Chroma Cb QP Offset for dual tree is  12" );
   xConfirmPara( m_crQpOffsetDualTree < -12,   "Min. Chroma Cr QP Offset for dual tree is -12" );
   xConfirmPara( m_crQpOffsetDualTree >  12,   "Max. Chroma Cr QP Offset for dual tree is  12" );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (m_dualTree && (m_chromaFormatIDC == CHROMA_400))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: --DualITree has been disabled because the chromaFormat is 400 **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_dualTree = false;
+  }
+  if (m_ccalf && (m_chromaFormatIDC == CHROMA_400))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: --CCALF has been disabled because the chromaFormat is 400     **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_ccalf = false;
+  }
+#endif
   if (m_JointCbCrMode && (m_chromaFormatIDC == CHROMA_400))
   {
     msg( WARNING, "****************************************************************************\n");

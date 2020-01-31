@@ -743,6 +743,12 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  int maxCompID = 1;
+  if (isChromaEnabled(pu->chromaFormat))
+  {
+    maxCompID = MAX_NUM_COMPONENT;
+#endif
   if (pu->chromaSize().width > 2)
   {
     initIntraPatternChType(cu, pu->Cb());
@@ -751,10 +757,20 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     initIntraPatternChType(cu, pu->Cr());
     predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  }
+  for (int currCompID = 0; currCompID < maxCompID; currCompID++)
+  {
+    if (currCompID > 0 && pu->chromaSize().width <= 2)
+    {
+      continue;
+    }
+#else
   for (int currCompID = 0; currCompID < 3; currCompID++)
   {
     if (pu->chromaSize().width <= 2 && currCompID > 0)
       continue;
+#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));

@@ -675,8 +675,13 @@ void DecCu::xReconInter(CodingUnit &cu)
 #endif
   CHECK(CU::isIBC(cu) && cu.firstPU->mmvdMergeFlag, "IBC and MMVD cannot be used together");
   const bool luma = cu.Y().valid();
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  const bool chroma = isChromaEnabled(cu.chromaFormat) && cu.Cb().valid();
+  if (luma && (chroma || !isChromaEnabled(cu.chromaFormat)))
+#else
   const bool chroma = cu.Cb().valid();
   if (luma && chroma)
+#endif
   {
     m_pcInterPred->motionCompensation(cu);
   }
@@ -698,7 +703,11 @@ void DecCu::xReconInter(CodingUnit &cu)
       cu.cs->getPredBuf(*cu.firstPU).Y().rspSignal(m_pcReshape->getFwdLUT());
     }
     m_pcIntraPred->geneWeightedPred(COMPONENT_Y, cu.cs->getPredBuf(*cu.firstPU).Y(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Y, 0));
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    if (isChromaEnabled(cu.chromaFormat) && cu.chromaSize().width > 2)
+#else
     if (cu.chromaSize().width > 2)
+#endif
     {
       m_pcIntraPred->geneWeightedPred(COMPONENT_Cb, cu.cs->getPredBuf(*cu.firstPU).Cb(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cb, 0));
       m_pcIntraPred->geneWeightedPred(COMPONENT_Cr, cu.cs->getPredBuf(*cu.firstPU).Cr(), *cu.firstPU, m_pcIntraPred->getPredictorPtr2(COMPONENT_Cr, 0));

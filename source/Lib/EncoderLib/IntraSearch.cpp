@@ -2596,7 +2596,11 @@ void IntraSearch::xEncIntraHeader( CodingStructure &cs, Partitioner &partitioner
       }
 #if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
       m_CABACEstimator->bdpcm_mode  ( cu, ComponentID(partitioner.chType) );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+      if (!CS::isDualITree(cs) && isLuma(partitioner.chType) && isChromaEnabled(cu.chromaFormat))
+#else
       if (!CS::isDualITree(cs) && isLuma(partitioner.chType))
+#endif
           m_CABACEstimator->bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
 #endif
     }
@@ -2641,7 +2645,9 @@ void IntraSearch::xEncSubdivCbfQT( CodingStructure &cs, Partitioner &partitioner
 
   const bool subdiv        = currTU.depth > currDepth;
   ComponentID compID = partitioner.chType == CHANNEL_TYPE_LUMA ? COMPONENT_Y : COMPONENT_Cb;
+#if !JVET_Q0438_MONOCHROME_BUGFIXES
   const bool chromaCbfISP = currArea.blocks[COMPONENT_Cb].valid() && currCU.ispMode && !subdiv;
+#endif
 
   if( partitioner.canSplit( TU_MAX_TR_SPLIT, cs ) )
   {
@@ -2652,7 +2658,14 @@ void IntraSearch::xEncSubdivCbfQT( CodingStructure &cs, Partitioner &partitioner
     CHECK( subdiv && !currCU.ispMode && isLuma( compID ), "No TU subdivision is allowed with QTBT" );
   }
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (bChroma)
+  {
+    const bool chromaCbfISP = currArea.blocks[COMPONENT_Cb].valid() && currCU.ispMode && !subdiv;
+    if ( !currCU.ispMode || chromaCbfISP )
+#else
   if( bChroma && ( !currCU.ispMode || chromaCbfISP ) )
+#endif
   {
     const uint32_t numberValidComponents = getNumberValidComponents(currArea.chromaFormat);
     const uint32_t cbfDepth = ( chromaCbfISP ? currDepth - 1 : currDepth );
@@ -2669,6 +2682,9 @@ void IntraSearch::xEncSubdivCbfQT( CodingStructure &cs, Partitioner &partitioner
       }
     }
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  }
+#endif
 
   if (subdiv)
   {
@@ -3056,11 +3072,27 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cResScale*cResScale));
   }
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  PelBuf          crOrg;
+  PelBuf          crPred;
+  PelBuf          crResi;
+  PelBuf          crReco;
+
+  if (isChroma(compID))
+  {
+    const CompArea &crArea = tu.blocks[ COMPONENT_Cr ];
+    crOrg  = cs.getOrgBuf  ( crArea );
+    crPred = cs.getPredBuf ( crArea );
+    crResi = cs.getResiBuf ( crArea );
+    crReco = cs.getRecoBuf ( crArea );
+  }
+#else
   const CompArea &crArea = tu.blocks     [ COMPONENT_Cr ];
   PelBuf          crOrg  = cs.getOrgBuf  ( crArea );
   PelBuf          crPred = cs.getPredBuf ( crArea );
   PelBuf          crResi = cs.getResiBuf ( crArea );
   PelBuf          crReco = cs.getRecoBuf ( crArea );
+#endif
 
   if ( jointCbCr )
   {

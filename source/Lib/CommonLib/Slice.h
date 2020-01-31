@@ -1965,6 +1965,9 @@ class PicHeader
 private:
   bool                        m_valid;                                                  //!< picture header is valid yet or not
   Picture*                    m_pcPic;                                                  //!< pointer to picture structure
+#if JVET_Q0819_PH_CHANGES
+  int                         m_pocLsb;                                                 //!< least significant bits of picture order count
+#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
   bool                        m_noOutputOfPriorPicsFlag;                                //!< no output of prior pictures flag
@@ -2056,6 +2059,10 @@ public:
   void                        setPic( Picture* p )                                      { m_pcPic = p;                                                                                 }
   Picture*                    getPic()                                                  { return m_pcPic;                                                                              }
   const Picture*              getPic() const                                            { return m_pcPic;                                                                              }
+#if JVET_Q0819_PH_CHANGES
+  void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
+  int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
+#endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
   void                        setGdrPicFlag( bool b )                                   { m_gdrPicFlag = b;                                                                            }

@@ -1308,13 +1308,19 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setRecoveryPocCnt( 0 );
   }
-  
+
   // parameter sets
   WRITE_UVLC(picHeader->getPPSId(), "ph_pic_parameter_set_id");
   pps = cs.slice->getPPS();
   CHECK(pps==0, "Invalid PPS");  
   sps = cs.slice->getSPS();
   CHECK(sps==0, "Invalid SPS");
+#if JVET_Q0819_PH_CHANGES
+  int pocBits = cs.slice->getSPS()->getBitsForPOC();
+  int pocMask = (1 << pocBits) - 1;
+  WRITE_CODE(cs.slice->getPOC() & pocMask, pocBits, "ph_pic_order_cnt_lsb");
+#endif
+
   
   // sub-picture IDs
   if( sps->getSubPicIdPresentFlag() ) 
@@ -1942,10 +1948,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     codePictureHeader(picHeader, false);
   }
 #endif
+#if !JVET_Q0819_PH_CHANGES
   int pocBits = pcSlice->getSPS()->getBitsForPOC();
   int pocMask = (1 << pocBits) - 1;
   WRITE_CODE(pcSlice->getPOC() & pocMask, pocBits, "slice_pic_order_cnt_lsb");
-  
+#endif
 
   if (pcSlice->getSPS()->getSubPicPresentFlag())
   {

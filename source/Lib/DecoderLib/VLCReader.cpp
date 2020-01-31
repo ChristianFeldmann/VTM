@@ -1942,6 +1942,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   picHeader->setSPSId( pps->getSPSId() );
   sps = parameterSetManager->getSPS(picHeader->getSPSId());
   CHECK(sps==0, "Invalid SPS");
+#if JVET_Q0819_PH_CHANGES
+  READ_CODE(sps->getBitsForPOC(), uiCode, "ph_pic_order_cnt_lsb");
+  picHeader->setPocLsb(uiCode);
+#endif
+
   
   // initialize tile/slice info for no partitioning case
   if( pps->getNoPicPartitionFlag() )
@@ -2745,7 +2750,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   const bool bChroma=(chFmt!=CHROMA_400);
 
   // picture order count
+#if JVET_Q0819_PH_CHANGES
+  uiCode = picHeader->getPocLsb();
+#else
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
+#endif
   if (pcSlice->getIdrPicFlag())
   {
     pcSlice->setPOC(uiCode);

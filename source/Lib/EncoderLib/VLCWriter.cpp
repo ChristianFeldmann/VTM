@@ -962,14 +962,20 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (pcSPS->getTransformSkipEnabledFlag())
   {
       WRITE_FLAG(pcSPS->getBDPCMEnabled() ? 1 : 0, "sps_bdpcm_enabled_flag");
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
+      if( pcSPS->getBDPCMEnabled() )
+#else
       if (pcSPS->getBDPCMEnabled() && pcSPS->getChromaFormatIdc() == CHROMA_444)
+#endif
       {
           WRITE_FLAG(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA ? 1 : 0, "sps_bdpcm_enabled_chroma_flag");
       }
+#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
       else 
       {
         CHECK(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA, "BDPCM for chroma can be used for 444 only.")
       }
+#endif
   }
   else
   {

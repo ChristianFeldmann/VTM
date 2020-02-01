@@ -366,6 +366,10 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
   }
 
   picY = pcPic->getOrigBuf(COMPONENT_Y);
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  double avgY = 0.0;
+  double varY = 0.0;
+#else
   PelBuf picU = pcPic->getOrigBuf(COMPONENT_Cb);
   PelBuf picV = pcPic->getOrigBuf(COMPONENT_Cr);
   const int widthC = picU.width;
@@ -373,6 +377,7 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
   const int strideC = picU.stride;
   double avgY = 0.0, avgU = 0.0, avgV = 0.0;
   double varY = 0.0, varU = 0.0, varV = 0.0;
+#endif
   for (int y = 0; y < height; y++)
   {
     for (int x = 0; x < width; x++)
@@ -382,6 +387,20 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
     }
     picY.buf += stride;
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  avgY = avgY / (width * height);
+  varY = varY / (width * height) - avgY * avgY;
+
+  if (isChromaEnabled(pcPic->chromaFormat))
+  {
+    PelBuf picU = pcPic->getOrigBuf(COMPONENT_Cb);
+    PelBuf picV = pcPic->getOrigBuf(COMPONENT_Cr);
+    const int widthC = picU.width;
+    const int heightC = picU.height;
+    const int strideC = picU.stride;
+    double avgU = 0.0, avgV = 0.0;
+    double varU = 0.0, varV = 0.0;
+#endif
   for (int y = 0; y < heightC; y++)
   {
     for (int x = 0; x < widthC; x++)
@@ -394,10 +413,14 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
     picU.buf += strideC;
     picV.buf += strideC;
   }
+#if !JVET_Q0438_MONOCHROME_BUGFIXES
   avgY = avgY / (width * height);
+#endif
   avgU = avgU / (widthC * heightC);
   avgV = avgV / (widthC * heightC);
+#if !JVET_Q0438_MONOCHROME_BUGFIXES
   varY = varY / (width * height) - avgY * avgY;
+#endif
   varU = varU / (widthC * heightC) - avgU * avgU;
   varV = varV / (widthC * heightC) - avgV * avgV;
   if (varY > 0)
@@ -405,6 +428,9 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
     stats.ratioStdU = sqrt(varU) / sqrt(varY);
     stats.ratioStdV = sqrt(varV) / sqrt(varY);
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  }
+#endif
 }
 void EncReshape::preAnalyzerLMCS(Picture *pcPic, const uint32_t signalType, const SliceType sliceType, const ReshapeCW& reshapeCW)
 {

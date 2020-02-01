@@ -1505,7 +1505,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getTransformSkipEnabledFlag())
   {
       READ_FLAG(uiCode, "sps_bdpcm_enabled_flag");
+#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
+      if( uiCode )
+#else
       if (uiCode && pcSPS->getChromaFormatIdc() == CHROMA_444 )
+#endif
       {
           READ_FLAG(uiCode, "sps_bdpcm_enabled_chroma_flag");
           uiCode++;

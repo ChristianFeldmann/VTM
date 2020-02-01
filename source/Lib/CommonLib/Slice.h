@@ -775,7 +775,7 @@ private:
 
 #if JVET_P0288_PIC_OUTPUT
 public:
-  uint32_t              m_targetOlsIdx;
+  int                   m_targetOlsIdx;
 #endif
 
 

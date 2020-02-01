@@ -321,7 +321,12 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   m_modeCtrl->initCTUEncoding( *cs.slice );
   cs.treeType = TREE_D;
 
+#if JVET_Q0504_PLT_NON444
+  cs.slice->m_mapPltCost[0].clear();
+  cs.slice->m_mapPltCost[1].clear();
+#else
   cs.slice->m_mapPltCost.clear();
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   if( m_pcEncCfg->getNumSplitThreads() > 1 )
   {
@@ -395,7 +400,12 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   tempCS->prevQP[CH_L] = bestCS->prevQP[CH_L] = prevQP[CH_L];
 
   xCompressCU(tempCS, bestCS, partitioner);
+#if JVET_Q0504_PLT_NON444
+  cs.slice->m_mapPltCost[0].clear();
+  cs.slice->m_mapPltCost[1].clear();
+#else
   cs.slice->m_mapPltCost.clear();
+#endif
   // all signals were already copied during compression if the CTU was split - at this point only the structures are copied to the top level CS
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
   cs.useSubStructure(*bestCS, partitioner.chType, CS::getArea(*bestCS, area, partitioner.chType), copyUnsplitCTUSignals,

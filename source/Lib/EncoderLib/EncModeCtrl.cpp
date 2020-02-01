@@ -1606,7 +1606,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     try
     {
 #if JVET_Q0504_PLT_NON444
-      double stored_cost = slice.m_mapPltCost.at(isChroma(partitioner.chType)).at(curr_cu.pos()).at(curr_cu.size());
+      double stored_cost = slice.m_mapPltCost[isChroma(partitioner.chType)].at(curr_cu.pos()).at(curr_cu.size());
 #else
       double stored_cost = slice.m_mapPltCost.at(curr_cu.pos()).at(curr_cu.size());
 #endif

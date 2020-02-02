@@ -3790,7 +3790,9 @@ void EncAppCfg::xPrintParameter()
   m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
 #endif
   msg(VERBOSE, "ACT:%d ", m_useColorTrans);
+#if !JVET_Q0504_PLT_NON444
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
+#endif
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );

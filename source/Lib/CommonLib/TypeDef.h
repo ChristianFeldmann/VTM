@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract ï¼ˆCtbSizeY / MinCbSizeY + 2ï¼‰ from wraparound offset before signaling
+#define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract £¨CtbSizeY / MinCbSizeY + 2£© from wraparound offset before signaling
 
 
 #define JVET_Q0504_PLT_NON444                             1 // JVET-Q0504: enable palette mode for non 444 color format

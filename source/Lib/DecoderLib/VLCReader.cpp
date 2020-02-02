@@ -1232,23 +1232,39 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       {
         pcSPS->setSubPicCtuTopLeftY(picIdx, 0);
       }
+#if JVET_Q0413_SKIP_LAST_SUBPIC_SIG
+      if (picIdx <pcSPS->getNumSubPics()-1 && pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+#else
       if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+#endif
       {
         READ_CODE(ceilLog2((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_width_minus1[ i ]");
         pcSPS->setSubPicWidth(picIdx, uiCode + 1);
       }
       else
       {
+#if JVET_Q0413_SKIP_LAST_SUBPIC_SIG
+        pcSPS->setSubPicWidth(picIdx, (pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftX(picIdx));
+#else
         pcSPS->setSubPicWidth(picIdx, 1);
+#endif
       }
+#if JVET_Q0413_SKIP_LAST_SUBPIC_SIG
+      if (picIdx <pcSPS->getNumSubPics() - 1 && pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+#else
       if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+#endif
       {
         READ_CODE(ceilLog2((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_height_minus1[ i ]");
         pcSPS->setSubPicHeight(picIdx, uiCode + 1);
       }
       else
       {
+#if JVET_Q0413_SKIP_LAST_SUBPIC_SIG
+        pcSPS->setSubPicWidth(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
+#else
         pcSPS->setSubPicHeight(picIdx, 1);
+#endif
       }
 #else
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_x[ i ]");

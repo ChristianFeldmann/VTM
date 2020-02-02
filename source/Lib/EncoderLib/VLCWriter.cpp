@@ -801,11 +801,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       {
         WRITE_CODE( pcSPS->getSubPicCtuTopLeftY(picIdx), ceilLog2(( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_ctu_top_left_y[ i ]"  );
       }
+#if  JVET_Q0413_SKIP_LAST_SUBPIC_SIG
+      if (picIdx<pcSPS->getNumSubPics()-1 && pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+#else
       if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+#endif
       {
         WRITE_CODE( pcSPS->getSubPicWidth(picIdx) - 1,   ceilLog2(( pcSPS->getMaxPicWidthInLumaSamples()  +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_width_minus1[ i ]"    );
       }
+#if  JVET_Q0413_SKIP_LAST_SUBPIC_SIG
+      if (picIdx<pcSPS->getNumSubPics() - 1 && pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+#else
       if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+#endif
       {
         WRITE_CODE( pcSPS->getSubPicHeight(picIdx) - 1,  ceilLog2(( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_height_minus1[ i ]"   );
       }

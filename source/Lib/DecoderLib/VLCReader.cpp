@@ -1541,7 +1541,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   if (pcSPS->getWrapAroundEnabledFlag())
   {
+#if JVET_Q0416_WRAPAROUND_OFFSET
+    READ_UVLC(uiCode, "sps_ref_wraparound_offset_minus1");               pcSPS->setWrapAroundOffset((uiCode + 2 + (1 << pcSPS->getLog2DiffMaxMinCodingBlockSize()))*(1 << pcSPS->getLog2MinCodingBlockSize()));
+#else
     READ_UVLC(uiCode, "sps_ref_wraparound_offset_minus1");               pcSPS->setWrapAroundOffset( (uiCode+1)*(1 <<  pcSPS->getLog2MinCodingBlockSize()));
+#endif
   }
 
   READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);

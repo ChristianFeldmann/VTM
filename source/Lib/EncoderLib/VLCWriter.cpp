@@ -282,6 +282,9 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 
     WRITE_UVLC( pcPPS->getSubPicIdLen() - 1, "pps_subpic_id_len_minus1" );
 
+#if JVET_Q0169_SUBPIC_LEN_CONFORM    
+    CHECK((1 << pcPPS->getSubPicIdLen()) < pcPPS->getNumSubPics(), "pps_subpic_id_len exceeds valid range");
+#endif
     for( int picIdx = 0; picIdx < pcPPS->getNumSubPics( ); picIdx++ )
     {
       WRITE_CODE( pcPPS->getSubPicId(picIdx), pcPPS->getSubPicIdLen( ), "pps_subpic_id[i]" );
@@ -830,6 +833,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     if( pcSPS->getSubPicIdSignallingPresentFlag() )
     {
       WRITE_UVLC( pcSPS->getSubPicIdLen( ) - 1, "sps_subpic_id_len_minus1" );
+#if JVET_Q0169_SUBPIC_LEN_CONFORM
+      CHECK((1 << pcSPS->getSubPicIdLen()) < pcSPS->getNumSubPics(), "sps_subpic_id_len exceeds valid range");
+#endif
       for( int picIdx = 0; picIdx < pcSPS->getNumSubPics( ); picIdx++ )
       {
         WRITE_CODE( pcSPS->getSubPicId(picIdx), pcSPS->getSubPicIdLen( ), "sps_subpic_id[i]" );
@@ -1357,6 +1363,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       if( picHeader->getSubPicIdSignallingPresentFlag() )
       {
         WRITE_UVLC( picHeader->getSubPicIdLen() - 1, "ph_subpic_id_len_minus1" );
+#if JVET_Q0169_SUBPIC_LEN_CONFORM
+        CHECK((1 << picHeader->getSubPicIdLen()) < sps->getNumSubPics(), "ph_subpic_id_len exceeds valid range");
+#endif
         for( int picIdx = 0; picIdx < sps->getNumSubPics( ); picIdx++ )
         {
           WRITE_CODE(picHeader->getSubPicId(picIdx), picHeader->getSubPicIdLen( ), "ph_subpic_id[i]" );

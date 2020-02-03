@@ -779,13 +779,21 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( 0,                                  "separate_colour_plane_flag");
   }
 
+#if JVET_Q0043_RPR_and_Subpics
+  WRITE_FLAG( pcSPS->getRprEnabledFlag(), "res_change_in_clvs_allowed_flag" );
+#else
   WRITE_FLAG( pcSPS->getRprEnabledFlag(), "ref_pic_resampling_enabled_flag" );
+#endif
 
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
+#if JVET_Q0043_RPR_and_Subpics
+  WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpic_info_present_flag");
+#else
   WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
+#endif
   if(pcSPS->getSubPicPresentFlag())
   {
     WRITE_CODE(pcSPS->getNumSubPics() - 1, 8, "sps_num_subpics_minus1");

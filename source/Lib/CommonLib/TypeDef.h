@@ -90,6 +90,8 @@
 
 #define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move colour_plane_id from PH to SH
 
+#define JVET_Q0444_AMVR_SIGNALLING                        1 // JVET-Q0444: Conditional signaling of sps_affine_amvr_enabled_flag based on sps_amvr_enabled_flag
+
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 
 #define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
@@ -127,6 +129,9 @@
 #define JVET_Q0775_PH_IN_SH                               1 // JVET-Q0755: Allow picture header in slice header
 
 #define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
+
+#define JVET_P0188_MINCR                                  1 // JVET-P0188: Add MinCR checking in encoder.
+#define JVET_Q0436_CABAC_ZERO_WORD                        1 // JVET-Q0436: Add modified CABAC zero word insertion in encoder.
 
 #define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
 

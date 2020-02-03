@@ -1329,7 +1329,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
 
   CodingStructure& cs = *picHeader->getPic()->cs;
-
+#if JVET_Q0819_PH_CHANGES
+  // Q0781, two-flags
+  WRITE_FLAG(picHeader->getPicInterSliceAllowedFlag(), "pic_inter_slice_allowed_flag");
+  if (picHeader->getPicInterSliceAllowedFlag())
+  {
+    WRITE_FLAG(picHeader->getPicIntraSliceAllowedFlag(), "pic_intra_slice_allowed_flag");
+  }
+#endif
   WRITE_FLAG(picHeader->getNonReferencePictureFlag(), "non_reference_picture_flag");
   WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
   WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
@@ -1533,6 +1540,16 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   if (sps->getSplitConsOverrideEnabledFlag())
   {
     WRITE_FLAG(picHeader->getSplitConsOverrideFlag(), "partition_constraints_override_flag");
+#if JVET_Q0819_PH_CHANGES
+  }
+  else
+  {
+    picHeader->setSplitConsOverrideFlag(0);
+  }
+  // Q0781, two-flags
+  if (picHeader->getPicIntraSliceAllowedFlag())
+  {
+#endif
     if (picHeader->getSplitConsOverrideFlag())
     {
       WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_luma");
@@ -1546,15 +1563,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
         WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "pic_log2_diff_max_bt_min_qt_intra_slice_luma");
         WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "pic_log2_diff_max_tt_min_qt_intra_slice_luma");
       }
-#if JVET_Q0819_PH_CHANGES
-      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_inter_slice");
-      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE),  "pic_max_mtt_hierarchy_depth_inter_slice");
-#endif
+
+#if !JVET_Q0819_PH_CHANGES
       if (picHeader->getMaxMTTHierarchyDepth(P_SLICE) != 0)
       {
         WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_bt_min_qt_inter_slice");
         WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_tt_min_qt_inter_slice");
       }
+#endif
       if (sps->getUseDualITree())
       {
         WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
@@ -1567,6 +1583,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       }
     }
   }
+#if !JVET_Q0819_PH_CHANGES
   else 
   {
     picHeader->setSplitConsOverrideFlag(0);
@@ -1580,141 +1597,198 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setMaxBTSizes(sps->getMaxBTSizes());
       picHeader->setMaxTTSizes(sps->getMaxTTSizes());
   }
-
+#endif
+#if JVET_Q0819_PH_CHANGES
+  if (picHeader->getPicIntraSliceAllowedFlag())
+  {
+#endif
   // delta quantization and chrom and chroma offset
-  if (pps->getUseDQP())
-  {
-    WRITE_UVLC( picHeader->getCuQpDeltaSubdivIntra(), "pic_cu_qp_delta_subdiv_intra_slice" );
-    WRITE_UVLC( picHeader->getCuQpDeltaSubdivInter(), "pic_cu_qp_delta_subdiv_inter_slice" );
+    if (pps->getUseDQP())
+    {
+      WRITE_UVLC( picHeader->getCuQpDeltaSubdivIntra(), "pic_cu_qp_delta_subdiv_intra_slice" );
+#if !JVET_Q0819_PH_CHANGES
+      WRITE_UVLC( picHeader->getCuQpDeltaSubdivInter(), "pic_cu_qp_delta_subdiv_inter_slice" );
+#endif
+    }
+    else 
+    {
+      picHeader->setCuQpDeltaSubdivIntra( 0 );
+#if !JVET_Q0819_PH_CHANGES
+      picHeader->setCuQpDeltaSubdivInter( 0 );
+#endif
+    }
+    if (pps->getCuChromaQpOffsetEnabledFlag())
+    {
+      WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivIntra(), "pic_cu_chroma_qp_offset_subdiv_intra_slice" );
+#if !JVET_Q0819_PH_CHANGES
+      WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice" );
+#endif
+    }
+    else 
+    {
+      picHeader->setCuChromaQpOffsetSubdivIntra( 0 );
+#if !JVET_Q0819_PH_CHANGES
+      picHeader->setCuChromaQpOffsetSubdivInter( 0 );
+#endif
+    }
+#if JVET_Q0819_PH_CHANGES
   }
-  else 
+
+
+  if (picHeader->getPicInterSliceAllowedFlag())
   {
-    picHeader->setCuQpDeltaSubdivIntra( 0 );
-    picHeader->setCuQpDeltaSubdivInter( 0 );
-  }
-  if (pps->getCuChromaQpOffsetEnabledFlag())
-  {
-    WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivIntra(), "pic_cu_chroma_qp_offset_subdiv_intra_slice" );
-    WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice" );
-  }
-  else 
-  {
-    picHeader->setCuChromaQpOffsetSubdivIntra( 0 );
-    picHeader->setCuChromaQpOffsetSubdivInter( 0 );
-  }
-  
+    if (picHeader->getSplitConsOverrideFlag())
+    {
+      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_inter_slice");
+      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE), "pic_max_mtt_hierarchy_depth_inter_slice");
+      if (picHeader->getMaxMTTHierarchyDepth(P_SLICE) != 0)
+      {
+        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_bt_min_qt_inter_slice");
+        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_tt_min_qt_inter_slice");
+      }
+    }
+
+    // delta quantization and chrom and chroma offset
+    if (pps->getUseDQP())
+    {
+      WRITE_UVLC(picHeader->getCuQpDeltaSubdivInter(), "pic_cu_qp_delta_subdiv_inter_slice");
+    }
+    else
+    {
+      picHeader->setCuQpDeltaSubdivInter(0);
+    }
+    if (pps->getCuChromaQpOffsetEnabledFlag())
+    {
+      WRITE_UVLC(picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice");
+    }
+    else
+    {
+      picHeader->setCuChromaQpOffsetSubdivInter(0);
+    }
+#endif
   // temporal motion vector prediction
-  if (sps->getSPSTemporalMVPEnabledFlag())
-  {
-    WRITE_FLAG( picHeader->getEnableTMVPFlag(), "pic_temporal_mvp_enabled_flag" );
-  }
-  else
-  {
-    picHeader->setEnableTMVPFlag(false);
-  }
+    if (sps->getSPSTemporalMVPEnabledFlag())
+    {
+      WRITE_FLAG( picHeader->getEnableTMVPFlag(), "pic_temporal_mvp_enabled_flag" );
+    }
+    else
+    {
+      picHeader->setEnableTMVPFlag(false);
+    }
 
   // mvd L1 zero flag
-  if (!pps->getPPSMvdL1ZeroIdc())
-  {
-    WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
-  }
-  else
-  {
-    picHeader->setMvdL1ZeroFlag( pps->getPPSMvdL1ZeroIdc() - 1 );
-  }
+    if (!pps->getPPSMvdL1ZeroIdc())
+    {
+      WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
+    }
+    else
+    {
+      picHeader->setMvdL1ZeroFlag( pps->getPPSMvdL1ZeroIdc() - 1 );
+    }
    
   // merge candidate list size
-  if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
-  {
-    CHECK(picHeader->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
-    WRITE_UVLC(MRG_MAX_NUM_CANDS - picHeader->getMaxNumMergeCand(), "pic_six_minus_max_num_merge_cand");
-  }
-  else
-  {
-    picHeader->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - (pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1));
-  }
+    if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
+    {
+      CHECK(picHeader->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
+      WRITE_UVLC(MRG_MAX_NUM_CANDS - picHeader->getMaxNumMergeCand(), "pic_six_minus_max_num_merge_cand");
+    }
+    else
+    {
+      picHeader->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - (pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1));
+    }
 
   // subblock merge candidate list size
-  if ( sps->getUseAffine() )
-  {
-    CHECK( picHeader->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
-    WRITE_UVLC(AFFINE_MRG_MAX_NUM_CANDS - picHeader->getMaxNumAffineMergeCand(), "pic_five_minus_max_num_subblock_merge_cand");
-  }
-  else
-  {
-    picHeader->setMaxNumAffineMergeCand( sps->getSBTMVPEnabledFlag() && picHeader->getEnableTMVPFlag() );
-  }
+    if ( sps->getUseAffine() )
+    {
+      CHECK( picHeader->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
+      WRITE_UVLC(AFFINE_MRG_MAX_NUM_CANDS - picHeader->getMaxNumAffineMergeCand(), "pic_five_minus_max_num_subblock_merge_cand");
+    }
+    else
+    {
+      picHeader->setMaxNumAffineMergeCand( sps->getSBTMVPEnabledFlag() && picHeader->getEnableTMVPFlag() );
+    }
 
   // full-pel MMVD flag
-  if (sps->getFpelMmvdEnabledFlag())
-  {
-    WRITE_FLAG( picHeader->getDisFracMMVD(), "pic_fpel_mmvd_enabled_flag" );
-  }
-  else
-  {
-    picHeader->setDisFracMMVD(false);
-  }
+    if (sps->getFpelMmvdEnabledFlag())
+    {
+      WRITE_FLAG( picHeader->getDisFracMMVD(), "pic_fpel_mmvd_enabled_flag" );
+    }
+    else
+    {
+      picHeader->setDisFracMMVD(false);
+    }
   
   // picture level BDOF disable flags
-  if (sps->getBdofControlPresentFlag())
-  {
-    WRITE_FLAG(picHeader->getDisBdofFlag(), "pic_disable_bdof_flag");
-  }
-  else
-  {
-    picHeader->setDisBdofFlag(0);
-  }
+    if (sps->getBdofControlPresentFlag())
+    {
+      WRITE_FLAG(picHeader->getDisBdofFlag(), "pic_disable_bdof_flag");
+    }
+    else
+    {
+      picHeader->setDisBdofFlag(0);
+    }
 
   // picture level DMVR disable flags
-  if (sps->getDmvrControlPresentFlag())
-  {
-    WRITE_FLAG(picHeader->getDisDmvrFlag(), "pic_disable_dmvr_flag");
-  }
-  else
-  {
-    picHeader->setDisDmvrFlag(0);
-  }
+    if (sps->getDmvrControlPresentFlag())
+    {
+      WRITE_FLAG(picHeader->getDisDmvrFlag(), "pic_disable_dmvr_flag");
+    }
+    else
+    {
+      picHeader->setDisDmvrFlag(0);
+    }
 
   // picture level PROF disable flags
-  if (sps->getProfControlPresentFlag())
-  {
-    WRITE_FLAG(picHeader->getDisProfFlag(), "pic_disable_prof_flag");
-  }
-  else
-  {
-    picHeader->setDisProfFlag(0);
-  }
+    if (sps->getProfControlPresentFlag())
+    {
+      WRITE_FLAG(picHeader->getDisProfFlag(), "pic_disable_prof_flag");
+    }
+    else
+    {
+      picHeader->setDisProfFlag(0);
+    }
 
 #if !JVET_Q0806
   // triangle merge candidate list size
-  if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
-  {
-    if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
+    if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
     {
-      CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");
-      WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumTriangleCand(), "pic_max_num_merge_cand_minus_max_num_triangle_cand");
+      if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
+      {
+        CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumTriangleCand(), "Incorrrect max number of triangle candidates!");
+        WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumTriangleCand(), "pic_max_num_merge_cand_minus_max_num_triangle_cand");
+      }
+      else
+      {
+        picHeader->setMaxNumTriangleCand((uint32_t)(picHeader->getMaxNumMergeCand() - (pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() - 1)));
+      }    
     }
-    else
-    {
-      picHeader->setMaxNumTriangleCand((uint32_t)(picHeader->getMaxNumMergeCand() - (pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() - 1)));
-    }    
-  }
+
 #else
   // geometric merge candidate list size
-  if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
-  {
-    if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+    if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
     {
-      CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumGeoCand(), "Incorrrect max number of gpm candidates!");
-      WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
-    }
-    else
-    {
+      if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
+      {
+        CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumGeoCand(), "Incorrrect max number of gpm candidates!");
+        WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+      }
+      else
+      {
       picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - (pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1)));
+      }
     }
+#endif
+#if JVET_Q0819_PH_CHANGES
+  }
+  // inherit constraint values from SPS
+  if (!sps->getSplitConsOverrideEnabledFlag() || !picHeader->getSplitConsOverrideFlag())
+  {
+    picHeader->setMinQTSizes(sps->getMinQTSizes());
+    picHeader->setMaxMTTHierarchyDepths(sps->getMaxMTTHierarchyDepths());
+    picHeader->setMaxBTSizes(sps->getMaxBTSizes());
+    picHeader->setMaxTTSizes(sps->getMaxTTSizes());
   }
 #endif
-
   // ibc merge candidate list size
   if (sps->getIBCFlag())
   {
@@ -2034,9 +2108,18 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     }
   }
 
-
-    WRITE_UVLC( pcSlice->getSliceType(), "slice_type" );
-
+#if JVET_Q0819_PH_CHANGES
+  if (picHeader->getPicInterSliceAllowedFlag())
+  {
+#endif
+    WRITE_UVLC(pcSlice->getSliceType(), "slice_type");
+#if JVET_Q0819_PH_CHANGES
+  }
+  if (!picHeader->getPicIntraSliceAllowedFlag())
+  {
+    CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
+  }
+#endif
 #if JVET_Q0155_COLOUR_ID
     // 4:4:4 colour plane ID
     if( pcSlice->getSPS()->getSeparateColourPlaneFlag() )

@@ -2002,6 +2002,10 @@ private:
   ReferencePictureList        m_localRPL1;                                              //!< RPL for L1 when present in picture header
   int                         m_rpl0Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
   int                         m_rpl1Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
+#if JVET_Q0819_PH_CHANGES
+  bool                        m_picInterSliceAllowedFlag;                               //!< inter slice allowed flag in PH
+  bool                        m_picIntraSliceAllowedFlag;                               //!< intra slice allowed flag in PH
+#endif
   bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag  
   uint32_t                    m_cuQpDeltaSubdivIntra;                                   //!< CU QP delta maximum subdivision for intra slices
   uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices 
@@ -2123,6 +2127,12 @@ public:
   void                        setRPL1idx(int rplIdx)                                    { m_rpl1Idx = rplIdx;                                                                          }
   int                         getRPL0idx() const                                        { return m_rpl0Idx;                                                                            }
   int                         getRPL1idx() const                                        { return m_rpl1Idx;                                                                            }
+#if JVET_Q0819_PH_CHANGES
+  void                        setPicInterSliceAllowedFlag(bool b)                       { m_picInterSliceAllowedFlag = b; }
+  bool                        getPicInterSliceAllowedFlag() const                       { return m_picInterSliceAllowedFlag; }
+  void                        setPicIntraSliceAllowedFlag(bool b)                       { m_picIntraSliceAllowedFlag = b; }
+  bool                        getPicIntraSliceAllowedFlag() const                       { return m_picIntraSliceAllowedFlag; }
+#endif 
   void                        setSplitConsOverrideFlag( bool b )                        { m_splitConsOverrideFlag = b;                                                                 }
   bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }  
   void                        setCuQpDeltaSubdivIntra( uint32_t u )                     { m_cuQpDeltaSubdivIntra = u;                                                                  }

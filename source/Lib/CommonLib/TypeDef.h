@@ -128,6 +128,9 @@
 
 #define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
 
+#define JVET_P0188_MINCR                                  1 // JVET-P0188: Add MinCR checking in encoder.
+#define JVET_Q0436_CABAC_ZERO_WORD                        1 // JVET-Q0436: Add modified CABAC zero word insertion in encoder.
+
 #define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
 
 #define JVET_Q0787_SUBPIC                                 1 // JVET-Q0787: fix subpicture location signalling

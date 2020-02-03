@@ -343,6 +343,16 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     picHeader->setPicOutputFlag(true);
   }
   rpcSlice->setPOC( pocCurr );
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  if( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING )
+  {
+    rpcSlice->setTSResidualCodingDisabledFlag(true);
+  }
+  else
+  {
+    rpcSlice->setTSResidualCodingDisabledFlag(false);
+  }
+#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;

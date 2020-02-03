@@ -867,6 +867,10 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
   uint8_t tempCurPLTsize[MAX_NUM_CHANNEL_TYPE];
   uint8_t stuffPLTsize[MAX_NUM_COMPONENT];
 
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  uint32_t maxPredPltSize = jointPLT ? MAXPLTPREDSIZE : MAXPLTPREDSIZE_DUALTREE;
+#endif
+
   for (int i = compBegin; i < (compBegin + numComp); i++)
   {
     ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
@@ -881,7 +885,11 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
     if (ch > 1) break;
     for (int i = 0; i < prevPLT.curPLTSize[comID]; i++)
     {
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+      if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= maxPredPltSize)
+#else
       if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= MAXPLTPREDSIZE)
+#endif
         break;
 
       if (!reuseflag[comID][i])
@@ -905,6 +913,9 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
     ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
     prevPLT.curPLTSize[comID] = curPLTSize[comID] + stuffPLTsize[comID];
     memcpy(prevPLT.curPLT[i], stuffedPLT[i], prevPLT.curPLTSize[comID] * sizeof(Pel));
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+    CHECK(prevPLT.curPLTSize[comID] > maxPredPltSize, " Maximum palette predictor size exceed limit");
+#endif
   }
 }
 

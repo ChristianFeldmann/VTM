@@ -1494,9 +1494,18 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   TransformUnit&   tu = *cu.firstTU;
   uint32_t indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
 
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  int maxPltSize = cu.isSepTree() ? MAXPLTSIZE_DUALTREE : MAXPLTSIZE;
+#endif
+
   if (cu.lastPLTSize[compBegin])
   {
+    
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+    xEncodePLTPredIndicator(cu, maxPltSize, compBegin);
+#else
     xEncodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
+#endif
   }
 
   uint32_t reusedPLTnum = 0;
@@ -1505,8 +1514,11 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
     if (cu.reuseflag[compBegin][idx])
       reusedPLTnum++;
   }
-
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  if (reusedPLTnum < maxPltSize)
+#else
   if (reusedPLTnum < MAXPLTSIZE)
+#endif
   {
     exp_golomb_eqprob(cu.curPLTSize[compBegin] - reusedPLTnum, 0);
   }
@@ -1560,6 +1572,9 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   {
     cuPaletteSubblockInfo(cu, compBegin, numComp, subSetId, prevRunPos, prevRunType);
   }
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  CHECK(cu.curPLTSize[compBegin] > maxPltSize, " Current palette size is larger than maximum palette size");
+#endif
 }
 void CABACWriter::cuPaletteSubblockInfo(const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType)
 {

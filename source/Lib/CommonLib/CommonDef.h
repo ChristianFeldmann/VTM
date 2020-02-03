@@ -493,6 +493,10 @@ static const int NUM_TRELLIS_STATE =                              3;
 static const double ENC_CHROMA_WEIGHTING =                      0.8;
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+static const int MAXPLTPREDSIZE_DUALTREE = 31;
+static const int MAXPLTSIZE_DUALTREE = 15;
+#endif
 static const double PLT_CHROMA_WEIGHTING =                      0.8;
 static const int PLT_ENCBITDEPTH = 8;
 static const int PLT_FAST_RATIO = 100;

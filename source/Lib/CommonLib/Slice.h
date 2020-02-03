@@ -191,7 +191,10 @@ public:
   void       codeScalingList(int* scalingList, int scalingListDC, int scalinListId, int& bitsCost);
   void       setScalingListPreditorModeFlag(uint32_t scalingListId, bool bIsPred) { m_scalingListPreditorModeFlag[scalingListId] = bIsPred; }
   bool       getScalingListPreditorModeFlag(uint32_t scalingListId) const { return m_scalingListPreditorModeFlag[scalingListId]; }
-
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  bool       getChromaScalingListPresentFlag() const {return m_chromaScalingListPresentFlag;}
+  void       setChromaScalingListPresentFlag( bool flag) { m_chromaScalingListPresentFlag = flag;}
+  #endif
   void       checkDcOfMatrix();
   bool       xParseScalingList(const std::string &fileName);
   void       setDefaultScalingList();
@@ -232,6 +235,9 @@ private:
   uint32_t         m_refMatrixId                   [30]; //!< RefMatrixID
   bool             m_scalingListPreditorModeFlag   [30]; //!< reference list index
   std::vector<int> m_scalingListCoef               [30]; //!< quantization matrix
+  #if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  bool             m_chromaScalingListPresentFlag;
+  #endif
 };
 
 class ConstraintInfo

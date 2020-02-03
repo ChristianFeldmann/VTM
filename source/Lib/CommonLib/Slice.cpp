@@ -2594,6 +2594,9 @@ void ReferencePictureList::printRefPicInfo() const
 ScalingList::ScalingList()
 {
   m_disableScalingMatrixForLfnstBlks = true;
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  m_chromaScalingListPresentFlag = true;
+#endif
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
     int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;

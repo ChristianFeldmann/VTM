@@ -3818,8 +3818,16 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   uint32_t  code;
   bool scalingListCopyModeFlag;
   READ_FLAG(code, "scaling_matrix_for_lfnst_disabled_flag"); scalingList->setDisableScalingMatrixForLfnstBlks(code ? true : false);
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  READ_FLAG(code, "scaling_list_chroma_present_flag");
+  scalingList->setChromaScalingListPresentFlag(code ? true : false);
+#endif
   for (int scalingListId = 0; scalingListId < 28; scalingListId++)
   {
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  if(scalingList->getChromaScalingListPresentFlag()|| scalingListId % 3 == 2 || scalingListId == 27)
+   {
+#endif
     READ_FLAG(code, "scaling_list_copy_mode_flag");
     scalingListCopyModeFlag = (code) ? true : false;
     scalingList->setScalingListCopyModeFlag(scalingListId, scalingListCopyModeFlag);
@@ -3854,6 +3862,13 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
     {
       decodeScalingList(scalingList, scalingListId, scalingList->getScalingListPreditorModeFlag(scalingListId));
     }
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+    }
+  else
+  {
+     scalingList->processDefaultMatrix(scalingListId);
+  }
+#endif
   }
 
   return;

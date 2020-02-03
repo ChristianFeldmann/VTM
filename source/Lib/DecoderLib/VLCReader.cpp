@@ -1178,6 +1178,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_CODE(2, uiCode, "chroma_format_idc");                     pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
 
+#if JVET_Q0265
+  const uint32_t chromaArrayType = (int) pcSPS->getSeparateColourPlaneFlag() ? 0 : pcSPS->getChromaFormatIdc();
+#endif
+
   if( pcSPS->getChromaFormatIdc() == CHROMA_444 )
   {
     READ_FLAG(     uiCode, "separate_colour_plane_flag");        CHECK(uiCode != 0, "Invalid code");
@@ -1188,10 +1192,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "res_change_in_clvs_allowed_flag" );        pcSPS->setRprEnabledFlag( uiCode );
 #else
   READ_FLAG( uiCode, "ref_pic_resampling_enabled_flag" );        pcSPS->setRprEnabledFlag( uiCode );
-#endif
-
-#if JVET_Q0265
-  const uint32_t chromaArrayType = (int) pcSPS->getSeparateColourPlaneFlag() ? 0 : pcSPS->getChromaFormatIdc();
 #endif
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );

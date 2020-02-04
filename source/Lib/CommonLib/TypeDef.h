@@ -64,6 +64,8 @@
 
 #define JVET_Q0043_RPR_and_Subpics                        1 // JVET-Q0043: Disallow for both RPR and subpics to be used together
 
+#define JVET_Q0818_PT_SEI                                 1 // JVET-Q0818: add display_elemental_periods_minus1 to picture timing SEI message
+
 #define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
 
 #define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT

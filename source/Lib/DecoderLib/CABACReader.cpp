@@ -2729,8 +2729,8 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
 
   unsigned  cbf = 0;
-  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmMode)
-   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmModeChroma))
+  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmMode)
+   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmModeChroma))
   {
     if (area.compID == COMPONENT_Y)
         ctxId = 1;

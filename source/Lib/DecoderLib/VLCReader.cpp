@@ -1421,7 +1421,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   if( pcSPS->getSubPicIdPresentFlag() == false || pcSPS->getSubPicIdSignallingPresentFlag() == false )
 #else
-  if( !pcSPS->getSubPicIdMappingExplicitlySignalledFlag() || !pcSPS->getSubPicIdMappingInSpsFlag() ) // is it correct???
+  if( !pcSPS->getSubPicIdMappingExplicitlySignalledFlag() || !pcSPS->getSubPicIdMappingInSpsFlag() )
 #endif
   {
     for( int picIdx = 0; picIdx < pcSPS->getNumSubPics( ); picIdx++ )

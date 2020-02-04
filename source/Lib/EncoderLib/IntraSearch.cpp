@@ -2280,7 +2280,11 @@ void IntraSearch::initTBCTable(int bitDepth)
   memset(m_escapeNumBins, 0, sizeof(uint16_t)*m_symbolSize);
   for (uint32_t i = 0; i < m_symbolSize; i++)
   {
+#if JVET_Q0491_PLT_ESCAPE
+    m_escapeNumBins[i] = getEpExGolombNumBins(i, 5);
+#else
     m_escapeNumBins[i] = getEpExGolombNumBins(i, 3);
+#endif
   }
 }
 void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, uint32_t yPos, uint32_t xPos, ComponentID compBegin, uint32_t numComp)

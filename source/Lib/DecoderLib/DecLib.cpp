@@ -1230,6 +1230,9 @@ void DecLib::xActivateParameterSets( const int layerId )
   const SPS *sps = pSlice->getSPS();
   const PPS *pps = pSlice->getPPS();
 
+#if JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG
+  CHECK(sps->getGDREnabledFlag() == false && m_picHeader.getGdrPicFlag(), "When gdr_enabled_flag is equal to 0, the value of gdr_pic_flag shall be equal to 0 ");
+#endif
   if( !sps->getUseWP() )
   {
     CHECK( pps->getUseWP(), "When sps_weighted_pred_flag is equal to 0, the value of pps_weighted_pred_flag shall be equal to 0." );

@@ -1355,6 +1355,39 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
+
+#if JVET_P0101_POC_MULTILAYER
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+  CHECK(pps == 0, "No PPS present");
+  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+  CHECK(sps == 0, "No SPS present");
+  VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+  CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
+  if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
+  {
+    bool pocIsSet = false;
+    for(auto auNALit=m_accessUnitPicInfo.begin(); auNALit != m_accessUnitPicInfo.end();auNALit++)
+    {      
+      for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0) && !pocIsSet; iRefIdx++)
+      {
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)
+        {
+          m_apcSlicePilot->setPOC(m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC());
+          pocIsSet = true;
+        }
+      }
+      for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_1) && !pocIsSet; iRefIdx++)
+      {
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)
+        {
+          m_apcSlicePilot->setPOC(m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC());
+          pocIsSet = true;
+        }
+      }
+    }
+  }
+#endif
+
   // update independent slice index
   uint32_t uiIndependentSliceIdx = 0;
   if (!m_bFirstSliceInPicture)
@@ -1365,11 +1398,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setIndependentSliceIdx(uiIndependentSliceIdx);
 
 #if K0149_BLOCK_STATISTICS
+#if !JVET_P0101_POC_MULTILAYER
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
-
+#endif
   writeBlockStatisticsHeader(sps);
 #endif
 
@@ -1458,14 +1492,25 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
       m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
   {
+#if !JVET_P0101_POC_MULTILAYER
     PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
     CHECK(pps == 0, "No PPS present");
     SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
     CHECK(sps == 0, "No SPS present");
+#endif
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
   }
+
+#if JVET_P0101_POC_MULTILAYER
+  AccessUnitPicInfo picInfo;
+  picInfo.m_nalUnitType = nalu.m_nalUnitType;
+  picInfo.m_nuhLayerId  = nalu.m_nuhLayerId;
+  picInfo.m_temporalId  = nalu.m_temporalId;
+  picInfo.m_POC         = m_apcSlicePilot->getPOC();
+  m_accessUnitPicInfo.push_back(picInfo);
+#endif
 
   // Skip pictures due to random access
 

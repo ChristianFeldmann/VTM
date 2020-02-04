@@ -2409,8 +2409,8 @@ void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea&
   unsigned  ctxId = DeriveCtx::CtxQtCbf(area.compID, prevCbf, useISP && isLuma(area.compID));
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
 
-  if ((area.compID == COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmMode)
-   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID)) != NULL && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmModeChroma))
+  if ((area.compID == COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmMode)
+   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID)) != NULL && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmModeChroma))
   {
     if (area.compID == COMPONENT_Y)
       ctxId = 1;

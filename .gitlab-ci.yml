@@ -22,10 +22,10 @@ stages:
       - make realclean
       - make linuxbuild enable-tracing=true
 
-#build_macos:
-#   extends: .build_template
-#   tags:
-#      - macos
+build_macos:
+   extends: .build_template
+   tags:
+      - macos
 
 build_ubuntu1604:
    extends: .build_template_linux

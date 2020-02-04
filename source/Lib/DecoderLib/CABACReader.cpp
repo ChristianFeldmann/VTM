@@ -671,6 +671,16 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   bool jointPLT = false;
   if (cu.isSepTree())
   {
+#if JVET_Q0504_PLT_NON444
+    if( cu.isLocalSepTree() )
+    {
+      compBegin = COMPONENT_Y;
+      numComp = (cu.chromaFormat != CHROMA_400)?3: 1;
+      jointPLT = true;
+    }
+    else
+    {
+#endif
     if (isLuma(partitioner.chType))
     {
       compBegin = COMPONENT_Y;
@@ -681,11 +691,18 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       compBegin = COMPONENT_Cb;
       numComp = 2;
     }
+#if JVET_Q0504_PLT_NON444
+    }
+#endif
   }
   else
   {
     compBegin = COMPONENT_Y;
+#if JVET_Q0504_PLT_NON444
+    numComp = (cu.chromaFormat != CHROMA_400) ? 3 : 1;
+#else
     numComp = 3;
+#endif
     jointPLT = true;
   }
   if (CU::isPLT(cu))
@@ -854,7 +871,18 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     }
     else
     {
+#if JVET_Q0504_PLT_NON444
+      if( cu.chromaFormat != CHROMA_400 )
+      {
+        cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+      }
+      else
+      {
+        cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
+      }
+#else
       cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+#endif
     }
     end_of_ctu(cu, cuCtx);
     return;
@@ -1682,6 +1710,10 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   TransformUnit&   tu = *cu.firstTU;
   int curPLTidx = 0;
 
+#if JVET_Q0504_PLT_NON444
+  if( cu.isLocalSepTree() )
+    cu.cs->prevPLT.curPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[COMPONENT_Y];
+#endif
   cu.lastPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[compBegin];
 
   if (cu.lastPLTSize[compBegin])
@@ -1693,10 +1725,24 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   {
     if (cu.reuseflag[compBegin][idx])
     {
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+      {
+        for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
+        {
+          cu.curPLT[comp][curPLTidx] = cu.cs->prevPLT.curPLT[comp][idx];
+        }
+      }
+      else
+      {
+#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         cu.curPLT[comp][curPLTidx] = cu.cs->prevPLT.curPLT[comp][idx];
       }
+#if JVET_Q0504_PLT_NON444
+      }
+#endif
       curPLTidx++;
     }
   }
@@ -1709,6 +1755,10 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   }
 
   cu.curPLTSize[compBegin] = curPLTidx + recievedPLTnum;
+#if JVET_Q0504_PLT_NON444
+  if( cu.isLocalSepTree() )
+    cu.curPLTSize[COMPONENT_Y] = cu.curPLTSize[compBegin];
+#endif
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
     for (int idx = curPLTidx; idx < cu.curPLTSize[compBegin]; idx++)
@@ -1716,6 +1766,20 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       ComponentID compID = (ComponentID)comp;
       const int  channelBitDepth = sps.getBitDepth(toChannelType(compID));
       cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+      {
+        if( isLuma( cu.chType ) )
+        {
+          cu.curPLT[COMPONENT_Cb][idx] = 1 << (cu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+          cu.curPLT[COMPONENT_Cr][idx] = 1 << (cu.cs->sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+        }
+        else
+        {
+          cu.curPLT[COMPONENT_Y][idx] = 1 << (cu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
+        }
+      }
+#endif
     }
   }
   cu.useEscape[compBegin] = true;
@@ -1893,7 +1957,11 @@ void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, u
           PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
           if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
           {
+#if JVET_Q0491_PLT_ESCAPE
+            escapeValue.at(posx, posy) = exp_golomb_eqprob(5);
+#else
             escapeValue.at(posx, posy) = exp_golomb_eqprob(3);
+#endif
             assert(escapeValue.at(posx, posy) < (1 << (cu.cs->sps->getBitDepth(toChannelType((ComponentID)comp)) + 1)));
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
@@ -1901,7 +1969,11 @@ void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, u
           {
             uint32_t posxC = posx >> scaleX;
             uint32_t posyC = posy >> scaleY;
+#if JVET_Q0491_PLT_ESCAPE
+            escapeValue.at(posxC, posyC) = exp_golomb_eqprob(5);
+#else
             escapeValue.at(posxC, posyC) = exp_golomb_eqprob(3);
+#endif
             assert(escapeValue.at(posxC, posyC) < (1 << (cu.cs->sps->getBitDepth(toChannelType(compID)) + 1)));
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
@@ -1937,6 +2009,10 @@ void CABACReader::xDecodePLTPredIndicator(CodingUnit& cu, uint32_t maxPLTSize, C
         idx += symbol - 1;
       }
       cu.reuseflag[compBegin][idx] = 1;
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+        cu.reuseflag[COMPONENT_Y][idx] = 1;
+#endif
       numPltPredicted++;
       idx++;
     }
@@ -2661,8 +2737,8 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
 
   unsigned  cbf = 0;
-  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmMode)
-   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmModeChroma))
+  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmMode)
+   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmModeChroma))
   {
     if (area.compID == COMPONENT_Y)
         ctxId = 1;
@@ -2958,7 +3034,11 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
   ts_flag            ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  if( tu.mtsIdx[compID] == MTS_SKIP && !tu.cs->slice->getTSResidualCodingDisabledFlag() )
+#else
   if (tu.mtsIdx[compID] == MTS_SKIP)
+#endif
   {
     residual_codingTS( tu, compID );
     return;

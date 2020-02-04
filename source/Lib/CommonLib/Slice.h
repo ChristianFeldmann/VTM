@@ -796,6 +796,12 @@ private:
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
 
+#if JVET_P0288_PIC_OUTPUT
+public:
+  int                   m_targetOlsIdx;
+#endif
+
+
 public:
                     VPS();
 
@@ -847,6 +853,11 @@ public:
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
+
+#if JVET_P0288_PIC_OUTPUT
+  uint32_t          getTargetOlsIdx() { return m_targetOlsIdx; }
+  void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
+#endif
 };
 
 class Window
@@ -899,7 +910,9 @@ private:
   int        m_colourPrimaries;
   int        m_transferCharacteristics;
   int        m_matrixCoefficients;
+#if !JVET_Q0042_VUI
   bool       m_fieldSeqFlag;
+#endif
   bool       m_chromaLocInfoPresentFlag;
   int        m_chromaSampleLocTypeTopField;
   int        m_chromaSampleLocTypeBottomField;
@@ -919,7 +932,9 @@ public:
     , m_colourPrimaries                   (2)
     , m_transferCharacteristics           (2)
     , m_matrixCoefficients                (2)
+#if !JVET_Q0042_VUI
     , m_fieldSeqFlag                      (false)
+#endif
     , m_chromaLocInfoPresentFlag          (false)
     , m_chromaSampleLocTypeTopField       (0)
     , m_chromaSampleLocTypeBottomField    (0)
@@ -957,8 +972,10 @@ public:
   int               getMatrixCoefficients() const                          { return m_matrixCoefficients;                   }
   void              setMatrixCoefficients(int i)                           { m_matrixCoefficients = i;                      }
 
+#if !JVET_Q0042_VUI
   bool              getFieldSeqFlag() const                                { return m_fieldSeqFlag;                         }
   void              setFieldSeqFlag(bool i)                                { m_fieldSeqFlag = i;                            }
+#endif
 
   bool              getChromaLocInfoPresentFlag() const                    { return m_chromaLocInfoPresentFlag;             }
   void              setChromaLocInfoPresentFlag(bool i)                    { m_chromaLocInfoPresentFlag = i;                }
@@ -1105,7 +1122,11 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool              m_BDPCMEnabledFlag;
+#else
   int               m_BDPCMEnabled;
+#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
@@ -1144,6 +1165,9 @@ private:
   bool              m_hrdParametersPresentFlag;
   HRDParameters     m_hrdParameters;
 
+#if JVET_Q0042_VUI
+  bool              m_fieldSeqFlag;
+#endif
   bool              m_vuiParametersPresentFlag;
   VUI               m_vuiParameters;
 
@@ -1317,8 +1341,13 @@ public:
 #endif
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
+  void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
+#else
   int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
   void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
+#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
@@ -1421,6 +1450,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   void                    setHrdParametersPresentFlag(bool b)                                             { m_hrdParametersPresentFlag = b; }
   HRDParameters*          getHrdParameters()                                                              { return &m_hrdParameters; }
   const HRDParameters*    getHrdParameters() const                                                        { return &m_hrdParameters; }
+#if JVET_Q0042_VUI
+  bool                    getFieldSeqFlag() const                                                         { return m_fieldSeqFlag;                         }
+  void                    setFieldSeqFlag(bool i)                                                         { m_fieldSeqFlag = i;                            }
+#endif
   bool                    getVuiParametersPresentFlag() const                                             { return m_vuiParametersPresentFlag;                                   }
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }
   VUI*                    getVuiParameters()                                                              { return &m_vuiParameters;                                             }
@@ -1972,6 +2005,9 @@ class PicHeader
 private:
   bool                        m_valid;                                                  //!< picture header is valid yet or not
   Picture*                    m_pcPic;                                                  //!< pointer to picture structure
+#if JVET_Q0819_PH_CHANGES
+  int                         m_pocLsb;                                                 //!< least significant bits of picture order count
+#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
   bool                        m_noOutputOfPriorPicsFlag;                                //!< no output of prior pictures flag
@@ -1997,6 +2033,10 @@ private:
   ReferencePictureList        m_localRPL1;                                              //!< RPL for L1 when present in picture header
   int                         m_rpl0Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
   int                         m_rpl1Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
+#if JVET_Q0819_PH_CHANGES
+  bool                        m_picInterSliceAllowedFlag;                               //!< inter slice allowed flag in PH
+  bool                        m_picIntraSliceAllowedFlag;                               //!< intra slice allowed flag in PH
+#endif
   bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag  
   uint32_t                    m_cuQpDeltaSubdivIntra;                                   //!< CU QP delta maximum subdivision for intra slices
   uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices 
@@ -2063,6 +2103,10 @@ public:
   void                        setPic( Picture* p )                                      { m_pcPic = p;                                                                                 }
   Picture*                    getPic()                                                  { return m_pcPic;                                                                              }
   const Picture*              getPic() const                                            { return m_pcPic;                                                                              }
+#if JVET_Q0819_PH_CHANGES
+  void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
+  int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
+#endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
   void                        setGdrPicFlag( bool b )                                   { m_gdrPicFlag = b;                                                                            }
@@ -2114,6 +2158,12 @@ public:
   void                        setRPL1idx(int rplIdx)                                    { m_rpl1Idx = rplIdx;                                                                          }
   int                         getRPL0idx() const                                        { return m_rpl0Idx;                                                                            }
   int                         getRPL1idx() const                                        { return m_rpl1Idx;                                                                            }
+#if JVET_Q0819_PH_CHANGES
+  void                        setPicInterSliceAllowedFlag(bool b)                       { m_picInterSliceAllowedFlag = b; }
+  bool                        getPicInterSliceAllowedFlag() const                       { return m_picInterSliceAllowedFlag; }
+  void                        setPicIntraSliceAllowedFlag(bool b)                       { m_picIntraSliceAllowedFlag = b; }
+  bool                        getPicIntraSliceAllowedFlag() const                       { return m_picIntraSliceAllowedFlag; }
+#endif 
   void                        setSplitConsOverrideFlag( bool b )                        { m_splitConsOverrideFlag = b;                                                                 }
   bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }  
   void                        setCuQpDeltaSubdivIntra( uint32_t u )                     { m_cuQpDeltaSubdivIntra = u;                                                                  }
@@ -2290,6 +2340,9 @@ private:
   int                        m_deblockingFilterCbTcOffsetDiv2;    //< tc offset for deblocking filter
   int                        m_deblockingFilterCrBetaOffsetDiv2;  //< beta offset for deblocking filter
   int                        m_deblockingFilterCrTcOffsetDiv2;    //< tc offset for deblocking filter
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                       m_tsResidualCodingDisabledFlag;
 #endif
   int                        m_list1IdxToList0Idx[MAX_NUM_REF];
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
@@ -2472,6 +2525,10 @@ public:
   void                        setDeblockingFilterCbTcOffsetDiv2( int i )             { m_deblockingFilterCbTcOffsetDiv2 = i;                           }
   void                        setDeblockingFilterCrBetaOffsetDiv2( int i )           { m_deblockingFilterCrBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterCrTcOffsetDiv2( int i )             { m_deblockingFilterCrTcOffsetDiv2 = i;                           }
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  void                        setTSResidualCodingDisabledFlag(bool b) { m_tsResidualCodingDisabledFlag = b; }
+  bool                        getTSResidualCodingDisabledFlag() const { return m_tsResidualCodingDisabledFlag; }
 #endif
 
   void                        setNumRefIdx( RefPicList e, int i )                    { m_aiNumRefIdx[e]    = i;                                      }
@@ -2666,7 +2723,11 @@ protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );
   Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId );
 public:
+#if JVET_Q0504_PLT_NON444
+  std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost[2];
+#else
   std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
+#endif
 private:
 };// END CLASS DEFINITION Slice
 

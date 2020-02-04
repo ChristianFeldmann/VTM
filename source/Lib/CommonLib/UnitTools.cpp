@@ -3837,8 +3837,12 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
   SizeType transformSkipMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
 
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool bdpcmAllowed = cu.cs->sps->getBDPCMEnabledFlag();
+#else
   bool bdpcmAllowed = cu.cs->sps->getBDPCMEnabled();
        bdpcmAllowed &= (isLuma(compID) || cu.cs->sps->getBDPCMEnabled() == BDPCM_LUMACHROMA);
+#endif
        bdpcmAllowed &= CU::isIntra( cu );
        if (isLuma(compID))
            bdpcmAllowed &= (cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize);

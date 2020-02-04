@@ -743,6 +743,12 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  int maxCompID = 1;
+  if (isChromaEnabled(pu->chromaFormat))
+  {
+    maxCompID = MAX_NUM_COMPONENT;
+#endif
   if (pu->chromaSize().width > 2)
   {
     initIntraPatternChType(cu, pu->Cb());
@@ -751,10 +757,20 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     initIntraPatternChType(cu, pu->Cr());
     predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  }
+  for (int currCompID = 0; currCompID < maxCompID; currCompID++)
+  {
+    if (currCompID > 0 && pu->chromaSize().width <= 2)
+    {
+      continue;
+    }
+#else
   for (int currCompID = 0; currCompID < 3; currCompID++)
   {
     if (pu->chromaSize().width <= 2 && currCompID > 0)
       continue;
+#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
@@ -1927,6 +1943,10 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 
     for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
     {
+#if JVET_Q0504_PLT_NON444
+      if( curPLTpred[curidx] )
+        continue;
+#endif
       bool matchTmp = true;
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
@@ -1943,10 +1963,25 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     {
       cu.reuseflag[compBegin][predidx] = true;
       curPLTpred[curidx] = true;
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+      {
+        cu.reuseflag[COMPONENT_Y][predidx] = true;
+        for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
+        {
+          curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
+        }
+      }
+      else
+      {
+#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
       }
+#if JVET_Q0504_PLT_NON444
+      }
+#endif
       reusePLTSizetmp++;
       pltSizetmp++;
     }
@@ -1956,20 +1991,57 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
   {
     if (!curPLTpred[curidx])
     {
+#if JVET_Q0504_PLT_NON444
+      if( cu.isLocalSepTree() )
+      {
+        for( int comp = compBegin; comp < (compBegin + numComp); comp++ )
+        {
+          curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
+        }
+        if( isLuma(partitioner.chType) )
+        {
+          curPLTtmp[COMPONENT_Cb][pltSizetmp] = 1 << (cs.sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+          curPLTtmp[COMPONENT_Cr][pltSizetmp] = 1 << (cs.sps->getBitDepth(CHANNEL_TYPE_CHROMA) - 1);
+        }
+        else
+        {
+          curPLTtmp[COMPONENT_Y][pltSizetmp] = 1 << (cs.sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
+        }
+      }
+      else
+      {
+#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
       }
+#if JVET_Q0504_PLT_NON444
+      }
+#endif
       pltSizetmp++;
     }
   }
   assert(pltSizetmp == cu.curPLTSize[compBegin]);
   for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
   {
+#if JVET_Q0504_PLT_NON444
+    if( cu.isLocalSepTree() )
+    {
+      for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
+      {
+        cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
+      }
+    }
+    else
+    {
+#endif
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
     }
+#if JVET_Q0504_PLT_NON444
+    }
+#endif
   }
 }
 //! \}

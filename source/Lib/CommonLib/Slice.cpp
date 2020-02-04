@@ -73,6 +73,9 @@ Slice::Slice()
 , m_deblockingFilterCrBetaOffsetDiv2( 0 )
 , m_deblockingFilterCrTcOffsetDiv2  ( 0 )
 #endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+, m_tsResidualCodingDisabledFlag  ( false )
+#endif
 , m_pendingRasInit                ( false )
 , m_bCheckLDC                     ( false )
 , m_biDirPred                    ( false )
@@ -769,6 +772,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_deblockingFilterCrBetaOffsetDiv2  = pSrc->m_deblockingFilterCrBetaOffsetDiv2;
   m_deblockingFilterCrTcOffsetDiv2    = pSrc->m_deblockingFilterCrTcOffsetDiv2;
 #endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  m_tsResidualCodingDisabledFlag      = pSrc->m_tsResidualCodingDisabledFlag;
+#endif
 
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
   {
@@ -1016,7 +1022,11 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
       {
         numLeadingPicsFound++;
         int limitNonLP = 0;
+#if JVET_Q0042_VUI
+        if (pcSlice->getSPS()->getFieldSeqFlag())
+#else
         if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
+#endif
           limitNonLP = 1;
         CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
       }
@@ -1867,7 +1877,11 @@ SPS::SPS()
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_transformSkipEnabledFlag  (false)
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+, m_BDPCMEnabledFlag          (false)
+#else
 , m_BDPCMEnabled              (0)
+#endif
 , m_JointCbCrEnabledFlag      (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
@@ -1887,6 +1901,9 @@ SPS::SPS()
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
 , m_hrdParametersPresentFlag  (false)
+#if JVET_Q0042_VUI
+, m_fieldSeqFlag              (false)
+#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)

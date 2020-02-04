@@ -1162,7 +1162,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  sps.setBDPCMEnabledFlag(m_useBDPCM);
+#else
   sps.setBDPCMEnabled(m_useBDPCM);
+#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
@@ -1194,6 +1198,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #if JVET_Q0795_CCALF
   sps.setCCALFEnabledFlag( m_ccalf );
 #endif
+#if JVET_Q0042_VUI
+  sps.setFieldSeqFlag(false);
+#endif
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1208,7 +1215,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     pcVUI->setColourPrimaries(getColourPrimaries());
     pcVUI->setTransferCharacteristics(getTransferCharacteristics());
     pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+#if !JVET_Q0042_VUI
     pcVUI->setFieldSeqFlag(false);
+#endif
     pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
     pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
     pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());

@@ -55,6 +55,9 @@
 #include "CommonLib/UnitTools.h"
 #include "CommonLib/dtrace_codingstruct.h"
 #include "CommonLib/dtrace_buffer.h"
+#if JVET_Q0436_CABAC_ZERO_WORD || JVET_P0188_MINCR
+#include "CommonLib/ProfileLevelTier.h"
+#endif
 
 #include "DecoderLib/DecLib.h"
 
@@ -1230,8 +1233,47 @@ void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *
   }
 }
 
+#if JVET_P0188_MINCR
+static void
+validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBytesInVclNalUnits, const Picture *pPic, const EncCfg *pCfg)
+{
+  //  numBytesInVclNalUnits shall be less than or equal to
+  //     FormatCapabilityFactor * MaxLumaSr * framePeriod ÷ MinCr,
+  //     ( = FormatCapabilityFactor * MaxLumaSr ÷ (MinCr * frameRate),
+  if (plt.getLevelTierFeatures() && plt.getProfileFeatures() && plt.getLevelTierFeatures()->level!=Level::LEVEL8_5)
+  {
+    const uint32_t formatCapabilityFactorx1000 = plt.getProfileFeatures()->formatCapabilityFactorx1000;
+    const uint64_t maxLumaSr = plt.getLevelTierFeatures()->maxLumaSr;
+    const uint32_t frameRate = pCfg->getFrameRate();
+    const double   minCr = plt.getMinCr();
+    const double   denominator = (minCr * frameRate * 1000);
+    if (denominator!=0)
+    {
+      const double   threshold =(formatCapabilityFactorx1000 * maxLumaSr) / (denominator);
+
+      if (numBytesInVclNalUnits > threshold)
+      {
+        msg( WARNING, "WARNING: Encoded stream does not meet MinCr requirements numBytesInVclNalUnits (%.0f) must be <= %.0f. Try increasing Qp, tier or level\n",
+                      (double) numBytesInVclNalUnits, threshold );
+      }
+    }
+  }
+}
+#endif
+
+#if JVET_Q0436_CABAC_ZERO_WORD
+static void
+cabac_zero_word_padding(const Slice *const pcSlice,
+                        const Picture *const pcPic,
+                        const std::size_t binCountsInNalUnits,
+                        const std::size_t numBytesInVclNalUnits,
+                              std::ostringstream &nalUnitData,
+                        const bool cabacZeroWordPaddingEnabled,
+                        const ProfileLevelTierFeatures &plt)
+#else
 static void
 cabac_zero_word_padding(Slice *const pcSlice, Picture *const pcPic, const std::size_t binCountsInNalUnits, const std::size_t numBytesInVclNalUnits, std::ostringstream &nalUnitData, const bool cabacZeroWordPaddingEnabled)
+#endif
 {
   const SPS &sps=*(pcSlice->getSPS());
   const ChromaFormat format = sps.getChromaFormatIdc();
@@ -1247,11 +1289,23 @@ cabac_zero_word_padding(Slice *const pcSlice, Picture *const pcPic, const std::s
   const int paddedHeight = ( ( pcSlice->getPPS()->getPicHeightInLumaSamples() + minCuHeight - 1 ) / minCuHeight ) * minCuHeight;
   const int rawBits = paddedWidth * paddedHeight *
                          (sps.getBitDepth(CHANNEL_TYPE_LUMA) + ((2*sps.getBitDepth(CHANNEL_TYPE_CHROMA))>>log2subWidthCxsubHeightC));
+#if JVET_Q0436_CABAC_ZERO_WORD
+  const int vclByteScaleFactor_x3 = ( 32 + 4 * (plt.getTier()==Level::HIGH ? 1 : 0) );
+  const std::size_t threshold = (vclByteScaleFactor_x3*numBytesInVclNalUnits/3) + (rawBits/32);
+  // "The value of BinCountsInPicNalUnits shall be less than or equal to vclByteScaleFactor * NumBytesInPicVclNalUnits     + ( RawMinCuBits * PicSizeInMinCbsY ) / 32."
+  //               binCountsInNalUnits                  <=               vclByteScaleFactor_x3 * numBytesInVclNalUnits / 3 +   rawBits / 32.
+  // If it is currently not, then add cabac_zero_words to increase numBytesInVclNalUnits.
+#else
   const std::size_t threshold = (32/3)*numBytesInVclNalUnits + (rawBits/32);
+#endif
   if (binCountsInNalUnits >= threshold)
   {
     // need to add additional cabac zero words (each one accounts for 3 bytes (=00 00 03)) to increase numBytesInVclNalUnits
+#if JVET_Q0436_CABAC_ZERO_WORD
+    const std::size_t targetNumBytesInVclNalUnits = ((binCountsInNalUnits - (rawBits/32))*3+vclByteScaleFactor_x3-1)/vclByteScaleFactor_x3;
+#else
     const std::size_t targetNumBytesInVclNalUnits = ((binCountsInNalUnits - (rawBits/32))*3+31)/32;
+#endif
 
     if (targetNumBytesInVclNalUnits>numBytesInVclNalUnits) // It should be!
     {
@@ -2034,7 +2088,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     picHeader->setSPSId( pcPic->cs->pps->getSPSId() );
     picHeader->setPPSId( pcPic->cs->pps->getPPSId() );
     picHeader->setSplitConsOverrideFlag(false);
-
+#if JVET_Q0819_PH_CHANGES
+    // initial two flags to be false
+    picHeader->setPicInterSliceAllowedFlag(false);
+    picHeader->setPicIntraSliceAllowedFlag(false);
+#endif
 #if ER_CHROMA_QP_WCG_PPS
     // th this is a hot fix for the choma qp control
     if( m_pcEncLib->getWCGChromaQPControl().isEnabled() && m_pcEncLib->getSwitchPOC() != -1 )
@@ -2098,6 +2156,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
+
+#if JVET_Q0819_PH_CHANGES
+    // set two flags according to slice type presented in the picture
+    if (pcSlice->getSliceType() != I_SLICE)
+    {
+      picHeader->setPicInterSliceAllowedFlag(true);
+    }
+    if (pcSlice->getSliceType() == I_SLICE)
+    {
+      picHeader->setPicIntraSliceAllowedFlag(true);
+    }
+#endif
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
 
@@ -3131,7 +3201,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcPic->cs->picHeader->setPic(pcPic);
           pcPic->cs->picHeader->setValid();
 #if JVET_Q0775_PH_IN_SH
-          if (pcPic->cs->pps->getNumSlicesInPic() > 1 || m_pcCfg->getEnablePictureHeaderInSliceHeader())
+          if (pcPic->cs->pps->getNumSlicesInPic() > 1 || !m_pcCfg->getEnablePictureHeaderInSliceHeader())
           {
             pcSlice->setPictureHeaderInSliceHeader(false);
             actualTotalBits += xWritePicHeader(accessUnit, pcPic->cs->picHeader);
@@ -3222,9 +3292,26 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       } // end iteration over slices
 
+#if JVET_Q0436_CABAC_ZERO_WORD || JVET_P0188_MINCR
+      {
+        // Check picture level encoding constraints/requirements
+        ProfileLevelTierFeatures profileLevelTierFeatures;
+        profileLevelTierFeatures.extractPTLInformation(*(pcSlice->getSPS()));
+#endif
+#if JVET_P0188_MINCR
+        validateMinCrRequirements(profileLevelTierFeatures, numBytesInVclNalUnits, pcPic, m_pcCfg);
+#endif
+#if JVET_Q0436_CABAC_ZERO_WORD
+        // cabac_zero_words processing
+        cabac_zero_word_padding(pcSlice, pcPic, binCountsInNalUnits, numBytesInVclNalUnits, accessUnit.back()->m_nalUnitData, m_pcCfg->getCabacZeroWordPaddingEnabled(), profileLevelTierFeatures);
+#else
 
       // cabac_zero_words processing
       cabac_zero_word_padding(pcSlice, pcPic, binCountsInNalUnits, numBytesInVclNalUnits, accessUnit.back()->m_nalUnitData, m_pcCfg->getCabacZeroWordPaddingEnabled());
+#endif
+#if JVET_Q0436_CABAC_ZERO_WORD || JVET_P0188_MINCR
+      }
+#endif
 
       //-- For time output for each slice
       auto elapsed = std::chrono::steady_clock::now() - beforeTime;

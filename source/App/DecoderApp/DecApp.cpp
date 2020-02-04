@@ -174,7 +174,7 @@ uint32_t DecApp::decode()
             }
           }
 #if JVET_P0288_PIC_OUTPUT
-          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_iTargetOLS);
+          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_targetOlsIdx);
 #else
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
 #endif

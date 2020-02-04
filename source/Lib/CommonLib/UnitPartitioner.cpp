@@ -391,7 +391,11 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
 #if JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  SizeType side = (chType == CHANNEL_TYPE_CHROMA) ? areaC->height : area.height;
+#else
   SizeType side = chType == CHANNEL_TYPE_CHROMA ? areaC.height : area.height;
+#endif
   if (side <= minQtSize)                                     canQt = false;
 #else
   if( area.width <= minQtSize )                              canQt = false;

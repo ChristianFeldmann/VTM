@@ -796,6 +796,12 @@ private:
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
 
+#if JVET_P0288_PIC_OUTPUT
+public:
+  int                   m_targetOlsIdx;
+#endif
+
+
 public:
                     VPS();
 
@@ -847,6 +853,11 @@ public:
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
+
+#if JVET_P0288_PIC_OUTPUT
+  uint32_t          getTargetOlsIdx() { return m_targetOlsIdx; }
+  void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
+#endif
 };
 
 class Window

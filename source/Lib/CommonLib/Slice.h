@@ -847,6 +847,11 @@ private:
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
+  
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  int                   m_vpsLayerChromaFormatIDC[MAX_VPS_LAYERS];
+  int                   m_vpsLayerBitDepth[MAX_VPS_LAYERS];
+#endif  
 
 #if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;

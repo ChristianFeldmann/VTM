@@ -1957,7 +1957,11 @@ void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, u
           PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
           if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
           {
+#if JVET_Q0491_PLT_ESCAPE
+            escapeValue.at(posx, posy) = exp_golomb_eqprob(5);
+#else
             escapeValue.at(posx, posy) = exp_golomb_eqprob(3);
+#endif
             assert(escapeValue.at(posx, posy) < (1 << (cu.cs->sps->getBitDepth(toChannelType((ComponentID)comp)) + 1)));
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
@@ -1965,7 +1969,11 @@ void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, u
           {
             uint32_t posxC = posx >> scaleX;
             uint32_t posyC = posy >> scaleY;
+#if JVET_Q0491_PLT_ESCAPE
+            escapeValue.at(posxC, posyC) = exp_golomb_eqprob(5);
+#else
             escapeValue.at(posxC, posyC) = exp_golomb_eqprob(3);
+#endif
             assert(escapeValue.at(posxC, posyC) < (1 << (cu.cs->sps->getBitDepth(toChannelType(compID)) + 1)));
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
@@ -2729,8 +2737,8 @@ bool CABACReader::cbf_comp( CodingStructure& cs, const CompArea& area, unsigned 
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__QT_CBF, area.size(), area.compID);
 
   unsigned  cbf = 0;
-  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmMode)
-   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmModeChroma))
+  if( (area.compID == COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmMode)
+   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmModeChroma))
   {
     if (area.compID == COMPONENT_Y)
         ctxId = 1;

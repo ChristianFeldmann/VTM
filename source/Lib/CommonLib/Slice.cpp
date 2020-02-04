@@ -2303,8 +2303,13 @@ void PPS::initRectSliceMap()
   // allocate new memory for slice list
   CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
   m_sliceMap.resize( m_numSlicesInPic );
+#if JVET_Q0817   
+  if( getSingleSlicePerSubPicFlag() )
+  {
+#else
   if ((getNumSubPics() > 0) && getSingleSlicePerSubPicFlag())
   {
+#endif
     for (uint32_t i = 0; i <= getNumSubPics() - 1; i++)
     {
       m_sliceMap[i].initSliceMap();

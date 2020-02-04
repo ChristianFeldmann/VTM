@@ -177,12 +177,11 @@ public:
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 
-#if JVET_Q0819_PH_CHANGES //Hendry
-  void parsePredWeightTable( Slice *pcSlice, PicHeader *picHeader, const SPS *sps );
-#else
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
+#if JVET_Q0819_PH_CHANGES
+  void parsePredWeightTable ( PicHeader *picHeader, const SPS *sps );
 #endif
-  void parseScalingList(ScalingList *scalingList);
+  void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );

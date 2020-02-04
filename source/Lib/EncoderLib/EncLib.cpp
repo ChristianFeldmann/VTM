@@ -96,6 +96,35 @@ EncLib::~EncLib()
 void EncLib::create( const int layerId )
 {
   m_layerId = layerId;
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  if (getVPS()->getMaxLayers() > 1)
+  {
+    VPS* vps = getVPS();
+    int curLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(layerId);
+    if (curLayerChromaFormatIdcInVPS == NOT_VALID)
+      vps->setLayerChromaFormatIDC(layerId, m_chromaFormatIDC);
+    else
+      CHECK(curLayerChromaFormatIdcInVPS != m_chromaFormatIDC, "The chroma formats of different SPS are not the same in the same layer");
+
+    int curLayerBitDepthInVPS = vps->getLayerBitDepth(layerId);
+    if (curLayerBitDepthInVPS == NOT_VALID)
+      vps->setLayerBitDepth(layerId, m_bitDepth[0]);
+    else
+      CHECK(curLayerBitDepthInVPS != m_bitDepth[0], "The bit-depth of different SPS are not the same in the same layer");
+
+    //check chroma format and bit-depth for dependent layers
+    for (uint32_t i = 0; i < layerId; i++)
+    {
+      if (vps->getDirectRefLayerFlag(layerId, i))
+      {
+        int refLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(i);
+        CHECK(curLayerChromaFormatIdcInVPS != refLayerChromaFormatIdcInVPS, "The chroma formats of the current layer and the reference layer are different");
+        int refLayerBitDepthInVPS = vps->getLayerBitDepth(i);
+        CHECK(curLayerBitDepthInVPS != refLayerBitDepthInVPS, "The bit-depth of the current layer and the reference layer are different");
+      }
+    }
+  }
+#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -1128,7 +1157,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  sps.setBDPCMEnabledFlag(m_useBDPCM);
+#else
   sps.setBDPCMEnabled(m_useBDPCM);
+#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
@@ -1160,6 +1193,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #if JVET_Q0795_CCALF
   sps.setCCALFEnabledFlag( m_ccalf );
 #endif
+#if JVET_Q0042_VUI
+  sps.setFieldSeqFlag(false);
+#endif
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1174,7 +1210,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     pcVUI->setColourPrimaries(getColourPrimaries());
     pcVUI->setTransferCharacteristics(getTransferCharacteristics());
     pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+#if !JVET_Q0042_VUI
     pcVUI->setFieldSeqFlag(false);
+#endif
     pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
     pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
     pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());

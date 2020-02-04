@@ -378,6 +378,13 @@ const bool CodingUnit::isSepTree() const
   return treeType != TREE_D || CS::isDualITree( *cs );
 }
 
+#if JVET_Q0504_PLT_NON444
+const bool CodingUnit::isLocalSepTree() const
+{
+  return treeType != TREE_D && !CS::isDualITree(*cs);
+}
+#endif
+
 const bool CodingUnit::checkCCLMAllowed() const
 {
   bool allowCCLM = false;
@@ -782,7 +789,12 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, bool **runType)
     m_pcmbuf[i] = pcmbuf[i];
   }
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  // numBlocks is either 1 for 4:0:0, or 3 otherwise. It would perhaps be better to loop over getNumberValidChannels(*cs->pcv.chrFormat) for m_runType.
+  for (uint32_t i = 0; i < std::max<uint32_t>(2, numBlocks)-1; i++)
+#else
   for (uint32_t i = 0; i < numBlocks - 1; i++)
+#endif
   {
     m_runType[i] = runType[i];
   }

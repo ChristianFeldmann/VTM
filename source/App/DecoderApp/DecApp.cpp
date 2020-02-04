@@ -162,11 +162,18 @@ uint32_t DecApp::decode()
               {
                 m_cDecLib.resetAccessUnitNals();
                 m_cDecLib.resetAccessUnitApsNals();
+#if JVET_P0101_POC_MULTILAYER
+                m_cDecLib.resetAccessUnitPicInfo();
+#endif
               }
               bPicSkipped = false;
             }
           }
+#if JVET_P0288_PIC_OUTPUT
+          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_iTargetOLS);
+#else
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
+#endif
           if (nalu.m_nalUnitType == NAL_UNIT_VPS)
           {
             deriveOutputLayerSet();
@@ -257,6 +264,9 @@ uint32_t DecApp::decode()
     {
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
+#if JVET_P0101_POC_MULTILAYER
+        m_cDecLib.resetAccessUnitPicInfo();
+#endif
     }
   }
 

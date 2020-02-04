@@ -1191,8 +1191,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SliceLevelSao",                                   m_sliceLevelSao,                                   true, "Code SAO parameters in slice headers rather than picture header.")
   ("SliceLevelAlf",                                   m_sliceLevelAlf,                                   true, "Code ALF parameters in slice headers rather than picture header.")
 #if JVET_Q0819_PH_CHANGES 
-  ("SliceLevelWeightedPrediction",                    m_sliceLevelSao,                                   true, "Code weighted prediction parameters in slice headers rather than picture header.")
-  ("SliceLevelDeltaQp",                               m_sliceLevelSao,                                   true, "Code delta Qp in slice headers rather than picture header.")
+  ("SliceLevelWeightedPrediction",                    m_sliceLevelWp,                                    true, "Code weighted prediction parameters in slice headers rather than picture header.")
+  ("SliceLevelDeltaQp",                               m_sliceLevelDeltaQp,                               true, "Code delta Qp in slice headers rather than picture header.")
 #endif
   ("FEN",                                             tmpFastInterSearchMode,   int(FASTINTERSEARCH_DISABLED), "fast encoder setting")
   ("ECU",                                             m_bUseEarlyCU,                                    false, "Early CU setting")

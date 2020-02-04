@@ -115,9 +115,10 @@ public:
 private:
   void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
-  void xCodePredWeightTable     ( Slice* pcSlice );
-#if JVET_Q0819_PH_CHANGES 
-  void xCodePredWeightTable     ( PicHeader *picHeader, const SPS *sps );
+#if JVET_Q0819_PH_CHANGES
+  void xCodePredWeightTable     ( Slice *pcSlice, PicHeader *picHeader, const SPS *sps );
+#else
+  void xCodePredWeightTable     ( Slice *pcSlice );
 #endif
   void xCodeScalingList         ( const ScalingList* scalingList, uint32_t scalinListId, bool isPredictor);
 public:

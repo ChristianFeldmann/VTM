@@ -1466,8 +1466,15 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
     {
       if (bioApplied)
       {
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        if (isChromaEnabled(yuvDstTmp->chromaFormat))
+        {
+#endif
         yuvDstTmp->bufs[1].copyFrom(pcYuvDst.bufs[1]);
         yuvDstTmp->bufs[2].copyFrom(pcYuvDst.bufs[2]);
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        }
+#endif
       }
       else
         yuvDstTmp->copyFrom(pcYuvDst, lumaOnly, chromaOnly);
@@ -1519,6 +1526,11 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
   , PelUnitBuf* predBufWOBIO /*= NULL*/
 )
 {
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  // Note: there appears to be an interaction with weighted prediction that
+  // makes the code follow different paths if chroma is on or off (in the encoder).
+  // Therefore for 4:0:0, "chroma" is not changed to false.
+#endif
   CHECK(predBufWOBIO && pu.ciipFlag, "the case should not happen!");
 
   if (!pu.cs->pcv->isEncoder)
@@ -1741,8 +1753,15 @@ void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, const bool splitD
   else
   {
     m_if.weightedTriangleBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, predDst, predSrc0, predSrc1 );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    if (isChromaEnabled(pu.chromaFormat))
+    {
+#endif
     m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
     m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    }
+#endif
   }
 }
 #else
@@ -1760,7 +1779,7 @@ void InterPrediction::motionCompensationGeo( CodingUnit &cu, MergeCtx &geoMrgCtx
 
     geoMrgCtx.setMergeInfo( pu, candIdx0 );
     PU::spanMotionInfo( pu );
-    motionCompensation(pu, tmpGeoBuf0, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat));
+    motionCompensation(pu, tmpGeoBuf0, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat)); // TODO: check 4:0:0 interaction with weighted prediction.
     if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
     {
       printf( "DECODER_GEO_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
@@ -1768,7 +1787,7 @@ void InterPrediction::motionCompensationGeo( CodingUnit &cu, MergeCtx &geoMrgCtx
     
     geoMrgCtx.setMergeInfo( pu, candIdx1 );
     PU::spanMotionInfo( pu );
-    motionCompensation(pu, tmpGeoBuf1, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat));
+    motionCompensation(pu, tmpGeoBuf1, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat)); // TODO: check 4:0:0 interaction with weighted prediction.
     if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
     {
       printf( "DECODER_GEO_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
@@ -1791,8 +1810,15 @@ void InterPrediction::weightedGeoBlk( PredictionUnit &pu, const uint8_t splitDir
   else
   {
     m_if.weightedGeoBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, predDst, predSrc0, predSrc1 );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    if (isChromaEnabled(pu.chromaFormat))
+    {
+#endif
     m_if.weightedGeoBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
     m_if.weightedGeoBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    }
+#endif
   }
 }
 #endif
@@ -1848,7 +1874,11 @@ void InterPrediction::xPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList ref
   int offset = 0, width, height;
   int padsize;
   Mv cMv;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  for (int compID = 0; compID < getNumberValidComponents(pu.chromaFormat); compID++)
+#else
   for (int compID = 0; compID < MAX_NUM_COMPONENT; compID++)
+#endif
   {
     int filtersize = (compID == (COMPONENT_Y)) ? NTAPS_LUMA : NTAPS_CHROMA;
     width = pcPad.bufs[compID].width;
@@ -2011,7 +2041,11 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
         pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), startMv.getHor(), startMv.getVer(), tileArea.topLeft().x, tileArea.topLeft().y, tileArea.bottomRight().x, tileArea.bottomRight().y );
       THROW( "MCTS constraint failed!" );
     }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    for (int compID = 0; compID < getNumberValidComponents(pu.chromaFormat); compID++)
+#else
     for (int compID = 0; compID < MAX_NUM_COMPONENT; compID++)
+#endif
     {
       Pel *srcBufPelPtr = NULL;
       int pcPadstride = 0;
@@ -2294,13 +2328,26 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
         if (pu.mvdL0SubPu[num] != Mv(0, 0))
         {
           blockMoved = true;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+          if (isChromaEnabled(pu.chromaFormat))
+          {
+#endif
           xPrefetch(subPu, m_cYuvRefBuffDMVRL0, REF_PIC_LIST_0, 0);
           xPrefetch(subPu, m_cYuvRefBuffDMVRL1, REF_PIC_LIST_1, 0);
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+          }
+#endif
           xPad(subPu, m_cYuvRefBuffDMVRL0, REF_PIC_LIST_0);
           xPad(subPu, m_cYuvRefBuffDMVRL1, REF_PIC_LIST_1);
         }
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        int dstStride[MAX_NUM_COMPONENT] = { pcYuvDst.bufs[COMPONENT_Y].stride,
+                                             isChromaEnabled(pu.chromaFormat) ? pcYuvDst.bufs[COMPONENT_Cb].stride : 0,
+                                             isChromaEnabled(pu.chromaFormat) ? pcYuvDst.bufs[COMPONENT_Cr].stride : 0};
+#else
         int dstStride[MAX_NUM_COMPONENT] = { pcYuvDst.bufs[COMPONENT_Y].stride, pcYuvDst.bufs[COMPONENT_Cb].stride, pcYuvDst.bufs[COMPONENT_Cr].stride };
+#endif
         subPu.mv[0] = mergeMv[REF_PIC_LIST_0] + pu.mvdL0SubPu[num];
         subPu.mv[1] = mergeMv[REF_PIC_LIST_1] - pu.mvdL0SubPu[num];
 
@@ -2313,10 +2360,16 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
 
         subPredBuf.bufs[COMPONENT_Y].buf = pcYuvDst.bufs[COMPONENT_Y].buf + xStart + yStart * dstStride[COMPONENT_Y];
 
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        if (isChromaEnabled(pu.chromaFormat))
+        {
+#endif
         subPredBuf.bufs[COMPONENT_Cb].buf = pcYuvDst.bufs[COMPONENT_Cb].buf + (xStart >> scaleX) + ((yStart >> scaleY) * dstStride[COMPONENT_Cb]);
 
         subPredBuf.bufs[COMPONENT_Cr].buf = pcYuvDst.bufs[COMPONENT_Cr].buf + (xStart >> scaleX) + ((yStart >> scaleY) * dstStride[COMPONENT_Cr]);
-
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        }
+#endif
         xWeightedAverage(subPu, srcPred0, srcPred1, subPredBuf, subPu.cu->slice->getSPS()->getBitDepths(), subPu.cu->slice->clpRngs(), bioAppliedType[num]);
         num++;
       }

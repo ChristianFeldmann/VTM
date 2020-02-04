@@ -500,6 +500,10 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
       partitioner.exitCurrSplit();
       if( chromaNotSplit )
       {
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        if (isChromaEnabled(cs.pcv->chrFormat))
+        {
+#endif
         CHECK( partitioner.chType != CHANNEL_TYPE_LUMA, "must be luma status" );
         partitioner.chType = CHANNEL_TYPE_CHROMA;
         partitioner.treeType = TREE_C;
@@ -508,6 +512,9 @@ void CABACWriter::coding_tree(const CodingStructure& cs, Partitioner& partitione
         {
           coding_tree( cs, partitioner, cuCtx );
         }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+        }
+#endif
 
         //recover
         partitioner.chType = CHANNEL_TYPE_LUMA;
@@ -686,14 +693,29 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     }
     else
     {
+#if JVET_Q0504_PLT_NON444
+      if( cu.chromaFormat != CHROMA_400 )
+      {
+        cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+      }
+      else
+      {
+        cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
+      }
+#else
       cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
+#endif
     }
     end_of_ctu(cu, cuCtx);
     return;
   }
 #if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
   bdpcm_mode( cu, ComponentID( partitioner.chType ) );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (!CS::isDualITree(cs) && isLuma(partitioner.chType) && isChromaEnabled(cu.chromaFormat))
+#else
   if (!CS::isDualITree(cs) && isLuma(partitioner.chType))
+#endif
       bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
 #endif
 
@@ -815,7 +837,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 }
 void CABACWriter::bdpcm_mode( const CodingUnit& cu, const ComponentID compID )
 {
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  if( !cu.cs->sps->getBDPCMEnabledFlag() ) return;
+#else
   if( cu.cs->sps->getBDPCMEnabled() == 0 ) return;
+#endif
   if( !CU::bdpcmAllowed( cu, compID ) ) return;
 
   int bdpcmMode = isLuma(compID) ? cu.bdpcmMode : cu.bdpcmModeChroma;
@@ -2485,12 +2511,21 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
   const CodingUnit&       cu = *tu.cu;
   const UnitArea&         area = partitioner.currArea();
   const unsigned          trDepth = partitioner.currTrDepth;
+#if !JVET_Q0438_MONOCHROME_BUGFIXES
   const bool              chromaCbfISP = area.blocks[COMPONENT_Cb].valid() && cu.ispMode;
+#endif
   ChromaCbfs              chromaCbfs;
   CHECK(tu.depth != trDepth, " transform unit should be not be futher partitioned");
 
   // cbf_cb & cbf_cr
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (area.chromaFormat != CHROMA_400)
+  {
+    const bool              chromaCbfISP = area.blocks[COMPONENT_Cb].valid() && cu.ispMode;
+    if (area.blocks[COMPONENT_Cb].valid() && (!cu.isSepTree() || partitioner.chType == CHANNEL_TYPE_CHROMA) && (!cu.ispMode || chromaCbfISP))
+#else
   if (area.chromaFormat != CHROMA_400 && area.blocks[COMPONENT_Cb].valid() && (!cu.isSepTree() || partitioner.chType == CHANNEL_TYPE_CHROMA) && (!cu.ispMode || chromaCbfISP))
+#endif
   {
     {
       unsigned cbfDepth = chromaCbfISP ? trDepth - 1 : trDepth;
@@ -2513,6 +2548,13 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
   {
     chromaCbfs = ChromaCbfs(false);
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  }
+  else if (cu.isSepTree())
+  {
+    chromaCbfs = ChromaCbfs(false);
+  }
+#endif
 
   if (!isChroma(partitioner.chType))
   {
@@ -2707,7 +2749,11 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   ts_flag            ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  if( tu.mtsIdx[compID] == MTS_SKIP && !tu.cs->slice->getTSResidualCodingDisabledFlag() )
+#else
   if (tu.mtsIdx[compID] == MTS_SKIP)
+#endif
   {
     residual_codingTS( tu, compID );
     return;

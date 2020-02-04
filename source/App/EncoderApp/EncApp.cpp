@@ -243,7 +243,11 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
+#else
   m_cEncLib.setNoBDPCMConstraintFlag                             ( m_useBDPCM == 0 );
+#endif
   m_cEncLib.setNoJointCbCrConstraintFlag                         (!m_JointCbCrMode);
   m_cEncLib.setNoQpDeltaConstraintFlag                           ( m_bNoQpDeltaConstraintFlag );
   m_cEncLib.setNoDepQuantConstraintFlag                          ( !m_depQuantEnabledFlag);

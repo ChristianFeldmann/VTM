@@ -253,7 +253,11 @@ void QTBTPartitioner::initCtu( const UnitArea& ctuArea, const ChannelType _chTyp
   currQtDepth = 0;
   currSubdiv  = 0;
   currQgPos   = ctuArea.lumaPos();
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  currQgChromaPos = ctuArea.chromaFormat != CHROMA_400 ? ctuArea.chromaPos() : Position();
+#else
   currQgChromaPos = ctuArea.chromaPos();
+#endif
   currImplicitBtDepth = 0;
   chType      = _chType;
 
@@ -374,7 +378,11 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // the minimal and maximal sizes are given in luma samples
   const CompArea&  area  = currArea().Y();
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  const CompArea  *areaC = (chType == CHANNEL_TYPE_CHROMA) ? &(currArea().Cb()) : nullptr;
+#else
   const CompArea&  areaC = currArea().Cb();
+#endif
         PartLevel& level = m_partStack.back();
 
   const PartSplit lastSplit = level.split;
@@ -383,7 +391,11 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
   if( area.width <= minQtSize )                              canQt = false;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if( areaC && areaC->width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
+#else
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
+#endif
   if( treeType == TREE_C )
   {
     canQt = canBh = canTh = canBv = canTv = false;
@@ -395,7 +407,11 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
     canBh = implicitSplit == CU_HORZ_SPLIT;
     canBv = implicitSplit == CU_VERT_SPLIT;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+    if (areaC && areaC->width == 4) canBv = false;
+#else
     if (chType == CHANNEL_TYPE_CHROMA && areaC.width == 4) canBv = false;
+#endif
     return;
   }
 
@@ -431,20 +447,37 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // specific check for BT splits
   if( area.height <= minBtSize )                            canBh = false;
   if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if( areaC && areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
+#else
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
+#endif
   if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (areaC && (areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE || areaC->width == 4))     canBv = false;
+#else
   if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE || areaC.width == 4))     canBv = false;
+#endif
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 32 )  canBv = canBh = false;
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if( areaC && areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTh = false;
+#else
   if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTh = false;
+#endif
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (areaC && (areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE * 2 || areaC->width == 8))     canTv = false;
+#else
   if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE * 2 || areaC.width == 8))     canTv = false;
+#endif
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 64 )  canTv = canTh = false;
+
 }
 
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )
@@ -570,7 +603,11 @@ void QTBTPartitioner::exitCurrSplit()
   currSubdiv--;
   if( currQgEnable() )
     currQgPos = currArea().lumaPos();
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if( currArea().chromaFormat != CHROMA_400 && currQgChromaEnable() )
+#else
   if( currQgChromaEnable() )
+#endif
     currQgChromaPos = currArea().chromaPos();
 #if _DEBUG
   m_currArea = m_partStack.back().parts[m_partStack.back().idx];
@@ -998,7 +1035,11 @@ void PartitionerImpl::getTUIntraSubPartitions( Partitioning &sub, const UnitArea
     THROW( "Unknown TU sub-partitioning" );
   }
   //we only partition luma, so there is going to be only one chroma tu at the end (unless it is dual tree, in which case there won't be any chroma components)
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  uint32_t partitionsWithoutChroma = (cs.area.chromaFormat == CHROMA_400) ? 0 : (isDualTree ? nPartitions : nPartitions - 1);
+#else
   uint32_t partitionsWithoutChroma = isDualTree ? nPartitions : nPartitions - 1;
+#endif
   for( uint32_t i = 0; i < partitionsWithoutChroma; i++ )
   {
     CompArea& blkCb = sub[i].blocks[COMPONENT_Cb];

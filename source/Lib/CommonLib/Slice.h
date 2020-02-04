@@ -1188,7 +1188,11 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool              m_BDPCMEnabledFlag;
+#else
   int               m_BDPCMEnabled;
+#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
@@ -1396,8 +1400,13 @@ public:
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
+  void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
+#else
   int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
   void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
+#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
@@ -2051,6 +2060,9 @@ class PicHeader
 private:
   bool                        m_valid;                                                  //!< picture header is valid yet or not
   Picture*                    m_pcPic;                                                  //!< pointer to picture structure
+#if JVET_Q0819_PH_CHANGES
+  int                         m_pocLsb;                                                 //!< least significant bits of picture order count
+#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
   bool                        m_noOutputOfPriorPicsFlag;                                //!< no output of prior pictures flag
@@ -2076,6 +2088,10 @@ private:
   ReferencePictureList        m_localRPL1;                                              //!< RPL for L1 when present in picture header
   int                         m_rpl0Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
   int                         m_rpl1Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
+#if JVET_Q0819_PH_CHANGES
+  bool                        m_picInterSliceAllowedFlag;                               //!< inter slice allowed flag in PH
+  bool                        m_picIntraSliceAllowedFlag;                               //!< intra slice allowed flag in PH
+#endif
   bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag  
   uint32_t                    m_cuQpDeltaSubdivIntra;                                   //!< CU QP delta maximum subdivision for intra slices
   uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices 
@@ -2142,6 +2158,10 @@ public:
   void                        setPic( Picture* p )                                      { m_pcPic = p;                                                                                 }
   Picture*                    getPic()                                                  { return m_pcPic;                                                                              }
   const Picture*              getPic() const                                            { return m_pcPic;                                                                              }
+#if JVET_Q0819_PH_CHANGES
+  void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
+  int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
+#endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
   void                        setGdrPicFlag( bool b )                                   { m_gdrPicFlag = b;                                                                            }
@@ -2193,6 +2213,12 @@ public:
   void                        setRPL1idx(int rplIdx)                                    { m_rpl1Idx = rplIdx;                                                                          }
   int                         getRPL0idx() const                                        { return m_rpl0Idx;                                                                            }
   int                         getRPL1idx() const                                        { return m_rpl1Idx;                                                                            }
+#if JVET_Q0819_PH_CHANGES
+  void                        setPicInterSliceAllowedFlag(bool b)                       { m_picInterSliceAllowedFlag = b; }
+  bool                        getPicInterSliceAllowedFlag() const                       { return m_picInterSliceAllowedFlag; }
+  void                        setPicIntraSliceAllowedFlag(bool b)                       { m_picIntraSliceAllowedFlag = b; }
+  bool                        getPicIntraSliceAllowedFlag() const                       { return m_picIntraSliceAllowedFlag; }
+#endif 
   void                        setSplitConsOverrideFlag( bool b )                        { m_splitConsOverrideFlag = b;                                                                 }
   bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }  
   void                        setCuQpDeltaSubdivIntra( uint32_t u )                     { m_cuQpDeltaSubdivIntra = u;                                                                  }
@@ -2369,6 +2395,9 @@ private:
   int                        m_deblockingFilterCbTcOffsetDiv2;    //< tc offset for deblocking filter
   int                        m_deblockingFilterCrBetaOffsetDiv2;  //< beta offset for deblocking filter
   int                        m_deblockingFilterCrTcOffsetDiv2;    //< tc offset for deblocking filter
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  bool                       m_tsResidualCodingDisabledFlag;
 #endif
   int                        m_list1IdxToList0Idx[MAX_NUM_REF];
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
@@ -2551,6 +2580,10 @@ public:
   void                        setDeblockingFilterCbTcOffsetDiv2( int i )             { m_deblockingFilterCbTcOffsetDiv2 = i;                           }
   void                        setDeblockingFilterCrBetaOffsetDiv2( int i )           { m_deblockingFilterCrBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterCrTcOffsetDiv2( int i )             { m_deblockingFilterCrTcOffsetDiv2 = i;                           }
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  void                        setTSResidualCodingDisabledFlag(bool b) { m_tsResidualCodingDisabledFlag = b; }
+  bool                        getTSResidualCodingDisabledFlag() const { return m_tsResidualCodingDisabledFlag; }
 #endif
 
   void                        setNumRefIdx( RefPicList e, int i )                    { m_aiNumRefIdx[e]    = i;                                      }
@@ -2745,7 +2778,11 @@ protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );
   Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId );
 public:
+#if JVET_Q0504_PLT_NON444
+  std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost[2];
+#else
   std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
+#endif
 private:
 };// END CLASS DEFINITION Slice
 

@@ -1041,6 +1041,9 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
             );
 
   // derive filter (chroma)
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (isChromaEnabled(cs.pcv->chrFormat))
+#endif
   {
     alfEncoder( cs, alfParam, orgYuv, recYuv, cs.getRecoBuf(), CHANNEL_TYPE_CHROMA
 #if ENABLE_QPA
@@ -2922,6 +2925,10 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
   }
 
   //chroma
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (isChromaEnabled(cs.pcv->chrFormat))
+  {
+#endif
   m_alfParamTemp = alfParamNewFiltersBest;
   if( m_alfParamTemp.numAlternativesChroma < 1 )
   {
@@ -3129,6 +3136,9 @@ void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfPar
     }
     apss[cs.slice->getTileGroupApsIdChroma()] = m_apsMap->getPS((cs.slice->getTileGroupApsIdChroma() << NUM_APS_TYPE_LEN) + ALF_APS);
   }
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  }
+#endif
 }
 
 void EncAdaptiveLoopFilter::alfReconstructor(CodingStructure& cs, const PelUnitBuf& recExtBuf)

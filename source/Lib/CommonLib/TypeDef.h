@@ -50,6 +50,20 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
+
+#define JVET_Q0169_SUBPIC_LEN_CONFORM                     1 // JVET-Q0169: add bitstream conformance check on subpic length
+
+#define JVET_Q0504_PLT_NON444                             1 // JVET-Q0504: enable palette mode for non 444 color format
+
+#define JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM     1 // JVET-Q0089: RRC slice-level switch for lossless coding and one SPS flag for luma and chroma BDPCM.
+
+#define JVET_Q0816                                        1 // JVET_Q0816: Omit the signalling of subpic layout when there is only one subpicture
+
+#define JVET_Q0438_MONOCHROME_BUGFIXES                    1 // JVET-Q0438: Monochrome bug fixes
+
+#define JVET_Q0043_RPR_and_Subpics                        1 // JVET-Q0043: Disallow for both RPR and subpics to be used together
+
 #define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
 
 #define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT
@@ -79,6 +93,8 @@
 #define JVET_Q0481_PARTITION_CONSTRAINTS_ORDER            1 // JVET-Q0481: Ordering of partition constraints syntax elements in the SPS
 
 #define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move colour_plane_id from PH to SH
+
+#define JVET_Q0444_AMVR_SIGNALLING                        1 // JVET-Q0444: Conditional signaling of sps_affine_amvr_enabled_flag based on sps_amvr_enabled_flag
 
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 
@@ -117,6 +133,9 @@
 #define JVET_Q0775_PH_IN_SH                               1 // JVET-Q0755: Allow picture header in slice header
 
 #define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
+
+#define JVET_P0188_MINCR                                  1 // JVET-P0188: Add MinCR checking in encoder.
+#define JVET_Q0436_CABAC_ZERO_WORD                        1 // JVET-Q0436: Add modified CABAC zero word insertion in encoder.
 
 #define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
 
@@ -336,12 +355,14 @@ typedef       uint64_t        Distortion;        ///< distortion measurement
 // Enumeration
 // ====================================================================================================================
 
+#if !JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
 enum BDPCMControl
 {
   BDPCM_INACTIVE = 0,
   BDPCM_LUMAONLY = 1,
   BDPCM_LUMACHROMA = 2,
 };
+#endif
 
 enum ApsType
 {

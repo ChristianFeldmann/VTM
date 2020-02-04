@@ -73,6 +73,9 @@ Slice::Slice()
 , m_deblockingFilterCrBetaOffsetDiv2( 0 )
 , m_deblockingFilterCrTcOffsetDiv2  ( 0 )
 #endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+, m_tsResidualCodingDisabledFlag  ( false )
+#endif
 , m_pendingRasInit                ( false )
 , m_bCheckLDC                     ( false )
 , m_biDirPred                    ( false )
@@ -768,6 +771,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_deblockingFilterCbTcOffsetDiv2    = pSrc->m_deblockingFilterCbTcOffsetDiv2;
   m_deblockingFilterCrBetaOffsetDiv2  = pSrc->m_deblockingFilterCrBetaOffsetDiv2;
   m_deblockingFilterCrTcOffsetDiv2    = pSrc->m_deblockingFilterCrTcOffsetDiv2;
+#endif
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  m_tsResidualCodingDisabledFlag      = pSrc->m_tsResidualCodingDisabledFlag;
 #endif
 
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
@@ -2017,7 +2023,11 @@ SPS::SPS()
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_transformSkipEnabledFlag  (false)
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+, m_BDPCMEnabledFlag          (false)
+#else
 , m_BDPCMEnabled              (0)
+#endif
 , m_JointCbCrEnabledFlag      (false)
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)

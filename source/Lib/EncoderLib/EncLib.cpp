@@ -96,6 +96,35 @@ EncLib::~EncLib()
 void EncLib::create( const int layerId )
 {
   m_layerId = layerId;
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  if (getVPS()->getMaxLayers() > 1)
+  {
+    VPS* vps = getVPS();
+    int curLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(layerId);
+    if (curLayerChromaFormatIdcInVPS == NOT_VALID)
+      vps->setLayerChromaFormatIDC(layerId, m_chromaFormatIDC);
+    else
+      CHECK(curLayerChromaFormatIdcInVPS != m_chromaFormatIDC, "The chroma formats of different SPS are not the same in the same layer");
+
+    int curLayerBitDepthInVPS = vps->getLayerBitDepth(layerId);
+    if (curLayerBitDepthInVPS == NOT_VALID)
+      vps->setLayerBitDepth(layerId, m_bitDepth[0]);
+    else
+      CHECK(curLayerBitDepthInVPS != m_bitDepth[0], "The bit-depth of different SPS are not the same in the same layer");
+
+    //check chroma format and bit-depth for dependent layers
+    for (uint32_t i = 0; i < layerId; i++)
+    {
+      if (vps->getDirectRefLayerFlag(layerId, i))
+      {
+        int refLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(i);
+        CHECK(curLayerChromaFormatIdcInVPS != refLayerChromaFormatIdcInVPS, "The chroma formats of the current layer and the reference layer are different");
+        int refLayerBitDepthInVPS = vps->getLayerBitDepth(layerId);
+        CHECK(curLayerBitDepthInVPS != refLayerBitDepthInVPS, "The bit-depth of the current layer and the reference layer are different");
+      }
+    }
+  }
+#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );

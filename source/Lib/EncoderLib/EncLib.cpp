@@ -1164,6 +1164,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #if JVET_Q0795_CCALF
   sps.setCCALFEnabledFlag( m_ccalf );
 #endif
+#if JVET_Q0042_VUI
+  sps.setFieldSeqFlag(false);
+#endif
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1178,7 +1181,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     pcVUI->setColourPrimaries(getColourPrimaries());
     pcVUI->setTransferCharacteristics(getTransferCharacteristics());
     pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+#if !JVET_Q0042_VUI
     pcVUI->setFieldSeqFlag(false);
+#endif
     pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
     pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
     pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());

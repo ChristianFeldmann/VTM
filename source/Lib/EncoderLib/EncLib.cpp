@@ -119,7 +119,7 @@ void EncLib::create( const int layerId )
       {
         int refLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(i);
         CHECK(curLayerChromaFormatIdcInVPS != refLayerChromaFormatIdcInVPS, "The chroma formats of the current layer and the reference layer are different");
-        int refLayerBitDepthInVPS = vps->getLayerBitDepth(layerId);
+        int refLayerBitDepthInVPS = vps->getLayerBitDepth(i);
         CHECK(curLayerBitDepthInVPS != refLayerBitDepthInVPS, "The bit-depth of the current layer and the reference layer are different");
       }
     }

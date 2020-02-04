@@ -163,6 +163,9 @@ class HRD
 public:
   HRD()
   :m_bufferingPeriodInitialized (false)
+#if JVET_Q0818_PT_SEI
+  , m_pictureTimingAvailable    (false)	
+#endif
   {};
 
   virtual ~HRD()
@@ -179,11 +182,20 @@ public:
   void                       setBufferingPeriodSEI(const SEIBufferingPeriod* bp)  { bp->copyTo(m_bufferingPeriodSEI); m_bufferingPeriodInitialized = true; }
   const SEIBufferingPeriod*  getBufferingPeriodSEI() const                        { return m_bufferingPeriodInitialized ? &m_bufferingPeriodSEI : nullptr; }
 
+#if JVET_Q0818_PT_SEI
+  void                       setPictureTimingSEI(const SEIPictureTiming* pt)  { pt->copyTo(m_pictureTimingSEI); m_pictureTimingAvailable = true; }
+  const SEIPictureTiming*    getPictureTimingSEI() const                      { return m_pictureTimingAvailable ? &m_pictureTimingSEI : nullptr; }
+#endif
+
 protected:
   HRDParameters m_hrdParams;
   TimingInfo    m_timingInfo;
   bool               m_bufferingPeriodInitialized;
   SEIBufferingPeriod m_bufferingPeriodSEI;
+#if JVET_Q0818_PT_SEI
+  bool               m_pictureTimingAvailable;
+  SEIPictureTiming   m_pictureTimingSEI;
+#endif
 };
 
 #endif //__HRD__

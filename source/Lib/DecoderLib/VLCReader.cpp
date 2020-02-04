@@ -1020,6 +1020,60 @@ void HLSyntaxReader::parseScalingListAps( APS* aps )
   parseScalingList( &info );
 }
 
+#if JVET_Q0042_VUI
+void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
+{
+#if ENABLE_TRACING
+  DTRACE( g_trace_ctx, D_HEADER, "----------- vui_parameters -----------\n");
+#endif
+
+
+  uint32_t  symbol;
+
+  READ_FLAG( symbol, "vui_aspect_ratio_info_present_flag");           pcVUI->setAspectRatioInfoPresentFlag(symbol);
+  if (pcVUI->getAspectRatioInfoPresentFlag())
+  {
+    READ_FLAG( symbol, "vui_aspect_ratio_constant_flag");           pcVUI->setAspectRatioConstantFlag(symbol);
+    READ_CODE(8, symbol, "vui_aspect_ratio_idc");                         pcVUI->setAspectRatioIdc(symbol);
+    if (pcVUI->getAspectRatioIdc() == 255)
+    {
+      READ_CODE(16, symbol, "vui_sar_width");                             pcVUI->setSarWidth(symbol);
+      READ_CODE(16, symbol, "vui_sar_height");                            pcVUI->setSarHeight(symbol);
+    }
+  }
+
+  READ_FLAG(     symbol, "vui_overscan_info_present_flag");               pcVUI->setOverscanInfoPresentFlag(symbol);
+  if (pcVUI->getOverscanInfoPresentFlag())
+  {
+    READ_FLAG(   symbol, "vui_overscan_appropriate_flag");                pcVUI->setOverscanAppropriateFlag(symbol);
+  }
+
+  READ_FLAG(   symbol, "vui_colour_description_present_flag");          pcVUI->setColourDescriptionPresentFlag(symbol);
+  if (pcVUI->getColourDescriptionPresentFlag())
+  {
+    READ_CODE(8, symbol, "vui_colour_primaries");                       pcVUI->setColourPrimaries(symbol);
+    READ_CODE(8, symbol, "vui_transfer_characteristics");               pcVUI->setTransferCharacteristics(symbol);
+    READ_CODE(8, symbol, "vui_matrix_coeffs");                          pcVUI->setMatrixCoefficients(symbol);
+    READ_FLAG(   symbol, "vui_video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
+  }
+
+  READ_FLAG(     symbol, "vui_chroma_loc_info_present_flag");             pcVUI->setChromaLocInfoPresentFlag(symbol);
+  if (pcVUI->getChromaLocInfoPresentFlag())
+  {
+    if(pcSPS->getProfileTierLevel()->getConstraintInfo()->getProgressiveSourceFlag() && 
+       !pcSPS->getProfileTierLevel()->getConstraintInfo()->getInterlacedSourceFlag())
+    {
+      READ_UVLC(   symbol, "vui_chroma_sample_loc_type" );        pcVUI->setChromaSampleLocType(symbol);
+    }
+    else 
+    {
+      READ_UVLC(   symbol, "vui_chroma_sample_loc_type_top_field" );        pcVUI->setChromaSampleLocTypeTopField(symbol);
+      READ_UVLC(   symbol, "vui_chroma_sample_loc_type_bottom_field" );     pcVUI->setChromaSampleLocTypeBottomField(symbol);
+    }
+  }
+
+}
+#else
 void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 {
 #if ENABLE_TRACING
@@ -1072,6 +1126,7 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
     READ_FLAG(   symbol, "overscan_appropriate_flag");                pcVUI->setOverscanAppropriateFlag(symbol);
   }
 }
+#endif
 
 void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLayer, uint32_t maxNumSubLayersMinus1)
 {
@@ -1761,6 +1816,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       parseHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
     }
   }
+
+#if JVET_Q0042_VUI
+  READ_FLAG(     uiCode, "field_seq_flag");                       pcSPS->setFieldSeqFlag(uiCode);
+#endif
 
   READ_FLAG( uiCode, "vui_parameters_present_flag" );             pcSPS->setVuiParametersPresentFlag(uiCode);
 

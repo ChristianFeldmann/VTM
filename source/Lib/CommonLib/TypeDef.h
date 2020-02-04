@@ -461,7 +461,11 @@ enum SliceType
   NUMBER_OF_SLICE_TYPES = 3
 };
 
+#if JVET_Q0265
+/// chroma formats (according to how the monochrome or the color planes are intended to be coded)
+#else
 /// chroma formats (according to semantics of chroma_format_idc)
+#endif
 enum ChromaFormat
 {
   CHROMA_400        = 0,

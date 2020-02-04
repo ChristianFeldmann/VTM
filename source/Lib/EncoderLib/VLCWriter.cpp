@@ -956,7 +956,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
 #if JVET_Q0147_JCCR_SIGNALLING
 #if JVET_Q0265
-  if (chromaArrayType != 0)
+  if (chromaArrayType != CHROMA_400)
 #else
   if (pcSPS->getChromaFormatIdc() != CHROMA_400)
 #endif

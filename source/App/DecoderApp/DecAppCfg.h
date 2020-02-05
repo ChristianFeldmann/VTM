@@ -58,6 +58,11 @@ class DecAppCfg
 protected:
   std::string   m_bitstreamFileName;                    ///< input bitstream file name
   std::string   m_reconFileName;                        ///< output reconstruction file name
+
+#if JVET_P2008_OUTPUT_LOG
+  std::string   m_oplFilename;                        ///< filename to output conformance log.
+#endif //JVET_P2008_OUTPUT_LOG
+
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
   InputColourSpaceConversion m_outputColourSpaceConvert;
@@ -69,6 +74,8 @@ protected:
   std::string   m_colourRemapSEIFileName;             ///< output Colour Remapping file name
   std::vector<int> m_targetDecLayerIdSet;             ///< set of LayerIds to be included in the sub-bitstream extraction process.
   std::string   m_outputDecodedSEIMessagesFilename;   ///< filename to output decoded SEI messages to. If '-', then use stdout. If empty, do not output details.
+
+  
   bool          m_bClipOutputVideoToRec709Range;      ///< If true, clip the output video to the Rec 709 range on saving.
   bool          m_packedYUVMode;                      ///< If true, output 10-bit and 12-bit YUV data as 5-byte and 3-byte (respectively) packed YUV data
   std::string   m_cacheCfgFile;                       ///< Config file of cache model

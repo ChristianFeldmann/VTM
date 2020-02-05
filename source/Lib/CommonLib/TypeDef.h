@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests
 
 #define JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER       1 // Removing dependencies on VPS from the decoding process of a non-scalable bitstream
 

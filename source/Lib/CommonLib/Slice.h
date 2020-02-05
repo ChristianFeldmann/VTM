@@ -931,6 +931,14 @@ public:
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
 #endif
 
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  int               getLayerChromaFormatIDC( uint32_t layerIdx ) const                { return m_vpsLayerChromaFormatIDC[layerIdx]; }
+  void              setLayerChromaFormatIDC( uint32_t layerIdx, int chromaFormatIDC ) { m_vpsLayerChromaFormatIDC[layerIdx] = chromaFormatIDC; }
+
+  int               getLayerBitDepth( uint32_t layerIdx ) const                       { return m_vpsLayerBitDepth[layerIdx]; }
+  void              setLayerBitDepth( uint32_t layerIdx, int bitDepth )               { m_vpsLayerBitDepth[layerIdx] = bitDepth; }
+#endif
+
 #if JVET_Q0814_DPB
   int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
   int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }

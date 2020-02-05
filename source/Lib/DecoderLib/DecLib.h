@@ -147,7 +147,7 @@ private:
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
 
-#if SUBPIC_DECCHECK
+#if JVET_O1143_SUBPIC_DECCHECK
 public:
   int                     m_targetSubPicIdx;
 #endif

@@ -328,6 +328,31 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     scalingWindow.setWindow( 0, width - scaledWidth, 0, height - scaledHeight );
     pps.setScalingWindow( scalingWindow );
 
+#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
+    //register the width/height of the current pic into reference SPS
+    if (!sps0.getPPSValidFlag(pps.getPPSId()))
+    {
+      sps0.setPPSValidFlag(pps.getPPSId(), true);
+      sps0.setScalingWindowSizeInPPS(pps.getPPSId(), scaledWidth, scaledHeight);
+    }
+    int curSeqMaxPicWidthY = sps0.getMaxPicWidthInLumaSamples();    // pic_width_max_in_luma_samples
+    int curSeqMaxPicHeightY = sps0.getMaxPicHeightInLumaSamples();  // pic_height_max_in_luma_samples
+    int curPicWidthY = width;                                       // pic_width_in_luma_samples
+    int curPicHeightY = height;                                     // pic_height_in_luma_samples 
+    int max8MinCbSizeY = std::max((int)8, (1 << sps0.getLog2MinCodingBlockSize())); // Max(8, MinCbSizeY)
+    //Warning message of potential scaling window size violation
+    for (int i = 0; i < 64; i++)
+    {
+      if (sps0.getPPSValidFlag(i))
+      {
+        if ((scaledWidth * curSeqMaxPicWidthY) < sps0.getScalingWindowSizeInPPS(i).width * (curPicWidthY - max8MinCbSizeY))
+          printf("Potential violation: (curScaledWIdth * curSeqMaxPicWidthY) should be greater than or equal to refScaledWidth * (curPicWidthY - max(8, MinCbSizeY)\n");
+        if ((scaledHeight * curSeqMaxPicHeightY) < sps0.getScalingWindowSizeInPPS(i).height * (curPicHeightY - max8MinCbSizeY))
+          printf("Potential violation: (curScaledHeight * curSeqMaxPicHeightY) should be greater than or equal to refScaledHeight * (curPicHeightY - max(8, MinCbSizeY)\n");
+      }
+    }
+#endif
+
     // disable picture partitioning for scaled RPR pictures (slice/tile config only provided for the original resolution)
     m_noPicPartitionFlag = true;
 
@@ -1196,6 +1221,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxMTTHierarchyDepth                ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
+#if JVET_Q0330_BLOCK_PARTITION
+  sps.setMaxBTSize( m_uiMaxBT[1], m_uiMaxBT[0], m_uiMaxBT[2] );
+  sps.setMaxTTSize( m_uiMaxTT[1], m_uiMaxTT[0], m_uiMaxTT[2] );
+#else  
   unsigned maxBtSize[3], maxTtSize[3];
   memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
   memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
@@ -1216,6 +1245,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
   sps.setMaxBTSize                           ( maxBtSize[1], maxBtSize[0], maxBtSize[2] );
   sps.setMaxTTSize                           ( maxTtSize[1], maxTtSize[0], maxTtSize[2] );
+#endif  
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );
@@ -1477,6 +1507,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 
 #if JVET_Q0297_MER
   sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
+#endif
+
+#if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+  CHECK(sps.getRprEnabledFlag() && sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
 #endif
 }
 

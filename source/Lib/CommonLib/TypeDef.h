@@ -50,16 +50,26 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE               1 // JVET-Q0291: reduce palette size of dual tree from 31 to 15 and palette predictor size of dual tree from 63 to 31
+
+#define JVET_Q0330_BLOCK_PARTITION                        1 // JVET-Q0330: fix the block partitioning at picture boundary
+
+#define JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG         1 // JVET_Q0417: a constraint on the value of sps_virtual_boundaries_present_flag based on res_change_in_clvs_allowed_flag
+
+#define JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT         1 // JVET-Q0179: Scaling window size constraint for constraining worst case memory bandwidth
+
+#define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests
 
 #define JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER       1 // Removing dependencies on VPS from the decoding process of a non-scalable bitstream
 
 #define JVET_Q0420_PPS_CHROMA_TOOL_FLAG                   1 // JVET-Q0420: add pps_chroma_tool_offsets_present_flag in PPS
 
-#define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 //JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
+#define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 // JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
 
 #define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization
 
 #define JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG              1  //JVET-Q0414: when gdr_enabled_flag is equal to 0, gdr_pic_flag shall be 0
+
 #define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
 
 #define JVET_Q0169_SUBPIC_LEN_CONFORM                     1 // JVET-Q0169: add bitstream conformance check on subpic length
@@ -133,7 +143,9 @@
 
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as piucture boundary
 #if JVET_O1143_SUBPIC_BOUNDARY
-#define SUBPIC_DECCHECK                                   0
+#define JVET_O1143_SUBPIC_DECCHECK                        0
+#define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
+#define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 #endif
 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF

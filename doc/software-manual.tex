@@ -1143,49 +1143,85 @@ Defines the depth of the TU tree for inter CUs.
 \Option{MaxMTTHierarchyDepth} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree for inter slices.
+Defines the initial maximum depth of the multi-type tree for inter slices.
 \\
 
 \Option{MaxMTTHierarchyDepthI} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree for intra slices.
+Defines the initial maximum depth of the multi-type tree for intra slices.
 \\
 
 \Option{MaxMTTHierarchyDepthISliceC} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree in dual tree for chroma components.
+Defines the initial maximum depth of the multi-type tree in dual tree for chroma components.
 \\
 
 \Option{MaxMTTHierarchyDepthISliceL} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree in dual tree for luma component.
+Defines the initial maximum depth of the multi-type tree in dual tree for luma component.
 \\
 
 \Option{MinQTChromaISlice} &
 %\ShortOption{\None} &
 \Default{4} &
-Defines the minimum size of the quad tree in dual tree for chroma components.
+Defines the initial minimum size of the quad tree in dual tree for chroma components.
 \\
 
 \Option{MinQTISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree for intra slices.
+Defines the initial minimum size of the quad tree for intra slices.
 \\
 
 \Option{MinQTLumaISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree in dual tree for luma component.
+Defines the initial minimum size of the quad tree in dual tree for luma component.
 \\
 
 \Option{MinQTNonISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree for inter slices.
+Defines the initial minimum size of the quad tree for inter slices.
+\\
+
+\Option{MaxBTLumaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the binary tree in dual tree for luma component.
+\\
+
+\Option{MaxBTChromaISlice} &
+%\ShortOption{\None} &
+\Default{64} &
+Defines the initial maximum size of the binary tree in dual tree for chroma components.
+\\
+
+\Option{MaxBTNonISlice} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the initial maximum size of the binary tree for inter slices.
+\\
+
+\Option{MaxTTLumaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the tenary tree in dual tree for luma component.
+\\
+
+\Option{MaxTTChromaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the tenary tree in dual tree for chroma components.
+\\
+
+\Option{MaxTTNonISlice} &
+%\ShortOption{\None} &
+\Default{64} &
+Defines the initial maximum size of the tenary tree for inter slices.
 \\
 
 \end{OptionTableNoShorthand}
@@ -4017,6 +4053,12 @@ Defines the input bit stream file name.
 %\ShortOption{-o} &
 \Default{\NotSet} &
 Defines the reconstructed video file name. If empty, no file is generated. If the bitstream contains multiple layer and no single target layer is specified (i.e. TargetLayer=-1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'decoded.yuv' becomes 'decoded0.yuv' for layer id 0, 'decoded' becomes 'decoded0'.
+\\
+
+\Option{OplFile (-opl)} &
+%\ShortOption{-o} &
+\Default{\NotSet} &
+Defines the output log file name (*.opl file). If empty, no file is generated. Each output picture log file contains one row for each output picture in the bitstream, in output order. Each row contains the following information, as CSV:	PicOrderCntVal, pic\_width\_max\_in\_luma\_samples, pic\_height\_max\_in\_luma\_samples, MD5 checksum for the Y component, MD5 checksum for the U component, MD5 checksum for the V component. The format of output log file is specified in JVET-P2008. 
 \\
 
 \Option{SkipFrames (-s)} &

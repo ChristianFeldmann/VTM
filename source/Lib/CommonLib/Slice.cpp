@@ -2071,8 +2071,13 @@ SPS::SPS()
 , m_CTUSize(0)
 , m_minQT{ 0, 0, 0 }
 , m_maxMTTHierarchyDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
+#if JVET_Q0330_BLOCK_PARTITION
+, m_maxBTSize{ 0, 0, 0 }
+, m_maxTTSize{ 0, 0, 0 }
+#else
 , m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
 , m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
+#endif
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
 , m_uiMaxCodingDepth          (  3)
@@ -2167,6 +2172,9 @@ SPS::SPS()
   ::memset(m_usedByCurrPicLtSPSFlag, 0, sizeof(m_usedByCurrPicLtSPSFlag));
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
+#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
+  ::memset(m_ppsValidFlag, 0, sizeof(m_ppsValidFlag));
+#endif
 }
 
 SPS::~SPS()
@@ -2625,6 +2633,7 @@ void PPS::initSubPic(const SPS &sps)
   m_subPics.resize(getNumSubPics());
   for (int i=0; i< getNumSubPics(); i++)
   {
+    m_subPics[i].setSubPicIdx(i);
     m_subPics[i].setSubPicCtuTopLeftX(sps.getSubPicCtuTopLeftX(i));
     m_subPics[i].setSubPicCtuTopLeftY(sps.getSubPicCtuTopLeftY(i));
     m_subPics[i].setSubPicWidthInCTUs(sps.getSubPicWidth(i));
@@ -2641,10 +2650,15 @@ void PPS::initSubPic(const SPS &sps)
     uint32_t right = std::min(m_picWidthInLumaSamples - 1, (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) * m_ctuSize - 1);
     m_subPics[i].setSubPicRight(right);
     
+    m_subPics[i].setSubPicWidthInLumaSample(right - left + 1);
+
     uint32_t top = sps.getSubPicCtuTopLeftY(i) * m_ctuSize;
     m_subPics[i].setSubPicTop(top);
     
     uint32_t bottom = std::min(m_picHeightInLumaSamples - 1, (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)) * m_ctuSize - 1);
+
+    m_subPics[i].setSubPicHeightInLumaSample(bottom - top + 1);
+
     m_subPics[i].setSubPicBottom(bottom);
     
     for (int j = 0; j < m_numSlicesInPic; j++)
@@ -2657,13 +2671,31 @@ void PPS::initSubPic(const SPS &sps)
           ctu_y >= sps.getSubPicCtuTopLeftY(i) &&
           ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i))) 
       {
-         // slice in the subpicture
+         // add ctus in a slice to the subpicture it belongs to
         m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
       }
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));
     m_subPics[i].setloopFilterAcrossEnabledFlag(sps.getLoopFilterAcrossSubpicEnabledFlag(i));
   }
+}
+
+SubPic PPS::getSubPicFromPos(const Position& pos)  const
+{
+  for (int i = 0; i< m_numSubPics; i++)
+  {
+    if (m_subPics[i].isContainingPos(pos))
+    {
+      return m_subPics[i];
+    }
+  }
+  return m_subPics[0];
+}
+
+SubPic  PPS::getSubPicFromCU(const CodingUnit& cu) const 
+{
+  const Position lumaPos = cu.Y().valid() ? cu.Y().pos() : recalcPosition(cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos());
+  return getSubPicFromPos(lumaPos);
 }
 #endif
 

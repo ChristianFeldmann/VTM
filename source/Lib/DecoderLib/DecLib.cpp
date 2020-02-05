@@ -612,7 +612,7 @@ void DecLib::executeLoopFilters()
     m_cALF.ALFProcess(cs);
   }
 
-#if SUBPIC_DECCHECK 
+#if JVET_O1143_SUBPIC_DECCHECK 
   for (int i = 0; i < cs.pps->getNumSubPics(); i++)
   {
     // keep target subpic samples untouched, for other subpics mask their output sample value to 0
@@ -1290,6 +1290,10 @@ void DecLib::xActivateParameterSets( const int layerId )
   CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When ref_pic_resampling_enabled_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
 #endif
 
+#if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+  CHECK(sps->getRprEnabledFlag() && sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
+
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
   {
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
@@ -1380,32 +1384,27 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
     CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
 
-#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
-  {
-    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
-    CHECK(pps == 0, "No PPS present");
-    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
-    CHECK(sps == 0, "No SPS present");
-    if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
-    {
-      CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id when sps_video_parameter_set_id is equal to 0" );
-    }
-  }
-#endif
-
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 #if JVET_Q0795_CCALF
   m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();
 #endif
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
-
-#if JVET_P0101_POC_MULTILAYER
+#if JVET_P0101_POC_MULTILAYER || JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
   VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+#endif
+#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
+  {
+    CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id "
+                                              "when sps_video_parameter_set_id is equal to 0");
+  }
+#endif
+#if JVET_P0101_POC_MULTILAYER
   CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
   if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
   {

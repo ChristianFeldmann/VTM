@@ -50,6 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
+
+#define JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER       1 // Removing dependencies on VPS from the decoding process of a non-scalable bitstream
+
 #define JVET_Q0420_PPS_CHROMA_TOOL_FLAG                   1 // JVET-Q0420: add pps_chroma_tool_offsets_present_flag in PPS
 
 #define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 //JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 

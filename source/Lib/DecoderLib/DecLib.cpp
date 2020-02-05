@@ -1356,6 +1356,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
     CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
 
+#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  {
+    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    CHECK(pps == 0, "No PPS present");
+    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+    CHECK(sps == 0, "No SPS present");
+    if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
+    {
+      CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id when sps_video_parameter_set_id is equal to 0" );
+    }
+  }
+#endif
+
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 #if JVET_Q0795_CCALF
   m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();

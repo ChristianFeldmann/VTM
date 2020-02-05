@@ -378,8 +378,13 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
+#if JVET_Q0119_CLEANUPS
+  m_cEncLib.setSubPicInfoPresentFlag                             ( m_subPicInfoPresentFlag );
+  if(m_subPicInfoPresentFlag)
+#else
   m_cEncLib.setSubPicPresentFlag                                 ( m_subPicPresentFlag );
   if(m_subPicPresentFlag)
+#endif
   {
     m_cEncLib.setNumSubPics                                      ( m_numSubPics );
     for (int i = 0; i < m_numSubPics; i++)
@@ -392,11 +397,20 @@ void EncApp::xInitLibCfg()
       m_cEncLib.setLoopFilterAcrossSubpicEnabledFlag             ( m_loopFilterAcrossSubpicEnabledFlag[i], i );
     }
   }
+
+#if JVET_Q0119_CLEANUPS
+  m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag            ( m_subPicIdMappingExplicitlySignalledFlag );
+  if (m_subPicIdMappingExplicitlySignalledFlag)
+  {
+    m_cEncLib.setSubPicIdMappingInSpsFlag                        ( m_subPicIdMappingInSpsFlag );
+    if(m_subPicIdMappingInSpsFlag)
+#else
   m_cEncLib.setSubPicIdPresentFlag                               ( m_subPicIdPresentFlag );
   if (m_subPicIdPresentFlag) 
   {
     m_cEncLib.setSubPicIdSignallingPresentFlag                   ( m_subPicIdSignallingPresentFlag );
     if(m_subPicIdSignallingPresentFlag)
+#endif
     {
       m_cEncLib.setSubPicIdLen                                   ( m_subPicIdLen );
       for (int i = 0; i < m_numSubPics; i++)
@@ -726,6 +740,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );
   m_cEncLib.setSliceLevelDblk                                    ( m_sliceLevelDblk );
   m_cEncLib.setSliceLevelSao                                     ( m_sliceLevelSao  );
+#if JVET_Q0819_PH_CHANGES 
+  m_cEncLib.setSliceLevelWp                                      ( m_sliceLevelWp );
+  m_cEncLib.setSliceLevelDeltaQp                                 ( m_sliceLevelDeltaQp );
+#endif
   m_cEncLib.setSliceLevelAlf                                     ( m_sliceLevelAlf  );
   m_cEncLib.setConstantSliceHeaderParamsEnabledFlag              ( m_constantSliceHeaderParamsEnabledFlag );
   m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );

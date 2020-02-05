@@ -266,7 +266,11 @@ protected:
 
   int       m_maxTempLayer;                      ///< Max temporal layer
   unsigned  m_CTUSize;
+#if JVET_Q0119_CLEANUPS
+  bool                  m_subPicInfoPresentFlag;
+#else
   bool                  m_subPicPresentFlag;
+#endif
   unsigned              m_numSubPics;
   uint32_t              m_subPicCtuTopLeftX[MAX_NUM_SUB_PICS];
   uint32_t              m_subPicCtuTopLeftY[MAX_NUM_SUB_PICS];
@@ -274,8 +278,13 @@ protected:
   uint32_t              m_subPicHeight[MAX_NUM_SUB_PICS];
   uint32_t              m_subPicTreatedAsPicFlag[MAX_NUM_SUB_PICS];
   uint32_t              m_loopFilterAcrossSubpicEnabledFlag[MAX_NUM_SUB_PICS];
+#if JVET_Q0119_CLEANUPS
+  bool                  m_subPicIdMappingExplicitlySignalledFlag;
+  bool                  m_subPicIdMappingInSpsFlag;
+#else
   bool                  m_subPicIdPresentFlag;
   bool                  m_subPicIdSignallingPresentFlag;
+#endif
   unsigned              m_subPicIdLen;
   uint32_t              m_subPicId[MAX_NUM_SUB_PICS];
   bool      m_useSplitConsOverride;
@@ -645,6 +654,10 @@ protected:
   bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                      ///< code ALF parameters in slice headers rather than picture header
+#if JVET_Q0819_PH_CHANGES 
+  bool      m_sliceLevelWp;                       ///< code weighted prediction parameters in slice headers rather than picture header
+  bool      m_sliceLevelDeltaQp;                  ///< code delta in slice headers rather than picture header
+#endif
   bool      m_disableScalingMatrixForLfnstBlks;
   int       m_TMVPModeId;
   bool      m_constantSliceHeaderParamsEnabledFlag;
@@ -943,7 +956,11 @@ public:
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
+#if JVET_Q0119_CLEANUPS
+  void      setSubPicInfoPresentFlag                        (bool b)                    { m_subPicInfoPresentFlag = b; }
+#else
   void      setSubPicPresentFlag                        (bool b)                    { m_subPicPresentFlag = b; }
+#endif
   void      setNumSubPics                               (uint32_t u)                { m_numSubPics = u; }
   void      setSubPicCtuTopLeftX                        (uint32_t u, int i)         { m_subPicCtuTopLeftX[i] = u; }
   void      setSubPicCtuTopLeftY                        (uint32_t u, int i)         { m_subPicCtuTopLeftY[i] = u; }
@@ -951,12 +968,22 @@ public:
   void      setSubPicHeight                             (uint32_t u, int i)         { m_subPicHeight[i] = u; }
   void      setSubPicTreatedAsPicFlag                   (bool b, int i)             { m_subPicTreatedAsPicFlag[i] = b; }
   void      setLoopFilterAcrossSubpicEnabledFlag        (uint32_t u, int i)         { m_loopFilterAcrossSubpicEnabledFlag[i] = u; }
+
+#if JVET_Q0119_CLEANUPS
+  void      setSubPicIdMappingExplicitlySignalledFlag   (bool b)                    { m_subPicIdMappingExplicitlySignalledFlag = b; }
+  void      setSubPicIdMappingInSpsFlag                 (bool b)                    { m_subPicIdMappingInSpsFlag = b; }
+#else
   void      setSubPicIdPresentFlag                      (bool b)                    { m_subPicIdPresentFlag = b; }
   void      setSubPicIdSignallingPresentFlag            (bool b)                    { m_subPicIdSignallingPresentFlag = b; }
+#endif
   void      setSubPicIdLen                              (uint32_t u)                { m_subPicIdLen = u; }
   void      setSubPicId                                 (uint32_t b, int i)         { m_subPicId[i] = b; }
 
+#if JVET_Q0119_CLEANUPS
+  bool      getSubPicInfoPresentFlag                    ()                          { return m_subPicInfoPresentFlag; }
+#else
   bool      getSubPicPresentFlag                        ()                          { return m_subPicPresentFlag; }
+#endif
   uint32_t  getNumSubPics                               ()                          { return m_numSubPics; }
   uint32_t  getSubPicCtuTopLeftX                        (int i)                     { return m_subPicCtuTopLeftX[i]; }
   uint32_t  getSubPicCtuTopLeftY                        (int i)                     { return m_subPicCtuTopLeftY[i]; }
@@ -964,8 +991,13 @@ public:
   uint32_t  getSubPicHeight                             (int i)                     { return m_subPicHeight[i]; }
   bool      getSubPicTreatedAsPicFlag                   (int i)                     { return m_subPicTreatedAsPicFlag[i]; }
   uint32_t  getLoopFilterAcrossSubpicEnabledFlag        (int i)                     { return m_loopFilterAcrossSubpicEnabledFlag[i]; }
+#if JVET_Q0119_CLEANUPS
+  bool      getSubPicIdMappingExplicitlySignalledFlag   ()                          { return m_subPicIdMappingExplicitlySignalledFlag; }
+  bool      getSubPicIdMappingInSpsFlag                 ()                          { return m_subPicIdMappingInSpsFlag; }
+#else
   bool      getSubPicIdPresentFlag                      ()                          { return m_subPicIdPresentFlag; }
   bool      getSubPicIdSignallingPresentFlag            ()                          { return m_subPicIdSignallingPresentFlag; }
+#endif
   uint32_t  getSubPicIdLen                              ()                          { return m_subPicIdLen; }
   uint32_t  getSubPicId                                 (int i)                     { return m_subPicId[i]; }
   void      setLFNST                        ( bool b )       { m_LFNST = b; }
@@ -1698,7 +1730,13 @@ public:
   bool         getSliceLevelSao  ()                                  { return m_sliceLevelSao;  }
   void         setSliceLevelAlf  ( bool b )                          { m_sliceLevelAlf = b;     }
   bool         getSliceLevelAlf  ()                                  { return m_sliceLevelAlf;  }
-  void         setDisableScalingMatrixForLfnstBlks(bool u)          { m_disableScalingMatrixForLfnstBlks = u;   }
+#if JVET_Q0819_PH_CHANGES
+  void         setSliceLevelWp(bool b)                               { m_sliceLevelWp = b;      }
+  bool         getSliceLevelWp()                                     { return m_sliceLevelWp;   }
+  void         setSliceLevelDeltaQp(bool b)                          { m_sliceLevelDeltaQp = b; }
+  bool         getSliceLevelDeltaQp()                                { return m_sliceLevelDeltaQp; }
+#endif
+  void         setDisableScalingMatrixForLfnstBlks(bool u) { m_disableScalingMatrixForLfnstBlks = u; }
   bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }

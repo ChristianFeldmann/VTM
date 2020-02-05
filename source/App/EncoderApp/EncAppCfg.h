@@ -273,7 +273,11 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
+#if JVET_Q0119_CLEANUPS
+  bool m_subPicInfoPresentFlag;
+#else
   bool m_subPicPresentFlag;
+#endif
   unsigned m_numSubPics;
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
@@ -281,8 +285,13 @@ protected:
   std::vector<uint32_t> m_subPicHeight;
   std::vector<uint32_t> m_subPicTreatedAsPicFlag;
   std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
+#if JVET_Q0119_CLEANUPS
+  bool m_subPicIdMappingExplicitlySignalledFlag;
+  bool m_subPicIdMappingInSpsFlag;
+#else
   bool m_subPicIdPresentFlag;
   bool m_subPicIdSignallingPresentFlag;
+#endif
   unsigned m_subPicIdLen;
   std::vector<uint32_t> m_subPicId;
   bool      m_SplitConsOverrideEnabledFlag;
@@ -621,6 +630,11 @@ protected:
   bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
+#if JVET_Q0819_PH_CHANGES
+  bool      m_sliceLevelWp;                                       ///< code weighted prediction parameters in slice headers rather than picture header
+  bool      m_sliceLevelDeltaQp;                                  ///< code delta in slice headers rather than picture header
+#endif
+
   int       m_TMVPModeId;
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;

@@ -1274,7 +1274,11 @@ void DecLib::xActivateParameterSets( const int layerId )
   }
   if( sps->getRprEnabledFlag() )
   {
+#if JVET_Q0119_CLEANUPS
+    CHECK( sps->getSubPicInfoPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#else
     CHECK( sps->getSubPicPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#endif
   }
   CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When res_change_in_clvs_allowed_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
 #else  
@@ -1375,6 +1379,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
     CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
+
+#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  {
+    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    CHECK(pps == 0, "No PPS present");
+    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+    CHECK(sps == 0, "No SPS present");
+    if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
+    {
+      CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id when sps_video_parameter_set_id is equal to 0" );
+    }
+  }
+#endif
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 #if JVET_Q0795_CCALF

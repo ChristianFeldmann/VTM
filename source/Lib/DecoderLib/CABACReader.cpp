@@ -1716,9 +1716,17 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
 #endif
   cu.lastPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[compBegin];
 
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  int maxPltSize = cu.isSepTree() ? MAXPLTSIZE_DUALTREE : MAXPLTSIZE;
+#endif
+
   if (cu.lastPLTSize[compBegin])
   {
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+    xDecodePLTPredIndicator(cu, maxPltSize, compBegin);
+#else
     xDecodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
+#endif
   }
 
   for (int idx = 0; idx < cu.lastPLTSize[compBegin]; idx++)
@@ -1748,8 +1756,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   }
 
   uint32_t recievedPLTnum = 0;
-
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  if (curPLTidx < maxPltSize)
+#else
   if (curPLTidx < MAXPLTSIZE)
+#endif
   {
     recievedPLTnum = exp_golomb_eqprob(0);
   }
@@ -1825,6 +1836,9 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   {
     cuPaletteSubblockInfo(cu, compBegin, numComp, subSetId, prevRunPos, prevRunType);
   }
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  CHECK(cu.curPLTSize[compBegin] > maxPltSize, " Current palette size is larger than maximum palette size");
+#endif
 }
 void CABACReader::cuPaletteSubblockInfo(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType)
 {

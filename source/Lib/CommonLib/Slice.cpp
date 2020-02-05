@@ -3457,28 +3457,6 @@ void ParameterSetMap<VPS>::setID(VPS* parameterSet, const int psId)
   parameterSet->setVPSId(psId);
 }
 
-#if JVET_Q0814_DPB
-#if defined( __GNUC__) && __GNUC__ < 6
-std::unordered_map<Level::Name, TierLevelLimits, EnumHash> ProfileTierLevel::m_tierLevelLimits = {
-#else
-std::unordered_map<Level::Name, TierLevelLimits> ProfileTierLevel::m_tierLevelLimits = {
-#endif
-  { Level::Name::LEVEL1,   TierLevelLimits( Level::Name::LEVEL1,   36864,    std::pair<int, int>( 350,    -1     ),  16,  1, 1  ) },
-  { Level::Name::LEVEL2,   TierLevelLimits( Level::Name::LEVEL2,   122880,   std::pair<int, int>( 1500,   -1     ),  16,  1, 1  ) },
-  { Level::Name::LEVEL2_1, TierLevelLimits( Level::Name::LEVEL2_1, 245760,   std::pair<int, int>( 3000,   -1     ),  20,  1, 1  ) },
-  { Level::Name::LEVEL3,   TierLevelLimits( Level::Name::LEVEL3,   552960,   std::pair<int, int>( 6000,   -1     ),  30,  2, 2  ) },
-  { Level::Name::LEVEL3_1, TierLevelLimits( Level::Name::LEVEL3_1, 983040,   std::pair<int, int>( 10000,  -1     ),  40,  3, 3  ) },
-  { Level::Name::LEVEL4,   TierLevelLimits( Level::Name::LEVEL4,   2228224,  std::pair<int, int>( 12000,  30000  ),  75,  5, 5  ) },
-  { Level::Name::LEVEL4_1, TierLevelLimits( Level::Name::LEVEL4_1, 2228224,  std::pair<int, int>( 20000,  50000  ),  75,  5, 5  ) },
-  { Level::Name::LEVEL5,   TierLevelLimits( Level::Name::LEVEL5,   8912896,  std::pair<int, int>( 25000,  100000 ), 200, 11, 10 ) },
-  { Level::Name::LEVEL5_1, TierLevelLimits( Level::Name::LEVEL5_1, 8912896,  std::pair<int, int>( 40000,  160000 ), 200, 11, 10 ) },
-  { Level::Name::LEVEL5_2, TierLevelLimits( Level::Name::LEVEL5_2, 8912896,  std::pair<int, int>( 60000,  240000 ), 200, 11, 10 ) },
-  { Level::Name::LEVEL6,   TierLevelLimits( Level::Name::LEVEL6,   35651584, std::pair<int, int>( 60000,  240000 ), 600, 22, 20 ) },
-  { Level::Name::LEVEL6_1, TierLevelLimits( Level::Name::LEVEL6_1, 35651584, std::pair<int, int>( 120000, 480000 ), 600, 22, 20 ) },
-  { Level::Name::LEVEL6_2, TierLevelLimits( Level::Name::LEVEL6_2, 35651584, std::pair<int, int>( 240000, 800000 ), 600, 22, 20 ) }
-};
-#endif
-
 ProfileTierLevel::ProfileTierLevel()
   : m_tierFlag        (Level::MAIN)
   , m_profileIdc      (Profile::NONE)
@@ -3490,30 +3468,6 @@ ProfileTierLevel::ProfileTierLevel()
   ::memset(m_subLayerLevelIdc, Level::NONE, sizeof(m_subLayerLevelIdc          ));
 }
 
-
-#if JVET_Q0814_DPB
-uint32_t ProfileTierLevel::getMaxDpbSize( uint32_t picSizeMaxInSamplesY ) const
-{
-  const uint32_t maxDpbPicBuf = 8;
-  const uint32_t maxLumaPs = m_tierLevelLimits[m_levelIdc].maxLumaPs;
-  uint32_t maxDpbSize = maxDpbPicBuf;
-
-  if( picSizeMaxInSamplesY <= ( maxLumaPs >> 2 ) )
-  {
-    maxDpbSize = std::min<uint32_t>( 4 * maxDpbPicBuf, 16 );
-  }
-  else if( picSizeMaxInSamplesY <= ( maxLumaPs >> 1 ) )
-  {
-    maxDpbSize = std::min<uint32_t>( 2 * maxDpbPicBuf, 16 );
-  }
-  else if( picSizeMaxInSamplesY <= ( ( 3 * maxLumaPs ) >> 2 ) )
-  {
-    maxDpbSize = std::min<uint32_t>( ( 4 * maxDpbPicBuf ) / 3, 16 );
-  }
-
-  return maxDpbSize;
-}
-#endif
 
 void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData)
 {

@@ -47,6 +47,9 @@
 #include <omp.h>
 #endif
 #include "EncLibCommon.h"
+#if JVET_Q0814_DPB
+#include "CommonLib/ProfileLevelTier.h"
+#endif
 
 //! \ingroup EncoderLib
 //! \{
@@ -1012,6 +1015,9 @@ void EncLib::xInitVPS( const SPS& sps )
   // set the VPS profile information.
   m_vps->setMaxSubLayers( sps.getMaxTLayers() );
 
+  ProfileLevelTierFeatures profileLevelTierFeatures;
+  profileLevelTierFeatures.extractPTLInformation( sps );
+
   m_vps->deriveOutputLayerSets();
   m_vps->deriveTargetOutputLayerSet( m_vps->m_targetOlsIdx );
 
@@ -1066,7 +1072,7 @@ void EncLib::xInitVPS( const SPS& sps )
 
     for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[i] ); j <= m_vps->m_dpbMaxTemporalId[i]; j++ )
     {
-      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = sps.getProfileTierLevel()->getMaxDpbSize( m_vps->getOlsDpbPicSize( olsIdx ).width * m_vps->getOlsDpbPicSize( olsIdx ).height );
+      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = profileLevelTierFeatures.getMaxDpbSize( m_vps->getOlsDpbPicSize( olsIdx ).width * m_vps->getOlsDpbPicSize( olsIdx ).height );
       m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j];
       m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = 0;
     }

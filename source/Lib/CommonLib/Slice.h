@@ -689,11 +689,14 @@ class SubPic
 {
 private:
   uint32_t         m_subPicID;                                  //!< ID of subpicture
+  uint32_t         m_subPicIdx;                                 //!< Index of subpicture
   uint32_t         m_numCTUsInSubPic;                           //!< number of CTUs contained in this sub-picture
   uint32_t         m_subPicCtuTopLeftX;                         //!< horizontal position of top left CTU of the subpicture in unit of CTU
   uint32_t         m_subPicCtuTopLeftY;                         //!< vertical position of top left CTU of the subpicture in unit of CTU
   uint32_t         m_subPicWidth;                               //!< the width of subpicture in units of CTU
   uint32_t         m_subPicHeight;                              //!< the height of subpicture in units of CTU
+  uint32_t         m_subPicWidthInLumaSample;                   //!< the width of subpicture in units of luma sample
+  uint32_t         m_subPicHeightInLumaSample;                  //!< the height of subpicture in units of luma sample
   uint32_t         m_firstCtuInSubPic;                          //!< the raster scan index of the first CTU in a subpicture
   uint32_t         m_lastCtuInSubPic;                           //!< the raster scan index of the last CTU in a subpicture
   uint32_t         m_subPicLeft;                                //!< the position of left boundary 
@@ -711,6 +714,8 @@ public:
 
   void             setSubPicID (uint32_t u)                {         m_subPicID = u;       }
   uint32_t         getSubPicID   ()                  const { return  m_subPicID;           }
+  void             setSubPicIdx (uint32_t u)               {         m_subPicIdx = u;      }
+  uint32_t         getSubPicIdx ()                   const { return  m_subPicIdx;          }
   void             setNumCTUsInSubPic   (uint32_t u)       {         m_numCTUsInSubPic = u;       }
   uint32_t         getNumCTUsInSubPic   ()           const { return  m_numCTUsInSubPic;           }
   void             setSubPicCtuTopLeftX (uint32_t u)       {         m_subPicCtuTopLeftX = u;     }
@@ -734,16 +739,28 @@ public:
   void             setSubPicBottom      (uint32_t u)       {         m_subPicBottom = u;          }
   uint32_t         getSubPicBottom      ()           const { return  m_subPicBottom;              }
 
+  void             setSubPicWidthInLumaSample (uint32_t u) {         m_subPicWidthInLumaSample = u;   }
+  uint32_t         getSubPicWidthInLumaSample()      const { return  m_subPicWidthInLumaSample;       }
+  void             setSubPicHeightInLumaSample(uint32_t u) {         m_subPicHeightInLumaSample = u;  }
+  uint32_t         getSubPicHeightInLumaSample()     const { return  m_subPicHeightInLumaSample;      }
+
   std::vector<uint32_t> getCtuAddrList  ()           const { return  m_ctuAddrInSubPic;           }
   void                  addCTUsToSubPic(std::vector<uint32_t> ctuAddrInSlice)
   {
     for (auto ctu:ctuAddrInSlice)
       m_ctuAddrInSubPic.push_back(ctu);    
   }
+  bool                 isContainingPos(const Position& pos) const
+  {
+    return pos.x >= m_subPicLeft && pos.x <= m_subPicRight && pos.y >= m_subPicTop  && pos.y <= m_subPicBottom;
+  }
   void             setTreatedAsPicFlag           (bool u)  {         m_treatedAsPicFlag = u;   }
   bool             getTreatedAsPicFlag           ()  const { return  m_treatedAsPicFlag;       }
   void             setloopFilterAcrossEnabledFlag(bool u)  {         m_loopFilterAcrossSubPicEnabledFlag = u; }
   bool             getloopFilterAcrossEnabledFlag()  const { return  m_loopFilterAcrossSubPicEnabledFlag;     }
+
+  bool             isFirstCTUinSubPic(uint32_t ctuAddr)    { return  ctuAddr == m_firstCtuInSubPic;  }
+  bool              isLastCTUinSubPic(uint32_t ctuAddr)    { return  ctuAddr == m_lastCtuInSubPic;   }
 };
 #endif
 class DPS
@@ -1925,6 +1942,8 @@ public:
 #if JVET_O1143_SUBPIC_BOUNDARY
   std::vector<SubPic>    getSubPics()  const                                              {return m_subPics;          };
   void                   initSubPic(const SPS &sps);
+  SubPic                 getSubPicFromPos(const Position& pos)  const;
+  SubPic                 getSubPicFromCU (const CodingUnit& cu) const;
 #endif
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
   void                   checkSliceMap(); 
@@ -2616,7 +2635,11 @@ public:
   int                         getNumRefIdx( RefPicList e ) const                     { return m_aiNumRefIdx[e];                                      }
   Picture*                    getPic()                                               { return m_pcPic;                                               }
   const Picture*              getPic() const                                         { return m_pcPic;                                               }
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+        Picture*              getRefPic( RefPicList e, int iRefIdx) const            { return m_apcRefPicList[e][iRefIdx];                           }
+#else
   const Picture*              getRefPic( RefPicList e, int iRefIdx) const            { return m_apcRefPicList[e][iRefIdx];                           }
+#endif
   int                         getRefPOC( RefPicList e, int iRefIdx) const            { return m_aiRefPOCList[e][iRefIdx];                            }
   int                         getDepth() const                                       { return m_iDepth;                                              }
   bool                        getColFromL0Flag() const                               { return m_colFromL0Flag;                                       }

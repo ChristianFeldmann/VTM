@@ -172,6 +172,21 @@ private:
   Window        m_scalingWindow;
 
 public:
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY  
+  bool m_isSubPicBorderSaved;
+
+  PelStorage m_bufSubPicAbove;
+  PelStorage m_bufSubPicBelow;
+  PelStorage m_bufSubPicLeft;
+  PelStorage m_bufSubPicRight;
+
+  void    saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+  void  extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+  void restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+
+  bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
+  void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
+#endif
   bool m_bIsBorderExtended;
   bool referenced;
   bool reconstructed;

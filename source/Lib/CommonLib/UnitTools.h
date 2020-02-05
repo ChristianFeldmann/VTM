@@ -66,6 +66,9 @@ namespace CU
   bool isSameSlice                    (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameTile                     (const CodingUnit &cu, const CodingUnit &cu2);
   bool isSameSliceAndTile             (const CodingUnit &cu, const CodingUnit &cu2);
+#if JVET_O1143_SUBPIC_BOUNDARY
+  bool isSameSubPic                   (const CodingUnit &cu, const CodingUnit &cu2);
+#endif
   bool isLastSubCUOfCtu               (const CodingUnit &cu);
   uint32_t getCtuAddr                     (const CodingUnit &cu);
   int  predictQP                      (const CodingUnit& cu, const int prevQP );

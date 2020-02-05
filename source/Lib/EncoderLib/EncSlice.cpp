@@ -1462,7 +1462,32 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       cs.motionLut.lutIbc.resize(0);
     }
 
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+    SubPic curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
+    // padding/restore at slice level
+    if (curSubPic.getTreatedAsPicFlag() && ctuIdx == 0)
+    {
+      int subPicX = (int)curSubPic.getSubPicLeft();
+      int subPicY = (int)curSubPic.getSubPicTop();
+      int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
+      int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
 
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      {
+        int n = pcSlice->getNumRefIdx((RefPicList)rlist);
+        for (int idx = 0; idx < n; idx++) 
+        {
+          Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
+          if (!refPic->getSubPicSaved()) 
+          {
+            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->setSubPicSaved(true);
+          }
+        }
+      }
+    }
+#endif
     if (cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && cs.pps->ctuIsTileRowBd( ctuYPosInCtus ))
     {
       pCABACWriter->initCtxModels( *pcSlice );
@@ -1659,6 +1684,31 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 
     m_uiPicTotalBits += actualBits;
     m_uiPicDist       = cs.dist;
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+    // for last Ctu in the slice    
+    if (curSubPic.getTreatedAsPicFlag() && ctuIdx == (pcSlice->getNumCtuInSlice() - 1))
+    {
+
+      int subPicX = (int)curSubPic.getSubPicLeft();
+      int subPicY = (int)curSubPic.getSubPicTop();
+      int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
+      int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
+
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      {
+        int n = pcSlice->getNumRefIdx((RefPicList)rlist);
+        for (int idx = 0; idx < n; idx++) 
+        {
+          Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
+          if (refPic->getSubPicSaved()) 
+          {
+            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->setSubPicSaved(false);
+          }
+        }
+      }
+    }
+#endif
   }
 
   // this is wpp exclusive section

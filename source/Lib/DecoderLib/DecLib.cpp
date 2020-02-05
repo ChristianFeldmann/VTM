@@ -599,7 +599,7 @@ void DecLib::executeLoopFilters()
     m_cALF.ALFProcess(cs);
   }
 
-#if SUBPIC_DECCHECK 
+#if JVET_O1143_SUBPIC_DECCHECK 
   for (int i = 0; i < cs.pps->getNumSubPics(); i++)
   {
     // keep target subpic samples untouched, for other subpics mask their output sample value to 0

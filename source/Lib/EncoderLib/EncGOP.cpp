@@ -3126,7 +3126,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           // code RPL in picture header or slice headers
           if( !m_pcCfg->getSliceLevelRpl() && (!pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent()) )
           {
+#if !JVET_Q0819_PH_CHANGES 
             picHeader->setPicRplPresentFlag(true);
+#endif
             picHeader->setRPL0idx(pcSlice->getRPL0idx());
             picHeader->setRPL1idx(pcSlice->getRPL1idx());
             picHeader->setRPL0(pcSlice->getRPL0());
@@ -3134,14 +3136,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             *picHeader->getLocalRPL0() = *pcSlice->getLocalRPL0();
             *picHeader->getLocalRPL1() = *pcSlice->getLocalRPL1();
           }
+#if !JVET_Q0819_PH_CHANGES  
           else {
             picHeader->setPicRplPresentFlag(false);
           }
+#endif
           
           // code DBLK in picture header or slice headers
           if( !m_pcCfg->getSliceLevelDblk() )
           {
-            picHeader->setDeblockingFilterOverridePresentFlag( true );
+#if !JVET_Q0819_PH_CHANGES 
+            picHeader->setDeblockingFilterOverridePresentFlag(true);
+#endif
             picHeader->setDeblockingFilterOverrideFlag   ( pcSlice->getDeblockingFilterOverrideFlag()   );
             picHeader->setDeblockingFilterDisable        ( pcSlice->getDeblockingFilterDisable()        ); 
             picHeader->setDeblockingFilterBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() ); 
@@ -3153,25 +3159,42 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setDeblockingFilterCrTcOffsetDiv2  ( pcSlice->getDeblockingFilterCrTcOffsetDiv2() );
 #endif
           }
-          else {
+#if !JVET_Q0819_PH_CHANGES 
+          else
+          {
             picHeader->setDeblockingFilterOverridePresentFlag( false );
           }
-          
+#endif
+
+#if JVET_Q0819_PH_CHANGES 
+          if (!m_pcCfg->getSliceLevelDeltaQp())
+          {
+            picHeader->setQpDelta(pcSlice->getSliceQp() - (pcSlice->getPPS()->getPicInitQPMinus26() + 26));
+          }
+#endif
+
           // code SAO parameters in picture header or slice headers
           if( !m_pcCfg->getSliceLevelSao() )
           {
-            picHeader->setSaoEnabledPresentFlag( true );
+#if !JVET_Q0819_PH_CHANGES 
+            picHeader->setSaoEnabledPresentFlag(true);
+#endif
             picHeader->setSaoEnabledFlag(CHANNEL_TYPE_LUMA,   pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA  ));
             picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
           }
-          else {
+#if !JVET_Q0819_PH_CHANGES 
+          else
+          {
             picHeader->setSaoEnabledPresentFlag( false );
           }
+#endif
           
           // code ALF parameters in picture header or slice headers
           if( !m_pcCfg->getSliceLevelAlf() )
           {
-            picHeader->setAlfEnabledPresentFlag( true );
+#if !JVET_Q0819_PH_CHANGES 
+            picHeader->setAlfEnabledPresentFlag(true);
+#endif
             picHeader->setAlfEnabledFlag(COMPONENT_Y,  pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y ) );
             picHeader->setAlfEnabledFlag(COMPONENT_Cb, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) );
             picHeader->setAlfEnabledFlag(COMPONENT_Cr, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) );            
@@ -3185,9 +3208,22 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setCcAlfCrApsId(pcSlice->getTileGroupCcAlfCrApsId());
 #endif
           }
-          else {
+#if !JVET_Q0819_PH_CHANGES 
+          else
+          {
             picHeader->setAlfEnabledPresentFlag( false );
           }
+#endif
+
+#if JVET_Q0819_PH_CHANGES 
+          // code WP parameters in picture header or slice headers
+          if (!m_pcCfg->getSliceLevelWp())
+          {
+            picHeader->setWpScaling(pcSlice->getWpScalingAll());
+            picHeader->setNumL0Weights(pcSlice->getNumRefIdx(REF_PIC_LIST_0));
+            picHeader->setNumL0Weights(pcSlice->getNumRefIdx(REF_PIC_LIST_1));
+          }
+#endif
 
           pcPic->cs->picHeader->setPic(pcPic);
           pcPic->cs->picHeader->setValid();

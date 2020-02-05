@@ -1157,6 +1157,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  sps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
+#endif
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   sps.setBDPCMEnabledFlag(m_useBDPCM);
 #else
@@ -1265,8 +1268,13 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setRPL1CopyFromRPL0Flag( true );
   }
 
+#if JVET_Q0119_CLEANUPS
+  sps.setSubPicInfoPresentFlag(m_subPicInfoPresentFlag);
+  if (m_subPicInfoPresentFlag)
+#else
   sps.setSubPicPresentFlag(m_subPicPresentFlag);
   if (m_subPicPresentFlag) 
+#endif
   {
     sps.setNumSubPics(m_numSubPics);
     for (int i = 0; i < m_numSubPics; i++) 
@@ -1279,6 +1287,21 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
       sps.setLoopFilterAcrossSubpicEnabledFlag(i, m_loopFilterAcrossSubpicEnabledFlag[i]);
     }
   }
+#if JVET_Q0119_CLEANUPS
+  sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
+  if (m_subPicIdMappingExplicitlySignalledFlag)
+  {
+    sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
+    if (m_subPicIdMappingInSpsFlag)
+    {
+      sps.setSubPicIdLen(m_subPicIdLen);
+      for (int i = 0; i < m_numSubPics; i++)
+      {
+        sps.setSubPicId(i, m_subPicId[i]);
+      }
+    }
+  }
+#else
   sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
   if (m_subPicIdPresentFlag) 
   {
@@ -1292,6 +1315,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
       }
     }
   }
+#endif
 
   sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
   sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
@@ -1348,7 +1372,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #endif
 
   pps.setNumSubPics(sps.getNumSubPics());
+#if JVET_Q0119_CLEANUPS
+  pps.setSubPicIdMappingInPpsFlag(false);
+#else
   pps.setSubPicIdSignallingPresentFlag(false);
+#endif
   pps.setSubPicIdLen(sps.getSubPicIdLen());
   for(int picIdx=0; picIdx<pps.getNumSubPics(); picIdx++)
   {
@@ -1365,6 +1393,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   if ( getLumaLevelToDeltaQPMapping().isEnabled() )
   {
     bUseDQP = true;
+  }
+#endif
+#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
+  if (sps.getChromaFormatIdc() != CHROMA_400)
+  {
+    pps.setPPSChromaToolFlag (true);
   }
 #endif
 #if ENABLE_QPA
@@ -1627,8 +1661,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   CHECK(!(bestPos <= 15), "Unspecified error");
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
+#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
+#endif
   pps.setPictureHeaderExtensionPresentFlag(false);
+
+#if JVET_Q0819_PH_CHANGES 
+  pps.setRplInfoInPhFlag(getSliceLevelRpl() ? false : true);
+  pps.setDbfInfoInPhFlag(getSliceLevelDblk() ? false : true);
+  pps.setSaoInfoInPhFlag(getSliceLevelSao() ? false : true);
+  pps.setAlfInfoInPhFlag(getSliceLevelAlf() ? false : true);
+  pps.setWpInfoInPhFlag(getSliceLevelWp() ? false : true);
+  pps.setQpDeltaInfoInPhFlag(getSliceLevelDeltaQp() ? false : true);
+#endif
 
   pps.pcv = new PreCalcValues( sps, pps, true );
   pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());
@@ -1717,12 +1762,14 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
     picHeader.setCuChromaQpOffsetSubdivInter(0);
   }
   
+#if !JVET_Q0119_CLEANUPS
   // sub-pictures
   picHeader.setSubPicIdSignallingPresentFlag(sps.getSubPicIdSignallingPresentFlag());
   picHeader.setSubPicIdLen(sps.getSubPicIdLen());
   for(i=0; i<sps.getNumSubPics(); i++) {
     picHeader.setSubPicId(i, sps.getSubPicId(i));
   }
+#endif
 
   // virtual boundaries
   picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());

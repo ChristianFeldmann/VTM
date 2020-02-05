@@ -1052,6 +1052,24 @@ Specifies the value of general_non_packed_constraint_flag
 Specifies the value of general_frame_only_constraint_flag
 \\
 
+\Option{SubPicInfoPresentFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of subpicture subpic_info_present_flag
+\\
+
+\Option{SubPicIdMappingExplicitlySignalledFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of subpicture subpic_id_mapping_explicitly_signalled_flag
+\\
+
+\Option{SubPicIdMappingInSpsFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of subpicture subpic_id_mapping_in_sps_flag
+\\
+
 \end{OptionTableNoShorthand}
 
 
@@ -2242,6 +2260,18 @@ Code deblocking filter parameters in slice headers rather than picture header.
 %\ShortOption{\None} &
 \Default{true} &
 Code SAO parameters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelWeightedPrediction} &
+%\ShortOption{\None} &
+\Default{true} &
+Code Weighted Prediction paremeters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelDeltaQp} &
+%\ShortOption{\None} &
+\Default{true} &
+Code delta Qp in slice headers rather than picture header.
 \\
 
 \Option{TransformSkip} &

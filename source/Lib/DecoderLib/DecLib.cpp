@@ -605,7 +605,6 @@ void DecLib::executeLoopFilters()
       uint32_t right = SubPicNoUse.getSubPicRight();
       uint32_t top   = SubPicNoUse.getSubPicTop();
       uint32_t bottom= SubPicNoUse.getSubPicBottom();
-      printf("left %d right %d, top %d bottom %d\n", left, right, top, bottom);
       for (uint32_t row = top; row <= bottom; row++)
       {
         for (uint32_t col = left; col <= right; col++)

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0420_PPS_CHROMA_TOOL_FLAG                   1 // JVET-Q0420: add pps_chroma_tool_offsets_present_flag in PPS
+
 #define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 //JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
 
 #define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization

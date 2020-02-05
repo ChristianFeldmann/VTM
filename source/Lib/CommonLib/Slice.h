@@ -1142,6 +1142,9 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  int               m_log2MaxTransformSkipBlockSize;
+#endif
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool              m_BDPCMEnabledFlag;
 #else
@@ -1369,6 +1372,10 @@ public:
   uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  uint32_t                getLog2MaxTransformSkipBlockSize() const                                            { return m_log2MaxTransformSkipBlockSize;                              }
+  void                    setLog2MaxTransformSkipBlockSize(uint32_t u)                                        { m_log2MaxTransformSkipBlockSize = u;                                 }
+#endif
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
   void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
@@ -1688,7 +1695,9 @@ private:
 #endif
   bool             m_loopFilterAcrossTilesEnabledFlag;  //!< loop filtering applied across tiles flag
   bool             m_loopFilterAcrossSlicesEnabledFlag; //!< loop filtering applied across slices flag
+#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   int              m_log2MaxTransformSkipBlockSize;
+#endif
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
   bool              m_constantSliceHeaderParamsEnabledFlag;
@@ -1910,10 +1919,10 @@ public:
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
   void                   checkSliceMap(); 
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }
-
+#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }
   void                   setLog2MaxTransformSkipBlockSize(uint32_t u)                     { m_log2MaxTransformSkipBlockSize = u; }
-
+#endif
   bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
 

@@ -1569,9 +1569,9 @@ void                    setCCALFEnabledFlag( bool b )                           
 #endif
 #if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   void          setPPSValidFlag(int i, bool b) { m_ppsValidFlag[i] = b; }
-  bool          getPPSValidFlag(int i) { return m_ppsValidFlag[i]; }
-  void          setScalingWindowSizeInPPS(int i, int scWidth, int scHeight) { m_scalingWindowSizeInPPS[i].width = scWidth; m_scalingWindowSizeInPPS[i].height = scHeight; }
-  const Size&   getScalingWindowSizeInPPS(int i) { return m_scalingWindowSizeInPPS[i]; }
+  bool          getPPSValidFlag(int i)         { return m_ppsValidFlag[i]; }
+  void          setScalingWindowSizeInPPS(int i, int scWidth, int scHeight) { m_scalingWindowSizeInPPS[i].width = scWidth; m_scalingWindowSizeInPPS[i].height = scHeight;}
+  const Size&   getScalingWindowSizeInPPS(int i)                            { return m_scalingWindowSizeInPPS[i]; }
 #endif
 };
 

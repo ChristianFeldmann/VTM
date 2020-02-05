@@ -329,7 +329,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     int curPicWidthY = width;                                       // pic_width_in_luma_samples
     int curPicHeightY = height;                                     // pic_height_in_luma_samples 
     int max8MinCbSizeY = std::max((int)8, (1 << sps0.getLog2MinCodingBlockSize())); // Max(8, MinCbSizeY)
-                                                                                    //Warning message of potential scaling window size violation
+    //Warning message of potential scaling window size violation
     for (int i = 0; i < 64; i++)
     {
       if (sps0.getPPSValidFlag(i))

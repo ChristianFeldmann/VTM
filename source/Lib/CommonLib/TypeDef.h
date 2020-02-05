@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
+
 #define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 //JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
 
 #define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization

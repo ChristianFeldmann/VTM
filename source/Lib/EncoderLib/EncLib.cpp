@@ -235,7 +235,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 {
   m_AUWriterIf = auWriterIf;
 
-  SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
+#if ENABLING_MULTI_SPS
+  SPS &sps0 = *(m_spsMap.allocatePS(m_layerId)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
+#else
+  SPS &sps0 = *(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
+#endif
   PPS &pps0 = *( m_ppsMap.allocatePS( m_layerId ) );
   APS &aps0 = *( m_apsMap.allocatePS( SCALING_LIST_APS ) );
   aps0.setAPSId( 0 );
@@ -1305,11 +1309,16 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
   }
 
-  sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
+#if ENABLING_MULTI_SPS
+  sps.setInterLayerPresentFlag(vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() && !vps.getIndependentLayerFlag(vps.getGeneralLayerIdx(m_layerId)) == 1 && vps.getGeneralLayerIdx(m_layerId) > 0);
+  CHECK((vps.getIndependentLayerFlag(vps.getGeneralLayerIdx(m_layerId)) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
+#else
+  sps.setInterLayerPresentFlag(vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag());
   for (unsigned int i = 0; i < vps.getMaxLayers(); ++i)
   {
     CHECK((vps.getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
+#endif
 
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
 

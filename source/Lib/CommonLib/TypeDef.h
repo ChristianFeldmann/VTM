@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG         1 // JVET_Q0417: a constraint on the value of sps_virtual_boundaries_present_flag based on res_change_in_clvs_allowed_flag
+
 #define JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT         1 // JVET-Q0179: Scaling window size constraint for constraining worst case memory bandwidth
 
 #define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests

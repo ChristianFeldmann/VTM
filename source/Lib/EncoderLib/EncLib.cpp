@@ -1365,6 +1365,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #if JVET_Q0297_MER
   sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
 #endif
+
+#if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+  CHECK(sps.getRprEnabledFlag() && sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
 }
 
 void EncLib::xInitHrdParameters(SPS &sps)

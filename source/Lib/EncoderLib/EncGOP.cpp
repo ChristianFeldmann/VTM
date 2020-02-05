@@ -2364,6 +2364,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if( refLayer >= 0 && m_uiNumBlk[refLayer] != 0 )
         {
+#if JVET_Q0330_BLOCK_PARTITION
+          const int MAX_BT_SIZE_INTER = 128;
+#endif
           picHeader->setSplitConsOverrideFlag(true);
           double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
           if( dBlkSize < AMAXBT_TH32 || pcPic->cs->sps->getCTUSize()==32 )

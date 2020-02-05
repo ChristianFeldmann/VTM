@@ -289,6 +289,10 @@ protected:
   uint32_t              m_subPicId[MAX_NUM_SUB_PICS];
   bool      m_useSplitConsOverride;
   unsigned  m_uiMinQT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
+#if JVET_Q0330_BLOCK_PARTITION
+  unsigned  m_uiMaxBT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
+  unsigned  m_uiMaxTT[3]; //0: I slice; 1: P/B slice, 2: I slice chroma
+#endif  
   unsigned  m_uiMaxMTTHierarchyDepth;
   unsigned  m_uiMaxMTTHierarchyDepthI;
   unsigned  m_uiMaxMTTHierarchyDepthIChroma;
@@ -944,6 +948,10 @@ public:
 
   void      setCTUSize                      ( unsigned  u )      { m_CTUSize  = u; }
   void      setMinQTSizes                   ( unsigned* minQT)   { m_uiMinQT[0] = minQT[0]; m_uiMinQT[1] = minQT[1]; m_uiMinQT[2] = minQT[2]; }
+#if JVET_Q0330_BLOCK_PARTITION
+  void      setMaxBTSizes                   ( unsigned* maxBT)   { m_uiMaxBT[0] = maxBT[0]; m_uiMaxBT[1] = maxBT[1]; m_uiMaxBT[2] = maxBT[2]; }
+  void      setMaxTTSizes                   ( unsigned* maxTT)   { m_uiMaxTT[0] = maxTT[0]; m_uiMaxTT[1] = maxTT[1]; m_uiMaxTT[2] = maxTT[2]; }
+#endif  
   void      setMaxMTTHierarchyDepth         ( unsigned uiMaxMTTHierarchyDepth, unsigned uiMaxMTTHierarchyDepthI, unsigned uiMaxMTTHierarchyDepthIChroma )
                                                              { m_uiMaxMTTHierarchyDepth = uiMaxMTTHierarchyDepth; m_uiMaxMTTHierarchyDepthI = uiMaxMTTHierarchyDepthI; m_uiMaxMTTHierarchyDepthIChroma = uiMaxMTTHierarchyDepthIChroma; }
   unsigned  getMaxMTTHierarchyDepth         ()         const { return m_uiMaxMTTHierarchyDepth; }

@@ -415,6 +415,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxMTTHierarchyDepth                              ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
+#if JVET_Q0330_BLOCK_PARTITION
+  m_cEncLib.setMaxBTSizes                                        ( m_uiMaxBT );
+  m_cEncLib.setMaxTTSizes                                        ( m_uiMaxTT );
+#endif 
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLFNST                                             ( m_LFNST );
   m_cEncLib.setUseFastLFNST                                      ( m_useFastLFNST );

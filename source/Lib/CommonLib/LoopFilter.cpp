@@ -81,31 +81,30 @@ inline static uint32_t getRasterIdx(const Position& pos, const PreCalcValues& pc
 // ====================================================================================================================
 // utility functions
 // ====================================================================================================================
-
-static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction 
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-  , const bool bEnforceSubPicRestriction
+static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction, const bool bEnforceSubPicRestriction)
+#else
+static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction)
 #endif
-)
 {
-  return ( ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) 
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-    && (!bEnforceSubPicRestriction || CU::isSameSubPic(cu, cu2))
-#endif
-    );
+  return ((!bEnforceSliceRestriction || CU::isSameSlice(cu, cu2)) && (!bEnforceTileRestriction || CU::isSameTile(cu, cu2)) && (!bEnforceSubPicRestriction || CU::isSameSubPic(cu, cu2)));
+#else
+  return ((!bEnforceSliceRestriction || CU::isSameSlice(cu, cu2)) && (!bEnforceTileRestriction || CU::isSameTile(cu, cu2)));
+#endif    
 }
 
-static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-  , const bool bEnforceSubPicRestriction
+static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction, const bool bEnforceSubPicRestriction)
+#else
+static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction)
 #endif
-)
 {
-  return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) )
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-  && (!bEnforceSubPicRestriction || CU::isSameSubPic(cu, cu2))
+  return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) && (!bEnforceSubPicRestriction || CU::isSameSubPic(cu, cu2));
+#else
+  return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) ;
 #endif
-  ;
 }
 
 
@@ -697,16 +696,18 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 
   m_stLFCUParam.internalEdge = true;
 
-  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() 
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-    , !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() );
+#else
+  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag());  
 #endif
-  );
-  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag() 
+
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-    , !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() );
+#else
+  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag());  
 #endif
-  );
+
 }
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const
@@ -962,11 +963,11 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-          , !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()
-#endif
-        ))
+        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()))
+#else
+        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#endif        
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
           continue;
@@ -974,11 +975,11 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       }
       else  // (iDir == EDGE_HOR)
       {
-        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-          , !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()
+        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()))
+#else
+        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
 #endif
-        ))
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
           continue;

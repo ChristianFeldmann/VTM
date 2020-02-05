@@ -752,11 +752,7 @@ public:
   }
   bool                 isContainingPos(const Position& pos) const
   {
-    if (pos.x >= m_subPicLeft && pos.x <= m_subPicRight &&
-      pos.y >= m_subPicTop  && pos.y <= m_subPicBottom)
-      return true;
-    else
-      return false;
+    return pos.x >= m_subPicLeft && pos.x <= m_subPicRight && pos.y >= m_subPicTop  && pos.y <= m_subPicBottom;
   }
   void             setTreatedAsPicFlag           (bool u)  {         m_treatedAsPicFlag = u;   }
   bool             getTreatedAsPicFlag           ()  const { return  m_treatedAsPicFlag;       }

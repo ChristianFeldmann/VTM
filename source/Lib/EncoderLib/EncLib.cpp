@@ -1265,8 +1265,13 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setRPL1CopyFromRPL0Flag( true );
   }
 
+#if JVET_Q0119_CLEANUPS
+  sps.setSubPicInfoPresentFlag(m_subPicInfoPresentFlag);
+  if (m_subPicInfoPresentFlag)
+#else
   sps.setSubPicPresentFlag(m_subPicPresentFlag);
   if (m_subPicPresentFlag) 
+#endif
   {
     sps.setNumSubPics(m_numSubPics);
     for (int i = 0; i < m_numSubPics; i++) 
@@ -1279,6 +1284,21 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
       sps.setLoopFilterAcrossSubpicEnabledFlag(i, m_loopFilterAcrossSubpicEnabledFlag[i]);
     }
   }
+#if JVET_Q0119_CLEANUPS
+  sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
+  if (m_subPicIdMappingExplicitlySignalledFlag)
+  {
+    sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
+    if (m_subPicIdMappingInSpsFlag)
+    {
+      sps.setSubPicIdLen(m_subPicIdLen);
+      for (int i = 0; i < m_numSubPics; i++)
+      {
+        sps.setSubPicId(i, m_subPicId[i]);
+      }
+    }
+  }
+#else
   sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
   if (m_subPicIdPresentFlag) 
   {
@@ -1292,6 +1312,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
       }
     }
   }
+#endif
 
   sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
   sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
@@ -1348,7 +1369,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 #endif
 
   pps.setNumSubPics(sps.getNumSubPics());
+#if JVET_Q0119_CLEANUPS
+  pps.setSubPicIdMappingInPpsFlag(false);
+#else
   pps.setSubPicIdSignallingPresentFlag(false);
+#endif
   pps.setSubPicIdLen(sps.getSubPicIdLen());
   for(int picIdx=0; picIdx<pps.getNumSubPics(); picIdx++)
   {
@@ -1732,12 +1757,14 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
     picHeader.setCuChromaQpOffsetSubdivInter(0);
   }
   
+#if !JVET_Q0119_CLEANUPS
   // sub-pictures
   picHeader.setSubPicIdSignallingPresentFlag(sps.getSubPicIdSignallingPresentFlag());
   picHeader.setSubPicIdLen(sps.getSubPicIdLen());
   for(i=0; i<sps.getNumSubPics(); i++) {
     picHeader.setSubPicId(i, sps.getSubPicId(i));
   }
+#endif
 
   // virtual boundaries
   picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());

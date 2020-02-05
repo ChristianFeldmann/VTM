@@ -1638,8 +1638,10 @@ PicHeader::PicHeader()
 , m_recoveryPocCnt                                ( 0 )
 , m_spsId                                         ( -1 )
 , m_ppsId                                         ( -1 )
+#if !JVET_Q0119_CLEANUPS
 , m_subPicIdSignallingPresentFlag                 ( 0 )
 , m_subPicIdLen                                   ( 0 )
+#endif
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag ( 0 )
 , m_numVerVirtualBoundaries                       ( 0 )
 , m_numHorVirtualBoundaries                       ( 0 )
@@ -1710,7 +1712,9 @@ PicHeader::PicHeader()
 , m_numL1Weights                                  ( 0 )
 #endif
 {
+#if !JVET_Q0119_CLEANUPS
   memset(m_subPicId,                                0,    sizeof(m_subPicId));
+#endif
   memset(m_virtualBoundariesPosX,                   0,    sizeof(m_virtualBoundariesPosX));
   memset(m_virtualBoundariesPosY,                   0,    sizeof(m_virtualBoundariesPosY));
   memset(m_saoEnabledFlag,                          0,    sizeof(m_saoEnabledFlag));
@@ -1752,8 +1756,10 @@ void PicHeader::initPicHeader()
   m_recoveryPocCnt                                = 0;
   m_spsId                                         = -1;
   m_ppsId                                         = -1;
+#if !JVET_Q0119_CLEANUPS
   m_subPicIdSignallingPresentFlag                 = 0;
   m_subPicIdLen                                   = 0;
+#endif
   m_loopFilterAcrossVirtualBoundariesDisabledFlag = 0;
   m_numVerVirtualBoundaries                       = 0;
   m_numHorVirtualBoundaries                       = 0;
@@ -1822,7 +1828,9 @@ void PicHeader::initPicHeader()
   m_numL0Weights                                  = 0;
   m_numL1Weights                                  = 0;
 #endif
+#if !JVET_Q0119_CLEANUPS
   memset(m_subPicId,                                0,    sizeof(m_subPicId));
+#endif
   memset(m_virtualBoundariesPosX,                   0,    sizeof(m_virtualBoundariesPosX));
   memset(m_virtualBoundariesPosY,                   0,    sizeof(m_virtualBoundariesPosY));
   memset(m_saoEnabledFlag,                          0,    sizeof(m_saoEnabledFlag));
@@ -1888,10 +1896,19 @@ SPS::SPS()
 // Structure
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
+#if JVET_Q0119_CLEANUPS
+, m_subPicInfoPresentFlag         (0)
+#else
 , m_subPicPresentFlag         (0)
+#endif
 , m_numSubPics(1)
+#if JVET_Q0119_CLEANUPS
+, m_subPicIdMappingExplicitlySignalledFlag ( false )
+, m_subPicIdMappingInSpsFlag ( false )
+#else
 , m_subPicIdPresentFlag(0)
 , m_subPicIdSignallingPresentFlag(0)
+#endif
 , m_subPicIdLen(16)
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
@@ -2151,7 +2168,11 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_numSubPics                       (1)
+#if JVET_Q0119_CLEANUPS
+, m_subPicIdMappingInPpsFlag         (0)
+#else
 , m_subPicIdSignallingPresentFlag    (0)
+#endif
 , m_subPicIdLen                      (16)
 , m_noPicPartitionFlag               (1)
 , m_log2CtuSize                      (0)

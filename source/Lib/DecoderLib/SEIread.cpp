@@ -169,6 +169,9 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
 
   SEI *sei = NULL;
   const SEIBufferingPeriod *bp = NULL;
+#if JVET_Q0818_PT_SEI
+  const SEIPictureTiming *pt = NULL;
+#endif
 
   if(nalUnitType == NAL_UNIT_PREFIX_SEI)
   {
@@ -206,12 +209,20 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
         {
           sei = new SEIPictureTiming;
           xParseSEIPictureTiming((SEIPictureTiming&)*sei, payloadSize, temporalId, *bp, pDecodedMessageOutputStream);
+#if JVET_Q0818_PT_SEI
+          hrd.setPictureTimingSEI( (SEIPictureTiming*) sei );
+#endif
         }
       }
       break;
     case SEI::FRAME_FIELD_INFO:
       sei = new SEIFrameFieldInfo;
+#if JVET_Q0818_PT_SEI
+      pt = hrd.getPictureTimingSEI();
+      xParseSEIFrameFieldinfo((SEIFrameFieldInfo&) *sei, *pt, payloadSize, pDecodedMessageOutputStream);
+#else
       xParseSEIFrameFieldinfo((SEIFrameFieldInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
+#endif
       break;
     case SEI::DEPENDENT_RAP_INDICATION:
       sei = new SEIDependentRAPIndication;
@@ -695,9 +706,17 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
       }
     }
   }
+#if JVET_Q0818_PT_SEI
+  sei_read_uvlc( pDecodedMessageOutputStream, symbol,    "pt_display_elemental_periods_minus1" );
+  sei.m_ptDisplayElementalPeriodsMinus1 = symbol;
+#endif
 }
 
+#if JVET_Q0818_PT_SEI
+void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, const SEIPictureTiming& pt, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
+#else
 void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
+#endif
 {
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
 
@@ -727,6 +746,10 @@ void SEIReader::xParseSEIFrameFieldinfo(SEIFrameFieldInfo& sei, uint32_t payload
     }
     sei_read_uvlc( pDecodedMessageOutputStream, symbol,    "display_elemental_periods_minus1" );
     sei.m_displayElementalPeriodsMinus1 = symbol;
+#if JVET_Q0818_PT_SEI
+    if( pt.m_ptDisplayElementalPeriodsMinus1 != sei.m_displayElementalPeriodsMinus1 )
+      msg( WARNING, "Warning: display_elemental_periods_minus1 is different in picture timing and frame field information SEI messages!");
+#endif
   }
   sei_read_code( pDecodedMessageOutputStream, 2, symbol,   "source_scan_type" );
   sei.m_sourceScanType = symbol;

@@ -355,6 +355,9 @@ public:
   , m_cpbAltTimingInfoPresentFlag (false)
   , m_cpbDelayOffset (0)
   , m_dpbDelayOffset (0)
+#if JVET_Q0818_PT_SEI
+  , m_ptDisplayElementalPeriodsMinus1(0)
+#endif
   {
     ::memset(m_ptSubLayerDelaysPresentFlag, 0, sizeof(m_ptSubLayerDelaysPresentFlag));
     ::memset(m_duCommonCpbRemovalDelayMinus1, 0, sizeof(m_duCommonCpbRemovalDelayMinus1));
@@ -383,6 +386,9 @@ public:
   std::vector<uint32_t> m_cpbAltInitialCpbRemovalOffsetDelta;
   uint32_t m_cpbDelayOffset;
   uint32_t m_dpbDelayOffset;
+#if JVET_Q0818_PT_SEI
+  int m_ptDisplayElementalPeriodsMinus1;
+#endif
 };
 
 class SEIDecodingUnitInfo : public SEI

@@ -1123,7 +1123,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("TransformSkipFast",                               m_useTransformSkipFast,                           false, "Fast encoder search for transform skipping, winner takes it all mode.")
   ("TransformSkipLog2MaxSize",                        m_log2MaxTransformSkipBlockSize,                     5U, "Specify transform-skip maximum size. Minimum 2, Maximum 5. (not valid in V1 profiles)")
   ("ChromaTS",                                        m_useChromaTS,                                    false, "Enable encoder search of chromaTS")
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+  ("BDPCM",                                           m_useBDPCM,                                       false, "BDPCM (0:off, 1:luma and chroma)")
+#else
   ("BDPCM",                                           m_useBDPCM,                                           0, "BDPCM (0:off, 1:lumaonly, 2:lumachroma")
+#endif
   ("ISPFast",                                         m_useFastISP,                                     false, "Fast encoder search for ISP")
   ("ImplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT],        false, "Enable implicitly signalled residual DPCM for intra (also known as sample-adaptive intra predict) (not valid in V1 profiles)")
   ("ExplicitResidualDPCM",                            m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT],        false, "Enable explicitly signalled residual DPCM for inter (not valid in V1 profiles)")
@@ -1604,6 +1608,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
         CHECK( m_subPicIdLen > 16, "sibpic ID length must not exceed 16 bits" );
       }
     }
+#if JVET_Q0043_RPR_and_Subpics
+    CHECK( m_rprEnabled, "RPR and subpictures cannot be enabled together" );
+#endif
   }
   if( m_picPartitionFlag ) 
   {
@@ -2516,6 +2523,22 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_cbQpOffsetDualTree >  12,   "Max. Chroma Cb QP Offset for dual tree is  12" );
   xConfirmPara( m_crQpOffsetDualTree < -12,   "Min. Chroma Cr QP Offset for dual tree is -12" );
   xConfirmPara( m_crQpOffsetDualTree >  12,   "Max. Chroma Cr QP Offset for dual tree is  12" );
+#if JVET_Q0438_MONOCHROME_BUGFIXES
+  if (m_dualTree && (m_chromaFormatIDC == CHROMA_400))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: --DualITree has been disabled because the chromaFormat is 400 **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_dualTree = false;
+  }
+  if (m_ccalf && (m_chromaFormatIDC == CHROMA_400))
+  {
+    msg( WARNING, "****************************************************************************\n");
+    msg( WARNING, "** WARNING: --CCALF has been disabled because the chromaFormat is 400     **\n");
+    msg( WARNING, "****************************************************************************\n");
+    m_ccalf = false;
+  }
+#endif
   if (m_JointCbCrMode && (m_chromaFormatIDC == CHROMA_400))
   {
     msg( WARNING, "****************************************************************************\n");
@@ -3512,7 +3535,9 @@ bool EncAppCfg::xCheckParameter()
   check_failed |= m_ext360.verifyParameters();
 #endif
 
+#if !JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   xConfirmPara(m_useBDPCM < 0 || m_useBDPCM > 2, "BDPCM must be in range 0..2");
+#endif
 #if JVET_Q0820_ACT
   xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
 #endif
@@ -3768,7 +3793,9 @@ void EncAppCfg::xPrintParameter()
   m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
 #endif
   msg(VERBOSE, "ACT:%d ", m_useColorTrans);
+#if !JVET_Q0504_PLT_NON444
     m_PLTMode = ( m_chromaFormatIDC == CHROMA_444) ? m_PLTMode : 0u;
+#endif
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
     msg(VERBOSE, "IBC:%d ", m_IBCMode);
   msg( VERBOSE, "HashME:%d ", m_HashME );

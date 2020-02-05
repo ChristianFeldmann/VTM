@@ -3207,11 +3207,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
         }
         else
         {
-#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
-          VPS *vps = m_vpsMap.getPS(vpsId);
-          if (vps)
-            CHECK(vps->getMaxLayers() >= 2, "When sps_video_parameter_set_id is equal to 0, there shall be only a single layer in the bitstream");
-#endif
           m_vpsMap.clear();
           m_vpsMap.allocatePS(0);
           m_activeVPSId = 0;

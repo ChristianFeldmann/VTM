@@ -98,7 +98,6 @@ uint32_t DecApp::decode()
 #if JVET_P2008_OUTPUT_LOG
   if (!m_oplFilename.empty() && m_oplFilename!="-")
   {
-    m_oplFilename += ".opl";
     m_oplFileStream.open(m_oplFilename.c_str(), std::ios::out);
     if (!m_oplFileStream.is_open() || !m_oplFileStream.good())
     {

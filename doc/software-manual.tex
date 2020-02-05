@@ -3989,6 +3989,12 @@ Defines the input bit stream file name.
 Defines the reconstructed video file name. If empty, no file is generated. If the bitstream contains multiple layer and no single target layer is specified (i.e. TargetLayer=-1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'decoded.yuv' becomes 'decoded0.yuv' for layer id 0, 'decoded' becomes 'decoded0'.
 \\
 
+\Option{OplFile (-opl)} &
+%\ShortOption{-o} &
+\Default{\NotSet} &
+Defines the output log file name (*.opl file). If empty, no file is generated. Each output picture log file contains one row for each output picture in the bitstream, in output order. Each row contains the following information, as CSV:	PicOrderCntVal, pic\_width\_max\_in\_luma\_samples, pic\_height\_max\_in\_luma\_samples, MD5 checksum for the Y component, MD5 checksum for the U component, MD5 checksum for the V component. The format of output log file is specified in JVET-P2008. 
+\\
+
 \Option{SkipFrames (-s)} &
 %\ShortOption{-s} &
 \Default{0} &

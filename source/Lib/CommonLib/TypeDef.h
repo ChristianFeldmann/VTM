@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests
 #define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 //JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
 
 #define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization

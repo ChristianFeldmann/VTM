@@ -1797,7 +1797,7 @@ public:
   void                   setSingleSlicePerSubPicFlag( bool b )                            { m_singleSlicePerSubPicFlag = b;                                                                                                 }
   bool                   getSingleSlicePerSubPicFlag( ) const                             { return  m_singleSlicePerSubPicFlag;                                                                                             }
 #if JVET_Q0817
-  uint32_t               getCtuToSubPicIdx( int idx ) const                               { CHECK( idx >= m_ctuToSubPicIdx.size(), "CTU address index exceeds valid range" ); return  ( !( getNumSubPics() > 0 ) ? 0 : m_ctuToSubPicIdx[ idx ] ); }
+  uint32_t               getCtuToSubPicIdx( int idx ) const                               { CHECK( idx >= m_ctuToSubPicIdx.size(), "CTU address index exceeds valid range" ); CHECK( getNumSubPics() > 0, "Number of subpicture cannot be 0" ); return  m_ctuToSubPicIdx[ idx ]; }
 #else
   uint32_t               getCtuToSubPicIdx( int idx ) const                               { CHECK( idx >= m_ctuToSubPicIdx.size(), "CTU address index exceeds valid range" ); return  m_ctuToSubPicIdx[idx];                }
 #endif

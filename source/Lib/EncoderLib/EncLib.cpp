@@ -500,7 +500,8 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
     {
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
-      if (aps.getScalingList().getChromaScalingListPresentFlag()|| scalingListId % 3 == 2 || scalingListId == 27){
+      if (aps.getScalingList().getChromaScalingListPresentFlag()|| scalingListId % 3 == 2 || scalingListId == 27)
+      {
 #endif
         aps.getScalingList().checkPredMode(scalingListId);
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400

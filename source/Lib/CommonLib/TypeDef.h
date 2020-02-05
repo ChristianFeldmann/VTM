@@ -81,6 +81,8 @@
 
 #define JVET_Q0446_MIP_CONST_SHIFT_OFFSET                 1 // JVET-Q0446: MIP with constant shift and offset
 
+#define JVET_Q0265                                        1 // JVET-Q0265: Cleanup for monochrome and independently coded color planes
+
 #define JVET_Q0447_WP_PARAM_ESTIM                         1 // JVET-Q0447: Add search iterations for method 2,3 and 4
 
 #define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
@@ -475,7 +477,11 @@ enum SliceType
   NUMBER_OF_SLICE_TYPES = 3
 };
 
+#if JVET_Q0265
+/// chroma formats (according to how the monochrome or the color planes are intended to be coded)
+#else
 /// chroma formats (according to semantics of chroma_format_idc)
+#endif
 enum ChromaFormat
 {
   CHROMA_400        = 0,

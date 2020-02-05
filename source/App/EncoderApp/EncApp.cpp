@@ -919,7 +919,7 @@ void EncApp::xInitLib(bool isFieldCoding)
 // Public member functions
 // ====================================================================================================================
 
-void EncApp::createLib( const int layerId )
+void EncApp::createLib( const int layerIdx )
 {
   const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
   UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
@@ -938,8 +938,9 @@ void EncApp::createLib( const int layerId )
     }
   }
 
-  // initialize internal class & member variables
+  // initialize internal class & member variables and VPS
   xInitLibCfg();
+  const int layerId = m_cEncLib.getVPS() == nullptr ? 0 : m_cEncLib.getVPS()->getLayerId( layerIdx );
   xCreateLib( m_recBufList, layerId );
   xInitLib( m_isField );
 

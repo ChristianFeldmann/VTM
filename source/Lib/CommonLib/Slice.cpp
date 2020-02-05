@@ -2011,6 +2011,9 @@ SPS::SPS()
   ::memset(m_usedByCurrPicLtSPSFlag, 0, sizeof(m_usedByCurrPicLtSPSFlag));
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
+#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
+  ::memset(m_ppsValidFlag, 0, sizeof(m_ppsValidFlag));
+#endif
 }
 
 SPS::~SPS()

@@ -1492,6 +1492,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
+#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+  CHECK(pps == 0, "No PPS present");
+  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+  CHECK(sps == 0, "No SPS present");
+  if (sps->getVPSId() > 0)
+  {
+    VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+    CHECK(vps == 0, "No VPS present");
+    //vps->getOlsModeIdc()
+  }
+#endif
+
   if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
       m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
   {

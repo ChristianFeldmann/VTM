@@ -205,7 +205,11 @@ void Slice::initSlice()
 
 void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SPS *sps )
 { 
+#if JVET_Q0819_PH_CHANGES 
+  if (pps->getRplInfoInPhFlag())
+#else
   if(picHeader->getPicRplPresentFlag())
+#endif
   {
     setRPL0idx( picHeader->getRPL0idx() );
     *getLocalRPL0() = *picHeader->getLocalRPL0();
@@ -1643,7 +1647,9 @@ PicHeader::PicHeader()
 , m_colourPlaneId                                 ( 0 )
 #endif
 , m_picOutputFlag                                 ( true )
+#if !JVET_Q0819_PH_CHANGES 
 , m_picRplPresentFlag                             ( 0 )
+#endif
 , m_pRPL0                                         ( 0 )
 , m_pRPL1                                         ( 0 )
 , m_rpl0Idx                                       ( 0 )
@@ -1668,14 +1674,20 @@ PicHeader::PicHeader()
 #endif
 , m_maxNumIBCMergeCand                            ( IBC_MRG_MAX_NUM_CANDS )
 , m_jointCbCrSignFlag                             ( 0 )
+#if JVET_Q0819_PH_CHANGES 
+, m_qpDelta                                       ( 0 )
+#else
 , m_saoEnabledPresentFlag                         ( 0 )
 , m_alfEnabledPresentFlag                         ( 0 )
+#endif
 , m_numAlfAps                                     ( 0 )
 , m_alfApsId                                      ( 0 )
 , m_alfChromaApsId                                ( 0 )
 , m_depQuantEnabledFlag                           ( 0 )
 , m_signDataHidingEnabledFlag                     ( 0 )
+#if !JVET_Q0819_PH_CHANGES  
 , m_deblockingFilterOverridePresentFlag           ( 0 )
+#endif
 , m_deblockingFilterOverrideFlag                  ( 0 )
 , m_deblockingFilterDisable                       ( 0 )
 , m_deblockingFilterBetaOffsetDiv2                ( 0 )
@@ -1693,6 +1705,10 @@ PicHeader::PicHeader()
 , m_scalingListPresentFlag                        ( 0 )
 , m_scalingListApsId                              ( -1 )
 , m_scalingListAps                                ( nullptr )
+#if JVET_Q0819_PH_CHANGES 
+, m_numL0Weights                                  ( 0 )
+, m_numL1Weights                                  ( 0 )
+#endif
 {
   memset(m_subPicId,                                0,    sizeof(m_subPicId));
   memset(m_virtualBoundariesPosX,                   0,    sizeof(m_virtualBoundariesPosX));
@@ -1745,7 +1761,9 @@ void PicHeader::initPicHeader()
   m_colourPlaneId                                 = 0;
 #endif
   m_picOutputFlag                                 = true;
+#if !JVET_Q0819_PH_CHANGES 
   m_picRplPresentFlag                             = 0;
+#endif
   m_pRPL0                                         = 0;
   m_pRPL1                                         = 0;
   m_rpl0Idx                                       = 0;
@@ -1770,13 +1788,19 @@ void PicHeader::initPicHeader()
 #endif
   m_maxNumIBCMergeCand                            = IBC_MRG_MAX_NUM_CANDS;
   m_jointCbCrSignFlag                             = 0;
+#if JVET_Q0819_PH_CHANGES 
+  m_qpDelta                                       = 0;
+#else
   m_saoEnabledPresentFlag                         = 0;
   m_alfEnabledPresentFlag                         = 0;
+#endif
   m_numAlfAps                                     = 0;
   m_alfChromaApsId                                = 0;
   m_depQuantEnabledFlag                           = 0;
   m_signDataHidingEnabledFlag                     = 0;
+#if !JVET_Q0819_PH_CHANGES 
   m_deblockingFilterOverridePresentFlag           = 0;
+#endif
   m_deblockingFilterOverrideFlag                  = 0;
   m_deblockingFilterDisable                       = 0;
   m_deblockingFilterBetaOffsetDiv2                = 0;
@@ -1794,6 +1818,10 @@ void PicHeader::initPicHeader()
   m_scalingListPresentFlag                        = 0;
   m_scalingListApsId                              = -1;
   m_scalingListAps                                = nullptr;
+#if JVET_Q0819_PH_CHANGES 
+  m_numL0Weights                                  = 0;
+  m_numL1Weights                                  = 0;
+#endif
   memset(m_subPicId,                                0,    sizeof(m_subPicId));
   memset(m_virtualBoundariesPosX,                   0,    sizeof(m_virtualBoundariesPosX));
   memset(m_virtualBoundariesPosY,                   0,    sizeof(m_virtualBoundariesPosY));
@@ -1816,6 +1844,14 @@ void PicHeader::initPicHeader()
 
   m_alfApsId.resize(0);
 }
+
+#if JVET_Q0819_PH_CHANGES 
+void PicHeader::getWpScaling(RefPicList e, int iRefIdx, WPScalingParam *&wp) const
+{
+  CHECK(e >= NUM_REF_PIC_LIST_01, "Invalid picture reference list");
+  wp = (WPScalingParam *) m_weightPredTable[e][iRefIdx];
+}
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // Sequence parameter set (SPS)
@@ -2148,7 +2184,15 @@ PPS::PPS()
 , m_pictureHeaderExtensionPresentFlag(0)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_listsModificationPresentFlag     (0)
-, m_picWidthInLumaSamples( 352 )
+#if JVET_Q0819_PH_CHANGES
+, m_rplInfoInPhFlag                  (1)
+, m_dbfInfoInPhFlag                  (1)
+, m_saoInfoInPhFlag                  (1)
+, m_alfInfoInPhFlag                  (1)
+, m_wpInfoInPhFlag                   (1)
+, m_qpDeltaInfoInPhFlag              (1)
+#endif
+, m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)

@@ -1636,6 +1636,15 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
   pps.setPictureHeaderExtensionPresentFlag(false);
 
+#if JVET_Q0819_PH_CHANGES 
+  pps.setRplInfoInPhFlag(getSliceLevelRpl() ? false : true);
+  pps.setDbfInfoInPhFlag(getSliceLevelDblk() ? false : true);
+  pps.setSaoInfoInPhFlag(getSliceLevelSao() ? false : true);
+  pps.setAlfInfoInPhFlag(getSliceLevelAlf() ? false : true);
+  pps.setWpInfoInPhFlag(getSliceLevelWp() ? false : true);
+  pps.setQpDeltaInfoInPhFlag(getSliceLevelDeltaQp() ? false : true);
+#endif
+
   pps.pcv = new PreCalcValues( sps, pps, true );
   pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());
 }

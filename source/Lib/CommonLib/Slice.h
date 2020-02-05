@@ -1241,11 +1241,6 @@ private:
   Size              m_scalingWindowSizeInPPS[64];
 #endif
 
-#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
-  bool              m_ppsValidFlag[64];
-  Size              m_scalingWindowSizeInPPS[64];
-#endif
-
 public:
 
   SPS();

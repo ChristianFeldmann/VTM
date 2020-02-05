@@ -1468,16 +1468,12 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         for (int idx = 0; idx < n; idx++) 
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
-
-          refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
-          refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
-
           if (!refPic->getSubPicSaved()) 
           {
+            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->setSubPicSaved(true);
           }
-          // Save only at the beginning of the tile          
-          // refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);          
         }
       }
     }
@@ -1694,9 +1690,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         for (int idx = 0; idx < n; idx++) 
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
-          refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
           if (refPic->getSubPicSaved()) 
           {
+            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->setSubPicSaved(false);
           }
         }

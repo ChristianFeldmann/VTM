@@ -740,11 +740,6 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
 void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
 {
-  // 1.0 check border was extended
-  if (getSubPicSaved()) 
-  {
-    return;
-  }
 
   // 1.1 set up margin for back up memory allocation
   int xMargin = margin >> getComponentScaleX(COMPONENT_Y, cs->area.chromaFormat);
@@ -822,11 +817,6 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
 
 void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
 {
-  // 1.0 check border was extended
-  if (getSubPicSaved()) 
-  {
-    return;
-  }
 
   for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
   {
@@ -893,12 +883,6 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
 
 void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
 {
-  // 1.0 check border was extended
-  if (!getSubPicSaved()) 
-  {
-    return;
-  }
-
   for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
   {
     ComponentID compID = ComponentID(comp);

@@ -158,10 +158,10 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         for (int idx = 0; idx < n; idx++) 
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
-          refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
-          refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
           if (!refPic->getSubPicSaved()) 
           {
+            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->setSubPicSaved(true);
           }
         }
@@ -271,10 +271,9 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         for (int idx = 0; idx < n; idx++) 
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
-          refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
-
           if (refPic->getSubPicSaved()) 
           {
+            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->setSubPicSaved(false);
           }
         }

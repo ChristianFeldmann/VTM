@@ -239,6 +239,13 @@ class ConstraintInfo
   bool              m_progressiveSourceFlag;
   bool              m_interlacedSourceFlag;
   bool              m_nonPackedConstraintFlag;
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool              m_nonProjectedConstraintFlag;
+  bool              m_noResChangeInClvsConstraintFlag;
+  bool              m_oneTilePerPicConstraintFlag;
+  bool              m_oneSlicePerPicConstraintFlag;
+  bool              m_oneSubpicPerPicConstraintFlag;
+#endif
   bool              m_frameOnlyConstraintFlag;
   bool              m_intraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
@@ -293,6 +300,13 @@ public:
     : m_progressiveSourceFlag (false)
     , m_interlacedSourceFlag (false)
     , m_nonPackedConstraintFlag (false)
+#if JVET_Q0114_CONSTRAINT_FLAGS
+    , m_nonProjectedConstraintFlag(false)
+    , m_noResChangeInClvsConstraintFlag(false)
+    , m_oneTilePerPicConstraintFlag(false)
+    , m_oneSlicePerPicConstraintFlag(false)
+    , m_oneSubpicPerPicConstraintFlag(false)
+#endif
     , m_frameOnlyConstraintFlag  (false)
     , m_intraOnlyConstraintFlag  (false)
     , m_maxBitDepthConstraintIdc  (  0)
@@ -357,6 +371,23 @@ public:
 
   ChromaFormat  getMaxChromaFormatConstraintIdc() const { return m_maxChromaFormatConstraintIdc; }
   void          setMaxChromaFormatConstraintIdc(ChromaFormat fmt) { m_maxChromaFormatConstraintIdc = fmt; }
+
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool          getNonProjectedConstraintFlag() const { return m_nonProjectedConstraintFlag; }
+  void          setNonProjectedConstraintFlag(bool b) { m_nonProjectedConstraintFlag = b; }
+
+  bool          getNoResChangeInClvsConstraintFlag() const { return m_noResChangeInClvsConstraintFlag; }
+  void          setNoResChangeInClvsConstraintFlag(bool b) { m_noResChangeInClvsConstraintFlag = b; }
+
+  bool          getOneTilePerPicConstraintFlag() const { return m_oneTilePerPicConstraintFlag; }
+  void          setOneTilePerPicConstraintFlag(bool b) { m_oneTilePerPicConstraintFlag = b; }
+
+  bool          getOneSlicePerPicConstraintFlag() const { return m_oneSlicePerPicConstraintFlag; }
+  void          setOneSlicePerPicConstraintFlag(bool b) { m_oneSlicePerPicConstraintFlag = b; }
+
+  bool          getOneSubpicPerPicConstraintFlag() const { return m_oneSubpicPerPicConstraintFlag; }
+  void          setOneSubpicPerPicConstraintFlag(bool b) { m_oneSubpicPerPicConstraintFlag = b; }
+#endif
 
   bool          getIntraOnlyConstraintFlag() const { return m_intraOnlyConstraintFlag; }
   void          setIntraOnlyConstraintFlag(bool b) { m_intraOnlyConstraintFlag = b; }

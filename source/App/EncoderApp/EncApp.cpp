@@ -75,7 +75,12 @@ EncApp::~EncApp()
 
 void EncApp::xInitLibCfg()
 {
+#if JVET_Q0814_DPB
+  VPS& vps = *m_cEncLib.getVPS();
+  vps.m_targetOlsIdx = m_targetOlsIdx;
+#else
   VPS vps;
+#endif
 
   vps.setMaxLayers( m_maxLayers );
 
@@ -171,7 +176,9 @@ void EncApp::xInitLibCfg()
     }
   }
   vps.setVPSExtensionFlag                                        ( false );
+#if !JVET_Q0814_DPB
   m_cEncLib.setVPS(&vps);
+#endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
   m_cEncLib.setNumSubProfile                                     ( m_numSubProfile );
@@ -916,7 +923,7 @@ void EncApp::xInitLib(bool isFieldCoding)
 // Public member functions
 // ====================================================================================================================
 
-void EncApp::createLib( const int layerId )
+void EncApp::createLib( const int layerIdx )
 {
   const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
   UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
@@ -935,8 +942,9 @@ void EncApp::createLib( const int layerId )
     }
   }
 
-  // initialize internal class & member variables
+  // initialize internal class & member variables and VPS
   xInitLibCfg();
+  const int layerId = m_cEncLib.getVPS() == nullptr ? 0 : m_cEncLib.getVPS()->getLayerId( layerIdx );
   xCreateLib( m_recBufList, layerId );
   xInitLib( m_isField );
 

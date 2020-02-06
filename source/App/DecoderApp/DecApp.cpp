@@ -163,7 +163,11 @@ uint32_t DecApp::decode()
         }
 
         // parse NAL unit syntax if within target decoding layer
+#if JVET_Q0814_DPB
+        if( ( m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer ) && xIsNaluWithinTargetDecLayerIdSet( &nalu ) )
+#else
         if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu))
+#endif
         {
           if (bPicSkipped)
           {
@@ -181,13 +185,19 @@ uint32_t DecApp::decode()
             }
           }
 #if JVET_P0288_PIC_OUTPUT
-          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_iTargetOLS);
+          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_targetOlsIdx);
 #else
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
 #endif
           if (nalu.m_nalUnitType == NAL_UNIT_VPS)
           {
+#if JVET_Q0814_DPB
+            m_cDecLib.deriveTargetOutputLayerSet( m_targetOlsIdx );
+            m_targetDecLayerIdSet = m_cDecLib.getVPS()->m_targetLayerIdSet;
+            m_targetOutputLayerIdSet = m_cDecLib.getVPS()->m_targetOutputLayerIdSet;
+#else
             deriveOutputLayerSet();
+#endif
           }
         }
         else
@@ -237,7 +247,11 @@ uint32_t DecApp::decode()
         }
 
         std::string reconFileName = m_reconFileName;
+#if JVET_Q0814_DPB
+        if( m_reconFileName.compare( "/dev/null" ) && m_cDecLib.getVPS() != nullptr && m_cDecLib.getVPS()->getMaxLayers() > 1 && xIsNaluWithinTargetOutputLayerIdSet( &nalu ) )
+#else
         if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu)))
+#endif
         {
           size_t pos = reconFileName.find_last_of('.');
           if (pos != string::npos)
@@ -249,10 +263,17 @@ uint32_t DecApp::decode()
             reconFileName.append( std::to_string( nalu.m_nuhLayerId ) );
           }
         }
+#if JVET_Q0814_DPB
+        if( ( m_cDecLib.getVPS() != nullptr && ( m_cDecLib.getVPS()->getMaxLayers() == 1 || xIsNaluWithinTargetOutputLayerIdSet( &nalu ) ) ) || m_cDecLib.getVPS() == nullptr )
+        {
+          m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
+        }
+#else
         if(((m_cDecLib.getVPS() != nullptr) &&
               ((m_cDecLib.getVPS()->getMaxLayers() == 1) || (isNaluWithinTargetOutputLayerIdSet(&nalu)))) ||
             (m_cDecLib.getVPS() == nullptr))
         m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open(reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon); // write mode
+#endif
       }
       // write reconstruction to file
       if( bNewPicture )
@@ -300,10 +321,11 @@ uint32_t DecApp::decode()
   return nRet;
 }
 
+#if !JVET_Q0814_DPB
 bool DecApp::deriveOutputLayerSet()
 {
   int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
-  if(m_iTargetOLS == - 1 || vps_max_layers_minus1 == 0)
+  if(m_targetOlsIdx == - 1 || vps_max_layers_minus1 == 0)
   {
     m_targetDecLayerIdSet.clear();
     return true;
@@ -413,8 +435,8 @@ bool DecApp::deriveOutputLayerSet()
   }
 
   m_targetOutputLayerIdSet.clear();
-  for (i = 0; i < NumOutputLayersInOls[m_iTargetOLS]; i++)
-    m_targetOutputLayerIdSet.push_back(OutputLayerIdInOls[m_iTargetOLS][i]);
+  for (i = 0; i < NumOutputLayersInOls[m_targetOlsIdx]; i++)
+    m_targetOutputLayerIdSet.push_back(OutputLayerIdInOls[m_targetOlsIdx][i]);
 
   NumLayersInOls[0] = 1;
   LayerIdInOls[0][0] = m_cDecLib.getVPS()->getLayerId(0);
@@ -441,8 +463,8 @@ bool DecApp::deriveOutputLayerSet()
   }
 
   m_targetDecLayerIdSet.clear();
-  for (i = 0; i < NumLayersInOls[m_iTargetOLS]; i++)
-    m_targetDecLayerIdSet.push_back(LayerIdInOls[m_iTargetOLS][i]);
+  for (i = 0; i < NumLayersInOls[m_targetOlsIdx]; i++)
+    m_targetDecLayerIdSet.push_back(LayerIdInOls[m_targetOlsIdx][i]);
 
   delete[] NumOutputLayersInOls;
   delete[] NumLayersInOls;
@@ -470,6 +492,7 @@ bool DecApp::deriveOutputLayerSet()
 
   return true;
 }
+#endif
 
 /**
  - lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new picture
@@ -756,6 +779,21 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
   uint32_t maxDecPicBufferingHighestTid;
   uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
 
+#if JVET_Q0814_DPB
+  const VPS* referredVPS = pcListPic->front()->cs->vps;
+  const int temporalId = ( m_iMaxTemporalLayer == -1 || m_iMaxTemporalLayer >= maxNrSublayers ) ? maxNrSublayers - 1 : m_iMaxTemporalLayer;
+
+  if( referredVPS == nullptr || referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] == 1 )
+  {
+    numReorderPicsHighestTid = activeSPS->getNumReorderPics( temporalId );
+    maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering( temporalId );
+  }
+  else
+  {
+    numReorderPicsHighestTid = referredVPS->getNumReorderPics( temporalId );
+    maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( temporalId );
+  }
+#else
   if(m_iMaxTemporalLayer == -1 || m_iMaxTemporalLayer >= maxNrSublayers)
   {
     numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
@@ -766,6 +804,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
     numReorderPicsHighestTid = activeSPS->getNumReorderPics(m_iMaxTemporalLayer);
     maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(m_iMaxTemporalLayer);
   }
+#endif
 
   while (iterPic != pcListPic->end())
   {
@@ -1085,6 +1124,29 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
 
 /** \param nalu Input nalu to check whether its LayerId is within targetDecLayerIdSet
  */
+#if JVET_Q0814_DPB
+bool DecApp::xIsNaluWithinTargetDecLayerIdSet( const InputNALUnit* nalu ) const
+{
+  if( !m_targetDecLayerIdSet.size() ) // By default, the set is empty, meaning all LayerIds are allowed
+  {
+    return true;
+  }
+
+  return std::find( m_targetDecLayerIdSet.begin(), m_targetDecLayerIdSet.end(), nalu->m_nuhLayerId ) != m_targetDecLayerIdSet.end();
+}
+
+/** \param nalu Input nalu to check whether its LayerId is within targetOutputLayerIdSet
+ */
+bool DecApp::xIsNaluWithinTargetOutputLayerIdSet( const InputNALUnit* nalu ) const
+{
+  if( !m_targetOutputLayerIdSet.size() ) // By default, the set is empty, meaning all LayerIds are allowed
+  {
+    return true;
+  }
+
+  return std::find( m_targetOutputLayerIdSet.begin(), m_targetOutputLayerIdSet.end(), nalu->m_nuhLayerId ) != m_targetOutputLayerIdSet.end();
+}
+#else
 bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
 {
   if ( m_targetDecLayerIdSet.size() == 0 ) // By default, the set is empty, meaning all LayerIds are allowed
@@ -1118,6 +1180,6 @@ bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
   }
   return false;
 }
-
+#endif
 
 //! \}

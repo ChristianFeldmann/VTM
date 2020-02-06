@@ -108,7 +108,7 @@ public:
   virtual ~EncApp();
 
   int   getMaxLayers() const { return m_maxLayers; }
-  void  createLib( int layerId );
+  void  createLib( const int layerIdx );
   void  destroyLib();
   bool  encodePrep( bool& eos );
   bool  encode();                               ///< main encoding function

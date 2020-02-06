@@ -3640,6 +3640,97 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
   }
 #endif
+
+#if JVET_Q0819_PH_CHANGES
+  // inherit values from picture header
+  //   set default values in case slice overrides are disabled
+  pcSlice->inheritFromPicHeader(picHeader, pps, sps);
+
+#if JVET_Q0819_PH_CHANGES
+  if (sps->getALFEnabledFlag() && !pps->getAlfInfoInPhFlag())
+#else
+  if (sps->getALFEnabledFlag() && !picHeader->getAlfEnabledPresentFlag())
+#endif
+  {
+    READ_FLAG(uiCode, "slice_alf_enabled_flag");
+    pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);
+    int alfChromaIdc = 0;
+    if (uiCode)
+    {
+      READ_CODE(3, uiCode, "slice_num_alf_aps_ids_luma");
+      int numAps = uiCode;
+      pcSlice->setTileGroupNumAps(numAps);
+      std::vector<int> apsId(numAps, -1);
+      for (int i = 0; i < numAps; i++)
+      {
+        READ_CODE(3, uiCode, "slice_alf_aps_id_luma");
+        apsId[i] = uiCode;
+        APS* APStoCheckLuma = parameterSetManager->getAPS(apsId[i], ALF_APS);
+        CHECK(APStoCheckLuma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] != 1, "bitstream conformance error, alf_luma_filter_signal_flag shall be equal to 1");
+      }
+
+
+      pcSlice->setAlfAPSs(apsId);
+      if (bChroma)
+      {
+        READ_CODE(2, uiCode, "slice_alf_chroma_idc");   alfChromaIdc = uiCode;
+      }
+      else
+      {
+        alfChromaIdc = 0;
+      }
+      if (alfChromaIdc)
+      {
+        READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
+        pcSlice->setTileGroupApsIdChroma(uiCode);
+        APS* APStoCheckChroma = parameterSetManager->getAPS(uiCode, ALF_APS);
+        CHECK(APStoCheckChroma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] != 1, "bitstream conformance error, alf_chroma_filter_signal_flag shall be equal to 1");
+      }
+    }
+    else
+    {
+      pcSlice->setTileGroupNumAps(0);
+    }
+    pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
+    pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+
+#if JVET_Q0795_CCALF
+    CcAlfFilterParam &filterParam = pcSlice->m_ccAlfFilterParam;
+    if (sps->getCCALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
+    {
+      READ_FLAG(uiCode, "slice_cc_alf_cb_enabled_flag");
+      pcSlice->setTileGroupCcAlfCbEnabledFlag(uiCode);
+      filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = (uiCode == 1) ? true : false;
+      pcSlice->setTileGroupCcAlfCbApsId(-1);
+      if (filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1])
+      {
+        // parse APS ID
+        READ_CODE(3, uiCode, "slice_cc_alf_cb_aps_id");
+        pcSlice->setTileGroupCcAlfCbApsId(uiCode);
+      }
+      // Cr
+      READ_FLAG(uiCode, "slice_cc_alf_cr_enabled_flag");
+      pcSlice->setTileGroupCcAlfCrEnabledFlag(uiCode);
+      filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = (uiCode == 1) ? true : false;
+      pcSlice->setTileGroupCcAlfCrApsId(-1);
+      if (filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1])
+      {
+        // parse APS ID
+        READ_CODE(3, uiCode, "slice_cc_alf_cr_aps_id");
+        pcSlice->setTileGroupCcAlfCrApsId(uiCode);
+      }
+    }
+    else
+    {
+      filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] = false;
+      filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = false;
+      pcSlice->setTileGroupCcAlfCbApsId(-1);
+      pcSlice->setTileGroupCcAlfCrApsId(-1);
+    }
+#endif
+  }
+#endif
+
 #if JVET_Q0155_COLOUR_ID
     // 4:4:4 colour plane ID
     if( sps->getSeparateColourPlaneFlag() )
@@ -3653,9 +3744,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     }
 #endif
 
+#if !JVET_Q0819_PH_CHANGES
     // inherit values from picture header
     //   set default values in case slice overrides are disabled
     pcSlice->inheritFromPicHeader( picHeader, pps, sps );
+#endif
 
 #if JVET_Q0819_PH_CHANGES
     if( pps->getRplInfoInPhFlag() )
@@ -4086,6 +4179,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
     }
 
+#if !JVET_Q0819_PH_CHANGES
 #if JVET_Q0819_PH_CHANGES
     if (sps->getALFEnabledFlag() && !pps->getAlfInfoInPhFlag())
 #else
@@ -4169,6 +4263,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
 #endif
     }
+#endif
 
     if (pps->getDeblockingFilterControlPresentFlag())
     {

@@ -2592,6 +2592,59 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
   }
 #endif
+
+#if JVET_Q0819_PH_CHANGES
+#if JVET_Q0819_PH_CHANGES
+  if (pcSlice->getSPS()->getALFEnabledFlag() && !pcSlice->getPPS()->getAlfInfoInPhFlag())
+#else
+  if (pcSlice->getSPS()->getALFEnabledFlag() && !picHeader->getAlfEnabledPresentFlag())
+#endif
+  {
+    const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
+    WRITE_FLAG(alfEnabled, "slice_alf_enabled_flag");
+
+    if (alfEnabled)
+    {
+      WRITE_CODE(pcSlice->getTileGroupNumAps(), 3, "slice_num_alf_aps_ids_luma");
+      const std::vector<int>&   apsId = pcSlice->getTileGroupApsIdLuma();
+      for (int i = 0; i < pcSlice->getTileGroupNumAps(); i++)
+      {
+        WRITE_CODE(apsId[i], 3, "slice_alf_aps_id_luma");
+      }
+
+      const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2;
+      if (chromaEnabled)
+      {
+        WRITE_CODE(alfChromaIdc, 2, "slice_alf_chroma_idc");
+      }
+      if (alfChromaIdc)
+      {
+        WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "slice_alf_aps_id_chroma");
+      }
+
+#if JVET_Q0795_CCALF
+      if (pcSlice->getSPS()->getCCALFEnabledFlag())
+      {
+        CcAlfFilterParam &filterParam = pcSlice->m_ccAlfFilterParam;
+        WRITE_FLAG(filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1] ? 1 : 0, "slice_cc_alf_cb_enabled_flag");
+        if (filterParam.ccAlfFilterEnabled[COMPONENT_Cb - 1])
+        {
+          // write CC ALF Cb APS ID
+          WRITE_CODE(pcSlice->getTileGroupCcAlfCbApsId(), 3, "slice_cc_alf_cb_aps_id");
+        }
+        // Cr
+        WRITE_FLAG(filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] ? 1 : 0, "slice_cc_alf_cr_enabled_flag");
+        if (filterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1])
+        {
+          // write CC ALF Cr APS ID
+          WRITE_CODE(pcSlice->getTileGroupCcAlfCrApsId(), 3, "slice_cc_alf_cr_aps_id");
+        }
+      }
+#endif
+    }
+  }
+#endif
+
 #if JVET_Q0155_COLOUR_ID
     // 4:4:4 colour plane ID
     if( pcSlice->getSPS()->getSeparateColourPlaneFlag() )
@@ -2862,6 +2915,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
 
+#if !JVET_Q0819_PH_CHANGES
 #if JVET_Q0819_PH_CHANGES
     if (pcSlice->getSPS()->getALFEnabledFlag() && !pcSlice->getPPS()->getAlfInfoInPhFlag())
 #else
@@ -2911,7 +2965,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
       }
     }
-	
+#endif	
 
     if (pcSlice->getPPS()->getDeblockingFilterControlPresentFlag())
     {

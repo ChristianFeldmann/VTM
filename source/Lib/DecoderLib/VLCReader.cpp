@@ -485,7 +485,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
   if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
   {
-    CHECK(pcPPS->getNumTiles() != 1, "invalid number of tiles");
+    CHECK(pcPPS->getNumTiles() != 1, "Each picture shall contain only one tile");
   }
 #endif
 
@@ -531,7 +531,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
       if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
       {
-        CHECK(uiCode != 0, "invalid num_slices_in_pic_minus1 value");
+        CHECK(uiCode != 0, "Each picture shall contain only one slice");
       }
 #endif
       CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
@@ -1348,7 +1348,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_Q0114_CONSTRAINT_FLAGS
     if (pcSPS->getProfileTierLevel()->getConstraintInfo()->getOneSubpicPerPicConstraintFlag())
     {
-      CHECK(uiCode != 0, "invalid sps_num_subpics_minus1 value");
+      CHECK(uiCode != 0, "Each picture shall contain only one subpicture");
     }
 #endif
 
@@ -3240,7 +3240,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #if JVET_Q0114_CONSTRAINT_FLAGS
       if (!pps->getRectSliceFlag() && sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
       {
-        CHECK(pps->getNumTiles() != uiCode + 1, "invalid num_tiles_in_slice_minus1 value");
+        CHECK(pps->getNumTiles() != uiCode + 1, "The value of num_tiles_in_slice_minus1 present in each slice header shall be equal to NumTilesInPic - 1");
       }
 #endif
     }
@@ -4026,7 +4026,7 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol,  "one_subpic_per_pic_constraint_flag"       ); cinfo->setOneSubpicPerPicConstraintFlag(symbol ? true : false);
   if (cinfo->getOneSlicePerPicConstraintFlag())
   {
-    CHECK(symbol == 0, "invalid one_subpic_per_pic_constraint_flag value");
+    CHECK(symbol == 0, "When one_slice_per_pic_constraint_flag is equal to 1, the value of one_subpic_per_pic_constraint_flag shall be equal to 1");
   }
 #endif
 

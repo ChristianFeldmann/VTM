@@ -72,7 +72,7 @@ private:
 
   // filtering functions
   unsigned
-  xGetBoundaryStrengthSingle      ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const;
+  xGetBoundaryStrengthSingle      ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos, const ChannelType chType  ) const;
 
   void xSetEdgefilterMultiple     ( const CodingUnit&     cu,
                                     const DeblockEdgeDir  edgeDir,

@@ -1607,7 +1607,7 @@ VPS::VPS()
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_vpsLayerId[i] = 0;
-    m_vpsIndependentLayerFlag[i] = 1;
+    m_vpsIndependentLayerFlag[i] = true;
 #if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
     m_vpsLayerChromaFormatIDC[i] = NOT_VALID;
     m_vpsLayerBitDepth[i] = NOT_VALID;
@@ -3371,11 +3371,13 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   if (pps)
   {
     int spsId = pps->getSPSId();
+#if !ENABLING_MULTI_SPS
     if (!isIRAP && (spsId != m_activeSPSId ))
     {
       msg( WARNING, "Warning: tried to activate PPS referring to a inactive SPS at non-IDR.");
     }
     else
+#endif
     {
       SPS *sps = m_spsMap.getPS(spsId);
       if (sps)

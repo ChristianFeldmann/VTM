@@ -1283,16 +1283,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
-        int shiftHorP = cuP.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuP.firstPU->chromaFormat);
-        int shiftVerP = cuP.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuP.firstPU->chromaFormat);
-        int shiftHorQ = cuQ.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
-        int shiftVerQ = cuQ.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
-        const Position& posQ = Position{ pos.x >> shiftHorQ,  pos.y >> shiftVerQ };
-        const Position& posP1 = Position{ pos.x >> shiftHorP,  pos.y >> shiftVerP };
-        const Position  posP = (edgeDir == EDGE_VER) ? posP1.offset(-1, 0) : posP1.offset(0, -1);
-
-        const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
-        const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType); 
+        const TransformUnit& tuQ = *cuQ.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, pos), CHANNEL_TYPE_CHROMA);
+        const TransformUnit& tuP = *cuP.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, (edgeDir == EDGE_VER) ? pos.offset(-1, 0) : pos.offset(0, -1)), CHANNEL_TYPE_CHROMA);
 
 #if JVET_Q0820_ACT
         const QpParam cQP(tuP, ComponentID(chromaIdx + 1), -MAX_INT, false);

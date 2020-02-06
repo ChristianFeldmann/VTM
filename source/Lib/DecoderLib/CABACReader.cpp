@@ -1219,7 +1219,7 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 #endif
     intra_luma_pred_modes( cu );
 #if JVET_Q0110_Q0785_CHROMA_BDPCM_420
-    if( !cu.Y().valid() || ( !cu.isSepTree() && cu.Y().valid() ) )
+    if( ( !cu.Y().valid() || (!cu.isSepTree() && cu.Y().valid() ) ) && isChromaEnabled(cu.chromaFormat) )
     {
       bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
     } 

@@ -742,6 +742,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
 #endif
     }
   }
+  else
+  {
+    pcPPS->setDeblockingFilterOverrideEnabledFlag(false);
+  }
 
 #if JVET_Q0819_PH_CHANGES
   READ_FLAG(uiCode, "rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);

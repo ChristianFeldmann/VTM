@@ -175,6 +175,42 @@ void EncApp::xInitLibCfg()
       }
     }
   }
+#if JVET_Q0786_PTL_only
+  CHECK( m_numPtlsInVps == 0, "There has to be at least one PTL structure in the VPS." );
+  vps.setNumPtls                                                 ( m_numPtlsInVps );
+  vps.setPtPresentFlag                                           (0, 1);
+  for (int i = 0; i < vps.getNumPtls(); i++)
+  {
+    if( i > 0 )
+      vps.setPtPresentFlag                                         (i, 0);
+    vps.setPtlMaxTemporalId                                      (i, vps.getMaxSubLayers() - 1); 
+  }
+  for (int i = 0; i < vps.getNumOutputLayerSets(); i++)
+  {
+    vps.setOlsPtlIdx                                             (i, m_olsPtlIdx[i]);
+  }
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(vps.getNumPtls());
+  // PTL0 shall be the same as the one signalled in the SPS
+  ptls[0].setLevelIdc                                            ( m_level );
+  ptls[0].setProfileIdc                                          ( m_profile);
+  ptls[0].setTierFlag                                            ( m_levelTier );
+  ptls[0].setNumSubProfile                                       ( m_numSubProfile );
+  for (int i = 0; i < m_numSubProfile; i++)
+  {
+    ptls[0].setSubProfileIdc                                   (i, m_subProfile[i]);
+  }
+  for(int i = 1; i < vps.getNumPtls(); i++)
+  {
+    ptls[i].setLevelIdc                                          (m_levelPtl[i]);
+  }
+  vps.setProfileTierLevel(ptls);
+  for(int i = 0; i < vps.getMaxLayers(); i++)
+  {
+    vps.setLayerChromaFormatIDC                                  (i, m_chromaFormatIDC);
+    vps.setLayerBitDepth                                         (i, m_internalBitDepth[CHANNEL_TYPE_LUMA]);
+  }
+#endif
   vps.setVPSExtensionFlag                                        ( false );
 #if !JVET_Q0814_DPB
   m_cEncLib.setVPS(&vps);

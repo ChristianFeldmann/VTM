@@ -371,17 +371,32 @@ int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, cons
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
-int EncGOP::xWriteParameterSets( AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst )
+#if ENABLING_MULTI_SPS
+int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst, const int layerIdx)
+#else
+int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst)
+#endif
 {
   int actualTotalBits = 0;
 
   if( bSeqFirst )
   {
+#if ENABLING_MULTI_SPS
+    if (layerIdx == 0)
+    {
+      actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+      if (slice->getSPS()->getVPSId() != 0)
+      {
+        actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
+      }
+    }
+#else
     if (slice->getSPS()->getVPSId() != 0)
     {
       actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
     }
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
+#endif
 
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
@@ -2988,8 +3003,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       int layerIdx = m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() );
 
       // it is assumed that layerIdx equal to 0 is always present
-      actualTotalBits += xWriteParameterSets( accessUnit, pcSlice, writePS && !layerIdx );
-
+#if ENABLING_MULTI_SPS
+      actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS, layerIdx);
+#else
+      actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS && !layerIdx);
+#endif
       if (writePS)
       {
         // create prefix SEI messages at the beginning of the sequence

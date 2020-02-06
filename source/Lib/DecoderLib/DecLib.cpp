@@ -1244,11 +1244,22 @@ void DecLib::xActivateParameterSets( const int layerId )
   }
 
   // Conformance checks
-  Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
-  const SPS *sps = pSlice->getSPS();
-  const PPS *pps = pSlice->getPPS();
+  Slice *slice = m_pcPic->slices[m_uiSliceSegmentIdx];
+  const SPS *sps = slice->getSPS();
+  const PPS *pps = slice->getPPS();
 #if JVET_Q0814_DPB
-  const VPS *vps = pSlice->getVPS();
+  const VPS *vps = slice->getVPS();
+#endif
+
+#if SPS_ID_CHECK
+  static std::unordered_map<int, int> m_clvssSPSid;
+
+  if( slice->isIRAP() && m_bFirstSliceInPicture && !pps->getMixedNaluTypesInPicFlag() )
+  {
+    m_clvssSPSid[layerId] = pps->getSPSId();
+  }
+
+  CHECK( m_clvssSPSid[layerId] != pps->getSPSId(), "The value of pps_seq_parameter_set_id shall be the same in all PPSs that are referred to by coded pictures in a CLVS" );
 #endif
 
 #if JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG

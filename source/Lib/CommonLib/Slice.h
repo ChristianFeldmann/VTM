@@ -1831,6 +1831,9 @@ private:
   bool             m_wpInfoInPhFlag;
   bool             m_qpDeltaInfoInPhFlag;
 #endif
+#if SPS_ID_CHECK
+  bool             m_mixedNaluTypesInPicFlag;
+#endif
 
   uint32_t         m_picWidthInLumaSamples;
   uint32_t         m_picHeightInLumaSamples;
@@ -2104,6 +2107,11 @@ public:
   Window&                 getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&           getScalingWindow()                                        const { return  m_scalingWindow; }
   void                    setScalingWindow( Window& scalingWindow )                       { m_scalingWindow = scalingWindow; }
+
+#if SPS_ID_CHECK
+  int                     getMixedNaluTypesInPicFlag() const                              { return m_mixedNaluTypesInPicFlag; }
+  void                    setMixedNaluTypesInPicFlag( const bool flag )                   { m_mixedNaluTypesInPicFlag = flag; }
+#endif
 };
 
 class APS

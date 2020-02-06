@@ -2382,6 +2382,9 @@ PPS::PPS()
 , m_wpInfoInPhFlag                   (1)
 , m_qpDeltaInfoInPhFlag              (1)
 #endif
+#if SPS_ID_CHECK
+, m_mixedNaluTypesInPicFlag          ( false )
+#endif
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
 , m_ppsRangeExtension                ()

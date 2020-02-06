@@ -1608,10 +1608,6 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-    m_vpsLayerChromaFormatIDC[i] = NOT_VALID;
-    m_vpsLayerBitDepth[i] = NOT_VALID;
-#endif
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
       m_vpsDirectRefLayerFlag[i][j] = 0;

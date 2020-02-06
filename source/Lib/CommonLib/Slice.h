@@ -848,11 +848,6 @@ private:
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
-  
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  int                   m_vpsLayerChromaFormatIDC[MAX_VPS_LAYERS];
-  int                   m_vpsLayerBitDepth[MAX_VPS_LAYERS];
-#endif  
 
 #if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
@@ -930,14 +925,6 @@ public:
 #if JVET_P0288_PIC_OUTPUT
   int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
-#endif
-
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  int               getLayerChromaFormatIDC( uint32_t layerIdx ) const                { return m_vpsLayerChromaFormatIDC[layerIdx]; }
-  void              setLayerChromaFormatIDC( uint32_t layerIdx, int chromaFormatIDC ) { m_vpsLayerChromaFormatIDC[layerIdx] = chromaFormatIDC; }
-
-  int               getLayerBitDepth( uint32_t layerIdx ) const                       { return m_vpsLayerBitDepth[layerIdx]; }
-  void              setLayerBitDepth( uint32_t layerIdx, int bitDepth )               { m_vpsLayerBitDepth[layerIdx] = bitDepth; }
 #endif
 
 #if JVET_Q0814_DPB

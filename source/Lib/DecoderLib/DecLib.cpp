@@ -1119,7 +1119,17 @@ void DecLib::xActivateParameterSets( const int layerId )
     m_pcPic->cs->pcv   = pps->pcv;
 
     // Initialise the various objects for the new set of settings
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   sps->getMaxCodingDepth(),
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
+#else
     m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA ), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA ) );
+#endif
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );

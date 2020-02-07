@@ -2798,13 +2798,6 @@ When true, specifies the use of the cross component prediction tool (4:4:4 proce
 If true, then when determining the alpha value for cross-component prediction, use the reconstructed residual rather than the pre-transform encoder-side residual
 \\
 
-\Option{SaoLumaOffsetBitShift}
-\Option{SaoChromaOffsetBitShift}&
-\Default{0}
-\Default{0} &
-Specifies the shift to apply to the SAO parameters. If negative, an estimate will be calculated based upon the initial QP. Version 1 and some Version 2 (RExt) profiles require this to be 0.
-\\
-
 \Option{TransformSkipLog2MaxSize} &
 \Default{2} &
 Specifies the maximum TU size for which transform-skip can be used; the minimum value is 2. Version 1 and some Version 2 (RExt) profiles require this to be 2.

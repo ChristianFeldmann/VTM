@@ -214,7 +214,9 @@ protected:
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
+#if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
+#endif
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM

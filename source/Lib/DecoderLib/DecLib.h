@@ -146,6 +146,10 @@ private:
   VPS*                    m_vps;
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  int                     m_layerChromaFormat[MAX_VPS_LAYERS];
+  int                     m_layerBitDepth[MAX_VPS_LAYERS];
+#endif
 
 #if JVET_O1143_SUBPIC_DECCHECK
 public:

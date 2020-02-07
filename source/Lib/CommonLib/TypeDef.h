@@ -106,7 +106,7 @@
 
 #define JVET_Q0447_WP_PARAM_ESTIM                         1 // JVET-Q0447: Add search iterations for method 2,3 and 4
 
-#define JVET_Q0119_CLEANUPS                               0 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
+#define JVET_Q0119_CLEANUPS                               1 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
 
 #define JVET_Q0114_CONSTRAINT_FLAGS                       1 // JVET-Q0114: AHG9: A few more general constraints flags
 

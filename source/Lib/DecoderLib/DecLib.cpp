@@ -1254,7 +1254,7 @@ void DecLib::xActivateParameterSets( const int layerId )
 #if SPS_ID_CHECK
   static std::unordered_map<int, int> m_clvssSPSid;
 
-  if( slice->isIRAP() && m_bFirstSliceInPicture && !pps->getMixedNaluTypesInPicFlag() )
+  if( slice->isClvssPu( pps->getMixedNaluTypesInPicFlag() ) && m_bFirstSliceInPicture )
   {
     m_clvssSPSid[layerId] = pps->getSPSId();
   }

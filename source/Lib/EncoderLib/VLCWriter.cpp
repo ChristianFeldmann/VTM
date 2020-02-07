@@ -376,7 +376,9 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
     WRITE_FLAG( pcPPS->getLoopFilterAcrossSlicesEnabledFlag(), "loop_filter_across_slices_enabled_flag");
   }
 
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   WRITE_FLAG( pcPPS->getEntropyCodingSyncEnabledFlag() ? 1 : 0, "entropy_coding_sync_enabled_flag" );
+#endif
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
@@ -986,7 +988,15 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_minus8" );
 #if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   WRITE_UVLC( pcSPS->getMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA),                      "min_qp_prime_ts_minus4" );
-#endif  
+#endif
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  WRITE_FLAG( pcSPS->getEntropyCodingSyncEnabledFlag() ? 1 : 0, "sps_entropy_coding_sync_enabled_flag" );
+  if (pcSPS->getEntropyCodingSyncEnabledFlag()) 
+  {
+    WRITE_FLAG( pcSPS->getEntropyCodingSyncEntryPointsPresentFlag() ? 1 : 0, "sps_wpp_entry_point_offsets_present_flag" );
+  }
+#endif
+
   WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 
@@ -2862,7 +2872,11 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 */
 void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
 {
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  pSlice->setNumEntryPoints( pSlice->getSPS(), pSlice->getPPS() );
+#else
   pSlice->setNumEntryPoints( pSlice->getPPS() );
+#endif
   if( pSlice->getNumEntryPoints() == 0 )
   {
     return;

@@ -747,6 +747,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
   m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  m_cEncLib.setEntropyCodingSyncEntryPointPresentFlag            ( m_entropyCodingSyncEntryPointPresentFlag );
+#endif
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
   m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );
   m_cEncLib.setSliceLevelDblk                                    ( m_sliceLevelDblk );

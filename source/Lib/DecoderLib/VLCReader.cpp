@@ -4550,7 +4550,17 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_Q0210_UEK_REMOVAL 
+      READ_UVLC( code, "alf coeff abs" );
+      coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = code;
+      if( coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] != 0 )
+      {
+        READ_FLAG( code, "alf_coeff_sign" );
+        coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = ( code ) ? -coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] : coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ];
+       }
+#else
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
+#endif
       CHECK( isChroma &&
              ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -127 )
              , "AlfCoeffC shall be in the range of -127 to 127, inclusive" );

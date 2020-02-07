@@ -68,23 +68,19 @@ bool ParcatHLSyntaxReader::parsePictureHeaderInSliceHeaderFlag(ParameterSetManag
 void ParcatHLSyntaxReader::parsePictureHeaderUpToPoc ( ParameterSetManager *parameterSetManager )
 {
   uint32_t  uiCode;
-  uint32_t  gdrPicFlag;
   PPS* pps = NULL;
   SPS* sps = NULL;
+  READ_FLAG(uiCode, "gdr_or_irap_pic_flag");
+  if (uiCode)
+  {
+    READ_FLAG(uiCode, "gdr_pic_flag");
+  }
   READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");
   if (uiCode)
   {
     READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");
   }
   READ_FLAG(uiCode, "non_reference_picture_flag");
-  READ_FLAG(uiCode, "gdr_pic_flag");
-  gdrPicFlag = uiCode;
-  READ_FLAG(uiCode, "no_output_of_prior_pics_flag");
-  if (gdrPicFlag)
-  {
-    READ_UVLC(uiCode, "recovery_poc_cnt");
-  }
-
   // parameter sets
   READ_UVLC(uiCode, "ph_pic_parameter_set_id");
   pps = parameterSetManager->getPPS(uiCode);

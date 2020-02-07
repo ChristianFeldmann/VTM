@@ -2256,6 +2256,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 
 #if JVET_Q0819_PH_CHANGES
+  READ_FLAG(uiCode, "gdr_or_irap_pic_flag");               picHeader->setGdrOrIrapPicFlag(uiCode != 0);
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    READ_FLAG(uiCode, "gdr_pic_flag");                     picHeader->setGdrPicFlag(uiCode != 0);
+  }
   READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");       picHeader->setPicInterSliceAllowedFlag(uiCode != 0);
   if (picHeader->getPicInterSliceAllowedFlag())
   {
@@ -2268,8 +2273,27 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   CHECK(picHeader->getPicInterSliceAllowedFlag() == 0 && picHeader->getPicIntraSliceAllowedFlag() == 0, "Invalid picture without intra or inter slice");
 #endif
   READ_FLAG(uiCode, "non_reference_picture_flag");       picHeader->setNonReferencePictureFlag( uiCode != 0 );
+#if !JVET_Q0819_PH_CHANGES
   READ_FLAG(uiCode, "gdr_pic_flag");                     picHeader->setGdrPicFlag( uiCode != 0 );
+#endif
+#if JVET_Q0819_PH_CHANGES
+  // parameter sets
+  READ_UVLC(uiCode, "ph_pic_parameter_set_id");
+  picHeader->setPPSId(uiCode);
+  pps = parameterSetManager->getPPS(picHeader->getPPSId());
+  CHECK(pps == 0, "Invalid PPS");
+  picHeader->setSPSId(pps->getSPSId());
+  sps = parameterSetManager->getSPS(picHeader->getSPSId());
+  CHECK(sps == 0, "Invalid SPS");
+  READ_CODE(sps->getBitsForPOC(), uiCode, "ph_pic_order_cnt_lsb");
+  picHeader->setPocLsb(uiCode);
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    READ_FLAG(uiCode, "no_output_of_prior_pics_flag");   picHeader->setNoOutputOfPriorPicsFlag(uiCode != 0);
+  }
+#else
   READ_FLAG(uiCode, "no_output_of_prior_pics_flag");     picHeader->setNoOutputOfPriorPicsFlag( uiCode != 0 );
+#endif
   if( picHeader->getGdrPicFlag() ) 
   {
     READ_UVLC(uiCode, "recovery_poc_cnt");               picHeader->setRecoveryPocCnt( uiCode );
@@ -2279,6 +2303,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setRecoveryPocCnt( 0 );
   }
   
+#if !JVET_Q0819_PH_CHANGES
   // parameter sets
   READ_UVLC(uiCode, "ph_pic_parameter_set_id");
   picHeader->setPPSId( uiCode );
@@ -2287,11 +2312,145 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   picHeader->setSPSId( pps->getSPSId() );
   sps = parameterSetManager->getSPS(picHeader->getSPSId());
   CHECK(sps==0, "Invalid SPS");
-#if JVET_Q0819_PH_CHANGES
-  READ_CODE(sps->getBitsForPOC(), uiCode, "ph_pic_order_cnt_lsb");
-  picHeader->setPocLsb(uiCode);
 #endif
 
+#if JVET_Q0819_PH_CHANGES
+  // alf enable flags and aps IDs
+#if JVET_Q0795_CCALF
+  picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
+  picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
+#endif
+  if (sps->getALFEnabledFlag())
+  {
+#if JVET_Q0819_PH_CHANGES
+    if (pps->getAlfInfoInPhFlag())
+#else
+    READ_FLAG(uiCode, "pic_alf_enabled_present_flag");
+    picHeader->setAlfEnabledPresentFlag(uiCode != 0);
+
+    if (picHeader->getAlfEnabledPresentFlag())
+#endif
+    {
+      READ_FLAG(uiCode, "pic_alf_enabled_flag");
+      picHeader->setAlfEnabledFlag(COMPONENT_Y, uiCode);
+
+      int alfChromaIdc = 0;
+      if (uiCode)
+      {
+        READ_CODE(3, uiCode, "pic_num_alf_aps_ids_luma");
+        int numAps = uiCode;
+        picHeader->setNumAlfAps(numAps);
+
+        std::vector<int> apsId(numAps, -1);
+        for (int i = 0; i < numAps; i++)
+        {
+          READ_CODE(3, uiCode, "pic_alf_aps_id_luma");
+          apsId[i] = uiCode;
+        }
+        picHeader->setAlfAPSs(apsId);
+
+        if (sps->getChromaFormatIdc() != CHROMA_400)
+        {
+          READ_CODE(2, uiCode, "pic_alf_chroma_idc");
+          alfChromaIdc = uiCode;
+        }
+        else
+        {
+          alfChromaIdc = 0;
+        }
+        if (alfChromaIdc)
+        {
+          READ_CODE(3, uiCode, "pic_alf_aps_id_chroma");
+          picHeader->setAlfApsIdChroma(uiCode);
+        }
+#if JVET_Q0795_CCALF
+        if (sps->getCCALFEnabledFlag())
+        {
+          READ_FLAG(uiCode, "ph_cc_alf_cb_enabled_flag");
+          picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, uiCode != 0);
+          picHeader->setCcAlfCbApsId(-1);
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cb))
+          {
+            // parse APS ID
+            READ_CODE(3, uiCode, "ph_cc_alf_cb_aps_id");
+            picHeader->setCcAlfCbApsId(uiCode);
+          }
+          // Cr
+          READ_FLAG(uiCode, "ph_cc_alf_cr_enabled_flag");
+          picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, uiCode != 0);
+          picHeader->setCcAlfCrApsId(-1);
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cr))
+          {
+            // parse APS ID
+            READ_CODE(3, uiCode, "ph_cc_alf_cr_aps_id");
+            picHeader->setCcAlfCrApsId(uiCode);
+          }
+        }
+#endif
+      }
+      else
+      {
+        picHeader->setNumAlfAps(0);
+      }
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+    }
+    else
+    {
+      picHeader->setAlfEnabledFlag(COMPONENT_Y, true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, true);
+    }
+  }
+  else
+  {
+    picHeader->setAlfEnabledFlag(COMPONENT_Y, false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
+  }
+  // luma mapping / chroma scaling controls
+  if (sps->getUseLmcs())
+  {
+    READ_FLAG(uiCode, "pic_lmcs_enabled_flag");
+    picHeader->setLmcsEnabledFlag(uiCode != 0);
+
+    if (picHeader->getLmcsEnabledFlag())
+    {
+      READ_CODE(2, uiCode, "pic_lmcs_aps_id");
+      picHeader->setLmcsAPSId(uiCode);
+
+      if (sps->getChromaFormatIdc() != CHROMA_400)
+      {
+        READ_FLAG(uiCode, "pic_chroma_residual_scale_flag");
+        picHeader->setLmcsChromaResidualScaleFlag(uiCode != 0);
+      }
+      else
+      {
+        picHeader->setLmcsChromaResidualScaleFlag(false);
+      }
+    }
+  }
+  else
+  {
+    picHeader->setLmcsEnabledFlag(false);
+    picHeader->setLmcsChromaResidualScaleFlag(false);
+  }
+  // quantization scaling lists
+  if (sps->getScalingListFlag())
+  {
+    READ_FLAG(uiCode, "pic_scaling_list_present_flag");
+    picHeader->setScalingListPresentFlag(uiCode);
+    if (picHeader->getScalingListPresentFlag())
+    {
+      READ_CODE(3, uiCode, "pic_scaling_list_aps_id");
+      picHeader->setScalingListAPSId(uiCode);
+    }
+  }
+  else
+  {
+    picHeader->setScalingListPresentFlag(false);
+  }
+#endif
   
   // initialize tile/slice info for no partitioning case
   if( pps->getNoPicPartitionFlag() )
@@ -2906,7 +3065,8 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setSaoEnabledFlag(CHANNEL_TYPE_LUMA,   false);
     picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, false);
   }
-  
+
+#if !JVET_Q0819_PH_CHANGES
   // alf enable flags and aps IDs
 #if JVET_Q0795_CCALF
   picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
@@ -2914,14 +3074,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
   if( sps->getALFEnabledFlag() )
   {
-#if JVET_Q0819_PH_CHANGES
-    if (pps->getAlfInfoInPhFlag())
-#else
     READ_FLAG(uiCode, "pic_alf_enabled_present_flag");  
     picHeader->setAlfEnabledPresentFlag(uiCode != 0);
 
     if (picHeader->getAlfEnabledPresentFlag()) 
-#endif
     {
       READ_FLAG(uiCode, "pic_alf_enabled_flag");
       picHeader->setAlfEnabledFlag(COMPONENT_Y, uiCode);
@@ -3000,6 +3156,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
     picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
   }
+#endif
 
   // dependent quantization
   if (!pps->getPPSDepQuantEnabledIdc())
@@ -3133,6 +3290,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
   }
 
+#if !JVET_Q0819_PH_CHANGES
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
@@ -3176,6 +3334,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setScalingListPresentFlag( false );
   }
+#endif
 
   // picture header extension
   if(pps->getPictureHeaderExtensionPresentFlag())

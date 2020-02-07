@@ -2770,6 +2770,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setDisProfFlag(0);
     }
 
+#if JVET_Q0819_PH_CHANGES
+    if( (pps->getUseWP() || pps->getWPBiPred()) && pps->getWpInfoInPhFlag() )
+    {
+      parsePredWeightTable(picHeader, sps);
+    }
+#endif
+
 #if !JVET_Q0806
   // triangle merge candidate list size
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
@@ -2838,13 +2845,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
    {
     picHeader->setMaxNumIBCMergeCand(0);
   }
-
-#if JVET_Q0819_PH_CHANGES
-  if ((pps->getUseWP() || pps->getWPBiPred()) && pps->getWpInfoInPhFlag())
-  {
-    parsePredWeightTable(picHeader, sps);
-  }
-#endif
 
 #if JVET_Q0819_PH_CHANGES
   if (pps->getQpDeltaInfoInPhFlag())
@@ -3695,6 +3695,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #if JVET_Q0819_PH_CHANGES
       if (pps->getWpInfoInPhFlag())
       {
+        CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_0) > picHeader->getNumL0Weights(), "ERROR: Number of active reference picture L0 is greater than the number of weighted prediction signalled in Picture Header");
+        CHECK(pcSlice->getNumRefIdx(REF_PIC_LIST_1) > picHeader->getNumL1Weights(), "ERROR: Number of active reference picture L1 is greater than the number of weighted prediction signalled in Picture Header");
         pcSlice->setWpScaling(picHeader->getWpScalingAll());
       }
       else
@@ -4387,6 +4389,8 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
 
   uint32_t numLxWeights;
   READ_UVLC(numLxWeights, "num_l0_weights");
+  picHeader->setNumL0Weights(numLxWeights);
+  picHeader->setNumL1Weights(0);
 
   bool moreSyntaxToBeParsed = true;
   for (int numRef = 0; numRef < NUM_REF_PIC_LIST_01 && moreSyntaxToBeParsed; numRef++)
@@ -4492,6 +4496,7 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
     {
       READ_UVLC(numLxWeights, "num_l1_weights");
       moreSyntaxToBeParsed = (numLxWeights == 0) ? false : true;
+      picHeader->setNumL1Weights(numLxWeights);
     }
   }
   CHECK(totalSignalledWeightFlags > 24, "Too many weight flag signalled");

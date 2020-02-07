@@ -1961,6 +1961,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setDisProfFlag(0);
     }
 
+#if JVET_Q0819_PH_CHANGES
+    if ((pps->getUseWP() || pps->getWPBiPred()) && pps->getWpInfoInPhFlag())
+    {
+      xCodePredWeightTable(picHeader, sps);
+    }
+#endif
+
 #if !JVET_Q0806
   // triangle merge candidate list size
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
@@ -2008,13 +2015,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     CHECK( picHeader->getMaxNumIBCMergeCand() > IBC_MRG_MAX_NUM_CANDS, "More IBC merge candidates signalled than supported" );
     WRITE_UVLC(IBC_MRG_MAX_NUM_CANDS - picHeader->getMaxNumIBCMergeCand(), "pic_six_minus_max_num_ibc_merge_cand");
   }
-
-#if JVET_Q0819_PH_CHANGES
-  if ((pps->getUseWP() || pps->getWPBiPred()) && pps->getWpInfoInPhFlag())
-  {
-    xCodePredWeightTable(picHeader, sps);
-  }
-#endif
 
 #if JVET_Q0819_PH_CHANGES
   if (pps->getQpDeltaInfoInPhFlag())

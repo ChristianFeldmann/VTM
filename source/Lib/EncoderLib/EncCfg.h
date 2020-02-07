@@ -230,6 +230,13 @@ protected:
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
   bool m_nonPackedConstraintFlag;
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool m_nonProjectedConstraintFlag;
+  bool m_noResChangeInClvsConstraintFlag;
+  bool m_oneTilePerPicConstraintFlag;
+  bool m_oneSlicePerPicConstraintFlag;
+  bool m_oneSubpicPerPicConstraintFlag;
+#endif
   bool m_frameOnlyConstraintFlag;
   bool m_intraConstraintFlag;
 
@@ -692,7 +699,9 @@ protected:
 #endif
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
 
+#if !JVET_Q0814_DPB
   VPS       m_cVPS;
+#endif
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
@@ -1798,8 +1807,10 @@ public:
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }
 
+#if !JVET_Q0814_DPB
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
+#endif
   void         setDPS(DPS *p)                                        { m_dps = *p; }
   DPS*         getDPS()                                              { return &m_dps; }
   void         setUseRecalculateQPAccordingToLambda (bool b)         { m_recalculateQPAccordingToLambda = b;    }
@@ -1861,6 +1872,23 @@ public:
 
   bool         getNonPackedConstraintFlag() const                    { return m_nonPackedConstraintFlag; }
   void         setNonPackedConstraintFlag(bool b)                    { m_nonPackedConstraintFlag = b; }
+
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool         getNonProjectedConstraintFlag() const                 { return m_nonProjectedConstraintFlag; }
+  void         setNonProjectedConstraintFlag(bool b)                 { m_nonProjectedConstraintFlag = b; }
+               
+  bool         getNoResChangeInClvsConstraintFlag() const            { return m_noResChangeInClvsConstraintFlag; }
+  void         setNoResChangeInClvsConstraintFlag(bool b)            { m_noResChangeInClvsConstraintFlag = b; }
+               
+  bool         getOneTilePerPicConstraintFlag() const                { return m_oneTilePerPicConstraintFlag; }
+  void         setOneTilePerPicConstraintFlag(bool b)                { m_oneTilePerPicConstraintFlag = b; }
+               
+  bool         getOneSlicePerPicConstraintFlag() const               { return m_oneSlicePerPicConstraintFlag; }
+  void         setOneSlicePerPicConstraintFlag(bool b)               { m_oneSlicePerPicConstraintFlag = b; }
+               
+  bool         getOneSubpicPerPicConstraintFlag() const              { return m_oneSubpicPerPicConstraintFlag; }
+  void         setOneSubpicPerPicConstraintFlag(bool b)              { m_oneSubpicPerPicConstraintFlag = b; }
+#endif
 
   bool         getFrameOnlyConstraintFlag() const                    { return m_frameOnlyConstraintFlag; }
   void         setFrameOnlyConstraintFlag(bool b)                    { m_frameOnlyConstraintFlag = b; }

@@ -95,6 +95,9 @@ class ProfileLevelTierFeatures
     Level::Tier                getTier()              const { return m_tier; }
     uint64_t getCpbSizeInBits()                       const;
     double getMinCr()                                 const;
+#if JVET_Q0814_DPB
+    uint32_t getMaxDpbSize( uint32_t picSizeMaxInSamplesY ) const;
+#endif
 };
 
 

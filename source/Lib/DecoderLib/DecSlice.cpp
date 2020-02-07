@@ -146,7 +146,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     SubPic curSubPic = slice->getPPS()->getSubPicFromPos(pos);
     // padding/restore at slice level
-    if (curSubPic.getTreatedAsPicFlag() && ctuIdx==0)
+    if (slice->getPPS()->getNumSubPics()>=2 && curSubPic.getTreatedAsPicFlag() && ctuIdx==0)
     {
       int subPicX      = (int)curSubPic.getSubPicLeft();
       int subPicY      = (int)curSubPic.getSubPicTop();
@@ -258,7 +258,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       subStrmId++;
     }
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
-    if (curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
+    if (slice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
     // for last Ctu in the slice
     {
       int subPicX = (int)curSubPic.getSubPicLeft();

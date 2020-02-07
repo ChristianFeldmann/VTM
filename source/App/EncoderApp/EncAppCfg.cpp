@@ -868,6 +868,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ProgressiveSource",                               m_progressiveSourceFlag,                          false, "Indicate that source is progressive")
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  ("NonProjectedConstraintFlag",                      m_nonProjectedConstraintFlag,                     false, "Indicate that the bitstream contains projection SEI messages")
+  ("NoResChangeInClvsConstraintFlag",                 m_noResChangeInClvsConstraintFlag,                false, "Indicate that the picture spatial resolution does not change within any CLVS referring to the SPS")
+  ("OneTilePerPicConstraintFlag",                     m_oneTilePerPicConstraintFlag,                    false, "Indicate that each picture shall contain only one tile")
+  ("OneSlicePerPicConstraintFlag",                    m_oneSlicePerPicConstraintFlag,                   false, "Indicate that each picture shall contain only one slice")
+  ("OneSubpicPerPicConstraintFlag",                   m_oneSubpicPerPicConstraintFlag,                  false, "Indicate that each picture shall contain only one subpicture")
+#endif
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
 #if JVET_Q0119_CLEANUPS
@@ -1426,7 +1433,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
   ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
-
+#if JVET_Q0814_DPB
+  ( "TargetOutputLayerSet,p",                         m_targetOlsIdx,                              -1, "Target output layer set index" )
+#endif
   ;
   opts.addOptions()
   ( "MaxSublayers",                                   m_maxSublayers,                               1, "Max number of Sublayers")

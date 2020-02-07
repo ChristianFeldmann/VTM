@@ -787,7 +787,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
       }
+#if JVET_Q0629_REMOVAL_PLT_4X4
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
       if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif           
       {
         m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
       }
@@ -801,7 +805,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
       if (CU::isIntra(cu) || CU::isPLT(cu))
       {
+#if JVET_Q0629_REMOVAL_PLT_4X4
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
         if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif                      
           m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
       }
       else
@@ -824,12 +832,20 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || cu.isConsIntra() )
     {
+#if JVET_Q0629_REMOVAL_PLT_4X4
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
       if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif           
         m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
       return;
     }
     m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+#if JVET_Q0629_REMOVAL_PLT_4X4    
+    if ((CU::isIntra(cu) || CU::isPLT(cu)) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
     if ((CU::isIntra(cu) || CU::isPLT(cu)) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif         
     {
       m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
     }
@@ -885,7 +901,7 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
 
     intra_luma_pred_modes  ( cu );
 #if JVET_Q0110_Q0785_CHROMA_BDPCM_420
-    if( !cu.Y().valid() || ( !cu.isSepTree() && cu.Y().valid() ) )
+    if( ( !cu.Y().valid() || ( !cu.isSepTree() && cu.Y().valid() ) ) && isChromaEnabled(cu.chromaFormat) )
     {
       bdpcm_mode( cu, ComponentID(CHANNEL_TYPE_CHROMA) );
     } 

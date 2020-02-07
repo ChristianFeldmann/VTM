@@ -251,6 +251,10 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
   WRITE_UVLC( pcPPS->getPPSId(),                             "pps_pic_parameter_set_id" );
   WRITE_CODE( pcPPS->getSPSId(), 4,                          "pps_seq_parameter_set_id" );
 
+#if SPS_ID_CHECK
+  WRITE_FLAG( pcPPS->getMixedNaluTypesInPicFlag() ? 1 : 0,   "mixed_nalu_types_in_pic_flag" );
+#endif
+
   WRITE_UVLC( pcPPS->getPicWidthInLumaSamples(), "pic_width_in_luma_samples" );
   WRITE_UVLC( pcPPS->getPicHeightInLumaSamples(), "pic_height_in_luma_samples" );
   Window conf = pcPPS->getConformanceWindow();
@@ -1460,6 +1464,58 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       }
     }
   }
+
+#if JVET_Q0814_DPB
+  if( !pcVPS->getAllIndependentLayersFlag() )
+  {
+    WRITE_UVLC( pcVPS->m_numDpbParams, "vps_num_dpb_params" );
+  }
+
+  if( pcVPS->m_numDpbParams > 0 && pcVPS->getMaxSubLayers() > 1 )
+  {
+    WRITE_FLAG( pcVPS->m_sublayerDpbParamsPresentFlag, "vps_sublayer_dpb_params_present_flag" );
+  }
+
+  for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
+  {
+    if( pcVPS->getMaxSubLayers() == 1 )
+    {
+      CHECK( pcVPS->m_dpbMaxTemporalId[i] != 0, "When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0" );
+    }
+    else
+    {
+      if( pcVPS->getAllLayersSameNumSublayersFlag() )
+      {
+        CHECK( pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1" );
+      }
+      else
+      {
+        WRITE_CODE( pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]" );
+      }
+    }
+
+    for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
+    {
+      WRITE_UVLC( pcVPS->m_dpbParameters[i].m_maxDecPicBuffering[j], "max_dec_pic_buffering_minus1[i]" );
+      WRITE_UVLC( pcVPS->m_dpbParameters[i].m_numReorderPics[j], "max_num_reorder_pics[i]" );
+      WRITE_UVLC( pcVPS->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j], "max_latency_increase_plus1[i]" );
+    }
+  }
+
+  for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
+  {
+    if( pcVPS->m_numLayersInOls[i] > 1 )
+    {
+      WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
+      WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
+      if( pcVPS->m_numDpbParams > 1 )
+      {
+        WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
+      }
+    }
+  }
+#endif
+
   WRITE_FLAG(0, "vps_extension_flag");
 
   //future extensions here..
@@ -2704,10 +2760,19 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
   WRITE_FLAG(cinfo->getNonPackedConstraintFlag(), "general_non_packed_constraint_flag"      );
   WRITE_FLAG(cinfo->getFrameOnlyConstraintFlag(), "general_frame_only_constraint_flag"      );
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  WRITE_FLAG(cinfo->getNonProjectedConstraintFlag(), "general_non_projected_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getIntraOnlyConstraintFlag(),     "intra_only_constraint_flag"      );
 
   WRITE_CODE(cinfo->getMaxBitDepthConstraintIdc(), 4, "max_bitdepth_constraint_idc" );
   WRITE_CODE(cinfo->getMaxChromaFormatConstraintIdc(), 2, "max_chroma_format_constraint_idc" );
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  WRITE_FLAG(cinfo->getNoResChangeInClvsConstraintFlag(), "no_res_change_in_clvs_constraint_flag");
+  WRITE_FLAG(cinfo->getOneTilePerPicConstraintFlag(), "one_tile_per_pic_constraint_flag");
+  WRITE_FLAG(cinfo->getOneSlicePerPicConstraintFlag(), "one_slice_per_pic_constraint_flag");
+  WRITE_FLAG(cinfo->getOneSubpicPerPicConstraintFlag(), "one_subpic_per_pic_constraint_flag");
+#endif
 
   WRITE_FLAG(cinfo->getNoQtbttDualTreeIntraConstraintFlag() ? 1 : 0, "no_qtbtt_dual_tree_intra_constraint_flag");
   WRITE_FLAG(cinfo->getNoPartitionConstraintsOverrideConstraintFlag() ? 1 : 0, "no_partition_constraints_override_constraint_flag");

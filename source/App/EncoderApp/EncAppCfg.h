@@ -191,6 +191,13 @@ protected:
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
   bool          m_nonPackedConstraintFlag;
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool          m_nonProjectedConstraintFlag;
+  bool          m_noResChangeInClvsConstraintFlag;
+  bool          m_oneTilePerPicConstraintFlag;
+  bool          m_oneSlicePerPicConstraintFlag;
+  bool          m_oneSubpicPerPicConstraintFlag;
+#endif
   bool          m_frameOnlyConstraintFlag;
 
   // coding structure
@@ -734,6 +741,9 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 
   int         m_maxLayers;
+#if JVET_Q0814_DPB
+  int         m_targetOlsIdx;
+#endif
 
   int         m_layerId[MAX_VPS_LAYERS];
   int         m_layerIdx;

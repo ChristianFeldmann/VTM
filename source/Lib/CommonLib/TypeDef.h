@@ -51,6 +51,11 @@
 #include <cassert>
 
 #define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).
+#define JVET_Q0449_RPR_NO_SMOOTHING                       1 // JVET-Q0449: Disable smoothing half-sample interpolation filter in conjunction with RPR
+
+#define JVET_Q0493_PLT_ENCODER_LOSSLESS                   1 // JVET-Q0493: Palette encoder improvements for lossless coding
+
+#define JVET_Q0629_REMOVAL_PLT_4X4                        1 // JVET-Q0629: Removal of 4x4 blocks in palette mode
 
 #define JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE               1 // JVET-Q0291: reduce palette size of dual tree from 31 to 15 and palette predictor size of dual tree from 63 to 31
 
@@ -106,7 +111,13 @@
 
 #define JVET_Q0119_CLEANUPS                               1 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
 
+#define JVET_Q0114_CONSTRAINT_FLAGS                       1 // JVET-Q0114: AHG9: A few more general constraints flags
+
 #define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
+
+#define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
+#define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
+#define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
 
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 
@@ -141,9 +152,8 @@
 
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
-#define JVET_O1143_SUBPIC_BOUNDARY                        0 // treat subpicture boundary as picture boundary
+#define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 #if JVET_O1143_SUBPIC_BOUNDARY
-#define JVET_O1143_SUBPIC_DECCHECK                        0
 #define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
 #define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 #endif

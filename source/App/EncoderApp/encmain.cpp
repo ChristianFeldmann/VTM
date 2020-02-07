@@ -167,8 +167,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    int layerId = layerIdx; //VS: layerIdx should be converted to layerId after VPS is implemented
-    pcEncApp[layerIdx]->createLib( layerId );
+    pcEncApp[layerIdx]->createLib( layerIdx );
 
     if( !resized )
     {

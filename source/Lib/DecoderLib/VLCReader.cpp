@@ -421,6 +421,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_CODE(4, uiCode, "pps_seq_parameter_set_id");
   pcPPS->setSPSId (uiCode);
 
+#if SPS_ID_CHECK
+  READ_FLAG( uiCode, "mixed_nalu_types_in_pic_flag" );       pcPPS->setMixedNaluTypesInPicFlag( uiCode == 1 );
+#endif
+
   READ_UVLC( uiCode, "pic_width_in_luma_samples" );          pcPPS->setPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_in_luma_samples" );         pcPPS->setPicHeightInLumaSamples( uiCode );
 
@@ -474,13 +478,21 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     {
       pcPPS->setSubPicId( picIdx, picIdx );
     }
-#if JVET_O1143_SUBPIC_BOUNDARY
-    // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
-    SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-    pcPPS->setNumSubPics(sps->getNumSubPics());
-#endif
   }
 
+#if JVET_O1143_SUBPIC_BOUNDARY
+  // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
+  pcPPS->setNumSubPics(parameterSetManager->getSPS(pcPPS->getSPSId())->getNumSubPics());
+#endif
+
+
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
+  {
+    CHECK(pcPPS->getNumTiles() != 1, "When one_tile_per_pic_constraint_flag is equal to 1, each picture shall contain only one tile");
+  }
+#endif
 
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
@@ -520,6 +532,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       int32_t tileIdx = 0;
 
       READ_UVLC( uiCode, "num_slices_in_pic_minus1" );                pcPPS->setNumSlicesInPic( uiCode + 1 );
+#if JVET_Q0114_CONSTRAINT_FLAGS
+      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
+      if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
+      {
+        CHECK(uiCode != 0, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
+      }
+#endif
       CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
       READ_CODE(1, uiCode, "tile_idx_delta_present_flag");            pcPPS->setTileIdxDeltaPresentFlag( uiCode == 1 );
       pcPPS->initRectSlices();
@@ -584,17 +603,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       
       // initialize mapping between rectangular slices and CTUs
       pcPPS->initRectSliceMap();
-#if JVET_O1143_SUBPIC_BOUNDARY
-      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-      CHECK(sps == 0, "Invalid SPS");
-      pcPPS->initSubPic(*sps);
-#endif
     }
 
     // loop filtering across slice/tile controls
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
+#if JVET_O1143_SUBPIC_BOUNDARY  
+  pcPPS->initSubPic(*sps);
+#endif
 
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
@@ -1289,6 +1306,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "ref_pic_resampling_enabled_flag" );        pcSPS->setRprEnabledFlag( uiCode );
 #endif
 
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  if (pcSPS->getProfileTierLevel()->getConstraintInfo()->getNoResChangeInClvsConstraintFlag())
+  {
+    CHECK(uiCode != 0, "When no_res_change_in_clvs_constraint_flag is equal to 1, res_change_in_clvs_allowed_flag shall be equal to 0");
+  }
+#endif
+
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
 
@@ -1325,6 +1349,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     CHECK(uiCode > (pcSPS->getMaxPicWidthInLumaSamples() / (1 << pcSPS->getCTUSize())) * (pcSPS->getMaxPicHeightInLumaSamples() / (1 << pcSPS->getCTUSize())) - 1, "Invalid sps_num_subpics_minus1 value");
 #else
     READ_CODE(8, uiCode, "sps_num_subpics_minus1"); pcSPS->setNumSubPics(uiCode + 1);
+#endif
+#if JVET_Q0114_CONSTRAINT_FLAGS
+    if (pcSPS->getProfileTierLevel()->getConstraintInfo()->getOneSubpicPerPicConstraintFlag())
+    {
+      CHECK(uiCode != 0, "When one_subpic_per_pic_constraint_flag is equal to 1, each picture shall contain only one subpicture");
+    }
 #endif
 
 #if JVET_Q0816
@@ -1483,8 +1513,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(     uiCode, "min_qp_prime_ts_minus4" );
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
   CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
-#endif
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
+#endif
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
@@ -1839,6 +1869,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_UVLC(uiCode, "min_qp_prime_ts_minus4");
     pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
     CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
+    pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
   }
 #endif
   READ_FLAG( uiCode,    "sps_bcw_enabled_flag" );                   pcSPS->setUseBcw( uiCode != 0 );
@@ -2124,6 +2155,76 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       }
     }
   }
+
+#if JVET_Q0814_DPB
+  if( !pcVPS->getAllIndependentLayersFlag() )
+  {
+    READ_UVLC( uiCode, "vps_num_dpb_params" ); pcVPS->m_numDpbParams = uiCode;
+  }
+
+  if( pcVPS->m_numDpbParams > 0 && pcVPS->getMaxSubLayers() > 1 )
+  {
+    READ_FLAG( uiCode, "vps_sublayer_dpb_params_present_flag" ); pcVPS->m_sublayerDpbParamsPresentFlag = uiCode;
+  }
+
+  pcVPS->m_dpbParameters.resize( pcVPS->m_numDpbParams );
+
+  for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
+  {
+    if( pcVPS->getMaxSubLayers() == 1 )
+    {
+      // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0.
+      pcVPS->m_dpbMaxTemporalId.push_back( 0 );
+    }
+    else
+    {
+      if( pcVPS->getAllLayersSameNumSublayersFlag() )
+      {
+        // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1.
+        pcVPS->m_dpbMaxTemporalId.push_back( pcVPS->getMaxSubLayers() - 1 );
+      }
+      else
+      {
+        READ_CODE( 3, uiCode, "dpb_max_temporal_id[i]" );  pcVPS->m_dpbMaxTemporalId.push_back( uiCode );
+      }
+    }
+
+    for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
+    {
+      READ_UVLC( uiCode, "max_dec_pic_buffering_minus1[i]" );  pcVPS->m_dpbParameters[i].m_maxDecPicBuffering[j] = uiCode;
+      READ_UVLC( uiCode, "max_num_reorder_pics[i]" );          pcVPS->m_dpbParameters[i].m_numReorderPics[j] = uiCode;
+      READ_UVLC( uiCode, "max_latency_increase_plus1[i]" );    pcVPS->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = uiCode;
+    }
+
+    for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? pcVPS->m_dpbMaxTemporalId[i] : 0 ); j < pcVPS->m_dpbMaxTemporalId[i]; j++ )
+    {
+      // When max_dec_pic_buffering_minus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
+      pcVPS->m_dpbParameters[i].m_maxDecPicBuffering[j] = pcVPS->m_dpbParameters[i].m_maxDecPicBuffering[pcVPS->m_dpbMaxTemporalId[i]];
+
+      // When max_num_reorder_pics[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
+      pcVPS->m_dpbParameters[i].m_numReorderPics[j] = pcVPS->m_dpbParameters[i].m_numReorderPics[pcVPS->m_dpbMaxTemporalId[i]];
+
+      // When max_latency_increase_plus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
+      pcVPS->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = pcVPS->m_dpbParameters[i].m_maxLatencyIncreasePlus1[pcVPS->m_dpbMaxTemporalId[i]];
+    }
+  }
+
+  pcVPS->deriveOutputLayerSets();
+
+  for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
+  {
+    if( pcVPS->m_numLayersInOls[i] > 1 )
+    {
+      READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( i, uiCode );
+      READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
+      if( pcVPS->m_numDpbParams > 1 )
+      {
+        READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );
+      }
+    }
+  }
+#endif
+
   READ_FLAG(uiCode, "vps_extension_flag");
   if (uiCode)
   {
@@ -3167,7 +3268,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   {
     uint32_t bitsSubPicId;
 #if JVET_Q0119_CLEANUPS
-    if (pcSlice->getSPS()->getSubPicIdMappingExplicitlySignalledFlag())
+    if (sps->getSubPicIdMappingExplicitlySignalledFlag())
 #else
     if (sps->getSubPicIdSignallingPresentFlag())
 #endif
@@ -3181,7 +3282,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     }
 #endif
 #if JVET_Q0119_CLEANUPS
-    else if (pcSlice->getPPS()->getSubPicIdMappingInPpsFlag())
+    else if (pps->getSubPicIdMappingInPpsFlag())
 #else
     else if (pps->getSubPicIdSignallingPresentFlag())
 #endif
@@ -3212,6 +3313,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       int bitsSliceAddress = ceilLog2(pps->getNumTiles());
       READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
       READ_UVLC(uiCode, "num_tiles_in_slice_minus1");        numTilesInSlice = uiCode + 1;      
+#if JVET_Q0114_CONSTRAINT_FLAGS
+      if (!pps->getRectSliceFlag() && sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
+      {
+        CHECK(pps->getNumTiles() != uiCode + 1, "When rect_slice_flag is equal to 0 and one_slice_per_pic_constraint_flag equal to 1, the value of num_tiles_in_slice_minus1 present in each slice header shall be equal to NumTilesInPic - 1");
+      }
+#endif
     }
     else {
       sliceAddr = 0;
@@ -3981,10 +4088,23 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol,  "general_interlaced_source_flag"           ); cinfo->setInterlacedSourceFlag(symbol ? true : false);
   READ_FLAG(symbol,  "general_non_packed_constraint_flag"       ); cinfo->setNonPackedConstraintFlag(symbol ? true : false);
   READ_FLAG(symbol,  "general_frame_only_constraint_flag"       ); cinfo->setFrameOnlyConstraintFlag(symbol ? true : false);
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  READ_FLAG(symbol,  "general_non_projected_constraint_flag"    ); cinfo->setNonProjectedConstraintFlag(symbol ? true : false);
+#endif
   READ_FLAG(symbol,  "intra_only_constraint_flag"               ); cinfo->setIntraOnlyConstraintFlag(symbol ? true : false);
 
   READ_CODE(4, symbol,  "max_bitdepth_constraint_idc"              ); cinfo->setMaxBitDepthConstraintIdc(symbol);
   READ_CODE(2, symbol,  "max_chroma_format_constraint_idc"         ); cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)symbol);
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  READ_FLAG(symbol,  "no_res_change_in_clvs_constraint_flag"    ); cinfo->setNoResChangeInClvsConstraintFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "one_tile_per_pic_constraint_flag"         ); cinfo->setOneTilePerPicConstraintFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "one_slice_per_pic_constraint_flag"        ); cinfo->setOneSlicePerPicConstraintFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "one_subpic_per_pic_constraint_flag"       ); cinfo->setOneSubpicPerPicConstraintFlag(symbol ? true : false);
+  if (cinfo->getOneSlicePerPicConstraintFlag())
+  {
+    CHECK(symbol == 0, "When one_slice_per_pic_constraint_flag is equal to 1, the value of one_subpic_per_pic_constraint_flag shall be equal to 1");
+  }
+#endif
 
   READ_FLAG(symbol,  "no_qtbtt_dual_tree_intra_constraint_flag" ); cinfo->setNoQtbttDualTreeIntraConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_partition_constraints_override_constraint_flag"); cinfo->setNoPartitionConstraintsOverrideConstraintFlag(symbol > 0 ? true : false);

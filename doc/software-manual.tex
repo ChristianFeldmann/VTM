@@ -1046,6 +1046,36 @@ Specifies the value of general_interlaced_source_flag
 Specifies the value of general_non_packed_constraint_flag
 \\
 
+\Option{NonProjectedConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_non_projected_constraint_flag
+\\
+
+\Option{NoResChangeInClvsConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of no_res_change_in_clvs_constraint_flag
+\\
+
+\Option{OneTilePerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_tile_per_pic_constraint_flag
+\\
+
+\Option{OneSlicePerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_slice_per_pic_constraint_flag
+\\
+
+\Option{OneSubpicPerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_subpic_per_pic_constraint_flag
+\\
+
 \Option{FrameOnly} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1092,6 +1122,12 @@ Specifies the value to use to derive the vps_max_layers_minus1 for layered codin
 %%
 
 \begin{OptionTableNoShorthand}{Unit definition parameters}{tab:unit}
+\Option{CTUSize} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the CTU size (width and height).
+\\
+
 \Option{MaxCUWidth} &
 %\ShortOption{\None} &
 \Default{64} &
@@ -2076,6 +2112,12 @@ Enables or disables encoder-side deblocking optimization. When it is enabled, de
 Enables or disables the use of multiple reference line intra prediction (MRL).
 \\
 
+\Option{DualITree} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of separate QTBT trees for intra slice luma and chroma channel types.
+\\ 
+
 \Option{MIP} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2141,6 +2183,12 @@ for LCU bottom and right boundary areas.
 %\ShortOption{\None} &
 \Default{false} &
 When true, resets the encoder's SAO state after an IRAP (POC order).
+\\
+
+\Option{SAOGreedyEnc} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the SAO greedy merge encoding algorithm.
 \\
 
 \Option{FastUDIUseMPMEnabled} &
@@ -2409,6 +2457,24 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
+\Option{BCW} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of Bi-prediction with CU-level Weights (BCW).
+\\
+
+\Option{BcwFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the fast encoding of Bi-prediction with CU-level Weights (BCW).
+\\
+ 
+\Option{BDOF} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of bi-directional optical flow (BDOF).
 \\
 
 \Option{LMCSEnable} &

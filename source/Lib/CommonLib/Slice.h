@@ -71,6 +71,14 @@ typedef std::list<Picture*> PicList;
 // Class definition
 // ====================================================================================================================
 
+#if JVET_Q0814_DPB
+struct DpbParameters
+{
+  int m_maxDecPicBuffering[MAX_TLAYER] = { 0 };
+  int m_numReorderPics[MAX_TLAYER] = { 0 };
+  int m_maxLatencyIncreasePlus1[MAX_TLAYER] = { 0 };
+};
+#endif
 
 class ReferencePictureList
 {
@@ -231,6 +239,13 @@ class ConstraintInfo
   bool              m_progressiveSourceFlag;
   bool              m_interlacedSourceFlag;
   bool              m_nonPackedConstraintFlag;
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool              m_nonProjectedConstraintFlag;
+  bool              m_noResChangeInClvsConstraintFlag;
+  bool              m_oneTilePerPicConstraintFlag;
+  bool              m_oneSlicePerPicConstraintFlag;
+  bool              m_oneSubpicPerPicConstraintFlag;
+#endif
   bool              m_frameOnlyConstraintFlag;
   bool              m_intraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
@@ -285,6 +300,13 @@ public:
     : m_progressiveSourceFlag (false)
     , m_interlacedSourceFlag (false)
     , m_nonPackedConstraintFlag (false)
+#if JVET_Q0114_CONSTRAINT_FLAGS
+    , m_nonProjectedConstraintFlag(false)
+    , m_noResChangeInClvsConstraintFlag(false)
+    , m_oneTilePerPicConstraintFlag(false)
+    , m_oneSlicePerPicConstraintFlag(false)
+    , m_oneSubpicPerPicConstraintFlag(false)
+#endif
     , m_frameOnlyConstraintFlag  (false)
     , m_intraOnlyConstraintFlag  (false)
     , m_maxBitDepthConstraintIdc  (  0)
@@ -349,6 +371,23 @@ public:
 
   ChromaFormat  getMaxChromaFormatConstraintIdc() const { return m_maxChromaFormatConstraintIdc; }
   void          setMaxChromaFormatConstraintIdc(ChromaFormat fmt) { m_maxChromaFormatConstraintIdc = fmt; }
+
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool          getNonProjectedConstraintFlag() const { return m_nonProjectedConstraintFlag; }
+  void          setNonProjectedConstraintFlag(bool b) { m_nonProjectedConstraintFlag = b; }
+
+  bool          getNoResChangeInClvsConstraintFlag() const { return m_noResChangeInClvsConstraintFlag; }
+  void          setNoResChangeInClvsConstraintFlag(bool b) { m_noResChangeInClvsConstraintFlag = b; }
+
+  bool          getOneTilePerPicConstraintFlag() const { return m_oneTilePerPicConstraintFlag; }
+  void          setOneTilePerPicConstraintFlag(bool b) { m_oneTilePerPicConstraintFlag = b; }
+
+  bool          getOneSlicePerPicConstraintFlag() const { return m_oneSlicePerPicConstraintFlag; }
+  void          setOneSlicePerPicConstraintFlag(bool b) { m_oneSlicePerPicConstraintFlag = b; }
+
+  bool          getOneSubpicPerPicConstraintFlag() const { return m_oneSubpicPerPicConstraintFlag; }
+  void          setOneSubpicPerPicConstraintFlag(bool b) { m_oneSubpicPerPicConstraintFlag = b; }
+#endif
 
   bool          getIntraOnlyConstraintFlag() const { return m_intraOnlyConstraintFlag; }
   void          setIntraOnlyConstraintFlag(bool b) { m_intraOnlyConstraintFlag = b; }
@@ -477,7 +516,6 @@ public:
 
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
-
 };
 
 
@@ -750,6 +788,17 @@ public:
     for (auto ctu:ctuAddrInSlice)
       m_ctuAddrInSubPic.push_back(ctu);    
   }
+  void  addAllCtusInPicToSubPic(uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY)
+  {
+    CHECK(startX >= stopX || startY >= stopY, "Invalid slice definition");
+    for (uint32_t ctbY = startY; ctbY < stopY; ctbY++)
+    {
+      for (uint32_t ctbX = startX; ctbX < stopX; ctbX++)
+      {
+        m_ctuAddrInSubPic.push_back(ctbY * picWidthInCtbsY + ctbX);
+      }
+    }
+  }
   bool                 isContainingPos(const Position& pos) const
   {
     return pos.x >= m_subPicLeft && pos.x <= m_subPicRight && pos.y >= m_subPicTop  && pos.y <= m_subPicBottom;
@@ -788,8 +837,6 @@ public:
   const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
 };
 
-
-
 class VPS
 {
 private:
@@ -812,17 +859,32 @@ private:
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
-
+  
 #if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
   int                   m_vpsLayerChromaFormatIDC[MAX_VPS_LAYERS];
   int                   m_vpsLayerBitDepth[MAX_VPS_LAYERS];
-#endif
+#endif  
 
-#if JVET_P0288_PIC_OUTPUT
+#if JVET_Q0814_DPB
+  std::vector<Size>             m_olsDpbPicSize;
+  std::vector<int>              m_olsDpbParamsIdx;
+  std::vector<std::vector<int>> m_outputLayerIdInOls;
+public:
+  int                           m_totalNumOLSs;
+  int                           m_numDpbParams;
+  std::vector<DpbParameters>    m_dpbParameters;
+  bool                          m_sublayerDpbParamsPresentFlag;
+  std::vector<int>              m_dpbMaxTemporalId;
+  std::vector<int>              m_targetOutputLayerIdSet;          ///< set of LayerIds to be outputted
+  std::vector<int>              m_targetLayerIdSet;                ///< set of LayerIds to be included in the sub-bitstream extraction process.
+  int                           m_targetOlsIdx;
+  std::vector<int>              m_numOutputLayersInOls;
+  std::vector<int>              m_numLayersInOls;
+  std::vector<std::vector<int>> m_layerIdInOls;
+#elif JVET_P0288_PIC_OUTPUT
 public:
   int                   m_targetOlsIdx;
 #endif
-
 
 public:
                     VPS();
@@ -877,18 +939,33 @@ public:
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
 
 #if JVET_P0288_PIC_OUTPUT
-  uint32_t          getTargetOlsIdx() { return m_targetOlsIdx; }
+  int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
 #endif
 
 #if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  int               getLayerChromaFormatIDC(uint32_t layerIdx) const { return m_vpsLayerChromaFormatIDC[layerIdx]; }
-  void              setLayerChromaFormatIDC(uint32_t layerIdx, int chromaFormatIDC) { m_vpsLayerChromaFormatIDC[layerIdx] = chromaFormatIDC; }
+  int               getLayerChromaFormatIDC( uint32_t layerIdx ) const                { return m_vpsLayerChromaFormatIDC[layerIdx]; }
+  void              setLayerChromaFormatIDC( uint32_t layerIdx, int chromaFormatIDC ) { m_vpsLayerChromaFormatIDC[layerIdx] = chromaFormatIDC; }
 
-  int               getLayerBitDepth(uint32_t layerIdx) const { return m_vpsLayerBitDepth[layerIdx]; }
-  void              setLayerBitDepth(uint32_t layerIdx, int bitDepth) { m_vpsLayerBitDepth[layerIdx] = bitDepth; }
+  int               getLayerBitDepth( uint32_t layerIdx ) const                       { return m_vpsLayerBitDepth[layerIdx]; }
+  void              setLayerBitDepth( uint32_t layerIdx, int bitDepth )               { m_vpsLayerBitDepth[layerIdx] = bitDepth; }
 #endif
 
+#if JVET_Q0814_DPB
+  int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
+  int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }
+  int               getTotalNumOLSs() const                              { return m_totalNumOLSs; }
+  Size              getOlsDpbPicSize( int olsIdx ) const                 { return m_olsDpbPicSize[olsIdx];          }
+  void              setOlsDpbPicSize( int olsIdx, Size size )            { m_olsDpbPicSize[olsIdx] = size;          }
+  void              setOlsDpbPicWidth( int olsIdx, int width )           { m_olsDpbPicSize[olsIdx].width = width;   }
+  void              setOlsDpbPicHeight( int olsIdx, int height )         { m_olsDpbPicSize[olsIdx].height = height; }
+
+  int               getOlsDpbParamsIdx( int olsIdx ) const               { return m_olsDpbParamsIdx[olsIdx];        }
+  void              setOlsDpbParamsIdx( int olsIdx, int paramIdx )       { m_olsDpbParamsIdx[olsIdx] = paramIdx;    }
+  
+  void              deriveOutputLayerSets();
+  void              deriveTargetOutputLayerSet( int targetOlsIdx );
+#endif
 };
 
 class Window
@@ -1179,13 +1256,13 @@ private:
   bool              m_BdofControlPresentFlag;
   bool              m_DmvrControlPresentFlag;
   bool              m_ProfControlPresentFlag;
-  uint32_t              m_uiBitsForPOC;
-  uint32_t              m_numLongTermRefPicSPS;
-  uint32_t              m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
+  uint32_t          m_uiBitsForPOC;
+  uint32_t          m_numLongTermRefPicSPS;
+  uint32_t          m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
   uint32_t          m_log2MaxTbSize;
-  bool             m_useWeightPred;                     //!< Use of Weighting Prediction (P_SLICE)
-  bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
+  bool              m_useWeightPred;                     //!< Use of Weighting Prediction (P_SLICE)
+  bool              m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
 
   bool              m_saoEnabledFlag;
 
@@ -1197,8 +1274,8 @@ private:
   unsigned          m_numHorVirtualBoundaries;                         //!< number of horizontal virtual boundaries
   unsigned          m_virtualBoundariesPosX[3];                        //!< horizontal position of each vertical virtual boundary
   unsigned          m_virtualBoundariesPosY[3];                        //!< vertical position of each horizontal virtual boundary
-  uint32_t              m_uiMaxDecPicBuffering[MAX_TLAYER];
-  uint32_t              m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
+  uint32_t          m_uiMaxDecPicBuffering[MAX_TLAYER];
+  uint32_t          m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 
 
   TimingInfo        m_timingInfo;
@@ -1493,10 +1570,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   unsigned                getVirtualBoundariesPosX(unsigned idx) const                                    { CHECK( idx >= 3, "vitrual boundary index exceeds valid range" ); return m_virtualBoundariesPosX[idx]; }
   void                    setVirtualBoundariesPosY(unsigned u, unsigned idx)                              { CHECK( idx >= 3, "vitrual boundary index exceeds valid range" ); m_virtualBoundariesPosY[idx] = u;    }
   unsigned                getVirtualBoundariesPosY(unsigned idx) const                                    { CHECK( idx >= 3, "vitrual boundary index exceeds valid range" ); return m_virtualBoundariesPosY[idx]; }
-  uint32_t                    getMaxDecPicBuffering(uint32_t tlayer) const                                        { return m_uiMaxDecPicBuffering[tlayer];                               }
-  void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                                   { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
-  uint32_t                    getMaxLatencyIncreasePlus1(uint32_t tlayer) const                                   { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
-  void                    setMaxLatencyIncreasePlus1( uint32_t ui , uint32_t tlayer)                              { m_uiMaxLatencyIncreasePlus1[tlayer] = ui;                            }
+  uint32_t                getMaxDecPicBuffering(uint32_t tlayer) const                                    { return m_uiMaxDecPicBuffering[tlayer];                               }
+  void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                           { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
+  uint32_t                getMaxLatencyIncreasePlus1(uint32_t tlayer) const                               { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
+  void                    setMaxLatencyIncreasePlus1( uint32_t ui , uint32_t tlayer)                      { m_uiMaxLatencyIncreasePlus1[tlayer] = ui;                            }
 
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
@@ -1764,6 +1841,9 @@ private:
   bool             m_alfInfoInPhFlag;
   bool             m_wpInfoInPhFlag;
   bool             m_qpDeltaInfoInPhFlag;
+#endif
+#if SPS_ID_CHECK
+  bool             m_mixedNaluTypesInPicFlag;
 #endif
 
   uint32_t         m_picWidthInLumaSamples;
@@ -2038,6 +2118,11 @@ public:
   Window&                 getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&           getScalingWindow()                                        const { return  m_scalingWindow; }
   void                    setScalingWindow( Window& scalingWindow )                       { m_scalingWindow = scalingWindow; }
+
+#if SPS_ID_CHECK
+  int                     getMixedNaluTypesInPicFlag() const                              { return m_mixedNaluTypesInPicFlag; }
+  void                    setMixedNaluTypesInPicFlag( const bool flag )                   { m_mixedNaluTypesInPicFlag = flag; }
+#endif
 };
 
 class APS
@@ -2659,6 +2744,9 @@ public:
   bool                        getRapPicFlag() const;
   bool                        getIdrPicFlag() const                                  { return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP; }
   bool                        isIRAP() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA); }
+#if SPS_ID_CHECK
+  bool                        isClvssPu() const                                      { return m_eNalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && m_eNalUnitType <= NAL_UNIT_CODED_SLICE_GDR && !m_pcPPS->getMixedNaluTypesInPicFlag(); }
+#endif
   bool                        isIDRorBLA() const { return (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP); }
   void                        checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic);
   void                        checkSTSA(PicList& rcListPic);

@@ -66,7 +66,7 @@ protected:
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
   InputColourSpaceConversion m_outputColourSpaceConvert;
-  int           m_iTargetOLS;                         ///< target output layer set
+  int           m_targetOlsIdx;                       ///< target output layer set
   std::vector<int> m_targetOutputLayerIdSet;          ///< set of LayerIds to be outputted           
   int           m_iMaxTemporalLayer;                  ///< maximum temporal layer to be decoded
   int           m_decodedPictureHashSEIEnabled;       ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
@@ -83,7 +83,7 @@ protected:
   bool          m_mctsCheck;
 
   int          m_upscaledOutput;                     ////< Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
-#if JVET_O1143_SUBPIC_DECCHECK
+#if JVET_O1143_SUBPIC_BOUNDARY
   int           m_targetSubPicIdx;                    ///< Specify which subpicture shall be write to output, using subpicture index
 #endif
 public:

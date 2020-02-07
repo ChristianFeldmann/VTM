@@ -106,7 +106,7 @@ private:
 #endif
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
-  uint32_t                    m_uiSliceSegmentIdx;
+  uint32_t                m_uiSliceSegmentIdx;
   uint32_t                m_prevLayerID;
   int                     m_prevPOC;
   int                     m_prevTid0POC;
@@ -147,7 +147,7 @@ private:
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
 
-#if JVET_O1143_SUBPIC_DECCHECK
+#if JVET_O1143_SUBPIC_BOUNDARY
 public:
   int                     m_targetSubPicIdx;
 #endif
@@ -200,6 +200,10 @@ public:
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }
+#if JVET_Q0814_DPB
+  void deriveTargetOutputLayerSet( const int targetOlsIdx ) { if( m_vps != nullptr ) m_vps->deriveTargetOutputLayerSet( targetOlsIdx ); }
+#endif
+
   void  initScalingList()
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);

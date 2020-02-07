@@ -4500,6 +4500,7 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
+#if !JVET_Q0210_UEK_REMOVAL
 int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 {
   int numLeadingBits = -1;
@@ -4532,6 +4533,7 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
   }
   return symbol;
 }
+#endif
 
 void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx )
 {

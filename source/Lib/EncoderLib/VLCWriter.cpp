@@ -3100,6 +3100,7 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
   return false;
 }
 
+#if !JVET_Q0210_UEK_REMOVAL
 void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
 {
   unsigned int symbol = abs( coeff );
@@ -3120,6 +3121,7 @@ void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
     WRITE_FLAG( (coeff < 0) ? 1 : 0, "alf_coeff_sign" );
   }
 }
+#endif
 
 void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx )
 {

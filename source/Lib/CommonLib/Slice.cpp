@@ -2640,6 +2640,13 @@ void PPS::initSubPic(const SPS &sps)
 {
   CHECK(getNumSubPics() > MAX_NUM_SUB_PICS, "Number of sub-pictures in picture exceeds valid range");
   m_subPics.resize(getNumSubPics());
+  // m_ctuSize,  m_picWidthInCtu, and m_picHeightInCtu might not be initialized yet.
+  if (m_ctuSize == 0 || m_picWidthInCtu == 0 || m_picHeightInCtu == 0)
+  {
+    m_ctuSize = sps.getCTUSize();
+    m_picWidthInCtu = (m_picWidthInLumaSamples + m_ctuSize - 1) / m_ctuSize;
+    m_picHeightInCtu = (m_picHeightInLumaSamples + m_ctuSize - 1) / m_ctuSize;
+  }
   for (int i=0; i< getNumSubPics(); i++)
   {
     m_subPics[i].setSubPicIdx(i);
@@ -2670,18 +2677,26 @@ void PPS::initSubPic(const SPS &sps)
 
     m_subPics[i].setSubPicBottom(bottom);
     
-    for (int j = 0; j < m_numSlicesInPic; j++)
+    if (m_numSlicesInPic == 1)
     {
-      uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
-      uint32_t ctu_x = ctu % m_picWidthInCtu; 
-      uint32_t ctu_y = ctu / m_picWidthInCtu;
-      if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
+      CHECK(getNumSubPics() != 1, "only one slice in picture, but number of subpic is not one");
+      m_subPics[i].addAllCtusInPicToSubPic(0, getPicWidthInCtu(), 0, getPicHeightInCtu(), getPicWidthInCtu());
+    }
+    else
+    {
+      for (int j = 0; j < m_numSlicesInPic; j++)
+      {
+        uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
+        uint32_t ctu_x = ctu % m_picWidthInCtu;
+        uint32_t ctu_y = ctu / m_picWidthInCtu;
+        if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
           ctu_x < (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) &&
           ctu_y >= sps.getSubPicCtuTopLeftY(i) &&
-          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i))) 
-      {
-         // add ctus in a slice to the subpicture it belongs to
-        m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)))  
+        {
+          // add ctus in a slice to the subpicture it belongs to
+          m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+        }
       }
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));

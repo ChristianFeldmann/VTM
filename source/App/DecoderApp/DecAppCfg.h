@@ -83,7 +83,7 @@ protected:
   bool          m_mctsCheck;
 
   int          m_upscaledOutput;                     ////< Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
-#if JVET_O1143_SUBPIC_DECCHECK
+#if JVET_O1143_SUBPIC_BOUNDARY
   int           m_targetSubPicIdx;                    ///< Specify which subpicture shall be write to output, using subpicture index
 #endif
 public:

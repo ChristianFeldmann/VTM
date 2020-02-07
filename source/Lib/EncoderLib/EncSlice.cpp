@@ -1465,7 +1465,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     SubPic curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
     // padding/restore at slice level
-    if (curSubPic.getTreatedAsPicFlag() && ctuIdx == 0)
+    if (pcSlice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == 0)
     {
       int subPicX = (int)curSubPic.getSubPicLeft();
       int subPicY = (int)curSubPic.getSubPicTop();
@@ -1686,7 +1686,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     m_uiPicDist       = cs.dist;
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     // for last Ctu in the slice    
-    if (curSubPic.getTreatedAsPicFlag() && ctuIdx == (pcSlice->getNumCtuInSlice() - 1))
+    if (pcSlice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (pcSlice->getNumCtuInSlice() - 1))
     {
 
       int subPicX = (int)curSubPic.getSubPicLeft();

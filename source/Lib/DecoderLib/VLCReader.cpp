@@ -478,12 +478,13 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     {
       pcPPS->setSubPicId( picIdx, picIdx );
     }
-#if JVET_O1143_SUBPIC_BOUNDARY
-    // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
-    SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-    pcPPS->setNumSubPics(sps->getNumSubPics());
-#endif
   }
+
+#if JVET_O1143_SUBPIC_BOUNDARY
+  // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
+  pcPPS->setNumSubPics(parameterSetManager->getSPS(pcPPS->getSPSId())->getNumSubPics());
+#endif
+
 
 #if JVET_Q0114_CONSTRAINT_FLAGS
   SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
@@ -602,19 +603,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       
       // initialize mapping between rectangular slices and CTUs
       pcPPS->initRectSliceMap();
-#if JVET_O1143_SUBPIC_BOUNDARY
-#if !JVET_Q0114_CONSTRAINT_FLAGS
-      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-      CHECK(sps == 0, "Invalid SPS");
-#endif
-      pcPPS->initSubPic(*sps);
-#endif
     }
 
     // loop filtering across slice/tile controls
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
+#if JVET_O1143_SUBPIC_BOUNDARY  
+  pcPPS->initSubPic(*sps);
+#endif
 
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
@@ -4641,6 +4638,7 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
+#if !JVET_Q0210_UEK_REMOVAL
 int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
 {
   int numLeadingBits = -1;
@@ -4673,6 +4671,7 @@ int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
   }
   return symbol;
 }
+#endif
 
 void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx )
 {
@@ -4691,7 +4690,17 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_Q0210_UEK_REMOVAL 
+      READ_UVLC( code, "alf coeff abs" );
+      coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = code;
+      if( coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] != 0 )
+      {
+        READ_FLAG( code, "alf_coeff_sign" );
+        coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = ( code ) ? -coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] : coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ];
+       }
+#else
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
+#endif
       CHECK( isChroma &&
              ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -127 )
              , "AlfCoeffC shall be in the range of -127 to 127, inclusive" );

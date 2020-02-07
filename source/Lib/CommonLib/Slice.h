@@ -788,6 +788,17 @@ public:
     for (auto ctu:ctuAddrInSlice)
       m_ctuAddrInSubPic.push_back(ctu);    
   }
+  void  addAllCtusInPicToSubPic(uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY)
+  {
+    CHECK(startX >= stopX || startY >= stopY, "Invalid slice definition");
+    for (uint32_t ctbY = startY; ctbY < stopY; ctbY++)
+    {
+      for (uint32_t ctbX = startX; ctbX < stopX; ctbX++)
+      {
+        m_ctuAddrInSubPic.push_back(ctbY * picWidthInCtbsY + ctbX);
+      }
+    }
+  }
   bool                 isContainingPos(const Position& pos) const
   {
     return pos.x >= m_subPicLeft && pos.x <= m_subPicRight && pos.y >= m_subPicTop  && pos.y <= m_subPicBottom;

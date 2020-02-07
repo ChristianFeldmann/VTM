@@ -148,7 +148,9 @@ public:
   void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
 
 private:
+#if !JVET_Q0210_UEK_REMOVAL
   void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
+#endif
 };
 
 //! \}

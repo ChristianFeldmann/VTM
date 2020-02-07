@@ -612,11 +612,12 @@ void DecLib::executeLoopFilters()
     m_cALF.ALFProcess(cs);
   }
 
-#if JVET_O1143_SUBPIC_DECCHECK 
-  for (int i = 0; i < cs.pps->getNumSubPics(); i++)
+#if JVET_O1143_SUBPIC_BOUNDARY
+  for (int i = 0; i < cs.pps->getNumSubPics() && m_targetSubPicIdx; i++)
   {
     // keep target subpic samples untouched, for other subpics mask their output sample value to 0
-    if (i != m_targetSubPicIdx)
+    int targetSubPicIdx = m_targetSubPicIdx - 1;
+    if (i != targetSubPicIdx)
     {
       SubPic SubPicNoUse = cs.pps->getSubPics()[i];
       uint32_t left  = SubPicNoUse.getSubPicLeft();

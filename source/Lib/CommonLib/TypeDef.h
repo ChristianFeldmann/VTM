@@ -106,7 +106,7 @@
 
 #define JVET_Q0447_WP_PARAM_ESTIM                         1 // JVET-Q0447: Add search iterations for method 2,3 and 4
 
-#define JVET_Q0119_CLEANUPS                               1 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
+#define JVET_Q0119_CLEANUPS                               0 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
 
 #define JVET_Q0114_CONSTRAINT_FLAGS                       1 // JVET-Q0114: AHG9: A few more general constraints flags
 
@@ -149,9 +149,8 @@
 
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
-#define JVET_O1143_SUBPIC_BOUNDARY                        0 // treat subpicture boundary as picture boundary
+#define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 #if JVET_O1143_SUBPIC_BOUNDARY
-#define JVET_O1143_SUBPIC_DECCHECK                        0
 #define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
 #define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 #endif

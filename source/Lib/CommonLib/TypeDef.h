@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).
 #define JVET_Q0449_RPR_NO_SMOOTHING                       1 // JVET-Q0449: Disable smoothing half-sample interpolation filter in conjunction with RPR
 
 #define JVET_Q0493_PLT_ENCODER_LOSSLESS                   1 // JVET-Q0493: Palette encoder improvements for lossless coding

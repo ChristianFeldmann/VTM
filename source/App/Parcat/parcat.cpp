@@ -71,6 +71,11 @@ void ParcatHLSyntaxReader::parsePictureHeaderUpToPoc ( ParameterSetManager *para
   uint32_t  gdrPicFlag;
   PPS* pps = NULL;
   SPS* sps = NULL;
+  READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");
+  if (uiCode)
+  {
+    READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");
+  }
   READ_FLAG(uiCode, "non_reference_picture_flag");
   READ_FLAG(uiCode, "gdr_pic_flag");
   gdrPicFlag = uiCode;

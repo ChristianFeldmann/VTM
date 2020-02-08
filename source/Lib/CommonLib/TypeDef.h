@@ -50,8 +50,43 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_Q0505_CHROAM_QM_SIGNALING_400                1  //JVET-Q0505: Cleanup of chroma quantization matrix signaling for 400 color format
+#define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
+
+#define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).
+
+#define JVET_Q0449_RPR_NO_SMOOTHING                       1 // JVET-Q0449: Disable smoothing half-sample interpolation filter in conjunction with RPR
+
+#define JVET_Q0493_PLT_ENCODER_LOSSLESS                   1 // JVET-Q0493: Palette encoder improvements for lossless coding
+
+#define JVET_Q0629_REMOVAL_PLT_4X4                        1 // JVET-Q0629: Removal of 4x4 blocks in palette mode
+
+#define JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE               1 // JVET-Q0291: reduce palette size of dual tree from 31 to 15 and palette predictor size of dual tree from 63 to 31
+
+#define JVET_Q0330_BLOCK_PARTITION                        1 // JVET-Q0330: fix the block partitioning at picture boundary
+
+#define JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG         1 // JVET_Q0417: a constraint on the value of sps_virtual_boundaries_present_flag based on res_change_in_clvs_allowed_flag
+
+#define JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT         1 // JVET-Q0179: Scaling window size constraint for constraining worst case memory bandwidth
+
+#define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests
+
+#define JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER       1 // Removing dependencies on VPS from the decoding process of a non-scalable bitstream
+
+#define JVET_Q0420_PPS_CHROMA_TOOL_FLAG                   1 // JVET-Q0420: add pps_chroma_tool_offsets_present_flag in PPS
+
+#define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 // JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
+
+#define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization
+
+#define JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG              1  //JVET-Q0414: when gdr_enabled_flag is equal to 0, gdr_pic_flag shall be 0
+
+#define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
+
+#define JVET_Q0169_SUBPIC_LEN_CONFORM                     1 // JVET-Q0169: add bitstream conformance check on subpic length
+
 #define JVET_Q0504_PLT_NON444                             1 // JVET-Q0504: enable palette mode for non 444 color format
+
+#define JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL        1 // JVET-Q0183: Signal the max block size in SPS and conditionally signal min_qp_prime_ts_minus4
 
 #define JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM     1 // JVET-Q0089: RRC slice-level switch for lossless coding and one SPS flag for luma and chroma BDPCM.
 
@@ -59,16 +94,39 @@
 
 #define JVET_Q0438_MONOCHROME_BUGFIXES                    1 // JVET-Q0438: Monochrome bug fixes
 
+#define JVET_Q0441_SAO_MOD_12_BIT                         1 // JVET-Q0441: SAO modification for 12 bit. Also removes old HEVC RExt SAO modification, which was broken.
+
+#define JVET_Q0043_RPR_and_Subpics                        1 // JVET-Q0043: Disallow for both RPR and subpics to be used together
+
+#define JVET_Q0818_PT_SEI                                 1 // JVET-Q0818: add display_elemental_periods_minus1 to picture timing SEI message
+
 #define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
 
+#define JVET_Q0042_VUI                                    1 // Modifications to VUI syntax
+
 #define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT
+
+#define JVET_P0101_POC_MULTILAYER                         1 // POC derivation for pictures in dependent layers
+
 #define JVET_Q0446_MIP_CONST_SHIFT_OFFSET                 1 // JVET-Q0446: MIP with constant shift and offset
+
+#define JVET_Q0265                                        1 // JVET-Q0265: Cleanup for monochrome and independently coded color planes
 
 #define JVET_Q0447_WP_PARAM_ESTIM                         1 // JVET-Q0447: Add search iterations for method 2,3 and 4
 
+#define JVET_Q0119_CLEANUPS                               1 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
+
+#define JVET_Q0114_CONSTRAINT_FLAGS                       1 // JVET-Q0114: AHG9: A few more general constraints flags
+
 #define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
 
+#define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
+#define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
+#define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
+
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
+
+#define JVET_P0288_PIC_OUTPUT                             1 // JVET-P0288: Set the value of PictureOutputFlag
 
 #define JVET_Q0695_CHROMA_TS_JCCR                         1 // JVET-Q0695: Enabling the RD checking of chroma transform-skip mode for JCCR at encoder
 #define JVET_Q0500_CCLM_REF_PADDING                       1 // JVET-Q0500: Reference samples padding for CCLM
@@ -87,6 +145,8 @@
 
 #define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move colour_plane_id from PH to SH
 
+#define JVET_Q0444_AMVR_SIGNALLING                        1 // JVET-Q0444: Conditional signaling of sps_affine_amvr_enabled_flag based on sps_amvr_enabled_flag
+
 #define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 
 #define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
@@ -97,14 +157,16 @@
 
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
-#define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as piucture boundary
+#define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 #if JVET_O1143_SUBPIC_BOUNDARY
-#define SUBPIC_DECCHECK                                   0
+#define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
+#define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 #endif
 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF
 
 #define JVET_Q0156_STSA                                   1 // JVET-Q0156: Enable inter-layer prediction for STSA pictures
+
 #define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
 #define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing
 #define JVET_Q0054                                        1 // fix for long luma deblocking decision
@@ -124,6 +186,9 @@
 #define JVET_Q0775_PH_IN_SH                               1 // JVET-Q0755: Allow picture header in slice header
 
 #define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
+
+#define JVET_P0188_MINCR                                  1 // JVET-P0188: Add MinCR checking in encoder.
+#define JVET_Q0436_CABAC_ZERO_WORD                        1 // JVET-Q0436: Add modified CABAC zero word insertion in encoder.
 
 #define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
 
@@ -451,7 +516,11 @@ enum SliceType
   NUMBER_OF_SLICE_TYPES = 3
 };
 
+#if JVET_Q0265
+/// chroma formats (according to how the monochrome or the color planes are intended to be coded)
+#else
 /// chroma formats (according to semantics of chroma_format_idc)
+#endif
 enum ChromaFormat
 {
   CHROMA_400        = 0,

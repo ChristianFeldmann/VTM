@@ -123,6 +123,17 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
   yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
 
+#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
+  int curSeqMaxPicWidthY = sps->getMaxPicWidthInLumaSamples();                  // pic_width_max_in_luma_samples
+  int curSeqMaxPicHeightY = sps->getMaxPicHeightInLumaSamples();                // pic_height_max_in_luma_samples
+  int curPicWidthY = curPPS->getPicWidthInLumaSamples();                        // pic_width_in_luma_samples
+  int curPicHeightY = curPPS->getPicHeightInLumaSamples();                      // pic_height_in_luma_samples 
+  int max8MinCbSizeY = std::max((int)8, (1<<sps->getLog2MinCodingBlockSize())); // Max(8, MinCbSizeY)
+
+  CHECK((curPicWidth * curSeqMaxPicWidthY) < refPicWidth * (curPicWidthY - max8MinCbSizeY), "(curPicWidth * curSeqMaxPicWidthY) should be greater than or equal to refPicWidth * (curPicWidthY - max8MinCbSizeY))");
+  CHECK((curPicHeight * curSeqMaxPicHeightY) < refPicHeight * (curPicHeightY - max8MinCbSizeY), "(curPicHeight * curSeqMaxPicHeightY) should be greater than or equal to refPicHeight * (curPicHeightY - max8MinCbSizeY))");
+#endif
+
 #if JVET_Q0487_SCALING_WINDOW_ISSUES
   return refPic->isRefScaled( curPPS );
 #else
@@ -171,6 +182,13 @@ bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)
 {
   return ( cu.slice->getIndependentSliceIdx() == cu2.slice->getIndependentSliceIdx() ) && ( cu.tileIdx == cu2.tileIdx );
 }
+
+#if JVET_O1143_SUBPIC_BOUNDARY
+bool CU::isSameSubPic(const CodingUnit& cu, const CodingUnit& cu2)
+{
+  return (cu.slice->getPPS()->getSubPicFromCU(cu).getSubPicIdx() == cu2.slice->getPPS()->getSubPicFromCU(cu2).getSubPicIdx()) ;
+}
+#endif 
 
 bool CU::isSameCtu(const CodingUnit& cu, const CodingUnit& cu2)
 {
@@ -1069,7 +1087,18 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     Position posC0;
     Position posC1 = pu.Y().center();
     bool C0Avail = false;
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+    bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
+    SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+    if (curSubPic.getTreatedAsPicFlag())
+    {
+      boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
+                      (posRB.y + pcv.minCUHeight) <= curSubPic.getSubPicBottom());
+    }    
+    if (boundaryCond)
+#else
     if (((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight))
+#endif
     {
       int posYInCtu = posRB.y & pcv.maxCUHeightMask;
       if (posYInCtu + 4 < pcv.maxCUHeight)
@@ -1402,6 +1431,15 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
     return false;
   }
 
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+  // Check the position of colocated block is within a subpicture
+  SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+  if (curSubPic.getTreatedAsPicFlag())
+  {
+    if (!curSubPic.isContainingPos(pos))
+      return false;
+  }
+#endif
   RefPicList eColRefPicList = slice.getCheckLDC() ? eRefPicList : RefPicList(slice.getColFromL0Flag());
 
   const MotionInfo& mi = pColPic->cs->getMotionInfo( pos );
@@ -1778,7 +1816,18 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     Position posC1 = pu.Y().center();
     Mv cColMv;
 
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+    bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
+    SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+    if (curSubPic.getTreatedAsPicFlag())
+    {
+      boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
+                      (posRB.y + pcv.minCUHeight) <= curSubPic.getSubPicBottom());
+    }    
+    if (boundaryCond)
+#else
     if( ( ( posRB.x + pcv.minCUWidth ) < pcv.lumaWidth ) && ( ( posRB.y + pcv.minCUHeight ) < pcv.lumaHeight ) )
+#endif
     {
       int posYInCtu = posRB.y & pcv.maxCUHeightMask;
       if (posYInCtu + 4 < pcv.maxCUHeight)
@@ -2093,7 +2142,18 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       bool C0Avail = false;
       Position posC1 = pu.Y().center();
       Mv cColMv;
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+      bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
+      SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+      if (curSubPic.getTreatedAsPicFlag())
+      {
+        boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
+          (posRB.y + pcv.minCUHeight) <= curSubPic.getSubPicBottom());
+      }
+      if (boundaryCond)
+#else
       if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
+#endif
       {
         int posYInCtu = posRB.y & pcv.maxCUHeightMask;
         if (posYInCtu + 4 < pcv.maxCUHeight)
@@ -2670,7 +2730,18 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         Position posC0;
         bool C0Avail = false;
 
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+        bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
+        SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+        if (curSubPic.getTreatedAsPicFlag())
+        {
+          boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
+            (posRB.y + pcv.minCUHeight) <= curSubPic.getSubPicBottom());
+        }
+        if (boundaryCond)
+#else
         if ( ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight) )
+#endif
         {
           int posYInCtu = posRB.y & pcv.maxCUHeightMask;
           if (posYInCtu + 4 < pcv.maxCUHeight)
@@ -2860,7 +2931,20 @@ void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
   int log2CtuSize = floorLog2(pu.cs->sps->getCTUSize());
   int ctuX = ((puPos.x >> log2CtuSize) << log2CtuSize);
   int ctuY = ((puPos.y >> log2CtuSize) << log2CtuSize);
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+  int horMax;
+  SubPic curSubPic = pu.cu->slice->getPPS()->getSubPicFromPos(puPos);
+  if (curSubPic.getTreatedAsPicFlag())
+  {
+    horMax = std::min((int)curSubPic.getSubPicRight(), ctuX + (int)pu.cs->sps->getCTUSize() + 3);
+  }
+  else
+  {
+    horMax = std::min((int)pu.cs->pps->getPicWidthInLumaSamples() - 1, ctuX + (int)pu.cs->sps->getCTUSize() + 3);
+  }
+#else
   int horMax = std::min( (int)pu.cs->pps->getPicWidthInLumaSamples() - 1, ctuX + (int)pu.cs->sps->getCTUSize() + 3 );
+#endif
   int horMin = std::max((int)0, ctuX);
   int verMax = std::min( (int)pu.cs->pps->getPicHeightInLumaSamples() - 1, ctuY + (int)pu.cs->sps->getCTUSize() - 1 );
   int verMin = std::max((int)0, ctuY);
@@ -3835,7 +3919,11 @@ uint8_t CU::deriveBcwIdx( uint8_t bcwLO, uint8_t bcwL1 )
 
 bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  SizeType transformSkipMaxSize = 1 << cu.cs->sps->getLog2MaxTransformSkipBlockSize();
+#else
   SizeType transformSkipMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
+#endif
 
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool bdpcmAllowed = cu.cs->sps->getBDPCMEnabledFlag();
@@ -3857,7 +3945,11 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 
 bool CU::isMTSAllowed(const CodingUnit &cu, const ComponentID compID)
 {
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  SizeType tsMaxSize = 1 << cu.cs->sps->getLog2MaxTransformSkipBlockSize();
+#else
   SizeType tsMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
+#endif
   const int maxSize  = CU::isIntra( cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
   const int cuWidth  = cu.blocks[0].lumaSize().width;
   const int cuHeight = cu.blocks[0].lumaSize().height;
@@ -3900,7 +3992,11 @@ void TU::setCbfAtDepth(TransformUnit &tu, const ComponentID &compID, const unsig
 
 bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
 {
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  const int maxSize = tu.cs->sps->getLog2MaxTransformSkipBlockSize();
+#else
   const int maxSize = tu.cs->pps->getLog2MaxTransformSkipBlockSize();
+#endif
 
   bool tsAllowed = tu.cs->sps->getTransformSkipEnabledFlag();
   tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );

@@ -191,6 +191,13 @@ protected:
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
   bool          m_nonPackedConstraintFlag;
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  bool          m_nonProjectedConstraintFlag;
+  bool          m_noResChangeInClvsConstraintFlag;
+  bool          m_oneTilePerPicConstraintFlag;
+  bool          m_oneSlicePerPicConstraintFlag;
+  bool          m_oneSubpicPerPicConstraintFlag;
+#endif
   bool          m_frameOnlyConstraintFlag;
 
   // coding structure
@@ -207,7 +214,9 @@ protected:
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
+#if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
+#endif
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
@@ -273,7 +282,11 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
+#if JVET_Q0119_CLEANUPS
+  bool m_subPicInfoPresentFlag;
+#else
   bool m_subPicPresentFlag;
+#endif
   unsigned m_numSubPics;
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
@@ -281,8 +294,13 @@ protected:
   std::vector<uint32_t> m_subPicHeight;
   std::vector<uint32_t> m_subPicTreatedAsPicFlag;
   std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
+#if JVET_Q0119_CLEANUPS
+  bool m_subPicIdMappingExplicitlySignalledFlag;
+  bool m_subPicIdMappingInSpsFlag;
+#else
   bool m_subPicIdPresentFlag;
   bool m_subPicIdSignallingPresentFlag;
+#endif
   unsigned m_subPicIdLen;
   std::vector<uint32_t> m_subPicId;
   bool      m_SplitConsOverrideEnabledFlag;
@@ -290,6 +308,10 @@ protected:
   unsigned  m_uiMaxMTTHierarchyDepth;
   unsigned  m_uiMaxMTTHierarchyDepthI;
   unsigned  m_uiMaxMTTHierarchyDepthIChroma;
+#if JVET_Q0330_BLOCK_PARTITION
+  unsigned  m_uiMaxBT[3];
+  unsigned  m_uiMaxTT[3];
+#endif 
   bool      m_dualTree;
   bool      m_LFNST;
   bool      m_useFastLFNST;
@@ -364,9 +386,13 @@ protected:
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  unsigned m_log2MinCuSize;                                   ///< min. CU size log2
+#else
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
   unsigned  m_uiMaxCodingDepth;                               ///< max. total CU depth - includes depth of transform-block structure
   unsigned  m_uiLog2DiffMaxMinCodingBlockSize;                ///< difference between largest and smallest CU depth
+#endif
 
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;
@@ -621,6 +647,11 @@ protected:
   bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
+#if JVET_Q0819_PH_CHANGES
+  bool      m_sliceLevelWp;                                       ///< code weighted prediction parameters in slice headers rather than picture header
+  bool      m_sliceLevelDeltaQp;                                  ///< code delta in slice headers rather than picture header
+#endif
+
   int       m_TMVPModeId;
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;
@@ -716,6 +747,9 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 
   int         m_maxLayers;
+#if JVET_Q0814_DPB
+  int         m_targetOlsIdx;
+#endif
 
   int         m_layerId[MAX_VPS_LAYERS];
   int         m_layerIdx;

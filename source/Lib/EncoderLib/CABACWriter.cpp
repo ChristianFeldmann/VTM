@@ -787,7 +787,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
       }
+#if JVET_Q0629_REMOVAL_PLT_4X4
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
       if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif           
       {
         m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
       }
@@ -801,7 +805,11 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
       if (CU::isIntra(cu) || CU::isPLT(cu))
       {
+#if JVET_Q0629_REMOVAL_PLT_4X4
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
         if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif                      
           m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
       }
       else
@@ -824,12 +832,20 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || cu.isConsIntra() )
     {
+#if JVET_Q0629_REMOVAL_PLT_4X4
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
       if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif           
         m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
       return;
     }
     m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
+#if JVET_Q0629_REMOVAL_PLT_4X4    
+    if ((CU::isIntra(cu) || CU::isPLT(cu)) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+#else
     if ((CU::isIntra(cu) || CU::isPLT(cu)) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
+#endif         
     {
       m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
     }
@@ -885,7 +901,7 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
 
     intra_luma_pred_modes  ( cu );
 #if JVET_Q0110_Q0785_CHROMA_BDPCM_420
-    if( !cu.Y().valid() || ( !cu.isSepTree() && cu.Y().valid() ) )
+    if( ( !cu.Y().valid() || ( !cu.isSepTree() && cu.Y().valid() ) ) && isChromaEnabled(cu.chromaFormat) )
     {
       bdpcm_mode( cu, ComponentID(CHANNEL_TYPE_CHROMA) );
     } 
@@ -1494,9 +1510,18 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   TransformUnit&   tu = *cu.firstTU;
   uint32_t indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
 
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  int maxPltSize = cu.isSepTree() ? MAXPLTSIZE_DUALTREE : MAXPLTSIZE;
+#endif
+
   if (cu.lastPLTSize[compBegin])
   {
+    
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+    xEncodePLTPredIndicator(cu, maxPltSize, compBegin);
+#else
     xEncodePLTPredIndicator(cu, MAXPLTSIZE, compBegin);
+#endif
   }
 
   uint32_t reusedPLTnum = 0;
@@ -1505,8 +1530,11 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
     if (cu.reuseflag[compBegin][idx])
       reusedPLTnum++;
   }
-
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  if (reusedPLTnum < maxPltSize)
+#else
   if (reusedPLTnum < MAXPLTSIZE)
+#endif
   {
     exp_golomb_eqprob(cu.curPLTSize[compBegin] - reusedPLTnum, 0);
   }
@@ -1560,6 +1588,9 @@ void CABACWriter::cu_palette_info(const CodingUnit& cu, ComponentID compBegin, u
   {
     cuPaletteSubblockInfo(cu, compBegin, numComp, subSetId, prevRunPos, prevRunType);
   }
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+  CHECK(cu.curPLTSize[compBegin] > maxPltSize, " Current palette size is larger than maximum palette size");
+#endif
 }
 void CABACWriter::cuPaletteSubblockInfo(const CodingUnit& cu, ComponentID compBegin, uint32_t numComp, int subSetId, uint32_t& prevRunPos, unsigned& prevRunType)
 {
@@ -1654,14 +1685,22 @@ void CABACWriter::cuPaletteSubblockInfo(const CodingUnit& cu, ComponentID compBe
           PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
           if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
           {
+#if JVET_Q0491_PLT_ESCAPE
+            exp_golomb_eqprob((unsigned)escapeValue.at(posx, posy), 5);
+#else
             exp_golomb_eqprob((unsigned)escapeValue.at(posx, posy), 3);
+#endif
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
           if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
           {
             uint32_t posxC = posx >> scaleX;
             uint32_t posyC = posy >> scaleY;
+#if JVET_Q0491_PLT_ESCAPE
+            exp_golomb_eqprob((unsigned)escapeValue.at(posxC, posyC), 5);
+#else
             exp_golomb_eqprob((unsigned)escapeValue.at(posxC, posyC), 3);
+#endif
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
       }
@@ -2409,8 +2448,8 @@ void CABACWriter::cbf_comp( const CodingStructure& cs, bool cbf, const CompArea&
   unsigned  ctxId = DeriveCtx::CtxQtCbf(area.compID, prevCbf, useISP && isLuma(area.compID));
   const CtxSet&   ctxSet  = Ctx::QtCbf[ area.compID ];
 
-  if ((area.compID == COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmMode)
-   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), ChannelType(area.compID)) != NULL && cs.getCU(area.pos(), ChannelType(area.compID))->bdpcmModeChroma))
+  if ((area.compID == COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmMode)
+   || (area.compID != COMPONENT_Y && cs.getCU(area.pos(), toChannelType(area.compID)) != NULL && cs.getCU(area.pos(), toChannelType(area.compID))->bdpcmModeChroma))
   {
     if (area.compID == COMPONENT_Y)
       ctxId = 1;

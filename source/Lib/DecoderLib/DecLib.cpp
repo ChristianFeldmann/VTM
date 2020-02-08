@@ -129,7 +129,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       {
         read( nalu );
         int iSkipFrame = 0;
-        bNewPicture = pcDecLib->decode( nalu, iSkipFrame, iPOCLastDisplay );
+
+#if JVET_P0288_PIC_OUTPUT
+        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay, 0);
+#else
+        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay);
+#endif
         if( bNewPicture )
         {
           bitstreamFile->clear();
@@ -268,6 +273,15 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
             uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
             uint32_t numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
             uint32_t maxDecPicBufferingHighestTid =  activeSPS->getMaxDecPicBuffering(maxNrSublayers-1);
+#if JVET_Q0814_DPB
+            const VPS* referredVPS = pcListPic->front()->cs->vps;
+
+            if( referredVPS != nullptr && referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] > 1 )
+            {
+              numReorderPicsHighestTid = referredVPS->getNumReorderPics( maxNrSublayers - 1 );
+              maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( maxNrSublayers - 1 );
+            }
+#endif
 
             while (iterPic != pcListPic->end())
             {
@@ -497,7 +511,11 @@ void DecLib::deletePicBuffer ( )
 Picture* DecLib::xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId )
 {
   Picture * pcPic = nullptr;
+#if JVET_Q0814_DPB
+  m_iMaxRefPicNum = ( m_vps == nullptr || m_vps->m_numLayersInOls[m_vps->m_targetOlsIdx] == 1 ) ? sps.getMaxDecPicBuffering( temporalLayer ) : m_vps->getMaxDecPicBuffering( temporalLayer );     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
+#else
   m_iMaxRefPicNum = sps.getMaxDecPicBuffering(temporalLayer);     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
+#endif
   if (m_cListPic.size() < (uint32_t)m_iMaxRefPicNum)
   {
     pcPic = new Picture();
@@ -594,11 +612,12 @@ void DecLib::executeLoopFilters()
     m_cALF.ALFProcess(cs);
   }
 
-#if SUBPIC_DECCHECK 
-  for (int i = 0; i < cs.pps->getNumSubPics(); i++)
+#if JVET_O1143_SUBPIC_BOUNDARY
+  for (int i = 0; i < cs.pps->getNumSubPics() && m_targetSubPicIdx; i++)
   {
     // keep target subpic samples untouched, for other subpics mask their output sample value to 0
-    if (i != m_targetSubPicIdx)
+    int targetSubPicIdx = m_targetSubPicIdx - 1;
+    if (i != targetSubPicIdx)
     {
       SubPic SubPicNoUse = cs.pps->getSubPics()[i];
       uint32_t left  = SubPicNoUse.getSubPicLeft();
@@ -1101,8 +1120,34 @@ void DecLib::xActivateParameterSets( const int layerId )
     m_pcPic->cs->pcv   = pps->pcv;
 
     // Initialise the various objects for the new set of settings
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   maxDepth,
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
+#else
+    m_cSAO.create(pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA));
+#endif
+    m_cLoopFilter.create(maxDepth);
+#else
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   sps->getMaxCodingDepth(),
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
+#else
     m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA ), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA ) );
+#endif
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
+#endif
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
     if (sps->getUseLmcs())
@@ -1148,7 +1193,12 @@ void DecLib::xActivateParameterSets( const int layerId )
 
     if( sps->getALFEnabledFlag() )
     {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+      const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
+      m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, sps->getBitDepths().recon);
+#else
       m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
+#endif
     }
 #if JVET_Q0795_CCALF
     pSlice->m_ccAlfFilterControl[0] = m_cALF.getCcAlfControlIdc(COMPONENT_Cb);
@@ -1226,10 +1276,27 @@ void DecLib::xActivateParameterSets( const int layerId )
   }
 
   // Conformance checks
-  Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
-  const SPS *sps = pSlice->getSPS();
-  const PPS *pps = pSlice->getPPS();
+  Slice *slice = m_pcPic->slices[m_uiSliceSegmentIdx];
+  const SPS *sps = slice->getSPS();
+  const PPS *pps = slice->getPPS();
+#if JVET_Q0814_DPB
+  const VPS *vps = slice->getVPS();
+#endif
 
+#if SPS_ID_CHECK
+  static std::unordered_map<int, int> m_clvssSPSid;
+
+  if( slice->isClvssPu() && m_bFirstSliceInPicture )
+  {
+    m_clvssSPSid[layerId] = pps->getSPSId();
+  }
+
+  CHECK( m_clvssSPSid[layerId] != pps->getSPSId(), "The value of pps_seq_parameter_set_id shall be the same in all PPSs that are referred to by coded pictures in a CLVS" );
+#endif
+
+#if JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG
+  CHECK(sps->getGDREnabledFlag() == false && m_picHeader.getGdrPicFlag(), "When gdr_enabled_flag is equal to 0, the value of gdr_pic_flag shall be equal to 0 ");
+#endif
   if( !sps->getUseWP() )
   {
     CHECK( pps->getUseWP(), "When sps_weighted_pred_flag is equal to 0, the value of pps_weighted_pred_flag shall be equal to 0." );
@@ -1240,20 +1307,54 @@ void DecLib::xActivateParameterSets( const int layerId )
     CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
   }
 
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  const int minCuSize = 1 << sps->getLog2MinCodingBlockSize();
+  CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
+  CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
+#else
   CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, int( sps->getMaxCUWidth() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, int( sps->getMaxCUHeight() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
-  if( !sps->getRprEnabledFlag() ) // subpics_present_flag is equal to 1 condition shall be added
+#endif
+#if JVET_Q0043_RPR_and_Subpics
+  if( !sps->getRprEnabledFlag() ) 
+  {
+    CHECK( pps->getPicWidthInLumaSamples() != sps->getMaxPicWidthInLumaSamples(), "When res_change_in_clvs_allowed_flag equal to 0, the value of pic_width_in_luma_samples shall be equal to pic_width_max_in_luma_samples." );
+    CHECK( pps->getPicHeightInLumaSamples() != sps->getMaxPicHeightInLumaSamples(), "When res_change_in_clvs_allowed_flag equal to 0, the value of pic_height_in_luma_samples shall be equal to pic_height_max_in_luma_samples." );
+  }
+  if( sps->getRprEnabledFlag() )
+  {
+#if JVET_Q0119_CLEANUPS
+    CHECK( sps->getSubPicInfoPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#else
+    CHECK( sps->getSubPicPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#endif
+  }
+  CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When res_change_in_clvs_allowed_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
+#else  
+  if( !sps->getRprEnabledFlag() && sps->getSubPicPresentFlag() )
   {
     CHECK( pps->getPicWidthInLumaSamples() != sps->getMaxPicWidthInLumaSamples(), "When subpics_present_flag is equal to 1 or ref_pic_resampling_enabled_flag equal to 0, the value of pic_width_in_luma_samples shall be equal to pic_width_max_in_luma_samples." );
     CHECK( pps->getPicHeightInLumaSamples() != sps->getMaxPicHeightInLumaSamples(), "When subpics_present_flag is equal to 1 or ref_pic_resampling_enabled_flag equal to 0, the value of pic_height_in_luma_samples shall be equal to pic_height_max_in_luma_samples." );
   }
-
   CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When ref_pic_resampling_enabled_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
+#endif
+
+#if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+  CHECK(sps->getRprEnabledFlag() && sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
 
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
   {
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
   }
+
+#if JVET_Q0814_DPB
+  if( vps != nullptr && vps->m_numOutputLayersInOls[vps->m_targetOlsIdx] > 1 )
+  {
+    CHECK( sps->getMaxPicWidthInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).width, "pic_width_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_width[ i ]" );
+    CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
+  }
+#endif
 }
 
 
@@ -1338,6 +1439,47 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
+#if JVET_P0101_POC_MULTILAYER || JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+  CHECK(pps == 0, "No PPS present");
+  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+  CHECK(sps == 0, "No SPS present");
+  VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+#endif
+#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
+  {
+    CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id "
+                                              "when sps_video_parameter_set_id is equal to 0");
+  }
+#endif
+#if JVET_P0101_POC_MULTILAYER
+  CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
+  if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
+  {
+    bool pocIsSet = false;
+    for(auto auNALit=m_accessUnitPicInfo.begin(); auNALit != m_accessUnitPicInfo.end();auNALit++)
+    {      
+      for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0) && !pocIsSet; iRefIdx++)
+      {
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)
+        {
+          m_apcSlicePilot->setPOC(m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC());
+          pocIsSet = true;
+        }
+      }
+      for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_1) && !pocIsSet; iRefIdx++)
+      {
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)
+        {
+          m_apcSlicePilot->setPOC(m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC());
+          pocIsSet = true;
+        }
+      }
+    }
+  }
+#endif
+
   // update independent slice index
   uint32_t uiIndependentSliceIdx = 0;
   if (!m_bFirstSliceInPicture)
@@ -1348,11 +1490,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setIndependentSliceIdx(uiIndependentSliceIdx);
 
 #if K0149_BLOCK_STATISTICS
+#if !JVET_P0101_POC_MULTILAYER
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
-
+#endif
   writeBlockStatisticsHeader(sps);
 #endif
 
@@ -1420,17 +1563,46 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
   }
 
-  if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
-      m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
+#if JVET_P0288_PIC_OUTPUT
   {
     PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
     CHECK(pps == 0, "No PPS present");
     SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
     CHECK(sps == 0, "No SPS present");
+    if (sps->getVPSId() > 0)
+    {
+      VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+      CHECK(vps == 0, "No VPS present");
+      if ((vps->getOlsModeIdc() == 0 && vps->getGeneralLayerIdx(nalu.m_nuhLayerId) < (vps->getMaxLayers() - 1) && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getMaxLayers() - 1) == 1) || (vps->getOlsModeIdc() == 2 && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) == 0))
+      {
+        m_picHeader.setPicOutputFlag(false);
+      }
+    }
+  }
+#endif
+
+  if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+      m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
+  {
+#if !JVET_P0101_POC_MULTILAYER
+    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    CHECK(pps == 0, "No PPS present");
+    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+    CHECK(sps == 0, "No SPS present");
+#endif
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
   }
+
+#if JVET_P0101_POC_MULTILAYER
+  AccessUnitPicInfo picInfo;
+  picInfo.m_nalUnitType = nalu.m_nalUnitType;
+  picInfo.m_nuhLayerId  = nalu.m_nuhLayerId;
+  picInfo.m_temporalId  = nalu.m_temporalId;
+  picInfo.m_POC         = m_apcSlicePilot->getPOC();
+  m_accessUnitPicInfo.push_back(picInfo);
+#endif
 
   // Skip pictures due to random access
 
@@ -1821,7 +1993,11 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   // thus, storing it must be last action.
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }
+#if JVET_P0288_PIC_OUTPUT
+bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, int iTargetOlsIdx)
+#else
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
+#endif
 {
   bool ret;
   // ignore all NAL units of layers > 0
@@ -1832,6 +2008,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
   {
     case NAL_UNIT_VPS:
       xDecodeVPS( nalu );
+#if JVET_P0288_PIC_OUTPUT
+      m_vps->m_targetOlsIdx = iTargetOlsIdx;
+#endif
       return false;
 
     case NAL_UNIT_DPS:

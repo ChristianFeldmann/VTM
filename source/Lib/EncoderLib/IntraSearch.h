@@ -112,11 +112,27 @@ public:
       data[ch] = ui[ch];
     }
   }
+#if JVET_Q0493_PLT_ENCODER_LOSSLESS
+  bool almostEqualData(SortingElement element, int errorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp, bool lossless)
+#else
   bool almostEqualData(SortingElement element, int errorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+#endif
   {
     bool almostEqual = true;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
+#if JVET_Q0493_PLT_ENCODER_LOSSLESS
+      if (lossless)
+      {
+        if ((std::abs(data[comp] - element.data[comp])) > errorLimit)
+        {
+          almostEqual = false;
+          break;
+        }
+      }
+      else
+      {
+#endif
       uint32_t absError = 0;
       if (isChroma((ComponentID) comp))
       {
@@ -131,16 +147,34 @@ public:
         almostEqual = false;
         break;
       }
+#if JVET_Q0493_PLT_ENCODER_LOSSLESS
+      }
+#endif
     }
     return almostEqual;
   }
+#if JVET_Q0493_PLT_ENCODER_LOSSLESS
+  uint32_t getSAD(SortingElement element, const BitDepths &bitDepths, ComponentID compBegin, uint32_t numComp, bool lossless)
+#else
   uint32_t getSAD(SortingElement element, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+#endif
   {
     uint32_t sumAd = 0;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
+#if JVET_Q0493_PLT_ENCODER_LOSSLESS
+      if (lossless)
+      {
+        sumAd += (std::abs(data[comp] - element.data[comp]));
+      }
+      else
+      {
+#endif
       sumAd += (std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
+#if JVET_Q0493_PLT_ENCODER_LOSSLESS
+      }
+#endif 
     }
     return sumAd;
   }

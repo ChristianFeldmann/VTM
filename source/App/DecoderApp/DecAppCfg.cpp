@@ -77,6 +77,10 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   ("BitstreamFile,b",           m_bitstreamFileName,                   string(""), "bitstream input file name")
   ("ReconFile,o",               m_reconFileName,                       string(""), "reconstructed YUV output file name\n")
 
+#if JVET_P2008_OUTPUT_LOG
+  ("OplFile,-opl",              m_oplFilename ,                        string(""), "opl-file name without extension for conformance testing\n")
+#endif //JVET_P2008_OUTPUT_LOG
+
 #if ENABLE_SIMD_OPT
   ("SIMD",                      ignore,                                string(""), "SIMD extension to use (SCALAR, SSE41, SSE42, AVX, AVX2, AVX512), default: the highest supported extension\n")
 #endif
@@ -87,7 +91,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   ("OutputBitDepthC,d",         m_outputBitDepth[CHANNEL_TYPE_CHROMA], 0,          "bit depth of YUV output chroma component (default: use luma output bit-depth)")
   ("OutputColourSpaceConvert",  outputColourSpaceConvert,              string(""), "Colour space conversion to apply to input 444 video. Permitted values are (empty string=UNCHANGED) " + getListOfColourSpaceConverts(false))
   ("MaxTemporalLayer,t",        m_iMaxTemporalLayer,                   -1,         "Maximum Temporal Layer to be decoded. -1 to decode all layers")
-  ("TargetOutputLayerSet,p",    m_iTargetOLS,                          -1,         "Target output layer set.")
+  ("TargetOutputLayerSet,p",    m_targetOlsIdx,                          -1,       "Target output layer set index")
   ("SEIDecodedPictureHash,-dph",m_decodedPictureHashSEIEnabled,        1,          "Control handling of decoded picture hash SEI messages\n"
                                                                                    "\t1: check hash in SEI messages if available in the bitstream\n"
                                                                                    "\t0: ignore SEI message")
@@ -113,8 +117,8 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
   ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
-#if SUBPIC_DECCHECK
-  ("targetSubPicIdx",          m_targetSubPicIdx,                     0,           "Specify which subpicture shall be written to output, using subpic index\n" )
+#if JVET_O1143_SUBPIC_BOUNDARY
+  ("targetSubPicIdx",          m_targetSubPicIdx,                     0,           "Specify which subpicture shall be written to output, using subpic index, 0: disabled, subpicIdx=m_targetSubPicIdx-1 \n" )
 #endif
   ( "UpscaledOutput",          m_upscaledOutput,                          0,       "Upscaled output for RPR" )
   ;
@@ -223,10 +227,14 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
 DecAppCfg::DecAppCfg()
 : m_bitstreamFileName()
 , m_reconFileName()
+#if JVET_P2008_OUTPUT_LOG
+, m_oplFilename()
+#endif //JVET_P2008_OUTPUT_LOG
+
 , m_iSkipFrame(0)
 // m_outputBitDepth array initialised below
 , m_outputColourSpaceConvert(IPCOLOURSPACE_UNCHANGED)
-, m_iTargetOLS(0)
+, m_targetOlsIdx(0)
 , m_iMaxTemporalLayer(-1)
 , m_decodedPictureHashSEIEnabled(0)
 , m_decodedNoDisplaySEIEnabled(false)

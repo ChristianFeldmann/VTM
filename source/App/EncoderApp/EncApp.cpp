@@ -75,7 +75,12 @@ EncApp::~EncApp()
 
 void EncApp::xInitLibCfg()
 {
+#if JVET_Q0814_DPB
+  VPS& vps = *m_cEncLib.getVPS();
+  vps.m_targetOlsIdx = m_targetOlsIdx;
+#else
   VPS vps;
+#endif
 
   vps.setMaxLayers( m_maxLayers );
 
@@ -171,7 +176,9 @@ void EncApp::xInitLibCfg()
     }
   }
   vps.setVPSExtensionFlag                                        ( false );
+#if !JVET_Q0814_DPB
   m_cEncLib.setVPS(&vps);
+#endif
   m_cEncLib.setProfile                                           ( m_profile);
   m_cEncLib.setLevel                                             ( m_levelTier, m_level);
   m_cEncLib.setNumSubProfile                                     ( m_numSubProfile );
@@ -182,6 +189,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  m_cEncLib.setNonProjectedConstraintFlag                        ( m_nonProjectedConstraintFlag );
+  m_cEncLib.setNoResChangeInClvsConstraintFlag                   ( m_noResChangeInClvsConstraintFlag );
+  m_cEncLib.setOneTilePerPicConstraintFlag                       ( m_oneTilePerPicConstraintFlag );
+  m_cEncLib.setOneSlicePerPicConstraintFlag                      ( m_oneSlicePerPicConstraintFlag );
+  m_cEncLib.setOneSubpicPerPicConstraintFlag                     ( m_oneSubpicPerPicConstraintFlag );
+#endif
   m_cEncLib.setFrameOnlyConstraintFlag                           ( m_frameOnlyConstraintFlag);
   m_cEncLib.setIntraConstraintFlag                               ( m_intraConstraintFlag );
 
@@ -371,8 +385,13 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
+#if JVET_Q0119_CLEANUPS
+  m_cEncLib.setSubPicInfoPresentFlag                             ( m_subPicInfoPresentFlag );
+  if(m_subPicInfoPresentFlag)
+#else
   m_cEncLib.setSubPicPresentFlag                                 ( m_subPicPresentFlag );
   if(m_subPicPresentFlag)
+#endif
   {
     m_cEncLib.setNumSubPics                                      ( m_numSubPics );
     for (int i = 0; i < m_numSubPics; i++)
@@ -385,11 +404,20 @@ void EncApp::xInitLibCfg()
       m_cEncLib.setLoopFilterAcrossSubpicEnabledFlag             ( m_loopFilterAcrossSubpicEnabledFlag[i], i );
     }
   }
+
+#if JVET_Q0119_CLEANUPS
+  m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag            ( m_subPicIdMappingExplicitlySignalledFlag );
+  if (m_subPicIdMappingExplicitlySignalledFlag)
+  {
+    m_cEncLib.setSubPicIdMappingInSpsFlag                        ( m_subPicIdMappingInSpsFlag );
+    if(m_subPicIdMappingInSpsFlag)
+#else
   m_cEncLib.setSubPicIdPresentFlag                               ( m_subPicIdPresentFlag );
   if (m_subPicIdPresentFlag) 
   {
     m_cEncLib.setSubPicIdSignallingPresentFlag                   ( m_subPicIdSignallingPresentFlag );
     if(m_subPicIdSignallingPresentFlag)
+#endif
     {
       m_cEncLib.setSubPicIdLen                                   ( m_subPicIdLen );
       for (int i = 0; i < m_numSubPics; i++)
@@ -401,6 +429,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxMTTHierarchyDepth                              ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
+#if JVET_Q0330_BLOCK_PARTITION
+  m_cEncLib.setMaxBTSizes                                        ( m_uiMaxBT );
+  m_cEncLib.setMaxTTSizes                                        ( m_uiMaxTT );
+#endif 
   m_cEncLib.setDualITree                                         ( m_dualTree );
   m_cEncLib.setLFNST                                             ( m_LFNST );
   m_cEncLib.setUseFastLFNST                                      ( m_useFastLFNST );
@@ -480,8 +512,12 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
   m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  m_cEncLib.setLog2MinCodingBlockSize                            ( m_log2MinCuSize );
+#else
   m_cEncLib.setMaxCodingDepth                                    ( m_uiMaxCodingDepth );
   m_cEncLib.setLog2DiffMaxMinCodingBlockSize                     ( m_uiLog2DiffMaxMinCodingBlockSize );
+#endif
   m_cEncLib.setLog2MaxTbSize                                     ( m_log2MaxTbSize );
   m_cEncLib.setUseEncDbOpt(m_encDbOpt);
   m_cEncLib.setUseFastLCTU                                       ( m_useFastLCTU );
@@ -504,8 +540,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
+#if !JVET_Q0441_SAO_MOD_12_BIT
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_LUMA  , m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA]   );
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA] );
+#endif
   m_cEncLib.setUseTransformSkip                                  ( m_useTransformSkip      );
   m_cEncLib.setUseTransformSkipFast                              ( m_useTransformSkipFast  );
   m_cEncLib.setUseChromaTS                                       ( m_useChromaTS && m_useTransformSkip);
@@ -719,6 +757,10 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );
   m_cEncLib.setSliceLevelDblk                                    ( m_sliceLevelDblk );
   m_cEncLib.setSliceLevelSao                                     ( m_sliceLevelSao  );
+#if JVET_Q0819_PH_CHANGES 
+  m_cEncLib.setSliceLevelWp                                      ( m_sliceLevelWp );
+  m_cEncLib.setSliceLevelDeltaQp                                 ( m_sliceLevelDeltaQp );
+#endif
   m_cEncLib.setSliceLevelAlf                                     ( m_sliceLevelAlf  );
   m_cEncLib.setConstantSliceHeaderParamsEnabledFlag              ( m_constantSliceHeaderParamsEnabledFlag );
   m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );
@@ -894,7 +936,7 @@ void EncApp::xInitLib(bool isFieldCoding)
 // Public member functions
 // ====================================================================================================================
 
-void EncApp::createLib( const int layerId )
+void EncApp::createLib( const int layerIdx )
 {
   const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
   UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
@@ -913,8 +955,9 @@ void EncApp::createLib( const int layerId )
     }
   }
 
-  // initialize internal class & member variables
+  // initialize internal class & member variables and VPS
   xInitLibCfg();
+  const int layerId = m_cEncLib.getVPS() == nullptr ? 0 : m_cEncLib.getVPS()->getLayerId( layerIdx );
   xCreateLib( m_recBufList, layerId );
   xInitLib( m_isField );
 

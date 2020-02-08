@@ -178,6 +178,9 @@ public:
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
+#if JVET_Q0819_PH_CHANGES
+  void parsePredWeightTable ( PicHeader *picHeader, const SPS *sps );
+#endif
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
@@ -187,7 +190,9 @@ public:
 #endif
 
 private:
+#if !JVET_Q0210_UEK_REMOVAL
   int  alfGolombDecode( const int k, const bool signed_val=true );
+#endif
 
 protected:
   bool  xMoreRbspData();

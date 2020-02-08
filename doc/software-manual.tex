@@ -1046,10 +1046,58 @@ Specifies the value of general_interlaced_source_flag
 Specifies the value of general_non_packed_constraint_flag
 \\
 
+\Option{NonProjectedConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_non_projected_constraint_flag
+\\
+
+\Option{NoResChangeInClvsConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of no_res_change_in_clvs_constraint_flag
+\\
+
+\Option{OneTilePerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_tile_per_pic_constraint_flag
+\\
+
+\Option{OneSlicePerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_slice_per_pic_constraint_flag
+\\
+
+\Option{OneSubpicPerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_subpic_per_pic_constraint_flag
+\\
+
 \Option{FrameOnly} &
 %\ShortOption{\None} &
 \Default{false} &
 Specifies the value of general_frame_only_constraint_flag
+\\
+
+\Option{SubPicInfoPresentFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of subpicture subpic_info_present_flag
+\\
+
+\Option{SubPicIdMappingExplicitlySignalledFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of subpicture subpic_id_mapping_explicitly_signalled_flag
+\\
+
+\Option{SubPicIdMappingInSpsFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of subpicture subpic_id_mapping_in_sps_flag
 \\
 
 \end{OptionTableNoShorthand}
@@ -1074,6 +1122,12 @@ Specifies the value to use to derive the vps_max_layers_minus1 for layered codin
 %%
 
 \begin{OptionTableNoShorthand}{Unit definition parameters}{tab:unit}
+\Option{CTUSize} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the CTU size (width and height).
+\\
+
 \Option{MaxCUWidth} &
 %\ShortOption{\None} &
 \Default{64} &
@@ -1092,10 +1146,10 @@ Defines the maximum CU height.
 Defines the maximum CU size.
 \\
 
-\Option{MaxPartitionDepth (-h)} &
-%\ShortOption{-h} &
-\Default{4} &
-Defines the depth of the CU tree.
+\Option{Log2MinCuSize} &
+%\ShortOption{\None} &
+\Default{2} &
+Defines the minimum CU size in logarithm base 2.
 \\
 
 \Option{QuadtreeTULog2MaxSize} &
@@ -1125,49 +1179,85 @@ Defines the depth of the TU tree for inter CUs.
 \Option{MaxMTTHierarchyDepth} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree for inter slices.
+Defines the initial maximum depth of the multi-type tree for inter slices.
 \\
 
 \Option{MaxMTTHierarchyDepthI} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree for intra slices.
+Defines the initial maximum depth of the multi-type tree for intra slices.
 \\
 
 \Option{MaxMTTHierarchyDepthISliceC} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree in dual tree for chroma components.
+Defines the initial maximum depth of the multi-type tree in dual tree for chroma components.
 \\
 
 \Option{MaxMTTHierarchyDepthISliceL} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree in dual tree for luma component.
+Defines the initial maximum depth of the multi-type tree in dual tree for luma component.
 \\
 
 \Option{MinQTChromaISlice} &
 %\ShortOption{\None} &
 \Default{4} &
-Defines the minimum size of the quad tree in dual tree for chroma components.
+Defines the initial minimum size of the quad tree in dual tree for chroma components.
 \\
 
 \Option{MinQTISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree for intra slices.
+Defines the initial minimum size of the quad tree for intra slices.
 \\
 
 \Option{MinQTLumaISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree in dual tree for luma component.
+Defines the initial minimum size of the quad tree in dual tree for luma component.
 \\
 
 \Option{MinQTNonISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree for inter slices.
+Defines the initial minimum size of the quad tree for inter slices.
+\\
+
+\Option{MaxBTLumaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the binary tree in dual tree for luma component.
+\\
+
+\Option{MaxBTChromaISlice} &
+%\ShortOption{\None} &
+\Default{64} &
+Defines the initial maximum size of the binary tree in dual tree for chroma components.
+\\
+
+\Option{MaxBTNonISlice} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the initial maximum size of the binary tree for inter slices.
+\\
+
+\Option{MaxTTLumaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the tenary tree in dual tree for luma component.
+\\
+
+\Option{MaxTTChromaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the tenary tree in dual tree for chroma components.
+\\
+
+\Option{MaxTTNonISlice} &
+%\ShortOption{\None} &
+\Default{64} &
+Defines the initial maximum size of the tenary tree for inter slices.
 \\
 
 \end{OptionTableNoShorthand}
@@ -2022,6 +2112,12 @@ Enables or disables encoder-side deblocking optimization. When it is enabled, de
 Enables or disables the use of multiple reference line intra prediction (MRL).
 \\
 
+\Option{DualITree} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of separate QTBT trees for intra slice luma and chroma channel types.
+\\ 
+
 \Option{MIP} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2087,6 +2183,12 @@ for LCU bottom and right boundary areas.
 %\ShortOption{\None} &
 \Default{false} &
 When true, resets the encoder's SAO state after an IRAP (POC order).
+\\
+
+\Option{SAOGreedyEnc} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the SAO greedy merge encoding algorithm.
 \\
 
 \Option{FastUDIUseMPMEnabled} &
@@ -2244,6 +2346,18 @@ Code deblocking filter parameters in slice headers rather than picture header.
 Code SAO parameters in slice headers rather than picture header.
 \\
 
+\Option{SliceLevelWeightedPrediction} &
+%\ShortOption{\None} &
+\Default{true} &
+Code Weighted Prediction paremeters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelDeltaQp} &
+%\ShortOption{\None} &
+\Default{true} &
+Code delta Qp in slice headers rather than picture header.
+\\
+
 \Option{TransformSkip} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -2343,6 +2457,24 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
+\Option{BCW} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of Bi-prediction with CU-level Weights (BCW).
+\\
+
+\Option{BcwFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the fast encoding of Bi-prediction with CU-level Weights (BCW).
+\\
+ 
+\Option{BDOF} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of bi-directional optical flow (BDOF).
 \\
 
 \Option{LMCSEnable} &
@@ -2664,13 +2796,6 @@ When true, specifies the use of the cross component prediction tool (4:4:4 proce
 \Option{ReconBasedCrossCPredictionEstimate} &
 \Default{false} &
 If true, then when determining the alpha value for cross-component prediction, use the reconstructed residual rather than the pre-transform encoder-side residual
-\\
-
-\Option{SaoLumaOffsetBitShift}
-\Option{SaoChromaOffsetBitShift}&
-\Default{0}
-\Default{0} &
-Specifies the shift to apply to the SAO parameters. If negative, an estimate will be calculated based upon the initial QP. Version 1 and some Version 2 (RExt) profiles require this to be 0.
 \\
 
 \Option{TransformSkipLog2MaxSize} &
@@ -3987,6 +4112,12 @@ Defines the input bit stream file name.
 %\ShortOption{-o} &
 \Default{\NotSet} &
 Defines the reconstructed video file name. If empty, no file is generated. If the bitstream contains multiple layer and no single target layer is specified (i.e. TargetLayer=-1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'decoded.yuv' becomes 'decoded0.yuv' for layer id 0, 'decoded' becomes 'decoded0'.
+\\
+
+\Option{OplFile (-opl)} &
+%\ShortOption{-o} &
+\Default{\NotSet} &
+Defines the output log file name (*.opl file). If empty, no file is generated. Each output picture log file contains one row for each output picture in the bitstream, in output order. Each row contains the following information, as CSV:	PicOrderCntVal, pic\_width\_max\_in\_luma\_samples, pic\_height\_max\_in\_luma\_samples, MD5 checksum for the Y component, MD5 checksum for the U component, MD5 checksum for the V component. The format of output log file is specified in JVET-P2008. 
 \\
 
 \Option{SkipFrames (-s)} &

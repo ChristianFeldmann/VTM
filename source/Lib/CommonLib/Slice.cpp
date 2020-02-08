@@ -205,7 +205,11 @@ void Slice::initSlice()
 
 void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SPS *sps )
 { 
+#if JVET_Q0819_PH_CHANGES 
+  if (pps->getRplInfoInPhFlag())
+#else
   if(picHeader->getPicRplPresentFlag())
+#endif
   {
     setRPL0idx( picHeader->getRPL0idx() );
     *getLocalRPL0() = *picHeader->getLocalRPL0();
@@ -1022,7 +1026,11 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
       {
         numLeadingPicsFound++;
         int limitNonLP = 0;
+#if JVET_Q0042_VUI
+        if (pcSlice->getSPS()->getFieldSeqFlag())
+#else
         if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
+#endif
           limitNonLP = 1;
         CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
       }
@@ -1588,12 +1596,22 @@ VPS::VPS()
   , m_vpsEachLayerIsAnOlsFlag (1)
   , m_vpsOlsModeIdc (0)
   , m_vpsNumOutputLayerSets (1)
-, m_vpsExtensionFlag()
+  , m_vpsExtensionFlag()
+#if JVET_Q0814_DPB
+  , m_totalNumOLSs( 0 )
+  , m_numDpbParams( 0 )
+  , m_sublayerDpbParamsPresentFlag( false )
+  , m_targetOlsIdx( -1 )
+#endif
 {
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_vpsLayerId[i] = 0;
-    m_vpsIndependentLayerFlag[i] = 1;
+    m_vpsIndependentLayerFlag[i] = true;
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+    m_vpsLayerChromaFormatIDC[i] = NOT_VALID;
+    m_vpsLayerBitDepth[i] = NOT_VALID;
+#endif
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
       m_vpsDirectRefLayerFlag[i][j] = 0;
@@ -1614,6 +1632,156 @@ VPS::~VPS()
 {
 }
 
+#if JVET_Q0814_DPB
+void VPS::deriveOutputLayerSets()
+{
+  if( m_uiMaxLayers == 1 )
+  {
+    m_totalNumOLSs = 1;
+  }
+  else if( m_vpsEachLayerIsAnOlsFlag || m_vpsOlsModeIdc < 2 )
+  {
+    m_totalNumOLSs = m_uiMaxLayers;
+  }
+  else if( m_vpsOlsModeIdc == 2 )
+  {
+    m_totalNumOLSs = m_vpsNumOutputLayerSets;
+  }
+
+  m_olsDpbParamsIdx.resize( m_totalNumOLSs );
+  m_olsDpbPicSize.resize( m_totalNumOLSs, Size(0, 0) );
+  m_numOutputLayersInOls.resize( m_totalNumOLSs );
+  m_numLayersInOls.resize( m_totalNumOLSs );
+  m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+  m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+
+  std::vector<int> numRefLayers( m_uiMaxLayers );
+  std::vector<std::vector<int>> outputLayerIdx( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+  std::vector<std::vector<int>> layerIncludedInOlsFlag( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, 0 ) );
+  std::vector<std::vector<int>> dependencyFlag( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+  std::vector<std::vector<int>> refLayerIdx( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+
+  for( int i = 0; i < m_uiMaxLayers; i++ )
+  {
+    int r = 0;
+
+    for( int j = 0; j < m_uiMaxLayers; j++ )
+    {
+      dependencyFlag[i][j] = m_vpsDirectRefLayerFlag[i][j];
+
+      for( int k = 0; k < i; k++ )
+      {
+        if( m_vpsDirectRefLayerFlag[i][k] && dependencyFlag[k][j] )
+        {
+          dependencyFlag[i][j] = 1;
+        }
+      }
+
+      if( dependencyFlag[i][j] )
+      {
+        refLayerIdx[i][r++] = j;
+      }
+    }
+
+    numRefLayers[i] = r;
+  }
+
+  m_numOutputLayersInOls[0] = 1;
+  m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
+
+  for( int i = 1; i < m_totalNumOLSs; i++ )
+  {
+    if( m_vpsEachLayerIsAnOlsFlag || m_vpsOlsModeIdc == 0 )
+    {
+      m_numOutputLayersInOls[i] = 1;
+      m_outputLayerIdInOls[i][0] = m_vpsLayerId[i];
+    }
+    else if( m_vpsOlsModeIdc == 1 )
+    {
+      m_numOutputLayersInOls[i] = i + 1;
+
+      for( int j = 0; j < m_numOutputLayersInOls[i]; j++ )
+      {
+        m_outputLayerIdInOls[i][j] = m_vpsLayerId[j];
+      }
+    }
+    else if( m_vpsOlsModeIdc == 2 )
+    {
+      int j = 0;
+      for( int k = 0; k < m_uiMaxLayers; k++ )
+      {
+        if( m_vpsOlsOutputLayerFlag[i][k] )
+        {
+          layerIncludedInOlsFlag[i][k] = 1;
+          outputLayerIdx[i][j] = k;
+          m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
+        }
+      }
+      m_numOutputLayersInOls[i] = j;
+
+      for( j = 0; j < m_numOutputLayersInOls[i]; j++ )
+      {
+        int idx = outputLayerIdx[i][j];
+        for( int k = 0; k < numRefLayers[idx]; k++ )
+        {
+          layerIncludedInOlsFlag[i][refLayerIdx[idx][k]] = 1;
+        }
+      }
+    }
+  }
+
+  m_numLayersInOls[0] = 1;
+  m_layerIdInOls[0][0] = m_vpsLayerId[0];
+
+  for( int i = 1; i < m_totalNumOLSs; i++ )
+  {
+    if( m_vpsEachLayerIsAnOlsFlag )
+    {
+      m_numLayersInOls[i] = 1;
+      m_layerIdInOls[i][0] = m_vpsLayerId[i];
+    }
+    else if( m_vpsOlsModeIdc == 0 || m_vpsOlsModeIdc == 1 )
+    {
+      m_numLayersInOls[i] = i + 1;
+      for( int j = 0; j < m_numLayersInOls[i]; j++ )
+      {
+        m_layerIdInOls[i][j] = m_vpsLayerId[j];
+      }
+    }
+    else if( m_vpsOlsModeIdc == 2 )
+    {
+      int j = 0;
+      for( int k = 0; k < m_uiMaxLayers; k++ )
+      {
+        if( layerIncludedInOlsFlag[i][k] )
+        {
+          m_layerIdInOls[i][j++] = m_vpsLayerId[k];
+        }
+      }
+
+      m_numLayersInOls[i] = j;
+    }
+  }
+}
+
+void VPS::deriveTargetOutputLayerSet( int targetOlsIdx )
+{
+  m_targetOlsIdx = targetOlsIdx < 0 ? m_uiMaxLayers - 1 : targetOlsIdx;
+  m_targetOutputLayerIdSet.clear();
+  m_targetLayerIdSet.clear();
+
+  for( int i = 0; i < m_numOutputLayersInOls[m_targetOlsIdx]; i++ )
+  {
+    m_targetOutputLayerIdSet.push_back( m_outputLayerIdInOls[m_targetOlsIdx][i] );
+  }
+
+  for( int i = 0; i < m_numLayersInOls[m_targetOlsIdx]; i++ )
+  {
+    m_targetLayerIdSet.push_back( m_layerIdInOls[m_targetOlsIdx][i] );
+  }
+}
+#endif
+
 // ------------------------------------------------------------------------------------------------
 // Picture Header
 // ------------------------------------------------------------------------------------------------
@@ -1626,8 +1794,10 @@ PicHeader::PicHeader()
 , m_recoveryPocCnt                                ( 0 )
 , m_spsId                                         ( -1 )
 , m_ppsId                                         ( -1 )
+#if !JVET_Q0119_CLEANUPS
 , m_subPicIdSignallingPresentFlag                 ( 0 )
 , m_subPicIdLen                                   ( 0 )
+#endif
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag ( 0 )
 , m_numVerVirtualBoundaries                       ( 0 )
 , m_numHorVirtualBoundaries                       ( 0 )
@@ -1635,7 +1805,9 @@ PicHeader::PicHeader()
 , m_colourPlaneId                                 ( 0 )
 #endif
 , m_picOutputFlag                                 ( true )
+#if !JVET_Q0819_PH_CHANGES 
 , m_picRplPresentFlag                             ( 0 )
+#endif
 , m_pRPL0                                         ( 0 )
 , m_pRPL1                                         ( 0 )
 , m_rpl0Idx                                       ( 0 )
@@ -1660,14 +1832,20 @@ PicHeader::PicHeader()
 #endif
 , m_maxNumIBCMergeCand                            ( IBC_MRG_MAX_NUM_CANDS )
 , m_jointCbCrSignFlag                             ( 0 )
+#if JVET_Q0819_PH_CHANGES 
+, m_qpDelta                                       ( 0 )
+#else
 , m_saoEnabledPresentFlag                         ( 0 )
 , m_alfEnabledPresentFlag                         ( 0 )
+#endif
 , m_numAlfAps                                     ( 0 )
 , m_alfApsId                                      ( 0 )
 , m_alfChromaApsId                                ( 0 )
 , m_depQuantEnabledFlag                           ( 0 )
 , m_signDataHidingEnabledFlag                     ( 0 )
+#if !JVET_Q0819_PH_CHANGES  
 , m_deblockingFilterOverridePresentFlag           ( 0 )
+#endif
 , m_deblockingFilterOverrideFlag                  ( 0 )
 , m_deblockingFilterDisable                       ( 0 )
 , m_deblockingFilterBetaOffsetDiv2                ( 0 )
@@ -1685,8 +1863,14 @@ PicHeader::PicHeader()
 , m_scalingListPresentFlag                        ( 0 )
 , m_scalingListApsId                              ( -1 )
 , m_scalingListAps                                ( nullptr )
+#if JVET_Q0819_PH_CHANGES 
+, m_numL0Weights                                  ( 0 )
+, m_numL1Weights                                  ( 0 )
+#endif
 {
+#if !JVET_Q0119_CLEANUPS
   memset(m_subPicId,                                0,    sizeof(m_subPicId));
+#endif
   memset(m_virtualBoundariesPosX,                   0,    sizeof(m_virtualBoundariesPosX));
   memset(m_virtualBoundariesPosY,                   0,    sizeof(m_virtualBoundariesPosY));
   memset(m_saoEnabledFlag,                          0,    sizeof(m_saoEnabledFlag));
@@ -1728,8 +1912,10 @@ void PicHeader::initPicHeader()
   m_recoveryPocCnt                                = 0;
   m_spsId                                         = -1;
   m_ppsId                                         = -1;
+#if !JVET_Q0119_CLEANUPS
   m_subPicIdSignallingPresentFlag                 = 0;
   m_subPicIdLen                                   = 0;
+#endif
   m_loopFilterAcrossVirtualBoundariesDisabledFlag = 0;
   m_numVerVirtualBoundaries                       = 0;
   m_numHorVirtualBoundaries                       = 0;
@@ -1737,7 +1923,9 @@ void PicHeader::initPicHeader()
   m_colourPlaneId                                 = 0;
 #endif
   m_picOutputFlag                                 = true;
+#if !JVET_Q0819_PH_CHANGES 
   m_picRplPresentFlag                             = 0;
+#endif
   m_pRPL0                                         = 0;
   m_pRPL1                                         = 0;
   m_rpl0Idx                                       = 0;
@@ -1762,13 +1950,19 @@ void PicHeader::initPicHeader()
 #endif
   m_maxNumIBCMergeCand                            = IBC_MRG_MAX_NUM_CANDS;
   m_jointCbCrSignFlag                             = 0;
+#if JVET_Q0819_PH_CHANGES 
+  m_qpDelta                                       = 0;
+#else
   m_saoEnabledPresentFlag                         = 0;
   m_alfEnabledPresentFlag                         = 0;
+#endif
   m_numAlfAps                                     = 0;
   m_alfChromaApsId                                = 0;
   m_depQuantEnabledFlag                           = 0;
   m_signDataHidingEnabledFlag                     = 0;
+#if !JVET_Q0819_PH_CHANGES 
   m_deblockingFilterOverridePresentFlag           = 0;
+#endif
   m_deblockingFilterOverrideFlag                  = 0;
   m_deblockingFilterDisable                       = 0;
   m_deblockingFilterBetaOffsetDiv2                = 0;
@@ -1786,7 +1980,13 @@ void PicHeader::initPicHeader()
   m_scalingListPresentFlag                        = 0;
   m_scalingListApsId                              = -1;
   m_scalingListAps                                = nullptr;
+#if JVET_Q0819_PH_CHANGES 
+  m_numL0Weights                                  = 0;
+  m_numL1Weights                                  = 0;
+#endif
+#if !JVET_Q0119_CLEANUPS
   memset(m_subPicId,                                0,    sizeof(m_subPicId));
+#endif
   memset(m_virtualBoundariesPosX,                   0,    sizeof(m_virtualBoundariesPosX));
   memset(m_virtualBoundariesPosY,                   0,    sizeof(m_virtualBoundariesPosY));
   memset(m_saoEnabledFlag,                          0,    sizeof(m_saoEnabledFlag));
@@ -1808,6 +2008,14 @@ void PicHeader::initPicHeader()
 
   m_alfApsId.resize(0);
 }
+
+#if JVET_Q0819_PH_CHANGES 
+void PicHeader::getWpScaling(RefPicList e, int iRefIdx, WPScalingParam *&wp) const
+{
+  CHECK(e >= NUM_REF_PIC_LIST_01, "Invalid picture reference list");
+  wp = (WPScalingParam *) m_weightPredTable[e][iRefIdx];
+}
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // Sequence parameter set (SPS)
@@ -1844,21 +2052,41 @@ SPS::SPS()
 // Structure
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
+#if JVET_Q0119_CLEANUPS
+, m_subPicInfoPresentFlag         (0)
+#else
 , m_subPicPresentFlag         (0)
+#endif
 , m_numSubPics(1)
+#if JVET_Q0119_CLEANUPS
+, m_subPicIdMappingExplicitlySignalledFlag ( false )
+, m_subPicIdMappingInSpsFlag ( false )
+#else
 , m_subPicIdPresentFlag(0)
 , m_subPicIdSignallingPresentFlag(0)
+#endif
 , m_subPicIdLen(16)
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+, m_log2MinCodingBlockSize    (  2)
+#else
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
+#endif
 , m_CTUSize(0)
 , m_minQT{ 0, 0, 0 }
 , m_maxMTTHierarchyDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
+#if JVET_Q0330_BLOCK_PARTITION
+, m_maxBTSize{ 0, 0, 0 }
+, m_maxTTSize{ 0, 0, 0 }
+#else
 , m_maxBTSize{ MAX_BT_SIZE,  MAX_BT_SIZE_INTER,  MAX_BT_SIZE_C }
 , m_maxTTSize{ MAX_TT_SIZE,  MAX_TT_SIZE_INTER,  MAX_TT_SIZE_C }
+#endif
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
+#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
 , m_uiMaxCodingDepth          (  3)
+#endif
 , m_numRPL0                   ( 0 )
 , m_numRPL1                   ( 0 )
 , m_rpl1CopyFromRpl0Flag      ( false )
@@ -1867,6 +2095,9 @@ SPS::SPS()
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_transformSkipEnabledFlag  (false)
+#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+, m_log2MaxTransformSkipBlockSize (2)
+#endif
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
 , m_BDPCMEnabledFlag          (false)
 #else
@@ -1891,6 +2122,9 @@ SPS::SPS()
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
 , m_hrdParametersPresentFlag  (false)
+#if JVET_Q0042_VUI
+, m_fieldSeqFlag              (false)
+#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
@@ -1944,6 +2178,9 @@ SPS::SPS()
   ::memset(m_usedByCurrPicLtSPSFlag, 0, sizeof(m_usedByCurrPicLtSPSFlag));
   ::memset(m_virtualBoundariesPosX, 0, sizeof(m_virtualBoundariesPosX));
   ::memset(m_virtualBoundariesPosY, 0, sizeof(m_virtualBoundariesPosY));
+#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
+  ::memset(m_ppsValidFlag, 0, sizeof(m_ppsValidFlag));
+#endif
 }
 
 SPS::~SPS()
@@ -2082,12 +2319,16 @@ SubPic::~SubPic()
 
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
+#if JVET_Q0441_SAO_MOD_12_BIT
+{
+#else
 // m_log2SaoOffsetScale initialized below
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_log2SaoOffsetScale[ch] = 0;
   }
+#endif
 }
 
 PPS::PPS()
@@ -2104,7 +2345,11 @@ PPS::PPS()
 , m_numRefIdxL1DefaultActive         (1)
 , m_rpl1IdxPresentFlag               (false)
 , m_numSubPics                       (1)
+#if JVET_Q0119_CLEANUPS
+, m_subPicIdMappingInPpsFlag         (0)
+#else
 , m_subPicIdSignallingPresentFlag    (0)
+#endif
 , m_subPicIdLen                      (16)
 , m_noPicPartitionFlag               (1)
 , m_log2CtuSize                      (0)
@@ -2119,7 +2364,9 @@ PPS::PPS()
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
 , m_loopFilterAcrossSlicesEnabledFlag(0)
-, m_log2MaxTransformSkipBlockSize    (2)
+#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
+  , m_log2MaxTransformSkipBlockSize    (2)
+#endif
 , m_entropyCodingSyncEnabledFlag     (false)
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
@@ -2137,7 +2384,18 @@ PPS::PPS()
 , m_pictureHeaderExtensionPresentFlag(0)
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_listsModificationPresentFlag     (0)
-, m_picWidthInLumaSamples( 352 )
+#if JVET_Q0819_PH_CHANGES
+, m_rplInfoInPhFlag                  (1)
+, m_dbfInfoInPhFlag                  (1)
+, m_saoInfoInPhFlag                  (1)
+, m_alfInfoInPhFlag                  (1)
+, m_wpInfoInPhFlag                   (1)
+, m_qpDeltaInfoInPhFlag              (1)
+#endif
+#if SPS_ID_CHECK
+, m_mixedNaluTypesInPicFlag          ( false )
+#endif
+, m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
 , m_ppsRangeExtension                ()
 , pcv                                (NULL)
@@ -2386,8 +2644,16 @@ void PPS::initSubPic(const SPS &sps)
 {
   CHECK(getNumSubPics() > MAX_NUM_SUB_PICS, "Number of sub-pictures in picture exceeds valid range");
   m_subPics.resize(getNumSubPics());
+  // m_ctuSize,  m_picWidthInCtu, and m_picHeightInCtu might not be initialized yet.
+  if (m_ctuSize == 0 || m_picWidthInCtu == 0 || m_picHeightInCtu == 0)
+  {
+    m_ctuSize = sps.getCTUSize();
+    m_picWidthInCtu = (m_picWidthInLumaSamples + m_ctuSize - 1) / m_ctuSize;
+    m_picHeightInCtu = (m_picHeightInLumaSamples + m_ctuSize - 1) / m_ctuSize;
+  }
   for (int i=0; i< getNumSubPics(); i++)
   {
+    m_subPics[i].setSubPicIdx(i);
     m_subPics[i].setSubPicCtuTopLeftX(sps.getSubPicCtuTopLeftX(i));
     m_subPics[i].setSubPicCtuTopLeftY(sps.getSubPicCtuTopLeftY(i));
     m_subPics[i].setSubPicWidthInCTUs(sps.getSubPicWidth(i));
@@ -2404,29 +2670,60 @@ void PPS::initSubPic(const SPS &sps)
     uint32_t right = std::min(m_picWidthInLumaSamples - 1, (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) * m_ctuSize - 1);
     m_subPics[i].setSubPicRight(right);
     
+    m_subPics[i].setSubPicWidthInLumaSample(right - left + 1);
+
     uint32_t top = sps.getSubPicCtuTopLeftY(i) * m_ctuSize;
     m_subPics[i].setSubPicTop(top);
     
     uint32_t bottom = std::min(m_picHeightInLumaSamples - 1, (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)) * m_ctuSize - 1);
+
+    m_subPics[i].setSubPicHeightInLumaSample(bottom - top + 1);
+
     m_subPics[i].setSubPicBottom(bottom);
     
-    for (int j = 0; j < m_numSlicesInPic; j++)
+    if (m_numSlicesInPic == 1)
     {
-      uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
-      uint32_t ctu_x = ctu % m_picWidthInCtu; 
-      uint32_t ctu_y = ctu / m_picWidthInCtu;
-      if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
+      CHECK(getNumSubPics() != 1, "only one slice in picture, but number of subpic is not one");
+      m_subPics[i].addAllCtusInPicToSubPic(0, getPicWidthInCtu(), 0, getPicHeightInCtu(), getPicWidthInCtu());
+    }
+    else
+    {
+      for (int j = 0; j < m_numSlicesInPic; j++)
+      {
+        uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
+        uint32_t ctu_x = ctu % m_picWidthInCtu;
+        uint32_t ctu_y = ctu / m_picWidthInCtu;
+        if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
           ctu_x < (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) &&
           ctu_y >= sps.getSubPicCtuTopLeftY(i) &&
-          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i))) 
-      {
-         // slice in the subpicture
-        m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)))  
+        {
+          // add ctus in a slice to the subpicture it belongs to
+          m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+        }
       }
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));
     m_subPics[i].setloopFilterAcrossEnabledFlag(sps.getLoopFilterAcrossSubpicEnabledFlag(i));
   }
+}
+
+SubPic PPS::getSubPicFromPos(const Position& pos)  const
+{
+  for (int i = 0; i< m_numSubPics; i++)
+  {
+    if (m_subPics[i].isContainingPos(pos))
+    {
+      return m_subPics[i];
+    }
+  }
+  return m_subPics[0];
+}
+
+SubPic  PPS::getSubPicFromCU(const CodingUnit& cu) const 
+{
+  const Position lumaPos = cu.Y().valid() ? cu.Y().pos() : recalcPosition(cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos());
+  return getSubPicFromPos(lumaPos);
 }
 #endif
 
@@ -3109,11 +3406,13 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   if (pps)
   {
     int spsId = pps->getSPSId();
+#if !ENABLING_MULTI_SPS
     if (!isIRAP && (spsId != m_activeSPSId ))
     {
       msg( WARNING, "Warning: tried to activate PPS referring to a inactive SPS at non-IDR.");
     }
     else
+#endif
     {
       SPS *sps = m_spsMap.getPS(spsId);
       if (sps)
@@ -3240,6 +3539,7 @@ ProfileTierLevel::ProfileTierLevel()
   ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
   ::memset(m_subLayerLevelIdc, Level::NONE, sizeof(m_subLayerLevelIdc          ));
 }
+
 
 void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData)
 {

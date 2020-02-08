@@ -381,19 +381,24 @@ static const int DMVR_NUM_ITERATION = 2;
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
 static const int    MAX_BT_DEPTH  =                                 4;      ///<  <=7
+#if !JVET_Q0330_BLOCK_PARTITION
 static const int    MAX_BT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
 
 static const int    MAX_TT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
 static const int    MAX_TT_SIZE_C =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
+#endif
                                                                             //for P/B slice CTU config. para.
 static const int    MAX_BT_DEPTH_INTER =                            4;      ///< <=7
+#if !JVET_Q0330_BLOCK_PARTITION
 static const int    MAX_BT_SIZE_INTER  =                          128;      ///< for initialization, [1<<MIN_BT_SIZE_INTER, 1<<CTU_LOG2]
-
+#endif
                                                                             //for I slice chroma CTB configuration para. (in luma samples)
 static const int    MAX_BT_DEPTH_C      =                           0;      ///< <=7
+#if !JVET_Q0330_BLOCK_PARTITION
 static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
 
 static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
+#endif
 static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
 static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;
 static const SplitSeries SPLIT_BITS         =                       5;
@@ -493,6 +498,10 @@ static const int NUM_TRELLIS_STATE =                              3;
 static const double ENC_CHROMA_WEIGHTING =                      0.8;
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
+#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
+static const int MAXPLTPREDSIZE_DUALTREE = 31;
+static const int MAXPLTSIZE_DUALTREE = 15;
+#endif
 static const double PLT_CHROMA_WEIGHTING =                      0.8;
 static const int PLT_ENCBITDEPTH = 8;
 static const int PLT_FAST_RATIO = 100;

@@ -3347,6 +3347,13 @@ void ScalingList::checkDcOfMatrix()
   }
 }
 
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+bool ScalingList::isLumaScalingList( int scalingListId) const
+  {
+    return (scalingListId % MAX_NUM_COMPONENT == SCALING_LIST_1D_START_4x4 || scalingListId == SCALING_LIST_1D_START_64x64 + 1);
+  }
+#endif
+
 ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 , m_ppsMap(MAX_NUM_PPS)

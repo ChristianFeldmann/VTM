@@ -443,13 +443,6 @@ DecLib::DecLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  for (int i = 0; i < MAX_VPS_LAYERS; i++)
-  {
-    m_layerChromaFormat[i] = NOT_VALID;
-    m_layerBitDepth[i] = NOT_VALID;
-  }
-#endif
 }
 
 DecLib::~DecLib()
@@ -1326,26 +1319,23 @@ void DecLib::xActivateParameterSets( const int layerId )
 #endif
 
 #if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  static std::unordered_map<int, int> m_layerChromaFormat;
+  static std::unordered_map<int, int> m_layerBitDepth;
+
   if (vps != nullptr && vps->getMaxLayers() > 1)
   {
     int curLayerIdx = vps->getGeneralLayerIdx(layerId);
     int curLayerChromaFormat = sps->getChromaFormatIdc();
     int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
-    if (m_layerChromaFormat[curLayerIdx] == NOT_VALID)
+
+    if (m_layerBitDepth[curLayerIdx] == 0) //not yet register the chroma format and bitdepth to m_layerChromaFormat and m_layerBitDepth
     {
       m_layerChromaFormat[curLayerIdx] = curLayerChromaFormat;
-    }
-    else
-    {
-      CHECK(m_layerChromaFormat[curLayerIdx] != curLayerChromaFormat, "Different chroma format in the same layer.");
-    }
-
-    if (m_layerBitDepth[curLayerIdx] == NOT_VALID)
-    {
       m_layerBitDepth[curLayerIdx] = curLayerBitDepth;
     }
     else
     {
+      CHECK(m_layerChromaFormat[curLayerIdx] != curLayerChromaFormat, "Different chroma format in the same layer.");
       CHECK(m_layerBitDepth[curLayerIdx] != curLayerBitDepth, "Different bit-depth in the same layer.");
     }
 

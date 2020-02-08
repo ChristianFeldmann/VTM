@@ -1324,6 +1324,43 @@ void DecLib::xActivateParameterSets( const int layerId )
     CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
   }
 #endif
+
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  if (vps != nullptr && vps->getMaxLayers() > 1)
+  {
+    int curLayerIdx = vps->getGeneralLayerIdx(layerId);
+    int curLayerChromaFormat = sps->getChromaFormatIdc();
+    int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
+    if (m_layerChromaFormat[curLayerIdx] == NOT_VALID)
+    {
+      m_layerChromaFormat[curLayerIdx] = curLayerChromaFormat;
+    }
+    else
+    {
+      CHECK(m_layerChromaFormat[curLayerIdx] != curLayerChromaFormat, "Different chroma format in the same layer.");
+    }
+
+    if (m_layerBitDepth[curLayerIdx] == NOT_VALID)
+    {
+      m_layerBitDepth[curLayerIdx] = curLayerBitDepth;
+    }
+    else
+    {
+      CHECK(m_layerBitDepth[curLayerIdx] != curLayerBitDepth, "Different bit-depth in the same layer.");
+    }
+
+    for (int i = 0; i < curLayerIdx; i++)
+    {
+      if (vps->getDirectRefLayerFlag(curLayerIdx, i))
+      {
+        int refLayerChromaFormat = m_layerChromaFormat[i];
+        CHECK(curLayerChromaFormat != refLayerChromaFormat, "The chroma formats of the current layer and the reference layer are different");
+        int refLayerBitDepth = m_layerBitDepth[i];
+        CHECK(curLayerBitDepth != refLayerBitDepth, "The bit-depth of the current layer and the reference layer are different");
+      }
+    }
+  }
+#endif
 }
 
 
@@ -1933,32 +1970,6 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
   m_HLSReader.parseSPS( sps );
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
   m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  if (m_vps != NULL && m_vps->getMaxLayers() > 1)
-  {
-    int curLayerIdx = m_vps->getGeneralLayerIdx(nalu.m_nuhLayerId);
-    int curLayerChromaFormat = sps->getChromaFormatIdc();
-    int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
-    if (m_layerChromaFormat[curLayerIdx] == NOT_VALID)
-      m_layerChromaFormat[curLayerIdx] = curLayerChromaFormat;
-    else
-      CHECK(m_layerChromaFormat[curLayerIdx] != curLayerChromaFormat, "Different chroma format in the same layer.");
-    if (m_layerBitDepth[curLayerIdx] == NOT_VALID)
-      m_layerBitDepth[curLayerIdx] = curLayerBitDepth;
-    else
-      CHECK(m_layerBitDepth[curLayerIdx] != curLayerBitDepth, "Different bit-depth in the same layer.");
-    for (int i = 0; i < curLayerIdx; i++)
-    {
-      if (m_vps->getDirectRefLayerFlag(curLayerIdx, i))
-      {
-        int refLayerChromaFormat = m_layerChromaFormat[i];
-        CHECK(curLayerChromaFormat != refLayerChromaFormat, "The chroma formats of the current layer and the reference layer are different");
-        int refLayerBitDepth = m_layerBitDepth[i];
-        CHECK(curLayerBitDepth != refLayerBitDepth, "The bit-depth of the current layer and the reference layer are different");
-      }
-    }
-  }
-#endif
 }
 
 void DecLib::xDecodePPS( InputNALUnit& nalu )

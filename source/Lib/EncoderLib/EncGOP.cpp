@@ -2843,9 +2843,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         const uint32_t widthInCtus = ( picWidth + maxCUWidth - 1 ) / maxCUWidth;
         const uint32_t heightInCtus = ( picHeight + maxCUHeight - 1 ) / maxCUHeight;
         const uint32_t numCtuInFrame = widthInCtus * heightInCtus;
-
+#if JVET_Q0441_SAO_MOD_12_BIT
+        const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+        const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, pcSlice->getSPS()->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+#else
         const uint32_t log2SaoOffsetScaleLuma = pcPic->cs->slice->getPPS()->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA );
         const uint32_t log2SaoOffsetScaleChroma = pcPic->cs->slice->getPPS()->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA );
+#endif
 
         m_pcSAO->create( picWidth, picHeight, chromaFormatIDC, maxCUWidth, maxCUHeight, maxTotalCUDepth, log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
         m_pcSAO->destroyEncData();

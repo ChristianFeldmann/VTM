@@ -2319,12 +2319,16 @@ SubPic::~SubPic()
 
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
+#if JVET_Q0441_SAO_MOD_12_BIT
+{
+#else
 // m_log2SaoOffsetScale initialized below
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_log2SaoOffsetScale[ch] = 0;
   }
+#endif
 }
 
 PPS::PPS()

@@ -1709,30 +1709,37 @@ void                    setCCALFEnabledFlag( bool b )                           
 
 
 /// PPS RExt class
-class PPSRExt // Names aligned to text specification
+class PPSRExt // TODO: remove
 {
 private:
   bool             m_crossComponentPredictionEnabledFlag;
 
+#if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t             m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
+#endif
 
 public:
   PPSRExt();
 
   bool settingsDifferFromDefaults(const bool bTransformSkipEnabledFlag) const
   {
+#if JVET_Q0441_SAO_MOD_12_BIT
+    return (getCrossComponentPredictionEnabledFlag() );
+#else
     return (getCrossComponentPredictionEnabledFlag() )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA) !=0 )
         || (getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) !=0 );
+#endif
   }
 
   bool                   getCrossComponentPredictionEnabledFlag() const                   { return m_crossComponentPredictionEnabledFlag;   }
   void                   setCrossComponentPredictionEnabledFlag(bool value)               { m_crossComponentPredictionEnabledFlag = value;  }
 
+#if !JVET_Q0441_SAO_MOD_12_BIT
   // Now: getPpsRangeExtension().getLog2SaoOffsetScale and getPpsRangeExtension().setLog2SaoOffsetScale
   uint32_t                   getLog2SaoOffsetScale(ChannelType type) const                    { return m_log2SaoOffsetScale[type];             }
   void                   setLog2SaoOffsetScale(ChannelType type, uint32_t uiBitShift)         { m_log2SaoOffsetScale[type] = uiBitShift;       }
-
+#endif
 };
 
 

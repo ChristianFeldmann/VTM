@@ -3825,7 +3825,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   for (int scalingListId = 0; scalingListId < 28; scalingListId++)
   {
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
-  if(scalingList->getChromaScalingListPresentFlag()|| scalingListId % 3 == 2 || scalingListId == 27)
+  if(scalingList->getChromaScalingListPresentFlag()|| scalingList->isLumaScalingList(scalingListId))
    {
 #endif
     READ_FLAG(code, "scaling_list_copy_mode_flag");

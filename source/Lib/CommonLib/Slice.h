@@ -186,6 +186,7 @@ public:
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
   bool       getChromaScalingListPresentFlag() const {return m_chromaScalingListPresentFlag;}
   void       setChromaScalingListPresentFlag( bool flag) { m_chromaScalingListPresentFlag = flag;}
+  bool       isLumaScalingList( int scalingListId) const;
   #endif
   void       checkDcOfMatrix();
   bool       xParseScalingList(const std::string &fileName);

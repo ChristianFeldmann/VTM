@@ -2588,7 +2588,7 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
-    if(scalingList.getChromaScalingListPresentFlag()|| scalingListId % 3 == 2 || scalingListId == 27)
+    if(scalingList.getChromaScalingListPresentFlag()|| scalingList.isLumaScalingList(scalingListId))
    {
 #endif
     bool scalingListCopyModeFlag = scalingList.getScalingListCopyModeFlag(scalingListId);

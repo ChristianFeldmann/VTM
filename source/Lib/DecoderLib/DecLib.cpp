@@ -1121,7 +1121,7 @@ void DecLib::xActivateParameterSets( const int layerId )
 
     // Initialise the various objects for the new set of settings
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-    const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
+    const int maxDepth = floorLog2(sps->getMaxCUWidth()) - pps->pcv->minCUWidthLog2;
 #if JVET_Q0441_SAO_MOD_12_BIT
     const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
     const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);

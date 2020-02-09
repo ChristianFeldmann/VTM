@@ -161,7 +161,7 @@ void EncLib::create( const int layerId )
 #endif
 
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  m_cLoopFilter.create(floorLog2(m_maxCUWidth) - m_log2MinCUSize);
+  m_cLoopFilter.create(floorLog2(m_maxCUWidth) - MIN_CU_LOG2);
 #else
   m_cLoopFilter.create( m_maxTotalCUDepth );
 #endif
@@ -1260,6 +1260,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 
   sps.setCTUSize                             ( m_CTUSize );
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  // convert the Intra Chroma minQT setting from chroma unit to luma unit
+  m_uiMinQT[2] <<= getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC);
+#endif
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxMTTHierarchyDepth                ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
 #if JVET_Q0330_BLOCK_PARTITION

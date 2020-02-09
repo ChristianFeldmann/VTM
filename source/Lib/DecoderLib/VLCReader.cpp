@@ -1664,12 +1664,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   if (pcSPS->getUseDualITree())
   {
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-    // minQT[2] is in chroma sample unit, and the syntax signaled is in luma sample unit, a conversion is used here
-    READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = (1 << (uiCode + pcSPS->getLog2MinCodingBlockSize())) >> (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pcSPS->getChromaFormatIdc());
-#else
     READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma"); minQT[2] = 1 << (uiCode + pcSPS->getLog2MinCodingBlockSize());
-#endif
     READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_chroma"); maxBTD[2] = uiCode;
     CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
     maxTTSize[2] = maxBTSize[2] = minQT[2];
@@ -2585,12 +2580,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
       if (sps->getUseDualITree())
       {
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-        // minQT[2] is in chroma sample unit, and the syntax signaled is in luma sample unit, a conversion is used here
-        READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");     minQT[2] = (1 << (uiCode + sps->getLog2MinCodingBlockSize())) >> (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, sps->getChromaFormatIdc());
-#else
         READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");     minQT[2] = 1 << (uiCode + sps->getLog2MinCodingBlockSize());
-#endif
         READ_UVLC(uiCode, "pic_max_mtt_hierarchy_depth_intra_slice_chroma");     maxBTD[2] = uiCode;
         maxTTSize[2] = maxBTSize[2] = minQT[2];
         if (maxBTD[2] != 0)

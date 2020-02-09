@@ -1279,6 +1279,10 @@ private:
   bool              m_DmvrControlPresentFlag;
   bool              m_ProfControlPresentFlag;
   uint32_t          m_uiBitsForPOC;
+#if JVET_P0116_POC_MSB
+  bool              m_pocMsbFlag;
+  uint32_t          m_pocMsbLen;
+#endif
   uint32_t          m_numLongTermRefPicSPS;
   uint32_t          m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1509,6 +1513,12 @@ public:
 #endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
+#if JVET_P0116_POC_MSB
+  void                    setPocMsbFlag(bool b)                                                               { m_pocMsbFlag = b;                                                    }
+  bool                    getPocMsbFlag() const                                                               { return m_pocMsbFlag;                                                 }
+  void                    setPocMsbLen(uint32_t u)                                                            { m_pocMsbLen = u;                                                     }
+  uint32_t                getPocMsbLen() const                                                                { return m_pocMsbLen;                                                  }
+#endif
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
   int                     getNumReorderPics(uint32_t tlayer) const                                            { return m_numReorderPics[tlayer];                                     }
   void                    createRPLList0(int numRPL);
@@ -2230,6 +2240,10 @@ private:
 #if JVET_Q0819_PH_CHANGES
   int                         m_pocLsb;                                                 //!< least significant bits of picture order count
 #endif
+#if JVET_P0116_POC_MSB
+  bool                        m_pocMsbPresentFlag;                                      //!< ph_poc_msb_present_flag
+  int                         m_pocMsbVal;                                              //!< poc_msb_val
+#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrOrIrapPicFlag;                                       //!< gdr or irap picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
@@ -2348,6 +2362,12 @@ public:
 #if JVET_Q0819_PH_CHANGES
   void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
   int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
+#endif
+#if JVET_P0116_POC_MSB
+  void                        setPocMsbPresentFlag(bool b)                              { m_pocMsbPresentFlag = b;                                                                     }
+  bool                        getPocMsbPresentFlag() const                              { return m_pocMsbPresentFlag;                                                                  }
+  void                        setPocMsbVal(int i)                                       { m_pocMsbVal = i;                                                                             }
+  int                         getPocMsbVal()                                            { return m_pocMsbVal;                                                                          }
 #endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }

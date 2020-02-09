@@ -2240,10 +2240,6 @@ private:
 #if JVET_Q0819_PH_CHANGES
   int                         m_pocLsb;                                                 //!< least significant bits of picture order count
 #endif
-#if JVET_P0116_POC_MSB
-  bool                        m_pocMsbPresentFlag;                                      //!< ph_poc_msb_present_flag
-  int                         m_pocMsbVal;                                              //!< poc_msb_val
-#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrOrIrapPicFlag;                                       //!< gdr or irap picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
@@ -2251,6 +2247,10 @@ private:
   uint32_t                    m_recoveryPocCnt;                                         //!< recovery POC count
   int                         m_spsId;                                                  //!< sequence parameter set ID
   int                         m_ppsId;                                                  //!< picture parameter set ID
+#if JVET_P0116_POC_MSB
+  bool                        m_pocMsbPresentFlag;                                      //!< ph_poc_msb_present_flag
+  int                         m_pocMsbVal;                                              //!< poc_msb_val
+#endif
 #if !JVET_Q0119_CLEANUPS
   bool                        m_subPicIdSignallingPresentFlag;                          //!< indicates the presence of sub-picture ID signalling in the SPS
   uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
@@ -2363,12 +2363,6 @@ public:
   void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
   int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
 #endif
-#if JVET_P0116_POC_MSB
-  void                        setPocMsbPresentFlag(bool b)                              { m_pocMsbPresentFlag = b;                                                                     }
-  bool                        getPocMsbPresentFlag() const                              { return m_pocMsbPresentFlag;                                                                  }
-  void                        setPocMsbVal(int i)                                       { m_pocMsbVal = i;                                                                             }
-  int                         getPocMsbVal()                                            { return m_pocMsbVal;                                                                          }
-#endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
   void                        setGdrOrIrapPicFlag( bool b )                             { m_gdrOrIrapPicFlag = b;                                                                      }
@@ -2383,6 +2377,12 @@ public:
   uint32_t                    getSPSId() const                                          { return m_spsId;                                                                              }
   void                        setPPSId( uint32_t u )                                    { m_ppsId = u;                                                                                 }
   uint32_t                    getPPSId() const                                          { return m_ppsId;                                                                              }
+#if JVET_P0116_POC_MSB
+  void                        setPocMsbPresentFlag(bool b)                              { m_pocMsbPresentFlag = b;                                                                     }
+  bool                        getPocMsbPresentFlag() const                              { return m_pocMsbPresentFlag;                                                                  }
+  void                        setPocMsbVal(int i)                                       { m_pocMsbVal = i;                                                                             }
+  int                         getPocMsbVal()                                            { return m_pocMsbVal;                                                                          }
+#endif
 #if !JVET_Q0119_CLEANUPS
   void                        setSubPicIdSignallingPresentFlag( bool b )                { m_subPicIdSignallingPresentFlag = b;                                                         }
   bool                        getSubPicIdSignallingPresentFlag() const                  { return  m_subPicIdSignallingPresentFlag;                                                     }

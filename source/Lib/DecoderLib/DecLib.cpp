@@ -1366,7 +1366,11 @@ void DecLib::xActivateParameterSets( const int layerId )
     int curLayerChromaFormat = sps->getChromaFormatIdc();
     int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
 
-    if (slice->isIRAP() && m_bFirstSliceInPicture)
+#if SPS_ID_CHECK
+    if (slice->isClvssPu() && m_bFirstSliceInPicture)
+#else
+    if (m_layerBitDepth[curLayerIdx] == 0)
+#endif
     {
       m_layerChromaFormat[curLayerIdx] = curLayerChromaFormat;
       m_layerBitDepth[curLayerIdx] = curLayerBitDepth;

@@ -195,7 +195,7 @@ public:
   bool       getChromaScalingListPresentFlag() const {return m_chromaScalingListPresentFlag;}
   void       setChromaScalingListPresentFlag( bool flag) { m_chromaScalingListPresentFlag = flag;}
   bool       isLumaScalingList( int scalingListId) const;
-  #endif
+#endif
   void       checkDcOfMatrix();
   bool       xParseScalingList(const std::string &fileName);
   void       setDefaultScalingList();
@@ -236,9 +236,9 @@ private:
   uint32_t         m_refMatrixId                   [30]; //!< RefMatrixID
   bool             m_scalingListPreditorModeFlag   [30]; //!< reference list index
   std::vector<int> m_scalingListCoef               [30]; //!< quantization matrix
-  #if JVET_Q0505_CHROAM_QM_SIGNALING_400
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
   bool             m_chromaScalingListPresentFlag;
-  #endif
+#endif
 };
 
 class ConstraintInfo

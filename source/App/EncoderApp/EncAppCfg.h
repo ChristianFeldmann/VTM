@@ -214,7 +214,9 @@ protected:
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
+#if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
+#endif
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
@@ -384,9 +386,13 @@ protected:
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  unsigned m_log2MinCuSize;                                   ///< min. CU size log2
+#else
   unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
   unsigned  m_uiMaxCodingDepth;                               ///< max. total CU depth - includes depth of transform-block structure
   unsigned  m_uiLog2DiffMaxMinCodingBlockSize;                ///< difference between largest and smallest CU depth
+#endif
 
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;

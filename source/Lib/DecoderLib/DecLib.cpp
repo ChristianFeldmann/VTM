@@ -612,11 +612,12 @@ void DecLib::executeLoopFilters()
     m_cALF.ALFProcess(cs);
   }
 
-#if JVET_O1143_SUBPIC_DECCHECK 
-  for (int i = 0; i < cs.pps->getNumSubPics(); i++)
+#if JVET_O1143_SUBPIC_BOUNDARY
+  for (int i = 0; i < cs.pps->getNumSubPics() && m_targetSubPicIdx; i++)
   {
     // keep target subpic samples untouched, for other subpics mask their output sample value to 0
-    if (i != m_targetSubPicIdx)
+    int targetSubPicIdx = m_targetSubPicIdx - 1;
+    if (i != targetSubPicIdx)
     {
       SubPic SubPicNoUse = cs.pps->getSubPics()[i];
       uint32_t left  = SubPicNoUse.getSubPicLeft();
@@ -1119,8 +1120,34 @@ void DecLib::xActivateParameterSets( const int layerId )
     m_pcPic->cs->pcv   = pps->pcv;
 
     // Initialise the various objects for the new set of settings
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   maxDepth,
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
+#else
+    m_cSAO.create(pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA));
+#endif
+    m_cLoopFilter.create(maxDepth);
+#else
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   sps->getMaxCodingDepth(),
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
+#else
     m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA ), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA ) );
+#endif
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
+#endif
     m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
     m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
     if (sps->getUseLmcs())
@@ -1166,7 +1193,12 @@ void DecLib::xActivateParameterSets( const int layerId )
 
     if( sps->getALFEnabledFlag() )
     {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+      const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
+      m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, sps->getBitDepths().recon);
+#else
       m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
+#endif
     }
 #if JVET_Q0795_CCALF
     pSlice->m_ccAlfFilterControl[0] = m_cALF.getCcAlfControlIdc(COMPONENT_Cb);
@@ -1254,7 +1286,7 @@ void DecLib::xActivateParameterSets( const int layerId )
 #if SPS_ID_CHECK
   static std::unordered_map<int, int> m_clvssSPSid;
 
-  if( slice->isIRAP() && m_bFirstSliceInPicture && !pps->getMixedNaluTypesInPicFlag() )
+  if( slice->isClvssPu() && m_bFirstSliceInPicture )
   {
     m_clvssSPSid[layerId] = pps->getSPSId();
   }
@@ -1275,8 +1307,14 @@ void DecLib::xActivateParameterSets( const int layerId )
     CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
   }
 
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  const int minCuSize = 1 << sps->getLog2MinCodingBlockSize();
+  CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
+  CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
+#else
   CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, int( sps->getMaxCUWidth() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, int( sps->getMaxCUHeight() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
+#endif
 #if JVET_Q0043_RPR_and_Subpics
   if( !sps->getRprEnabledFlag() ) 
   {

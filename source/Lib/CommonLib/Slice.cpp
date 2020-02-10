@@ -2062,8 +2062,12 @@ SPS::SPS()
 , m_subPicIdSignallingPresentFlag(0)
 #endif
 , m_subPicIdLen(16)
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+, m_log2MinCodingBlockSize    (  2)
+#else
 , m_log2MinCodingBlockSize    (  0)
 , m_log2DiffMaxMinCodingBlockSize(0)
+#endif
 , m_CTUSize(0)
 , m_minQT{ 0, 0, 0 }
 , m_maxMTTHierarchyDepth{ MAX_BT_DEPTH, MAX_BT_DEPTH_INTER, MAX_BT_DEPTH_C }
@@ -2076,7 +2080,9 @@ SPS::SPS()
 #endif
 , m_uiMaxCUWidth              ( 32)
 , m_uiMaxCUHeight             ( 32)
+#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
 , m_uiMaxCodingDepth          (  3)
+#endif
 , m_numRPL0                   ( 0 )
 , m_numRPL1                   ( 0 )
 , m_rpl1CopyFromRpl0Flag      ( false )
@@ -2309,12 +2315,16 @@ SubPic::~SubPic()
 
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
+#if JVET_Q0441_SAO_MOD_12_BIT
+{
+#else
 // m_log2SaoOffsetScale initialized below
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
     m_log2SaoOffsetScale[ch] = 0;
   }
+#endif
 }
 
 PPS::PPS()
@@ -2630,6 +2640,13 @@ void PPS::initSubPic(const SPS &sps)
 {
   CHECK(getNumSubPics() > MAX_NUM_SUB_PICS, "Number of sub-pictures in picture exceeds valid range");
   m_subPics.resize(getNumSubPics());
+  // m_ctuSize,  m_picWidthInCtu, and m_picHeightInCtu might not be initialized yet.
+  if (m_ctuSize == 0 || m_picWidthInCtu == 0 || m_picHeightInCtu == 0)
+  {
+    m_ctuSize = sps.getCTUSize();
+    m_picWidthInCtu = (m_picWidthInLumaSamples + m_ctuSize - 1) / m_ctuSize;
+    m_picHeightInCtu = (m_picHeightInLumaSamples + m_ctuSize - 1) / m_ctuSize;
+  }
   for (int i=0; i< getNumSubPics(); i++)
   {
     m_subPics[i].setSubPicIdx(i);
@@ -2660,18 +2677,26 @@ void PPS::initSubPic(const SPS &sps)
 
     m_subPics[i].setSubPicBottom(bottom);
     
-    for (int j = 0; j < m_numSlicesInPic; j++)
+    if (m_numSlicesInPic == 1)
     {
-      uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
-      uint32_t ctu_x = ctu % m_picWidthInCtu; 
-      uint32_t ctu_y = ctu / m_picWidthInCtu;
-      if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
+      CHECK(getNumSubPics() != 1, "only one slice in picture, but number of subpic is not one");
+      m_subPics[i].addAllCtusInPicToSubPic(0, getPicWidthInCtu(), 0, getPicHeightInCtu(), getPicWidthInCtu());
+    }
+    else
+    {
+      for (int j = 0; j < m_numSlicesInPic; j++)
+      {
+        uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
+        uint32_t ctu_x = ctu % m_picWidthInCtu;
+        uint32_t ctu_y = ctu / m_picWidthInCtu;
+        if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
           ctu_x < (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) &&
           ctu_y >= sps.getSubPicCtuTopLeftY(i) &&
-          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i))) 
-      {
-         // add ctus in a slice to the subpicture it belongs to
-        m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)))  
+        {
+          // add ctus in a slice to the subpicture it belongs to
+          m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+        }
       }
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));

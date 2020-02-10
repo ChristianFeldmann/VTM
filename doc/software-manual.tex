@@ -1122,6 +1122,12 @@ Specifies the value to use to derive the vps_max_layers_minus1 for layered codin
 %%
 
 \begin{OptionTableNoShorthand}{Unit definition parameters}{tab:unit}
+\Option{CTUSize} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the CTU size (width and height).
+\\
+
 \Option{MaxCUWidth} &
 %\ShortOption{\None} &
 \Default{64} &
@@ -1140,10 +1146,10 @@ Defines the maximum CU height.
 Defines the maximum CU size.
 \\
 
-\Option{MaxPartitionDepth (-h)} &
-%\ShortOption{-h} &
-\Default{4} &
-Defines the depth of the CU tree.
+\Option{Log2MinCuSize} &
+%\ShortOption{\None} &
+\Default{2} &
+Defines the minimum CU size in logarithm base 2.
 \\
 
 \Option{QuadtreeTULog2MaxSize} &
@@ -2106,6 +2112,12 @@ Enables or disables encoder-side deblocking optimization. When it is enabled, de
 Enables or disables the use of multiple reference line intra prediction (MRL).
 \\
 
+\Option{DualITree} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of separate QTBT trees for intra slice luma and chroma channel types.
+\\ 
+
 \Option{MIP} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2171,6 +2183,12 @@ for LCU bottom and right boundary areas.
 %\ShortOption{\None} &
 \Default{false} &
 When true, resets the encoder's SAO state after an IRAP (POC order).
+\\
+
+\Option{SAOGreedyEnc} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the SAO greedy merge encoding algorithm.
 \\
 
 \Option{FastUDIUseMPMEnabled} &
@@ -2439,6 +2457,24 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
+\Option{BCW} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of Bi-prediction with CU-level Weights (BCW).
+\\
+
+\Option{BcwFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the fast encoding of Bi-prediction with CU-level Weights (BCW).
+\\
+ 
+\Option{BDOF} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of bi-directional optical flow (BDOF).
 \\
 
 \Option{LMCSEnable} &
@@ -2760,13 +2796,6 @@ When true, specifies the use of the cross component prediction tool (4:4:4 proce
 \Option{ReconBasedCrossCPredictionEstimate} &
 \Default{false} &
 If true, then when determining the alpha value for cross-component prediction, use the reconstructed residual rather than the pre-transform encoder-side residual
-\\
-
-\Option{SaoLumaOffsetBitShift}
-\Option{SaoChromaOffsetBitShift}&
-\Default{0}
-\Default{0} &
-Specifies the shift to apply to the SAO parameters. If negative, an estimate will be calculated based upon the initial QP. Version 1 and some Version 2 (RExt) profiles require this to be 0.
 \\
 
 \Option{TransformSkipLog2MaxSize} &

@@ -306,8 +306,12 @@ protected:
   bool      m_dualITree;
   unsigned  m_maxCUWidth;
   unsigned  m_maxCUHeight;
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  unsigned m_log2MinCUSize;
+#else
   unsigned  m_maxTotalCUDepth;
   unsigned  m_log2DiffMaxMinCodingBlockSize;
+#endif
 
   int       m_LMChroma;
   bool      m_horCollocatedChromaFlag;
@@ -476,7 +480,9 @@ protected:
   bool      m_useEarlySkipDetection;
   bool      m_crossComponentPredictionEnabledFlag;
   bool      m_reconBasedCrossCPredictionEstimate;
+#if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
+#endif
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
   bool      m_useChromaTS;
@@ -1154,9 +1160,14 @@ public:
   uint32_t      getMaxCUWidth                   () const         { return m_maxCUWidth; }
   void      setMaxCUHeight                  ( uint32_t  u )      { m_maxCUHeight = u; }
   uint32_t      getMaxCUHeight                  () const         { return m_maxCUHeight; }
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  void      setLog2MinCodingBlockSize       ( int n )        { m_log2MinCUSize = n;   }
+  int       getLog2MinCodingBlockSize       () const         { return m_log2MinCUSize;}
+#else
   void      setMaxCodingDepth               ( uint32_t  u )      { m_maxTotalCUDepth = u; }
   uint32_t      getMaxCodingDepth               () const         { return m_maxTotalCUDepth; }
   void      setLog2DiffMaxMinCodingBlockSize( uint32_t  u )      { m_log2DiffMaxMinCodingBlockSize = u; }
+#endif
   void      setUseEncDbOpt                  ( bool  n )          { m_encDbOpt = n; }
   bool      getUseEncDbOpt                  () const             { return m_encDbOpt; }
 
@@ -1393,7 +1404,9 @@ public:
   void      setCrossComponentPredictionEnabledFlag     (const bool value)      { m_crossComponentPredictionEnabledFlag = value;  }
   bool      getUseReconBasedCrossCPredictionEstimate ()                const { return m_reconBasedCrossCPredictionEstimate;  }
   void      setUseReconBasedCrossCPredictionEstimate (const bool value)      { m_reconBasedCrossCPredictionEstimate = value; }
+#if !JVET_Q0441_SAO_MOD_12_BIT
   void      setLog2SaoOffsetScale(ChannelType type, uint32_t uiBitShift)         { m_log2SaoOffsetScale[type] = uiBitShift; }
+#endif
 
   bool getUseTransformSkip                             ()      { return m_useTransformSkip;        }
   void setUseTransformSkip                             ( bool b ) { m_useTransformSkip  = b;       }

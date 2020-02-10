@@ -515,9 +515,10 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
           const PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
 
           WRITE_FLAG((ppsRangeExtension.getCrossComponentPredictionEnabledFlag() ? 1 : 0), "cross_component_prediction_enabled_flag" );
-
+#if !JVET_Q0441_SAO_MOD_12_BIT
           WRITE_UVLC( ppsRangeExtension.getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA),           "log2_sao_offset_scale_luma"   );
           WRITE_UVLC( ppsRangeExtension.getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA),         "log2_sao_offset_scale_chroma" );
+#endif
         }
         break;
         default:
@@ -1064,7 +1065,14 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   if (pcSPS->getUseDualITree())
   {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    // minQT[2] is in chroma sample unit, and the syntax signaled is in luma sample unit, a conversion is used here
+    const int minDiff = (int)floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) + (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, pcSPS->getChromaFormatIdc()) - pcSPS->getLog2MinCodingBlockSize();
+    CHECK(minDiff < 0, "Intra chroma min QT size in luma samples cannot be smaller than min luma CB size");
+    WRITE_UVLC(minDiff, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#else
     WRITE_UVLC(floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - pcSPS->getLog2MinCodingBlockSize(), "sps_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#endif
     WRITE_UVLC(pcSPS->getMaxMTTHierarchyDepthIChroma(), "sps_max_mtt_hierarchy_depth_intra_slice_chroma");
     if (pcSPS->getMaxMTTHierarchyDepthIChroma() != 0)
     {
@@ -1530,13 +1538,18 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 {
   const PPS*  pps = NULL;
   const SPS*  sps = NULL;
-  
+
 #if ENABLE_TRACING
   xTracePictureHeader ();
 #endif
 
   CodingStructure& cs = *picHeader->getPic()->cs;
 #if JVET_Q0819_PH_CHANGES
+  WRITE_FLAG(picHeader->getGdrOrIrapPicFlag(), "gdr_or_irap_pic_flag");
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
+  }
   // Q0781, two-flags
   WRITE_FLAG(picHeader->getPicInterSliceAllowedFlag(), "pic_inter_slice_allowed_flag");
   if (picHeader->getPicInterSliceAllowedFlag())
@@ -1545,8 +1558,26 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
 #endif
   WRITE_FLAG(picHeader->getNonReferencePictureFlag(), "non_reference_picture_flag");
+#if !JVET_Q0819_PH_CHANGES
   WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
+#endif
+#if JVET_Q0819_PH_CHANGES
+  // parameter sets
+  WRITE_UVLC(picHeader->getPPSId(), "ph_pic_parameter_set_id");
+  pps = cs.slice->getPPS();
+  CHECK(pps == 0, "Invalid PPS");
+  sps = cs.slice->getSPS();
+  CHECK(sps == 0, "Invalid SPS");
+  int pocBits = cs.slice->getSPS()->getBitsForPOC();
+  int pocMask = (1 << pocBits) - 1;
+  WRITE_CODE(cs.slice->getPOC() & pocMask, pocBits, "ph_pic_order_cnt_lsb");
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
+  }
+#else
   WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
+#endif
   if( picHeader->getGdrPicFlag() ) 
   {
     WRITE_UVLC(picHeader->getRecoveryPocCnt(), "recovery_poc_cnt");
@@ -1556,18 +1587,122 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setRecoveryPocCnt( 0 );
   }
 
+#if !JVET_Q0819_PH_CHANGES
   // parameter sets
   WRITE_UVLC(picHeader->getPPSId(), "ph_pic_parameter_set_id");
   pps = cs.slice->getPPS();
   CHECK(pps==0, "Invalid PPS");  
   sps = cs.slice->getSPS();
   CHECK(sps==0, "Invalid SPS");
-#if JVET_Q0819_PH_CHANGES
-  int pocBits = cs.slice->getSPS()->getBitsForPOC();
-  int pocMask = (1 << pocBits) - 1;
-  WRITE_CODE(cs.slice->getPOC() & pocMask, pocBits, "ph_pic_order_cnt_lsb");
 #endif
 
+#if JVET_Q0819_PH_CHANGES
+   // alf enable flags and aps IDs
+  if( sps->getALFEnabledFlag() )
+  {
+#if JVET_Q0819_PH_CHANGES
+    if (pps->getAlfInfoInPhFlag())
+#else
+    WRITE_FLAG(picHeader->getAlfEnabledPresentFlag(), "pic_alf_enabled_present_flag");
+    if (picHeader->getAlfEnabledPresentFlag())
+#endif
+    {
+      WRITE_FLAG(picHeader->getAlfEnabledFlag(COMPONENT_Y), "pic_alf_enabled_flag");
+      if (picHeader->getAlfEnabledFlag(COMPONENT_Y))
+      {
+        WRITE_CODE(picHeader->getNumAlfAps(), 3, "pic_num_alf_aps_ids_luma");
+        const std::vector<int>&   apsId = picHeader->getAlfAPSs();
+        for (int i = 0; i < picHeader->getNumAlfAps(); i++)
+        {
+          WRITE_CODE(apsId[i], 3, "pic_alf_aps_id_luma");
+        }
+
+        const int alfChromaIdc = picHeader->getAlfEnabledFlag(COMPONENT_Cb) + picHeader->getAlfEnabledFlag(COMPONENT_Cr) * 2 ;
+        if (sps->getChromaFormatIdc() != CHROMA_400)
+        {
+          WRITE_CODE(alfChromaIdc, 2, "pic_alf_chroma_idc");
+        }
+        if (alfChromaIdc)
+        {
+          WRITE_CODE(picHeader->getAlfApsIdChroma(), 3, "pic_alf_aps_id_chroma");
+        }
+#if JVET_Q0795_CCALF
+        if (sps->getCCALFEnabledFlag())
+        {
+          WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cb), "ph_cc_alf_cb_enabled_flag");
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cb))
+          {
+            WRITE_CODE(picHeader->getCcAlfCbApsId(), 3, "ph_cc_alf_cb_aps_id");
+          }
+          WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cr), "ph_cc_alf_cr_enabled_flag");
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cr))
+          {
+            WRITE_CODE(picHeader->getCcAlfCrApsId(), 3, "ph_cc_alf_cr_aps_id");
+          }
+        }
+#endif
+      }
+    }
+    else
+    {
+      picHeader->setAlfEnabledFlag(COMPONENT_Y,  true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, true);
+#if JVET_Q0795_CCALF
+      picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, sps->getCCALFEnabledFlag());
+      picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, sps->getCCALFEnabledFlag());
+#endif
+    }
+  }
+  else
+  {
+    picHeader->setAlfEnabledFlag(COMPONENT_Y,  false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
+#if JVET_Q0795_CCALF
+    picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
+#endif
+  }
+
+  // luma mapping / chroma scaling controls
+  if (sps->getUseLmcs())
+  {
+    WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "pic_lmcs_enabled_flag");
+    if (picHeader->getLmcsEnabledFlag())
+    {
+      WRITE_CODE(picHeader->getLmcsAPSId(), 2, "pic_lmcs_aps_id");
+      if (sps->getChromaFormatIdc() != CHROMA_400)
+      {
+        WRITE_FLAG(picHeader->getLmcsChromaResidualScaleFlag(), "pic_chroma_residual_scale_flag");
+      }
+      else
+      {
+        picHeader->setLmcsChromaResidualScaleFlag(false);
+      }
+    }
+  }
+  else
+  {
+    picHeader->setLmcsEnabledFlag(false);
+    picHeader->setLmcsChromaResidualScaleFlag(false);
+  }
+
+  // quantization scaling lists
+  if( sps->getScalingListFlag() )
+  {
+    WRITE_FLAG( picHeader->getScalingListPresentFlag(), "pic_scaling_list_present_flag" );
+    if( picHeader->getScalingListPresentFlag() )
+    {
+      WRITE_CODE( picHeader->getScalingListAPSId(), 3, "pic_scaling_list_aps_id" );
+    }
+  }
+  else
+  {
+    picHeader->setScalingListPresentFlag( false );
+  }
+
+#endif
   
 #if !JVET_Q0119_CLEANUPS
   // sub-picture IDs
@@ -1786,7 +1921,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
       if (sps->getUseDualITree())
       {
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+          // minQT[2] is in chroma sample unit, and the syntax signaled is in luma sample unit, a conversion is used here
+          const int minDiff = (int)floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) + (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, sps->getChromaFormatIdc()) - sps->getLog2MinCodingBlockSize();
+          CHECK(minDiff < 0, "Intra chroma min QT size in luma samples cannot be smaller than min luma CB size");
+          WRITE_UVLC(minDiff, "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#else
         WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
+#endif
         WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA), "pic_max_mtt_hierarchy_depth_intra_slice_chroma");
         if (picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA) != 0)
         {
@@ -2069,6 +2211,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, false);
   }
   
+#if !JVET_Q0819_PH_CHANGES
   // alf enable flags and aps IDs
   if( sps->getALFEnabledFlag() )
   {
@@ -2136,6 +2279,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
 #endif
   }
+#endif
 
   // dependent quantization
   if (!pps->getPPSDepQuantEnabledIdc())
@@ -2232,6 +2376,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
   }
 
+#if !JVET_Q0819_PH_CHANGES
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
@@ -2268,6 +2413,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setScalingListPresentFlag( false );
   }
+#endif
 
   // picture header extension
   if(pps->getPictureHeaderExtensionPresentFlag())
@@ -3165,6 +3311,7 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
   return false;
 }
 
+#if !JVET_Q0210_UEK_REMOVAL
 void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
 {
   unsigned int symbol = abs( coeff );
@@ -3185,6 +3332,7 @@ void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
     WRITE_FLAG( (coeff < 0) ? 1 : 0, "alf_coeff_sign" );
   }
 }
+#endif
 
 void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx )
 {
@@ -3201,7 +3349,15 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
+#if JVET_Q0210_UEK_REMOVAL 
+      WRITE_UVLC( abs(coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ]), "alf_abs_coeff" ); //alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+      if( abs( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] ) != 0 )
+      {
+        WRITE_FLAG( ( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] < 0 ) ? 1 : 0, "alf_coeff_sign" );
+      }
+#else
       alfGolombEncode( coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], 3 );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+#endif
     }
   }
 

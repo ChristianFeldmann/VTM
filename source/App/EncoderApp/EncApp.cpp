@@ -205,11 +205,6 @@ void EncApp::xInitLibCfg()
     ptls[i].setLevelIdc                                          (m_levelPtl[i]);
   }
   vps.setProfileTierLevel(ptls);
-  for(int i = 0; i < vps.getMaxLayers(); i++)
-  {
-    vps.setLayerChromaFormatIDC                                  (i, m_chromaFormatIDC);
-    vps.setLayerBitDepth                                         (i, m_internalBitDepth[CHANNEL_TYPE_LUMA]);
-  }
 #endif
   vps.setVPSExtensionFlag                                        ( false );
 #if !JVET_Q0814_DPB

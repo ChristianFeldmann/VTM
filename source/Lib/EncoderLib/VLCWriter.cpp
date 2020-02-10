@@ -850,7 +850,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
   WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
 
+#if JVET_Q0786_PTL_only
+  codeProfileTierLevel( pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1 );
+#else
   codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
+#endif
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
 
   WRITE_CODE( pcSPS->getSPSId (), 4, "sps_seq_parameter_set_id" );
@@ -1411,7 +1415,11 @@ void HLSWriter::codeDPS( const DPS* dps )
   for (int i=0; i< numPTLs; i++)
   {
     ProfileTierLevel ptl = dps->getProfileTierLevel(i);
+#if JVET_Q0786_PTL_only
+    codeProfileTierLevel( &ptl, true, 0 );
+#else
     codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
+#endif
   }
   WRITE_FLAG( 0,                                              "dps_extension_flag" );
   xWriteRbspTrailingBits();
@@ -1472,6 +1480,34 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       }
     }
   }
+
+#if JVET_Q0786_PTL_only
+  int totalNumOlss = pcVPS->getTotalNumOLSs();
+  WRITE_CODE(pcVPS->getNumPtls() - 1, 8, "vps_num_ptls_minus1");
+  for (int i = 0; i < pcVPS->getNumPtls(); i++)
+  {
+    if(i > 0)
+      WRITE_FLAG(pcVPS->getPtPresentFlag(i), "pt_present_flag");           
+    if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
+      WRITE_CODE(pcVPS->getPtlMaxTemporalId(i) ,3, "ptl_max_temporal_id");    
+  }
+  int cnt = 0;
+  while (m_pcBitIf->getNumBitsUntilByteAligned())
+  {
+    WRITE_FLAG( 0, "rbsp_alignment_zero_bit");
+    cnt++;
+  }
+  CHECK(cnt>=8, "More than '8' alignment bytes written");
+  for (int i = 0; i < pcVPS->getNumPtls(); i++)
+  {
+    codeProfileTierLevel(&pcVPS->getProfileTierLevel(i), pcVPS->getPtPresentFlag(i), pcVPS->getPtlMaxTemporalId(i) - 1);
+  }
+  for (int i = 0; i < totalNumOlss; i++)
+  {
+    if(pcVPS->getNumPtls() > 1)
+      WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
+  }
+#endif
 
 #if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
@@ -1538,13 +1574,18 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 {
   const PPS*  pps = NULL;
   const SPS*  sps = NULL;
-  
+
 #if ENABLE_TRACING
   xTracePictureHeader ();
 #endif
 
   CodingStructure& cs = *picHeader->getPic()->cs;
 #if JVET_Q0819_PH_CHANGES
+  WRITE_FLAG(picHeader->getGdrOrIrapPicFlag(), "gdr_or_irap_pic_flag");
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
+  }
   // Q0781, two-flags
   WRITE_FLAG(picHeader->getPicInterSliceAllowedFlag(), "pic_inter_slice_allowed_flag");
   if (picHeader->getPicInterSliceAllowedFlag())
@@ -1553,8 +1594,26 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
 #endif
   WRITE_FLAG(picHeader->getNonReferencePictureFlag(), "non_reference_picture_flag");
+#if !JVET_Q0819_PH_CHANGES
   WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
+#endif
+#if JVET_Q0819_PH_CHANGES
+  // parameter sets
+  WRITE_UVLC(picHeader->getPPSId(), "ph_pic_parameter_set_id");
+  pps = cs.slice->getPPS();
+  CHECK(pps == 0, "Invalid PPS");
+  sps = cs.slice->getSPS();
+  CHECK(sps == 0, "Invalid SPS");
+  int pocBits = cs.slice->getSPS()->getBitsForPOC();
+  int pocMask = (1 << pocBits) - 1;
+  WRITE_CODE(cs.slice->getPOC() & pocMask, pocBits, "ph_pic_order_cnt_lsb");
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
+  }
+#else
   WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
+#endif
   if( picHeader->getGdrPicFlag() ) 
   {
     WRITE_UVLC(picHeader->getRecoveryPocCnt(), "recovery_poc_cnt");
@@ -1564,18 +1623,122 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setRecoveryPocCnt( 0 );
   }
 
+#if !JVET_Q0819_PH_CHANGES
   // parameter sets
   WRITE_UVLC(picHeader->getPPSId(), "ph_pic_parameter_set_id");
   pps = cs.slice->getPPS();
   CHECK(pps==0, "Invalid PPS");  
   sps = cs.slice->getSPS();
   CHECK(sps==0, "Invalid SPS");
-#if JVET_Q0819_PH_CHANGES
-  int pocBits = cs.slice->getSPS()->getBitsForPOC();
-  int pocMask = (1 << pocBits) - 1;
-  WRITE_CODE(cs.slice->getPOC() & pocMask, pocBits, "ph_pic_order_cnt_lsb");
 #endif
 
+#if JVET_Q0819_PH_CHANGES
+   // alf enable flags and aps IDs
+  if( sps->getALFEnabledFlag() )
+  {
+#if JVET_Q0819_PH_CHANGES
+    if (pps->getAlfInfoInPhFlag())
+#else
+    WRITE_FLAG(picHeader->getAlfEnabledPresentFlag(), "pic_alf_enabled_present_flag");
+    if (picHeader->getAlfEnabledPresentFlag())
+#endif
+    {
+      WRITE_FLAG(picHeader->getAlfEnabledFlag(COMPONENT_Y), "pic_alf_enabled_flag");
+      if (picHeader->getAlfEnabledFlag(COMPONENT_Y))
+      {
+        WRITE_CODE(picHeader->getNumAlfAps(), 3, "pic_num_alf_aps_ids_luma");
+        const std::vector<int>&   apsId = picHeader->getAlfAPSs();
+        for (int i = 0; i < picHeader->getNumAlfAps(); i++)
+        {
+          WRITE_CODE(apsId[i], 3, "pic_alf_aps_id_luma");
+        }
+
+        const int alfChromaIdc = picHeader->getAlfEnabledFlag(COMPONENT_Cb) + picHeader->getAlfEnabledFlag(COMPONENT_Cr) * 2 ;
+        if (sps->getChromaFormatIdc() != CHROMA_400)
+        {
+          WRITE_CODE(alfChromaIdc, 2, "pic_alf_chroma_idc");
+        }
+        if (alfChromaIdc)
+        {
+          WRITE_CODE(picHeader->getAlfApsIdChroma(), 3, "pic_alf_aps_id_chroma");
+        }
+#if JVET_Q0795_CCALF
+        if (sps->getCCALFEnabledFlag())
+        {
+          WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cb), "ph_cc_alf_cb_enabled_flag");
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cb))
+          {
+            WRITE_CODE(picHeader->getCcAlfCbApsId(), 3, "ph_cc_alf_cb_aps_id");
+          }
+          WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cr), "ph_cc_alf_cr_enabled_flag");
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cr))
+          {
+            WRITE_CODE(picHeader->getCcAlfCrApsId(), 3, "ph_cc_alf_cr_aps_id");
+          }
+        }
+#endif
+      }
+    }
+    else
+    {
+      picHeader->setAlfEnabledFlag(COMPONENT_Y,  true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, true);
+#if JVET_Q0795_CCALF
+      picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, sps->getCCALFEnabledFlag());
+      picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, sps->getCCALFEnabledFlag());
+#endif
+    }
+  }
+  else
+  {
+    picHeader->setAlfEnabledFlag(COMPONENT_Y,  false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
+#if JVET_Q0795_CCALF
+    picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
+#endif
+  }
+
+  // luma mapping / chroma scaling controls
+  if (sps->getUseLmcs())
+  {
+    WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "pic_lmcs_enabled_flag");
+    if (picHeader->getLmcsEnabledFlag())
+    {
+      WRITE_CODE(picHeader->getLmcsAPSId(), 2, "pic_lmcs_aps_id");
+      if (sps->getChromaFormatIdc() != CHROMA_400)
+      {
+        WRITE_FLAG(picHeader->getLmcsChromaResidualScaleFlag(), "pic_chroma_residual_scale_flag");
+      }
+      else
+      {
+        picHeader->setLmcsChromaResidualScaleFlag(false);
+      }
+    }
+  }
+  else
+  {
+    picHeader->setLmcsEnabledFlag(false);
+    picHeader->setLmcsChromaResidualScaleFlag(false);
+  }
+
+  // quantization scaling lists
+  if( sps->getScalingListFlag() )
+  {
+    WRITE_FLAG( picHeader->getScalingListPresentFlag(), "pic_scaling_list_present_flag" );
+    if( picHeader->getScalingListPresentFlag() )
+    {
+      WRITE_CODE( picHeader->getScalingListAPSId(), 3, "pic_scaling_list_aps_id" );
+    }
+  }
+  else
+  {
+    picHeader->setScalingListPresentFlag( false );
+  }
+
+#endif
   
 #if !JVET_Q0119_CLEANUPS
   // sub-picture IDs
@@ -2084,6 +2247,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, false);
   }
   
+#if !JVET_Q0819_PH_CHANGES
   // alf enable flags and aps IDs
   if( sps->getALFEnabledFlag() )
   {
@@ -2151,6 +2315,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
 #endif
   }
+#endif
 
   // dependent quantization
   if (!pps->getPPSDepQuantEnabledIdc())
@@ -2247,6 +2412,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
   }
 
+#if !JVET_Q0819_PH_CHANGES
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
@@ -2283,6 +2449,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setScalingListPresentFlag( false );
   }
+#endif
 
   // picture header extension
   if(pps->getPictureHeaderExtensionPresentFlag())
@@ -2832,22 +2999,44 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoApsConstraintFlag() ? 1 : 0, "no_aps_constraint_flag");
 }
 
-
+#if JVET_Q0786_PTL_only
+void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1 )
+#else
 void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 )
+#endif
 {
+#if JVET_Q0786_PTL_only
+  if(profileTierPresentFlag)
+  {
+    WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
+    WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
+    codeConstraintInfo( ptl->getConstraintInfo() );
+  }
+#else
   WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
   WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
 
   codeConstraintInfo( ptl->getConstraintInfo() );
+#endif
 
   WRITE_CODE( int( ptl->getLevelIdc() ), 8, "general_level_idc" );
 
+#if JVET_Q0786_PTL_only
+  if(profileTierPresentFlag)
+  {
+    WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
+    for (int i = 0; i < ptl->getNumSubProfile(); i++)
+    {
+      WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
+    }
+  }
+#else
   WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
   for (int i = 0; i < ptl->getNumSubProfile(); i++)
   {
     WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
   }
-
+#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {

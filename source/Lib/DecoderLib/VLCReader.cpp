@@ -1286,7 +1286,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
   CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
 
+#if JVET_Q0786_PTL_only
+  parseProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
+#else
   parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+#endif
 
   READ_FLAG(uiCode, "gdr_enabled_flag");
   pcSPS->setGDREnabledFlag(uiCode);
@@ -2066,7 +2070,11 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   ptls.resize(numPTLs);
   for (int i=0; i<numPTLs; i++)
   {
+#if JVET_Q0786_PTL_only
+     parseProfileTierLevel(&ptls[i], true, 0);
+#else
      parseProfileTierLevel(&ptls[i], dps->getMaxSubLayersMinus1());
+#endif
   }
   dps->setProfileTierLevel(ptls);
 
@@ -2170,6 +2178,55 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
   }
 
+#if JVET_Q0786_PTL_only
+  pcVPS->deriveOutputLayerSets();
+  READ_CODE(8, uiCode, "vps_num_ptls_minus1");        pcVPS->setNumPtls(uiCode + 1);
+  for (int i = 0; i < pcVPS->getNumPtls(); i++)
+  {
+    if(i > 0)
+    {
+      READ_FLAG(uiCode, "pt_present_flag");           
+      pcVPS->setPtPresentFlag(i, uiCode);
+    }
+    else
+      pcVPS->setPtPresentFlag(0, 1);
+    if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
+    {
+      READ_CODE(3, uiCode, "ptl_max_temporal_id");    
+      pcVPS->setPtlMaxTemporalId(i, uiCode);
+    }
+    else if(pcVPS->getMaxSubLayers() > 1)
+      pcVPS->setPtlMaxTemporalId(i, pcVPS->getMaxSubLayers() - 1);
+    else
+      pcVPS->setPtlMaxTemporalId(i, 0);
+  }
+  int cnt = 0;
+  while (m_pcBitstream->getNumBitsUntilByteAligned())
+  {
+    READ_FLAG( uiCode, "vps_ptl_alignment_zero_bit");
+    CHECK(uiCode!=0, "Alignment bit is not '0'");
+    cnt++;
+  }
+  CHECK(cnt >= 8, "Read more than '8' alignment bits");
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(pcVPS->getNumPtls());
+  for (int i = 0; i < pcVPS->getNumPtls(); i++)
+  {
+    parseProfileTierLevel(&ptls[i], pcVPS->getPtPresentFlag(i), pcVPS->getPtlMaxTemporalId(i) - 1);
+  }
+  pcVPS->setProfileTierLevel(ptls);
+  for (int i = 0; i < pcVPS->getTotalNumOLSs(); i++)
+  {
+    if(pcVPS->getNumPtls() > 1)
+    {
+      READ_CODE(8, uiCode, "ols_ptl_idx");
+      pcVPS->setOlsPtlIdx(i, uiCode);
+    }
+    else
+      pcVPS->setOlsPtlIdx(i, 0);
+  }
+#endif
+
 #if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
   {
@@ -2223,7 +2280,9 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
   }
 
+#if !JVET_Q0786_PTL_only
   pcVPS->deriveOutputLayerSets();
+#endif
 
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
@@ -2267,6 +2326,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 
 #if JVET_Q0819_PH_CHANGES
+  READ_FLAG(uiCode, "gdr_or_irap_pic_flag");               picHeader->setGdrOrIrapPicFlag(uiCode != 0);
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    READ_FLAG(uiCode, "gdr_pic_flag");                     picHeader->setGdrPicFlag(uiCode != 0);
+  }
   READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");       picHeader->setPicInterSliceAllowedFlag(uiCode != 0);
   if (picHeader->getPicInterSliceAllowedFlag())
   {
@@ -2279,8 +2343,27 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   CHECK(picHeader->getPicInterSliceAllowedFlag() == 0 && picHeader->getPicIntraSliceAllowedFlag() == 0, "Invalid picture without intra or inter slice");
 #endif
   READ_FLAG(uiCode, "non_reference_picture_flag");       picHeader->setNonReferencePictureFlag( uiCode != 0 );
+#if !JVET_Q0819_PH_CHANGES
   READ_FLAG(uiCode, "gdr_pic_flag");                     picHeader->setGdrPicFlag( uiCode != 0 );
+#endif
+#if JVET_Q0819_PH_CHANGES
+  // parameter sets
+  READ_UVLC(uiCode, "ph_pic_parameter_set_id");
+  picHeader->setPPSId(uiCode);
+  pps = parameterSetManager->getPPS(picHeader->getPPSId());
+  CHECK(pps == 0, "Invalid PPS");
+  picHeader->setSPSId(pps->getSPSId());
+  sps = parameterSetManager->getSPS(picHeader->getSPSId());
+  CHECK(sps == 0, "Invalid SPS");
+  READ_CODE(sps->getBitsForPOC(), uiCode, "ph_pic_order_cnt_lsb");
+  picHeader->setPocLsb(uiCode);
+  if (picHeader->getGdrOrIrapPicFlag())
+  {
+    READ_FLAG(uiCode, "no_output_of_prior_pics_flag");   picHeader->setNoOutputOfPriorPicsFlag(uiCode != 0);
+  }
+#else
   READ_FLAG(uiCode, "no_output_of_prior_pics_flag");     picHeader->setNoOutputOfPriorPicsFlag( uiCode != 0 );
+#endif
   if( picHeader->getGdrPicFlag() ) 
   {
     READ_UVLC(uiCode, "recovery_poc_cnt");               picHeader->setRecoveryPocCnt( uiCode );
@@ -2290,6 +2373,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setRecoveryPocCnt( 0 );
   }
   
+#if !JVET_Q0819_PH_CHANGES
   // parameter sets
   READ_UVLC(uiCode, "ph_pic_parameter_set_id");
   picHeader->setPPSId( uiCode );
@@ -2298,11 +2382,145 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   picHeader->setSPSId( pps->getSPSId() );
   sps = parameterSetManager->getSPS(picHeader->getSPSId());
   CHECK(sps==0, "Invalid SPS");
-#if JVET_Q0819_PH_CHANGES
-  READ_CODE(sps->getBitsForPOC(), uiCode, "ph_pic_order_cnt_lsb");
-  picHeader->setPocLsb(uiCode);
 #endif
 
+#if JVET_Q0819_PH_CHANGES
+  // alf enable flags and aps IDs
+#if JVET_Q0795_CCALF
+  picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
+  picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
+#endif
+  if (sps->getALFEnabledFlag())
+  {
+#if JVET_Q0819_PH_CHANGES
+    if (pps->getAlfInfoInPhFlag())
+#else
+    READ_FLAG(uiCode, "pic_alf_enabled_present_flag");
+    picHeader->setAlfEnabledPresentFlag(uiCode != 0);
+
+    if (picHeader->getAlfEnabledPresentFlag())
+#endif
+    {
+      READ_FLAG(uiCode, "pic_alf_enabled_flag");
+      picHeader->setAlfEnabledFlag(COMPONENT_Y, uiCode);
+
+      int alfChromaIdc = 0;
+      if (uiCode)
+      {
+        READ_CODE(3, uiCode, "pic_num_alf_aps_ids_luma");
+        int numAps = uiCode;
+        picHeader->setNumAlfAps(numAps);
+
+        std::vector<int> apsId(numAps, -1);
+        for (int i = 0; i < numAps; i++)
+        {
+          READ_CODE(3, uiCode, "pic_alf_aps_id_luma");
+          apsId[i] = uiCode;
+        }
+        picHeader->setAlfAPSs(apsId);
+
+        if (sps->getChromaFormatIdc() != CHROMA_400)
+        {
+          READ_CODE(2, uiCode, "pic_alf_chroma_idc");
+          alfChromaIdc = uiCode;
+        }
+        else
+        {
+          alfChromaIdc = 0;
+        }
+        if (alfChromaIdc)
+        {
+          READ_CODE(3, uiCode, "pic_alf_aps_id_chroma");
+          picHeader->setAlfApsIdChroma(uiCode);
+        }
+#if JVET_Q0795_CCALF
+        if (sps->getCCALFEnabledFlag())
+        {
+          READ_FLAG(uiCode, "ph_cc_alf_cb_enabled_flag");
+          picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, uiCode != 0);
+          picHeader->setCcAlfCbApsId(-1);
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cb))
+          {
+            // parse APS ID
+            READ_CODE(3, uiCode, "ph_cc_alf_cb_aps_id");
+            picHeader->setCcAlfCbApsId(uiCode);
+          }
+          // Cr
+          READ_FLAG(uiCode, "ph_cc_alf_cr_enabled_flag");
+          picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, uiCode != 0);
+          picHeader->setCcAlfCrApsId(-1);
+          if (picHeader->getCcAlfEnabledFlag(COMPONENT_Cr))
+          {
+            // parse APS ID
+            READ_CODE(3, uiCode, "ph_cc_alf_cr_aps_id");
+            picHeader->setCcAlfCrApsId(uiCode);
+          }
+        }
+#endif
+      }
+      else
+      {
+        picHeader->setNumAlfAps(0);
+      }
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+    }
+    else
+    {
+      picHeader->setAlfEnabledFlag(COMPONENT_Y, true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, true);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, true);
+    }
+  }
+  else
+  {
+    picHeader->setAlfEnabledFlag(COMPONENT_Y, false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
+    picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
+  }
+  // luma mapping / chroma scaling controls
+  if (sps->getUseLmcs())
+  {
+    READ_FLAG(uiCode, "pic_lmcs_enabled_flag");
+    picHeader->setLmcsEnabledFlag(uiCode != 0);
+
+    if (picHeader->getLmcsEnabledFlag())
+    {
+      READ_CODE(2, uiCode, "pic_lmcs_aps_id");
+      picHeader->setLmcsAPSId(uiCode);
+
+      if (sps->getChromaFormatIdc() != CHROMA_400)
+      {
+        READ_FLAG(uiCode, "pic_chroma_residual_scale_flag");
+        picHeader->setLmcsChromaResidualScaleFlag(uiCode != 0);
+      }
+      else
+      {
+        picHeader->setLmcsChromaResidualScaleFlag(false);
+      }
+    }
+  }
+  else
+  {
+    picHeader->setLmcsEnabledFlag(false);
+    picHeader->setLmcsChromaResidualScaleFlag(false);
+  }
+  // quantization scaling lists
+  if (sps->getScalingListFlag())
+  {
+    READ_FLAG(uiCode, "pic_scaling_list_present_flag");
+    picHeader->setScalingListPresentFlag(uiCode);
+    if (picHeader->getScalingListPresentFlag())
+    {
+      READ_CODE(3, uiCode, "pic_scaling_list_aps_id");
+      picHeader->setScalingListAPSId(uiCode);
+    }
+  }
+  else
+  {
+    picHeader->setScalingListPresentFlag(false);
+  }
+#endif
   
   // initialize tile/slice info for no partitioning case
   if( pps->getNoPicPartitionFlag() )
@@ -2922,7 +3140,8 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setSaoEnabledFlag(CHANNEL_TYPE_LUMA,   false);
     picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, false);
   }
-  
+
+#if !JVET_Q0819_PH_CHANGES
   // alf enable flags and aps IDs
 #if JVET_Q0795_CCALF
   picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
@@ -2930,14 +3149,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
   if( sps->getALFEnabledFlag() )
   {
-#if JVET_Q0819_PH_CHANGES
-    if (pps->getAlfInfoInPhFlag())
-#else
     READ_FLAG(uiCode, "pic_alf_enabled_present_flag");  
     picHeader->setAlfEnabledPresentFlag(uiCode != 0);
 
     if (picHeader->getAlfEnabledPresentFlag()) 
-#endif
     {
       READ_FLAG(uiCode, "pic_alf_enabled_flag");
       picHeader->setAlfEnabledFlag(COMPONENT_Y, uiCode);
@@ -3016,6 +3231,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
     picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
   }
+#endif
 
   // dependent quantization
   if (!pps->getPPSDepQuantEnabledIdc())
@@ -3149,6 +3365,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
   }
 
+#if !JVET_Q0819_PH_CHANGES
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
@@ -3192,6 +3409,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setScalingListPresentFlag( false );
   }
+#endif
 
   // picture header extension
   if(pps->getPictureHeaderExtensionPresentFlag())
@@ -4170,16 +4388,41 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 }
 
 
+#if JVET_Q0786_PTL_only
+void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1)
+#else
 void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubLayersMinus1)
+#endif
 {
   uint32_t symbol;
+#if JVET_Q0786_PTL_only
+  if(profileTierPresentFlag)
+  {
+    READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
+    READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
+    parseConstraintInfo( ptl->getConstraintInfo() );
+  }
+#else
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
 
   parseConstraintInfo( ptl->getConstraintInfo() );
+#endif
 
   READ_CODE( 8, symbol, "general_level_idc" ); ptl->setLevelIdc( Level::Name( symbol ) );
 
+#if JVET_Q0786_PTL_only
+  if(profileTierPresentFlag)
+  {
+    READ_CODE(8, symbol, "num_sub_profiles");
+    uint8_t numSubProfiles = symbol;
+    ptl->setNumSubProfile( numSubProfiles );
+    for (int i = 0; i < numSubProfiles; i++)
+    {
+      READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
+    }
+  }
+#else
   READ_CODE(8, symbol, "num_sub_profiles");
   uint8_t numSubProfiles = symbol;
   ptl->setNumSubProfile( numSubProfiles );
@@ -4187,7 +4430,7 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   {
     READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
   }
-
+#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {

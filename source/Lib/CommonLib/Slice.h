@@ -863,14 +863,17 @@ private:
   uint32_t              m_directRefLayerIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   uint32_t              m_generalLayerIdx[MAX_VPS_LAYERS];
 
+#if JVET_Q0786_PTL_only
+  uint32_t              m_vpsNumPtls;
+  bool                  m_ptPresentFlag[MAX_NUM_OLSS];
+  uint32_t              m_ptlMaxTemporalId[MAX_NUM_OLSS];
+  std::vector<ProfileTierLevel> m_vpsProfileTierLevel;
+  uint32_t              m_olsPtlIdx[MAX_NUM_OLSS];
+#endif
+
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
-  
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  int                   m_vpsLayerChromaFormatIDC[MAX_VPS_LAYERS];
-  int                   m_vpsLayerBitDepth[MAX_VPS_LAYERS];
-#endif  
 
 #if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
@@ -942,20 +945,29 @@ public:
   bool              getOlsOutputLayerFlag(uint32_t ols, uint32_t layer) const { return m_vpsOlsOutputLayerFlag[ols][layer]; }
   void              setOlsOutputLayerFlag(uint32_t ols, uint32_t layer, bool t) { m_vpsOlsOutputLayerFlag[ols][layer] = t; }
 
+#if JVET_Q0786_PTL_only
+  uint32_t          getNumPtls()                                   const { return m_vpsNumPtls; }
+  void              setNumPtls(uint32_t val)                             { m_vpsNumPtls = val; }
+
+  bool              getPtPresentFlag(int idx)                      const { return m_ptPresentFlag[idx]; }
+  void              setPtPresentFlag(int idx, bool val)                  { m_ptPresentFlag[idx] = val; }
+
+  uint32_t          getPtlMaxTemporalId(int idx)                   const { return m_ptlMaxTemporalId[idx]; }
+  void              setPtlMaxTemporalId(int idx, uint32_t val)           { m_ptlMaxTemporalId[idx] = val; }
+
+  void              setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_vpsProfileTierLevel = val; }
+  const ProfileTierLevel& getProfileTierLevel(int idx)             const { return m_vpsProfileTierLevel[idx]; }
+
+  uint32_t          getOlsPtlIdx(int idx)                          const { return m_olsPtlIdx[idx]; }
+  void              setOlsPtlIdx(int idx, uint32_t val)                  { m_olsPtlIdx[idx] = val; }
+#endif
+
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
 
 #if JVET_P0288_PIC_OUTPUT
   int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
-#endif
-
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  int               getLayerChromaFormatIDC( uint32_t layerIdx ) const                { return m_vpsLayerChromaFormatIDC[layerIdx]; }
-  void              setLayerChromaFormatIDC( uint32_t layerIdx, int chromaFormatIDC ) { m_vpsLayerChromaFormatIDC[layerIdx] = chromaFormatIDC; }
-
-  int               getLayerBitDepth( uint32_t layerIdx ) const                       { return m_vpsLayerBitDepth[layerIdx]; }
-  void              setLayerBitDepth( uint32_t layerIdx, int bitDepth )               { m_vpsLayerBitDepth[layerIdx] = bitDepth; }
 #endif
 
 #if JVET_Q0814_DPB
@@ -2219,6 +2231,7 @@ private:
   int                         m_pocLsb;                                                 //!< least significant bits of picture order count
 #endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
+  bool                        m_gdrOrIrapPicFlag;                                       //!< gdr or irap picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
   bool                        m_noOutputOfPriorPicsFlag;                                //!< no output of prior pictures flag
   uint32_t                    m_recoveryPocCnt;                                         //!< recovery POC count
@@ -2338,6 +2351,8 @@ public:
 #endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
+  void                        setGdrOrIrapPicFlag( bool b )                             { m_gdrOrIrapPicFlag = b;                                                                      }
+  bool                        getGdrOrIrapPicFlag() const                               { return m_gdrOrIrapPicFlag;                                                                   }
   void                        setGdrPicFlag( bool b )                                   { m_gdrPicFlag = b;                                                                            }
   bool                        getGdrPicFlag() const                                     { return m_gdrPicFlag;                                                                         }
   void                        setNoOutputOfPriorPicsFlag( bool b )                      { m_noOutputOfPriorPicsFlag = b;                                                               }

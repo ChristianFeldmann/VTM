@@ -1596,6 +1596,9 @@ VPS::VPS()
   , m_vpsEachLayerIsAnOlsFlag (1)
   , m_vpsOlsModeIdc (0)
   , m_vpsNumOutputLayerSets (1)
+#if JVET_Q0786_PTL_only
+  , m_vpsNumPtls (1)
+#endif
   , m_vpsExtensionFlag()
 #if JVET_Q0814_DPB
   , m_totalNumOLSs( 0 )
@@ -1608,10 +1611,6 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-    m_vpsLayerChromaFormatIDC[i] = NOT_VALID;
-    m_vpsLayerBitDepth[i] = NOT_VALID;
-#endif
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
       m_vpsDirectRefLayerFlag[i][j] = 0;
@@ -1625,6 +1624,14 @@ VPS::VPS()
     {
       m_vpsOlsOutputLayerFlag[i][j] = 0;
     }
+#if JVET_Q0786_PTL_only
+    if(i == 0)
+      m_ptPresentFlag[i] = 1;
+    else
+      m_ptPresentFlag[i] = 0;
+    m_ptlMaxTemporalId[i] = m_vpsMaxSubLayers - 1;
+    m_olsPtlIdx[i] = 0;
+#endif
   }
 }
 

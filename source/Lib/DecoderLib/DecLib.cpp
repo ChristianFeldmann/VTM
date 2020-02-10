@@ -1355,6 +1355,44 @@ void DecLib::xActivateParameterSets( const int layerId )
     CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
   }
 #endif
+
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  static std::unordered_map<int, int> m_layerChromaFormat;
+  static std::unordered_map<int, int> m_layerBitDepth;
+
+  if (vps != nullptr && vps->getMaxLayers() > 1)
+  {
+    int curLayerIdx = vps->getGeneralLayerIdx(layerId);
+    int curLayerChromaFormat = sps->getChromaFormatIdc();
+    int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
+
+#if SPS_ID_CHECK
+    if (slice->isClvssPu() && m_bFirstSliceInPicture)
+#else
+    if (m_layerBitDepth[curLayerIdx] == 0)
+#endif
+    {
+      m_layerChromaFormat[curLayerIdx] = curLayerChromaFormat;
+      m_layerBitDepth[curLayerIdx] = curLayerBitDepth;
+    }
+    else
+    {
+      CHECK(m_layerChromaFormat[curLayerIdx] != curLayerChromaFormat, "Different chroma format in the same layer.");
+      CHECK(m_layerBitDepth[curLayerIdx] != curLayerBitDepth, "Different bit-depth in the same layer.");
+    }
+
+    for (int i = 0; i < curLayerIdx; i++)
+    {
+      if (vps->getDirectRefLayerFlag(curLayerIdx, i))
+      {
+        int refLayerChromaFormat = m_layerChromaFormat[i];
+        CHECK(curLayerChromaFormat != refLayerChromaFormat, "The chroma formats of the current layer and the reference layer are different");
+        int refLayerBitDepth = m_layerBitDepth[i];
+        CHECK(curLayerBitDepth != refLayerBitDepth, "The bit-depth of the current layer and the reference layer are different");
+      }
+    }
+  }
+#endif
 }
 
 

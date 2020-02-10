@@ -118,8 +118,11 @@ public:
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
-
-
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  VPS * getVPS() { return m_cEncLib.getVPS(); }
+  int   getChromaFormatIDC() const { return m_cEncLib.getChromaFormatIdc(); }
+  int   getBitDepth() const { return m_cEncLib.getBitDepth(CHANNEL_TYPE_LUMA); }
+#endif
 };// END CLASS DEFINITION EncApp
 
 //! \}

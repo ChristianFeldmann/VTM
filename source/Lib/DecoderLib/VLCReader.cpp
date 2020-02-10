@@ -4530,7 +4530,7 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   {
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
   if(scalingList->getChromaScalingListPresentFlag()|| scalingList->isLumaScalingList(scalingListId))
-   {
+  {
 #endif
     READ_FLAG(code, "scaling_list_copy_mode_flag");
     scalingListCopyModeFlag = (code) ? true : false;
@@ -4567,10 +4567,10 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
       decodeScalingList(scalingList, scalingListId, scalingList->getScalingListPreditorModeFlag(scalingListId));
     }
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
-    }
+  }
   else
   {
-     scalingList->processDefaultMatrix(scalingListId);
+    scalingList->processDefaultMatrix(scalingListId);
   }
 #endif
   }

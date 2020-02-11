@@ -321,7 +321,7 @@ protected:
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
   int xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId = 0 );
-  int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId = 0 );
+  int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const int layerId = 0 );
   int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );
 #if ENABLING_MULTI_SPS
   int xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst, const int layerIdx);

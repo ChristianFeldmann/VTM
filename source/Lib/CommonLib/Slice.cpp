@@ -2649,6 +2649,17 @@ void PPS::initRectSliceMap()
 #if JVET_O1143_SUBPIC_BOUNDARY
 void PPS::initSubPic(const SPS &sps)
 {
+  if (getSubPicIdMappingInPpsFlag())
+  {
+    // When signalled, the number of subpictures has to match in PPS and SPS
+    CHECK (getNumSubPics() != sps.getNumSubPics(), "pps_num_subpics_minus1 shall be equal to sps_num_subpics_minus1");
+  }
+  else
+  {
+    // When not signalled  set the numer equal for convenient access
+    setNumSubPics(sps.getNumSubPics());
+  }
+
   CHECK(getNumSubPics() > MAX_NUM_SUB_PICS, "Number of sub-pictures in picture exceeds valid range");
   m_subPics.resize(getNumSubPics());
   // m_ctuSize,  m_picWidthInCtu, and m_picHeightInCtu might not be initialized yet.
@@ -2687,6 +2698,8 @@ void PPS::initSubPic(const SPS &sps)
     m_subPics[i].setSubPicHeightInLumaSample(bottom - top + 1);
 
     m_subPics[i].setSubPicBottom(bottom);
+    
+    m_subPics[i].clearCTUAddrList();
     
     if (m_numSlicesInPic == 1)
     {
@@ -3474,8 +3487,8 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
           m_vpsMap.setActive(0);
         }
 
-          m_spsMap.clear();
-          m_spsMap.setActive(spsId);
+        m_spsMap.clear();
+        m_spsMap.setActive(spsId);
         m_activeSPSId = spsId;
         m_ppsMap.clear();
         m_ppsMap.setActive(ppsId);

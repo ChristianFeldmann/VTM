@@ -279,7 +279,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     {
       PPS* pps = new PPS();
       HLSReader.setBitstream( &inp_nalu.getBitstream() );
-      HLSReader.parsePPS( pps, &parameterSetManager );
+      HLSReader.parsePPS( pps );
       parameterSetManager.storePPS( pps, inp_nalu.getBitstream().getFifo() );
     }
 #if !JVET_Q0819_PH_CHANGES

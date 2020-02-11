@@ -1065,6 +1065,12 @@ void DecLib::xActivateParameterSets( const int layerId )
     {
       THROW("Parameter set activation failed!");
     }
+    
+#if JVET_O1143_SUBPIC_BOUNDARY
+    PPS* nonconstPPS = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    nonconstPPS->initSubPic(*sps);
+#endif
+
     m_parameterSetManager.getApsMap()->clear();
     for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
     {
@@ -1274,7 +1280,11 @@ void DecLib::xActivateParameterSets( const int layerId )
        deleteSEIs(m_SEIs);
      }
   }
+  xCheckParameterSetConstraints(layerId);
+}
 
+void DecLib::xCheckParameterSetConstraints(const int layerId)
+{
   // Conformance checks
   Slice *slice = m_pcPic->slices[m_uiSliceSegmentIdx];
   const SPS *sps = slice->getSPS();
@@ -1393,6 +1403,17 @@ void DecLib::xActivateParameterSets( const int layerId )
     }
   }
 #endif
+
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
+  {
+    CHECK(pps->getNumTiles() != 1, "When one_tile_per_pic_constraint_flag is equal to 1, each picture shall contain only one tile");
+  }
+  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
+  {
+    CHECK( pps->getNumSlicesInPic() != 0, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
+  }
+#endif
 }
 
 
@@ -1433,7 +1454,8 @@ void DecLib::xDecodePicHeader( InputNALUnit& nalu )
 bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay )
 {
 #if !JVET_Q0775_PH_IN_SH
-  if(m_picHeader.isValid() == false) {
+  if(m_picHeader.isValid() == false)
+  {
     return false;
   }
 #endif
@@ -1449,7 +1471,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
   else
   {
-      CHECK(nalu.m_nalUnitType != m_pcPic->slices[m_uiSliceSegmentIdx - 1]->getNalUnitType(), "The value of NAL unit type shall be the same for all coded slice NAL units of a picture");
+    CHECK(nalu.m_nalUnitType != m_pcPic->slices[m_uiSliceSegmentIdx - 1]->getNalUnitType(), "The value of NAL unit type shall be the same for all coded slice NAL units of a picture");
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
 
@@ -1469,7 +1491,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
+  {
     CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
+  }
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 #if JVET_Q0795_CCALF
@@ -2008,7 +2032,7 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
 {
   PPS* pps = new PPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
-  m_HLSReader.parsePPS( pps, &m_parameterSetManager );
+  m_HLSReader.parsePPS( pps );
   pps->setLayerId( nalu.m_nuhLayerId );
   pps->setTemporalId( nalu.m_temporalId );
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );

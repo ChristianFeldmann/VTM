@@ -242,7 +242,7 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
   }
 }
 
-void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
+void HLSWriter::codePPS( const PPS* pcPPS )
 {
 #if ENABLE_TRACING
   xTracePPSHeader ();
@@ -395,10 +395,6 @@ void HLSWriter::codePPS( const PPS* pcPPS, const SPS* pcSPS )
 #endif
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cb), "pps_cb_qp_offset" );
   WRITE_SVLC( pcPPS->getQpOffset(COMPONENT_Cr), "pps_cr_qp_offset" );
-  if (pcSPS->getJointCbCrEnabledFlag() == false || pcSPS->getChromaFormatIdc() == CHROMA_400)
-  {
-    CHECK(pcPPS->getJointCbCrQpOffsetPresentFlag(), "pps_jcbcr_qp_offset_present_flag should be false");
-  }
   WRITE_FLAG(pcPPS->getJointCbCrQpOffsetPresentFlag() ? 1 : 0, "pps_joint_cbcr_qp_offset_present_flag");
   if (pcPPS->getJointCbCrQpOffsetPresentFlag())
   {

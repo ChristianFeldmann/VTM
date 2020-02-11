@@ -2562,16 +2562,25 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
 
         const uint32_t uiColFromL0 = refPicL0->slices[0]->getSliceQp() > refPicL1->slices[0]->getSliceQp();
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+        picHeader->setPicColFromL0Flag( uiColFromL0 );
+#endif
         pcSlice->setColFromL0Flag( uiColFromL0 );
         pcSlice->setColRefIdx( uiColFromL0 ? colRefIdxL0 : colRefIdxL1 );
       }
       else if( colRefIdxL0 < 0 && colRefIdxL1 >= 0 )
       {
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+        picHeader->setPicColFromL0Flag( false );
+#endif
         pcSlice->setColFromL0Flag( false );
         pcSlice->setColRefIdx( colRefIdxL1 );
       }
       else if( colRefIdxL0 >= 0 && colRefIdxL1 < 0 )
       {
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+        picHeader->setPicColFromL0Flag( true );
+#endif
         pcSlice->setColFromL0Flag( true );
         pcSlice->setColRefIdx( colRefIdxL0 );
       }

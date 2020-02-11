@@ -458,6 +458,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG(pcPPS->getQpDeltaInfoInPhFlag() ? 1 : 0, "qp_delta_info_in_ph_flag");
 #endif
 
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   WRITE_FLAG( pcPPS->getConstantSliceHeaderParamsEnabledFlag(),              "constant_slice_header_params_enabled_flag");
   if ( pcPPS->getConstantSliceHeaderParamsEnabledFlag() ) {
     WRITE_CODE( pcPPS->getPPSDepQuantEnabledIdc(), 2,                        "pps_dep_quant_enabled_idc");
@@ -472,6 +473,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_UVLC(pcPPS->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(), "pps_max_num_merge_cand_minus_max_num_gpm_cand_plus1");
 #endif
   }
+#endif
 
 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
@@ -1860,6 +1862,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       // RPL in picture header or SPS
       else if (sps->getNumRPL(listIdx) > 0)
       {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         if (!pps->getPPSRefPicListSPSIdc(listIdx))
         {
           WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "pic_rpl_sps_flag[i]");
@@ -1868,6 +1871,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
         {
           picHeader->setRPLIdx( listIdx, -1);
         }
+#else
+        WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "pic_rpl_sps_flag[i]");
+#endif
       }
       else 
       {
@@ -2068,6 +2074,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
 
   // mvd L1 zero flag
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSMvdL1ZeroIdc())
     {
       WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
@@ -2076,18 +2083,30 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     {
       picHeader->setMvdL1ZeroFlag( pps->getPPSMvdL1ZeroIdc() - 1 );
     }
+#else
+
+    if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
+    {
+      WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
+    }
+
+    WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
+#endif
    
   // merge candidate list size
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
     {
+#endif
       CHECK(picHeader->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
       WRITE_UVLC(MRG_MAX_NUM_CANDS - picHeader->getMaxNumMergeCand(), "pic_six_minus_max_num_merge_cand");
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     }
     else
     {
       picHeader->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - (pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1));
     }
-
+#endif
   // subblock merge candidate list size
     if ( sps->getUseAffine() )
     {
@@ -2165,15 +2184,19 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // geometric merge candidate list size
     if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
     {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
       {
+#endif
         CHECK(picHeader->getMaxNumMergeCand() < picHeader->getMaxNumGeoCand(), "Incorrrect max number of gpm candidates!");
         WRITE_UVLC(picHeader->getMaxNumMergeCand() - picHeader->getMaxNumGeoCand(), "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
       }
       else
       {
       picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - (pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1)));
       }
+#endif
     }
 #endif
 #if JVET_Q0819_PH_CHANGES
@@ -2318,6 +2341,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
 
   // dependent quantization
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   if (!pps->getPPSDepQuantEnabledIdc())
   {
     WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "pic_dep_quant_enabled_flag");
@@ -2326,7 +2350,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setDepQuantEnabledFlag( pps->getPPSDepQuantEnabledIdc() - 1 );
   }
-
+#else
+  WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "pic_dep_quant_enabled_flag");
+#endif
   // sign data hiding
   if( !picHeader->getDepQuantEnabledFlag() )
   {
@@ -2582,10 +2608,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       //Write L0 related syntax elements
       if (pcSlice->getSPS()->getNumRPL0() > 0)
       {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc0())
         {
+#endif
           WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         }
+#endif
       }
       if (pcSlice->getRPL0idx() != -1)
       {
@@ -2637,10 +2667,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       {
         if (pcSlice->getSPS()->getNumRPL1() > 0)
         {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
         {
+#endif
           WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         }
+#endif
         }
         if (pcSlice->getRPL1idx() != -1)
         {
@@ -2744,6 +2778,15 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
     if( pcSlice->getPicHeader()->getEnableTMVPFlag() )
     {
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      if(!pcSlice->getPPS()->getRplInfoInPhFlag())
+      {
+        if (pcSlice->getSliceType() == B_SLICE)
+        {
+          WRITE_FLAG(pcSlice->getColFromL0Flag(), "collocated_from_l0_flag");
+        }
+      }
+#else
       if( pcSlice->getSliceType() == B_SLICE )
       {
         if (!pcSlice->getPPS()->getPPSCollocatedFromL0Idc())
@@ -2751,6 +2794,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
         }
       }
+#endif
 
       if( pcSlice->getSliceType() != I_SLICE &&
         ( ( pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) > 1 ) ||

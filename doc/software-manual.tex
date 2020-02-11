@@ -1204,6 +1204,11 @@ Defines the initial maximum depth of the multi-type tree in dual tree for luma c
 %\ShortOption{\None} &
 \Default{4} &
 Defines the initial minimum size of the quad tree in dual tree for chroma components.
+
+Note: this size is defined in chroma sample unit in configuration, and it is converted
+into luma sample unit according to the horizontal chroma subsampling ratio when applied
+in the software. In chroma format 4:2:2 case, this value shall be set to the value of
+the height of minimum chroma QT node in chroma samples.
 \\
 
 \Option{MinQTISlice} &

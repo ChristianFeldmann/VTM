@@ -544,6 +544,9 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     {
       setUseScalingListId( SCALING_LIST_DEFAULT );
     }
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+    aps.getScalingList().setChromaScalingListPresentFlag((sps.getChromaFormatIdc()!=CHROMA_400));
+#endif
     quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
     quant->setUseScalingList(true);
 #if ENABLE_SPLIT_PARALLELISM
@@ -564,7 +567,14 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     // Prepare delta's:
     for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
     {
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+      if (aps.getScalingList().getChromaScalingListPresentFlag()||aps.getScalingList().isLumaScalingList(scalingListId))
+      {
+#endif
         aps.getScalingList().checkPredMode(scalingListId);
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+      }
+#endif
     }
   }
 }

@@ -2898,6 +2898,9 @@ void ReferencePictureList::printRefPicInfo() const
 ScalingList::ScalingList()
 {
   m_disableScalingMatrixForLfnstBlks = true;
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  m_chromaScalingListPresentFlag = true;
+#endif
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
     int matrixSize = (scalingListId < SCALING_LIST_1D_START_4x4) ? 2 : (scalingListId < SCALING_LIST_1D_START_8x8) ? 4 : 8;
@@ -3350,6 +3353,13 @@ void ScalingList::checkDcOfMatrix()
     }
   }
 }
+
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+bool ScalingList::isLumaScalingList( int scalingListId) const
+{
+  return (scalingListId % MAX_NUM_COMPONENT == SCALING_LIST_1D_START_4x4 || scalingListId == SCALING_LIST_1D_START_64x64 + 1);
+}
+#endif
 
 ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)

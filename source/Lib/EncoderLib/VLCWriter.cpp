@@ -3279,8 +3279,15 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
 {
   //for each size
   WRITE_FLAG(scalingList.getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag"); 
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  WRITE_FLAG(scalingList.getChromaScalingListPresentFlag(), "scaling_list_chroma_present_flag");
+#endif
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+    if(scalingList.getChromaScalingListPresentFlag()|| scalingList.isLumaScalingList(scalingListId))
+   {
+#endif
     bool scalingListCopyModeFlag = scalingList.getScalingListCopyModeFlag(scalingListId);
     WRITE_FLAG(scalingListCopyModeFlag, "scaling_list_copy_mode_flag"); //copy mode
     if (!scalingListCopyModeFlag)// Copy Mode
@@ -3296,6 +3303,9 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
       //DPCM
       xCodeScalingList(&scalingList, scalingListId, scalingList.getScalingListPreditorModeFlag(scalingListId));
     }
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+   }
+#endif
   }
   return;
 }

@@ -347,13 +347,13 @@ int EncGOP::xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId
 
 }
 
-int EncGOP::xWritePPS( AccessUnit &accessUnit, const PPS *pps, const SPS *sps, const int layerId )
+int EncGOP::xWritePPS( AccessUnit &accessUnit, const PPS *pps, const int layerId )
 {
   OutputNALUnit nalu(NAL_UNIT_PPS);
   m_HLSWriter->setBitstream( &nalu.m_Bitstream );
   nalu.m_nuhLayerId = layerId;
   CHECK( nalu.m_temporalId < accessUnit.temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
-  m_HLSWriter->codePPS( pps, sps );
+  m_HLSWriter->codePPS( pps );
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
@@ -407,7 +407,7 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
 
   if( m_pcEncLib->PPSNeedsWriting( slice->getPPS()->getPPSId() ) ) // Note this assumes that all changes to the PPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
   {
-    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), slice->getSPS(), m_pcEncLib->getLayerId() );
+    actualTotalBits += xWritePPS( accessUnit, slice->getPPS(), m_pcEncLib->getLayerId() );
   }
 
   return actualTotalBits;

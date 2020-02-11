@@ -405,7 +405,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   rpl->setNumberOfInterLayerPictures( numIlrp );
 }
 
-void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetManager )
+void HLSyntaxReader::parsePPS( PPS* pcPPS )
 {
 #if ENABLE_TRACING
   xTracePPSHeader ();
@@ -480,20 +480,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
   }
 
-#if JVET_O1143_SUBPIC_BOUNDARY
-  // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
-  pcPPS->setNumSubPics(parameterSetManager->getSPS(pcPPS->getSPSId())->getNumSubPics());
-#endif
-
-
-#if JVET_Q0114_CONSTRAINT_FLAGS
-  SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
-  {
-    CHECK(pcPPS->getNumTiles() != 1, "When one_tile_per_pic_constraint_flag is equal to 1, each picture shall contain only one tile");
-  }
-#endif
-
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
   {
@@ -532,14 +518,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       int32_t tileIdx = 0;
 
       READ_UVLC( uiCode, "num_slices_in_pic_minus1" );                pcPPS->setNumSlicesInPic( uiCode + 1 );
-#if JVET_Q0114_CONSTRAINT_FLAGS
-      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-      if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
-      {
-        CHECK(uiCode != 0, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
-      }
-#endif
       CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
+
       READ_CODE(1, uiCode, "tile_idx_delta_present_flag");            pcPPS->setTileIdxDeltaPresentFlag( uiCode == 1 );
       pcPPS->initRectSlices();
       
@@ -609,9 +589,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
-#if JVET_O1143_SUBPIC_BOUNDARY  
-  pcPPS->initSubPic(*sps);
-#endif
 
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
@@ -1427,7 +1404,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       else
       {
 #if JVET_Q0413_SKIP_LAST_SUBPIC_SIG
-        pcSPS->setSubPicWidth(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
+        pcSPS->setSubPicHeight(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
 #else
         pcSPS->setSubPicHeight(picIdx, 1);
 #endif

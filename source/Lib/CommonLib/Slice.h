@@ -790,6 +790,7 @@ public:
   uint32_t         getSubPicHeightInLumaSample()     const { return  m_subPicHeightInLumaSample;      }
 
   std::vector<uint32_t> getCtuAddrList  ()           const { return  m_ctuAddrInSubPic;           }
+  void                  clearCTUAddrList()                 { m_ctuAddrInSubPic.clear(); }
   void                  addCTUsToSubPic(std::vector<uint32_t> ctuAddrInSlice)
   {
     for (auto ctu:ctuAddrInSlice)

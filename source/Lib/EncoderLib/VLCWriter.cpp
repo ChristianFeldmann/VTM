@@ -1166,7 +1166,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
 #if JVET_Q0416_WRAPAROUND_OFFSET
-    WRITE_UVLC((pcSPS->getWrapAroundOffset() / (1 << pcSPS->getLog2MinCodingBlockSize())) - 2 - (1 << pcSPS->getLog2DiffMaxMinCodingBlockSize()), "sps_ref_wraparound_offset");
+    WRITE_UVLC((pcSPS->getWrapAroundOffset() / (1 << pcSPS->getLog2MinCodingBlockSize())) - 2 - pcSPS->getCTUSize()/(1<<pcSPS->getLog2MinCodingBlockSize()), "sps_ref_wraparound_offset");
 #else
     WRITE_UVLC( (pcSPS->getWrapAroundOffset()/(1 <<  pcSPS->getLog2MinCodingBlockSize()))-1,  "sps_ref_wraparound_offset_minus1" );
 #endif

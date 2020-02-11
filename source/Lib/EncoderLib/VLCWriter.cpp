@@ -1199,7 +1199,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
+#if JVET_Q0416_WRAPAROUND_OFFSET
+    WRITE_UVLC((pcSPS->getWrapAroundOffset() / (1 << pcSPS->getLog2MinCodingBlockSize())) - 2 - pcSPS->getCTUSize()/(1<<pcSPS->getLog2MinCodingBlockSize()), "sps_ref_wraparound_offset");
+#else
     WRITE_UVLC( (pcSPS->getWrapAroundOffset()/(1 <<  pcSPS->getLog2MinCodingBlockSize()))-1,  "sps_ref_wraparound_offset_minus1" );
+#endif
   }
 
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
@@ -2179,6 +2183,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setDisProfFlag(0);
     }
 
+#if JVET_Q0819_PH_CHANGES
+    if ((pps->getUseWP() || pps->getWPBiPred()) && pps->getWpInfoInPhFlag())
+    {
+      xCodePredWeightTable(picHeader, sps);
+    }
+#endif
+
 #if !JVET_Q0806
   // triangle merge candidate list size
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
@@ -2226,13 +2237,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     CHECK( picHeader->getMaxNumIBCMergeCand() > IBC_MRG_MAX_NUM_CANDS, "More IBC merge candidates signalled than supported" );
     WRITE_UVLC(IBC_MRG_MAX_NUM_CANDS - picHeader->getMaxNumIBCMergeCand(), "pic_six_minus_max_num_ibc_merge_cand");
   }
-
-#if JVET_Q0819_PH_CHANGES
-  if ((pps->getUseWP() || pps->getWPBiPred()) && pps->getWpInfoInPhFlag())
-  {
-    xCodePredWeightTable(picHeader, sps);
-  }
-#endif
 
 #if JVET_Q0819_PH_CHANGES
   if (pps->getQpDeltaInfoInPhFlag())

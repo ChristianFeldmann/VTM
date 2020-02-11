@@ -102,35 +102,6 @@ EncLib::~EncLib()
 void EncLib::create( const int layerId )
 {
   m_layerId = layerId;
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
-  if (getVPS()->getMaxLayers() > 1)
-  {
-    VPS* vps = getVPS();
-    int curLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(layerId);
-    if (curLayerChromaFormatIdcInVPS == NOT_VALID)
-      vps->setLayerChromaFormatIDC(layerId, m_chromaFormatIDC);
-    else
-      CHECK(curLayerChromaFormatIdcInVPS != m_chromaFormatIDC, "The chroma formats of different SPS are not the same in the same layer");
-
-    int curLayerBitDepthInVPS = vps->getLayerBitDepth(layerId);
-    if (curLayerBitDepthInVPS == NOT_VALID)
-      vps->setLayerBitDepth(layerId, m_bitDepth[0]);
-    else
-      CHECK(curLayerBitDepthInVPS != m_bitDepth[0], "The bit-depth of different SPS are not the same in the same layer");
-
-    //check chroma format and bit-depth for dependent layers
-    for (uint32_t i = 0; i < layerId; i++)
-    {
-      if (vps->getDirectRefLayerFlag(layerId, i))
-      {
-        int refLayerChromaFormatIdcInVPS = vps->getLayerChromaFormatIDC(i);
-        CHECK(curLayerChromaFormatIdcInVPS != refLayerChromaFormatIdcInVPS, "The chroma formats of the current layer and the reference layer are different");
-        int refLayerBitDepthInVPS = vps->getLayerBitDepth(i);
-        CHECK(curLayerBitDepthInVPS != refLayerBitDepthInVPS, "The bit-depth of the current layer and the reference layer are different");
-      }
-    }
-  }
-#endif
   m_iPOCLast = m_compositeRefEnabled ? -2 : -1;
   // create processing unit classes
   m_cGOPEncoder.        create( );
@@ -573,6 +544,9 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     {
       setUseScalingListId( SCALING_LIST_DEFAULT );
     }
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+    aps.getScalingList().setChromaScalingListPresentFlag((sps.getChromaFormatIdc()!=CHROMA_400));
+#endif
     quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
     quant->setUseScalingList(true);
 #if ENABLE_SPLIT_PARALLELISM
@@ -593,7 +567,14 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     // Prepare delta's:
     for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
     {
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+      if (aps.getScalingList().getChromaScalingListPresentFlag()||aps.getScalingList().isLumaScalingList(scalingListId))
+      {
+#endif
         aps.getScalingList().checkPredMode(scalingListId);
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+      }
+#endif
     }
   }
 }
@@ -1066,7 +1047,9 @@ void EncLib::xInitVPS( const SPS& sps )
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
+#if !JVET_Q0786_PTL_only
   m_vps->setMaxSubLayers( sps.getMaxTLayers() );
+#endif
 
   ProfileLevelTierFeatures profileLevelTierFeatures;
   profileLevelTierFeatures.extractPTLInformation( sps );
@@ -1148,7 +1131,9 @@ void EncLib::xInitVPS(VPS& vps, const SPS& sps)
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
+#if !JVET_Q0786_PTL_only
   vps.setMaxSubLayers(sps.getMaxTLayers());
+#endif
 }
 #endif
 
@@ -1542,6 +1527,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   
   for( int i = 0; i < m_vps->getMaxLayers(); ++i )
   {
+#if JVET_Q0786_PTL_only
+    //Bug fix to make the decoder run with configfile layers.cfg
+    if(m_vps->getIndependentLayerFlag(i) == 1)
+      sps.setInterLayerPresentFlag(0);
+#endif
     CHECK((m_vps->getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
 #endif  
@@ -1553,6 +1543,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
   for (unsigned int i = 0; i < vps.getMaxLayers(); ++i)
   {
+#if JVET_Q0786_PTL_only
+    //Bug fix to make the decoder run with configfile layers.cfg
+    if(vps.getIndependentLayerFlag(i) == 1)
+      sps.setInterLayerPresentFlag(0);
+#endif
     CHECK((vps.getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
 #endif

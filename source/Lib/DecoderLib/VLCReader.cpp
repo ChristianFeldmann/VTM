@@ -1286,7 +1286,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
   CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
 
+#if JVET_Q0786_PTL_only
+  parseProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
+#else
   parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+#endif
 
   READ_FLAG(uiCode, "gdr_enabled_flag");
   pcSPS->setGDREnabledFlag(uiCode);
@@ -2066,7 +2070,11 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   ptls.resize(numPTLs);
   for (int i=0; i<numPTLs; i++)
   {
+#if JVET_Q0786_PTL_only
+     parseProfileTierLevel(&ptls[i], true, 0);
+#else
      parseProfileTierLevel(&ptls[i], dps->getMaxSubLayersMinus1());
+#endif
   }
   dps->setProfileTierLevel(ptls);
 
@@ -2170,6 +2178,55 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
   }
 
+#if JVET_Q0786_PTL_only
+  pcVPS->deriveOutputLayerSets();
+  READ_CODE(8, uiCode, "vps_num_ptls_minus1");        pcVPS->setNumPtls(uiCode + 1);
+  for (int i = 0; i < pcVPS->getNumPtls(); i++)
+  {
+    if(i > 0)
+    {
+      READ_FLAG(uiCode, "pt_present_flag");           
+      pcVPS->setPtPresentFlag(i, uiCode);
+    }
+    else
+      pcVPS->setPtPresentFlag(0, 1);
+    if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
+    {
+      READ_CODE(3, uiCode, "ptl_max_temporal_id");    
+      pcVPS->setPtlMaxTemporalId(i, uiCode);
+    }
+    else if(pcVPS->getMaxSubLayers() > 1)
+      pcVPS->setPtlMaxTemporalId(i, pcVPS->getMaxSubLayers() - 1);
+    else
+      pcVPS->setPtlMaxTemporalId(i, 0);
+  }
+  int cnt = 0;
+  while (m_pcBitstream->getNumBitsUntilByteAligned())
+  {
+    READ_FLAG( uiCode, "vps_ptl_alignment_zero_bit");
+    CHECK(uiCode!=0, "Alignment bit is not '0'");
+    cnt++;
+  }
+  CHECK(cnt >= 8, "Read more than '8' alignment bits");
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(pcVPS->getNumPtls());
+  for (int i = 0; i < pcVPS->getNumPtls(); i++)
+  {
+    parseProfileTierLevel(&ptls[i], pcVPS->getPtPresentFlag(i), pcVPS->getPtlMaxTemporalId(i) - 1);
+  }
+  pcVPS->setProfileTierLevel(ptls);
+  for (int i = 0; i < pcVPS->getTotalNumOLSs(); i++)
+  {
+    if(pcVPS->getNumPtls() > 1)
+    {
+      READ_CODE(8, uiCode, "ols_ptl_idx");
+      pcVPS->setOlsPtlIdx(i, uiCode);
+    }
+    else
+      pcVPS->setOlsPtlIdx(i, 0);
+  }
+#endif
+
 #if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
   {
@@ -2223,7 +2280,9 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
   }
 
+#if !JVET_Q0786_PTL_only
   pcVPS->deriveOutputLayerSets();
+#endif
 
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
@@ -4329,16 +4388,41 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 }
 
 
+#if JVET_Q0786_PTL_only
+void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1)
+#else
 void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubLayersMinus1)
+#endif
 {
   uint32_t symbol;
+#if JVET_Q0786_PTL_only
+  if(profileTierPresentFlag)
+  {
+    READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
+    READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
+    parseConstraintInfo( ptl->getConstraintInfo() );
+  }
+#else
   READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
   READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
 
   parseConstraintInfo( ptl->getConstraintInfo() );
+#endif
 
   READ_CODE( 8, symbol, "general_level_idc" ); ptl->setLevelIdc( Level::Name( symbol ) );
 
+#if JVET_Q0786_PTL_only
+  if(profileTierPresentFlag)
+  {
+    READ_CODE(8, symbol, "num_sub_profiles");
+    uint8_t numSubProfiles = symbol;
+    ptl->setNumSubProfile( numSubProfiles );
+    for (int i = 0; i < numSubProfiles; i++)
+    {
+      READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
+    }
+  }
+#else
   READ_CODE(8, symbol, "num_sub_profiles");
   uint8_t numSubProfiles = symbol;
   ptl->setNumSubProfile( numSubProfiles );
@@ -4346,7 +4430,7 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
   {
     READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
   }
-
+#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {
@@ -4681,8 +4765,16 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   uint32_t  code;
   bool scalingListCopyModeFlag;
   READ_FLAG(code, "scaling_matrix_for_lfnst_disabled_flag"); scalingList->setDisableScalingMatrixForLfnstBlks(code ? true : false);
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  READ_FLAG(code, "scaling_list_chroma_present_flag");
+  scalingList->setChromaScalingListPresentFlag(code ? true : false);
+#endif
   for (int scalingListId = 0; scalingListId < 28; scalingListId++)
   {
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  if(scalingList->getChromaScalingListPresentFlag()|| scalingList->isLumaScalingList(scalingListId))
+  {
+#endif
     READ_FLAG(code, "scaling_list_copy_mode_flag");
     scalingListCopyModeFlag = (code) ? true : false;
     scalingList->setScalingListCopyModeFlag(scalingListId, scalingListCopyModeFlag);
@@ -4717,6 +4809,13 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
     {
       decodeScalingList(scalingList, scalingListId, scalingList->getScalingListPreditorModeFlag(scalingListId));
     }
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+  }
+  else
+  {
+    scalingList->processDefaultMatrix(scalingListId);
+  }
+#endif
   }
 
   return;

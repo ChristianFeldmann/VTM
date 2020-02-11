@@ -52,6 +52,10 @@
 
 #define JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT              1 // JVET-Q0471: Chroma QT split
 
+#define JVET_Q0505_CHROAM_QM_SIGNALING_400                1  //JVET-Q0505: Cleanup of chroma quantization matrix signaling for 400 color format
+
+#define JVET_Q0786_PTL_only                               1 // JVET-Q0786: modifications to VPS syntax - PTL part only (signal PTL for single layer OLSs)
+
 #define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
 
 #define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).

@@ -1114,6 +1114,77 @@ Specifies the value of subpicture subpic_id_mapping_in_sps_flag
 Specifies the value to use to derive the vps_max_layers_minus1 for layered coding
 \\
 
+\Option{MaxSubLayers} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the maximum number of temporal sublayers to signal in the VPS
+\\
+
+\Option{AllLayersSameNumSublayersFlag} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies the value of vps_all_layers_same_num_sublayers_flag in the VPS
+\\
+
+\Option{LayerId\emph{i}} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the nuh_layer_id of the i-th layer (with i an integer greater than 0)
+\\
+
+\Option{NumRefLayers\emph{i}} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the number of direct reference layers of the i-th layer (with i an integer greater than 0)
+\\
+
+\Option{RefLayerIdx\emph{i}} &
+%\ShortOption{\None} &
+\Default{""} &
+Specifies a list of indexes of the reference layers of the i-th layer (with i an integer greater than 0)
+\\
+
+\Option{EachLayerIsAnOlsFlag} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies the value of each_layer_is_an_ols_flag in the VPS
+\\
+
+\Option{OlsModeIdc} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the value of ols_mode_idc in the VPS
+\\
+
+\Option{NumOutputLayerSets} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the number of output layer sets (OLS) signalled in the VPS
+\\
+
+\Option{OlsOutputLayer\emph{i}} &
+%\ShortOption{\None} &
+\Default{""} &
+Specifies a list of indexes of the output layers of the i-th OLS (with i an integer greater than 0) 
+\\
+
+\Option{NumPTLsInVPS} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the number of profile_tier_level (PTL) syntax structures signalled in the VPS 
+\\
+
+\Option{LevelPTL\emph{i}} &
+%\ShortOption{\None} &
+\Default{Level::NONE} &
+Specifies the level to signal in the i-th PTL of the VPS (with i an integer greater than 0) 
+\\
+
+\Option{OlsPTLIdx\emph{i}} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the index of the PTL that applies to the i-th OLS (with i an integer greater than 0) 
+\\
 \end{OptionTableNoShorthand}
 
 

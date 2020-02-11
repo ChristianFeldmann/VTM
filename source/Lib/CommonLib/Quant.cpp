@@ -544,11 +544,22 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
     {
       if ((size == SCALING_LIST_2x2 && list < 4) || (size == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))   // skip 2x2 luma
         continue;
-      for(int qp = minimumQp; qp < maximumQp; qp++)
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
+      if (scalingList->getChromaScalingListPresentFlag() || scalingList->isLumaScalingList(scalingListId))
       {
-        xSetScalingListEnc(scalingList, list, size, qp, scalingListId);
-        xSetScalingListDec(*scalingList, list, size, qp, scalingListId);
+#endif
+        for(int qp = minimumQp; qp < maximumQp; qp++)
+        {
+          xSetScalingListEnc(scalingList, list, size, qp, scalingListId);
+          xSetScalingListDec(*scalingList, list, size, qp, scalingListId);
+        }
+#if JVET_Q0505_CHROAM_QM_SIGNALING_400
       }
+      else // chroma QMs in 400
+      {
+         scalingList->processDefaultMatrix(scalingListId);
+      }
+#endif
       scalingListId++;
     }
   }

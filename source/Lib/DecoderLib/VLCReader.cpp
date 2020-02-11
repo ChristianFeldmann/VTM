@@ -1271,6 +1271,21 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
   }
 }
 
+#if JVET_P0117_PTL_SCALABILITY
+void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS)
+{
+  uint32_t  uiCode;
+  for (int i = (subLayerInfoFlag ? 0 : maxSubLayersMinus1); i <= maxSubLayersMinus1; i++)
+  {
+    READ_UVLC(uiCode, "sps_max_dec_pic_buffering_minus1[i]");
+    pcSPS->setMaxDecPicBuffering(uiCode + 1, i);
+    READ_UVLC(uiCode, "sps_max_num_reorder_pics[i]");
+    pcSPS->setNumReorderPics(uiCode, i);
+    READ_UVLC(uiCode, "sps_max_latency_increase_plus1[i]");
+    pcSPS->setMaxLatencyIncreasePlus1(uiCode, i);
+  }
+}
+#endif
 
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
@@ -1283,13 +1298,28 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id" );      pcSPS->setVPSId( uiCode );
   READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
+#if JVET_P0117_PTL_SCALABILITY
+  READ_CODE(4, uiCode, "sps_reserved_zero_4bits");
+  CHECK(uiCode != 0, "sps_reserved_zero_4bits not equal to zero");
+  READ_FLAG(uiCode, "sps_ptl_dpb_hrd_params_present_flag"); pcSPS->setPtlDpbHrdParamsPresentFlag(uiCode);
+#else
   READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
   CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
+#endif
+  
+#if JVET_P0117_PTL_SCALABILITY
+  if (pcSPS->getPtlDpbHrdParamsPresentFlag())
+  {
+#endif
 
 #if JVET_Q0786_PTL_only
-  parseProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
+    parseProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
 #else
-  parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+    parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+#endif
+
+#if JVET_P0117_PTL_SCALABILITY
+  }
 #endif
 
   READ_FLAG(uiCode, "gdr_enabled_flag");
@@ -1527,6 +1557,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");
+#if JVET_P0117_PTL_SCALABILITY
+  if (pcSPS->getMaxTLayers() - 1 > 0)
+  {
+    READ_FLAG(uiCode, "sps_sublayer_dpb_params_flag");     pcSPS->setSubLayerDpbParamsFlag(uiCode ? true : false);
+  }    
+  if (pcSPS->getPtlDpbHrdParamsPresentFlag())
+  {
+    dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
+  }
+#else
   // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
   if (pcSPS->getMaxTLayers() > 1)
@@ -1558,6 +1598,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       break;
     }
   }
+#endif
 
   READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
   READ_FLAG( uiCode, "inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
@@ -1957,6 +1998,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setNumHorVirtualBoundaries( 0 );
   }
 
+#if JVET_P0117_PTL_SCALABILITY
+  if (pcSPS->getPtlDpbHrdParamsPresentFlag())
+  {
+#endif
   TimingInfo *timingInfo = pcSPS->getTimingInfo();
   READ_FLAG(     uiCode, "general_hrd_parameters_present_flag");        pcSPS->setHrdParametersPresentFlag(uiCode);
   if( pcSPS->getHrdParametersPresentFlag() )
@@ -1974,6 +2019,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       parseHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
     }
   }
+#if JVET_P0117_PTL_SCALABILITY
+  }
+#endif
 
 #if JVET_Q0042_VUI
   READ_FLAG(     uiCode, "field_seq_flag");                       pcSPS->setFieldSeqFlag(uiCode);

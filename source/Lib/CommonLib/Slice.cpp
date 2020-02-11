@@ -1825,6 +1825,9 @@ PicHeader::PicHeader()
 , m_cuChromaQpOffsetSubdivIntra                   ( 0 )
 , m_cuChromaQpOffsetSubdivInter                   ( 0 )
 , m_enableTMVPFlag                                ( true )
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+, m_picColFromL0Flag                              ( true )
+#endif
 , m_mvdL1ZeroFlag                                 ( 0 )
 , m_maxNumMergeCand                               ( MRG_MAX_NUM_CANDS )
 , m_maxNumAffineMergeCand                         ( AFFINE_MRG_MAX_NUM_CANDS )
@@ -1943,6 +1946,9 @@ void PicHeader::initPicHeader()
   m_cuChromaQpOffsetSubdivIntra                   = 0;
   m_cuChromaQpOffsetSubdivInter                   = 0;
   m_enableTMVPFlag                                = true;
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+  m_picColFromL0Flag                              = true;
+#endif
   m_mvdL1ZeroFlag                                 = 0;
   m_maxNumMergeCand                               = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand                         = AFFINE_MRG_MAX_NUM_CANDS;
@@ -2375,6 +2381,7 @@ PPS::PPS()
   , m_log2MaxTransformSkipBlockSize    (2)
 #endif
 , m_entropyCodingSyncEnabledFlag     (false)
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
 , m_PPSRefPicListSPSIdc0             (0)
@@ -2386,6 +2393,7 @@ PPS::PPS()
 , m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
 #else
 , m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 (0)
+#endif
 #endif
 , m_cabacInitPresentFlag             (false)
 , m_pictureHeaderExtensionPresentFlag(0)

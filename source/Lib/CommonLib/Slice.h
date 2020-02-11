@@ -1837,6 +1837,7 @@ private:
 #endif
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool              m_constantSliceHeaderParamsEnabledFlag;
   int               m_PPSDepQuantEnabledIdc;
   int               m_PPSRefPicListSPSIdc0;
@@ -1848,6 +1849,7 @@ private:
   uint32_t          m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
 #else
   uint32_t          m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
+#endif
 #endif
 
   bool             m_cabacInitPresentFlag;
@@ -2069,6 +2071,7 @@ public:
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
 
 
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool                    getConstantSliceHeaderParamsEnabledFlag() const                 { return m_constantSliceHeaderParamsEnabledFlag; }
   void                    setConstantSliceHeaderParamsEnabledFlag(bool b)                 { m_constantSliceHeaderParamsEnabledFlag = b;   }
   int                     getPPSDepQuantEnabledIdc() const                                { return m_PPSDepQuantEnabledIdc;               }
@@ -2090,6 +2093,7 @@ public:
 #else
   uint32_t                getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() const            { return m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1; }
   void                    setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(uint32_t u)        { m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = u; }
+#endif
 #endif
 
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
@@ -2271,6 +2275,9 @@ private:
   uint32_t                    m_cuChromaQpOffsetSubdivIntra;                            //!< CU chroma QP offset maximum subdivision for intra slices 
   uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices 
   bool                        m_enableTMVPFlag;                                         //!< enable temporal motion vector prediction
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+  bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
+#endif
   bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
   uint32_t                    m_maxNumMergeCand;                                        //!< max number of merge candidates
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
@@ -2424,6 +2431,10 @@ public:
   uint32_t                    getCuChromaQpOffsetSubdivInter() const                    { return m_cuChromaQpOffsetSubdivInter;                                                        }
   void                        setEnableTMVPFlag( bool b )                               { m_enableTMVPFlag = b;                                                                        }
   bool                        getEnableTMVPFlag() const                                 { return m_enableTMVPFlag;                                                                     }
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+  void                        setPicColFromL0Flag(bool val)                             { m_picColFromL0Flag = val;                                                                     }
+  bool                        getPicColFromL0Flag() const                               { return m_picColFromL0Flag;                                                                    }
+#endif
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
   bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  
   void                        setMaxNumMergeCand(uint32_t val )                         { m_maxNumMergeCand = val;                                                                     }

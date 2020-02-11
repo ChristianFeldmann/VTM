@@ -313,6 +313,16 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;
     verEdgeFilter = m_stLFCUParam.internalEdge;
     horEdgeFilter = m_stLFCUParam.internalEdge;
+
+    if( edgeDir == EDGE_HOR && ((areaTu.y % 4) != 0) )
+    {
+      continue;
+    }
+    if( edgeDir == EDGE_VER && ((areaTu.x % 4) != 0) )
+    {
+      continue;
+    }
+
     if( isCuCrossedByVirtualBoundaries )
     {
       xDeriveEdgefilterParam( areaTu.x, areaTu.y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );

@@ -3782,7 +3782,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             uiCode = pps->getPPSRefPicListSPSIdc1() - 1;
           }
 #else
-        READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
+          READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
 #endif
         }
         else

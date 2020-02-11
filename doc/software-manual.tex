@@ -2371,34 +2371,6 @@ Controls the temporal motion vector prediction mode.
 \end{tabular}
 \\
 
-\Option{PPSorSliceMode} &
-%\ShortOption{\None} &
-\Default{0} &
-Enables signaling the below parameters either in PPS or for each slice according to the following preset modes:
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-  0 & Always signaled per slice. \\
-  1 & RA settings. \\
-  2 & LDB settings. \\
-  3 & LDP settings. \\ 
-\end{tabular}
-\par
-\begin{tabular}{p{5cm}llll}
-  & & & & \\
-  Parameter & \multicolumn{3}{l}{Mode} \\
-  & 0 & 1 & 2 & 3 \\
-  dep_quant_enabled_flag & s & p & p & p \\
-  ref_pic_list_sps_flag0 & s & s & p & p \\
-  ref_pic_list_sps_flag1 & s & s & p & p \\
-  temporal_mvp_enabled_flag & s & s & p & p \\
-  mvd_l1_zero_flag & s & s & p & s \\
-  collocated_from_l0_flag & s & s & p & s \\
-  six_minus_max_num_merge_cand & s & p & p & p \\
-  five_minus_max_num_subblock_merge_cand & s & p & p & p \\
-  max_num_merge_cand_minus_max_num_geo_cand & s & p & p & s \\
-\end{tabular}
-\\
-
 \Option{SliceLevelRpl} &
 %\ShortOption{\None} &
 \Default{true} &

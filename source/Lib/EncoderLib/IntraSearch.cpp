@@ -1617,14 +1617,24 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     int reuseFlagIdx = 0, curPLTtmpIdx = 0, reuseEntrySize = 0;
     memset(cu.reuseflag[compBegin], false, sizeof(bool) * MAXPLTPREDSIZE);
 #if JVET_Q0504_PLT_NON444
+    int compBeginTmp = compBegin;
+    int numCompTmp   = numComp;
     if( cu.isLocalSepTree() )
+    {
       memset(cu.reuseflag[COMPONENT_Y], false, sizeof(bool) * MAXPLTPREDSIZE);
+      compBeginTmp = COMPONENT_Y;
+      numCompTmp   = (cu.chromaFormat != CHROMA_400) ? 3 : 1;
+    }
 #endif
     for (int curIdx = 0; curIdx < cu.curPLTSize[compBegin]; curIdx++)
     {
       if (idxExist[curIdx])
       {
+#if JVET_Q0504_PLT_NON444
+        for (int comp = compBeginTmp; comp < (compBeginTmp + numCompTmp); comp++)
+#else
         for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+#endif
           curPLTtmp[comp][curPLTtmpIdx] = cu.curPLT[comp][curIdx];
 
         // Update reuse flags
@@ -1663,8 +1673,10 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
 #if JVET_Q0504_PLT_NON444
     if( cu.isLocalSepTree() )
       cu.curPLTSize[COMPONENT_Y] = newPLTSize;
-#endif
+    for (int comp = compBeginTmp; comp < (compBeginTmp + numCompTmp); comp++)
+#else
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
+#endif
       memcpy( cu.curPLT[comp], curPLTtmp[comp], sizeof(Pel)*cu.curPLTSize[compBegin]);
   }
 #endif

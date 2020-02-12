@@ -1768,6 +1768,7 @@ public:
   bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }
   int          getTMVPModeId ()                                      { return m_TMVPModeId; }
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   void         setConstantSliceHeaderParamsEnabledFlag ( bool u )    { m_constantSliceHeaderParamsEnabledFlag = u; }
   bool         getConstantSliceHeaderParamsEnabledFlag ()            { return m_constantSliceHeaderParamsEnabledFlag; }
   void         setPPSDepQuantEnabledIdc ( int u )                    { m_PPSDepQuantEnabledIdc = u; }
@@ -1788,6 +1789,7 @@ public:
 #else
   void         setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 ( uint32_t u ) { m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = u; }
   uint32_t     getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 ()       { return m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1; }
+#endif
 #endif
   WeightedPredictionMethod getWeightedPredictionMethod() const       { return m_weightedPredictionMethod; }
   void         setWeightedPredictionMethod( WeightedPredictionMethod m ) { m_weightedPredictionMethod = m; }

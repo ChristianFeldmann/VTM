@@ -158,7 +158,7 @@ public:
   void  parseVPS            ( VPS* pcVPS );
   void  parseDPS            ( DPS* dps );
   void  parseSPS            ( SPS* pcSPS );
-  void  parsePPS            ( PPS* pcPPS, ParameterSetManager *parameterSetManager );
+  void  parsePPS            ( PPS* pcPPS );
   void  parseAPS            ( APS* pcAPS );
   void  parseAlfAps         ( APS* pcAPS );
   void  parseLmcsAps        ( APS* pcAPS );

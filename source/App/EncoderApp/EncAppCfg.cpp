@@ -1217,8 +1217,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1: use MD5\n"
                                                                                                                "\t0: disable")
   ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
                                                                                                                 "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
+#endif 
   ("SliceLevelRpl",                                   m_sliceLevelRpl,                                   true, "Code reference picture lists in slice headers rather than picture header.")
   ("SliceLevelDblk",                                  m_sliceLevelDblk,                                  true, "Code deblocking filter parameters in slice headers rather than picture header.")
   ("SliceLevelSao",                                   m_sliceLevelSao,                                   true, "Code SAO parameters in slice headers rather than picture header.")
@@ -3452,6 +3454,7 @@ bool EncAppCfg::xCheckParameter()
     m_BIO = false;
   }
 
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   // If m_PPSorSliceFlag is equal to 1, for each PPS parameter below,
   //     0:  value is signaled in slice header
   //     >0: value is derived from PPS parameter as value - 1
@@ -3518,6 +3521,7 @@ bool EncAppCfg::xCheckParameter()
   }
   xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc0 > 0, "PPSRefPicListSPSIdc0 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
   xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc1 > 0, "PPSRefPicListSPSIdc1 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
+#endif
 
 #if HEVC_SEI
   if (m_toneMappingInfoSEIEnabled)

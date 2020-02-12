@@ -310,9 +310,20 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
   for( auto &currTU : CU::traverseTUs( cu ) )
   {
-    const Area& areaTu    = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : area;
+    const Area& areaTu = cu.Y().valid() ? currTU.block( COMPONENT_Y ) : Area( recalcPosition( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, currTU.blocks[cu.chType].pos() ), recalcSize( cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, currTU.blocks[cu.chType].size() ) );
+
     verEdgeFilter = m_stLFCUParam.internalEdge;
     horEdgeFilter = m_stLFCUParam.internalEdge;
+
+    if( edgeDir == EDGE_HOR && ((areaTu.y % 4) != 0) )
+    {
+      continue;
+    }
+    if( edgeDir == EDGE_VER && ((areaTu.x % 4) != 0) )
+    {
+      continue;
+    }
+
     if( isCuCrossedByVirtualBoundaries )
     {
       xDeriveEdgefilterParam( areaTu.x, areaTu.y, numVerVirBndry, numHorVirBndry, verVirBndryPos, horVirBndryPos, verEdgeFilter, horEdgeFilter );
@@ -320,7 +331,14 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
     xSetEdgefilterMultiple( cu, EDGE_VER, areaTu, verEdgeFilter );
     xSetEdgefilterMultiple( cu, EDGE_HOR, areaTu, horEdgeFilter );
     xSetMaxFilterLengthPQFromTransformSizes( edgeDir, cu, currTU );
-    edgeIdx.push_back( ( edgeDir == EDGE_HOR ) ? ( currTU.blocks[cu.chType].y - cu.blocks[cu.chType].y ) / 4 : ( currTU.blocks[cu.chType].x - cu.blocks[cu.chType].x ) / 4 );
+    if( cu.Y().valid() )
+    {
+      edgeIdx.push_back( ( edgeDir == EDGE_HOR ) ? ( currTU.blocks[cu.chType].y - cu.blocks[cu.chType].y ) / 4 : ( currTU.blocks[cu.chType].x - cu.blocks[cu.chType].x ) / 4 );
+    }
+    else 
+    {
+      edgeIdx.push_back( ( edgeDir == EDGE_HOR ) ? (( currTU.blocks[cu.chType].y - cu.blocks[cu.chType].y ) << ::getComponentScaleY(COMPONENT_Cb, cu.chromaFormat))  / 4 : (( currTU.blocks[cu.chType].x - cu.blocks[cu.chType].x ) << ::getComponentScaleX(COMPONENT_Cb, cu.chromaFormat)) / 4 );
+    }
   }
 
   bool mvSubBlocks = false;
@@ -1283,16 +1301,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const ClpRng& clpRng( cu.cs->slice->clpRng( ComponentID( chromaIdx + 1 )) );
         Pel* piTmpSrcChroma = (chromaIdx == 0) ? piTmpSrcCb : piTmpSrcCr;
 
-        int shiftHorP = cuP.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuP.firstPU->chromaFormat);
-        int shiftVerP = cuP.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuP.firstPU->chromaFormat);
-        int shiftHorQ = cuQ.Y().valid() ? 0 : ::getComponentScaleX(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
-        int shiftVerQ = cuQ.Y().valid() ? 0 : ::getComponentScaleY(COMPONENT_Cb, cuQ.firstPU->chromaFormat);
-        const Position& posQ = Position{ pos.x >> shiftHorQ,  pos.y >> shiftVerQ };
-        const Position& posP1 = Position{ pos.x >> shiftHorP,  pos.y >> shiftVerP };
-        const Position  posP = (edgeDir == EDGE_VER) ? posP1.offset(-1, 0) : posP1.offset(0, -1);
-
-        const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
-        const TransformUnit& tuP = *cuP.cs->getTU(posP, cuP.chType); 
+        const TransformUnit& tuQ = *cuQ.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, pos), CHANNEL_TYPE_CHROMA);
+        const TransformUnit& tuP = *cuP.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, (edgeDir == EDGE_VER) ? pos.offset(-1, 0) : pos.offset(0, -1)), CHANNEL_TYPE_CHROMA);
 
 #if JVET_Q0820_ACT
         const QpParam cQP(tuP, ComponentID(chromaIdx + 1), -MAX_INT, false);

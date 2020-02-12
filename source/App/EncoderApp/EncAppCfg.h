@@ -653,6 +653,7 @@ protected:
 #endif
 
   int       m_TMVPModeId;
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   int       m_PPSorSliceMode;
   bool      m_constantSliceHeaderParamsEnabledFlag;
   int       m_PPSDepQuantEnabledIdc;
@@ -665,6 +666,7 @@ protected:
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
 #else
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
+#endif
 #endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;

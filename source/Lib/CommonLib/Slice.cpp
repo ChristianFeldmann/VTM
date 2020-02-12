@@ -1801,6 +1801,10 @@ PicHeader::PicHeader()
 , m_recoveryPocCnt                                ( 0 )
 , m_spsId                                         ( -1 )
 , m_ppsId                                         ( -1 )
+#if JVET_P0116_POC_MSB
+, m_pocMsbPresentFlag                             ( 0 )
+, m_pocMsbVal                                     ( 0 )
+#endif
 #if !JVET_Q0119_CLEANUPS
 , m_subPicIdSignallingPresentFlag                 ( 0 )
 , m_subPicIdLen                                   ( 0 )
@@ -1825,6 +1829,9 @@ PicHeader::PicHeader()
 , m_cuChromaQpOffsetSubdivIntra                   ( 0 )
 , m_cuChromaQpOffsetSubdivInter                   ( 0 )
 , m_enableTMVPFlag                                ( true )
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+, m_picColFromL0Flag                              ( true )
+#endif
 , m_mvdL1ZeroFlag                                 ( 0 )
 , m_maxNumMergeCand                               ( MRG_MAX_NUM_CANDS )
 , m_maxNumAffineMergeCand                         ( AFFINE_MRG_MAX_NUM_CANDS )
@@ -1919,6 +1926,10 @@ void PicHeader::initPicHeader()
   m_recoveryPocCnt                                = 0;
   m_spsId                                         = -1;
   m_ppsId                                         = -1;
+#if JVET_P0116_POC_MSB
+  m_pocMsbPresentFlag                             = 0;
+  m_pocMsbVal                                     = 0;
+#endif
 #if !JVET_Q0119_CLEANUPS
   m_subPicIdSignallingPresentFlag                 = 0;
   m_subPicIdLen                                   = 0;
@@ -1943,6 +1954,9 @@ void PicHeader::initPicHeader()
   m_cuChromaQpOffsetSubdivIntra                   = 0;
   m_cuChromaQpOffsetSubdivInter                   = 0;
   m_enableTMVPFlag                                = true;
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+  m_picColFromL0Flag                              = true;
+#endif
   m_mvdL1ZeroFlag                                 = 0;
   m_maxNumMergeCand                               = MRG_MAX_NUM_CANDS;
   m_maxNumAffineMergeCand                         = AFFINE_MRG_MAX_NUM_CANDS;
@@ -2122,6 +2136,10 @@ SPS::SPS()
 , m_DmvrControlPresentFlag    ( false )
 , m_ProfControlPresentFlag    ( false )
 , m_uiBitsForPOC              (  8)
+#if JVET_P0116_POC_MSB
+, m_pocMsbFlag                ( false )
+, m_pocMsbLen                 ( 1 )
+#endif
 , m_numLongTermRefPicSPS      (  0)
 , m_log2MaxTbSize             (  6)
 , m_useWeightPred             (false)
@@ -2192,6 +2210,12 @@ SPS::SPS()
 #if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   ::memset(m_ppsValidFlag, 0, sizeof(m_ppsValidFlag));
 #endif
+  ::memset(m_subPicCtuTopLeftX, 0, sizeof(m_subPicCtuTopLeftX));
+  ::memset(m_subPicCtuTopLeftY, 0, sizeof(m_subPicCtuTopLeftY));
+  ::memset(m_SubPicWidth, 0, sizeof(m_SubPicWidth));
+  ::memset(m_SubPicHeight, 0, sizeof(m_SubPicHeight));
+  ::memset(m_subPicTreatedAsPicFlag, 0, sizeof(m_subPicTreatedAsPicFlag));
+  ::memset(m_loopFilterAcrossSubpicEnabledFlag, 0, sizeof(m_loopFilterAcrossSubpicEnabledFlag));
 }
 
 SPS::~SPS()
@@ -2379,6 +2403,7 @@ PPS::PPS()
   , m_log2MaxTransformSkipBlockSize    (2)
 #endif
 , m_entropyCodingSyncEnabledFlag     (false)
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
 , m_PPSRefPicListSPSIdc0             (0)
@@ -2390,6 +2415,7 @@ PPS::PPS()
 , m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 (0)
 #else
 , m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 (0)
+#endif
 #endif
 , m_cabacInitPresentFlag             (false)
 , m_pictureHeaderExtensionPresentFlag(0)
@@ -2653,6 +2679,17 @@ void PPS::initRectSliceMap()
 #if JVET_O1143_SUBPIC_BOUNDARY
 void PPS::initSubPic(const SPS &sps)
 {
+  if (getSubPicIdMappingInPpsFlag())
+  {
+    // When signalled, the number of subpictures has to match in PPS and SPS
+    CHECK (getNumSubPics() != sps.getNumSubPics(), "pps_num_subpics_minus1 shall be equal to sps_num_subpics_minus1");
+  }
+  else
+  {
+    // When not signalled  set the numer equal for convenient access
+    setNumSubPics(sps.getNumSubPics());
+  }
+
   CHECK(getNumSubPics() > MAX_NUM_SUB_PICS, "Number of sub-pictures in picture exceeds valid range");
   m_subPics.resize(getNumSubPics());
   // m_ctuSize,  m_picWidthInCtu, and m_picHeightInCtu might not be initialized yet.
@@ -2691,6 +2728,8 @@ void PPS::initSubPic(const SPS &sps)
     m_subPics[i].setSubPicHeightInLumaSample(bottom - top + 1);
 
     m_subPics[i].setSubPicBottom(bottom);
+    
+    m_subPics[i].clearCTUAddrList();
     
     if (m_numSlicesInPic == 1)
     {
@@ -3478,8 +3517,8 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
           m_vpsMap.setActive(0);
         }
 
-          m_spsMap.clear();
-          m_spsMap.setActive(spsId);
+        m_spsMap.clear();
+        m_spsMap.setActive(spsId);
         m_activeSPSId = spsId;
         m_ppsMap.clear();
         m_ppsMap.setActive(ppsId);

@@ -405,7 +405,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   rpl->setNumberOfInterLayerPictures( numIlrp );
 }
 
-void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetManager )
+void HLSyntaxReader::parsePPS( PPS* pcPPS )
 {
 #if ENABLE_TRACING
   xTracePPSHeader ();
@@ -480,20 +480,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     }
   }
 
-#if JVET_O1143_SUBPIC_BOUNDARY
-  // set the value of pps_num_subpics_minus1 equal to sps_num_subpics_minus1
-  pcPPS->setNumSubPics(parameterSetManager->getSPS(pcPPS->getSPSId())->getNumSubPics());
-#endif
-
-
-#if JVET_Q0114_CONSTRAINT_FLAGS
-  SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
-  {
-    CHECK(pcPPS->getNumTiles() != 1, "When one_tile_per_pic_constraint_flag is equal to 1, each picture shall contain only one tile");
-  }
-#endif
-
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
   {
@@ -532,14 +518,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
       int32_t tileIdx = 0;
 
       READ_UVLC( uiCode, "num_slices_in_pic_minus1" );                pcPPS->setNumSlicesInPic( uiCode + 1 );
-#if JVET_Q0114_CONSTRAINT_FLAGS
-      SPS* sps = parameterSetManager->getSPS(pcPPS->getSPSId());
-      if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
-      {
-        CHECK(uiCode != 0, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
-      }
-#endif
       CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
+
       READ_CODE(1, uiCode, "tile_idx_delta_present_flag");            pcPPS->setTileIdxDeltaPresentFlag( uiCode == 1 );
       pcPPS->initRectSlices();
       
@@ -609,9 +589,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
-#if JVET_O1143_SUBPIC_BOUNDARY  
-  pcPPS->initSubPic(*sps);
-#endif
 
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
@@ -780,6 +757,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
   READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
 #endif
 
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   READ_FLAG( uiCode, "constant_slice_header_params_enabled_flag"); pcPPS->setConstantSliceHeaderParamsEnabledFlag(uiCode);
   if ( pcPPS->getConstantSliceHeaderParamsEnabledFlag() ) {
     READ_CODE( 2, uiCode, "pps_dep_quant_enabled_idc");        pcPPS->setPPSDepQuantEnabledIdc(uiCode);
@@ -808,6 +786,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS, ParameterSetManager *parameterSetMana
     pcPPS->setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(0);
 #endif
   }
+#endif
 
 
   READ_FLAG( uiCode, "picture_header_extension_present_flag");
@@ -1274,15 +1253,15 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
 #if JVET_P0117_PTL_SCALABILITY
 void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS)
 {
-  uint32_t  uiCode;
+  uint32_t code;
   for (int i = (subLayerInfoFlag ? 0 : maxSubLayersMinus1); i <= maxSubLayersMinus1; i++)
   {
-    READ_UVLC(uiCode, "sps_max_dec_pic_buffering_minus1[i]");
-    pcSPS->setMaxDecPicBuffering(uiCode + 1, i);
-    READ_UVLC(uiCode, "sps_max_num_reorder_pics[i]");
-    pcSPS->setNumReorderPics(uiCode, i);
-    READ_UVLC(uiCode, "sps_max_latency_increase_plus1[i]");
-    pcSPS->setMaxLatencyIncreasePlus1(uiCode, i);
+    READ_UVLC(code, "sps_max_dec_pic_buffering_minus1[i]");
+    pcSPS->setMaxDecPicBuffering(code + 1, i);
+    READ_UVLC(code, "sps_max_num_reorder_pics[i]");
+    pcSPS->setNumReorderPics(code, i);
+    READ_UVLC(code, "sps_max_latency_increase_plus1[i]");
+    pcSPS->setMaxLatencyIncreasePlus1(code, i);
   }
 }
 #endif
@@ -1457,7 +1436,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       else
       {
 #if JVET_Q0413_SKIP_LAST_SUBPIC_SIG
-        pcSPS->setSubPicWidth(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
+        pcSPS->setSubPicHeight(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
 #else
         pcSPS->setSubPicHeight(picIdx, 1);
 #endif
@@ -1557,6 +1536,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");
+
+#if JVET_P0116_POC_MSB
+  READ_FLAG(uiCode, "sps_poc_msb_flag");                    pcSPS->setPocMsbFlag(uiCode ? true : false);
+  if (pcSPS->getPocMsbFlag())
+  {
+    READ_UVLC(uiCode, "poc_msb_len_minus1");                  pcSPS->setPocMsbLen(1 + uiCode);
+    CHECK(uiCode > (32 - pcSPS->getBitsForPOC() - 4 - 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
+  }
+#endif
+  
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getMaxTLayers() - 1 > 0)
   {
@@ -1895,25 +1884,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setProfControlPresentFlag( false );
     }
   }
+#if !JVET_Q0820_ACT
 #if JVET_Q0265
   if (chromaArrayType == CHROMA_444)
 #else
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
 #endif
   {
-#if JVET_Q0820_ACT
-    if (pcSPS->getLog2MaxTbSize() != 6)
-    {
-      READ_FLAG(uiCode, "sps_act_enabled_flag");                                pcSPS->setUseColorTrans(uiCode != 0);
-    }
-#else
     READ_FLAG(uiCode, "sps_act_enabled_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);
-#endif
   }
   else
   {
     pcSPS->setUseColorTrans(false);
   }
+#endif
 #if JVET_Q0504_PLT_NON444
   READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
 #else
@@ -1924,6 +1908,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   else
   {
     pcSPS->setPLTMode(false);
+  }
+#endif
+#if JVET_Q0820_ACT
+#if JVET_Q0265
+  if (chromaArrayType == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
+#else
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
+#endif
+  {
+    READ_FLAG(uiCode, "sps_act_enabled_flag");                                pcSPS->setUseColorTrans(uiCode != 0);
+  }
+  else
+  {
+    pcSPS->setUseColorTrans(false);
   }
 #endif
 #if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
@@ -2425,6 +2423,18 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setRecoveryPocCnt( 0 );
   }
   
+#if JVET_P0116_POC_MSB
+  if (sps->getPocMsbFlag())
+  {
+    READ_FLAG(uiCode, "ph_poc_msb_present_flag"); picHeader->setPocMsbPresentFlag(uiCode != 0);
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      READ_CODE(sps->getPocMsbLen(), uiCode, "poc_msb_val");
+      picHeader->setPocMsbVal(uiCode);
+    }
+  }
+#endif
+
 #if !JVET_Q0819_PH_CHANGES
   // parameter sets
   READ_UVLC(uiCode, "ph_pic_parameter_set_id");
@@ -2725,6 +2735,12 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         uiCode = 0;
       }
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      else
+      {
+        READ_FLAG(uiCode, "pic_rpl_sps_flag[i]");
+      }
+#else
       else if (!pps->getPPSRefPicListSPSIdc( listIdx ))
       {
         READ_FLAG(uiCode, "pic_rpl_sps_flag[i]");
@@ -2733,7 +2749,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         uiCode = pps->getPPSRefPicListSPSIdc( listIdx ) - 1;
       }
-
+#endif
       // explicit RPL in picture header
       if (!uiCode)
       {
@@ -2980,7 +2996,20 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setEnableTMVPFlag(false);
     }
 
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+    if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
+    {
+      READ_CODE( 1, uiCode, "pic_collocated_from_l0_flag");
+      picHeader->setPicColFromL0Flag(uiCode);
+    }
+    else
+    {
+      picHeader->setPicColFromL0Flag(0);
+    }
+#endif
+
   // mvd L1 zero flag
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSMvdL1ZeroIdc())
     {
       READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");
@@ -2989,9 +3018,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       uiCode = pps->getPPSMvdL1ZeroIdc() - 1;
     }
+#else
+    READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");
+#endif
     picHeader->setMvdL1ZeroFlag( uiCode != 0 );
      
   // merge candidate list size
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
     {
       READ_UVLC(uiCode, "pic_six_minus_max_num_merge_cand");
@@ -3000,6 +3033,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       uiCode = pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1;
     }
+#else
+    READ_UVLC(uiCode, "pic_six_minus_max_num_merge_cand");
+#endif
     CHECK(MRG_MAX_NUM_CANDS <= uiCode, "Incorrrect max number of merge candidates!");
     picHeader->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
 
@@ -3067,6 +3103,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // triangle merge candidate list size
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
     {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
       {
         READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_triangle_cand");
@@ -3075,6 +3112,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() - 1;
       }
+#else
+    READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_triangle_cand");
+#endif
       CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of triangle candidates!");
       picHeader->setMaxNumTriangleCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
     }
@@ -3086,6 +3126,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // geometric merge candidate list size
     if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
     {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
       {
         READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
@@ -3094,6 +3135,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1;
       }
+#else
+      READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
+#endif
       CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of gpm candidates!");
       picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
     }
@@ -3286,6 +3330,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 
   // dependent quantization
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   if (!pps->getPPSDepQuantEnabledIdc())
   {
     READ_FLAG(uiCode, "pic_dep_quant_enabled_flag");
@@ -3294,6 +3339,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     uiCode = pps->getPPSDepQuantEnabledIdc() - 1;
   }
+#else
+  READ_FLAG(uiCode, "pic_dep_quant_enabled_flag");
+#endif
   picHeader->setDepQuantEnabledFlag( uiCode != 0 );
 
   // sign data hiding
@@ -3534,18 +3582,29 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
     int iPOCmsb;
-    if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
-    }
-    else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
-    {
-      iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
     }
     else
     {
-      iPOCmsb = iPrevPOCmsb;
+#endif
+      if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+      }
+      else if ((iPOClsb > iPrevPOClsb) && ((iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      }
+      else
+      {
+        iPOCmsb = iPrevPOCmsb;
+      }
+#if JVET_P0116_POC_MSB
     }
+#endif
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 
@@ -3704,6 +3763,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       //Read L0 related syntax elements
       if (sps->getNumRPL0() > 0)
       {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         if (!pps->getPPSRefPicListSPSIdc0())
         {
           READ_FLAG(uiCode, "ref_pic_list_sps_flag[0]");
@@ -3712,6 +3772,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         {
           uiCode = pps->getPPSRefPicListSPSIdc0() - 1;
         }
+#else
+        READ_FLAG(uiCode, "ref_pic_list_sps_flag[0]");
+#endif
       }
       else
       {
@@ -3780,6 +3843,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         if (sps->getNumRPL1() > 0)
         {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
           if (!pps->getPPSRefPicListSPSIdc1())
           {
             READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
@@ -3788,6 +3852,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
           {
             uiCode = pps->getPPSRefPicListSPSIdc1() - 1;
           }
+#else
+          READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
+#endif
         }
         else
         {
@@ -3947,8 +4014,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 
     if ( pcSlice->getPicHeader()->getEnableTMVPFlag() )
     {
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      if ( !pps->getRplInfoInPhFlag())
+      {
+#endif
       if ( pcSlice->getSliceType() == B_SLICE )
       {
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
         if (!pps->getPPSCollocatedFromL0Idc())
         {
           READ_FLAG(uiCode, "collocated_from_l0_flag");
@@ -3957,13 +4029,22 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         {
           uiCode = pps->getPPSCollocatedFromL0Idc() - 1;
         }
+#else
+        READ_FLAG(uiCode, "collocated_from_l0_flag");
+#endif
         pcSlice->setColFromL0Flag(uiCode);
       }
       else
       {
         pcSlice->setColFromL0Flag( 1 );
       }
-
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      }
+      else
+      {
+        pcSlice->setColFromL0Flag(picHeader->getPicColFromL0Flag());
+      }
+#endif
       if ( pcSlice->getSliceType() != I_SLICE &&
            ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1)||
            (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
@@ -4356,18 +4437,29 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
     int iPOCmsb;
-    if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
-    }
-    else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
-    {
-      iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
     }
     else
     {
-      iPOCmsb = iPrevPOCmsb;
+#endif
+      if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+      }
+      else if ((iPOClsb > iPrevPOClsb) && ((iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      }
+      else
+      {
+        iPOCmsb = iPrevPOCmsb;
+      }
+#if JVET_P0116_POC_MSB
     }
+#endif
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 }

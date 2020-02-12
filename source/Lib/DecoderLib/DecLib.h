@@ -220,6 +220,7 @@ protected:
   void  xCreateLostPicture( int iLostPOC, const int layerId );
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
   void  xActivateParameterSets( const int layerId );
+  void  xCheckParameterSetConstraints( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );

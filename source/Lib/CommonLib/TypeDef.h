@@ -55,10 +55,13 @@
 
 #define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract £¨CtbSizeY / MinCbSizeY + 2£© from wraparound offset before signaling
 
+#define JVET_Q0482_REMOVE_CONSTANT_PARAMS                 1 // JVET-Q0482: Remove constant slice header parameter settings in PPS
 
 #define JVET_Q0505_CHROAM_QM_SIGNALING_400                1  //JVET-Q0505: Cleanup of chroma quantization matrix signaling for 400 color format
 
 #define JVET_Q0786_PTL_only                               1 // JVET-Q0786: modifications to VPS syntax - PTL part only (signal PTL for single layer OLSs)
+
+#define JVET_P0116_POC_MSB                                1 // JVET-P0116: use POC MSB cycle signalling for independent layers,to support of mixed IRAP and non-IRAP pictures within an AU
 
 #define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
 

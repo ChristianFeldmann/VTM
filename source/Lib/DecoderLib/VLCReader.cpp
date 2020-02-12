@@ -4358,9 +4358,16 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   return;
 }
 
+#if JVET_Q0819_PH_CHANGES
+void HLSyntaxReader::getSlicePoc(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
+#else
 void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
+#endif
 {
   uint32_t  uiCode;
+#if JVET_Q0819_PH_CHANGES
+  uint32_t  pocLsb;
+#endif
   PPS* pps = NULL;
   SPS* sps = NULL;
 
@@ -4372,16 +4379,50 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
   sps = parameterSetManager->getSPS(pps->getSPSId());
   //!KS: need to add error handling code here, if SPS is not available
   CHECK(sps==0, "Invalid SPS");
-  
-  // picture order count
-  READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
-  if (pcSlice->getIdrPicFlag())
+
+#if JVET_Q0819_PH_CHANGES
+  READ_FLAG(uiCode, "picture_header_in_slice_header_flag");
+  if (uiCode == 0)
   {
-    pcSlice->setPOC(uiCode);
+    pocLsb = picHeader->getPocLsb();
   }
   else
   {
+    READ_FLAG(uiCode, "gdr_or_irap_pic_flag");
+    if (uiCode)
+    {
+      READ_FLAG(uiCode, "gdr_pic_flag");
+    }
+    READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");
+    if (uiCode)
+    {
+      READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");
+    }
+    READ_FLAG(uiCode, "non_reference_picture_flag");
+    // parameter sets
+    READ_UVLC(uiCode, "ph_pic_parameter_set_id");
+    // picture order count
+    READ_CODE(sps->getBitsForPOC(), pocLsb, "ph_pic_order_cnt_lsb");
+  }
+#else
+  // picture order count
+  READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
+#endif
+  if (pcSlice->getIdrPicFlag())
+  {
+#if JVET_Q0819_PH_CHANGES
+    pcSlice->setPOC(pocLsb);
+#else
+    pcSlice->setPOC(uiCode);
+#endif
+  }
+  else
+  {
+#if JVET_Q0819_PH_CHANGES
+    int iPOClsb = pocLsb;
+#else
     int iPOClsb = uiCode;
+#endif
     int iPrevPOC = prevTid0POC;
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);

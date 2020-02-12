@@ -1505,6 +1505,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
   READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
+#if JVET_P0116_POC_MSB
+  READ_FLAG(uiCode, "sps_poc_msb_flag");                    pcSPS->setPocMsbFlag(uiCode ? true : false);
+  if (pcSPS->getPocMsbFlag())
+  {
+    READ_UVLC(uiCode, "poc_msb_len_minus1");                  pcSPS->setPocMsbLen(1 + uiCode);
+    CHECK(uiCode > (32 - pcSPS->getBitsForPOC() - 4 - 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
+  }
+#endif
   CHECK(uiCode > 12, "Invalid code");
   // KJS: Marakech decision: sub-layers added back
   uint32_t subLayerOrderingInfoPresentFlag;
@@ -2365,6 +2373,18 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setRecoveryPocCnt( 0 );
   }
   
+#if JVET_P0116_POC_MSB
+  if (sps->getPocMsbFlag())
+  {
+    READ_FLAG(uiCode, "ph_poc_msb_present_flag"); picHeader->setPocMsbPresentFlag(uiCode != 0);
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      READ_CODE(sps->getPocMsbLen(), uiCode, "poc_msb_val");
+      picHeader->setPocMsbVal(uiCode);
+    }
+  }
+#endif
+
 #if !JVET_Q0819_PH_CHANGES
   // parameter sets
   READ_UVLC(uiCode, "ph_pic_parameter_set_id");
@@ -3512,18 +3532,29 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
     int iPOCmsb;
-    if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
-    }
-    else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
-    {
-      iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
     }
     else
     {
-      iPOCmsb = iPrevPOCmsb;
+#endif
+      if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+      }
+      else if ((iPOClsb > iPrevPOClsb) && ((iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      }
+      else
+      {
+        iPOCmsb = iPrevPOCmsb;
+      }
+#if JVET_P0116_POC_MSB
     }
+#endif
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 
@@ -4356,18 +4387,29 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
     int iPOCmsb;
-    if ((iPOClsb  <  iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
-    }
-    else if ((iPOClsb  >  iPrevPOClsb) && ((iPOClsb - iPrevPOClsb)  >  (iMaxPOClsb / 2)))
-    {
-      iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
     }
     else
     {
-      iPOCmsb = iPrevPOCmsb;
+#endif
+      if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+      }
+      else if ((iPOClsb > iPrevPOClsb) && ((iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2)))
+      {
+        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+      }
+      else
+      {
+        iPOCmsb = iPrevPOCmsb;
+      }
+#if JVET_P0116_POC_MSB
     }
+#endif
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 }

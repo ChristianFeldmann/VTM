@@ -994,6 +994,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 
   WRITE_CODE(pcSPS->getBitsForPOC()-4, 4, "log2_max_pic_order_cnt_lsb_minus4");
+#if JVET_P0116_POC_MSB
+  WRITE_FLAG(pcSPS->getPocMsbFlag() ? 1 : 0, "sps_poc_msb_flag");
+  if (pcSPS->getPocMsbFlag())
+  {
+    WRITE_UVLC(pcSPS->getPocMsbLen() - 1, "poc_msb_len_minus1");
+  }
+#endif
   // KJS: Marakech decision: sub-layers added back
   const bool subLayerOrderingInfoPresentFlag = 1;
   if (pcSPS->getMaxTLayers() > 1)
@@ -1625,6 +1632,17 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setRecoveryPocCnt( 0 );
   }
+
+#if JVET_P0116_POC_MSB
+  if (sps->getPocMsbFlag())
+  {
+    WRITE_FLAG(picHeader->getPocMsbPresentFlag(), "ph_poc_msb_present_flag");
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      WRITE_CODE(picHeader->getPocMsbVal(), sps->getPocMsbLen(), "poc_msb_val");
+    }
+  }
+#endif
 
 #if !JVET_Q0819_PH_CHANGES
   // parameter sets

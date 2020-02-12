@@ -1801,6 +1801,10 @@ PicHeader::PicHeader()
 , m_recoveryPocCnt                                ( 0 )
 , m_spsId                                         ( -1 )
 , m_ppsId                                         ( -1 )
+#if JVET_P0116_POC_MSB
+, m_pocMsbPresentFlag                             ( 0 )
+, m_pocMsbVal                                     ( 0 )
+#endif
 #if !JVET_Q0119_CLEANUPS
 , m_subPicIdSignallingPresentFlag                 ( 0 )
 , m_subPicIdLen                                   ( 0 )
@@ -1922,6 +1926,10 @@ void PicHeader::initPicHeader()
   m_recoveryPocCnt                                = 0;
   m_spsId                                         = -1;
   m_ppsId                                         = -1;
+#if JVET_P0116_POC_MSB
+  m_pocMsbPresentFlag                             = 0;
+  m_pocMsbVal                                     = 0;
+#endif
 #if !JVET_Q0119_CLEANUPS
   m_subPicIdSignallingPresentFlag                 = 0;
   m_subPicIdLen                                   = 0;
@@ -2124,6 +2132,10 @@ SPS::SPS()
 , m_DmvrControlPresentFlag    ( false )
 , m_ProfControlPresentFlag    ( false )
 , m_uiBitsForPOC              (  8)
+#if JVET_P0116_POC_MSB
+, m_pocMsbFlag                ( false )
+, m_pocMsbLen                 ( 1 )
+#endif
 , m_numLongTermRefPicSPS      (  0)
 , m_log2MaxTbSize             (  6)
 , m_useWeightPred             (false)

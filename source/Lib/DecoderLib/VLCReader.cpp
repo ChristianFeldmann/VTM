@@ -3646,11 +3646,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   //   set default values in case slice overrides are disabled
   pcSlice->inheritFromPicHeader(picHeader, pps, sps);
 
-#if JVET_Q0819_PH_CHANGES
   if (sps->getALFEnabledFlag() && !pps->getAlfInfoInPhFlag())
-#else
-  if (sps->getALFEnabledFlag() && !picHeader->getAlfEnabledPresentFlag())
-#endif
   {
     READ_FLAG(uiCode, "slice_alf_enabled_flag");
     pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);

@@ -2594,11 +2594,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
 
 #if JVET_Q0819_PH_CHANGES
-#if JVET_Q0819_PH_CHANGES
   if (pcSlice->getSPS()->getALFEnabledFlag() && !pcSlice->getPPS()->getAlfInfoInPhFlag())
-#else
-  if (pcSlice->getSPS()->getALFEnabledFlag() && !picHeader->getAlfEnabledPresentFlag())
-#endif
   {
     const int alfEnabled = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y);
     WRITE_FLAG(alfEnabled, "slice_alf_enabled_flag");

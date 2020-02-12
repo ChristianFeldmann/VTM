@@ -439,6 +439,10 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  , m_maxDecSubPicIdx(0)
+  , m_maxDecSliceAddrInSubPic(-1)
+#endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -742,6 +746,10 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
   poc                 = pcSlice->getPOC();
   rpcListPic          = &m_cListPic;
   m_bFirstSliceInPicture  = true; // TODO: immer true? hier ist irgendwas faul
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  m_maxDecSubPicIdx = 0;
+  m_maxDecSliceAddrInSubPic = -1;
+#endif
 
   m_pcPic->destroyTempBuffers();
   m_pcPic->cs->destroyCoeffs();
@@ -1066,7 +1074,7 @@ void DecLib::xActivateParameterSets( const int layerId )
       THROW("Parameter set activation failed!");
     }
     
-#if JVET_O1143_SUBPIC_BOUNDARY
+#if JVET_O1143_SUBPIC_BOUNDARY && !JVET_Q0044_SLICE_IDX_WITH_SUBPICS
     PPS* nonconstPPS = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
     nonconstPPS->initSubPic(*sps);
 #endif
@@ -1507,6 +1515,25 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
   VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+#endif
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  int currSubPicIdx = pps->getSubPicIdxFromSubPicId( m_apcSlicePilot->getSliceSubPicId() );
+  int currSliceAddr = m_apcSlicePilot->getSliceID();
+  for(int sp = 0; sp < currSubPicIdx; sp++)
+  {
+    currSliceAddr -= pps->getSubPic(sp).getNumSlicesInSubPic();
+  }
+  CHECK( currSubPicIdx < m_maxDecSubPicIdx, "Error in the order of coded slice NAL units of subpictures" );
+  CHECK( currSubPicIdx == m_maxDecSubPicIdx && currSliceAddr <= m_maxDecSliceAddrInSubPic, "Error in the order of coded slice NAL units within a subpicture" );
+  if( currSubPicIdx == m_maxDecSubPicIdx )
+  {
+    m_maxDecSliceAddrInSubPic = currSliceAddr;
+  }
+  if( currSubPicIdx > m_maxDecSubPicIdx )
+  {
+    m_maxDecSubPicIdx = currSubPicIdx; 
+    m_maxDecSliceAddrInSubPic = currSliceAddr;
+  }
 #endif
 #if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
   if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))

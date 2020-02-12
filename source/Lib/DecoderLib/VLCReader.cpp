@@ -2605,6 +2605,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     CHECK(pps->getCtuSize() != sps->getCTUSize(), "PPS CTU size does not match CTU size in SPS");
   }
 
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  pps->initSubPic(*sps);
+#endif
+
 #if !JVET_Q0119_CLEANUPS
   // sub-picture IDs
   if( sps->getSubPicIdPresentFlag() ) 
@@ -3682,17 +3686,37 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     uint32_t sliceAddr;
 
     // slice address is the index of the slice within the current sub-picture
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+    uint32_t currSubPicIdx = pps->getSubPicIdxFromSubPicId( pcSlice->getSliceSubPicId() );
+    SubPic currSubPic = pps->getSubPic(currSubPicIdx);
+    if( currSubPic.getNumSlicesInSubPic() > 1 )
+#else
     if( pps->getNumSlicesInPic() > 1 ) 
+#endif
     {
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+      int bitsSliceAddress = ceilLog2(currSubPic.getNumSlicesInSubPic());  
+#else
       int bitsSliceAddress = ceilLog2(pps->getNumSlicesInPic());  // change to NumSlicesInSubPic when available
+#endif
       READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
       CHECK(sliceAddr >= pps->getNumSlicesInPic(), "Invalid slice address");
     }
     else {
       sliceAddr = 0;
     }
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+    uint32_t picLevelSliceIdx = sliceAddr;
+    for(int subpic = 0; subpic < currSubPicIdx; subpic++)
+    {
+      picLevelSliceIdx += pps->getSubPic(subpic).getNumSlicesInSubPic();
+    }
+    pcSlice->setSliceMap( pps->getSliceMap(picLevelSliceIdx) );
+    pcSlice->setSliceID(picLevelSliceIdx);
+#else
     pcSlice->setSliceMap( pps->getSliceMap(sliceAddr) );
     pcSlice->setSliceID(sliceAddr);
+#endif
   }
 
 #if JVET_Q0819_PH_CHANGES

@@ -1480,6 +1480,18 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
       sps.setLoopFilterAcrossSubpicEnabledFlag(i, m_loopFilterAcrossSubpicEnabledFlag[i]);
     }
   }
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  else   //In that case, there is only one subpicture that contains the whole picture
+  {
+    sps.setNumSubPics(1);
+    sps.setSubPicCtuTopLeftX(0, 0);
+    sps.setSubPicCtuTopLeftY(0, 0);
+    sps.setSubPicWidth(0, m_iSourceWidth);
+    sps.setSubPicHeight(0, m_iSourceHeight);
+    sps.setSubPicTreatedAsPicFlag(0, 1);
+    sps.setLoopFilterAcrossSubpicEnabledFlag(0, 0);
+  }
+#endif
 #if JVET_Q0119_CLEANUPS
   sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
   if (m_subPicIdMappingExplicitlySignalledFlag)

@@ -1833,25 +1833,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setProfControlPresentFlag( false );
     }
   }
+#if !JVET_Q0820_ACT
 #if JVET_Q0265
   if (chromaArrayType == CHROMA_444)
 #else
   if (pcSPS->getChromaFormatIdc() == CHROMA_444)
 #endif
   {
-#if JVET_Q0820_ACT
-    if (pcSPS->getLog2MaxTbSize() != 6)
-    {
-      READ_FLAG(uiCode, "sps_act_enabled_flag");                                pcSPS->setUseColorTrans(uiCode != 0);
-    }
-#else
     READ_FLAG(uiCode, "sps_act_enabled_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);
-#endif
   }
   else
   {
     pcSPS->setUseColorTrans(false);
   }
+#endif
 #if JVET_Q0504_PLT_NON444
   READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
 #else
@@ -1862,6 +1857,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   else
   {
     pcSPS->setPLTMode(false);
+  }
+#endif
+#if JVET_Q0820_ACT
+#if JVET_Q0265
+  if (chromaArrayType == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
+#else
+  if (pcSPS->getChromaFormatIdc() == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
+#endif
+  {
+    READ_FLAG(uiCode, "sps_act_enabled_flag");                                pcSPS->setUseColorTrans(uiCode != 0);
+  }
+  else
+  {
+    pcSPS->setUseColorTrans(false);
   }
 #endif
 #if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL

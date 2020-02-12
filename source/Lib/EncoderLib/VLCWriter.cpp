@@ -1616,7 +1616,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   WRITE_CODE(cs.slice->getPOC() & pocMask, pocBits, "ph_pic_order_cnt_lsb");
   if (picHeader->getGdrOrIrapPicFlag())
   {
-  WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
+    WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
   }
 #else
   WRITE_FLAG(picHeader->getNoOutputOfPriorPicsFlag(), "no_output_of_prior_pics_flag");
@@ -3026,8 +3026,8 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 #if JVET_Q0786_PTL_only
   if(profileTierPresentFlag)
   {
-  WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
-  WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
+    WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
+    WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
     codeConstraintInfo( ptl->getConstraintInfo() );
   }
 #else
@@ -3042,11 +3042,11 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 #if JVET_Q0786_PTL_only
   if(profileTierPresentFlag)
   {
-  WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
-  for (int i = 0; i < ptl->getNumSubProfile(); i++)
-  {
-    WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
-  }
+    WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
+    for (int i = 0; i < ptl->getNumSubProfile(); i++)
+    {
+      WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
+    }
   }
 #else
   WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
@@ -3322,7 +3322,7 @@ void HLSWriter::codeScalingList( const ScalingList &scalingList )
       xCodeScalingList(&scalingList, scalingListId, scalingList.getScalingListPreditorModeFlag(scalingListId));
     }
 #if JVET_Q0505_CHROAM_QM_SIGNALING_400
-  }
+   }
 #endif
   }
   return;

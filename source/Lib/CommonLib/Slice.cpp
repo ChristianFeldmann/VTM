@@ -2194,6 +2194,12 @@ SPS::SPS()
 #if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   ::memset(m_ppsValidFlag, 0, sizeof(m_ppsValidFlag));
 #endif
+  ::memset(m_subPicCtuTopLeftX, 0, sizeof(m_subPicCtuTopLeftX));
+  ::memset(m_subPicCtuTopLeftY, 0, sizeof(m_subPicCtuTopLeftY));
+  ::memset(m_SubPicWidth, 0, sizeof(m_SubPicWidth));
+  ::memset(m_SubPicHeight, 0, sizeof(m_SubPicHeight));
+  ::memset(m_subPicTreatedAsPicFlag, 0, sizeof(m_subPicTreatedAsPicFlag));
+  ::memset(m_loopFilterAcrossSubpicEnabledFlag, 0, sizeof(m_loopFilterAcrossSubpicEnabledFlag));
 }
 
 SPS::~SPS()

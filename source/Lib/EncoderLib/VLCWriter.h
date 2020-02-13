@@ -150,7 +150,9 @@ public:
   void  codeScalingList         ( const ScalingList &scalingList );
 
   void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
-
+#if JVET_P0117_PTL_SCALABILITY
+  void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, const SPS *pcSPS);
+#endif
 private:
 #if !JVET_Q0210_UEK_REMOVAL
   void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );

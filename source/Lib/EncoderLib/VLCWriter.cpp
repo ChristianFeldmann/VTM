@@ -835,6 +835,17 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
   }
 }
 
+#if JVET_P0117_PTL_SCALABILITY
+void HLSWriter::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, const SPS *pcSPS)
+{
+  for (uint32_t i = (subLayerInfoFlag ? 0 : maxSubLayersMinus1); i <= maxSubLayersMinus1; i++)
+  {
+    WRITE_UVLC(pcSPS->getMaxDecPicBuffering(i) - 1, "max_dec_pic_buffering_minus1[i]");
+    WRITE_UVLC(pcSPS->getNumReorderPics(i),                 "max_num_reorder_pics[i]");
+    WRITE_UVLC(pcSPS->getMaxLatencyIncreasePlus1(i),  "max_latency_increase_plus1[i]");
+  }
+}
+#endif
 
 void HLSWriter::codeSPS( const SPS* pcSPS )
 {
@@ -846,13 +857,26 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
-  WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
-
-#if JVET_Q0786_PTL_only
-  codeProfileTierLevel( pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1 );
+#if JVET_P0117_PTL_SCALABILITY
+  WRITE_CODE(0,                          4, "sps_reserved_zero_4bits");
+  WRITE_FLAG(pcSPS->getPtlDpbHrdParamsPresentFlag(), "sps_ptl_dpb_hrd_params_present_flag");
 #else
-  codeProfileTierLevel( pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1 );
+  WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
 #endif
+
+#if JVET_P0117_PTL_SCALABILITY
+  if (pcSPS->getPtlDpbHrdParamsPresentFlag())
+  {
+#endif
+#if JVET_Q0786_PTL_only
+    codeProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
+#else
+    codeProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
+#endif
+#if JVET_P0117_PTL_SCALABILITY
+  }
+#endif
+  
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
 
   WRITE_CODE( pcSPS->getSPSId (), 4, "sps_seq_parameter_set_id" );
@@ -994,6 +1018,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 
   WRITE_CODE(pcSPS->getBitsForPOC()-4, 4, "log2_max_pic_order_cnt_lsb_minus4");
+
 #if JVET_P0116_POC_MSB
   WRITE_FLAG(pcSPS->getPocMsbFlag() ? 1 : 0, "sps_poc_msb_flag");
   if (pcSPS->getPocMsbFlag())
@@ -1001,6 +1026,15 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC(pcSPS->getPocMsbLen() - 1, "poc_msb_len_minus1");
   }
 #endif
+
+#if JVET_P0117_PTL_SCALABILITY
+  if (pcSPS->getMaxTLayers() - 1 > 0)
+    WRITE_FLAG(pcSPS->getSubLayerDpbParamsFlag(), "sps_sublayer_dpb_params_flag");
+  if (pcSPS->getPtlDpbHrdParamsPresentFlag())
+  {
+    dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
+  }
+#else
   // KJS: Marakech decision: sub-layers added back
   const bool subLayerOrderingInfoPresentFlag = 1;
   if (pcSPS->getMaxTLayers() > 1)
@@ -1017,6 +1051,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       break;
     }
   }
+#endif
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
   WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
   WRITE_FLAG( pcSPS->getInterLayerPresentFlag() ? 1 : 0, "inter_layer_ref_pics_present_flag" );
@@ -1319,7 +1354,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_CODE((pcSPS->getVirtualBoundariesPosY(i)>>3), 13, "sps_virtual_boundaries_pos_y");
     }
   }
-
+#if JVET_P0117_PTL_SCALABILITY
+  if (pcSPS->getPtlDpbHrdParamsPresentFlag())
+  {
+#endif
   const TimingInfo *timingInfo = pcSPS->getTimingInfo();
   WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),          "general_hrd_parameters_present_flag");
     if( pcSPS->getHrdParametersPresentFlag() )
@@ -1336,6 +1374,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       codeHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
     }
   }
+#if JVET_P0117_PTL_SCALABILITY
+  }
+#endif
 
 #if JVET_Q0042_VUI
   WRITE_FLAG(pcSPS->getFieldSeqFlag(),                          "field_seq_flag");

@@ -192,7 +192,9 @@ public:
 #if JVET_Q0795_CCALF
   void ccAlfFilter( Slice *pcSlice );
 #endif
-
+#if JVET_P0117_PTL_SCALABILITY
+  void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS);
+#endif
 private:
 #if !JVET_Q0210_UEK_REMOVAL
   int  alfGolombDecode( const int k, const bool signed_val=true );

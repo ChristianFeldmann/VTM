@@ -458,6 +458,9 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
         cs.slice = cu->slice;
         reconstructCoeffAPSs(cs, true, cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) || cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), false);
         alfCtuFilterIndex = cu->slice->getPic()->getAlfCtbFilterIndex();
+#if JVET_Q0795_CCALF
+        m_ccAlfFilterParam = cu->slice->m_ccAlfFilterParam;
+#endif
       }
       lastSliceIdx = cu->slice->getSliceID();
 

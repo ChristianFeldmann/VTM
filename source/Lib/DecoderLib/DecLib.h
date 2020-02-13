@@ -111,7 +111,11 @@ private:
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  bool                    m_bFirstSliceInSequence[MAX_VPS_LAYERS];
+#else
   bool                    m_bFirstSliceInSequence;
+#endif
   bool                    m_prevSliceSkipped;
   int                     m_skippedPOC;
   bool                    m_bFirstSliceInBitstream;
@@ -183,8 +187,13 @@ public:
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
   bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  bool  getFirstSliceInSequence(int layer) const { return m_bFirstSliceInSequence[layer]; }
+  void  setFirstSliceInSequence(bool val, int layer) { m_bFirstSliceInSequence[layer] = val; }
+#else
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
+#endif
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 

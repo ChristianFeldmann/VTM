@@ -410,7 +410,16 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 
       if( m_aapbEdgeFilter[edgeDir][rasterIdx] && uiBSCheck )
       {
-        m_aapucBS[edgeDir][rasterIdx] = xGetBoundaryStrengthSingle( cu, edgeDir, localPos );
+        char bS = 0;
+        if(cu.treeType != TREE_C)
+        {
+          bS |= xGetBoundaryStrengthSingle( cu, edgeDir, localPos, CHANNEL_TYPE_LUMA );
+        }
+        if(cu.treeType != TREE_L && cu.chromaFormat != CHROMA_400)
+        {
+          bS |= xGetBoundaryStrengthSingle( cu, edgeDir, localPos, CHANNEL_TYPE_CHROMA );
+        }
+        m_aapucBS[edgeDir][rasterIdx] = bS;
       }
     }
   }
@@ -728,7 +737,7 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 
 }
 
-unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const
+unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos, const ChannelType chType ) const
 {
   // The boundary strength that is output by the function xGetBoundaryStrengthSingle is a multi component boundary strength that contains boundary strength for luma (bits 0 to 1), cb (bits 2 to 3) and cr (bits 4 to 5).
 
@@ -740,33 +749,57 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   const Position  posP  = ( edgeDir == EDGE_VER ) ? posQ.offset( -1, 0 ) : posQ.offset( 0, -1 );
 
   const CodingUnit& cuQ = cu;
-  const CodingUnit& cuP = *cu.cs->getCU( posP, cu.chType );
+  const CodingUnit& cuP = (chType == CHANNEL_TYPE_CHROMA && cuQ.chType == CHANNEL_TYPE_LUMA) ? 
+                          *cu.cs->getCU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, posP), CHANNEL_TYPE_CHROMA) :
+                          *cu.cs->getCU( posP, cu.chType );
 
 
   //-- Set BS for Intra MB : BS = 4 or 3
   if( ( MODE_INTRA == cuP.predMode ) || ( MODE_INTRA == cuQ.predMode ) )
   {
-    int bsY = (MODE_INTRA == cuP.predMode && cuP.bdpcmMode) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode) ? 0 : 2;
-    int bsC = (MODE_INTRA == cuP.predMode && cuP.bdpcmModeChroma) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmModeChroma) ? 0 : 2;
-    return (BsSet(bsY, COMPONENT_Y) + BsSet(bsC, COMPONENT_Cb) + BsSet(bsC, COMPONENT_Cr));
+    if( chType == CHANNEL_TYPE_LUMA ) 
+    {
+      int bsY = (MODE_INTRA == cuP.predMode && cuP.bdpcmMode) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmMode) ? 0 : 2;
+      return BsSet(bsY, COMPONENT_Y);
+    }
+    else 
+    {
+      int bsC = (MODE_INTRA == cuP.predMode && cuP.bdpcmModeChroma) && (MODE_INTRA == cuQ.predMode && cuQ.bdpcmModeChroma) ? 0 : 2;
+      return (BsSet(bsC, COMPONENT_Cb) + BsSet(bsC, COMPONENT_Cr));
+    }
   }
 
   const TransformUnit& tuQ = *cuQ.cs->getTU(posQ, cuQ.chType);
-  const TransformUnit& tuP = *cuP.cs->getTU(posP, cuQ.chType); 
+  const TransformUnit& tuP = (cuP.chType == CHANNEL_TYPE_CHROMA && cuQ.chType == CHANNEL_TYPE_LUMA) ?
+                             *cuP.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, posP), CHANNEL_TYPE_CHROMA) :
+                             *cuP.cs->getTU(posP, cuQ.chType);
+
   const PreCalcValues& pcv = *cu.cs->pcv;
   const unsigned rasterIdx = getRasterIdx( Position{ localPos.x,  localPos.y }, pcv );
   if (m_aapucBS[edgeDir][rasterIdx] && (cuP.firstPU->ciipFlag || cuQ.firstPU->ciipFlag))
   {
-     return (BsSet(2, COMPONENT_Y) + BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr));
+    if(chType == CHANNEL_TYPE_LUMA)
+    {
+      return BsSet(2, COMPONENT_Y);
+    }
+    else 
+    {
+      return BsSet(2, COMPONENT_Cb) + BsSet(2, COMPONENT_Cr);
+    }
   }
 
   unsigned tmpBs = 0;
   //-- Set BS for not Intra MB : BS = 2 or 1 or 0
-  // Y
-  if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Y) || TU::getCbf(tuP, COMPONENT_Y)))
+  if(chType == CHANNEL_TYPE_LUMA)
   {
-    tmpBs += BsSet(1, COMPONENT_Y);
+    // Y
+    if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Y) || TU::getCbf(tuP, COMPONENT_Y)))
+    {
+      tmpBs += BsSet(1, COMPONENT_Y);
+    }
   }
+  else 
+  {
 #if JVET_Q0438_MONOCHROME_BUGFIXES
   if (pcv.chrFormat != CHROMA_400)
   {
@@ -784,6 +817,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 #if JVET_Q0438_MONOCHROME_BUGFIXES
   }
 #endif
+  }
   if (BsGet(tmpBs, COMPONENT_Y) == 1)
   {
     return tmpBs;

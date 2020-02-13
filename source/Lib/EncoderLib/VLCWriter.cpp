@@ -1026,6 +1026,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC(pcSPS->getPocMsbLen() - 1, "poc_msb_len_minus1");
   }
 #endif
+#if JVET_Q0400_EXTRA_BITS
+  // extra bits are for future extensions, so these are currently hard coded to not being sent
+  WRITE_CODE(0, 2, "num_extra_ph_bits_bytes");
+  // extra_ph_bits_struct( num_extra_ph_bits_bytes )
+  WRITE_CODE(0, 2, "num_extra_sh_bits_bytes");
+  // extra_sh_bits_struct( num_extra_sh_bits_bytes )
+#endif
 
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getMaxTLayers() - 1 > 0)
@@ -1666,7 +1673,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     picHeader->setRecoveryPocCnt( 0 );
   }
-
+#if JVET_Q0400_EXTRA_BITS
+  // PH extra bits are not written in the reference encoder
+  // as these bits are reserved for future extensions
+  // for( i = 0; i < NumExtraPhBits; i++ )
+  //    ph_extra_bit[ i ]
+#endif
+            
 #if JVET_P0116_POC_MSB
   if (sps->getPocMsbFlag())
   {

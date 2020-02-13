@@ -390,7 +390,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
-#if JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT
+#if JVET_Q0471_CHROMA_QT_SPLIT
   // minQtSize is in luma samples unit
   const unsigned minQTThreshold = minQtSize >> ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat));
   if( area.width <= minQTThreshold )                         canQt = false;
@@ -570,7 +570,7 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     const bool isBtAllowed    = area.width <= maxBtSize && area.height <= maxBtSize;
 #endif
     const unsigned minQtSize  = cs.pcv->getMinQtSize( *cs.slice, chType );
-#if JVET_Q0471_CHROMA_QT_SPLIT_ON_HEIGHT
+#if JVET_Q0471_CHROMA_QT_SPLIT
     // minQtSize is in luma samples unit
     const unsigned minQTThreshold = minQtSize >> ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat));
     const bool isQtAllowed    = area.width > minQTThreshold && currBtDepth == 0;

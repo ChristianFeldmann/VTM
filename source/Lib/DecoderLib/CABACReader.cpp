@@ -1088,7 +1088,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
       }
       }
 #if JVET_Q0629_REMOVAL_PLT_4X4
-      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && (cu.lumaSize().width * cu.lumaSize().height > 16) )
 #else
       if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
 #endif                 
@@ -1105,7 +1105,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
       {
         cu.predMode = MODE_INTRA;
 #if JVET_Q0629_REMOVAL_PLT_4X4
-        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && (cu.lumaSize().width * cu.lumaSize().height > 16) )
 #else
         if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
 #endif           
@@ -1142,7 +1142,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
     {
       cu.predMode = MODE_INTRA;
 #if JVET_Q0629_REMOVAL_PLT_4X4
-      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ( ( (!isLuma(cu.chType)) && (cu.chromaSize().width * cu.chromaSize().height > 16) ) || ((isLuma(cu.chType)) && ((cu.lumaSize().width * cu.lumaSize().height) > 16 ) )  ) )
 #else
       if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
 #endif                 
@@ -1157,7 +1157,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
     {
       cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
 #if JVET_Q0629_REMOVAL_PLT_4X4
-      if (CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ((cu.lheight() * cu.lwidth()) > ( ( (!cu.isSepTree()) || isLuma(cu.chType) ) ? 16 : ( 16 * ( (cu.chromaFormat == CHROMA_420) ? 4 : ( (cu.chromaFormat == CHROMA_422) ? 2 : 1 ) ) ) ) ) )
+      if (CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && ( ( (!isLuma(cu.chType)) && (cu.chromaSize().width * cu.chromaSize().height > 16) ) || ((isLuma(cu.chType)) && ((cu.lumaSize().width * cu.lumaSize().height) > 16 ) )  ) )
 #else
       if (CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
 #endif        

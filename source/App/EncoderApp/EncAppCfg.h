@@ -212,7 +212,9 @@ protected:
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
+#if !REMOVE_PPS_REXT
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
+#endif
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
 #if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets

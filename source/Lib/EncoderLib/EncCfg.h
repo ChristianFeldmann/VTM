@@ -478,7 +478,9 @@ protected:
   bool      m_useFastDecisionForMerge;
   bool      m_bUseCbfFastMode;
   bool      m_useEarlySkipDetection;
+#if !REMOVE_PPS_REXT
   bool      m_crossComponentPredictionEnabledFlag;
+#endif
   bool      m_reconBasedCrossCPredictionEstimate;
 #if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
@@ -1395,8 +1397,10 @@ public:
   void  setGopBasedTemporalFilterEnabled(bool flag) { m_gopBasedTemporalFilterEnabled = flag; }
   bool  getGopBasedTemporalFilterEnabled()          { return m_gopBasedTemporalFilterEnabled; }
 
+#if !REMOVE_PPS_REXT
   bool      getCrossComponentPredictionEnabledFlag     ()                const { return m_crossComponentPredictionEnabledFlag;   }
   void      setCrossComponentPredictionEnabledFlag     (const bool value)      { m_crossComponentPredictionEnabledFlag = value;  }
+#endif
   bool      getUseReconBasedCrossCPredictionEstimate ()                const { return m_reconBasedCrossCPredictionEstimate;  }
   void      setUseReconBasedCrossCPredictionEstimate (const bool value)      { m_reconBasedCrossCPredictionEstimate = value; }
 #if !JVET_Q0441_SAO_MOD_12_BIT

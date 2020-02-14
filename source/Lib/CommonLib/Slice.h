@@ -1792,7 +1792,7 @@ void                    setCCALFEnabledFlag( bool b )                           
 #endif
 };
 
-
+#if !REMOVE_PPS_REXT
 /// Reference Picture Lists class
 
 
@@ -1829,7 +1829,7 @@ public:
   void                   setLog2SaoOffsetScale(ChannelType type, uint32_t uiBitShift)         { m_log2SaoOffsetScale[type] = uiBitShift;       }
 #endif
 };
-
+#endif
 
 /// PPS class
 class PPS
@@ -1957,8 +1957,10 @@ private:
   Window           m_conformanceWindow;
   Window           m_scalingWindow;
 
+#if !REMOVE_PPS_REXT
   PPSRExt          m_ppsRangeExtension;
-
+#endif
+  
 public:
   PreCalcValues   *pcv;
 
@@ -2223,8 +2225,10 @@ public:
   bool                   getQpDeltaInfoInPhFlag() const                                   { return m_qpDeltaInfoInPhFlag; }
 #endif
 
+#if !REMOVE_PPS_REXT
   const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
+#endif
 
   void                    setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
   uint32_t                getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }

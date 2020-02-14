@@ -240,6 +240,7 @@
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
+#define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;

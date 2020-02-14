@@ -4507,11 +4507,13 @@ void EncCu::xCalDebCost( CodingStructure &cs, Partitioner &partitioner, bool cal
     //deblock
     if ( leftEdgeAvai )
     {
+      m_pcLoopFilter->resetFilterLengths();
       m_pcLoopFilter->xDeblockCU( *cu, EDGE_VER );
     }
 
     if (topEdgeAvai)
     {
+      m_pcLoopFilter->resetFilterLengths();
       m_pcLoopFilter->xDeblockCU( *cu, EDGE_HOR );
     }
 

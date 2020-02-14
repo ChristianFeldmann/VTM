@@ -137,6 +137,11 @@ void EncLib::create( const int layerId )
   m_cLoopFilter.create( m_maxTotalCUDepth );
 #endif
 
+  if (!m_bLoopFilterDisable)
+  {
+    m_cLoopFilter.initEncPicYuvBuffer(m_chromaFormatIDC, getSourceWidth(), getSourceHeight());
+  }
+
 #if ENABLE_SPLIT_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
 #endif

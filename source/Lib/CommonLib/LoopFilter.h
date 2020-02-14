@@ -127,6 +127,8 @@ public:
     const int indexB = Clip3( 0, MAX_QP, qp );
     return sm_betaTable[ indexB ];
   }
+
+  void resetFilterLengths();
 };
 
 //! \}

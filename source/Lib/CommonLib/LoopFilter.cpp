@@ -262,6 +262,16 @@ void LoopFilter::loopFilterPic( CodingStructure& cs
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 }
 
+void LoopFilter::resetFilterLengths()
+{
+  memset(m_aapucBS[EDGE_VER].data(), 0, m_aapucBS[EDGE_VER].byte_size());
+  memset(m_aapbEdgeFilter[EDGE_VER].data(), false, m_aapbEdgeFilter[EDGE_VER].byte_size());
+  memset(m_aapucBS[EDGE_HOR].data(), 0, m_aapucBS[EDGE_HOR].byte_size());
+  memset(m_aapbEdgeFilter[EDGE_HOR].data(), false, m_aapbEdgeFilter[EDGE_HOR].byte_size());
+  memset(m_maxFilterLengthP, 0, sizeof(m_maxFilterLengthP));
+  memset(m_maxFilterLengthQ, 0, sizeof(m_maxFilterLengthQ));
+  memset(m_transformEdge, false, sizeof(m_transformEdge));
+}
 
 // ====================================================================================================================
 // Protected member functions

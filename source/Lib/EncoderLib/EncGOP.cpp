@@ -2884,11 +2884,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_pcSAO->setReshaper( m_pcReshaper );
       }
 
-      if( !m_pcEncLib->getLoopFilterDisable() )
-      {
-        m_pcEncLib->getLoopFilter()->initEncPicYuvBuffer( chromaFormatIDC, picWidth, picHeight );
-      }
-
       if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
       {
         picHeader->setScalingListPresentFlag(true);

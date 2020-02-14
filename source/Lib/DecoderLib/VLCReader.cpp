@@ -754,6 +754,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   {
     READ_FLAG(uiCode, "wp_info_in_ph_flag");                   pcPPS->setWpInfoInPhFlag(uiCode ? true : false);
   }
+  else
+  {
+    pcPPS->setWpInfoInPhFlag(false);
+  }
   READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
 #endif
 

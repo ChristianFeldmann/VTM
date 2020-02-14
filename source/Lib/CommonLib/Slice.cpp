@@ -2422,12 +2422,12 @@ PPS::PPS()
 , m_sliceHeaderExtensionPresentFlag  (false)
 , m_listsModificationPresentFlag     (0)
 #if JVET_Q0819_PH_CHANGES
-, m_rplInfoInPhFlag                  (1)
-, m_dbfInfoInPhFlag                  (1)
-, m_saoInfoInPhFlag                  (1)
-, m_alfInfoInPhFlag                  (1)
-, m_wpInfoInPhFlag                   (1)
-, m_qpDeltaInfoInPhFlag              (1)
+, m_rplInfoInPhFlag                  (0)
+, m_dbfInfoInPhFlag                  (0)
+, m_saoInfoInPhFlag                  (0)
+, m_alfInfoInPhFlag                  (0)
+, m_wpInfoInPhFlag                   (0)
+, m_qpDeltaInfoInPhFlag              (0)
 #endif
 #if SPS_ID_CHECK
 , m_mixedNaluTypesInPicFlag          ( false )

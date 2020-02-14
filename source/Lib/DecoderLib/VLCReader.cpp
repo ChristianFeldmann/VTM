@@ -1542,7 +1542,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getPocMsbFlag())
   {
     READ_UVLC(uiCode, "poc_msb_len_minus1");                  pcSPS->setPocMsbLen(1 + uiCode);
-    CHECK(uiCode > (32 - pcSPS->getBitsForPOC() - 4 - 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
+    CHECK(uiCode > (32 - ( pcSPS->getBitsForPOC() - 4 )- 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
   }
 #endif
   

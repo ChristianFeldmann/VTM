@@ -1270,6 +1270,38 @@ void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFla
 }
 #endif
 
+#if JVET_Q0400_EXTRA_BITS
+void HLSyntaxReader::parseExtraPHBitsStruct( SPS *sps, int numBytes )
+{
+  uint32_t symbol;
+  std::vector<bool> presentFlags;
+  presentFlags.resize ( 8 * numBytes );
+  
+  for (int i=0; i < 8*numBytes; i++)
+  {
+    READ_FLAG(symbol, "extra_ph_bit_present_flag[ i ]");
+    presentFlags[i] = symbol;
+  }
+  
+  sps->setExtraPHBitPresentFlags(presentFlags);
+}
+
+void HLSyntaxReader::parseExtraSHBitsStruct( SPS *sps, int numBytes )
+{
+  uint32_t symbol;
+  std::vector<bool> presentFlags;
+  presentFlags.resize ( 8 * numBytes );
+  
+  for (int i=0; i < 8*numBytes; i++)
+  {
+    READ_FLAG(symbol, "extra_sh_bit_present_flag[ i ]");
+    presentFlags[i] = symbol;
+  }
+  
+  sps->setExtraSHBitPresentFlags(presentFlags);
+}
+#endif
+
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
   uint32_t  uiCode;
@@ -1549,7 +1581,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     CHECK(uiCode > (32 - ( pcSPS->getBitsForPOC() - 4 )- 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
   }
 #endif
-  
+
+#if JVET_Q0400_EXTRA_BITS
+  // extra bits are for future extensions, we will read, but ignore them,
+  // unless a meaning is specified in the spec
+  READ_CODE(2, uiCode, "num_extra_ph_bits_bytes");
+  parseExtraPHBitsStruct( pcSPS, uiCode );
+  READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");
+  parseExtraSHBitsStruct( pcSPS, uiCode );
+#endif
+
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getMaxTLayers() - 1 > 0)
   {
@@ -2421,6 +2462,18 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setRecoveryPocCnt( 0 );
   }
+  
+#if JVET_Q0400_EXTRA_BITS
+  std::vector<bool> phExtraBitsPresent = sps->getExtraPHBitPresentFlags();
+  for (int i=0; i< sps->getNumExtraPHBitsBytes() * 8; i++)
+  {
+    // extra bits are ignored (when present)
+    if (phExtraBitsPresent[i])
+    {
+      READ_FLAG(uiCode, "ph_extra_bit[ i ]");
+    }
+  }
+#endif
   
 #if JVET_P0116_POC_MSB
   if (sps->getPocMsbFlag())
@@ -3706,7 +3759,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
       CHECK(sliceAddr >= pps->getNumSlicesInPic(), "Invalid slice address");
     }
-    else {
+    else
+    {
       sliceAddr = 0;
     }
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
@@ -3722,6 +3776,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     pcSlice->setSliceID(sliceAddr);
 #endif
   }
+
+#if JVET_Q0400_EXTRA_BITS
+  std::vector<bool> shExtraBitsPresent = sps->getExtraSHBitPresentFlags();
+  for (int i=0; i< sps->getNumExtraSHBitsBytes() * 8; i++)
+  {
+    // extra bits are ignored (when present)
+    if (shExtraBitsPresent[i])
+    {
+      READ_FLAG(uiCode, "sh_extra_bit[ i ]");
+    }
+  }
+#endif
 
 #if JVET_Q0819_PH_CHANGES
   if (picHeader->getPicInterSliceAllowedFlag())

@@ -1301,6 +1301,12 @@ private:
   bool              m_pocMsbFlag;
   uint32_t          m_pocMsbLen;
 #endif
+#if JVET_Q0400_EXTRA_BITS
+  int               m_numExtraPHBitsBytes;
+  int               m_numExtraSHBitsBytes;
+  std::vector<bool> m_extraPHBitPresentFlag;
+  std::vector<bool> m_extraSHBitPresentFlag;
+#endif
   uint32_t          m_numLongTermRefPicSPS;
   uint32_t          m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1536,6 +1542,16 @@ public:
   bool                    getPocMsbFlag() const                                                               { return m_pocMsbFlag;                                                 }
   void                    setPocMsbLen(uint32_t u)                                                            { m_pocMsbLen = u;                                                     }
   uint32_t                getPocMsbLen() const                                                                { return m_pocMsbLen;                                                  }
+#endif
+#if JVET_Q0400_EXTRA_BITS
+  void                    setNumExtraPHBitsBytes(int i)                                                       { m_numExtraPHBitsBytes = i;                                           }
+  int                     getNumExtraPHBitsBytes() const                                                      { return m_numExtraPHBitsBytes;                                        }
+  void                    setNumExtraSHBitsBytes(int i)                                                       { m_numExtraSHBitsBytes = i;                                           }
+  int                     getNumExtraSHBitsBytes() const                                                      { return m_numExtraSHBitsBytes;                                        }
+  void                    setExtraPHBitPresentFlags(const std::vector<bool> &b)                               { m_extraPHBitPresentFlag = b;                                         }
+  const std::vector<bool> getExtraPHBitPresentFlags() const                                                   { return m_extraPHBitPresentFlag;                                      }
+  void                    setExtraSHBitPresentFlags(const std::vector<bool> &b)                               { m_extraSHBitPresentFlag = b;                                         }
+  const std::vector<bool> getExtraSHBitPresentFlags() const                                                   { return m_extraSHBitPresentFlag;                                      }
 #endif
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
   int                     getNumReorderPics(uint32_t tlayer) const                                            { return m_numReorderPics[tlayer];                                     }

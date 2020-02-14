@@ -199,6 +199,10 @@ public:
 #if JVET_P0117_PTL_SCALABILITY
   void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS);
 #endif
+#if JVET_Q0400_EXTRA_BITS
+  void parseExtraPHBitsStruct( SPS *sps, int numBytes );
+  void parseExtraSHBitsStruct( SPS *sps, int numBytes );
+#endif
 private:
 #if !JVET_Q0210_UEK_REMOVAL
   int  alfGolombDecode( const int k, const bool signed_val=true );

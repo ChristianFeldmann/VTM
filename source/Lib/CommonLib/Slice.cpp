@@ -2140,6 +2140,10 @@ SPS::SPS()
 , m_pocMsbFlag                ( false )
 , m_pocMsbLen                 ( 1 )
 #endif
+#if JVET_Q0400_EXTRA_BITS
+, m_numExtraPHBitsBytes       ( 0 )
+, m_numExtraSHBitsBytes       ( 0 )
+#endif
 , m_numLongTermRefPicSPS      (  0)
 , m_log2MaxTbSize             (  6)
 , m_useWeightPred             (false)

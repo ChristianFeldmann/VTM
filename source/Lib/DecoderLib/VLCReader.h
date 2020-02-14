@@ -177,7 +177,11 @@ public:
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
 #endif
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
+#if JVET_Q0819_PH_CHANGES
+  void  getSlicePoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
+#else
   void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
+#endif
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 

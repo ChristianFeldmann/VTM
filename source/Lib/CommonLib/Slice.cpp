@@ -2707,6 +2707,23 @@ void PPS::initSubPic(const SPS &sps)
   for (int i=0; i< getNumSubPics(); i++)
   {
     m_subPics[i].setSubPicIdx(i);
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+    if(sps.getSubPicIdMappingExplicitlySignalledFlag())
+    {
+      if(m_subPicIdMappingInPpsFlag)
+      {
+        m_subPics[i].setSubPicID(m_subPicId[i]);
+      }
+      else
+      {
+        m_subPics[i].setSubPicID(sps.getSubPicId(i));
+      }
+    }
+    else
+    {
+      m_subPics[i].setSubPicID(i);
+    }
+#endif
     m_subPics[i].setSubPicCtuTopLeftX(sps.getSubPicCtuTopLeftX(i));
     m_subPics[i].setSubPicCtuTopLeftY(sps.getSubPicCtuTopLeftY(i));
     m_subPics[i].setSubPicWidthInCTUs(sps.getSubPicWidth(i));
@@ -2740,9 +2757,15 @@ void PPS::initSubPic(const SPS &sps)
     {
       CHECK(getNumSubPics() != 1, "only one slice in picture, but number of subpic is not one");
       m_subPics[i].addAllCtusInPicToSubPic(0, getPicWidthInCtu(), 0, getPicHeightInCtu(), getPicWidthInCtu());
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+      m_subPics[i].setNumSlicesInSubPic(1);
+#endif
     }
     else
     {
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+      int numSlicesInSubPic = 0;
+#endif
       for (int j = 0; j < m_numSlicesInPic; j++)
       {
         uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
@@ -2755,8 +2778,14 @@ void PPS::initSubPic(const SPS &sps)
         {
           // add ctus in a slice to the subpicture it belongs to
           m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+	  numSlicesInSubPic++;
+#endif
         }
       }
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+      m_subPics[i].setNumSlicesInSubPic(numSlicesInSubPic);
+#endif
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));
     m_subPics[i].setloopFilterAcrossEnabledFlag(sps.getLoopFilterAcrossSubpicEnabledFlag(i));
@@ -2779,6 +2808,20 @@ SubPic  PPS::getSubPicFromCU(const CodingUnit& cu) const
 {
   const Position lumaPos = cu.Y().valid() ? cu.Y().pos() : recalcPosition(cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos());
   return getSubPicFromPos(lumaPos);
+}
+#endif
+
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+uint32_t PPS::getSubPicIdxFromSubPicId( uint32_t subPicId ) const
+{
+  for (int i = 0; i < m_numSubPics; i++)
+  {
+    if(m_subPics[i].getSubPicID() == subPicId)
+    {
+      return i;
+    }
+  }
+  return 0;
 }
 #endif
 

@@ -544,6 +544,61 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #endif
 
         // multiple slices within a single tile special case
+#if JVET_Q0203_MULTI_SLICE_IN_TILE
+        if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()) > 1 )
+        {
+          READ_UVLC(uiCode, "num_exp_slices_in_tile[i]");
+          uint32_t numExpSliceInTile = uiCode;
+          uint32_t numSliceInTile    = 0;
+          uint32_t remTileRowHeight  = pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns());
+          for( int j = 0; j < numExpSliceInTile - 1; j++ )
+          {
+            READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+            pcPPS->setSliceHeightInCtu(i, uiCode + 1);
+            remTileRowHeight -= (uiCode + 1);
+            i++;
+            pcPPS->setSliceWidthInTiles(i, 1);
+            pcPPS->setSliceHeightInTiles(i, 1);
+            pcPPS->setSliceTileIdx(i, tileIdx);
+            numSliceInTile++;
+          }
+          READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+          pcPPS->setSliceHeightInCtu(i, uiCode + 1);
+          remTileRowHeight -= (uiCode + 1);
+          i++;
+          pcPPS->setSliceWidthInTiles(i, 1);
+          pcPPS->setSliceHeightInTiles(i, 1);
+          pcPPS->setSliceTileIdx(i, tileIdx);
+          numSliceInTile++;
+          uint32_t uniformSliceHeight = pcPPS->getSliceHeightInCtu(i - 1);
+
+          CHECK(remTileRowHeight < 0, "The height of the last slice in a tile cannot be less than 0");
+          if( remTileRowHeight == 0 )
+          {
+            i--;
+          }
+
+          while( remTileRowHeight > uniformSliceHeight )
+          {
+            pcPPS->setSliceHeightInCtu(i, uniformSliceHeight);
+            remTileRowHeight -= uniformSliceHeight;
+            i++;
+            pcPPS->setSliceWidthInTiles(i, 1);
+            pcPPS->setSliceHeightInTiles(i, 1);
+            pcPPS->setSliceTileIdx(i, tileIdx);
+            numSliceInTile++;
+          }
+          if( remTileRowHeight > 0 )
+          {
+            pcPPS->setSliceHeightInCtu(i, remTileRowHeight);
+            numSliceInTile++;
+          }
+          for( int j = 0; j < numSliceInTile; j++ )
+          {
+            pcPPS->setNumSlicesInTile(i - 1 - j, numSliceInTile);
+          }
+        }
+#else
         if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
         {
           READ_UVLC( uiCode, "num_slices_in_tile_minus1[i]" );        pcPPS->setNumSlicesInTile( i, uiCode + 1 );
@@ -558,6 +613,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
             pcPPS->setSliceTileIdx      ( i, tileIdx );
           }
         }
+#endif
 
         // tile index offset to start of next slice
         if( i < pcPPS->getNumSlicesInPic()-1 )

@@ -175,6 +175,8 @@
 
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
+#define JVET_Q0203_MULTI_SLICE_IN_TILE                    1 // JVET-Q0203: Signalling of multiple rectangular slices within a tile
+
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 #if JVET_O1143_SUBPIC_BOUNDARY
 #define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 

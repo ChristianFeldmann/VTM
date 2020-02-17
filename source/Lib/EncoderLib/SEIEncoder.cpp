@@ -370,6 +370,35 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
   }
 }
 
+#if JVET_P0190_SCALABLE_NESTING_SEI
+void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs) 
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(scalableNestingSEI != NULL), "Unspecified error");
+  // VPS *vps = m_pcEncLib->getVPS();
+  scalableNestingSEI->m_nestingOlsFlag = 1;         // by If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
+  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs. 
+  for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is  
+  for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+  {
+    if (i == 0)
+      scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i];
+    else
+      scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] + scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i - 1] + 1;
+  }
+
+  scalableNestingSEI->m_nestingAllLayersFlag = 1; // nesting is not applied to all layers
+  scalableNestingSEI->m_nestingNumLayersMinus1 = 2 - 1;  //nesting_num_layers_minus1
+  scalableNestingSEI->m_nestingLayerId[0] = 0;
+
+  scalableNestingSEI->m_nestedSEIs.clear();
+  for (SEIMessages::iterator it = nestedSEIs.begin(); it != nestedSEIs.end(); it++)
+  {
+    scalableNestingSEI->m_nestedSEIs.push_back((*it));
+  }
+}
+#endif
 
 #if HEVC_SEI
 //! initialize scalable nesting SEI message.

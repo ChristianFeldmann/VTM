@@ -233,6 +233,7 @@ typedef std::pair<int, int>  TrCost;
 #endif
 // clang-format on
 
+#define JVET_P0190_SCALABLE_NESTING_SEI                   1 // JVET-P0190 scalable nesting sei message
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0

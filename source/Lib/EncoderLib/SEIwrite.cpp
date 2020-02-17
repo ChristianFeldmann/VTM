@@ -54,6 +54,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const 
     CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Decoding Unit Information SEI");
     xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), *bp, temporalId);
     break;
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  case SEI::SCALABLE_NESTING:
+    xWriteSEIScalableNesting(bs, *static_cast<const SEIScalableNesting*>(&sei), sps);
+    break;
+#endif
   case SEI::DECODED_PICTURE_HASH:
     xWriteSEIDecodedPictureHash(*static_cast<const SEIDecodedPictureHash*>(&sei));
     break;
@@ -179,7 +184,7 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
       xTraceSEIMessageType((*sei)->payloadType());
 #endif
 
-    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
+    xWriteSEIpayloadData(bs, **sei, sps, hrd, temporalId);
   }
   if (!isNested)
   {
@@ -434,6 +439,43 @@ void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication&
 {
   // intentionally empty
 }
+
+#if JVET_P0190_SCALABLE_NESTING_SEI
+void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps)
+{
+  WRITE_FLAG(sei.m_nestingOlsFlag, "nesting_ols_flag");
+  if (sei.m_nestingOlsFlag)
+  {
+    WRITE_UVLC(sei.m_nestingNumOlssMinus1, "nesting_num_olss_minus1");
+    for (uint32_t i = 0; i <= sei.m_nestingNumOlssMinus1; i++)
+    {
+      WRITE_UVLC(sei.m_nestingOlsIdxDeltaMinus1[i], "nesting_ols_idx_delta_minus1[i]");
+    }
+  }
+  else
+  {
+    WRITE_FLAG(sei.m_nestingAllLayersFlag, "nesting_all_layers_flag");
+    if (!sei.m_nestingAllLayersFlag)
+    {
+      WRITE_UVLC(sei.m_nestingNumLayersMinus1, "nesting_num_layers");
+      for (uint32_t i = 0; i <= sei.m_nestingNumLayersMinus1; i++)
+      {
+        WRITE_CODE(sei.m_nestingLayerId[i], 6, "nesting_layer_id");
+      }
+    }
+  }
+
+  // byte alignment
+  while (m_pcBitIf->getNumberOfWrittenBits() % 8 != 0)
+  {
+    WRITE_FLAG(0, "nesting_zero_bit");
+  }
+
+  // write nested SEI messages
+  HRD hrd;
+  writeSEImessages(bs, sei.m_nestedSEIs, sps, hrd, true, 0);
+}
+#endif
 
 void SEIWriter::xWriteSEIFramePacking(const SEIFramePacking& sei)
 {

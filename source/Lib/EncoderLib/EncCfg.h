@@ -539,6 +539,11 @@ protected:
   int       m_framePackingSEIInterpretation;
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
+
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  bool      m_scalableNestingSEIEnabled;
+#endif
+
 #if HEVC_SEI
   bool      m_SOPDescriptionSEIEnabled;
   bool      m_scalableNestingSEIEnabled;
@@ -1510,6 +1515,10 @@ public:
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  void  setScalableNestingSEIEnabled(bool b)                         { m_scalableNestingSEIEnabled = b; }
+  bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
+#endif
 #if HEVC_SEI
   void  setSOPDescriptionSEIEnabled(bool b)                          { m_SOPDescriptionSEIEnabled = b; }
   bool  getSOPDescriptionSEIEnabled() const                          { return m_SOPDescriptionSEIEnabled; }

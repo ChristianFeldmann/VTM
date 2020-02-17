@@ -215,6 +215,12 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
         }
       }
       break;
+#if JVET_P0190_SCALABLE_NESTING_SEI
+    case SEI::SCALABLE_NESTING:
+      sei = new SEIScalableNesting;
+      xParseSEIScalableNesting((SEIScalableNesting&)*sei, nalUnitType, payloadSize, sps, pDecodedMessageOutputStream);
+      break;
+#endif
     case SEI::FRAME_FIELD_INFO:
       sei = new SEIFrameFieldInfo;
 #if JVET_Q0818_PT_SEI
@@ -486,6 +492,55 @@ void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32
 }
 #endif
 
+#if JVET_P0190_SCALABLE_NESTING_SEI
+void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitType nalUnitType, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
+{
+  uint32_t uiCode;
+  SEIMessages seis;
+  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
+
+  sei_read_flag(pDecodedMessageOutputStream, uiCode, "nesting_ols_flag"); sei.m_nestingOlsFlag = uiCode;
+  if (sei.m_nestingOlsFlag)
+  {
+    sei_read_uvlc(pDecodedMessageOutputStream, uiCode, "nesting_num_olss_minus1"); sei.m_nestingNumOlssMinus1 = uiCode;
+    for (uint32_t i = 0; i <= sei.m_nestingNumOlssMinus1; i++)
+    {
+      sei_read_uvlc(pDecodedMessageOutputStream, uiCode, "nesting_ols_idx_delta_minus1[i]"); sei.m_nestingOlsIdxDeltaMinus1[i] = uiCode;
+    }
+  }
+  else
+  {
+    sei_read_flag(pDecodedMessageOutputStream, uiCode, "nesting_all_layers_flag"); sei.m_nestingAllLayersFlag = uiCode;
+    if (!sei.m_nestingAllLayersFlag)
+    {
+      sei_read_uvlc(pDecodedMessageOutputStream, uiCode, "nesting_num_layers_minus1"); sei.m_nestingNumLayersMinus1 = uiCode;
+      for (uint32_t i = 0; i <= sei.m_nestingNumLayersMinus1; i++)
+      {
+        sei_read_code(pDecodedMessageOutputStream, 6, uiCode, "nesting_layer_id[i]"); sei.m_nestingLayerId[i] = uiCode;
+      }
+    }
+  }
+
+  // byte alignment
+  while (m_pcBitstream->getNumBitsRead() % 8 != 0)
+  {
+    uint32_t code;
+    sei_read_flag(pDecodedMessageOutputStream, code, "nesting_zero_bit");
+  }
+
+  // read nested SEI messages
+  do
+  {
+    HRD hrd;
+    xReadSEImessage(sei.m_nestedSEIs, nalUnitType, 0, sps, hrd, pDecodedMessageOutputStream);
+  } while (m_pcBitstream->getNumBitsLeft() > 8);
+
+  if (pDecodedMessageOutputStream)
+  {
+    (*pDecodedMessageOutputStream) << "End of scalable nesting SEI message\n";
+  }
+}
+#endif
 void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t payloadSize, const SEIBufferingPeriod& bp, const uint32_t temporalId, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;

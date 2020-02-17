@@ -392,7 +392,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
 #if JVET_Q0471_CHROMA_QT_SPLIT
   // minQtSize is in luma samples unit
-  const unsigned minQTThreshold = minQtSize >> ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat));
+  const unsigned minQTThreshold = minQtSize >> ((area.chromaFormat == CHROMA_400) ? 0 : ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat)));
   if( area.width <= minQTThreshold )                         canQt = false;
 #else
   if( area.width <= minQtSize )                              canQt = false;
@@ -572,7 +572,7 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     const unsigned minQtSize  = cs.pcv->getMinQtSize( *cs.slice, chType );
 #if JVET_Q0471_CHROMA_QT_SPLIT
     // minQtSize is in luma samples unit
-    const unsigned minQTThreshold = minQtSize >> ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat));
+    const unsigned minQTThreshold = minQtSize >> ((area.chromaFormat == CHROMA_400) ? 0 : ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat)));
     const bool isQtAllowed    = area.width > minQTThreshold && currBtDepth == 0;
 #else
     const bool isQtAllowed    = area.width >  minQtSize && area.height >  minQtSize && currBtDepth == 0;

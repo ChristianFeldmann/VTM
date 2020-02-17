@@ -1539,7 +1539,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
     {
       CHECK(!luma, "IBC only for Chroma is not allowed.");
       xIntraBlockCopy(pu, predBuf, COMPONENT_Y);
-      if (chroma)
+      if (chroma && isChromaEnabled(pu.chromaFormat))
       {
         xIntraBlockCopy(pu, predBuf, COMPONENT_Cb);
         xIntraBlockCopy(pu, predBuf, COMPONENT_Cr);

@@ -4974,6 +4974,15 @@ void HLSyntaxReader::parsePredWeightTable( Slice* pcSlice, const SPS *sps )
         uiTotalSignalledWeightFlags += 2*wp[COMPONENT_Cb].bPresentFlag;
       }
     }
+    else
+    {
+      for ( int iRefIdx=0; iRefIdx<MAX_NUM_REF; iRefIdx++ )
+      {
+        pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
+        wp[1].bPresentFlag = false;
+        wp[2].bPresentFlag = false;
+      }
+    }
     for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
     {
       pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
@@ -5096,6 +5105,15 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
           wp[j].bPresentFlag = (uiCode == 1);
         }
         totalSignalledWeightFlags += 2 * wp[COMPONENT_Cb].bPresentFlag;
+      }
+    }
+    else
+    {
+      for ( int refIdx=0; refIdx<MAX_NUM_REF; refIdx++ )
+      {
+        picHeader->getWpScaling(refPicList, refIdx, wp);
+        wp[1].bPresentFlag = false;
+        wp[2].bPresentFlag = false;
       }
     }
     for (int refIdx = 0; refIdx < numLxWeights; refIdx++)

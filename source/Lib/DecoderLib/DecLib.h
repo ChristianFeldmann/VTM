@@ -142,6 +142,9 @@ private:
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
   #endif
   std::vector<int> m_accessUnitApsNals;
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+  std::vector<int> m_accessUnitSeiTids;
+#endif
 
   VPS*                    m_vps;
   bool                    m_scalingListUpdateFlag;
@@ -201,6 +204,10 @@ public:
   void resetAccessUnitPicInfo()              { m_accessUnitPicInfo.clear();    }
 #endif
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+  void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
+  void checkTidLayerIdInAccessUnit();
+#endif
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }

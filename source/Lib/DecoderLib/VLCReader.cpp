@@ -3621,18 +3621,41 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #else
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
+#if JVET_P0116_POC_MSB
+  int iPOClsb = uiCode;
+  int iMaxPOClsb = 1 << sps->getBitsForPOC();
+  int iPOCmsb;
+#endif
   if (pcSlice->getIdrPicFlag())
   {
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
+    }
+    else
+    {
+      iPOCmsb = 0;
+    }
+    pcSlice->setPOC(iPOCmsb + iPOClsb);
+#else
     pcSlice->setPOC(uiCode);
+#endif
   }
   else
   {
+#if !JVET_P0116_POC_MSB
     int iPOClsb = uiCode;
+#endif
     int iPrevPOC = prevTid0POC;
+#if !JVET_P0116_POC_MSB
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
+#endif
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+#if !JVET_P0116_POC_MSB
     int iPOCmsb;
+#endif
 #if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
@@ -4633,26 +4656,57 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
   // picture order count
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
+#if JVET_P0116_POC_MSB
+#if JVET_Q0819_PH_CHANGES
+  int iPOClsb = pocLsb;
+#else
+  int iPOClsb = uiCode;
+#endif
+  int iMaxPOClsb = 1 << sps->getBitsForPOC();
+  int iPOCmsb;
+#endif
   if (pcSlice->getIdrPicFlag())
   {
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
+    }
+    else
+    {
+      iPOCmsb = 0;
+    }
+#if JVET_Q0819_PH_CHANGES
+    pcSlice->setPOC(iPOCmsb + pocLsb);
+#else
+    pcSlice->setPOC(iPOCmsb + uiCode);
+#endif
+#else
 #if JVET_Q0819_PH_CHANGES
     pcSlice->setPOC(pocLsb);
 #else
     pcSlice->setPOC(uiCode);
 #endif
+#endif
   }
   else
   {
+#if !JVET_P0116_POC_MSB
 #if JVET_Q0819_PH_CHANGES
     int iPOClsb = pocLsb;
 #else
     int iPOClsb = uiCode;
 #endif
+#endif
     int iPrevPOC = prevTid0POC;
+#if !JVET_P0116_POC_MSB
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
+#endif
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+#if !JVET_P0116_POC_MSB
     int iPOCmsb;
+#endif
 #if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {

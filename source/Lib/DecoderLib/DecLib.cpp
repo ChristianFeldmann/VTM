@@ -891,17 +891,17 @@ void DecLib::checkTidLayerIdInAccessUnit()
       break;
     }
   }
-  CHECK(!isPicTidInAuSame, "The TemporalId of an SEI NAL unit shall be equal to the TemporalId of the AU containing the NAL unit");
+  CHECK(!isSeiTidInAuSameAsAuTid, "The TemporalId of an SEI NAL unit shall be equal to the TemporalId of the AU containing the NAL unit");
 
   for (auto tempNalu = m_accessUnitNals.begin(); tempNalu != m_accessUnitNals.end(); tempNalu++)
   {
     if ((tempNalu->first == NAL_UNIT_FD) && (tempNalu->second != firstPicLayerId))
     {
-      isPicTidInAuSame = false;
+      isFdNaluLayerIdSameAsVclNaluLayerId = false;
       break;
     }
   }
-  CHECK(!isPicTidInAuSame, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
+  CHECK(!isFdNaluLayerIdSameAsVclNaluLayerId, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
 
 }
 #endif

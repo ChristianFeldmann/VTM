@@ -123,7 +123,7 @@ uint32_t DecApp::decode()
 
   // main decoder loop
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-  bool loopFiltered[MAX_VPS_LAYERS] = { 0 };
+  bool loopFiltered[MAX_VPS_LAYERS] = { false };
 #else
   bool loopFiltered = false;
 #endif

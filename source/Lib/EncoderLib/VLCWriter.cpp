@@ -2126,6 +2126,17 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
       WRITE_FLAG( picHeader->getEnableTMVPFlag(), "pic_temporal_mvp_enabled_flag" );
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+      if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
+      {
+        WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
+        if ((picHeader->getPicColFromL0Flag() && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
+          (!picHeader->getPicColFromL0Flag() && picHeader->getRPL(1)->getNumRefEntries() > 1))
+        {
+          WRITE_UVLC(picHeader->getColRefIdx(), "collocated_ref_idx");
+        }
+      }
+#endif
     }
     else
     {
@@ -2143,12 +2154,12 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setMvdL1ZeroFlag( pps->getPPSMvdL1ZeroIdc() - 1 );
     }
 #else
-
+#if !JVET_Q0259_COLLOCATED_PIC_IN_PH
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
     {
       WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
     }
-
+#endif
     WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
 #endif
    
@@ -2898,8 +2909,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_FLAG( encCabacInitFlag ? 1 : 0, "cabac_init_flag" );
       }
     }
-
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+    if (pcSlice->getPicHeader()->getEnableTMVPFlag() && !pcSlice->getPPS()->getRplInfoInPhFlag())
+#else
     if( pcSlice->getPicHeader()->getEnableTMVPFlag() )
+#endif
     {
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if(!pcSlice->getPPS()->getRplInfoInPhFlag())

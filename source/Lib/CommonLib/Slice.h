@@ -2342,6 +2342,9 @@ private:
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
 #endif
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+  uint32_t                    m_colRefIdx;
+#endif
   bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
   uint32_t                    m_maxNumMergeCand;                                        //!< max number of merge candidates
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
@@ -2504,6 +2507,10 @@ public:
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   void                        setPicColFromL0Flag(bool val)                             { m_picColFromL0Flag = val;                                                                     }
   bool                        getPicColFromL0Flag() const                               { return m_picColFromL0Flag;                                                                    }
+#endif
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+  void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                                                       }
+  uint32_t                    getColRefIdx()                                             { return m_colRefIdx;                                                                         }
 #endif
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
   bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  

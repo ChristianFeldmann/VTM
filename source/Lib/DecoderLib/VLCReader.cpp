@@ -4657,30 +4657,24 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
 #if JVET_P0116_POC_MSB
-#if JVET_Q0819_PH_CHANGES
-  int iPOClsb = pocLsb;
-#else
-  int iPOClsb = uiCode;
+#if !JVET_Q0819_PH_CHANGES
+  int pocLsb = uiCode;
 #endif
-  int iMaxPOClsb = 1 << sps->getBitsForPOC();
-  int iPOCmsb;
+  int maxPocLsb = 1 << sps->getBitsForPOC();
+  int pocMsb;
 #endif
   if (pcSlice->getIdrPicFlag())
   {
 #if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
+      pocMsb = picHeader->getPocMsbVal()*maxPocLsb;
     }
     else
     {
-      iPOCmsb = 0;
+      pocMsb = 0;
     }
-#if JVET_Q0819_PH_CHANGES
-    pcSlice->setPOC(iPOCmsb + pocLsb);
-#else
-    pcSlice->setPOC(iPOCmsb + uiCode);
-#endif
+    pcSlice->setPOC(pocMsb + pocLsb);
 #else
 #if JVET_Q0819_PH_CHANGES
     pcSlice->setPOC(pocLsb);
@@ -4692,45 +4686,43 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
   else
   {
 #if !JVET_P0116_POC_MSB
-#if JVET_Q0819_PH_CHANGES
-    int iPOClsb = pocLsb;
-#else
-    int iPOClsb = uiCode;
+#if !JVET_Q0819_PH_CHANGES
+    int pocLsb = uiCode;
 #endif
 #endif
-    int iPrevPOC = prevTid0POC;
+    int prevPoc = prevTid0POC;
 #if !JVET_P0116_POC_MSB
-    int iMaxPOClsb = 1 << sps->getBitsForPOC();
+    int maxPocLsb = 1 << sps->getBitsForPOC();
 #endif
-    int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
-    int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+    int prevPocLsb = prevPoc & (maxPocLsb - 1);
+    int prevPocMsb = prevPoc - prevPocLsb;
 #if !JVET_P0116_POC_MSB
-    int iPOCmsb;
+    int pocMsb;
 #endif
 #if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
+      pocMsb = picHeader->getPocMsbVal()*maxPocLsb;
     }
     else
     {
 #endif
-      if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      if ((pocLsb < prevPocLsb) && ((prevPocLsb - pocLsb) >= (maxPocLsb / 2)))
       {
-        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+        pocMsb = prevPocMsb + maxPocLsb;
       }
-      else if ((iPOClsb > iPrevPOClsb) && ((iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2)))
+      else if ((pocLsb > prevPocLsb) && ((pocLsb - prevPocLsb) > (maxPocLsb / 2)))
       {
-        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+        pocMsb = prevPocMsb - maxPocLsb;
       }
       else
       {
-        iPOCmsb = iPrevPOCmsb;
+        pocMsb = prevPocMsb;
       }
 #if JVET_P0116_POC_MSB
     }
 #endif
-    pcSlice->setPOC(iPOCmsb + iPOClsb);
+    pcSlice->setPOC(pocMsb + pocLsb);
   }
 }
 

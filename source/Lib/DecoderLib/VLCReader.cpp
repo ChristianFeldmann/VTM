@@ -2173,7 +2173,11 @@ void HLSyntaxReader::parseDCI(DCI* dci)
   ptls.resize(numPTLs);
   for (int i = 0; i < numPTLs; i++)
   {
+#if JVET_Q0786_PTL_only
+    parseProfileTierLevel(&ptls[i], true, 0);
+#else
     parseProfileTierLevel(&ptls[i], 0);
+#endif
   }
   dci->setProfileTierLevel(ptls);
 

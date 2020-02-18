@@ -837,7 +837,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCostMode                                          ( m_costMode );
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-  m_cEncLib.setDCIEnabled                                         ( m_DCIEnabled );
+  m_cEncLib.setDCIEnabled                                        ( m_DCIEnabled );
 #else
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
 #endif

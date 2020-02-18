@@ -715,23 +715,16 @@ protected:
 
 #if !JVET_Q0814_DPB
   VPS       m_cVPS;
-<<<<<<< HEAD
-<<<<<<< HEAD
 #endif
-=======
-=======
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
+
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   DCI       m_dci;
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
 #else
-<<<<<<< HEAD
->>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
-=======
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 #endif
+
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
 #if HEVC_SEI
   int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
@@ -1854,21 +1847,13 @@ public:
 #if !JVET_Q0814_DPB
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
-<<<<<<< HEAD
-<<<<<<< HEAD
 #endif
-=======
-=======
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
+
 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void         setDCI(DCI *p)                                        { m_dci = *p; }
   DCI*         getDCI()                                              { return &m_dci; }
 #else
-<<<<<<< HEAD
->>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
-=======
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
   void         setDPS(DPS *p)                                        { m_dps = *p; }
   DPS*         getDPS()                                              { return &m_dps; }
 #endif

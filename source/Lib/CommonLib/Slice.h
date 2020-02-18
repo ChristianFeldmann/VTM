@@ -482,6 +482,11 @@ public:
   void          setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
   bool          getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  friend bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2);
+  friend bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2);
+#endif
 };
 
 class ProfileTierLevel
@@ -523,6 +528,10 @@ public:
 
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  friend bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
+  friend bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
+#endif
 };
 
 
@@ -853,6 +862,12 @@ public:
   size_t getNumPTLs() const { return m_profileTierLevel.size(); }
   void  setProfileTierLevel(const std::vector<ProfileTierLevel>& val) { m_profileTierLevel = val; }
   const ProfileTierLevel& getProfileTierLevel(int idx) const { return m_profileTierLevel[idx]; }
+  bool  IsIndenticalDCI(const DCI& comparedDCI) const
+  {
+    if(m_maxSubLayersMinus1 != comparedDCI.m_maxSubLayersMinus1) return false;
+    if(m_profileTierLevel != comparedDCI.m_profileTierLevel) return false;
+    return true;
+  }
 };
 #else
 class DPS
@@ -879,16 +894,9 @@ public:
   void  setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_profileTierLevel = val; }
   const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
 };
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
 #endif
 
->>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
-=======
-#endif
-
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
 
 class VPS
 {

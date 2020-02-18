@@ -474,9 +474,13 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
+
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
+#endif
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  , m_dci(NULL)
 #endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
@@ -504,6 +508,14 @@ void DecLib::destroy()
 {
   delete m_apcSlicePilot;
   m_apcSlicePilot = NULL;
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  if( m_dci )
+  {
+    delete m_dci;
+    m_dci = NULL;
+  }
+#endif
 
   m_cSliceDecoder.destroy();
 }
@@ -2153,12 +2165,20 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
 void DecLib::xDecodeDCI(InputNALUnit& nalu)
 {
-  DCI* dci = new DCI();
   m_HLSReader.setBitstream(&nalu.getBitstream());
 
   CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
-
-  m_HLSReader.parseDCI(dci);
+  if (!m_dci)
+  {
+    m_dci = new DCI;
+    m_HLSReader.parseDCI(m_dci);
+  }
+  else
+  {
+    DCI dupDCI;
+    m_HLSReader.parseDCI(&dupDCI);
+    CHECK( !m_dci->IsIndenticalDCI(dupDCI), "Two signaled DCIs are different");
+  }
 }
 #else
 void DecLib::xDecodeDPS( InputNALUnit& nalu )

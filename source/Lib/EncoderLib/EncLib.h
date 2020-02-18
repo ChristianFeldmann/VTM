@@ -169,25 +169,16 @@ public:
 
 protected:
   void  xGetNewPicBuffer  ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Picture*& rpcPic, int ppsId ); ///< get picture buffer which will be processed. If ppsId<0, then the ppsMap will be queried for the first match.
-<<<<<<< HEAD
-  void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
-#if JVET_Q0814_DPB
-  void  xInitVPS( const SPS& sps ); ///< initialize VPS from encoder options
-  void  xInitSPS( SPS& sps );       ///< initialize SPS from encoder options
-#else
-  void  xInitVPS(VPS& vps, const SPS& sps); ///< initialize VPS from encoder options
-=======
-  void  xInitVPS(VPS& vps, const SPS& sps); ///< initialize VPS from encoder options
-
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void  xInitDCI(DCI& dci, const SPS& sps); ///< initialize Decoding Capability Information (DCI) from encoder options
 #else
   void  xInitDPS          (DPS &dps, const SPS &sps, const int dpsId); ///< initialize DPS from encoder options
 #endif
-<<<<<<< HEAD
->>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
-=======
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
+#if JVET_Q0814_DPB
+  void  xInitVPS( const SPS& sps ); ///< initialize VPS from encoder options
+  void  xInitSPS( SPS& sps );       ///< initialize SPS from encoder options
+#else
+  void  xInitVPS(VPS& vps, const SPS& sps); ///< initialize VPS from encoder options
   void  xInitSPS          ( SPS& sps, VPS& vps );       ///< initialize SPS from encoder options
 #endif
   void  xInitPPS          (PPS &pps, const SPS &sps); ///< initialize PPS from encoder options

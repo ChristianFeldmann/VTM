@@ -395,7 +395,11 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
 #if ENABLING_MULTI_SPS
     if (layerIdx == 0)
     {
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      actualTotalBits += xWriteDCI(accessUnit, m_pcEncLib->getDCI());
+#else
       actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+#endif
       if (slice->getSPS()->getVPSId() != 0)
       {
         actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -411,13 +415,7 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
 #else
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 #endif
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
->>>>>>> effa8e16... Commit Q0117. HLS clenup: DPS is changed to DCI
-=======
->>>>>>> f765570c... Commit Q0117. HLS clenup: DPS is changed to DCI
+#endif
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.

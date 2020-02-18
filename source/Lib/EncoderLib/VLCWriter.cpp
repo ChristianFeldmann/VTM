@@ -1479,7 +1479,11 @@ void HLSWriter::codeDCI(const DCI* dci)
   for (int i = 0; i < numPTLs; i++)
   {
     ProfileTierLevel ptl = dci->getProfileTierLevel(i);
+#if JVET_Q0786_PTL_only
+    codeProfileTierLevel(&ptl, true, 0);
+#else
     codeProfileTierLevel(&ptl, 0);
+#endif
   }
   WRITE_FLAG(0, "dci_extension_flag");
   xWriteRbspTrailingBits();

@@ -1585,9 +1585,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_Q0400_EXTRA_BITS
   // extra bits are for future extensions, we will read, but ignore them,
   // unless a meaning is specified in the spec
-  READ_CODE(2, uiCode, "num_extra_ph_bits_bytes");
+  READ_CODE(2, uiCode, "num_extra_ph_bits_bytes");  pcSPS->setNumExtraPHBitsBytes(uiCode);
   parseExtraPHBitsStruct( pcSPS, uiCode );
-  READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");
+  READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");  pcSPS->setNumExtraSHBitsBytes(uiCode);
   parseExtraSHBitsStruct( pcSPS, uiCode );
 #endif
 

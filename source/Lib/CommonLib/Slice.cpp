@@ -3415,6 +3415,93 @@ bool Slice::checkRPR()
   return false;
 }
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2)
+{
+  if( op1.m_progressiveSourceFlag                        != op2.m_progressiveSourceFlag                          ) return false;
+  if( op1.m_interlacedSourceFlag                         != op2.m_interlacedSourceFlag                           ) return false;
+  if( op1.m_nonPackedConstraintFlag                      != op2.m_nonPackedConstraintFlag                        ) return false;
+  if( op1.m_frameOnlyConstraintFlag                      != op2.m_frameOnlyConstraintFlag                        ) return false;
+  if( op1.m_intraOnlyConstraintFlag                      != op2.m_intraOnlyConstraintFlag                        ) return false;
+  if( op1.m_maxBitDepthConstraintIdc                     != op2.m_maxBitDepthConstraintIdc                       ) return false;
+  if( op1.m_maxChromaFormatConstraintIdc                 != op2.m_maxChromaFormatConstraintIdc                   ) return false;
+  if( op1.m_onePictureOnlyConstraintFlag                 != op2.m_onePictureOnlyConstraintFlag                   ) return false;
+  if( op1.m_lowerBitRateConstraintFlag                   != op2.m_lowerBitRateConstraintFlag                     ) return false;
+  if( op1.m_noQtbttDualTreeIntraConstraintFlag           != op2.m_noQtbttDualTreeIntraConstraintFlag             ) return false;
+  if( op1.m_noPartitionConstraintsOverrideConstraintFlag != op2.m_noPartitionConstraintsOverrideConstraintFlag   ) return false;
+  if( op1.m_noSaoConstraintFlag                          != op2.m_noSaoConstraintFlag                            ) return false;
+  if( op1.m_noAlfConstraintFlag                          != op2.m_noAlfConstraintFlag                            ) return false;
+#if JVET_Q0795_CCALF                                                                              
+  if( op1.m_noCCAlfConstraintFlag                        != op2.m_noCCAlfConstraintFlag                          ) return false;
+#endif                                                                                         
+  if( op1.m_noRefWraparoundConstraintFlag                != op2.m_noRefWraparoundConstraintFlag                  ) return false;
+  if( op1.m_noTemporalMvpConstraintFlag                  != op2.m_noTemporalMvpConstraintFlag                    ) return false;
+  if( op1.m_noSbtmvpConstraintFlag                       != op2.m_noSbtmvpConstraintFlag                         ) return false;
+  if( op1.m_noAmvrConstraintFlag                         != op2.m_noAmvrConstraintFlag                           ) return false;
+  if( op1.m_noBdofConstraintFlag                         != op2.m_noBdofConstraintFlag                           ) return false;
+  if( op1.m_noDmvrConstraintFlag                         != op2.m_noDmvrConstraintFlag                           ) return false;
+  if( op1.m_noCclmConstraintFlag                         != op2.m_noCclmConstraintFlag                           ) return false;
+  if( op1.m_noMtsConstraintFlag                          != op2.m_noMtsConstraintFlag                            ) return false;
+  if( op1.m_noSbtConstraintFlag                          != op2.m_noSbtConstraintFlag                            ) return false;
+  if( op1.m_noAffineMotionConstraintFlag                 != op2.m_noAffineMotionConstraintFlag                   ) return false;
+  if( op1.m_noBcwConstraintFlag                          != op2.m_noBcwConstraintFlag                            ) return false;
+  if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
+  if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
+  if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
+  if( op1.m_noTriangleConstraintFlag                     != op2.m_noTriangleConstraintFlag                       ) return false;
+  if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
+  if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
+  if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;
+  if( op1.m_noJointCbCrConstraintFlag                    != op2.m_noJointCbCrConstraintFlag                      ) return false;
+  if( op1.m_noQpDeltaConstraintFlag                      != op2.m_noQpDeltaConstraintFlag                        ) return false;
+  if( op1.m_noDepQuantConstraintFlag                     != op2.m_noDepQuantConstraintFlag                       ) return false;
+  if( op1.m_noSignDataHidingConstraintFlag               != op2.m_noSignDataHidingConstraintFlag                 ) return false;
+  if( op1.m_noTrailConstraintFlag                        != op2.m_noTrailConstraintFlag                          ) return false;
+  if( op1.m_noStsaConstraintFlag                         != op2.m_noStsaConstraintFlag                           ) return false;
+  if( op1.m_noRaslConstraintFlag                         != op2.m_noRaslConstraintFlag                           ) return false;
+  if( op1.m_noRadlConstraintFlag                         != op2.m_noRadlConstraintFlag                           ) return false;
+  if( op1.m_noIdrConstraintFlag                          != op2.m_noIdrConstraintFlag                            ) return false;
+  if( op1.m_noCraConstraintFlag                          != op2.m_noCraConstraintFlag                            ) return false;
+  if( op1.m_noGdrConstraintFlag                          != op2.m_noGdrConstraintFlag                            ) return false;
+  if( op1.m_noApsConstraintFlag                          != op2.m_noApsConstraintFlag                            ) return false;
+  return true;
+}
+bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2)
+{
+  return !(op1 == op2);
+}
+
+bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2)
+{
+  if (op1.m_tierFlag        != op2.m_tierFlag) return false;
+  if (op1.m_profileIdc      != op2.m_profileIdc) return false;
+  if (op1.m_numSubProfile   != op2.m_numSubProfile) return false;
+  if (op1.m_levelIdc        != op2.m_levelIdc) return false;
+  if (op1.m_constraintInfo  != op2.m_constraintInfo) return false;
+  if (op1.m_subProfileIdc   != op2.m_subProfileIdc) return false;
+
+  for (int i = 0; i < MAX_TLAYER - 1; i++)
+  {
+    if (op1.m_subLayerLevelPresentFlag[i] != op2.m_subLayerLevelPresentFlag[i])
+    {
+      return false;
+    }
+  }
+  for (int i = 0; i < MAX_TLAYER; i++)
+  {
+    if (op1.m_subLayerLevelIdc[i] != op2.m_subLayerLevelIdc[i])
+    {
+      return false;
+    }
+  }
+  return true;
+}
+bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2)
+{
+  return !(op1 == op2);
+}
+#endif
+
 #if ENABLE_TRACING
 void xTraceVPSHeader()
 {

@@ -141,6 +141,10 @@ private:
 public:
   int                     m_targetSubPicIdx;
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  DCI*                    m_dci;
+#endif
 public:
   DecLib();
   virtual ~DecLib();

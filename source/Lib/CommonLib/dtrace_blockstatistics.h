@@ -248,6 +248,10 @@ void writeBlockStatisticsHeader(const SPS *sps);
 void getAndStoreBlockStatistics(const CodingStructure& cs, const UnitArea& ctuArea);
 void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea);
 void writeAllCodedData(const CodingStructure& cs, const UnitArea& ctuArea);
+#if JVET_Q0806
+class MergeCtx;
+void storeGeoMergeCtx(MergeCtx geoMergeCtx);
+#endif
 #endif
 
 #endif // _DTRACE_BLOCKSTATISTICS_H_

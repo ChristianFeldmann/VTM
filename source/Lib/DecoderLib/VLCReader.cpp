@@ -5400,8 +5400,8 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
 #endif
       CHECK( isChroma &&
-             ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -127 )
-             , "AlfCoeffC shall be in the range of -127 to 127, inclusive" );
+             ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -128 )
+             , "AlfCoeffC shall be in the range of -128 to 127, inclusive" );
     }
   }
 

@@ -462,6 +462,13 @@ void EncReshape::preAnalyzerLMCS(Picture *pcPic, const uint32_t signalType, cons
       bool intraAdp = true, interAdp = true;
 
       calcSeqStats(pcPic, m_srcSeqStats);
+
+      bool isFlat = true;
+      for (int b = 0; b < m_binNum; b++)
+      {
+        if (m_srcSeqStats.binVar[b] > 0) { isFlat = false; }
+      }
+      if (isFlat) { intraAdp = false;  interAdp = false; }
       if (m_binNum == PIC_CODE_CW_BINS)
       {
         if ((m_srcSeqStats.binHist[0] + m_srcSeqStats.binHist[m_binNum - 1]) > 0.005) { m_exceedSTD = true; }

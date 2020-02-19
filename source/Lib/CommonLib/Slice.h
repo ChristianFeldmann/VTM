@@ -2299,6 +2299,9 @@ private:
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
   bool                        m_noOutputOfPriorPicsFlag;                                //!< no output of prior pictures flag
   uint32_t                    m_recoveryPocCnt;                                         //!< recovery POC count
+#if SPS_ID_CHECK
+  bool                        m_noOutputBeforeRecoveryFlag;                             //!< NoOutputBeforeRecoveryFlag
+#endif
   int                         m_spsId;                                                  //!< sequence parameter set ID
   int                         m_ppsId;                                                  //!< picture parameter set ID
 #if JVET_P0116_POC_MSB
@@ -2430,6 +2433,10 @@ public:
   bool                        getNoOutputOfPriorPicsFlag() const                        { return m_noOutputOfPriorPicsFlag;                                                            }
   void                        setRecoveryPocCnt( uint32_t u )                           { m_recoveryPocCnt = u;                                                                        }
   bool                        getRecoveryPocCnt() const                                 { return m_recoveryPocCnt;                                                                     }
+#if SPS_ID_CHECK
+  void                        setNoOutputBeforeRecoveryFlag( bool b )                   { m_noOutputBeforeRecoveryFlag = b;                                                            }
+  bool                        getNoOutputBeforeRecoveryFlag() const                     { return m_noOutputBeforeRecoveryFlag;                                                         }
+#endif
   void                        setSPSId( uint32_t u )                                    { m_spsId = u;                                                                                 }
   uint32_t                    getSPSId() const                                          { return m_spsId;                                                                              }
   void                        setPPSId( uint32_t u )                                    { m_ppsId = u;                                                                                 }
@@ -2862,7 +2869,8 @@ public:
   bool                        getIdrPicFlag() const                                  { return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP; }
   bool                        isIRAP() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA); }
 #if SPS_ID_CHECK
-  bool                        isClvssPu() const                                      { return m_eNalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && m_eNalUnitType <= NAL_UNIT_CODED_SLICE_GDR && !m_pcPPS->getMixedNaluTypesInPicFlag(); }
+  // CLVSS PU is either an IRAP PU with NoOutputBeforeRecoveryFlag equal to 1 or a GDR PU with NoOutputBeforeRecoveryFlag equal to 1.
+  bool                        isClvssPu() const                                      { return m_eNalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && m_eNalUnitType <= NAL_UNIT_CODED_SLICE_GDR && !m_pcPPS->getMixedNaluTypesInPicFlag() && m_pcPicHeader->getNoOutputBeforeRecoveryFlag(); }
 #endif
   bool                        isIDRorBLA() const { return (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP); }
   void                        checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic);

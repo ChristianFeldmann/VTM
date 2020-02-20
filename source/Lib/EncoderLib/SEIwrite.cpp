@@ -41,7 +41,7 @@
 //! \ingroup EncoderLib
 //! \{
 
-void SEIWriter::xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId)
+void SEIWriter::xWriteSEIpayloadData(const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId)
 {
   const SEIBufferingPeriod *bp = NULL;
   switch (sei.payloadType())
@@ -151,7 +151,7 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
     bool traceEnable = g_HLSTraceEnable;
     g_HLSTraceEnable = false;
 #endif
-    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
+    xWriteSEIpayloadData(**sei, sps, hrd, temporalId);
 #if ENABLE_TRACING
     g_HLSTraceEnable = traceEnable;
 #endif
@@ -179,7 +179,7 @@ void SEIWriter::writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList
       xTraceSEIMessageType((*sei)->payloadType());
 #endif
 
-    xWriteSEIpayloadData(bs_count, **sei, sps, hrd, temporalId);
+    xWriteSEIpayloadData(**sei, sps, hrd, temporalId);
   }
   if (!isNested)
   {

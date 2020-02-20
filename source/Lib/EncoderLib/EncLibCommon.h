@@ -39,6 +39,7 @@
 #include <list>
 #include <fstream>
 #include "CommonLib/Slice.h"
+#include "CommonLib/ParameterSetManager.h"
 
 class EncLibCommon
 {

@@ -42,6 +42,7 @@
 #include "CommonLib/BitStream.h"
 #include "CommonLib/Slice.h"
 #include "CommonLib/SampleAdaptiveOffset.h"
+#include "CommonLib/ParameterSetManager.h"
 #include "CABACReader.h"
 
 #if ENABLE_TRACING

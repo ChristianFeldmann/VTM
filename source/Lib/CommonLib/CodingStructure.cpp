@@ -657,6 +657,39 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   return *tu;
 }
 
+void CodingStructure::addEmptyTUs( Partitioner &partitioner )
+{
+  const UnitArea& area    = partitioner.currArea();
+  bool            split   = partitioner.canSplit(TU_MAX_TR_SPLIT, *this);
+  const unsigned  trDepth = partitioner.currTrDepth;
+
+  if( split )
+  {
+    partitioner.splitCurrArea( TU_MAX_TR_SPLIT, *this );  
+    do
+    {
+      addEmptyTUs( partitioner );
+    } while( partitioner.nextPart( *this ) );
+
+    partitioner.exitCurrSplit();
+  }
+  else
+  {
+    TransformUnit &tu = this->addTU( CS::getArea( *this, area, partitioner.chType ), partitioner.chType );
+    unsigned numBlocks = ::getNumberValidTBlocks( *this->pcv );
+    for( unsigned compID = COMPONENT_Y; compID < numBlocks; compID++ )
+    {
+      if( tu.blocks[compID].valid() )
+      {
+        tu.getCoeffs( ComponentID( compID ) ).fill( 0 );
+        tu.getPcmbuf( ComponentID( compID ) ).fill( 0 );
+        tu.rdpcm[compID] = RDPCM_OFF;
+      }
+    }
+    tu.depth = trDepth;
+  }
+}
+
 CUTraverser CodingStructure::traverseCUs( const UnitArea& unit, const ChannelType effChType )
 {
   CodingUnit* firstCU = getCU( isLuma( effChType ) ? unit.lumaPos() : unit.chromaPos(), effChType );

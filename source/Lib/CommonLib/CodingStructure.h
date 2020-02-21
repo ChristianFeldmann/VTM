@@ -143,6 +143,7 @@ public:
   CodingUnit&     addCU(const UnitArea &unit, const ChannelType _chType);
   PredictionUnit& addPU(const UnitArea &unit, const ChannelType _chType);
   TransformUnit&  addTU(const UnitArea &unit, const ChannelType _chType);
+  void            addEmptyTUs(Partitioner &partitioner);
 
   CUTraverser     traverseCUs(const UnitArea& _unit, const ChannelType _chType);
   PUTraverser     traversePUs(const UnitArea& _unit, const ChannelType _chType);

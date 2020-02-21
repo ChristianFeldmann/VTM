@@ -7443,8 +7443,8 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     }
 
 
-    // add an empty TU
-    cs.addTU(CS::getArea(cs, cs.area, partitioner.chType), partitioner.chType);
+    // add empty TU(s)
+    cs.addEmptyTUs( partitioner );
     Distortion distortion = 0;
 
     for (int comp = 0; comp < numValidComponents; comp++)
@@ -7694,14 +7694,8 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
     cs.clearTUs();
 
-    // add a new "empty" TU spanning the whole CU
-    TransformUnit& tu = cs.addTU(cu, partitioner.chType);
-
-    for (int comp = 0; comp < numValidComponents; comp++)
-    {
-      tu.rdpcm[comp] = RDPCM_OFF;
-    }
-    cu.firstTU = cu.lastTU = &tu;
+    // add new "empty" TU(s) spanning the whole CU
+    cs.addEmptyTUs( partitioner );
   }
   if (!iter)
   {

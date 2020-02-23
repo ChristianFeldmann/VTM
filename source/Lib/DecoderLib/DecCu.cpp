@@ -128,6 +128,12 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
       if (currCU.predMode != MODE_INTRA && currCU.predMode != MODE_PLT && currCU.Y().valid())
       {
         xDeriveCUMV(currCU);
+#if JVET_Q0806 && K0149_BLOCK_STATISTICS
+        if(currCU.geoFlag)
+        {
+          storeGeoMergeCtx(m_geoMrgCtx);
+        }
+#endif
       }
       switch( currCU.predMode )
       {

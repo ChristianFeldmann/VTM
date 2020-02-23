@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
+
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split

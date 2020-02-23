@@ -1585,9 +1585,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_Q0400_EXTRA_BITS
   // extra bits are for future extensions, we will read, but ignore them,
   // unless a meaning is specified in the spec
-  READ_CODE(2, uiCode, "num_extra_ph_bits_bytes");
+  READ_CODE(2, uiCode, "num_extra_ph_bits_bytes");  pcSPS->setNumExtraPHBitsBytes(uiCode);
   parseExtraPHBitsStruct( pcSPS, uiCode );
-  READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");
+  READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");  pcSPS->setNumExtraSHBitsBytes(uiCode);
   parseExtraSHBitsStruct( pcSPS, uiCode );
 #endif
 
@@ -2777,35 +2777,41 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   if( picHeader->getPicRplPresentFlag() )
 #endif
   {
+    bool rplSpsFlag0 = 0;
+
     // List0 and List1
     for(int listIdx = 0; listIdx < 2; listIdx++) 
     {                 
-      // copy L1 index from L0 index
-      if (listIdx == 1 && !pps->getRpl1IdxPresentFlag())
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      if (sps->getNumRPL(listIdx) > 0 &&
+          (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
+#else
+      if (sps->getNumRPL(listIdx) > 0 && !pps->getPPSRefPicListSPSIdc(listIdx) &&
+          (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
+#endif
       {
-        picHeader->setRPL1idx(picHeader->getRPL0idx());
-        uiCode = (picHeader->getRPL0idx() != -1);
+        READ_FLAG(uiCode, "pic_rpl_sps_flag[i]");
       }
-      // RPL in picture header or SPS
-      else if (sps->getNumRPL( listIdx ) == 0)
+      else if (sps->getNumRPL(listIdx) == 0)
       {
         uiCode = 0;
       }
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
-      else
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      else if (pps->getRpl1IdxPresentFlag())
       {
-        READ_FLAG(uiCode, "pic_rpl_sps_flag[i]");
-      }
-#else
-      else if (!pps->getPPSRefPicListSPSIdc( listIdx ))
-      {
-        READ_FLAG(uiCode, "pic_rpl_sps_flag[i]");
-      }
-      else
-      {
-        uiCode = pps->getPPSRefPicListSPSIdc( listIdx ) - 1;
+        uiCode = pps->getPPSRefPicListSPSIdc(listIdx) - 1;
       }
 #endif
+      else
+      {
+        uiCode = rplSpsFlag0;
+      }
+
+      if (listIdx == 0)
+      {
+        rplSpsFlag0 = uiCode;
+      }
+
       // explicit RPL in picture header
       if (!uiCode)
       {
@@ -2816,23 +2822,26 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         picHeader->setRPL(listIdx, rpl);
       }
       // use list from SPS
-      else 
-      { 
-        if (listIdx == 1 && !pps->getRpl1IdxPresentFlag())
-        {
-          picHeader->setRPL( listIdx, sps->getRPLList( listIdx )->getReferencePictureList(picHeader->getRPLIdx( listIdx )));
-        }
-        else if (sps->getNumRPL( listIdx ) > 1)
+      else
+      {
+        if (sps->getNumRPL(listIdx) > 1 &&
+            (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
         {
           int numBits = ceilLog2(sps->getNumRPL( listIdx ));
           READ_CODE(numBits, uiCode, "pic_rpl_idx[i]");
           picHeader->setRPLIdx( listIdx, uiCode );
           picHeader->setRPL( listIdx, sps->getRPLList( listIdx )->getReferencePictureList(uiCode));
         }
-        else
+        else if (sps->getNumRPL(listIdx) == 1)
         {
           picHeader->setRPLIdx( listIdx, 0 );
           picHeader->setRPL( listIdx, sps->getRPLList( listIdx )->getReferencePictureList(0));
+        }
+        else
+        {
+          assert(picHeader->getRPLIdx(0) != -1);
+          picHeader->setRPLIdx( listIdx, picHeader->getRPLIdx(0));
+          picHeader->setRPL( listIdx, sps->getRPLList( listIdx )->getReferencePictureList(picHeader->getRPLIdx( listIdx )));
         }
       }
 
@@ -3621,18 +3630,41 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #else
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
+#if JVET_P0116_POC_MSB
+  int iPOClsb = uiCode;
+  int iMaxPOClsb = 1 << sps->getBitsForPOC();
+  int iPOCmsb;
+#endif
   if (pcSlice->getIdrPicFlag())
   {
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
+    }
+    else
+    {
+      iPOCmsb = 0;
+    }
+    pcSlice->setPOC(iPOCmsb + iPOClsb);
+#else
     pcSlice->setPOC(uiCode);
+#endif
   }
   else
   {
+#if !JVET_P0116_POC_MSB
     int iPOClsb = uiCode;
+#endif
     int iPrevPOC = prevTid0POC;
+#if !JVET_P0116_POC_MSB
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
+#endif
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
+#if !JVET_P0116_POC_MSB
     int iPOCmsb;
+#endif
 #if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
@@ -3934,6 +3966,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     else
     {
       //Read L0 related syntax elements
+      bool rplSpsFlag0 = 0;
+
       if (sps->getNumRPL0() > 0)
       {
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
@@ -3953,6 +3987,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         uiCode = 0;
       }
+
+      rplSpsFlag0 = uiCode;
 
       if (!uiCode) //explicitly carried in this SH
       {
@@ -4006,54 +4042,51 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
 
       //Read L1 related syntax elements
-      if (!pps->getRpl1IdxPresentFlag())
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      if (sps->getNumRPL(1) > 0 && pps->getRpl1IdxPresentFlag())
+#else
+      if (sps->getNumRPL(1) > 0 && pps->getRpl1IdxPresentFlag() && !pps->getPPSRefPicListSPSIdc(1))
+#endif
       {
-        pcSlice->setRPL1idx(pcSlice->getRPL0idx());
-        if (pcSlice->getRPL1idx() != -1)
-          pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(pcSlice->getRPL0idx()));
+          READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
       }
+      else if (sps->getNumRPL(1) == 0)
+      {
+        uiCode = 0;
+      }
+#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      else if (pps->getRpl1IdxPresentFlag())
+      {
+        uiCode = pps->getPPSRefPicListSPSIdc(1) - 1;
+      }
+#endif
       else
       {
-        if (sps->getNumRPL1() > 0)
+        uiCode = rplSpsFlag0;
+      }
+
+      if (uiCode == 1)
+      {
+        if (sps->getNumRPL(1) > 1 && pps->getRpl1IdxPresentFlag())
         {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-          if (!pps->getPPSRefPicListSPSIdc1())
-          {
-            READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
-          }
-          else
-          {
-            uiCode = pps->getPPSRefPicListSPSIdc1() - 1;
-          }
-#else
-          READ_FLAG(uiCode, "ref_pic_list_sps_flag[1]");
-#endif
+          int numBits = ceilLog2(sps->getNumRPL1());
+          READ_CODE(numBits, uiCode, "ref_pic_list_idx[1]");
+          pcSlice->setRPL1idx(uiCode);
+          pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(uiCode));
+        }
+        else if (sps->getNumRPL(1) == 1)
+        {
+          pcSlice->setRPL1idx(0);
+          pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(0));
         }
         else
         {
-          uiCode = 0;
-        }
-        if (uiCode == 1)
-        {
-          if (sps->getNumRPL1() > 1)
-          {
-            int numBits = ceilLog2(sps->getNumRPL1());
-            READ_CODE(numBits, uiCode, "ref_pic_list_idx[1]");
-            pcSlice->setRPL1idx(uiCode);
-            pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(uiCode));
-          }
-          else
-          {
-            pcSlice->setRPL1idx(0);
-            pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(0));
-          }
-        }
-        else
-        {
-          pcSlice->setRPL1idx(-1);
+          assert(pcSlice->getRPL0idx() != -1);
+          pcSlice->setRPL1idx(pcSlice->getRPL0idx());
+          pcSlice->setRPL1(sps->getRPLList1()->getReferencePictureList(pcSlice->getRPL0idx()));
         }
       }
-      if (pcSlice->getRPL1idx() == -1) //explicitly carried in this SH
+      else
       {
         ReferencePictureList* rpl1 = pcSlice->getLocalRPL1();
         (*rpl1) = ReferencePictureList();
@@ -4633,50 +4666,73 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
   // picture order count
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
+#if JVET_P0116_POC_MSB
+#if !JVET_Q0819_PH_CHANGES
+  int pocLsb = uiCode;
+#endif
+  int maxPocLsb = 1 << sps->getBitsForPOC();
+  int pocMsb;
+#endif
   if (pcSlice->getIdrPicFlag())
   {
+#if JVET_P0116_POC_MSB
+    if (picHeader->getPocMsbPresentFlag())
+    {
+      pocMsb = picHeader->getPocMsbVal()*maxPocLsb;
+    }
+    else
+    {
+      pocMsb = 0;
+    }
+    pcSlice->setPOC(pocMsb + pocLsb);
+#else
 #if JVET_Q0819_PH_CHANGES
     pcSlice->setPOC(pocLsb);
 #else
     pcSlice->setPOC(uiCode);
 #endif
+#endif
   }
   else
   {
-#if JVET_Q0819_PH_CHANGES
-    int iPOClsb = pocLsb;
-#else
-    int iPOClsb = uiCode;
+#if !JVET_P0116_POC_MSB
+#if !JVET_Q0819_PH_CHANGES
+    int pocLsb = uiCode;
 #endif
-    int iPrevPOC = prevTid0POC;
-    int iMaxPOClsb = 1 << sps->getBitsForPOC();
-    int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
-    int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
-    int iPOCmsb;
+#endif
+    int prevPoc = prevTid0POC;
+#if !JVET_P0116_POC_MSB
+    int maxPocLsb = 1 << sps->getBitsForPOC();
+#endif
+    int prevPocLsb = prevPoc & (maxPocLsb - 1);
+    int prevPocMsb = prevPoc - prevPocLsb;
+#if !JVET_P0116_POC_MSB
+    int pocMsb;
+#endif
 #if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
-      iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
+      pocMsb = picHeader->getPocMsbVal()*maxPocLsb;
     }
     else
     {
 #endif
-      if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
+      if ((pocLsb < prevPocLsb) && ((prevPocLsb - pocLsb) >= (maxPocLsb / 2)))
       {
-        iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
+        pocMsb = prevPocMsb + maxPocLsb;
       }
-      else if ((iPOClsb > iPrevPOClsb) && ((iPOClsb - iPrevPOClsb) > (iMaxPOClsb / 2)))
+      else if ((pocLsb > prevPocLsb) && ((pocLsb - prevPocLsb) > (maxPocLsb / 2)))
       {
-        iPOCmsb = iPrevPOCmsb - iMaxPOClsb;
+        pocMsb = prevPocMsb - maxPocLsb;
       }
       else
       {
-        iPOCmsb = iPrevPOCmsb;
+        pocMsb = prevPocMsb;
       }
 #if JVET_P0116_POC_MSB
     }
 #endif
-    pcSlice->setPOC(iPOCmsb + iPOClsb);
+    pcSlice->setPOC(pocMsb + pocLsb);
   }
 }
 
@@ -4920,6 +4976,15 @@ void HLSyntaxReader::parsePredWeightTable( Slice* pcSlice, const SPS *sps )
         uiTotalSignalledWeightFlags += 2*wp[COMPONENT_Cb].bPresentFlag;
       }
     }
+    else
+    {
+      for ( int iRefIdx=0; iRefIdx<MAX_NUM_REF; iRefIdx++ )
+      {
+        pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
+        wp[1].bPresentFlag = false;
+        wp[2].bPresentFlag = false;
+      }
+    }
     for ( int iRefIdx=0 ; iRefIdx<pcSlice->getNumRefIdx(eRefPicList) ; iRefIdx++ )
     {
       pcSlice->getWpScaling(eRefPicList, iRefIdx, wp);
@@ -5042,6 +5107,15 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
           wp[j].bPresentFlag = (uiCode == 1);
         }
         totalSignalledWeightFlags += 2 * wp[COMPONENT_Cb].bPresentFlag;
+      }
+    }
+    else
+    {
+      for ( int refIdx=0; refIdx<MAX_NUM_REF; refIdx++ )
+      {
+        picHeader->getWpScaling(refPicList, refIdx, wp);
+        wp[1].bPresentFlag = false;
+        wp[2].bPresentFlag = false;
       }
     }
     for (int refIdx = 0; refIdx < numLxWeights; refIdx++)
@@ -5326,8 +5400,8 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
       coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
 #endif
       CHECK( isChroma &&
-             ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -127 )
-             , "AlfCoeffC shall be in the range of -127 to 127, inclusive" );
+             ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -128 )
+             , "AlfCoeffC shall be in the range of -128 to 127, inclusive" );
     }
   }
 

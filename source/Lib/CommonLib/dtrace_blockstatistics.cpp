@@ -42,6 +42,10 @@
 #include "CommonLib/Picture.h"
 #include "CommonLib/UnitTools.h"
 //#include "CommonLib/CodingStructure.h"
+#if JVET_Q0806
+#include <queue>
+#endif
+
 #define BLOCK_STATS_POLYGON_MIN_POINTS                    3
 #define BLOCK_STATS_POLYGON_MAX_POINTS                    5
 
@@ -359,6 +363,185 @@ void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& tr
     CHECK(triangleDir != TRIANGLE_DIR_45 && triangleDir != TRIANGLE_DIR_135, "Unknown triangle type");
   }
 }
+#else
+void retrieveGeoPolygons(const CodingUnit& cu, std::vector<Position> (&geoPartitions)[2], Position (&linePositions)[2])
+{
+  // adapted code from interpolation filter to find geo partition polygons like this:
+  // use SAD mask, which should clearly partition the two polygons.
+  // loop over boundary pixels and find positions where there is a change, these should be the polygon corners
+  static bool isInitialized = false;
+  static std::vector<Position> allGeoPartitionings[GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][GEO_NUM_PARTITION_MODE][2];
+  static Position allGeoPartitioningLines[GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][GEO_NUM_PARTITION_MODE][2];
+
+  if(!isInitialized)
+  {
+    for( int hIdx = 0; hIdx < GEO_NUM_CU_SIZE; hIdx++ )
+    {
+      int16_t height = 1 << ( hIdx + GEO_MIN_CU_LOG2);
+      for( int wIdx = 0; wIdx < GEO_NUM_CU_SIZE; wIdx++ )
+      {
+        int16_t width = 1 << (wIdx + GEO_MIN_CU_LOG2);
+        for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
+        {
+          int16_t angle         = g_GeoParams[splitDir][0];
+
+          int maskStride = 0;
+          int stepX = 1;
+          Pel* SADmask;
+          if (g_angle2mirror[angle] == 2)
+          {
+            maskStride = -GEO_WEIGHT_MASK_SIZE;
+            SADmask = &g_globalGeoEncSADmask[g_angle2mask[g_GeoParams[splitDir][0]]][(GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[splitDir][hIdx][wIdx][1]) * GEO_WEIGHT_MASK_SIZE + g_weightOffset[splitDir][hIdx][wIdx][0]];
+          }
+          else if (g_angle2mirror[angle] == 1)
+          {
+            stepX = -1;
+            maskStride = GEO_WEIGHT_MASK_SIZE;
+            SADmask = &g_globalGeoEncSADmask[g_angle2mask[g_GeoParams[splitDir][0]]][g_weightOffset[splitDir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[splitDir][hIdx][wIdx][0])];
+          }
+          else
+          {
+            maskStride = GEO_WEIGHT_MASK_SIZE;
+            SADmask = &g_globalGeoEncSADmask[g_angle2mask[g_GeoParams[splitDir][0]]][g_weightOffset[splitDir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[splitDir][hIdx][wIdx][0]];
+          }
+
+          int currentPartition = 0;
+          std::vector<Pel> boundaryOfMask; // for debugging
+
+          Area partitionArea = Area(0, 0, width, height);
+          Position TL = partitionArea.topLeft();
+          Position TR = partitionArea.topRight();    TR = TR.offset(1, 0);
+          Position BL = partitionArea.bottomLeft();  BL = BL.offset(0, 1);
+          Position BR = partitionArea.bottomRight(); BR = BR.offset(1, 1);
+
+          std::vector<Position> oneGeoPartitioning[2];
+          Position oneGeoPartitioningLine[2];
+          // corner of block is a corner of the first partition
+          oneGeoPartitioning[currentPartition].push_back(TL);
+
+          // process top boundary
+          for( int x = 0; x < width-1; x++ )
+          {
+            boundaryOfMask.push_back(*SADmask);
+            if(*SADmask != *(SADmask+stepX))
+            {
+              // found a change of partitions, it is a corner of both partition polygons
+              oneGeoPartitioning[currentPartition].push_back(Position(TL.x + x, TL.y));
+              oneGeoPartitioningLine[currentPartition] = Position(TL.x + x, TL.y);
+              currentPartition ^= 0x01;
+              oneGeoPartitioning[currentPartition].push_back(Position(TL.x + x, TL.y));
+            }
+            SADmask += stepX;
+          }
+
+          // corner of block is a corner of the current partition
+          oneGeoPartitioning[currentPartition].push_back(TR);
+
+          // process right boundary
+          for( int y = 0; y < height-1; y++ )
+          {
+            boundaryOfMask.push_back(*SADmask);
+            if(*SADmask != *(SADmask+maskStride))
+            {
+              // found a change of partitions, it is a corner of both partition polygons
+              oneGeoPartitioning[currentPartition].push_back(Position(TR.x, TR.y + y));
+              oneGeoPartitioningLine[currentPartition] = Position(TR.x, TR.y + y);
+              currentPartition ^= 0x01;
+              oneGeoPartitioning[currentPartition].push_back(Position(TR.x, TR.y + y));
+            }
+            SADmask += maskStride;
+          }
+
+          // corner of block is a corner of the current partition
+          oneGeoPartitioning[currentPartition].push_back(BR);
+
+          // process bottom boundary
+          for( int x = width-1; x > 0; x-- )
+          {
+            boundaryOfMask.push_back(*SADmask);
+            if(*SADmask != *(SADmask-stepX))
+            {
+              // found a change of partitions, it is a corner of both partition polygons
+              oneGeoPartitioning[currentPartition].push_back(Position(BL.x + x, BL.y));
+              oneGeoPartitioningLine[currentPartition] = Position(BL.x + x, BL.y);
+              currentPartition ^= 0x01;
+              oneGeoPartitioning[currentPartition].push_back(Position(BL.x + x, BL.y));
+            }
+            SADmask -= stepX;
+          }
+
+          // corner of block is a corner of the current partition
+          oneGeoPartitioning[currentPartition].push_back(BL);
+
+          // process left boundary
+          for( int y = height-1; y > 0; y-- )
+          {
+            boundaryOfMask.push_back(*SADmask);
+            if(*SADmask != *(SADmask-maskStride))
+            {
+              // found a change of partitions, it is a corner of both partition polygons
+              oneGeoPartitioning[currentPartition].push_back(Position(TL.x, TL.y + y));
+              oneGeoPartitioningLine[currentPartition] = Position(TL.x, TL.y + y);
+              currentPartition ^= 0x01;
+              oneGeoPartitioning[currentPartition].push_back(Position(TL.x, TL.y + y));
+            }
+            SADmask -= maskStride;
+          }
+
+          // corner of block is a corner of the current partition
+          oneGeoPartitioning[currentPartition].push_back(TL);
+
+          // remove duplicate points
+          for( auto geoPartIdx = 0; geoPartIdx < 2; geoPartIdx++)
+          {
+            // this will only remove consecutive duplicates
+            auto last = std::unique(oneGeoPartitioning[geoPartIdx].begin(), oneGeoPartitioning[geoPartIdx].end());
+            oneGeoPartitioning[geoPartIdx].erase(last, oneGeoPartitioning[geoPartIdx].end());
+            // also check if first and last are the same
+            if(oneGeoPartitioning[geoPartIdx].front() == oneGeoPartitioning[geoPartIdx].back())
+            {
+              oneGeoPartitioning[geoPartIdx].pop_back();
+            }
+
+            CHECK(!(oneGeoPartitioning[geoPartIdx].size() > 2 && oneGeoPartitioning[geoPartIdx].size() < 6), "Invalid geo partition shape. Polygon should have between 3 and 5 corners.");
+          }
+
+          allGeoPartitionings[hIdx][wIdx][splitDir][0] = oneGeoPartitioning[0];
+          allGeoPartitionings[hIdx][wIdx][splitDir][1] = oneGeoPartitioning[1];
+          allGeoPartitioningLines[hIdx][wIdx][splitDir][0] = oneGeoPartitioningLine[0];
+          allGeoPartitioningLines[hIdx][wIdx][splitDir][1] = oneGeoPartitioningLine[1];
+        }
+      }
+    }
+    isInitialized = true;
+  }
+
+  const uint8_t splitDir = cu.firstPU->geoSplitDir;
+  int16_t wIdx = floorLog2(cu.lwidth()) - GEO_MIN_CU_LOG2;
+  int16_t hIdx = floorLog2(cu.lheight()) - GEO_MIN_CU_LOG2;
+
+  Position TL = cu.Y().topLeft();
+
+  geoPartitions[0] = allGeoPartitionings[hIdx][wIdx][splitDir][0];
+  geoPartitions[1] = allGeoPartitionings[hIdx][wIdx][splitDir][1];
+  linePositions[0] = allGeoPartitioningLines[hIdx][wIdx][splitDir][0];
+  linePositions[1] = allGeoPartitioningLines[hIdx][wIdx][splitDir][1];
+
+  // offset the partitioning to the current cu
+  for( auto geoPartIdx = 0; geoPartIdx < 2; geoPartIdx++)
+  {
+    for( Position &polygonCorner : geoPartitions[geoPartIdx])
+    {
+      polygonCorner.repositionTo(polygonCorner.offset(TL));
+    }
+  }
+}
+
+std::queue<MergeCtx> geoMergeCtxtsOfCurrentCtu;
+void storeGeoMergeCtx(MergeCtx geoMergeCtx)
+{
+  geoMergeCtxtsOfCurrentCtu.push(geoMergeCtx);
+}
 #endif
 
 void writeBlockStatisticsHeader(const SPS *sps)
@@ -547,7 +730,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               }
             }
 #endif
-            else
+            else if (pu.cu->affine)
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -656,11 +839,77 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
 
               }
             }
-
-
-
-
           }
+
+#if JVET_Q0806
+          if (cu.geoFlag)
+          {
+            const uint8_t candIdx0 = cu.firstPU->geoMergeIdx0;
+            const uint8_t candIdx1 = cu.firstPU->geoMergeIdx1;
+            std::vector<Position> geoPartitions[2];
+            Position linePositions[2];
+            retrieveGeoPolygons(cu, geoPartitions, linePositions);
+            DTRACE_LINE(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::GeoPartitioning), linePositions[0].x, linePositions[0].y, linePositions[1].x, linePositions[1].y);
+
+            if(geoMergeCtxtsOfCurrentCtu.size() > 0)
+            // Geo partition MVs can only be stored when using the statistics with the decoder. Encoder is not supported
+            {
+              MergeCtx geoMrgCtx = geoMergeCtxtsOfCurrentCtu.front();
+              geoMergeCtxtsOfCurrentCtu.pop();
+
+              // first partition
+              {
+                PredictionUnit tmpPu = *cu.firstPU;
+                geoMrgCtx.setMergeInfo( tmpPu, candIdx0 );
+                const int geoPartIdx = 0;
+                for (int refIdx = 0; refIdx < 2; refIdx++)
+                {
+                  if (tmpPu.refIdx[refIdx] != -1)
+                  {
+                    Mv tmpMv = tmpPu.mv[refIdx];
+                    tmpMv.hor = tmpMv.hor >= 0 ? (tmpMv.hor + nOffset) >> nShift : -((-tmpMv.hor + nOffset) >> nShift);
+                    tmpMv.ver = tmpMv.ver >= 0 ? (tmpMv.ver + nOffset) >> nShift : -((-tmpMv.ver + nOffset) >> nShift);
+                    DTRACE_POLYGON_VECTOR(g_trace_ctx,
+                                          D_BLOCK_STATISTICS_ALL,
+                                          cu.slice->getPOC(),
+                                          geoPartitions[geoPartIdx],
+                                          GetBlockStatisticName(refIdx==0?BlockStatistic::GeoMVL0:BlockStatistic::GeoMVL1),
+                                          tmpMv.hor,
+                                          tmpMv.ver
+                                          );
+                  }
+                }
+              }
+
+              // second partition
+              {
+                PredictionUnit tmpPu = *cu.firstPU;
+                geoMrgCtx.setMergeInfo( tmpPu, candIdx1 );
+                const int geoPartIdx = 1;
+                {
+                  for (int refIdx = 0; refIdx < 2; refIdx++)
+                  {
+                    if (tmpPu.refIdx[refIdx] != -1)
+                    {
+                      Mv tmpMv = tmpPu.mv[refIdx];
+                      tmpMv.hor = tmpMv.hor >= 0 ? (tmpMv.hor + nOffset) >> nShift : -((-tmpMv.hor + nOffset) >> nShift);
+                      tmpMv.ver = tmpMv.ver >= 0 ? (tmpMv.ver + nOffset) >> nShift : -((-tmpMv.ver + nOffset) >> nShift);
+                      DTRACE_POLYGON_VECTOR(g_trace_ctx,
+                                            D_BLOCK_STATISTICS_ALL,
+                                            cu.slice->getPOC(),
+                                            geoPartitions[geoPartIdx],
+                                            GetBlockStatisticName(refIdx==0?BlockStatistic::GeoMVL0:BlockStatistic::GeoMVL1),
+                                            tmpMv.hor,
+                                            tmpMv.ver
+                                            );
+                    }
+                  }
+                }
+              }
+            }
+          }
+#endif
+
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SMVDFlag), cu.smvdMode);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::RootCbf), cu.rootCbf);
@@ -742,6 +991,10 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
       }
     }
   }
+
+#if JVET_Q0806
+  CHECK(geoMergeCtxtsOfCurrentCtu.size() != 0, "Did not use all pushed back geo merge contexts. Should not be possible!");
+#endif
 }
 
 void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)

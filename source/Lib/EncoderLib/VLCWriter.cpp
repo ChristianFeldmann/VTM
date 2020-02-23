@@ -1920,48 +1920,43 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     // List0 and List1
     for(int listIdx = 0; listIdx < 2; listIdx++) 
     {                 
-      // copy L1 index from L0 index
-      if (listIdx == 1 && !pps->getRpl1IdxPresentFlag())
-      {
-        picHeader->setRPL1idx(picHeader->getRPL0idx());
-      }      
-      // RPL in picture header or SPS
-      else if (sps->getNumRPL(listIdx) > 0)
-      {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-        if (!pps->getPPSRefPicListSPSIdc(listIdx))
-        {
-          WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "pic_rpl_sps_flag[i]");
-        }
-        else if (pps->getPPSRefPicListSPSIdc( listIdx ) == 1)
-        {
-          picHeader->setRPLIdx( listIdx, -1);
-        }
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      if(sps->getNumRPL(listIdx) > 0 &&
+          (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
 #else
-        WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "pic_rpl_sps_flag[i]");
+      if(sps->getNumRPL(listIdx) > 0 && !pps->getPPSRefPicListSPSIdc(listIdx) &&
+          (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
 #endif
-      }
-      else 
       {
-          picHeader->setRPLIdx( listIdx, -1 );
+        WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "pic_rpl_sps_flag[i]");
+      }
+      else if(sps->getNumRPL(listIdx) == 0)
+      {
+        CHECK(picHeader->getRPLIdx(listIdx) != -1, "rpl_sps_flag[1] will be infer to 0 and this is not what was expected");
+      }
+      else if(listIdx == 1)
+      {
+        auto rplsSpsFlag0 = picHeader->getRPLIdx(0) != -1 ? 1 : 0;
+        auto rplsSpsFlag1 = picHeader->getRPLIdx(1) != -1 ? 1 : 0;
+        CHECK(rplsSpsFlag1 != rplsSpsFlag0, "rpl_sps_flag[1] will be infer to 0 and this is not what was expected");
       }
 
-      // use list from SPS
-      if (picHeader->getRPLIdx(listIdx) != -1)
+      if(picHeader->getRPLIdx(listIdx) != -1)
       {
-        if (listIdx == 1 && !pps->getRpl1IdxPresentFlag())
-        {
-        }
-        else if (sps->getNumRPL( listIdx ) > 1)
+        if(sps->getNumRPL(listIdx) > 1 &&
+            (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
         {
           int numBits = ceilLog2(sps->getNumRPL( listIdx ));
           WRITE_CODE(picHeader->getRPLIdx(listIdx), numBits, "pic_rpl_idx[i]");
         }
+        else if(sps->getNumRPL(listIdx) == 1)
+        {
+          CHECK(picHeader->getRPLIdx(listIdx) != 0, "RPL1Idx is not signalled but it is not equal to 0");
+        }
         else
         {
-          picHeader->setRPLIdx( listIdx, 0 );
+          CHECK(picHeader->getRPL1idx() != picHeader->getRPL0idx(), "RPL1Idx is not signalled but it is not the same as RPL0Idx");
         }
-        picHeader->setRPL( listIdx, sps->getRPLList( listIdx )->getReferencePictureList(picHeader->getRPLIdx(listIdx)));
       }
       // explicit RPL in picture header
       else
@@ -2778,43 +2773,48 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
 
       //Write L1 related syntax elements
-      if (!pcSlice->getPPS()->getRpl1IdxPresentFlag())
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+      if (pcSlice->getSPS()->getNumRPL1() > 0 && pcSlice->getPPS()->getRpl1IdxPresentFlag())
+#else
+      if (pcSlice->getSPS()->getNumRPL1() > 0 && pcSlice->getPPS()->getRpl1IdxPresentFlag() && !pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
+#endif
       {
-        CHECK(pcSlice->getRPL1idx() != pcSlice->getRPL0idx(), "RPL1Idx is not signalled but it is not the same as RPL0Idx");
-        if (pcSlice->getRPL1idx() == -1)
-        {  //write local RPL1
-          xCodeRefPicList( pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC(), !pcSlice->getSPS()->getUseWP() && !pcSlice->getSPS()->getUseWPBiPred() );
-        }
+        WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
+      }
+      else if (pcSlice->getSPS()->getNumRPL1() == 0)
+      {
+        CHECK(pcSlice->getRPL1idx() != -1, "rpl_sps_flag[1] will be infer to 0 and this is not what was expected");
       }
       else
       {
-        if (pcSlice->getSPS()->getNumRPL1() > 0)
+        auto rplsSpsFlag0 = pcSlice->getRPL0idx() != -1 ? 1 : 0;
+        auto rplsSpsFlag1 = pcSlice->getRPL1idx() != -1 ? 1 : 0;
+        CHECK(rplsSpsFlag1 != rplsSpsFlag0, "rpl_sps_flag[1] will be infer to 0 and this is not what was expected");
+      }
+
+      if (pcSlice->getRPL1idx() != -1)
+      {
+        if (pcSlice->getSPS()->getNumRPL1() > 1 && pcSlice->getPPS()->getRpl1IdxPresentFlag())
         {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-        if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
-        {
-#endif
-          WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-        }
-#endif
-        }
-        if (pcSlice->getRPL1idx() != -1)
-        {
-          if (pcSlice->getSPS()->getNumRPL1() > 1)
+          int numBits = 0;
+          while ((1 << numBits) < pcSlice->getSPS()->getNumRPL1())
           {
-            int numBits = 0;
-            while ((1 << numBits) < pcSlice->getSPS()->getNumRPL1())
-            {
-              numBits++;
-            }
-            WRITE_CODE(pcSlice->getRPL1idx(), numBits, "ref_pic_list_idx[1]");
+            numBits++;
           }
+          WRITE_CODE(pcSlice->getRPL1idx(), numBits, "ref_pic_list_idx[1]");
+        }
+        else if (pcSlice->getSPS()->getNumRPL1() == 1)
+        {
+          CHECK(pcSlice->getRPL1idx() != 0, "RPL1Idx is not signalled but it is not equal to 0");
         }
         else
-        {  //write local RPL1
-          xCodeRefPicList( pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC(), !pcSlice->getSPS()->getUseWP() && !pcSlice->getSPS()->getUseWPBiPred() );
+        {
+          CHECK(pcSlice->getRPL1idx() != pcSlice->getRPL0idx(), "RPL1Idx is not signalled but it is not the same as RPL0Idx");
         }
+      }
+      else
+      {  //write local RPL1
+        xCodeRefPicList( pcSlice->getRPL1(), pcSlice->getSPS()->getLongTermRefsPresent(), pcSlice->getSPS()->getBitsForPOC(), !pcSlice->getSPS()->getUseWP() && !pcSlice->getSPS()->getUseWPBiPred() );
       }
       //Deal POC Msb cycle signalling for LTRP
       if (pcSlice->getRPL1()->getNumberOfLongtermPictures())

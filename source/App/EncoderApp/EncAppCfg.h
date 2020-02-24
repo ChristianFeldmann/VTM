@@ -508,6 +508,9 @@ protected:
   bool      m_pictureTimingSEIEnabled;
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  bool      m_scalableNestingSEIEnabled;
+#endif
   bool      m_frameFieldInfoSEIEnabled;
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;

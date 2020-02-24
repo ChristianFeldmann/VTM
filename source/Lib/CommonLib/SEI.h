@@ -69,6 +69,9 @@ public:
     TEMPORAL_LEVEL0_INDEX                = 131,
 #endif
     DECODED_PICTURE_HASH                 = 132,
+#if JVET_P0190_SCALABLE_NESTING_SEI
+    SCALABLE_NESTING                     = 133,
+#endif
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     DEPENDENT_RAP_INDICATION             = 145,
     EQUIRECTANGULAR_PROJECTION           = 150,
@@ -491,6 +494,31 @@ SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
 
 /// delete list of SEI messages (freeing the referenced objects)
 void deleteSEIs (SEIMessages &seiList);
+
+#if JVET_P0190_SCALABLE_NESTING_SEI
+class SEIScalableNesting : public SEI
+{
+public:
+  PayloadType payloadType() const { return SCALABLE_NESTING; }
+
+  SEIScalableNesting() {}
+
+  virtual ~SEIScalableNesting()
+  {
+    deleteSEIs(m_nestedSEIs);
+  }
+
+  bool  m_nestingOlsFlag;
+  uint32_t m_nestingNumOlssMinus1;
+  uint32_t m_nestingOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
+  uint32_t m_nestingOlsIdx[MAX_NESTING_NUM_LAYER];
+  bool  m_nestingAllLayersFlag;                           //value valid if m_nestingOlsFlag == 0
+  uint32_t  m_nestingNumLayersMinus1;                     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
+  uint8_t m_nestingLayerId[MAX_NESTING_NUM_LAYER];        //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
+
+  SEIMessages m_nestedSEIs;
+};
+#endif
 
 #if HEVC_SEI
 class SEIScalableNesting : public SEI

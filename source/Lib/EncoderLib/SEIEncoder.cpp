@@ -381,7 +381,9 @@ void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, 
   scalableNestingSEI->m_nestingOlsFlag = 1;         // by If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
   scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs. 
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+  {
     scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is  
+  }
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
   {
     if (i == 0)

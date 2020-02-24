@@ -371,6 +371,9 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
 }
 
 #if JVET_P0190_SCALABLE_NESTING_SEI
+//! initialize scalable nesting SEI message.
+//! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
+//!       automatically freed, when the nesting SEI is disposed.
 void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs) 
 {
   CHECK(!(m_isInitialized), "Unspecified error");
@@ -382,9 +385,13 @@ void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, 
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
   {
     if (i == 0)
+    {
       scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i];
+    }
     else
+    {
       scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] + scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i - 1] + 1;
+    }
   }
 
   scalableNestingSEI->m_nestingAllLayersFlag = 1; // nesting is not applied to all layers

@@ -122,7 +122,11 @@ uint32_t DecApp::decode()
   }
 
   // main decoder loop
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  bool loopFiltered[MAX_VPS_LAYERS] = { false };
+#else
   bool loopFiltered = false;
+#endif
 
   bool bPicSkipped = false;
 
@@ -207,23 +211,42 @@ uint32_t DecApp::decode()
       }
     }
 
-
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId) && !bPicSkipped)
+#else
     if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
+#endif
     {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      if (!loopFiltered[nalu.m_nuhLayerId] || bitstreamFile)
+#else
       if (!loopFiltered || bitstreamFile)
+#endif
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
       }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+#else
       loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+#endif
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
       {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+        m_cDecLib.setFirstSliceInSequence(true, nalu.m_nuhLayerId);
+#else
         m_cDecLib.setFirstSliceInSequence(true);
+#endif
       }
 
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
+#else
               m_cDecLib.getFirstSliceInSequence () )
+#endif
     {
       m_cDecLib.setFirstSliceInPicture (true);
     }

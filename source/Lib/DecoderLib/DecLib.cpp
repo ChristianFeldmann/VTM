@@ -62,7 +62,11 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
   PicList* pcListPic = NULL;
 
   static bool bFirstCall      = true;             /* TODO: MT */
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  static bool loopFiltered[MAX_VPS_LAYERS] = { false };            /* TODO: MT */
+#else
   static bool loopFiltered    = false;            /* TODO: MT */
+#endif
   static int  iPOCLastDisplay = -MAX_INT;         /* TODO: MT */
 
   static std::ifstream* bitstreamFile = nullptr;  /* TODO: MT */
@@ -147,9 +151,17 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
         }
       }
 
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      if ((bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !pcDecLib->getFirstSliceInSequence(nalu.m_nuhLayerId))
+#else
       if( ( bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) && !pcDecLib->getFirstSliceInSequence() )
+#endif
       {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+        if (!loopFiltered[nalu.m_nuhLayerId] || *bitstreamFile)
+#else
         if( !loopFiltered || *bitstreamFile )
+#endif
         {
           pcDecLib->finishPictureLight( poc, pcListPic );
 
@@ -344,14 +356,26 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
 
         }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+        loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+#else
         loopFiltered = ( nalu.m_nalUnitType == NAL_UNIT_EOS );
+#endif
         if( nalu.m_nalUnitType == NAL_UNIT_EOS )
         {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+          pcDecLib->setFirstSliceInSequence(true, nalu.m_nuhLayerId);
+#else
           pcDecLib->setFirstSliceInSequence( true );
+#endif
         }
 
       }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      else if ((bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && pcDecLib->getFirstSliceInSequence(nalu.m_nuhLayerId))
+#else
       else if( ( bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) && pcDecLib->getFirstSliceInSequence() )
+#endif
       {
         pcDecLib->setFirstSliceInPicture( true );
       }
@@ -369,7 +393,14 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       pcDecLib = nullptr;
     }
     bFirstCall   = true;
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+    for (int i = 0; i < MAX_VPS_LAYERS; i++)
+    {
+      loopFiltered[i] = false;
+    }
+#else
     loopFiltered = false;
+#endif
     iPOCLastDisplay = -MAX_INT;
 
     if( bytestream )
@@ -421,7 +452,11 @@ DecLib::DecLib()
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
   , m_bFirstSliceInPicture(true)
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  , m_bFirstSliceInSequence{ true }
+#else
   , m_bFirstSliceInSequence(true)
+#endif
   , m_prevSliceSkipped(false)
   , m_skippedPOC(0)
   , m_bFirstSliceInBitstream(true)
@@ -1621,9 +1656,15 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //For inference of NoOutputOfPriorPicsFlag
   if (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
   {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+    if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence[nalu.m_nuhLayerId]) ||
+      (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) ||
+      (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence[nalu.m_nuhLayerId]))
+#else
     if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence))
+#endif
     {
       m_apcSlicePilot->setNoIncorrectPicOutputFlag(true);
     }
@@ -1721,7 +1762,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_prevSliceSkipped = false;
 
   //we should only get a different poc for a new picture (with CTU address==0)
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  if (m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence[nalu.m_nuhLayerId] && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
+#else
   if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
+#endif
   {
     msg( WARNING, "Warning, the first slice of a picture might have been lost!\n");
   }
@@ -1787,7 +1832,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   // actual decoding starts here
   xActivateParameterSets( nalu.m_nuhLayerId );
 
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  m_bFirstSliceInSequence[nalu.m_nuhLayerId] = false;
+#else
   m_bFirstSliceInSequence = false;
+#endif
   m_bFirstSliceInBitstream  = false;
 
 

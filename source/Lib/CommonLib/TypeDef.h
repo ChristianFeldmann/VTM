@@ -60,6 +60,8 @@
 
 #define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract £¨CtbSizeY / MinCbSizeY + 2£© from wraparound offset before signaling
 
+#define JVET_P0125_EOS_LAYER_SPECIFIC                     1 // JVET-P0125: Specify EOS NAL units to be layer specific
+
 #define JVET_Q0482_REMOVE_CONSTANT_PARAMS                 1 // JVET-Q0482: Remove constant slice header parameter settings in PPS
 
 #define JVET_Q0505_CHROAM_QM_SIGNALING_400                1  //JVET-Q0505: Cleanup of chroma quantization matrix signaling for 400 color format

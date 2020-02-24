@@ -43,7 +43,6 @@
 #endif // _MSC_VER > 1000
 
 #include "Utilities/VideoIOYuv.h"
-#include "Utilities/ColourRemapping.h"
 #include "CommonLib/Picture.h"
 #include "DecoderLib/DecLib.h"
 #include "DecAppCfg.h"

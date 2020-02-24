@@ -880,17 +880,6 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           const bool isTff = pcPicTop->topField;
 
           bool display = true;
-#if HEVC_SEI
-          if( m_decodedNoDisplaySEIEnabled )
-          {
-            SEIMessages noDisplay = getSeisByType( pcPic->SEIs, SEI::NO_DISPLAY );
-            const SEINoDisplay *nd = ( noDisplay.size() > 0 ) ? (SEINoDisplay*) *(noDisplay.begin()) : NULL;
-            if( (nd != NULL) && nd->m_noDisplay )
-            {
-              display = false;
-            }
-          }
-#endif
 
           if (display)
           {
@@ -970,12 +959,6 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
         writeLineToOutputLog(pcPic);
 #endif
 
-#if HEVC_SEI
-        if (m_seiMessageFileStream.is_open())
-        {
-          m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
-        }
-#endif
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 
@@ -1111,12 +1094,6 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
         }
 #if JVET_P2008_OUTPUT_LOG
         writeLineToOutputLog(pcPic);
-#endif
-#if HEVC_SEI
-        if (m_seiMessageFileStream.is_open())
-        {
-          m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
-        }
 #endif
 
         // update POC of display order

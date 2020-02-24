@@ -43,7 +43,6 @@
 #endif // _MSC_VER > 1000
 
 #include "Utilities/VideoIOYuv.h"
-#include "Utilities/ColourRemapping.h"
 #include "CommonLib/Picture.h"
 #include "DecoderLib/DecLib.h"
 #include "DecAppCfg.h"
@@ -72,9 +71,6 @@ private:
 #endif //JVET_P2008_OUTPUT_LOG
 
 
-#if HEVC_SEI
-  ColourRemapping m_cColourRemapping;             ///< colour remapping handler
-#endif
 
 #if JVET_Q0814_DPB
 private:

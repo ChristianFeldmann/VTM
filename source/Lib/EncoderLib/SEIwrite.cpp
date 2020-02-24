@@ -234,21 +234,6 @@ void SEIWriter::xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei)
   }
 }
 
-#if HEVC_SEI
-void SEIWriter::xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei)
-{
-  WRITE_FLAG(sei.m_selfContainedCvsFlag,     "self_contained_cvs_flag");
-  WRITE_FLAG(sei.m_noParameterSetUpdateFlag, "no_parameter_set_update_flag");
-  WRITE_UVLC(sei.numSpsIdsMinus1,            "num_sps_ids_minus1");
-
-  CHECK(sei.activeSeqParameterSetId.size() != (sei.numSpsIdsMinus1 + 1), "Unknown active SPS");
-
-  for (int i = 0; i < sei.activeSeqParameterSetId.size(); i++)
-  {
-    WRITE_CODE( sei.activeSeqParameterSetId[i], 4, "active_seq_parameter_set_id" );
-  }
-}
-#endif
 
 void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId)
 {

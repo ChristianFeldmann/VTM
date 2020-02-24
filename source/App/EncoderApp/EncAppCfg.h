@@ -503,9 +503,6 @@ protected:
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
 
   HashType  m_decodedPictureHashSEIType;                      ///< Checksum mode for decoded picture hash SEI message
-#if HEVC_SEI
-  bool      m_recoveryPointSEIEnabled;
-#endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
   bool      m_bpDeltasGOPStructure;
@@ -693,9 +690,6 @@ protected:
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_SEI
-  int       m_activeParameterSetsSEIEnabled;
-#endif
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
@@ -717,9 +711,6 @@ protected:
   bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
-#if HEVC_SEI
-  std::string m_colourRemapSEIFileRoot;
-#endif
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.

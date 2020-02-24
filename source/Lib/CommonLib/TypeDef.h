@@ -240,7 +240,6 @@
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
-#define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;

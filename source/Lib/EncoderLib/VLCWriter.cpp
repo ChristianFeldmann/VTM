@@ -1484,6 +1484,7 @@ void HLSWriter::codeDCI(const DCI* dci)
 #else
     codeProfileTierLevel(&ptl, 0);
 #endif
+
   }
   WRITE_FLAG(0, "dci_extension_flag");
   xWriteRbspTrailingBits();

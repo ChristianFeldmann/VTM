@@ -1222,6 +1222,9 @@ private:
   // Structure
   uint32_t              m_maxWidthInLumaSamples;
   uint32_t              m_maxHeightInLumaSamples;
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  Window                m_conformanceWindow;
+#endif
 #if JVET_Q0119_CLEANUPS
   bool                  m_subPicInfoPresentFlag;                // indicates the presence of sub-picture info
 #else
@@ -1426,6 +1429,11 @@ public:
   uint32_t                getMaxPicWidthInLumaSamples() const                                             { return  m_maxWidthInLumaSamples; }
   void                    setMaxPicHeightInLumaSamples( uint32_t u )                                      { m_maxHeightInLumaSamples = u; }
   uint32_t                getMaxPicHeightInLumaSamples() const                                            { return  m_maxHeightInLumaSamples; }
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  Window&                 getConformanceWindow()                                                          { return  m_conformanceWindow; }
+  const Window&           getConformanceWindow() const                                                    { return  m_conformanceWindow; }
+  void                    setConformanceWindow( Window& conformanceWindow )                               { m_conformanceWindow = conformanceWindow; }
+#endif
 
 #if JVET_Q0119_CLEANUPS
   void                    setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }

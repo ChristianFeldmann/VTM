@@ -1504,6 +1504,19 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK( pps->getNumSlicesInPic() != 0, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
   }
 #endif
+
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  if (sps->getMaxPicWidthInLumaSamples() == pps->getPicWidthInLumaSamples() &&
+      sps->getMaxPicHeightInLumaSamples() == pps->getPicHeightInLumaSamples())
+  {
+    const Window& spsConfWin = sps->getConformanceWindow();
+    const Window& ppsConfWin = pps->getConformanceWindow();
+    CHECK(spsConfWin.getWindowLeftOffset() != ppsConfWin.getWindowLeftOffset(), "When picture size is equal to maximum picutre size, conformance window left offset in SPS and PPS shall be equal");
+    CHECK(spsConfWin.getWindowRightOffset() != ppsConfWin.getWindowRightOffset(), "When picture size is equal to maximum picutre size, conformance window right offset in SPS and PPS shall be equal");
+    CHECK(spsConfWin.getWindowTopOffset() != ppsConfWin.getWindowTopOffset(), "When picture size is equal to maximum picutre size, conformance window top offset in SPS and PPS shall be equal");
+    CHECK(spsConfWin.getWindowBottomOffset() != ppsConfWin.getWindowBottomOffset(), "When picture size is equal to maximum picutre size, conformance window bottom offset in SPS and PPS shall be equal");
+  }
+#endif
 }
 
 

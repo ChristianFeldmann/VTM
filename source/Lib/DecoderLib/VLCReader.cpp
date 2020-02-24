@@ -427,7 +427,17 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
   READ_UVLC( uiCode, "pic_width_in_luma_samples" );          pcPPS->setPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_in_luma_samples" );         pcPPS->setPicHeightInLumaSamples( uiCode );
-
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  READ_FLAG(uiCode, "pps_conformance_window_flag");
+  if (uiCode != 0)
+  {
+    Window& conf = pcPPS->getConformanceWindow();
+    READ_UVLC(uiCode, "pps_conf_win_left_offset");               conf.setWindowLeftOffset(uiCode);
+    READ_UVLC(uiCode, "pps_conf_win_right_offset");              conf.setWindowRightOffset(uiCode);
+    READ_UVLC(uiCode, "pps_conf_win_top_offset");                conf.setWindowTopOffset(uiCode);
+    READ_UVLC(uiCode, "pps_conf_win_bottom_offset");             conf.setWindowBottomOffset(uiCode);
+  }
+#else
   READ_FLAG( uiCode, "conformance_window_flag" );
   if( uiCode != 0 )
   {
@@ -437,7 +447,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_UVLC( uiCode, "conf_win_top_offset" );                conf.setWindowTopOffset( uiCode );
     READ_UVLC( uiCode, "conf_win_bottom_offset" );             conf.setWindowBottomOffset( uiCode );
   }
-
+#endif
   READ_FLAG( uiCode, "scaling_window_flag" );
   if( uiCode != 0 )
   {
@@ -1423,7 +1433,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
-
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  READ_FLAG(uiCode, "sps_conformance_window_flag");
+  if (uiCode != 0)
+  {
+    Window& conf = pcSPS->getConformanceWindow();
+    READ_UVLC(uiCode, "sps_conf_win_left_offset");               conf.setWindowLeftOffset(uiCode);
+    READ_UVLC(uiCode, "sps_conf_win_right_offset");              conf.setWindowRightOffset(uiCode);
+    READ_UVLC(uiCode, "sps_conf_win_top_offset");                conf.setWindowTopOffset(uiCode);
+    READ_UVLC(uiCode, "sps_conf_win_bottom_offset");             conf.setWindowBottomOffset(uiCode);
+  }
+#endif
 #if JVET_Q0265
   const uint32_t chromaArrayType = (int) pcSPS->getSeparateColourPlaneFlag() ? 0 : pcSPS->getChromaFormatIdc();
 #endif

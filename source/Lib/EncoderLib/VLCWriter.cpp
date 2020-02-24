@@ -258,7 +258,16 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_UVLC( pcPPS->getPicWidthInLumaSamples(), "pic_width_in_luma_samples" );
   WRITE_UVLC( pcPPS->getPicHeightInLumaSamples(), "pic_height_in_luma_samples" );
   Window conf = pcPPS->getConformanceWindow();
-
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  WRITE_FLAG(conf.getWindowEnabledFlag(), "pps_conformance_window_flag");
+  if (conf.getWindowEnabledFlag())
+  {
+    WRITE_UVLC(conf.getWindowLeftOffset(), "pps_conf_win_left_offset");
+    WRITE_UVLC(conf.getWindowRightOffset(), "pps_conf_win_right_offset");
+    WRITE_UVLC(conf.getWindowTopOffset(), "pps_conf_win_top_offset");
+    WRITE_UVLC(conf.getWindowBottomOffset(), "pps_conf_win_bottom_offset");
+  }
+#else
   WRITE_FLAG( conf.getWindowEnabledFlag(), "conformance_window_flag" );
   if( conf.getWindowEnabledFlag() )
   {
@@ -267,6 +276,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_UVLC( conf.getWindowTopOffset(),    "conf_win_top_offset" );
     WRITE_UVLC( conf.getWindowBottomOffset(), "conf_win_bottom_offset" );
   }
+#endif
   Window scalingWindow = pcPPS->getScalingWindow();
 
   WRITE_FLAG( scalingWindow.getWindowEnabledFlag(), "scaling_window_flag" );
@@ -933,6 +943,18 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  Window conf = pcSPS->getConformanceWindow();
+  WRITE_FLAG(conf.getWindowEnabledFlag(), "sps_conformance_window_flag");
+  if (conf.getWindowEnabledFlag())
+  {
+    WRITE_UVLC(conf.getWindowLeftOffset(), "sps_conf_win_left_offset");
+    WRITE_UVLC(conf.getWindowRightOffset(), "sps_conf_win_right_offset");
+    WRITE_UVLC(conf.getWindowTopOffset(), "sps_conf_win_top_offset");
+    WRITE_UVLC(conf.getWindowBottomOffset(), "sps_conf_win_bottom_offset");
+  }
+
+#endif
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
 #if JVET_Q0043_RPR_and_Subpics | JVET_Q0119_CLEANUPS

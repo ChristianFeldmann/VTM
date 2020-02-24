@@ -2954,7 +2954,19 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
             if (uiCode)
             {
               READ_UVLC(uiCode, "pic_delta_poc_msb_cycle_lt[i][j]");
+              if(i != 0)
+              {
+                uiCode += picHeader->getLocalRPL( listIdx )->getDeltaPocMSBCycleLT(i-1);
+              }
               picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+            else if(i != 0)
+            {
+              picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i, picHeader->getLocalRPL( listIdx )->getDeltaPocMSBCycleLT(i-1));
+            }
+            else
+            {
+              picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i,0);
             }
           }
         }
@@ -4137,7 +4149,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             if (uiCode)
             {
               READ_UVLC(uiCode, "slice_delta_poc_msb_cycle_lt[i][j]");
+              if(i != 0)
+              {
+                uiCode += pcSlice->getLocalRPL0()->getDeltaPocMSBCycleLT(i-1);
+              }
               pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+            else if(i != 0)
+            {
+              pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, pcSlice->getLocalRPL0()->getDeltaPocMSBCycleLT(i-1));
+            }
+            else
+            {
+              pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i,0);
             }
           }
         }
@@ -4219,7 +4243,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             if (uiCode)
             {
               READ_UVLC(uiCode, "slice_delta_poc_msb_cycle_lt[i][j]");
+              if(i != 0)
+              {
+                uiCode += pcSlice->getLocalRPL1()->getDeltaPocMSBCycleLT(i-1);
+              }
               pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+            else if(i != 0)
+            {
+              pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, pcSlice->getLocalRPL1()->getDeltaPocMSBCycleLT(i-1));
+            }
+            else
+            {
+              pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i,0);
             }
           }
         }

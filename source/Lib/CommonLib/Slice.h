@@ -2707,6 +2707,9 @@ private:
 #if JVET_Q0775_PH_IN_SH
   bool                       m_pictureHeaderInSliceHeader;
 #endif
+#if JVET_Q0118_CLEANUPS
+  uint32_t                   m_nuhLayerId;           ///< Nal unit layer id
+#endif
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
@@ -2891,6 +2894,10 @@ public:
 #endif
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
+#if JVET_Q0118_CLEANUPS
+  void                        setNalUnitLayerId( uint32_t i )                        { m_nuhLayerId = i;                                             }
+  uint32_t                    getNalUnitLayerId() const                              { return m_nuhLayerId;                                          }
+#endif
   bool                        getRapPicFlag() const;
   bool                        getIdrPicFlag() const                                  { return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP; }
   bool                        isIRAP() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA); }

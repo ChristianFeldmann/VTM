@@ -2097,7 +2097,9 @@ SPSRExt::SPSRExt()
 
 SPS::SPS()
 : m_SPSId                     (  0)
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 , m_decodingParameterSetId    (  0 )
+#endif
 , m_VPSId                     ( 0 )
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )

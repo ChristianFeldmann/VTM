@@ -314,12 +314,10 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
   {
     switch (payloadType)
     {
-#if HEVC_SEI
       case SEI::USER_DATA_UNREGISTERED:
         sei = new SEIuserDataUnregistered;
         xParseSEIuserDataUnregistered((SEIuserDataUnregistered&) *sei, payloadSize, pDecodedMessageOutputStream);
         break;
-#endif
       case SEI::DECODED_PICTURE_HASH:
         sei = new SEIDecodedPictureHash;
         xParseSEIDecodedPictureHash((SEIDecodedPictureHash&) *sei, payloadSize, pDecodedMessageOutputStream);

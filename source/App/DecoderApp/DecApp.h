@@ -72,9 +72,6 @@ private:
 #endif //JVET_P2008_OUTPUT_LOG
 
 
-#if HEVC_SEI
-  ColourRemapping m_cColourRemapping;             ///< colour remapping handler
-#endif
 
 #if JVET_Q0814_DPB
 private:

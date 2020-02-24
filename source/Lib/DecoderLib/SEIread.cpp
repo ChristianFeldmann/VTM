@@ -322,12 +322,6 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
         sei = new SEIDecodedPictureHash;
         xParseSEIDecodedPictureHash((SEIDecodedPictureHash&) *sei, payloadSize, pDecodedMessageOutputStream);
         break;
-#if HEVC_SEI
-      case SEI::GREEN_METADATA:
-        sei = new SEIGreenMetadataInfo;
-        xParseSEIGreenMetadataInfo((SEIGreenMetadataInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
-        break;
-#endif
       default:
         for (uint32_t i = 0; i < payloadSize; i++)
         {
@@ -472,23 +466,6 @@ void SEIReader::xParseSEIDecodedPictureHash(SEIDecodedPictureHash& sei, uint32_t
   }
 }
 
-#if HEVC_SEI
-void SEIReader::xParseSEIActiveParameterSets(SEIActiveParameterSets& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
-{
-  uint32_t val;
-  output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-
-  sei_read_flag( pDecodedMessageOutputStream,    val, "self_contained_cvs_flag");         sei.m_selfContainedCvsFlag     = (val != 0);
-  sei_read_flag( pDecodedMessageOutputStream,    val, "no_parameter_set_update_flag");    sei.m_noParameterSetUpdateFlag = (val != 0);
-  sei_read_uvlc( pDecodedMessageOutputStream,    val, "num_sps_ids_minus1");              sei.numSpsIdsMinus1 = val;
-
-  sei.activeSeqParameterSetId.resize(sei.numSpsIdsMinus1 + 1);
-  for (int i=0; i < (sei.numSpsIdsMinus1 + 1); i++)
-  {
-    sei_read_code( pDecodedMessageOutputStream, 4, val, "active_seq_parameter_set_id[i]" ); sei.activeSeqParameterSetId[i] = val;
-  }
-}
-#endif
 
 #if JVET_P0190_SCALABLE_NESTING_SEI
 void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitType nalUnitType, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)

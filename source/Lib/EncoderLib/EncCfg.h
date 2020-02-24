@@ -547,11 +547,6 @@ protected:
   bool      m_scalableNestingSEIEnabled;
 #endif
 
-#if HEVC_SEI
-  bool      m_SOPDescriptionSEIEnabled;
-  bool      m_scalableNestingSEIEnabled;
-  bool      m_tmctsSEIEnabled;
-#endif
   bool      m_erpSEIEnabled;
   bool      m_erpSEICancelFlag;
   bool      m_erpSEIPersistenceFlag;
@@ -719,17 +714,9 @@ protected:
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_SEI
-  int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
-#endif
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
-#if HEVC_SEI
-  bool      m_chromaResamplingFilterHintEnabled;              ///< Signals whether chroma sampling filter hint data is present
-  int       m_chromaResamplingHorFilterIdc;                   ///< Specifies the Index of filter to use
-  int       m_chromaResamplingVerFilterIdc;                   ///< Specifies the Index of filter to use
-#endif
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
   int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
@@ -1525,14 +1512,6 @@ public:
   void  setScalableNestingSEIEnabled(bool b)                         { m_scalableNestingSEIEnabled = b; }
   bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
 #endif
-#if HEVC_SEI
-  void  setSOPDescriptionSEIEnabled(bool b)                          { m_SOPDescriptionSEIEnabled = b; }
-  bool  getSOPDescriptionSEIEnabled() const                          { return m_SOPDescriptionSEIEnabled; }
-  void  setScalableNestingSEIEnabled(bool b)                         { m_scalableNestingSEIEnabled = b; }
-  bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
-  void  setTMCTSSEIEnabled(bool b)                                   { m_tmctsSEIEnabled = b; }
-  bool  getTMCTSSEIEnabled()                                         { return m_tmctsSEIEnabled; }
-#endif
 
   void  setErpSEIEnabled(bool b)                                     { m_erpSEIEnabled = b; }
   bool  getErpSEIEnabled()                                           { return m_erpSEIEnabled; }
@@ -1852,10 +1831,6 @@ public:
   void         setHarmonizeGopFirstFieldCoupleEnabled( bool b )      { m_bHarmonizeGopFirstFieldCoupleEnabled = b; }
   bool         getHarmonizeGopFirstFieldCoupleEnabled( ) const       { return m_bHarmonizeGopFirstFieldCoupleEnabled; }
 
-#if HEVC_SEI
-  void         setActiveParameterSetsSEIEnabled ( int b )            { m_activeParameterSetsSEIEnabled = b; }
-  int          getActiveParameterSetsSEIEnabled ()                   { return m_activeParameterSetsSEIEnabled; }
-#endif
 
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
@@ -1928,14 +1903,6 @@ public:
   void         setIntraConstraintFlag(bool b)                        { m_intraConstraintFlag=b; }
 
 
-#if HEVC_SEI
-  bool         getChromaResamplingFilterHintEnabled()                { return m_chromaResamplingFilterHintEnabled;}
-  void         setChromaResamplingFilterHintEnabled(bool i)          { m_chromaResamplingFilterHintEnabled = i;}
-  int          getChromaResamplingHorFilterIdc()                     { return m_chromaResamplingHorFilterIdc;}
-  void         setChromaResamplingHorFilterIdc(int i)                { m_chromaResamplingHorFilterIdc = i;}
-  int          getChromaResamplingVerFilterIdc()                     { return m_chromaResamplingVerFilterIdc;}
-  void         setChromaResamplingVerFilterIdc(int i)                { m_chromaResamplingVerFilterIdc = i;}
-#endif
 
   void         setSummaryOutFilename(const std::string &s)           { m_summaryOutFilename = s; }
   const std::string& getSummaryOutFilename() const                   { return m_summaryOutFilename; }

@@ -42,35 +42,5 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#if HEVC_SEI
-
-#include "CommonLib/Picture.h"
-#include "CommonLib/SEI.h"
-#include <fstream>
-
-
-//! \ingroup DecoderApp
-//! \{
-
-// ====================================================================================================================
-// Class definition
-// ====================================================================================================================
-
-/// decoder application class
-class ColourRemapping
-{
-private:
-  SEIColourRemappingInfo*         m_pcSeiColourRemappingInfoPrevious;
-public:
-  ColourRemapping();
-  virtual ~ColourRemapping();
-
-  void outputColourRemapPic(Picture* pcPic, std::ofstream& outstream );
-  void reset();
-};
-
-//! \}
-
-#endif
 
 #endif

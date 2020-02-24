@@ -187,6 +187,8 @@
 
 #define JVET_Q0151_Q0205_ENTRYPOINTS                      1 // JVET-Q0151 & JVET-Q0205: Make mandatory the tile offsets signalling and move the entropy_coding_sync_enabled_flag entry_point_offsets_present_flag syntax elements to the SPS from the PPS
 
+#define JVET_Q0203_MULTI_SLICE_IN_TILE                    1 // JVET-Q0203: Signalling of multiple rectangular slices within a tile
+
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 
 #if JVET_O1143_SUBPIC_BOUNDARY

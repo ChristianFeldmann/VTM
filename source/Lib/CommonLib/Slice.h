@@ -1242,7 +1242,9 @@ class SPS
 {
 private:
   int               m_SPSId;
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   int               m_decodingParameterSetId;
+#endif
   int               m_VPSId;
 
   bool              m_affineAmvrEnabledFlag;

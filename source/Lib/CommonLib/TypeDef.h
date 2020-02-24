@@ -177,7 +177,10 @@
 
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
+#define JVET_Q0151_Q0205_ENTRYPOINTS                      1 // JVET-Q0151 & JVET-Q0205: Make mandatory the tile offsets signalling and move the entropy_coding_sync_enabled_flag entry_point_offsets_present_flag syntax elements to the SPS from the PPS
+
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
+
 #if JVET_O1143_SUBPIC_BOUNDARY
 #define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
 #define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1

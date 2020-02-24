@@ -1287,6 +1287,10 @@ private:
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  bool              m_entropyCodingSyncEnabledFlag;                    //!< Flag for enabling WPP
+  bool              m_entropyCodingSyncEntryPointPresentFlag;          //!< Flag for indicating the presence of WPP entry points
+ #endif
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
 
@@ -1582,6 +1586,13 @@ public:
   int                     getBitDepth(ChannelType type) const                                             { return m_bitDepths.recon[type];                                      }
   void                    setBitDepth(ChannelType type, int u )                                           { m_bitDepths.recon[type] = u;                                         }
   const BitDepths&        getBitDepths() const                                                            { return m_bitDepths;                                                  }
+
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  bool                    getEntropyCodingSyncEnabledFlag() const                                         { return m_entropyCodingSyncEnabledFlag;                               }
+  void                    setEntropyCodingSyncEnabledFlag(bool val)                                       { m_entropyCodingSyncEnabledFlag = val;                                }
+  bool                    getEntropyCodingSyncEntryPointsPresentFlag() const                              { return m_entropyCodingSyncEntryPointPresentFlag;                     }
+  void                    setEntropyCodingSyncEntryPointsPresentFlag(bool val)                            { m_entropyCodingSyncEntryPointPresentFlag = val;                      }
+#endif
   int                     getMaxLog2TrDynamicRange(ChannelType channelType) const                         { return getSpsRangeExtension().getExtendedPrecisionProcessingFlag() ? std::max<int>(15, int(m_bitDepths.recon[channelType] + 6)) : 15; }
 
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
@@ -1885,7 +1896,9 @@ private:
 #if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   int              m_log2MaxTransformSkipBlockSize;
 #endif
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
+#endif
 
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool              m_constantSliceHeaderParamsEnabledFlag;
@@ -2127,8 +2140,10 @@ public:
   uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }
   void                   setLog2MaxTransformSkipBlockSize(uint32_t u)                     { m_log2MaxTransformSkipBlockSize = u; }
 #endif
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
+#endif
 
 
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
@@ -2748,6 +2763,9 @@ private:
   ClpRngs                    m_clpRngs;
   std::vector<uint32_t>          m_substreamSizes;
   uint32_t                   m_numEntryPoints;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  uint32_t                   m_numSubstream;
+#endif
 
   bool                       m_cabacInitFlag;
 
@@ -3017,6 +3035,11 @@ public:
   uint32_t                        getNumberOfSubstreamSizes( )                           { return (uint32_t) m_substreamSizes.size();                        }
   void                        addSubstreamSize( uint32_t size )                          { m_substreamSizes.push_back(size);                             }
   uint32_t                        getSubstreamSize( uint32_t idx )                           { CHECK(idx>=getNumberOfSubstreamSizes(),"Invalid index"); return m_substreamSizes[idx]; }
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  void                        resetNumberOfSubstream()                               { m_numSubstream = 0;                                           }
+  uint32_t                    getNumberOfSubstream()                                 { return (uint32_t) m_numSubstream;                             }
+  void                        increaseNumberOfSubstream()                            { m_numSubstream++;                                             }
+#endif
 
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
@@ -3074,7 +3097,12 @@ public:
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();
   const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { CHECK( refIdx < 0, "Invalid reference index" ); return m_scalingRatio[refPicList][refIdx]; }
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  void                        setNumSubstream( const SPS *sps, const PPS *pps );
+  void                        setNumEntryPoints( const SPS *sps, const PPS *pps );
+#else
   void                        setNumEntryPoints( const PPS *pps );
+#endif
   uint32_t                    getNumEntryPoints( ) const { return m_numEntryPoints;  }
 
 #if JVET_Q0795_CCALF

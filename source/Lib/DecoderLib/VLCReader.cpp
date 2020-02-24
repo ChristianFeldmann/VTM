@@ -590,7 +590,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
 
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
+#endif
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
   READ_UVLC(uiCode, "num_ref_idx_l0_default_active_minus1");
@@ -1567,6 +1569,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
 #endif
+
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  READ_FLAG( uiCode, "sps_entropy_coding_sync_enabled_flag" );       pcSPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
+  if (pcSPS->getEntropyCodingSyncEnabledFlag()) 
+  {
+    READ_FLAG(uiCode, "sps_wpp_entry_point_offsets_present_flag");   pcSPS->setEntropyCodingSyncEntryPointsPresentFlag(uiCode == 1);
+  }
+#endif
+
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
@@ -4558,7 +4569,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 
   std::vector<uint32_t> entryPointOffset;
 
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  pcSlice->resetNumberOfSubstream();
+  pcSlice->setNumSubstream(sps, pps);
+
+  pcSlice->setNumEntryPoints( sps, pps );
+#else
   pcSlice->setNumEntryPoints( pps );
+#endif
   if( pcSlice->getNumEntryPoints() > 0 )
   {
     uint32_t offsetLenMinus1;

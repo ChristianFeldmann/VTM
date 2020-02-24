@@ -898,7 +898,48 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, c
   }
 
 }
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+void DecLib::checkTidLayerIdInAccessUnit()
+{
+  int firstPicTid = m_accessUnitPicInfo.begin()->m_temporalId;
+  int firstPicLayerId = m_accessUnitPicInfo.begin()->m_nuhLayerId;
 
+  bool isPicTidInAuSame = true;
+  bool isSeiTidInAuSameAsAuTid = true;
+  bool isFdNaluLayerIdSameAsVclNaluLayerId = true;
+
+  for (auto pic = m_accessUnitPicInfo.begin(); pic != m_accessUnitPicInfo.end(); pic++)
+  {
+    if (pic->m_temporalId != firstPicTid)
+    {
+      isPicTidInAuSame = false;
+      break;
+    }
+  }
+  CHECK(!isPicTidInAuSame, "All pictures in an AU shall have the same value of TemporalId");
+
+  for (auto tid = m_accessUnitSeiTids.begin(); tid != m_accessUnitSeiTids.end(); tid++)
+  {
+    if ((*tid) != firstPicTid)
+    {
+      isSeiTidInAuSameAsAuTid = false;
+      break;
+    }
+  }
+  CHECK(!isSeiTidInAuSameAsAuTid, "The TemporalId of an SEI NAL unit shall be equal to the TemporalId of the AU containing the NAL unit");
+
+  for (auto tempNalu = m_accessUnitNals.begin(); tempNalu != m_accessUnitNals.end(); tempNalu++)
+  {
+    if ((tempNalu->first == NAL_UNIT_FD) && (tempNalu->second != firstPicLayerId))
+    {
+      isFdNaluLayerIdSameAsVclNaluLayerId = false;
+      break;
+    }
+  }
+  CHECK(!isFdNaluLayerIdSameAsVclNaluLayerId, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
+
+}
+#endif
 /**
  - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
  */
@@ -1483,6 +1524,9 @@ void DecLib::xParsePrefixSEImessages()
   while (!m_prefixSEINALUs.empty())
   {
     InputNALUnit &nalu=*m_prefixSEINALUs.front();
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+    m_accessUnitSeiTids.push_back(nalu.m_temporalId);
+#endif
     m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
     delete m_prefixSEINALUs.front();
     m_prefixSEINALUs.pop_front();
@@ -2194,6 +2238,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+        m_accessUnitSeiTids.push_back(nalu.m_temporalId);
+#endif
         m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
       }
       else

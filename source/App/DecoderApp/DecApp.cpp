@@ -317,6 +317,10 @@ uint32_t DecApp::decode()
     }
     if(bNewAccessUnit) 
     {
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+      m_cDecLib.checkTidLayerIdInAccessUnit();
+      m_cDecLib.resetAccessUnitSeiTids();
+#endif
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
 #if JVET_P0101_POC_MULTILAYER

@@ -52,7 +52,7 @@
 
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
-
+#define JVET_Q0355_DPS_LEVEL_IDC_CONSTRAINT               1 // JVET-Q0355: max level in the DPS shall not be less than the highest level in an SPS
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 
 #define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id

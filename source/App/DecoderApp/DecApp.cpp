@@ -177,7 +177,7 @@ uint32_t DecApp::decode()
           CHECK(nalu.m_temporalId > m_iMaxTemporalLayer, "bitstream shall not include any NAL unit with TemporalId greater than HighestTid");
           if (m_targetDecLayerIdSet.size())
           {
-            CHECK(std::find(m_targetOutputLayerIdSet.begin(), m_targetOutputLayerIdSet.end(), nalu.m_nuhLayerId) == m_targetOutputLayerIdSet.end(), "bitstream shall not contain any other layers than included in the OLS with OlsIdx");
+            CHECK(std::find(m_targetDecLayerIdSet.begin(), m_targetDecLayerIdSet.end(), nalu.m_nuhLayerId) == m_targetDecLayerIdSet.end(), "bitstream shall not contain any other layers than included in the OLS with OlsIdx");
           }
 #endif
           if (bPicSkipped)

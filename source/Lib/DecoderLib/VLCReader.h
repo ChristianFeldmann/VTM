@@ -176,6 +176,9 @@ public:
 #else
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
 #endif
+#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
+  void  checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager);
+#endif
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
 #if JVET_Q0819_PH_CHANGES
   void  getSlicePoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );

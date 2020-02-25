@@ -52,6 +52,8 @@
 
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
+#define JVET_Q0358_ALF_NALU_TID_CONSTRAINT                1 // JVET-Q0358: TemporalId constraint between ALF_APS NALU and the pic associated with PH
+
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 
 #define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id

@@ -1501,7 +1501,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   }
   if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
   {
-    CHECK( pps->getNumSlicesInPic() != 0, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
+    CHECK( pps->getNumSlicesInPic() != 1, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
   }
 #endif
 

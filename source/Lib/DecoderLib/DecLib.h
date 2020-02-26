@@ -150,6 +150,10 @@ private:
   std::vector<int> m_accessUnitSeiTids;
 #endif
 
+#if JVET_P0125_SEI_CONSTRAINTS
+  // NAL unit type, layer ID, and SEI payloadType
+  std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
+#endif
   VPS*                    m_vps;
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
@@ -216,6 +220,10 @@ public:
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
   void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
   void checkTidLayerIdInAccessUnit();
+#endif
+#if JVET_P0125_SEI_CONSTRAINTS
+  void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
+  void checkSEIInAccessUnit();
 #endif
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 

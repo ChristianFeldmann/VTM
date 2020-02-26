@@ -482,6 +482,11 @@ public:
   void          setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
   bool          getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  friend bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2);
+  friend bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2);
+#endif
 };
 
 class ProfileTierLevel
@@ -523,6 +528,10 @@ public:
 
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  friend bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
+  friend bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
+#endif
 };
 
 
@@ -832,6 +841,35 @@ public:
 #endif
 };
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP // Rename DPS to DCI (decoding_capability_information)
+class DCI
+{
+private:
+  int m_maxSubLayersMinus1;
+  std::vector<ProfileTierLevel> m_profileTierLevel;
+
+public:
+  DCI()
+    : m_maxSubLayersMinus1(0)
+  {};
+
+  virtual ~DCI() {};
+
+  int  getMaxSubLayersMinus1() const { return m_maxSubLayersMinus1; }
+  void setMaxSubLayersMinus1(int val) { m_maxSubLayersMinus1 = val; }
+
+  size_t getNumPTLs() const { return m_profileTierLevel.size(); }
+  void  setProfileTierLevel(const std::vector<ProfileTierLevel>& val) { m_profileTierLevel = val; }
+  const ProfileTierLevel& getProfileTierLevel(int idx) const { return m_profileTierLevel[idx]; }
+  bool  IsIndenticalDCI(const DCI& comparedDCI) const
+  {
+    if(m_maxSubLayersMinus1 != comparedDCI.m_maxSubLayersMinus1) return false;
+    if(m_profileTierLevel != comparedDCI.m_profileTierLevel) return false;
+    return true;
+  }
+};
+#else
 class DPS
 {
 private:
@@ -856,6 +894,9 @@ public:
   void  setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_profileTierLevel = val; }
   const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
 };
+
+#endif
+
 
 class VPS
 {
@@ -1201,7 +1242,9 @@ class SPS
 {
 private:
   int               m_SPSId;
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   int               m_decodingParameterSetId;
+#endif
   int               m_VPSId;
 
   bool              m_affineAmvrEnabledFlag;
@@ -1411,8 +1454,10 @@ public:
 
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
   int                     getDecodingParameterSetId() const                                               { return m_decodingParameterSetId; }
+#endif
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
 
@@ -2749,7 +2794,9 @@ private:
 
 
   // access channel
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   const DPS*                 m_dps;
+#endif
   const VPS*                 m_pcVPS;
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
@@ -2819,8 +2866,11 @@ public:
   void                        setPicHeader( const PicHeader* pcPicHeader )           { m_pcPicHeader = pcPicHeader;                                  }
   const PicHeader*            getPicHeader() const                                   { return m_pcPicHeader;                                         }
   int                         getRefIdx4MVPair( RefPicList eCurRefPicList, int nCurRefIdx );
+
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   void                        setDPS( DPS* dps )                                     { m_dps = dps;                                              }
   const DPS*                  getDPS() const                                         { return m_dps;                                               }
+#endif
 
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
@@ -3330,13 +3380,14 @@ public:
   void           storeVPS(VPS *vps, const std::vector<uint8_t> &naluData)    { m_vpsMap.storePS(vps->getVPSId(), vps, &naluData); }
   VPS*           getVPS( int vpsId )                                         { return m_vpsMap.getPS( vpsId ); };
 
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   void           storeDPS(DPS *dps, const std::vector<uint8_t> &naluData)    { m_dpsMap.storePS( dps->getDecodingParameterSetId(), dps, &naluData); };
   //! get pointer to existing video parameter set
   DPS*           getDPS(int dpsId)                                           { return m_dpsMap.getPS(dpsId); };
   bool           getDPSChangedFlag(int dpsId) const                          { return m_dpsMap.getChangedFlag(dpsId); }
   void           clearDPSChangedFlag(int dpsId)                              { m_dpsMap.clearChangedFlag(dpsId); }
   DPS*           getFirstDPS()                                               { return m_dpsMap.getFirstPS(); };
-
+#endif
   //! store sequence parameter set and take ownership of it
   void           storeSPS(SPS *sps, const std::vector<uint8_t> &naluData) { m_spsMap.storePS( sps->getSPSId(), sps, &naluData); };
   //! get pointer to existing sequence parameter set
@@ -3369,20 +3420,24 @@ public:
   APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS(); };
   bool           activateAPS(int apsId, int apsType);
   const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   const DPS*     getActiveDPS()const                                         { return m_dpsMap.getPS(m_activeDPSId); };
-
+#endif
   void           checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals ) { m_apsMap.checkAuApsContent( aps, accessUnitApsNals ); }
 
 protected:
   ParameterSetMap<SPS> m_spsMap;
   ParameterSetMap<PPS> m_ppsMap;
   ParameterSetMap<APS> m_apsMap;
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   ParameterSetMap<DPS> m_dpsMap;
+#endif
   ParameterSetMap<VPS> m_vpsMap;
 
   APS* m_apss[ALF_CTB_MAX_NUM_APS];
-
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   int m_activeDPSId; // -1 for nothing active
+#endif
   int m_activeSPSId; // -1 for nothing active
   int m_activeVPSId; // -1 for nothing active
 };

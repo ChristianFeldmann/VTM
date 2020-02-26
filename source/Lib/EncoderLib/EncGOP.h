@@ -318,7 +318,11 @@ protected:
   void xWriteDuSEIMessages       (SEIMessages& duInfoSeiMessages, AccessUnit &accessUnit, int temporalId, const SPS *sps, std::deque<DUData> &duData);
 
   int xWriteVPS (AccessUnit &accessUnit, const VPS *vps);
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  int xWriteDCI (AccessUnit &accessUnit, const DCI *dci);
+#else
   int xWriteDPS (AccessUnit &accessUnit, const DPS *dps);
+#endif
   int xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId = 0 );
   int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const int layerId = 0 );
   int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );

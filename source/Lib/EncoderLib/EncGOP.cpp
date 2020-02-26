@@ -317,7 +317,17 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
-
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+int EncGOP::xWriteDCI(AccessUnit& accessUnit, const DCI* dci)
+{
+  OutputNALUnit nalu(NAL_UNIT_DCI);
+  m_HLSWriter->setBitstream(&nalu.m_Bitstream);
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
+  m_HLSWriter->codeDCI(dci);
+  accessUnit.push_back(new NALUnitEBSP(nalu));
+  return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
+}
+#else
 int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
 {
   if (dps->getDecodingParameterSetId() !=0)
@@ -334,6 +344,7 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
     return 0;
   }
 }
+#endif
 
 int EncGOP::xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId )
 {
@@ -384,7 +395,11 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
 #if ENABLING_MULTI_SPS
     if (layerIdx == 0)
     {
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      actualTotalBits += xWriteDCI(accessUnit, m_pcEncLib->getDCI());
+#else
       actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+#endif
       if (slice->getSPS()->getVPSId() != 0)
       {
         actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -395,9 +410,12 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
     {
       actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
     }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    actualTotalBits += xWriteDCI( accessUnit, m_pcEncLib->getDCI() );
+#else
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 #endif
-
+#endif
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
@@ -498,13 +516,23 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 {
   AccessUnit::iterator itNalu = accessUnit.begin();
 
-  while ( (itNalu!=accessUnit.end())&&
-    ( (*itNalu)->m_nalUnitType==NAL_UNIT_ACCESS_UNIT_DELIMITER
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_VPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_DPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_SPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_PPS
-    ))
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  while ((itNalu != accessUnit.end()) &&
+    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_DCI
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
+      ))
+#else
+  while ((itNalu != accessUnit.end()) &&
+    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_DPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
+      ))
+#endif
   {
     itNalu++;
   }
@@ -4119,7 +4147,11 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if( ( *it )->m_nalUnitType != NAL_UNIT_PREFIX_SEI && ( *it )->m_nalUnitType != NAL_UNIT_SUFFIX_SEI )
     {
       numRBSPBytes += numRBSPBytes_nal;
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DCI || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#else
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#endif
       {
         numRBSPBytes += 4;
       }

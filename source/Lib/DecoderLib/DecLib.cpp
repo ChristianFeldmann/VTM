@@ -474,9 +474,13 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
+
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
+#endif
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  , m_dci(NULL)
 #endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
@@ -504,6 +508,14 @@ void DecLib::destroy()
 {
   delete m_apcSlicePilot;
   m_apcSlicePilot = NULL;
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  if( m_dci )
+  {
+    delete m_dci;
+    m_dci = NULL;
+  }
+#endif
 
   m_cSliceDecoder.destroy();
 }
@@ -1589,11 +1601,22 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   for( auto& naluTemporalId : m_accessUnitNals )
   {
-    if( naluTemporalId.first != NAL_UNIT_DPS
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    if (
+      naluTemporalId.first != NAL_UNIT_DCI
+      && naluTemporalId.first != NAL_UNIT_VPS
+      && naluTemporalId.first != NAL_UNIT_SPS
+      && naluTemporalId.first != NAL_UNIT_EOS
+      && naluTemporalId.first != NAL_UNIT_EOB)
+#else
+    if (
+      naluTemporalId.first != NAL_UNIT_DPS
       && naluTemporalId.first != NAL_UNIT_VPS
       && naluTemporalId.first != NAL_UNIT_SPS
       && naluTemporalId.first != NAL_UNIT_EOS
       && naluTemporalId.first != NAL_UNIT_EOB )
+#endif
+
     {
       CHECK( naluTemporalId.second < nalu.m_temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
     }
@@ -2155,6 +2178,25 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
   m_parameterSetManager.storeVPS( m_vps, nalu.getBitstream().getFifo());
 }
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void DecLib::xDecodeDCI(InputNALUnit& nalu)
+{
+  m_HLSReader.setBitstream(&nalu.getBitstream());
+
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
+  if (!m_dci)
+  {
+    m_dci = new DCI;
+    m_HLSReader.parseDCI(m_dci);
+  }
+  else
+  {
+    DCI dupDCI;
+    m_HLSReader.parseDCI(&dupDCI);
+    CHECK( !m_dci->IsIndenticalDCI(dupDCI), "Two signaled DCIs are different");
+  }
+}
+#else
 void DecLib::xDecodeDPS( InputNALUnit& nalu )
 {
   DPS* dps = new DPS();
@@ -2165,6 +2207,7 @@ void DecLib::xDecodeDPS( InputNALUnit& nalu )
   m_HLSReader.parseDPS( dps );
   m_parameterSetManager.storeDPS( dps, nalu.getBitstream().getFifo() );
 }
+#endif
 
 void DecLib::xDecodeSPS( InputNALUnit& nalu )
 {
@@ -2224,11 +2267,15 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
       m_vps->m_targetOlsIdx = iTargetOlsIdx;
 #endif
       return false;
-
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    case NAL_UNIT_DCI:
+      xDecodeDCI( nalu );
+      return false;
+#else
     case NAL_UNIT_DPS:
       xDecodeDPS( nalu );
       return false;
-
+#endif
     case NAL_UNIT_SPS:
       xDecodeSPS( nalu );
       return false;
@@ -2378,6 +2425,8 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
     const ConstraintInfo *cInfo = m_parameterSetManager.getActiveSPS()->getProfileTierLevel()->getConstraintInfo();
     xCheckNalUnitConstraintFlags( cInfo, naluType );
   }
+
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   if (m_parameterSetManager.getActiveDPS() != NULL)
   {
     const DPS *dps = m_parameterSetManager.getActiveDPS();
@@ -2388,6 +2437,7 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
       xCheckNalUnitConstraintFlags( cInfo, naluType );
     }
   }
+#endif
 }
 void DecLib::xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType )
 {

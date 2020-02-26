@@ -1377,7 +1377,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  READ_CODE(4, uiCode, "sps_seq_parameter_set_id");              pcSPS->setSPSId(uiCode);
+#else
   READ_CODE( 4,  uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId( uiCode );
+#endif
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id" );      pcSPS->setVPSId( uiCode );
   READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
@@ -1407,9 +1412,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG(uiCode, "gdr_enabled_flag");
   pcSPS->setGDREnabledFlag(uiCode);
-
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   READ_CODE(4, uiCode, "sps_seq_parameter_set_id");              pcSPS->setSPSId(uiCode);
-
+#endif
   READ_CODE(2, uiCode, "chroma_format_idc");                     pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
 
   if( pcSPS->getChromaFormatIdc() == CHROMA_444 )
@@ -2225,6 +2230,44 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   xReadRbspTrailingBits();
 }
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void HLSyntaxReader::parseDCI(DCI* dci)
+{
+#if ENABLE_TRACING
+  xTraceDPSHeader();
+#endif
+  uint32_t  symbol;
+
+  READ_CODE(3, symbol, "dci_max_sub_layers_minus1");          dci->setMaxSubLayersMinus1(symbol);
+  READ_CODE(1, symbol, "dci_reserved_zero_bit");              CHECK(symbol != 0, "dci_reserved_zero_bit must be equal to zero");
+
+  uint32_t numPTLs;
+  READ_CODE(4, numPTLs, "dci_num_ptls_minus1");
+  numPTLs += 1;
+
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(numPTLs);
+  for (int i = 0; i < numPTLs; i++)
+  {
+#if JVET_Q0786_PTL_only
+    parseProfileTierLevel(&ptls[i], true, 0);
+#else
+    parseProfileTierLevel(&ptls[i], 0);
+#endif
+  }
+  dci->setProfileTierLevel(ptls);
+
+  READ_FLAG(symbol, "dci_extension_flag");
+  if (symbol)
+  {
+    while (xMoreRbspData())
+    {
+      READ_FLAG(symbol, "dci_extension_data_flag");
+    }
+  }
+  xReadRbspTrailingBits();
+}
+#else
 void HLSyntaxReader::parseDPS(DPS* dps)
 {
 #if ENABLE_TRACING
@@ -2265,6 +2308,7 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   }
   xReadRbspTrailingBits();
 }
+#endif
 
 void HLSyntaxReader::parseVPS(VPS* pcVPS)
 {

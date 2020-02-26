@@ -711,8 +711,15 @@ protected:
 #if !JVET_Q0814_DPB
   VPS       m_cVPS;
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  DCI       m_dci;
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
+#else
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
+#endif
+
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
@@ -1820,8 +1827,15 @@ public:
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
 #endif
+
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void         setDCI(DCI *p)                                        { m_dci = *p; }
+  DCI*         getDCI()                                              { return &m_dci; }
+#else
   void         setDPS(DPS *p)                                        { m_dps = *p; }
   DPS*         getDPS()                                              { return &m_dps; }
+#endif
   void         setUseRecalculateQPAccordingToLambda (bool b)         { m_recalculateQPAccordingToLambda = b;    }
   bool         getUseRecalculateQPAccordingToLambda ()               { return m_recalculateQPAccordingToLambda; }
 
@@ -1832,8 +1846,13 @@ public:
   bool         getHarmonizeGopFirstFieldCoupleEnabled( ) const       { return m_bHarmonizeGopFirstFieldCoupleEnabled; }
 
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  bool         getDCIEnabled()                      { return m_DCIEnabled; }
+  void         setDCIEnabled(bool i)                { m_DCIEnabled = i; }
+#else
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
+#endif
   bool         getHrdParametersPresentFlag()                         { return m_hrdParametersPresentFlag; }
   void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }

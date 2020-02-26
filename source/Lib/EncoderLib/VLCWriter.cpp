@@ -415,7 +415,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
-  WRITE_FLAG(pcPPS->getRpl1IdxPresentFlag() ? 1 : 0, "rpl1IdxPresentFlag");
+  WRITE_FLAG( pcPPS->getRpl1IdxPresentFlag() ? 1 : 0,     "rpl1_idx_present_flag");
 
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
@@ -438,8 +438,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_FLAG( pcPPS->getSliceChromaQpFlag() ? 1 : 0,          "pps_slice_chroma_qp_offsets_present_flag" );
 
-  WRITE_FLAG(uint32_t(pcPPS->getCuChromaQpOffsetEnabledFlag()),         "cu_chroma_qp_offset_enabled_flag" );
-  if (pcPPS->getCuChromaQpOffsetEnabledFlag())
+  WRITE_FLAG(uint32_t(pcPPS->getCuChromaQpOffsetListEnabledFlag()),         "pps_cu_chroma_qp_offset_list_enabled_flag" );
+  if (pcPPS->getCuChromaQpOffsetListEnabledFlag())
   {
     WRITE_UVLC(pcPPS->getChromaQpOffsetListLen() - 1,                   "chroma_qp_offset_list_len_minus1");
     /* skip zero index */
@@ -707,10 +707,10 @@ void HLSWriter::codeLmcsAps( APS* pcAPS )
   int deltaCRS = param.chrResScalingOffset;
   int signCRS = (deltaCRS < 0) ? 1 : 0;
   int absCRS = (deltaCRS < 0) ? (-deltaCRS) : deltaCRS;
-  WRITE_CODE(absCRS, 3, "lmcs_delta_crs_val");
+  WRITE_CODE(absCRS, 3, "lmcs_delta_abs_crs");
   if (absCRS > 0)
   {
-    WRITE_FLAG(signCRS, "lmcs_delta_crs_val_flag");
+    WRITE_FLAG(signCRS, "lmcs_delta_sign_crs_flag");
   }
 }
 
@@ -2123,7 +2123,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setCuQpDeltaSubdivInter( 0 );
 #endif
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivIntra(), "pic_cu_chroma_qp_offset_subdiv_intra_slice" );
 #if !JVET_Q0819_PH_CHANGES
@@ -2163,7 +2163,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     {
       picHeader->setCuQpDeltaSubdivInter(0);
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       WRITE_UVLC(picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice");
     }
@@ -3035,7 +3035,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       CHECK(numberValidComponents < COMPONENT_Cr+1, "Too many valid components");
     }
 
-    if (pcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag())
+    if (pcSlice->getPPS()->getCuChromaQpOffsetListEnabledFlag())
     {
       WRITE_FLAG(pcSlice->getUseChromaQpAdj(), "cu_chroma_qp_offset_enabled_flag");
     }
@@ -3659,10 +3659,10 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
 #if JVET_Q0210_UEK_REMOVAL 
-      WRITE_UVLC( abs(coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ]), "alf_abs_coeff" ); //alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+      WRITE_UVLC( abs(coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ]), isChroma ? "alf_chroma_coeff_abs" : "alf_luma_coeff_abs" ); //alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
       if( abs( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] ) != 0 )
       {
-        WRITE_FLAG( ( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] < 0 ) ? 1 : 0, "alf_coeff_sign" );
+        WRITE_FLAG( ( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] < 0 ) ? 1 : 0, isChroma ? "alf_chroma_coeff_sign" : "alf_luma_coeff_sign" );
       }
 #else
       alfGolombEncode( coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], 3 );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
@@ -3681,7 +3681,7 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
     {
       for (int i = 0; i < alfShape.numCoeff - 1; i++)
       {
-        WRITE_CODE(clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], 2, "alf_clipping_index");
+        WRITE_CODE(clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], 2, isChroma ? "alf_chroma_clip_idx" : "alf_luma_clip_idx");
       }
     }
   }

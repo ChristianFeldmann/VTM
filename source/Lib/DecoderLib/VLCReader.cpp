@@ -716,7 +716,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
   pcPPS->setSliceChromaQpFlag( uiCode ? true : false );
 
-  READ_FLAG( uiCode, "pps_cu_chroma_qp_offset_enabled_flag");
+  READ_FLAG( uiCode, "pps_cu_chroma_qp_offset_list_enabled_flag");
   if (uiCode == 0)
   {
     pcPPS->clearChromaQpOffsetList();
@@ -1328,11 +1328,11 @@ void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFla
   uint32_t code;
   for (int i = (subLayerInfoFlag ? 0 : maxSubLayersMinus1); i <= maxSubLayersMinus1; i++)
   {
-    READ_UVLC(code, "sps_max_dec_pic_buffering_minus1[i]");
+    READ_UVLC(code, "max_dec_pic_buffering_minus1[i]");
     pcSPS->setMaxDecPicBuffering(code + 1, i);
-    READ_UVLC(code, "sps_max_num_reorder_pics[i]");
+    READ_UVLC(code, "max_num_reorder_pics[i]");
     pcSPS->setNumReorderPics(code, i);
-    READ_UVLC(code, "sps_max_latency_increase_plus1[i]");
+    READ_UVLC(code, "max_latency_increase_plus1[i]");
     pcSPS->setMaxLatencyIncreasePlus1(code, i);
   }
 }
@@ -2100,12 +2100,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
 #endif
 
-  // KJS: reference picture sets to be replaced
-
-  // KJS: not found in draft -> does not exist
-
-  // KJS: remove scaling lists?
-  READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
+  READ_FLAG( uiCode, "sps_scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
 
   READ_FLAG( uiCode, "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" ); pcSPS->setLoopFilterAcrossVirtualBoundariesDisabledFlag( uiCode != 0 );
   if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
@@ -3089,7 +3084,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setCuQpDeltaSubdivInter( 0 );
 #endif
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       READ_UVLC( uiCode, "pic_cu_chroma_qp_offset_subdiv_intra_slice" );   picHeader->setCuChromaQpOffsetSubdivIntra( uiCode );
 #if !JVET_Q0819_PH_CHANGES
@@ -3134,7 +3129,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       picHeader->setCuQpDeltaSubdivInter(0);
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       READ_UVLC(uiCode, "pic_cu_chroma_qp_offset_subdiv_inter_slice");   picHeader->setCuChromaQpOffsetSubdivInter(uiCode);
     }
@@ -4507,7 +4502,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
     }
 
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
     }
@@ -5553,11 +5548,11 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
 #if JVET_Q0210_UEK_REMOVAL 
-      READ_UVLC( code, "alf coeff abs" );
+      READ_UVLC( code, isChroma ? "alf_chroma_coeff_abs" : "alf_luma_coeff_abs" );
       coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = code;
       if( coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] != 0 )
       {
-        READ_FLAG( code, "alf_coeff_sign" );
+        READ_FLAG( code, isChroma ? "alf_chroma_coeff_sign" : "alf_luma_coeff_sign" );
         coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = ( code ) ? -coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] : coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ];
        }
 #else
@@ -5583,7 +5578,7 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
 
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
-        READ_CODE(2, code, "alf_clipping_index");
+        READ_CODE(2, code, isChroma ? "alf_chroma_clip_idx" : "alf_luma_clip_idx");
         clipp[ind * MAX_NUM_ALF_LUMA_COEFF + i] = code;
       }
     }

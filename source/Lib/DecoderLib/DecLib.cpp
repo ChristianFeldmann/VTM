@@ -943,7 +943,6 @@ void DecLib::checkTidLayerIdInAccessUnit()
 #if JVET_P0125_SEI_CONSTRAINTS
 void DecLib::checkSEIInAccessUnit()
 {
-  int firstPicLayerId = m_accessUnitPicInfo.begin()->m_nuhLayerId;
   for (auto &sei : m_accessUnitSeiPayLoadTypes)
   {
     enum NalUnitType         naluType = std::get<0>(sei);

@@ -1871,20 +1871,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "final", 1 ) );
   }
 
-#if FIX_TICKET891
   // actual decoding starts here
   xActivateParameterSets( nalu.m_nuhLayerId );
-#endif
 
   //detect lost reference picture and insert copy of earlier frame.
   {
     int lostPoc;
     int refPicIndex;
-#if FIX_TICKET891
     while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex, m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0))) > 0)
-#else
-    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex)) > 0)
-#endif
     {
       if ( ( (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) ) && m_apcSlicePilot->getNoIncorrectPicOutputFlag() )
       {
@@ -1898,11 +1892,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         xCreateLostPicture( lostPoc - 1, m_apcSlicePilot->getPic()->layerId );
       }
     }
-#if FIX_TICKET891
     while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 0, true, &refPicIndex, m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_1))) > 0)
-#else
-    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 0, true, &refPicIndex)) > 0)
-#endif
     {
       if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
       {
@@ -1925,10 +1915,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     xUpdateRasInit(m_apcSlicePilot);
   }
 
-#if !FIX_TICKET891  
-  // actual decoding starts here
-  xActivateParameterSets( nalu.m_nuhLayerId );
-#endif
 
 #if JVET_P0125_EOS_LAYER_SPECIFIC
   m_bFirstSliceInSequence[nalu.m_nuhLayerId] = false;

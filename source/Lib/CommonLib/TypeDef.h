@@ -50,8 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
-#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
+#define JVET_Q0244                                        1 // JVET-Q0244 Aspect 3: Signal the slice width(height) in tiles when the number of tile columns(rows) is greater than 1.
 
+#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 

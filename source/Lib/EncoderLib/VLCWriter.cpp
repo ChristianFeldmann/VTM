@@ -2050,7 +2050,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       }
 
       // POC MSB cycle signalling for LTRP
-      if (picHeader->getRPL(listIdx)->getNumberOfLongtermPictures())
+      if (picHeader->getRPL(listIdx) && picHeader->getRPL(listIdx)->getNumberOfLongtermPictures())
       {
         for (int i = 0; i < picHeader->getRPL(listIdx)->getNumberOfLongtermPictures() + picHeader->getRPL(listIdx)->getNumberOfShorttermPictures(); i++)
         {

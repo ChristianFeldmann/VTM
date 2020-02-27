@@ -39,6 +39,7 @@
 #define __ENCADAPTIVELOOPFILTER__
 
 #include "CommonLib/AdaptiveLoopFilter.h"
+#include "CommonLib/ParameterSetManager.h"
 
 #include "CABACWriter.h"
 #include "EncCfg.h"

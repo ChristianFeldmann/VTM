@@ -2111,9 +2111,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG( uiCode, "sps_scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
 
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  READ_FLAG( uiCode, "sps_virtual_boundaries_enabled_flag" ); pcSPS->setVirtualBoundariesEnabledFlag( uiCode != 0 );
+  if( pcSPS->getVirtualBoundariesEnabledFlag() )
+  {
+    READ_FLAG( uiCode, "sps_loop_filter_across_virtual_boundaries_present_flag" ); pcSPS->setVirtualBoundariesPresentFlag( uiCode != 0 );
+    if( pcSPS->getVirtualBoundariesPresentFlag() )
+    {
+#else
   READ_FLAG( uiCode, "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" ); pcSPS->setLoopFilterAcrossVirtualBoundariesDisabledFlag( uiCode != 0 );
   if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
+#endif
     READ_CODE( 2, uiCode, "sps_num_ver_virtual_boundaries");        pcSPS->setNumVerVirtualBoundaries( uiCode );
     for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
     {
@@ -2130,6 +2139,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setNumVerVirtualBoundaries( 0 );
     pcSPS->setNumHorVirtualBoundaries( 0 );
   }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  }
+#endif
 
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
@@ -2841,11 +2853,20 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 
   // virtual boundaries
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
+  {
+    READ_FLAG( uiCode, "ph_loop_filter_across_virtual_boundaries_present_flag" );
+    picHeader->setVirtualBoundariesPresentFlag( uiCode != 0 );
+    if( picHeader->getVirtualBoundariesPresentFlag() )
+    {
+#else
   if( !sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     READ_FLAG( uiCode, "ph_loop_filter_across_virtual_boundaries_disabled_present_flag" ); picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( uiCode != 0 );
     if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
     {
+#endif
       READ_CODE( 2, uiCode, "ph_num_ver_virtual_boundaries");        picHeader->setNumVerVirtualBoundaries( uiCode );
       for( unsigned i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
       {
@@ -2865,7 +2886,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
   else
   {
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+    picHeader->setVirtualBoundariesPresentFlag( sps->getVirtualBoundariesPresentFlag() );
+    if( picHeader->getVirtualBoundariesEnabledFlag() )
+    {
+#else
     picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );
+#endif
     picHeader->setNumVerVirtualBoundaries( sps->getNumVerVirtualBoundaries() );
     picHeader->setNumHorVirtualBoundaries( sps->getNumHorVirtualBoundaries() );
     for( unsigned i = 0; i < 3; i++ ) 
@@ -2873,6 +2900,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setVirtualBoundariesPosX( sps->getVirtualBoundariesPosX(i), i );
       picHeader->setVirtualBoundariesPosY( sps->getVirtualBoundariesPosY(i), i );
     }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+    }
+#endif
   }
   
 #if !JVET_Q0155_COLOUR_ID

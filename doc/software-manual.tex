@@ -2135,10 +2135,11 @@ Specifies the use of a deblocking filter metric to evaluate the suitability of d
 LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values are 0, 1 and 2.
 \\
 
-\Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&
+\Option{VirtualBoundariesPresentInSPSFlag}&
 %\ShortOption{\None}&
 \Default{false}&
-Disables in-loop filtering operations across the virtual boundaries.
+In-loop filtering operations across the virtual boundaries information present in the SPS when VirtualBoundariesPresentFlagInSPS = 1, otherwise
+present in the Picture Header when VirtualBoundariesPresentFlagInSPS = 0.
 \\
 
 \Option{NumVerVirtualBoundaries}&

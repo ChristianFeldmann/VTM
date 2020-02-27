@@ -1550,17 +1550,27 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
 #endif
 
-  sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
-  sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
-  sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
-  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  sps.setVirtualBoundariesEnabledFlag( m_virtualBoundariesEnabledFlag );
+  if( sps.getVirtualBoundariesEnabledFlag() )
   {
-    sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+    sps.setVirtualBoundariesPresentFlag( m_virtualBoundariesPresentFlag );
+#else
+    sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+#endif
+    sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
+    sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
+    for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+    {
+      sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+    }
+    for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
+    {
+      sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
+    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
-  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
-  {
-    sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
-  }
+#endif
 
 #if JVET_Q0814_DPB
 #if ENABLING_MULTI_SPS
@@ -1604,7 +1614,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #endif
 
 #if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  CHECK( sps.getRprEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
+#else
   CHECK(sps.getRprEnabledFlag() && sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
 #endif
 }
 
@@ -2044,13 +2058,22 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
 #endif
 
   // virtual boundaries
-  picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());
-  picHeader.setNumVerVirtualBoundaries(sps.getNumVerVirtualBoundaries());
-  picHeader.setNumHorVirtualBoundaries(sps.getNumHorVirtualBoundaries());
-  for(i=0; i<3; i++) {
-    picHeader.setVirtualBoundariesPosX(sps.getVirtualBoundariesPosX(i), i);
-    picHeader.setVirtualBoundariesPosY(sps.getVirtualBoundariesPosY(i), i);
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( sps.getVirtualBoundariesEnabledFlag() )
+  {
+    picHeader.setVirtualBoundariesPresentFlag( sps.getVirtualBoundariesPresentFlag() );
+#else
+    picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());
+#endif
+    picHeader.setNumVerVirtualBoundaries(sps.getNumVerVirtualBoundaries());
+    picHeader.setNumHorVirtualBoundaries(sps.getNumHorVirtualBoundaries());
+    for(i=0; i<3; i++) {
+      picHeader.setVirtualBoundariesPosX(sps.getVirtualBoundariesPosX(i), i);
+      picHeader.setVirtualBoundariesPosY(sps.getVirtualBoundariesPosY(i), i);
+    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
+#endif
 
   // gradual decoder refresh flag
   picHeader.setGdrPicFlag(false);

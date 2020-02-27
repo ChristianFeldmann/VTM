@@ -50,8 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
-#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
+#define JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG           1 // JVET-Q0246: virtual boundary enable flag in the SPS.
 
+#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 

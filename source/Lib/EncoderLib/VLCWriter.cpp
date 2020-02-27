@@ -1406,20 +1406,32 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
 
-  WRITE_FLAG( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" );
-  if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  WRITE_FLAG( pcSPS->getVirtualBoundariesEnabledFlag(), "sps_virtual_boundaries_enabled_flag" );
+  if( pcSPS->getVirtualBoundariesEnabledFlag() )
   {
-    WRITE_CODE( pcSPS->getNumVerVirtualBoundaries(), 2, "sps_num_ver_virtual_boundaries");
-    for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
+    WRITE_FLAG( pcSPS->getVirtualBoundariesPresentFlag(), "sps_loop_filter_across_virtual_boundaries_present_flag" );
+    if( pcSPS->getVirtualBoundariesPresentFlag() )
     {
-      WRITE_CODE((pcSPS->getVirtualBoundariesPosX(i)>>3), 13, "sps_virtual_boundaries_pos_x");
-    }
-    WRITE_CODE(pcSPS->getNumHorVirtualBoundaries(), 2, "sps_num_hor_virtual_boundaries");
-    for( unsigned i = 0; i < pcSPS->getNumHorVirtualBoundaries(); i++ )
+#else
+    WRITE_FLAG( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" );
+    if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
     {
-      WRITE_CODE((pcSPS->getVirtualBoundariesPosY(i)>>3), 13, "sps_virtual_boundaries_pos_y");
+#endif
+      WRITE_CODE( pcSPS->getNumVerVirtualBoundaries(), 2, "sps_num_ver_virtual_boundaries");
+      for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
+      {
+        WRITE_CODE((pcSPS->getVirtualBoundariesPosX(i)>>3), 13, "sps_virtual_boundaries_pos_x");
+      }
+      WRITE_CODE(pcSPS->getNumHorVirtualBoundaries(), 2, "sps_num_hor_virtual_boundaries");
+      for( unsigned i = 0; i < pcSPS->getNumHorVirtualBoundaries(); i++ )
+      {
+        WRITE_CODE((pcSPS->getVirtualBoundariesPosY(i)>>3), 13, "sps_virtual_boundaries_pos_y");
+      }
     }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
+#endif
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
@@ -1944,11 +1956,19 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
 
   // virtual boundaries
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
+  {
+    WRITE_FLAG( picHeader->getVirtualBoundariesPresentFlag(), "ph_loop_filter_across_virtual_boundaries_present_flag" );
+    if( picHeader->getVirtualBoundariesPresentFlag() )
+    {
+#else
   if( !sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     WRITE_FLAG( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "ph_loop_filter_across_virtual_boundaries_disabled_present_flag" );
     if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
     {
+#endif
       WRITE_CODE(picHeader->getNumVerVirtualBoundaries(), 2, "ph_num_ver_virtual_boundaries");
       for( unsigned i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
       {
@@ -1962,21 +1982,34 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
     else
     {
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+      picHeader->setVirtualBoundariesPresentFlag( 0 );
+#else
       picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( 0 );
+#endif
       picHeader->setNumVerVirtualBoundaries( 0 );
       picHeader->setNumHorVirtualBoundaries( 0 );
     }
   }
   else
   {
-    picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );
-    picHeader->setNumVerVirtualBoundaries( sps->getNumVerVirtualBoundaries() );
-    picHeader->setNumHorVirtualBoundaries( sps->getNumHorVirtualBoundaries() );
-    for( unsigned i = 0; i < 3; i++ ) 
-    {
-      picHeader->setVirtualBoundariesPosX( sps->getVirtualBoundariesPosX(i), i );
-      picHeader->setVirtualBoundariesPosY( sps->getVirtualBoundariesPosY(i), i );
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+      picHeader->setVirtualBoundariesPresentFlag( sps->getVirtualBoundariesPresentFlag() );
+      if( picHeader->getVirtualBoundariesPresentFlag() )
+      {
+#else
+        picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );
+#endif
+       picHeader->setNumVerVirtualBoundaries( sps->getNumVerVirtualBoundaries() );
+       picHeader->setNumHorVirtualBoundaries( sps->getNumHorVirtualBoundaries() );
+      for( unsigned i = 0; i < 3; i++ ) 
+      {
+        picHeader->setVirtualBoundariesPosX( sps->getVirtualBoundariesPosX(i), i );
+        picHeader->setVirtualBoundariesPosY( sps->getVirtualBoundariesPosY(i), i );
+      }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
     }
+#endif
   }
   
 #if !JVET_Q0155_COLOUR_ID

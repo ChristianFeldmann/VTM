@@ -52,7 +52,6 @@
 
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
-#define FIX_TICKET891                                     1
 
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 

@@ -2502,6 +2502,7 @@ SubPic::~SubPic()
 }
 #endif
 
+#if !REMOVE_PPS_REXT
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
 #if JVET_Q0441_SAO_MOD_12_BIT
@@ -2515,7 +2516,8 @@ PPSRExt::PPSRExt()
   }
 #endif
 }
-
+#endif
+  
 PPS::PPS()
 : m_PPSId                            (0)
 , m_SPSId                            (0)
@@ -2586,7 +2588,9 @@ PPS::PPS()
 #endif
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
+#if !REMOVE_PPS_REXT
 , m_ppsRangeExtension                ()
+#endif
 , pcv                                (NULL)
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.

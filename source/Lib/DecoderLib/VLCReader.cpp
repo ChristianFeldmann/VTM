@@ -870,6 +870,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG( uiCode, "pps_extension_present_flag");
   if (uiCode)
   {
+#if !REMOVE_PPS_REXT
 #if ENABLE_TRACING || RExt__DECODER_DEBUG_BIT_STATISTICS
     static const char *syntaxStrings[]={ "pps_range_extension_flag",
       "pps_multilayer_extension_flag",
@@ -918,11 +919,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     }
     if (bSkipTrailingExtensionBits)
     {
+#endif
       while ( xMoreRbspData() )
       {
         READ_FLAG( uiCode, "pps_extension_data_flag");
       }
+#if !REMOVE_PPS_REXT
     }
+#endif
   }
   xReadRbspTrailingBits();
 }

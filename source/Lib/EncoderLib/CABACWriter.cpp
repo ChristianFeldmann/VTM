@@ -2694,10 +2694,12 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     {
       for( ComponentID compID = COMPONENT_Cb; compID <= COMPONENT_Cr; compID = ComponentID( compID + 1 ) )
       {
+#if !REMOVE_PPS_REXT
         if( TU::hasCrossCompPredInfo( tu, compID ) )
         {
           cross_comp_pred( tu, compID );
         }
+#endif
         if( cbf[ compID ] )
         {
           residual_coding( tu, compID, &cuCtx );
@@ -3378,7 +3380,7 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 
 
 
-
+#if !REMOVE_PPS_REXT
 //================================================================================
 //  clause 7.3.8.12
 //--------------------------------------------------------------------------------
@@ -3418,7 +3420,7 @@ void CABACWriter::cross_comp_pred( const TransformUnit& tu, ComponentID compID )
 
   DTRACE( g_trace_ctx, D_SYNTAX, "cross_comp_pred() etype=%d pos=(%d,%d) alpha=%d\n", compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.compAlpha[compID] );
 }
-
+#endif
 
 
 

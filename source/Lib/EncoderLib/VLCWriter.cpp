@@ -521,6 +521,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   if (pps_extension_present_flag)
   {
+#if !REMOVE_PPS_REXT
 #if ENABLE_TRACING /*|| RExt__DECODER_DEBUG_BIT_STATISTICS*/
     static const char *syntaxStrings[]={ "pps_range_extension_flag",
       "pps_multilayer_extension_flag",
@@ -560,6 +561,12 @@ void HLSWriter::codePPS( const PPS* pcPPS )
         } // switch
       } // if flag present
     } // loop over PPS flags
+#else
+    for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++)
+    {
+      WRITE_FLAG( pps_extension_flags[i]?1:0, "pps_extension_data_flag" );
+    }
+#endif
   } // pps_extension_present_flag is non-zero
   xWriteRbspTrailingBits();
 }

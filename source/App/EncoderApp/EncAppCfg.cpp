@@ -2696,6 +2696,21 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_iSourceWidth  % (std::max(8, int(m_uiMaxCUWidth  >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
   xConfirmPara( (m_iSourceHeight % (std::max(8, int(m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
 #endif
+  if (m_uiMaxMTTHierarchyDepthI == 0)
+  {
+    xConfirmPara(m_uiMaxBT[0] != m_uiMinQT[0], "MaxBTLumaISlice shall be equal to MinQTLumaISlice when MaxMTTHierarchyDepthISliceL is 0.");
+    xConfirmPara(m_uiMaxTT[0] != m_uiMinQT[0], "MaxTTLumaISlice shall be equal to MinQTLumaISlice when MaxMTTHierarchyDepthISliceL is 0.");
+  }
+  if (m_uiMaxMTTHierarchyDepthIChroma == 0)
+  {
+    xConfirmPara(m_uiMaxBT[2] != m_uiMinQT[2], "MaxBTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
+    xConfirmPara(m_uiMaxTT[2] != m_uiMinQT[2], "MaxTTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
+  }
+  if (m_uiMaxMTTHierarchyDepthI == 0)
+  {
+    xConfirmPara(m_uiMaxBT[1] != m_uiMinQT[1], "MaxBTNonISlice shall be equal to MinQTNonISlice when MaxMTTHierarchyDepth is 0.");
+    xConfirmPara(m_uiMaxTT[1] != m_uiMinQT[1], "MaxTTNonISlice shall be equal to MinQTNonISlice when MaxMTTHierarchyDepth is 0.");
+  }
   xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
   xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");

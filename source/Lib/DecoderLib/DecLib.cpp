@@ -2218,11 +2218,11 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
   CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
 
   m_HLSReader.parseSPS( sps );
-#if JVET_Q0355_DPS_LEVEL_IDC_CONSTRAINT
+#if JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT
   if (sps->getProfileTierLevel() != NULL)
   {
     int levelIdcSps = int(sps->getProfileTierLevel()->getLevelIdc());
-    checkDpsLevelSpsLevelConstraints(levelIdcSps);
+    checkDciLevelSpsLevelConstraints(levelIdcSps);
   }
 #endif
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
@@ -2447,21 +2447,20 @@ void DecLib::checkNalUnitConstraints( uint32_t naluType )
   }
 #endif
 }
-#if JVET_Q0355_DPS_LEVEL_IDC_CONSTRAINT
-void DecLib::checkDpsLevelSpsLevelConstraints(int levelIdcSps)
+#if JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT
+void DecLib::checkDciLevelSpsLevelConstraints(int levelIdcSps)
 {
-  int maxLevelIdxDps = 0;
-  if ((m_parameterSetManager.getFirstDPS() != NULL))
+  int maxLevelIdxDci = 0;
+  if (m_dci)
   {
-    const DPS *dps = m_parameterSetManager.getFirstDPS();
-    for (int i = 0; i < dps->getNumPTLs(); i++)
+    for (int i = 0; i < m_dci->getNumPTLs(); i++)
     {
-      if (maxLevelIdxDps < int(dps->getProfileTierLevel(i).getLevelIdc()))
+      if (maxLevelIdxDci < int(m_dci->getProfileTierLevel(i).getLevelIdc()))
       {
-        maxLevelIdxDps = int(dps->getProfileTierLevel(i).getLevelIdc());
+        maxLevelIdxDci = int(m_dci->getProfileTierLevel(i).getLevelIdc());
       }
     }
-    CHECK(levelIdcSps > maxLevelIdxDps, "the max level in the DPS shall not be less than the highest level in an SPS");
+    CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
   }
 }
 #endif

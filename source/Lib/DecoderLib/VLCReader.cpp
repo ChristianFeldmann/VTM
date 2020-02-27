@@ -3199,14 +3199,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       READ_CODE( 1, uiCode, "pic_collocated_from_l0_flag");
       picHeader->setPicColFromL0Flag(uiCode);
-    }
-    else
-    {
-      picHeader->setPicColFromL0Flag(0);
-    }
 #if JVET_Q0259_COLLOCATED_PIC_IN_PH
-    if (pps->getRplInfoInPhFlag())
-    {
       if ((picHeader->getPicColFromL0Flag() == 1 && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
         (picHeader->getPicColFromL0Flag() == 0 && picHeader->getRPL(1)->getNumRefEntries() > 1))
       {
@@ -3217,8 +3210,12 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         picHeader->setColRefIdx(0);
       }
-    }
 #endif
+    }
+    else
+    {
+      picHeader->setPicColFromL0Flag(0);
+    }
 #endif
 
   // mvd L1 zero flag

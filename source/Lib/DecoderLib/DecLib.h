@@ -192,9 +192,7 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
-#if JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT
-  void checkDciLevelSpsLevelConstraints(int levelIdcSps);
-#endif
+
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }

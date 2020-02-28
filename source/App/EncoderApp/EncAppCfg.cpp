@@ -1495,6 +1495,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
   }
+
+  //Check the given value of intra period and decoding refresh type. If intra period is -1, set decoding refresh type to be equal to 0. And vice versa
+  if( m_iIntraPeriod == -1 )
+  {
+    m_iDecodingRefreshType = 0;
+  }
+  if( !m_iDecodingRefreshType )
+  {
+    m_iIntraPeriod = -1;
+  }
+
   m_bpDeltasGOPStructure = false;
   if(m_iGOPSize == 16)
   {

@@ -1555,6 +1555,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   if( sps.getVirtualBoundariesEnabledFlag() )
   {
     sps.setVirtualBoundariesPresentFlag( m_virtualBoundariesPresentFlag );
+#if JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT
+    CHECK( sps.getSubPicInfoPresentFlag() && sps.getVirtualBoundariesPresentFlag() != 1, "When subpicture signalling is present, the signalling of virtual boundaries, is present, shall be in the SPS" );
+#endif
 #else
     sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
 #endif

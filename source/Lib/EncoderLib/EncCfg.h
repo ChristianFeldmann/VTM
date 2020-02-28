@@ -1298,8 +1298,8 @@ public:
   double    getIntraQpFactor                ()                        const { return m_dIntraQpFactor;                }
 
   //==== Coding Structure ========
-  uint32_t      getIntraPeriod                  () const     { return  m_uiIntraPeriod; }
-  uint32_t      getDecodingRefreshType          () const     { return  m_uiDecodingRefreshType; }
+  int       getIntraPeriod                  () const     { return  m_uiIntraPeriod; }
+  uint32_t  getDecodingRefreshType          () const     { return  m_uiDecodingRefreshType; }
   bool      getReWriteParamSets             ()  const    { return m_rewriteParamSets; }
   int       getGOPSize                      () const     { return  m_iGOPSize; }
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }

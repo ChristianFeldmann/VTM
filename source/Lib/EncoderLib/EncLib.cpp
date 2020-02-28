@@ -2226,7 +2226,17 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   int fullListNum = m_iGOPSize;
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
-  if (m_uiIntraPeriod < 0)
+
+  int rplPeriod = m_uiIntraPeriod;
+  if( rplPeriod < 0 )  //Need to check if it is low delay or RA but with no RAP
+  {
+    if( slice->getSPS()->getRPLList0()->getReferencePictureList(1)->getRefPicIdentifier(0) * slice->getSPS()->getRPLList1()->getReferencePictureList(1)->getRefPicIdentifier(0) < 0)
+    {
+      rplPeriod = m_iGOPSize * 2;
+    }
+  }
+
+  if (rplPeriod < 0)
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
@@ -2242,11 +2252,12 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   }
   for (; extraNum < fullListNum + partialListNum; extraNum++)
   {
-    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    //if (rplPeriod > 0 && getDecodingRefreshType() > 0)
+    if( rplPeriod > 0 )
     {
-      int POCIndex = POCCurr%m_uiIntraPeriod;
+      int POCIndex = POCCurr%rplPeriod;
       if (POCIndex == 0)
-        POCIndex = m_uiIntraPeriod;
+        POCIndex = rplPeriod;
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         slice->setRPL0idx(extraNum);
@@ -2264,7 +2275,7 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
       slice->setRPL0idx(getRPLCandidateSize(0));
       slice->setRPL1idx(getRPLCandidateSize(0));
     }
-    else if (m_uiIntraPeriod < 0)
+    else if( rplPeriod < 0 )
     {
       // To set RPL indexes for LD
       int numRPLCandidates = getRPLCandidateSize(0);

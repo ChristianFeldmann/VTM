@@ -2137,6 +2137,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     pcSlice->setLastIDR(m_iLastIDR);
     pcSlice->setIndependentSliceIdx(0);
+    if (pcSlice->getPOC() && m_pcCfg->getIntraPeriod() != 1)
+    {
+      pcSlice->setSliceType(m_pcCfg->getGOPEntry(iGOPid).m_sliceType == 'I' ? I_SLICE : (m_pcCfg->getGOPEntry(iGOPid).m_sliceType == 'B' ? B_SLICE : P_SLICE) );
+    }
 
     if(pcSlice->getSliceType()==B_SLICE&&m_pcCfg->getGOPEntry(iGOPid).m_sliceType=='P')
     {
@@ -2146,6 +2150,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
+    pcSlice->setTLayer(m_pcCfg->getGOPEntry(iGOPid).m_temporalId);
 
 #if JVET_Q0819_PH_CHANGES
     // set two flags according to slice type presented in the picture
@@ -2404,6 +2409,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType ( P_SLICE );
     }
+
     xUpdateRasInit( pcSlice );
 
     if ( pcSlice->getPendingRasInit() )

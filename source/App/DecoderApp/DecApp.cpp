@@ -207,7 +207,6 @@ uint32_t DecApp::decode()
       }
     }
 
-
     if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
     {
       if (!loopFiltered || bitstreamFile)
@@ -219,6 +218,9 @@ uint32_t DecApp::decode()
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
       {
         m_cDecLib.setFirstSliceInSequence(true);
+#if SPS_ID_CHECK
+        std::memset( m_cDecLib.getFirstSliceInLayer(), true, sizeof( *m_cDecLib.getFirstSliceInLayer() ) * MAX_VPS_LAYERS );
+#endif
       }
 
     }
@@ -284,6 +286,9 @@ uint32_t DecApp::decode()
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
         m_cDecLib.setFirstSliceInPicture (false);
+#if SPS_ID_CHECK
+        std::memset( m_cDecLib.getFirstSliceInLayer(), false, sizeof( *m_cDecLib.getFirstSliceInLayer() ) * MAX_VPS_LAYERS );
+#endif
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
       if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)

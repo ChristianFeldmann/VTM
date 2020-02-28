@@ -2301,6 +2301,8 @@ private:
   uint32_t                    m_recoveryPocCnt;                                         //!< recovery POC count
 #if SPS_ID_CHECK
   bool                        m_noOutputBeforeRecoveryFlag;                             //!< NoOutputBeforeRecoveryFlag
+  bool                        m_handleCraAsCvsStartFlag;                                //!< HandleCraAsCvsStartFlag
+  bool                        m_handleGdrAsCvsStartFlag;                                //!< HandleGdrAsCvsStartFlag
 #endif
   int                         m_spsId;                                                  //!< sequence parameter set ID
   int                         m_ppsId;                                                  //!< picture parameter set ID
@@ -2433,10 +2435,6 @@ public:
   bool                        getNoOutputOfPriorPicsFlag() const                        { return m_noOutputOfPriorPicsFlag;                                                            }
   void                        setRecoveryPocCnt( uint32_t u )                           { m_recoveryPocCnt = u;                                                                        }
   bool                        getRecoveryPocCnt() const                                 { return m_recoveryPocCnt;                                                                     }
-#if SPS_ID_CHECK
-  void                        setNoOutputBeforeRecoveryFlag( bool b )                   { m_noOutputBeforeRecoveryFlag = b;                                                            }
-  bool                        getNoOutputBeforeRecoveryFlag() const                     { return m_noOutputBeforeRecoveryFlag;                                                         }
-#endif
   void                        setSPSId( uint32_t u )                                    { m_spsId = u;                                                                                 }
   uint32_t                    getSPSId() const                                          { return m_spsId;                                                                              }
   void                        setPPSId( uint32_t u )                                    { m_ppsId = u;                                                                                 }
@@ -2654,6 +2652,15 @@ public:
   void                        setNumL1Weights(int b)                                   { m_numL1Weights = b;                          }
   int                         getNumL1Weights()                                        { return m_numL1Weights;                       }
 #endif
+
+#if SPS_ID_CHECK
+  void                        setNoOutputBeforeRecoveryFlag( bool val )                { m_noOutputBeforeRecoveryFlag = val;  }
+  bool                        getNoOutputBeforeRecoveryFlag() const                    { return m_noOutputBeforeRecoveryFlag; }
+  void                        setHandleCraAsCvsStartFlag( bool val )                   { m_handleCraAsCvsStartFlag = val;     }
+  bool                        getHandleCraAsCvsStartFlag() const                       { return m_handleCraAsCvsStartFlag;    }
+  void                        setHandleGdrAsCvsStartFlag( bool val )                   { m_handleGdrAsCvsStartFlag = val;     }
+  bool                        getHandleGdrAsCvsStartFlag() const                       { return m_handleGdrAsCvsStartFlag;    }
+#endif
 };
 
 /// slice header class
@@ -2731,8 +2738,10 @@ private:
   const PicHeader*           m_pcPicHeader;    //!< pointer to picture header structure
   bool                       m_colFromL0Flag;  // collocated picture from List0 flag
 
+#if !SPS_ID_CHECK
   bool                       m_noIncorrectPicOutputFlag;
   bool                       m_handleCraAsCvsStartFlag;
+#endif
 
   uint32_t                       m_colRefIdx;
   double                     m_lambdas[MAX_NUM_COMPONENT];
@@ -2971,11 +2980,13 @@ public:
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors)                const;
+#if !SPS_ID_CHECK
   void                        setNoIncorrectPicOutputFlag(bool val)                  { m_noIncorrectPicOutputFlag = val;                             }
   bool                        getNoIncorrectPicOutputFlag() const                    { return m_noIncorrectPicOutputFlag;                                    }
 
   void                        setHandleCraAsCvsStartFlag( bool val )                 { m_handleCraAsCvsStartFlag = val;                                   }
   bool                        getHandleCraAsCvsStartFlag() const                     { return m_handleCraAsCvsStartFlag;                                  }
+#endif
 
   void                        setNumTilesInSlice( uint32_t u )                       { m_sliceMap.setNumTilesInSlice( u );                                       }
   uint32_t                    getNumTilesInSlice() const                             { return m_sliceMap.getNumTilesInSlice();                                   }

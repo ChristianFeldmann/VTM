@@ -111,18 +111,23 @@ private:
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
+#if SPS_ID_CHECK
+  bool                    m_firstSliceInLayer[MAX_VPS_LAYERS];
+  bool                    m_firstSliceInSequence;
+#else
   bool                    m_bFirstSliceInSequence;
+  bool                    m_bFirstSliceInBitstream;
+#endif
   bool                    m_prevSliceSkipped;
   int                     m_skippedPOC;
-  bool                    m_bFirstSliceInBitstream;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-  bool                    m_lastNoIncorrectPicOutputFlag;    //value of variable NoIncorrectPicOutputFlag of the last CRA / GDR pic
+  bool                    m_lastNoOutputBeforeRecoveryFlag;    //value of variable NoOutputBeforeRecoveryFlag  of the last CRA / GDR pic
   int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
   int                     m_decodedPictureHashSEIEnabled;  ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
-  uint32_t                    m_numberOfChecksumErrorsDetected;
+  uint32_t                m_numberOfChecksumErrorsDetected;
 
   bool                    m_warningMessageSkipPicture;
 
@@ -187,8 +192,13 @@ public:
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
   bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
+#if SPS_ID_CHECK
+  bool  getFirstSliceInSequence() const     { return m_firstSliceInSequence; }
+  void  setFirstSliceInSequence( bool val ) { m_firstSliceInSequence = val; }
+#else
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
+#endif
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 
@@ -216,6 +226,10 @@ public:
   void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
   int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
   void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
+
+#if SPS_ID_CHECK
+  bool* getFirstSliceInLayer()       { return m_firstSliceInLayer; }
+#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);

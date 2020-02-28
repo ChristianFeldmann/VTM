@@ -77,14 +77,14 @@ endif()
 
 if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   add_custom_command( TARGET ${LIB_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-                                                          $<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/EncoderApp>
-                                                          $<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/EncoderApp>
-                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/EncoderApp>
-                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL}/EncoderApp>
-                                                          $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStaticd>
-                                                          $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStatic>
-                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStaticp>
-                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStaticm> )
+                                                          $<$<CONFIG:Debug>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG}/libvtmencoder.so>
+                                                          $<$<CONFIG:Release>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE}/libvtmencoder.so>
+                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO}/libvtmencoder.so>
+                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL}/libvtmencoder.so>
+                                                          $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
+                                                          $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
+                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
+                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so> )
 endif()
 
 # example: place header files in different folders

@@ -1,5 +1,5 @@
 # executable
-set( LIB_NAME libVVCDecoder )
+set( LIB_NAME vtmdecoder )
 
 # get source files
 file( GLOB SRC_FILES "*.cpp" )
@@ -60,15 +60,7 @@ if( CMAKE_COMPILER_IS_GNUCC AND BUILD_STATIC )
   target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_WPP_STATIC_LINK=1 )
 endif()
 
-target_link_libraries( ${LIB_NAME} CommonLib EncoderLib DecoderLib Utilities Threads::Threads ${ADDITIONAL_LIBS} )
-
-if( EXTENSION_360_VIDEO )
-  target_link_libraries( ${LIB_NAME} Lib360 AppEncHelper360 )
-endif()
-
-if( EXTENSION_HDRTOOLS )
-  target_link_libraries( ${LIB_NAME} HDRLib )
-endif()
+target_link_libraries( ${LIB_NAME} CommonLib DecoderLib Utilities Threads::Threads ${ADDITIONAL_LIBS} )
 
 # lldb custom data formatters
 if( XCODE )
@@ -77,14 +69,14 @@ endif()
 
 if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
   add_custom_command( TARGET ${LIB_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-                                                          $<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/EncoderApp>
-                                                          $<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/EncoderApp>
-                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO}/EncoderApp>
-                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL}/EncoderApp>
-                                                          $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStaticd>
-                                                          $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStatic>
-                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStaticp>
-                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/EncoderAppStaticm> )
+                                                          $<$<CONFIG:Debug>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG}/libvtmdecoder.so>
+                                                          $<$<CONFIG:Release>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE}/libvtmdecoder.so>
+                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO}/libvtmdecoder.so>
+                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL}/libvtmdecoder.so>
+                                                          $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so>
+                                                          $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so>
+                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so>
+                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so> )
 endif()
 
 # example: place header files in different folders

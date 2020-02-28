@@ -61,28 +61,6 @@ typedef enum
   LIBVTMENC_ERROR              ///< There was an unspecified error
 } libVTMEnc_error;
 
-typedef struct vtm_nal_t
-{
-  int payloadSizeBytes;
-  uint8_t *payload;
-} vtm_nal_t;
-
-typedef struct vtm_image_t
-{
-  int     i_csp;       /* Colorspace */
-  int     i_plane;     /* Number of image planes */
-  int     i_stride[4]; /* Strides for each plane */
-  uint8_t *plane[4];   /* Pointers to each plane */
-} vtm_image_t;
-
-typedef struct vtm_pic_t
-{
-  int i_type;
-  int64_t i_pts;
-  int64_t i_dts;
-  vtm_image_t img;
-} vtm_pic_t;
-
 typedef enum
 {
   VTM_CHROMA_400        = 0,
@@ -91,6 +69,29 @@ typedef enum
   VTM_CHROMA_444        = 3,
   VTM_NUM_CHROMA_FORMAT = 4
 } vtm_chroma_format_t;
+
+typedef struct vtm_nal_t
+{
+  int payloadSizeBytes;
+  uint8_t *payload;
+} vtm_nal_t;
+
+typedef struct vtm_image_t
+{
+  int                 nr_planes; /* Number of image planes */
+  int                 stride[4]; /* Strides for each plane */
+  int                 size[2];   /* width/height */
+  int16_t             *plane[4]; /* Pointers to each plane */
+} vtm_image_t;
+
+typedef struct vtm_pic_t
+{
+  int i_type;
+  int64_t i_pts;
+  int64_t i_dts;
+  vtm_chroma_format_t chroma_format;
+  vtm_image_t img;
+} vtm_pic_t;
 
 typedef struct vtm_settings_t
 {

@@ -4837,6 +4837,8 @@ bool LibVTMEncoderCfg::applySettings(vtm_settings_t *settings)
   default:
     return false;
   }
+  m_chromaFormatIDC = m_InputChromaFormatIDC;
+
   return true;
 }
 

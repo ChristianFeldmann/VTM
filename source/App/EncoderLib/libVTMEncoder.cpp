@@ -75,26 +75,59 @@ public:
 
   bool configureEncoder(vtm_settings_t *settings)
   {
-    if (!applySettings(settings))
+    if (settings == nullptr || !applySettings(settings))
     {
       return false;
     }
+
+    vtm_settings = *settings;
 
     xInitLibCfg();
     m_cEncLib.create(); // The part we need from xCreateLib
     m_cEncLib.init(false, this); // xInitLib
     
     UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, m_iSourceHeight ) );
-    orgPic.create( unitArea );
+    origPic.create( unitArea );
 
     return true;
+  }
+
+  vtm_pic_t *getVtmPicForPushing()
+  {
+    origVtmPic.i_dts = -1;
+    origVtmPic.i_pts = -1;
+    origVtmPic.i_type = -1;
+    origVtmPic.chroma_format = vtm_settings.chroma_format;
+    origVtmPic.img.nr_planes = (vtm_settings.chroma_format == VTM_CHROMA_400) ? 1 : 3;
+    origVtmPic.img.size[0] = vtm_settings.source_width;
+    origVtmPic.img.size[1] = vtm_settings.source_height;
+    for (int i=0; i<origVtmPic.img.nr_planes; i++)
+    {
+      auto component = ComponentID(i);
+      auto luma = origPic.get(component);
+      origVtmPic.img.stride[i] = luma.stride;
+      origVtmPic.img.plane[i] = luma.bufAt(0, 0);
+    }
+    return &origVtmPic;
+  }
+
+  void pushFrame(vtm_pic_t *pic)
+  {
+    const bool bEos = false;
+    const InputColourSpaceConversion snrCSC = (!m_snrInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
+    m_cEncLib.encode( bEos, flushing ? 0 : &origPic, nullptr, snrCSC, recBufList, iNumEncoded );
   }
 
 protected:
   vtm_settings_t vtm_settings;
 
   std::vector<AccessUnit> m_lOutputAUList;
-  PelStorage orgPic;
+  PelStorage origPic;
+  vtm_pic_t origVtmPic;
+  std::list<PelUnitBuf*> recBufList;
+  int iNumEncoded = { 0 };
+
+  bool flushing { false };
 };
 
 extern "C" {
@@ -147,7 +180,7 @@ extern "C" {
     if (!enc)
       return nullptr;
 
-    return nullptr;
+    return enc->getVtmPicForPushing();
   }
 
   VTM_ENC_API libVTMEnc_error libVTMEncoder_send_frame(libVTMEncoder_context* encCtx, vtm_pic_t *pic_in)
@@ -155,6 +188,8 @@ extern "C" {
     vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
     if (!enc)
       return LIBVTMENC_ERROR;
+
+    enc->pushFrame(pic_in);
 
     return LIBVTMENC_OK;
   }

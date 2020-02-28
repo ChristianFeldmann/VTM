@@ -678,7 +678,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     }
 #endif
 
-    if( m_rprEnabled && m_uiIntraPeriod == -1 )
+    if( m_rprEnabled && m_intraPeriod == -1 )
     {
       const int poc = m_iPOCLast + ( m_compositeRefEnabled ? 2 : 1 );
 
@@ -1484,7 +1484,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
 
-  if( m_uiIntraPeriod < 0 )
+  if( m_intraPeriod < 0 )
   {
     sps.setRPL1CopyFromRPL0Flag( true );
   }
@@ -2165,7 +2165,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
 
 void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1)
 {
-  if (m_uiIntraPeriod < 0)  //Only for RA
+  if (m_intraPeriod < 0)  //Only for RA
   {
     *activeL0 = *activeL1 = 0;
     return;
@@ -2176,7 +2176,7 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   int fullListNum = m_iGOPSize;
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
-  if (m_uiIntraPeriod < 0)
+  if (m_intraPeriod < 0)
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
@@ -2192,11 +2192,13 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   }
   for (; extraNum<fullListNum + partialListNum; extraNum++)
   {
-    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    if (m_intraPeriod > 0 && getDecodingRefreshType() > 0)
     {
-      int POCIndex = POCCurr%m_uiIntraPeriod;
+      int POCIndex = POCCurr % m_intraPeriod;
       if (POCIndex == 0)
-        POCIndex = m_uiIntraPeriod;
+      {
+        POCIndex = m_intraPeriod;
+      }
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         rpl0Idx = extraNum;
@@ -2227,7 +2229,7 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
 
-  int rplPeriod = m_uiIntraPeriod;
+  int rplPeriod = m_intraPeriod;
   if( rplPeriod < 0 )  //Need to check if it is low delay or RA but with no RAP
   {
     if( slice->getSPS()->getRPLList0()->getReferencePictureList(1)->getRefPicIdentifier(0) * slice->getSPS()->getRPLList1()->getReferencePictureList(1)->getRefPicIdentifier(0) < 0)
@@ -2252,12 +2254,13 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   }
   for (; extraNum < fullListNum + partialListNum; extraNum++)
   {
-    //if (rplPeriod > 0 && getDecodingRefreshType() > 0)
     if( rplPeriod > 0 )
     {
-      int POCIndex = POCCurr%rplPeriod;
+      int POCIndex = POCCurr % rplPeriod;
       if (POCIndex == 0)
+      {
         POCIndex = rplPeriod;
+      }
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         slice->setRPL0idx(extraNum);

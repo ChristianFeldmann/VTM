@@ -241,8 +241,8 @@ protected:
   bool m_intraConstraintFlag;
 
   //====== Coding Structure ========
-  int       m_uiIntraPeriod;                        // needs to be signed to allow '-1' for no intra period
-  uint32_t      m_uiDecodingRefreshType;            ///< the type of decoding refresh employed for the random access.
+  int       m_intraPeriod;                        // needs to be signed to allow '-1' for no intra period
+  uint32_t  m_decodingRefreshType;            ///< the type of decoding refresh employed for the random access.
   bool      m_rewriteParamSets;
   bool      m_idrRefParamList;
   int       m_iGOPSize;
@@ -917,8 +917,8 @@ public:
   void      setCabacZeroWordPaddingEnabled(bool value)       { m_cabacZeroWordPaddingEnabled = value; }
 
   //====== Coding Structure ========
-  void      setIntraPeriod                  (int   i)        { m_uiIntraPeriod = i;                   }
-  void      setDecodingRefreshType          ( int   i )      { m_uiDecodingRefreshType = (uint32_t)i; }
+  void      setIntraPeriod                  (int   i)        { m_intraPeriod = i;                   }
+  void      setDecodingRefreshType          ( int   i )      { m_decodingRefreshType = (uint32_t)i; }
   void      setReWriteParamSets             ( bool  b )      { m_rewriteParamSets = b; }
   void      setIDRRefParamListPresent       ( bool  b )      { m_idrRefParamList  = b; }
   bool      getIDRRefParamListPresent       ()        const  { return m_idrRefParamList; }
@@ -1298,8 +1298,8 @@ public:
   double    getIntraQpFactor                ()                        const { return m_dIntraQpFactor;                }
 
   //==== Coding Structure ========
-  int       getIntraPeriod                  () const     { return  m_uiIntraPeriod; }
-  uint32_t  getDecodingRefreshType          () const     { return  m_uiDecodingRefreshType; }
+  int       getIntraPeriod                  () const     { return  m_intraPeriod; }
+  uint32_t  getDecodingRefreshType          () const     { return  m_decodingRefreshType; }
   bool      getReWriteParamSets             ()  const    { return m_rewriteParamSets; }
   int       getGOPSize                      () const     { return  m_iGOPSize; }
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }

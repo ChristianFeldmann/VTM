@@ -1371,7 +1371,12 @@ private:
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool              m_virtualBoundariesEnabledFlag;   //!< Enable virtual boundaries tool
+  bool              m_virtualBoundariesPresentFlag;   //!< disable loop filtering across virtual boundaries
+#else
   bool              m_loopFilterAcrossVirtualBoundariesDisabledFlag;   //!< disable loop filtering across virtual boundaries
+#endif
   unsigned          m_numVerVirtualBoundaries;                         //!< number of vertical virtual boundaries
   unsigned          m_numHorVirtualBoundaries;                         //!< number of horizontal virtual boundaries
   unsigned          m_virtualBoundariesPosX[3];                        //!< horizontal position of each vertical virtual boundary
@@ -1702,8 +1707,15 @@ void                    setCCALFEnabledFlag( bool b )                           
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG  
+  void                    setVirtualBoundariesEnabledFlag( bool b )                                       { m_virtualBoundariesEnabledFlag = b; }
+  bool                    getVirtualBoundariesEnabledFlag() const                                         { return m_virtualBoundariesEnabledFlag; }
+  void                    setVirtualBoundariesPresentFlag( bool b )                                       { m_virtualBoundariesPresentFlag = b; }
+  bool                    getVirtualBoundariesPresentFlag() const                                         { return m_virtualBoundariesPresentFlag; }
+#else 
   void                    setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)                        { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b;                 }
   bool                    getLoopFilterAcrossVirtualBoundariesDisabledFlag() const                        { return m_loopFilterAcrossVirtualBoundariesDisabledFlag;              }
+#endif
   void                    setNumVerVirtualBoundaries(unsigned u)                                          { m_numVerVirtualBoundaries = u;                                       }
   unsigned                getNumVerVirtualBoundaries() const                                              { return m_numVerVirtualBoundaries;                                    }
   void                    setNumHorVirtualBoundaries(unsigned u)                                          { m_numHorVirtualBoundaries = u;                                       }
@@ -2384,7 +2396,12 @@ private:
   uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
   uint8_t                     m_subPicId[MAX_NUM_SUB_PICS];                             //!< sub-picture ID for each sub-picture in the sequence
 #endif
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool                        m_virtualBoundariesEnabledFlag;                           //!< loop filtering across virtual boundaries disabled
+  bool                        m_virtualBoundariesPresentFlag;                           //!< loop filtering across virtual boundaries disabled
+#else
   bool                        m_loopFilterAcrossVirtualBoundariesDisabledFlag;          //!< loop filtering across virtual boundaries disabled
+#endif
   unsigned                    m_numVerVirtualBoundaries;                                //!< number of vertical virtual boundaries
   unsigned                    m_numHorVirtualBoundaries;                                //!< number of horizontal virtual boundaries
   unsigned                    m_virtualBoundariesPosX[3];                               //!< horizontal virtual boundary positions
@@ -2525,8 +2542,15 @@ public:
   void                        setSubPicId( int i, uint8_t u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); m_subPicId[i] = u;      }
   uint8_t                     getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
 #endif
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  void                        setVirtualBoundariesEnabledFlag( bool b )                 { m_virtualBoundariesEnabledFlag = b;                                                          }
+  bool                        getVirtualBoundariesEnabledFlag() const                   { return m_virtualBoundariesEnabledFlag;                                                       }
+  void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }
+  bool                        getVirtualBoundariesPresentFlag() const                   { return m_virtualBoundariesPresentFlag;                                                       }
+#else
   void                        setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)  { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b;                                         }
   bool                        getLoopFilterAcrossVirtualBoundariesDisabledFlag() const  { return m_loopFilterAcrossVirtualBoundariesDisabledFlag;                                      }
+#endif
   void                        setNumVerVirtualBoundaries(unsigned u)                    { m_numVerVirtualBoundaries = u;                                                               }
   unsigned                    getNumVerVirtualBoundaries() const                        { return m_numVerVirtualBoundaries;                                                            }
   void                        setNumHorVirtualBoundaries(unsigned u)                    { m_numHorVirtualBoundaries = u;                                                               }

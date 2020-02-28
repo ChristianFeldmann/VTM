@@ -528,18 +528,27 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );
 
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
-
-  m_cEncLib.setLoopFilterAcrossVirtualBoundariesDisabledFlag     ( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
-  m_cEncLib.setNumVerVirtualBoundaries                           ( m_numVerVirtualBoundaries );
-  m_cEncLib.setNumHorVirtualBoundaries                           ( m_numHorVirtualBoundaries );
-  for( unsigned i = 0; i < m_numVerVirtualBoundaries; i++ )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  m_cEncLib.setVirtualBoundariesEnabledFlag                      ( m_virtualBoundariesEnabledFlag );
+  if( m_cEncLib.getVirtualBoundariesEnabledFlag() )
   {
-    m_cEncLib.setVirtualBoundariesPosX                           ( m_virtualBoundariesPosX[ i ], i );
+    m_cEncLib.setVirtualBoundariesPresentFlag                      ( m_virtualBoundariesPresentFlag );
+#else
+    m_cEncLib.setLoopFilterAcrossVirtualBoundariesDisabledFlag     ( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+#endif
+    m_cEncLib.setNumVerVirtualBoundaries                           ( m_numVerVirtualBoundaries );
+    m_cEncLib.setNumHorVirtualBoundaries                           ( m_numHorVirtualBoundaries );
+    for( unsigned i = 0; i < m_numVerVirtualBoundaries; i++ )
+    {
+      m_cEncLib.setVirtualBoundariesPosX                           ( m_virtualBoundariesPosX[ i ], i );
+    }
+    for( unsigned i = 0; i < m_numHorVirtualBoundaries; i++ )
+    {
+      m_cEncLib.setVirtualBoundariesPosY                           ( m_virtualBoundariesPosY[ i ], i );
+    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
-  for( unsigned i = 0; i < m_numHorVirtualBoundaries; i++ )
-  {
-    m_cEncLib.setVirtualBoundariesPosY                           ( m_virtualBoundariesPosY[ i ], i );
-  }
+#endif 
 
   m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
   m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );

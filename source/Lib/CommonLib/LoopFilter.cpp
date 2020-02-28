@@ -467,8 +467,13 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 inline bool LoopFilter::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader )
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( picHeader->getVirtualBoundariesPresentFlag() )
+  {
+#else
   if (picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag())
   {
+#endif
     for (int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++)
     {
       if (yPos <= picHeader->getVirtualBoundariesPosY(i) && picHeader->getVirtualBoundariesPosY(i) < yPos + height)

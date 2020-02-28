@@ -372,7 +372,12 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool      m_virtualBoundariesEnabledFlag;
+  bool      m_virtualBoundariesPresentFlag;
+#else
   bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+#endif
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   unsigned  m_virtualBoundariesPosX[3];
@@ -1138,8 +1143,15 @@ public:
   unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  void      setVirtualBoundariesEnabledFlag( bool b ) { m_virtualBoundariesEnabledFlag = b; }
+  bool      getVirtualBoundariesEnabledFlag() const { return m_virtualBoundariesEnabledFlag; }
+  void      setVirtualBoundariesPresentFlag( bool b ) { m_virtualBoundariesPresentFlag = b; }
+  bool      getVirtualBoundariesPresentFlag() const { return m_virtualBoundariesPresentFlag; }
+#else
   void      setLoopFilterAcrossVirtualBoundariesDisabledFlag( bool b ) { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b; }
   bool      getLoopFilterAcrossVirtualBoundariesDisabledFlag() const { return m_loopFilterAcrossVirtualBoundariesDisabledFlag; }
+#endif
   void      setNumVerVirtualBoundaries      ( unsigned u )   { m_numVerVirtualBoundaries = u; }
   unsigned  getNumVerVirtualBoundaries      ()         const { return m_numVerVirtualBoundaries; }
   void      setNumHorVirtualBoundaries      ( unsigned u )   { m_numHorVirtualBoundaries = u; }

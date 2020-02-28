@@ -1807,7 +1807,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       m_picHeader.setNoOutputOfPriorPicsFlag( true );
     }
 #else
-    if( !m_bFirstSliceInBitstream &&
+    if( !m_firstSliceInBitstream &&
         ( m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) &&
         m_apcSlicePilot->getNoIncorrectPicOutputFlag())
     {

@@ -510,10 +510,16 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     for( colIdx = 0; colIdx < pcPPS->getNumExpTileColumns(); colIdx++ )
     {
       READ_UVLC( uiCode, "tile_column_width_minus1[i]" );             pcPPS->addTileColumnWidth( uiCode + 1 );
+#if JVET_Q0359_TILE_SIZE_CONSTRAINT
+      CHECK(uiCode  > (pcPPS->getPicWidthInCtu()-1),                 "The value of tile_column_width_minus1[i] shall be in the range of 0 to PicWidthInCtbY-1, inclusive");
+#endif
     }
     for( rowIdx = 0; rowIdx < pcPPS->getNumExpTileRows(); rowIdx++ )
     {
       READ_UVLC( uiCode, "tile_row_height_minus1[i]" );               pcPPS->addTileRowHeight( uiCode + 1 );
+#if JVET_Q0359_TILE_SIZE_CONSTRAINT
+      CHECK(uiCode > (pcPPS->getPicHeightInCtu() - 1),                "The value of tile_row_height_minus shall be in the range of 0 to PicHeightInCtbY-1, inclusive");
+#endif
     }
     pcPPS->initTiles();
      

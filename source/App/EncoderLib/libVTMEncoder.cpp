@@ -58,8 +58,7 @@ public:
   {
     try
     {
-      if(!parseCfg())
-        return LIBVTMENC_ERROR;
+      setRandomAccessConfig();
     }
     catch (df::program_options_lite::ParseFailure &e)
     {
@@ -74,8 +73,13 @@ public:
     m_lOutputAUList.push_back(au);
   }
 
-  bool applySettings(vtm_settings_t *settings)
+  bool configureEncoder(vtm_settings_t *settings)
   {
+    if (!applySettings(settings))
+    {
+      return false;
+    }
+
     xInitLibCfg();
     m_cEncLib.create(); // The part we need from xCreateLib
     m_cEncLib.init(false, this); // xInitLib
@@ -121,7 +125,7 @@ extern "C" {
     if (!settings)
       return LIBVTMENC_ERROR;
 
-    if (!enc->applySettings(settings))
+    if (!enc->configureEncoder(settings))
       return LIBVTMENC_ERROR;
 
     return LIBVTMENC_OK;
@@ -137,7 +141,25 @@ extern "C" {
     return LIBVTMENC_OK;
   }
 
-  VTM_ENC_API libVTMEnc_error libVTMEncoder_encode(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_in, vtm_pic_t *pic_out)
+  VTM_ENC_API vtm_pic_t *libVTMEncoder_get_input_frame(libVTMEncoder_context* encCtx)
+  {
+    vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
+    if (!enc)
+      return nullptr;
+
+    return nullptr;
+  }
+
+  VTM_ENC_API libVTMEnc_error libVTMEncoder_send_frame(libVTMEncoder_context* encCtx, vtm_pic_t *pic_in)
+  {
+    vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
+    if (!enc)
+      return LIBVTMENC_ERROR;
+
+    return LIBVTMENC_OK;
+  }
+
+  VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_out)
   {
     vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
     if (!enc)

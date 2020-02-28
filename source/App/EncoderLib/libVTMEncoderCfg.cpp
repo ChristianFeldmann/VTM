@@ -3917,7 +3917,7 @@ bool confirmPara(bool bflag, const char* message)
 
 void LibVTMEncoderCfg::xInitLibCfg()
 {
-    VPS vps;
+  VPS vps;
 
   vps.setMaxLayers                                               ( 1 );
   for(int i = 0; i < MAX_TLAYER; i++)
@@ -4674,6 +4674,10 @@ void LibVTMEncoderCfg::setRandomAccessConfig()
   m_loopFilterTcOffsetDiv2 = 0;
   m_deblockingFilterMetric = 0;
 
+  // #=========== Misc. ============
+  m_internalBitDepth[CHANNEL_TYPE_LUMA] = 10;
+  m_internalBitDepth[CHANNEL_TYPE_CHROMA] = 10;
+
   // #=========== Coding Tools =================
   m_bUseSAO = true;
   m_useTransformSkip = true;
@@ -4703,8 +4707,10 @@ void LibVTMEncoderCfg::setRandomAccessConfig()
   m_decodedPictureHashSEIType = HASHTYPE_MD5;
   m_cbQpOffset = 0;
   m_crQpOffset = 0;
-  m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag = false;
+  m_chromaQpMappingTableParams.m_sameCQPTableForAllChromaFlag = true;
   int qpBdOffsetC = 6 * (m_internalBitDepth[CHANNEL_TYPE_CHROMA] - 8);
+  m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(2);
+  m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0].resize(2);
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][0] = 32 + qpBdOffsetC;
   m_chromaQpMappingTableParams.m_deltaQpOutVal[0][0] = 32 + qpBdOffsetC;
   m_chromaQpMappingTableParams.m_deltaQpInValMinus1[0][1] = 44 - 32 - 1;
@@ -4767,6 +4773,71 @@ void LibVTMEncoderCfg::setRandomAccessConfig()
   // # Encoder optimization tools
   m_AffineAmvrEncOpt = true;
   m_MmvdDisNum = 6;
+}
+
+bool LibVTMEncoderCfg::applySettings(vtm_settings_t *settings)
+{
+  if (settings->source_width <= 0 || settings->source_height <= 0)
+  {
+    return false;
+  }
+  
+  m_iSourceWidth = settings->source_width;
+  m_iSourceHeight = settings->source_height;
+  m_inputBitDepth[CHANNEL_TYPE_LUMA] = settings->source_bitdepth;
+  m_inputBitDepth[CHANNEL_TYPE_CHROMA] = settings->source_bitdepth;
+
+  /* rules for input, output and internal bitdepths as per help text */
+  if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
+  {
+    m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] = m_inputBitDepth      [CHANNEL_TYPE_LUMA  ];
+  }
+  if (m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] == 0)
+  {
+    m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] = m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ];
+  }
+  if (m_internalBitDepth   [CHANNEL_TYPE_LUMA  ] == 0)
+  {
+    m_internalBitDepth   [CHANNEL_TYPE_LUMA  ] = m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ];
+  }
+  if (m_internalBitDepth   [CHANNEL_TYPE_CHROMA] == 0)
+  {
+    m_internalBitDepth   [CHANNEL_TYPE_CHROMA] = m_internalBitDepth   [CHANNEL_TYPE_LUMA  ];
+  }
+  if (m_inputBitDepth      [CHANNEL_TYPE_CHROMA] == 0)
+  {
+    m_inputBitDepth      [CHANNEL_TYPE_CHROMA] = m_inputBitDepth      [CHANNEL_TYPE_LUMA  ];
+  }
+  if (m_outputBitDepth     [CHANNEL_TYPE_LUMA  ] == 0)
+  {
+    m_outputBitDepth     [CHANNEL_TYPE_LUMA  ] = m_internalBitDepth   [CHANNEL_TYPE_LUMA  ];
+  }
+  if (m_outputBitDepth     [CHANNEL_TYPE_CHROMA] == 0)
+  {
+    m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
+  }
+
+  m_outputBitDepth[CHANNEL_TYPE_LUMA] = settings->source_bitdepth;
+  m_outputBitDepth[CHANNEL_TYPE_CHROMA] = settings->source_bitdepth;
+  m_iFrameRate = int(double(settings->fps_den) / settings->fps_num + 0.5);
+  switch (settings->chroma_format)
+  {
+  case VTM_CHROMA_400:
+    m_InputChromaFormatIDC = CHROMA_400;
+    break;
+  case VTM_CHROMA_420:
+    m_InputChromaFormatIDC = CHROMA_420;
+    break;
+  case VTM_CHROMA_422:
+    m_InputChromaFormatIDC = CHROMA_422;
+    break;
+  case VTM_CHROMA_444:
+    m_InputChromaFormatIDC = CHROMA_444;
+    break;  
+  default:
+    return false;
+  }
+  return true;
 }
 
 //! \}

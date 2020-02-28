@@ -38,6 +38,8 @@
 #ifndef __LIBVTMENCODERCFG__
 #define __LIBVTMENCODERCFG__
 
+#include "libVTMEncoder.h"
+
 #include "CommonLib/CommonDef.h"
 
 #include "EncoderLib/EncCfg.h"
@@ -708,6 +710,7 @@ public:
   bool  parseCfg    ();               ///< parse configuration file to fill member variables
   void  xInitLibCfg ();
   void  setRandomAccessConfig();
+  bool  applySettings(vtm_settings_t *settings);
 
 };// END CLASS DEFINITION LibVTMEncoderCfg
 

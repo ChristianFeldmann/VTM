@@ -129,7 +129,15 @@ VTM_ENC_API libVTMEnc_error libVTMEncoder_init_encoder(libVTMEncoder_context* en
  */
 VTM_ENC_API libVTMEnc_error libVTMEncoder_free_encoder(libVTMEncoder_context* encCtx);
 
-VTM_ENC_API libVTMEnc_error libVTMEncoder_encode(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_in, vtm_pic_t *pic_out);
+/** Get a frame that can be fille with data for inpout.
+ * The frame is already allocated with the settings that were provided in libVTMEncoder_init_encoder.
+ * The ownership of the frame is and stays in this library. Just copy the frame data into it
+ * and then use libVTMEncoder_send_frame to push it.
+ */
+VTM_ENC_API vtm_pic_t *libVTMEncoder_get_input_frame(libVTMEncoder_context* encCtx);
+
+VTM_ENC_API libVTMEnc_error libVTMEncoder_send_frame(libVTMEncoder_context* encCtx, vtm_pic_t *pic_in);
+VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_out);
 
 //! \}
 

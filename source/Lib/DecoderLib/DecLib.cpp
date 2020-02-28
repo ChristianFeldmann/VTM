@@ -1533,6 +1533,21 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK(spsConfWin.getWindowBottomOffset() != ppsConfWin.getWindowBottomOffset(), "When picture size is equal to maximum picutre size, conformance window bottom offset in SPS and PPS shall be equal");
   }
 #endif
+#if JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT
+  int levelIdcSps = int(sps->getProfileTierLevel()->getLevelIdc());
+  int maxLevelIdxDci = 0;
+  if (m_dci)
+  {
+    for (int i = 0; i < m_dci->getNumPTLs(); i++)
+    {
+      if (maxLevelIdxDci < int(m_dci->getProfileTierLevel(i).getLevelIdc()))
+      {
+        maxLevelIdxDci = int(m_dci->getProfileTierLevel(i).getLevelIdc());
+      }
+    }
+    CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
+  }
+#endif
 }
 
 

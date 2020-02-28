@@ -85,6 +85,7 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
                                                           $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
                                                           $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
                                                           $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so> )
+  add_custom_command( TARGET ${LIB_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/source/App/EncoderLib/libVTMEncoder.h ${CMAKE_SOURCE_DIR}/bin/libVTMEncoder.h)
 endif()
 
 # example: place header files in different folders

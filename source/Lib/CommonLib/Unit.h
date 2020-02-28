@@ -271,7 +271,11 @@ struct UnitAreaRelative : public UnitArea
 
 class SPS;
 class VPS;
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+class DCI;
+#else
 class DPS;
+#endif
 class PPS;
 class Slice;
 
@@ -471,7 +475,9 @@ struct TransformUnit : public UnitArea
   uint8_t        jointCbCr;
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
+#if !REMOVE_PPS_REXT
   int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
+#endif
 
   TransformUnit() : chType( CH_L ) { }
   TransformUnit(const UnitArea& unit);

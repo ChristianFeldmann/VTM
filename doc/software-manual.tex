@@ -205,7 +205,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 7.1 of the software.
+for the VVC project. It applies to version 8.0 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -992,10 +992,10 @@ NB: There is currently only limited validation that the encoder configuration co
 Indicates interoperability metadata registered as specified by X Recommendation ITU-T T.35.
 \\
 
-\Option{EnableDecodingParameterSet} &
+\Option{EnableDecodingCapabilityInformation} &
 %\ShortOption{\None} &
 \Default{false} &
-Enables writing of a decoding parameter set. If disabled, no parameter set will be written and the specical reserved ID zero will be used in the SPS indicating no constraint.
+Enables writing of a decoding capability information (DCI). If disabled, no DCI will be written.
 \\
 
 \Option{MaxBitDepthConstraint} &
@@ -1471,12 +1471,6 @@ between the current and the reference pictures.
                                  \mathrm{RateGOPSize}}\right)
 $}
 \end{displaymath}
-\\
-
-\Option{Log2ParallelMergeLevel} &
-%\ShortOption{\None} &
-\Default{2} &
-Defines the SPS-derived Log2ParallelMergeLevel variable.
 \\
 
 \Option{MaxNumMergeCand} &
@@ -2047,6 +2041,12 @@ beginning of each line of CTBs in order to produce a bitstream that can
 be encoded or decoded using one or more cores.
 \\
 
+\Option{WaveFrontEntryPointsPresent} &
+%\ShortOption{\None} &
+\Default{false} &
+Allow signalling of entry points for WPP in slice header.
+Note that when a slice contains more than one tile, entry point offsets for tile are always present in the slice header.
+\\
 
 \end{OptionTableNoShorthand}
 
@@ -2135,10 +2135,11 @@ Specifies the use of a deblocking filter metric to evaluate the suitability of d
 LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values are 0, 1 and 2.
 \\
 
-\Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&
+\Option{VirtualBoundariesPresentInSPSFlag}&
 %\ShortOption{\None}&
 \Default{false}&
-Disables in-loop filtering operations across the virtual boundaries.
+In-loop filtering operations across the virtual boundaries information present in the SPS when VirtualBoundariesPresentFlagInSPS = 1, otherwise
+present in the Picture Header when VirtualBoundariesPresentFlagInSPS = 0.
 \\
 
 \Option{NumVerVirtualBoundaries}&
@@ -2834,11 +2835,6 @@ This setting is only valid for the 16-bit RExt profiles.
 \Option{HighPrecisionPredictionWeighting} &
 \Default{false} &
 Specifies the value of high_precision_prediction_weighting_flag. This setting is only valid for the 16-bit or 4:4:4 RExt profiles.
-\\
-
-\Option{CrossComponentPrediction} &
-\Default{false} &
-When true, specifies the use of the cross component prediction tool (4:4:4 processing only). Version 1 and some Version 2 (RExt) profiles require this to be false.
 \\
 
 \Option{ReconBasedCrossCPredictionEstimate} &

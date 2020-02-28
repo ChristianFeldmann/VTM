@@ -42,6 +42,8 @@
 #include "CodingStructure.h"
 #include "Slice.h"
 
+#if !REMOVE_PPS_REXT
+
 //! \ingroup CommonLib
 //! \{
 
@@ -129,3 +131,4 @@ void CrossComponentPrediction::crossComponentPrediction(        TransformUnit &t
     }
   }
 }
+#endif

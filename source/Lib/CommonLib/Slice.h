@@ -318,6 +318,8 @@ public:
     , m_intraOnlyConstraintFlag  (false)
     , m_maxBitDepthConstraintIdc  (  0)
     , m_maxChromaFormatConstraintIdc(CHROMA_420)
+    , m_onePictureOnlyConstraintFlag (false)
+    , m_lowerBitRateConstraintFlag (false )
     , m_noQtbttDualTreeIntraConstraintFlag(false)
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
@@ -482,6 +484,11 @@ public:
   void          setNoGdrConstraintFlag(bool bVal) { m_noGdrConstraintFlag = bVal; }
   bool          getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  friend bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2);
+  friend bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2);
+#endif
 };
 
 class ProfileTierLevel
@@ -523,6 +530,10 @@ public:
 
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  friend bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
+  friend bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
+#endif
 };
 
 
@@ -832,6 +843,35 @@ public:
 #endif
 };
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP // Rename DPS to DCI (decoding_capability_information)
+class DCI
+{
+private:
+  int m_maxSubLayersMinus1;
+  std::vector<ProfileTierLevel> m_profileTierLevel;
+
+public:
+  DCI()
+    : m_maxSubLayersMinus1(0)
+  {};
+
+  virtual ~DCI() {};
+
+  int  getMaxSubLayersMinus1() const { return m_maxSubLayersMinus1; }
+  void setMaxSubLayersMinus1(int val) { m_maxSubLayersMinus1 = val; }
+
+  size_t getNumPTLs() const { return m_profileTierLevel.size(); }
+  void  setProfileTierLevel(const std::vector<ProfileTierLevel>& val) { m_profileTierLevel = val; }
+  const ProfileTierLevel& getProfileTierLevel(int idx) const { return m_profileTierLevel[idx]; }
+  bool  IsIndenticalDCI(const DCI& comparedDCI) const
+  {
+    if(m_maxSubLayersMinus1 != comparedDCI.m_maxSubLayersMinus1) return false;
+    if(m_profileTierLevel != comparedDCI.m_profileTierLevel) return false;
+    return true;
+  }
+};
+#else
 class DPS
 {
 private:
@@ -856,6 +896,9 @@ public:
   void  setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_profileTierLevel = val; }
   const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
 };
+
+#endif
+
 
 class VPS
 {
@@ -1201,7 +1244,9 @@ class SPS
 {
 private:
   int               m_SPSId;
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   int               m_decodingParameterSetId;
+#endif
   int               m_VPSId;
 
   bool              m_affineAmvrEnabledFlag;
@@ -1222,6 +1267,9 @@ private:
   // Structure
   uint32_t              m_maxWidthInLumaSamples;
   uint32_t              m_maxHeightInLumaSamples;
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  Window                m_conformanceWindow;
+#endif
 #if JVET_Q0119_CLEANUPS
   bool                  m_subPicInfoPresentFlag;                // indicates the presence of sub-picture info
 #else
@@ -1287,6 +1335,10 @@ private:
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  bool              m_entropyCodingSyncEnabledFlag;                    //!< Flag for enabling WPP
+  bool              m_entropyCodingSyncEntryPointPresentFlag;          //!< Flag for indicating the presence of WPP entry points
+ #endif
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
 
@@ -1319,7 +1371,12 @@ private:
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool              m_virtualBoundariesEnabledFlag;   //!< Enable virtual boundaries tool
+  bool              m_virtualBoundariesPresentFlag;   //!< disable loop filtering across virtual boundaries
+#else
   bool              m_loopFilterAcrossVirtualBoundariesDisabledFlag;   //!< disable loop filtering across virtual boundaries
+#endif
   unsigned          m_numVerVirtualBoundaries;                         //!< number of vertical virtual boundaries
   unsigned          m_numHorVirtualBoundaries;                         //!< number of horizontal virtual boundaries
   unsigned          m_virtualBoundariesPosX[3];                        //!< horizontal position of each vertical virtual boundary
@@ -1404,8 +1461,10 @@ public:
 
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
   int                     getDecodingParameterSetId() const                                               { return m_decodingParameterSetId; }
+#endif
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
 
@@ -1422,6 +1481,11 @@ public:
   uint32_t                getMaxPicWidthInLumaSamples() const                                             { return  m_maxWidthInLumaSamples; }
   void                    setMaxPicHeightInLumaSamples( uint32_t u )                                      { m_maxHeightInLumaSamples = u; }
   uint32_t                getMaxPicHeightInLumaSamples() const                                            { return  m_maxHeightInLumaSamples; }
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  Window&                 getConformanceWindow()                                                          { return  m_conformanceWindow; }
+  const Window&           getConformanceWindow() const                                                    { return  m_conformanceWindow; }
+  void                    setConformanceWindow( Window& conformanceWindow )                               { m_conformanceWindow = conformanceWindow; }
+#endif
 
 #if JVET_Q0119_CLEANUPS
   void                    setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }
@@ -1582,6 +1646,13 @@ public:
   int                     getBitDepth(ChannelType type) const                                             { return m_bitDepths.recon[type];                                      }
   void                    setBitDepth(ChannelType type, int u )                                           { m_bitDepths.recon[type] = u;                                         }
   const BitDepths&        getBitDepths() const                                                            { return m_bitDepths;                                                  }
+
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  bool                    getEntropyCodingSyncEnabledFlag() const                                         { return m_entropyCodingSyncEnabledFlag;                               }
+  void                    setEntropyCodingSyncEnabledFlag(bool val)                                       { m_entropyCodingSyncEnabledFlag = val;                                }
+  bool                    getEntropyCodingSyncEntryPointsPresentFlag() const                              { return m_entropyCodingSyncEntryPointPresentFlag;                     }
+  void                    setEntropyCodingSyncEntryPointsPresentFlag(bool val)                            { m_entropyCodingSyncEntryPointPresentFlag = val;                      }
+#endif
   int                     getMaxLog2TrDynamicRange(ChannelType channelType) const                         { return getSpsRangeExtension().getExtendedPrecisionProcessingFlag() ? std::max<int>(15, int(m_bitDepths.recon[channelType] + 6)) : 15; }
 
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
@@ -1636,8 +1707,15 @@ void                    setCCALFEnabledFlag( bool b )                           
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG  
+  void                    setVirtualBoundariesEnabledFlag( bool b )                                       { m_virtualBoundariesEnabledFlag = b; }
+  bool                    getVirtualBoundariesEnabledFlag() const                                         { return m_virtualBoundariesEnabledFlag; }
+  void                    setVirtualBoundariesPresentFlag( bool b )                                       { m_virtualBoundariesPresentFlag = b; }
+  bool                    getVirtualBoundariesPresentFlag() const                                         { return m_virtualBoundariesPresentFlag; }
+#else 
   void                    setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)                        { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b;                 }
   bool                    getLoopFilterAcrossVirtualBoundariesDisabledFlag() const                        { return m_loopFilterAcrossVirtualBoundariesDisabledFlag;              }
+#endif
   void                    setNumVerVirtualBoundaries(unsigned u)                                          { m_numVerVirtualBoundaries = u;                                       }
   unsigned                getNumVerVirtualBoundaries() const                                              { return m_numVerVirtualBoundaries;                                    }
   void                    setNumHorVirtualBoundaries(unsigned u)                                          { m_numHorVirtualBoundaries = u;                                       }
@@ -1773,7 +1851,7 @@ void                    setCCALFEnabledFlag( bool b )                           
 #endif
 };
 
-
+#if !REMOVE_PPS_REXT
 /// Reference Picture Lists class
 
 
@@ -1810,7 +1888,7 @@ public:
   void                   setLog2SaoOffsetScale(ChannelType type, uint32_t uiBitShift)         { m_log2SaoOffsetScale[type] = uiBitShift;       }
 #endif
 };
-
+#endif
 
 /// PPS class
 class PPS
@@ -1885,7 +1963,9 @@ private:
 #if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   int              m_log2MaxTransformSkipBlockSize;
 #endif
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
+#endif
 
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool              m_constantSliceHeaderParamsEnabledFlag;
@@ -1936,8 +2016,10 @@ private:
   Window           m_conformanceWindow;
   Window           m_scalingWindow;
 
+#if !REMOVE_PPS_REXT
   PPSRExt          m_ppsRangeExtension;
-
+#endif
+  
 public:
   PreCalcValues   *pcv;
 
@@ -1994,7 +2076,7 @@ public:
     return (compID==COMPONENT_Y) ? 0 : (compID==COMPONENT_Cb ? m_chromaCbQpOffset : compID==COMPONENT_Cr ? m_chromaCrQpOffset : m_chromaCbCrQpOffset );
   }
 
-  bool                   getCuChromaQpOffsetEnabledFlag() const                           { return getChromaQpOffsetListLen()>0;            }
+  bool                   getCuChromaQpOffsetListEnabledFlag() const                       { return getChromaQpOffsetListLen()>0;            }
   int                    getChromaQpOffsetListLen() const                                 { return m_chromaQpOffsetListLen;                 }
   void                   clearChromaQpOffsetList()                                        { m_chromaQpOffsetListLen = 0;                    }
 
@@ -2127,8 +2209,10 @@ public:
   uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }
   void                   setLog2MaxTransformSkipBlockSize(uint32_t u)                     { m_log2MaxTransformSkipBlockSize = u; }
 #endif
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
   void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
+#endif
 
 
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
@@ -2200,8 +2284,10 @@ public:
   bool                   getQpDeltaInfoInPhFlag() const                                   { return m_qpDeltaInfoInPhFlag; }
 #endif
 
+#if !REMOVE_PPS_REXT
   const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
   PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
+#endif
 
   void                    setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
   uint32_t                getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
@@ -2315,7 +2401,12 @@ private:
   uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
   uint8_t                     m_subPicId[MAX_NUM_SUB_PICS];                             //!< sub-picture ID for each sub-picture in the sequence
 #endif
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool                        m_virtualBoundariesEnabledFlag;                           //!< loop filtering across virtual boundaries disabled
+  bool                        m_virtualBoundariesPresentFlag;                           //!< loop filtering across virtual boundaries disabled
+#else
   bool                        m_loopFilterAcrossVirtualBoundariesDisabledFlag;          //!< loop filtering across virtual boundaries disabled
+#endif
   unsigned                    m_numVerVirtualBoundaries;                                //!< number of vertical virtual boundaries
   unsigned                    m_numHorVirtualBoundaries;                                //!< number of horizontal virtual boundaries
   unsigned                    m_virtualBoundariesPosX[3];                               //!< horizontal virtual boundary positions
@@ -2346,6 +2437,9 @@ private:
   bool                        m_enableTMVPFlag;                                         //!< enable temporal motion vector prediction
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
+#endif
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+  uint32_t                    m_colRefIdx;
 #endif
   bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
   uint32_t                    m_maxNumMergeCand;                                        //!< max number of merge candidates
@@ -2453,8 +2547,15 @@ public:
   void                        setSubPicId( int i, uint8_t u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); m_subPicId[i] = u;      }
   uint8_t                     getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
 #endif
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  void                        setVirtualBoundariesEnabledFlag( bool b )                 { m_virtualBoundariesEnabledFlag = b;                                                          }
+  bool                        getVirtualBoundariesEnabledFlag() const                   { return m_virtualBoundariesEnabledFlag;                                                       }
+  void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }
+  bool                        getVirtualBoundariesPresentFlag() const                   { return m_virtualBoundariesPresentFlag;                                                       }
+#else
   void                        setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)  { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b;                                         }
   bool                        getLoopFilterAcrossVirtualBoundariesDisabledFlag() const  { return m_loopFilterAcrossVirtualBoundariesDisabledFlag;                                      }
+#endif
   void                        setNumVerVirtualBoundaries(unsigned u)                    { m_numVerVirtualBoundaries = u;                                                               }
   unsigned                    getNumVerVirtualBoundaries() const                        { return m_numVerVirtualBoundaries;                                                            }
   void                        setNumHorVirtualBoundaries(unsigned u)                    { m_numHorVirtualBoundaries = u;                                                               }
@@ -2509,6 +2610,10 @@ public:
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   void                        setPicColFromL0Flag(bool val)                             { m_picColFromL0Flag = val;                                                                     }
   bool                        getPicColFromL0Flag() const                               { return m_picColFromL0Flag;                                                                    }
+#endif
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+  void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                                                       }
+  uint32_t                    getColRefIdx()                                             { return m_colRefIdx;                                                                         }
 #endif
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
   bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  
@@ -2691,6 +2796,9 @@ private:
 #if JVET_Q0775_PH_IN_SH
   bool                       m_pictureHeaderInSliceHeader;
 #endif
+#if JVET_Q0118_CLEANUPS
+  uint32_t                   m_nuhLayerId;           ///< Nal unit layer id
+#endif
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
@@ -2730,7 +2838,9 @@ private:
 
 
   // access channel
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   const DPS*                 m_dps;
+#endif
   const VPS*                 m_pcVPS;
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
@@ -2764,6 +2874,9 @@ private:
   ClpRngs                    m_clpRngs;
   std::vector<uint32_t>          m_substreamSizes;
   uint32_t                   m_numEntryPoints;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  uint32_t                   m_numSubstream;
+#endif
 
   bool                       m_cabacInitFlag;
 
@@ -2799,8 +2912,11 @@ public:
   void                        setPicHeader( const PicHeader* pcPicHeader )           { m_pcPicHeader = pcPicHeader;                                  }
   const PicHeader*            getPicHeader() const                                   { return m_pcPicHeader;                                         }
   int                         getRefIdx4MVPair( RefPicList eCurRefPicList, int nCurRefIdx );
+
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   void                        setDPS( DPS* dps )                                     { m_dps = dps;                                              }
   const DPS*                  getDPS() const                                         { return m_dps;                                               }
+#endif
 
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
@@ -2874,6 +2990,10 @@ public:
 #endif
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
+#if JVET_Q0118_CLEANUPS
+  void                        setNalUnitLayerId( uint32_t i )                        { m_nuhLayerId = i;                                             }
+  uint32_t                    getNalUnitLayerId() const                              { return m_nuhLayerId;                                          }
+#endif
   bool                        getRapPicFlag() const;
   bool                        getIdrPicFlag() const                                  { return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP; }
   bool                        isIRAP() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA); }
@@ -2975,7 +3095,7 @@ public:
   void                        setTLayer( uint32_t uiTLayer )                             { m_uiTLayer = uiTLayer;                                        }
 
   void                        checkLeadingPictureRestrictions( PicList& rcListPic )                                         const;
-  int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList* pRPL, int rplIdx, bool printErrors, int* refPicIndex) const;
+  int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList* pRPL, int rplIdx, bool printErrors, int* refPicIndex, int numActiveRefPics) const;
   void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId )  const;
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
@@ -3036,6 +3156,11 @@ public:
   uint32_t                        getNumberOfSubstreamSizes( )                           { return (uint32_t) m_substreamSizes.size();                        }
   void                        addSubstreamSize( uint32_t size )                          { m_substreamSizes.push_back(size);                             }
   uint32_t                        getSubstreamSize( uint32_t idx )                           { CHECK(idx>=getNumberOfSubstreamSizes(),"Invalid index"); return m_substreamSizes[idx]; }
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  void                        resetNumberOfSubstream()                               { m_numSubstream = 0;                                           }
+  uint32_t                    getNumberOfSubstream()                                 { return (uint32_t) m_numSubstream;                             }
+  void                        increaseNumberOfSubstream()                            { m_numSubstream++;                                             }
+#endif
 
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
@@ -3093,7 +3218,12 @@ public:
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();
   const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { CHECK( refIdx < 0, "Invalid reference index" ); return m_scalingRatio[refPicList][refIdx]; }
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  void                        setNumSubstream( const SPS *sps, const PPS *pps );
+  void                        setNumEntryPoints( const SPS *sps, const PPS *pps );
+#else
   void                        setNumEntryPoints( const PPS *pps );
+#endif
   uint32_t                    getNumEntryPoints( ) const { return m_numEntryPoints;  }
 
 #if JVET_Q0795_CCALF
@@ -3113,248 +3243,6 @@ public:
 private:
 };// END CLASS DEFINITION Slice
 
-void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData);
-
-template <class T> class ParameterSetMap
-{
-public:
-  template <class Tm>
-  struct MapData
-  {
-    bool                  bChanged;
-    std::vector<uint8_t>   *pNaluData; // Can be null
-    Tm*                   parameterSet;
-  };
-
-  ParameterSetMap(int maxId)
-  :m_maxId (maxId)
-  ,m_lastActiveParameterSet(NULL)
-  {
-    m_activePsId.clear();
-  }
-
-  ~ParameterSetMap()
-  {
-    for (typename std::map<int,MapData<T> >::iterator i = m_paramsetMap.begin(); i!= m_paramsetMap.end(); i++)
-    {
-      delete (*i).second.pNaluData;
-      delete (*i).second.parameterSet;
-    }
-    delete m_lastActiveParameterSet; m_lastActiveParameterSet = NULL;
-  }
-
-  T *allocatePS(const int psId)
-  {
-    CHECK( psId >= m_maxId, "Invalid PS id" );
-    if ( m_paramsetMap.find(psId) == m_paramsetMap.end() )
-    {
-      m_paramsetMap[psId].bChanged = true;
-      m_paramsetMap[psId].pNaluData=0;
-      m_paramsetMap[psId].parameterSet = new T;
-      setID(m_paramsetMap[psId].parameterSet, psId);
-    }
-    return m_paramsetMap[psId].parameterSet;
-  }
-
-  void clearMap()
-  {
-    m_paramsetMap.clear();
-  }
-
-  void storePS(int psId, T *ps, const std::vector<uint8_t> *pNaluData)
-  {
-    CHECK( psId >= m_maxId, "Invalid PS id" );
-    if ( m_paramsetMap.find(psId) != m_paramsetMap.end() )
-    {
-      MapData<T> &mapData=m_paramsetMap[psId];
-
-      // work out changed flag
-      calculateParameterSetChangedFlag(mapData.bChanged, mapData.pNaluData, pNaluData);
-
-      if( ! mapData.bChanged )
-      {
-        // just keep the old one
-        delete ps;
-        return;
-      }
-
-      if (find(m_activePsId.begin(), m_activePsId.end(), psId) != m_activePsId.end())
-      {
-        std::swap( m_paramsetMap[psId].parameterSet, m_lastActiveParameterSet );
-      }
-      delete m_paramsetMap[psId].pNaluData;
-      delete m_paramsetMap[psId].parameterSet;
-
-      m_paramsetMap[psId].parameterSet = ps;
-    }
-    else
-    {
-      m_paramsetMap[psId].parameterSet = ps;
-      m_paramsetMap[psId].bChanged = false;
-    }
-    if (pNaluData != 0)
-    {
-      m_paramsetMap[psId].pNaluData=new std::vector<uint8_t>;
-      *(m_paramsetMap[psId].pNaluData) = *pNaluData;
-    }
-    else
-    {
-      m_paramsetMap[psId].pNaluData=0;
-    }
-  }
-
-  void checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals )
-  {
-    int apsId = ( aps->getAPSId() << NUM_APS_TYPE_LEN ) + (int)aps->getAPSType();
-
-    if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
-    {
-      CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exist" );
-      APS* existedAPS = m_paramsetMap[apsId].parameterSet;
-
-      if( aps->getAPSType() == LMCS_APS )
-      {
-        CHECK( aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
-      }
-      else if( aps->getAPSType() == ALF_APS )
-      {
-        CHECK( aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
-      }
-      else if( aps->getAPSType() == SCALING_LIST_APS )
-      {
-        CHECK( aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
-      }
-      else
-      {
-        CHECK( true, "Wrong APS type" );
-      }
-    }
-    else
-    {
-      accessUnitApsNals.push_back( apsId );
-    }
-  }
-
-
-  void setChangedFlag(int psId, bool bChanged=true)
-  {
-    if ( m_paramsetMap.find(psId) != m_paramsetMap.end() )
-    {
-      m_paramsetMap[psId].bChanged=bChanged;
-    }
-  }
-
-  void clearChangedFlag(int psId)
-  {
-    if ( m_paramsetMap.find(psId) != m_paramsetMap.end() )
-    {
-      m_paramsetMap[psId].bChanged=false;
-    }
-  }
-
-  bool getChangedFlag(int psId) const
-  {
-    const typename std::map<int,MapData<T> >::const_iterator constit=m_paramsetMap.find(psId);
-    if ( constit != m_paramsetMap.end() )
-    {
-      return constit->second.bChanged;
-    }
-    return false;
-  }
-
-  T* getPS(int psId)
-  {
-    typename std::map<int,MapData<T> >::iterator it=m_paramsetMap.find(psId);
-    return ( it == m_paramsetMap.end() ) ? NULL : (it)->second.parameterSet;
-  }
-
-  const T* getPS(int psId) const
-  {
-    typename std::map<int,MapData<T> >::const_iterator it=m_paramsetMap.find(psId);
-    return ( it == m_paramsetMap.end() ) ? NULL : (it)->second.parameterSet;
-  }
-
-  T* getFirstPS()
-  {
-    return (m_paramsetMap.begin() == m_paramsetMap.end() ) ? NULL : m_paramsetMap.begin()->second.parameterSet;
-  }
-
-  void setActive(int psId) { m_activePsId.push_back(psId); }
-  void clear() { m_activePsId.clear(); }
-
-private:
-  std::map<int,MapData<T> > m_paramsetMap;
-  int                       m_maxId;
-  std::vector<int>          m_activePsId;
-  T*                        m_lastActiveParameterSet;
-  static void setID(T* parameterSet, const int psId);
-};
-
-class ParameterSetManager
-{
-public:
-                 ParameterSetManager();
-  virtual        ~ParameterSetManager();
-
-  void           storeVPS(VPS *vps, const std::vector<uint8_t> &naluData)    { m_vpsMap.storePS(vps->getVPSId(), vps, &naluData); }
-  VPS*           getVPS( int vpsId )                                         { return m_vpsMap.getPS( vpsId ); };
-
-  void           storeDPS(DPS *dps, const std::vector<uint8_t> &naluData)    { m_dpsMap.storePS( dps->getDecodingParameterSetId(), dps, &naluData); };
-  //! get pointer to existing video parameter set
-  DPS*           getDPS(int dpsId)                                           { return m_dpsMap.getPS(dpsId); };
-  bool           getDPSChangedFlag(int dpsId) const                          { return m_dpsMap.getChangedFlag(dpsId); }
-  void           clearDPSChangedFlag(int dpsId)                              { m_dpsMap.clearChangedFlag(dpsId); }
-  DPS*           getFirstDPS()                                               { return m_dpsMap.getFirstPS(); };
-
-  //! store sequence parameter set and take ownership of it
-  void           storeSPS(SPS *sps, const std::vector<uint8_t> &naluData) { m_spsMap.storePS( sps->getSPSId(), sps, &naluData); };
-  //! get pointer to existing sequence parameter set
-  SPS*           getSPS(int spsId)                                           { return m_spsMap.getPS(spsId); };
-  bool           getSPSChangedFlag(int spsId) const                          { return m_spsMap.getChangedFlag(spsId); }
-  void           clearSPSChangedFlag(int spsId)                              { m_spsMap.clearChangedFlag(spsId); }
-  SPS*           getFirstSPS()                                               { return m_spsMap.getFirstPS(); };
-
-  //! store picture parameter set and take ownership of it
-  void           storePPS(PPS *pps, const std::vector<uint8_t> &naluData) { m_ppsMap.storePS( pps->getPPSId(), pps, &naluData); };
-  //! get pointer to existing picture parameter set
-  PPS*           getPPS(int ppsId)                                           { return m_ppsMap.getPS(ppsId); };
-  bool           getPPSChangedFlag(int ppsId) const                          { return m_ppsMap.getChangedFlag(ppsId); }
-  void           clearPPSChangedFlag(int ppsId)                              { m_ppsMap.clearChangedFlag(ppsId); }
-  PPS*           getFirstPPS()                                               { return m_ppsMap.getFirstPS(); };
-
-  //! activate a SPS from a active parameter sets SEI message
-  //! \returns true, if activation is successful
-  // bool           activateSPSWithSEI(int SPSId);
-
-  //! activate a PPS and depending on isIDR parameter also SPS
-  //! \returns true, if activation is successful
-  bool           activatePPS(int ppsId, bool isIRAP);
-  APS**          getAPSs() { return &m_apss[0]; }
-  ParameterSetMap<APS>* getApsMap() { return &m_apsMap; }
-  void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS(aps->getAPSId() + (MAX_NUM_APS * aps->getAPSType()), aps, &naluData); };
-  APS*           getAPS(int apsId, int apsType)                              { return m_apsMap.getPS(apsId + (MAX_NUM_APS * apsType)); };
-  bool           getAPSChangedFlag(int apsId, int apsType) const             { return m_apsMap.getChangedFlag(apsId + (MAX_NUM_APS * apsType)); }
-  void           clearAPSChangedFlag(int apsId, int apsType)                 { m_apsMap.clearChangedFlag(apsId + ( MAX_NUM_APS * apsType)); }
-  APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS(); };
-  bool           activateAPS(int apsId, int apsType);
-  const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };
-  const DPS*     getActiveDPS()const                                         { return m_dpsMap.getPS(m_activeDPSId); };
-
-  void           checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals ) { m_apsMap.checkAuApsContent( aps, accessUnitApsNals ); }
-
-protected:
-  ParameterSetMap<SPS> m_spsMap;
-  ParameterSetMap<PPS> m_ppsMap;
-  ParameterSetMap<APS> m_apsMap;
-  ParameterSetMap<DPS> m_dpsMap;
-  ParameterSetMap<VPS> m_vpsMap;
-
-  APS* m_apss[ALF_CTB_MAX_NUM_APS];
-
-  int m_activeDPSId; // -1 for nothing active
-  int m_activeSPSId; // -1 for nothing active
-  int m_activeVPSId; // -1 for nothing active
-};
 
 class PreCalcValues
 {

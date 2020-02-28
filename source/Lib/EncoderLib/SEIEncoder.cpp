@@ -370,42 +370,44 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
   }
 }
 
-
-#if HEVC_SEI
+#if JVET_P0190_SCALABLE_NESTING_SEI
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
-void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs)
+void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs) 
 {
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(scalableNestingSEI != NULL), "Unspecified error");
+  scalableNestingSEI->m_nestingOlsFlag = 1;         // by If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
+  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs. 
+  for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+  {
+    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is  
+  }
+  for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+  {
+    if (i == 0)
+    {
+      scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i];
+    }
+    else
+    {
+      scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] + scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i - 1] + 1;
+    }
+  }
 
-  scalableNestingSEI->m_bitStreamSubsetFlag           = 1;      // If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, bitstream_subset_flag shall be equal to 1
-  scalableNestingSEI->m_nestingOpFlag                 = 0;
-  scalableNestingSEI->m_nestingNumOpsMinus1           = 0;      //nesting_num_ops_minus1
-  scalableNestingSEI->m_allLayersFlag                 = 0;
-  scalableNestingSEI->m_nestingNoOpMaxTemporalIdPlus1 = 6 + 1;  //nesting_no_op_max_temporal_id_plus1
-  scalableNestingSEI->m_nestingNumLayersMinus1        = 1 - 1;  //nesting_num_layers_minus1
-  scalableNestingSEI->m_nestingLayerId[0]             = 0;
+  scalableNestingSEI->m_nestingAllLayersFlag = 1; // nesting is not applied to all layers
+  scalableNestingSEI->m_nestingNumLayersMinus1 = 2 - 1;  //nesting_num_layers_minus1
+  scalableNestingSEI->m_nestingLayerId[0] = 0;
 
   scalableNestingSEI->m_nestedSEIs.clear();
-  for (SEIMessages::iterator it=nestedSEIs.begin(); it!=nestedSEIs.end(); it++)
+  for (SEIMessages::iterator it = nestedSEIs.begin(); it != nestedSEIs.end(); it++)
   {
     scalableNestingSEI->m_nestedSEIs.push_back((*it));
   }
 }
-
-void SEIEncoder::initSEIRecoveryPoint(SEIRecoveryPoint *recoveryPointSEI, Slice *slice)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(recoveryPointSEI != NULL), "Unspecified error");
-  CHECK(!(slice != NULL), "Unspecified error");
-
-  recoveryPointSEI->m_recoveryPocCnt    = 0;
-  recoveryPointSEI->m_exactMatchingFlag = ( slice->getPOC() == 0 ) ? (true) : (false);
-  recoveryPointSEI->m_brokenLinkFlag    = false;
-}
 #endif
+
 
 //! calculate hashes for entire reconstructed picture
 void SEIEncoder::initDecodedPictureHashSEI(SEIDecodedPictureHash *decodedPictureHashSEI, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths)
@@ -444,102 +446,6 @@ void SEIEncoder::initSEIDependentRAPIndication(SEIDependentRAPIndication *seiDep
   CHECK(!(seiDependentRAPIndication!=NULL), "Unspecified error");
 }
 
-#if HEVC_SEI
-void SEIEncoder::initTemporalLevel0IndexSEI(SEITemporalLevel0Index *temporalLevel0IndexSEI, Slice *slice)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(temporalLevel0IndexSEI!=NULL), "Unspecified error");
-  CHECK(!(slice!=NULL), "Unspecified error");
-
-  if (slice->getRapPicFlag())
-  {
-    m_tl0Idx = 0;
-    m_rapIdx = (m_rapIdx + 1) & 0xFF;
-  }
-  else
-  {
-    m_tl0Idx = (m_tl0Idx + (slice->getTLayer() ? 0 : 1)) & 0xFF;
-  }
-  temporalLevel0IndexSEI->tl0Idx = m_tl0Idx;
-  temporalLevel0IndexSEI->rapIdx = m_rapIdx;
-}
-
-void SEIEncoder::initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedTileSets *sei, const PPS *pps)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(sei!=NULL), "Unspecified error");
-  CHECK(!(pps!=NULL), "Unspecified error");
-
-  if(!pps->getSingleTileInPicFlag())
-  {
-    if (m_pcCfg->getMCTSEncConstraint())
-    {
-      sei->m_mc_all_tiles_exact_sample_value_match_flag = true;
-      sei->m_each_tile_one_tile_set_flag = true;
-      sei->m_limited_tile_set_display_flag = false;
-      sei->m_max_mcs_tier_level_idc_present_flag = false;
-      sei->setNumberOfTileSets(0);
-    }
-    else
-    {
-    sei->m_mc_all_tiles_exact_sample_value_match_flag = false;
-    sei->m_each_tile_one_tile_set_flag                = false;
-    sei->m_limited_tile_set_display_flag              = false;
-    sei->setNumberOfTileSets((pps->getNumTileColumnsMinus1() + 1) * (pps->getNumTileRowsMinus1() + 1));
-
-    for(int i=0; i < sei->getNumberOfTileSets(); i++)
-    {
-      sei->tileSetData(i).m_mcts_id = i;  //depends the application;
-      sei->tileSetData(i).setNumberOfTileRects(1);
-
-      for(int j=0; j<sei->tileSetData(i).getNumberOfTileRects(); j++)
-      {
-        sei->tileSetData(i).topLeftTileIndex(j)     = i+j;
-        sei->tileSetData(i).bottomRightTileIndex(j) = i+j;
-      }
-
-      sei->tileSetData(i).m_exact_sample_value_match_flag    = false;
-      sei->tileSetData(i).m_mcts_tier_level_idc_present_flag = false;
-    }
-  }
-  }
-  else
-  {
-    CHECK(!(!"Tile is not enabled"), "Unspecified error");
-  }
-}
-
-void SEIEncoder::initSEIKneeFunctionInfo(SEIKneeFunctionInfo *seiKneeFunctionInfo)
-{
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(seiKneeFunctionInfo!=NULL), "Unspecified error");
-
-  seiKneeFunctionInfo->m_kneeId = m_pcCfg->getKneeSEIId();
-  seiKneeFunctionInfo->m_kneeCancelFlag = m_pcCfg->getKneeSEICancelFlag();
-  if ( !seiKneeFunctionInfo->m_kneeCancelFlag )
-  {
-    seiKneeFunctionInfo->m_kneePersistenceFlag = m_pcCfg->getKneeSEIPersistenceFlag();
-    seiKneeFunctionInfo->m_kneeInputDrange = m_pcCfg->getKneeSEIInputDrange();
-    seiKneeFunctionInfo->m_kneeInputDispLuminance = m_pcCfg->getKneeSEIInputDispLuminance();
-    seiKneeFunctionInfo->m_kneeOutputDrange = m_pcCfg->getKneeSEIOutputDrange();
-    seiKneeFunctionInfo->m_kneeOutputDispLuminance = m_pcCfg->getKneeSEIOutputDispLuminance();
-
-    seiKneeFunctionInfo->m_kneeNumKneePointsMinus1 = m_pcCfg->getKneeSEINumKneePointsMinus1();
-    int* piInputKneePoint  = m_pcCfg->getKneeSEIInputKneePoint();
-    int* piOutputKneePoint = m_pcCfg->getKneeSEIOutputKneePoint();
-    if(piInputKneePoint&&piOutputKneePoint)
-    {
-      seiKneeFunctionInfo->m_kneeInputKneePoint.resize(seiKneeFunctionInfo->m_kneeNumKneePointsMinus1+1);
-      seiKneeFunctionInfo->m_kneeOutputKneePoint.resize(seiKneeFunctionInfo->m_kneeNumKneePointsMinus1+1);
-      for(int i=0; i<=seiKneeFunctionInfo->m_kneeNumKneePointsMinus1; i++)
-      {
-        seiKneeFunctionInfo->m_kneeInputKneePoint[i] = piInputKneePoint[i];
-        seiKneeFunctionInfo->m_kneeOutputKneePoint[i] = piOutputKneePoint[i];
-      }
-    }
-  }
-}
-#endif
 
 template <typename T>
 static void readTokenValue(T            &returnedValue, /// value returned

@@ -42,6 +42,7 @@
 #include "CommonLib/BitStream.h"
 #include "CommonLib/Slice.h"
 #include "CommonLib/SampleAdaptiveOffset.h"
+#include "CommonLib/ParameterSetManager.h"
 #include "CABACReader.h"
 
 #if ENABLE_TRACING
@@ -156,7 +157,11 @@ protected:
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
   void  parseVPS            ( VPS* pcVPS );
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void  parseDCI            ( DCI* dci );
+#else
   void  parseDPS            ( DPS* dps );
+#endif
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS );
   void  parseAPS            ( APS* pcAPS );

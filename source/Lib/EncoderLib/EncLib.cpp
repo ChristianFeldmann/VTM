@@ -240,10 +240,13 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitVPS(m_cVPS, sps0);
 #endif
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  xInitDCI(m_dci, sps0);
+#else
   int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
   xInitDPS(m_dps, sps0, dpsId);
   sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-
+#endif
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -675,7 +678,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     }
 #endif
 
-    if( m_rprEnabled && m_uiIntraPeriod == -1 )
+    if( m_rprEnabled && m_intraPeriod == -1 )
     {
       const int poc = m_iPOCLast + ( m_compositeRefEnabled ? 2 : 1 );
 
@@ -1142,6 +1145,16 @@ void EncLib::xInitVPS(VPS& vps, const SPS& sps)
 }
 #endif
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void EncLib::xInitDCI(DCI& dci, const SPS& sps)
+{
+  dci.setMaxSubLayersMinus1(sps.getMaxTLayers() - 1);
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(1);
+  ptls[0] = *sps.getProfileTierLevel();
+  dci.setProfileTierLevel(ptls);
+}
+#else
 void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
 {
   // The SPS must have already been set up.
@@ -1153,6 +1166,7 @@ void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
   ptls[0] = *sps.getProfileTierLevel();
   dps.setProfileTierLevel(ptls);
 }
+#endif
 
 #if JVET_Q0814_DPB
 void EncLib::xInitSPS( SPS& sps )
@@ -1236,6 +1250,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #endif
   sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  sps.setConformanceWindow( m_conformanceWindow );
+#endif
+
   sps.setMaxCUWidth             ( m_maxCUWidth        );
   sps.setMaxCUHeight            ( m_maxCUHeight       );
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
@@ -1375,6 +1393,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
   }
 
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  sps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+  sps.setEntropyCodingSyncEntryPointsPresentFlag( m_entropyCodingSyncEntryPointPresentFlag );
+#endif
+
   sps.setUseWP( m_useWeightedPred );
   sps.setUseWPBiPred( m_useWeightedBiPred );
 
@@ -1461,7 +1484,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
 
-  if( m_uiIntraPeriod < 0 )
+  if( m_intraPeriod < 0 )
   {
     sps.setRPL1CopyFromRPL0Flag( true );
   }
@@ -1527,17 +1550,27 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
 #endif
 
-  sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
-  sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
-  sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
-  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  sps.setVirtualBoundariesEnabledFlag( m_virtualBoundariesEnabledFlag );
+  if( sps.getVirtualBoundariesEnabledFlag() )
   {
-    sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+    sps.setVirtualBoundariesPresentFlag( m_virtualBoundariesPresentFlag );
+#else
+    sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+#endif
+    sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
+    sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
+    for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+    {
+      sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+    }
+    for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
+    {
+      sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
+    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
-  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
-  {
-    sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
-  }
+#endif
 
 #if JVET_Q0814_DPB
 #if ENABLING_MULTI_SPS
@@ -1581,7 +1614,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #endif
 
 #if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  CHECK( sps.getRprEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
+#else
   CHECK(sps.getRprEnabledFlag() && sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
 #endif
 }
 
@@ -1682,12 +1719,13 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.clearChromaQpOffsetList();
   }
+#if !REMOVE_PPS_REXT
   pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
 #if !JVET_Q0441_SAO_MOD_12_BIT
   pps.getPpsRangeExtension().setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA,   m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA  ]);
   pps.getPpsRangeExtension().setLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA]);
 #endif
-
+#endif
   {
     int baseQp = 26;
     if( 16 == getGOPSize() )
@@ -1772,7 +1810,9 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
   }
 
-  pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
+  pps.setEntropyCodingSyncEnabledFlag(m_entropyCodingSyncEnabledFlag);
+#endif
 
   pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
   if( m_noPicPartitionFlag == false )
@@ -2018,13 +2058,22 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
 #endif
 
   // virtual boundaries
-  picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());
-  picHeader.setNumVerVirtualBoundaries(sps.getNumVerVirtualBoundaries());
-  picHeader.setNumHorVirtualBoundaries(sps.getNumHorVirtualBoundaries());
-  for(i=0; i<3; i++) {
-    picHeader.setVirtualBoundariesPosX(sps.getVirtualBoundariesPosX(i), i);
-    picHeader.setVirtualBoundariesPosY(sps.getVirtualBoundariesPosY(i), i);
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( sps.getVirtualBoundariesEnabledFlag() )
+  {
+    picHeader.setVirtualBoundariesPresentFlag( sps.getVirtualBoundariesPresentFlag() );
+#else
+    picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());
+#endif
+    picHeader.setNumVerVirtualBoundaries(sps.getNumVerVirtualBoundaries());
+    picHeader.setNumHorVirtualBoundaries(sps.getNumHorVirtualBoundaries());
+    for(i=0; i<3; i++) {
+      picHeader.setVirtualBoundariesPosX(sps.getVirtualBoundariesPosX(i), i);
+      picHeader.setVirtualBoundariesPosY(sps.getVirtualBoundariesPosY(i), i);
+    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
+#endif
 
   // gradual decoder refresh flag
   picHeader.setGdrPicFlag(false);
@@ -2139,7 +2188,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
 
 void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1)
 {
-  if (m_uiIntraPeriod < 0)  //Only for RA
+  if (m_intraPeriod < 0)  //Only for RA
   {
     *activeL0 = *activeL1 = 0;
     return;
@@ -2150,7 +2199,7 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   int fullListNum = m_iGOPSize;
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
-  if (m_uiIntraPeriod < 0)
+  if (m_intraPeriod < 0)
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
@@ -2166,11 +2215,13 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   }
   for (; extraNum<fullListNum + partialListNum; extraNum++)
   {
-    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    if (m_intraPeriod > 0 && getDecodingRefreshType() > 0)
     {
-      int POCIndex = POCCurr%m_uiIntraPeriod;
+      int POCIndex = POCCurr % m_intraPeriod;
       if (POCIndex == 0)
-        POCIndex = m_uiIntraPeriod;
+      {
+        POCIndex = m_intraPeriod;
+      }
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         rpl0Idx = extraNum;
@@ -2200,7 +2251,17 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   int fullListNum = m_iGOPSize;
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
-  if (m_uiIntraPeriod < 0)
+
+  int rplPeriod = m_intraPeriod;
+  if( rplPeriod < 0 )  //Need to check if it is low delay or RA but with no RAP
+  {
+    if( slice->getSPS()->getRPLList0()->getReferencePictureList(1)->getRefPicIdentifier(0) * slice->getSPS()->getRPLList1()->getReferencePictureList(1)->getRefPicIdentifier(0) < 0)
+    {
+      rplPeriod = m_iGOPSize * 2;
+    }
+  }
+
+  if (rplPeriod < 0)
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
@@ -2216,11 +2277,13 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   }
   for (; extraNum < fullListNum + partialListNum; extraNum++)
   {
-    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    if( rplPeriod > 0 )
     {
-      int POCIndex = POCCurr%m_uiIntraPeriod;
+      int POCIndex = POCCurr % rplPeriod;
       if (POCIndex == 0)
-        POCIndex = m_uiIntraPeriod;
+      {
+        POCIndex = rplPeriod;
+      }
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         slice->setRPL0idx(extraNum);
@@ -2238,7 +2301,7 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
       slice->setRPL0idx(getRPLCandidateSize(0));
       slice->setRPL1idx(getRPLCandidateSize(0));
     }
-    else if (m_uiIntraPeriod < 0)
+    else if( rplPeriod < 0 )
     {
       // To set RPL indexes for LD
       int numRPLCandidates = getRPLCandidateSize(0);

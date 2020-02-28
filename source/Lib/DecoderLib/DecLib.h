@@ -111,13 +111,12 @@ private:
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
-#if SPS_ID_CHECK
-  bool                    m_firstSliceInLayer[MAX_VPS_LAYERS];
-  bool                    m_firstSliceInSequence;
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];
 #else
   bool                    m_bFirstSliceInSequence;
-  bool                    m_bFirstSliceInBitstream;
 #endif
+  bool                    m_firstSliceInBitstream;
   bool                    m_prevSliceSkipped;
   int                     m_skippedPOC;
   int                     m_lastPOCNoOutputPriorPics;
@@ -147,6 +146,9 @@ private:
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
   #endif
   std::vector<int> m_accessUnitApsNals;
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+  std::vector<int> m_accessUnitSeiTids;
+#endif
 
   VPS*                    m_vps;
   bool                    m_scalingListUpdateFlag;
@@ -159,6 +161,10 @@ private:
 #if JVET_O1143_SUBPIC_BOUNDARY
 public:
   int                     m_targetSubPicIdx;
+#endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  DCI*                    m_dci;
 #endif
 public:
   DecLib();
@@ -192,9 +198,9 @@ public:
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
   bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
-#if SPS_ID_CHECK
-  bool  getFirstSliceInSequence() const     { return m_firstSliceInSequence; }
-  void  setFirstSliceInSequence( bool val ) { m_firstSliceInSequence = val; }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  bool  getFirstSliceInSequence(int layerId) const { return m_firstSliceInSequence[layerId]; }
+  void  setFirstSliceInSequence(bool val, int layerId) { m_firstSliceInSequence[layerId] = val; }
 #else
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
@@ -211,6 +217,10 @@ public:
   void resetAccessUnitPicInfo()              { m_accessUnitPicInfo.clear();    }
 #endif
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+  void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
+  void checkTidLayerIdInAccessUnit();
+#endif
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }
@@ -227,10 +237,6 @@ public:
   int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
   void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
 
-#if SPS_ID_CHECK
-  bool* getFirstSliceInLayer()       { return m_firstSliceInLayer; }
-#endif
-
 protected:
   void  xUpdateRasInit(Slice* slice);
 
@@ -242,7 +248,11 @@ protected:
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void      xDecodeDCI( InputNALUnit& nalu );
+#else
   void      xDecodeDPS( InputNALUnit& nalu );
+#endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);

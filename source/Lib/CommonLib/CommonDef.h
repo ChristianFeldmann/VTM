@@ -140,7 +140,7 @@ static const double MAX_DOUBLE =                             1.7e+308; ///< max.
 // Most of these should not be changed - they resolve the meaning of otherwise magic numbers.
 
 static const int MAX_GOP =                                         64; ///< max. value of hierarchical GOP size
-static const int MAX_NUM_REF_PICS =                                16; ///< max. number of pictures used for reference
+static const int MAX_NUM_REF_PICS =                                29; ///< max. number of pictures used for reference
 static const int MAX_NUM_REF =                                     16; ///< max. number of entries in picture reference list
 static const int MAX_QP =                                          63;
 static const int NOT_VALID =                                       -1;

@@ -130,11 +130,6 @@ EncAppCfg::EncAppCfg()
 #endif
 {
   m_aidQP = NULL;
-#if HEVC_SEI
-  m_startOfCodedInterval = NULL;
-  m_codedPivotValue = NULL;
-  m_targetPivotValue = NULL;
-#endif
 }
 
 EncAppCfg::~EncAppCfg()
@@ -143,23 +138,6 @@ EncAppCfg::~EncAppCfg()
   {
     delete[] m_aidQP;
   }
-#if HEVC_SEI
-  if ( m_startOfCodedInterval )
-  {
-    delete[] m_startOfCodedInterval;
-    m_startOfCodedInterval = NULL;
-  }
-   if ( m_codedPivotValue )
-  {
-    delete[] m_codedPivotValue;
-    m_codedPivotValue = NULL;
-  }
-  if ( m_targetPivotValue )
-  {
-    delete[] m_targetPivotValue;
-    m_targetPivotValue = NULL;
-  }
-#endif
 
 #if ENABLE_TRACING
   tracing_uninit(g_trace_ctx);
@@ -862,7 +840,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
   ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  ("EnableDecodingCapabilityInformation",             m_DCIEnabled,                                     false, "Enables writing of Decoding Capability Information")
+#else
   ("EnableDecodingParameterSet",                      m_decodingParameterSetEnabled,                    false, "Enables writing of Decoding Parameter Set")
+#endif
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("IntraConstraintFlag",                             m_intraConstraintFlag,                            false, "Value of general_intra_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
@@ -991,7 +973,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  ( "VirtualBoundariesPresentInSPSFlag",              m_virtualBoundariesPresentFlag,                    true, "Virtual Boundary position information is signalled in SPS or PH (1:SPS, 0:PH)  [default: on]" )
+#else
   ("LoopFilterAcrossVirtualBoundariesDisabledFlag",   m_loopFilterAcrossVirtualBoundariesDisabledFlag,  false, "Disable in-loop filtering operations across the virtual boundaries (0:off, 1:on)  [default: off]")
+#endif
   ("NumVerVirtualBoundaries",                         m_numVerVirtualBoundaries,                           0u, "Number of vertical virtual boundaries (0-3, inclusive)")
   ("NumHorVirtualBoundaries",                         m_numHorVirtualBoundaries,                           0u, "Number of horizontal virtual boundaries (0-3, inclusive)")
   ("VirtualBoundariesPosX",                           cfg_virtualBoundariesPosX,    cfg_virtualBoundariesPosX, "Locations of the vertical virtual boundaries in units of luma samples")
@@ -1146,7 +1132,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("DeblockingFilterMetric",                          m_DeblockingFilterMetric,                         false)
 #endif
   // Coding tools
+#if !REMOVE_PPS_REXT
   ("CrossComponentPrediction",                        m_crossComponentPredictionEnabledFlag,            false, "Enable the use of cross-component prediction (not valid in V1 profiles)")
+#endif
   ("ReconBasedCrossCPredictionEstimate",              m_reconBasedCrossCPredictionEstimate,             false, "When determining the alpha value for cross-component prediction, use the decoded residual rather than the pre-transform encoder-side residual")
 #if !JVET_Q0441_SAO_MOD_12_BIT
   ("SaoLumaOffsetBitShift",                           saoOffsetBitShift[CHANNEL_TYPE_LUMA],                 0, "Specify the luma SAO bit-shift. If negative, automatically calculate a suitable value based upon bit depth and initial QP")
@@ -1197,6 +1185,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Log2ParallelMergeLevel",                          m_log2ParallelMergeLevel,                            2u, "Parallel merge estimation region")
 #endif
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  ("WaveFrontEntryPointsPresent",                     m_entropyCodingSyncEntryPointPresentFlag,         false, "0: entry points for WPP is not present; 1 entry points for WPP may be present in slice header")
+#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
   ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
@@ -1248,10 +1239,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("CostMode",                                        m_costMode,                         COST_STANDARD_LOSSY, "Use alternative cost functions: choose between 'lossy', 'sequence_level_lossless', 'lossless' (which forces QP to " MACRO_TO_STRING(LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP) ") and 'mixed_lossless_lossy' (which used QP'=" MACRO_TO_STRING(LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME) " for pre-estimates of transquant-bypass blocks).")
   ("RecalculateQPAccordingToLambda",                  m_recalculateQPAccordingToLambda,                 false, "Recalculate QP values according to lambda values. Do not suggest to be enabled in all intra case")
-#if HEVC_SEI
-  ("SEIActiveParameterSets",                          m_activeParameterSetsSEIEnabled,                      0, "Enable generation of active parameter sets SEI messages");
-  opts.addOptions()
-#endif
   ("HrdParametersPresent,-hrd",                       m_hrdParametersPresentFlag,                       false, "Enable generation of hrd_parameters()")
   ("VuiParametersPresent,-vui",                       m_vuiParametersPresentFlag,                       false, "Enable generation of vui_parameters()")
   ("AspectRatioInfoPresent",                          m_aspectRatioInfoPresentFlag,                     false, "Signals whether aspect_ratio_idc is present")
@@ -1270,13 +1257,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("OverscanAppropriate",                             m_overscanAppropriateFlag,                        false, "Indicates whether conformant decoded pictures are suitable for display using overscan\n")
   ("VideoFullRange",                                  m_videoFullRangeFlag,                             false, "Indicates the black level and range of luma and chroma signals");
   opts.addOptions()
-#if HEVC_SEI
-  ("SEIColourRemappingInfoFileRoot,-cri",             m_colourRemapSEIFileRoot,                    string(""), "Colour Remapping Information SEI parameters root file name (wo num ext)")
-  ("SEIRecoveryPoint",                                m_recoveryPointSEIEnabled,                        false, "Control generation of recovery point SEI messages")
-#endif
   ("SEIBufferingPeriod",                              m_bufferingPeriodSEIEnabled,                      false, "Control generation of buffering period SEI messages")
   ("SEIPictureTiming",                                m_pictureTimingSEIEnabled,                        false, "Control generation of picture timing SEI messages")
   ("SEIDecodingUnitInfo",                             m_decodingUnitInfoSEIEnabled,                     false, "Control generation of decoding unit information SEI message.")
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  ("SEIScalableNesting",                              m_scalableNestingSEIEnabled,                      false, "Control generation of scalable nesting SEI messages")
+#endif
   ("SEIFrameFieldInfo",                               m_frameFieldInfoSEIEnabled,                       false, "Control generation of frame field information SEI messages")
   ("SEIFramePacking",                                 m_framePackingSEIEnabled,                         false, "Control generation of frame packing SEI messages")
   ("SEIFramePackingType",                             m_framePackingSEIType,                                0, "Define frame packing arrangement\n"
@@ -1509,6 +1495,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   {
     m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
   }
+
+  //Check the given value of intra period and decoding refresh type. If intra period is -1, set decoding refresh type to be equal to 0. And vice versa
+  if( m_iIntraPeriod == -1 )
+  {
+    m_iDecodingRefreshType = 0;
+  }
+  if( !m_iDecodingRefreshType )
+  {
+    m_iIntraPeriod = -1;
+  }
+
   m_bpDeltasGOPStructure = false;
   if(m_iGOPSize == 16)
   {
@@ -1766,6 +1763,13 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
   }
 
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  if( !m_entropyCodingSyncEnabledFlag ) 
+  {
+    m_entropyCodingSyncEntryPointPresentFlag = false;
+  }
+#endif
+
   m_InputChromaFormatIDC = numberToChromaFormat(tmpInputChromaFormat);
   m_chromaFormatIDC      = ((tmpChromaFormat == 0) ? (m_InputChromaFormatIDC) : (numberToChromaFormat(tmpChromaFormat)));
 #if EXTENSION_360_VIDEO
@@ -1813,8 +1817,14 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   m_rgbFormat = (m_inputColourSpaceConvert == IPCOLOURSPACE_RGBtoGBR && m_chromaFormatIDC == CHROMA_444) ? true : false;
 
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  // Picture width and height must be multiples of 8 and minCuSize
+  const int minResolutionMultiple = std::max(8, 1 << m_log2MinCuSize);
+  CHECK(((m_iSourceWidth% minResolutionMultiple) || (m_iSourceHeight % minResolutionMultiple)) && m_conformanceWindowMode != 1, "Picture width or height is not a multiple of 8 or minCuSize, please use ConformanceMode 1!");
+#else
   const int minCuSize = 1 << m_log2MinCuSize;
   CHECK(((m_iSourceWidth % minCuSize ) || (m_iSourceHeight % minCuSize )) && m_conformanceWindowMode != 1, "Picture width or height is not a multiple of minCuSize, please use ConformanceMode 1!");
+#endif
 #endif
   switch (m_conformanceWindowMode)
   {
@@ -1829,8 +1839,24 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     {
       // automatic padding to minimum CU size
 #if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+      // Picture width and height must be multiples of 8 and minCuSize
+      int minCuSize = m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1);
+      int minResolutionMultiple = std::max(8, minCuSize);
+#else
       int minCuSize = m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1);
 #endif
+#endif
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+      if (m_iSourceWidth % minResolutionMultiple)
+      {
+        m_aiPad[0] = m_confWinRight  = ((m_iSourceWidth / minResolutionMultiple) + 1) * minResolutionMultiple - m_iSourceWidth;
+        m_iSourceWidth  += m_confWinRight;
+      }
+      if (m_iSourceHeight % minResolutionMultiple)
+      {
+        m_aiPad[1] = m_confWinBottom = ((m_iSourceHeight / minResolutionMultiple) + 1) * minResolutionMultiple - m_iSourceHeight;
+#else
       if (m_iSourceWidth % minCuSize)
       {
         m_aiPad[0] = m_confWinRight  = ((m_iSourceWidth / minCuSize) + 1) * minCuSize - m_iSourceWidth;
@@ -1839,6 +1865,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       if (m_iSourceHeight % minCuSize)
       {
         m_aiPad[1] = m_confWinBottom = ((m_iSourceHeight / minCuSize) + 1) * minCuSize - m_iSourceHeight;
+#endif
         m_iSourceHeight += m_confWinBottom;
         if ( m_isField )
         {
@@ -2049,41 +2076,55 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
-  if ( m_loopFilterAcrossVirtualBoundariesDisabledFlag )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  m_virtualBoundariesEnabledFlag = 0;
+  if( m_numVerVirtualBoundaries > 0 || m_numHorVirtualBoundaries > 0 )
+    m_virtualBoundariesEnabledFlag = 1;
+
+  if( m_virtualBoundariesEnabledFlag )
   {
-    CHECK( m_numVerVirtualBoundaries > 3, "Number of vertical virtual boundaries must be comprised between 0 and 3 included" );
-    CHECK( m_numHorVirtualBoundaries > 3, "Number of horizontal virtual boundaries must be comprised between 0 and 3 included" );
-    CHECK( m_numVerVirtualBoundaries != cfg_virtualBoundariesPosX.values.size(), "Size of VirtualBoundariesPosX must be equal to NumVerVirtualBoundaries");
-    CHECK( m_numHorVirtualBoundaries != cfg_virtualBoundariesPosY.values.size(), "Size of VirtualBoundariesPosY must be equal to NumHorVirtualBoundaries");
-    m_virtualBoundariesPosX = cfg_virtualBoundariesPosX.values;
-    if (m_numVerVirtualBoundaries > 1)
+    if( m_virtualBoundariesPresentFlag )
     {
-      sort(m_virtualBoundariesPosX.begin(), m_virtualBoundariesPosX.end());
-    }
-    for (unsigned i = 0; i < m_numVerVirtualBoundaries; i++)
+#else
+    if ( m_loopFilterAcrossVirtualBoundariesDisabledFlag )
     {
-      CHECK( m_virtualBoundariesPosX[i] == 0 || m_virtualBoundariesPosX[i] >= m_iSourceWidth, "The vertical virtual boundary must be within the picture" );
-      CHECK( m_virtualBoundariesPosX[i] % 8, "The vertical virtual boundary must be a multiple of 8 luma samples" );
-      if (i > 0)
+#endif
+      CHECK( m_numVerVirtualBoundaries > 3, "Number of vertical virtual boundaries must be comprised between 0 and 3 included" );
+      CHECK( m_numHorVirtualBoundaries > 3, "Number of horizontal virtual boundaries must be comprised between 0 and 3 included" );
+      CHECK( m_numVerVirtualBoundaries != cfg_virtualBoundariesPosX.values.size(), "Size of VirtualBoundariesPosX must be equal to NumVerVirtualBoundaries");
+      CHECK( m_numHorVirtualBoundaries != cfg_virtualBoundariesPosY.values.size(), "Size of VirtualBoundariesPosY must be equal to NumHorVirtualBoundaries");
+      m_virtualBoundariesPosX = cfg_virtualBoundariesPosX.values;
+      if (m_numVerVirtualBoundaries > 1)
       {
-        CHECK( m_virtualBoundariesPosX[i] - m_virtualBoundariesPosX[i-1] < m_uiCTUSize, "The distance between any two vertical virtual boundaries shall be greater than or equal to the CTU size" );
+        sort(m_virtualBoundariesPosX.begin(), m_virtualBoundariesPosX.end());
+      }
+      for (unsigned i = 0; i < m_numVerVirtualBoundaries; i++)
+      {
+        CHECK( m_virtualBoundariesPosX[i] == 0 || m_virtualBoundariesPosX[i] >= m_iSourceWidth, "The vertical virtual boundary must be within the picture" );
+        CHECK( m_virtualBoundariesPosX[i] % 8, "The vertical virtual boundary must be a multiple of 8 luma samples" );
+        if (i > 0)
+        {
+          CHECK( m_virtualBoundariesPosX[i] - m_virtualBoundariesPosX[i-1] < m_uiCTUSize, "The distance between any two vertical virtual boundaries shall be greater than or equal to the CTU size" );
+        }
+      }
+      m_virtualBoundariesPosY = cfg_virtualBoundariesPosY.values;
+      if (m_numHorVirtualBoundaries > 1)
+      {
+        sort(m_virtualBoundariesPosY.begin(), m_virtualBoundariesPosY.end());
+      }
+      for (unsigned i = 0; i < m_numHorVirtualBoundaries; i++)
+      {
+        CHECK( m_virtualBoundariesPosY[i] == 0 || m_virtualBoundariesPosY[i] >= m_iSourceHeight, "The horizontal virtual boundary must be within the picture" );
+        CHECK( m_virtualBoundariesPosY[i] % 8, "The horizontal virtual boundary must be a multiple of 8 luma samples" );
+        if (i > 0)
+        {
+          CHECK( m_virtualBoundariesPosY[i] - m_virtualBoundariesPosY[i-1] < m_uiCTUSize, "The distance between any two horizontal virtual boundaries shall be greater than or equal to the CTU size" );
+        }
       }
     }
-    m_virtualBoundariesPosY = cfg_virtualBoundariesPosY.values;
-    if (m_numHorVirtualBoundaries > 1)
-    {
-      sort(m_virtualBoundariesPosY.begin(), m_virtualBoundariesPosY.end());
-    }
-    for (unsigned i = 0; i < m_numHorVirtualBoundaries; i++)
-    {
-      CHECK( m_virtualBoundariesPosY[i] == 0 || m_virtualBoundariesPosY[i] >= m_iSourceHeight, "The horizontal virtual boundary must be within the picture" );
-      CHECK( m_virtualBoundariesPosY[i] % 8, "The horizontal virtual boundary must be a multiple of 8 luma samples" );
-      if (i > 0)
-      {
-        CHECK( m_virtualBoundariesPosY[i] - m_virtualBoundariesPosY[i-1] < m_uiCTUSize, "The distance between any two horizontal virtual boundaries shall be greater than or equal to the CTU size" );
-      }
-    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
+#endif
 
   if ( m_alf )
   {
@@ -2432,7 +2473,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara(m_internalBitDepth[CHANNEL_TYPE_CHROMA] != m_internalBitDepth[CHANNEL_TYPE_LUMA], "The internalBitDepth must be the same for luma and chroma");
   if (m_profile==Profile::MAIN_10 || m_profile==Profile::MAIN_444_10)
   {
+#if !REMOVE_PPS_REXT
     xConfirmPara(m_crossComponentPredictionEnabledFlag==true, "CrossComponentPrediction must not be used for given profile.");
+#endif
     xConfirmPara(m_log2MaxTransformSkipBlockSize>=6, "Transform Skip Log2 Max Size must be less or equal to 5 for given profile.");
     xConfirmPara(m_transformSkipRotationEnabledFlag==true, "UseResidualRotation must not be enabled for given profile.");
     xConfirmPara(m_transformSkipContextEnabledFlag==true, "UseSingleSignificanceMapContext must not be enabled for given profile.");
@@ -2488,12 +2531,6 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_iIntraPeriod > 0 && m_iIntraPeriod < m_iGOPSize) || m_iIntraPeriod == 0, "Intra period must be more than GOP size, or -1 , not 0" );
   xConfirmPara( m_drapPeriod < 0,                                                           "DRAP period must be greater or equal to 0" );
   xConfirmPara( m_iDecodingRefreshType < 0 || m_iDecodingRefreshType > 3,                   "Decoding Refresh Type must be comprised between 0 and 3 included" );
-#if HEVC_SEI
-  if(m_iDecodingRefreshType == 3)
-  {
-    xConfirmPara( !m_recoveryPointSEIEnabled,                                               "When using RecoveryPointSEI messages as RA points, recoveryPointSEI must be enabled" );
-  }
-#endif
 
   if (m_isField)
   {
@@ -2512,6 +2549,7 @@ bool EncAppCfg::xCheckParameter()
     m_pictureTimingSEIEnabled = false;
   }
 
+#if !REMOVE_PPS_REXT
   if(m_crossComponentPredictionEnabledFlag && (m_chromaFormatIDC != CHROMA_444))
   {
     msg( WARNING, "****************************************************************************\n");
@@ -2520,7 +2558,7 @@ bool EncAppCfg::xCheckParameter()
 
     m_crossComponentPredictionEnabledFlag = false;
   }
-
+#endif
   xConfirmPara( m_bufferingPeriodSEIEnabled == true && m_RCCpbSize == 0,  "RCCpbSize must be greater than zero, when buffering period SEI is enabled" );
 
   xConfirmPara (m_log2MaxTransformSkipBlockSize < 2, "Transform Skip Log2 Max Size must be at least 2 (4x4)");
@@ -2692,6 +2730,21 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( (m_iSourceWidth  % (std::max(8, int(m_uiMaxCUWidth  >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
   xConfirmPara( (m_iSourceHeight % (std::max(8, int(m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
 #endif
+  if (m_uiMaxMTTHierarchyDepthI == 0)
+  {
+    xConfirmPara(m_uiMaxBT[0] != m_uiMinQT[0], "MaxBTLumaISlice shall be equal to MinQTLumaISlice when MaxMTTHierarchyDepthISliceL is 0.");
+    xConfirmPara(m_uiMaxTT[0] != m_uiMinQT[0], "MaxTTLumaISlice shall be equal to MinQTLumaISlice when MaxMTTHierarchyDepthISliceL is 0.");
+  }
+  if (m_uiMaxMTTHierarchyDepthIChroma == 0)
+  {
+    xConfirmPara(m_uiMaxBT[2] != m_uiMinQT[2], "MaxBTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
+    xConfirmPara(m_uiMaxTT[2] != m_uiMinQT[2], "MaxTTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
+  }
+  if (m_uiMaxMTTHierarchyDepthI == 0)
+  {
+    xConfirmPara(m_uiMaxBT[1] != m_uiMinQT[1], "MaxBTNonISlice shall be equal to MinQTNonISlice when MaxMTTHierarchyDepth is 0.");
+    xConfirmPara(m_uiMaxTT[1] != m_uiMinQT[1], "MaxTTNonISlice shall be equal to MinQTNonISlice when MaxMTTHierarchyDepth is 0.");
+  }
   xConfirmPara( m_log2MaxTbSize > 6, "Log2MaxTbSize must be 6 or smaller." );
   xConfirmPara( m_log2MaxTbSize < 5,  "Log2MaxTbSize must be 5 or greater." );
   xConfirmPara( m_maxNumMergeCand < 1,  "MaxNumMergeCand must be 1 or greater.");
@@ -3523,40 +3576,6 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc1 > 0, "PPSRefPicListSPSIdc1 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
 #endif
 
-#if HEVC_SEI
-  if (m_toneMappingInfoSEIEnabled)
-  {
-    xConfirmPara( m_toneMapCodedDataBitDepth < 8 || m_toneMapCodedDataBitDepth > 14 , "SEIToneMapCodedDataBitDepth must be in rage 8 to 14");
-    xConfirmPara( m_toneMapTargetBitDepth < 1 || (m_toneMapTargetBitDepth > 16 && m_toneMapTargetBitDepth < 255) , "SEIToneMapTargetBitDepth must be in rage 1 to 16 or equal to 255");
-    xConfirmPara( m_toneMapModelId < 0 || m_toneMapModelId > 4 , "SEIToneMapModelId must be in rage 0 to 4");
-    xConfirmPara( m_cameraIsoSpeedValue == 0, "SEIToneMapCameraIsoSpeedValue shall not be equal to 0");
-    xConfirmPara( m_exposureIndexValue  == 0, "SEIToneMapExposureIndexValue shall not be equal to 0");
-    xConfirmPara( m_extendedRangeWhiteLevel < 100, "SEIToneMapExtendedRangeWhiteLevel should be greater than or equal to 100");
-    xConfirmPara( m_nominalBlackLevelLumaCodeValue >= m_nominalWhiteLevelLumaCodeValue, "SEIToneMapNominalWhiteLevelLumaCodeValue shall be greater than SEIToneMapNominalBlackLevelLumaCodeValue");
-    xConfirmPara( m_extendedWhiteLevelLumaCodeValue < m_nominalWhiteLevelLumaCodeValue, "SEIToneMapExtendedWhiteLevelLumaCodeValue shall be greater than or equal to SEIToneMapNominalWhiteLevelLumaCodeValue");
-  }
-
-  if (m_kneeSEIEnabled && !m_kneeSEICancelFlag)
-  {
-    xConfirmPara( m_kneeSEINumKneePointsMinus1 < 0 || m_kneeSEINumKneePointsMinus1 > 998, "SEIKneeFunctionNumKneePointsMinus1 must be in the range of 0 to 998");
-    for ( uint32_t i=0; i<=m_kneeSEINumKneePointsMinus1; i++ )
-    {
-      xConfirmPara( m_kneeSEIInputKneePoint[i] < 1 || m_kneeSEIInputKneePoint[i] > 999, "SEIKneeFunctionInputKneePointValue must be in the range of 1 to 999");
-      xConfirmPara( m_kneeSEIOutputKneePoint[i] < 0 || m_kneeSEIOutputKneePoint[i] > 1000, "SEIKneeFunctionInputKneePointValue must be in the range of 0 to 1000");
-      if ( i > 0 )
-      {
-        xConfirmPara( m_kneeSEIInputKneePoint[i-1] >= m_kneeSEIInputKneePoint[i],  "The i-th SEIKneeFunctionInputKneePointValue must be greater than the (i-1)-th value");
-        xConfirmPara( m_kneeSEIOutputKneePoint[i-1] > m_kneeSEIOutputKneePoint[i],  "The i-th SEIKneeFunctionOutputKneePointValue must be greater than or equal to the (i-1)-th value");
-      }
-    }
-  }
-
-  if (m_chromaResamplingFilterSEIenabled)
-  {
-    xConfirmPara( (m_chromaFormatIDC == CHROMA_400 ), "chromaResamplingFilterSEI is not allowed to be present when ChromaFormatIDC is equal to zero (4:0:0)" );
-    xConfirmPara(m_vuiParametersPresentFlag && m_chromaLocInfoPresentFlag && (m_chromaSampleLocTypeTopField != m_chromaSampleLocTypeBottomField ), "When chromaResamplingFilterSEI is enabled, ChromaSampleLocTypeTopField has to be equal to ChromaSampleLocTypeBottomField" );
-  }
-#endif
   xConfirmPara( m_sariAspectRatioIdc < 0 || m_sariAspectRatioIdc > 255, "SEISARISampleAspectRatioIdc must be in the range of 0 to 255");
 
   if ( m_RCEnableRateControl )
@@ -3788,7 +3807,9 @@ void EncAppCfg::xPrintParameter()
   msg( DETAILS, "explicit_rdpcm_enabled_flag            : %s\n", (m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT] ? "Enabled" : "Disabled") );
   msg( DETAILS, "transform_skip_rotation_enabled_flag   : %s\n", (m_transformSkipRotationEnabledFlag        ? "Enabled" : "Disabled") );
   msg( DETAILS, "transform_skip_context_enabled_flag    : %s\n", (m_transformSkipContextEnabledFlag         ? "Enabled" : "Disabled") );
+#if !REMOVE_PPS_REXT
   msg( DETAILS, "cross_component_prediction_enabled_flag: %s\n", (m_crossComponentPredictionEnabledFlag     ? (m_reconBasedCrossCPredictionEstimate ? "Enabled (reconstructed-residual-based estimate)" : "Enabled (encoder-side-residual-based estimate)") : "Disabled") );
+#endif
   msg( DETAILS, "high_precision_offsets_enabled_flag    : %s\n", (m_highPrecisionOffsetsEnabledFlag         ? "Enabled" : "Disabled") );
   msg( DETAILS, "persistent_rice_adaptation_enabled_flag: %s\n", (m_persistentRiceAdaptationEnabledFlag     ? "Enabled" : "Disabled") );
   msg( DETAILS, "cabac_bypass_alignment_enabled_flag    : %s\n", (m_cabacBypassAlignmentEnabledFlag         ? "Enabled" : "Disabled") );
@@ -3946,9 +3967,16 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "WrapAroundOffset:%d ", m_wrapAroundOffset );
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  msg( VERBOSE, "VirtualBoundariesEnabledFlag:%d ", m_virtualBoundariesEnabledFlag );
+  msg( VERBOSE, "VirtualBoundariesPresentInSPSFlag:%d ", m_virtualBoundariesPresentFlag );
+  if( m_virtualBoundariesPresentFlag )
+  {
+#else
   msg(VERBOSE, "LoopFilterAcrossVirtualBoundaries:%d ", m_loopFilterAcrossVirtualBoundariesDisabledFlag);
   if ( m_loopFilterAcrossVirtualBoundariesDisabledFlag )
   {
+#endif
     msg(VERBOSE, "vertical virtual boundaries:[");
     for (unsigned i = 0; i < m_numVerVirtualBoundaries; i++)
     {

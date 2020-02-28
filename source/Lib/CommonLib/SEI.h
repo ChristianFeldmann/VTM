@@ -56,19 +56,16 @@ public:
   {
     BUFFERING_PERIOD                     = 0,
     PICTURE_TIMING                       = 1,
-#if HEVC_SEI
-    PAN_SCAN_RECT                        = 2,
-#endif
     FILLER_PAYLOAD                       = 3,
     USER_DATA_REGISTERED_ITU_T_T35       = 4,
     USER_DATA_UNREGISTERED               = 5,
     FILM_GRAIN_CHARACTERISTICS           = 19,
     FRAME_PACKING                        = 45,
     DECODING_UNIT_INFO                   = 130,
-#if HEVC_SEI
-    TEMPORAL_LEVEL0_INDEX                = 131,
-#endif
     DECODED_PICTURE_HASH                 = 132,
+#if JVET_P0190_SCALABLE_NESTING_SEI
+    SCALABLE_NESTING                     = 133,
+#endif
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     DEPENDENT_RAP_INDICATION             = 145,
     EQUIRECTANGULAR_PROJECTION           = 150,
@@ -260,25 +257,6 @@ public:
   virtual ~SEIDependentRAPIndication() { }
 };
 
-#if HEVC_SEI
-class SEIActiveParameterSets : public SEI
-{
-public:
-  PayloadType payloadType() const { return ACTIVE_PARAMETER_SETS; }
-
-  SEIActiveParameterSets()
-    : m_selfContainedCvsFlag(false)
-    , m_noParameterSetUpdateFlag (false)
-    , numSpsIdsMinus1        (0)
-  {}
-  virtual ~SEIActiveParameterSets() {}
-
-  bool m_selfContainedCvsFlag;
-  bool m_noParameterSetUpdateFlag;
-  int numSpsIdsMinus1;
-  std::vector<int> activeSeqParameterSetId;
-};
-#endif
 
 class SEIBufferingPeriod : public SEI
 {
@@ -492,7 +470,7 @@ SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
 /// delete list of SEI messages (freeing the referenced objects)
 void deleteSEIs (SEIMessages &seiList);
 
-#if HEVC_SEI
+#if JVET_P0190_SCALABLE_NESTING_SEI
 class SEIScalableNesting : public SEI
 {
 public:
@@ -505,89 +483,18 @@ public:
     deleteSEIs(m_nestedSEIs);
   }
 
-  bool  m_bitStreamSubsetFlag;
-  bool  m_nestingOpFlag;
-  bool  m_defaultOpFlag;                             //value valid if m_nestingOpFlag != 0
-  uint32_t  m_nestingNumOpsMinus1;                       // -"-
-  uint32_t  m_nestingMaxTemporalIdPlus1[MAX_TLAYER];     // -"-
-  uint32_t  m_nestingOpIdx[MAX_NESTING_NUM_OPS];         // -"-
-
-  bool  m_allLayersFlag;                             //value valid if m_nestingOpFlag == 0
-  uint32_t  m_nestingNoOpMaxTemporalIdPlus1;             //value valid if m_nestingOpFlag == 0 and m_allLayersFlag == 0
-  uint32_t  m_nestingNumLayersMinus1;                    //value valid if m_nestingOpFlag == 0 and m_allLayersFlag == 0
-  uint8_t m_nestingLayerId[MAX_NESTING_NUM_LAYER];     //value valid if m_nestingOpFlag == 0 and m_allLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
+  bool  m_nestingOlsFlag;
+  uint32_t m_nestingNumOlssMinus1;
+  uint32_t m_nestingOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
+  uint32_t m_nestingOlsIdx[MAX_NESTING_NUM_LAYER];
+  bool  m_nestingAllLayersFlag;                           //value valid if m_nestingOlsFlag == 0
+  uint32_t  m_nestingNumLayersMinus1;                     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
+  uint8_t m_nestingLayerId[MAX_NESTING_NUM_LAYER];        //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
 
   SEIMessages m_nestedSEIs;
 };
-
-class SEITimeCode : public SEI
-{
-public:
-  PayloadType payloadType() const { return TIME_CODE; }
-  SEITimeCode() {}
-  virtual ~SEITimeCode(){}
-
-  uint32_t numClockTs;
-  SEITimeSet timeSetArray[MAX_TIMECODE_SEI_SETS];
-};
-
-//definition according to P1005_v1;
-class SEITempMotionConstrainedTileSets: public SEI
-{
-  struct TileSetData
-  {
-    protected:
-      std::vector<int> m_top_left_tile_index;  //[tileSetIdx][tileIdx];
-      std::vector<int> m_bottom_right_tile_index;
-
-    public:
-      int     m_mcts_id;
-      bool    m_display_tile_set_flag;
-      bool    m_exact_sample_value_match_flag;
-      bool    m_mcts_tier_level_idc_present_flag;
-      bool    m_mcts_tier_flag;
-      int     m_mcts_level_idc;
-
-      void setNumberOfTileRects(const int number)
-      {
-        m_top_left_tile_index    .resize(number);
-        m_bottom_right_tile_index.resize(number);
-      }
-
-      int  getNumberOfTileRects() const
-      {
-        CHECK(m_top_left_tile_index.size() != m_bottom_right_tile_index.size(), "Inconsistent tile arrangement");
-        return int(m_top_left_tile_index.size());
-      }
-
-            int &topLeftTileIndex    (const int tileRectIndex)       { return m_top_left_tile_index    [tileRectIndex]; }
-            int &bottomRightTileIndex(const int tileRectIndex)       { return m_bottom_right_tile_index[tileRectIndex]; }
-      const int &topLeftTileIndex    (const int tileRectIndex) const { return m_top_left_tile_index    [tileRectIndex]; }
-      const int &bottomRightTileIndex(const int tileRectIndex) const { return m_bottom_right_tile_index[tileRectIndex]; }
-  };
-
-protected:
-  std::vector<TileSetData> m_tile_set_data;
-
-public:
-
-  bool    m_mc_all_tiles_exact_sample_value_match_flag;
-  bool    m_each_tile_one_tile_set_flag;
-  bool    m_limited_tile_set_display_flag;
-  bool    m_max_mcs_tier_level_idc_present_flag;
-  bool    m_max_mcts_tier_flag;
-  int     m_max_mcts_level_idc;
-
-  PayloadType payloadType() const { return TEMP_MOTION_CONSTRAINED_TILE_SETS; }
-
-  void setNumberOfTileSets(const int number)       { m_tile_set_data.resize(number);     }
-  int  getNumberOfTileSets()                 const { return int(m_tile_set_data.size()); }
-
-        TileSetData &tileSetData (const int index)       { return m_tile_set_data[index]; }
-  const TileSetData &tileSetData (const int index) const { return m_tile_set_data[index]; }
-
-};
 #endif
+
 
 #if ENABLE_TRACING
 void xTraceSEIHeader();

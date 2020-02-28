@@ -212,7 +212,9 @@ protected:
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
+#if !REMOVE_PPS_REXT
   bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
+#endif
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
 #if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
@@ -370,7 +372,12 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool      m_virtualBoundariesEnabledFlag;
+  bool      m_virtualBoundariesPresentFlag;
+#else
   bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+#endif
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;
@@ -494,20 +501,22 @@ protected:
   bool      m_subPicPartitionFlag;
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  bool      m_entropyCodingSyncEntryPointPresentFlag;         ///< flag for the presence of entry points for WPP
+#endif
 
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
 
   HashType  m_decodedPictureHashSEIType;                      ///< Checksum mode for decoded picture hash SEI message
-#if HEVC_SEI
-  bool      m_recoveryPointSEIEnabled;
-#endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  bool      m_scalableNestingSEIEnabled;
+#endif
   bool      m_frameFieldInfoSEIEnabled;
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
@@ -688,11 +697,12 @@ protected:
   CostMode  m_costMode;                                       ///< Cost mode to use
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_SEI
-  int       m_activeParameterSetsSEIEnabled;
-#endif
-  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
+#else
+  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
+#endif
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
@@ -712,9 +722,6 @@ protected:
   bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
-#if HEVC_SEI
-  std::string m_colourRemapSEIFileRoot;
-#endif
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.

@@ -317,7 +317,17 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
-
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+int EncGOP::xWriteDCI(AccessUnit& accessUnit, const DCI* dci)
+{
+  OutputNALUnit nalu(NAL_UNIT_DCI);
+  m_HLSWriter->setBitstream(&nalu.m_Bitstream);
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
+  m_HLSWriter->codeDCI(dci);
+  accessUnit.push_back(new NALUnitEBSP(nalu));
+  return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
+}
+#else
 int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
 {
   if (dps->getDecodingParameterSetId() !=0)
@@ -334,6 +344,7 @@ int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
     return 0;
   }
 }
+#endif
 
 int EncGOP::xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId )
 {
@@ -384,7 +395,11 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
 #if ENABLING_MULTI_SPS
     if (layerIdx == 0)
     {
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      actualTotalBits += xWriteDCI(accessUnit, m_pcEncLib->getDCI());
+#else
       actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
+#endif
       if (slice->getSPS()->getVPSId() != 0)
       {
         actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -395,9 +410,12 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
     {
       actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
     }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    actualTotalBits += xWriteDCI( accessUnit, m_pcEncLib->getDCI() );
+#else
     actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
 #endif
-
+#endif
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
@@ -498,13 +516,23 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 {
   AccessUnit::iterator itNalu = accessUnit.begin();
 
-  while ( (itNalu!=accessUnit.end())&&
-    ( (*itNalu)->m_nalUnitType==NAL_UNIT_ACCESS_UNIT_DELIMITER
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_VPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_DPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_SPS
-    || (*itNalu)->m_nalUnitType==NAL_UNIT_PPS
-    ))
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  while ((itNalu != accessUnit.end()) &&
+    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_DCI
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
+      ))
+#else
+  while ((itNalu != accessUnit.end()) &&
+    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_DPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
+      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
+      ))
+#endif
   {
     itNalu++;
   }
@@ -517,13 +545,6 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 #endif
   // The case that a specific SEI is not present is handled in xWriteSEI (empty list)
 
-#if HEVC_SEI
-  // Active parameter sets SEI must always be the first SEI
-  currentMessages = extractSeisByType(localMessages, SEI::ACTIVE_PARAMETER_SETS);
-  CHECK(!(currentMessages.size() <= 1), "Unspecified error");
-  xWriteSEI(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
-  xClearSEIs(currentMessages, !testWrite);
-#endif
 
   // Buffering period SEI must always be following active parameter sets
   currentMessages = extractSeisByType(localMessages, SEI::BUFFERING_PERIOD);
@@ -549,12 +570,16 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
     xClearSEIs(currentMessages, !testWrite);
   }
 
-#if HEVC_SEI
-  // Scalable nesting SEI must always be the following DU info
-  currentMessages = extractSeisByType(localMessages, SEI::SCALABLE_NESTING);
-  xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
-  xClearSEIs(currentMessages, !testWrite);
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  if (m_pcCfg->getScalableNestingSEIEnabled())
+  {
+    // Scalable nesting SEI must always be the following DU info
+    currentMessages = extractSeisByType(localMessages, SEI::SCALABLE_NESTING);
+    xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
+    xClearSEIs(currentMessages, !testWrite);
+  }
 #endif
+
 
   // And finally everything else one by one
   xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, localMessages, accessUnit, itNalu, temporalId, sps);
@@ -751,7 +776,7 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     seiMessages.push_back(bufferingPeriodSEI);
     m_bufferingPeriodSEIPresentInAU = true;
 
-#if HEVC_SEI
+#if JVET_P0190_SCALABLE_NESTING_SEI
     if (m_pcCfg->getScalableNestingSEIEnabled())
     {
       SEIBufferingPeriod *bufferingPeriodSEIcopy = new SEIBufferingPeriod();
@@ -759,6 +784,7 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
       nestedSeiMessages.push_back(bufferingPeriodSEIcopy);
     }
 #endif
+
   }
 
   if (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && slice->isDRAP())
@@ -768,76 +794,25 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     seiMessages.push_back(dependentRAPIndicationSEI);
   }
 
-#if HEVC_SEI
-  if (picInGOP ==0 && m_pcCfg->getSOPDescriptionSEIEnabled() ) // write SOP description SEI (if enabled) at the beginning of GOP
-  {
-    SEISOPDescription* sopDescriptionSEI = new SEISOPDescription();
-    m_seiEncoder.initSEISOPDescription(sopDescriptionSEI, slice, picInGOP, m_iLastIDR, m_iGopSize);
-    seiMessages.push_back(sopDescriptionSEI);
-  }
-
-  if( ( m_pcEncLib->getRecoveryPointSEIEnabled() ) && ( slice->getSliceType() == I_SLICE ) )
-  {
-    if( m_pcEncLib->getGradualDecodingRefreshInfoEnabled() && !slice->getRapPicFlag() )
-    {
-      // Gradual decoding refresh SEI
-      SEIGradualDecodingRefreshInfo *gradualDecodingRefreshInfoSEI = new SEIGradualDecodingRefreshInfo();
-      gradualDecodingRefreshInfoSEI->m_gdrForegroundFlag = true; // Indicating all "foreground"
-      seiMessages.push_back(gradualDecodingRefreshInfoSEI);
-    }
-    // Recovery point SEI
-    SEIRecoveryPoint *recoveryPointSEI = new SEIRecoveryPoint();
-    m_seiEncoder.initSEIRecoveryPoint(recoveryPointSEI, slice);
-    seiMessages.push_back(recoveryPointSEI);
-  }
-  if (m_pcCfg->getTemporalLevel0IndexSEIEnabled())
-  {
-    SEITemporalLevel0Index *temporalLevel0IndexSEI = new SEITemporalLevel0Index();
-    m_seiEncoder.initTemporalLevel0IndexSEI(temporalLevel0IndexSEI, slice);
-    seiMessages.push_back(temporalLevel0IndexSEI);
-  }
-
-  if( m_pcEncLib->getNoDisplaySEITLayer() && ( slice->getTLayer() >= m_pcEncLib->getNoDisplaySEITLayer() ) )
-  {
-    SEINoDisplay *seiNoDisplay = new SEINoDisplay;
-    seiNoDisplay->m_noDisplay = true;
-    seiMessages.push_back(seiNoDisplay);
-  }
-
-  // insert one Colour Remapping Info SEI for the picture (if the file exists)
-  if (!m_pcCfg->getColourRemapInfoSEIFileRoot().empty())
-  {
-    SEIColourRemappingInfo *seiColourRemappingInfo = new SEIColourRemappingInfo();
-    const bool success = m_seiEncoder.initSEIColourRemappingInfo(seiColourRemappingInfo, slice->getPOC() );
-
-    if(success)
-    {
-      seiMessages.push_back(seiColourRemappingInfo);
-    }
-    else
-    {
-      delete seiColourRemappingInfo;
-    }
-  }
-#endif
 }
 
-#if HEVC_SEI
-void EncGOP::xCreateScalableNestingSEI (SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
+#if JVET_P0190_SCALABLE_NESTING_SEI
+void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
 {
   SEIMessages tmpMessages;
   while (!nestedSeiMessages.empty())
   {
-    SEI* sei=nestedSeiMessages.front();
+    SEI* sei = nestedSeiMessages.front();
     nestedSeiMessages.pop_front();
     tmpMessages.push_back(sei);
     SEIScalableNesting *nestingSEI = new SEIScalableNesting();
-    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages);
+    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages); 
     seiMessages.push_back(nestingSEI);
     tmpMessages.clear();
   }
 }
 #endif
+
 
 void EncGOP::xCreateFrameFieldInfoSEI  (SEIMessages& seiMessages, Slice *slice, bool isField)
 {
@@ -1081,8 +1056,8 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     {
       seiMessages.push_back(pictureTimingSEI);
 
-#if HEVC_SEI
-      if ( m_pcCfg->getScalableNestingSEIEnabled() ) // put picture timing SEI into scalable nesting SEI
+#if JVET_P0190_SCALABLE_NESTING_SEI
+      if (m_pcCfg->getScalableNestingSEIEnabled()) 
       {
         SEIPictureTiming *pictureTimingSEIcopy = new SEIPictureTiming();
         pictureTimingSEI->copyTo(*pictureTimingSEIcopy);
@@ -2162,6 +2137,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     pcSlice->setLastIDR(m_iLastIDR);
     pcSlice->setIndependentSliceIdx(0);
+    if (pcSlice->getPOC() && m_pcCfg->getIntraPeriod() != 1)
+    {
+      pcSlice->setSliceType(m_pcCfg->getGOPEntry(iGOPid).m_sliceType == 'I' ? I_SLICE : (m_pcCfg->getGOPEntry(iGOPid).m_sliceType == 'B' ? B_SLICE : P_SLICE) );
+    }
 
     if(pcSlice->getSliceType()==B_SLICE&&m_pcCfg->getGOPEntry(iGOPid).m_sliceType=='P')
     {
@@ -2171,6 +2150,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType(I_SLICE);
     }
+    pcSlice->setTLayer(m_pcCfg->getGOPEntry(iGOPid).m_temporalId);
 
 #if JVET_Q0819_PH_CHANGES
     // set two flags according to slice type presented in the picture
@@ -2429,6 +2409,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       pcSlice->setSliceType ( P_SLICE );
     }
+
     xUpdateRasInit( pcSlice );
 
     if ( pcSlice->getPendingRasInit() )
@@ -2567,6 +2548,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
         pcSlice->setColFromL0Flag( uiColFromL0 );
         pcSlice->setColRefIdx( uiColFromL0 ? colRefIdxL0 : colRefIdxL1 );
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+        picHeader->setColRefIdx( uiColFromL0 ? colRefIdxL0 : colRefIdxL1 );
+#endif
       }
       else if( colRefIdxL0 < 0 && colRefIdxL1 >= 0 )
       {
@@ -2575,6 +2559,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
         pcSlice->setColFromL0Flag( false );
         pcSlice->setColRefIdx( colRefIdxL1 );
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+        picHeader->setColRefIdx( colRefIdxL1 );
+#endif
       }
       else if( colRefIdxL0 >= 0 && colRefIdxL1 < 0 )
       {
@@ -2583,6 +2570,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
         pcSlice->setColFromL0Flag( true );
         pcSlice->setColRefIdx( colRefIdxL0 );
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+        picHeader->setColRefIdx( colRefIdxL0 );
+#endif
       }
       else
       {
@@ -2721,7 +2711,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     // Allocate some coders, now the number of tiles are known.
     const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
     const int numSubstreamsColumns = pcSlice->getPPS()->getNumTileColumns();
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+    const int numSubstreamRows     = pcSlice->getSPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRows());
+#else
     const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRows());
+#endif
     const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->cs->pps->getNumSlicesInPic());
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
@@ -3332,6 +3326,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         pcSlice->setFinalized(true);
 
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+        pcSlice->resetNumberOfSubstream( );
+        pcSlice->setNumSubstream( pcSlice->getSPS(), pcSlice->getPPS() );
+#endif
         pcSlice->clearSubstreamSizes(  );
         {
           uint32_t numBinsCoded = 0;
@@ -3347,7 +3345,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           // Append substreams...
           OutputBitstream *pcOut = pcBitstreamRedirect;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+          const int numSubstreamsToCode = pcSlice->getNumberOfSubstream() + 1;
+#else
           const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
+#endif
+
           for ( uint32_t ui = 0 ; ui < numSubstreamsToCode; ui++ )
           {
             pcOut->addSubstream(&(substreamsOut[ui]));
@@ -3426,15 +3429,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       double PSNR_Y;
       xCalculateAddPSNRs(isField, isTff, iGOPid, pcPic, accessUnit, rcListPic, encTime, snr_conversion, printFrameMSE, &PSNR_Y, isEncodeLtRef );
 
-#if HEVC_SEI
-      // Only produce the Green Metadata SEI message with the last picture.
-      if( m_pcCfg->getSEIGreenMetadataInfoSEIEnable() && pcSlice->getPOC() == ( m_pcCfg->getFramesToBeEncoded() - 1 )  )
-      {
-        SEIGreenMetadataInfo *seiGreenMetadataInfo = new SEIGreenMetadataInfo;
-        m_seiEncoder.initSEIGreenMetadataInfo(seiGreenMetadataInfo, (uint32_t)(PSNR_Y * 100 + 0.5));
-        trailingSeiMessages.push_back(seiGreenMetadataInfo);
-      }
-#endif
 
       xWriteTrailingSEIMessages(trailingSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS());
 
@@ -3471,12 +3465,14 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       }
       xCreateFrameFieldInfoSEI( leadingSeiMessages, pcSlice, isField );
       xCreatePictureTimingSEI( m_pcCfg->getEfficientFieldIRAPEnabled() ? effFieldIRAPMap.GetIRAPGOPid() : 0, leadingSeiMessages, nestedSeiMessages, duInfoSeiMessages, pcSlice, isField, duData );
-#if HEVC_SEI
-     if( m_pcCfg->getScalableNestingSEIEnabled() )
+
+#if JVET_P0190_SCALABLE_NESTING_SEI
+      if (m_pcCfg->getScalableNestingSEIEnabled())
       {
-        xCreateScalableNestingSEI( leadingSeiMessages, nestedSeiMessages );
+        xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages);
       }
 #endif
+
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
       xWriteDuSEIMessages( duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
 
@@ -4169,7 +4165,11 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if( ( *it )->m_nalUnitType != NAL_UNIT_PREFIX_SEI && ( *it )->m_nalUnitType != NAL_UNIT_SUFFIX_SEI )
     {
       numRBSPBytes += numRBSPBytes_nal;
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DCI || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#else
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
+#endif
       {
         numRBSPBytes += 4;
       }

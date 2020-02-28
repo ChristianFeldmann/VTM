@@ -258,7 +258,16 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_UVLC( pcPPS->getPicWidthInLumaSamples(), "pic_width_in_luma_samples" );
   WRITE_UVLC( pcPPS->getPicHeightInLumaSamples(), "pic_height_in_luma_samples" );
   Window conf = pcPPS->getConformanceWindow();
-
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  WRITE_FLAG(conf.getWindowEnabledFlag(), "pps_conformance_window_flag");
+  if (conf.getWindowEnabledFlag())
+  {
+    WRITE_UVLC(conf.getWindowLeftOffset(), "pps_conf_win_left_offset");
+    WRITE_UVLC(conf.getWindowRightOffset(), "pps_conf_win_right_offset");
+    WRITE_UVLC(conf.getWindowTopOffset(), "pps_conf_win_top_offset");
+    WRITE_UVLC(conf.getWindowBottomOffset(), "pps_conf_win_bottom_offset");
+  }
+#else
   WRITE_FLAG( conf.getWindowEnabledFlag(), "conformance_window_flag" );
   if( conf.getWindowEnabledFlag() )
   {
@@ -267,6 +276,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_UVLC( conf.getWindowTopOffset(),    "conf_win_top_offset" );
     WRITE_UVLC( conf.getWindowBottomOffset(), "conf_win_bottom_offset" );
   }
+#endif
   Window scalingWindow = pcPPS->getScalingWindow();
 
   WRITE_FLAG( scalingWindow.getWindowEnabledFlag(), "scaling_window_flag" );
@@ -337,17 +347,53 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )
       {
         // complete tiles within a single slice
+#if JVET_Q0244  
+        if( pcPPS->getNumTileColumns() > 1 )
+        {
+#endif
         WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
+#if JVET_Q0244  
+        }
+#endif
 #if JVET_Q0480_RASTER_RECT_SLICES
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns()) == 0 ) )
         {
-          WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+#if JVET_Q0244
+          if( pcPPS->getNumTileRows() > 1 )
+          {
+#endif
+           WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+#if JVET_Q0244
+          }
+#endif
         }
 #else
         WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
 #endif
 
         // multiple slices within a single tile special case
+#if JVET_Q0203_MULTI_SLICE_IN_TILE
+        if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()) > 1 )
+        {
+          uint32_t numExpSliceInTile = pcPPS->getNumSlicesInTile(i) - 1;
+          if( pcPPS->getSliceHeightInCtu(i + numExpSliceInTile - 2) >= pcPPS->getSliceHeightInCtu(i + numExpSliceInTile - 1) )
+          {
+            for( int j = numExpSliceInTile - 2; j >= 0; j-- )
+            {
+              if( pcPPS->getSliceHeightInCtu(i + j) == pcPPS->getSliceHeightInCtu(i + j + 1) )
+              {
+                numExpSliceInTile--;
+              }
+            }
+          }
+          WRITE_UVLC(numExpSliceInTile, "num_exp_slices_in_tile[i]");
+          for( int j = 0; j < numExpSliceInTile; j++ )
+          {
+            WRITE_UVLC(pcPPS->getSliceHeightInCtu(i + j) - 1, "exp_slice_height_in_ctus_minus1[i]");
+          }
+          i += (pcPPS->getNumSlicesInTile(i) - 1);
+        }
+#else
         if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
         {
           WRITE_UVLC( pcPPS->getNumSlicesInTile( i ) - 1,  "num_slices_in_tile_minus1[i]" );
@@ -358,6 +404,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
             i++;
           }
         }
+#endif
 
         // tile index offset to start of next slice
         if( i < pcPPS->getNumSlicesInPic()-1 ) 
@@ -376,11 +423,13 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_FLAG( pcPPS->getLoopFilterAcrossSlicesEnabledFlag(), "loop_filter_across_slices_enabled_flag");
   }
 
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   WRITE_FLAG( pcPPS->getEntropyCodingSyncEnabledFlag() ? 1 : 0, "entropy_coding_sync_enabled_flag" );
+#endif
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );
   WRITE_UVLC( pcPPS->getNumRefIdxL0DefaultActive()-1,     "num_ref_idx_l0_default_active_minus1");
   WRITE_UVLC( pcPPS->getNumRefIdxL1DefaultActive()-1,     "num_ref_idx_l1_default_active_minus1");
-  WRITE_FLAG(pcPPS->getRpl1IdxPresentFlag() ? 1 : 0, "rpl1IdxPresentFlag");
+  WRITE_FLAG( pcPPS->getRpl1IdxPresentFlag() ? 1 : 0,     "rpl1_idx_present_flag");
 
 
   WRITE_SVLC( pcPPS->getPicInitQPMinus26(),                  "init_qp_minus26");
@@ -403,8 +452,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   WRITE_FLAG( pcPPS->getSliceChromaQpFlag() ? 1 : 0,          "pps_slice_chroma_qp_offsets_present_flag" );
 
-  WRITE_FLAG(uint32_t(pcPPS->getCuChromaQpOffsetEnabledFlag()),         "cu_chroma_qp_offset_enabled_flag" );
-  if (pcPPS->getCuChromaQpOffsetEnabledFlag())
+  WRITE_FLAG(uint32_t(pcPPS->getCuChromaQpOffsetListEnabledFlag()),         "pps_cu_chroma_qp_offset_list_enabled_flag" );
+  if (pcPPS->getCuChromaQpOffsetListEnabledFlag())
   {
     WRITE_UVLC(pcPPS->getChromaQpOffsetListLen() - 1,                   "chroma_qp_offset_list_len_minus1");
     /* skip zero index */
@@ -486,6 +535,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   if (pps_extension_present_flag)
   {
+#if !REMOVE_PPS_REXT
 #if ENABLE_TRACING /*|| RExt__DECODER_DEBUG_BIT_STATISTICS*/
     static const char *syntaxStrings[]={ "pps_range_extension_flag",
       "pps_multilayer_extension_flag",
@@ -525,6 +575,12 @@ void HLSWriter::codePPS( const PPS* pcPPS )
         } // switch
       } // if flag present
     } // loop over PPS flags
+#else
+    for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++)
+    {
+      WRITE_FLAG( pps_extension_flags[i]?1:0, "pps_extension_data_flag" );
+    }
+#endif
   } // pps_extension_present_flag is non-zero
   xWriteRbspTrailingBits();
 }
@@ -672,10 +728,10 @@ void HLSWriter::codeLmcsAps( APS* pcAPS )
   int deltaCRS = param.chrResScalingOffset;
   int signCRS = (deltaCRS < 0) ? 1 : 0;
   int absCRS = (deltaCRS < 0) ? (-deltaCRS) : deltaCRS;
-  WRITE_CODE(absCRS, 3, "lmcs_delta_crs_val");
+  WRITE_CODE(absCRS, 3, "lmcs_delta_abs_crs");
   if (absCRS > 0)
   {
-    WRITE_FLAG(signCRS, "lmcs_delta_crs_val_flag");
+    WRITE_FLAG(signCRS, "lmcs_delta_sign_crs_flag");
   }
 }
 
@@ -852,7 +908,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  WRITE_CODE(pcSPS->getSPSId(), 4, "sps_seq_parameter_set_id");
+#else
   WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
+#endif
   WRITE_CODE( pcSPS->getVPSId(), 4, "sps_video_parameter_set_id" );
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
@@ -878,9 +938,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
   
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
-
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   WRITE_CODE( pcSPS->getSPSId (), 4, "sps_seq_parameter_set_id" );
-
+#endif
   WRITE_CODE(int(pcSPS->getChromaFormatIdc ()), 2, "chroma_format_idc");
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
@@ -908,6 +968,18 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  Window conf = pcSPS->getConformanceWindow();
+  WRITE_FLAG(conf.getWindowEnabledFlag(), "sps_conformance_window_flag");
+  if (conf.getWindowEnabledFlag())
+  {
+    WRITE_UVLC(conf.getWindowLeftOffset(), "sps_conf_win_left_offset");
+    WRITE_UVLC(conf.getWindowRightOffset(), "sps_conf_win_right_offset");
+    WRITE_UVLC(conf.getWindowTopOffset(), "sps_conf_win_top_offset");
+    WRITE_UVLC(conf.getWindowBottomOffset(), "sps_conf_win_bottom_offset");
+  }
+
+#endif
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
 #if JVET_Q0043_RPR_and_Subpics | JVET_Q0119_CLEANUPS
@@ -1013,7 +1085,15 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_UVLC( pcSPS->getBitDepth(CHANNEL_TYPE_LUMA) - 8,                      "bit_depth_minus8" );
 #if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   WRITE_UVLC( pcSPS->getMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA),                      "min_qp_prime_ts_minus4" );
-#endif  
+#endif
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  WRITE_FLAG( pcSPS->getEntropyCodingSyncEnabledFlag() ? 1 : 0, "sps_entropy_coding_sync_enabled_flag" );
+  if (pcSPS->getEntropyCodingSyncEnabledFlag()) 
+  {
+    WRITE_FLAG( pcSPS->getEntropyCodingSyncEntryPointsPresentFlag() ? 1 : 0, "sps_wpp_entry_point_offsets_present_flag" );
+  }
+#endif
+
   WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
 
@@ -1340,20 +1420,32 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
 
-  WRITE_FLAG( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" );
-  if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  WRITE_FLAG( pcSPS->getVirtualBoundariesEnabledFlag(), "sps_virtual_boundaries_enabled_flag" );
+  if( pcSPS->getVirtualBoundariesEnabledFlag() )
   {
-    WRITE_CODE( pcSPS->getNumVerVirtualBoundaries(), 2, "sps_num_ver_virtual_boundaries");
-    for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
+    WRITE_FLAG( pcSPS->getVirtualBoundariesPresentFlag(), "sps_loop_filter_across_virtual_boundaries_present_flag" );
+    if( pcSPS->getVirtualBoundariesPresentFlag() )
     {
-      WRITE_CODE((pcSPS->getVirtualBoundariesPosX(i)>>3), 13, "sps_virtual_boundaries_pos_x");
-    }
-    WRITE_CODE(pcSPS->getNumHorVirtualBoundaries(), 2, "sps_num_hor_virtual_boundaries");
-    for( unsigned i = 0; i < pcSPS->getNumHorVirtualBoundaries(); i++ )
+#else
+    WRITE_FLAG( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" );
+    if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
     {
-      WRITE_CODE((pcSPS->getVirtualBoundariesPosY(i)>>3), 13, "sps_virtual_boundaries_pos_y");
+#endif
+      WRITE_CODE( pcSPS->getNumVerVirtualBoundaries(), 2, "sps_num_ver_virtual_boundaries");
+      for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
+      {
+        WRITE_CODE((pcSPS->getVirtualBoundariesPosX(i)>>3), 13, "sps_virtual_boundaries_pos_x");
+      }
+      WRITE_CODE(pcSPS->getNumHorVirtualBoundaries(), 2, "sps_num_hor_virtual_boundaries");
+      for( unsigned i = 0; i < pcSPS->getNumHorVirtualBoundaries(); i++ )
+      {
+        WRITE_CODE((pcSPS->getVirtualBoundariesPosY(i)>>3), 13, "sps_virtual_boundaries_pos_y");
+      }
     }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
+#endif
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
@@ -1449,7 +1541,33 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   xWriteRbspTrailingBits();
 }
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void HLSWriter::codeDCI(const DCI* dci)
+{
+#if ENABLE_TRACING
+  xTraceDPSHeader();
+#endif
+  WRITE_CODE(dci->getMaxSubLayersMinus1(), 3, "dci_max_sub_layers_minus1");
+  WRITE_CODE(0, 1, "dci_reserved_zero_bit");
+  uint32_t numPTLs = (uint32_t)dci->getNumPTLs();
+  CHECK(numPTLs < 1, "At least one PTL must be available in DCI");
 
+  WRITE_CODE(numPTLs - 1, 4, "dci_num_ptls_minus1");
+
+  for (int i = 0; i < numPTLs; i++)
+  {
+    ProfileTierLevel ptl = dci->getProfileTierLevel(i);
+#if JVET_Q0786_PTL_only
+    codeProfileTierLevel(&ptl, true, 0);
+#else
+    codeProfileTierLevel(&ptl, 0);
+#endif
+
+  }
+  WRITE_FLAG(0, "dci_extension_flag");
+  xWriteRbspTrailingBits();
+}
+#else
 void HLSWriter::codeDPS( const DPS* dps )
 {
 #if ENABLE_TRACING
@@ -1475,7 +1593,7 @@ void HLSWriter::codeDPS( const DPS* dps )
   WRITE_FLAG( 0,                                              "dps_extension_flag" );
   xWriteRbspTrailingBits();
 }
-
+#endif
 void HLSWriter::codeVPS(const VPS* pcVPS)
 {
 #if ENABLE_TRACING
@@ -1852,11 +1970,19 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
 
   // virtual boundaries
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
+  {
+    WRITE_FLAG( picHeader->getVirtualBoundariesPresentFlag(), "ph_loop_filter_across_virtual_boundaries_present_flag" );
+    if( picHeader->getVirtualBoundariesPresentFlag() )
+    {
+#else
   if( !sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     WRITE_FLAG( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "ph_loop_filter_across_virtual_boundaries_disabled_present_flag" );
     if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
     {
+#endif
       WRITE_CODE(picHeader->getNumVerVirtualBoundaries(), 2, "ph_num_ver_virtual_boundaries");
       for( unsigned i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
       {
@@ -1870,21 +1996,34 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
     else
     {
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+      picHeader->setVirtualBoundariesPresentFlag( 0 );
+#else
       picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( 0 );
+#endif
       picHeader->setNumVerVirtualBoundaries( 0 );
       picHeader->setNumHorVirtualBoundaries( 0 );
     }
   }
   else
   {
-    picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );
-    picHeader->setNumVerVirtualBoundaries( sps->getNumVerVirtualBoundaries() );
-    picHeader->setNumHorVirtualBoundaries( sps->getNumHorVirtualBoundaries() );
-    for( unsigned i = 0; i < 3; i++ ) 
-    {
-      picHeader->setVirtualBoundariesPosX( sps->getVirtualBoundariesPosX(i), i );
-      picHeader->setVirtualBoundariesPosY( sps->getVirtualBoundariesPosY(i), i );
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+      picHeader->setVirtualBoundariesPresentFlag( sps->getVirtualBoundariesPresentFlag() );
+      if( picHeader->getVirtualBoundariesPresentFlag() )
+      {
+#else
+        picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );
+#endif
+       picHeader->setNumVerVirtualBoundaries( sps->getNumVerVirtualBoundaries() );
+       picHeader->setNumHorVirtualBoundaries( sps->getNumHorVirtualBoundaries() );
+      for( unsigned i = 0; i < 3; i++ ) 
+      {
+        picHeader->setVirtualBoundariesPosX( sps->getVirtualBoundariesPosX(i), i );
+        picHeader->setVirtualBoundariesPosY( sps->getVirtualBoundariesPosY(i), i );
+      }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
     }
+#endif
   }
   
 #if !JVET_Q0155_COLOUR_ID
@@ -1965,7 +2104,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       }
 
       // POC MSB cycle signalling for LTRP
-      if (picHeader->getRPL(listIdx)->getNumberOfLongtermPictures())
+      if (picHeader->getRPL(listIdx) && picHeader->getRPL(listIdx)->getNumberOfLongtermPictures())
       {
         for (int i = 0; i < picHeader->getRPL(listIdx)->getNumberOfLongtermPictures() + picHeader->getRPL(listIdx)->getNumberOfShorttermPictures(); i++)
         {
@@ -2068,7 +2207,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setCuQpDeltaSubdivInter( 0 );
 #endif
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivIntra(), "pic_cu_chroma_qp_offset_subdiv_intra_slice" );
 #if !JVET_Q0819_PH_CHANGES
@@ -2108,7 +2247,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     {
       picHeader->setCuQpDeltaSubdivInter(0);
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       WRITE_UVLC(picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice");
     }
@@ -2121,6 +2260,17 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
       WRITE_FLAG( picHeader->getEnableTMVPFlag(), "pic_temporal_mvp_enabled_flag" );
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+      if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
+      {
+        WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
+        if ((picHeader->getPicColFromL0Flag() && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
+          (!picHeader->getPicColFromL0Flag() && picHeader->getRPL(1)->getNumRefEntries() > 1))
+        {
+          WRITE_UVLC(picHeader->getColRefIdx(), "collocated_ref_idx");
+        }
+      }
+#endif
     }
     else
     {
@@ -2138,12 +2288,12 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setMvdL1ZeroFlag( pps->getPPSMvdL1ZeroIdc() - 1 );
     }
 #else
-
+#if !JVET_Q0259_COLLOCATED_PIC_IN_PH
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
     {
       WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
     }
-
+#endif
     WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
 #endif
    
@@ -2898,8 +3048,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_FLAG( encCabacInitFlag ? 1 : 0, "cabac_init_flag" );
       }
     }
-
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+    if (pcSlice->getPicHeader()->getEnableTMVPFlag() && !pcSlice->getPPS()->getRplInfoInPhFlag())
+#else
     if( pcSlice->getPicHeader()->getEnableTMVPFlag() )
+#endif
     {
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if(!pcSlice->getPPS()->getRplInfoInPhFlag())
@@ -2966,7 +3119,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       CHECK(numberValidComponents < COMPONENT_Cr+1, "Too many valid components");
     }
 
-    if (pcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag())
+    if (pcSlice->getPPS()->getCuChromaQpOffsetListEnabledFlag())
     {
       WRITE_FLAG(pcSlice->getUseChromaQpAdj(), "cu_chroma_qp_offset_enabled_flag");
     }
@@ -3234,7 +3387,11 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
 */
 void  HLSWriter::codeTilesWPPEntryPoint( Slice* pSlice )
 {
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  pSlice->setNumEntryPoints( pSlice->getSPS(), pSlice->getPPS() );
+#else
   pSlice->setNumEntryPoints( pSlice->getPPS() );
+#endif
   if( pSlice->getNumEntryPoints() == 0 )
   {
     return;
@@ -3586,10 +3743,10 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
 #if JVET_Q0210_UEK_REMOVAL 
-      WRITE_UVLC( abs(coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ]), "alf_abs_coeff" ); //alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+      WRITE_UVLC( abs(coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ]), isChroma ? "alf_chroma_coeff_abs" : "alf_luma_coeff_abs" ); //alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
       if( abs( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] ) != 0 )
       {
-        WRITE_FLAG( ( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] < 0 ) ? 1 : 0, "alf_coeff_sign" );
+        WRITE_FLAG( ( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] < 0 ) ? 1 : 0, isChroma ? "alf_chroma_coeff_sign" : "alf_luma_coeff_sign" );
       }
 #else
       alfGolombEncode( coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], 3 );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
@@ -3608,7 +3765,7 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
     {
       for (int i = 0; i < alfShape.numCoeff - 1; i++)
       {
-        WRITE_CODE(clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], 2, "alf_clipping_index");
+        WRITE_CODE(clipp[ind* MAX_NUM_ALF_LUMA_COEFF + i], 2, isChroma ? "alf_chroma_clip_idx" : "alf_luma_clip_idx");
       }
     }
   }

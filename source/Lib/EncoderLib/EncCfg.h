@@ -241,8 +241,8 @@ protected:
   bool m_intraConstraintFlag;
 
   //====== Coding Structure ========
-  int       m_uiIntraPeriod;                        // needs to be signed to allow '-1' for no intra period
-  uint32_t      m_uiDecodingRefreshType;            ///< the type of decoding refresh employed for the random access.
+  int       m_intraPeriod;                        // needs to be signed to allow '-1' for no intra period
+  uint32_t  m_decodingRefreshType;            ///< the type of decoding refresh employed for the random access.
   bool      m_rewriteParamSets;
   bool      m_idrRefParamList;
   int       m_iGOPSize;
@@ -372,7 +372,12 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder lib) add tool enabling flags and associated parameters here
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool      m_virtualBoundariesEnabledFlag;
+  bool      m_virtualBoundariesPresentFlag;
+#else
   bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+#endif
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   unsigned  m_virtualBoundariesPosX[3];
@@ -478,7 +483,9 @@ protected:
   bool      m_useFastDecisionForMerge;
   bool      m_bUseCbfFastMode;
   bool      m_useEarlySkipDetection;
+#if !REMOVE_PPS_REXT
   bool      m_crossComponentPredictionEnabledFlag;
+#endif
   bool      m_reconBasedCrossCPredictionEstimate;
 #if !JVET_Q0441_SAO_MOD_12_BIT
   uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
@@ -525,6 +532,9 @@ protected:
   //====== Sub-picture and Slices ========
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  bool      m_entropyCodingSyncEntryPointPresentFlag;          ///< flag for the presence of entry points for WPP
+#endif
 
 
   HashType  m_decodedPictureHashSEIType;
@@ -539,11 +549,11 @@ protected:
   int       m_framePackingSEIInterpretation;
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
-#if HEVC_SEI
-  bool      m_SOPDescriptionSEIEnabled;
+
+#if JVET_P0190_SCALABLE_NESTING_SEI
   bool      m_scalableNestingSEIEnabled;
-  bool      m_tmctsSEIEnabled;
 #endif
+
   bool      m_erpSEIEnabled;
   bool      m_erpSEICancelFlag;
   bool      m_erpSEIPersistenceFlag;
@@ -708,20 +718,19 @@ protected:
 #if !JVET_Q0814_DPB
   VPS       m_cVPS;
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  DCI       m_dci;
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
+#else
   DPS       m_dps;
   bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
-  bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_SEI
-  int       m_activeParameterSetsSEIEnabled;                  ///< enable active parameter set SEI message
 #endif
+
+  bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
-#if HEVC_SEI
-  bool      m_chromaResamplingFilterHintEnabled;              ///< Signals whether chroma sampling filter hint data is present
-  int       m_chromaResamplingHorFilterIdc;                   ///< Specifies the Index of filter to use
-  int       m_chromaResamplingVerFilterIdc;                   ///< Specifies the Index of filter to use
-#endif
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
   int       m_sarHeight;                                      ///< vertical size of the sample aspect ratio
@@ -913,8 +922,8 @@ public:
   void      setCabacZeroWordPaddingEnabled(bool value)       { m_cabacZeroWordPaddingEnabled = value; }
 
   //====== Coding Structure ========
-  void      setIntraPeriod                  (int   i)        { m_uiIntraPeriod = i;                   }
-  void      setDecodingRefreshType          ( int   i )      { m_uiDecodingRefreshType = (uint32_t)i; }
+  void      setIntraPeriod                  (int   i)        { m_intraPeriod = i;                   }
+  void      setDecodingRefreshType          ( int   i )      { m_decodingRefreshType = (uint32_t)i; }
   void      setReWriteParamSets             ( bool  b )      { m_rewriteParamSets = b; }
   void      setIDRRefParamListPresent       ( bool  b )      { m_idrRefParamList  = b; }
   bool      getIDRRefParamListPresent       ()        const  { return m_idrRefParamList; }
@@ -1134,8 +1143,15 @@ public:
   unsigned  getWrapAroundOffset             ()         const { return m_wrapAroundOffset; }
 
   // ADD_NEW_TOOL : (encoder lib) add access functions here
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  void      setVirtualBoundariesEnabledFlag( bool b ) { m_virtualBoundariesEnabledFlag = b; }
+  bool      getVirtualBoundariesEnabledFlag() const { return m_virtualBoundariesEnabledFlag; }
+  void      setVirtualBoundariesPresentFlag( bool b ) { m_virtualBoundariesPresentFlag = b; }
+  bool      getVirtualBoundariesPresentFlag() const { return m_virtualBoundariesPresentFlag; }
+#else
   void      setLoopFilterAcrossVirtualBoundariesDisabledFlag( bool b ) { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b; }
   bool      getLoopFilterAcrossVirtualBoundariesDisabledFlag() const { return m_loopFilterAcrossVirtualBoundariesDisabledFlag; }
+#endif
   void      setNumVerVirtualBoundaries      ( unsigned u )   { m_numVerVirtualBoundaries = u; }
   unsigned  getNumVerVirtualBoundaries      ()         const { return m_numVerVirtualBoundaries; }
   void      setNumHorVirtualBoundaries      ( unsigned u )   { m_numHorVirtualBoundaries = u; }
@@ -1294,8 +1310,8 @@ public:
   double    getIntraQpFactor                ()                        const { return m_dIntraQpFactor;                }
 
   //==== Coding Structure ========
-  uint32_t      getIntraPeriod                  () const     { return  m_uiIntraPeriod; }
-  uint32_t      getDecodingRefreshType          () const     { return  m_uiDecodingRefreshType; }
+  int       getIntraPeriod                  () const     { return  m_intraPeriod; }
+  uint32_t  getDecodingRefreshType          () const     { return  m_decodingRefreshType; }
   bool      getReWriteParamSets             ()  const    { return m_rewriteParamSets; }
   int       getGOPSize                      () const     { return  m_iGOPSize; }
   int       getMaxDecPicBuffering           (uint32_t tlayer) { return m_maxDecPicBuffering[tlayer]; }
@@ -1400,8 +1416,10 @@ public:
   void  setGopBasedTemporalFilterEnabled(bool flag) { m_gopBasedTemporalFilterEnabled = flag; }
   bool  getGopBasedTemporalFilterEnabled()          { return m_gopBasedTemporalFilterEnabled; }
 
+#if !REMOVE_PPS_REXT
   bool      getCrossComponentPredictionEnabledFlag     ()                const { return m_crossComponentPredictionEnabledFlag;   }
   void      setCrossComponentPredictionEnabledFlag     (const bool value)      { m_crossComponentPredictionEnabledFlag = value;  }
+#endif
   bool      getUseReconBasedCrossCPredictionEstimate ()                const { return m_reconBasedCrossCPredictionEstimate;  }
   void      setUseReconBasedCrossCPredictionEstimate (const bool value)      { m_reconBasedCrossCPredictionEstimate = value; }
 #if !JVET_Q0441_SAO_MOD_12_BIT
@@ -1486,6 +1504,9 @@ public:
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  void  setEntropyCodingSyncEntryPointPresentFlag(bool b)            { m_entropyCodingSyncEntryPointPresentFlag = b; }
+#endif
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }
   HashType getDecodedPictureHashSEIType() const                      { return m_decodedPictureHashSEIType; }
   void  setBufferingPeriodSEIEnabled(bool b)                         { m_bufferingPeriodSEIEnabled = b; }
@@ -1510,13 +1531,9 @@ public:
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }
-#if HEVC_SEI
-  void  setSOPDescriptionSEIEnabled(bool b)                          { m_SOPDescriptionSEIEnabled = b; }
-  bool  getSOPDescriptionSEIEnabled() const                          { return m_SOPDescriptionSEIEnabled; }
+#if JVET_P0190_SCALABLE_NESTING_SEI
   void  setScalableNestingSEIEnabled(bool b)                         { m_scalableNestingSEIEnabled = b; }
   bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
-  void  setTMCTSSEIEnabled(bool b)                                   { m_tmctsSEIEnabled = b; }
-  bool  getTMCTSSEIEnabled()                                         { return m_tmctsSEIEnabled; }
 #endif
 
   void  setErpSEIEnabled(bool b)                                     { m_erpSEIEnabled = b; }
@@ -1826,8 +1843,15 @@ public:
   void         setVPS(VPS *p)                                        { m_cVPS = *p; }
   VPS *        getVPS()                                              { return &m_cVPS; }
 #endif
+
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  void         setDCI(DCI *p)                                        { m_dci = *p; }
+  DCI*         getDCI()                                              { return &m_dci; }
+#else
   void         setDPS(DPS *p)                                        { m_dps = *p; }
   DPS*         getDPS()                                              { return &m_dps; }
+#endif
   void         setUseRecalculateQPAccordingToLambda (bool b)         { m_recalculateQPAccordingToLambda = b;    }
   bool         getUseRecalculateQPAccordingToLambda ()               { return m_recalculateQPAccordingToLambda; }
 
@@ -1837,13 +1861,14 @@ public:
   void         setHarmonizeGopFirstFieldCoupleEnabled( bool b )      { m_bHarmonizeGopFirstFieldCoupleEnabled = b; }
   bool         getHarmonizeGopFirstFieldCoupleEnabled( ) const       { return m_bHarmonizeGopFirstFieldCoupleEnabled; }
 
-#if HEVC_SEI
-  void         setActiveParameterSetsSEIEnabled ( int b )            { m_activeParameterSetsSEIEnabled = b; }
-  int          getActiveParameterSetsSEIEnabled ()                   { return m_activeParameterSetsSEIEnabled; }
-#endif
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  bool         getDCIEnabled()                      { return m_DCIEnabled; }
+  void         setDCIEnabled(bool i)                { m_DCIEnabled = i; }
+#else
   bool         getDecodingParameterSetEnabled()                      { return m_decodingParameterSetEnabled; }
   void         setDecodingParameterSetEnabled(bool i)                { m_decodingParameterSetEnabled = i; }
+#endif
   bool         getHrdParametersPresentFlag()                         { return m_hrdParametersPresentFlag; }
   void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
@@ -1913,14 +1938,6 @@ public:
   void         setIntraConstraintFlag(bool b)                        { m_intraConstraintFlag=b; }
 
 
-#if HEVC_SEI
-  bool         getChromaResamplingFilterHintEnabled()                { return m_chromaResamplingFilterHintEnabled;}
-  void         setChromaResamplingFilterHintEnabled(bool i)          { m_chromaResamplingFilterHintEnabled = i;}
-  int          getChromaResamplingHorFilterIdc()                     { return m_chromaResamplingHorFilterIdc;}
-  void         setChromaResamplingHorFilterIdc(int i)                { m_chromaResamplingHorFilterIdc = i;}
-  int          getChromaResamplingVerFilterIdc()                     { return m_chromaResamplingVerFilterIdc;}
-  void         setChromaResamplingVerFilterIdc(int i)                { m_chromaResamplingVerFilterIdc = i;}
-#endif
 
   void         setSummaryOutFilename(const std::string &s)           { m_summaryOutFilename = s; }
   const std::string& getSummaryOutFilename() const                   { return m_summaryOutFilename; }

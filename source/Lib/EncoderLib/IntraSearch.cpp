@@ -387,8 +387,9 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
   const TempCtx ctxStartMrlIdx      ( m_CtxCache, SubCtx( Ctx::MultiRefLineIdx,        m_CABACEstimator->getCtx() ) );
 
   CHECK( !cu.firstPU, "CU has no PUs" );
+#if !REMOVE_PPS_REXT
   const bool keepResi   = cs.pps->getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() || KEEP_PRED_AND_RESI_SIGNALS;
-
+#endif
   // variables for saving fast intra modes scan results across multiple LFNST passes
   bool LFNSTLoadFlag = sps.getUseLFNST() && cu.lfnstIdx != 0;
   bool LFNSTSaveFlag = sps.getUseLFNST() && cu.lfnstIdx == 0;
@@ -1196,12 +1197,21 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     {
       if (cu.colorTransform)
       {
+#if !REMOVE_PPS_REXT
         cs.useSubStructure(*csBest, partitioner.chType, pu, true, true, keepResi, keepResi);
+#else
+        cs.useSubStructure(*csBest, partitioner.chType, pu, true, true, KEEP_PRED_AND_RESI_SIGNALS, KEEP_PRED_AND_RESI_SIGNALS);
+#endif
       }
       else
       {
+#if !REMOVE_PPS_REXT
         cs.useSubStructure(*csBest, partitioner.chType, pu.singleChan(CHANNEL_TYPE_LUMA), true, true, keepResi,
                            keepResi);
+#else
+        cs.useSubStructure(*csBest, partitioner.chType, pu.singleChan(CHANNEL_TYPE_LUMA), true, true, KEEP_PRED_AND_RESI_SIGNALS,
+                           KEEP_PRED_AND_RESI_SIGNALS);
+#endif
       }
     }
     csBest->releaseIntermediateData();
@@ -1438,15 +1448,15 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         }
         else
         {
-            cu.bdpcmModeChroma = 0;
-        if( PU::isLMCMode( chromaIntraMode ) && ! PU::isLMCModeEnabled( pu, chromaIntraMode ) )
-        {
-          continue;
-        }
-        if (!modeIsEnable[chromaIntraMode] && PU::isLMCModeEnabled(pu, chromaIntraMode)) // when CCLM is disable, then MDLM is disable. not use satd checking
-        {
-          continue;
-        }
+          cu.bdpcmModeChroma = 0;
+          if( PU::isLMCMode( chromaIntraMode ) && ! PU::isLMCModeEnabled( pu, chromaIntraMode ) )
+          {
+            continue;
+          }
+          if (!modeIsEnable[chromaIntraMode] && PU::isLMCModeEnabled(pu, chromaIntraMode)) // when CCLM is disable, then MDLM is disable. not use satd checking
+          {
+            continue;
+          }
         }
         cs.setDecomp( pu.Cb(), false );
         cs.dist = baseDist;
@@ -3237,10 +3247,12 @@ void IntraSearch::xEncCoeffQT( CodingStructure &cs, Partitioner &partitioner, co
       const int cbfMask = ( TU::getCbf( currTU, COMPONENT_Cb ) ? 2 : 0 ) + ( TU::getCbf( currTU, COMPONENT_Cr ) ? 1 : 0 );
       m_CABACEstimator->joint_cb_cr( currTU, cbfMask );
     }
+#if !REMOVE_PPS_REXT
     if( TU::hasCrossCompPredInfo( currTU, compID ) )
     {
       m_CABACEstimator->cross_comp_pred( currTU, compID );
     }
+#endif
     if( TU::getCbf( currTU, compID ) )
     {
       if( isLuma(compID) )
@@ -3302,10 +3314,12 @@ uint64_t IntraSearch::xGetIntraFracBitsQTSingleChromaComponent( CodingStructure 
   const bool prevCbf = ( compID == COMPONENT_Cr ? TU::getCbfAtDepth( currTU, COMPONENT_Cb, partitioner.currTrDepth ) : false );
   m_CABACEstimator->cbf_comp( cs, TU::getCbfAtDepth( currTU, compID, partitioner.currTrDepth ), currArea.blocks[compID], partitioner.currTrDepth - 1, prevCbf );
   //coeffs coding and cross comp coding
+#if !REMOVE_PPS_REXT
   if( TU::hasCrossCompPredInfo( currTU, compID ) )
   {
     m_CABACEstimator->cross_comp_pred( currTU, compID );
   }
+#endif
   if( TU::getCbf( currTU, compID ) )
   {
     m_CABACEstimator->residual_coding( currTU, compID );
@@ -3318,12 +3332,12 @@ uint64_t IntraSearch::xGetIntraFracBitsQTSingleChromaComponent( CodingStructure 
 uint64_t IntraSearch::xGetIntraFracBitsQTChroma(TransformUnit& currTU, const ComponentID &compID)
 {
   m_CABACEstimator->resetBits();
-
+#if !REMOVE_PPS_REXT
   if( TU::hasCrossCompPredInfo( currTU, compID ) )
   {
     m_CABACEstimator->cross_comp_pred( currTU, compID );
   }
-
+#endif
   // Include Cbf and jointCbCr flags here as we make decisions across components
   CodingStructure &cs = *currTU.cs;
 
@@ -3362,7 +3376,11 @@ uint64_t IntraSearch::xGetIntraFracBitsQTChroma(TransformUnit& currTU, const Com
   return fracBits;
 }
 
+#if !REMOVE_PPS_REXT
 void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2, uint32_t* numSig, std::vector<TrMode>* trModes, const bool loadTr)
+#else
+void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &compID, Distortion& ruiDist, const int &default0Save1Load2, uint32_t* numSig, std::vector<TrMode>* trModes, const bool loadTr)
+#endif
 {
   if (!tu.blocks[compID].valid())
   {
@@ -3374,7 +3392,9 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
 
   const CompArea      &area                 = tu.blocks[compID];
   const SPS           &sps                  = *cs.sps;
+#if !REMOVE_PPS_REXT
   const PPS           &pps                  = *cs.pps;
+#endif
 
   const ChannelType    chType               = toChannelType(compID);
   const int            bitDepth             = sps.getBitDepth(chType);
@@ -3382,14 +3402,18 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   PelBuf         piOrg                      = cs.getOrgBuf    (area);
   PelBuf         piPred                     = cs.getPredBuf   (area);
   PelBuf         piResi                     = cs.getResiBuf   (area);
+#if !REMOVE_PPS_REXT
   PelBuf         piOrgResi                  = cs.getOrgResiBuf(area);
+#endif
   PelBuf         piReco                     = cs.getRecoBuf   (area);
 
   const PredictionUnit &pu                  = *cs.getPU(area.pos(), chType);
   const uint32_t           uiChFinalMode        = PU::getFinalIntraMode(pu, chType);
 
+#if !REMOVE_PPS_REXT
   const bool           bUseCrossCPrediction = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isChroma( compID ) && PU::isChromaIntraModeCrossCheckMode( pu ) && checkCrossCPrediction;
   const bool           ccUseRecoResi        = m_pcEncCfg->getUseReconBasedCrossCPredictionEstimate();
+#endif
 
 
   //===== init availability pattern =====
@@ -3402,72 +3426,71 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   if (compID == COMPONENT_Y || (isChroma(compID) && tu.cu->bdpcmModeChroma))
 #endif
   {
-  PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
-  if( default0Save1Load2 != 2 )
-  {
-    bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
-    bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
-    CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
-    if (tu.cu->ispMode && isLuma(compID))
+    PelBuf sharedPredTS( m_pSharedPredTransformSkip[compID], area );
+    if( default0Save1Load2 != 2 )
     {
-      if (predRegDiffFromTB)
-      {
-        if (firstTBInPredReg)
-        {
-          CU::adjustPredArea(areaPredReg);
-          initIntraPatternChTypeISP(*tu.cu, areaPredReg, piReco);
-        }
-      }
-      else
-        initIntraPatternChTypeISP(*tu.cu, area, piReco);
-    }
-    else
-    {
-      initIntraPatternChType(*tu.cu, area);
-    }
-
-    //===== get prediction signal =====
-    if(compID != COMPONENT_Y && !tu.cu->bdpcmModeChroma && PU::isLMCMode(uiChFinalMode))
-    {
-      {
-        xGetLumaRecPixels( pu, area );
-      }
-      predIntraChromaLM( compID, piPred, pu, area, uiChFinalMode );
-    }
-    else
-    {
-      if( PU::isMIP( pu, chType ) )
-      {
-        initIntraMip( pu, area );
-        predIntraMip( compID, piPred, pu );
-      }
-      else
+      bool predRegDiffFromTB = CU::isPredRegDiffFromTB(*tu.cu, compID);
+      bool firstTBInPredReg = CU::isFirstTBInPredReg(*tu.cu, compID, area);
+      CompArea areaPredReg(COMPONENT_Y, tu.chromaFormat, area);
+      if (tu.cu->ispMode && isLuma(compID))
       {
         if (predRegDiffFromTB)
         {
           if (firstTBInPredReg)
           {
-            PelBuf piPredReg = cs.getPredBuf(areaPredReg);
-            predIntraAng(compID, piPredReg, pu);
+            CU::adjustPredArea(areaPredReg);
+            initIntraPatternChTypeISP(*tu.cu, areaPredReg, piReco);
           }
         }
         else
-          predIntraAng(compID, piPred, pu);
+          initIntraPatternChTypeISP(*tu.cu, area, piReco);
+      }
+      else
+      {
+        initIntraPatternChType(*tu.cu, area);
+      }
+
+      //===== get prediction signal =====
+      if(compID != COMPONENT_Y && !tu.cu->bdpcmModeChroma && PU::isLMCMode(uiChFinalMode))
+      {
+        xGetLumaRecPixels( pu, area );
+        predIntraChromaLM( compID, piPred, pu, area, uiChFinalMode );
+      }
+      else
+      {
+        if( PU::isMIP( pu, chType ) )
+        {
+          initIntraMip( pu, area );
+          predIntraMip( compID, piPred, pu );
+        }
+        else
+        {
+          if (predRegDiffFromTB)
+          {
+            if (firstTBInPredReg)
+            {
+              PelBuf piPredReg = cs.getPredBuf(areaPredReg);
+              predIntraAng(compID, piPredReg, pu);
+            }
+          }
+          else
+          {
+            predIntraAng(compID, piPred, pu);
+          }
+        }
+      }
+
+      // save prediction
+      if( default0Save1Load2 == 1 )
+      {
+        sharedPredTS.copyFrom( piPred );
       }
     }
-
-
-    // save prediction
-    if( default0Save1Load2 == 1 )
+    else
     {
-      sharedPredTS.copyFrom( piPred );
+      // load prediction
+      piPred.copyFrom( sharedPredTS );
     }
-  }
-  else
-  {
-    // load prediction
-    piPred.copyFrom( sharedPredTS );
-  }
   }
 
 
@@ -3478,32 +3501,36 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
   bool flag = slice.getPicHeader()->getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
   if (isLuma(compID))
   {
-  //===== get residual signal =====
-  piResi.copyFrom( piOrg  );
-  if (slice.getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
-  {
-    CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
-    PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
-    tmpPred.copyFrom(piPred);
-    piResi.rspSignal(m_pcReshape->getFwdLUT());
-    piResi.subtract(tmpPred);
-  }
-  else
-  piResi.subtract( piPred );
-
-  if (pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isLuma(compID))
-  {
-    piOrgResi.copyFrom (piResi);
-  }
-
-  if (bUseCrossCPrediction)
-  {
-    if (xCalcCrossComponentPredictionAlpha(tu, compID, ccUseRecoResi) == 0)
+    //===== get residual signal =====
+    piResi.copyFrom( piOrg  );
+    if (slice.getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
     {
-      return;
+      CompArea      tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
+      PelBuf tmpPred = m_tmpStorageLCU.getBuf(tmpArea);
+      tmpPred.copyFrom(piPred);
+      piResi.rspSignal(m_pcReshape->getFwdLUT());
+      piResi.subtract(tmpPred);
     }
-    CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, false);
-  }
+    else
+    {
+      piResi.subtract( piPred );
+    }
+
+#if !REMOVE_PPS_REXT
+    if (pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && isLuma(compID))
+    {
+      piOrgResi.copyFrom (piResi);
+    }
+
+    if (bUseCrossCPrediction)
+    {
+      if (xCalcCrossComponentPredictionAlpha(tu, compID, ccUseRecoResi) == 0)
+      {
+        return;
+      }
+      CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, false);
+    }
+#endif
   }
 
   //===== transform and quantization =====
@@ -3689,6 +3716,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       crResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(COMPONENT_Cr));
     }
   }
+#if !REMOVE_PPS_REXT
   if (bUseCrossCPrediction)
   {
     CrossComponentPrediction::crossComponentPrediction(tu, compID, cs.getResiBuf(tu.Y()), piResi, piResi, true);
@@ -3697,6 +3725,7 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       CrossComponentPrediction::crossComponentPrediction(tu, COMPONENT_Cr, cs.getResiBuf(tu.Y()), crResi, crResi, true);
     }
   }
+#endif
 
   if (slice.getPicHeader()->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && compID == COMPONENT_Y)
   {
@@ -3966,8 +3995,11 @@ bool IntraSearch::xIntraCodingLumaISP(CodingStructure& cs, Partitioner& partitio
     tu.depth = partitioner.currTrDepth;
 
     // Encode TU
+#if !REMOVE_PPS_REXT
     xIntraCodingTUBlock(tu, COMPONENT_Y, false, singleDistTmpLuma, 0, &numSig);
-
+#else
+    xIntraCodingTUBlock(tu, COMPONENT_Y, singleDistTmpLuma, 0, &numSig);
+#endif
     if (singleDistTmpLuma == MAX_INT)   // all zero CBF skip
     {
       earlySkipISP = true;
@@ -4060,8 +4092,10 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         bool  earlySkipISP = false;
   uint32_t currDepth       = partitioner.currTrDepth;
   const SPS &sps           = *cs.sps;
+#if !REMOVE_PPS_REXT
   const PPS &pps           = *cs.pps;
   const bool keepResi      = pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() || KEEP_PRED_AND_RESI_SIGNALS;
+#endif
   bool bCheckFull          = true;
   bool bCheckSplit         = false;
   bCheckFull               = !partitioner.canSplit( TU_MAX_TR_SPLIT, cs );
@@ -4299,7 +4333,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
 
         if( !cu.mtsFlag && checkTransformSkip )
         {
+#if !REMOVE_PPS_REXT
           xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig, modeId == 0 ? &trModes : nullptr, true );
+#else
+          xIntraCodingTUBlock( tu, COMPONENT_Y, singleDistTmpLuma, default0Save1Load2, &numSig, modeId == 0 ? &trModes : nullptr, true );
+#endif
           if( modeId == 0 )
           {
             for( int i = 0; i < 2; i++ )
@@ -4313,14 +4351,22 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         }
         else
         {
+#if !REMOVE_PPS_REXT
           xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig );
+#else
+          xIntraCodingTUBlock( tu, COMPONENT_Y, singleDistTmpLuma, default0Save1Load2, &numSig );
+#endif
         }
       }
       else
       {
         if( nNumTransformCands > 1 )
         {
+#if !REMOVE_PPS_REXT
           xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig, modeId == 0 ? &trModes : nullptr, true );
+#else
+          xIntraCodingTUBlock( tu, COMPONENT_Y, singleDistTmpLuma, default0Save1Load2, &numSig, modeId == 0 ? &trModes : nullptr, true );
+#endif
           if( modeId == 0 )
           {
             for( int i = 0; i < nNumTransformCands; i++ )
@@ -4334,7 +4380,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         }
         else
         {
+#if !REMOVE_PPS_REXT
           xIntraCodingTUBlock( tu, COMPONENT_Y, false, singleDistTmpLuma, default0Save1Load2, &numSig );
+#else
+          xIntraCodingTUBlock( tu, COMPONENT_Y, singleDistTmpLuma, default0Save1Load2, &numSig );
+#endif
         }
       }
 
@@ -4416,7 +4466,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
           saveCS.getPredBuf( tu.Y() ).copyFrom( csFull->getPredBuf( tu.Y() ) );
           saveCS.getRecoBuf( tu.Y() ).copyFrom( csFull->getRecoBuf( tu.Y() ) );
 
+#if !REMOVE_PPS_REXT
           if( keepResi )
+#else
+          if( KEEP_PRED_AND_RESI_SIGNALS )
+#endif
           {
             saveCS.getResiBuf   ( tu.Y() ).copyFrom( csFull->getResiBuf   ( tu.Y() ) );
             saveCS.getOrgResiBuf( tu.Y() ).copyFrom( csFull->getOrgResiBuf( tu.Y() ) );
@@ -4445,7 +4499,11 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         csFull->getPredBuf( tu.Y() ).copyFrom( saveCS.getPredBuf( tu.Y() ) );
         csFull->getRecoBuf( tu.Y() ).copyFrom( saveCS.getRecoBuf( tu.Y() ) );
 
+#if !REMOVE_PPS_REXT
         if( keepResi )
+#else
+        if( KEEP_PRED_AND_RESI_SIGNALS )
+#endif
         {
           csFull->getResiBuf   ( tu.Y() ).copyFrom( saveCS.getResiBuf   ( tu.Y() ) );
           csFull->getOrgResiBuf( tu.Y() ).copyFrom( saveCS.getOrgResiBuf( tu.Y() ) );
@@ -5458,7 +5516,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
   bool lumaUsesISP                    = false;
   uint32_t     currDepth                  = partitioner.currTrDepth;
+#if !REMOVE_PPS_REXT
   const PPS &pps                      = *cs.pps;
+#endif
   ChromaCbfs cbfs                     ( false );
 
   if (currDepth == currTU.depth)
@@ -5550,6 +5610,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
     }
 
     //----- get cross component prediction parameters -----
+#if !REMOVE_PPS_REXT
     bool checkCrossComponentPrediction = PU::isChromaIntraModeCrossCheckMode( pu ) && pps.getPpsRangeExtension().getCrossComponentPredictionEnabledFlag() && TU::getCbf( currTU, COMPONENT_Y );
     int  compAlpha[MAX_NUM_COMPONENT] = { 0, 0, 0 };
     if( checkCrossComponentPrediction )
@@ -5561,7 +5622,6 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
         checkCrossComponentPrediction = false;
       }
     }
-
     //===== store original residual signals (std and crossCompPred) =====
     CompStorage  orgResiCb[5], orgResiCr[5]; // 0:std, 1-3:jointCbCr (placeholder at this stage), 4:crossComp
     for( int k = 0; k < (checkCrossComponentPrediction?5:1); k+=4 )
@@ -5571,7 +5631,8 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       if( k >= 4 ) {
         CrossComponentPrediction::crossComponentPrediction( currTU, COMPONENT_Cb, cs.getResiBuf(currTU.Y()), resiCb, orgResiCb[k], false);
         CrossComponentPrediction::crossComponentPrediction( currTU, COMPONENT_Cr, cs.getResiBuf(currTU.Y()), resiCr, orgResiCr[k], false);
-      } else {
+      } else
+      {
         orgResiCb[k].copyFrom( resiCb );
         orgResiCr[k].copyFrom( resiCr );
       }
@@ -5582,6 +5643,20 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
         orgResiCr[k].scaleSignal( cResScaleInv, 1, currTU.cu->cs->slice->clpRng(COMPONENT_Cr) );
       }
     }
+#else
+    //===== store original residual signals =====
+    CompStorage  orgResiCb[4], orgResiCr[4]; // 0:std, 1-3:jointCbCr (placeholder at this stage)
+    orgResiCb[0].create( cbArea );
+    orgResiCr[0].create( crArea );
+    orgResiCb[0].copyFrom( resiCb );
+    orgResiCr[0].copyFrom( resiCr );
+    if( doReshaping )
+    {
+      int cResScaleInv = currTU.getChromaAdj();
+      orgResiCb[0].scaleSignal( cResScaleInv, 1, currTU.cu->cs->slice->clpRng(COMPONENT_Cb) );
+      orgResiCr[0].scaleSignal( cResScaleInv, 1, currTU.cu->cs->slice->clpRng(COMPONENT_Cr) );
+    }
+#endif
 
     for( uint32_t c = COMPONENT_Cb; c < numTBlocks; c++)
     {
@@ -5592,7 +5667,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       int        bestModeId     = 0;
       Distortion singleDistCTmp = 0;
       double     singleCostTmp  = 0;
+#if !REMOVE_PPS_REXT
       const int  crossCPredictionModesToTest = checkCrossComponentPrediction ? 2 : 1;
+#endif
 #if JVET_Q0784_LFNST_COMBINATION
       const bool tsAllowed = TU::isTSAllowed(currTU, compID) && m_pcEncCfg->getUseChromaTS() && !currTU.cu->lfnstIdx;
 #else
@@ -5628,7 +5705,12 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #endif 
       CHECK(!currTU.Cb().valid(), "Invalid TU");
 
+      
+#if !REMOVE_PPS_REXT
       const int  totalModesToTest            = crossCPredictionModesToTest * nNumTransformCands;
+#else
+      const int  totalModesToTest            = nNumTransformCands;
+#endif
       bool cbfDCT2 = true;
       const bool isOneMode                   = false;
       maxModesTested                         = totalModesToTest > maxModesTested ? totalModesToTest : maxModesTested;
@@ -5644,13 +5726,17 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
       for (int modeId = 0; modeId < nNumTransformCands; modeId++)
       {
+#if !REMOVE_PPS_REXT
         for (int crossCPredictionModeId = 0; crossCPredictionModeId < crossCPredictionModesToTest; crossCPredictionModeId++)
         {
           resiCb.copyFrom( orgResiCb[4*crossCPredictionModeId] );
           resiCr.copyFrom( orgResiCr[4*crossCPredictionModeId] );
 
           currTU.compAlpha    [compID] = ( crossCPredictionModeId ? compAlpha[compID] : 0 );
-
+#else
+          resiCb.copyFrom( orgResiCb[0] );
+          resiCr.copyFrom( orgResiCr[0] );
+#endif
           currTU.mtsIdx[compID] = currTU.cu->bdpcmModeChroma ? MTS_SKIP : trModes[modeId].first;
 
           currModeId++;
@@ -5684,14 +5770,26 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
           if (nNumTransformCands > 1)
           {
+#if !REMOVE_PPS_REXT
               xIntraCodingTUBlock(currTU, compID, crossCPredictionModeId != 0, singleDistCTmp, default0Save1Load2, nullptr, modeId == 0 ? &trModes : nullptr, true);
+#else
+              xIntraCodingTUBlock(currTU, compID, singleDistCTmp, default0Save1Load2, nullptr, modeId == 0 ? &trModes : nullptr, true);
+#endif
           }
           else
           {
+#if !REMOVE_PPS_REXT
               xIntraCodingTUBlock(currTU, compID, crossCPredictionModeId != 0, singleDistCTmp, default0Save1Load2);
+#else
+              xIntraCodingTUBlock(currTU, compID, singleDistCTmp, default0Save1Load2);
+#endif
           }
 
+#if !REMOVE_PPS_REXT
           if (((crossCPredictionModeId == 1) && (currTU.compAlpha[compID] == 0)) || ((currTU.mtsIdx[compID] == MTS_SKIP && !currTU.cu->bdpcmModeChroma) && !TU::getCbf(currTU, compID))) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#else
+          if (((currTU.mtsIdx[compID] == MTS_SKIP && !currTU.cu->bdpcmModeChroma) && !TU::getCbf(currTU, compID))) //In order not to code TS flag when cbf is zero, the case for TS with cbf being zero is forbidden.
+#endif
           {
 #if JVET_Q0820_ACT
             if (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING)
@@ -5759,7 +5857,9 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
               ctxBest = m_CABACEstimator->getCtx();
             }
           }
+#if !REMOVE_PPS_REXT
         }
+#endif
       }
 
       if( lumaUsesISP && dSingleCost > bestCostSoFar && c == COMPONENT_Cb )
@@ -5820,8 +5920,10 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #endif
 
         currTU.jointCbCr               = (uint8_t)cbfMask;
+#if !REMOVE_PPS_REXT
         currTU.compAlpha[COMPONENT_Cb] = 0;
         currTU.compAlpha[COMPONENT_Cr] = 0;
+#endif
 #if JVET_Q0695_CHROMA_TS_JCCR
         ComponentID codeCompId = ((currTU.jointCbCr >> 1) ? COMPONENT_Cb : COMPONENT_Cr);
         ComponentID otherCompId = ((codeCompId == COMPONENT_Cb) ? COMPONENT_Cr : COMPONENT_Cb);
@@ -5871,12 +5973,19 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 #if JVET_Q0695_CHROMA_TS_JCCR
         if (numTransformCands > 1)
         {
+#if !REMOVE_PPS_REXT
           xIntraCodingTUBlock(currTU, COMPONENT_Cb, false, distTmp, 0, nullptr, modeId == 0 ? &trModes : nullptr, true);
+#else
+          xIntraCodingTUBlock(currTU, COMPONENT_Cb, distTmp, 0, nullptr, modeId == 0 ? &trModes : nullptr, true);
+#endif
         }
         else
 #endif
+#if !REMOVE_PPS_REXT
         xIntraCodingTUBlock( currTU, COMPONENT_Cb, false, distTmp, 0 );
-
+#else
+        xIntraCodingTUBlock( currTU, COMPONENT_Cb, distTmp, 0 );
+#endif
         double costTmp = std::numeric_limits<double>::max();
         if( distTmp < std::numeric_limits<Distortion>::max() )
         {

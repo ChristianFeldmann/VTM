@@ -30,7 +30,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#if !REMOVE_PPS_REXT
 /** \file     Prediction.h
     \brief    prediction class (header)
 */
@@ -69,3 +69,4 @@ public:
 //! \}
 
 #endif // __PREDICTION__
+#endif

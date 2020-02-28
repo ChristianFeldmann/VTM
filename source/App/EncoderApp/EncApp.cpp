@@ -528,18 +528,27 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setWrapAroundOffset                                  ( m_wrapAroundOffset );
 
   // ADD_NEW_TOOL : (encoder app) add setting of tool enabling flags and associated parameters here
-
-  m_cEncLib.setLoopFilterAcrossVirtualBoundariesDisabledFlag     ( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
-  m_cEncLib.setNumVerVirtualBoundaries                           ( m_numVerVirtualBoundaries );
-  m_cEncLib.setNumHorVirtualBoundaries                           ( m_numHorVirtualBoundaries );
-  for( unsigned i = 0; i < m_numVerVirtualBoundaries; i++ )
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  m_cEncLib.setVirtualBoundariesEnabledFlag                      ( m_virtualBoundariesEnabledFlag );
+  if( m_cEncLib.getVirtualBoundariesEnabledFlag() )
   {
-    m_cEncLib.setVirtualBoundariesPosX                           ( m_virtualBoundariesPosX[ i ], i );
+    m_cEncLib.setVirtualBoundariesPresentFlag                      ( m_virtualBoundariesPresentFlag );
+#else
+    m_cEncLib.setLoopFilterAcrossVirtualBoundariesDisabledFlag     ( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
+#endif
+    m_cEncLib.setNumVerVirtualBoundaries                           ( m_numVerVirtualBoundaries );
+    m_cEncLib.setNumHorVirtualBoundaries                           ( m_numHorVirtualBoundaries );
+    for( unsigned i = 0; i < m_numVerVirtualBoundaries; i++ )
+    {
+      m_cEncLib.setVirtualBoundariesPosX                           ( m_virtualBoundariesPosX[ i ], i );
+    }
+    for( unsigned i = 0; i < m_numHorVirtualBoundaries; i++ )
+    {
+      m_cEncLib.setVirtualBoundariesPosY                           ( m_virtualBoundariesPosY[ i ], i );
+    }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
-  for( unsigned i = 0; i < m_numHorVirtualBoundaries; i++ )
-  {
-    m_cEncLib.setVirtualBoundariesPosY                           ( m_virtualBoundariesPosY[ i ], i );
-  }
+#endif 
 
   m_cEncLib.setMaxCUWidth                                        ( m_uiCTUSize );
   m_cEncLib.setMaxCUHeight                                       ( m_uiCTUSize );
@@ -569,7 +578,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseMIP                                            ( m_MIP );
   m_cEncLib.setUseFastMIP                                        ( m_useFastMIP );
   m_cEncLib.setFastLocalDualTreeMode                             ( m_fastLocalDualTreeMode );
+#if !REMOVE_PPS_REXT
   m_cEncLib.setCrossComponentPredictionEnabledFlag               ( m_crossComponentPredictionEnabledFlag );
+#endif
   m_cEncLib.setUseReconBasedCrossCPredictionEstimate             ( m_reconBasedCrossCPredictionEstimate );
 #if !JVET_Q0441_SAO_MOD_12_BIT
   m_cEncLib.setLog2SaoOffsetScale                                ( CHANNEL_TYPE_LUMA  , m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA]   );
@@ -655,15 +666,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSaoGreedyMergeEnc                                 ( m_saoGreedyMergeEnc);
   m_cEncLib.setIntraSmoothingDisabledFlag                        (!m_enableIntraReferenceSmoothing );
   m_cEncLib.setDecodedPictureHashSEIType                         ( m_decodedPictureHashSEIType );
-#if HEVC_SEI
-  m_cEncLib.setRecoveryPointSEIEnabled                           ( m_recoveryPointSEIEnabled );
-#endif
   m_cEncLib.setDependentRAPIndicationSEIEnabled                  ( m_drapPeriod > 0 );
   m_cEncLib.setBufferingPeriodSEIEnabled                         ( m_bufferingPeriodSEIEnabled );
   m_cEncLib.setPictureTimingSEIEnabled                           ( m_pictureTimingSEIEnabled );
   m_cEncLib.setFrameFieldInfoSEIEnabled                          ( m_frameFieldInfoSEIEnabled );
    m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
+#endif
   m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );
@@ -784,6 +795,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setCcvSEIMaxLuminanceValue                           (m_ccvSEIMaxLuminanceValue);
   m_cEncLib.setCcvSEIAvgLuminanceValue                           (m_ccvSEIAvgLuminanceValue);
   m_cEncLib.setEntropyCodingSyncEnabledFlag                      ( m_entropyCodingSyncEnabledFlag );
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  m_cEncLib.setEntropyCodingSyncEntryPointPresentFlag            ( m_entropyCodingSyncEntryPointPresentFlag );
+#endif
   m_cEncLib.setTMVPModeId                                        ( m_TMVPModeId );
   m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );
   m_cEncLib.setSliceLevelDblk                                    ( m_sliceLevelDblk );
@@ -830,9 +844,10 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setCostMode                                          ( m_costMode );
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  m_cEncLib.setDCIEnabled                                        ( m_DCIEnabled );
+#else
   m_cEncLib.setDecodingParameterSetEnabled                       ( m_decodingParameterSetEnabled );
-#if HEVC_SEI
-  m_cEncLib.setActiveParameterSetsSEIEnabled                     ( m_activeParameterSetsSEIEnabled );
 #endif
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
   m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
@@ -1233,7 +1248,11 @@ void EncApp::rateStatsAccum(const AccessUnit& au, const std::vector<uint32_t>& a
     case NAL_UNIT_CODED_SLICE_GDR:
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    case NAL_UNIT_DCI:
+#else
     case NAL_UNIT_DPS:
+#endif
     case NAL_UNIT_VPS:
     case NAL_UNIT_SPS:
     case NAL_UNIT_PPS:

@@ -81,7 +81,9 @@ Slice::Slice()
 , m_biDirPred                    ( false )
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 , m_dps                           ( nullptr )
+#endif
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
@@ -265,9 +267,36 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
 #endif
 }
 
-void  Slice::setNumEntryPoints( const PPS *pps ) 
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+void Slice::setNumSubstream(const SPS* sps, const PPS* pps) 
 {
   uint32_t ctuAddr, ctuX, ctuY;
+  m_numSubstream = 0;
+
+  // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
+  // ignore the first CTU since it doesn't count as an entry point
+  for (uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++)
+  {
+    ctuAddr = m_sliceMap.getCtuAddrInSlice(i);
+    ctuX    = (ctuAddr % pps->getPicWidthInCtu());
+    ctuY    = (ctuAddr / pps->getPicWidthInCtu());
+
+    if (pps->ctuIsTileColBd(ctuX) && (pps->ctuIsTileRowBd(ctuY) || sps->getEntropyCodingSyncEnabledFlag()))
+    {
+      m_numSubstream++;
+    }
+  }
+}
+
+void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
+#else
+void  Slice::setNumEntryPoints( const PPS *pps ) 
+#endif
+{
+  uint32_t ctuAddr, ctuX, ctuY;
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  uint32_t prevCtuAddr, prevCtuX, prevCtuY;
+#endif
   m_numEntryPoints = 0;
 
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
@@ -277,7 +306,15 @@ void  Slice::setNumEntryPoints( const PPS *pps )
     ctuAddr = m_sliceMap.getCtuAddrInSlice( i );
     ctuX = ( ctuAddr % pps->getPicWidthInCtu() );
     ctuY = ( ctuAddr / pps->getPicWidthInCtu() );
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+    prevCtuAddr = m_sliceMap.getCtuAddrInSlice(i - 1);
+    prevCtuX    = (prevCtuAddr % pps->getPicWidthInCtu());
+    prevCtuY    = (prevCtuAddr / pps->getPicWidthInCtu());
+
+    if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEntryPointsPresentFlag()))
+#else
     if( pps->ctuIsTileColBd( ctuX ) && (pps->ctuIsTileRowBd( ctuY ) || pps->getEntropyCodingSyncEnabledFlag() ) ) 
+#endif
     {
       m_numEntryPoints++;
     }
@@ -470,7 +507,10 @@ void Slice::constructRefPicList(PicList& rcListPic)
       int pocBits = getSPS()->getBitsForPOC();
       int pocMask = (1 << pocBits) - 1;
       int ltrpPoc = m_pRPL0->getRefPicIdentifier(ii) & pocMask;
-      ltrpPoc += m_localRPL0.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL0.getDeltaPocMSBCycleLT(ii) : 0;
+      if(m_localRPL0.getDeltaPocMSBPresentFlag(ii))
+      {
+        ltrpPoc += getPOC() - m_localRPL0.getDeltaPocMSBCycleLT(ii) * (pocMask + 1) - (getPOC() & pocMask);
+      }
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
@@ -503,7 +543,10 @@ void Slice::constructRefPicList(PicList& rcListPic)
       int pocBits = getSPS()->getBitsForPOC();
       int pocMask = (1 << pocBits) - 1;
       int ltrpPoc = m_pRPL1->getRefPicIdentifier(ii) & pocMask;
-      ltrpPoc += m_localRPL1.getDeltaPocMSBPresentFlag(ii) ? (pocMask + 1) * m_localRPL1.getDeltaPocMSBCycleLT(ii) : 0;
+      if(m_localRPL1.getDeltaPocMSBPresentFlag(ii))
+      {
+        ltrpPoc += getPOC() - m_localRPL1.getDeltaPocMSBCycleLT(ii) * (pocMask + 1) - (getPOC() & pocMask);
+      }
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
@@ -564,7 +607,14 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       }
       else
       {
-        CHECK( xGetLongTermRefPic( rcListPic, pRPL0->getRefPicIdentifier( i ), pRPL0->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
+        int pocBits = getSPS()->getBitsForPOC();
+        int pocMask = (1 << pocBits) - 1;
+        int ltrpPoc = pRPL0->getRefPicIdentifier(i) & pocMask;
+        if(pRPL0->getDeltaPocMSBPresentFlag(i))
+        {
+          ltrpPoc += getPOC() - pRPL0->getDeltaPocMSBCycleLT(i) * (pocMask + 1) - (getPOC() & pocMask);
+        }
+        CHECK( xGetLongTermRefPic( rcListPic, ltrpPoc, pRPL0->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
       }
     }
     numRefPic = pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures();
@@ -576,7 +626,14 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       }
       else if( !pRPL1->isInterLayerRefPic( i ) )
       {
-        CHECK( xGetLongTermRefPic( rcListPic, pRPL1->getRefPicIdentifier( i ), pRPL1->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
+        int pocBits = getSPS()->getBitsForPOC();
+        int pocMask = (1 << pocBits) - 1;
+        int ltrpPoc = m_pRPL1->getRefPicIdentifier(i) & pocMask;
+        if(pRPL1->getDeltaPocMSBPresentFlag(i))
+        {
+          ltrpPoc += getPOC() - pRPL1->getDeltaPocMSBCycleLT(i) * (pocMask + 1) - (getPOC() & pocMask);
+        }
+        CHECK( xGetLongTermRefPic( rcListPic, ltrpPoc, pRPL1->getDeltaPocMSBPresentFlag( i ), m_pcPic->layerId )->getPOC() < pocCRA, "Invalid state" );
       }
     }
   }
@@ -1120,8 +1177,17 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
       else
       {
         int pocCycle = 1 << (pcPic->cs->sps->getBitsForPOC());
-        int curPoc = pcPic->poc & (pocCycle - 1);
-        if (pcPic->longTerm && curPoc == pRPL0->getRefPicIdentifier(i))
+        int curPoc = pcPic->poc;
+        int refPoc = pRPL0->getRefPicIdentifier(i) & (pocCycle - 1);
+        if(pRPL0->getDeltaPocMSBPresentFlag(i))
+        {
+          refPoc += getPOC() - pRPL0->getDeltaPocMSBCycleLT(i) * pocCycle - (getPOC() & (pocCycle - 1));
+        }
+        else
+        {
+          curPoc = curPoc & (pocCycle - 1);
+        }
+        if (pcPic->longTerm && curPoc == refPoc)
         {
           isReference = 1;
           pcPic->longTerm = true;
@@ -1156,8 +1222,17 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
       else
       {
         int pocCycle = 1 << (pcPic->cs->sps->getBitsForPOC());
-        int curPoc = pcPic->poc & (pocCycle - 1);
-        if (pcPic->longTerm && curPoc == pRPL1->getRefPicIdentifier(i))
+        int curPoc = pcPic->poc;
+        int refPoc = pRPL1->getRefPicIdentifier(i) & (pocCycle - 1);
+        if(pRPL1->getDeltaPocMSBPresentFlag(i))
+        {
+          refPoc += getPOC() - pRPL1->getDeltaPocMSBCycleLT(i) * pocCycle - (getPOC() & (pocCycle - 1));
+        }
+        else
+        {
+          curPoc = curPoc & (pocCycle - 1);
+        }
+        if (pcPic->longTerm && curPoc == refPoc)
         {
           isReference = 1;
           pcPic->longTerm = true;
@@ -1206,8 +1281,16 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
     {
       rpcPic = *(iterPic++);
       int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
-      int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+      int curPoc = rpcPic->getPOC();
       int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+      if(pRPL->getDeltaPocMSBPresentFlag(ii))
+      {
+        refPoc += getPOC() - pRPL->getDeltaPocMSBCycleLT(ii) * pocCycle - (getPOC() & (pocCycle - 1));
+      }
+      else
+      {
+        curPoc = curPoc & (pocCycle - 1);
+      }
       if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
       {
         isAvailable = 1;
@@ -1222,8 +1305,16 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
       {
         rpcPic = *(iterPic++);
         int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
-        int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+        int curPoc = rpcPic->getPOC();
         int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+        if(pRPL->getDeltaPocMSBPresentFlag(ii))
+        {
+          refPoc += getPOC() - pRPL->getDeltaPocMSBCycleLT(ii) * pocCycle - (getPOC() & (pocCycle - 1));
+        }
+        else
+        {
+          curPoc = curPoc & (pocCycle - 1);
+        }
         if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
         {
           isAvailable = 1;
@@ -1275,7 +1366,7 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
   return 0;
 }
 
-int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors, int *refPicIndex) const
+int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors, int *refPicIndex, int numActiveRefPics) const
 {
   Picture* rpcPic;
   int isAvailable = 0;
@@ -1284,7 +1375,7 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
 
   if (this->isIDRorBLA()) return 0; //Assume that all pic in the DPB will be flushed anyway so no need to check.
 
-  int numberOfPictures = pRPL->getNumberOfLongtermPictures() + pRPL->getNumberOfShorttermPictures() + pRPL->getNumberOfInterLayerPictures();
+  int numberOfPictures = numActiveRefPics;
   //Check long term ref pics
   for (int ii = 0; pRPL->getNumberOfLongtermPictures() > 0 && ii < numberOfPictures; ii++)
   {
@@ -1300,8 +1391,16 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
     {
       rpcPic = *(iterPic++);
       int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
-      int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+      int curPoc = rpcPic->getPOC();
       int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+      if(pRPL->getDeltaPocMSBPresentFlag(ii))
+      {
+        refPoc += getPOC() - pRPL->getDeltaPocMSBCycleLT(ii) * pocCycle - (getPOC() & (pocCycle - 1));
+      }
+      else
+      {
+        curPoc = curPoc & (pocCycle - 1);
+      }
       if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
       {
         isAvailable = 1;
@@ -1316,8 +1415,16 @@ int Slice::checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePi
       {
         rpcPic = *(iterPic++);
         int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
-        int curPoc = rpcPic->getPOC() & (pocCycle - 1);
+        int curPoc = rpcPic->getPOC();
         int refPoc = pRPL->getRefPicIdentifier(ii) & (pocCycle - 1);
+        if(pRPL->getDeltaPocMSBPresentFlag(ii))
+        {
+          refPoc += getPOC() - pRPL->getDeltaPocMSBCycleLT(ii) * pocCycle - (getPOC() & (pocCycle - 1));
+        }
+        else
+        {
+          curPoc = curPoc & (pocCycle - 1);
+        }
         if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
         {
           isAvailable = 1;
@@ -1669,6 +1776,10 @@ void VPS::deriveOutputLayerSets()
   std::vector<std::vector<int>> layerIncludedInOlsFlag( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, 0 ) );
   std::vector<std::vector<int>> dependencyFlag( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
   std::vector<std::vector<int>> refLayerIdx( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+#if JVET_Q0118_CLEANUPS
+  std::vector<int> layerUsedAsRefLayerFlag( m_uiMaxLayers, 0 );
+  std::vector<int> layerUsedAsOutputLayerFlag( m_uiMaxLayers, NOT_VALID );
+#endif
 
   for( int i = 0; i < m_uiMaxLayers; i++ )
   {
@@ -1685,6 +1796,12 @@ void VPS::deriveOutputLayerSets()
           dependencyFlag[i][j] = 1;
         }
       }
+#if JVET_Q0118_CLEANUPS
+      if (m_vpsDirectRefLayerFlag[i][j])
+      {
+        layerUsedAsRefLayerFlag[j] = 1;
+      }
+#endif
 
       if( dependencyFlag[i][j] )
       {
@@ -1697,6 +1814,20 @@ void VPS::deriveOutputLayerSets()
 
   m_numOutputLayersInOls[0] = 1;
   m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
+#if JVET_Q0118_CLEANUPS
+  layerUsedAsOutputLayerFlag[0] = 1;
+  for (int i = 1; i < m_uiMaxLayers; i++)
+  {
+    if (m_vpsEachLayerIsAnOlsFlag || m_vpsOlsModeIdc < 2)
+    {
+      layerUsedAsOutputLayerFlag[i] = 1;
+    }
+    else
+    {
+      layerUsedAsOutputLayerFlag[i] = 0;
+    }
+  }
+#endif
 
   for( int i = 1; i < m_totalNumOLSs; i++ )
   {
@@ -1722,6 +1853,9 @@ void VPS::deriveOutputLayerSets()
         if( m_vpsOlsOutputLayerFlag[i][k] )
         {
           layerIncludedInOlsFlag[i][k] = 1;
+#if JVET_Q0118_CLEANUPS
+          layerUsedAsOutputLayerFlag[k] = 1;
+#endif
           outputLayerIdx[i][j] = k;
           m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
         }
@@ -1738,6 +1872,12 @@ void VPS::deriveOutputLayerSets()
       }
     }
   }
+#if JVET_Q0118_CLEANUPS
+  for (int i = 0; i < m_uiMaxLayers; i++)
+  {
+    CHECK(layerUsedAsRefLayerFlag[i] == 0 && layerUsedAsOutputLayerFlag[i] == 0, "There shall be no layer that is neither an output layer nor a direct reference layer");
+  }
+#endif
 
   m_numLayersInOls[0] = 1;
   m_layerIdInOls[0][0] = m_vpsLayerId[0];
@@ -1816,7 +1956,12 @@ PicHeader::PicHeader()
 , m_subPicIdSignallingPresentFlag                 ( 0 )
 , m_subPicIdLen                                   ( 0 )
 #endif
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+, m_virtualBoundariesEnabledFlag                  ( 0 )
+, m_virtualBoundariesPresentFlag                  ( 0 )
+#else
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag ( 0 )
+#endif
 , m_numVerVirtualBoundaries                       ( 0 )
 , m_numHorVirtualBoundaries                       ( 0 )
 #if !JVET_Q0155_COLOUR_ID
@@ -1941,7 +2086,12 @@ void PicHeader::initPicHeader()
   m_subPicIdSignallingPresentFlag                 = 0;
   m_subPicIdLen                                   = 0;
 #endif
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  m_virtualBoundariesEnabledFlag                  = 0;
+  m_virtualBoundariesPresentFlag                  = 0;
+#else
   m_loopFilterAcrossVirtualBoundariesDisabledFlag = 0;
+#endif
   m_numVerVirtualBoundaries                       = 0;
   m_numHorVirtualBoundaries                       = 0;
 #if !JVET_Q0155_COLOUR_ID
@@ -2067,7 +2217,9 @@ SPSRExt::SPSRExt()
 
 SPS::SPS()
 : m_SPSId                     (  0)
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 , m_decodingParameterSetId    (  0 )
+#endif
 , m_VPSId                     ( 0 )
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
@@ -2136,6 +2288,10 @@ SPS::SPS()
 , m_BDPCMEnabled              (0)
 #endif
 , m_JointCbCrEnabledFlag      (false)
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+, m_entropyCodingSyncEnabledFlag(false)
+, m_entropyCodingSyncEntryPointPresentFlag(false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -2158,7 +2314,12 @@ SPS::SPS()
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+, m_virtualBoundariesEnabledFlag( 0 )
+, m_virtualBoundariesPresentFlag( 0 )
+#else
 , m_loopFilterAcrossVirtualBoundariesDisabledFlag(0)
+#endif
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
 , m_hrdParametersPresentFlag  (false)
@@ -2363,6 +2524,7 @@ SubPic::~SubPic()
 }
 #endif
 
+#if !REMOVE_PPS_REXT
 PPSRExt::PPSRExt()
 : m_crossComponentPredictionEnabledFlag(false)
 #if JVET_Q0441_SAO_MOD_12_BIT
@@ -2376,7 +2538,8 @@ PPSRExt::PPSRExt()
   }
 #endif
 }
-
+#endif
+  
 PPS::PPS()
 : m_PPSId                            (0)
 , m_SPSId                            (0)
@@ -2413,7 +2576,9 @@ PPS::PPS()
 #if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   , m_log2MaxTransformSkipBlockSize    (2)
 #endif
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
 , m_entropyCodingSyncEnabledFlag     (false)
+#endif
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
 , m_constantSliceHeaderParamsEnabledFlag (false)
 , m_PPSDepQuantEnabledIdc            (0)
@@ -2445,7 +2610,9 @@ PPS::PPS()
 #endif
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
+#if !REMOVE_PPS_REXT
 , m_ppsRangeExtension                ()
+#endif
 , pcv                                (NULL)
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
@@ -3463,223 +3630,6 @@ bool ScalingList::isLumaScalingList( int scalingListId) const
 }
 #endif
 
-ParameterSetManager::ParameterSetManager()
-: m_spsMap(MAX_NUM_SPS)
-, m_ppsMap(MAX_NUM_PPS)
-, m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
-, m_dpsMap(MAX_NUM_DPS)
-, m_vpsMap(MAX_NUM_VPS)
-, m_activeDPSId(-1)
-, m_activeSPSId(-1)
-, m_activeVPSId(-1)
-{
-}
-
-
-ParameterSetManager::~ParameterSetManager()
-{
-}
-
-//! activate a SPS from a active parameter sets SEI message
-//! \returns true, if activation is successful
-//bool ParameterSetManager::activateSPSWithSEI(int spsId)
-//{
-//  SPS *sps = m_spsMap.getPS(spsId);
-//  if (sps)
-//  {
-//    int vpsId = sps->getVPSId();
-//    VPS *vps = m_vpsMap.getPS(vpsId);
-//    if (vps)
-//    {
-//      m_activeVPS = *(vps);
-//      m_activeSPS = *(sps);
-//      return true;
-//    }
-//    else
-//    {
-//     msg( WARNING, "Warning: tried to activate SPS using an Active parameter sets SEI message. Referenced VPS does not exist.");
-//    }
-//  }
-//  else
-//  {
-//    msg( WARNING, "Warning: tried to activate non-existing SPS using an Active parameter sets SEI message.");
-//  }
-//  return false;
-//}
-
-//! activate a PPS and depending on isIDR parameter also SPS
-//! \returns true, if activation is successful
-bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
-{
-  PPS *pps = m_ppsMap.getPS(ppsId);
-  if (pps)
-  {
-    int spsId = pps->getSPSId();
-#if !ENABLING_MULTI_SPS
-    if (!isIRAP && (spsId != m_activeSPSId ))
-    {
-      msg( WARNING, "Warning: tried to activate PPS referring to a inactive SPS at non-IDR.");
-    }
-    else
-#endif
-    {
-      SPS *sps = m_spsMap.getPS(spsId);
-      if (sps)
-      {
-        int dpsId = sps->getDecodingParameterSetId();
-        if ((m_activeDPSId!=-1) && (dpsId != m_activeDPSId ))
-        {
-          msg( WARNING, "Warning: tried to activate DPS with different ID than the currently active DPS. This should not happen within the same bitstream!");
-        }
-        else
-        {
-          if (dpsId != 0)
-          {
-            DPS *dps =m_dpsMap.getPS(dpsId);
-            if (dps)
-            {
-              m_activeDPSId = dpsId;
-              m_dpsMap.setActive(dpsId);
-            }
-            else
-            {
-              msg( WARNING, "Warning: tried to activate PPS that refers to a non-existing DPS.");
-            }
-          }
-          else
-          {
-            // set zero as active DPS ID (special reserved value, no actual DPS)
-            m_activeDPSId = dpsId;
-            m_dpsMap.setActive(dpsId);
-          }
-        }
-
-        int vpsId = sps->getVPSId();
-        if(vpsId != 0)
-        {
-          VPS *vps = m_vpsMap.getPS(vpsId);
-          if(vps)
-          {
-            m_activeVPSId = vpsId;
-            m_vpsMap.setActive(vpsId);
-          }  
-          else
-          {
-            msg( WARNING, "Warning: tried to activate PPS that refers to non-existing VPS." );
-          }
-        }
-        else
-        {
-          m_vpsMap.clear();
-          m_vpsMap.allocatePS(0);
-          m_activeVPSId = 0;
-          m_vpsMap.setActive(0);
-        }
-
-        m_spsMap.clear();
-        m_spsMap.setActive(spsId);
-        m_activeSPSId = spsId;
-        m_ppsMap.clear();
-        m_ppsMap.setActive(ppsId);
-        return true;
-      }
-      else
-      {
-        msg( WARNING, "Warning: tried to activate a PPS that refers to a non-existing SPS.");
-      }
-    }
-  }
-  else
-  {
-    msg( WARNING, "Warning: tried to activate non-existing PPS.");
-  }
-
-  // Failed to activate if reach here.
-  m_activeSPSId=-1;
-  m_activeDPSId=-1;
-  return false;
-}
-
-bool ParameterSetManager::activateAPS(int apsId, int apsType)
-{
-  APS *aps = m_apsMap.getPS(apsId + (MAX_NUM_APS * apsType));
-  if (aps)
-  {
-    m_apsMap.setActive(apsId + (MAX_NUM_APS * apsType));
-    return true;
-  }
-  else
-  {
-    msg(WARNING, "Warning: tried to activate non-existing APS.");
-  }
-  return false;
-}
-
-template <>
-void ParameterSetMap<APS>::setID(APS* parameterSet, const int psId)
-{
-  parameterSet->setAPSId(psId);
-}
-template <>
-void ParameterSetMap<PPS>::setID(PPS* parameterSet, const int psId)
-{
-  parameterSet->setPPSId(psId);
-}
-
-template <>
-void ParameterSetMap<SPS>::setID(SPS* parameterSet, const int psId)
-{
-  parameterSet->setSPSId(psId);
-}
-
-template <>
-void ParameterSetMap<VPS>::setID(VPS* parameterSet, const int psId)
-{
-  parameterSet->setVPSId(psId);
-}
-
-ProfileTierLevel::ProfileTierLevel()
-  : m_tierFlag        (Level::MAIN)
-  , m_profileIdc      (Profile::NONE)
-  , m_numSubProfile(0)
-  , m_subProfileIdc(0)
-  , m_levelIdc        (Level::NONE)
-{
-  ::memset(m_subLayerLevelPresentFlag,   0, sizeof(m_subLayerLevelPresentFlag  ));
-  ::memset(m_subLayerLevelIdc, Level::NONE, sizeof(m_subLayerLevelIdc          ));
-}
-
-
-void calculateParameterSetChangedFlag(bool &bChanged, const std::vector<uint8_t> *pOldData, const std::vector<uint8_t> *pNewData)
-{
-  if (!bChanged)
-  {
-    if ((pOldData==0 && pNewData!=0) || (pOldData!=0 && pNewData==0))
-    {
-      bChanged=true;
-    }
-    else if (pOldData!=0 && pNewData!=0)
-    {
-      // compare the two
-      if (pOldData->size() != pNewData->size())
-      {
-        bChanged=true;
-      }
-      else
-      {
-        const uint8_t *pNewDataArray=&(*pNewData)[0];
-        const uint8_t *pOldDataArray=&(*pOldData)[0];
-        if (memcmp(pOldDataArray, pNewDataArray, pOldData->size()))
-        {
-          bChanged=true;
-        }
-      }
-    }
-  }
-}
-
-//! \}
-
 uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType ) const
 {
   return slice.isIntra() ? ( ISingleTree ? 0 : ( chType << 1 ) ) : 1;
@@ -3905,6 +3855,95 @@ bool Slice::checkRPR()
 
   return false;
 }
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2)
+{
+  if( op1.m_progressiveSourceFlag                        != op2.m_progressiveSourceFlag                          ) return false;
+  if( op1.m_interlacedSourceFlag                         != op2.m_interlacedSourceFlag                           ) return false;
+  if( op1.m_nonPackedConstraintFlag                      != op2.m_nonPackedConstraintFlag                        ) return false;
+  if( op1.m_frameOnlyConstraintFlag                      != op2.m_frameOnlyConstraintFlag                        ) return false;
+  if( op1.m_intraOnlyConstraintFlag                      != op2.m_intraOnlyConstraintFlag                        ) return false;
+  if( op1.m_maxBitDepthConstraintIdc                     != op2.m_maxBitDepthConstraintIdc                       ) return false;
+  if( op1.m_maxChromaFormatConstraintIdc                 != op2.m_maxChromaFormatConstraintIdc                   ) return false;
+  if( op1.m_onePictureOnlyConstraintFlag                 != op2.m_onePictureOnlyConstraintFlag                   ) return false;
+  if( op1.m_lowerBitRateConstraintFlag                   != op2.m_lowerBitRateConstraintFlag                     ) return false;
+  if( op1.m_noQtbttDualTreeIntraConstraintFlag           != op2.m_noQtbttDualTreeIntraConstraintFlag             ) return false;
+  if( op1.m_noPartitionConstraintsOverrideConstraintFlag != op2.m_noPartitionConstraintsOverrideConstraintFlag   ) return false;
+  if( op1.m_noSaoConstraintFlag                          != op2.m_noSaoConstraintFlag                            ) return false;
+  if( op1.m_noAlfConstraintFlag                          != op2.m_noAlfConstraintFlag                            ) return false;
+#if JVET_Q0795_CCALF                                                                              
+  if( op1.m_noCCAlfConstraintFlag                        != op2.m_noCCAlfConstraintFlag                          ) return false;
+#endif                                                                                         
+  if( op1.m_noRefWraparoundConstraintFlag                != op2.m_noRefWraparoundConstraintFlag                  ) return false;
+  if( op1.m_noTemporalMvpConstraintFlag                  != op2.m_noTemporalMvpConstraintFlag                    ) return false;
+  if( op1.m_noSbtmvpConstraintFlag                       != op2.m_noSbtmvpConstraintFlag                         ) return false;
+  if( op1.m_noAmvrConstraintFlag                         != op2.m_noAmvrConstraintFlag                           ) return false;
+  if( op1.m_noBdofConstraintFlag                         != op2.m_noBdofConstraintFlag                           ) return false;
+  if( op1.m_noDmvrConstraintFlag                         != op2.m_noDmvrConstraintFlag                           ) return false;
+  if( op1.m_noCclmConstraintFlag                         != op2.m_noCclmConstraintFlag                           ) return false;
+  if( op1.m_noMtsConstraintFlag                          != op2.m_noMtsConstraintFlag                            ) return false;
+  if( op1.m_noSbtConstraintFlag                          != op2.m_noSbtConstraintFlag                            ) return false;
+  if( op1.m_noAffineMotionConstraintFlag                 != op2.m_noAffineMotionConstraintFlag                   ) return false;
+  if( op1.m_noBcwConstraintFlag                          != op2.m_noBcwConstraintFlag                            ) return false;
+  if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
+  if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
+  if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
+#if !JVET_Q0806
+  if( op1.m_noTriangleConstraintFlag                     != op2.m_noTriangleConstraintFlag                       ) return false;
+#endif
+  if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
+  if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
+  if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;
+  if( op1.m_noJointCbCrConstraintFlag                    != op2.m_noJointCbCrConstraintFlag                      ) return false;
+  if( op1.m_noQpDeltaConstraintFlag                      != op2.m_noQpDeltaConstraintFlag                        ) return false;
+  if( op1.m_noDepQuantConstraintFlag                     != op2.m_noDepQuantConstraintFlag                       ) return false;
+  if( op1.m_noSignDataHidingConstraintFlag               != op2.m_noSignDataHidingConstraintFlag                 ) return false;
+  if( op1.m_noTrailConstraintFlag                        != op2.m_noTrailConstraintFlag                          ) return false;
+  if( op1.m_noStsaConstraintFlag                         != op2.m_noStsaConstraintFlag                           ) return false;
+  if( op1.m_noRaslConstraintFlag                         != op2.m_noRaslConstraintFlag                           ) return false;
+  if( op1.m_noRadlConstraintFlag                         != op2.m_noRadlConstraintFlag                           ) return false;
+  if( op1.m_noIdrConstraintFlag                          != op2.m_noIdrConstraintFlag                            ) return false;
+  if( op1.m_noCraConstraintFlag                          != op2.m_noCraConstraintFlag                            ) return false;
+  if( op1.m_noGdrConstraintFlag                          != op2.m_noGdrConstraintFlag                            ) return false;
+  if( op1.m_noApsConstraintFlag                          != op2.m_noApsConstraintFlag                            ) return false;
+  return true;
+}
+bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2)
+{
+  return !(op1 == op2);
+}
+
+bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2)
+{
+  if (op1.m_tierFlag        != op2.m_tierFlag) return false;
+  if (op1.m_profileIdc      != op2.m_profileIdc) return false;
+  if (op1.m_numSubProfile   != op2.m_numSubProfile) return false;
+  if (op1.m_levelIdc        != op2.m_levelIdc) return false;
+  if (op1.m_constraintInfo  != op2.m_constraintInfo) return false;
+  if (op1.m_subProfileIdc   != op2.m_subProfileIdc) return false;
+
+  for (int i = 0; i < MAX_TLAYER - 1; i++)
+  {
+    if (op1.m_subLayerLevelPresentFlag[i] != op2.m_subLayerLevelPresentFlag[i])
+    {
+      return false;
+    }
+  }
+  for (int i = 0; i < MAX_TLAYER; i++)
+  {
+    if (op1.m_subLayerLevelIdc[i] != op2.m_subLayerLevelIdc[i])
+    {
+      return false;
+    }
+  }
+  return true;
+}
+bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2)
+{
+  return !(op1 == op2);
+}
+#endif
 
 #if ENABLE_TRACING
 void xTraceVPSHeader()

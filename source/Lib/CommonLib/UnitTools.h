@@ -195,8 +195,9 @@ namespace TU
   bool getCbfAtDepth                  (const TransformUnit &tu, const ComponentID &compID, const unsigned &depth);
   void setCbfAtDepth                  (      TransformUnit &tu, const ComponentID &compID, const unsigned &depth, const bool &cbf);
   bool isTSAllowed                    (const TransformUnit &tu, const ComponentID  compID);
+#if !REMOVE_PPS_REXT
   bool hasCrossCompPredInfo           (const TransformUnit &tu, const ComponentID &compID);
-
+#endif
 
   bool needsSqrt2Scale                ( const TransformUnit &tu, const ComponentID &compID );
   bool needsBlockSizeTrafoScale       ( const TransformUnit &tu, const ComponentID &compID );

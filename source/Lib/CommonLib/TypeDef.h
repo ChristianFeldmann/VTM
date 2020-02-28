@@ -50,15 +50,39 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
+
+#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
+
+#define JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG           1 // JVET-Q0246: virtual boundary enable flag in the SPS.
+
+#define JVET_Q0244                                        1 // JVET-Q0244 Aspect 3: Signal the slice width(height) in tiles when the number of tile columns(rows) is greater than 1.
+
+#define JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT               1 // JVET-Q0355: max level signaled in the DCI shall not be less than the level signaled in the SPS
+
+#define JVET_P0115_LAYER_TID_CONSTRAINT                   1 // JVET-P0115: bitstream shall not contain any other layers than included in the OLS with OlsIdx and shall not include any NAL unit with TemporalId greater than HighestTid
+
+#define JVET_Q0359_TILE_SIZE_CONSTRAINT                   1 // JVET-Q0359: sum of the explicit signaled tile size shall less than or equal to pic size
+
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
+
+#define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
 
 #define JVET_P0117_PTL_SCALABILITY                        1 // JVET-P0117: sps_ptl_dpb_hrd_params_present_flag related syntax change, others in JVET-Q0786
 
+#define JVET_Q0118_CLEANUPS                               1 // JVET-Q0118: AHG8/AHG9: Scalability HLS cleanups
+
 #define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract £¨CtbSizeY / MinCbSizeY + 2£© from wraparound offset before signaling
 
+#define JVET_P0125_EOS_LAYER_SPECIFIC                     1 // JVET-P0125: Specify EOS NAL units to be layer specific
+
 #define JVET_Q0482_REMOVE_CONSTANT_PARAMS                 1 // JVET-Q0482: Remove constant slice header parameter settings in PPS
+
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+#define JVET_Q0259_COLLOCATED_PIC_IN_PH                   1 // JVET-Q0259 aspect 5: Include collocated pic in PH when TMVP enabled and rpl_info_in_ph_flag is 1
+#endif
 
 #define JVET_Q0505_CHROAM_QM_SIGNALING_400                1  //JVET-Q0505: Cleanup of chroma quantization matrix signaling for 400 color format
 
@@ -67,6 +91,8 @@
 #define JVET_P0116_POC_MSB                                1 // JVET-P0116: use POC MSB cycle signalling for independent layers,to support of mixed IRAP and non-IRAP pictures within an AU
 
 #define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
+
+#define JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS              1 // JVET-Q0260: Conformance cropping window in the SPS that applies to the max picture size
 
 #define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).
 
@@ -141,6 +167,8 @@
 #define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
 #define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
 #define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
+#define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
+
 
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 
@@ -175,7 +203,12 @@
 
 #define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
+#define JVET_Q0151_Q0205_ENTRYPOINTS                      1 // JVET-Q0151 & JVET-Q0205: Make mandatory the tile offsets signalling and move the entropy_coding_sync_enabled_flag entry_point_offsets_present_flag syntax elements to the SPS from the PPS
+
+#define JVET_Q0203_MULTI_SLICE_IN_TILE                    1 // JVET-Q0203: Signalling of multiple rectangular slices within a tile
+
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
+
 #if JVET_O1143_SUBPIC_BOUNDARY
 #define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
 #define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
@@ -221,7 +254,7 @@
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
-#define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
+#define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
@@ -233,6 +266,7 @@ typedef std::pair<int, int>  TrCost;
 #endif
 // clang-format on
 
+#define JVET_P0190_SCALABLE_NESTING_SEI                   1 // JVET-P0190 scalable nesting sei message
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
@@ -958,7 +992,11 @@ enum NalUnitType
   NAL_UNIT_RESERVED_IRAP_VCL_11,
   NAL_UNIT_RESERVED_IRAP_VCL_12,
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  NAL_UNIT_DCI,                     // 13
+#else
   NAL_UNIT_DPS,                     // 13
+#endif
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16

@@ -427,7 +427,17 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
   READ_UVLC( uiCode, "pic_width_in_luma_samples" );          pcPPS->setPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_in_luma_samples" );         pcPPS->setPicHeightInLumaSamples( uiCode );
-
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  READ_FLAG(uiCode, "pps_conformance_window_flag");
+  if (uiCode != 0)
+  {
+    Window& conf = pcPPS->getConformanceWindow();
+    READ_UVLC(uiCode, "pps_conf_win_left_offset");               conf.setWindowLeftOffset(uiCode);
+    READ_UVLC(uiCode, "pps_conf_win_right_offset");              conf.setWindowRightOffset(uiCode);
+    READ_UVLC(uiCode, "pps_conf_win_top_offset");                conf.setWindowTopOffset(uiCode);
+    READ_UVLC(uiCode, "pps_conf_win_bottom_offset");             conf.setWindowBottomOffset(uiCode);
+  }
+#else
   READ_FLAG( uiCode, "conformance_window_flag" );
   if( uiCode != 0 )
   {
@@ -437,7 +447,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_UVLC( uiCode, "conf_win_top_offset" );                conf.setWindowTopOffset( uiCode );
     READ_UVLC( uiCode, "conf_win_bottom_offset" );             conf.setWindowBottomOffset( uiCode );
   }
-
+#endif
   READ_FLAG( uiCode, "scaling_window_flag" );
   if( uiCode != 0 )
   {
@@ -500,10 +510,16 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     for( colIdx = 0; colIdx < pcPPS->getNumExpTileColumns(); colIdx++ )
     {
       READ_UVLC( uiCode, "tile_column_width_minus1[i]" );             pcPPS->addTileColumnWidth( uiCode + 1 );
+#if JVET_Q0359_TILE_SIZE_CONSTRAINT
+      CHECK(uiCode  > (pcPPS->getPicWidthInCtu()-1),                 "The value of tile_column_width_minus1[i] shall be in the range of 0 to PicWidthInCtbY-1, inclusive");
+#endif
     }
     for( rowIdx = 0; rowIdx < pcPPS->getNumExpTileRows(); rowIdx++ )
     {
       READ_UVLC( uiCode, "tile_row_height_minus1[i]" );               pcPPS->addTileRowHeight( uiCode + 1 );
+#if JVET_Q0359_TILE_SIZE_CONSTRAINT
+      CHECK(uiCode > (pcPPS->getPicHeightInCtu() - 1),                "The value of tile_row_height_minus shall be in the range of 0 to PicHeightInCtbY-1, inclusive");
+#endif
     }
     pcPPS->initTiles();
      
@@ -529,11 +545,29 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         pcPPS->setSliceTileIdx( i, tileIdx );
 
         // complete tiles within a single slice
+#if JVET_Q0244  
+        uiCode = 0;
+        if( pcPPS->getNumTileColumns() > 1 )
+        {
+          READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );
+        }
+        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+#else
         READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+#endif
 #if JVET_Q0480_RASTER_RECT_SLICES
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (tileIdx % pcPPS->getNumTileColumns()) == 0 ) )
         {
+#if JVET_Q0244
+          uiCode = 0;
+          if( pcPPS->getNumTileRows() > 1 )
+          {
+            READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );
+          }
+          pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+#else
           READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );     pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+#endif
         }
         else 
         {
@@ -544,6 +578,61 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #endif
 
         // multiple slices within a single tile special case
+#if JVET_Q0203_MULTI_SLICE_IN_TILE
+        if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()) > 1 )
+        {
+          READ_UVLC(uiCode, "num_exp_slices_in_tile[i]");
+          uint32_t numExpSliceInTile = uiCode;
+          uint32_t numSliceInTile    = 0;
+          uint32_t remTileRowHeight  = pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns());
+          for( int j = 0; j < numExpSliceInTile - 1; j++ )
+          {
+            READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+            pcPPS->setSliceHeightInCtu(i, uiCode + 1);
+            remTileRowHeight -= (uiCode + 1);
+            i++;
+            pcPPS->setSliceWidthInTiles(i, 1);
+            pcPPS->setSliceHeightInTiles(i, 1);
+            pcPPS->setSliceTileIdx(i, tileIdx);
+            numSliceInTile++;
+          }
+          READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+          pcPPS->setSliceHeightInCtu(i, uiCode + 1);
+          remTileRowHeight -= (uiCode + 1);
+          i++;
+          pcPPS->setSliceWidthInTiles(i, 1);
+          pcPPS->setSliceHeightInTiles(i, 1);
+          pcPPS->setSliceTileIdx(i, tileIdx);
+          numSliceInTile++;
+          uint32_t uniformSliceHeight = pcPPS->getSliceHeightInCtu(i - 1);
+
+          CHECK(remTileRowHeight < 0, "The height of the last slice in a tile cannot be less than 0");
+          if( remTileRowHeight == 0 )
+          {
+            i--;
+          }
+
+          while( remTileRowHeight > uniformSliceHeight )
+          {
+            pcPPS->setSliceHeightInCtu(i, uniformSliceHeight);
+            remTileRowHeight -= uniformSliceHeight;
+            i++;
+            pcPPS->setSliceWidthInTiles(i, 1);
+            pcPPS->setSliceHeightInTiles(i, 1);
+            pcPPS->setSliceTileIdx(i, tileIdx);
+            numSliceInTile++;
+          }
+          if( remTileRowHeight > 0 )
+          {
+            pcPPS->setSliceHeightInCtu(i, remTileRowHeight);
+            numSliceInTile++;
+          }
+          for( int j = 0; j < numSliceInTile; j++ )
+          {
+            pcPPS->setNumSlicesInTile(i - 1 - j, numSliceInTile);
+          }
+        }
+#else
         if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
         {
           READ_UVLC( uiCode, "num_slices_in_tile_minus1[i]" );        pcPPS->setNumSlicesInTile( i, uiCode + 1 );
@@ -558,6 +647,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
             pcPPS->setSliceTileIdx      ( i, tileIdx );
           }
         }
+#endif
 
         // tile index offset to start of next slice
         if( i < pcPPS->getNumSlicesInPic()-1 )
@@ -590,7 +680,9 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
 
+#if !JVET_Q0151_Q0205_ENTRYPOINTS
   READ_FLAG(uiCode, "entropy_coding_sync_enabled_flag");       pcPPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
+#endif
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
   READ_UVLC(uiCode, "num_ref_idx_l0_default_active_minus1");
@@ -648,7 +740,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG( uiCode, "pps_slice_chroma_qp_offsets_present_flag" );
   pcPPS->setSliceChromaQpFlag( uiCode ? true : false );
 
-  READ_FLAG( uiCode, "pps_cu_chroma_qp_offset_enabled_flag");
+  READ_FLAG( uiCode, "pps_cu_chroma_qp_offset_list_enabled_flag");
   if (uiCode == 0)
   {
     pcPPS->clearChromaQpOffsetList();
@@ -802,6 +894,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG( uiCode, "pps_extension_present_flag");
   if (uiCode)
   {
+#if !REMOVE_PPS_REXT
 #if ENABLE_TRACING || RExt__DECODER_DEBUG_BIT_STATISTICS
     static const char *syntaxStrings[]={ "pps_range_extension_flag",
       "pps_multilayer_extension_flag",
@@ -850,11 +943,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     }
     if (bSkipTrailingExtensionBits)
     {
+#endif
       while ( xMoreRbspData() )
       {
         READ_FLAG( uiCode, "pps_extension_data_flag");
       }
+#if !REMOVE_PPS_REXT
     }
+#endif
   }
   xReadRbspTrailingBits();
 }
@@ -1260,11 +1356,11 @@ void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFla
   uint32_t code;
   for (int i = (subLayerInfoFlag ? 0 : maxSubLayersMinus1); i <= maxSubLayersMinus1; i++)
   {
-    READ_UVLC(code, "sps_max_dec_pic_buffering_minus1[i]");
+    READ_UVLC(code, "max_dec_pic_buffering_minus1[i]");
     pcSPS->setMaxDecPicBuffering(code + 1, i);
-    READ_UVLC(code, "sps_max_num_reorder_pics[i]");
+    READ_UVLC(code, "max_num_reorder_pics[i]");
     pcSPS->setNumReorderPics(code, i);
-    READ_UVLC(code, "sps_max_latency_increase_plus1[i]");
+    READ_UVLC(code, "max_latency_increase_plus1[i]");
     pcSPS->setMaxLatencyIncreasePlus1(code, i);
   }
 }
@@ -1309,7 +1405,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  READ_CODE(4, uiCode, "sps_seq_parameter_set_id");              pcSPS->setSPSId(uiCode);
+#else
   READ_CODE( 4,  uiCode, "sps_decoding_parameter_set_id");       pcSPS->setDecodingParameterSetId( uiCode );
+#endif
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id" );      pcSPS->setVPSId( uiCode );
   READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
@@ -1339,9 +1440,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_FLAG(uiCode, "gdr_enabled_flag");
   pcSPS->setGDREnabledFlag(uiCode);
-
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
   READ_CODE(4, uiCode, "sps_seq_parameter_set_id");              pcSPS->setSPSId(uiCode);
-
+#endif
   READ_CODE(2, uiCode, "chroma_format_idc");                     pcSPS->setChromaFormatIdc( ChromaFormat(uiCode) );
 
   if( pcSPS->getChromaFormatIdc() == CHROMA_444 )
@@ -1365,7 +1466,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 
   READ_UVLC( uiCode, "pic_width_max_in_luma_samples" );          pcSPS->setMaxPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_max_in_luma_samples" );         pcSPS->setMaxPicHeightInLumaSamples( uiCode );
-
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  READ_FLAG(uiCode, "sps_conformance_window_flag");
+  if (uiCode != 0)
+  {
+    Window& conf = pcSPS->getConformanceWindow();
+    READ_UVLC(uiCode, "sps_conf_win_left_offset");               conf.setWindowLeftOffset(uiCode);
+    READ_UVLC(uiCode, "sps_conf_win_right_offset");              conf.setWindowRightOffset(uiCode);
+    READ_UVLC(uiCode, "sps_conf_win_top_offset");                conf.setWindowTopOffset(uiCode);
+    READ_UVLC(uiCode, "sps_conf_win_bottom_offset");             conf.setWindowBottomOffset(uiCode);
+  }
+#endif
 #if JVET_Q0265
   const uint32_t chromaArrayType = (int) pcSPS->getSeparateColourPlaneFlag() ? 0 : pcSPS->getChromaFormatIdc();
 #endif
@@ -1567,6 +1678,15 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
   pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
 #endif
+
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  READ_FLAG( uiCode, "sps_entropy_coding_sync_enabled_flag" );       pcSPS->setEntropyCodingSyncEnabledFlag(uiCode == 1);
+  if (pcSPS->getEntropyCodingSyncEnabledFlag()) 
+  {
+    READ_FLAG(uiCode, "sps_wpp_entry_point_offsets_present_flag");   pcSPS->setEntropyCodingSyncEntryPointsPresentFlag(uiCode == 1);
+  }
+#endif
+
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
@@ -2013,16 +2133,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
 #endif
 
-  // KJS: reference picture sets to be replaced
+  READ_FLAG( uiCode, "sps_scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
 
-  // KJS: not found in draft -> does not exist
-
-  // KJS: remove scaling lists?
-  READ_FLAG( uiCode, "scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
-
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  READ_FLAG( uiCode, "sps_virtual_boundaries_enabled_flag" ); pcSPS->setVirtualBoundariesEnabledFlag( uiCode != 0 );
+  if( pcSPS->getVirtualBoundariesEnabledFlag() )
+  {
+    READ_FLAG( uiCode, "sps_loop_filter_across_virtual_boundaries_present_flag" ); pcSPS->setVirtualBoundariesPresentFlag( uiCode != 0 );
+    if( pcSPS->getVirtualBoundariesPresentFlag() )
+    {
+#else
   READ_FLAG( uiCode, "sps_loop_filter_across_virtual_boundaries_disabled_present_flag" ); pcSPS->setLoopFilterAcrossVirtualBoundariesDisabledFlag( uiCode != 0 );
   if( pcSPS->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
+#endif
     READ_CODE( 2, uiCode, "sps_num_ver_virtual_boundaries");        pcSPS->setNumVerVirtualBoundaries( uiCode );
     for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
     {
@@ -2039,6 +2163,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setNumVerVirtualBoundaries( 0 );
     pcSPS->setNumHorVirtualBoundaries( 0 );
   }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  }
+#endif
 
 #if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
@@ -2138,6 +2265,44 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   xReadRbspTrailingBits();
 }
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void HLSyntaxReader::parseDCI(DCI* dci)
+{
+#if ENABLE_TRACING
+  xTraceDPSHeader();
+#endif
+  uint32_t  symbol;
+
+  READ_CODE(3, symbol, "dci_max_sub_layers_minus1");          dci->setMaxSubLayersMinus1(symbol);
+  READ_CODE(1, symbol, "dci_reserved_zero_bit");              CHECK(symbol != 0, "dci_reserved_zero_bit must be equal to zero");
+
+  uint32_t numPTLs;
+  READ_CODE(4, numPTLs, "dci_num_ptls_minus1");
+  numPTLs += 1;
+
+  std::vector<ProfileTierLevel> ptls;
+  ptls.resize(numPTLs);
+  for (int i = 0; i < numPTLs; i++)
+  {
+#if JVET_Q0786_PTL_only
+    parseProfileTierLevel(&ptls[i], true, 0);
+#else
+    parseProfileTierLevel(&ptls[i], 0);
+#endif
+  }
+  dci->setProfileTierLevel(ptls);
+
+  READ_FLAG(symbol, "dci_extension_flag");
+  if (symbol)
+  {
+    while (xMoreRbspData())
+    {
+      READ_FLAG(symbol, "dci_extension_data_flag");
+    }
+  }
+  xReadRbspTrailingBits();
+}
+#else
 void HLSyntaxReader::parseDPS(DPS* dps)
 {
 #if ENABLE_TRACING
@@ -2178,6 +2343,7 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   }
   xReadRbspTrailingBits();
 }
+#endif
 
 void HLSyntaxReader::parseVPS(VPS* pcVPS)
 {
@@ -2711,11 +2877,20 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 
   // virtual boundaries
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
+  {
+    READ_FLAG( uiCode, "ph_loop_filter_across_virtual_boundaries_present_flag" );
+    picHeader->setVirtualBoundariesPresentFlag( uiCode != 0 );
+    if( picHeader->getVirtualBoundariesPresentFlag() )
+    {
+#else
   if( !sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
   {
     READ_FLAG( uiCode, "ph_loop_filter_across_virtual_boundaries_disabled_present_flag" ); picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( uiCode != 0 );
     if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
     {
+#endif
       READ_CODE( 2, uiCode, "ph_num_ver_virtual_boundaries");        picHeader->setNumVerVirtualBoundaries( uiCode );
       for( unsigned i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
       {
@@ -2735,7 +2910,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
   else
   {
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+    picHeader->setVirtualBoundariesPresentFlag( sps->getVirtualBoundariesPresentFlag() );
+    if( picHeader->getVirtualBoundariesEnabledFlag() )
+    {
+#else
     picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );
+#endif
     picHeader->setNumVerVirtualBoundaries( sps->getNumVerVirtualBoundaries() );
     picHeader->setNumHorVirtualBoundaries( sps->getNumHorVirtualBoundaries() );
     for( unsigned i = 0; i < 3; i++ ) 
@@ -2743,6 +2924,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setVirtualBoundariesPosX( sps->getVirtualBoundariesPosX(i), i );
       picHeader->setVirtualBoundariesPosY( sps->getVirtualBoundariesPosY(i), i );
     }
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+    }
+#endif
   }
   
 #if !JVET_Q0155_COLOUR_ID
@@ -2867,7 +3051,19 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
             if (uiCode)
             {
               READ_UVLC(uiCode, "pic_delta_poc_msb_cycle_lt[i][j]");
+              if(i != 0)
+              {
+                uiCode += picHeader->getLocalRPL( listIdx )->getDeltaPocMSBCycleLT(i-1);
+              }
               picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+            else if(i != 0)
+            {
+              picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i, picHeader->getLocalRPL( listIdx )->getDeltaPocMSBCycleLT(i-1));
+            }
+            else
+            {
+              picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i,0);
             }
           }
         }
@@ -2990,7 +3186,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setCuQpDeltaSubdivInter( 0 );
 #endif
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       READ_UVLC( uiCode, "pic_cu_chroma_qp_offset_subdiv_intra_slice" );   picHeader->setCuChromaQpOffsetSubdivIntra( uiCode );
 #if !JVET_Q0819_PH_CHANGES
@@ -3035,7 +3231,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       picHeader->setCuQpDeltaSubdivInter(0);
     }
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       READ_UVLC(uiCode, "pic_cu_chroma_qp_offset_subdiv_inter_slice");   picHeader->setCuChromaQpOffsetSubdivInter(uiCode);
     }
@@ -3061,6 +3257,18 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       READ_CODE( 1, uiCode, "pic_collocated_from_l0_flag");
       picHeader->setPicColFromL0Flag(uiCode);
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+      if ((picHeader->getPicColFromL0Flag() == 1 && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
+        (picHeader->getPicColFromL0Flag() == 0 && picHeader->getRPL(1)->getNumRefEntries() > 1))
+      {
+        READ_UVLC(uiCode, "collocated_ref_idx");
+        picHeader->setColRefIdx(uiCode);
+      }
+      else
+      {
+        picHeader->setColRefIdx(0);
+      }
+#endif
     }
     else
     {
@@ -3826,6 +4034,12 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   {
 #endif
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);
+#if JVET_Q0118_CLEANUPS
+    if (pcSlice->isIRAP() && pcSlice->getVPS()->getIndependentLayerFlag(pcSlice->getVPS()->getGeneralLayerIdx(pcSlice->getNalUnitLayerId())) == 1)
+    {
+      CHECK(uiCode != 2, "When nal_unit_type is in the range of IDR_W_RADL to CRA_NUT, inclusive, and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1, slice_type shall be equal to 2");
+    }
+#endif
 #if JVET_Q0819_PH_CHANGES
   }
   else
@@ -4035,7 +4249,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             if (uiCode)
             {
               READ_UVLC(uiCode, "slice_delta_poc_msb_cycle_lt[i][j]");
+              if(i != 0)
+              {
+                uiCode += pcSlice->getLocalRPL0()->getDeltaPocMSBCycleLT(i-1);
+              }
               pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+            else if(i != 0)
+            {
+              pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, pcSlice->getLocalRPL0()->getDeltaPocMSBCycleLT(i-1));
+            }
+            else
+            {
+              pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i,0);
             }
           }
         }
@@ -4117,7 +4343,19 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             if (uiCode)
             {
               READ_UVLC(uiCode, "slice_delta_poc_msb_cycle_lt[i][j]");
+              if(i != 0)
+              {
+                uiCode += pcSlice->getLocalRPL1()->getDeltaPocMSBCycleLT(i-1);
+              }
               pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, uiCode);
+            }
+            else if(i != 0)
+            {
+              pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, pcSlice->getLocalRPL1()->getDeltaPocMSBCycleLT(i-1));
+            }
+            else
+            {
+              pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i,0);
             }
           }
         }
@@ -4251,6 +4489,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         pcSlice->setColFromL0Flag(picHeader->getPicColFromL0Flag());
       }
 #endif
+
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+      if (!pps->getRplInfoInPhFlag())
+      {
+#endif
       if ( pcSlice->getSliceType() != I_SLICE &&
            ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1)||
            (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
@@ -4262,6 +4505,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         pcSlice->setColRefIdx(0);
       }
+
+#if JVET_Q0259_COLLOCATED_PIC_IN_PH
+      }
+      else
+      {
+        pcSlice->setColRefIdx(picHeader->getColRefIdx());
+      }
+#endif
     }
     if ( (pps->getUseWP() && pcSlice->getSliceType()==P_SLICE) || (pps->getWPBiPred() && pcSlice->getSliceType()==B_SLICE) )
     {
@@ -4350,7 +4601,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
     }
 
-    if (pps->getCuChromaQpOffsetEnabledFlag())
+    if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
       READ_FLAG(uiCode, "cu_chroma_qp_offset_enabled_flag"); pcSlice->setUseChromaQpAdj(uiCode != 0);
     }
@@ -4558,7 +4809,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 
   std::vector<uint32_t> entryPointOffset;
 
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  pcSlice->resetNumberOfSubstream();
+  pcSlice->setNumSubstream(sps, pps);
+
+  pcSlice->setNumEntryPoints( sps, pps );
+#else
   pcSlice->setNumEntryPoints( pps );
+#endif
   if( pcSlice->getNumEntryPoints() > 0 )
   {
     uint32_t offsetLenMinus1;
@@ -5389,11 +5647,11 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
 #if JVET_Q0210_UEK_REMOVAL 
-      READ_UVLC( code, "alf coeff abs" );
+      READ_UVLC( code, isChroma ? "alf_chroma_coeff_abs" : "alf_luma_coeff_abs" );
       coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = code;
       if( coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] != 0 )
       {
-        READ_FLAG( code, "alf_coeff_sign" );
+        READ_FLAG( code, isChroma ? "alf_chroma_coeff_sign" : "alf_luma_coeff_sign" );
         coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = ( code ) ? -coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] : coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ];
        }
 #else
@@ -5419,7 +5677,7 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
 
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
-        READ_CODE(2, code, "alf_clipping_index");
+        READ_CODE(2, code, isChroma ? "alf_chroma_clip_idx" : "alf_luma_clip_idx");
         clipp[ind * MAX_NUM_ALF_LUMA_COEFF + i] = code;
       }
     }

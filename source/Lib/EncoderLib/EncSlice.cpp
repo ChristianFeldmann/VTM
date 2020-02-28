@@ -596,7 +596,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
   rpcSlice->setSliceChromaQpDelta( JOINT_CbCr,   0 );
 #endif
-  rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getCuChromaQpOffsetEnabledFlag() );
+  rpcSlice->setUseChromaQpAdj( rpcSlice->getPPS()->getCuChromaQpOffsetListEnabledFlag() );
   rpcSlice->setNumRefIdx(REF_PIC_LIST_0, m_pcCfg->getRPLEntry(0, iGOPid).m_numRefPicsActive);
   rpcSlice->setNumRefIdx(REF_PIC_LIST_1, m_pcCfg->getRPLEntry(1, iGOPid).m_numRefPicsActive);
 
@@ -1722,7 +1722,14 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 {
 
   Slice *const pcSlice               = pcPic->slices[getSliceSegmentIdx()];
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+  const bool wavefrontsEnabled         = pcSlice->getSPS()->getEntropyCodingSyncEnabledFlag();
+  const bool wavefrontsEntryPointsFlag = (wavefrontsEnabled) ? pcSlice->getSPS()->getEntropyCodingSyncEntryPointsPresentFlag() : false;
+  uint32_t substreamSize               = 0;
+  pcSlice->resetNumberOfSubstream();
+#else
   const bool wavefrontsEnabled       = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag();
+#endif
 
 
   // setup coding structure
@@ -1810,7 +1817,17 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       if (!isLastCTUsinSlice) //Byte alignment only when it is not the last substream in the slice
       {
         // write sub-stream size
+#if JVET_Q0151_Q0205_ENTRYPOINTS
+        substreamSize += (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations();
+        pcSlice->increaseNumberOfSubstream();
+        if( isLastCTUinTile || (isLastCTUinWPP && wavefrontsEntryPointsFlag) )
+        {
+          pcSlice->addSubstreamSize(substreamSize);
+          substreamSize = 0;
+        }
+#else
         pcSlice->addSubstreamSize((pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations());
+#endif
       }
       uiSubStrm++;
     }

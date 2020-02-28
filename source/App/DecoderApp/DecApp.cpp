@@ -122,7 +122,11 @@ uint32_t DecApp::decode()
   }
 
   // main decoder loop
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  bool loopFiltered[MAX_VPS_LAYERS] = { false };
+#else
   bool loopFiltered = false;
+#endif
 
   bool bPicSkipped = false;
 
@@ -169,6 +173,13 @@ uint32_t DecApp::decode()
         if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu))
 #endif
         {
+#if JVET_P0115_LAYER_TID_CONSTRAINT
+          CHECK(nalu.m_temporalId > m_iMaxTemporalLayer, "bitstream shall not include any NAL unit with TemporalId greater than HighestTid");
+          if (m_targetDecLayerIdSet.size())
+          {
+            CHECK(std::find(m_targetDecLayerIdSet.begin(), m_targetDecLayerIdSet.end(), nalu.m_nuhLayerId) == m_targetDecLayerIdSet.end(), "bitstream shall not contain any other layers than included in the OLS with OlsIdx");
+          }
+#endif
           if (bPicSkipped)
           {
             if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
@@ -207,25 +218,42 @@ uint32_t DecApp::decode()
       }
     }
 
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId) && !bPicSkipped)
+#else
     if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
+#endif
     {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      if (!loopFiltered[nalu.m_nuhLayerId] || bitstreamFile)
+#else
       if (!loopFiltered || bitstreamFile)
+#endif
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
       }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+#else
       loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+#endif
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
       {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+        m_cDecLib.setFirstSliceInSequence(true, nalu.m_nuhLayerId);
+#else
         m_cDecLib.setFirstSliceInSequence(true);
-#if SPS_ID_CHECK
-        std::memset( m_cDecLib.getFirstSliceInLayer(), true, sizeof( *m_cDecLib.getFirstSliceInLayer() ) * MAX_VPS_LAYERS );
 #endif
       }
 
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+              m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
+#else
               m_cDecLib.getFirstSliceInSequence () )
+#endif
     {
       m_cDecLib.setFirstSliceInPicture (true);
     }
@@ -286,9 +314,6 @@ uint32_t DecApp::decode()
       {
         xWriteOutput( pcListPic, nalu.m_temporalId );
         m_cDecLib.setFirstSliceInPicture (false);
-#if SPS_ID_CHECK
-        std::memset( m_cDecLib.getFirstSliceInLayer(), false, sizeof( *m_cDecLib.getFirstSliceInLayer() ) * MAX_VPS_LAYERS );
-#endif
       }
       // write reconstruction to file -- for additional bumping as defined in C.5.2.3
       if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)
@@ -299,6 +324,10 @@ uint32_t DecApp::decode()
     }
     if(bNewAccessUnit) 
     {
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+      m_cDecLib.checkTidLayerIdInAccessUnit();
+      m_cDecLib.resetAccessUnitSeiTids();
+#endif
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
 #if JVET_P0101_POC_MULTILAYER
@@ -539,7 +568,11 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
 
         // NUT that indicate the start of a new picture
         case NAL_UNIT_ACCESS_UNIT_DELIMITER:
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+        case NAL_UNIT_DCI:
+#else
         case NAL_UNIT_DPS:
+#endif
         case NAL_UNIT_VPS:
         case NAL_UNIT_SPS:
         case NAL_UNIT_PPS:
@@ -858,17 +891,6 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           const bool isTff = pcPicTop->topField;
 
           bool display = true;
-#if HEVC_SEI
-          if( m_decodedNoDisplaySEIEnabled )
-          {
-            SEIMessages noDisplay = getSeisByType( pcPic->SEIs, SEI::NO_DISPLAY );
-            const SEINoDisplay *nd = ( noDisplay.size() > 0 ) ? (SEINoDisplay*) *(noDisplay.begin()) : NULL;
-            if( (nd != NULL) && nd->m_noDisplay )
-            {
-              display = false;
-            }
-          }
-#endif
 
           if (display)
           {
@@ -948,12 +970,6 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
         writeLineToOutputLog(pcPic);
 #endif
 
-#if HEVC_SEI
-        if (m_seiMessageFileStream.is_open())
-        {
-          m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
-        }
-#endif
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 
@@ -1089,12 +1105,6 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
         }
 #if JVET_P2008_OUTPUT_LOG
         writeLineToOutputLog(pcPic);
-#endif
-#if HEVC_SEI
-        if (m_seiMessageFileStream.is_open())
-        {
-          m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
-        }
 #endif
 
         // update POC of display order

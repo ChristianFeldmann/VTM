@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
+
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
 #define JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG           1 // JVET-Q0246: virtual boundary enable flag in the SPS.

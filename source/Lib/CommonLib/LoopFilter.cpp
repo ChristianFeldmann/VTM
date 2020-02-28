@@ -738,6 +738,12 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 
   m_stLFCUParam.internalEdge = true;
 
+#if JVET_Q0371_DEBLOCKING_CLEANUP
+  m_stLFCUParam.leftEdge = (0 < pos.x) && isAvailableLeft(cu, *cu.cs->getCU(pos.offset(-1, 0), cu.chType), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
+    !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(*cu.cs->getCU(pos.offset(-1, 0), cu.chType)).getloopFilterAcrossEnabledFlag()));
+  m_stLFCUParam.topEdge = (0 < pos.y) && isAvailableAbove(cu, *cu.cs->getCU(pos.offset(0, -1), cu.chType), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
+    !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(*cu.cs->getCU(pos.offset(0, -1), cu.chType)).getloopFilterAcrossEnabledFlag()));
+#else
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
   m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() );
 #else
@@ -749,7 +755,7 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 #else
   m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag());  
 #endif
-
+#endif
 }
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos, const ChannelType chType ) const
@@ -1030,11 +1036,16 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
+#if JVET_Q0371_DEBLOCKING_CLEANUP
+        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
+          !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())))
+#else
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
         if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()))
 #else
         if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
-#endif        
+#endif     
+#endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
           continue;
@@ -1042,10 +1053,15 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_Q0371_DEBLOCKING_CLEANUP
+        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
+          !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())))
+#else
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
         if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()))
 #else
         if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
+#endif
 #endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
@@ -1306,18 +1322,28 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
+#if JVET_Q0371_DEBLOCKING_CLEANUP
+        CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
+          !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())), "Neighbour not available");
+#else
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
         CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()), "Neighbour not available");
 #else
         CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
 #endif
+#endif
       }
       else  // (iDir == EDGE_HOR)
       {
+#if JVET_Q0371_DEBLOCKING_CLEANUP
+        CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
+          !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())), "Neighbour not available");
+#else
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
         CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()), "Neighbour not available");
 #else
         CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
+#endif
 #endif
       }
 

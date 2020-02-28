@@ -539,11 +539,29 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         pcPPS->setSliceTileIdx( i, tileIdx );
 
         // complete tiles within a single slice
+#if JVET_Q0244  
+        uiCode = 0;
+        if( pcPPS->getNumTileColumns() > 1 )
+        {
+          READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );
+        }
+        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+#else
         READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
+#endif
 #if JVET_Q0480_RASTER_RECT_SLICES
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (tileIdx % pcPPS->getNumTileColumns()) == 0 ) )
         {
+#if JVET_Q0244
+          uiCode = 0;
+          if( pcPPS->getNumTileRows() > 1 )
+          {
+            READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );
+          }
+          pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+#else
           READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );     pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
+#endif
         }
         else 
         {

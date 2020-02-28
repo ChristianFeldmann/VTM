@@ -347,11 +347,25 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )
       {
         // complete tiles within a single slice
+#if JVET_Q0244  
+        if( pcPPS->getNumTileColumns() > 1 )
+        {
+#endif
         WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
+#if JVET_Q0244  
+        }
+#endif
 #if JVET_Q0480_RASTER_RECT_SLICES
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns()) == 0 ) )
         {
-          WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+#if JVET_Q0244
+          if( pcPPS->getNumTileRows() > 1 )
+          {
+#endif
+           WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+#if JVET_Q0244
+          }
+#endif
         }
 #else
         WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );

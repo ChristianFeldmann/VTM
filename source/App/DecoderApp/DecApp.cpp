@@ -250,7 +250,7 @@ uint32_t DecApp::decode()
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-              m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
+      m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
 #else
               m_cDecLib.getFirstSliceInSequence () )
 #endif

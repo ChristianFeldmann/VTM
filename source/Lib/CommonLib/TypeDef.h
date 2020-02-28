@@ -58,6 +58,8 @@
 
 #define JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT               1 // JVET-Q0355: max level signaled in the DCI shall not be less than the level signaled in the SPS
 
+#define JVET_P0115_LAYER_TID_CONSTRAINT                   1 // JVET-P0115: bitstream shall not contain any other layers than included in the OLS with OlsIdx and shall not include any NAL unit with TemporalId greater than HighestTid
+
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 
 #define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id

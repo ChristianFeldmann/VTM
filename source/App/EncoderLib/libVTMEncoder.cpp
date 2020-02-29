@@ -58,6 +58,7 @@ public:
   {
     try
     {
+      setDefault();
       setRandomAccessConfig();
     }
     catch (df::program_options_lite::ParseFailure &e)
@@ -80,6 +81,18 @@ public:
       return false;
     }
 
+    if (!parseCfg())
+    {
+      return false;
+    }
+
+    // check validity of input parameters
+    if( xCheckParameter() )
+    {
+      // return check failed
+      return false;
+    }
+
     vtm_settings = *settings;
 
     xInitLibCfg();
@@ -88,6 +101,7 @@ public:
     
     UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, m_iSourceHeight ) );
     origPic.create( unitArea );
+    origPic2.create( unitArea );
 
     return true;
   }
@@ -115,7 +129,7 @@ public:
   {
     const bool bEos = false;
     const InputColourSpaceConversion snrCSC = (!m_snrInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
-    m_cEncLib.encode( bEos, flushing ? 0 : &origPic, nullptr, snrCSC, recBufList, iNumEncoded );
+    m_cEncLib.encode( bEos, flushing ? 0 : &origPic, flushing ? 0 : &origPic2, snrCSC, recBufList, iNumEncoded );
   }
 
 protected:
@@ -123,6 +137,7 @@ protected:
 
   std::vector<AccessUnit> m_lOutputAUList;
   PelStorage origPic;
+  PelStorage origPic2;
   vtm_pic_t origVtmPic;
   std::list<PelUnitBuf*> recBufList;
   int iNumEncoded = { 0 };

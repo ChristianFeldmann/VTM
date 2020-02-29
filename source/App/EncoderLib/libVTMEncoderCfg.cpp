@@ -700,10 +700,8 @@ automaticallySelectRExtProfile(const bool bUsingGeneralRExtTools,
     \param  argv        array of arguments
     \retval             true when success
  */
-bool LibVTMEncoderCfg::parseCfg( )
+void LibVTMEncoderCfg::setDefault( )
 {
-  bool do_help = false;
-
   int tmpChromaFormat;
   int tmpInputChromaFormat;
   int tmpConstraintChromaFormat;
@@ -799,7 +797,6 @@ bool LibVTMEncoderCfg::parseCfg( )
 
   po::Options opts;
   opts.addOptions()
-  ("help",                                            do_help,                                          false, "this help text")
   ("c",    po::parseConfigFile, "configuration file name")
   ("WarnUnknowParameter,w",                           warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
   ("isSDR",                                           sdr,                                              false, "compatibility")
@@ -1464,7 +1461,142 @@ bool LibVTMEncoderCfg::parseCfg( )
 
   po::setDefaults(opts);
   po::ErrorReporter err;
-   
+
+  m_adIntraLambdaModifier = cfg_adIntraLambdaModifier.values;
+
+  CHECK( !( tmpWeightedPredictionMethod >= 0 && tmpWeightedPredictionMethod <= WP_PER_PICTURE_WITH_HISTOGRAM_AND_PER_COMPONENT_AND_CLIPPING_AND_EXTENSION ), "Error in cfg" );
+  m_weightedPredictionMethod = WeightedPredictionMethod(tmpWeightedPredictionMethod);
+
+  CHECK( tmpFastInterSearchMode<0 || tmpFastInterSearchMode>FASTINTERSEARCH_MODE3, "Error in cfg" );
+  m_fastInterSearchMode = FastInterSearchMode(tmpFastInterSearchMode);
+
+  CHECK( tmpMotionEstimationSearchMethod < 0 || tmpMotionEstimationSearchMethod >= MESEARCH_NUMBER_OF_METHODS, "Error in cfg" );
+  m_motionEstimationSearchMethod=MESearchMethod(tmpMotionEstimationSearchMethod);
+
+if (extendedProfile >= 1000 && extendedProfile <= 12316)
+  {
+    m_profile = Profile::MAINREXT;
+    if (m_bitDepthConstraint != 0 || tmpConstraintChromaFormat != 0)
+    {
+      EXIT( "Error: The bit depth and chroma format constraints are not used when an explicit RExt profile is specified");
+    }
+    m_bitDepthConstraint           = (extendedProfile%100);
+    m_intraConstraintFlag          = ((extendedProfile%10000)>=2000);
+    m_onePictureOnlyConstraintFlag = (extendedProfile >= 10000);
+    switch ((extendedProfile/100)%10)
+    {
+      case 0:  tmpConstraintChromaFormat=400; break;
+      case 1:  tmpConstraintChromaFormat=420; break;
+      case 2:  tmpConstraintChromaFormat=422; break;
+      default: tmpConstraintChromaFormat=444; break;
+    }
+  }
+  else
+  {
+    //m_profile = Profile::Name(extendedProfile);
+  }
+
+  if (m_profile == Profile::HIGHTHROUGHPUTREXT )
+  {
+    if (m_bitDepthConstraint == 0)
+    {
+      m_bitDepthConstraint = 16;
+    }
+    m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? CHROMA_444 : numberToChromaFormat(tmpConstraintChromaFormat);
+  }
+  else if (m_profile == Profile::MAINREXT)
+  {
+    if (m_bitDepthConstraint == 0 && tmpConstraintChromaFormat == 0)
+    {
+      // produce a valid combination, if possible.
+      const bool bUsingGeneralRExtTools  = m_transformSkipRotationEnabledFlag        ||
+                                           m_transformSkipContextEnabledFlag         ||
+                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT] ||
+                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT] ||
+                                           !m_enableIntraReferenceSmoothing          ||
+                                           m_persistentRiceAdaptationEnabledFlag     ||
+                                           m_log2MaxTransformSkipBlockSize!=2;
+      const bool bUsingChromaQPAdjustment= m_cuChromaQpOffsetSubdiv >= 0;
+      const bool bUsingExtendedPrecision = m_extendedPrecisionProcessingFlag;
+      if (m_onePictureOnlyConstraintFlag)
+      {
+        m_chromaFormatConstraint = CHROMA_444;
+        if (m_intraConstraintFlag != true)
+        {
+          EXIT( "Error: Intra constraint flag must be true when one_picture_only_constraint_flag is true");
+        }
+        const int maxBitDepth = m_chromaFormatIDC==CHROMA_400 ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
+        m_bitDepthConstraint = maxBitDepth>8 ? 16:8;
+      }
+      else
+      {
+        m_chromaFormatConstraint = NUM_CHROMA_FORMAT;
+        automaticallySelectRExtProfile(bUsingGeneralRExtTools,
+                                       bUsingChromaQPAdjustment,
+                                       bUsingExtendedPrecision,
+                                       m_intraConstraintFlag,
+                                       m_bitDepthConstraint,
+                                       m_chromaFormatConstraint,
+                                       m_chromaFormatIDC==CHROMA_400 ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]),
+                                       m_chromaFormatIDC);
+      }
+    }
+    else if (m_bitDepthConstraint == 0 || tmpConstraintChromaFormat == 0)
+    {
+      EXIT( "Error: The bit depth and chroma format constraints must either both be specified or both be configured automatically");
+    }
+    else
+    {
+      m_chromaFormatConstraint = numberToChromaFormat(tmpConstraintChromaFormat);
+    }
+  }
+  else
+  {
+    m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? m_chromaFormatIDC : numberToChromaFormat(tmpConstraintChromaFormat);
+    m_bitDepthConstraint     = ( ( m_profile == Profile::MAIN10 || m_profile == Profile::NEXT ) ? 10 : 8 );
+  }
+  m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
+
+  if (tmpDecodedPictureHashSEIMappedType<0 || tmpDecodedPictureHashSEIMappedType>=int(NUMBER_OF_HASHTYPES))
+  {
+    EXIT( "Error: bad checksum mode");
+  }
+
+  // Need to map values to match those of the SEI message:
+  if (tmpDecodedPictureHashSEIMappedType==0)
+  {
+    m_decodedPictureHashSEIType=HASHTYPE_NONE;
+  }
+  else
+  {
+    m_decodedPictureHashSEIType=HashType(tmpDecodedPictureHashSEIMappedType-1);
+  }
+
+  if (tmpSliceMode<0 || tmpSliceMode>=int(NUMBER_OF_SLICE_CONSTRAINT_MODES))
+  {
+    EXIT( "Error: bad slice mode");
+  }
+  m_sliceMode = SliceConstraint(tmpSliceMode);
+
+  #if SHARP_LUMA_DELTA_QP
+  CHECK( lumaLevelToDeltaQPMode >= LUMALVL_TO_DQP_NUM_MODES, "Error in cfg" );
+
+  m_lumaLevelToDeltaQPMapping.mode=LumaLevelToDQPMode(lumaLevelToDeltaQPMode);
+
+  if (m_lumaLevelToDeltaQPMapping.mode)
+  {
+    CHECK(  cfg_lumaLeveltoDQPMappingLuma.values.size() != cfg_lumaLeveltoDQPMappingQP.values.size(), "Error in cfg" );
+    m_lumaLevelToDeltaQPMapping.mapping.resize(cfg_lumaLeveltoDQPMappingLuma.values.size());
+    for(uint32_t i=0; i<cfg_lumaLeveltoDQPMappingLuma.values.size(); i++)
+    {
+      m_lumaLevelToDeltaQPMapping.mapping[i]=std::pair<int,int>(cfg_lumaLeveltoDQPMappingLuma.values[i], cfg_lumaLeveltoDQPMappingQP.values[i]);
+    }
+  }
+#endif
+}
+
+bool LibVTMEncoderCfg::parseCfg( )
+{
 #if JVET_O1164_RPR
   m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
   if( m_fractionOfFrames != 1.0 )
@@ -1560,15 +1692,6 @@ bool LibVTMEncoderCfg::parseCfg( )
     }
   }
 
-  if (err.is_errored)
-  {
-    if (!warnUnknowParameter)
-    {
-      /* error report has already been printed on stderr */
-      return false;
-    }
-  }
-
   g_verbosity = MsgLevel( m_verbosity );
 
 
@@ -1581,19 +1704,12 @@ bool LibVTMEncoderCfg::parseCfg( )
   m_ext360.setMaxCUInfo(m_uiCTUSize, 1 << MIN_CU_LOG2);
 #endif
 
-  if (!inputPathPrefix.empty() && inputPathPrefix.back() != '/' && inputPathPrefix.back() != '\\' )
-  {
-    inputPathPrefix += "/";
-  }
-  m_inputFileName   = inputPathPrefix + m_inputFileName;
-
   if( m_temporalSubsampleRatio < 1)
   {
     EXIT ( "Error: TemporalSubsampleRatio must be greater than 0" );
   }
 
   m_framesToBeEncoded = ( m_framesToBeEncoded + m_temporalSubsampleRatio - 1 ) / m_temporalSubsampleRatio;
-  m_adIntraLambdaModifier = cfg_adIntraLambdaModifier.values;
   if(m_isField)
   {
     //Frame height
@@ -1604,6 +1720,8 @@ bool LibVTMEncoderCfg::parseCfg( )
     m_framesToBeEncoded *= 2;
   }
 
+  SMultiValueInput<uint32_t> cfg_ColumnWidth (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+  SMultiValueInput<uint32_t> cfg_RowHeight   (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
     if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)
@@ -1651,7 +1769,8 @@ bool LibVTMEncoderCfg::parseCfg( )
   {
     m_tileRowHeight.clear();
   }
- #if JVET_O0044_MULTI_SUB_PROFILE
+#if JVET_O0044_MULTI_SUB_PROFILE
+  SMultiValueInput<uint8_t> cfg_SubProfile(0, std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::max());
   m_numSubProfile = (uint8_t) cfg_SubProfile.values.size();
   m_subProfile.resize(m_numSubProfile);
   for (uint8_t i = 0; i < m_numSubProfile; ++i)
@@ -1699,106 +1818,9 @@ bool LibVTMEncoderCfg::parseCfg( )
     m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
   }
 
-  m_InputChromaFormatIDC = numberToChromaFormat(tmpInputChromaFormat);
-  m_chromaFormatIDC      = ((tmpChromaFormat == 0) ? (m_InputChromaFormatIDC) : (numberToChromaFormat(tmpChromaFormat)));
 #if EXTENSION_360_VIDEO
   m_ext360.processOptions(ext360CfgContext);
 #endif
-
-  CHECK( !( tmpWeightedPredictionMethod >= 0 && tmpWeightedPredictionMethod <= WP_PER_PICTURE_WITH_HISTOGRAM_AND_PER_COMPONENT_AND_CLIPPING_AND_EXTENSION ), "Error in cfg" );
-  m_weightedPredictionMethod = WeightedPredictionMethod(tmpWeightedPredictionMethod);
-
-  CHECK( tmpFastInterSearchMode<0 || tmpFastInterSearchMode>FASTINTERSEARCH_MODE3, "Error in cfg" );
-  m_fastInterSearchMode = FastInterSearchMode(tmpFastInterSearchMode);
-
-  CHECK( tmpMotionEstimationSearchMethod < 0 || tmpMotionEstimationSearchMethod >= MESEARCH_NUMBER_OF_METHODS, "Error in cfg" );
-  m_motionEstimationSearchMethod=MESearchMethod(tmpMotionEstimationSearchMethod);
-
-  if (extendedProfile >= 1000 && extendedProfile <= 12316)
-  {
-    m_profile = Profile::MAINREXT;
-    if (m_bitDepthConstraint != 0 || tmpConstraintChromaFormat != 0)
-    {
-      EXIT( "Error: The bit depth and chroma format constraints are not used when an explicit RExt profile is specified");
-    }
-    m_bitDepthConstraint           = (extendedProfile%100);
-    m_intraConstraintFlag          = ((extendedProfile%10000)>=2000);
-    m_onePictureOnlyConstraintFlag = (extendedProfile >= 10000);
-    switch ((extendedProfile/100)%10)
-    {
-      case 0:  tmpConstraintChromaFormat=400; break;
-      case 1:  tmpConstraintChromaFormat=420; break;
-      case 2:  tmpConstraintChromaFormat=422; break;
-      default: tmpConstraintChromaFormat=444; break;
-    }
-  }
-  else
-  {
-    m_profile = Profile::Name(extendedProfile);
-  }
-
-  if (m_profile == Profile::HIGHTHROUGHPUTREXT )
-  {
-    if (m_bitDepthConstraint == 0)
-    {
-      m_bitDepthConstraint = 16;
-    }
-    m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? CHROMA_444 : numberToChromaFormat(tmpConstraintChromaFormat);
-  }
-  else if (m_profile == Profile::MAINREXT)
-  {
-    if (m_bitDepthConstraint == 0 && tmpConstraintChromaFormat == 0)
-    {
-      // produce a valid combination, if possible.
-      const bool bUsingGeneralRExtTools  = m_transformSkipRotationEnabledFlag        ||
-                                           m_transformSkipContextEnabledFlag         ||
-                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_IMPLICIT] ||
-                                           m_rdpcmEnabledFlag[RDPCM_SIGNAL_EXPLICIT] ||
-                                           !m_enableIntraReferenceSmoothing          ||
-                                           m_persistentRiceAdaptationEnabledFlag     ||
-                                           m_log2MaxTransformSkipBlockSize!=2;
-      const bool bUsingChromaQPAdjustment= m_cuChromaQpOffsetSubdiv >= 0;
-      const bool bUsingExtendedPrecision = m_extendedPrecisionProcessingFlag;
-      if (m_onePictureOnlyConstraintFlag)
-      {
-        m_chromaFormatConstraint = CHROMA_444;
-        if (m_intraConstraintFlag != true)
-        {
-          EXIT( "Error: Intra constraint flag must be true when one_picture_only_constraint_flag is true");
-        }
-        const int maxBitDepth = m_chromaFormatIDC==CHROMA_400 ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
-        m_bitDepthConstraint = maxBitDepth>8 ? 16:8;
-      }
-      else
-      {
-        m_chromaFormatConstraint = NUM_CHROMA_FORMAT;
-        automaticallySelectRExtProfile(bUsingGeneralRExtTools,
-                                       bUsingChromaQPAdjustment,
-                                       bUsingExtendedPrecision,
-                                       m_intraConstraintFlag,
-                                       m_bitDepthConstraint,
-                                       m_chromaFormatConstraint,
-                                       m_chromaFormatIDC==CHROMA_400 ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]),
-                                       m_chromaFormatIDC);
-      }
-    }
-    else if (m_bitDepthConstraint == 0 || tmpConstraintChromaFormat == 0)
-    {
-      EXIT( "Error: The bit depth and chroma format constraints must either both be specified or both be configured automatically");
-    }
-    else
-    {
-      m_chromaFormatConstraint = numberToChromaFormat(tmpConstraintChromaFormat);
-    }
-  }
-  else
-  {
-    m_chromaFormatConstraint = (tmpConstraintChromaFormat == 0) ? m_chromaFormatIDC : numberToChromaFormat(tmpConstraintChromaFormat);
-    m_bitDepthConstraint     = ( ( m_profile == Profile::MAIN10 || m_profile == Profile::NEXT ) ? 10 : 8 );
-  }
-
-
-  m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
 
   switch (m_conformanceWindowMode)
   {
@@ -1863,18 +1885,11 @@ bool LibVTMEncoderCfg::parseCfg( )
     }
   }
 
-  if (tmpSliceMode<0 || tmpSliceMode>=int(NUMBER_OF_SLICE_CONSTRAINT_MODES))
-  {
-    EXIT( "Error: bad slice mode");
-  }
-  m_sliceMode = SliceConstraint(tmpSliceMode);
   if (m_sliceMode==FIXED_NUMBER_OF_CTU || m_sliceMode==FIXED_NUMBER_OF_BYTES)
   {
     // note: slice mode 2 can be re-enabled using scan order tiles
     EXIT( "Error: slice mode 1 (fixed number of CTUs) and 2 (fixed number of bytes) are no longer supported");
   }
-
-
 
   m_topLeftBrickIdx.clear();
   m_bottomRightBrickIdx.clear();
@@ -1893,7 +1908,7 @@ bool LibVTMEncoderCfg::parseCfg( )
 #endif
     {
       int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
-
+      SMultiValueInput<uint32_t> cfg_SliceIdx (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
       if (cfg_SliceIdx.values.size() > numSlicesInPic * 2)
       {
         EXIT("Error: The number of slice indices (RectSlicesBoundaryInPic) is greater than the NumSlicesInPicMinus1.");
@@ -1989,6 +2004,7 @@ bool LibVTMEncoderCfg::parseCfg( )
   {
     int numSlicesInPic = m_numSlicesInPicMinus1 + 1;
 
+    SMultiValueInput<uint32_t> cfg_SignalledSliceId (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
     if (cfg_SignalledSliceId.values.size() > numSlicesInPic)
     {
       EXIT("Error: The number of Slice Ids are greater than the m_signalledTileGroupIdLengthMinus1.");
@@ -2014,20 +2030,6 @@ bool LibVTMEncoderCfg::parseCfg( )
     {
       m_sliceId[i] = i;
     }
-  }
-
-  if (tmpDecodedPictureHashSEIMappedType<0 || tmpDecodedPictureHashSEIMappedType>=int(NUMBER_OF_HASHTYPES))
-  {
-    EXIT( "Error: bad checksum mode");
-  }
-  // Need to map values to match those of the SEI message:
-  if (tmpDecodedPictureHashSEIMappedType==0)
-  {
-    m_decodedPictureHashSEIType=HASHTYPE_NONE;
-  }
-  else
-  {
-    m_decodedPictureHashSEIType=HashType(tmpDecodedPictureHashSEIMappedType-1);
   }
 
   // allocate slice-based dQP values
@@ -2068,6 +2070,9 @@ bool LibVTMEncoderCfg::parseCfg( )
 
   for(uint32_t ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
+    int saoOffsetBitShift[MAX_NUM_CHANNEL_TYPE];
+    saoOffsetBitShift[0] = 0;
+    saoOffsetBitShift[1] = 0;
     if (saoOffsetBitShift[ch]<0)
     {
       if (m_internalBitDepth[ch]>10)
@@ -2085,22 +2090,16 @@ bool LibVTMEncoderCfg::parseCfg( )
     }
   }
 
-#if SHARP_LUMA_DELTA_QP
-  CHECK( lumaLevelToDeltaQPMode >= LUMALVL_TO_DQP_NUM_MODES, "Error in cfg" );
-
-  m_lumaLevelToDeltaQPMapping.mode=LumaLevelToDQPMode(lumaLevelToDeltaQPMode);
-
-  if (m_lumaLevelToDeltaQPMapping.mode)
-  {
-    CHECK(  cfg_lumaLeveltoDQPMappingLuma.values.size() != cfg_lumaLeveltoDQPMappingQP.values.size(), "Error in cfg" );
-    m_lumaLevelToDeltaQPMapping.mapping.resize(cfg_lumaLeveltoDQPMappingLuma.values.size());
-    for(uint32_t i=0; i<cfg_lumaLeveltoDQPMappingLuma.values.size(); i++)
-    {
-      m_lumaLevelToDeltaQPMapping.mapping[i]=std::pair<int,int>(cfg_lumaLeveltoDQPMappingLuma.values[i], cfg_lumaLeveltoDQPMappingQP.values[i]);
-    }
-  }
-#endif
 #if JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
+  const int qpInVals[] = { 25, 33, 43 };                // qpInVal values used to derive the chroma QP mapping table used in VTM-5.0
+  const int qpOutVals[] = { 25, 32, 37 };               // qpOutVal values used to derive the chroma QP mapping table used in VTM-5.0
+  SMultiValueInput<int> cfg_qpInValCb                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpInVals, sizeof(qpInVals)/sizeof(int));
+  SMultiValueInput<int> cfg_qpOutValCb                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, qpOutVals, sizeof(qpOutVals) / sizeof(int));
+  const int zeroVector[] = { 0 };
+  SMultiValueInput<int> cfg_qpInValCr                   (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCr                  (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpInValCbCr                 (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
+  SMultiValueInput<int> cfg_qpOutValCbCr                (MIN_QP_VALUE_FOR_16_BIT, MAX_QP, 0, MAX_NUM_QP_VALUES, zeroVector, 1);
 
   CHECK(cfg_qpInValCb.values.size() != cfg_qpOutValCb.values.size(), "Chroma QP table for Cb is incomplete.");
   CHECK(cfg_qpInValCr.values.size() != cfg_qpOutValCr.values.size(), "Chroma QP table for Cr is incomplete.");
@@ -2154,6 +2153,10 @@ bool LibVTMEncoderCfg::parseCfg( )
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   if ( m_LadfEnabed )
   {
+    const int defaultLadfQpOffset[3] = { 1, 0, 1 };
+    const int defaultLadfIntervalLowerBound[2] = { 350, 833 };
+    SMultiValueInput<int>  cfg_LadfQpOffset                    ( -MAX_QP, MAX_QP, 2, MAX_LADF_INTERVALS, defaultLadfQpOffset, 3 );
+    SMultiValueInput<int>  cfg_LadfIntervalLowerBound          ( 0, std::numeric_limits<int>::max(), 1, MAX_LADF_INTERVALS - 1, defaultLadfIntervalLowerBound, 2 );
     CHECK( m_LadfNumIntervals != cfg_LadfQpOffset.values.size(), "size of LadfQpOffset must be equal to LadfNumIntervals");
     CHECK( m_LadfNumIntervals - 1 != cfg_LadfIntervalLowerBound.values.size(), "size of LadfIntervalLowerBound must be equal to LadfNumIntervals - 1");
     m_LadfQpOffset = cfg_LadfQpOffset.values;
@@ -2182,6 +2185,8 @@ bool LibVTMEncoderCfg::parseCfg( )
 
   if ( m_loopFilterAcrossVirtualBoundariesDisabledFlag )
   {
+    SMultiValueInput<unsigned> cfg_virtualBoundariesPosX       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
+    SMultiValueInput<unsigned> cfg_virtualBoundariesPosY       (0, std::numeric_limits<uint32_t>::max(), 0, 3);
     CHECK( m_numVerVirtualBoundaries > 3, "Number of vertical virtual boundaries must be comprised between 0 and 3 included" );
     CHECK( m_numHorVirtualBoundaries > 3, "Number of horizontal virtual boundaries must be comprised between 0 and 3 included" );
     CHECK( m_numVerVirtualBoundaries != cfg_virtualBoundariesPosX.values.size(), "Size of VirtualBoundariesPosX must be equal to NumVerVirtualBoundaries");
@@ -2404,19 +2409,11 @@ bool LibVTMEncoderCfg::parseCfg( )
   m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
   m_uiMaxCUDepth = m_uiMaxCodingDepth;
 
-  // check validity of input parameters
-  if( xCheckParameter() )
-  {
-    // return check failed
-    return false;
-  }
-
-  // print-out parameters
-  xPrintParameter();
+  // // print-out parameters
+  // xPrintParameter();
 
   return true;
 }
-
 
 // ====================================================================================================================
 // Private member functions
@@ -2537,11 +2534,8 @@ bool LibVTMEncoderCfg::xCheckParameter()
   }
 #endif
 
-
   xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
 
-
-  xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
   const uint32_t maxBitDepth=(m_chromaFormatIDC==CHROMA_400) ? m_internalBitDepth[CHANNEL_TYPE_LUMA] : std::max(m_internalBitDepth[CHANNEL_TYPE_LUMA], m_internalBitDepth[CHANNEL_TYPE_CHROMA]);
   xConfirmPara(m_bitDepthConstraint<maxBitDepth, "The internalBitDepth must not be greater than the bitDepthConstraint value");
   xConfirmPara(m_chromaFormatConstraint<m_chromaFormatIDC, "The chroma format used must not be greater than the chromaFormatConstraint value");
@@ -2645,9 +2639,7 @@ bool LibVTMEncoderCfg::xCheckParameter()
   xConfirmPara( m_inputColourSpaceConvert >= NUMBER_INPUT_COLOUR_SPACE_CONVERSIONS,         sTempIPCSC.c_str() );
   xConfirmPara( m_InputChromaFormatIDC >= NUM_CHROMA_FORMAT,                                "InputChromaFormatIDC must be either 400, 420, 422 or 444" );
   xConfirmPara( m_iFrameRate <= 0,                                                          "Frame rate must be more than 1" );
-  xConfirmPara( m_framesToBeEncoded <= 0,                                                   "Total Number Of Frames encoded must be more than 0" );
-  xConfirmPara( m_framesToBeEncoded < m_switchPOC,                                          "debug POC out of range" );
-
+  
   xConfirmPara( m_iGOPSize < 1 ,                                                            "GOP Size must be greater or equal to 1" );
   xConfirmPara( m_iGOPSize > 1 &&  m_iGOPSize % 2,                                          "GOP Size must be a multiple of 2, if GOP Size is greater than 1" );
   xConfirmPara( (m_iIntraPeriod > 0 && m_iIntraPeriod < m_iGOPSize) || m_iIntraPeriod == 0, "Intra period must be more than GOP size, or -1 , not 0" );
@@ -4820,6 +4812,10 @@ bool LibVTMEncoderCfg::applySettings(vtm_settings_t *settings)
   m_outputBitDepth[CHANNEL_TYPE_LUMA] = settings->source_bitdepth;
   m_outputBitDepth[CHANNEL_TYPE_CHROMA] = settings->source_bitdepth;
   m_iFrameRate = int(double(settings->fps_den) / settings->fps_num + 0.5);
+  if (m_iFrameRate <= 0)
+  {
+    return false;
+  }
   switch (settings->chroma_format)
   {
   case VTM_CHROMA_400:

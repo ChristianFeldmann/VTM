@@ -707,6 +707,7 @@ public:
 public:
   void  create      ();               ///< create option handling class
   void  destroy     ();               ///< destroy option handling class
+  void  setDefault  ();
   bool  parseCfg    ();               ///< parse configuration file to fill member variables
   void  xInitLibCfg ();
   void  setRandomAccessConfig();

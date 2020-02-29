@@ -579,50 +579,55 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
         // multiple slices within a single tile special case
 #if JVET_Q0203_MULTI_SLICE_IN_TILE
-        if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()) > 1 )
+        if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 )
         {
-          READ_UVLC(uiCode, "num_exp_slices_in_tile[i]");
-          if (uiCode == 0)
+          if( pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()) > 1 )
           {
-            pcPPS->setNumSlicesInTile(i, 1);
-            pcPPS->setSliceHeightInCtu(i, pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()));
+            READ_UVLC(uiCode, "num_exp_slices_in_tile[i]");
+            if (uiCode == 0)
+            {
+              pcPPS->setNumSlicesInTile(i, 1);
+              pcPPS->setSliceHeightInCtu(i, pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()));
+            }
+            else
+            {
+              uint32_t numExpSliceInTile = uiCode;
+              uint32_t remTileRowHeight  = pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns());
+              int j = 0;
+              for( ; j < numExpSliceInTile - 1; j++ )
+              {
+                READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+                pcPPS->setSliceHeightInCtu(i + j, uiCode + 1);
+                remTileRowHeight -= (uiCode + 1);
+              }
+              READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+              uint32_t uniformSliceHeight = uiCode + 1;
+
+              while( remTileRowHeight >= uniformSliceHeight )
+              {
+                pcPPS->setSliceHeightInCtu(i + j, uniformSliceHeight);
+                remTileRowHeight -= uniformSliceHeight;
+                j++;
+              }
+              if( remTileRowHeight > 0 )
+              {
+                pcPPS->setSliceHeightInCtu(i + j, remTileRowHeight);
+                j++;
+              }
+              for( int k = 0; k < j; k++ )
+              {
+                pcPPS->setNumSlicesInTile(i + k, j);
+                pcPPS->setSliceWidthInTiles(i + k, 1);
+                pcPPS->setSliceHeightInTiles(i + k, 1);
+                pcPPS->setSliceTileIdx(i + k, tileIdx);
+              }
+              i += (j - 1);
+            }
           }
           else
           {
-            uint32_t numExpSliceInTile = uiCode;
-            uint32_t remTileRowHeight  = pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns());
-            int j = 0;
-            for( ; j < numExpSliceInTile - 1; j++ )
-            {
-              READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
-              pcPPS->setSliceHeightInCtu(i + j, uiCode + 1);
-              remTileRowHeight -= (uiCode + 1);
-              pcPPS->setSliceWidthInTiles(i + j, 1);
-              pcPPS->setSliceHeightInTiles(i + j, 1);
-              pcPPS->setSliceTileIdx(i + j, tileIdx);
-            }
-            READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
-            uint32_t uniformSliceHeight = uiCode + 1;
-
-            while( remTileRowHeight >= uniformSliceHeight )
-            {
-              pcPPS->setSliceHeightInCtu(i, uniformSliceHeight);
-              remTileRowHeight -= uniformSliceHeight;
-              pcPPS->setSliceWidthInTiles(i + j, 1);
-              pcPPS->setSliceHeightInTiles(i + j, 1);
-              pcPPS->setSliceTileIdx(i + j, tileIdx);
-              j++;
-            }
-            if( remTileRowHeight > 0 )
-            {
-              pcPPS->setSliceHeightInCtu(i + j, remTileRowHeight);
-              j++;
-            }
-            for( int k = 0; k < j; k++ )
-            {
-              pcPPS->setNumSlicesInTile(i + k, j);
-            }
-            i += (j - 1);
+            pcPPS->setNumSlicesInTile(i, 1);
+            pcPPS->setSliceHeightInCtu(i, pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns()));
           }
         }
 #else

@@ -52,8 +52,6 @@
 
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
-#define JVET_Q0358_ALF_NALU_TID_CONSTRAINT                1 // JVET-Q0358: TemporalId constraint between ALF_APS NALU and the pic associated with PH
-
 #define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 
 #define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id
@@ -61,6 +59,8 @@
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
 
 #define JVET_P0117_PTL_SCALABILITY                        1 // JVET-P0117: sps_ptl_dpb_hrd_params_present_flag related syntax change, others in JVET-Q0786
+
+#define JVET_Q0358_ALF_NALU_TID_CONSTRAINT                1 // JVET-Q0358: TemporalId constraint between ALF_APS NALU and the pic associated with PH
 
 #define JVET_Q0118_CLEANUPS                               1 // JVET-Q0118: AHG8/AHG9: Scalability HLS cleanups
 

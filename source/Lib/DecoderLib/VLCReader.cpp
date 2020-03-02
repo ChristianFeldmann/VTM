@@ -2910,7 +2910,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
     picHeader->setVirtualBoundariesPresentFlag( sps->getVirtualBoundariesPresentFlag() );
-    if( picHeader->getVirtualBoundariesEnabledFlag() )
+    if( picHeader->getVirtualBoundariesPresentFlag() )
     {
 #else
     picHeader->setLoopFilterAcrossVirtualBoundariesDisabledFlag( sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag() );

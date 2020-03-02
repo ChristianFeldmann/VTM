@@ -396,7 +396,10 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
     if (layerIdx == 0)
     {
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
-      actualTotalBits += xWriteDCI(accessUnit, m_pcEncLib->getDCI());
+      if (m_pcCfg->getDCIEnabled())
+      {
+        actualTotalBits += xWriteDCI(accessUnit, m_pcEncLib->getDCI());
+      }
 #else
       actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
 #endif

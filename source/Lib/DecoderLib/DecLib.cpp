@@ -1958,9 +1958,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "final", 1 ) );
   }
 
-  // actual decoding starts here
-  xActivateParameterSets( nalu.m_nuhLayerId );
-
   //detect lost reference picture and insert copy of earlier frame.
   {
     int lostPoc;
@@ -2010,6 +2007,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     xUpdateRasInit(m_apcSlicePilot);
   }
 
+  // actual decoding starts here
+  xActivateParameterSets( nalu.m_nuhLayerId );
 
 #if JVET_P0125_EOS_LAYER_SPECIFIC
   m_firstSliceInSequence[nalu.m_nuhLayerId] = false;

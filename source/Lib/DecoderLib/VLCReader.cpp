@@ -2267,7 +2267,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 void HLSyntaxReader::parseDCI(DCI* dci)
 {
 #if ENABLE_TRACING
-  xTraceDPSHeader();
+  xTraceDCIHeader();
 #endif
   uint32_t  symbol;
 
@@ -2406,7 +2406,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   {
     if (pcVPS->getAllIndependentLayersFlag())
     {
-      READ_FLAG(uiCode, "vps_each_layer_is_an_ols_flag");  pcVPS->setEachLayerIsAnOlsFlag(uiCode);
+      READ_FLAG(uiCode, "each_layer_is_an_ols_flag");  pcVPS->setEachLayerIsAnOlsFlag(uiCode);
       if (pcVPS->getEachLayerIsAnOlsFlag() == 0)
       {
         pcVPS->setOlsModeIdc(2);
@@ -2416,7 +2416,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     {
       if (!pcVPS->getAllIndependentLayersFlag())
       {
-        READ_CODE(2, uiCode, "vps_ols_mode_idc");             pcVPS->setOlsModeIdc(uiCode); CHECK(uiCode > MAX_VPS_OLS_MODE_IDC, "Invalid code");
+        READ_CODE(2, uiCode, "ols_mode_idc");             pcVPS->setOlsModeIdc(uiCode); CHECK(uiCode > MAX_VPS_OLS_MODE_IDC, "Invalid code");
       }
       if (pcVPS->getOlsModeIdc() == 2)
       {
@@ -2425,7 +2425,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
         {
           for (uint32_t j = 0; j < pcVPS->getMaxLayers(); j++)
           {
-            READ_FLAG(uiCode, "vps_ols_output_layer_flag");        pcVPS->setOlsOutputLayerFlag(i, j, uiCode);
+            READ_FLAG(uiCode, "ols_output_layer_flag");        pcVPS->setOlsOutputLayerFlag(i, j, uiCode);
           }
         }
       }

@@ -1545,7 +1545,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 void HLSWriter::codeDCI(const DCI* dci)
 {
 #if ENABLE_TRACING
-  xTraceDPSHeader();
+  xTraceDCIHeader();
 #endif
   WRITE_CODE(dci->getMaxSubLayersMinus1(), 3, "dci_max_sub_layers_minus1");
   WRITE_CODE(0, 1, "dci_reserved_zero_bit");
@@ -1629,21 +1629,21 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   {
     if (pcVPS->getAllIndependentLayersFlag()) 
     {
-      WRITE_FLAG(pcVPS->getEachLayerIsAnOlsFlag(), "vps_each_layer_is_an_ols_flag");
+      WRITE_FLAG(pcVPS->getEachLayerIsAnOlsFlag(), "each_layer_is_an_ols_flag");
     }
     if (!pcVPS->getEachLayerIsAnOlsFlag()) 
     {
       if (!pcVPS->getAllIndependentLayersFlag()) {
-        WRITE_CODE(pcVPS->getOlsModeIdc(), 2, "vps_ols_mode_idc");
+        WRITE_CODE(pcVPS->getOlsModeIdc(), 2, "ols_mode_idc");
       }
       if (pcVPS->getOlsModeIdc() == 2)
       {
-        WRITE_CODE(pcVPS->getNumOutputLayerSets() - 1, 8, "vps_num_output_layer_sets_minus1");
+        WRITE_CODE(pcVPS->getNumOutputLayerSets() - 1, 8, "num_output_layer_sets_minus1");
         for (uint32_t i = 1; i < pcVPS->getNumOutputLayerSets(); i++)
         {
           for (uint32_t j = 0; j < pcVPS->getMaxLayers(); j++)
           {
-            WRITE_FLAG(pcVPS->getOlsOutputLayerFlag(i, j), "vps_ols_output_layer_flag");
+            WRITE_FLAG(pcVPS->getOlsOutputLayerFlag(i, j), "ols_output_layer_flag");
           }
         }
       }
@@ -1663,7 +1663,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   int cnt = 0;
   while (m_pcBitIf->getNumBitsUntilByteAligned())
   {
-    WRITE_FLAG( 0, "rbsp_alignment_zero_bit");
+    WRITE_FLAG( 0, "vps_ptl_alignment_zero_bit");
     cnt++;
   }
   CHECK(cnt>=8, "More than '8' alignment bytes written");

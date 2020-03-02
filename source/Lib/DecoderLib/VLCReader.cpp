@@ -3064,6 +3064,14 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
               picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i,0);
             }
           }
+          else if(i != 0)
+          {
+            picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i, picHeader->getLocalRPL( listIdx )->getDeltaPocMSBCycleLT(i-1));
+          }
+          else
+          {
+            picHeader->getLocalRPL( listIdx )->setDeltaPocMSBCycleLT(i,0);
+          }
         }
       }
     }
@@ -4262,6 +4270,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
               pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i,0);
             }
           }
+          else if(i != 0)
+          {
+            pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i, pcSlice->getLocalRPL0()->getDeltaPocMSBCycleLT(i-1));
+          }
+          else
+          {
+            pcSlice->getLocalRPL0()->setDeltaPocMSBCycleLT(i,0);
+          }
         }
       }
 
@@ -4355,6 +4371,14 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             {
               pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i,0);
             }
+          }
+          else if(i != 0)
+          {
+            pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i, pcSlice->getLocalRPL1()->getDeltaPocMSBCycleLT(i-1));
+          }
+          else
+          {
+            pcSlice->getLocalRPL1()->setDeltaPocMSBCycleLT(i,0);
           }
         }
       }

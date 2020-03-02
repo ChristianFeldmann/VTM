@@ -594,7 +594,11 @@ void Slice::checkColRefIdx(uint32_t curSliceSegmentIdx, const Picture* pic)
   }
 }
 
+#if JVET_P0978_RPL_RESTRICTIONS
+void Slice::checkCRA(const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int pocCRA, PicList& rcListPic)
+#else
 void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic)
+#endif
 {
   if (pocCRA < MAX_UINT && getPOC() > pocCRA)
   {
@@ -637,6 +641,7 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       }
     }
   }
+#if !JVET_P0978_RPL_RESTRICTIONS
   if (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP) // IDR picture found
   {
     pocCRA = getPOC();
@@ -647,7 +652,135 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
     pocCRA = getPOC();
     associatedIRAPType = getNalUnitType();
   }
+#endif
 }
+
+#if JVET_P0978_RPL_RESTRICTIONS
+void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int associatedIRAPDecodingOrderNumber, PicList& rcListPic)
+{
+  Picture* pcRefPic;
+  int refPicPOC;
+  int refPicDecodingOrderNumber;
+
+  int irapPOC = getAssociatedIRAPPOC();
+
+  int numEntriesL0 = pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures() + pRPL0->getNumberOfInterLayerPictures();
+  int numEntriesL1 = pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures() + pRPL1->getNumberOfInterLayerPictures();
+
+  int numActiveEntriesL0 = getNumRefIdx(REF_PIC_LIST_0);
+  int numActiveEntriesL1 = getNumRefIdx(REF_PIC_LIST_1);
+
+#if JVET_Q0042_VUI
+  bool fieldSeqFlag = getSPS()->getFieldSeqFlag();
+#else
+  bool fieldSeqFlag = getSPS()->getVuiParameters() && getSPS()->getVuiParameters()->getFieldSeqFlag();
+#endif
+
+  int current_picture_is_trailing = 0;
+  if (getPic()->getDecodingOrderNumber() > associatedIRAPDecodingOrderNumber)
+  {
+    switch (m_eNalUnitType)
+    {
+    case NAL_UNIT_CODED_SLICE_STSA:
+    case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+    case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+    case NAL_UNIT_CODED_SLICE_CRA:
+    case NAL_UNIT_CODED_SLICE_RADL:
+    case NAL_UNIT_CODED_SLICE_RASL:
+      current_picture_is_trailing = 0;
+      break;
+    default:
+      current_picture_is_trailing = 1;
+    }
+  }
+
+  for (int i = 0; i < numEntriesL0; i++)
+  {
+    if (!pRPL0->isRefPicLongterm(i))
+    {
+      refPicPOC = getPOC() - pRPL0->getRefPicIdentifier(i);
+      pcRefPic = xGetRefPic(rcListPic, refPicPOC, m_pcPic->layerId);
+    }
+    else
+    {
+      pcRefPic = xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i), m_pcPic->layerId);
+      refPicPOC = pcRefPic->getPOC();
+    }
+    refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
+
+    // Checking this: "When the current picture is a CRA picture, there shall be no entry in RefPicList[0] or RefPicList[1]
+    // that precedes, in output order or decoding order, any preceding IRAP picture in decoding order (when present)"
+    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
+    {
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
+    }
+
+    // Checking this: "When the current picture is a trailing picture that follows in both decoding orderand output order one
+    // or more leading pictures associated with the same IRAP picture, if any, there shall be no picture referred to by an
+    // entry in RefPicList[0] or RefPicList[1] that precedes the associated IRAP picture in output order or decoding order"
+    // Note that when not in field coding, we know that all leading pictures of an IRAP precedes all trailing pictures of the
+    // same IRAP picture.
+    if (current_picture_is_trailing && !fieldSeqFlag) // 
+    {
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
+    }
+
+    if (i < numActiveEntriesL0)
+    {
+      // Checking this "When the current picture is a trailing picture, there shall be no picture referred to by an active
+      // entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the associated IRAP picture in output order or decoding order"
+      if (current_picture_is_trailing)
+      {
+        CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order");
+      }
+
+      // Checking this: "When the current picture is a RADL picture, there shall be no active entry in RefPicList[ 0 ] or
+      // RefPicList[ 1 ] that is any of the following: A picture that precedes the associated IRAP picture in decoding order"
+      if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_RADL)
+      {
+        CHECK(refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "RADL picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in decoding order");
+      }
+    }
+  }
+
+  for (int i = 0; i < numEntriesL1; i++)
+  {
+    if (!pRPL1->isRefPicLongterm(i))
+    {
+      refPicPOC = getPOC() - pRPL1->getRefPicIdentifier(i);
+      pcRefPic = xGetRefPic(rcListPic, refPicPOC, m_pcPic->layerId);
+    }
+    else
+    {
+      pcRefPic = xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i), m_pcPic->layerId);
+      refPicPOC = pcRefPic->getPOC();
+    }
+    refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
+
+    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
+    {
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
+    }
+    if (current_picture_is_trailing && !fieldSeqFlag)
+    {
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
+    }
+
+    if (i < numActiveEntriesL1)
+    {
+      if (current_picture_is_trailing)
+      {
+        CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order");
+      }
+      if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_RADL)
+      {
+        CHECK(refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "RADL picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in decoding order");
+      }
+    }
+  }
+}
+#endif
+
 
 void Slice::checkSTSA(PicList& rcListPic)
 {

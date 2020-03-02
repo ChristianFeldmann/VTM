@@ -426,6 +426,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 DecLib::DecLib()
   : m_iMaxRefPicNum(0)
   , m_associatedIRAPType(NAL_UNIT_INVALID)
+#if JVET_P0978_RPL_RESTRICTIONS
+  , m_associatedIRAPDecodingOrderNumber(0)
+#endif
   , m_pocCRA(0)
   , m_pocRandomAccess(MAX_INT)
   , m_lastRasPoc(MAX_INT)
@@ -478,13 +481,14 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
-
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
 #endif
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   , m_dci(NULL)
+#if JVET_P0978_RPL_RESTRICTIONS
+  , m_decodingOrderCounter(0)
 #endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
@@ -2028,8 +2032,22 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
 
+#if JVET_P0978_RPL_RESTRICTIONS
+  if (m_bFirstSliceInPicture)
+  {
+    m_pcPic->setDecodingOrderNumber(m_decodingOrderCounter);
+    m_decodingOrderCounter++;
+    m_pcPic->setPictureType(nalu.m_nalUnitType);
+  }
+
+  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_cListPic);
+#else
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
+#endif
   pcSlice->constructRefPicList(m_cListPic);
+#if JVET_P0978_RPL_RESTRICTIONS
+  pcSlice->checkRPL(pcSlice->getRPL0(), pcSlice->getRPL1(), m_associatedIRAPDecodingOrderNumber, m_cListPic);
+#endif
   pcSlice->checkSTSA(m_cListPic);
 
   pcSlice->scaleRefPicList( scaledRefPic, m_pcPic->cs->picHeader, m_parameterSetManager.getAPSs(), m_picHeader.getLmcsAPS(), m_picHeader.getScalingListAPS(), true );
@@ -2261,6 +2279,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   return false;
 }
+
+#if JVET_P0978_RPL_RESTRICTIONS
+void DecLib::UpdateAssociatedIRAP()
+{
+  const NalUnitType pictureType = m_pcPic->getPictureType();
+  if (pictureType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || pictureType == NAL_UNIT_CODED_SLICE_IDR_N_LP || pictureType == NAL_UNIT_CODED_SLICE_CRA)
+  {
+    m_associatedIRAPDecodingOrderNumber = m_pcPic->getDecodingOrderNumber();
+    m_pocCRA = m_pcPic->getPOC();
+    m_associatedIRAPType = pictureType;
+  }
+}
+#endif
 
 void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {

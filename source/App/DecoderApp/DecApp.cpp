@@ -221,6 +221,9 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInSequence(true);
       }
 
+#if JVET_P0978_RPL_RESTRICTIONS
+      m_cDecLib.UpdateAssociatedIRAP();
+#endif
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
               m_cDecLib.getFirstSliceInSequence () )

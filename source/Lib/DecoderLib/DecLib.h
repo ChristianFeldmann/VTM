@@ -112,21 +112,21 @@ private:
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-  bool                    m_bFirstSliceInSequence[MAX_VPS_LAYERS];
+  bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];
 #else
   bool                    m_bFirstSliceInSequence;
 #endif
+  bool                    m_firstSliceInBitstream;
   bool                    m_prevSliceSkipped;
   int                     m_skippedPOC;
-  bool                    m_bFirstSliceInBitstream;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-  bool                    m_lastNoIncorrectPicOutputFlag;    //value of variable NoIncorrectPicOutputFlag of the last CRA / GDR pic
+  bool                    m_lastNoOutputBeforeRecoveryFlag;    //value of variable NoOutputBeforeRecoveryFlag  of the last CRA / GDR pic
   int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
   int                     m_decodedPictureHashSEIEnabled;  ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
-  uint32_t                    m_numberOfChecksumErrorsDetected;
+  uint32_t                m_numberOfChecksumErrorsDetected;
 
   bool                    m_warningMessageSkipPicture;
 
@@ -199,8 +199,8 @@ public:
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
   bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-  bool  getFirstSliceInSequence(int layer) const { return m_bFirstSliceInSequence[layer]; }
-  void  setFirstSliceInSequence(bool val, int layer) { m_bFirstSliceInSequence[layer] = val; }
+  bool  getFirstSliceInSequence(int layerId) const { return m_firstSliceInSequence[layerId]; }
+  void  setFirstSliceInSequence(bool val, int layerId) { m_firstSliceInSequence[layerId] = val; }
 #else
   bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
   void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }

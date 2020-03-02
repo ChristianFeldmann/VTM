@@ -89,8 +89,10 @@ Slice::Slice()
 , m_pcPic                         ( NULL )
 , m_pcPicHeader                   ( NULL )
 , m_colFromL0Flag                 ( true )
+#if !SPS_ID_CHECK
 , m_noIncorrectPicOutputFlag      ( false )
-, m_handleCraAsCvsStartFlag            ( false )
+, m_handleCraAsCvsStartFlag       ( false )
+#endif
 , m_colRefIdx                     ( 0 )
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
@@ -1939,6 +1941,11 @@ PicHeader::PicHeader()
 , m_gdrPicFlag                                    ( 0 )
 , m_noOutputOfPriorPicsFlag                       ( 0 )
 , m_recoveryPocCnt                                ( 0 )
+#if SPS_ID_CHECK
+, m_noOutputBeforeRecoveryFlag                    ( false )
+, m_handleCraAsCvsStartFlag                       ( false )
+, m_handleGdrAsCvsStartFlag                       ( false )
+#endif
 , m_spsId                                         ( -1 )
 , m_ppsId                                         ( -1 )
 #if JVET_P0116_POC_MSB

@@ -453,16 +453,20 @@ DecLib::DecLib()
   , m_prevTid0POC(0)
   , m_bFirstSliceInPicture(true)
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-  , m_bFirstSliceInSequence{ true }
+  , m_firstSliceInSequence{ true }
 #else
   , m_bFirstSliceInSequence(true)
 #endif
+  , m_firstSliceInBitstream(true)
   , m_prevSliceSkipped(false)
   , m_skippedPOC(0)
-  , m_bFirstSliceInBitstream(true)
   , m_lastPOCNoOutputPriorPics(-1)
   , m_isNoOutputPriorPics(false)
+#if SPS_ID_CHECK
+  , m_lastNoOutputBeforeRecoveryFlag( false )
+#else
   , m_lastNoIncorrectPicOutputFlag(false)
+#endif
   , m_sliceLmcsApsId(-1)
   , m_pDecodedSEIOutputStream(NULL)
   , m_decodedPictureHashSEIEnabled(false)
@@ -1483,7 +1487,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
 
 #if SPS_ID_CHECK
-    if (slice->isClvssPu() && m_bFirstSliceInPicture)
+    if( slice->isClvssPu() && m_bFirstSliceInPicture )
 #else
     if (m_layerBitDepth[curLayerIdx] == 0)
 #endif
@@ -1755,6 +1759,30 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setAssociatedIRAPPOC(m_pocCRA);
   m_apcSlicePilot->setAssociatedIRAPType(m_associatedIRAPType);
 
+#if SPS_ID_CHECK
+  if( m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR )
+  {
+    // Derive NoOutputBeforeRecoveryFlag
+    if( !pps->getMixedNaluTypesInPicFlag() )
+    {
+      if( m_firstSliceInSequence[nalu.m_nuhLayerId] )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( true );
+      }
+      else if( m_apcSlicePilot->getIdrPicFlag() )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( true );
+      }
+      else if( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( m_picHeader.getHandleCraAsCvsStartFlag() );
+      }
+      else if( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( m_picHeader.getHandleGdrAsCvsStartFlag() );
+      }
+    }
+#else
   //For inference of NoOutputOfPriorPicsFlag
   if (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
   {
@@ -1770,9 +1798,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       m_apcSlicePilot->setNoIncorrectPicOutputFlag(true);
     }
-    //the inference for NoOutputPriorPicsFlag
-    if (!m_bFirstSliceInBitstream &&
-        (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+#endif
+
+    //the inference for NoOutputOfPriorPicsFlag
+#if SPS_ID_CHECK
+    if( !m_firstSliceInBitstream && m_picHeader.getNoOutputBeforeRecoveryFlag() )
+    {
+      m_picHeader.setNoOutputOfPriorPicsFlag( true );
+    }
+#else
+    if( !m_firstSliceInBitstream &&
+        ( m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) &&
         m_apcSlicePilot->getNoIncorrectPicOutputFlag())
     {
       if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
@@ -1780,6 +1816,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         m_picHeader.setNoOutputOfPriorPicsFlag(true);
       }
     }
+#endif
     else
     {
       m_picHeader.setNoOutputOfPriorPicsFlag(false);
@@ -1787,8 +1824,25 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
     if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
     {
+#if SPS_ID_CHECK
+      m_lastNoOutputBeforeRecoveryFlag = m_picHeader.getNoOutputBeforeRecoveryFlag();
+#else
       m_lastNoIncorrectPicOutputFlag = m_apcSlicePilot->getNoIncorrectPicOutputFlag();
+#endif
     }
+#if SPS_ID_CHECK
+
+    if( m_picHeader.getNoOutputOfPriorPicsFlag() )
+    {
+      m_lastPOCNoOutputPriorPics = m_apcSlicePilot->getPOC();
+      m_isNoOutputPriorPics = true;
+    }
+    else
+    {
+      m_isNoOutputPriorPics = false;
+    }
+  }
+#else
   }
   if ((m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) && m_picHeader.getNoOutputOfPriorPicsFlag())
   {
@@ -1799,11 +1853,20 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     m_isNoOutputPriorPics = false;
   }
+#endif
 
   //For inference of PicOutputFlag
+#if SPS_ID_CHECK
+  if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL ) )
+#else
   if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
+#endif
   {
+#if SPS_ID_CHECK
+    if( m_lastNoOutputBeforeRecoveryFlag )
+#else
     if (m_lastNoIncorrectPicOutputFlag)
+#endif
     {
       m_picHeader.setPicOutputFlag(false);
     }
@@ -1827,8 +1890,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 #endif
 
-  if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+#if SPS_ID_CHECK
+  //Reset POC MSB when CRA or GDR has NoOutputBeforeRecoveryFlag equal to 1
+  if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) && m_lastNoOutputBeforeRecoveryFlag )
+#else
+  if( ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) &&
       m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
+#endif
   {
 #if !JVET_P0101_POC_MULTILAYER
     PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
@@ -1865,7 +1933,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   //we should only get a different poc for a new picture (with CTU address==0)
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-  if (m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence[nalu.m_nuhLayerId] && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
+  if (m_apcSlicePilot->getPOC() != m_prevPOC && !m_firstSliceInSequence[nalu.m_nuhLayerId] && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
 #else
   if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
 #endif
@@ -1899,7 +1967,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     int refPicIndex;
     while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex, m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0))) > 0)
     {
+#if SPS_ID_CHECK
+      if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ) && m_picHeader.getNoOutputBeforeRecoveryFlag() )
+#else
       if ( ( (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) ) && m_apcSlicePilot->getNoIncorrectPicOutputFlag() )
+#endif
       {
         if (m_apcSlicePilot->getRPL0()->isInterLayerRefPic(refPicIndex) == 0)
         {
@@ -1913,7 +1985,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
     while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 0, true, &refPicIndex, m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_1))) > 0)
     {
+#if SPS_ID_CHECK
+      if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ) && m_picHeader.getNoOutputBeforeRecoveryFlag() )
+#else
       if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+#endif
       {
         if (m_apcSlicePilot->getRPL1()->isInterLayerRefPic(refPicIndex) == 0)
         {
@@ -1936,12 +2012,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
 
 #if JVET_P0125_EOS_LAYER_SPECIFIC
-  m_bFirstSliceInSequence[nalu.m_nuhLayerId] = false;
+  m_firstSliceInSequence[nalu.m_nuhLayerId] = false;
 #else
   m_bFirstSliceInSequence = false;
 #endif
-  m_bFirstSliceInBitstream  = false;
-
+  m_firstSliceInBitstream  = false;
 
   Slice* pcSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
   pcSlice->setPic( m_pcPic );
@@ -1950,7 +2025,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->referenced  = true;
   m_pcPic->layer       = nalu.m_temporalId;
   m_pcPic->layerId    = nalu.m_nuhLayerId;
-    m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
+  m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
 
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);

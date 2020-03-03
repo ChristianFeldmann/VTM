@@ -481,12 +481,14 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
+
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
 #endif
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   , m_dci(NULL)
+#endif
 #if JVET_P0978_RPL_RESTRICTIONS
   , m_decodingOrderCounter(0)
 #endif

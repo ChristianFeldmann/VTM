@@ -1153,7 +1153,9 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
     {
       Picture* rpcPic = *(iterPic++);
       if (!rpcPic->referenced)
+      {
         continue;
+      }
       int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
       int curPoc = rpcPic->getPOC();
       int refPoc = pRPL0->getRefPicIdentifier(i) & (pocCycle - 1);
@@ -1179,7 +1181,9 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
       {
         Picture* rpcPic = *(iterPic++);
         if (!rpcPic->referenced)
+        {
           continue;
+        }
         int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
         int curPoc = rpcPic->getPOC();
         int refPoc = pRPL0->getRefPicIdentifier(i) & (pocCycle - 1);
@@ -1215,7 +1219,9 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
     {
       Picture* rpcPic = *(iterPic++);
       if (!rpcPic->referenced)
+      {
         continue;
+      }
       int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
       int curPoc = rpcPic->getPOC();
       int refPoc = pRPL1->getRefPicIdentifier(i) & (pocCycle - 1);
@@ -1241,7 +1247,9 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
       {
         Picture* rpcPic = *(iterPic++);
         if (!rpcPic->referenced)
+        {
           continue;
+        }
         int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
         int curPoc = rpcPic->getPOC();
         int refPoc = pRPL1->getRefPicIdentifier(i) & (pocCycle - 1);

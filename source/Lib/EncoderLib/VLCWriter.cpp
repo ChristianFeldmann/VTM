@@ -2732,32 +2732,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
   {
     uint32_t bitsSubPicId;
-#if JVET_Q0119_CLEANUPS
-    if (pcSlice->getSPS()->getSubPicIdMappingExplicitlySignalledFlag())
-#else
-    if (pcSlice->getSPS()->getSubPicIdSignallingPresentFlag())
-#endif
-    {
-      bitsSubPicId = pcSlice->getSPS()->getSubPicIdLen();
-    }
-#if !JVET_Q0119_CLEANUPS
-    else if (picHeader->getSubPicIdSignallingPresentFlag())
-    {
-      bitsSubPicId = picHeader->getSubPicIdLen();
-    }
-#endif
-#if JVET_Q0119_CLEANUPS
-    else if (pcSlice->getPPS()->getSubPicIdMappingInPpsFlag())
-#else
-    else if (pcSlice->getPPS()->getSubPicIdSignallingPresentFlag())
-#endif
-    {
-      bitsSubPicId = pcSlice->getPPS()->getSubPicIdLen();
-    }
-    else
-    {
-      bitsSubPicId = ceilLog2(pcSlice->getSPS()->getNumSubPics());
-    }
+    bitsSubPicId = pcSlice->getSPS()->getSubPicIdLen();
     WRITE_CODE(pcSlice->getSliceSubPicId(), bitsSubPicId, "slice_subpic_id");
   }
 

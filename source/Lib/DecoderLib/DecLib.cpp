@@ -2613,7 +2613,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
           const unsigned  ctuRsAddrIRAP = latestIRAPNalUnit->m_firstCTUinSlice;
           const unsigned  ctuXPosInCtusIRAP = ctuRsAddrIRAP % pcSlice->getPPS()->getPicWidthInCtu();
           const unsigned  ctuYPosInCtusIRAP = ctuRsAddrIRAP / pcSlice->getPPS()->getPicWidthInCtu();
-          Position posIRAP(ctuXPosInCtusIRAP*maxCUSize, ctuXPosInCtusIRAP*maxCUSize);
+          Position posIRAP(ctuXPosInCtusIRAP*maxCUSize, ctuYPosInCtusIRAP*maxCUSize);
           bool isInCorrespondingSubpic = curSubPic.isContainingPos(posIRAP);
           if (isInCorrespondingSubpic)
           {

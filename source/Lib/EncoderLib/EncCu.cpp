@@ -3236,8 +3236,11 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
 
   const UnitArea localUnitArea(tempCS->area.chromaFormat, Area(0, 0, tempCS->area.Y().width, tempCS->area.Y().height));
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda();
-
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  uint8_t maxNumMergeCandidates = cu.cs->sps->getMaxNumGeoCand();
+#else
   uint8_t maxNumMergeCandidates = cu.cs->picHeader->getMaxNumGeoCand();
+#endif
   DistParam distParamWholeBlk;
   m_pcRdCost->setDistParam(distParamWholeBlk, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y().buf, m_acMergeBuffer[0].Y().stride, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y);
   Distortion bestWholeBlkSad = MAX_UINT64;
@@ -3880,7 +3883,11 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
         Distortion sad = distParam.distFunc(distParam);
         unsigned int bitsCand = mergeCand + 1;
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+        if (mergeCand == tempCS->sps->getMaxNumMergeCand() - 1)
+#else
         if (mergeCand == tempCS->picHeader->getMaxNumMergeCand() - 1)
+#endif
         {
           bitsCand--;
         }

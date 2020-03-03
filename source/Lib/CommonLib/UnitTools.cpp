@@ -749,8 +749,11 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 {
   const CodingStructure &cs = *pu.cs;
   const Slice &slice = *pu.cs->slice;
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumIBCMergeCand();
+#else
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumIBCMergeCand();
-
+#endif
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {
     mrgCtx.BcwIdx[ui] = BCW_DEFAULT;
@@ -866,8 +869,11 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
 {
   const CodingStructure &cs  = *pu.cs;
   const Slice &slice         = *pu.cs->slice;
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumMergeCand();
+#else
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
-
+#endif
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {
     mrgCtx.BcwIdx[ui] = BCW_DEFAULT;
@@ -3443,8 +3449,11 @@ void PU::getGeoMergeCandidates( const PredictionUnit &pu, MergeCtx& geoMrgCtx )
   MergeCtx tmpMergeCtx;
 
   const Slice &slice = *pu.cs->slice;
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumMergeCand();
+#else
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
-
+#endif
   geoMrgCtx.numValidMergeCand = 0;
 
   for (int32_t i = 0; i < GEO_MAX_NUM_UNI_CANDS; i++)

@@ -2129,7 +2129,11 @@ void CABACReader::prediction_unit( PredictionUnit& pu, MergeCtx& mrgCtx )
     pu.cu->affine = false;
     pu.refIdx[REF_PIC_LIST_0] = MAX_NUM_REF;
     mvd_coding(pu.mvd[REF_PIC_LIST_0]);
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    if (pu.cs->sps->getMaxNumIBCMergeCand() == 1)
+#else
     if ( pu.cu->slice->getPicHeader()->getMaxNumIBCMergeCand() == 1 )
+#endif
     {
       pu.mvpIdx[REF_PIC_LIST_0] = 0;
     }
@@ -2305,7 +2309,12 @@ void CABACReader::merge_data( PredictionUnit& pu )
 
 #if JVET_Q0806
     const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE && pu.cu->lwidth() * pu.cu->lheight() >= 64;
-    const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() && pu.cu->cs->picHeader->getMaxNumGeoCand() > 1
+    const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() && 
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+      pu.cs->sps->getMaxNumGeoCand() > 1
+#else
+      pu.cu->cs->picHeader->getMaxNumGeoCand() > 1
+#endif
                                                                       && pu.cu->lwidth() >= GEO_MIN_CU_SIZE && pu.cu->lheight() >= GEO_MIN_CU_SIZE
                                                                       && pu.cu->lwidth() <= GEO_MAX_CU_SIZE && pu.cu->lheight() <= GEO_MAX_CU_SIZE
                                                                       && pu.cu->lwidth() < 8 * pu.cu->lheight() && pu.cu->lheight() < 8 * pu.cu->lwidth();
@@ -2426,7 +2435,11 @@ void CABACReader::merge_idx( PredictionUnit& pu )
   }
   else
   {
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    int numCandminus1 = int(pu.cs->sps->getMaxNumMergeCand()) - 1;
+#else
   int numCandminus1 = int( pu.cs->picHeader->getMaxNumMergeCand() ) - 1;
+#endif
   pu.mergeIdx       = 0;
 
 #if !JVET_Q0806
@@ -2474,7 +2487,11 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     uint32_t splitDir  = 0;
     xReadTruncBinCode(splitDir, GEO_NUM_PARTITION_MODE);
     pu.geoSplitDir = splitDir;
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    const int maxNumGeoCand = pu.cs->sps->getMaxNumGeoCand();
+#else
     const int maxNumGeoCand = pu.cs->picHeader->getMaxNumGeoCand();
+#endif
     CHECK(maxNumGeoCand < 2, "Incorrect max number of geo candidates");
     CHECK(pu.cu->lheight() > 64 || pu.cu->lwidth() > 64, "Incorrect block size of geo flag");
     int numCandminus2 = maxNumGeoCand - 2;
@@ -2504,7 +2521,11 @@ void CABACReader::merge_idx( PredictionUnit& pu )
 
   if (pu.cu->predMode == MODE_IBC)
   {
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    numCandminus1 = int(pu.cs->sps->getMaxNumIBCMergeCand()) - 1;
+#else
     numCandminus1 = int(pu.cs->picHeader->getMaxNumIBCMergeCand()) - 1;
+#endif
   }
   if( numCandminus1 > 0 )
   {
@@ -2529,7 +2550,11 @@ void CABACReader::mmvd_merge_idx(PredictionUnit& pu)
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET(STATS__CABAC_BITS__MERGE_INDEX);
 
   int var0 = 0;
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  if (pu.cs->sps->getMaxNumMergeCand() > 1)
+#else
   if (pu.cs->picHeader->getMaxNumMergeCand() > 1)
+#endif
   {
     static_assert(MMVD_BASE_MV_NUM == 2, "");
     var0 = m_BinDecoder.decodeBin(Ctx::MmvdMergeIdx());

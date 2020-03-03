@@ -1139,6 +1139,138 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
 
   bool isNeedToCheck = (this->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP || this->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL) ? false : true;
 
+  // mark long-term reference pictures in List0
+  for( i = 0; i < pRPL0->getNumberOfShorttermPictures() + pRPL0->getNumberOfLongtermPictures() + pRPL0->getNumberOfInterLayerPictures(); i++ )
+  {
+    if( !pRPL0->isRefPicLongterm( i ) || pRPL0->isInterLayerRefPic( i ) )
+    {
+      continue;
+    }
+          
+    int isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      Picture* rpcPic = *(iterPic++);
+      if (!rpcPic->referenced)
+      {
+        continue;
+      }
+      int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+      int curPoc = rpcPic->getPOC();
+      int refPoc = pRPL0->getRefPicIdentifier(i) & (pocCycle - 1);
+      if(pRPL0->getDeltaPocMSBPresentFlag(i))
+      {
+        refPoc += getPOC() - pRPL0->getDeltaPocMSBCycleLT(i) * pocCycle - (getPOC() & (pocCycle - 1));
+      }
+      else
+      {
+        curPoc = curPoc & (pocCycle - 1);
+      }
+      if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    // if there was no such long-term check the short terms
+    if (!isAvailable)
+    {
+      iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        Picture* rpcPic = *(iterPic++);
+        if (!rpcPic->referenced)
+        {
+          continue;
+        }
+        int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+        int curPoc = rpcPic->getPOC();
+        int refPoc = pRPL0->getRefPicIdentifier(i) & (pocCycle - 1);
+        if(pRPL0->getDeltaPocMSBPresentFlag(i))
+        {
+          refPoc += getPOC() - pRPL0->getDeltaPocMSBCycleLT(i) * pocCycle - (getPOC() & (pocCycle - 1));
+        }
+        else
+        {
+          curPoc = curPoc & (pocCycle - 1);
+        }
+        if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+        {
+          isAvailable = 1;
+          rpcPic->longTerm = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // mark long-term reference pictures in List1
+  for( i = 0; i < pRPL1->getNumberOfShorttermPictures() + pRPL1->getNumberOfLongtermPictures() + pRPL1->getNumberOfInterLayerPictures(); i++ )
+  {
+    if( !pRPL1->isRefPicLongterm( i ) || pRPL1->isInterLayerRefPic( i ) )
+    {
+      continue;
+    }
+          
+    int isAvailable = 0;
+    PicList::iterator iterPic = rcListPic.begin();
+    while (iterPic != rcListPic.end())
+    {
+      Picture* rpcPic = *(iterPic++);
+      if (!rpcPic->referenced)
+      {
+        continue;
+      }
+      int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+      int curPoc = rpcPic->getPOC();
+      int refPoc = pRPL1->getRefPicIdentifier(i) & (pocCycle - 1);
+      if(pRPL1->getDeltaPocMSBPresentFlag(i))
+      {
+        refPoc += getPOC() - pRPL1->getDeltaPocMSBCycleLT(i) * pocCycle - (getPOC() & (pocCycle - 1));
+      }
+      else
+      {
+        curPoc = curPoc & (pocCycle - 1);
+      }
+      if (rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+      {
+        isAvailable = 1;
+        break;
+      }
+    }
+    // if there was no such long-term check the short terms
+    if (!isAvailable)
+    {
+      iterPic = rcListPic.begin();
+      while (iterPic != rcListPic.end())
+      {
+        Picture* rpcPic = *(iterPic++);
+        if (!rpcPic->referenced)
+        {
+          continue;
+        }
+        int pocCycle = 1 << (rpcPic->cs->sps->getBitsForPOC());
+        int curPoc = rpcPic->getPOC();
+        int refPoc = pRPL1->getRefPicIdentifier(i) & (pocCycle - 1);
+        if(pRPL1->getDeltaPocMSBPresentFlag(i))
+        {
+          refPoc += getPOC() - pRPL1->getDeltaPocMSBCycleLT(i) * pocCycle - (getPOC() & (pocCycle - 1));
+        }
+        else
+        {
+          curPoc = curPoc & (pocCycle - 1);
+        }
+        if (!rpcPic->longTerm && curPoc == refPoc && rpcPic->referenced)
+        {
+          isAvailable = 1;
+          rpcPic->longTerm = true;
+          break;
+        }
+      }
+    }
+  }
+
   // loop through all pictures in the reference picture buffer
   PicList::iterator iterPic = rcListPic.begin();
   while (iterPic != rcListPic.end())

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,11 +110,15 @@ static void convertPayloadToRBSP(vector<uint8_t>& nalUnitBuf, InputBitstream *bi
 static void xTraceNalUnitHeader(InputNALUnit& nalu)
 {
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "*********** NAL UNIT (%s) ***********\n", nalUnitTypeToString(nalu.m_nalUnitType) );
-
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "forbidden_zero_bit", 1, 0 );
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type", 6, nalu.m_nalUnitType );
-  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id", 6, nalu.m_nuhLayerId );
+  bool zeroTidRequiredFlag = 0;
+  if((nalu.m_nalUnitType >= 16) && (nalu.m_nalUnitType <= 31)) {
+    zeroTidRequiredFlag = 1;
+  }
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "zero_tid_required_flag", 1, zeroTidRequiredFlag );
   DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_temporal_id_plus1", 3, nalu.m_temporalId + 1 );
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nal_unit_type_lsb", 4, (nalu.m_nalUnitType) - (zeroTidRequiredFlag << 4));
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_layer_id_plus1", 7, nalu.m_nuhLayerId+1);
+  DTRACE( g_trace_ctx, D_NALUNITHEADER, "%-50s u(%d)  : %u\n", "nuh_reserved_zero_bit", 1, 0 );
 }
 #endif
 
@@ -122,13 +126,15 @@ void readNalUnitHeader(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-  bool forbidden_zero_bit = bs.read(1);           // forbidden_zero_bit
-  if(forbidden_zero_bit != 0) { THROW( "Forbidden zero-bit not '0'" );}
-  nalu.m_nalUnitType = (NalUnitType) bs.read(6);  // nal_unit_type
-  nalu.m_nuhLayerId = bs.read(6);                 // nuh_layer_id
-  nalu.m_temporalId = bs.read(3) - 1;             // nuh_temporal_id_plus1
+  nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
+  nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
+  nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
+  CHECK(nalu.m_nuhLayerId > 55, "The value of nuh_layer_id shall be in the range of 0 to 55, inclusive");
+  nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
+  nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
+
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
-  CodingStatistics::IncrementStatisticEP(STATS__NAL_UNIT_HEADER_BITS, 1+6+6+3, 0);
+  CodingStatistics::IncrementStatisticEP(STATS__NAL_UNIT_HEADER_BITS, 1+3+4+7+1, 0);
 #endif
 
 #if ENABLE_TRACING
@@ -140,65 +146,11 @@ void readNalUnitHeader(InputNALUnit& nalu)
   {
     if ( nalu.m_temporalId )
     {
-#if HEVC_VPS
-#if !JVET_M0101_HLS
-      CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-           || nalu.m_nalUnitType == NAL_UNIT_VPS
-           || nalu.m_nalUnitType == NAL_UNIT_SPS
-           || nalu.m_nalUnitType == NAL_UNIT_EOS
-           || nalu.m_nalUnitType == NAL_UNIT_EOB
-            , "Invalid NAL type" );
-#else
-      CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-           || nalu.m_nalUnitType == NAL_UNIT_VPS
-           || nalu.m_nalUnitType == NAL_UNIT_SPS
-           || nalu.m_nalUnitType == NAL_UNIT_EOS
-           || nalu.m_nalUnitType == NAL_UNIT_EOB
-           , "Invalid NAL type" );
-#endif
-#else
-#if !JVET_M0101_HLS
-      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_BLA_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-           || nalu.m_nalUnitType == NAL_UNIT_SPS
-           || nalu.m_nalUnitType == NAL_UNIT_EOS
-           || nalu.m_nalUnitType == NAL_UNIT_EOB
-           , "Invalid NAL type");
-#else
-      CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL
-         || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP
-         || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
-         || nalu.m_nalUnitType == NAL_UNIT_SPS
-         || nalu.m_nalUnitType == NAL_UNIT_EOS
-         || nalu.m_nalUnitType == NAL_UNIT_EOB
-         , "Invalid NAL type");
-#endif
-#endif
-
     }
     else
     {
-#if !JVET_M0101_HLS
-      CHECK(  nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_R
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TSA_N
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_R
-           || nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA_N
-            , "Invalid NAL type" );
-#else
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
-         , "Invalid NAL type");
-#endif
+        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0"); 
     }
   }
 }
@@ -215,4 +167,12 @@ void read(InputNALUnit& nalu)
   bitstream.resetToStart();
   readNalUnitHeader(nalu);
 }
+#if JVET_Q0775_PH_IN_SH
+bool checkPictureHeaderInSliceHeaderFlag(InputNALUnit& nalu)
+{
+  InputBitstream& bitstream = nalu.getBitstream();
+  CHECK(bitstream.getByteLocation() != 2, "The picture_header_in_slice_header_flag is the first bit after the NAL unit header");
+  return (bool)bitstream.read(1);
+}
+#endif
 //! \}

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,6 @@
 #endif // _MSC_VER > 1000
 
 #include "Utilities/VideoIOYuv.h"
-#include "Utilities/ColourRemapping.h"
 #include "CommonLib/Picture.h"
 #include "DecoderLib/DecLib.h"
 #include "DecAppCfg.h"
@@ -61,13 +60,23 @@ class DecApp : public DecAppCfg
 private:
   // class interface
   DecLib          m_cDecLib;                     ///< decoder class
-  VideoIOYuv      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
+  std::unordered_map<int, VideoIOYuv>      m_cVideoIOYuvReconFile;        ///< reconstruction YUV class
 
   // for output control
   int             m_iPOCLastDisplay;              ///< last POC in display order
   std::ofstream   m_seiMessageFileStream;         ///< Used for outputing SEI messages.
-  ColourRemapping m_cColourRemapping;             ///< colour remapping handler
 
+#if JVET_P2008_OUTPUT_LOG
+  std::ofstream   m_oplFileStream;                ///< Used to output log file for confomance testing
+#endif //JVET_P2008_OUTPUT_LOG
+
+
+
+#if JVET_Q0814_DPB
+private:
+  bool  xIsNaluWithinTargetDecLayerIdSet( const InputNALUnit* nalu ) const; ///< check whether given Nalu is within targetDecLayerIdSet
+  bool  xIsNaluWithinTargetOutputLayerIdSet( const InputNALUnit* nalu ) const; ///< check whether given Nalu is within targetOutputLayerIdSet
+#endif
 
 public:
   DecApp();
@@ -79,8 +88,19 @@ private:
   void  xCreateDecLib     (); ///< create internal classes
   void  xDestroyDecLib    (); ///< destroy internal classes
   void  xWriteOutput      ( PicList* pcListPic , uint32_t tId); ///< write YUV to file
-  void  xFlushOutput      ( PicList* pcListPic ); ///< flush all remaining decoded pictures to file
+  void  xFlushOutput( PicList* pcListPic, const int layerId = NOT_VALID ); ///< flush all remaining decoded pictures to file
+#if !JVET_Q0814_DPB
   bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
+  bool  isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu); ///< check whether given Nalu is within targetOutputLayerIdSet
+  bool  deriveOutputLayerSet(); ///< derive OLS and layer sets
+#endif
+  bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
+  bool  isNewAccessUnit(bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new access unit
+
+#if JVET_P2008_OUTPUT_LOG 
+  void  writeLineToOutputLog(Picture * pcPic);
+#endif // JVET_P2008_OUTPUT_LOG 
+
 };
 
 //! \}

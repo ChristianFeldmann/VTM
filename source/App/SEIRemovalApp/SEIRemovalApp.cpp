@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,11 +72,11 @@ void read2(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-  bool forbidden_zero_bit = bs.read(1);           // forbidden_zero_bit
-  if(forbidden_zero_bit != 0) { THROW( "Forbidden zero-bit not '0'" );}
-  nalu.m_nalUnitType = (NalUnitType) bs.read(6);  // nal_unit_type
-  nalu.m_nuhLayerId = bs.read(6);                 // nuh_layer_id
-  nalu.m_temporalId = bs.read(3) - 1;             // nuh_temporal_id_plus1
+  nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
+  nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
+  nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
+  nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
+  nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
 }
 
 uint32_t SEIRemovalApp::decode()

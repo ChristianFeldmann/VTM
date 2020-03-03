@@ -10,3 +10,8 @@ deploy
 *.suo
 .vs/
 .vscode/
+*.blg
+*.bbl
+*.pyc
+/out/
+/doc/_minted-software-manual/

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,37 +49,38 @@ public:
   SEIWriter() {};
   virtual ~SEIWriter() {};
 
-  void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, bool isNested);
+  void writeSEImessages(OutputBitstream& bs, const SEIMessages &seiList, const SPS *sps, HRD &hrd, bool isNested, const uint32_t temporalId);
 
 protected:
   void xWriteSEIuserDataUnregistered(const SEIuserDataUnregistered &sei);
-  void xWriteSEIActiveParameterSets(const SEIActiveParameterSets& sei);
-  void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SPS *sps);
+  void xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId);
   void xWriteSEIDecodedPictureHash(const SEIDecodedPictureHash& sei);
-  void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei, const SPS *sps);
-  void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SPS *sps);
-  void xWriteSEIRecoveryPoint(const SEIRecoveryPoint& sei);
-  void xWriteSEIFramePacking(const SEIFramePacking& sei);
-  void xWriteSEISegmentedRectFramePacking(const SEISegmentedRectFramePacking& sei);
-  void xWriteSEIDisplayOrientation(const SEIDisplayOrientation &sei);
-  void xWriteSEITemporalLevel0Index(const SEITemporalLevel0Index &sei);
-  void xWriteSEIGradualDecodingRefreshInfo(const SEIGradualDecodingRefreshInfo &sei);
-  void xWriteSEINoDisplay(const SEINoDisplay &sei);
-  void xWriteSEIToneMappingInfo(const SEIToneMappingInfo& sei);
-  void xWriteSEISOPDescription(const SEISOPDescription& sei);
+  void xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei);
+  void xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod& bp, const uint32_t temporalId);
+  void xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei);
+  void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
+#if JVET_P0190_SCALABLE_NESTING_SEI
   void xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps);
-  void xWriteSEITempMotionConstrainedTileSets(const SEITempMotionConstrainedTileSets& sei);
-  void xWriteSEITimeCode(const SEITimeCode& sei);
-  void xWriteSEIChromaResamplingFilterHint(const SEIChromaResamplingFilterHint& sei);
-  void xWriteSEIKneeFunctionInfo(const SEIKneeFunctionInfo &sei);
-  void xWriteSEIColourRemappingInfo(const SEIColourRemappingInfo& sei);
+#endif
+  void xWriteSEIFramePacking(const SEIFramePacking& sei);
   void xWriteSEIMasteringDisplayColourVolume( const SEIMasteringDisplayColourVolume& sei);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);
 #endif
-  void xWriteSEIGreenMetadataInfo(const SEIGreenMetadataInfo &sei);
+  void xWriteSEIEquirectangularProjection         (const SEIEquirectangularProjection &sei);
+  void xWriteSEISphereRotation                    (const SEISphereRotation &sei);
+  void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
+  void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
+  void xWriteSEIGeneralizedCubemapProjection      (const SEIGeneralizedCubemapProjection &sei);
+  void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei, const SPS* sps);
+  void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 
-  void xWriteSEIpayloadData(OutputBitstream& bs, const SEI& sei, const SPS *sps);
+  void xWriteSEIUserDataRegistered(const SEIUserDataRegistered& sei);
+  void xWriteSEIFilmGrainCharacteristics(const SEIFilmGrainCharacteristics& sei);
+  void xWriteSEIContentLightLevelInfo(const SEIContentLightLevelInfo& sei);
+  void xWriteSEIAmbientViewingEnvironment(const SEIAmbientViewingEnvironment& sei);
+  void xWriteSEIContentColourVolume(const SEIContentColourVolume &sei);
+  void xWriteSEIpayloadData(OutputBitstream &bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();
 };
 

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -274,9 +274,7 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
   // find the block with least candidates
   size_t minSize = MAX_UINT;
   unsigned int targetHashOneBlock = 0;
-#if JVET_N0329_IBC_SEARCH_IMP 
   Position targetBlockOffsetInCu(0, 0);
-#endif
   for (SizeType y = 0; y < lumaArea.height && minSize > 1; y += MIN_PU_SIZE)
   {
     for (SizeType x = 0; x < lumaArea.width && minSize > 1; x += MIN_PU_SIZE)
@@ -286,9 +284,7 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
       {
         minSize = m_hash2Pos[hash].size();
         targetHashOneBlock = hash;
-#if JVET_N0329_IBC_SEARCH_IMP 
         targetBlockOffsetInCu.repositionTo(Position(x, y));
-#endif
       }
     }
   }
@@ -300,20 +296,12 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
     // check whether whole block match
     for (std::vector<Position>::iterator refBlockPos = candOneBlock.begin(); refBlockPos != candOneBlock.end(); refBlockPos++)
     {
-#if JVET_N0329_IBC_SEARCH_IMP 
       Position topLeft = refBlockPos->offset(-targetBlockOffsetInCu.x, -targetBlockOffsetInCu.y);
       Position bottomRight = topLeft.offset(lumaArea.width - 1, lumaArea.height - 1);
-#else
-      Position bottomRight = refBlockPos->offset(lumaArea.width - 1, lumaArea.height - 1);
-#endif
       bool wholeBlockMatch = true;
       if (lumaArea.width > MIN_PU_SIZE || lumaArea.height > MIN_PU_SIZE)
       {
-#if JVET_N0329_IBC_SEARCH_IMP 
         if (!cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight || topLeft.x < 0 || topLeft.y < 0)
-#else
-        if (!cs.isDecomp(bottomRight, cs.chType) || bottomRight.x >= m_picWidth || bottomRight.y >= m_picHeight)
-#endif
         {
           continue;
         }
@@ -322,33 +310,21 @@ bool IbcHashMap::ibcHashMatch(const Area& lumaArea, std::vector<Position>& cand,
           for (SizeType x = 0; x < lumaArea.width && wholeBlockMatch; x += MIN_PU_SIZE)
           {
             // whether the reference block and current block has the same hash
-#if JVET_N0329_IBC_SEARCH_IMP 
             wholeBlockMatch &= (m_pos2Hash[lumaArea.pos().y + y][lumaArea.pos().x + x] == m_pos2Hash[topLeft.y + y][topLeft.x + x]);
-#else
-            wholeBlockMatch &= (m_pos2Hash[lumaArea.pos().y + y][lumaArea.pos().x + x] == m_pos2Hash[refBlockPos->y + y][refBlockPos->x + x]);
-#endif
           }
         }
       }
       else
       {
-#if JVET_N0329_IBC_SEARCH_IMP 
         CHECK(topLeft != *refBlockPos, "4x4 target block should not have offset!");
         if (abs(topLeft.x - lumaArea.x) > searchRange4SmallBlk || abs(topLeft.y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, CHANNEL_TYPE_LUMA))
-#else
-        if (abs(refBlockPos->x - lumaArea.x) > searchRange4SmallBlk || abs(refBlockPos->y - lumaArea.y) > searchRange4SmallBlk || !cs.isDecomp(bottomRight, cs.chType))
-#endif
         {
           continue;
         }
       }
       if (wholeBlockMatch)
       {
-#if JVET_N0329_IBC_SEARCH_IMP 
         cand.push_back(topLeft);
-#else
-        cand.push_back(*refBlockPos);
-#endif
         if (cand.size() > maxCand)
         {
           break;
@@ -377,7 +353,6 @@ int IbcHashMap::getHashHitRatio(const Area& lumaArea)
   return 100 * hit / total;
 }
 
-#if JVET_N0329_IBC_SEARCH_IMP
 int IbcHashMap::calHashBlkMatchPerc(const Area& lumaArea)
 {
   int maxX = std::min((int)(lumaArea.x + lumaArea.width), m_picWidth);
@@ -456,5 +431,4 @@ int IbcHashMap::calHashBlkMatchPerc(const Area& lumaArea)
     return 100 * hit / total;
   }
 }
-#endif
 //! \}

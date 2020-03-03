@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,20 @@
 // ====================================================================================================================
 // Class definition
 // ====================================================================================================================
+struct SeqInfo
+{
+  double binVar[PIC_ANALYZE_CW_BINS];
+  double binHist[PIC_ANALYZE_CW_BINS];
+  double normVar[PIC_ANALYZE_CW_BINS];
+  int    nonZeroCnt;
+  double weightVar;
+  double weightNorm;
+  double minBinVar;
+  double maxBinVar;
+  double meanBinVar;
+  double ratioStdU;
+  double ratioStdV;
+};
 
 class EncReshape : public Reshape
 {
@@ -71,6 +85,9 @@ private:
   Pel                     m_cwLumaWeight[PIC_CODE_CW_BINS];
   double                  m_chromaWeight;
   int                     m_chromaAdj;
+  int                     m_binNum;
+  SeqInfo                 m_srcSeqStats;
+  SeqInfo                 m_rspSeqStats;
 public:
 
   EncReshape();
@@ -81,20 +98,25 @@ public:
 
   bool getSrcReshaped() { return m_srcReshaped; }
   void setSrcReshaped(bool b) { m_srcReshaped = b; }
-  void preAnalyzerSDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT);
+  void initSeqStats(SeqInfo &stats);
+  void calcSeqStats(Picture *pcPic, SeqInfo &stats);
+  void preAnalyzerLMCS(Picture *pcPic, const uint32_t signalType, const SliceType sliceType, const ReshapeCW& reshapeCW);
   void preAnalyzerHDR(Picture *pcPic, const SliceType sliceType, const ReshapeCW& reshapeCW, bool isDualT);
   void bubbleSortDsd(double *array, int * idx, int n);
   void swap(int *xp, int *yp) { int temp = *xp;  *xp = *yp;  *yp = temp; }
   void swap(double *xp, double *yp) { double temp = *xp;  *xp = *yp;  *yp = temp; }
-  void deriveReshapeParametersSDRfromStats(uint32_t *, double*, double* reshapeTH1, double* reshapeTH2, bool *intraAdp, bool *interAdp);
+  void cwPerturbation(int startBinIdx, int endBinIdx, uint16_t maxCW);
+  void cwReduction(int startBinIdx, int endBinIdx);
+  void deriveReshapeParametersSDR(bool *intraAdp, bool *interAdp);
   void deriveReshapeParameters(double *array, int start, int end, ReshapeCW respCW, double &alpha, double &beta);
   void initLUTfromdQPModel();
-  void constructReshaperSDR();
+  void constructReshaperLMCS();
   ReshapeCW * getReshapeCW() { return &m_reshapeCW; }
   Pel * getWeightTable() { return m_cwLumaWeight; }
   double getCWeight() { return m_chromaWeight; }
+  void adjustLmcsPivot();
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   void copyState(const EncReshape& other);
 #endif
 };// END CLASS DEFINITION EncReshape

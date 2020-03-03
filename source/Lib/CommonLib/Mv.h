@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,21 +54,19 @@ enum MvPrecision
   MV_PRECISION_HALF     = 3,      // 1/2-pel
   MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
   MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
-  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,      
+  MV_PRECISION_INTERNAL = 2 + MV_FRACTIONAL_BITS_INTERNAL,
 };
 
 /// basic motion vector class
 class Mv
 {
 private:
-  static const MvPrecision m_amvrPrecision[3];
+  static const MvPrecision m_amvrPrecision[4];
   static const MvPrecision m_amvrPrecAffine[3];
   static const MvPrecision m_amvrPrecIbc[3];
 
-#if JVET_N0334_MVCLIPPING
   static const int mvClipPeriod = (1 << MV_BITS);
   static const int halMvClipPeriod = (1 << (MV_BITS - 1));
-#endif
 
 public:
   int   hor;     ///< horizontal component of motion vector
@@ -129,22 +127,12 @@ public:
   //! shift right with rounding
   void divideByPowerOf2 (const int i)
   {
-#if JVET_N0335_N0085_MV_ROUNDING
     if (i != 0)
     {
       const int offset = (1 << (i - 1));
       hor = (hor + offset - (hor >= 0)) >> i;
       ver = (ver + offset - (ver >= 0)) >> i;
     }
-#else
-#if ME_ENABLE_ROUNDING_OF_MVS
-    const int offset = (i == 0) ? 0 : 1 << (i - 1);
-    hor += offset;
-    ver += offset;
-#endif
-    hor >>= i;
-    ver >>= i;
-#endif
   }
 
   const Mv& operator<<= (const int i)
@@ -156,17 +144,12 @@ public:
 
   const Mv& operator>>= ( const int i )
   {
-#if JVET_N0335_N0085_MV_ROUNDING
     if (i != 0)
     {
       const int offset = (1 << (i - 1));
       hor = (hor + offset - (hor >= 0)) >> i;
       ver = (ver + offset - (ver >= 0)) >> i;
     }
-#else
-    hor >>= i;
-    ver >>= i;
-#endif
     return  *this;
   }
 
@@ -192,13 +175,8 @@ public:
 
   const Mv scaleMv( int iScale ) const
   {
-#if JVET_N0335_N0085_MV_ROUNDING
     const int mvx = Clip3(MV_MIN, MV_MAX, (iScale * getHor() + 128 - (iScale * getHor() >= 0)) >> 8);
     const int mvy = Clip3(MV_MIN, MV_MAX, (iScale * getVer() + 128 - (iScale * getVer() >= 0)) >> 8);
-#else
-    const int mvx = Clip3(MV_MIN, MV_MAX, (iScale * getHor() + 127 + (iScale * getHor() < 0)) >> 8);
-    const int mvy = Clip3(MV_MIN, MV_MAX, (iScale * getVer() + 127 + (iScale * getVer() < 0)) >> 8);
-#endif
     return Mv( mvx, mvy );
   }
 
@@ -213,13 +191,8 @@ public:
     {
       const int rightShift = -shift;
       const int nOffset = 1 << (rightShift - 1);
-#if JVET_N0335_N0085_MV_ROUNDING
       hor = hor >= 0 ? (hor + nOffset - 1) >> rightShift : (hor + nOffset) >> rightShift;
       ver = ver >= 0 ? (ver + nOffset - 1) >> rightShift : (ver + nOffset) >> rightShift;
-#else
-      hor = hor >= 0 ? (hor + nOffset) >> rightShift : -((-hor + nOffset) >> rightShift);
-      ver = ver >= 0 ? (ver + nOffset) >> rightShift : -((-ver + nOffset) >> rightShift);
-#endif
     }
   }
 
@@ -288,7 +261,6 @@ public:
     hor = Clip3( -(1 << 17), (1 << 17) - 1, hor );
     ver = Clip3( -(1 << 17), (1 << 17) - 1, ver );
   }
-#if JVET_N0334_MVCLIPPING
   void mvCliptoStorageBitDepth()  // periodic clipping
   {
     hor = (hor + mvClipPeriod) & (mvClipPeriod - 1);
@@ -296,7 +268,6 @@ public:
     ver = (ver + mvClipPeriod) & (mvClipPeriod - 1);
     ver = (ver >= halMvClipPeriod) ? (ver - mvClipPeriod) : ver;
   }
-#endif
 };// END CLASS DEFINITION MV
 
 namespace std
@@ -312,7 +283,15 @@ namespace std
 };
 void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
-              const class SPS& sps );
+              const class SPS& sps
+            , const class PPS& pps
+);
+
+bool wrapClipMv( Mv& rcMv, const Position& pos,
+                 const struct Size& size,
+                 const SPS *sps
+               , const PPS* pps
+);
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );
 

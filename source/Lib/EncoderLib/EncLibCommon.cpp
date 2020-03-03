@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,43 +31,21 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     ColourRemapping.h
-    \brief    Decoder application class (header)
+/** \file     EncLibCommon.cpp
+    \brief    Common encoder library class
 */
 
-#ifndef __COLOURREMAPPING__
-#define __COLOURREMAPPING__
+#include "CommonDef.h"
+#include "EncLibCommon.h"
 
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
-
-#include "CommonLib/Picture.h"
-#include "CommonLib/SEI.h"
-#include <fstream>
-
-
-//! \ingroup DecoderApp
-//! \{
-
-// ====================================================================================================================
-// Class definition
-// ====================================================================================================================
-
-/// decoder application class
-class ColourRemapping
+EncLibCommon::EncLibCommon()
+  : m_apsIdStart( ALF_CTB_MAX_NUM_APS )
+  , m_spsMap( MAX_NUM_SPS )
+  , m_ppsMap( MAX_NUM_PPS )
+  , m_apsMap( MAX_NUM_APS * MAX_NUM_APS_TYPE )
 {
-private:
-  SEIColourRemappingInfo*         m_pcSeiColourRemappingInfoPrevious;
-public:
-  ColourRemapping();
-  virtual ~ColourRemapping();
+}
 
-  void outputColourRemapPic(Picture* pcPic, std::ofstream& outstream );
-  void reset();
-};
-
-//! \}
-
-#endif
-
+EncLibCommon::~EncLibCommon()
+{
+}

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,27 +110,19 @@ static inline uint64_t getTotalFracBits(const uint32_t width, const uint32_t hei
 
 static inline int getTransformShift(const int channelBitDepth, const Size size, const int maxLog2TrDynamicRange)
 {
-  return maxLog2TrDynamicRange - channelBitDepth - ( ( g_aucLog2[size.width] + g_aucLog2[size.height] ) >> 1 );
+  return maxLog2TrDynamicRange - channelBitDepth - ( ( floorLog2(size.width) + floorLog2(size.height) ) >> 1 );
 }
 
 
 //------------------------------------------------
 
-static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chFmt)
-{
-  return g_aucChromaScale[chFmt][Clip3(0, (chromaQPMappingTableSize - 1), unscaledChromaQP)];
-}
-
-
-#if HEVC_USE_SCALING_LISTS
 //======================================================================================================================
 //Scaling lists  =======================================================================================================
 //======================================================================================================================
 
 static inline int getScalingListType(const PredMode predMode, const ComponentID compID)
 {
-  return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
+  return ((predMode == MODE_INTRA) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
 }
-#endif
 
 #endif

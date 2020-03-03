@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,11 @@ _byteStreamNALUnit(
   {
     uint8_t leading_zero_8bits = bs.readByte();
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
+#if EPBINCOUNT_FIX
+    statBits.bits+=8;
+#else
     statBits.bits+=8; statBits.count++;
+#endif
 #endif
     if(leading_zero_8bits != 0) { THROW( "Leading zero bits not zero" ); }
     stats.m_numLeadingZero8BitsBytes++;
@@ -97,7 +101,11 @@ _byteStreamNALUnit(
   {
     uint8_t zero_byte = bs.readByte();
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
+#if EPBINCOUNT_FIX
+    statBits.bits+=8;
+#else
     statBits.bits+=8; statBits.count++;
+#endif
 #endif
     CHECK( zero_byte != 0, "Zero byte not '0'" );
     stats.m_numZeroByteBytes++;
@@ -111,7 +119,11 @@ _byteStreamNALUnit(
   /* NB, (1) guarantees that the next three bytes are 0x00 00 01 */
   uint32_t start_code_prefix_one_3bytes = bs.readBytes(24/8);
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
+#if EPBINCOUNT_FIX
+  statBits.bits+=24;
+#else
   statBits.bits+=24; statBits.count+=3;
+#endif
 #endif
   if(start_code_prefix_one_3bytes != 0x000001) { THROW( "Invalid code prefix" );}
   stats.m_numStartCodePrefixBytes += 3;
@@ -163,7 +175,11 @@ _byteStreamNALUnit(
   {
     uint8_t trailing_zero_8bits = bs.readByte();
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
+#if EPBINCOUNT_FIX
+    statBits.bits+=8;
+#else
     statBits.bits+=8; statBits.count++;
+#endif
 #endif
     CHECK( trailing_zero_8bits != 0, "Trailing zero bits not '0'" );
     stats.m_numTrailingZero8BitsBytes++;

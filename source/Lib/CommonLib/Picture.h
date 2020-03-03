@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -50,11 +50,7 @@
 #include "MCTS.h"
 #include <deque>
 
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-class SyncObj;
-#endif
+#if ENABLE_SPLIT_PARALLELISM
 
 #define CURR_THREAD_ID -1
 
@@ -74,34 +70,9 @@ public:
   void     setSplitThreadId( const int tId = CURR_THREAD_ID );
   unsigned getNumSplitThreads() const { return m_numSplitThreads; };
 #endif
-#if ENABLE_WPP_PARALLELISM
-  unsigned getWppDataId  ( int lId = CURR_THREAD_ID ) const;
-  unsigned getWppThreadId() const;
-  void     setWppThreadId( const int tId = CURR_THREAD_ID );
-#endif
   unsigned getDataId     () const;
   bool init              ( const int ctuYsize, const int ctuXsize, const int numWppThreadsRunning, const int numWppExtraLines, const int numSplitThreads );
   int  getNumPicInstances() const;
-#if ENABLE_WPP_PARALLELISM
-  void setReady          ( const int ctuPosX, const int ctuPosY );
-  void wait              ( const int ctuPosX, const int ctuPosY );
-
-private:
-  bool getNextCtu( Position& pos, int ctuLine, int offset );
-
-private:
-  int m_firstNonFinishedLine;
-  int m_numWppThreads;
-  int m_numWppThreadsRunning;
-  int m_numWppDataInstances;
-  int m_ctuYsize;
-  int m_ctuXsize;
-
-  std::vector<int>         m_LineDone;
-  std::vector<bool>        m_LineProc;
-  std::mutex               m_mutex;
-  std::vector<SyncObj*>    m_SyncObjs;
-#endif
 #if ENABLE_SPLIT_PARALLELISM
 
   int   m_numSplitThreads;
@@ -115,58 +86,7 @@ class AQpLayer;
 
 typedef std::list<SEI*> SEIMessages;
 
-class Tile
-{
-private:
-  uint32_t      m_tileWidthInCtus;
-  uint32_t      m_tileHeightInCtus;
-  uint32_t      m_rightEdgePosInCtus;
-  uint32_t      m_bottomEdgePosInCtus;
-  uint32_t      m_firstCtuRsAddr;
 
-public:
-  Tile();
-  virtual ~Tile();
-
-  void      setTileWidthInCtus     ( uint32_t i )            { m_tileWidthInCtus = i; }
-  uint32_t      getTileWidthInCtus     () const              { return m_tileWidthInCtus; }
-  void      setTileHeightInCtus    ( uint32_t i )            { m_tileHeightInCtus = i; }
-  uint32_t      getTileHeightInCtus    () const              { return m_tileHeightInCtus; }
-  void      setRightEdgePosInCtus  ( uint32_t i )            { m_rightEdgePosInCtus = i; }
-  uint32_t      getRightEdgePosInCtus  () const              { return m_rightEdgePosInCtus; }
-  void      setBottomEdgePosInCtus ( uint32_t i )            { m_bottomEdgePosInCtus = i; }
-  uint32_t      getBottomEdgePosInCtus () const              { return m_bottomEdgePosInCtus; }
-  void      setFirstCtuRsAddr      ( uint32_t i )            { m_firstCtuRsAddr = i; }
-  uint32_t      getFirstCtuRsAddr      () const              { return m_firstCtuRsAddr; }
-};
-
-
-struct TileMap
-{
-  TileMap();
-
-  void create( const SPS& sps, const PPS& pps );
-  void destroy();
-
-  uint32_t getTileIdxMap( uint32_t ctuRsAddr )       const { return *(tileIdxMap + ctuRsAddr); }
-  uint32_t getTileIdxMap( const Position& pos )  const { return getTileIdxMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
-  uint32_t getCtuTsToRsAddrMap( uint32_t ctuTsAddr ) const { return *(ctuTsToRsAddrMap + (ctuTsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuTsAddr)); }
-  uint32_t getCtuRsToTsAddrMap( uint32_t ctuRsAddr ) const { return *(ctuRsToTsAddrMap + (ctuRsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuRsAddr)); }
-  uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool bAddressInRaster, Slice *pcSlice) const;
-
-  const PreCalcValues* pcv;
-  std::vector<Tile> tiles;
-  uint32_t  numTiles;
-  uint32_t  numTileColumns;
-  uint32_t  numTileRows;
-  uint32_t* tileIdxMap;
-  uint32_t* ctuTsToRsAddrMap;
-  uint32_t* ctuRsToTsAddrMap;
-
-  void initTileMap( const SPS& sps, const PPS& pps );
-  void initCtuTsRsAddrMap();
-  uint32_t calculateNextCtuRSAddr( const uint32_t currCtuRsAddr ) const;
-};
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -179,7 +99,7 @@ struct Picture : public UnitArea
   uint32_t margin;
   Picture();
 
-  void create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder);
+  void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerId );
   void destroy();
 
   void createTempBuffers( const unsigned _maxCUSize );
@@ -208,14 +128,14 @@ struct Picture : public UnitArea
          PelUnitBuf getResiBuf(const UnitArea &unit);
   const CPelUnitBuf getResiBuf(const UnitArea &unit) const;
 
-         PelBuf     getRecoBuf(const ComponentID compID);
-  const CPelBuf     getRecoBuf(const ComponentID compID) const;
-         PelBuf     getRecoBuf(const CompArea &blk);
-  const CPelBuf     getRecoBuf(const CompArea &blk) const;
-         PelUnitBuf getRecoBuf(const UnitArea &unit);
-  const CPelUnitBuf getRecoBuf(const UnitArea &unit) const;
-         PelUnitBuf getRecoBuf();
-  const CPelUnitBuf getRecoBuf() const;
+         PelBuf     getRecoBuf(const ComponentID compID, bool wrap=false);
+  const CPelBuf     getRecoBuf(const ComponentID compID, bool wrap=false) const;
+         PelBuf     getRecoBuf(const CompArea &blk, bool wrap=false);
+  const CPelBuf     getRecoBuf(const CompArea &blk, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false);
+  const CPelUnitBuf getRecoBuf(const UnitArea &unit, bool wrap=false) const;
+         PelUnitBuf getRecoBuf(bool wrap=false);
+  const CPelUnitBuf getRecoBuf(bool wrap=false) const;
 
          PelBuf     getBuf(const ComponentID compID, const PictureType &type);
   const CPelBuf     getBuf(const ComponentID compID, const PictureType &type) const;
@@ -225,11 +145,7 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-#if JVET_N0415_CTB_ALF
-  void finalInit(const SPS& sps, const PPS& pps, APS** apss);
-#else
-  void finalInit(const SPS& sps, const PPS& pps, APS& aps);
-#endif
+  void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 
   int  getPOC()                               const { return poc; }
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
@@ -239,8 +155,38 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
+
+  static void   rescalePicture( const std::pair<int, int> scalingRatio, 
+                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
+                                const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
+
+private:
+  Window        m_conformanceWindow;
+  Window        m_scalingWindow;
 
 public:
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY  
+  bool m_isSubPicBorderSaved;
+
+  PelStorage m_bufSubPicAbove;
+  PelStorage m_bufSubPicBelow;
+  PelStorage m_bufSubPicLeft;
+  PelStorage m_bufSubPicRight;
+
+  void    saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+  void  extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+  void restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+
+  bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
+  void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
+#endif
   bool m_bIsBorderExtended;
   bool referenced;
   bool reconstructed;
@@ -250,23 +196,26 @@ public:
   bool topField;
   bool fieldPic;
   int  m_prevQP[MAX_NUM_CHANNEL_TYPE];
+  bool precedingDRAP; // preceding a DRAP picture in decoding order
 
   int  poc;
   uint32_t layer;
   uint32_t depth;
+  int      layerId;
+
+  bool subLayerNonReferencePictureDueToSTSA;
 
   int* m_spliceIdx;
   int  m_ctuNums;
 
+  bool interLayerRefPicFlag;
+
 #if ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-  PelStorage m_bufs[( PARL_SPLIT_MAX_NUM_JOBS * PARL_WPP_MAX_NUM_THREADS )][NUM_PIC_TYPES];
-#else
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];
-#endif
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
+  const Picture*           unscaledPic;
 
   TComHash           m_hashMap;
   TComHash*          getHashMap() { return &m_hashMap; }
@@ -277,11 +226,25 @@ public:
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
 
+  uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
+  uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
+  Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
+  const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
+  Window&            getScalingWindow()                                              { return  m_scalingWindow; }
+  const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+  bool               isRefScaled( const PPS* pps ) const                             { return  getPicWidthInLumaSamples()                 != pps->getPicWidthInLumaSamples()                ||
+                                                                                               getPicHeightInLumaSamples()                != pps->getPicHeightInLumaSamples()               ||
+                                                                                               getScalingWindow().getWindowLeftOffset()   != pps->getScalingWindow().getWindowLeftOffset()  ||
+                                                                                               getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
+                                                                                               getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||
+                                                                                               getScalingWindow().getWindowBottomOffset() != pps->getScalingWindow().getWindowBottomOffset(); }
+#endif
+
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
-  TileMap*     tileMap;
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
@@ -293,11 +256,8 @@ private:
 #if ENABLE_SPLIT_PARALLELISM
 public:
   void finishParallelPart   ( const UnitArea& ctuArea );
-#if ENABLE_WPP_PARALLELISM
-  void finishCtuPart        ( const UnitArea& ctuArea );
 #endif
-#endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 public:
   Scheduler                  scheduler;
 #endif
@@ -328,9 +288,9 @@ public:
       std::fill( m_alfCtuEnableFlag[compIdx].begin(), m_alfCtuEnableFlag[compIdx].end(), 0 );
     }
   }
-#if JVET_N0415_CTB_ALF
   std::vector<short> m_alfCtbFilterIndex;
   short* getAlfCtbFilterIndex() { return m_alfCtbFilterIndex.data(); }
+  std::vector<short>& getAlfCtbFilterIndexVec() { return m_alfCtbFilterIndex; }
   void resizeAlfCtbFilterIndex(int numEntries)
   {
     m_alfCtbFilterIndex.resize(numEntries);
@@ -339,11 +299,25 @@ public:
       m_alfCtbFilterIndex[i] = 0;
     }
   }
-#endif
+  std::vector<uint8_t> m_alfCtuAlternative[MAX_NUM_COMPONENT];
+  std::vector<uint8_t>& getAlfCtuAlternative( int compIdx ) { return m_alfCtuAlternative[compIdx]; }
+  uint8_t* getAlfCtuAlternativeData( int compIdx ) { return m_alfCtuAlternative[compIdx].data(); }
+  void resizeAlfCtuAlternative( int numEntries )
+  {
+    for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+    {
+      m_alfCtuAlternative[compIdx].resize( numEntries );
+      std::fill( m_alfCtuAlternative[compIdx].begin(), m_alfCtuAlternative[compIdx].end(), 0 );
+    }
+  }
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);
 
+#if JVET_P2008_OUTPUT_LOG
+uint32_t calcMD5(const CPelUnitBuf& pic, PictureHash &digest, const BitDepths &bitDepths);
+std::string hashToString(const PictureHash &digest, int numChar);
+#endif // JVET_P2008_OUTPUT_LOG
 
 typedef std::list<Picture*> PicList;
 

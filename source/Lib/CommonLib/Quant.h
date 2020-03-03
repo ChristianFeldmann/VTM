@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,33 +58,46 @@
 // ====================================================================================================================
 // Class definition
 // ====================================================================================================================
-#if JVET_N0413_RDPCM
 struct TrQuantParams
 {
   int     rightShift;
   int     qScale;
 };
-#endif
 
 /// QP struct
-struct QpParam
+class QpParam
 {
-  int Qp;
-  int per;
-  int rem;
+public:
+  int Qps[2];
+  int pers[2];
+  int rems[2];
 
 private:
 
   QpParam(const int           qpy,
-          const ChannelType   chType,
+          const ComponentID   compID,
           const int           qpBdOffset,
+          const int           minQpPrimeTsMinus4,
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
-          const int           dqp );
+          const int           dqp
+        , const SPS           *sps
+#if JVET_Q0820_ACT
+        , const bool          applyACTQpoffset
+#endif 
+  );
 
 public:
 
+#if JVET_Q0820_ACT 
+  QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT, const bool allowACTQpoffset = true);
+#else
   QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT);
+#endif
+
+  int Qp ( const bool ts ) const { return Qps [ts?1:0]; }
+  int per( const bool ts ) const { return pers[ts?1:0]; }
+  int rem( const bool ts ) const { return rems[ts?1:0]; }
 
 }; // END STRUCT DEFINITION QpParam
 
@@ -116,26 +129,23 @@ public:
 #endif
   void   setLambda               ( const double dLambda )                      { m_dLambda = dLambda; }
   double getLambda               () const                                      { return m_dLambda; }
+  void   lambdaAdjustColorTrans(bool forward);
+  void   resetStore() { m_resetStore = true; }
 
-#if HEVC_USE_SCALING_LISTS
   int* getQuantCoeff             ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_quantCoef            [sizeX][sizeY][list][qp]; };  //!< get Quant Coefficent
   int* getDequantCoeff           ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_dequantCoef          [sizeX][sizeY][list][qp]; };  //!< get DeQuant Coefficent
 
   void setUseScalingList         ( bool bUseScalingList){ m_scalingListEnabledFlag = bUseScalingList; };
-  bool getUseScalingList         ( const uint32_t width, const uint32_t height, const bool isTransformSkip){ return m_scalingListEnabledFlag && (!isTransformSkip || ((width == 4) && (height == 4))); };
-
+  bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks) 
+  { 
+    return (m_scalingListEnabledFlag && !isTransformSkip && (!lfnstApplied || !disableScalingMatrixForLFNSTBlks));
+  }
   void setScalingListDec         ( const ScalingList &scalingList);
-#if JVET_N0246_MODIFIED_QUANTSCALES
   void processScalingListEnc     ( int *coeff, int *quantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
   void processScalingListDec     ( const int *coeff, int *dequantcoeff, int qpMod6, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
-#else
-  void processScalingListEnc     ( int *coeff, int *quantcoeff, int quantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
-  void processScalingListDec     ( const int *coeff, int *dequantcoeff, int invQuantScales, uint32_t height, uint32_t width, uint32_t ratio, int sizuNum, uint32_t dc);
-#endif
 
   virtual void setFlatScalingList( const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
   virtual void setScalingList    ( ScalingList *scalingList, const int maxLog2TrDynamicRange[MAX_NUM_CHANNEL_TYPE], const BitDepths &bitDepths);
-#endif
 
   // quantization
   virtual void quant             ( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx );
@@ -159,30 +169,30 @@ protected:
 #if T0196_SELECTIVE_RDOQ
   bool     m_useSelectiveRDOQ;
 #endif
-#if HEVC_USE_SCALING_LISTS
 private:
   void xInitScalingList   ( const Quant* other );
   void xDestroyScalingList();
   void xSetFlatScalingList( uint32_t list, uint32_t sizeX, uint32_t sizeY, int qp );
-  void xSetScalingListEnc ( ScalingList *scalingList, uint32_t list, uint32_t size, int qp );
-  void xSetScalingListDec ( const ScalingList &scalingList, uint32_t list, uint32_t size, int qp );
-#endif
-#if HEVC_USE_SIGN_HIDING
+  void xSetScalingListEnc(ScalingList *scalingList, uint32_t list, uint32_t size, int qp, uint32_t scalingListId);
+  void xSetScalingListDec(const ScalingList &scalingList, uint32_t list, uint32_t size, int qp, uint32_t scalingListId);
+  void xSetRecScalingListEnc(ScalingList *scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp, uint32_t scalingListId);
+  void xSetRecScalingListDec(const ScalingList &scalingList, uint32_t list, uint32_t sizew, uint32_t sizeh, int qp, uint32_t scalingListId);
 private:
   void xSignBitHidingHDQ  (TCoeff* pQCoef, const TCoeff* pCoef, TCoeff* deltaU, const CoeffCodingContext& cctx, const int maxLog2TrDynamicRange);
-#endif
 
 private:
 #if RDOQ_CHROMA_LAMBDA
   double   m_lambdas[MAX_NUM_COMPONENT];
 #endif
-#if HEVC_USE_SCALING_LISTS
+  double   m_lambdasStore[2][MAX_NUM_COMPONENT];  // 0-org; 1-act
+  bool     m_resetStore;
   bool     m_scalingListEnabledFlag;
   bool     m_isScalingListOwner;
 
   int      *m_quantCoef            [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of quantization matrix coefficient 4x4
   int      *m_dequantCoef          [SCALING_LIST_SIZE_NUM][SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM][SCALING_LIST_REM_NUM]; ///< array of dequantization matrix coefficient 4x4
-#endif
+
+  int      m_pairCheck;
 };// END CLASS DEFINITION Quant
 
 

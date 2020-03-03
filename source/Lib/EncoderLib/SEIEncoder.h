@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,9 +52,7 @@ public:
     :m_pcCfg(NULL)
     ,m_pcEncLib(NULL)
     ,m_pcEncGOP(NULL)
-    ,m_tl0Idx(0)
-    ,m_rapIdx(0)
-    ,m_isInitialized(false)
+  ,m_isInitialized(false)
   {};
   virtual ~SEIEncoder(){};
 
@@ -67,41 +65,33 @@ public:
   };
 
   // leading SEIs
-#if HEVC_VPS
-  void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const VPS *vps, const SPS *sps);
-#else
-  void initSEIActiveParameterSets (SEIActiveParameterSets *sei, const SPS *sps);
-#endif
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
-  void initSEIDisplayOrientation(SEIDisplayOrientation *sei);
-  void initSEIToneMappingInfo(SEIToneMappingInfo *sei);
-  void initSEISOPDescription(SEISOPDescription *sei, Slice *slice, int picInGOP, int lastIdr, int currGOPSize);
-  void initSEIBufferingPeriod(SEIBufferingPeriod *sei, Slice *slice);
-  void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
-  void initSEIRecoveryPoint(SEIRecoveryPoint *sei, Slice *slice);
-  void initSEISegmentedRectFramePacking(SEISegmentedRectFramePacking *sei);
-  void initSEITempMotionConstrainedTileSets (SEITempMotionConstrainedTileSets *sei, const PPS *pps);
-  void initSEIKneeFunctionInfo(SEIKneeFunctionInfo *sei);
-  void initSEIChromaResamplingFilterHint(SEIChromaResamplingFilterHint *sei, int iHorFilterIndex, int iVerFilterIndex);
-  void initSEITimeCode(SEITimeCode *sei);
-  bool initSEIColourRemappingInfo(SEIColourRemappingInfo *sei, int currPOC); // returns true on success, false on failure.
+  void initSEIDependentRAPIndication(SEIDependentRAPIndication *sei);
+  void initSEIBufferingPeriod(SEIBufferingPeriod *sei, bool noLeadingPictures);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
 #endif
-
+#if JVET_P0190_SCALABLE_NESTING_SEI
+  void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
+#endif
   // trailing SEIs
   void initDecodedPictureHashSEI(SEIDecodedPictureHash *sei, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths);
-  void initTemporalLevel0IndexSEI(SEITemporalLevel0Index *sei, Slice *slice);
-  void initSEIGreenMetadataInfo(SEIGreenMetadataInfo *sei, uint32_t u);
-
+  void initSEIErp(SEIEquirectangularProjection *sei);
+  void initSEISphereRotation(SEISphereRotation *sei);
+  void initSEIOmniViewport(SEIOmniViewport *sei);
+  void initSEIRegionWisePacking(SEIRegionWisePacking *sei);
+  void initSEIGcmp(SEIGeneralizedCubemapProjection *sei);
+  void initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps);
+  void initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo *sei);
+  void initSEIFilmGrainCharacteristics(SEIFilmGrainCharacteristics *sei);
+  void initSEIMasteringDisplayColourVolume(SEIMasteringDisplayColourVolume *sei);
+  void initSEIContentLightLevel(SEIContentLightLevelInfo *sei);
+  void initSEIAmbientViewingEnvironment(SEIAmbientViewingEnvironment *sei);
+  void initSEIContentColourVolume(SEIContentColourVolume *sei);
 private:
   EncCfg* m_pcCfg;
   EncLib* m_pcEncLib;
   EncGOP* m_pcEncGOP;
-
-  // for temporal level 0 index SEI
-  uint32_t m_tl0Idx;
-  uint32_t m_rapIdx;
 
   bool m_isInitialized;
 };

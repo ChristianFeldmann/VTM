@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,11 +59,13 @@ static std::vector<uint32_t> writeAnnexB(std::ostream& out, const AccessUnit& au
     uint32_t size = 0; /* size of annexB unit in bytes */
 
     static const uint8_t start_code_prefix[] = {0,0,0,1};
-#if HEVC_VPS
-    if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+      if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_DCI || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
 #else
-    if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
+      if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_DPS || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
 #endif
+
     {
       /* From AVC, When any of the following conditions are fulfilled, the
        * zero_byte syntax element shall be present:

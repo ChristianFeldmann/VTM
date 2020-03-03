@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,13 +73,10 @@ public:
   void initDecCuReshaper  ( Reshape* pcReshape, ChromaFormat chromaFormatIDC) ;
   void destoryDecCuReshaprBuf();
 
-  void setShareStateDec (int shareStateDecIn)  { m_shareStateDec = shareStateDecIn; }
-#if ENABLE_SPLIT_PARALLELISM
-  int  getShareStateDec () const { return m_shareStateDec; }
-#endif
   /// reconstruct Ctu information
 protected:
   void xIntraRecQT        ( CodingUnit&      cu, const ChannelType chType );
+  void xIntraRecACTQT(CodingUnit&      cu);
 
   void xReconInter        ( CodingUnit&      cu );
   void xDecodeInterTexture( CodingUnit&      cu );
@@ -87,22 +84,25 @@ protected:
   void xFillPCMBuffer     ( CodingUnit&      cu );
 
   void xIntraRecBlk       ( TransformUnit&   tu, const ComponentID compID );
-  void xReconPCM          ( TransformUnit&   tu);
-  void xDecodePCMTexture  ( TransformUnit&   tu, const ComponentID compID );
+  void xIntraRecACTBlk(TransformUnit&   tu);
   void xDecodeInterTU     ( TransformUnit&   tu, const ComponentID compID );
 
   void xDeriveCUMV        ( CodingUnit&      cu );
+  void xReconPLT          ( CodingUnit&      cu,       ComponentID compBegin, uint32_t numComp );
   PelStorage        *m_tmpStorageLCU;
 private:
   TrQuant*          m_pcTrQuant;
   IntraPrediction*  m_pcIntraPred;
   InterPrediction*  m_pcInterPred;
 
-  int               m_shareStateDec;
 
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
 
+#if !JVET_Q0806
   MergeCtx          m_triangleMrgCtx;
+#else
+  MergeCtx          m_geoMrgCtx;
+#endif
 };
 
 //! \}

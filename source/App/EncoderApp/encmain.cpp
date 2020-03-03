@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,7 @@
 #include <chrono>
 #include <ctime>
 
+#include "EncoderLib/EncLibCommon.h"
 #include "EncApp.h"
 #include "Utilities/program_options_lite.h"
 
@@ -104,10 +105,7 @@ int main(int argc, char* argv[])
 #if ENABLE_SPLIT_PARALLELISM
   fprintf( stdout, "[SPLIT_PARALLEL (%d jobs)]", PARL_SPLIT_MAX_NUM_JOBS );
 #endif
-#if ENABLE_WPP_PARALLELISM
-  fprintf( stdout, "[WPP_PARALLEL]" );
-#endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   const char* waitPolicy = getenv( "OMP_WAIT_POLICY" );
   const char* maxThLim   = getenv( "OMP_THREAD_LIMIT" );
   fprintf( stdout, waitPolicy ? "[OMP: WAIT_POLICY=%s," : "[OMP: WAIT_POLICY=,", waitPolicy );
@@ -116,24 +114,94 @@ int main(int argc, char* argv[])
 #endif
   fprintf( stdout, "\n" );
 
-  EncApp* pcEncApp = new EncApp;
-  // create application encoder class
-  pcEncApp->create();
+  std::fstream bitstream;
+  EncLibCommon encLibCommon;
 
-  // parse configuration
-  try
+  std::vector<EncApp*> pcEncApp(1);
+  bool resized = false;
+  int layerIdx = 0;
+
+  initROM();
+  TComHash::initBlockSizeToIndex();
+
+  char** layerArgv = new char*[argc];
+
+  do
   {
-    if(!pcEncApp->parseCfg( argc, argv ))
+    pcEncApp[layerIdx] = new EncApp( bitstream, &encLibCommon );
+    // create application encoder class per layer
+    pcEncApp[layerIdx]->create();
+
+    // parse configuration per layer
+    try
     {
-      pcEncApp->destroy();
+      int j = 0;
+      for( int i = 0; i < argc; i++ )
+      {
+        if( argv[i][0] == '-' && argv[i][1] == 'l' )
+        {
+          if( argv[i][2] == std::to_string( layerIdx ).c_str()[0] )
+          {
+            layerArgv[j] = argv[i + 1];
+            layerArgv[j + 1] = argv[i + 2];
+            j += 2;
+          }
+          i += 2;
+        }
+        else
+        {
+          layerArgv[j] = argv[i];
+          j++;
+        }
+      }
+
+      if( !pcEncApp[layerIdx]->parseCfg( j, layerArgv ) )
+      {
+        pcEncApp[layerIdx]->destroy();
+        return 1;
+      }
+    }
+    catch( df::program_options_lite::ParseFailure &e )
+    {
+      std::cerr << "Error parsing option \"" << e.arg << "\" with argument \"" << e.val << "\"." << std::endl;
       return 1;
     }
-  }
-  catch (df::program_options_lite::ParseFailure &e)
+
+    pcEncApp[layerIdx]->createLib( layerIdx );
+
+    if( !resized )
+    {
+      pcEncApp.resize( pcEncApp[layerIdx]->getMaxLayers() );
+      resized = true;
+    }
+
+    layerIdx++;
+  } while( layerIdx < pcEncApp.size() );
+
+  delete[] layerArgv;
+
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  if (layerIdx > 1)
   {
-    std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
-    return 1;
+    VPS* vps = pcEncApp[0]->getVPS();
+    //check chroma format and bit-depth for dependent layers
+    for (uint32_t i = 0; i < layerIdx; i++)
+    {
+      int curLayerChromaFormatIdc = pcEncApp[i]->getChromaFormatIDC();
+      int curLayerBitDepth = pcEncApp[i]->getBitDepth();
+      for (uint32_t j = 0; j < layerIdx; j++)
+      {
+        if (vps->getDirectRefLayerFlag(i, j))
+        {
+          int refLayerChromaFormatIdcInVPS = pcEncApp[j]->getChromaFormatIDC();
+          CHECK(curLayerChromaFormatIdc != refLayerChromaFormatIdcInVPS, "The chroma formats of the current layer and the reference layer are different");
+          int refLayerBitDepthInVPS = pcEncApp[j]->getBitDepth();
+          CHECK(curLayerBitDepth != refLayerBitDepthInVPS, "The bit-depth of the current layer and the reference layer are different");
+        }
+      }
+    }
   }
+#endif
 
 #if PRINT_MACRO_VALUES
   printMacroSettings();
@@ -145,40 +213,111 @@ int main(int argc, char* argv[])
   fprintf(stdout, " started @ %s", std::ctime(&startTime2) );
   clock_t startClock = clock();
 
-  // call encoding function
+  // call encoding function per layer
+  bool eos = false;
+
+  while( !eos )
+  {
+    // read GOP
+    bool keepLoop = true;
+    while( keepLoop )
+    {
+      for( auto & encApp : pcEncApp )
+      {
 #ifndef _DEBUG
-  try
-  {
+        try
+        {
 #endif
-    pcEncApp->encode();
+          keepLoop = encApp->encodePrep( eos );
 #ifndef _DEBUG
-  }
-  catch( Exception &e )
-  {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-  catch( ... )
-  {
-    std::cerr << "Unspecified error occurred" << std::endl;
-    return 1;
-  }
+        }
+        catch( Exception &e )
+        {
+          std::cerr << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+        catch( const std::bad_alloc &e )
+        {
+          std::cout << "Memory allocation failed: " << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
 #endif
+      }
+    }
+
+    // encode GOP
+    keepLoop = true;
+    while( keepLoop )
+    {
+      for( auto & encApp : pcEncApp )
+      {
+#ifndef _DEBUG
+        try
+        {
+#endif
+          keepLoop = encApp->encode();
+#ifndef _DEBUG
+        }
+        catch( Exception &e )
+        {
+          std::cerr << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+        catch( const std::bad_alloc &e )
+        {
+          std::cout << "Memory allocation failed: " << e.what() << std::endl;
+          return EXIT_FAILURE;
+        }
+#endif
+      }
+    }
+  }
   // ending time
   clock_t endClock = clock();
   auto endTime = std::chrono::steady_clock::now();
   std::time_t endTime2 = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime- startTime ).count();
-  // destroy application encoder class
-  pcEncApp->destroy();
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  auto metricTime = pcEncApp[0]->getMetricTime();
 
-  delete pcEncApp;
+  for( int layerIdx = 1; layerIdx < pcEncApp.size(); layerIdx++ )
+  {
+    metricTime += pcEncApp[layerIdx]->getMetricTime();
+  }
+  auto totalTime      = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime ).count();
+  auto encTime        = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime - metricTime ).count();
+  auto metricTimeuser = std::chrono::duration_cast<std::chrono::milliseconds>( metricTime ).count();
+#else
+  auto encTime = std::chrono::duration_cast<std::chrono::milliseconds>( endTime - startTime).count();
+#endif
+
+  for( auto & encApp : pcEncApp )
+  {
+    encApp->destroyLib();
+
+    // destroy application encoder class per layer
+    encApp->destroy();
+
+    delete encApp;
+  }
+
+  // destroy ROM
+  destroyROM();
+
+  pcEncApp.clear();
 
   printf( "\n finished @ %s", std::ctime(&endTime2) );
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  printf(" Encoding Time (Total Time): %12.3f ( %12.3f ) sec. [user] %12.3f ( %12.3f ) sec. [elapsed]\n",
+         ((endClock - startClock) * 1.0 / CLOCKS_PER_SEC) - (metricTimeuser/1000.0),
+         (endClock - startClock) * 1.0 / CLOCKS_PER_SEC,
+         encTime / 1000.0,
+         totalTime / 1000.0);
+#else
   printf(" Total Time: %12.3f sec. [user] %12.3f sec. [elapsed]\n",
          (endClock - startClock) * 1.0 / CLOCKS_PER_SEC,
          encTime / 1000.0);
+#endif
 
   return 0;
 }

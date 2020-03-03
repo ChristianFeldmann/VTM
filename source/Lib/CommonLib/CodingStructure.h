@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -57,14 +57,10 @@ enum PictureType
   PIC_PREDICTION,
   PIC_RESIDUAL,
   PIC_ORG_RESI,
+  PIC_RECON_WRAP,
+  PIC_ORIGINAL_INPUT,
+  PIC_TRUE_ORIGINAL_INPUT,
   NUM_PIC_TYPES
-};
-enum IbcLumaCoverage
-{
-  IBC_LUMA_COVERAGE_FULL = 0,
-  IBC_LUMA_COVERAGE_PARTIAL,
-  IBC_LUMA_COVERAGE_NONE,
-  NUM_IBC_LUMA_COVERAGE,
 };
 extern XUCache g_globalUnitCache;
 
@@ -89,29 +85,26 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
-  Position    sharedBndPos;
-  Size        sharedBndSize;
-  bool        isLossless;
   const SPS *sps;
   const PPS *pps;
-#if JVET_N0415_CTB_ALF
-  APS*       apss[MAX_NUM_APS];
-#else
-  APS *      aps;
-#endif
-#if HEVC_VPS
+  PicHeader *picHeader;
+  APS*       alfApss[ALF_CTB_MAX_NUM_APS];
+  APS *      lmcsAps;
+  APS *      scalinglistAps;
   const VPS *vps;
-#endif
   const PreCalcValues* pcv;
 
   CodingStructure(CUCache&, PUCache&, TUCache&);
-  void create( const UnitArea &_unit, const bool isTopLayer );
-  void create( const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer );
+
+  void create(const UnitArea &_unit, const bool isTopLayer, const bool isPLTused);
+  void create(const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer, const bool isPLTused);
+
   void destroy();
   void releaseIntermediateData();
 
   void rebindPicBufs();
-  void createCoeffs();
+
+  void createCoeffs(const bool isPLTused);
   void destroyCoeffs();
 
   void allocateVectorsAtPicLevel();
@@ -130,6 +123,7 @@ public:
   const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
+  CodingUnit     *getLumaCU( const Position &pos );
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
   TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
 
@@ -141,7 +135,7 @@ public:
   PredictionUnit *getPU(const ChannelType &_chType ) { return getPU(area.blocks[_chType].pos(), _chType); }
   TransformUnit  *getTU(const ChannelType &_chType ) { return getTU(area.blocks[_chType].pos(), _chType); }
 
-  const CodingUnit     *getCURestricted(const Position &pos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
+  const CodingUnit     *getCURestricted(const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType) const;
   const CodingUnit     *getCURestricted(const Position &pos, const CodingUnit& curCu,                               const ChannelType _chType) const;
   const PredictionUnit *getPURestricted(const Position &pos, const PredictionUnit& curPu,                           const ChannelType _chType) const;
   const TransformUnit  *getTURestricted(const Position &pos, const TransformUnit& curTu,                            const ChannelType _chType) const;
@@ -157,7 +151,6 @@ public:
   cCUTraverser    traverseCUs(const UnitArea& _unit, const ChannelType _chType) const;
   cPUTraverser    traversePUs(const UnitArea& _unit, const ChannelType _chType) const;
   cTUTraverser    traverseTUs(const UnitArea& _unit, const ChannelType _chType) const;
-  IbcLumaCoverage getIbcLumaCoverage(const CompArea& chromaArea) const;
   // ---------------------------------------------------------------------------
   // encoding search utilities
   // ---------------------------------------------------------------------------
@@ -171,8 +164,10 @@ public:
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;
+  TreeType    treeType; //because partitioner can not go deep to tu and cu coding (e.g., addCU()), need another variable for indicating treeType
+  ModeType    modeType;
 
-  void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
+  void initStructData  (const int &QP = MAX_INT, const bool &skipMotBuf = false);
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);
@@ -182,10 +177,17 @@ public:
   void clearTUs();
   void clearPUs();
   void clearCUs();
+  const int signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const;
+  void clearCuPuTuIdxMap  ( const UnitArea &_area, uint32_t numCu, uint32_t numPu, uint32_t numTu, uint32_t* pOffset );
+  void getNumCuPuTuOffset ( uint32_t* pArray )
+  {
+    pArray[0] = m_numCUs;     pArray[1] = m_numPUs;     pArray[2] = m_numTUs;
+    pArray[3] = m_offsets[0]; pArray[4] = m_offsets[1]; pArray[5] = m_offsets[2];
+  }
 
 
 private:
-  void createInternals(const UnitArea& _unit, const bool isTopLayer);
+  void createInternals(const UnitArea& _unit, const bool isTopLayer, const bool isPLTused);
 
 public:
 
@@ -197,6 +199,13 @@ public:
 
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
+  PLTBuf prevPLT;
+  void resetPrevPLT(PLTBuf& prevPLT);
+  void reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM_CHANNEL_TYPE], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+  void setPrevPLT(PLTBuf predictor);
+  void storePrevPLT(PLTBuf& predictor);
+#endif
 private:
 
   // needed for TU encoding
@@ -224,12 +233,18 @@ private:
 
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
-
+  bool   *m_runType[ MAX_NUM_CHANNEL_TYPE ];
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;
 
 public:
+  CodingStructure *bestParent;
+  double        tmpColorSpaceCost;
+  bool          firstColorSpaceSelected;
+  double        tmpColorSpaceIntraCost[2];
+  bool          firstColorSpaceTestOnly;
+  bool resetIBCBuffer;
 
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }
@@ -261,9 +276,7 @@ public:
   const CPelBuf       getRecoBuf(const CompArea &blk) const;
          PelUnitBuf   getRecoBuf(const UnitArea &unit);
   const CPelUnitBuf   getRecoBuf(const UnitArea &unit) const;
-#if JVET_N0415_CTB_ALF
          PelUnitBuf&  getRecoBufRef() { return m_reco; }
-#endif
 
          PelBuf       getOrgResiBuf(const CompArea &blk);
   const CPelBuf       getOrgResiBuf(const CompArea &blk) const;

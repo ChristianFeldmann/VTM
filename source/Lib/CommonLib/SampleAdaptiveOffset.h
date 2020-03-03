@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -84,15 +84,36 @@ protected:
     ) const;
 
   void offsetBlock(const int channelBitDepth, const ClpRng& clpRng, int typeIdx, int* offset, const Pel* srcBlk, Pel* resBlk, int srcStride, int resStride,  int width, int height
-                  , bool isLeftAvail, bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail);
+                  , bool isLeftAvail, bool isRightAvail, bool isAboveAvail, bool isBelowAvail, bool isAboveLeftAvail, bool isAboveRightAvail, bool isBelowLeftAvail, bool isBelowRightAvail
+                  , bool isCtuCrossedByVirtualBoundaries, int horVirBndryPos[], int verVirBndryPos[], int numHorVirBndry, int numVerVirBndry
+    );
   void invertQuantOffsets(ComponentID compIdx, int typeIdc, int typeAuxInfo, int* dstOffsets, int* srcOffsets);
   void reconstructBlkSAOParam(SAOBlkParam& recParam, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   int  getMergeList(CodingStructure& cs, int ctuRsAddr, SAOBlkParam* blkParams, SAOBlkParam* mergeList[NUM_SAO_MERGE_TYPES]);
   void offsetCTU(const UnitArea& area, const CPelUnitBuf& src, PelUnitBuf& res, SAOBlkParam& saoblkParam, CodingStructure& cs);
-  void xPCMLFDisableProcess(CodingStructure& cs);
-  void xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea);
-  void xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID);
   void xReconstructBlkSAOParams(CodingStructure& cs, SAOBlkParam* saoBlkParams);
+  bool isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader);
+  inline bool isProcessDisabled(int xPos, int yPos, int numVerVirBndry, int numHorVirBndry, int verVirBndryPos[], int horVirBndryPos[])
+  {
+    bool bDisabledFlag = false;
+    for (int i = 0; i < numVerVirBndry; i++)
+    {
+      if ((xPos == verVirBndryPos[i]) || (xPos == verVirBndryPos[i] - 1))
+      {
+        bDisabledFlag = true;
+        break;
+      }
+    }
+    for (int i = 0; i < numHorVirBndry; i++)
+    {
+      if ((yPos == horVirBndryPos[i]) || (yPos == horVirBndryPos[i] - 1))
+      {
+        bDisabledFlag = true;
+        break;
+      }
+    }
+    return bDisabledFlag;
+  }
   Reshape* m_pcReshape;
 protected:
   uint32_t m_offsetStepLog2[MAX_NUM_COMPONENT]; //offset step

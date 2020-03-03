@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -41,71 +41,59 @@
 
 #include "Unit.h"
 
-#if JVET_N0217_MATRIX_INTRAPRED
 static const int MIP_MAX_INPUT_SIZE             =  8;
 static const int MIP_MAX_REDUCED_OUTPUT_SAMPLES = 64;
 
-
-namespace Mip
-{
-  class PredictorMIP
-  {
-  public:
-    PredictorMIP();
-    void             deriveBoundaryData(const CPelBuf& src, const Area& block, const int bitDepth, const AvailableInfo &availInfo);
-    void             getPrediction     (int* const result, const int modeIdx, const int bitDepth);
-
-  private:
-    static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundary;           // downsampled             boundary of a block
-    static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundaryTransposed; // downsampled, transposed boundary of a block
-    static_vector<int, MIP_MAX_WIDTH>      m_boundaryForUpsamplingTop;  // top  boundary samples for upsampling
-    static_vector<int, MIP_MAX_HEIGHT>     m_boundaryForUpsamplingLeft; // left boundary samples for upsampling
-
-    Size m_blockSize;
-    int  m_numModes;
-    Size m_reducedBoundarySize;
-    Size m_reducedPredictionSize;
-    Size m_boundarySizeForUpsampling;
-    unsigned int m_upsmpFactorHor;
-    unsigned int m_upsmpFactorVer;
-
-    void initPredBlockParams(const Size& block);
-
-    static void boundaryDownsampling1D( int* reducedDst, int* fullSrcAndIntermediateDst, const SizeType srcLen, const SizeType dstLen, const bool saveIntermediate, const SizeType intermediateLen );
-    static void doDownsampling( int* dst, const int* src, const SizeType srcLen, const SizeType dstLen );
-
-    void predictionUpsampling( int* const dst, const int* const src, const bool transpose ) const;
-    static void predictionUpsampling1D( int* const dst, const int* const src, const int* const bndry,
-                                        const SizeType srcSizeUpsmpDim, const SizeType srcSizeOrthDim,
-                                        const SizeType srcStep, const SizeType srcStride,
-                                        const SizeType dstStep, const SizeType dstStride,
-                                        const unsigned int upsmpFactor );
-
-    void getMatrixBias( const short*& matrix, const short*& bias, const int modeIdx ) const;
-    void getShifts( int &shiftMatrix, int &shiftBias, const int modeIdx, const int bitDepth ) const;
-
-    bool isTransposed( const int modeIdx ) const;
-    int  getWeightIdx( const int modeIdx ) const;
-
-    void xComputeMatrixTimesRedBndryPlusBias( int*const result, const int* const input,
-                                              const short*matrix, const short*bias,
-                                              const bool leaveHorOut, const bool leaveVerOut, 
-                                              const int shiftMatrix, const int shiftBias,
-                                              const bool transpose, const bool needUpsampling );
-  };
-}
 
 class MatrixIntraPrediction
 {
 public:
   MatrixIntraPrediction();
 
-  Mip::PredictorMIP m_predictorMip;
+  void prepareInputForPred(const CPelBuf &pSrc, const Area& block, const int bitDepth);
+  void predBlock(int* const result, const int modeIdx, const bool transpose, const int bitDepth);
 
-  void prepareInputForPred(const CPelBuf &src, const Area& puArea, const int bitDepth, const AvailableInfo &availInfo);
-  void predBlock( const Size &puSize, const int modeIdx, PelBuf &dst, const int bitDepth );
-};
+  private:
+    static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundary;           // downsampled             boundary of a block
+    static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundaryTransposed; // downsampled, transposed boundary of a block
+    int                                    m_inputOffset;
+    int                                    m_inputOffsetTransp;
+    static_vector<int, MIP_MAX_WIDTH>      m_refSamplesTop;             // top  reference samples for upsampling
+    static_vector<int, MIP_MAX_HEIGHT>     m_refSamplesLeft;            // left reference samples for upsampling
 
-#endif // JVET_N0217_MATRIX_INTRAPRED
+    Size m_blockSize;
+    int  m_sizeId;
+    int  m_reducedBdrySize;
+    int  m_reducedPredSize;
+    unsigned int m_upsmpFactorHor;
+    unsigned int m_upsmpFactorVer;
+
+    void initPredBlockParams(const Size& block);
+
+    static void boundaryDownsampling1D(int* reducedDst, const int* const fullSrc, const SizeType srcLen, const SizeType dstLen);
+
+    void predictionUpsampling( int* const dst, const int* const src ) const;
+    static void predictionUpsampling1D( int* const dst, const int* const src, const int* const bndry,
+                                        const SizeType srcSizeUpsmpDim, const SizeType srcSizeOrthDim,
+                                        const SizeType srcStep, const SizeType srcStride,
+                                        const SizeType dstStep, const SizeType dstStride,
+                                        const SizeType bndryStep,
+                                        const unsigned int upsmpFactor );
+
+#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
+    const uint8_t* getMatrixData(const int modeIdx) const;
+#else
+    void getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const;
+#endif
+
+
+    void computeReducedPred( int*const result, const int* const input, 
+#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
+                             const uint8_t* matrix,
+#else
+                             const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
+#endif
+                             const bool transpose, const int bitDepth );
+  };
 
 #endif //__MATRIXINTRAPPREDICTION__

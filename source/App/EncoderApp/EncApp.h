@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,6 +45,16 @@
 #include "Utilities/VideoIOYuv.h"
 #include "CommonLib/NAL.h"
 #include "EncAppCfg.h"
+#if EXTENSION_360_VIDEO
+#include "AppEncHelper360/TExt360AppEncTop.h"
+#endif
+#include "EncoderLib/EncTemporalFilter.h"
+
+#if JVET_O0756_CALCULATE_HDRMETRICS
+#include <chrono>
+#endif
+
+class EncAppCommon;
 
 //! \ingroup EncoderApp
 //! \{
@@ -62,14 +72,16 @@ private:
   VideoIOYuv        m_cVideoIOYuvInputFile;       ///< input YUV file
   VideoIOYuv        m_cVideoIOYuvReconFile;       ///< output reconstruction file
   int               m_iFrameRcvd;                 ///< number of received frames
-  uint32_t              m_essentialBytes;
-  uint32_t              m_totalBytes;
-  fstream           m_bitstream;
+  uint32_t          m_essentialBytes;
+  uint32_t          m_totalBytes;
+  fstream&          m_bitstream;
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
+#endif
 
 private:
   // initialization
-  void xCreateLib  ( std::list<PelUnitBuf*>& recBufList
-                    );                           ///< create files & encoder class
+  void xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId );         ///< create files & encoder class
   void xInitLibCfg ();                           ///< initialize internal variables
   void xInitLib    (bool isFieldCoding);         ///< initialize encoder class
   void xDestroyLib ();                           ///< destroy encoder class
@@ -81,14 +93,36 @@ private:
   void printRateSummary ();
   void printChromaFormat();
 
+  std::list<PelUnitBuf*> m_recBufList;
+  int                    m_numEncoded;
+  PelStorage*            m_trueOrgPic;
+  PelStorage*            m_orgPic;
+#if EXTENSION_360_VIDEO
+  TExt360AppEncTop*      m_ext360;
+#endif
+  EncTemporalFilter      m_temporalFilter;
+  bool m_flush;
+
 public:
-  EncApp();
+  EncApp( fstream& bitStream, EncLibCommon* encLibCommon );
   virtual ~EncApp();
 
-  void  encode();                               ///< main encoding function
+  int   getMaxLayers() const { return m_maxLayers; }
+  void  createLib( const int layerIdx );
+  void  destroyLib();
+  bool  encodePrep( bool& eos );
+  bool  encode();                               ///< main encoding function
 
   void  outputAU( const AccessUnit& au );
 
+#if JVET_O0756_CALCULATE_HDRMETRICS
+  std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
+#endif
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  VPS * getVPS() { return m_cEncLib.getVPS(); }
+  int   getChromaFormatIDC() const { return m_cEncLib.getChromaFormatIdc(); }
+  int   getBitDepth() const { return m_cEncLib.getBitDepth(CHANNEL_TYPE_LUMA); }
+#endif
 };// END CLASS DEFINITION EncApp
 
 //! \}

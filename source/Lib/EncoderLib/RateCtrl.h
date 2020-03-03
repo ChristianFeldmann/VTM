@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -209,6 +209,8 @@ public:
   int  getPicLeft()               { return m_picLeft; }
   int  getBitsLeft()              { return m_bitsLeft; }
   int  getTargetBitInGOP( int i ) { return m_picTargetBitInGOP[i]; }
+  double getMinEstLambda()        { return m_minEstLambda; }
+  double getMaxEstLambda()        { return m_maxEstLambda; }
 
 private:
   EncRCSeq* m_encRCSeq;
@@ -217,6 +219,8 @@ private:
   int m_targetBits;
   int m_picLeft;
   int m_bitsLeft;
+  double m_minEstLambda;
+  double m_maxEstLambda;
 };
 
 class EncRCPic
@@ -242,6 +246,9 @@ public:
   int    getLCUEstQP( double lambda, int clipPicQP );
   void updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, double skipRatio, bool updateLCUParameter = true);
   void updateAfterPicture( int actualHeaderBits, int actualTotalBits, double averageQP, double averageLambda, bool isIRAP);
+
+  double clipRcAlpha(const int bitdepth, const double alpha);
+  double clipRcBeta(const double beta);
 
   void addToPictureLsit( list<EncRCPic*>& listPreviousPictures );
   double calAverageQP();
@@ -347,7 +354,7 @@ public:
   uint32_t       getCpbSize()               { return m_cpbSize;        }
   uint32_t       getBufferingRate()         { return m_bufferingRate;  }
   int        updateCpbState(int actualBits);
-  void       initHrdParam(const HRD* pcHrd, int iFrameRate, double fInitialCpbFullness);
+  void       initHrdParam(const HRDParameters* pcHrd, int iFrameRate, double fInitialCpbFullness);
 #endif
 
 private:

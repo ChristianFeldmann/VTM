@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,9 +69,11 @@ public:
                                 const WPScalingParam *const wp1,
                                       PelUnitBuf           &rpcYuvDst,
                                 const bool                  bRoundLuma = true,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT );
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT 
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+                                );
 
-#if JVET_N0146_DMVR_BDOF_CONDITION
   void addWeightBiComponent(    const CPelUnitBuf          &pcYuvSrc0,
                                 const CPelUnitBuf          &pcYuvSrc1,
                                 const ClpRngs              &clpRngs,
@@ -80,26 +82,34 @@ public:
                                       PelUnitBuf           &rpcYuvDst,
                                 const bool                  bRoundLuma = true,
                                 const ComponentID           Comp = COMPONENT_Y);
-#endif
 
   void  addWeightUni(           const CPelUnitBuf          &pcYuvSrc0,
                                 const ClpRngs              &clpRngs,
                                 const WPScalingParam *const wp0,
                                       PelUnitBuf           &rpcYuvDst,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT);
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+                                );
 
   void  xWeightedPredictionUni( const PredictionUnit       &pu,
                                 const CPelUnitBuf          &pcYuvSrc,
                                 const RefPicList           &eRefPicList,
                                       PelUnitBuf           &pcYuvPred,
                                 const int                   iRefIdx=-1,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT);
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+                                );
 
   void  xWeightedPredictionBi(  const PredictionUnit       &pu,
                                 const CPelUnitBuf          &pcYuvSrc0,
                                 const CPelUnitBuf          &pcYuvSrc1,
                                       PelUnitBuf           &pcYuvDst,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT );
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT 
+                                , bool                      lumaOnly = false
+                                , bool                      chromaOnly = false
+                                );
 };
 
 #endif

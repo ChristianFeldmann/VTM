@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -64,8 +64,14 @@ protected:
   uint16_t                m_initCW;
   bool                    m_reshape;
   std::vector<Pel>        m_reshapePivot;
+  std::vector<Pel>        m_inputPivot;
+  std::vector<int32_t>    m_fwdScaleCoef;
+  std::vector<int32_t>    m_invScaleCoef;
   int                     m_lumaBD;
   int                     m_reshapeLUTSize;
+  int                     m_chromaScale;
+  int                     m_vpduX;
+  int                     m_vpduY;
 public:
   Reshape();
 #if ENABLE_SPLIT_PARALLELISM
@@ -77,7 +83,6 @@ public:
   void createDec(int bitDepth);
   void destroy();
 
-  void reverseLUT(std::vector<Pel>& inputLUT, std::vector<Pel>& outputLUT, uint16_t lutSize);
   std::vector<Pel>&  getFwdLUT() { return m_fwdLUT; }
   std::vector<Pel>&  getInvLUT() { return m_invLUT; }
   std::vector<int>&  getChromaAdjHelpLUT() { return m_chromaAdjHelpLUT; }
@@ -93,9 +98,13 @@ public:
   void copySliceReshaperInfo(SliceReshapeInfo& tInfo, SliceReshapeInfo& sInfo);
 
   void constructReshaper();
-  void updateChromaScaleLUT();
   bool getReshapeFlag() { return m_reshape; }
   void setReshapeFlag(bool b) { m_reshape = b; }
+  int  calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY);
+  void setVPDULoc(int x, int y) { m_vpduX = x, m_vpduY = y; }
+  bool isVPDUprocessed(int x, int y) { return ((x == m_vpduX) && (y == m_vpduY)); }
+  void setChromaScale (int chromaScale) { m_chromaScale = chromaScale; }
+  int  getChromaScale() { return m_chromaScale; }
 };// END CLASS DEFINITION Reshape
 
 //! \}

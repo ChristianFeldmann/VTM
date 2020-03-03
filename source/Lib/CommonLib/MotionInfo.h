@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -103,14 +103,15 @@ struct MotionInfo
   bool     isInter;
   bool     isIBCmot;
   char     interDir;
+  bool     useAltHpelIf;
   uint16_t   sliceIdx;
   Mv      mv     [ NUM_REF_PIC_LIST_01 ];
   int16_t   refIdx [ NUM_REF_PIC_LIST_01 ];
-  uint8_t         GBiIdx;
+  uint8_t         BcwIdx;
   Mv      bv;
-  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, GBiIdx(0) { }
+  MotionInfo() : isInter(false), isIBCmot(false), interDir(0), useAltHpelIf(false), sliceIdx(0), refIdx{ NOT_VALID, NOT_VALID }, BcwIdx(0) { }
   // ensure that MotionInfo(0) produces '\x000....' bit pattern - needed to work with AreaBuf - don't use this constructor for anything else
-  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), sliceIdx(0), refIdx{ 0,         0 }, GBiIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
+  MotionInfo(int i) : isInter(i != 0), isIBCmot(false), interDir(0), useAltHpelIf(false), sliceIdx(0), refIdx{ 0,         0 }, BcwIdx(0) { CHECKD(i != 0, "The argument for this constructor has to be '0'"); }
 
   bool operator==( const MotionInfo& mi ) const
   {
@@ -143,7 +144,7 @@ struct MotionInfo
   }
 };
 
-class GBiMotionParam
+class BcwMotionParam
 {
   bool       m_readOnly[2][33];       // 2 RefLists, 33 RefFrams
   Mv         m_mv[2][33];
@@ -221,16 +222,10 @@ struct LutMotionCand
 {
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lut;
   static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutIbc;
-#if !JVET_N0266_SMALL_BLOCKS
-  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShare;
-#endif
-  static_vector<MotionInfo, MAX_NUM_HMVP_CANDS> lutShareIbc;
 };
-#if JVET_N0329_IBC_SEARCH_IMP
 struct PatentBvCand
 {
   Mv m_bvCands[IBC_NUM_CANDIDATES];
   int currCnt;
 };
-#endif
 #endif // __MOTIONINFO__

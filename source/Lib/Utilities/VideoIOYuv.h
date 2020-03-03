@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,9 @@ using namespace std;
 // Class definition
 // ====================================================================================================================
 
+#include "CommonLib/Slice.h"
+#include "CommonLib/Picture.h"
+
 /// YUV file I/O class
 class VideoIOYuv
 {
@@ -77,7 +80,7 @@ public:
   bool  read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSpaceConversion ipcsc, int aiPad[2], ChromaFormat fileFormat=NUM_CHROMA_FORMAT, const bool bClipToRec709=false );     ///< read one frame with padding parameter
 
   // If fileFormat=NUM_CHROMA_FORMAT, use the format defined by pPicYuv
-  bool  write( const CPelUnitBuf& pic,
+  bool  write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf& pic,
                const InputColourSpaceConversion ipCSC,
                const bool bPackedYUVOutputMode,
                int confLeft = 0, int confRight = 0, int confTop = 0, int confBottom = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one YUV frame with padding parameter
@@ -92,7 +95,10 @@ public:
 
   bool  isEof ();                                           ///< check for end-of-file
   bool  isFail();                                           ///< check for failure
+  bool  isOpen() { return m_cHandle.is_open(); }
 
+  bool  writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPelUnitBuf& pic,
+    const InputColourSpaceConversion ipCSC, const bool bPackedYUVOutputMode, int outputChoice = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one upsaled YUV frame
 
 };
 

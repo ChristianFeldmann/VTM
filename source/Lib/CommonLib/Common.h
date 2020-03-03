@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -259,16 +259,6 @@ public:
   }
 };
 
-#if JVET_N0217_MATRIX_INTRAPRED  
-struct AvailableInfo
-{
-  int  maxPosTop;
-  int  maxPosLeft;
-
-  AvailableInfo() : maxPosTop(0), maxPosLeft(0) {}
-  AvailableInfo(const int top, const int left) : maxPosTop(top), maxPosLeft(left) {}
-};
-#endif
 
 
 #endif

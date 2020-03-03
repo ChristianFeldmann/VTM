@@ -428,6 +428,7 @@ DecLib::DecLib()
   , m_associatedIRAPType(NAL_UNIT_INVALID)
 #if JVET_P0978_RPL_RESTRICTIONS
   , m_associatedIRAPDecodingOrderNumber(0)
+  , m_decodingOrderCounter(0)
 #endif
   , m_pocCRA(0)
   , m_pocRandomAccess(MAX_INT)
@@ -488,9 +489,6 @@ DecLib::DecLib()
 #endif
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   , m_dci(NULL)
-#endif
-#if JVET_P0978_RPL_RESTRICTIONS
-  , m_decodingOrderCounter(0)
 #endif
 {
 #if ENABLE_SIMD_OPT_BUFFER

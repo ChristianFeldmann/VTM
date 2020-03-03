@@ -1314,12 +1314,7 @@ private:
   RPLList           m_RPLList1;
   uint32_t          m_numRPL0;
   uint32_t          m_numRPL1;
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-  uint32_t          m_maxNumMergeCand;
-  uint32_t          m_maxNumAffineMergeCand;
-  uint32_t          m_maxNumIBCMergeCand;
-  uint32_t          m_maxNumGeoCand;
-#endif
+
   bool              m_rpl1CopyFromRpl0Flag;
   bool              m_rpl1IdxPresentFlag;
   bool              m_allRplEntriesHasSameSignFlag;
@@ -1459,7 +1454,12 @@ private:
   bool              m_ppsValidFlag[64];
   Size              m_scalingWindowSizeInPPS[64];
 #endif
-
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  uint32_t          m_maxNumMergeCand;
+  uint32_t          m_maxNumAffineMergeCand;
+  uint32_t          m_maxNumIBCMergeCand;
+  uint32_t          m_maxNumGeoCand;
+#endif
 public:
 
   SPS();

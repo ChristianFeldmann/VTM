@@ -748,10 +748,10 @@ bool PU::addMergeHMVPCand(const CodingStructure &cs, MergeCtx& mrgCtx, const int
 void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx)
 {
   const CodingStructure &cs = *pu.cs;
-  const Slice &slice = *pu.cs->slice;
 #if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumIBCMergeCand();
 #else
+  const Slice &slice = *pu.cs->slice;
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumIBCMergeCand();
 #endif
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
@@ -3448,10 +3448,11 @@ void PU::getGeoMergeCandidates( const PredictionUnit &pu, MergeCtx& geoMrgCtx )
 {
   MergeCtx tmpMergeCtx;
 
-  const Slice &slice = *pu.cs->slice;
+
 #if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumMergeCand();
 #else
+  const Slice &slice = *pu.cs->slice;
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
 #endif
   geoMrgCtx.numValidMergeCand = 0;

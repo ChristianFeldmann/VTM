@@ -2316,13 +2316,9 @@ SPS::SPS()
 , m_numExtraSHBitsBytes       ( 0 )
 #endif
 , m_numLongTermRefPicSPS      (  0)
+
 , m_log2MaxTbSize             (  6)
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-, m_maxNumMergeCand(MRG_MAX_NUM_CANDS)
-, m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
-, m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
-, m_maxNumGeoCand(0)
-#endif
+
 , m_useWeightPred             (false)
 , m_useWeightedBiPred         (false)
 , m_saoEnabledFlag            (false)
@@ -2374,7 +2370,12 @@ SPS::SPS()
 , m_GDREnabledFlag            ( true )
 , m_SubLayerCbpParametersPresentFlag ( true )
 , m_rprEnabledFlag            ( false )
-
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+, m_maxNumMergeCand(MRG_MAX_NUM_CANDS)
+, m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
+, m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
+, m_maxNumGeoCand(0)
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

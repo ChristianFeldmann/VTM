@@ -293,6 +293,9 @@ class ConstraintInfo
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
   bool              m_noSignDataHidingConstraintFlag;
+#if JVET_P0124_MIXED_NALU
+  bool              m_noMixedNaluTypesInPicConstraintFlag;
+#endif
   bool              m_noTrailConstraintFlag;
   bool              m_noStsaConstraintFlag;
   bool              m_noRaslConstraintFlag;
@@ -353,6 +356,9 @@ public:
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)
+#if JVET_P0124_MIXED_NALU
+    , m_noMixedNaluTypesInPicConstraintFlag(false)
+#endif
     , m_noTrailConstraintFlag (false)
     , m_noStsaConstraintFlag (false)
     , m_noRaslConstraintFlag (false)
@@ -468,6 +474,10 @@ public:
   void          setNoDepQuantConstraintFlag(bool bVal) { m_noDepQuantConstraintFlag = bVal; }
   bool          getNoSignDataHidingConstraintFlag() const { return m_noSignDataHidingConstraintFlag; }
   void          setNoSignDataHidingConstraintFlag(bool bVal) { m_noSignDataHidingConstraintFlag = bVal; }
+#if JVET_P0124_MIXED_NALU
+  bool          getNoMixedNaluTypesInPicConstraintFlag() const    { return m_noMixedNaluTypesInPicConstraintFlag; }
+  void          setNoMixedNaluTypesInPicConstraintFlag(bool bVal) { m_noMixedNaluTypesInPicConstraintFlag = bVal; }
+#endif
   bool          getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
   void          setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
   bool          getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }

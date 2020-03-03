@@ -841,7 +841,7 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
   if( cu.skip )
   {
     cu.colorTransform = false;
-    cs.addTU         ( cu, partitioner.chType );
+    cs.addEmptyTUs( partitioner );
     MergeCtx           mrgCtx;
     prediction_unit  ( pu, mrgCtx );
     end_of_ctu( cu, cuCtx );
@@ -1581,15 +1581,7 @@ void CABACReader::cu_residual( CodingUnit& cu, Partitioner &partitioner, CUCtx& 
     if( !cu.rootCbf )
     {
       cu.colorTransform = false;
-      TransformUnit& tu = cu.cs->addTU(cu, partitioner.chType);
-      tu.depth = 0;
-      for( unsigned c = 0; c < tu.blocks.size(); c++ )
-      {
-        tu.cbf[c]             = 0;
-        ComponentID   compID  = ComponentID(c);
-        tu.getCoeffs( compID ).fill( 0 );
-        tu.getPcmbuf( compID ).fill( 0 );
-      }
+      cu.cs->addEmptyTUs( partitioner );
       return;
     }
   }

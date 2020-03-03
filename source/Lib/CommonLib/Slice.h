@@ -1708,8 +1708,8 @@ void                    setCCALFEnabledFlag( bool b )                           
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG  
-  void                    setVirtualBoundariesEnabledFlag( bool b )                                       { m_virtualBoundariesEnabledFlag = b; }
-  bool                    getVirtualBoundariesEnabledFlag() const                                         { return m_virtualBoundariesEnabledFlag; }
+  void                    setVirtualBoundariesEnabledFlag( bool b )                                       { m_virtualBoundariesEnabledFlag = b;                                  }
+  bool                    getVirtualBoundariesEnabledFlag() const                                         { return m_virtualBoundariesEnabledFlag;                               }
   void                    setVirtualBoundariesPresentFlag( bool b )                                       { m_virtualBoundariesPresentFlag = b; }
   bool                    getVirtualBoundariesPresentFlag() const                                         { return m_virtualBoundariesPresentFlag; }
 #else 
@@ -2548,8 +2548,6 @@ public:
   uint8_t                     getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
 #endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
-  void                        setVirtualBoundariesEnabledFlag( bool b )                 { m_virtualBoundariesEnabledFlag = b;                                                          }
-  bool                        getVirtualBoundariesEnabledFlag() const                   { return m_virtualBoundariesEnabledFlag;                                                       }
   void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }
   bool                        getVirtualBoundariesPresentFlag() const                   { return m_virtualBoundariesPresentFlag;                                                       }
 #else

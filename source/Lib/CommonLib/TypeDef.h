@@ -74,7 +74,7 @@
 
 #define JVET_Q0118_CLEANUPS                               1 // JVET-Q0118: AHG8/AHG9: Scalability HLS cleanups
 
-#define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract £¨CtbSizeY / MinCbSizeY + 2£© from wraparound offset before signaling
+#define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract CtbSizeY / MinCbSizeY + 2 from wraparound offset before signaling
 
 #define JVET_P0125_EOS_LAYER_SPECIFIC                     1 // JVET-P0125: Specify EOS NAL units to be layer specific
 
@@ -251,6 +251,8 @@
 #define JVET_AHG14_LOSSLESS_ENC_QP_FIX                    1 && JVET_AHG14_LOSSLESS
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
+
+#define JVET_Q0221                                        1 // JVET-Q0221: Decoding unit parameter signalling
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 

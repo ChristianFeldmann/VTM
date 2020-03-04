@@ -2135,6 +2135,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       CHECK(pcSPS->getMaxNumMergeCand() < uiCode, "Incorrrect max number of GEO candidates!");
       pcSPS->setMaxNumGeoCand((uint32_t)(pcSPS->getMaxNumMergeCand() - uiCode));
     }
+    else
+      pcSPS->setMaxNumGeoCand(2);
   }
   else
   {

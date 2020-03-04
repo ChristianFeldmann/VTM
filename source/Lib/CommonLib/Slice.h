@@ -3340,7 +3340,11 @@ public:
 
 #if ENABLE_TRACING
 void xTraceVPSHeader();
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 void xTraceDPSHeader();
+#else
+void xTraceDCIHeader();
+#endif
 void xTraceSPSHeader();
 void xTracePPSHeader();
 void xTraceAPSHeader();

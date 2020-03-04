@@ -4083,10 +4083,17 @@ void xTraceVPSHeader()
   DTRACE( g_trace_ctx, D_HEADER, "=========== Video Parameter Set     ===========\n" );
 }
 
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
 void xTraceDPSHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Decoding Parameter Set     ===========\n" );
 }
+#else
+void xTraceDCIHeader()
+{
+  DTRACE( g_trace_ctx, D_HEADER, "=========== Decoding Capability Information     ===========\n" );
+}
+#endif
 
 void xTraceSPSHeader()
 {

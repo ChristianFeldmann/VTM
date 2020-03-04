@@ -3912,32 +3912,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #endif
   {
     uint32_t bitsSubPicId;
-#if JVET_Q0119_CLEANUPS
-    if (sps->getSubPicIdMappingExplicitlySignalledFlag())
-#else
-    if (sps->getSubPicIdSignallingPresentFlag())
-#endif
-    {
-      bitsSubPicId = sps->getSubPicIdLen();
-    }
-#if !JVET_Q0119_CLEANUPS
-    else if (picHeader->getSubPicIdSignallingPresentFlag())
-    {
-      bitsSubPicId = picHeader->getSubPicIdLen();
-    }
-#endif
-#if JVET_Q0119_CLEANUPS
-    else if (pps->getSubPicIdMappingInPpsFlag())
-#else
-    else if (pps->getSubPicIdSignallingPresentFlag())
-#endif
-    {
-      bitsSubPicId = pps->getSubPicIdLen();
-    }
-    else
-    {
-      bitsSubPicId = ceilLog2(sps->getNumSubPics());
-    }
+    bitsSubPicId = sps->getSubPicIdLen();
     READ_CODE(bitsSubPicId, uiCode, "slice_subpic_id");    pcSlice->setSliceSubPicId(uiCode);
   }
 #if JVET_Q0119_CLEANUPS

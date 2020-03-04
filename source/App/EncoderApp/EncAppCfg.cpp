@@ -3664,6 +3664,12 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif
   xConfirmPara( unsigned(m_ImvMode) > 1, "ImvMode exceeds range (0 to 1)" );
+#if JVET_Q0444_AMVR_SIGNALLING
+  if (m_AffineAmvr)
+  {
+    xConfirmPara(!m_ImvMode, "AffineAmvr cannot be used when IMV is disabled.");
+  }
+#endif
   xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");

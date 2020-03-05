@@ -71,6 +71,10 @@ private:
   int                     m_iMaxRefPicNum;
 
   NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
+#if JVET_P0978_RPL_RESTRICTIONS
+  int                     m_associatedIRAPDecodingOrderNumber; ///< Decoding order number of the associated IRAP picture
+  int                     m_decodingOrderCounter;
+#endif
   int                     m_pocCRA;            ///< POC number of the latest CRA picture
   int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
   int                     m_lastRasPoc;
@@ -192,6 +196,9 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
+#if JVET_P0978_RPL_RESTRICTIONS
+  void updateAssociatedIRAP();
+#endif
 
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }

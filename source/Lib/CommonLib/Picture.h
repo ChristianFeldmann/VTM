@@ -148,6 +148,12 @@ struct Picture : public UnitArea
   void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 
   int  getPOC()                               const { return poc; }
+#if JVET_P0978_RPL_RESTRICTIONS
+  int  getDecodingOrderNumber()               const { return m_decodingOrderNumber; }
+  void setDecodingOrderNumber(const int val)        { m_decodingOrderNumber = val;  }
+  NalUnitType getPictureType()                const { return m_pictureType;         }
+  void setPictureType(const NalUnitType val)        { m_pictureType = val;          }
+#endif
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
 
@@ -170,6 +176,10 @@ struct Picture : public UnitArea
 private:
   Window        m_conformanceWindow;
   Window        m_scalingWindow;
+#if JVET_P0978_RPL_RESTRICTIONS
+  int           m_decodingOrderNumber;
+  NalUnitType   m_pictureType;
+#endif
 
 public:
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY  

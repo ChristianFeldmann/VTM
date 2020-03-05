@@ -146,6 +146,8 @@
 
 #define JVET_Q0818_PT_SEI                                 1 // JVET-Q0818: add display_elemental_periods_minus1 to picture timing SEI message
 
+#define JVET_Q0343_GCMP_GUARD_BAND_TYPE                   1 // JVET-Q0343: Add gcmp_guard_band_type to generalized cubemap projection SEI message and rename boundary guard band
+
 #define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
 
 #define JVET_Q0042_VUI                                    1 // Modifications to VUI syntax

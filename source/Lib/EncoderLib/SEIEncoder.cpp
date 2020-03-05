@@ -341,8 +341,14 @@ void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCube
     seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag                 = m_pcCfg->getGcmpSEIGuardBandFlag();
     if (seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag)
     {
+#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
+      seiGeneralizedCubemapProjection->m_gcmpGuardBandType                 = m_pcCfg->getGcmpSEIGuardBandType();
+      seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryExteriorFlag = m_pcCfg->getGcmpSEIGuardBandBoundaryExteriorFlag();
+      seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1        = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
+#else
       seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryType       = m_pcCfg->getGcmpSEIGuardBandBoundaryType();
       seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1      = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
+#endif
     }
   }
 }

@@ -2801,6 +2801,9 @@ private:
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
   bool                       m_ChromaQpAdjEnabled;
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  bool                       m_lmcsEnabledFlag;
+#endif
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
@@ -2963,6 +2966,12 @@ public:
 #endif
   bool                        getPendingRasInit() const                              { return m_pendingRasInit;                                      }
   void                        setPendingRasInit( bool val )                          { m_pendingRasInit = val;                                       }
+
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  void                        setLmcsEnabledFlag(bool b)                              { m_lmcsEnabledFlag = b;                                       }
+  bool                        getLmcsEnabledFlag()                                    { return m_lmcsEnabledFlag;                                    }
+  const bool                  getLmcsEnabledFlag() const                              { return m_lmcsEnabledFlag;                                    }
+#endif
 
   int                         getNumRefIdx( RefPicList e ) const                     { return m_aiNumRefIdx[e];                                      }
   Picture*                    getPic()                                               { return m_pcPic;                                               }

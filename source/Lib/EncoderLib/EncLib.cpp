@@ -1484,11 +1484,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
 
-  if( m_intraPeriod < 0 )
-  {
-    sps.setRPL1CopyFromRPL0Flag( true );
-  }
-
 #if JVET_Q0119_CLEANUPS
   sps.setSubPicInfoPresentFlag(m_subPicInfoPresentFlag);
   if (m_subPicInfoPresentFlag)
@@ -2136,6 +2131,26 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
       rpl->setPOC(0, 0);
     }
   }
+
+  bool isRpl1CopiedFromRpl0 = true;
+  for( int i = 0; isRpl1CopiedFromRpl0 && i < numRPLCandidates; i++)
+  {
+    if( sps.getRPLList0()->getReferencePictureList(i)->getNumRefEntries() == sps.getRPLList1()->getReferencePictureList(i)->getNumRefEntries() )
+    {
+      for( int j = 0; isRpl1CopiedFromRpl0 && j < sps.getRPLList0()->getReferencePictureList(i)->getNumRefEntries(); j++ )
+      {
+        if( sps.getRPLList0()->getReferencePictureList(i)->getRefPicIdentifier(j) != sps.getRPLList1()->getReferencePictureList(i)->getRefPicIdentifier(j) )
+        {
+          isRpl1CopiedFromRpl0 = false;
+        }
+      }
+    }
+    else
+    {
+      isRpl1CopiedFromRpl0 = false;
+    }
+  }
+  sps.setRPL1CopyFromRPL0Flag(isRpl1CopiedFromRpl0);
 
   //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first

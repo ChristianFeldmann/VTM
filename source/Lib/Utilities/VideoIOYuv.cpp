@@ -980,7 +980,7 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
 bool VideoIOYuv::write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf& pic,
                         const InputColourSpaceConversion ipCSC,
                         const bool bPackedYUVOutputMode,
-                        int confLeft, int confRight, int confTop, int confBottom, ChromaFormat format, const bool bClipToRec709 )
+                        int confLeft, int confRight, int confTop, int confBottom, ChromaFormat format, const bool bClipToRec709, const bool subtractConfWindowOffsets )
 {
   PelStorage interm;
 
@@ -1037,6 +1037,12 @@ bool VideoIOYuv::write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf
   const CPelBuf areaY     = picO.get(COMPONENT_Y);
   const uint32_t    width444  = areaY.width - confLeft - confRight;
   const uint32_t    height444 = areaY.height -  confTop  - confBottom;
+
+  if( subtractConfWindowOffsets )
+  {
+    orgWidth -= confLeft + confRight;
+    orgHeight -= confTop + confBottom;
+  }
 
   if ((width444 == 0) || (height444 == 0))
   {
@@ -1286,7 +1292,7 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
         confFullResolution.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
         confFullResolution.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
         confFullResolution.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
-        NUM_CHROMA_FORMAT, bClipToRec709 );
+        NUM_CHROMA_FORMAT, bClipToRec709, false );
     }
     else
     {
@@ -1299,7 +1305,7 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
         conf.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
         conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
         conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
-        NUM_CHROMA_FORMAT, bClipToRec709 );
+        NUM_CHROMA_FORMAT, bClipToRec709, false );
     }
   }
   else

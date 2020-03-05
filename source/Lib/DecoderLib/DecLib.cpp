@@ -2279,7 +2279,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 }
 
 #if JVET_P0978_RPL_RESTRICTIONS
-void DecLib::UpdateAssociatedIRAP()
+void DecLib::updateAssociatedIRAP()
 {
   const NalUnitType pictureType = m_pcPic->getPictureType();
   if (pictureType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || pictureType == NAL_UNIT_CODED_SLICE_IDR_N_LP || pictureType == NAL_UNIT_CODED_SLICE_CRA)

@@ -248,7 +248,7 @@ uint32_t DecApp::decode()
       }
 
 #if JVET_P0978_RPL_RESTRICTIONS
-      m_cDecLib.UpdateAssociatedIRAP();
+      m_cDecLib.updateAssociatedIRAP();
 #endif
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&

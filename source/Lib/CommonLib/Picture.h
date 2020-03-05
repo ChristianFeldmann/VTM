@@ -151,8 +151,8 @@ struct Picture : public UnitArea
 #if JVET_P0978_RPL_RESTRICTIONS
   int  getDecodingOrderNumber()               const { return m_decodingOrderNumber; }
   void setDecodingOrderNumber(const int val)        { m_decodingOrderNumber = val;  }
-  NalUnitType getPictureType()                const { return m_PictureType;         }
-  void setPictureType(const NalUnitType val)        { m_PictureType = val;          }
+  NalUnitType getPictureType()                const { return m_pictureType;         }
+  void setPictureType(const NalUnitType val)        { m_pictureType = val;          }
 #endif
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
@@ -178,7 +178,7 @@ private:
   Window        m_scalingWindow;
 #if JVET_P0978_RPL_RESTRICTIONS
   int           m_decodingOrderNumber;
-  NalUnitType   m_PictureType;
+  NalUnitType   m_pictureType;
 #endif
 
 public:

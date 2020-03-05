@@ -676,7 +676,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
   bool fieldSeqFlag = getSPS()->getVuiParameters() && getSPS()->getVuiParameters()->getFieldSeqFlag();
 #endif
 
-  int current_picture_is_trailing = 0;
+  int currentPictureIsTrailing = 0;
   if (getPic()->getDecodingOrderNumber() > associatedIRAPDecodingOrderNumber)
   {
     switch (m_eNalUnitType)
@@ -687,10 +687,10 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     case NAL_UNIT_CODED_SLICE_CRA:
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
-      current_picture_is_trailing = 0;
+      currentPictureIsTrailing = 0;
       break;
     default:
-      current_picture_is_trailing = 1;
+      currentPictureIsTrailing = 1;
     }
   }
 
@@ -720,7 +720,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     // entry in RefPicList[0] or RefPicList[1] that precedes the associated IRAP picture in output order or decoding order"
     // Note that when not in field coding, we know that all leading pictures of an IRAP precedes all trailing pictures of the
     // same IRAP picture.
-    if (current_picture_is_trailing && !fieldSeqFlag) // 
+    if (currentPictureIsTrailing && !fieldSeqFlag) // 
     {
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
     }
@@ -729,7 +729,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     {
       // Checking this "When the current picture is a trailing picture, there shall be no picture referred to by an active
       // entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the associated IRAP picture in output order or decoding order"
-      if (current_picture_is_trailing)
+      if (currentPictureIsTrailing)
       {
         CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order");
       }
@@ -761,14 +761,14 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     {
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
     }
-    if (current_picture_is_trailing && !fieldSeqFlag)
+    if (currentPictureIsTrailing && !fieldSeqFlag)
     {
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
     }
 
     if (i < numActiveEntriesL1)
     {
-      if (current_picture_is_trailing)
+      if (currentPictureIsTrailing)
       {
         CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order");
       }

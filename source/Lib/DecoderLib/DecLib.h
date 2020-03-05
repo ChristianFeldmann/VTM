@@ -197,7 +197,7 @@ public:
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
 #if JVET_P0978_RPL_RESTRICTIONS
-  void UpdateAssociatedIRAP();
+  void updateAssociatedIRAP();
 #endif
 
 

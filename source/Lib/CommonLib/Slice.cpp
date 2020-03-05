@@ -63,6 +63,9 @@ Slice::Slice()
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
 , m_ChromaQpAdjEnabled            ( false )
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+, m_lmcsEnabledFlag               ( 0 )
+#endif
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
@@ -100,9 +103,6 @@ Slice::Slice()
 , m_nextSlice                     ( false )
 , m_sliceBits                     ( 0 )
 , m_bFinalized                    ( false )
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
-, m_lmcsEnabledFlag               ( 0 )
-#endif
 , m_bTestWeightPred               ( false )
 , m_bTestWeightBiPred             ( false )
 , m_substreamSizes                ( )

@@ -153,7 +153,7 @@ private:
     uint32_t        m_firstCTUinSlice; /// the first CTU in slice, specified with raster scan order ctu address
     int             m_POC;             /// the picture order 
   };
-  std::vector<NalUnitInfo> m_nalUnitInfo;
+  std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
 #endif 
   std::vector<int> m_accessUnitApsNals;
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH

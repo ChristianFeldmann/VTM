@@ -2152,7 +2152,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     naluInfo.m_firstCTUinSlice = pcSlice->getFirstCtuRsAddrInSlice();
     naluInfo.m_POC = pcSlice->getPOC();
     xCheckMixedNalUnit(pcSlice, sps, nalu);
-    m_nalUnitInfo.push_back(naluInfo);
+    m_nalUnitInfo[naluInfo.m_nuhLayerId].push_back(naluInfo);
 #endif
     SEIMessages drapSEIs = getSeisByType(m_pcPic->SEIs, SEI::DEPENDENT_RAP_INDICATION );
     if (!drapSEIs.empty())
@@ -2590,18 +2590,17 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
     else
     {
       // check reference list constraint
-      if (!m_nalUnitInfo.empty())
+      if (!m_nalUnitInfo[nalu.m_nuhLayerId].empty())
       {
         //find out the closest IRAP nal unit that are in the same layer and in the corresponding subpicture
         NalUnitInfo *latestIRAPNalUnit = nullptr;
-        int size = (int)m_nalUnitInfo.size();
+        int size = (int)m_nalUnitInfo[nalu.m_nuhLayerId].size();
         int naluIdx;
         for (naluIdx = size - 1; naluIdx >= 0; naluIdx--)
         {
-          NalUnitInfo *iterNalu = &m_nalUnitInfo[naluIdx];
-          bool isTheSameLayer = iterNalu->m_nuhLayerId == nalu.m_nuhLayerId;
+          NalUnitInfo *iterNalu = &m_nalUnitInfo[nalu.m_nuhLayerId][naluIdx];
           bool isIRAPSlice = iterNalu->m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && iterNalu->m_nalUnitType <= NAL_UNIT_CODED_SLICE_CRA;
-          if (isTheSameLayer && isIRAPSlice)
+          if (isIRAPSlice)
           {
             latestIRAPNalUnit = iterNalu;
             break;
@@ -2609,7 +2608,9 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         }
         if (latestIRAPNalUnit != nullptr)
         {
-          // only check the current slice, as previous slice have been checked
+          // clear the nalu unit before the latest IRAP slice
+          m_nalUnitInfo[nalu.m_nuhLayerId].erase(m_nalUnitInfo[nalu.m_nuhLayerId].begin(), m_nalUnitInfo[nalu.m_nuhLayerId].begin() + naluIdx);
+
           const unsigned  ctuRsAddrIRAP = latestIRAPNalUnit->m_firstCTUinSlice;
           const unsigned  ctuXPosInCtusIRAP = ctuRsAddrIRAP % pcSlice->getPPS()->getPicWidthInCtu();
           const unsigned  ctuYPosInCtusIRAP = ctuRsAddrIRAP / pcSlice->getPPS()->getPicWidthInCtu();
@@ -2621,27 +2622,27 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
             for (int refIdx = 0; refIdx < pcSlice->getNumRefIdx(REF_PIC_LIST_0); refIdx++)
             {
               int POC = pcSlice->getRefPOC(REF_PIC_LIST_0, refIdx);
-              for (int i = 0; i < naluIdx; i++)
+              bool notInPOCAfterIRAP = true;
+              // check all ref pics of the current slice are from poc after the IRAP slice
+              for (auto iterNalu : m_nalUnitInfo[nalu.m_nuhLayerId])
               {
-                NalUnitInfo *iterNalu = &m_nalUnitInfo[i];
-                if (iterNalu->m_nuhLayerId == nalu.m_nuhLayerId)
-                {
-                  CHECK(POC == iterNalu->m_POC, "preIRAP picture shall not be used as the reference picture of a slice after the IRAP picture");
-                }
+                if (POC == iterNalu.m_POC)
+                  notInPOCAfterIRAP = false;
               }
+              CHECK(notInPOCAfterIRAP, "all reference pictures of a slice after the IRAP picture are from pictures after the IRAP");
             }
             // check RefPicList[1]
             for (int refIdx = 0; refIdx < pcSlice->getNumRefIdx(REF_PIC_LIST_1); refIdx++)
             {
               int POC = pcSlice->getRefPOC(REF_PIC_LIST_1, refIdx);
-              for (int i = 0; i < naluIdx; i++)
+              bool notInPOCAfterIRAP = true;
+              // check all ref pics of the current slice are from poc after the IRAP slice
+              for (auto iterNalu : m_nalUnitInfo[nalu.m_nuhLayerId])
               {
-                NalUnitInfo *iterNalu = &m_nalUnitInfo[i];
-                if (iterNalu->m_nuhLayerId == nalu.m_nuhLayerId)
-                {
-                  CHECK(POC == iterNalu->m_POC, "preIRAP picture shall not be used as the reference picture of a slice after the IRAP picture");
-                }
+                if (POC == iterNalu.m_POC)
+                  notInPOCAfterIRAP = false;
               }
+              CHECK(notInPOCAfterIRAP, "all reference pictures of a slice after the IRAP picture are from pictures after the IRAP");
             }
           }
         }

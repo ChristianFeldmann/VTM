@@ -316,7 +316,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     pps.setConformanceWindow( conformanceWindow );
 
     Window scalingWindow;
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+    scalingWindow.setWindow( 0, ( width - scaledWidth ) / SPS::getWinUnitX( sps0.getChromaFormatIdc() ), 0, ( height - scaledHeight ) / SPS::getWinUnitY( sps0.getChromaFormatIdc() ) );
+#else
     scalingWindow.setWindow( 0, width - scaledWidth, 0, height - scaledHeight );
+#endif
     pps.setScalingWindow( scalingWindow );
 
 #if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT

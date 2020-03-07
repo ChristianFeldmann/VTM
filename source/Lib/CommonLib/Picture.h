@@ -243,8 +243,8 @@ public:
   Window&            getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
 #if JVET_Q0487_SCALING_WINDOW_ISSUES
-  bool               isRefScaled( const PPS* pps ) const                             { return  getPicWidthInLumaSamples()                 != pps->getPicWidthInLumaSamples()                ||
-                                                                                               getPicHeightInLumaSamples()                != pps->getPicHeightInLumaSamples()               ||
+  bool               isRefScaled( const PPS* pps ) const                             { return  unscaledPic->getPicWidthInLumaSamples()    != pps->getPicWidthInLumaSamples()                ||
+                                                                                               unscaledPic->getPicHeightInLumaSamples()   != pps->getPicHeightInLumaSamples()               ||
                                                                                                getScalingWindow().getWindowLeftOffset()   != pps->getScalingWindow().getWindowLeftOffset()  ||
                                                                                                getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
                                                                                                getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||

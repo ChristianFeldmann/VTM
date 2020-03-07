@@ -2122,7 +2122,28 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
 #if !JVET_Q0806
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  if (pcSPS->getMaxNumMergeCand() >= 2)
+  {
+    READ_FLAG(uiCode, "triangle_flag");
+    pcSPS->setUseTriangle(uiCode != 0);
+    if (pcSPS->getUseTriangle() && pcSPS->getMaxNumMergeCand() >= 3)
+    {
+      READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_gpm_cand");
+      CHECK(pcSPS->getMaxNumMergeCand() < uiCode, "Incorrrect max number of Triangle candidates!");
+      pcSPS->setMaxNumGeoCand((uint32_t)(pcSPS->getMaxNumMergeCand() - uiCode));
+    }
+    else if (pcSPS->getUseTriangle())
+      pcSPS->setMaxNumGeoCand(2);
+  }
+  else
+  {
+    pcSPS->setUseTriangle(0);
+    pcSPS->setMaxNumGeoCand(0);
+  }
+#else
   READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
+#endif
 #else
 #if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (pcSPS->getMaxNumMergeCand() >= 2)

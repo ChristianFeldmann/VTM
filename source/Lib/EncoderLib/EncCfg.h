@@ -670,7 +670,11 @@ protected:
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
 #if !JVET_Q0806
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  uint32_t      m_maxNumGeoCand;
+#else
   uint32_t      m_maxNumTriangleCand;
+#endif
 #else
   uint32_t      m_maxNumGeoCand;
 #endif
@@ -1755,8 +1759,13 @@ public:
   void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
   uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
 #if !JVET_Q0806
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  void         setMaxNumGeoCand(uint32_t u) { m_maxNumGeoCand = u; }
+  uint32_t     getMaxNumGeoCand() { return m_maxNumGeoCand; }
+#else
   void         setMaxNumTriangleCand             ( uint32_t u )      { m_maxNumTriangleCand = u;    }
   uint32_t     getMaxNumTriangleCand             ()                  { return m_maxNumTriangleCand; }
+#endif
 #else
   void         setMaxNumGeoCand                  ( uint32_t u )      { m_maxNumGeoCand = u;    }
   uint32_t     getMaxNumGeoCand                  ()                  { return m_maxNumGeoCand; }

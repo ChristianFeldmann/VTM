@@ -1999,7 +1999,12 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
                                                                     && pu.cu->lwidth() < 8 * pu.cu->lheight() && pu.cu->lheight() < 8 * pu.cu->lwidth();
   if (geoAvailable || ciipAvailable)
 #else
-  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() && pu.cu->cs->picHeader->getMaxNumTriangleCand() > 1;
+  const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() &&
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    pu.cs->sps->getMaxNumGeoCand() > 1;
+#else
+    pu.cu->cs->picHeader->getMaxNumTriangleCand() > 1;
+#endif
   const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
@@ -2172,7 +2177,11 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
         }
       };
       m_BinEncoder.encodeBinEP(splitDir);
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+      const int maxNumTriangleCand = pu.cs->sps->getMaxNumGeoCand();
+#else
       const int maxNumTriangleCand = pu.cs->picHeader->getMaxNumTriangleCand();
+#endif
       CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
       CHECK(candIdx0 >= maxNumTriangleCand, "Incorrect candIdx0");
       CHECK(candIdx1 >= maxNumTriangleCand, "Incorrect candIdx1");

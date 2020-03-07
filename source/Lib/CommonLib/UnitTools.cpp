@@ -3291,8 +3291,12 @@ void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangl
 {
   MergeCtx tmpMergeCtx;
 
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumMergeCand();
+#else
   const Slice &slice = *pu.cs->slice;
   const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
+#endif
 
   triangleMrgCtx.numValidMergeCand = 0;
 

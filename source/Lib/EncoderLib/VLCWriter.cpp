@@ -1402,7 +1402,19 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
 #if !JVET_Q0806
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  if (pcSPS->getMaxNumMergeCand() >= 2)
+  {
+    WRITE_FLAG(pcSPS->getUseTriangle() ? 1 : 0, "sps_triangle_enabled_flag");
+    if (pcSPS->getUseTriangle() && pcSPS->getMaxNumMergeCand() >= 3)
+    {
+      CHECK(pcSPS->getMaxNumMergeCand() < pcSPS->getMaxNumGeoCand(), "Incorrrect max number of Triangle candidates!");
+      WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
+    }
+  }
+#else
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "sps_triangle_enabled_flag" );
+#endif
 #else
 #if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (pcSPS->getMaxNumMergeCand() >= 2)

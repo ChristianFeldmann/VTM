@@ -226,7 +226,6 @@
 #define JVET_Q0795_CCALF                                  1 // Cross-component ALF
 
 #define JVET_Q0297_MER                                    1 // JVET_Q0297: Merge estimation region
-#define FIX_TICKET_937                                    1 // Fix ticket #937 
 
 #define JVET_Q0483_CLIP_TMVP                              1 // JVET-Q0483: Clip TMVP when no scaling is applied
 

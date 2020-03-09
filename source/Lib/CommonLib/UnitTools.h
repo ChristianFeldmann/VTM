@@ -142,7 +142,7 @@ namespace PU
   void getIBCMergeCandidates          (const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
   void getInterMMVDMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const int& mrgCandIdx = -1);
   int getDistScaleFactor(const int &currPOC, const int &currRefPOC, const int &colPOC, const int &colRefPOC);
-#if FIX_TICKET_937
+#if JVET_Q0297_MER
   bool isDiffMER                      (const Position &pos1, const Position &pos2, const unsigned plevel);
 #else
   bool isDiffMER                      (const PredictionUnit &pu, const PredictionUnit &pu2);

@@ -699,8 +699,20 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
       }
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[ i ] )
       {
-        sei_read_code( pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]" );
-        sei.m_cpbRemovalDelayDeltaIdx[ i ] = symbol;
+#if JVET_Q0216
+        if ((bp.m_numCpbRemovalDelayDeltas - 1) > 0)
+        {
+          sei_read_code(pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]");
+          sei.m_cpbRemovalDelayDeltaIdx[i] = symbol;
+        }
+        else
+        {
+          sei.m_cpbRemovalDelayDeltaIdx[i] = 0;
+        }
+#else
+        sei_read_code(pDecodedMessageOutputStream, ceilLog2(bp.m_numCpbRemovalDelayDeltas), symbol, "cpb_removal_delay_delta_idx[i]");
+        sei.m_cpbRemovalDelayDeltaIdx[i] = symbol;
+#endif
       }
       else
       {

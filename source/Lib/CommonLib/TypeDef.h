@@ -256,6 +256,8 @@
 
 #define JVET_Q0221                                        1 // JVET-Q0221: Decoding unit parameter signalling
 
+#define JVET_Q0216                                        1 // JVET-Q0216: modification to picture timing SEI message
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
 #define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension

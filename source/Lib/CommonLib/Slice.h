@@ -1041,6 +1041,14 @@ public:
   void              deriveOutputLayerSets();
   void              deriveTargetOutputLayerSet( int targetOlsIdx );
 #endif
+
+#if JVET_P0125_SEI_CONSTRAINTS  
+  void              setNumLayersInOls(int olsIdx, int numLayers)         { m_numLayersInOls[olsIdx]  = numLayers; }
+  int               getNumLayersInOls(int olsIdx)      const             { return m_numLayersInOls[olsIdx]; }
+
+  void              setLayerIdInOls  (int olsIdx, int layerIdx, int layerId)    { m_layerIdInOls[olsIdx][layerIdx] = layerId; }
+  uint32_t          getLayerIdInOls  (int olsIdx, int layerIdx) const           { return m_layerIdInOls[olsIdx][layerIdx]   ; }
+#endif
 };
 
 class Window

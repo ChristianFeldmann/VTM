@@ -961,6 +961,35 @@ void DecLib::checkTidLayerIdInAccessUnit()
 
 }
 #endif
+#if JVET_P0125_SEI_CONSTRAINTS
+void DecLib::checkSEIInAccessUnit()
+{
+  for (auto &sei : m_accessUnitSeiPayLoadTypes)
+  {
+    enum NalUnitType         naluType = std::get<0>(sei);
+    int                    nuhLayerId = std::get<1>(sei);
+    enum SEI::PayloadType payloadType = std::get<2>(sei);
+    if (naluType == NAL_UNIT_PREFIX_SEI && ((payloadType == SEI::BUFFERING_PERIOD || payloadType == SEI::PICTURE_TIMING || payloadType == SEI::DECODING_UNIT_INFO)))
+    {
+      int numlayersInZeroOls = m_vps->getNumLayersInOls(0);
+      bool inZeroOls = true;
+      for (int i = 0; i < numlayersInZeroOls; i++)
+      {
+        uint32_t layerIdInZeroOls = m_vps->getLayerIdInOls(0, i);
+        if (layerIdInZeroOls != nuhLayerId)
+        {
+          inZeroOls = false;
+        }
+      }
+      CHECK(!inZeroOls, "non-scalable-nested timing related SEI shall apply only to the 0-th OLS");
+      
+      int layerId = m_vps->getLayerId(0);
+      CHECK(nuhLayerId != layerId, "the nuh_layer_id of non-scalable-nested timing related SEI shall be equal to vps_layer_id[0]");
+    }
+  }
+}
+#endif
+
 /**
  - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
  */
@@ -1580,7 +1609,14 @@ void DecLib::xParsePrefixSEImessages()
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
     m_accessUnitSeiTids.push_back(nalu.m_temporalId);
 #endif
+#if JVET_P0125_SEI_CONSTRAINTS
+    const SPS *sps = m_parameterSetManager.getActiveSPS();
+    const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+    m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, sps, m_HRD, m_pDecodedSEIOutputStream );
+    m_accessUnitSeiPayLoadTypes.push_back(std::tuple<NalUnitType, int, SEI::PayloadType>(nalu.m_nalUnitType, nalu.m_nuhLayerId, m_SEIs.back()->payloadType()));
+#else
     m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
+#endif
     delete m_prefixSEINALUs.front();
     m_prefixSEINALUs.pop_front();
   }
@@ -2429,7 +2465,14 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
         m_accessUnitSeiTids.push_back(nalu.m_temporalId);
 #endif
+#if JVET_P0125_SEI_CONSTRAINTS
+        const SPS *sps = m_parameterSetManager.getActiveSPS();
+        const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+        m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, sps, m_HRD, m_pDecodedSEIOutputStream );
+        m_accessUnitSeiPayLoadTypes.push_back(std::tuple<NalUnitType, int, SEI::PayloadType>(nalu.m_nalUnitType, nalu.m_nuhLayerId, m_pcPic->SEIs.back()->payloadType()));
+#else
         m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
+#endif
       }
       else
       {

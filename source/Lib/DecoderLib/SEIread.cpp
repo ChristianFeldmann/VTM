@@ -115,14 +115,22 @@ static inline void output_sei_message_header(SEI &sei, std::ostream *pDecodedMes
  * unmarshal a single SEI message from bitstream bs
  */
  // note: for independent parsing no parameter set should not be required here
+#if JVET_P0125_SEI_CONSTRAINTS
+void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t nuh_layer_id, const uint32_t temporalId, const VPS *vps, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
+#else
 void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t temporalId, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
+#endif
 {
   setBitstream(bs);
 
   CHECK(m_pcBitstream->getNumBitsUntilByteAligned(), "Bitstream not aligned");
   do
   {
+#if JVET_P0125_SEI_CONSTRAINTS
+    xReadSEImessage(seis, nalUnitType, nuh_layer_id, temporalId, vps, sps, hrd, pDecodedMessageOutputStream);
+#else
     xReadSEImessage(seis, nalUnitType, temporalId, sps, hrd, pDecodedMessageOutputStream);
+#endif
 
     /* SEI messages are an integer number of bytes, something has failed
     * in the parsing if bitstream not byte-aligned */
@@ -133,7 +141,11 @@ void SEIReader::parseSEImessage(InputBitstream* bs, SEIMessages& seis, const Nal
   xReadRbspTrailingBits();
 }
 
+#if JVET_P0125_SEI_CONSTRAINTS
+void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t nuh_layer_id, const uint32_t temporalId, const VPS *vps, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
+#else
 void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType, const uint32_t temporalId, const SPS *sps, HRD &hrd, std::ostream *pDecodedMessageOutputStream)
+#endif
 {
 #if ENABLE_TRACING
   xTraceSEIHeader();
@@ -218,7 +230,11 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
 #if JVET_P0190_SCALABLE_NESTING_SEI
     case SEI::SCALABLE_NESTING:
       sei = new SEIScalableNesting;
+#if JVET_P0125_SEI_CONSTRAINTS
+      xParseSEIScalableNesting((SEIScalableNesting&)*sei, nalUnitType, nuh_layer_id, payloadSize, vps, sps, pDecodedMessageOutputStream);
+#else
       xParseSEIScalableNesting((SEIScalableNesting&)*sei, nalUnitType, payloadSize, sps, pDecodedMessageOutputStream);
+#endif
       break;
 #endif
     case SEI::FRAME_FIELD_INFO:
@@ -468,7 +484,11 @@ void SEIReader::xParseSEIDecodedPictureHash(SEIDecodedPictureHash& sei, uint32_t
 
 
 #if JVET_P0190_SCALABLE_NESTING_SEI
+#if JVET_P0125_SEI_CONSTRAINTS
+void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitType nalUnitType, const uint32_t nuh_layer_id, uint32_t payloadSize, const VPS *vps, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
+#else
 void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitType nalUnitType, uint32_t payloadSize, const SPS *sps, std::ostream *pDecodedMessageOutputStream)
+#endif
 {
   uint32_t uiCode;
   SEIMessages seis;
@@ -482,6 +502,32 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
     {
       sei_read_uvlc(pDecodedMessageOutputStream, uiCode, "nesting_ols_idx_delta_minus1[i]"); sei.m_nestingOlsIdxDeltaMinus1[i] = uiCode;
     }
+#if JVET_P0125_SEI_CONSTRAINTS
+    for (uint32_t i = 0; i <= sei.m_nestingNumOlssMinus1; i++)
+    {
+      if (i == 0)
+      {
+        sei.m_nestingOlsIdx[i] = sei.m_nestingOlsIdxDeltaMinus1[i];
+      }
+      else
+      {
+        sei.m_nestingOlsIdx[i] = sei.m_nestingOlsIdxDeltaMinus1[i] + sei.m_nestingOlsIdxDeltaMinus1[i - 1] + 1;
+      }
+    }
+    uint32_t lowestLayerId = MAX_UINT;
+    for (uint32_t olsIdxForSEI = 0; olsIdxForSEI <= sei.m_nestingNumOlssMinus1; olsIdxForSEI++)
+    {
+      int olsIdx = sei.m_nestingOlsIdx[olsIdxForSEI];
+      for (int layerIdx = 0; layerIdx < vps->getNumLayersInOls(olsIdx); layerIdx++)
+      {
+        if (lowestLayerId > vps->getLayerIdInOls(olsIdx, layerIdx))
+        {
+          lowestLayerId = vps->getLayerIdInOls(olsIdx, layerIdx);
+        }
+      }
+    }
+    CHECK(lowestLayerId!= nuh_layer_id, "nuh_layer_id is not equal to the lowest layer among Olss that the scalable SEI applies");
+#endif
   }
   else
   {
@@ -503,11 +549,31 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
     sei_read_flag(pDecodedMessageOutputStream, code, "nesting_zero_bit");
   }
 
+#if JVET_P0125_SEI_CONSTRAINTS
+  bool containBPorPTorDUI     = false;
+  bool containNoBPorPTorDUI = false;
+  for (auto nestedsei : sei.m_nestedSEIs)
+  {
+    if (nestedsei->payloadType() == SEI::BUFFERING_PERIOD || nestedsei->payloadType() == SEI::PICTURE_TIMING || nestedsei->payloadType() == SEI::DECODING_UNIT_INFO)
+    {
+      containBPorPTorDUI = true;
+    }
+    if (!(nestedsei->payloadType() == SEI::BUFFERING_PERIOD || nestedsei->payloadType() == SEI::PICTURE_TIMING || nestedsei->payloadType() == SEI::DECODING_UNIT_INFO))
+    {
+      containNoBPorPTorDUI = true;
+    }
+  }
+  CHECK(containBPorPTorDUI && containNoBPorPTorDUI, "nested SEI cannot have timing-related SEI and none-timing-related SEI at the same time");
+#endif
   // read nested SEI messages
   do
   {
     HRD hrd;
+#if JVET_P0125_SEI_CONSTRAINTS
+    xReadSEImessage(sei.m_nestedSEIs, nalUnitType, nuh_layer_id, 0, vps, sps, hrd, pDecodedMessageOutputStream);
+#else
     xReadSEImessage(sei.m_nestedSEIs, nalUnitType, 0, sps, hrd, pDecodedMessageOutputStream);
+#endif
   } while (m_pcBitstream->getNumBitsLeft() > 8);
 
   if (pDecodedMessageOutputStream)

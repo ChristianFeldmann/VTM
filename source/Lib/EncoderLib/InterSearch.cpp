@@ -1460,8 +1460,11 @@ bool InterSearch::predIBCSearch(CodingUnit& cu, Partitioner& partitioner, const 
     int bvpIdxBest = 0;
     cMv.setZero();
     Distortion cost = 0;
-
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    if (pu.cs->sps->getMaxNumIBCMergeCand() == 1)
+#else
     if ( pu.cu->slice->getPicHeader()->getMaxNumIBCMergeCand() == 1 )
+#endif
     {
       iBvpNum = 1;
       cMvPred[1] = cMvPred[0];

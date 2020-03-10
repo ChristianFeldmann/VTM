@@ -1332,10 +1332,17 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getUseIntraMTS() ? 1 : 0,                                               "sps_explicit_mts_intra_enabled_flag" );
     WRITE_FLAG( pcSPS->getUseInterMTS() ? 1 : 0,                                               "sps_explicit_mts_inter_enabled_flag" );
   }
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  CHECK(pcSPS->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
+  WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSPS->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
+#endif
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                                      "sps_sbt_enabled_flag");
   WRITE_FLAG( pcSPS->getUseAffine() ? 1 : 0,                                                   "sps_affine_enabled_flag" );
   if ( pcSPS->getUseAffine() )
   {
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+    WRITE_UVLC(AFFINE_MRG_MAX_NUM_CANDS - pcSPS->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand");
+#endif
     WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "sps_affine_type_flag" );
 #if JVET_Q0444_AMVR_SIGNALLING
     if (pcSPS->getAMVREnabledFlag())
@@ -1379,7 +1386,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
   WRITE_FLAG( pcSPS->getUseBcw() ? 1 : 0,                                                      "sps_bcw_enabled_flag" );
   WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "sps_ibc_enabled_flag");
-
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  if (pcSPS->getIBCFlag())
+  {
+    CHECK(pcSPS->getMaxNumIBCMergeCand() > IBC_MRG_MAX_NUM_CANDS, "More IBC merge candidates signalled than supported");
+    WRITE_UVLC(IBC_MRG_MAX_NUM_CANDS - pcSPS->getMaxNumIBCMergeCand(), "six_minus_max_num_ibc_merge_cand");
+  }
+#endif
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
 
@@ -1389,11 +1402,34 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
 #if !JVET_Q0806
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  if (pcSPS->getMaxNumMergeCand() >= 2)
+  {
+    WRITE_FLAG(pcSPS->getUseTriangle() ? 1 : 0, "sps_triangle_enabled_flag");
+    if (pcSPS->getUseTriangle() && pcSPS->getMaxNumMergeCand() >= 3)
+    {
+      CHECK(pcSPS->getMaxNumMergeCand() < pcSPS->getMaxNumGeoCand(), "Incorrrect max number of Triangle candidates!");
+      WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
+    }
+  }
+#else
   WRITE_FLAG( pcSPS->getUseTriangle() ? 1: 0,                                                  "sps_triangle_enabled_flag" );
+#endif
+#else
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+  if (pcSPS->getMaxNumMergeCand() >= 2)
+  {
+    WRITE_FLAG(pcSPS->getUseGeo() ? 1 : 0, "sps_gpm_enabled_flag");
+    if (pcSPS->getUseGeo() && pcSPS->getMaxNumMergeCand() >= 3)
+    {
+      CHECK(pcSPS->getMaxNumMergeCand() < pcSPS->getMaxNumGeoCand(), "Incorrrect max number of GEO candidates!");
+      WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
+    }
+  }
 #else
   WRITE_FLAG( pcSPS->getUseGeo() ? 1: 0,                                                       "sps_gpm_enabled_flag" );
 #endif
-
+#endif
   WRITE_FLAG(pcSPS->getUseLmcs() ? 1 : 0, "sps_lmcs_enable_flag");
   WRITE_FLAG( pcSPS->getUseLFNST() ? 1 : 0,                                                    "sps_lfnst_enabled_flag" );
 
@@ -2302,8 +2338,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
     {
 #endif
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
       CHECK(picHeader->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
       WRITE_UVLC(MRG_MAX_NUM_CANDS - picHeader->getMaxNumMergeCand(), "pic_six_minus_max_num_merge_cand");
+#endif
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     }
     else
@@ -2314,8 +2352,12 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // subblock merge candidate list size
     if ( sps->getUseAffine() )
     {
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+      picHeader->setMaxNumAffineMergeCand(sps->getMaxNumAffineMergeCand());
+#else
       CHECK( picHeader->getMaxNumAffineMergeCand() > AFFINE_MRG_MAX_NUM_CANDS, "More affine merge candidates signalled than supported" );
       WRITE_UVLC(AFFINE_MRG_MAX_NUM_CANDS - picHeader->getMaxNumAffineMergeCand(), "pic_five_minus_max_num_subblock_merge_cand");
+#endif
     }
     else
     {
@@ -2368,7 +2410,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       xCodePredWeightTable(picHeader, sps);
     }
 #endif
-
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
 #if !JVET_Q0806
   // triangle merge candidate list size
     if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
@@ -2403,6 +2445,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
     }
 #endif
+#endif
 #if JVET_Q0819_PH_CHANGES
   }
   // inherit constraint values from SPS
@@ -2415,12 +2458,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   }
 #endif
   // ibc merge candidate list size
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (sps->getIBCFlag())
   {
     CHECK( picHeader->getMaxNumIBCMergeCand() > IBC_MRG_MAX_NUM_CANDS, "More IBC merge candidates signalled than supported" );
     WRITE_UVLC(IBC_MRG_MAX_NUM_CANDS - picHeader->getMaxNumIBCMergeCand(), "pic_six_minus_max_num_ibc_merge_cand");
   }
-
+#endif
 #if JVET_Q0819_PH_CHANGES
   if (pps->getQpDeltaInfoInPhFlag())
   {

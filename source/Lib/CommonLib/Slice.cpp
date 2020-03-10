@@ -2250,18 +2250,22 @@ PicHeader::PicHeader()
 , m_picColFromL0Flag                              ( true )
 #endif
 , m_mvdL1ZeroFlag                                 ( 0 )
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
 , m_maxNumMergeCand                               ( MRG_MAX_NUM_CANDS )
+#endif
 , m_maxNumAffineMergeCand                         ( AFFINE_MRG_MAX_NUM_CANDS )
 , m_disFracMMVD                                   ( 0 )
 , m_disBdofFlag                                   ( 0 )
 , m_disDmvrFlag                                   ( 0 )
 , m_disProfFlag                                   ( 0 )
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
 #if !JVET_Q0806
 , m_maxNumTriangleCand                            ( 0 )
 #else
 , m_maxNumGeoCand                                 ( 0 )
 #endif
 , m_maxNumIBCMergeCand                            ( IBC_MRG_MAX_NUM_CANDS )
+#endif
 , m_jointCbCrSignFlag                             ( 0 )
 #if JVET_Q0819_PH_CHANGES 
 , m_qpDelta                                       ( 0 )
@@ -2380,18 +2384,22 @@ void PicHeader::initPicHeader()
   m_picColFromL0Flag                              = true;
 #endif
   m_mvdL1ZeroFlag                                 = 0;
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
   m_maxNumMergeCand                               = MRG_MAX_NUM_CANDS;
+#endif
   m_maxNumAffineMergeCand                         = AFFINE_MRG_MAX_NUM_CANDS;
   m_disFracMMVD                                   = 0;
   m_disBdofFlag                                   = 0;
   m_disDmvrFlag                                   = 0;
   m_disProfFlag                                   = 0;
+#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
 #if !JVET_Q0806
   m_maxNumTriangleCand                            = 0;
 #else
   m_maxNumGeoCand                                 = 0;
 #endif
   m_maxNumIBCMergeCand                            = IBC_MRG_MAX_NUM_CANDS;
+#endif
   m_jointCbCrSignFlag                             = 0;
 #if JVET_Q0819_PH_CHANGES 
   m_qpDelta                                       = 0;
@@ -2573,7 +2581,9 @@ SPS::SPS()
 , m_numExtraSHBitsBytes       ( 0 )
 #endif
 , m_numLongTermRefPicSPS      (  0)
+
 , m_log2MaxTbSize             (  6)
+
 , m_useWeightPred             (false)
 , m_useWeightedBiPred         (false)
 , m_saoEnabledFlag            (false)
@@ -2625,7 +2635,12 @@ SPS::SPS()
 , m_GDREnabledFlag            ( true )
 , m_SubLayerCbpParametersPresentFlag ( true )
 , m_rprEnabledFlag            ( false )
-
+#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
+, m_maxNumMergeCand(MRG_MAX_NUM_CANDS)
+, m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
+, m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
+, m_maxNumGeoCand(0)
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

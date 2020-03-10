@@ -864,12 +864,12 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
                                  int mmvdList,
                                  const int& mrgCandIdx )
 {
-  const CodingStructure &cs  = *pu.cs;
-  const Slice &slice         = *pu.cs->slice;
-  const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
 #if JVET_Q0297_MER
   const unsigned plevel = pu.cs->sps->getLog2ParallelMergeLevelMinus2() + 2;
 #endif
+  const CodingStructure &cs  = *pu.cs;
+  const Slice &slice         = *pu.cs->slice;
+  const uint32_t maxNumMergeCand = slice.getPicHeader()->getMaxNumMergeCand();
 
   for (uint32_t ui = 0; ui < maxNumMergeCand; ++ui)
   {

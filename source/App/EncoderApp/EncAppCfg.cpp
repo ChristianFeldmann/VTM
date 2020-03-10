@@ -2087,6 +2087,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   if( m_virtualBoundariesEnabledFlag )
   {
+#if JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT
+    CHECK( m_subPicInfoPresentFlag && m_virtualBoundariesPresentFlag != 1, "When subpicture signalling is present, the signalling of virtual boundaries, if present, shall be in the SPS" );
+#endif
+
     if( m_virtualBoundariesPresentFlag )
     {
 #else

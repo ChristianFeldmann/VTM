@@ -731,8 +731,9 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
   if (pcSlice->isDRAP()) c = 'D';
 
   //-- For time output for each slice
-  msg( msgl, "POC %4d LId: %2d TId: %1d ( %c-SLICE, QP%3d ) ", pcSlice->getPOC(), pcSlice->getPic()->layerId,
+  msg( msgl, "POC %4d LId: %2d TId: %1d ( %s, %c-SLICE, QP%3d ) ", pcSlice->getPOC(), pcSlice->getPic()->layerId,
          pcSlice->getTLayer(),
+         nalUnitTypeToString(pcSlice->getNalUnitType()),
          c,
          pcSlice->getSliceQp() );
   msg( msgl, "[DT %6.3f] ", pcSlice->getProcessingTime() );

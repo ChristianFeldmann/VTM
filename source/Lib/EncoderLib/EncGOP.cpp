@@ -2140,10 +2140,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     pcSlice->setLastIDR(m_iLastIDR);
     pcSlice->setIndependentSliceIdx(0);
-    if (pcSlice->getPOC() && m_pcCfg->getIntraPeriod() != 1)
-    {
-      pcSlice->setSliceType(m_pcCfg->getGOPEntry(iGOPid).m_sliceType == 'I' ? I_SLICE : (m_pcCfg->getGOPEntry(iGOPid).m_sliceType == 'B' ? B_SLICE : P_SLICE) );
-    }
 
     if(pcSlice->getSliceType()==B_SLICE&&m_pcCfg->getGOPEntry(iGOPid).m_sliceType=='P')
     {
@@ -2285,7 +2281,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
 #endif
 
-        for(int ii=iGOPid+1;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
+        for(int ii=0;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
         {
           int lTid = m_pcCfg->getRPLEntry(0, ii).m_temporalId;
 
@@ -2294,7 +2290,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             const ReferencePictureList* rpl0 = pcSlice->getSPS()->getRPLList0()->getReferencePictureList(ii);
             for (int jj = 0; jj < pcSlice->getRPL0()->getNumberOfActivePictures(); jj++)
             {
-              int tPoc = m_pcCfg->getRPLEntry(0, ii).m_POC + rpl0->getRefPicIdentifier(jj);
+              int tPoc = pcSlice->getPOC() - rpl0->getRefPicIdentifier(jj);
               int kk = 0;
               for (kk = 0; kk<m_pcCfg->getGOPSize(); kk++)
               {
@@ -2313,7 +2309,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             const ReferencePictureList* rpl1 = pcSlice->getSPS()->getRPLList1()->getReferencePictureList(ii);
             for (int jj = 0; jj < pcSlice->getRPL1()->getNumberOfActivePictures(); jj++)
             {
-              int tPoc = m_pcCfg->getRPLEntry(1, ii).m_POC + rpl1->getRefPicIdentifier(jj);
+              int tPoc = pcSlice->getPOC() - rpl1->getRefPicIdentifier(jj);
               int kk = 0;
               for (kk = 0; kk<m_pcCfg->getGOPSize(); kk++)
               {
@@ -4267,10 +4263,11 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   if( g_verbosity >= NOTICE )
   {
-    msg( NOTICE, "POC %4d LId: %2d TId: %1d ( %c-SLICE, QP %d ) %10d bits",
+    msg( NOTICE, "POC %4d LId: %2d TId: %1d ( %s, %c-SLICE, QP %d ) %10d bits",
          pcSlice->getPOC(),
          pcSlice->getPic()->layerId,
          pcSlice->getTLayer(),
+         nalUnitTypeToString(pcSlice->getNalUnitType()),
          c,
          pcSlice->getSliceQp(),
          uibits );

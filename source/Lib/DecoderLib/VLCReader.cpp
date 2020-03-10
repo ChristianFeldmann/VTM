@@ -2767,6 +2767,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         {
           alfChromaIdc = 0;
         }
+#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
+        picHeader->setAlfChromaIdc(alfChromaIdc);
+#endif
         if (alfChromaIdc)
         {
           READ_CODE(3, uiCode, "pic_alf_aps_id_chroma");
@@ -3874,6 +3877,33 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 }
 
+#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
+void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager)
+{
+  SPS* sps = parameterSetManager->getSPS(picHeader->getSPSId());
+  PPS* pps = parameterSetManager->getPPS(picHeader->getPPSId());
+  int curPicTid = pcSlice->getTLayer();
+  APS* aps;
+  const std::vector<int>&   apsId = picHeader->getAlfAPSs();
+
+  if (sps->getALFEnabledFlag() && pps->getAlfInfoInPhFlag() && picHeader->getAlfEnabledFlag(COMPONENT_Y))
+  {
+    //luma
+    for (int i = 0; i < picHeader->getNumAlfAps(); i++)
+    {
+      aps = parameterSetManager->getAPS(apsId[i], ALF_APS);
+      CHECK(aps->getTemporalId() > curPicTid, "The TemporalId of the APS NAL unit having aps_params_type equal to ALF_APS and adaptation_parameter_set_id equal to ph_alf_aps_id_luma[ i ] shall be less than or equal to the TemporalId of the picture associated with the PH.");
+    }
+    //chroma
+    if (picHeader->getAlfChromaIdc())
+    {
+      int chromaAlfApsId = picHeader->getAlfApsIdChroma();
+      aps = parameterSetManager->getAPS(chromaAlfApsId, ALF_APS);
+      CHECK(aps->getTemporalId() > curPicTid, "The TemporalId of the APS NAL unit having aps_params_type equal to ALF_APS and adaptation_parameter_set_id equal to ph_alf_aps_id_chroma shall be less than or equal to the TemporalId of the picture associated with the PH.");
+    }
+  }
+}
+#endif
 void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
 {
   uint32_t  uiCode;
@@ -3895,6 +3925,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #endif
   CHECK(picHeader==0, "Invalid Picture Header");
   CHECK(picHeader->isValid()==false, "Invalid Picture Header");
+#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
+  checkAlfNaluTidAndPicTid(pcSlice, picHeader, parameterSetManager);
+#endif
   pps = parameterSetManager->getPPS( picHeader->getPPSId() );
   //!KS: need to add error handling code here, if PPS is not available
   CHECK(pps==0, "Invalid PPS");

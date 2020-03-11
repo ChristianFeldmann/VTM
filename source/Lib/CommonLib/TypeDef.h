@@ -52,6 +52,7 @@
 
 #define JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE             1 // JVET-Q0798: signal the number of merge candidates in SPS
 
+#define JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT       1 //JVET-Q0157: subpicture reordering constraint
 
 #define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 

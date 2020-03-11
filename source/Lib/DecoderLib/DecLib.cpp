@@ -1590,6 +1590,52 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
   }
 #endif
+
+#if JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT
+  // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
+  // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.
+  if( sps->getSubPicInfoPresentFlag() )
+  {    
+    static std::unordered_map<int, std::vector<int>> previousSubPicIds;
+
+    if( m_firstSliceInSequence[layerId] )
+    {
+      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+      {
+        previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
+      }
+    }
+    else
+    {
+      int currentSubPicIdx = NOT_VALID;
+      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+      {
+        if( pps->getSubPic( subPicIdx ).getSubPicID() == slice->getSliceSubPicId() )
+        {
+          currentSubPicIdx = subPicIdx;
+          break;
+        }
+      }
+
+      CHECK( currentSubPicIdx == NOT_VALID, "Sub-picture was not found" );
+      CHECK( !previousSubPicIds.count( layerId ), "Sub-picture information of the previously decoded picture was not stored" );
+
+      if( previousSubPicIds[layerId][currentSubPicIdx] != slice->getSliceSubPicId() )
+      {
+        CHECK( !slice->isIRAP(), "For reordered sub-pictures, the slice NAL shall be in the range of IDR_W_RADL to CRA_NUT, inclusive" )
+      }
+
+      // store PPS ID to have sub-picture info for the next pictures when last rectangular slice in the picture is encountered
+      if( slice->getSliceID() + 1 == pps->getNumSlicesInPic() )
+      {
+        for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+        {
+          previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
+        }
+      }
+    }    
+  }
+#endif
 }
 
 

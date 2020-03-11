@@ -4894,6 +4894,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 	pcSlice->setTSResidualCodingDisabledFlag(uiCode != 0);
 #endif
 
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  if (picHeader->getLmcsEnabledFlag())
+  {
+    READ_FLAG(uiCode, "slice_lmcs_enabled_flag");
+    pcSlice->setLmcsEnabledFlag(uiCode);
+  }
+  else
+  {
+    pcSlice->setLmcsEnabledFlag(false);
+  }
+#endif
+
   if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
   {
     pcSlice->setDefaultClpRng( *sps );

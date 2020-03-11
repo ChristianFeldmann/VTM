@@ -1269,7 +1269,11 @@ void InterSearch::xIBCEstimation(PredictionUnit& pu, PelUnitBuf& origBuf,
   CPelBuf* pcPatternKey = &tmpPattern;
   PelBuf tmpOrgLuma;
 
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  if ((pu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#else
   if ((pu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()))
+#endif
   {
     const CompArea &area = pu.blocks[COMPONENT_Y];
     CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
@@ -6505,7 +6509,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     const UnitArea relativeUnitArea(tu.chromaFormat, Area(tuPos, tu.Y().size()));
 
     const Slice           &slice = *cs.slice;
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+    if (slice.getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && !(CS::isDualITree(cs) && slice.isIntra() && tu.cu->predMode == MODE_IBC))
+#else
     if (slice.getPicHeader()->getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && !(CS::isDualITree(cs) && slice.isIntra() && tu.cu->predMode==MODE_IBC ))
+#endif
     {
       const CompArea      &areaY = tu.blocks[COMPONENT_Y];
       int adj = m_pcReshape->calculateChromaAdjVpduNei(tu, areaY);
@@ -6684,7 +6692,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #if RDOQ_CHROMA_LAMBDA
           m_pcTrQuant->selectLambda(compID);
 #endif
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+          if (slice.getLmcsEnabledFlag() && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag())
+#else
           if (slice.getPicHeader()->getLmcsEnabledFlag() && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag())
+#endif
           {
             double cRescale = (double)(1 << CSCALE_FP_PREC) / (double)(tu.getChromaAdj());
             m_pcTrQuant->setLambda(m_pcTrQuant->getLambda() / (cRescale*cRescale));
@@ -6709,7 +6721,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             crossComponentPrediction( tu, compID, lumaResi, resiBuf, resiBuf, false );
           }
 #endif
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+          if (slice.getLmcsEnabledFlag() && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width * tu.blocks[compID].height > 4)
+#else
           if (slice.getPicHeader()->getLmcsEnabledFlag() && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width*tu.blocks[compID].height > 4)
+#endif
           {
             PelBuf resiBuf = csFull->getResiBuf(compArea);
             resiBuf.scaleSignal(tu.getChromaAdj(), 1, tu.cu->cs->slice->clpRng(compID));
@@ -6841,7 +6857,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             CPelBuf orgResiBuf = csFull->getOrgResiBuf(compArea);
 
             m_pcTrQuant->invTransformNxN(tu, compID, resiBuf, cQP);
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+            if (slice.getLmcsEnabledFlag() && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width * tu.blocks[compID].height > 4)
+#else
             if (slice.getPicHeader()->getLmcsEnabledFlag() && isChroma(compID) && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && tu.blocks[compID].width*tu.blocks[compID].height > 4)
+#endif
             {
               resiBuf.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
             }
@@ -6996,8 +7016,13 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
                          (TU::getCbf(tu, COMPONENT_Cb) && tu.mtsIdx[COMPONENT_Cb] == MTS_SKIP && TU::getCbf(tu, COMPONENT_Cr) && tu.mtsIdx[COMPONENT_Cr] == MTS_SKIP);
 #endif
       const int channelBitDepth = sps.getBitDepth(toChannelType(COMPONENT_Cb));
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+      bool      reshape         = slice.getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag()
+                               && tu.blocks[COMPONENT_Cb].width * tu.blocks[COMPONENT_Cb].height > 4;
+#else
       bool      reshape         = slice.getPicHeader()->getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag()
                                && tu.blocks[COMPONENT_Cb].width * tu.blocks[COMPONENT_Cb].height > 4;
+#endif
       double minCostCbCr = minCost[COMPONENT_Cb] + minCost[COMPONENT_Cr];
       if (colorTransFlag)
       {
@@ -7478,7 +7503,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     cs.getResiBuf().fill(0);
     {
       cs.getRecoBuf().copyFrom(cs.getPredBuf() );
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+      if (m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()) && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
+#else
       if (m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag()) && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
+#endif
       {
         cs.getRecoBuf().Y().rspSignal(m_pcReshape->getFwdLUT());
       }
@@ -7499,8 +7528,13 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       CPelBuf reco = cs.getRecoBuf (compID);
       CPelBuf org  = cs.getOrgBuf  (compID);
 #if WCG_EXT
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+      if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+        m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
       if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
         m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())) )
+#endif
       {
         const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
         if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()))
@@ -7538,7 +7572,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   if (luma)
   {
     cs.getResiBuf().bufs[0].copyFrom(cs.getOrgBuf().bufs[0]);
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+    if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
     if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
     {
       const CompArea &areaY = cu.Y();
       CompArea      tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
@@ -7812,7 +7850,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
 
   if (luma)
   {
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+    if (cu.rootCbf && cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#else
     if (cu.rootCbf && cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
+#endif
     {
       const CompArea &areaY = cu.Y();
       CompArea      tmpArea(COMPONENT_Y, areaY.chromaFormat, Position(0, 0), areaY.size());
@@ -7827,7 +7869,11 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     else
     {
       cs.getRecoBuf().bufs[0].reconstruct(cs.getPredBuf().bufs[0], cs.getResiBuf().bufs[0], cs.slice->clpRngs().comp[0]);
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+      if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
+#else
       if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
+#endif
       {
         cs.getRecoBuf().bufs[0].rspSignal(m_pcReshape->getFwdLUT());
       }
@@ -7857,8 +7903,13 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     CPelBuf org  = cs.getOrgBuf  (compID);
 
 #if WCG_EXT
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+    if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
+      m_pcEncCfg->getLmcs() && (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#else
     if (m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled() || (
       m_pcEncCfg->getLmcs() && (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())))
+#endif
     {
       const CPelBuf orgLuma = cs.getOrgBuf( cs.area.blocks[COMPONENT_Y] );
       if (compID == COMPONENT_Y && !(m_pcEncCfg->getLumaLevelToDeltaQPMapping().isEnabled()) )

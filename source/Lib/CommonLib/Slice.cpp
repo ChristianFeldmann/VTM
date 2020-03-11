@@ -63,6 +63,9 @@ Slice::Slice()
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
 , m_ChromaQpAdjEnabled            ( false )
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+, m_lmcsEnabledFlag               ( 0 )
+#endif
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
@@ -174,6 +177,9 @@ void Slice::initSlice()
   m_colourPlaneId = 0;
 #endif
   m_colRefIdx = 0;
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  m_lmcsEnabledFlag = 0;
+#endif
   initEqualRef();
 
   m_bCheckLDC = false;
@@ -1038,6 +1044,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_independentSliceIdx           = pSrc->m_independentSliceIdx;
   m_nextSlice                     = pSrc->m_nextSlice;
   m_clpRngs                       = pSrc->m_clpRngs;
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  m_lmcsEnabledFlag               = pSrc->m_lmcsEnabledFlag;
+#endif
   m_pendingRasInit                = pSrc->m_pendingRasInit;
 
   for ( uint32_t e=0 ; e<NUM_REF_PIC_LIST_01 ; e++ )

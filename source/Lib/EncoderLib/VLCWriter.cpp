@@ -3269,6 +3269,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 	WRITE_FLAG(pcSlice->getTSResidualCodingDisabledFlag() ? 1 : 0, "slice_ts_residual_coding_disabled_flag");
 #endif
 
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+  if (picHeader->getLmcsEnabledFlag())
+  {
+    WRITE_FLAG(pcSlice->getLmcsEnabledFlag(), "slice_lmcs_enabled_flag");
+  }
+#endif
+
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())
   {
     WRITE_UVLC(0,"slice_segment_header_extension_length");

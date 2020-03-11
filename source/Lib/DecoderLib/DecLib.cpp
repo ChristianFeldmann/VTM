@@ -1497,11 +1497,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 #endif
 #endif
 
-#if JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT    
-  if( sps->getSubPicInfoPresentFlag() && sps->getVirtualBoundariesEnabledFlag() )
-    CHECK( sps->getVirtualBoundariesPresentFlag() != 1, "When the subpicture info is present, the signalling of the virtual boundary position, if present, shall be in SPS" );
-#endif 
-
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
   {
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );

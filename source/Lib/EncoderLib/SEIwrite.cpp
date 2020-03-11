@@ -362,7 +362,14 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
       }
       if( sei.m_cpbRemovalDelayDeltaEnabledFlag[i] )
       {
-        WRITE_CODE( sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas),               "cpb_removal_delay_delta_idx[i]" );
+#if JVET_Q0216
+        if ((bp.m_numCpbRemovalDelayDeltas - 1) > 0)
+        {
+          WRITE_CODE(sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas), "cpb_removal_delay_delta_idx[i]");
+        }
+#else
+        WRITE_CODE(sei.m_cpbRemovalDelayDeltaIdx[i], ceilLog2(bp.m_numCpbRemovalDelayDeltas), "cpb_removal_delay_delta_idx[i]");
+#endif
       }
       else
       {

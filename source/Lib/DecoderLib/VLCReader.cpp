@@ -5156,6 +5156,9 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_qp_delta_constraint_flag");                cinfo->setNoQpDeltaConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_dep_quant_constraint_flag");               cinfo->setNoDepQuantConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_sign_data_hiding_constraint_flag");        cinfo->setNoSignDataHidingConstraintFlag(symbol > 0 ? true : false);
+#if JVET_P0124_MIXED_NALU
+  READ_FLAG(symbol, "no_mixed_nalu_types_in_pic_constraint_flag"); cinfo->setNoMixedNaluTypesInPicConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol, "no_trail_constraint_flag");                   cinfo->setNoTrailConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_stsa_constraint_flag");                    cinfo->setNoStsaConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_rasl_constraint_flag");                    cinfo->setNoRaslConstraintFlag(symbol > 0 ? true : false);

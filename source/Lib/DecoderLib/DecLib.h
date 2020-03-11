@@ -149,6 +149,16 @@ private:
   };
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
   #endif
+#if JVET_P0124_MIXED_NALU
+  struct NalUnitInfo
+  {
+    NalUnitType     m_nalUnitType; ///< nal_unit_type
+    uint32_t        m_nuhLayerId;  ///< nuh_layer_id
+    uint32_t        m_firstCTUinSlice; /// the first CTU in slice, specified with raster scan order ctu address
+    int             m_POC;             /// the picture order 
+  };
+  std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
+#endif 
   std::vector<int> m_accessUnitApsNals;
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
   std::vector<int> m_accessUnitSeiTids;
@@ -276,7 +286,9 @@ protected:
   void      xParsePrefixSEIsForUnknownVCLNal();
 
   void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
-
+#if JVET_P0124_MIXED_NALU
+  void     xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu);
+#endif
 };// END CLASS DEFINITION DecLib
 
 

@@ -177,6 +177,7 @@
 #define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
 #define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
 #define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
+#define JVET_P0124_MIXED_NALU                             1 // JVET-P0124/P0095/P0222: MIxed IRAP/non-IRAP VCL NAL units within a picture
 #define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
 
 
@@ -1003,7 +1004,9 @@ enum NalUnitType
 
   NAL_UNIT_RESERVED_IRAP_VCL_11,
   NAL_UNIT_RESERVED_IRAP_VCL_12,
-
+#if JVET_P0124_MIXED_NALU
+  NAL_UNIT_RESERVED_VCL_15,
+#endif
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   NAL_UNIT_DCI,                     // 13
 #else

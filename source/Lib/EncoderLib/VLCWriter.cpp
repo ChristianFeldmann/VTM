@@ -1792,10 +1792,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     WRITE_FLAG(picHeader->getGdrPicFlag(), "gdr_pic_flag");
   }
   // Q0781, two-flags
-  WRITE_FLAG(picHeader->getPicInterSliceAllowedFlag(), "pic_inter_slice_allowed_flag");
+  WRITE_FLAG(picHeader->getPicInterSliceAllowedFlag(), "ph_inter_slice_allowed_flag");
   if (picHeader->getPicInterSliceAllowedFlag())
   {
-    WRITE_FLAG(picHeader->getPicIntraSliceAllowedFlag(), "pic_intra_slice_allowed_flag");
+    WRITE_FLAG(picHeader->getPicIntraSliceAllowedFlag(), "ph_intra_slice_allowed_flag");
   }
 #endif
   WRITE_FLAG(picHeader->getNonReferencePictureFlag(), "non_reference_picture_flag");
@@ -1865,24 +1865,24 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     if (picHeader->getAlfEnabledPresentFlag())
 #endif
     {
-      WRITE_FLAG(picHeader->getAlfEnabledFlag(COMPONENT_Y), "pic_alf_enabled_flag");
+      WRITE_FLAG(picHeader->getAlfEnabledFlag(COMPONENT_Y), "ph_alf_enabled_flag");
       if (picHeader->getAlfEnabledFlag(COMPONENT_Y))
       {
-        WRITE_CODE(picHeader->getNumAlfAps(), 3, "pic_num_alf_aps_ids_luma");
+        WRITE_CODE(picHeader->getNumAlfAps(), 3, "ph_num_alf_aps_ids_luma");
         const std::vector<int>&   apsId = picHeader->getAlfAPSs();
         for (int i = 0; i < picHeader->getNumAlfAps(); i++)
         {
-          WRITE_CODE(apsId[i], 3, "pic_alf_aps_id_luma");
+          WRITE_CODE(apsId[i], 3, "ph_alf_aps_id_luma");
         }
 
         const int alfChromaIdc = picHeader->getAlfEnabledFlag(COMPONENT_Cb) + picHeader->getAlfEnabledFlag(COMPONENT_Cr) * 2 ;
         if (sps->getChromaFormatIdc() != CHROMA_400)
         {
-          WRITE_CODE(alfChromaIdc, 2, "pic_alf_chroma_idc");
+          WRITE_CODE(alfChromaIdc, 2, "ph_alf_chroma_idc");
         }
         if (alfChromaIdc)
         {
-          WRITE_CODE(picHeader->getAlfApsIdChroma(), 3, "pic_alf_aps_id_chroma");
+          WRITE_CODE(picHeader->getAlfApsIdChroma(), 3, "ph_alf_aps_id_chroma");
         }
 #if JVET_Q0795_CCALF
         if (sps->getCCALFEnabledFlag())
@@ -1926,13 +1926,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
-    WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "pic_lmcs_enabled_flag");
+    WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "ph_lmcs_enabled_flag");
     if (picHeader->getLmcsEnabledFlag())
     {
-      WRITE_CODE(picHeader->getLmcsAPSId(), 2, "pic_lmcs_aps_id");
+      WRITE_CODE(picHeader->getLmcsAPSId(), 2, "ph_lmcs_aps_id");
       if (sps->getChromaFormatIdc() != CHROMA_400)
       {
-        WRITE_FLAG(picHeader->getLmcsChromaResidualScaleFlag(), "pic_chroma_residual_scale_flag");
+        WRITE_FLAG(picHeader->getLmcsChromaResidualScaleFlag(), "ph_chroma_residual_scale_flag");
       }
       else
       {
@@ -1949,10 +1949,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // quantization scaling lists
   if( sps->getScalingListFlag() )
   {
-    WRITE_FLAG( picHeader->getScalingListPresentFlag(), "pic_scaling_list_present_flag" );
+    WRITE_FLAG( picHeader->getScalingListPresentFlag(), "ph_scaling_list_present_flag" );
     if( picHeader->getScalingListPresentFlag() )
     {
-      WRITE_CODE( picHeader->getScalingListAPSId(), 3, "pic_scaling_list_aps_id" );
+      WRITE_CODE( picHeader->getScalingListAPSId(), 3, "ph_scaling_list_aps_id" );
     }
   }
   else
@@ -2009,7 +2009,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
   {
-    WRITE_FLAG( picHeader->getVirtualBoundariesPresentFlag(), "ph_loop_filter_across_virtual_boundaries_present_flag" );
+    WRITE_FLAG( picHeader->getVirtualBoundariesPresentFlag(), "ph_virtual_boundaries_present_flag" );
     if( picHeader->getVirtualBoundariesPresentFlag() )
     {
 #else
@@ -2103,7 +2103,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
           (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
 #endif
       {
-        WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "pic_rpl_sps_flag[i]");
+        WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "rpl_sps_flag[i]");
       }
       else if(sps->getNumRPL(listIdx) == 0)
       {
@@ -2122,7 +2122,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
             (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
         {
           int numBits = ceilLog2(sps->getNumRPL( listIdx ));
-          WRITE_CODE(picHeader->getRPLIdx(listIdx), numBits, "pic_rpl_idx[i]");
+          WRITE_CODE(picHeader->getRPLIdx(listIdx), numBits, "rpl_idx[i]");
         }
         else if(sps->getNumRPL(listIdx) == 1)
         {
@@ -2149,12 +2149,12 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
             if (picHeader->getRPL(listIdx)->getLtrpInSliceHeaderFlag())
             { 
               WRITE_CODE(picHeader->getRPL(listIdx)->getRefPicIdentifier(i), sps->getBitsForPOC(),
-                         "pic_poc_lsb_lt[listIdx][rplsIdx][j]");
+                         "poc_lsb_lt[listIdx][rplsIdx][j]");
             }
-            WRITE_FLAG(picHeader->getLocalRPL(listIdx)->getDeltaPocMSBPresentFlag(i) ? 1 : 0, "pic_delta_poc_msb_present_flag[i][j]");
+            WRITE_FLAG(picHeader->getLocalRPL(listIdx)->getDeltaPocMSBPresentFlag(i) ? 1 : 0, "delta_poc_msb_present_flag[i][j]");
             if (picHeader->getLocalRPL(listIdx)->getDeltaPocMSBPresentFlag(i))
             {
-              WRITE_UVLC(picHeader->getLocalRPL(listIdx)->getDeltaPocMSBCycleLT(i), "pic_delta_poc_msb_cycle_lt[i][j]");
+              WRITE_UVLC(picHeader->getLocalRPL(listIdx)->getDeltaPocMSBCycleLT(i), "delta_poc_msb_cycle_lt[i][j]");
             }
           }
         }
@@ -2178,33 +2178,33 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #endif
     if (picHeader->getSplitConsOverrideFlag())
     {
-      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_luma");
+      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE)) - sps->getLog2MinCodingBlockSize(), "ph_log2_diff_min_qt_min_cb_intra_slice_luma");
 #if !JVET_Q0819_PH_CHANGES
-      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_inter_slice");
-      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE),  "pic_max_mtt_hierarchy_depth_inter_slice");
+      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "ph_log2_diff_min_qt_min_cb_inter_slice");
+      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE),  "ph_max_mtt_hierarchy_depth_inter_slice");
 #endif
-      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE), "pic_max_mtt_hierarchy_depth_intra_slice_luma");
+      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE), "ph_max_mtt_hierarchy_depth_intra_slice_luma");
       if (picHeader->getMaxMTTHierarchyDepth(I_SLICE) != 0)
       {
-        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "pic_log2_diff_max_bt_min_qt_intra_slice_luma");
-        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "pic_log2_diff_max_tt_min_qt_intra_slice_luma");
+        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "ph_log2_diff_max_bt_min_qt_intra_slice_luma");
+        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(I_SLICE)) - floorLog2(picHeader->getMinQTSize(I_SLICE)), "ph_log2_diff_max_tt_min_qt_intra_slice_luma");
       }
 
 #if !JVET_Q0819_PH_CHANGES
       if (picHeader->getMaxMTTHierarchyDepth(P_SLICE) != 0)
       {
-        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_bt_min_qt_inter_slice");
-        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_tt_min_qt_inter_slice");
+        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "ph_log2_diff_max_bt_min_qt_inter_slice");
+        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "ph_log2_diff_max_tt_min_qt_inter_slice");
       }
 #endif
       if (sps->getUseDualITree())
       {
-        WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");
-        WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA), "pic_max_mtt_hierarchy_depth_intra_slice_chroma");
+        WRITE_UVLC(floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - sps->getLog2MinCodingBlockSize(), "ph_log2_diff_min_qt_min_cb_intra_slice_chroma");
+        WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA), "ph_max_mtt_hierarchy_depth_intra_slice_chroma");
         if (picHeader->getMaxMTTHierarchyDepth(I_SLICE, CHANNEL_TYPE_CHROMA) != 0)
         {
-          WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)), "pic_log2_diff_max_bt_min_qt_intra_slice_chroma");
-          WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)), "pic_log2_diff_max_tt_min_qt_intra_slice_chroma");
+          WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)), "ph_log2_diff_max_bt_min_qt_intra_slice_chroma");
+          WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(I_SLICE, CHANNEL_TYPE_CHROMA)) - floorLog2(picHeader->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)), "ph_log2_diff_max_tt_min_qt_intra_slice_chroma");
         }
       }
     }
@@ -2231,9 +2231,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // delta quantization and chrom and chroma offset
     if (pps->getUseDQP())
     {
-      WRITE_UVLC( picHeader->getCuQpDeltaSubdivIntra(), "pic_cu_qp_delta_subdiv_intra_slice" );
+      WRITE_UVLC( picHeader->getCuQpDeltaSubdivIntra(), "ph_cu_qp_delta_subdiv_intra_slice" );
 #if !JVET_Q0819_PH_CHANGES
-      WRITE_UVLC( picHeader->getCuQpDeltaSubdivInter(), "pic_cu_qp_delta_subdiv_inter_slice" );
+      WRITE_UVLC( picHeader->getCuQpDeltaSubdivInter(), "ph_cu_qp_delta_subdiv_inter_slice" );
 #endif
     }
     else 
@@ -2245,9 +2245,9 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
     if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
-      WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivIntra(), "pic_cu_chroma_qp_offset_subdiv_intra_slice" );
+      WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivIntra(), "ph_cu_chroma_qp_offset_subdiv_intra_slice" );
 #if !JVET_Q0819_PH_CHANGES
-      WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice" );
+      WRITE_UVLC( picHeader->getCuChromaQpOffsetSubdivInter(), "ph_cu_chroma_qp_offset_subdiv_inter_slice" );
 #endif
     }
     else 
@@ -2265,19 +2265,19 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   {
     if (picHeader->getSplitConsOverrideFlag())
     {
-      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "pic_log2_diff_min_qt_min_cb_inter_slice");
-      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE), "pic_max_mtt_hierarchy_depth_inter_slice");
+      WRITE_UVLC(floorLog2(picHeader->getMinQTSize(P_SLICE)) - sps->getLog2MinCodingBlockSize(), "ph_log2_diff_min_qt_min_cb_inter_slice");
+      WRITE_UVLC(picHeader->getMaxMTTHierarchyDepth(P_SLICE), "ph_max_mtt_hierarchy_depth_inter_slice");
       if (picHeader->getMaxMTTHierarchyDepth(P_SLICE) != 0)
       {
-        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_bt_min_qt_inter_slice");
-        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "pic_log2_diff_max_tt_min_qt_inter_slice");
+        WRITE_UVLC(floorLog2(picHeader->getMaxBTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "ph_log2_diff_max_bt_min_qt_inter_slice");
+        WRITE_UVLC(floorLog2(picHeader->getMaxTTSize(P_SLICE)) - floorLog2(picHeader->getMinQTSize(P_SLICE)), "ph_log2_diff_max_tt_min_qt_inter_slice");
       }
     }
 
     // delta quantization and chrom and chroma offset
     if (pps->getUseDQP())
     {
-      WRITE_UVLC(picHeader->getCuQpDeltaSubdivInter(), "pic_cu_qp_delta_subdiv_inter_slice");
+      WRITE_UVLC(picHeader->getCuQpDeltaSubdivInter(), "ph_cu_qp_delta_subdiv_inter_slice");
     }
     else
     {
@@ -2285,7 +2285,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
     if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
-      WRITE_UVLC(picHeader->getCuChromaQpOffsetSubdivInter(), "pic_cu_chroma_qp_offset_subdiv_inter_slice");
+      WRITE_UVLC(picHeader->getCuChromaQpOffsetSubdivInter(), "ph_cu_chroma_qp_offset_subdiv_inter_slice");
     }
     else
     {
@@ -2295,15 +2295,15 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // temporal motion vector prediction
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
-      WRITE_FLAG( picHeader->getEnableTMVPFlag(), "pic_temporal_mvp_enabled_flag" );
+      WRITE_FLAG( picHeader->getEnableTMVPFlag(), "ph_temporal_mvp_enabled_flag" );
 #if JVET_Q0259_COLLOCATED_PIC_IN_PH
       if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
       {
-        WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
+        WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "ph_collocated_from_l0_flag");
         if ((picHeader->getPicColFromL0Flag() && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
           (!picHeader->getPicColFromL0Flag() && picHeader->getRPL(1)->getNumRefEntries() > 1))
         {
-          WRITE_UVLC(picHeader->getColRefIdx(), "collocated_ref_idx");
+          WRITE_UVLC(picHeader->getColRefIdx(), "ph_collocated_ref_idx");
         }
       }
 #endif
@@ -2317,7 +2317,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSMvdL1ZeroIdc())
     {
-      WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
+      WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "mvd_l1_zero_flag");
     }
     else
     {
@@ -2330,7 +2330,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
     }
 #endif
-    WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
+    WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "mvd_l1_zero_flag");
 #endif
    
   // merge candidate list size
@@ -2367,7 +2367,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // full-pel MMVD flag
     if (sps->getFpelMmvdEnabledFlag())
     {
-      WRITE_FLAG( picHeader->getDisFracMMVD(), "pic_fpel_mmvd_enabled_flag" );
+      WRITE_FLAG( picHeader->getDisFracMMVD(), "ph_fpel_mmvd_enabled_flag" );
     }
     else
     {
@@ -2377,7 +2377,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // picture level BDOF disable flags
     if (sps->getBdofControlPresentFlag())
     {
-      WRITE_FLAG(picHeader->getDisBdofFlag(), "pic_disable_bdof_flag");
+      WRITE_FLAG(picHeader->getDisBdofFlag(), "ph_disable_bdof_flag");
     }
     else
     {
@@ -2387,7 +2387,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // picture level DMVR disable flags
     if (sps->getDmvrControlPresentFlag())
     {
-      WRITE_FLAG(picHeader->getDisDmvrFlag(), "pic_disable_dmvr_flag");
+      WRITE_FLAG(picHeader->getDisDmvrFlag(), "ph_disable_dmvr_flag");
     }
     else
     {
@@ -2397,7 +2397,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // picture level PROF disable flags
     if (sps->getProfControlPresentFlag())
     {
-      WRITE_FLAG(picHeader->getDisProfFlag(), "pic_disable_prof_flag");
+      WRITE_FLAG(picHeader->getDisProfFlag(), "ph_disable_prof_flag");
     }
     else
     {
@@ -2475,7 +2475,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // joint Cb/Cr sign flag
   if (sps->getJointCbCrEnabledFlag())
   {
-    WRITE_FLAG( picHeader->getJointCbCrSignFlag(), "pic_joint_cbcr_sign_flag" );
+    WRITE_FLAG( picHeader->getJointCbCrSignFlag(), "ph_joint_cbcr_sign_flag" );
   }
   else
   {
@@ -2592,14 +2592,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   if (!pps->getPPSDepQuantEnabledIdc())
   {
-    WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "pic_dep_quant_enabled_flag");
+    WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "ph_dep_quant_enabled_flag");
   }
   else
   {
     picHeader->setDepQuantEnabledFlag( pps->getPPSDepQuantEnabledIdc() - 1 );
   }
 #else
-  WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "pic_dep_quant_enabled_flag");
+  WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "ph_dep_quant_enabled_flag");
 #endif
   // sign data hiding
   if( !picHeader->getDepQuantEnabledFlag() )
@@ -2623,7 +2623,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       if( picHeader->getDeblockingFilterOverridePresentFlag() ) 
 #endif
       {
-        WRITE_FLAG ( picHeader->getDeblockingFilterOverrideFlag(), "pic_deblocking_filter_override_flag" );
+        WRITE_FLAG ( picHeader->getDeblockingFilterOverrideFlag(), "ph_deblocking_filter_override_flag" );
       }
       else
       {    
@@ -2690,13 +2690,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
-    WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "pic_lmcs_enabled_flag");
+    WRITE_FLAG(picHeader->getLmcsEnabledFlag(), "ph_lmcs_enabled_flag");
     if (picHeader->getLmcsEnabledFlag())
     {
-      WRITE_CODE(picHeader->getLmcsAPSId(), 2, "pic_lmcs_aps_id");
+      WRITE_CODE(picHeader->getLmcsAPSId(), 2, "ph_lmcs_aps_id");
       if (sps->getChromaFormatIdc() != CHROMA_400)
       {
-        WRITE_FLAG(picHeader->getLmcsChromaResidualScaleFlag(), "pic_chroma_residual_scale_flag");
+        WRITE_FLAG(picHeader->getLmcsChromaResidualScaleFlag(), "ph_chroma_residual_scale_flag");
       }
       else
       {
@@ -2728,7 +2728,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // picture header extension
   if(pps->getPictureHeaderExtensionPresentFlag())
   {
-    WRITE_UVLC(0,"pic_segment_header_extension_length");
+    WRITE_UVLC(0,"ph_extension_length");
   }
   
 #if JVET_Q0775_PH_IN_SH
@@ -2826,7 +2826,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   }
   if (!picHeader->getPicIntraSliceAllowedFlag())
   {
-    CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
+    CHECK(pcSlice->getSliceType() == I_SLICE, "when ph_intra_slice_allowed_flag = 0, no I_Slice is allowed");
   }
 #endif
 

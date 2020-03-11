@@ -2792,7 +2792,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->cs->picHeader->setValid();
     if(pcPic->cs->sps->getFpelMmvdEnabledFlag()) 
     {
-      // cannot set pic_fpel_mmvd_enabled_flag at slice level - need new picture-level version of checkDisFracMmvd algorithm?
+      // cannot set ph_fpel_mmvd_enabled_flag at slice level - need new picture-level version of checkDisFracMmvd algorithm?
       // m_pcSliceEncoder->checkDisFracMmvd( pcPic, 0, numberOfCtusInFrame );
       bool useIntegerMVD = (pcPic->lwidth()*pcPic->lheight() > 1920 * 1080);
       pcPic->cs->picHeader->setDisFracMMVD( useIntegerMVD );

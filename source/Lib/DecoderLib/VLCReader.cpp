@@ -2646,10 +2646,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     READ_FLAG(uiCode, "gdr_pic_flag");                     picHeader->setGdrPicFlag(uiCode != 0);
   }
-  READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");       picHeader->setPicInterSliceAllowedFlag(uiCode != 0);
+  READ_FLAG(uiCode, "ph_inter_slice_allowed_flag");       picHeader->setPicInterSliceAllowedFlag(uiCode != 0);
   if (picHeader->getPicInterSliceAllowedFlag())
   {
-    READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");       picHeader->setPicIntraSliceAllowedFlag(uiCode != 0);
+    READ_FLAG(uiCode, "ph_intra_slice_allowed_flag");       picHeader->setPicIntraSliceAllowedFlag(uiCode != 0);
   }
   else
   {
@@ -2740,27 +2740,27 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     if (picHeader->getAlfEnabledPresentFlag())
 #endif
     {
-      READ_FLAG(uiCode, "pic_alf_enabled_flag");
+      READ_FLAG(uiCode, "ph_alf_enabled_flag");
       picHeader->setAlfEnabledFlag(COMPONENT_Y, uiCode);
 
       int alfChromaIdc = 0;
       if (uiCode)
       {
-        READ_CODE(3, uiCode, "pic_num_alf_aps_ids_luma");
+        READ_CODE(3, uiCode, "ph_num_alf_aps_ids_luma");
         int numAps = uiCode;
         picHeader->setNumAlfAps(numAps);
 
         std::vector<int> apsId(numAps, -1);
         for (int i = 0; i < numAps; i++)
         {
-          READ_CODE(3, uiCode, "pic_alf_aps_id_luma");
+          READ_CODE(3, uiCode, "ph_alf_aps_id_luma");
           apsId[i] = uiCode;
         }
         picHeader->setAlfAPSs(apsId);
 
         if (sps->getChromaFormatIdc() != CHROMA_400)
         {
-          READ_CODE(2, uiCode, "pic_alf_chroma_idc");
+          READ_CODE(2, uiCode, "ph_alf_chroma_idc");
           alfChromaIdc = uiCode;
         }
         else
@@ -2772,7 +2772,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
         if (alfChromaIdc)
         {
-          READ_CODE(3, uiCode, "pic_alf_aps_id_chroma");
+          READ_CODE(3, uiCode, "ph_alf_aps_id_chroma");
           picHeader->setAlfApsIdChroma(uiCode);
         }
 #if JVET_Q0795_CCALF
@@ -2823,17 +2823,17 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
-    READ_FLAG(uiCode, "pic_lmcs_enabled_flag");
+    READ_FLAG(uiCode, "ph_lmcs_enabled_flag");
     picHeader->setLmcsEnabledFlag(uiCode != 0);
 
     if (picHeader->getLmcsEnabledFlag())
     {
-      READ_CODE(2, uiCode, "pic_lmcs_aps_id");
+      READ_CODE(2, uiCode, "ph_lmcs_aps_id");
       picHeader->setLmcsAPSId(uiCode);
 
       if (sps->getChromaFormatIdc() != CHROMA_400)
       {
-        READ_FLAG(uiCode, "pic_chroma_residual_scale_flag");
+        READ_FLAG(uiCode, "ph_chroma_residual_scale_flag");
         picHeader->setLmcsChromaResidualScaleFlag(uiCode != 0);
       }
       else
@@ -2850,11 +2850,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // quantization scaling lists
   if (sps->getScalingListFlag())
   {
-    READ_FLAG(uiCode, "pic_scaling_list_present_flag");
+    READ_FLAG(uiCode, "ph_scaling_list_present_flag");
     picHeader->setScalingListPresentFlag(uiCode);
     if (picHeader->getScalingListPresentFlag())
     {
-      READ_CODE(3, uiCode, "pic_scaling_list_aps_id");
+      READ_CODE(3, uiCode, "ph_scaling_list_aps_id");
       picHeader->setScalingListAPSId(uiCode);
     }
   }
@@ -2942,7 +2942,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
   {
-    READ_FLAG( uiCode, "ph_loop_filter_across_virtual_boundaries_present_flag" );
+    READ_FLAG( uiCode, "ph_virtual_boundaries_present_flag" );
     picHeader->setVirtualBoundariesPresentFlag( uiCode != 0 );
 #if JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT
     CHECK( sps->getSubPicInfoPresentFlag() && picHeader->getVirtualBoundariesPresentFlag(), "When the subpicture info is present, the signalling of the virtual boundary position, if present, shall be in SPS" );
@@ -3039,7 +3039,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
           (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
 #endif
       {
-        READ_FLAG(uiCode, "pic_rpl_sps_flag[i]");
+        READ_FLAG(uiCode, "rpl_sps_flag[i]");
       }
       else if (sps->getNumRPL(listIdx) == 0)
       {
@@ -3077,7 +3077,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
             (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
         {
           int numBits = ceilLog2(sps->getNumRPL( listIdx ));
-          READ_CODE(numBits, uiCode, "pic_rpl_idx[i]");
+          READ_CODE(numBits, uiCode, "rpl_idx[i]");
           picHeader->setRPLIdx( listIdx, uiCode );
           picHeader->setRPL( listIdx, sps->getRPLList( listIdx )->getReferencePictureList(uiCode));
         }
@@ -3108,14 +3108,14 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
           {
             if (picHeader->getRPL( listIdx )->getLtrpInSliceHeaderFlag())
             {
-              READ_CODE(sps->getBitsForPOC(), uiCode, "pic_poc_lsb_lt[i][j]");
+              READ_CODE(sps->getBitsForPOC(), uiCode, "poc_lsb_lt[i][j]");
               picHeader->getLocalRPL( listIdx )->setRefPicIdentifier( i, uiCode, true, false, 0 );
             }
-            READ_FLAG(uiCode, "pic_delta_poc_msb_present_flag[i][j]");
+            READ_FLAG(uiCode, "delta_poc_msb_present_flag[i][j]");
             picHeader->getLocalRPL( listIdx )->setDeltaPocMSBPresentFlag(i, uiCode ? true : false);
             if (uiCode)
             {
-              READ_UVLC(uiCode, "pic_delta_poc_msb_cycle_lt[i][j]");
+              READ_UVLC(uiCode, "delta_poc_msb_cycle_lt[i][j]");
               if(i != 0)
               {
                 uiCode += picHeader->getLocalRPL( listIdx )->getDeltaPocMSBCycleLT(i-1);
@@ -3173,23 +3173,23 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       unsigned  maxTTSize[3] = { 0, 0, 0 };
       unsigned  ctbLog2SizeY = floorLog2(sps->getCTUSize());
 #endif
-      READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_intra_slice_luma");
+      READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_intra_slice_luma");
       unsigned minQtLog2SizeIntraY = uiCode + sps->getLog2MinCodingBlockSize();
       minQT[0] = 1 << minQtLog2SizeIntraY;
 #if !JVET_Q0819_PH_CHANGES
-      READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_inter_slice");
+      READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_inter_slice");
       unsigned minQtLog2SizeInterY = uiCode + sps->getLog2MinCodingBlockSize();
       minQT[1] = 1 << minQtLog2SizeInterY;
-      READ_UVLC(uiCode, "pic_max_mtt_hierarchy_depth_inter_slice");              maxBTD[1] = uiCode;
+      READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_inter_slice");              maxBTD[1] = uiCode;
 #endif
-      READ_UVLC(uiCode, "pic_max_mtt_hierarchy_depth_intra_slice_luma");         maxBTD[0] = uiCode;
+      READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_intra_slice_luma");         maxBTD[0] = uiCode;
 
       maxTTSize[0] = maxBTSize[0] = minQT[0];
       if (maxBTD[0] != 0)
       {
-        READ_UVLC(uiCode, "pic_log2_diff_max_bt_min_qt_intra_slice_luma");       maxBTSize[0] <<= uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_max_bt_min_qt_intra_slice_luma");       maxBTSize[0] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "Invalid code");
-        READ_UVLC(uiCode, "pic_log2_diff_max_tt_min_qt_intra_slice_luma");       maxTTSize[0] <<= uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_intra_slice_luma");       maxTTSize[0] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "Invalid code");
       }
 
@@ -3197,21 +3197,21 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       maxTTSize[1] = maxBTSize[1] = minQT[1];
       if (maxBTD[1] != 0)
       {
-        READ_UVLC(uiCode, "pic_log2_diff_max_bt_min_qt_inter_slice");            maxBTSize[1] <<= uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_max_bt_min_qt_inter_slice");            maxBTSize[1] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "Invalid code");
-        READ_UVLC(uiCode, "pic_log2_diff_max_tt_min_qt_inter_slice");            maxTTSize[1] <<= uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_inter_slice");            maxTTSize[1] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "Invalid code");
       }
 #endif
       if (sps->getUseDualITree())
       {
-        READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_intra_slice_chroma");     minQT[2] = 1 << (uiCode + sps->getLog2MinCodingBlockSize());
-        READ_UVLC(uiCode, "pic_max_mtt_hierarchy_depth_intra_slice_chroma");     maxBTD[2] = uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_intra_slice_chroma");     minQT[2] = 1 << (uiCode + sps->getLog2MinCodingBlockSize());
+        READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_intra_slice_chroma");     maxBTD[2] = uiCode;
         maxTTSize[2] = maxBTSize[2] = minQT[2];
         if (maxBTD[2] != 0)
         {
-          READ_UVLC(uiCode, "pic_log2_diff_max_bt_min_qt_intra_slice_chroma");   maxBTSize[2] <<= uiCode;
-          READ_UVLC(uiCode, "pic_log2_diff_max_tt_min_qt_intra_slice_chroma");   maxTTSize[2] <<= uiCode;
+          READ_UVLC(uiCode, "ph_log2_diff_max_bt_min_qt_intra_slice_chroma");   maxBTSize[2] <<= uiCode;
+          READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_intra_slice_chroma");   maxTTSize[2] <<= uiCode;
         }
       }
 #if !JVET_Q0819_PH_CHANGES
@@ -3247,9 +3247,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // delta quantization and chrom and chroma offset
     if (pps->getUseDQP())
     {
-      READ_UVLC( uiCode, "pic_cu_qp_delta_subdiv_intra_slice" );   picHeader->setCuQpDeltaSubdivIntra( uiCode );
+      READ_UVLC( uiCode, "ph_cu_qp_delta_subdiv_intra_slice" );   picHeader->setCuQpDeltaSubdivIntra( uiCode );
 #if !JVET_Q0819_PH_CHANGES
-      READ_UVLC( uiCode, "pic_cu_qp_delta_subdiv_inter_slice" );   picHeader->setCuQpDeltaSubdivInter( uiCode );
+      READ_UVLC( uiCode, "ph_cu_qp_delta_subdiv_inter_slice" );   picHeader->setCuQpDeltaSubdivInter( uiCode );
 #endif
     }
     else 
@@ -3261,9 +3261,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
     if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
-      READ_UVLC( uiCode, "pic_cu_chroma_qp_offset_subdiv_intra_slice" );   picHeader->setCuChromaQpOffsetSubdivIntra( uiCode );
+      READ_UVLC( uiCode, "ph_cu_chroma_qp_offset_subdiv_intra_slice" );   picHeader->setCuChromaQpOffsetSubdivIntra( uiCode );
 #if !JVET_Q0819_PH_CHANGES
-      READ_UVLC( uiCode, "pic_cu_chroma_qp_offset_subdiv_inter_slice" );   picHeader->setCuChromaQpOffsetSubdivInter( uiCode );
+      READ_UVLC( uiCode, "ph_cu_chroma_qp_offset_subdiv_inter_slice" );   picHeader->setCuChromaQpOffsetSubdivInter( uiCode );
 #endif
     }
     else 
@@ -3281,24 +3281,24 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     if (picHeader->getSplitConsOverrideFlag())
     {
-      READ_UVLC(uiCode, "pic_log2_diff_min_qt_min_cb_inter_slice");
+      READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_inter_slice");
       unsigned minQtLog2SizeInterY = uiCode + sps->getLog2MinCodingBlockSize();
       minQT[1] = 1 << minQtLog2SizeInterY;
-      READ_UVLC(uiCode, "pic_max_mtt_hierarchy_depth_inter_slice");              maxBTD[1] = uiCode;
+      READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_inter_slice");              maxBTD[1] = uiCode;
 
       maxTTSize[1] = maxBTSize[1] = minQT[1];
       if (maxBTD[1] != 0)
       {
-        READ_UVLC(uiCode, "pic_log2_diff_max_bt_min_qt_inter_slice");            maxBTSize[1] <<= uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_max_bt_min_qt_inter_slice");            maxBTSize[1] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "Invalid code");
-        READ_UVLC(uiCode, "pic_log2_diff_max_tt_min_qt_inter_slice");            maxTTSize[1] <<= uiCode;
+        READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_inter_slice");            maxTTSize[1] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "Invalid code");
       }
     }
     // delta quantization and chrom and chroma offset
     if (pps->getUseDQP())
     {
-      READ_UVLC(uiCode, "pic_cu_qp_delta_subdiv_inter_slice");   picHeader->setCuQpDeltaSubdivInter(uiCode);
+      READ_UVLC(uiCode, "ph_cu_qp_delta_subdiv_inter_slice");   picHeader->setCuQpDeltaSubdivInter(uiCode);
     }
     else
     {
@@ -3306,7 +3306,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
     if (pps->getCuChromaQpOffsetListEnabledFlag())
     {
-      READ_UVLC(uiCode, "pic_cu_chroma_qp_offset_subdiv_inter_slice");   picHeader->setCuChromaQpOffsetSubdivInter(uiCode);
+      READ_UVLC(uiCode, "ph_cu_chroma_qp_offset_subdiv_inter_slice");   picHeader->setCuChromaQpOffsetSubdivInter(uiCode);
     }
     else
     {
@@ -3317,7 +3317,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // temporal motion vector prediction
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
-      READ_FLAG( uiCode, "pic_temporal_mvp_enabled_flag" );
+      READ_FLAG( uiCode, "ph_temporal_mvp_enabled_flag" );
       picHeader->setEnableTMVPFlag( uiCode != 0 );
     }
     else
@@ -3328,13 +3328,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
     {
-      READ_CODE( 1, uiCode, "pic_collocated_from_l0_flag");
+      READ_CODE( 1, uiCode, "ph_collocated_from_l0_flag");
       picHeader->setPicColFromL0Flag(uiCode);
 #if JVET_Q0259_COLLOCATED_PIC_IN_PH
       if ((picHeader->getPicColFromL0Flag() == 1 && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
         (picHeader->getPicColFromL0Flag() == 0 && picHeader->getRPL(1)->getNumRefEntries() > 1))
       {
-        READ_UVLC(uiCode, "collocated_ref_idx");
+        READ_UVLC(uiCode, "ph_collocated_ref_idx");
         picHeader->setColRefIdx(uiCode);
       }
       else
@@ -3353,14 +3353,14 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSMvdL1ZeroIdc())
     {
-      READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");
+      READ_FLAG(uiCode, "mvd_l1_zero_flag");
     }
     else
     {
       uiCode = pps->getPPSMvdL1ZeroIdc() - 1;
     }
 #else
-    READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");
+    READ_FLAG(uiCode, "mvd_l1_zero_flag");
 #endif
     picHeader->setMvdL1ZeroFlag( uiCode != 0 );
      
@@ -3400,7 +3400,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // full-pel MMVD flag
     if (sps->getFpelMmvdEnabledFlag())
     {
-      READ_FLAG( uiCode, "pic_fpel_mmvd_enabled_flag" );
+      READ_FLAG( uiCode, "ph_fpel_mmvd_enabled_flag" );
       picHeader->setDisFracMMVD( uiCode != 0 );
     }
     else
@@ -3411,7 +3411,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // picture level BDOF disable flags
     if (sps->getBdofControlPresentFlag())
     {
-      READ_FLAG(uiCode, "pic_disable_bdof_flag");  picHeader->setDisBdofFlag(uiCode != 0);
+      READ_FLAG(uiCode, "ph_disable_bdof_flag");  picHeader->setDisBdofFlag(uiCode != 0);
     }
     else
     {
@@ -3421,7 +3421,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // picture level DMVR disable flags
     if (sps->getDmvrControlPresentFlag())
     {
-      READ_FLAG(uiCode, "pic_disable_dmvr_flag");  picHeader->setDisDmvrFlag(uiCode != 0);
+      READ_FLAG(uiCode, "ph_disable_dmvr_flag");  picHeader->setDisDmvrFlag(uiCode != 0);
     }
     else
     {
@@ -3431,7 +3431,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // picture level PROF disable flags
     if (sps->getProfControlPresentFlag())
     {
-      READ_FLAG(uiCode, "pic_disable_prof_flag");  picHeader->setDisProfFlag(uiCode != 0);
+      READ_FLAG(uiCode, "ph_disable_prof_flag");  picHeader->setDisProfFlag(uiCode != 0);
     }
     else
     {
@@ -3528,7 +3528,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   if (pps->getQpDeltaInfoInPhFlag())
   {
     int iCode = 0;
-    READ_SVLC(iCode, "slice_qp_delta");
+    READ_SVLC(iCode, "ph_qp_delta");
     picHeader->setQpDelta(iCode);
   }
 #endif
@@ -3536,7 +3536,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // joint Cb/Cr sign flag
   if (sps->getJointCbCrEnabledFlag())
   {
-    READ_FLAG( uiCode, "pic_joint_cbcr_sign_flag" ); 
+    READ_FLAG( uiCode, "ph_joint_cbcr_sign_flag" );
     picHeader->setJointCbCrSignFlag(uiCode != 0);
   }
   else
@@ -3681,14 +3681,14 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
   if (!pps->getPPSDepQuantEnabledIdc())
   {
-    READ_FLAG(uiCode, "pic_dep_quant_enabled_flag");
+    READ_FLAG(uiCode, "ph_dep_quant_enabled_flag");
   }
   else
   {
     uiCode = pps->getPPSDepQuantEnabledIdc() - 1;
   }
 #else
-  READ_FLAG(uiCode, "pic_dep_quant_enabled_flag");
+  READ_FLAG(uiCode, "ph_dep_quant_enabled_flag");
 #endif
   picHeader->setDepQuantEnabledFlag( uiCode != 0 );
 
@@ -3711,13 +3711,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #if JVET_Q0819_PH_CHANGES
       if (pps->getDbfInfoInPhFlag())
 #else
-      READ_FLAG(uiCode, "pic_deblocking_filter_override_present_flag");
+      READ_FLAG(uiCode, "ph_deblocking_filter_override_present_flag");
       picHeader->setDeblockingFilterOverridePresentFlag(uiCode != 0);
     
       if( picHeader->getDeblockingFilterOverridePresentFlag() ) 
 #endif
       {
-        READ_FLAG ( uiCode, "pic_deblocking_filter_override_flag" );
+        READ_FLAG ( uiCode, "ph_deblocking_filter_override_flag" );
         picHeader->setDeblockingFilterOverrideFlag(uiCode != 0);
       }
       else
@@ -3817,17 +3817,17 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // luma mapping / chroma scaling controls
   if (sps->getUseLmcs())
   {
-    READ_FLAG(uiCode, "pic_lmcs_enabled_flag");
+    READ_FLAG(uiCode, "ph_lmcs_enabled_flag");
     picHeader->setLmcsEnabledFlag(uiCode != 0);
 
     if (picHeader->getLmcsEnabledFlag())
     {
-      READ_CODE(2, uiCode, "pic_lmcs_aps_id");
+      READ_CODE(2, uiCode, "ph_lmcs_aps_id");
       picHeader->setLmcsAPSId(uiCode);
 
       if (sps->getChromaFormatIdc() != CHROMA_400)
       {
-        READ_FLAG(uiCode, "pic_chroma_residual_scale_flag");
+        READ_FLAG(uiCode, "ph_chroma_residual_scale_flag");
         picHeader->setLmcsChromaResidualScaleFlag(uiCode != 0);
       }
       else
@@ -3862,11 +3862,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // picture header extension
   if(pps->getPictureHeaderExtensionPresentFlag())
   {
-    READ_UVLC(uiCode,"pic_segment_header_extension_length");
+    READ_UVLC(uiCode,"ph_extension_length");
     for(int i=0; i<uiCode; i++)
     {
       uint32_t ignore_;
-      READ_CODE(8,ignore_,"pic_segment_header_extension_data_byte");
+      READ_CODE(8,ignore_,"ph_extension_data_byte");
     }
   }
 
@@ -4135,7 +4135,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   }
   if (!picHeader->getPicIntraSliceAllowedFlag())
   {
-    CHECK(pcSlice->getSliceType() == I_SLICE, "when pic_intra_slice_allowed_flag = 0, no I_Slice is allowed");
+    CHECK(pcSlice->getSliceType() == I_SLICE, "when ph_intra_slice_allowed_flag = 0, no I_Slice is allowed");
   }
 #endif
 
@@ -5012,10 +5012,10 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
     {
       READ_FLAG(uiCode, "gdr_pic_flag");
     }
-    READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");
+    READ_FLAG(uiCode, "ph_inter_slice_allowed_flag");
     if (uiCode)
     {
-      READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");
+      READ_FLAG(uiCode, "ph_intra_slice_allowed_flag");
     }
     READ_FLAG(uiCode, "non_reference_picture_flag");
     // parameter sets

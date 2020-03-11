@@ -263,7 +263,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if U0132_TARGET_BITS_SATURATION
   if (m_RCCpbSaturationEnabled)
   {
+#if TRY_HRD
+    m_cRateCtrl.initHrdParam(sps0.getGeneralHrdParameters(), sps0.getOlsHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+#else
     m_cRateCtrl.initHrdParam(sps0.getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+#endif
   }
 #endif
 #if ENABLE_SPLIT_PARALLELISM
@@ -1064,6 +1068,10 @@ void EncLib::xInitVPS( const SPS& sps )
   m_vps->setMaxSubLayers( sps.getMaxTLayers() );
 #endif
 
+#if TRY_HRD
+  m_vps->m_olsHrdParams.clear();
+  m_vps->m_olsHrdParams.resize(m_vps->getNumOlsHrdParamsMinus1(), std::vector<OlsHrdParams>(m_vps->getMaxSubLayers()));
+#endif
   ProfileLevelTierFeatures profileLevelTierFeatures;
   profileLevelTierFeatures.extractPTLInformation( sps );
 
@@ -1495,7 +1503,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
   if( getBufferingPeriodSEIEnabled() || getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() )
   {
+#if TRY_HRD
+    sps.setGeneralHrdParametersPresentFlag(true);
+#else
     sps.setHrdParametersPresentFlag( true );
+#endif
   }
 
   // Set up SPS range extension settings
@@ -1651,11 +1663,19 @@ void EncLib::xInitHrdParameters(SPS &sps)
 {
   m_encHRD.initHRDParameters((EncCfg*) this);
 
+#if TRY_HRD
+  GeneralHrdParams *generalHrdParams = sps.getGeneralHrdParameters();
+  *generalHrdParams = m_encHRD.getGeneralHrdParameters();
+
+  OlsHrdParams *olsHrdParams = sps.getOlsHrdParameters();
+  *olsHrdParams = m_encHRD.getOlsHrdParameters();
+#else
   HRDParameters *hrdParams = sps.getHrdParameters();
   *hrdParams = m_encHRD.getHRDParameters();
 
   TimingInfo *timingInfo = sps.getTimingInfo();
   *timingInfo = m_encHRD.getTimingInfo();
+#endif
 }
 
 void EncLib::xInitPPS(PPS &pps, const SPS &sps)

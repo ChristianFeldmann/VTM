@@ -1983,6 +1983,11 @@ VPS::VPS()
   , m_vpsNumPtls (1)
 #endif
   , m_vpsExtensionFlag()
+#if TRY_HRD
+  , m_vpsGeneralHrdParamsPresentFlag(false)
+  , m_vpsSublayerCpbParamsPresentFlag(false)
+  , m_numOlsHrdParamsMinus1(0)
+#endif
 #if JVET_Q0814_DPB
   , m_totalNumOLSs( 0 )
   , m_numDpbParams( 0 )
@@ -2014,6 +2019,10 @@ VPS::VPS()
       m_ptPresentFlag[i] = 0;
     m_ptlMaxTemporalId[i] = m_vpsMaxSubLayers - 1;
     m_olsPtlIdx[i] = 0;
+#endif
+#if TRY_HRD
+    m_hrdMaxTid[i] = m_vpsMaxSubLayers - 1;
+    m_olsHrdIdx[i] = 0;
 #endif
   }
 }
@@ -2606,7 +2615,11 @@ SPS::SPS()
 #endif
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
+#if TRY_HRD
+, m_generalHrdParametersPresentFlag(false)
+#else
 , m_hrdParametersPresentFlag  (false)
+#endif
 #if JVET_Q0042_VUI
 , m_fieldSeqFlag              (false)
 #endif
@@ -2642,7 +2655,11 @@ SPS::SPS()
 , m_MRL                       ( false )
 , m_MIP                       ( false )
 , m_GDREnabledFlag            ( true )
+#if TRY_HRD
+, m_SubLayerCbpParamsPresentFlag(true)
+#else
 , m_SubLayerCbpParametersPresentFlag ( true )
+#endif
 , m_rprEnabledFlag            ( false )
 #if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
 , m_maxNumMergeCand(MRG_MAX_NUM_CANDS)

@@ -940,12 +940,24 @@ private:
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
+#if TRY_HRD
+  bool                  m_vpsGeneralHrdParamsPresentFlag;
+  bool                  m_vpsSublayerCpbParamsPresentFlag;
+  uint32_t              m_numOlsHrdParamsMinus1;
+  uint32_t              m_hrdMaxTid[MAX_NUM_OLSS];
+  uint32_t              m_olsHrdIdx[MAX_NUM_OLSS];
+  GeneralHrdParams      m_generalHrdParams;
 
+#endif
 #if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
   std::vector<int>              m_olsDpbParamsIdx;
   std::vector<std::vector<int>> m_outputLayerIdInOls;
+
 public:
+#if TRY_HRD
+  std::vector<std::vector<OlsHrdParams>> m_olsHrdParams;
+#endif
   int                           m_totalNumOLSs;
   int                           m_numDpbParams;
   std::vector<DpbParameters>    m_dpbParameters;
@@ -1030,7 +1042,25 @@ public:
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
+#if TRY_HRD
+  bool              getVPSGeneralHrdParamsPresentFlag() const { return m_vpsGeneralHrdParamsPresentFlag; }
+  void              setVPSGeneralHrdParamsPresentFlag(bool t) { m_vpsGeneralHrdParamsPresentFlag = t; }
+  bool              getVPSSublayerCpbParamsPresentFlag() const { return m_vpsSublayerCpbParamsPresentFlag; }
+  void              setVPSSublayerCpbParamsPresentFlag(bool t) { m_vpsSublayerCpbParamsPresentFlag = t; }
+  uint32_t          getNumOlsHrdParamsMinus1()                                   const { return m_numOlsHrdParamsMinus1; }
+  void              setNumOlsHrdParamsMinus1(uint32_t val) { m_numOlsHrdParamsMinus1 = val; }
 
+  uint32_t          getHrdMaxTid(int olsIdx)                   const { return m_hrdMaxTid[olsIdx]; }
+  void              setHrdMaxTid(int olsIdx, uint32_t val)           { m_hrdMaxTid[olsIdx] = val; }
+  uint32_t          getOlsHrdIdx(int olsIdx)                   const { return m_olsHrdIdx[olsIdx]; }
+  void              setOlsHrdIdx(int olsIdx, uint32_t val)           { m_olsHrdIdx[olsIdx] = val; }  
+
+  OlsHrdParams*          getOlsHrdParameters(int olsIdx) { return &m_olsHrdParams[olsIdx][0]; }
+  const OlsHrdParams*    getOlsHrdParameters(int olsIdx) const { return &m_olsHrdParams[olsIdx][0]; }
+
+  GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
+  const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
+#endif
 #if JVET_P0288_PIC_OUTPUT
   int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
@@ -1404,9 +1434,20 @@ private:
   uint32_t          m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 
 
+#if !TRY_HRD
   TimingInfo        m_timingInfo;
+#endif
+#if TRY_HRD
+  bool              m_generalHrdParametersPresentFlag;
+#else
   bool              m_hrdParametersPresentFlag;
+#endif
+#if TRY_HRD
+  GeneralHrdParams m_generalHrdParams;
+  OlsHrdParams     m_olsHrdParams[MAX_TLAYER];
+#else
   HRDParameters     m_hrdParameters;
+#endif
 
 #if JVET_Q0042_VUI
   bool              m_fieldSeqFlag;
@@ -1460,7 +1501,11 @@ private:
   bool              m_MIP;
   ChromaQpMappingTable m_chromaQpMappingTable;
   bool m_GDREnabledFlag;
+#if TRY_HRD
+  bool              m_SubLayerCbpParamsPresentFlag;
+#else
   bool              m_SubLayerCbpParametersPresentFlag;
+#endif
 
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
@@ -1764,12 +1809,27 @@ void                    setCCALFEnabledFlag( bool b )                           
 #endif
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
+#if !TRY_HRD
   TimingInfo*             getTimingInfo()                                                                 { return &m_timingInfo; }
   const TimingInfo*       getTimingInfo() const                                                           { return &m_timingInfo; }
+#endif
+#if TRY_HRD
+  bool                    getGeneralHrdParametersPresentFlag() const { return m_generalHrdParametersPresentFlag; }
+  void                    setGeneralHrdParametersPresentFlag(bool b) { m_generalHrdParametersPresentFlag = b; }
+#else
   bool                    getHrdParametersPresentFlag() const                                             { return m_hrdParametersPresentFlag; }
   void                    setHrdParametersPresentFlag(bool b)                                             { m_hrdParametersPresentFlag = b; }
+#endif
+#if TRY_HRD
+  OlsHrdParams*          getOlsHrdParameters() { return &m_olsHrdParams[0]; }
+  const OlsHrdParams*    getOlsHrdParameters() const { return &m_olsHrdParams[0]; }
+
+  GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
+  const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
+#else
   HRDParameters*          getHrdParameters()                                                              { return &m_hrdParameters; }
   const HRDParameters*    getHrdParameters() const                                                        { return &m_hrdParameters; }
+#endif
 #if JVET_Q0042_VUI
   bool                    getFieldSeqFlag() const                                                         { return m_fieldSeqFlag;                         }
   void                    setFieldSeqFlag(bool i)                                                         { m_fieldSeqFlag = i;                            }
@@ -1864,8 +1924,13 @@ void                    setCCALFEnabledFlag( bool b )                           
   int       getMappedChromaQpValue(ComponentID compID, int qpVal)         const     { return m_chromaQpMappingTable.getMappedChromaQpValue(compID, qpVal); }
   void setGDREnabledFlag(bool flag) { m_GDREnabledFlag = flag; }
   bool getGDREnabledFlag() const { return m_GDREnabledFlag; }
+#if TRY_HRD
+  void      setSubLayerCbpParamsPresentFlag(bool flag) { m_SubLayerCbpParamsPresentFlag = flag; }
+  bool      getSubLayerCbpParamsPresentFlag()                            const { return m_SubLayerCbpParamsPresentFlag; }
+#else
   void      setSubLayerParametersPresentFlag(bool flag)                             { m_SubLayerCbpParametersPresentFlag = flag; }
   bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
+#endif
 
   bool      getRprEnabledFlag()                                           const     { return m_rprEnabledFlag; }
   void      setRprEnabledFlag( bool flag )                                          { m_rprEnabledFlag = flag; }

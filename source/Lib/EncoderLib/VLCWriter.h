@@ -148,8 +148,15 @@ public:
 #else
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
 #endif
+#if TRY_HRD
+  void  codeOlsHrdParameters(const GeneralHrdParams * generalHrd, const OlsHrdParams *olsHrd , const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
+#else
   void  codeHrdParameters       ( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
+#endif
 
+#if TRY_HRD
+  void codeGeneralHrdparameters(const GeneralHrdParams *hrd);
+#endif
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 

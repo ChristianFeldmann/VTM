@@ -55,6 +55,144 @@ int EncHRD::xCalcScale(int x)
 }
 #endif
 
+#if TRY_HRD
+void EncHRD::initHRDParameters(EncCfg* encCfg)
+{
+  bool useSubCpbParams = encCfg->getNoPicPartitionFlag() == false;
+  int  bitRate = encCfg->getTargetBitrate();
+# if U0132_TARGET_BITS_SATURATION
+  int cpbSize = encCfg->getCpbSize();
+  CHECK(!(cpbSize != 0), "Unspecified error");  // CPB size may not be equal to zero. ToDo: have a better default and check for level constraints
+  if (!encCfg->getHrdParametersPresentFlag() && !encCfg->getCpbSaturationEnabled())
+#else
+  if (!encCfg->getHrdParametersPresentFlag())
+#endif
+  {
+    return;
+  }
+
+  switch (encCfg->getFrameRate())
+  {
+  case 24:
+    m_generalHrdParams.setNumUnitsInTick(1125000);    m_generalHrdParams.setTimeScale(27000000);
+    break;
+  case 25:
+    m_generalHrdParams.setNumUnitsInTick(1080000);    m_generalHrdParams.setTimeScale(27000000);
+    break;
+  case 30:
+    m_generalHrdParams.setNumUnitsInTick(900900);     m_generalHrdParams.setTimeScale(27000000);
+    break;
+  case 50:
+    m_generalHrdParams.setNumUnitsInTick(540000);     m_generalHrdParams.setTimeScale(27000000);
+    break;
+  case 60:
+    m_generalHrdParams.setNumUnitsInTick(450450);     m_generalHrdParams.setTimeScale(27000000);
+    break;
+  default:
+    m_generalHrdParams.setNumUnitsInTick(1001);       m_generalHrdParams.setTimeScale(60000);
+    break;
+  }
+
+  if (encCfg->getTemporalSubsampleRatio() > 1)
+  {
+    uint32_t temporalSubsampleRatio = encCfg->getTemporalSubsampleRatio();
+    if (double(m_generalHrdParams.getNumUnitsInTick()) * temporalSubsampleRatio > std::numeric_limits<uint32_t>::max())
+    {
+      m_generalHrdParams.setTimeScale(m_generalHrdParams.getTimeScale() / temporalSubsampleRatio);
+    }
+    else
+    {
+      m_generalHrdParams.setNumUnitsInTick(m_generalHrdParams.getNumUnitsInTick() * temporalSubsampleRatio);
+    }
+  }
+  bool rateCnt = (bitRate > 0);
+
+  m_generalHrdParams.setGeneralNalHrdParametersPresentFlag(rateCnt);
+  m_generalHrdParams.setGeneralVclHrdParametersPresentFlag(rateCnt);
+  useSubCpbParams &= (m_generalHrdParams.getGeneralNalHrdParametersPresentFlag() || m_generalHrdParams.getGeneralVclHrdParametersPresentFlag());
+
+  m_generalHrdParams.setGeneralDecodingUnitHrdParamsPresentFlag(useSubCpbParams);
+
+  if (m_generalHrdParams.getGeneralDecodingUnitHrdParamsPresentFlag())
+  {
+    m_generalHrdParams.setTickDivisorMinus2(100 - 2);
+  }
+
+#if U0132_TARGET_BITS_SATURATION
+  if (xCalcScale(bitRate) <= 6)
+  {
+    m_generalHrdParams.setBitRateScale(0);
+  }
+  else
+  {
+    m_generalHrdParams.setBitRateScale(xCalcScale(bitRate) - 6);
+  }
+
+  if (xCalcScale(cpbSize) <= 4)
+  {
+    m_generalHrdParams.setCpbSizeScale(0);
+  }
+  else
+  {
+    m_generalHrdParams.setCpbSizeScale(xCalcScale(cpbSize) - 4);
+  }
+#else
+  m_generalHrdParams.setBitRateScale(4);                                       // in units of 2^( 6 + 4 ) = 1,024 bps
+  m_generalHrdParams.setCpbSizeScale(6);                                       // in units of 2^( 4 + 6 ) = 1,024 bit
+#endif
+
+  m_generalHrdParams.setCpbSizeDuScale(6);                                     // in units of 2^( 4 + 6 ) = 1,024 bit
+  m_generalHrdParams.setHrdCpbCntMinus1(0);
+
+
+  // Note: parameters for all temporal layers are initialized with the same values
+  int i, j;
+  uint32_t bitrateValue, cpbSizeValue;
+  uint32_t duCpbSizeValue;
+  uint32_t duBitRateValue = 0;
+  OlsHrdParams* olsHrdParams = getOlsHrdParametersAddr();
+
+  for (i = 0; i < MAX_TLAYER; i++)  
+  {
+    OlsHrdParams curOlsHrdParams = olsHrdParams[i];
+
+    curOlsHrdParams.setFixedPicRateGeneralFlag(1);
+    curOlsHrdParams.setElementDurationInTcMinus1(0);
+    curOlsHrdParams.setLowDelayHrdFlag(0);
+
+    //! \todo check for possible PTL violations
+    // BitRate[ i ] = ( bit_rate_value_minus1[ i ] + 1 ) * 2^( 6 + bit_rate_scale )
+    bitrateValue = bitRate / (1 << (6 + m_generalHrdParams.getBitRateScale()));      // bitRate is in bits, so it needs to be scaled down
+                                                                              // CpbSize[ i ] = ( cpb_size_value_minus1[ i ] + 1 ) * 2^( 4 + cpb_size_scale )
+#if U0132_TARGET_BITS_SATURATION
+    cpbSizeValue = cpbSize / (1 << (4 + m_generalHrdParams.getCpbSizeScale()));      // using bitRate results in 1 second CPB size
+#else
+    cpbSizeValue = bitRate / (1 << (4 + m_generalHrdParams.getCpbSizeScale()));      // using bitRate results in 1 second CPB size
+#endif
+
+
+                                                                              // DU CPB size could be smaller (i.e. bitrateValue / number of DUs), but we don't know
+                                                                              // in how many DUs the slice segment settings will result
+    duCpbSizeValue = bitrateValue;
+    duBitRateValue = cpbSizeValue;
+
+    for (j = 0; j < (m_generalHrdParams.getHrdCpbCntMinus1() + 1); j++)
+    {
+      curOlsHrdParams.setBitRateValueMinus1(j, 0, (bitrateValue - 1));
+      curOlsHrdParams.setCpbSizeValueMinus1(j, 0, (cpbSizeValue - 1));
+      curOlsHrdParams.setDuCpbSizeValueMinus1(j, 0, (duCpbSizeValue - 1));
+      curOlsHrdParams.setDuBitRateValueMinus1(j, 0, (duBitRateValue - 1));
+      curOlsHrdParams.setCbrFlag(j, 0, false);
+
+      curOlsHrdParams.setBitRateValueMinus1(j, 1, (bitrateValue - 1));
+      curOlsHrdParams.setCpbSizeValueMinus1(j, 1, (cpbSizeValue - 1));
+      curOlsHrdParams.setDuCpbSizeValueMinus1(j, 1, (duCpbSizeValue - 1));
+      curOlsHrdParams.setDuBitRateValueMinus1(j, 1, (duBitRateValue - 1));
+      curOlsHrdParams.setCbrFlag(j, 1, false);
+    }
+  }
+}
+#else
 void EncHRD::initHRDParameters (EncCfg* encCfg)
 {
   bool useSubCpbParams = encCfg->getNoPicPartitionFlag() == false;
@@ -106,9 +244,15 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     }
   }
   bool rateCnt = ( bitRate > 0 );
+#if TRY_HRD
+  m_hrdParams.setGeneralNalHrdParametersPresentFlag(rateCnt);
+  m_hrdParams.setGeneralVclHrdParametersPresentFlag(rateCnt);
+  useSubCpbParams &= (m_hrdParams.getGeneralNalHrdParametersPresentFlag() || m_hrdParams.getGeneralVclHrdParametersPresentFlag());
+#else
   m_hrdParams.setNalHrdParametersPresentFlag( rateCnt );
   m_hrdParams.setVclHrdParametersPresentFlag( rateCnt );
   useSubCpbParams &= ( m_hrdParams.getNalHrdParametersPresentFlag() || m_hrdParams.getVclHrdParametersPresentFlag() );
+#endif
   m_hrdParams.setGeneralDecodingUnitHrdParamsPresentFlag( useSubCpbParams );
 
   if( m_hrdParams.getGeneralDecodingUnitHrdParamsPresentFlag() )
@@ -140,6 +284,9 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 #endif
 
   m_hrdParams.setCpbSizeDuScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
+  #if TRY_HRD
+  m_hrdParams.setHrdCpbCntMinus1(0);
+#endif
 
 
   // Note: parameters for all temporal layers are initialized with the same values
@@ -150,10 +297,16 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 
   for( i = 0; i < MAX_TLAYER; i ++ )
   {
+#if TRY_HRD
+    m_hrdParams.setFixedPicRateGeneralFlag(i, 1);
+    m_hrdParams.setElementDurationInTcMinus1(i, 0);
+    m_hrdParams.setLowDelayHrdFlag(i, 0);
+#else
     m_hrdParams.setFixedPicRateFlag( i, 1 );
     m_hrdParams.setPicDurationInTcMinus1( i, 0 );
     m_hrdParams.setLowDelayHrdFlag( i, 0 );
     m_hrdParams.setCpbCntMinus1( i, 0 );
+#endif
 
     //! \todo check for possible PTL violations
     // BitRate[ i ] = ( bit_rate_value_minus1[ i ] + 1 ) * 2^( 6 + bit_rate_scale )
@@ -171,7 +324,11 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     duCpbSizeValue = bitrateValue;
     duBitRateValue = cpbSizeValue;
 
+#if TRY_HRD
+    for (j = 0; j < (m_hrdParams.getHrdCpbCntMinus1() + 1); j++)
+#else
     for( j = 0; j < ( m_hrdParams.getCpbCntMinus1( i ) + 1 ); j ++ )
+#endif
     {
       m_hrdParams.setBitRateValueMinus1( i, j, 0, ( bitrateValue - 1 ) );
       m_hrdParams.setCpbSizeValueMinus1( i, j, 0, ( cpbSizeValue - 1 ) );
@@ -187,4 +344,5 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     }
   }
 }
+#endif
 

@@ -54,6 +54,8 @@
 
 #define JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT       1 //JVET-Q0157: subpicture reordering constraint
 
+#define TRY_HRD                                           1 //implement HRD
+
 #define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1

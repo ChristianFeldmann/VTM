@@ -146,6 +146,11 @@ public:
 
 class HLSyntaxReader : public VLCReader
 {
+#if TRY_HRD
+private:
+  bool m_isFirstGeneralHrd;
+  GeneralHrdParams*      m_prevGeneralHrdParams;
+#endif
 public:
   HLSyntaxReader();
   virtual ~HLSyntaxReader();
@@ -175,7 +180,15 @@ public:
 #else
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
 #endif
+#if TRY_HRD
+  void  checkGeneralHrdParametersIdentical(GeneralHrdParams *generalHr);
+  void  parseOlsHrdParameters(GeneralHrdParams* generalHrd, OlsHrdParams *olsHrd, uint32_t firstSubLayer, uint32_t tempLevelHigh);
+#else
   void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
+#endif
+#if TRY_HRD
+  void parseGeneralHrdParameters(GeneralHrdParams *generalHrd);
+#endif
 #if JVET_Q0775_PH_IN_SH
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits );
 #else

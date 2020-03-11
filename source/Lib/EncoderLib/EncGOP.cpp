@@ -2803,21 +2803,24 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         pcSlice->setSliceMap( pcPic->cs->pps->getSliceMap( sliceIdx ) );
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
-	if( pcPic->cs->pps->getRectSliceFlag() )
-	{
+        if( pcPic->cs->pps->getRectSliceFlag() )
+        {
           Position firstCtu;
           firstCtu.x = pcSlice->getFirstCtuRsAddrInSlice() % pcPic->cs->pps->getPicWidthInCtu();
           firstCtu.y = pcSlice->getFirstCtuRsAddrInSlice() / pcPic->cs->pps->getPicWidthInCtu();
-          int subPicIdx = 0;
-          for(int sp = 0; sp < pcPic->cs->pps->getNumSubPics(); sp++)
+          int subPicIdx = NOT_VALID;
+          for( int sp = 0; sp < pcPic->cs->pps->getNumSubPics(); sp++ )
           {
-            if(pcPic->cs->pps->getSubPic(sp).containsCtu(firstCtu))
+            if( pcPic->cs->pps->getSubPic( sp ).containsCtu( firstCtu ) )
             {
               subPicIdx = sp;
+              break;
             }
           }
-          pcSlice->setSliceSubPicId( pcPic->cs->pps->getSubPic(subPicIdx).getSubPicID() );
-	}
+          CHECK( subPicIdx == NOT_VALID, "Sub-picture was not found" );
+
+          pcSlice->setSliceSubPicId( pcPic->cs->pps->getSubPic( subPicIdx ).getSubPicID() );
+        }
 #endif
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );

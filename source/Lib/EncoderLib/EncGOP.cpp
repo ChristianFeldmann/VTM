@@ -2158,6 +2158,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     pcSlice->setTLayer(m_pcCfg->getGOPEntry(iGOPid).m_temporalId);
 
+    // Set the nal unit type
+    pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
 #if JVET_Q0819_PH_CHANGES
     // set two flags according to slice type presented in the picture
     if (pcSlice->getSliceType() != I_SLICE)
@@ -2170,8 +2172,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     picHeader->setGdrOrIrapPicFlag(picHeader->getGdrPicFlag() || pcSlice->isIRAP());
 #endif
-    // Set the nal unit type
-    pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
 
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
     {

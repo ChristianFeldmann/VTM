@@ -2234,8 +2234,9 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
-      rpl0Idx = POCCurr + m_iGOPSize - 1;
-      rpl1Idx = POCCurr + m_iGOPSize - 1;
+      int candidateIdx = (POCCurr + m_iGOPSize - 1 >= fullListNum + partialListNum) ? GOPid : POCCurr + m_iGOPSize - 1;
+      rpl0Idx = candidateIdx;
+      rpl1Idx = candidateIdx;
     }
     else
     {
@@ -2296,8 +2297,9 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
-      slice->setRPL0idx(POCCurr + m_iGOPSize - 1);
-      slice->setRPL1idx(POCCurr + m_iGOPSize - 1);
+      int candidateIdx = (POCCurr + m_iGOPSize - 1 >= fullListNum + partialListNum) ? GOPid : POCCurr + m_iGOPSize - 1;
+      slice->setRPL0idx(candidateIdx);
+      slice->setRPL1idx(candidateIdx);
     }
     else
     {

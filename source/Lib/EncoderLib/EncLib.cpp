@@ -1257,9 +1257,13 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     int maxPicHeight = std::max(m_iSourceHeight, (int)((double)m_iSourceHeight / m_scalingRatioVer + 0.5));
     const int minCuSize = std::max(8, 1 << m_log2MinCUSize);
     if (maxPicWidth % minCuSize)
+    {
       maxPicWidth += ((maxPicWidth / minCuSize) + 1) * minCuSize - maxPicWidth;
+    }
     if (maxPicHeight % minCuSize)
+    {
       maxPicHeight += ((maxPicHeight / minCuSize) + 1) * minCuSize - maxPicHeight;
+    }
     sps.setMaxPicWidthInLumaSamples( maxPicWidth );
     sps.setMaxPicHeightInLumaSamples( maxPicHeight );
   }

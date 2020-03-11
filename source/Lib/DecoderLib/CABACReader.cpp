@@ -3399,7 +3399,11 @@ int CABACReader::last_sig_coeff( CoeffCodingContext& cctx, TransformUnit& tu, Co
   return scanPos;
 }
 
-
+static void check_coeff_conformance(TCoeff coeff)
+{
+  CHECK( coeff < COEFF_MIN || coeff > COEFF_MAX,
+         "TransCoeffLevel should be in the range [-32768, 32767]" );
+}
 
 void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* coeff, const int stateTransTable, int& state )
 {
@@ -3549,6 +3553,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     sumAbs               += AbsCoeff;
     coeff[ sigBlkPos[k] ] = ( signPattern & ( 1u << 31 ) ? -AbsCoeff : AbsCoeff );
     signPattern         <<= 1;
+    check_coeff_conformance( coeff[ sigBlkPos[k] ] );
   }
   if( numNonZero > numSigns )
   {
@@ -3556,6 +3561,7 @@ void CABACReader::residual_coding_subblock( CoeffCodingContext& cctx, TCoeff* co
     int AbsCoeff          = coeff[ sigBlkPos[ k ] ];
     sumAbs               += AbsCoeff;
     coeff[ sigBlkPos[k] ] = ( sumAbs & 1 ? -AbsCoeff : AbsCoeff );
+    check_coeff_conformance( coeff[ sigBlkPos[k] ] );
   }
 }
 
@@ -3746,6 +3752,7 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
     int AbsCoeff          = coeff[ sigBlkPos[ k ] ];
     coeff[ sigBlkPos[k] ] = ( signPattern & 1 ? -AbsCoeff : AbsCoeff );
     signPattern         >>= 1;
+    check_coeff_conformance( coeff[ sigBlkPos[k] ] );
   }
 }
 

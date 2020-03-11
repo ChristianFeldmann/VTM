@@ -75,10 +75,10 @@ void ParcatHLSyntaxReader::parsePictureHeaderUpToPoc ( ParameterSetManager *para
   {
     READ_FLAG(uiCode, "gdr_pic_flag");
   }
-  READ_FLAG(uiCode, "pic_inter_slice_allowed_flag");
+  READ_FLAG(uiCode, "ph_inter_slice_allowed_flag");
   if (uiCode)
   {
-    READ_FLAG(uiCode, "pic_intra_slice_allowed_flag");
+    READ_FLAG(uiCode, "ph_intra_slice_allowed_flag");
   }
   READ_FLAG(uiCode, "non_reference_picture_flag");
   // parameter sets

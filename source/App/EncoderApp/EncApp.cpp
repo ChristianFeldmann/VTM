@@ -745,7 +745,12 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setGcmpSEIFunctionCoeffV                             ( m_gcmpSEIFunctionCoeffV );
   m_cEncLib.setGcmpSEIFunctionVAffectedByUFlag                   ( m_gcmpSEIFunctionVAffectedByUFlag );                                                              
   m_cEncLib.setGcmpSEIGuardBandFlag                              ( m_gcmpSEIGuardBandFlag );
+#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
+  m_cEncLib.setGcmpSEIGuardBandType                              ( m_gcmpSEIGuardBandType );
+  m_cEncLib.setGcmpSEIGuardBandBoundaryExteriorFlag              ( m_gcmpSEIGuardBandBoundaryExteriorFlag );
+#else
   m_cEncLib.setGcmpSEIGuardBandBoundaryType                      ( m_gcmpSEIGuardBandBoundaryType );
+#endif
   m_cEncLib.setGcmpSEIGuardBandSamplesMinus1                     ( (uint8_t)m_gcmpSEIGuardBandSamplesMinus1 );
   m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
   m_cEncLib.setSampleAspectRatioInfoSEIEnabled                   (m_sampleAspectRatioInfoSEIEnabled);

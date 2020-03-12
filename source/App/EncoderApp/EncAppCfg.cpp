@@ -1349,7 +1349,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIGcmpFunctionCoeffV",                           cfg_gcmpSEIFunctionCoeffV,                cfg_gcmpSEIFunctionCoeffV,                "Specifies the coefficient used in the cubemap mapping function of the v-axis of the i-th face")
   ("SEIGcmpFunctionVAffectedByUFlag",                 cfg_gcmpSEIFunctionVAffectedByUFlag,      cfg_gcmpSEIFunctionVAffectedByUFlag,      "Specifies whether the cubemap mapping function of the v-axis refers to the u position of the sample location")
   ("SEIGcmpGuardBandFlag",                            m_gcmpSEIGuardBandFlag,                   false,                                    "Indicate the existence of guard band areas in the picture")
+#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
+  ("SEIGcmpGuardBandType",                            m_gcmpSEIGuardBandType,                   0u,                                       "Indicate the type of the guard bands")
+  ("SEIGcmpGuardBandBoundaryExteriorFlag",            m_gcmpSEIGuardBandBoundaryExteriorFlag,   false,                                    "Indicate whether face boundaries contain guard bands")
+#else
   ("SEIGcmpGuardBandBoundaryType",                    m_gcmpSEIGuardBandBoundaryType,           false,                                    "Indicate which face boundaries contain guard bands")
+#endif
   ("SEIGcmpGuardBandSamplesMinus1",                   m_gcmpSEIGuardBandSamplesMinus1,          0u,                                       "Specifies the number of guard band samples minus1 used in the cubemap projected picture")
   ("SEISubpicureLevelInfo",                           m_subpicureLevelInfoSEIEnabled,           false, "Control generation of Subpicture Level Information SEI messages")
   ("SEISampleAspectRatioInfo",                        m_sampleAspectRatioInfoSEIEnabled,        false, "Control generation of Sample Aspect Ratio Information SEI messages")

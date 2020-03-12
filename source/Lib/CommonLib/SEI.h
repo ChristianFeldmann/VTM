@@ -197,7 +197,12 @@ public:
   std::vector<uint8_t> m_gcmpFunctionCoeffV;
   std::vector<bool>    m_gcmpFunctionVAffectedByUFlag;
   bool                 m_gcmpGuardBandFlag;
+#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
+  uint8_t              m_gcmpGuardBandType;
+  bool                 m_gcmpGuardBandBoundaryExteriorFlag;
+#else
   bool                 m_gcmpGuardBandBoundaryType;
+#endif
   uint8_t              m_gcmpGuardBandSamplesMinus1;
 };
 

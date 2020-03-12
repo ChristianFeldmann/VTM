@@ -3703,7 +3703,18 @@ An array that specifies whether the cubemap mapping function of the v-axis refer
 \Default{false} &
 Indicates the existence of guard band areas in the picture.
 \\
-\Option{SEIGcmpGuardBandBoundaryType} &
+\Option{SEIGcmpGuardBandType} &
+\Default{0} &
+Indicates the type of the guard bands.
+\par
+\begin{tabular}{cp{0.35\textwidth}}
+ 0 & Unspecified \\
+ 1 & Suffice for interpolation of sample values at sub-pel sample fractional locations within the coded face. \\
+ 2 & Represent actual picture content that is spherically adjacent to the content in the coded face at quality that gradually changes from the picture quality of the coded face to that of the spherically adjacent region. \\
+ 3 & Represent actual picture content that is spherically adjacent to the content in the coded face at a similar picture quality as within the coded face. \\
+\end{tabular}
+\\
+\Option{SEIGcmpGuardBandBoundaryExteriorFlag} &
 \Default{false} &
 Enables (true) or disables (false) the boundary guard bands.
 \\

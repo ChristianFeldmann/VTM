@@ -1261,8 +1261,14 @@ void SEIReader::xParseSEIGeneralizedCubemapProjection(SEIGeneralizedCubemapProje
     sei_read_flag( pDecodedMessageOutputStream,        val,    "gcmp_guard_band_flag" );                  sei.m_gcmpGuardBandFlag = val;
     if (sei.m_gcmpGuardBandFlag)
     {
+#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
+      sei_read_code( pDecodedMessageOutputStream,   3, val,    "gcmp_guard_band_type" );                   sei.m_gcmpGuardBandType = val;
+      sei_read_flag( pDecodedMessageOutputStream,      val,    "gcmp_guard_band_boundary_exterior_flag" ); sei.m_gcmpGuardBandBoundaryExteriorFlag = val;
+      sei_read_code( pDecodedMessageOutputStream,   4, val,    "gcmp_guard_band_samples_minus1" );         sei.m_gcmpGuardBandSamplesMinus1 = val;
+#else
       sei_read_flag( pDecodedMessageOutputStream,      val,    "gcmp_guard_band_boundary_type" );         sei.m_gcmpGuardBandBoundaryType  = val;
       sei_read_code( pDecodedMessageOutputStream,   4, val,    "gcmp_guard_band_samples_minus1" );        sei.m_gcmpGuardBandSamplesMinus1 = val;
+#endif
     }
   }
 }

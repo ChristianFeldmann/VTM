@@ -1029,8 +1029,9 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerId );
     if( m_rprEnabled )
     {
-      rpcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
-      rpcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+      const PPS &pps0 = *m_ppsMap.getPS(0);
+      rpcPic->M_BUFS(0, PIC_ORIGINAL_INPUT).create(sps.getChromaFormatIdc(), Area(Position(), Size(pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples())));
+      rpcPic->M_BUFS(0, PIC_TRUE_ORIGINAL_INPUT).create(sps.getChromaFormatIdc(), Area(Position(), Size(pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples())));
     }
     if ( getUseAdaptiveQP() )
     {
@@ -1254,6 +1255,22 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #endif
   sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
+  if (m_rprEnabled)
+  {
+    int maxPicWidth = std::max(m_iSourceWidth, (int)((double)m_iSourceWidth / m_scalingRatioHor + 0.5));
+    int maxPicHeight = std::max(m_iSourceHeight, (int)((double)m_iSourceHeight / m_scalingRatioVer + 0.5));
+    const int minCuSize = std::max(8, 1 << m_log2MinCUSize);
+    if (maxPicWidth % minCuSize)
+    {
+      maxPicWidth += ((maxPicWidth / minCuSize) + 1) * minCuSize - maxPicWidth;
+    }
+    if (maxPicHeight % minCuSize)
+    {
+      maxPicHeight += ((maxPicHeight / minCuSize) + 1) * minCuSize - maxPicHeight;
+    }
+    sps.setMaxPicWidthInLumaSamples( maxPicWidth );
+    sps.setMaxPicHeightInLumaSamples( maxPicHeight );
+  }
 #if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   sps.setConformanceWindow( m_conformanceWindow );
 #endif

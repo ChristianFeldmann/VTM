@@ -2797,7 +2797,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         {
           num1stSetSlice++;
         }
-        else if ((naluType >= NAL_UNIT_CODED_SLICE_TRAIL && naluType <= NAL_UNIT_RESERVED_VCL_15) || naluType == NAL_UNIT_CODED_SLICE_GDR)
+        else if ((naluType >= NAL_UNIT_CODED_SLICE_TRAIL && naluType <= NAL_UNIT_RESERVED_VCL_6) || naluType == NAL_UNIT_CODED_SLICE_GDR)
         {
           num2ndSetSlice++;
         }

@@ -645,10 +645,23 @@ void DecLib::executeLoopFilters()
 
   CodingStructure& cs = *m_pcPic->cs;
 
-  if (cs.sps->getUseLmcs() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+  if (cs.sps->getUseLmcs() && cs.picHeader->getLmcsEnabledFlag())
   {
-      CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
-      m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+      const PreCalcValues& pcv = *cs.pcv;
+      for (uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight)
+      {
+        for (uint32_t xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth)
+        {
+          const CodingUnit* cu = cs.getCU(Position(xPos, yPos), CHANNEL_TYPE_LUMA);
+          if (cu->slice->getLmcsEnabledFlag())
+          {
+            const uint32_t width = (xPos + pcv.maxCUWidth > pcv.lumaWidth) ? (pcv.lumaWidth - xPos) : pcv.maxCUWidth;
+            const uint32_t height = (yPos + pcv.maxCUHeight > pcv.lumaHeight) ? (pcv.lumaHeight - yPos) : pcv.maxCUHeight;
+            const UnitArea area(cs.area.chromaFormat, Area(xPos, yPos, width, height));
+            cs.getRecoBuf(area).get(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+          }
+        }
+      }
       m_cReshaper.setRecReshaped(false);
       m_cSAO.setReshaper(&m_cReshaper);
   }
@@ -1143,11 +1156,7 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
   }
 #endif
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
-  if (pSlice->getLmcsEnabledFlag() && lmcsAPS == nullptr)
-#else
   if (picHeader->getLmcsEnabledFlag() && lmcsAPS == nullptr)
-#endif
   {
     lmcsAPS = parameterSetManager.getAPS(picHeader->getLmcsAPSId(), LMCS_APS);
     CHECK(lmcsAPS == nullptr, "No LMCS APS present");

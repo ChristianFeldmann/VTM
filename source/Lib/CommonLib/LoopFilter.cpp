@@ -135,11 +135,11 @@ void LoopFilter::create( const unsigned uiMaxCUDepth )
   m_enc = false;
 }
 
-void LoopFilter::initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight)
+void LoopFilter::initEncPicYuvBuffer(ChromaFormat chromaFormat, const Size &size, const unsigned maxCUSize)
 {
-  const UnitArea picArea(chromaFormat, Area(0, 0, lumaWidth, lumaHeight));
+  const Area a = Area(Position(), size);
   m_encPicYuvBuffer.destroy();
-  m_encPicYuvBuffer.create(picArea);
+  m_encPicYuvBuffer.create(chromaFormat, a, maxCUSize, 7);
 }
 
 void LoopFilter::destroy()
@@ -425,7 +425,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
         {
           bS |= xGetBoundaryStrengthSingle( cu, edgeDir, localPos, CHANNEL_TYPE_LUMA );
         }
-        if(cu.treeType != TREE_L && cu.chromaFormat != CHROMA_400)
+        if(cu.treeType != TREE_L && cu.chromaFormat != CHROMA_400 && cu.blocks[COMPONENT_Cb].valid())
         {
           bS |= xGetBoundaryStrengthSingle( cu, edgeDir, localPos, CHANNEL_TYPE_CHROMA );
         }

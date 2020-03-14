@@ -137,9 +137,9 @@ void EncLib::create( const int layerId )
   m_cLoopFilter.create( m_maxTotalCUDepth );
 #endif
 
-  if (!m_bLoopFilterDisable)
+  if (!m_bLoopFilterDisable && m_encDbOpt)
   {
-    m_cLoopFilter.initEncPicYuvBuffer(m_chromaFormatIDC, getSourceWidth(), getSourceHeight());
+    m_cLoopFilter.initEncPicYuvBuffer(m_chromaFormatIDC, Size(getSourceWidth(), getSourceHeight()), getMaxCUWidth());
   }
 
 #if ENABLE_SPLIT_PARALLELISM

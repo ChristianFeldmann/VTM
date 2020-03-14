@@ -111,7 +111,7 @@ public:
 
   /// CU-level deblocking function
   void xDeblockCU(CodingUnit& cu, const DeblockEdgeDir edgeDir);
-  void  initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight);
+  void  initEncPicYuvBuffer(ChromaFormat chromaFormat, const Size &size, const unsigned maxCUSize);
   PelStorage& getDbEncPicYuvBuffer() { return m_encPicYuvBuffer; }
   void  setEnc(bool b) { m_enc = b; }
 

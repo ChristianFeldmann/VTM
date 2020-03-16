@@ -1843,7 +1843,7 @@ int  RateCtrl::updateCpbState(int actualBits)
   return cpbState;
 }
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
 void RateCtrl::initHrdParam(const GeneralHrdParams* generalHrd, const OlsHrdParams* olsHrd, int iFrameRate, double fInitialCpbFullness)
 {
   m_CpbSaturationEnabled = true;

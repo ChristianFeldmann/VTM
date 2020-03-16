@@ -773,7 +773,7 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
 #if JVET_P0125_SEI_CONSTRAINTS
     slice->getNalUnitLayerId()==slice->getVPS()->getLayerId(0) && 
 #endif
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   (slice->getSPS()->getGeneralHrdParametersPresentFlag()))
 #else
     ( slice->getSPS()->getHrdParametersPresentFlag() ) )
@@ -850,7 +850,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     return;
   }
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   const GeneralHrdParams *hrd = slice->getSPS()->getGeneralHrdParameters();
 #else
   const HRDParameters *hrd = slice->getSPS()->getHrdParameters();
@@ -1149,7 +1149,7 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
   {
     return;
   }
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   const GeneralHrdParams *hrd = sps->getGeneralHrdParameters();
 #else
   const HRDParameters *hrd = sps->getHrdParameters();
@@ -1184,7 +1184,7 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
 
       for( i = ( numDU - 2 ); i >= 0; i -- )
       {
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
         ui64Tmp = (((duData[numDU - 1].accumBitsDU - duData[i].accumBitsDU) * (sps->getGeneralHrdParameters()->getTimeScale() / sps->getGeneralHrdParameters()->getNumUnitsInTick()) * (hrd->getTickDivisorMinus2() + 2)) / (m_pcCfg->getTargetBitrate()));
 #else
         ui64Tmp = ( ( ( duData[numDU - 1].accumBitsDU  - duData[i].accumBitsDU ) * ( sps->getTimingInfo()->getTimeScale() / sps->getTimingInfo()->getNumUnitsInTick() ) * ( hrd->getTickDivisorMinus2() + 2 ) ) / ( m_pcCfg->getTargetBitrate() ) );
@@ -1200,7 +1200,7 @@ void EncGOP::xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUD
       for( i = ( numDU - 2 ); i >= 0; i -- )
       {
         flag = 0;
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
         ui64Tmp = (((duData[numDU - 1].accumBitsDU - duData[i].accumBitsDU) * (sps->getGeneralHrdParameters()->getTimeScale() / sps->getGeneralHrdParameters()->getNumUnitsInTick()) * (hrd->getTickDivisorMinus2() + 2)) / (m_pcCfg->getTargetBitrate()));
 #else
         ui64Tmp = ( ( ( duData[numDU - 1].accumBitsDU  - duData[i].accumBitsDU ) * ( sps->getTimingInfo()->getTimeScale() / sps->getTimingInfo()->getNumUnitsInTick() ) * ( hrd->getTickDivisorMinus2() + 2 ) ) / ( m_pcCfg->getTargetBitrate() ) );
@@ -3407,7 +3407,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
 
         if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) &&
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
         ((pcSlice->getSPS()->getGeneralHrdParameters()->getGeneralNalHrdParametersPresentFlag())
           || (pcSlice->getSPS()->getGeneralHrdParameters()->getGeneralVclHrdParametersPresentFlag())) &&
           (pcSlice->getSPS()->getGeneralHrdParameters()->getGeneralDecodingUnitHrdParamsPresentFlag()))

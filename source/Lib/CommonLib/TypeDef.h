@@ -54,7 +54,7 @@
 
 #define JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT       1 //JVET-Q0157: subpicture reordering constraint
 
-#define TRY_HRD                                           1 //implement HRD
+#define JVET_P0118_HRD_ASPECTS                            1 //JVET-P0118: HRD aspects
 
 #define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 

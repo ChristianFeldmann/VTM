@@ -55,7 +55,7 @@ int EncHRD::xCalcScale(int x)
 }
 #endif
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
 void EncHRD::initHRDParameters(EncCfg* encCfg)
 {
   bool useSubCpbParams = encCfg->getNoPicPartitionFlag() == false;
@@ -244,7 +244,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     }
   }
   bool rateCnt = ( bitRate > 0 );
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   m_hrdParams.setGeneralNalHrdParametersPresentFlag(rateCnt);
   m_hrdParams.setGeneralVclHrdParametersPresentFlag(rateCnt);
   useSubCpbParams &= (m_hrdParams.getGeneralNalHrdParametersPresentFlag() || m_hrdParams.getGeneralVclHrdParametersPresentFlag());
@@ -284,7 +284,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 #endif
 
   m_hrdParams.setCpbSizeDuScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
-  #if TRY_HRD
+  #if JVET_P0118_HRD_ASPECTS
   m_hrdParams.setHrdCpbCntMinus1(0);
 #endif
 
@@ -297,7 +297,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 
   for( i = 0; i < MAX_TLAYER; i ++ )
   {
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
     m_hrdParams.setFixedPicRateGeneralFlag(i, 1);
     m_hrdParams.setElementDurationInTcMinus1(i, 0);
     m_hrdParams.setLowDelayHrdFlag(i, 0);
@@ -324,7 +324,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     duCpbSizeValue = bitrateValue;
     duBitRateValue = cpbSizeValue;
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
     for (j = 0; j < (m_hrdParams.getHrdCpbCntMinus1() + 1); j++)
 #else
     for( j = 0; j < ( m_hrdParams.getCpbCntMinus1( i ) + 1 ); j ++ )

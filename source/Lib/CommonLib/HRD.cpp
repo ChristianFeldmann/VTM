@@ -33,7 +33,7 @@
 
 #include "HRD.h"
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
 OlsHrdParams::OlsHrdParams()
   : m_fixedPicRateGeneralFlag(false)
   , m_fixedPicRateWithinCvsFlag(false)

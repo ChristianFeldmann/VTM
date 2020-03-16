@@ -37,7 +37,7 @@
 
 #include "Common.h"
 #include "SEI.h"
-#if !TRY_HRD
+#if !JVET_P0118_HRD_ASPECTS
 class TimingInfo
 {
 protected:
@@ -80,7 +80,7 @@ struct HrdSubLayerInfo
   uint32_t duBitRateValue    [MAX_CPB_CNT][2];
 };
 #endif
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
 class OlsHrdParams
 {
 private:
@@ -120,14 +120,14 @@ public:
 };
 #endif
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
 class GeneralHrdParams
 #else
 class HRDParameters
 #endif
 {
 private:
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   uint32_t m_numUnitsInTick;
   uint32_t m_timeScale;
   bool     m_generalNalHrdParamsPresentFlag;
@@ -137,30 +137,30 @@ private:
   bool     m_nalHrdParametersPresentFlag;
   bool     m_vclHrdParametersPresentFlag;
 #endif
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   bool     m_generalDecodingUnitHrdParamsPresentFlag;
 #endif
   uint32_t m_tickDivisorMinus2;
-#if !TRY_HRD
+#if !JVET_P0118_HRD_ASPECTS
   bool     m_generalDecodingUnitHrdParamsPresentFlag;
 #endif
   uint32_t m_bitRateScale;
   uint32_t m_cpbSizeScale;
   uint32_t m_cpbSizeDuScale;
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   uint32_t m_hrdCpbCntMinus1;
 #endif
-#if !TRY_HRD
+#if !JVET_P0118_HRD_ASPECTS
   HrdSubLayerInfo m_HRD[MAX_TLAYER];
 #endif
 
 public:
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   GeneralHrdParams()
 #else
   HRDParameters()
 #endif
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
     :m_generalNalHrdParamsPresentFlag(false)
     ,m_generalVclHrdParamsPresentFlag(false)
     ,m_generalSamPicTimingInAllOlsFlag(true)
@@ -168,27 +168,27 @@ public:
     :m_nalHrdParametersPresentFlag       (false)
     ,m_vclHrdParametersPresentFlag       (false)
 #endif
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
     , m_generalDecodingUnitHrdParamsPresentFlag(false)
 #endif
     ,m_tickDivisorMinus2                 (0)
-#if !TRY_HRD
+#if !JVET_P0118_HRD_ASPECTS
     ,m_generalDecodingUnitHrdParamsPresentFlag  (false)
 #endif
     ,m_bitRateScale                      (0)
     ,m_cpbSizeScale                      (0)
     ,m_cpbSizeDuScale                    (0)
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
     ,m_hrdCpbCntMinus1(0)
 #endif
   {}
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   virtual ~GeneralHrdParams() {}
 #else
   virtual ~HRDParameters() {}
 #endif
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   void      setNumUnitsInTick(uint32_t value) { m_numUnitsInTick = value; }
   uint32_t  getNumUnitsInTick() const { return m_numUnitsInTick; }
 
@@ -211,7 +211,7 @@ public:
   bool      getVclHrdParametersPresentFlag( ) const                                    { return m_vclHrdParametersPresentFlag;                      }
 #endif
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   void      setGeneralDecodingUnitHrdParamsPresentFlag(bool flag) { m_generalDecodingUnitHrdParamsPresentFlag = flag; }
   bool      getGeneralDecodingUnitHrdParamsPresentFlag() const { return m_generalDecodingUnitHrdParamsPresentFlag; }
 #endif
@@ -220,7 +220,7 @@ public:
   uint32_t  getTickDivisorMinus2( ) const                                              { return m_tickDivisorMinus2;                                }
 
 
-#if !TRY_HRD
+#if !JVET_P0118_HRD_ASPECTS
   void      setGeneralDecodingUnitHrdParamsPresentFlag( bool flag)                     { m_generalDecodingUnitHrdParamsPresentFlag = flag;                 }
   bool      getGeneralDecodingUnitHrdParamsPresentFlag( ) const                        { return m_generalDecodingUnitHrdParamsPresentFlag;                 }
 #endif
@@ -233,12 +233,12 @@ public:
   void      setCpbSizeDuScale( uint32_t value )                                        { m_cpbSizeDuScale = value;                                  }
   uint32_t  getCpbSizeDuScale( ) const                                                 { return m_cpbSizeDuScale;                                   }
 
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   void      setHrdCpbCntMinus1(uint32_t value) { m_hrdCpbCntMinus1 = value; }
   uint32_t  getHrdCpbCntMinus1() const { return m_hrdCpbCntMinus1; }
 #endif
 
-#if !TRY_HRD
+#if !JVET_P0118_HRD_ASPECTS
   void      setFixedPicRateFlag( int layer, bool flag )                                { m_HRD[layer].fixedPicRateFlag = flag;                      }
   bool      getFixedPicRateFlag( int layer ) const                                     { return m_HRD[layer].fixedPicRateFlag;                      }
 
@@ -284,7 +284,7 @@ public:
 
   virtual ~HRD()
   {};
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   void                 setGeneralHrdParameters(GeneralHrdParams &generalHrdParam) { m_generalHrdParams = generalHrdParam; }
   GeneralHrdParams        getGeneralHrdParameters() const { return m_generalHrdParams; }
   const GeneralHrdParams& getGeneralHrdParameters() { return m_generalHrdParams; }
@@ -313,7 +313,7 @@ public:
 #endif
 
 protected:
-#if TRY_HRD
+#if JVET_P0118_HRD_ASPECTS
   GeneralHrdParams      m_generalHrdParams;
   OlsHrdParams          m_olsHrdParams[MAX_TLAYER];
 #else

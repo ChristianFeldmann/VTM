@@ -211,6 +211,10 @@
 
 #define JVET_Q0346_LMCS_ENABLE_IN_SH                      1 // JVET-Q0346 aspect 1: LMCS enabled flag in SH
 
+#if JVET_Q0819_PH_CHANGES
+#define JVET_Q0346_SCALING_LIST_USED_IN_SH               1 // JVET-Q0346 aspect 2: Scaling list used flag in SH
+#endif
+
 #define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
 
 #define JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2                1 // JVET-Q0293: Removal of chroma Nx2 blocks in PDPC 

@@ -1174,7 +1174,11 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
   }
   picHeader->setLmcsAPS(lmcsAPS);
 
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if( picHeader->getExplicitScalingListEnabledFlag() && scalingListAPS == nullptr)
+#else
   if( picHeader->getScalingListPresentFlag() && scalingListAPS == nullptr)
+#endif
   {
     scalingListAPS = parameterSetManager.getAPS( picHeader->getScalingListAPSId(), SCALING_LIST_APS );
     CHECK( scalingListAPS == nullptr, "No SCALING LIST APS present" );
@@ -2281,7 +2285,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if( pcSlice->getSPS()->getScalingListFlag() )
   {
     ScalingList scalingList;
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+    if( pcSlice->getExplicitScalingListUsed() )
+#else
     if( pcSlice->getPicHeader()->getScalingListPresentFlag() )
+#endif
     {
       APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
       scalingList = scalingListAPS->getScalingList();

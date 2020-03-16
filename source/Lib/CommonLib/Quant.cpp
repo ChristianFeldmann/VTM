@@ -381,8 +381,11 @@ void Quant::dequant(const TransformUnit &tu,
   const TCoeff          transformMinimum   = -(1 << maxLog2TrDynamicRange);
   const TCoeff          transformMaximum   =  (1 << maxLog2TrDynamicRange) - 1;
   const bool            isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
-
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  const bool            disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
   const bool            disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
 #if JVET_Q0784_LFNST_COMBINATION
   const bool            isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
   const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST);
@@ -999,8 +1002,11 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     const uint32_t uiLog2TrWidth = floorLog2(uiWidth);
     const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
     int *piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
-
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+    const bool disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
     const bool disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
 #if JVET_Q0784_LFNST_COMBINATION
     const bool isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
     const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, useTransformSkip, isLfnstApplied, disableSMForLFNST);
@@ -1079,7 +1085,11 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
   const uint32_t uiLog2TrHeight = floorLog2(uiHeight);
   int *piQuantCoeff         = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
 
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  const bool disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
   const bool disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
 #if JVET_Q0784_LFNST_COMBINATION
   const bool isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
   const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0), isLfnstApplied, disableSMForLFNST);
@@ -1134,7 +1144,11 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
   const int            channelBitDepth                = sps.getBitDepth(toChannelType(compID));
   const int            iTransformShift                = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
   const int            scalingListType                = getScalingListType(tu.cu->predMode, compID);
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  const bool           disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
   const bool           disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
 #if JVET_Q0784_LFNST_COMBINATION
   const bool           isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, isLfnstApplied, disableSMForLFNST);
@@ -1198,7 +1212,11 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   const int            channelBitDepth        = sps.getBitDepth(toChannelType(compID));
   const int            iTransformShift        = getTransformShift(channelBitDepth, rect.size(), maxLog2TrDynamicRange);
   const int            scalingListType        = getScalingListType(tu.cu->predMode, compID);
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  const bool           disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#else
   const bool           disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
+#endif
 #if JVET_Q0784_LFNST_COMBINATION
   const bool           isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, isLfnstApplied, disableSMForLFNST);

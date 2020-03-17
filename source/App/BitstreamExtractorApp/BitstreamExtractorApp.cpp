@@ -295,7 +295,7 @@ uint32_t BitstreamExtractorApp::decode()
                   break;
                 }
               }
-              writeInpuNalUnitToStream &= false;
+              writeInpuNalUnitToStream &= targetOlsIdxInNestingAppliedOls;
             }
           }
           // remove unqualified timing related SEI 

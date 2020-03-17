@@ -268,6 +268,8 @@
 
 #define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension
 
+#define JVET_P0118_OLS_EXTRACTION                         1  // OLS based sub-bitstream extraction
+
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 

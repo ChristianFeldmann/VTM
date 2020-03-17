@@ -1059,6 +1059,9 @@ public:
   void              setLayerIdInOls  (int olsIdx, int layerIdx, int layerId)    { m_layerIdInOls[olsIdx][layerIdx] = layerId; }
   uint32_t          getLayerIdInOls  (int olsIdx, int layerIdx) const           { return m_layerIdInOls[olsIdx][layerIdx]   ; }
 #endif
+#if JVET_P0118_OLS_EXTRACTION
+  std::vector<int>  getLayerIdsInOls(int targetOlsIdx)                    { return m_layerIdInOls[targetOlsIdx];     }
+#endif
 };
 
 class Window

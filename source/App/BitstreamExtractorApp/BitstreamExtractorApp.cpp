@@ -45,6 +45,9 @@
 #include "EncoderLib/AnnexBwrite.h"
 
 BitstreamExtractorApp::BitstreamExtractorApp()
+#if JVET_P0118_OLS_EXTRACTION
+:m_vpsId(-1)
+#endif
 {
 }
 
@@ -184,9 +187,12 @@ uint32_t BitstreamExtractorApp::decode()
 
       bool writeInpuNalUnitToStream = true;
 
-      // filte temporal layers
+#if JVET_P0118_OLS_EXTRACTION
+      // Remove NAL units with TemporalId greater than tIdTarget.
+      writeInpuNalUnitToStream &= (nalu.m_temporalId <= m_maxTemporalLayer);
+#else      
       writeInpuNalUnitToStream &= ( m_maxTemporalLayer < 0  ) || ( nalu.m_temporalId <= m_maxTemporalLayer );
-
+#endif
       if( nalu.m_nalUnitType == NAL_UNIT_VPS )
       {
         VPS* vps = new VPS();
@@ -194,7 +200,9 @@ uint32_t BitstreamExtractorApp::decode()
         m_hlSynaxReader.parseVPS( vps );
         m_parameterSetManager.storeVPS( vps, nalu.getBitstream().getFifo() );
         xPrintVPSInfo(vps);
-
+#if JVET_P0118_OLS_EXTRACTION
+        m_vpsId = vps->getVPSId();
+#endif
         // example: just write the parsed VPS back to the stream
         // *** add modifications here ***
         // only write, if not dropped earlier
@@ -205,6 +213,29 @@ uint32_t BitstreamExtractorApp::decode()
         }
       }
 
+#if JVET_P0118_OLS_EXTRACTION      
+      VPS *vps = nullptr;
+      // if there is no VPS nal unit, there shall be one OLS and one layer.
+      if (m_vpsId == -1)
+      {
+        CHECK(m_targetOlsIdx != 0, "only one OLS and one layer exist, but target olsIdx is not equal to zero");
+        vps = new VPS();
+        vps->setNumLayersInOls(0, 1);
+        vps->setLayerIdInOls(0, 0, nalu.m_nuhLayerId);
+      }
+      else
+      {
+        // Remove NAL units with nal_unit_type not equal to any of VPS_NUT, DPS_NUT, and EOB_NUT and with nuh_layer_id not included in the list LayerIdInOls[targetOlsIdx].
+        NalUnitType t = nalu.m_nalUnitType;
+        bool isSpecialNalTypes = t == NAL_UNIT_VPS || t == NAL_UNIT_DCI || t == NAL_UNIT_EOB;
+        vps = m_parameterSetManager.getVPS(m_vpsId);
+        uint32_t numOlss = vps->getNumOutputLayerSets();
+        CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
+        std::vector<int> LayerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
+        bool isIncludedInTargetOls = std::find(LayerIdInOls.begin(), LayerIdInOls.end(), nalu.m_nuhLayerId) != LayerIdInOls.end();
+        writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
+      }
+#endif
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )
       {
         SPS* sps = new SPS();
@@ -240,7 +271,44 @@ uint32_t BitstreamExtractorApp::decode()
           writeInpuNalUnitToStream = false;
         }
       }
-
+#if JVET_P0118_OLS_EXTRACTION
+      if (nalu.m_nalUnitType == NAL_UNIT_PREFIX_SEI)
+      {
+        // decoding a SEI
+        SEIMessages SEIs;
+        HRD hrd;
+        m_seiReader.parseSEImessage(&(nalu.getBitstream()), SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, m_parameterSetManager.getActiveSPS(), hrd, &std::cout);
+        for (auto sei : SEIs)
+        {
+          // remove unqualiified scalable nesting SEI 
+          if (sei->payloadType() == SEI::SCALABLE_NESTING)
+          {
+            SEIScalableNesting *seiNesting = (SEIScalableNesting *)sei;
+            if (seiNesting->m_nestingOlsFlag == 1)
+            {
+              bool targetOlsIdxInNestingAppliedOls = false;
+              for (uint32_t i = 0; i <= seiNesting->m_nestingNumOlssMinus1; i++)
+              {
+                if (seiNesting->m_nestingOlsIdx[i] == m_targetOlsIdx)
+                {
+                  targetOlsIdxInNestingAppliedOls = true;
+                  break;
+                }
+              }
+              writeInpuNalUnitToStream &= targetOlsIdxInNestingAppliedOls;
+            }
+          }
+          // remove unqualified timing related SEI 
+          if (sei->payloadType() == SEI::BUFFERING_PERIOD || sei->payloadType() == SEI::PICTURE_TIMING || sei->payloadType() == SEI::DECODING_UNIT_INFO)
+          {
+            bool targetOlsIdxGreaterThanZero = m_targetOlsIdx > 0;
+            writeInpuNalUnitToStream &= !targetOlsIdxGreaterThanZero;
+          }
+        }
+      }
+      if (m_vpsId == -1)
+        delete vps;
+#endif
       unitCnt++;
 
       if( writeInpuNalUnitToStream )

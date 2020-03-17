@@ -70,14 +70,9 @@ namespace po = df::program_options_lite;
   ("help",                      printHelp,                             false,      "This help text")
   ("BitstreamFileIn,b",         m_bitstreamFileNameIn,                 string(""), "Bitstream input file name")
   ("BitstreamFileOut,o",        m_bitstreamFileNameOut,                string(""), "bitstream output file name")
-#if JVET_P0118_OLS_EXTRACTION
-  ("MaxTemporalLayer,t",        m_maxTemporalLayer,                    0,         "Maximum Temporal Layer to be decoded, shall be in range of 0 to 6, inclusive")
-  ("TargetOutputLayerSet,s",    m_targetOlsIdx,                        0,         "Target output layer set index")
-#else
   ("MaxTemporalLayer,t",        m_maxTemporalLayer,                    -1,         "Maximum Temporal Layer to be decoded. -1 to decode all layers")
   ("TargetOutputLayerSet,p",    m_targetOlsIdx,                        -1,         "Target output layer set index")
-#endif
-  ("SubPicId,p",                m_subPicId,                            -1,         "Target subpic ID")
+  ("SubPicId,s",                m_subPicId,                            -1,         "Target subpic ID")
 
 #if ENABLE_TRACING
   ("TraceChannelsList",         printTracingChannelsList,              false,        "List all available tracing channels" )
@@ -126,7 +121,7 @@ namespace po = df::program_options_lite;
     }
   }
 #if JVET_P0118_OLS_EXTRACTION
-  CHECK(m_maxTemporalLayer < 0 || m_maxTemporalLayer > 6, "tIdTarget shall equal to any value in the range of 0 to 6, inclusive");
+  CHECK(m_maxTemporalLayer < -1 || m_maxTemporalLayer > 6, "MaxTemporalLayer shall either be equal -1 (for diabled) or in the range of 0 to 6, inclusive");
 #else
   if (m_targetOlsIdx != -1)
   {

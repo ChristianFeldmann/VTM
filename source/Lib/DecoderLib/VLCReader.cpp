@@ -536,7 +536,20 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       READ_UVLC( uiCode, "num_slices_in_pic_minus1" );                pcPPS->setNumSlicesInPic( uiCode + 1 );
       CHECK(pcPPS->getNumSlicesInPic() > MAX_SLICES,                  "Number of slices in picture exceeds valid range");
 
-      READ_CODE(1, uiCode, "tile_idx_delta_present_flag");            pcPPS->setTileIdxDeltaPresentFlag( uiCode == 1 );
+#if JVET_Q0218_PROPOSAL1
+      if ((pcPPS->getNumSlicesInPic() - 1) > 0)
+      {
+        READ_CODE(1, uiCode, "tile_idx_delta_present_flag");
+        pcPPS->setTileIdxDeltaPresentFlag(uiCode == 1);
+      }
+      else
+      {
+        pcPPS->setTileIdxDeltaPresentFlag(0);
+      }
+#else
+      READ_CODE(1, uiCode, "tile_idx_delta_present_flag");
+      pcPPS->setTileIdxDeltaPresentFlag(uiCode == 1);
+#endif
       pcPPS->initRectSlices();
       
       // read rectangular slice parameters

@@ -222,6 +222,8 @@ public:
                  ParameterSetManager();
   virtual        ~ParameterSetManager();
 
+  // store video parameter set and take ownership of it
+  // warning: vps object cannot be used after storing (repeated parameter sets are directly deleted)
   void           storeVPS(VPS *vps, const std::vector<uint8_t> &naluData)    { m_vpsMap.storePS(vps->getVPSId(), vps, &naluData); }
   VPS*           getVPS( int vpsId )                                         { return m_vpsMap.getPS( vpsId ); };
 
@@ -234,6 +236,7 @@ public:
   DPS*           getFirstDPS()                                               { return m_dpsMap.getFirstPS(); };
 #endif
   // store sequence parameter set and take ownership of it
+  // warning: sps object cannot be used after storing (repeated parameter sets are directly deleted)
   void           storeSPS(SPS *sps, const std::vector<uint8_t> &naluData)    { m_spsMap.storePS( sps->getSPSId(), sps, &naluData); };
   // get pointer to existing sequence parameter set
   SPS*           getSPS(int spsId)                                           { return m_spsMap.getPS(spsId); };
@@ -242,6 +245,7 @@ public:
   SPS*           getFirstSPS()                                               { return m_spsMap.getFirstPS(); };
 
   // store picture parameter set and take ownership of it
+  // warning: pps object cannot be used after storing (repeated parameter sets are directly deleted)
   void           storePPS(PPS *pps, const std::vector<uint8_t> &naluData)    { m_ppsMap.storePS( pps->getPPSId(), pps, &naluData); };
   // get pointer to existing picture parameter set
   PPS*           getPPS(int ppsId)                                           { return m_ppsMap.getPS(ppsId); };
@@ -252,8 +256,11 @@ public:
   // activate a PPS and depending on isIRAP parameter also SPS
   // returns true, if activation is successful
   bool           activatePPS(int ppsId, bool isIRAP);
+
   APS**          getAPSs() { return &m_apss[0]; }
   ParameterSetMap<APS>* getApsMap() { return &m_apsMap; }
+  // store adaptation parameter set and take ownership of it
+  // warning: aps object cannot be used after storing (repeated parameter sets are directly deleted)
   void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS(aps->getAPSId() + (MAX_NUM_APS * aps->getAPSType()), aps, &naluData); };
   APS*           getAPS(int apsId, int apsType)                              { return m_apsMap.getPS(apsId + (MAX_NUM_APS * apsType)); };
   bool           getAPSChangedFlag(int apsId, int apsType) const             { return m_apsMap.getChangedFlag(apsId + (MAX_NUM_APS * apsType)); }

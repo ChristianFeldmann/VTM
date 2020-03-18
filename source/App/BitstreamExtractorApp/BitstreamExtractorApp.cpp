@@ -195,7 +195,11 @@ uint32_t BitstreamExtractorApp::decode()
         VPS* vps = new VPS();
         m_hlSynaxReader.setBitstream( &nalu.getBitstream() );
         m_hlSynaxReader.parseVPS( vps );
+        int vpsId = vps->getVPSId();
+        // note: storeVPS may invalidate the vps pointer!
         m_parameterSetManager.storeVPS( vps, nalu.getBitstream().getFifo() );
+        // get VPS back
+        vps = m_parameterSetManager.getVPS(vpsId);
         xPrintVPSInfo(vps);
 #if JVET_P0118_OLS_EXTRACTION
         m_vpsId = vps->getVPSId();
@@ -241,9 +245,13 @@ uint32_t BitstreamExtractorApp::decode()
         SPS* sps = new SPS();
         m_hlSynaxReader.setBitstream( &nalu.getBitstream() );
         m_hlSynaxReader.parseSPS( sps );
+        int spsId = sps->getSPSId();
+        // note: storeSPS may invalidate the sps pointer!
         m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
+        // get SPS back
+        sps = m_parameterSetManager.getSPS(spsId);
+        msg (VERBOSE, "SPS Info: SPS ID = %d\n", spsId);
 
-        msg (VERBOSE, "SPS Info: SPS ID = %d\n", sps->getSPSId());
         // example: just write the parsed SPS back to the stream
         // *** add modifications here ***
         // only write, if not dropped earlier
@@ -259,7 +267,11 @@ uint32_t BitstreamExtractorApp::decode()
         PPS* pps = new PPS();
         m_hlSynaxReader.setBitstream( &nalu.getBitstream() );
         m_hlSynaxReader.parsePPS( pps );
+        int ppsId = pps->getPPSId();
+        // note: storePPS may invalidate the pps pointer!
         m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
+        // get PPS back
+        pps = m_parameterSetManager.getPPS(ppsId);
         msg (VERBOSE, "PPS Info: PPS ID = %d\n", pps->getPPSId());
 
         // example: just write the parsed PPS back to the stream

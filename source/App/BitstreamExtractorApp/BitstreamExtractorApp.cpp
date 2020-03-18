@@ -41,6 +41,7 @@
 #include "DecoderLib/AnnexBread.h"
 #include "DecoderLib/NALread.h"
 #include "EncoderLib/NALwrite.h"
+#include "DecoderLib/VLCReader.h"
 #include "EncoderLib/VLCWriter.h"
 #include "EncoderLib/AnnexBwrite.h"
 
@@ -77,6 +78,184 @@ void BitstreamExtractorApp::xPrintVPSInfo (VPS *vps)
     msg (VERBOSE, "\n");
   }
 }
+
+#if JVET_Q0397_SUB_PIC_EXTRACT
+void BitstreamExtractorApp::xPrintSubPicInfo (PPS *pps)
+{
+  msg (VERBOSE, "Subpic Info: \n");
+  msg (VERBOSE, "  SPS ID         : %d\n", pps->getSPSId());
+  msg (VERBOSE, "  PPS ID         : %d\n", pps->getPPSId());
+  msg (VERBOSE, "  Subpic enabled : %s\n", pps->getNumSubPics() > 1 ? "yes": "no" );
+  if ( pps->getNumSubPics() > 1)
+  {
+    msg (VERBOSE, "    Number of subpics : %d\n", pps->getNumSubPics() );
+    for (int i=0; i<pps->getNumSubPics(); i++)
+    {
+      SubPic subP = pps->getSubPic(i);
+      msg ( VERBOSE, "      SubpicIdx #%d : TL=(%d, %d) Size CTU=(%d, %d) Size Pel=(%d, %d) SubpicID=%d\n", i, subP.getSubPicCtuTopLeftX(), subP.getSubPicCtuTopLeftY(),
+            subP.getSubPicWidthInCTUs(), subP.getSubPicHeightInCTUs(), subP.getSubPicWidthInLumaSample(), subP.getSubPicHeightInLumaSample(), subP.getSubPicID());
+    }
+  }
+}
+
+void BitstreamExtractorApp::xReadPicHeader(InputNALUnit &nalu)
+{
+  m_hlSynaxReader.setBitstream(&nalu.getBitstream());
+  m_hlSynaxReader.parsePictureHeader(&m_picHeader, &m_parameterSetManager, true);
+  m_picHeader.setValid();
+}
+
+
+bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int targetSubPicId)
+{
+  m_hlSynaxReader.setBitstream(&nalu.getBitstream());
+  Slice slice;
+  slice.initSlice();
+  slice.setNalUnitType(nalu.m_nalUnitType);
+  slice.setNalUnitLayerId(nalu.m_nuhLayerId);
+  slice.setTLayer(nalu.m_temporalId);
+
+  m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc);
+  
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+  CHECK (nullptr==pps, "referenced PPS not found");
+  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+  CHECK (nullptr==sps, "referenced SPS not found");
+
+  if (sps->getSubPicInfoPresentFlag())
+  {
+    // subpic ID is explicitly indicated
+    msg( VERBOSE, "found slice subpic id %d\n", slice.getSliceSubPicId());
+    return ( targetSubPicId == slice.getSliceSubPicId());
+  }
+  else
+  {
+    THROW ("Subpicture signalling disbled, cannot extract.");
+  }
+    
+  return true;
+}
+
+void BitstreamExtractorApp::xRewriteSPS (SPS &targetSPS, const SPS &sourceSPS, SubPic &subPic)
+{
+  targetSPS = sourceSPS;
+  // set the number of subpicture to 1, location should not be transmited
+  targetSPS.setNumSubPics(1);
+  // set the target subpicture ID as first ID
+  targetSPS.setSubPicIdMappingExplicitlySignalledFlag(true);
+  targetSPS.setSubPicIdMappingInSpsFlag(true);
+  targetSPS.setSubPicId(0, subPic.getSubPicID());
+  targetSPS.setMaxPicWidthInLumaSamples(subPic.getSubPicWidthInLumaSample());
+  targetSPS.setMaxPicHeightInLumaSamples(subPic.getSubPicHeightInLumaSample());
+}
+
+
+void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, SubPic &subPic)
+{
+  targetPPS = sourcePPS;
+
+  // set number of subpictures to 1
+  targetPPS.setNumSubPics(1);
+  // set taget subpicture ID as first ID
+  targetPPS.setSubPicId(0, m_subPicId);
+  // we send the ID in the SPS, so don't sent it in the PPS (hard coded decision)
+  targetPPS.setSubPicIdMappingInPpsFlag(false);
+  // picture size
+  targetPPS.setPicWidthInLumaSamples(subPic.getSubPicWidthInLumaSample());
+  targetPPS.setPicHeightInLumaSamples(subPic.getSubPicHeightInLumaSample());
+  // todo: Conformance window
+
+  // Tiles
+  int                   numTileCols = 1;
+  int                   numTileRows = 1;
+  std::vector<uint32_t> tileColWidth;
+  std::vector<uint32_t> tileRowHeight;
+  std::vector<uint32_t> tileColBd;
+  std::vector<uint32_t> tileRowBd;
+
+  for (int i=0; i<= sourcePPS.getNumTileColumns(); i++)
+  {
+    const int currentColBd = sourcePPS.getTileColumnBd(i);
+    if ((currentColBd >= subPic.getSubPicCtuTopLeftX()) && (currentColBd <= (subPic.getSubPicCtuTopLeftX() + subPic.getSubPicWidthInCTUs())))
+    {
+      tileColBd.push_back(currentColBd - subPic.getSubPicCtuTopLeftX());
+    }
+  }
+  numTileCols=(int)tileColBd.size() - 1;
+  CHECK (numTileCols < 1, "After extraction there should be at least one tile horizonally.")
+  tileColWidth.resize(numTileCols);
+  for (int i=0; i<numTileCols; i++)
+  {
+    tileColWidth[i] = tileColBd[i+1] - tileColBd[i];
+  }
+  targetPPS.setNumExpTileColumns(numTileCols);
+  targetPPS.setNumTileColumns(numTileCols);
+  targetPPS.setTileColumnWidths(tileColWidth);
+
+  for (int i=0; i<= sourcePPS.getNumTileRows(); i++)
+  {
+    const int currentRowBd = sourcePPS.getTileRowBd(i);
+    if ((currentRowBd >= subPic.getSubPicCtuTopLeftY()) && (currentRowBd <= (subPic.getSubPicCtuTopLeftY() + subPic.getSubPicHeightInCTUs())))
+    {
+      tileRowBd.push_back(currentRowBd - subPic.getSubPicCtuTopLeftY());
+    }
+  }
+  numTileRows=(int)tileRowBd.size() - 1;
+  CHECK (numTileRows < 1, "After extraction there should be at least one tile vertically.")
+  tileRowHeight.resize(numTileRows);
+  for (int i=0; i<numTileRows; i++)
+  {
+    tileRowHeight[i] = tileRowBd[i+1] - tileRowBd[i];
+  }
+  targetPPS.setNumExpTileRows(numTileRows);
+  targetPPS.setNumTileRows(numTileRows);
+  targetPPS.setTileRowHeights(tileRowHeight);
+
+  // slices
+  // no change reqired when each slice is one subpicture
+  if (!sourcePPS.getSingleSlicePerSubPicFlag())
+  {
+    int targetNumSlices = subPic.getNumSlicesInSubPic();
+    targetPPS.setNumSlicesInPic(targetNumSlices);
+
+    for (int i=0, cnt=0; i<sourcePPS.getNumSlicesInPic(); i++)
+    {
+      SliceMap slMap= sourcePPS.getSliceMap(i);
+
+      if (subPic.containsCtu(slMap.getCtuAddrInSlice(0)))
+      {
+        targetPPS.setSliceWidthInTiles(cnt, sourcePPS.getSliceWidthInTiles(i));
+        targetPPS.setSliceHeightInTiles(cnt, sourcePPS.getSliceHeightInTiles(i));
+        targetPPS.setNumSlicesInTile(cnt, sourcePPS.getNumSlicesInTile(i));
+        targetPPS.setSliceHeightInCtu(cnt, sourcePPS.getSliceHeightInCtu(i));
+        targetPPS.setSliceTileIdx(cnt, sourcePPS.getSliceTileIdx(i));
+        cnt++;
+      }
+    }
+    // renumber tiles to close gaps
+    for (int i=0; i<targetPPS.getNumSlicesInPic(); i++)
+    {
+      int minVal = MAX_INT;
+      int minPos = -1;
+      for (int j=0; j<targetPPS.getNumSlicesInPic(); j++)
+      {
+        if ((targetPPS.getSliceTileIdx(j) < minVal) && (targetPPS.getSliceTileIdx(j) >= i))
+        {
+          minVal = targetPPS.getSliceTileIdx(j);
+          minPos = j;
+        }
+      }
+      if ( minPos != -1)
+      {
+        targetPPS.setSliceTileIdx(minPos, i);
+      }
+    }
+
+  }
+
+}
+
+#endif
 
 void BitstreamExtractorApp::xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId)
 {
@@ -163,6 +342,10 @@ uint32_t BitstreamExtractorApp::decode()
   bitstreamFileIn.seekg( 0, std::ios::beg );
 
   int unitCnt = 0;
+
+  VPS *vpsIdZero = new VPS();
+  std::vector<uint8_t> empty;
+  m_parameterSetManager.storeVPS(vpsIdZero, empty);
 
   while (!!bitstreamFileIn)
   {
@@ -255,6 +438,16 @@ uint32_t BitstreamExtractorApp::decode()
         // example: just write the parsed SPS back to the stream
         // *** add modifications here ***
         // only write, if not dropped earlier
+        // rewrite the SPS
+#if JVET_Q0397_SUB_PIC_EXTRACT
+        if (m_subPicId >= 0)
+        {
+          // we generally don't write SPS to the bitstream unless referred to by PPS
+          // but remember that the SPS got updated
+          xSetSPSUpdated(sps->getSPSId());
+          writeInpuNalUnitToStream = false;
+        }
+#endif
         if (writeInpuNalUnitToStream)
         {
           xWriteSPS(sps, bitstreamFileOut, nalu.m_nuhLayerId, nalu.m_temporalId);
@@ -274,6 +467,50 @@ uint32_t BitstreamExtractorApp::decode()
         pps = m_parameterSetManager.getPPS(ppsId);
         msg (VERBOSE, "PPS Info: PPS ID = %d\n", pps->getPPSId());
 
+#if JVET_Q0397_SUB_PIC_EXTRACT
+        SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+        if ( nullptr == sps)
+        {
+          printf("Cannot find SPS referred to by PPS, ignoring");
+        }
+        else
+        {
+          pps->initSubPic(*sps);
+          xPrintSubPicInfo (pps);
+          if (m_subPicId >= 0)
+          {
+            SubPic subPic;
+            bool found = false;
+            
+            for (int i=0; i< pps->getNumSubPics() && !found; i++)
+            {
+              subPic = pps->getSubPic(i);
+              if (subPic.getSubPicID() == m_subPicId)
+              {
+                found=true;
+              }
+            }
+            CHECK (!found, "Target subpicture not found");
+
+            // if the referred SPS was updated, modify and write it
+            if (xIsSPSUpdate(sps->getSPSId()))
+            {
+              SPS targetSPS;
+              xRewriteSPS(targetSPS, *sps, subPic);
+              xWriteSPS(&targetSPS, bitstreamFileOut, nalu.m_nuhLayerId, nalu.m_temporalId);
+              xClearSPSUpdated(sps->getSPSId());
+            }
+
+            // rewrite the PPS
+            PPS targetPPS;
+            xRewritePPS(targetPPS, *pps, subPic);
+
+            xWritePPS(&targetPPS, bitstreamFileOut, nalu.m_nuhLayerId, nalu.m_temporalId);
+            writeInpuNalUnitToStream = false;
+          }
+        }
+#endif
+
         // example: just write the parsed PPS back to the stream
         // *** add modifications here ***
         // only write, if not dropped earlier
@@ -283,6 +520,26 @@ uint32_t BitstreamExtractorApp::decode()
           writeInpuNalUnitToStream = false;
         }
       }
+#if JVET_Q0397_SUB_PIC_EXTRACT
+      // when re-using code for slice header parsing, we need to store APSs
+      if( ( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS ) || ( nalu.m_nalUnitType == NAL_UNIT_SUFFIX_APS ))
+      {
+        APS* aps = new APS();
+        m_hlSynaxReader.setBitstream( &nalu.getBitstream() );
+        m_hlSynaxReader.parseAPS( aps );
+        int apsId = aps->getAPSId();
+        int apsType = aps->getAPSType();
+        // note: storeAPS may invalidate the aps pointer!
+        m_parameterSetManager.storeAPS( aps, nalu.getBitstream().getFifo() );
+        // get APS back
+        aps = m_parameterSetManager.getAPS(apsId, apsType);
+      }
+
+      if (nalu.m_nalUnitType == NAL_UNIT_PH)
+      {
+        xReadPicHeader(nalu);
+      }
+#endif
 #if JVET_P0118_OLS_EXTRACTION
       if (m_targetOlsIdx>=0)
       {
@@ -324,6 +581,17 @@ uint32_t BitstreamExtractorApp::decode()
         {
           delete vps;
         }
+      }
+#endif
+#if JVET_Q0397_SUB_PIC_EXTRACT
+      if (m_subPicId>=0)
+      {
+        if ( nalu.isSlice() )
+        {
+          // check for subpicture ID
+          writeInpuNalUnitToStream = xCheckSliceSubpicture(nalu, m_subPicId);
+        }
+
       }
 #endif
       unitCnt++;

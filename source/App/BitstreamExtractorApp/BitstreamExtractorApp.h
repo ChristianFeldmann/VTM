@@ -64,6 +64,18 @@ public:
   
 protected:
   void xPrintVPSInfo (VPS *vps);
+#if JVET_Q0397_SUB_PIC_EXTRACT
+  void xPrintSubPicInfo (PPS *pps);
+  void xRewriteSPS (SPS &targetSPS, const SPS &sourceSPS, SubPic &subPic);
+  void xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, SubPic &subPic);
+
+  bool xCheckSliceSubpicture(InputNALUnit &nalu, int subPicId);
+  void xReadPicHeader(InputNALUnit &nalu);
+
+  void xSetSPSUpdated(int spsId)   { return m_updatedSPSList.push_back(spsId); }
+  bool xIsSPSUpdate(int spsId)     { return (std::find(m_updatedSPSList.begin(),m_updatedSPSList.end(), spsId) != m_updatedSPSList.end()); }
+  void xClearSPSUpdated(int spsId) { m_updatedSPSList.erase(std::remove(m_updatedSPSList.begin(), m_updatedSPSList.end(), spsId)); };
+#endif
   
   void xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId);
   void xWriteSPS(SPS *sps, std::ostream& out, int layerId, int temporalId);
@@ -75,6 +87,14 @@ protected:
 #if JVET_P0118_OLS_EXTRACTION
   SEIReader             m_seiReader;
   int                   m_vpsId;
+#endif
+
+#if JVET_Q0397_SUB_PIC_EXTRACT
+  PicHeader             m_picHeader;
+  int                   m_prevTid0Poc;
+  std::vector<int>      m_updatedVPSList;
+  std::vector<int>      m_updatedSPSList;
+  std::vector<int>      m_updatedPPSList;
 #endif
 };
 

@@ -851,6 +851,19 @@ public:
            pos.y >= m_subPicCtuTopLeftY && pos.y < m_subPicCtuTopLeftY + m_subPicHeight;
   }
 #endif
+#if JVET_Q0397_SUB_PIC_EXTRACT
+  bool             containsCtu(int ctuAddr) const
+  {
+    for (auto & addr : m_ctuAddrInSubPic)
+    {
+      if (addr == ctuAddr)
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+  #endif
 };
 #endif
 

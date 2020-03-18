@@ -278,6 +278,8 @@
 
 #define JVET_P0118_OLS_EXTRACTION                         1  // OLS based sub-bitstream extraction
 
+#define JVET_Q0397_SUB_PIC_EXTRACT                        1  // subpicture extraction
+
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 

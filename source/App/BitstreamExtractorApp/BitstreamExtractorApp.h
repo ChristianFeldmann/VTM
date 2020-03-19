@@ -64,7 +64,7 @@ public:
   
 protected:
   void xPrintVPSInfo (VPS *vps);
-
+  
   void xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId);
   void xWriteSPS(SPS *sps, std::ostream& out, int layerId, int temporalId);
   void xWritePPS(PPS *pps, std::ostream& out, int layerId, int temporalId);

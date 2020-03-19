@@ -169,8 +169,8 @@ private:
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
 #endif
   VPS*                    m_vps;
-  bool                    m_scalingListUpdateFlag;
 #if !JVET_Q0346_SCALING_LIST_USED_IN_SH
+  bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
 #endif
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS

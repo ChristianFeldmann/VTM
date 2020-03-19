@@ -480,8 +480,8 @@ DecLib::DecLib()
   , m_debugPOC( -1 )
   , m_debugCTU( -1 )
   , m_vps( nullptr )
-  , m_scalingListUpdateFlag(true)
 #if !JVET_Q0346_SCALING_LIST_USED_IN_SH
+  , m_scalingListUpdateFlag(true)
   , m_PreScalingListAPSId(-1)
 #endif
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS

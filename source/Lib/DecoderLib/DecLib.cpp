@@ -2295,11 +2295,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if( pcSlice->getSPS()->getScalingListFlag() )
   {
     ScalingList scalingList;
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
-    if( pcSlice->getExplicitScalingListUsed() )
-#else
     if( pcSlice->getPicHeader()->getScalingListPresentFlag() )
-#endif
     {
       APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
       scalingList = scalingListAPS->getScalingList();

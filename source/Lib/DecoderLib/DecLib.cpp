@@ -481,8 +481,9 @@ DecLib::DecLib()
   , m_debugCTU( -1 )
   , m_vps( nullptr )
   , m_scalingListUpdateFlag(true)
+#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
   , m_PreScalingListAPSId(-1)
-
+#endif
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
@@ -2282,6 +2283,15 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   Quant *quant = m_cTrQuant.getQuant();
 
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if (pcSlice->getExplicitScalingListUsed())
+  {
+    APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
+    ScalingList scalingList = scalingListAPS->getScalingList();
+    quant->setScalingListDec(scalingList);
+    quant->setUseScalingList(true);
+  }
+#else
   if( pcSlice->getSPS()->getScalingListFlag() )
   {
     ScalingList scalingList;
@@ -2307,11 +2317,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
     quant->setUseScalingList( true );
   }
+#endif
   else
   {
     quant->setUseScalingList( false );
   }
-
 
   if (pcSlice->getSPS()->getUseLmcs())
   {
@@ -2488,10 +2498,12 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
+#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
   if (aps->getAPSType() == SCALING_LIST_APS)
   {
     setScalingListUpdateFlag(true);
   }
+#endif
 
   // aps will be deleted if it was already stored (and did not changed),
   // thus, storing it must be last action.

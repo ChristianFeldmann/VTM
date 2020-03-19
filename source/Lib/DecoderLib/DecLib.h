@@ -170,7 +170,9 @@ private:
 #endif
   VPS*                    m_vps;
   bool                    m_scalingListUpdateFlag;
+#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
   int                     m_PreScalingListAPSId;
+#endif
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
@@ -257,10 +259,12 @@ public:
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
   }
+#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool  getScalingListUpdateFlag() { return m_scalingListUpdateFlag; }
   void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
   int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
   void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
+#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);

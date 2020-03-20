@@ -2847,8 +2847,6 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         //if the NAL unit of the current slice is in the second set
         if (secondSet.find(pcSlice->getNalUnitType()) != secondSet.end())
         {
-          bool allNalsOK = true;
-          bool foundNalInOtherSet = false;
           NalUnitType otherNalType = pcSlice->getNalUnitType();
           for (int i = 0; i < m_uiSliceSegmentIdx; i++)
           {

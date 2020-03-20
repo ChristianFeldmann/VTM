@@ -3159,9 +3159,17 @@ public:
   uint32_t                        getTLayer() const                                      { return m_uiTLayer;                                            }
   void                        setTLayer( uint32_t uiTLayer )                             { m_uiTLayer = uiTLayer;                                        }
 
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+  void                        checkLeadingPictureRestrictions( PicList& rcListPic, const PPS& pps)                                         const;
+#else
   void                        checkLeadingPictureRestrictions( PicList& rcListPic )                                         const;
+#endif
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList* pRPL, int rplIdx, bool printErrors, int* refPicIndex, int numActiveRefPics) const;
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+  void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId, const PPS& pps )  const;
+#else
   void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId )  const;
+#endif
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors)                const;

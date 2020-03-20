@@ -1130,13 +1130,30 @@ bool Slice::isStepwiseTemporalLayerSwitchingPointCandidate(PicList& rcListPic) c
 }
 
 
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) const
+#else
 void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
+#endif
 {
   int nalUnitType = this->getNalUnitType();
 
   // When a picture is a leading picture, it shall be a RADL or RASL picture.
   if(this->getAssociatedIRAPPOC() > this->getPOC())
   {
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+    //check this only when mixed_nalu_types_in_pic_flag is equal to 0
+    if (pps.getMixedNaluTypesInPicFlag() == 0)
+    {
+      // Do not check IRAP pictures since they may get a POC lower than their associated IRAP
+      if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
+          nalUnitType > NAL_UNIT_CODED_SLICE_CRA)
+      {
+        CHECK(nalUnitType != NAL_UNIT_CODED_SLICE_RASL &&
+              nalUnitType != NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
+      }
+    }
+#else
     // Do not check IRAP pictures since they may get a POC lower than their associated IRAP
     if (nalUnitType < NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
         nalUnitType > NAL_UNIT_CODED_SLICE_CRA)
@@ -1144,13 +1161,24 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
       CHECK(nalUnitType != NAL_UNIT_CODED_SLICE_RASL &&
             nalUnitType != NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
     }
+#endif
   }
 
   // When a picture is a trailing picture, it shall not be a RADL or RASL picture.
   if(this->getAssociatedIRAPPOC() < this->getPOC())
   {
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+      //check this only when mixed_nalu_types_in_pic_flag is equal to 0
+    if (pps.getMixedNaluTypesInPicFlag() == 0)
+    {
+      CHECK(nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
+            nalUnitType == NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
+    }
+#else
     CHECK(nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
           nalUnitType == NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
+#endif
+
   }
 
 
@@ -1274,10 +1302,18 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
 
 
 //Function for applying picture marking based on the Reference Picture List
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId, const PPS& pps ) const
+#else
 void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId ) const
+#endif
 {
   int i, isReference;
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+  checkLeadingPictureRestrictions(rcListPic, pps);
+#else
   checkLeadingPictureRestrictions(rcListPic);
+#endif
 
   bool isNeedToCheck = (this->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP || this->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL) ? false : true;
 

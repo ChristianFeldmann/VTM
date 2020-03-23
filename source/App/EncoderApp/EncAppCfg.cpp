@@ -888,7 +888,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
-  ("MinQTChromaISlice",                               m_uiMinQT[2],                                        4u, "MinQTChromaISlice")
+  ("MinQTChromaISliceInChromaSamples",                m_uiMinQT[2],                                        4u, "MinQTChromaISliceInChromaSamples")
   ("MinQTNonISlice",                                  m_uiMinQT[1],                                        8u, "MinQTNonISlice")
   ("MaxMTTHierarchyDepth",                            m_uiMaxMTTHierarchyDepth,                            3u, "MaxMTTHierarchyDepth")
   ("MaxMTTHierarchyDepthI",                           m_uiMaxMTTHierarchyDepthI,                           3u, "MaxMTTHierarchyDepthI")
@@ -2707,7 +2707,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMinQT[1] < minCuSize,                                                   "Min Luma QT size in non-I slices should be larger than or equal to minCuSize");
   xConfirmPara((m_iSourceWidth % minCuSize ) || (m_iSourceHeight % minCuSize),              "Picture width or height is not a multiple of minCuSize");
   const int minDiff = (int)floorLog2(m_uiMinQT[2]) - std::max(MIN_CU_LOG2, (int)m_log2MinCuSize - (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC));
-  xConfirmPara(minDiff < 0 ,                                                                "Min Chroma QT size in I slices is smaller than Min Luma CU size even considering color format");
+  xConfirmPara( minDiff < 0 ,                                                               "Min Chroma QT size in I slices is smaller than Min Luma CU size even considering color format");
+  xConfirmPara( (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)) > std::min(64, (int)m_uiCTUSize),
+                                                                                            "Min Chroma QT size in I slices should be smaller than or equal to CTB size or CB size after implicit split of CTB");
 #else
   xConfirmPara( m_uiMinQT[0] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
   xConfirmPara( m_uiMinQT[1] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
@@ -2727,13 +2729,15 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMaxBT[0] > m_uiCTUSize,                                                 "Maximum BT size for luma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( m_uiMaxBT[1] < m_uiMinQT[1],                                                "Maximum BT size for luma block in non I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxBT[1] > m_uiCTUSize,                                                 "Maximum BT size for luma block in non I slice should be smaller than or equal to CTUSize");
-  xConfirmPara( m_uiMaxBT[2] < m_uiMinQT[2],                                                "Maximum BT size for chroma block in I slice should be larger than minimum QT size");
+  xConfirmPara( m_uiMaxBT[2] < (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)), 
+                                                                                            "Maximum BT size for chroma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxBT[2] > m_uiCTUSize,                                                 "Maximum BT size for chroma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( m_uiMaxTT[0] < m_uiMinQT[0],                                                "Maximum TT size for luma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[0] > m_uiCTUSize,                                                 "Maximum TT size for luma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( m_uiMaxTT[1] < m_uiMinQT[1],                                                "Maximum TT size for luma block in non I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[1] > m_uiCTUSize,                                                 "Maximum TT size for luma block in non I slice should be smaller than or equal to CTUSize");
-  xConfirmPara( m_uiMaxTT[2] < m_uiMinQT[2],                                                "Maximum TT size for chroma block in I slice should be larger than minimum QT size");
+  xConfirmPara( m_uiMaxTT[2] < (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)), 
+                                                                                            "Maximum TT size for chroma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[2] > m_uiCTUSize,                                                 "Maximum TT size for chroma block in I slice should be smaller than or equal to CTUSize");
 #endif
 #if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
@@ -2750,8 +2754,8 @@ bool EncAppCfg::xCheckParameter()
   }
   if (m_uiMaxMTTHierarchyDepthIChroma == 0)
   {
-    xConfirmPara(m_uiMaxBT[2] != m_uiMinQT[2], "MaxBTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
-    xConfirmPara(m_uiMaxTT[2] != m_uiMinQT[2], "MaxTTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
+    xConfirmPara(m_uiMaxBT[2] != (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)), "MaxBTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
+    xConfirmPara(m_uiMaxTT[2] != (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)), "MaxTTChromaISlice shall be equal to MinQTChromaISlice when MaxMTTHierarchyDepthISliceC is 0.");
   }
   if (m_uiMaxMTTHierarchyDepthI == 0)
   {

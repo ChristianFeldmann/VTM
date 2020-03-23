@@ -646,7 +646,7 @@ void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir e
             m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff + y] = 1;
             m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff + y] = 1;
           }
-          else if (y > 0 && ( m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y-8] || (( y + 8 ) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y+8] )) // adjacent to transform edge on 8x8 grid
+          else if (y > 0 && ( ( y == 8 ) || m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y-8] || (( y + 8 ) >= areaPu.height) || m_transformEdge[cIdx][ctuXOff+x][ctuYOff+y+8] )) // adjacent to transform edge on 8x8 grid
           {
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
             m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = 2;
@@ -678,7 +678,7 @@ void LoopFilter::xSetMaxFilterLengthPQForCodingSubBlocks( const DeblockEdgeDir e
             m_maxFilterLengthQ[cIdx][ctuXOff + x][ctuYOff + y] = 1;
             m_maxFilterLengthP[cIdx][ctuXOff + x][ctuYOff + y] = 1;
           }
-          else if ( x > 0 && ( m_transformEdge[cIdx][ctuXOff+x-8][ctuYOff+y] || ( (x + 8) >= areaPu.width ) || m_transformEdge[cIdx][ctuXOff+x+8][ctuYOff+y] ) ) // adjacent to transform edge on 8x8 grid
+          else if ( x > 0 && ( ( x == 8 ) || m_transformEdge[cIdx][ctuXOff+x-8][ctuYOff+y] || ( (x + 8) >= areaPu.width ) || m_transformEdge[cIdx][ctuXOff+x+8][ctuYOff+y] ) ) // adjacent to transform edge on 8x8 grid
           {
             m_maxFilterLengthQ[cIdx][ctuXOff+x][ctuYOff+y] = 2;
             m_maxFilterLengthP[cIdx][ctuXOff+x][ctuYOff+y] = 2;

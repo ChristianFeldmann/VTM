@@ -8075,10 +8075,10 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
   SubPic curSubPic = pps.getSubPicFromPos(pos);
   if (curSubPic.getTreatedAsPicFlag()) 
   {
-    horMax = (curSubPic.getSubPicWidthInLumaSample() + offset - (int)pos.x - 1) << mvShift;
+    horMax = ((curSubPic.getSubPicRight() + 1)  + offset - (int)pos.x - 1) << mvShift;
     horMin = (-(int)sps.getMaxCUWidth()  - offset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << mvShift;
 
-    verMax = (curSubPic.getSubPicHeightInLumaSample()+ offset -  (int)pos.y - 1) << mvShift;
+    verMax = ((curSubPic.getSubPicBottom() + 1) + offset -  (int)pos.y - 1) << mvShift;
     verMin = (-(int)sps.getMaxCUHeight() - offset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << mvShift;
   }
 #endif

@@ -70,10 +70,10 @@ void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& 
   SubPic curSubPic = pps.getSubPicFromPos(pos);
   if (curSubPic.getTreatedAsPicFlag()) 
   {
-    iHorMax = (curSubPic.getSubPicWidthInLumaSample() + iOffset - (int)pos.x - 1 ) << iMvShift;
+    iHorMax = ((curSubPic.getSubPicRight() + 1)  + iOffset - (int)pos.x - 1 ) << iMvShift;
     iHorMin = (-(int)sps.getMaxCUWidth() -  iOffset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << iMvShift;
 
-    iVerMax = (curSubPic.getSubPicHeightInLumaSample()+ iOffset - (int)pos.y - 1) << iMvShift;
+    iVerMax = ((curSubPic.getSubPicBottom() + 1) + iOffset - (int)pos.y - 1) << iMvShift;
     iVerMin = (-(int)sps.getMaxCUHeight() - iOffset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << iMvShift;
   }
 #endif

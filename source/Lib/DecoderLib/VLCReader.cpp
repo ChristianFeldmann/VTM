@@ -2212,7 +2212,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
 #endif
 
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  READ_FLAG(uiCode, "sps_explicit_scaling_list_enabled_flag");                 pcSPS->setScalingListFlag(uiCode);
+#else
   READ_FLAG( uiCode, "sps_scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
+#endif
 
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   READ_FLAG( uiCode, "sps_virtual_boundaries_enabled_flag" ); pcSPS->setVirtualBoundariesEnabledFlag( uiCode != 0 );
@@ -2870,9 +2874,15 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   // quantization scaling lists
   if (sps->getScalingListFlag())
   {
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+    READ_FLAG(uiCode, "ph_explicit_scaling_list_enabled_flag");
+    picHeader->setExplicitScalingListEnabledFlag(uiCode);
+    if (picHeader->getExplicitScalingListEnabledFlag())
+#else
     READ_FLAG(uiCode, "ph_scaling_list_present_flag");
     picHeader->setScalingListPresentFlag(uiCode);
     if (picHeader->getScalingListPresentFlag())
+#endif
     {
       READ_CODE(3, uiCode, "ph_scaling_list_aps_id");
       picHeader->setScalingListAPSId(uiCode);
@@ -2880,7 +2890,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
   else
   {
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+    picHeader->setExplicitScalingListEnabledFlag(false);
+#else
     picHeader->setScalingListPresentFlag(false);
+#endif
   }
 #endif
   
@@ -4927,7 +4941,17 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     pcSlice->setLmcsEnabledFlag(false);
   }
 #endif
-
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if (picHeader->getExplicitScalingListEnabledFlag())
+  {
+    READ_FLAG(uiCode, "slice_explicit_scaling_list_used_flag");
+    pcSlice->setExplicitScalingListUsed(uiCode);
+  }
+  else
+  {
+    pcSlice->setExplicitScalingListUsed(false);
+  }
+#endif
   if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
   {
     pcSlice->setDefaultClpRng( *sps );

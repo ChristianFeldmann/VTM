@@ -66,6 +66,9 @@ Slice::Slice()
 #if JVET_Q0346_LMCS_ENABLE_IN_SH
 , m_lmcsEnabledFlag               ( 0 )
 #endif
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+, m_explicitScalingListUsed       ( 0 )
+#endif
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
@@ -179,6 +182,9 @@ void Slice::initSlice()
   m_colRefIdx = 0;
 #if JVET_Q0346_LMCS_ENABLE_IN_SH
   m_lmcsEnabledFlag = 0;
+#endif
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  m_explicitScalingListUsed = 0;
 #endif
   initEqualRef();
 
@@ -1047,6 +1053,10 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
 #if JVET_Q0346_LMCS_ENABLE_IN_SH
   m_lmcsEnabledFlag               = pSrc->m_lmcsEnabledFlag;
 #endif
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  m_explicitScalingListUsed       = pSrc->m_explicitScalingListUsed;
+#endif
+
   m_pendingRasInit                = pSrc->m_pendingRasInit;
 
   for ( uint32_t e=0 ; e<NUM_REF_PIC_LIST_01 ; e++ )
@@ -2304,7 +2314,11 @@ PicHeader::PicHeader()
 , m_lmcsApsId                                     ( -1 )
 , m_lmcsAps                                       ( nullptr )
 , m_lmcsChromaResidualScaleFlag                   ( 0 )
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+, m_explicitScalingListEnabledFlag                ( 0 )
+#else
 , m_scalingListPresentFlag                        ( 0 )
+#endif
 , m_scalingListApsId                              ( -1 )
 , m_scalingListAps                                ( nullptr )
 #if JVET_Q0819_PH_CHANGES 
@@ -2437,7 +2451,11 @@ void PicHeader::initPicHeader()
   m_lmcsApsId                                     = -1;
   m_lmcsAps                                       = nullptr;
   m_lmcsChromaResidualScaleFlag                   = 0;
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  m_explicitScalingListEnabledFlag                = 0;
+#else
   m_scalingListPresentFlag                        = 0;
+#endif
   m_scalingListApsId                              = -1;
   m_scalingListAps                                = nullptr;
 #if JVET_Q0819_PH_CHANGES 

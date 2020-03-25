@@ -1964,15 +1964,24 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // quantization scaling lists
   if( sps->getScalingListFlag() )
   {
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+    WRITE_FLAG( picHeader->getExplicitScalingListEnabledFlag(), "ph_scaling_list_present_flag" );
+    if( picHeader->getExplicitScalingListEnabledFlag() )
+#else
     WRITE_FLAG( picHeader->getScalingListPresentFlag(), "ph_scaling_list_present_flag" );
     if( picHeader->getScalingListPresentFlag() )
+#endif
     {
       WRITE_CODE( picHeader->getScalingListAPSId(), 3, "ph_scaling_list_aps_id" );
     }
   }
   else
   {
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+    picHeader->setExplicitScalingListEnabledFlag( false );
+#else
     picHeader->setScalingListPresentFlag( false );
+#endif
   }
 
 #endif
@@ -3288,6 +3297,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   if (picHeader->getLmcsEnabledFlag())
   {
     WRITE_FLAG(pcSlice->getLmcsEnabledFlag(), "slice_lmcs_enabled_flag");
+  }
+#endif
+
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if (picHeader->getExplicitScalingListEnabledFlag())
+  {
+    WRITE_FLAG(pcSlice->getExplicitScalingListUsed(), "slice_explicit_scaling_list_used_flag");
   }
 #endif
 

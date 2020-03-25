@@ -44,6 +44,9 @@
 #include "CommonLib/UnitTools.h"
 
 #include <fstream>
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+#include <set>
+#endif
 #include <stdio.h>
 #include <fcntl.h>
 #include "AnnexBread.h"
@@ -1254,7 +1257,11 @@ void DecLib::xActivateParameterSets( const int layerId )
     //  Get a new picture buffer. This will also set up m_pcPic, and therefore give us a SPS and PPS pointer that we can use.
     m_pcPic = xGetNewPicBuffer( *sps, *pps, m_apcSlicePilot->getTLayer(), layerId );
 
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+    m_apcSlicePilot->applyReferencePictureListBasedMarking( m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1(), layerId, *pps);
+#else
     m_apcSlicePilot->applyReferencePictureListBasedMarking( m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1(), layerId );
+#endif
     m_pcPic->finalInit( vps, *sps, *pps, &m_picHeader, apss, lmcsAPS, scalinglistAPS );
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
     m_pcPic->cs->createCoeffs((bool)m_pcPic->cs->sps->getPLTMode());
@@ -2767,7 +2774,12 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
             break;
           }
         }
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+        if (latestIRAPNalUnit != nullptr && ((latestIRAPNalUnit->m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && latestIRAPNalUnit->m_nalUnitType <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
+            || (latestIRAPNalUnit->m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA && pcSlice->getPOC() > latestIRAPNalUnit->m_POC)))
+#else
         if (latestIRAPNalUnit != nullptr)
+#endif
         {
           // clear the nalu unit before the latest IRAP slice
           m_nalUnitInfo[nalu.m_nuhLayerId].erase(m_nalUnitInfo[nalu.m_nuhLayerId].begin(), m_nalUnitInfo[nalu.m_nuhLayerId].begin() + naluIdx);
@@ -2809,9 +2821,74 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         }
       }
     }
-    // check whether the nalu type of slices meet the nal unit type constraints
+    // if this is the last slice of the picture, check whether the nalu type of the slices meet the nal unit type constraints
     if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))
     {
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+      std::set<NalUnitType> firstSet = { NAL_UNIT_CODED_SLICE_STSA, NAL_UNIT_CODED_SLICE_RADL,
+        NAL_UNIT_CODED_SLICE_RASL, NAL_UNIT_CODED_SLICE_IDR_W_RADL, NAL_UNIT_CODED_SLICE_IDR_N_LP, NAL_UNIT_CODED_SLICE_CRA };
+      std::set<NalUnitType> secondSet = { NAL_UNIT_CODED_SLICE_TRAIL, NAL_UNIT_CODED_SLICE_RADL, NAL_UNIT_CODED_SLICE_RASL };
+      bool allNalsOK = true;
+      bool foundNalInOtherSet = false;
+      //if the NAL unit of the current slice is in the first set
+      if (firstSet.find(pcSlice->getNalUnitType()) != firstSet.end())
+      {
+        NalUnitType otherNalType = pcSlice->getNalUnitType();
+        for (int i = 0; i < m_uiSliceSegmentIdx; i++)
+        {
+          Slice* PreSlice = m_pcPic->slices[i];
+          if (PreSlice->getNalUnitType() != pcSlice->getNalUnitType())
+          {
+            foundNalInOtherSet = true;
+            //Set the value of the other NAL unit type the first time a different NAL unit is found
+            if (otherNalType == pcSlice->getNalUnitType())
+            {
+              otherNalType = PreSlice->getNalUnitType();
+            }
+            if (otherNalType != PreSlice->getNalUnitType())
+            {
+              allNalsOK = false;
+            }
+            if (secondSet.find(PreSlice->getNalUnitType()) == secondSet.end())
+            {
+              allNalsOK = false;
+            }
+          }
+        }
+      }
+      if (foundNalInOtherSet == false || allNalsOK == false)
+      {
+        allNalsOK = true;
+        foundNalInOtherSet = false;
+        //if the NAL unit of the current slice is in the second set
+        if (secondSet.find(pcSlice->getNalUnitType()) != secondSet.end())
+        {
+          NalUnitType otherNalType = pcSlice->getNalUnitType();
+          for (int i = 0; i < m_uiSliceSegmentIdx; i++)
+          {
+            Slice* PreSlice = m_pcPic->slices[i];
+            if (PreSlice->getNalUnitType() != pcSlice->getNalUnitType())
+            {
+              foundNalInOtherSet = true;
+              //Set the value of the other NAL unit type the first time a different NAL unit is found
+              if (otherNalType == pcSlice->getNalUnitType())
+              {
+                otherNalType = PreSlice->getNalUnitType();
+              }
+              if (otherNalType != PreSlice->getNalUnitType())
+              {
+                allNalsOK = false;
+              }
+              if (firstSet.find(PreSlice->getNalUnitType()) == firstSet.end())
+              {
+                allNalsOK = false;
+              }
+            }
+          }
+        }
+        CHECK(!allNalsOK || !foundNalInOtherSet, "disallowed mix of nal unit types");
+      }
+#else
       int num1stSetSlice = 0;
       int num2ndSetSlice = 0;
       int num3rdSetSlice = 0;
@@ -2832,6 +2909,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         }
       }
       CHECK((num1stSetSlice + num2ndSetSlice) != pcSlice->getPPS()->getNumSlicesInPic() || num3rdSetSlice != 0, "mixed nal unit picture contain more than two nal unit types");
+#endif
     }
   }
   else // all slices shall have the same nal unit type

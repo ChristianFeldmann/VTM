@@ -1534,7 +1534,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
 #if JVET_Q0787_SUBPIC
+#if JVET_Q0222_SUBPICTURE_SIGNALLING
+      if ((picIdx > 0) && (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize()))
+#else
       if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
+#endif
       {
         READ_CODE(ceilLog2((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_ctu_top_left_x[ i ]");
         pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
@@ -1543,7 +1547,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       {
         pcSPS->setSubPicCtuTopLeftX(picIdx, 0);
       }
+#if JVET_Q0222_SUBPICTURE_SIGNALLING
+      if ((picIdx > 0) && (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize()))
+#else
       if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
+#endif
       {
         READ_CODE(ceilLog2((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_ctu_top_left_y[ i ]");
         pcSPS->setSubPicCtuTopLeftY(picIdx, uiCode);
@@ -1587,10 +1595,22 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
       }
 #else
+#if JVET_Q0222_SUBPICTURE_SIGNALLING
+      if (picIdx > 0)
+      {
+#endif
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_x[ i ]");
       pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_ctu_top_left_y[ i ]");
       pcSPS->setSubPicCtuTopLeftY(picIdx, uiCode);
+#if JVET_Q0222_SUBPICTURE_SIGNALLING
+      }
+      else
+      {
+        pcSPS->setSubPicCtuTopLeftX(picIdx, 0);
+        pcSPS->setSubPicCtuTopLeftY(picIdx, 0);
+      }
+#endif
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_width_minus1[ i ]");
       pcSPS->setSubPicWidth(picIdx, uiCode + 1);
       READ_CODE(std::max(1, ceilLog2(((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) >> floorLog2(pcSPS->getCTUSize())))), uiCode, "subpic_height_minus1[ i ]");

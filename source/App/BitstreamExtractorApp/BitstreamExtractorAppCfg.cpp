@@ -129,11 +129,13 @@ namespace po = df::program_options_lite;
     return false;
   }
 #endif
+#if !JVET_Q0397_SUB_PIC_EXTRACT
   if (m_subPicId != -1)
   {
     std::cerr << "Extraction by subpicture ID is not implemented yet";
     return false;
   }
+#endif
 
   if (m_bitstreamFileNameIn.empty())
   {

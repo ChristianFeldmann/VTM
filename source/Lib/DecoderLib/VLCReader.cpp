@@ -4160,6 +4160,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         READ_CODE(3, uiCode, "slice_alf_aps_id_luma");
         apsId[i] = uiCode;
         APS* APStoCheckLuma = parameterSetManager->getAPS(apsId[i], ALF_APS);
+        CHECK(APStoCheckLuma == nullptr, "referenced APS not found");
         CHECK(APStoCheckLuma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_LUMA] != 1, "bitstream conformance error, alf_luma_filter_signal_flag shall be equal to 1");
       }
 
@@ -4178,6 +4179,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
         pcSlice->setTileGroupApsIdChroma(uiCode);
         APS* APStoCheckChroma = parameterSetManager->getAPS(uiCode, ALF_APS);
+        CHECK(APStoCheckChroma == nullptr, "referenced APS not found");
         CHECK(APStoCheckChroma->getAlfAPSParam().newFilterFlag[CHANNEL_TYPE_CHROMA] != 1, "bitstream conformance error, alf_chroma_filter_signal_flag shall be equal to 1");
       }
     }
@@ -4559,7 +4561,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setEncCABACTableIdx( pcSlice->getSliceType() == B_SLICE ? ( uiCode ? P_SLICE : B_SLICE ) : ( uiCode ? B_SLICE : P_SLICE ) );
     }
 
-    if ( pcSlice->getPicHeader()->getEnableTMVPFlag() )
+    if ( picHeader->getEnableTMVPFlag() )
     {
 #if JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if ( !pps->getRplInfoInPhFlag())

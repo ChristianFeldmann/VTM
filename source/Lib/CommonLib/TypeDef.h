@@ -279,6 +279,8 @@
 
 #define JVET_Q0216                                        1 // JVET-Q0216: modification to picture timing SEI message
 
+#define JVET_Q0218_PROPOSAL3                              1 // JVET-Q0218_PROPOSAL3: fix missing inference rule for single_slice_per_subpic_flag
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
 #define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension

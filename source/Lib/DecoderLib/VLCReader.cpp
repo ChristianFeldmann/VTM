@@ -529,6 +529,12 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     {
       READ_FLAG(uiCode, "single_slice_per_subpic_flag");            pcPPS->setSingleSlicePerSubPicFlag(uiCode == 1);
     }
+#if JVET_Q0218_PROPOSAL3
+    else
+    {
+      pcPPS->setSingleSlicePerSubPicFlag(0);
+    }
+#endif
     if (pcPPS->getRectSliceFlag() & !(pcPPS->getSingleSlicePerSubPicFlag()))
     {
       int32_t tileIdx = 0;

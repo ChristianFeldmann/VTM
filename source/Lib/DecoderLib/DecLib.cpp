@@ -986,7 +986,7 @@ void DecLib::checkSEIInAccessUnit()
     enum NalUnitType         naluType = std::get<0>(sei);
     int                    nuhLayerId = std::get<1>(sei);
     enum SEI::PayloadType payloadType = std::get<2>(sei);
-    if (naluType == NAL_UNIT_PREFIX_SEI && ((payloadType == SEI::BUFFERING_PERIOD || payloadType == SEI::PICTURE_TIMING || payloadType == SEI::DECODING_UNIT_INFO)))
+    if (m_vps != nullptr && naluType == NAL_UNIT_PREFIX_SEI && ((payloadType == SEI::BUFFERING_PERIOD || payloadType == SEI::PICTURE_TIMING || payloadType == SEI::DECODING_UNIT_INFO)))
     {
       int numlayersInZeroOls = m_vps->getNumLayersInOls(0);
       bool inZeroOls = true;

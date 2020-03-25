@@ -134,6 +134,13 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   CHECK((curPicHeight * curSeqMaxPicHeightY) < refPicHeight * (curPicHeightY - max8MinCbSizeY), "(curPicHeight * curSeqMaxPicHeightY) should be greater than or equal to refPicHeight * (curPicHeightY - max8MinCbSizeY))");
 #endif
 
+#if JVET_Q0257_SCALING_WINDOW_CONSTRAINT
+  CHECK(curPicWidth * 2 < refPicWidth, "curPicWidth * 2 shall be greater than or equal to refPicWidth");
+  CHECK(curPicHeight * 2 < refPicHeight, "curPicHeight * 2 shall be greater than or equal to refPicHeight");
+  CHECK(curPicWidth > refPicWidth * 8, "curPicWidth shall be less than or equal to refPicWidth * 8");
+  CHECK(curPicHeight > refPicHeight * 8, "curPicHeight shall be less than or equal to refPicHeight * 8");
+#endif
+
 #if JVET_Q0487_SCALING_WINDOW_ISSUES
   return refPic->isRefScaled( curPPS );
 #else

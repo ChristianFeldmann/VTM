@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_Q0237_STSA_TID_ZERO_DEPLAYER                 1 // JVET-Q0237: STSA picture with TemporalId equal to 0 in a dependent layer
+
 #define JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE             1 // JVET-Q0798: signal the number of merge candidates in SPS
 
 #define JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT       1 //JVET-Q0157: subpicture reordering constraint

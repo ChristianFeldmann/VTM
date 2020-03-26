@@ -626,7 +626,11 @@ void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SP
   // TODO: implement config file parameters and intialization
   fprintf(stderr, "SEISubpicureLevelInfo depends on subpictures! Initializing to dummy values!\n");
 
+#if !JVET_Q0630_SUBPIC_LEVEL
   sei->m_sliSeqParameterSetId = sps->getSPSId();
+#else
+  sei->m_numSubpics = sps->getNumSubPics();
+#endif
   sei->m_numRefLevels = 2;
   sei->m_refLevelIdc.resize(2);
   sei->m_refLevelIdc[0] = Level::LEVEL4;

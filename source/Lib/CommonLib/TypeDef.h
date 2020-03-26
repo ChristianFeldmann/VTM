@@ -295,6 +295,8 @@
 
 #define JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS 1   // JVET-Q0219: Signal alternative buffering delay parameters 
 
+#define JVET_Q0399_SCALING_INFERENCE                      1  // JVET-Q0399 infer scaling window to conformance window, if not present
+
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 

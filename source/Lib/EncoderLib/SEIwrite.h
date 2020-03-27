@@ -72,7 +72,11 @@ protected:
   void xWriteSEIOmniViewport                      (const SEIOmniViewport& sei);
   void xWriteSEIRegionWisePacking                 (const SEIRegionWisePacking &sei);
   void xWriteSEIGeneralizedCubemapProjection      (const SEIGeneralizedCubemapProjection &sei);
+#if JVET_Q0630_SUBPIC_LEVEL
+  void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei);
+#else
   void xWriteSEISubpictureLevelInfo               (const SEISubpicureLevelInfo &sei, const SPS* sps);
+#endif
   void xWriteSEISampleAspectRatioInfo             (const SEISampleAspectRatioInfo &sei);
 
   void xWriteSEIUserDataRegistered(const SEIUserDataRegistered& sei);

@@ -121,7 +121,11 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream &bs, const SEI& sei, const 
     xWriteSEIContentColourVolume(*static_cast<const SEIContentColourVolume*>(&sei));
     break;
   case SEI::SUBPICTURE_LEVEL_INFO:
+#if JVET_Q0630_SUBPIC_LEVEL
+    xWriteSEISubpictureLevelInfo(*static_cast<const SEISubpicureLevelInfo*>(&sei));
+#else
     xWriteSEISubpictureLevelInfo(*static_cast<const SEISubpicureLevelInfo*>(&sei), sps);
+#endif
     break;
   case SEI::SAMPLE_ASPECT_RATIO_INFO:
     xWriteSEISampleAspectRatioInfo(*static_cast<const SEISampleAspectRatioInfo*>(&sei));
@@ -703,9 +707,15 @@ void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubema
   }
 }
 
+#if JVET_Q0630_SUBPIC_LEVEL
+void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei)
+#else
 void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, const SPS* sps)
+#endif
 {
+#if !JVET_Q0630_SUBPIC_LEVEL
   WRITE_CODE( (uint32_t)sei.m_sliSeqParameterSetId, 4,                        "sli_seq_parameter_set_id");
+#endif
   CHECK(sei.m_numRefLevels < 1, "SEISubpicureLevelInfo: numRefLevels must be greater than zero");
   CHECK(sei.m_numRefLevels != (int)sei.m_refLevelIdc.size(), "SEISubpicureLevelInfo: numRefLevels must be equal to the number of levels");
   if (sei.m_explicitFractionPresentFlag)
@@ -714,14 +724,29 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei, c
   }
   WRITE_CODE( (uint32_t)sei.m_numRefLevels - 1, 3,                            "num_ref_levels_minus1");
   WRITE_FLAG(           sei.m_explicitFractionPresentFlag,                    "explicit_fraction_present_flag");
+#if JVET_Q0630_SUBPIC_LEVEL
+  if (sei.m_explicitFractionPresentFlag)
+  {
+    WRITE_UVLC(         sei.m_numSubpics -1 ,                                 "sli_num_subpics_minus1");
+    while (!isByteAligned())
+    {
+      WRITE_FLAG(       0,                                                    "sli_alignment_zero_bit");
+    }
+  }
+#endif
 
   for (int i=0; i<sei.m_numRefLevels; i++)
   {
     WRITE_CODE( (uint32_t)sei.m_refLevelIdc[i], 8,                            "ref_level_idc[i]");
     if (sei.m_explicitFractionPresentFlag)
     {
+#if !JVET_Q0630_SUBPIC_LEVEL
       CHECK(sps->getNumSubPics() != (int)sei.m_refLevelFraction[i].size(),    "SEISubpicureLevelInfo: number of fractions differs from number of subpictures");
       for (int j = 0; j < sps->getNumSubPics(); j++)
+#else
+      CHECK(sei.m_numSubpics != (int)sei.m_refLevelFraction[i].size(),        "SEISubpicureLevelInfo: number of fractions differs from number of subpictures");
+      for (int j = 0; j < sei.m_numSubpics; j++)
+#endif
       {
         WRITE_CODE( (uint32_t)sei.m_refLevelFraction[i][j], 8,                "ref_level_fraction_minus1[i][j]");
       }

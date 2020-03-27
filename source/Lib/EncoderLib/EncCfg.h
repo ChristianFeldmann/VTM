@@ -47,6 +47,8 @@
 
 #include "CommonLib/Unit.h"
 
+#include "EncCfgParam.h"
+
 #if JVET_O0756_CALCULATE_HDRMETRICS
 #include "HDRLib/inc/DistortionMetric.H"
 #endif
@@ -621,7 +623,11 @@ protected:
   bool                 m_gcmpSEIGuardBandBoundaryType;
 #endif
   uint8_t              m_gcmpSEIGuardBandSamplesMinus1;
+#if JVET_SUBPIC_LEVEL_CFG
+  EncCfgParam::CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
+#else
   bool m_subpicureLevelInfoSEIEnabled;
+#endif
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
   bool                  m_sariPersistenceFlag;
@@ -1676,8 +1682,13 @@ public:
 #endif
   void    setGcmpSEIGuardBandSamplesMinus1( uint8_t u )                                             { m_gcmpSEIGuardBandSamplesMinus1 = u; }
   uint8_t getGcmpSEIGuardBandSamplesMinus1()                                                        { return m_gcmpSEIGuardBandSamplesMinus1; }
+#if JVET_SUBPIC_LEVEL_CFG
+  const EncCfgParam::CfgSEISubpictureLevel getSubpicureLevelInfoSEICfg() const                      { return m_cfgSubpictureLevelInfoSEI; }
+  void    setSubpicureLevelInfoSEICfg(EncCfgParam::CfgSEISubpictureLevel cfg)                       { m_cfgSubpictureLevelInfoSEI = cfg; }
+#else
   bool    getSubpicureLevelInfoSEIEnabled() const { return m_subpicureLevelInfoSEIEnabled; }
   void    setSubpicureLevelInfoSEIEnabled(bool val) { m_subpicureLevelInfoSEIEnabled = val; }
+#endif
   bool     getSampleAspectRatioInfoSEIEnabled() const                                                       { return m_sampleAspectRatioInfoSEIEnabled; }
   void     setSampleAspectRatioInfoSEIEnabled(const bool val)                                               { m_sampleAspectRatioInfoSEIEnabled = val; }
   bool     getSariCancelFlag() const                                                                        { return m_sariCancelFlag; }

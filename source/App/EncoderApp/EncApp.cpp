@@ -752,7 +752,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setGcmpSEIGuardBandBoundaryType                      ( m_gcmpSEIGuardBandBoundaryType );
 #endif
   m_cEncLib.setGcmpSEIGuardBandSamplesMinus1                     ( (uint8_t)m_gcmpSEIGuardBandSamplesMinus1 );
+#if JVET_SUBPIC_LEVEL_CFG
+  m_cEncLib.setSubpicureLevelInfoSEICfg                          (m_cfgSubpictureLevelInfoSEI);
+#else
   m_cEncLib.setSubpicureLevelInfoSEIEnabled                      (m_subpicureLevelInfoSEIEnabled);
+#endif
   m_cEncLib.setSampleAspectRatioInfoSEIEnabled                   (m_sampleAspectRatioInfoSEIEnabled);
   m_cEncLib.setSariCancelFlag                                    (m_sariCancelFlag);
   m_cEncLib.setSariPersistenceFlag                               (m_sariPersistenceFlag);

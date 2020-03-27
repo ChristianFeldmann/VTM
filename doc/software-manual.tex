@@ -3936,11 +3936,27 @@ Enables (true) or disables (false) the insertion of Frame-Field Information SEI 
 \end{OptionTableNoShorthand}
 
 \begin{OptionTableNoShorthand}{Subpicture Level Information SEI message encoder parameters}{tab:sei-subpic-level}
-\Option{SEISubpictureLevelInfo} &
+\Option{SEISubpictLevelInfoEnabled} &
 \Default{false} &
 Enables (true) or disables (false) the insertion of Subpicture Level Information SEI message.
 Note, currently no other configuration options are available, because this depends on the number of subpictures,
 which are still not supported in the software. An example SEI with dummy values is generated, when the option is enabled.
+\\
+\Option{SEISubpicLevelInfoRefLevels} &
+\Default{none} &
+List of reference levels to be signalled.
+\\
+\Option{SEISubpicLevelInfoExplicitFraction} &
+\Default{false} &
+Enable signalling of explicit fraction for each level and subpicture
+\\
+\Option{SEISubpicLevelInfoNumSubpics} &
+\Default{1} &
+Number of subpictures in context of the SEI. Has to be equal to NumSubpics.
+\\
+\Option{SEISubpicLevelInfoRefLevelFractions} &
+\Default{none} &
+List of fractions of levels to be signalled. List is ordered by subpicture then level.
 \\
 \end{OptionTableNoShorthand}
 

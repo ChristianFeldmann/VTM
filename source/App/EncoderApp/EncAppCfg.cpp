@@ -446,6 +446,24 @@ bool SMultiValueInput<bool>::readValue(const char *&pStr, bool &bSuccess)
   return val!=0;
 }
 
+template<>
+Level::Name SMultiValueInput<Level::Name>::readValue(const char *&cStr, bool &success)
+{
+  // first parse the value from the map, using iostreams
+  std::istringstream str (cStr);
+  Level::Name val = Level::NONE;
+  readStrToEnum(strToLevel, sizeof(strToLevel)/sizeof(*strToLevel), str, val);
+
+  // now read a double to forward the string pointer ignoring the returned value
+  char *eptr;
+  strtod(cStr, &eptr);
+  cStr=eptr;
+
+  success=!(*eptr!=0 && !isspace(*eptr) && *eptr!=',') && !((int)val<int(minValIncl) || (int)val>int(maxValIncl));
+  return val;
+}
+
+
 template <class T>
 istream& SMultiValueInput<T>::readValues(std::istream &in)
 {
@@ -736,6 +754,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<uint32_t>  cfg_subPicTreatedAsPicFlag(0, 1, 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_loopFilterAcrossSubpicEnabledFlag(0, 1, 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_subPicId(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+
+#if JVET_SUBPIC_LEVEL_CFG
+  SMultiValueInput<int>          cfg_sliFractions(0, 100, 0, std::numeric_limits<int>::max());
+  SMultiValueInput<Level::Name>  cfg_sliRefLevels(Level::NONE, Level::LEVEL8_5,  0, 8);
+#endif
+
   int warnUnknowParameter = 0;
 
 #if ENABLE_TRACING
@@ -1356,7 +1380,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SEIGcmpGuardBandBoundaryType",                    m_gcmpSEIGuardBandBoundaryType,           false,                                    "Indicate which face boundaries contain guard bands")
 #endif
   ("SEIGcmpGuardBandSamplesMinus1",                   m_gcmpSEIGuardBandSamplesMinus1,          0u,                                       "Specifies the number of guard band samples minus1 used in the cubemap projected picture")
+#if JVET_SUBPIC_LEVEL_CFG
+  ("SEISubpicLevelInfoEnabled",                       m_cfgSubpictureLevelInfoSEI.m_enabled,             false,            "Control generation of Subpicture Level Information SEI messages")
+  ("SEISubpicLevelInfoRefLevels",                     cfg_sliRefLevels,                                  cfg_sliRefLevels, "List of reference levels for Subpicture Level Information SEI messages")
+  ("SEISubpicLevelInfoExplicitFraction",              m_cfgSubpictureLevelInfoSEI.m_explicitFraction,    false,            "Enable sending of explicit fractions in Subpicture Level Information SEI messages")
+  ("SEISubpicLevelInfoNumSubpics",                    m_cfgSubpictureLevelInfoSEI.m_numSubpictures,      1,                "Number of subpictures for Subpicture Level Information SEI messages")
+  ("SEISubpicLevelInfoRefLevelFractions",             cfg_sliFractions,                                  cfg_sliFractions, "List of fractions for Subpicture Level Information SEI messages")
+#else
   ("SEISubpicureLevelInfo",                           m_subpicureLevelInfoSEIEnabled,           false, "Control generation of Subpicture Level Information SEI messages")
+#endif
   ("SEISampleAspectRatioInfo",                        m_sampleAspectRatioInfoSEIEnabled,        false, "Control generation of Sample Aspect Ratio Information SEI messages")
   ("SEISARICancelFlag",                               m_sariCancelFlag,                         false, "Indicates that Sample Aspect Ratio Information SEI message cancels the persistence or follows")
   ("SEISARIPersistenceFlag",                          m_sariPersistenceFlag,                    true, "Specifies the persistence of the Sample Aspect Ratio Information SEI message")
@@ -1685,6 +1717,20 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     CHECK( m_rprEnabled, "RPR and subpictures cannot be enabled together" );
 #endif
   }
+
+#if JVET_SUBPIC_LEVEL_CFG
+  if (m_cfgSubpictureLevelInfoSEI.m_enabled)
+  {
+    CHECK (m_numSubPics != m_cfgSubpictureLevelInfoSEI.m_numSubpictures, "NumSubPics must be equal to SEISubpicLevelInfoNumSubpics" );
+    if (m_cfgSubpictureLevelInfoSEI.m_explicitFraction)
+    {
+      m_cfgSubpictureLevelInfoSEI.m_fractions = cfg_sliFractions.values;
+      m_cfgSubpictureLevelInfoSEI.m_refLevels = cfg_sliRefLevels.values;
+      CHECK (cfg_sliRefLevels.values.size() * m_cfgSubpictureLevelInfoSEI.m_numSubpictures != cfg_sliFractions.values.size(), "Number of subpicture level fractions must be equal to the numer of subpictures times the number of reference levels.");
+    }
+  }
+#endif
+
   if( m_picPartitionFlag ) 
   {
     // store tile column widths

@@ -541,7 +541,18 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
         }
         else
         {
+#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+          if (tu.cs->slice->getTSResidualCodingDisabledFlag())
+          {
+            xRateDistOptQuant( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+          }
+          else
+          {
+            xRateDistOptQuantTS( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+          }
+#else
           xRateDistOptQuantTS( tu, compID, pSrc, uiAbsSum, cQP, ctx );
+#endif
         }
       }
       else

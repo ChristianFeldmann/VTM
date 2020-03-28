@@ -714,7 +714,11 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     m_seiEncoder.initSEIGcmp(sei);
     seiMessages.push_back(sei);
   }
+#if JVET_SUBPIC_LEVEL_CFG
+  if (m_pcCfg->getSubpicureLevelInfoSEICfg().m_enabled)
+#else
   if (m_pcCfg->getSubpicureLevelInfoSEIEnabled())
+#endif
   {
     SEISubpicureLevelInfo *seiSubpicureLevelInfo = new SEISubpicureLevelInfo;
     m_seiEncoder.initSEISubpictureLevelInfo(seiSubpicureLevelInfo, sps);

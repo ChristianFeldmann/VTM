@@ -621,6 +621,27 @@ void SEIEncoder::initSEIContentColourVolume(SEIContentColourVolume *seiContentCo
 }
 void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps)
 {
+#if JVET_SUBPIC_LEVEL_CFG
+  const EncCfgParam::CfgSEISubpictureLevel &cfgSubPicLevel = m_pcCfg->getSubpicureLevelInfoSEICfg();
+
+  sei->m_numRefLevels = (int) cfgSubPicLevel.m_refLevels.size();
+  sei->m_refLevelIdc  = cfgSubPicLevel.m_refLevels;
+  sei->m_explicitFractionPresentFlag = cfgSubPicLevel.m_explicitFraction;
+  if (cfgSubPicLevel.m_explicitFraction)
+  {
+    CHECK (sps->getNumSubPics() != cfgSubPicLevel.m_numSubpictures, "Number of subpictures must be equal in SPS and subpicture level information SEI" );
+    sei->m_numSubpics = cfgSubPicLevel.m_numSubpictures;
+    sei->m_refLevelFraction.resize(sei->m_numRefLevels);
+    for (int level=0, cnt=0; level < sei->m_numRefLevels; level++)
+    {
+      sei->m_refLevelFraction[level].resize(sei->m_numSubpics);
+      for (int subpic=0; subpic<sei->m_numSubpics; subpic++)
+      {
+        sei->m_refLevelFraction[level][subpic] = cfgSubPicLevel.m_fractions[cnt++];
+      }
+    }
+  }
+#else
   // subpicture level information should be specified via config file
   // unfortunately the implementation of subpictures is still not available
   // TODO: implement config file parameters and intialization
@@ -636,6 +657,7 @@ void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SP
   sei->m_refLevelIdc[0] = Level::LEVEL4;
   sei->m_refLevelIdc[1] = Level::LEVEL8_5;
   sei->m_explicitFractionPresentFlag = false;
+#endif
 }
 
 

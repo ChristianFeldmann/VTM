@@ -39,6 +39,7 @@
 #define __ENCAPPCFG__
 
 #include "CommonLib/CommonDef.h"
+#include "EncoderLib/EncCfgParam.h"
 
 #include <map>
 template <class T1, class T2>
@@ -629,7 +630,11 @@ protected:
 #endif
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 
+#if JVET_SUBPIC_LEVEL_CFG
+  EncCfgParam::CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
+#else
   bool m_subpicureLevelInfoSEIEnabled;
+#endif
 
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;

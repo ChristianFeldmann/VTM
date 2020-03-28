@@ -244,15 +244,9 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     }
   }
   bool rateCnt = ( bitRate > 0 );
-#if JVET_P0118_HRD_ASPECTS
-  m_hrdParams.setGeneralNalHrdParametersPresentFlag(rateCnt);
-  m_hrdParams.setGeneralVclHrdParametersPresentFlag(rateCnt);
-  useSubCpbParams &= (m_hrdParams.getGeneralNalHrdParametersPresentFlag() || m_hrdParams.getGeneralVclHrdParametersPresentFlag());
-#else
   m_hrdParams.setNalHrdParametersPresentFlag( rateCnt );
   m_hrdParams.setVclHrdParametersPresentFlag( rateCnt );
   useSubCpbParams &= ( m_hrdParams.getNalHrdParametersPresentFlag() || m_hrdParams.getVclHrdParametersPresentFlag() );
-#endif
   m_hrdParams.setGeneralDecodingUnitHrdParamsPresentFlag( useSubCpbParams );
 
   if( m_hrdParams.getGeneralDecodingUnitHrdParamsPresentFlag() )
@@ -284,9 +278,6 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 #endif
 
   m_hrdParams.setCpbSizeDuScale( 6 );                                     // in units of 2^( 4 + 6 ) = 1,024 bit
-  #if JVET_P0118_HRD_ASPECTS
-  m_hrdParams.setHrdCpbCntMinus1(0);
-#endif
 
 
   // Note: parameters for all temporal layers are initialized with the same values
@@ -297,16 +288,10 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
 
   for( i = 0; i < MAX_TLAYER; i ++ )
   {
-#if JVET_P0118_HRD_ASPECTS
-    m_hrdParams.setFixedPicRateGeneralFlag(i, 1);
-    m_hrdParams.setElementDurationInTcMinus1(i, 0);
-    m_hrdParams.setLowDelayHrdFlag(i, 0);
-#else
     m_hrdParams.setFixedPicRateFlag( i, 1 );
     m_hrdParams.setPicDurationInTcMinus1( i, 0 );
     m_hrdParams.setLowDelayHrdFlag( i, 0 );
     m_hrdParams.setCpbCntMinus1( i, 0 );
-#endif
 
     //! \todo check for possible PTL violations
     // BitRate[ i ] = ( bit_rate_value_minus1[ i ] + 1 ) * 2^( 6 + bit_rate_scale )
@@ -324,11 +309,7 @@ void EncHRD::initHRDParameters (EncCfg* encCfg)
     duCpbSizeValue = bitrateValue;
     duBitRateValue = cpbSizeValue;
 
-#if JVET_P0118_HRD_ASPECTS
-    for (j = 0; j < (m_hrdParams.getHrdCpbCntMinus1() + 1); j++)
-#else
     for( j = 0; j < ( m_hrdParams.getCpbCntMinus1( i ) + 1 ); j ++ )
-#endif
     {
       m_hrdParams.setBitRateValueMinus1( i, j, 0, ( bitrateValue - 1 ) );
       m_hrdParams.setCpbSizeValueMinus1( i, j, 0, ( cpbSizeValue - 1 ) );

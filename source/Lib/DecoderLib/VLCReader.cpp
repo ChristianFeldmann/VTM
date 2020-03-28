@@ -533,9 +533,20 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #endif
     }
     pcPPS->initTiles();
-     
     // rectangular slice signalling
+#if JVET_Q0289_BUGFIX_RECT_SLICE_FLAG
+    if (pcPPS->getNumTiles() > 1)
+    {
+      READ_CODE(1, uiCode, "rect_slice_flag");
+    }
+    else
+    {
+      uiCode = 1;
+    }
+    pcPPS->setRectSliceFlag(uiCode == 1);
+#else
     READ_CODE(1, uiCode, "rect_slice_flag");                          pcPPS->setRectSliceFlag( uiCode == 1 );
+#endif
     if (pcPPS->getRectSliceFlag()) 
     {
       READ_FLAG(uiCode, "single_slice_per_subpic_flag");            pcPPS->setSingleSlicePerSubPicFlag(uiCode == 1);

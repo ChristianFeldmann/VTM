@@ -3888,12 +3888,12 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
         {
           if (referencingExistingAps)
           {
-            curTotalRate += 1 + 3 + lengthUvlc(ccAlfFilterCount - 1); // +1 for enable flag, +3 APS ID in slice header
+            curTotalRate += 1 + 3; // +1 for enable flag, +3 APS ID in slice header
           }
           else
           {
-            curTotalRate += getCoeffRateCcAlf(ccAlfFilterCoeff, ccAlfFilterIdxEnabled, ccAlfFilterCount, compID) + 1 + lengthUvlc(ccAlfFilterCount - 1)
-            + 7;   // +1 for the enable flag, +7 two 3-bit APS ID, one in slice header/one in APS, a 1-bit
+            curTotalRate += getCoeffRateCcAlf(ccAlfFilterCoeff, ccAlfFilterIdxEnabled, ccAlfFilterCount, compID) + 1
+            + 9;   // +1 for the enable flag, +7 two 3-bit APS ID, one in slice header/one in APS, a 1-bit
             // new filter flags (ignore shared cost such as other new-filter flags/NALU header/RBSP
             // terminating bit/byte alignment bits)
           }

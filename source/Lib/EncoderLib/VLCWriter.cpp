@@ -901,7 +901,6 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
 #else
     WRITE_FLAG( hrd->getFixedPicRateFlag( i ) ? 1 : 0,          "fixed_pic_rate_general_flag");
     bool fixedPixRateWithinCvsFlag = true;
-
     if( !hrd->getFixedPicRateFlag( i ) )
     {
       fixedPixRateWithinCvsFlag = hrd->getFixedPicRateWithinCvsFlag( i );
@@ -1573,9 +1572,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if JVET_P0118_HRD_ASPECTS
     if ((pcSPS->getMaxTLayers() - 1) > 0)
     {
-      WRITE_FLAG(pcSPS->getSubLayerCbpParamsPresentFlag(), "sps_sublayer_cpb_params_present_flag");
+      WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sps_sublayer_cpb_params_present_flag");
     }
-    uint32_t firstSubLayer = pcSPS->getSubLayerCbpParamsPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
+    uint32_t firstSubLayer = pcSPS->getSubLayerParametersPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
 #else
     WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sub_layer_cpb_parameters_present_flag");
 #endif

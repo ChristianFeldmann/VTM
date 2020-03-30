@@ -2655,11 +2655,7 @@ SPS::SPS()
 , m_MRL                       ( false )
 , m_MIP                       ( false )
 , m_GDREnabledFlag            ( true )
-#if JVET_P0118_HRD_ASPECTS
-, m_SubLayerCbpParamsPresentFlag(true)
-#else
 , m_SubLayerCbpParametersPresentFlag ( true )
-#endif
 , m_rprEnabledFlag            ( false )
 #if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
 , m_maxNumMergeCand(MRG_MAX_NUM_CANDS)

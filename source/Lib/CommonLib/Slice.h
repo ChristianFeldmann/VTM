@@ -947,13 +947,11 @@ private:
   uint32_t              m_hrdMaxTid[MAX_NUM_OLSS];
   uint32_t              m_olsHrdIdx[MAX_NUM_OLSS];
   GeneralHrdParams      m_generalHrdParams;
-
 #endif
 #if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
   std::vector<int>              m_olsDpbParamsIdx;
   std::vector<std::vector<int>> m_outputLayerIdInOls;
-
 public:
 #if JVET_P0118_HRD_ASPECTS
   std::vector<std::vector<OlsHrdParams>> m_olsHrdParams;
@@ -1501,11 +1499,7 @@ private:
   bool              m_MIP;
   ChromaQpMappingTable m_chromaQpMappingTable;
   bool m_GDREnabledFlag;
-#if JVET_P0118_HRD_ASPECTS
-  bool              m_SubLayerCbpParamsPresentFlag;
-#else
   bool              m_SubLayerCbpParametersPresentFlag;
-#endif
 
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
@@ -1924,13 +1918,8 @@ void                    setCCALFEnabledFlag( bool b )                           
   int       getMappedChromaQpValue(ComponentID compID, int qpVal)         const     { return m_chromaQpMappingTable.getMappedChromaQpValue(compID, qpVal); }
   void setGDREnabledFlag(bool flag) { m_GDREnabledFlag = flag; }
   bool getGDREnabledFlag() const { return m_GDREnabledFlag; }
-#if JVET_P0118_HRD_ASPECTS
-  void      setSubLayerCbpParamsPresentFlag(bool flag) { m_SubLayerCbpParamsPresentFlag = flag; }
-  bool      getSubLayerCbpParamsPresentFlag()                            const { return m_SubLayerCbpParamsPresentFlag; }
-#else
   void      setSubLayerParametersPresentFlag(bool flag)                             { m_SubLayerCbpParametersPresentFlag = flag; }
   bool      getSubLayerParametersPresentFlag()                            const     { return m_SubLayerCbpParametersPresentFlag;  }
-#endif
 
   bool      getRprEnabledFlag()                                           const     { return m_rprEnabledFlag; }
   void      setRprEnabledFlag( bool flag )                                          { m_rprEnabledFlag = flag; }

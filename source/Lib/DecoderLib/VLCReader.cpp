@@ -2389,14 +2389,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_P0118_HRD_ASPECTS
     if ((pcSPS->getMaxTLayers()-1) > 0)
     {
-      READ_FLAG(uiCode, "sps_sublayer_cpb_params_present_flag");  pcSPS->setSubLayerCbpParamsPresentFlag(uiCode);
+      READ_FLAG(uiCode, "sps_sublayer_cpb_params_present_flag");  pcSPS->setSubLayerParametersPresentFlag(uiCode);
     }
     else if((pcSPS->getMaxTLayers()-1) == 0)
     {
-      pcSPS->setSubLayerCbpParamsPresentFlag(0);
+      pcSPS->setSubLayerParametersPresentFlag(0);
     }
 
-    uint32_t firstSubLayer = pcSPS->getSubLayerCbpParamsPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
+    uint32_t firstSubLayer = pcSPS->getSubLayerParametersPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
     parseOlsHrdParameters(pcSPS->getGeneralHrdParameters(),pcSPS->getOlsHrdParameters(), firstSubLayer, pcSPS->getMaxTLayers() - 1);
 #else
     READ_FLAG( uiCode, "sub_layer_cpb_parameters_present_flag");  pcSPS->setSubLayerParametersPresentFlag(uiCode);

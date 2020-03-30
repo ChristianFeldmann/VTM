@@ -137,13 +137,8 @@ private:
   bool     m_nalHrdParametersPresentFlag;
   bool     m_vclHrdParametersPresentFlag;
 #endif
-#if JVET_P0118_HRD_ASPECTS
-  bool     m_generalDecodingUnitHrdParamsPresentFlag;
-#endif
   uint32_t m_tickDivisorMinus2;
-#if !JVET_P0118_HRD_ASPECTS
   bool     m_generalDecodingUnitHrdParamsPresentFlag;
-#endif
   uint32_t m_bitRateScale;
   uint32_t m_cpbSizeScale;
   uint32_t m_cpbSizeDuScale;
@@ -168,13 +163,8 @@ public:
     :m_nalHrdParametersPresentFlag       (false)
     ,m_vclHrdParametersPresentFlag       (false)
 #endif
-#if JVET_P0118_HRD_ASPECTS
-    , m_generalDecodingUnitHrdParamsPresentFlag(false)
-#endif
     ,m_tickDivisorMinus2                 (0)
-#if !JVET_P0118_HRD_ASPECTS
     ,m_generalDecodingUnitHrdParamsPresentFlag  (false)
-#endif
     ,m_bitRateScale                      (0)
     ,m_cpbSizeScale                      (0)
     ,m_cpbSizeDuScale                    (0)
@@ -211,19 +201,13 @@ public:
   bool      getVclHrdParametersPresentFlag( ) const                                    { return m_vclHrdParametersPresentFlag;                      }
 #endif
 
-#if JVET_P0118_HRD_ASPECTS
-  void      setGeneralDecodingUnitHrdParamsPresentFlag(bool flag) { m_generalDecodingUnitHrdParamsPresentFlag = flag; }
-  bool      getGeneralDecodingUnitHrdParamsPresentFlag() const { return m_generalDecodingUnitHrdParamsPresentFlag; }
-#endif
 
   void      setTickDivisorMinus2( uint32_t value )                                     { m_tickDivisorMinus2 = value;                               }
   uint32_t  getTickDivisorMinus2( ) const                                              { return m_tickDivisorMinus2;                                }
 
 
-#if !JVET_P0118_HRD_ASPECTS
   void      setGeneralDecodingUnitHrdParamsPresentFlag( bool flag)                     { m_generalDecodingUnitHrdParamsPresentFlag = flag;                 }
   bool      getGeneralDecodingUnitHrdParamsPresentFlag( ) const                        { return m_generalDecodingUnitHrdParamsPresentFlag;                 }
-#endif
 
   void      setBitRateScale( uint32_t value )                                          { m_bitRateScale = value;                                    }
   uint32_t  getBitRateScale( ) const                                                   { return m_bitRateScale;                                     }
@@ -248,13 +232,11 @@ public:
   void      setPicDurationInTcMinus1( int layer, uint32_t value )                      { m_HRD[layer].picDurationInTcMinus1 = value;                }
   uint32_t  getPicDurationInTcMinus1( int layer ) const                                { return m_HRD[layer].picDurationInTcMinus1;                 }
 
-
   void      setLowDelayHrdFlag( int layer, bool flag )                                 { m_HRD[layer].lowDelayHrdFlag = flag;                       }
   bool      getLowDelayHrdFlag( int layer ) const                                      { return m_HRD[layer].lowDelayHrdFlag;                       }
 
   void      setCpbCntMinus1( int layer, uint32_t value )                               { m_HRD[layer].cpbCntMinus1 = value;                         }
   uint32_t  getCpbCntMinus1( int layer ) const                                         { return m_HRD[layer].cpbCntMinus1;                          }
-
 
   void      setBitRateValueMinus1( int layer, int cpbcnt, int nalOrVcl, uint32_t value )   { m_HRD[layer].bitRateValueMinus1[cpbcnt][nalOrVcl] = value; }
   uint32_t  getBitRateValueMinus1( int layer, int cpbcnt, int nalOrVcl ) const             { return m_HRD[layer].bitRateValueMinus1[cpbcnt][nalOrVcl];  }

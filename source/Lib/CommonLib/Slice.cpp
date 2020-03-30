@@ -2029,6 +2029,11 @@ VPS::VPS()
   , m_vpsNumPtls (1)
 #endif
   , m_vpsExtensionFlag()
+#if JVET_P0118_HRD_ASPECTS
+  , m_vpsGeneralHrdParamsPresentFlag(false)
+  , m_vpsSublayerCpbParamsPresentFlag(false)
+  , m_numOlsHrdParamsMinus1(0)
+#endif
 #if JVET_Q0814_DPB
   , m_totalNumOLSs( 0 )
   , m_numDpbParams( 0 )
@@ -2060,6 +2065,10 @@ VPS::VPS()
       m_ptPresentFlag[i] = 0;
     m_ptlMaxTemporalId[i] = m_vpsMaxSubLayers - 1;
     m_olsPtlIdx[i] = 0;
+#endif
+#if JVET_P0118_HRD_ASPECTS
+    m_hrdMaxTid[i] = m_vpsMaxSubLayers - 1;
+    m_olsHrdIdx[i] = 0;
 #endif
   }
 }
@@ -2660,7 +2669,11 @@ SPS::SPS()
 #endif
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
+#if JVET_P0118_HRD_ASPECTS
+, m_generalHrdParametersPresentFlag(false)
+#else
 , m_hrdParametersPresentFlag  (false)
+#endif
 #if JVET_Q0042_VUI
 , m_fieldSeqFlag              (false)
 #endif

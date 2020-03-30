@@ -953,12 +953,22 @@ private:
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
-
+#if JVET_P0118_HRD_ASPECTS
+  bool                  m_vpsGeneralHrdParamsPresentFlag;
+  bool                  m_vpsSublayerCpbParamsPresentFlag;
+  uint32_t              m_numOlsHrdParamsMinus1;
+  uint32_t              m_hrdMaxTid[MAX_NUM_OLSS];
+  uint32_t              m_olsHrdIdx[MAX_NUM_OLSS];
+  GeneralHrdParams      m_generalHrdParams;
+#endif
 #if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
   std::vector<int>              m_olsDpbParamsIdx;
   std::vector<std::vector<int>> m_outputLayerIdInOls;
 public:
+#if JVET_P0118_HRD_ASPECTS
+  std::vector<std::vector<OlsHrdParams>> m_olsHrdParams;
+#endif
   int                           m_totalNumOLSs;
   int                           m_numDpbParams;
   std::vector<DpbParameters>    m_dpbParameters;
@@ -1043,7 +1053,25 @@ public:
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
+#if JVET_P0118_HRD_ASPECTS
+  bool              getVPSGeneralHrdParamsPresentFlag() const { return m_vpsGeneralHrdParamsPresentFlag; }
+  void              setVPSGeneralHrdParamsPresentFlag(bool t) { m_vpsGeneralHrdParamsPresentFlag = t; }
+  bool              getVPSSublayerCpbParamsPresentFlag() const { return m_vpsSublayerCpbParamsPresentFlag; }
+  void              setVPSSublayerCpbParamsPresentFlag(bool t) { m_vpsSublayerCpbParamsPresentFlag = t; }
+  uint32_t          getNumOlsHrdParamsMinus1()                                   const { return m_numOlsHrdParamsMinus1; }
+  void              setNumOlsHrdParamsMinus1(uint32_t val) { m_numOlsHrdParamsMinus1 = val; }
 
+  uint32_t          getHrdMaxTid(int olsIdx)                   const { return m_hrdMaxTid[olsIdx]; }
+  void              setHrdMaxTid(int olsIdx, uint32_t val)           { m_hrdMaxTid[olsIdx] = val; }
+  uint32_t          getOlsHrdIdx(int olsIdx)                   const { return m_olsHrdIdx[olsIdx]; }
+  void              setOlsHrdIdx(int olsIdx, uint32_t val)           { m_olsHrdIdx[olsIdx] = val; }  
+
+  OlsHrdParams*          getOlsHrdParameters(int olsIdx) { return &m_olsHrdParams[olsIdx][0]; }
+  const OlsHrdParams*    getOlsHrdParameters(int olsIdx) const { return &m_olsHrdParams[olsIdx][0]; }
+
+  GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
+  const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
+#endif
 #if JVET_P0288_PIC_OUTPUT
   int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
@@ -1420,9 +1448,20 @@ private:
   uint32_t          m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 
 
+#if !JVET_P0118_HRD_ASPECTS
   TimingInfo        m_timingInfo;
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  bool              m_generalHrdParametersPresentFlag;
+#else
   bool              m_hrdParametersPresentFlag;
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  GeneralHrdParams m_generalHrdParams;
+  OlsHrdParams     m_olsHrdParams[MAX_TLAYER];
+#else
   HRDParameters     m_hrdParameters;
+#endif
 
 #if JVET_Q0042_VUI
   bool              m_fieldSeqFlag;
@@ -1780,12 +1819,27 @@ void                    setCCALFEnabledFlag( bool b )                           
 #endif
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
+#if !JVET_P0118_HRD_ASPECTS
   TimingInfo*             getTimingInfo()                                                                 { return &m_timingInfo; }
   const TimingInfo*       getTimingInfo() const                                                           { return &m_timingInfo; }
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  bool                    getGeneralHrdParametersPresentFlag() const { return m_generalHrdParametersPresentFlag; }
+  void                    setGeneralHrdParametersPresentFlag(bool b) { m_generalHrdParametersPresentFlag = b; }
+#else
   bool                    getHrdParametersPresentFlag() const                                             { return m_hrdParametersPresentFlag; }
   void                    setHrdParametersPresentFlag(bool b)                                             { m_hrdParametersPresentFlag = b; }
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  OlsHrdParams*          getOlsHrdParameters() { return &m_olsHrdParams[0]; }
+  const OlsHrdParams*    getOlsHrdParameters() const { return &m_olsHrdParams[0]; }
+
+  GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
+  const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
+#else
   HRDParameters*          getHrdParameters()                                                              { return &m_hrdParameters; }
   const HRDParameters*    getHrdParameters() const                                                        { return &m_hrdParameters; }
+#endif
 #if JVET_Q0042_VUI
   bool                    getFieldSeqFlag() const                                                         { return m_fieldSeqFlag;                         }
   void                    setFieldSeqFlag(bool i)                                                         { m_fieldSeqFlag = i;                            }

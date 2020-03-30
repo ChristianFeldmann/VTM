@@ -56,6 +56,8 @@
 
 #define JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT       1 //JVET-Q0157: subpicture reordering constraint
 
+#define JVET_P0118_HRD_ASPECTS                            1 //JVET-P0118: HRD aspects
+
 #define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 
 #define JVET_Q0289_BUGFIX_RECT_SLICE_FLAG                 1 //JVET-Q0289: If NumTilesInPic is equal to 1, don't signal the rect_slice_flag and infer its value to be 1.

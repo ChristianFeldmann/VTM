@@ -282,6 +282,10 @@ void FDReader::parseFillerData(InputBitstream* bs, uint32_t &fdSize)
 // ====================================================================================================================
 
 HLSyntaxReader::HLSyntaxReader()
+#if JVET_P0118_HRD_ASPECTS
+  : m_isFirstGeneralHrd(true)
+  , m_prevGeneralHrdParams(NULL)
+#endif
 {
 }
 
@@ -1308,6 +1312,62 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 }
 #endif
 
+#if JVET_P0118_HRD_ASPECTS
+void HLSyntaxReader::parseGeneralHrdParameters(GeneralHrdParams *hrd)
+{
+  uint32_t  symbol;
+  READ_CODE(32, symbol, "num_units_in_tick");                hrd->setNumUnitsInTick(symbol);
+  READ_CODE(32, symbol, "time_scale");                       hrd->setTimeScale(symbol);
+  READ_FLAG(symbol, "general_nal_hrd_parameters_present_flag");           hrd->setGeneralNalHrdParametersPresentFlag(symbol == 1 ? true : false);
+  READ_FLAG(symbol, "general_vcl_hrd_parameters_present_flag");           hrd->setGeneralVclHrdParametersPresentFlag(symbol == 1 ? true : false);
+  CHECK((hrd->getGeneralNalHrdParametersPresentFlag() == 0) && (hrd->getGeneralVclHrdParametersPresentFlag() == 0), "general_nal_hrd_params_present_flag and general_vcl_hrd_params_present_flag in each general_hrd_parameters( ) syntax structure shall not be both equal to 0.");
+  READ_FLAG(symbol, "general_same_pic_timing_in_all_ols_flag");           hrd->setGeneralSamPicTimingInAllOlsFlag(symbol == 1 ? true : false);
+  READ_FLAG(symbol, "general_decoding_unit_hrd_params_present_flag");     hrd->setGeneralDecodingUnitHrdParamsPresentFlag(symbol == 1 ? true : false);
+  if (hrd->getGeneralDecodingUnitHrdParamsPresentFlag())
+  {
+    READ_CODE(8, symbol, "tick_divisor_minus2");                        hrd->setTickDivisorMinus2(symbol);
+  }
+  READ_CODE(4, symbol, "bit_rate_scale");                       hrd->setBitRateScale(symbol);
+  READ_CODE(4, symbol, "cpb_size_scale");                       hrd->setCpbSizeScale(symbol);
+  if (hrd->getGeneralDecodingUnitHrdParamsPresentFlag())
+  {
+    READ_CODE(4, symbol, "cpb_size_du_scale");                  hrd->setCpbSizeDuScale(symbol);
+  }
+  READ_UVLC(symbol, "hrd_cpb_cnt_minus1");                      hrd->setHrdCpbCntMinus1(symbol);
+  CHECK(symbol > 31,"The value of hrd_cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive");
+  if (!m_isFirstGeneralHrd)
+  {
+    checkGeneralHrdParametersIdentical(hrd);
+  }
+  m_prevGeneralHrdParams = hrd;
+  m_isFirstGeneralHrd = false;
+}
+void HLSyntaxReader::checkGeneralHrdParametersIdentical(GeneralHrdParams *generalHrd)
+{
+  bool isIdentical = true;
+  if ( (generalHrd->getNumUnitsInTick()!= m_prevGeneralHrdParams->getNumUnitsInTick())
+    || (generalHrd->getTimeScale()!= m_prevGeneralHrdParams->getTimeScale())
+    || (generalHrd->getGeneralNalHrdParametersPresentFlag()!= m_prevGeneralHrdParams->getGeneralNalHrdParametersPresentFlag())
+    || (generalHrd->getGeneralVclHrdParametersPresentFlag()!= m_prevGeneralHrdParams->getGeneralVclHrdParametersPresentFlag())
+    || (generalHrd->getGeneralSamPicTimingInAllOlsFlag()!= m_prevGeneralHrdParams->getGeneralSamPicTimingInAllOlsFlag())
+    || (generalHrd->getGeneralDecodingUnitHrdParamsPresentFlag()!= m_prevGeneralHrdParams->getGeneralDecodingUnitHrdParamsPresentFlag())
+    || (generalHrd->getTickDivisorMinus2()!= m_prevGeneralHrdParams->getTickDivisorMinus2())
+    || (generalHrd->getBitRateScale()!= m_prevGeneralHrdParams->getBitRateScale())
+    || (generalHrd->getCpbSizeScale()!= m_prevGeneralHrdParams->getCpbSizeScale())
+    || (generalHrd->getCpbSizeDuScale()!= m_prevGeneralHrdParams->getCpbSizeDuScale())
+    || (generalHrd->getHrdCpbCntMinus1()!= m_prevGeneralHrdParams->getHrdCpbCntMinus1())
+    )
+  {
+    isIdentical = false;
+  }
+  CHECK(!isIdentical, "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
+}
+#endif
+#if JVET_P0118_HRD_ASPECTS
+void HLSyntaxReader::parseOlsHrdParameters(GeneralHrdParams * generalHrd, OlsHrdParams *olsHrd, uint32_t firstSubLayer, uint32_t maxNumSubLayersMinus1)
+{
+  uint32_t  symbol;
+#else
 void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLayer, uint32_t maxNumSubLayersMinus1)
 {
   uint32_t  symbol;
@@ -1325,9 +1385,33 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
   {
     READ_CODE( 4, symbol, "cpb_size_du_scale" );                  hrd->setCpbSizeDuScale( symbol );
   }
+#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {
+#if JVET_P0118_HRD_ASPECTS
+    OlsHrdParams *hrd = &(olsHrd[i]);
+    READ_FLAG(symbol, "fixed_pic_rate_general_flag");                     hrd->setFixedPicRateGeneralFlag(symbol == 1 ? true : false);
+    if (!hrd->getFixedPicRateGeneralFlag())
+    {
+      READ_FLAG(symbol, "fixed_pic_rate_within_cvs_flag");                hrd->setFixedPicRateWithinCvsFlag(symbol == 1 ? true : false);
+    }
+    else
+    {
+      hrd->setFixedPicRateWithinCvsFlag(true);
+    }
+
+    hrd->setLowDelayHrdFlag(false); // Inferred to be 0 when not present
+
+    if (hrd->getFixedPicRateWithinCvsFlag())
+    {
+      READ_UVLC(symbol, "elemental_duration_in_tc_minus1");             hrd->setElementDurationInTcMinus1(symbol);
+    }
+    else if(generalHrd->getHrdCpbCntMinus1() == 0)
+    {
+      READ_FLAG(symbol, "low_delay_hrd_flag");                      hrd->setLowDelayHrdFlag(symbol == 1 ? true : false);
+    }
+#else
     READ_FLAG( symbol, "fixed_pic_rate_general_flag" );                     hrd->setFixedPicRateFlag( i, symbol == 1 ? true : false  );
     if( !hrd->getFixedPicRateFlag( i ) )
     {
@@ -1353,9 +1437,18 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
     {
       READ_UVLC( symbol, "cpb_cnt_minus1" );                          hrd->setCpbCntMinus1( i, symbol );
     }
+#endif
 
     for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
+#if JVET_P0118_HRD_ASPECTS
+      if (((nalOrVcl == 0) && (generalHrd->getGeneralNalHrdParametersPresentFlag())) || ((nalOrVcl == 1) && (generalHrd->getGeneralVclHrdParametersPresentFlag())))
+      {
+        for (int j = 0; j <= (generalHrd->getHrdCpbCntMinus1()); j++)
+        {
+          READ_UVLC(symbol, "bit_rate_value_minus1");             hrd->setBitRateValueMinus1(j, nalOrVcl, symbol);
+          READ_UVLC(symbol, "cpb_size_value_minus1");             hrd->setCpbSizeValueMinus1(j, nalOrVcl, symbol);
+#else
       if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
           ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
       {
@@ -1363,26 +1456,68 @@ void HLSyntaxReader::parseHrdParameters(HRDParameters *hrd, uint32_t firstSubLay
         {
           READ_UVLC( symbol, "bit_rate_value_minus1" );             hrd->setBitRateValueMinus1( i, j, nalOrVcl, symbol );
           READ_UVLC( symbol, "cpb_size_value_minus1" );             hrd->setCpbSizeValueMinus1( i, j, nalOrVcl, symbol );
+#endif
+#if JVET_P0118_HRD_ASPECTS
+          if (generalHrd->getGeneralDecodingUnitHrdParamsPresentFlag())
+          {
+            READ_UVLC(symbol, "bit_rate_du_value_minus1");             hrd->setDuBitRateValueMinus1(j, nalOrVcl, symbol);
+            READ_UVLC(symbol, "cpb_size_du_value_minus1");             hrd->setDuCpbSizeValueMinus1(j, nalOrVcl, symbol);
+          }
+          READ_FLAG(symbol, "cbr_flag");                          hrd->setCbrFlag(j, nalOrVcl, symbol == 1 ? true : false);
+#else
           READ_FLAG( symbol, "cbr_flag" );                          hrd->setCbrFlag( i, j, nalOrVcl, symbol == 1 ? true : false  );
+#endif
         }
       }
     }
   }
   for (int i = 0; i < firstSubLayer; i++)
   {
+#if JVET_P0118_HRD_ASPECTS
+    OlsHrdParams* hrdHighestTLayer = &(olsHrd[maxNumSubLayersMinus1]);
+    OlsHrdParams* hrdTemp = &(olsHrd[i]);
+    bool tempFlag = hrdHighestTLayer->getFixedPicRateGeneralFlag();
+    hrdTemp->setFixedPicRateGeneralFlag(tempFlag);
+    tempFlag = hrdHighestTLayer->getFixedPicRateWithinCvsFlag();
+    hrdTemp->setFixedPicRateWithinCvsFlag(tempFlag);
+    uint32_t tempElementDurationInTcMinus1 = hrdHighestTLayer->getElementDurationInTcMinus1();
+    hrdTemp->setElementDurationInTcMinus1(tempElementDurationInTcMinus1);
+#endif
     for (int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl++)
     {
+#if JVET_P0118_HRD_ASPECTS
+      if (((nalOrVcl == 0) && (generalHrd->getGeneralNalHrdParametersPresentFlag())) || ((nalOrVcl == 1) && (generalHrd->getGeneralVclHrdParametersPresentFlag())))
+      {
+        for (int j = 0; j <= (generalHrd->getHrdCpbCntMinus1()); j++)
+#else
       if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
           ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
       {
         for (int j = 0; j <= (hrd->getCpbCntMinus1(i)); j++)
+#endif
         {
+#if JVET_P0118_HRD_ASPECTS
+          uint32_t bitRate = hrdHighestTLayer->getBitRateValueMinus1(j, nalOrVcl);
+          hrdTemp->setBitRateValueMinus1(j, nalOrVcl, bitRate);
+          uint32_t cpbSize = hrdHighestTLayer->getCpbSizeValueMinus1(j, nalOrVcl);
+          hrdTemp->setCpbSizeValueMinus1(j, nalOrVcl, cpbSize);
+          if (generalHrd->getGeneralDecodingUnitHrdParamsPresentFlag())
+          {
+            uint32_t bitRateDu = hrdHighestTLayer->getDuBitRateValueMinus1(j, nalOrVcl);
+            hrdTemp->setDuBitRateValueMinus1(j, nalOrVcl, bitRateDu);
+            uint32_t cpbSizeDu = hrdHighestTLayer->getDuCpbSizeValueMinus1(j, nalOrVcl);
+            hrdTemp->setDuCpbSizeValueMinus1(j, nalOrVcl, cpbSizeDu);
+          }
+          bool flag = hrdHighestTLayer->getCbrFlag(j, nalOrVcl);
+          hrdTemp->setCbrFlag(j, nalOrVcl, flag);
+#else
           uint32_t bitRate = hrd->getBitRateValueMinus1(maxNumSubLayersMinus1, j, nalOrVcl);
           hrd->setBitRateValueMinus1(i, j, nalOrVcl, bitRate);
           uint32_t cpbSize = hrd->getCpbSizeValueMinus1(maxNumSubLayersMinus1, j, nalOrVcl);
           hrd->setCpbSizeValueMinus1(i, j, nalOrVcl, cpbSize);
           bool flag = hrd->getCbrFlag(maxNumSubLayersMinus1, j, nalOrVcl);
           hrd->setCbrFlag(i, j, nalOrVcl, flag);
+#endif
         }
       }
     }
@@ -2295,13 +2430,40 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
 #endif
+#if !JVET_P0118_HRD_ASPECTS
   TimingInfo *timingInfo = pcSPS->getTimingInfo();
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  READ_FLAG(uiCode, "sps_general_hrd_params_present_flag");        pcSPS->setGeneralHrdParametersPresentFlag(uiCode);
+#else
   READ_FLAG(     uiCode, "general_hrd_parameters_present_flag");        pcSPS->setHrdParametersPresentFlag(uiCode);
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  if (pcSPS->getGeneralHrdParametersPresentFlag())
+#else
   if( pcSPS->getHrdParametersPresentFlag() )
+#endif
   {
+#if !JVET_P0118_HRD_ASPECTS
     READ_CODE( 32, uiCode, "num_units_in_tick");                timingInfo->setNumUnitsInTick             (uiCode);
     READ_CODE( 32, uiCode, "time_scale");                       timingInfo->setTimeScale                  (uiCode);
+#endif
+#if JVET_P0118_HRD_ASPECTS
+    parseGeneralHrdParameters(pcSPS->getGeneralHrdParameters());
+#endif
+#if JVET_P0118_HRD_ASPECTS
+    if ((pcSPS->getMaxTLayers()-1) > 0)
+    {
+      READ_FLAG(uiCode, "sps_sublayer_cpb_params_present_flag");  pcSPS->setSubLayerParametersPresentFlag(uiCode);
+    }
+    else if((pcSPS->getMaxTLayers()-1) == 0)
+    {
+      pcSPS->setSubLayerParametersPresentFlag(0);
+    }
 
+    uint32_t firstSubLayer = pcSPS->getSubLayerParametersPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
+    parseOlsHrdParameters(pcSPS->getGeneralHrdParameters(),pcSPS->getOlsHrdParameters(), firstSubLayer, pcSPS->getMaxTLayers() - 1);
+#else
     READ_FLAG( uiCode, "sub_layer_cpb_parameters_present_flag");  pcSPS->setSubLayerParametersPresentFlag(uiCode);
     if (pcSPS->getSubLayerParametersPresentFlag())
     {
@@ -2311,6 +2473,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     {
       parseHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
     }
+#endif
   }
 #if JVET_P0117_PTL_SCALABILITY
   }
@@ -2673,6 +2836,69 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       if( pcVPS->m_numDpbParams > 1 )
       {
         READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );
+      }
+    }
+  }
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  if (!pcVPS->getEachLayerIsAnOlsFlag())
+  {
+    READ_FLAG(uiCode, "vps_general_hrd_params_present_flag");  pcVPS->setVPSGeneralHrdParamsPresentFlag(uiCode);
+  }
+  if (pcVPS->getVPSGeneralHrdParamsPresentFlag())
+  {
+    parseGeneralHrdParameters(pcVPS->getGeneralHrdParameters());
+    if ((pcVPS->getMaxSubLayers() - 1) > 0)
+    {
+      READ_FLAG(uiCode, "vps_sublayer_cpb_params_present_flag");  pcVPS->setVPSSublayerCpbParamsPresentFlag(uiCode);
+    }
+    else
+    {
+      pcVPS->setVPSSublayerCpbParamsPresentFlag(0);
+    }
+
+    READ_UVLC(uiCode, "num_ols_hrd_params_minus1"); pcVPS->setNumOlsHrdParamsMinus1(uiCode);
+    CHECK(uiCode >= pcVPS->getTotalNumOLSs(),"The value of num_ols_hrd_params_minus1 shall be in the range of 0 to TotalNumOlss - 1, inclusive");
+    pcVPS->m_olsHrdParams.clear();
+    pcVPS->m_olsHrdParams.resize(pcVPS->getNumOlsHrdParamsMinus1(), std::vector<OlsHrdParams>(pcVPS->getMaxSubLayers()));
+    for (int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++)
+    {
+      if (((pcVPS->getMaxSubLayers() - 1) > 0) && (!pcVPS->getAllLayersSameNumSublayersFlag()))
+      {
+        READ_CODE(3, uiCode, "hrd_max_tid[i]");  pcVPS->setHrdMaxTid(i, uiCode);
+      }
+      else
+      {
+        if (pcVPS->getMaxSubLayers() == 1)
+        {
+          pcVPS->setHrdMaxTid(i, 0);
+        }
+        else if ((pcVPS->getMaxSubLayers() >= 1)&&(pcVPS->getAllLayersSameNumSublayersFlag()))
+        {
+          pcVPS->setHrdMaxTid(i, pcVPS->getMaxSubLayers()- 1);
+        }
+        
+      }
+      uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);
+      parseOlsHrdParameters(pcVPS->getGeneralHrdParameters(),pcVPS->getOlsHrdParameters(i), firstSublayer, pcVPS->getHrdMaxTid(i));
+    }
+    for (int i = 1; i < pcVPS->getTotalNumOLSs(); i++)
+    {
+      if (((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->getTotalNumOLSs()) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
+      {
+        if (pcVPS->m_numLayersInOls[i] > 1)
+        {
+          READ_UVLC(uiCode, "ols_hrd_idx[i]"); pcVPS->setOlsHrdIdx(i, uiCode);
+          CHECK(uiCode > pcVPS->getNumOlsHrdParamsMinus1(), "The value of ols_hrd_idx[[ i ] shall be in the range of 0 to num_ols_hrd_params_minus1, inclusive.");
+        }
+      }
+      else if ((pcVPS->getNumOlsHrdParamsMinus1() + 1) == pcVPS->getTotalNumOLSs())
+      {
+        pcVPS->setOlsHrdIdx(i, i);
+      }
+      else if ((pcVPS->m_numLayersInOls[i] > 1) && (pcVPS->getNumOlsHrdParamsMinus1() == 0))
+      {
+        pcVPS->setOlsHrdIdx(i, 0);
       }
     }
   }

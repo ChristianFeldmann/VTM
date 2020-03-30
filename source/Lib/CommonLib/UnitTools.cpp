@@ -680,11 +680,9 @@ int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, co
     return ( int ) dirMode;
   }
 
-  CodingStructure& cs           = *tu.cs;
-  const CompArea&  area         = tu.blocks[ compID ];
-  PelBuf           pred         = cs.getPredBuf( area );
-  int              width        = int( pred.width );
-  int              height       = int( pred.height );
+  const CompArea&  area         = tu.cu->ispMode && isLuma(compID) ? tu.cu->blocks[compID] : tu.blocks[ compID ];
+  int              width        = area.width;
+  int              height       = area.height;
   int              modeShift[ ] = { 0, 6, 10, 12, 14, 15 };
   int              deltaSize    = abs( floorLog2( width ) - floorLog2( height ) );
   int              predMode     = dirMode;

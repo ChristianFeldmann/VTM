@@ -2552,6 +2552,13 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_inputBitDepth[CHANNEL_TYPE_LUMA  ] < 8,                                   "InputBitDepth must be at least 8" );
   xConfirmPara( m_inputBitDepth[CHANNEL_TYPE_CHROMA] < 8,                                   "InputBitDepthC must be at least 8" );
 
+  if( (m_internalBitDepth[CHANNEL_TYPE_LUMA] < m_inputBitDepth[CHANNEL_TYPE_LUMA]) || (m_internalBitDepth[CHANNEL_TYPE_CHROMA] < m_inputBitDepth[CHANNEL_TYPE_CHROMA]) )
+  {
+      msg(WARNING, "*****************************************************************************\n");
+      msg(WARNING, "** WARNING: InternalBitDepth is set to the lower value than InputBitDepth! **\n");
+      msg(WARNING, "*****************************************************************************\n");
+  }
+
 #if !RExt__HIGH_BIT_DEPTH_SUPPORT
   if (m_extendedPrecisionProcessingFlag)
   {

@@ -1573,11 +1573,7 @@ DepQuant::~DepQuant()
 
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
-  if ( tu.cs->picHeader->getDepQuantEnabledFlag() && !(tu.mtsIdx[compID] == MTS_SKIP && !tu.cs->slice->getTSResidualCodingDisabledFlag()))
-#else
   if ( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP) )
-#endif
   {
     //===== scaling matrix ====
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
@@ -1611,11 +1607,7 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 
 void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const ComponentID &compID, const QpParam &cQP )
 {
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
-  if( tu.cs->picHeader->getDepQuantEnabledFlag() && !(tu.mtsIdx[compID] == MTS_SKIP && !tu.cs->slice->getTSResidualCodingDisabledFlag()))
-#else
   if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP))
-#endif
   {
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
     const int         qpPer           = qpDQ / 6;

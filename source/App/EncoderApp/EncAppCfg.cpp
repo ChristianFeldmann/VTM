@@ -2556,6 +2556,7 @@ bool EncAppCfg::xCheckParameter()
   {
       msg(WARNING, "*****************************************************************************\n");
       msg(WARNING, "** WARNING: InternalBitDepth is set to the lower value than InputBitDepth! **\n");
+      msg(WARNING, "**          min_qp_prime_ts_minus4 will be clipped to 0 at the low end!    **\n");
       msg(WARNING, "*****************************************************************************\n");
   }
 

@@ -222,11 +222,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   m_AUWriterIf = auWriterIf;
 
 #if ENABLING_MULTI_SPS
-  SPS &sps0 = *(m_spsMap.allocatePS(m_layerId)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
+  SPS &sps0 = *(m_spsMap.allocatePS( m_vps->getGeneralLayerIdx( m_layerId ) )); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
 #else
   SPS &sps0 = *(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
 #endif
-  PPS &pps0 = *( m_ppsMap.allocatePS( m_layerId ) );
+  PPS &pps0 = *( m_ppsMap.allocatePS( m_vps->getGeneralLayerIdx( m_layerId ) ) );
   APS &aps0 = *( m_apsMap.allocatePS( SCALING_LIST_APS ) );
   aps0.setAPSId( 0 );
   aps0.setAPSType( SCALING_LIST_APS );
@@ -706,7 +706,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     if( m_cVPS.getMaxLayers() > 1 )
 #endif
     {
-      ppsID = m_layerId;
+      ppsID = m_vps->getGeneralLayerIdx( m_layerId );
     }
 
     xGetNewPicBuffer( rcListPicYuvRecOut, pcPicCurr, ppsID );

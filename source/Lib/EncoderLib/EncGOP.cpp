@@ -5345,7 +5345,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
       // loop through all pictures in the reference picture buffer
       PicList::iterator iterPic = rcListPic.begin();
 
-      while( iterPic != rcListPic.end() )
+      while( iterPic != rcListPic.end() && ii < numOfRefPic )
       {
         rpcPic = *( iterPic++ );
         int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
@@ -5355,7 +5355,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
           pLocalRPL0->setRefPicIdentifier( refPicIdxL0, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
           refPicIdxL0++;
           numOfILRPL0++;
-          break;
+          ii++;
         }
       }
     }
@@ -5441,7 +5441,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
       // loop through all pictures in the reference picture buffer
       PicList::iterator iterPic = rcListPic.begin();
 
-      while( iterPic != rcListPic.end() )
+      while( iterPic != rcListPic.end() && ii < numOfRefPic )
       {
         rpcPic = *( iterPic++ );
         int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
@@ -5451,7 +5451,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
           pLocalRPL1->setRefPicIdentifier( refPicIdxL1, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
           refPicIdxL1++;
           numOfILRPL1++;
-          break;
+          ii++;
         }
       }
     }

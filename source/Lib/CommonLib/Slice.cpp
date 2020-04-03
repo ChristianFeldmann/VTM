@@ -503,9 +503,9 @@ void Slice::constructRefPicList(PicList& rcListPic)
     {
       CHECK( m_pRPL0->getInterLayerRefPicIdx( ii ) == NOT_VALID, "Wrong ILRP index" );
 
-      int refLayerIdx = m_pcPic->cs->vps->getDirectRefLayerIdx( layerIdx, m_pRPL0->getInterLayerRefPicIdx( ii ) );
+      int refLayerId = m_pcPic->cs->vps->getLayerId( m_pcPic->cs->vps->getDirectRefLayerIdx( layerIdx, m_pRPL0->getInterLayerRefPicIdx( ii ) ) );
 
-      pcRefPic = xGetRefPic( rcListPic, getPOC(), refLayerIdx );
+      pcRefPic = xGetRefPic( rcListPic, getPOC(), refLayerId );
       pcRefPic->longTerm = true;
     }
     else
@@ -539,9 +539,9 @@ void Slice::constructRefPicList(PicList& rcListPic)
     {
       CHECK( m_pRPL1->getInterLayerRefPicIdx( ii ) == NOT_VALID, "Wrong ILRP index" );
 
-      int refLayerIdx = m_pcPic->cs->vps->getDirectRefLayerIdx( layerIdx, m_pRPL1->getInterLayerRefPicIdx( ii ) );
+      int refLayerId = m_pcPic->cs->vps->getLayerId( m_pcPic->cs->vps->getDirectRefLayerIdx( layerIdx, m_pRPL1->getInterLayerRefPicIdx( ii ) ) );
 
-      pcRefPic = xGetRefPic( rcListPic, getPOC(), refLayerIdx );
+      pcRefPic = xGetRefPic( rcListPic, getPOC(), refLayerId );
       pcRefPic->longTerm = true;
     }
     else
@@ -4082,10 +4082,12 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
       else
       {
         int poc = m_apcRefPicList[refList][rIdx]->getPOC();
+        int layerId = m_apcRefPicList[refList][rIdx]->layerId;
+
         // check whether the reference picture has already been scaled
         for( i = 0; i < MAX_NUM_REF; i++ )
         {
-          if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc )
+          if( scaledRefPic[i] != nullptr && scaledRefPic[i]->poc == poc && scaledRefPic[i]->layerId == layerId )
           {
             break;
           }
@@ -4120,9 +4122,9 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
 
             scaledRefPic[j]->finalInit( m_pcPic->cs->vps, *sps, *pps, picHeader, apss, lmcsAps, scalingListAps );
 
-            scaledRefPic[j]->poc = -1;
+            scaledRefPic[j]->poc = NOT_VALID;
 
-            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder, m_pcPic->layerId );
+            scaledRefPic[j]->create( sps->getChromaFormatIdc(), Size( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples() ), sps->getMaxCUWidth(), sps->getMaxCUWidth() + 16, isDecoder, layerId );
           }
 
           scaledRefPic[j]->poc = poc;

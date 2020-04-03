@@ -69,6 +69,8 @@ class DecLib
 {
 private:
   int                     m_iMaxRefPicNum;
+  bool m_isFirstGeneralHrd;
+  GeneralHrdParams        m_prevGeneralHrdParams;
 
   NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
 #if JVET_P0978_RPL_RESTRICTIONS
@@ -274,6 +276,8 @@ protected:
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
   void  xActivateParameterSets( const int layerId );
   void  xCheckParameterSetConstraints( const int layerId );
+  void  xCheckGeneralHrdParametersIdentical(const GeneralHrdParams* generalHrdParams1, const GeneralHrdParams* generalHrdParams2);
+  void  xCopyGeneralHrdParameters(GeneralHrdParams* generalHrdParamsDst, const GeneralHrdParams* generalHrdParamsSrc);
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );

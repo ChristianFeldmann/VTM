@@ -146,11 +146,6 @@ public:
 
 class HLSyntaxReader : public VLCReader
 {
-#if JVET_P0118_HRD_ASPECTS
-private:
-  bool m_isFirstGeneralHrd;
-  GeneralHrdParams*      m_prevGeneralHrdParams;
-#endif
 public:
   HLSyntaxReader();
   virtual ~HLSyntaxReader();
@@ -181,7 +176,6 @@ public:
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
 #endif
 #if JVET_P0118_HRD_ASPECTS
-  void  checkGeneralHrdParametersIdentical(GeneralHrdParams *generalHr);
   void  parseOlsHrdParameters(GeneralHrdParams* generalHrd, OlsHrdParams *olsHrd, uint32_t firstSubLayer, uint32_t tempLevelHigh);
 #else
   void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );

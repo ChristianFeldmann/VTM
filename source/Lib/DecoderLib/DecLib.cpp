@@ -428,6 +428,8 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
 DecLib::DecLib()
   : m_iMaxRefPicNum(0)
+  , m_isFirstGeneralHrd(true)
+  , m_prevGeneralHrdParams()
   , m_associatedIRAPType(NAL_UNIT_INVALID)
 #if JVET_P0978_RPL_RESTRICTIONS
   , m_associatedIRAPDecodingOrderNumber(0)
@@ -1447,7 +1449,47 @@ void DecLib::xActivateParameterSets( const int layerId )
   }
   xCheckParameterSetConstraints(layerId);
 }
+void DecLib::xCheckGeneralHrdParametersIdentical(const GeneralHrdParams* generalHrdParams1, const GeneralHrdParams* generalHrdParams2)
+{
+  bool isIdentical = true;
+  if ((generalHrdParams1->getNumUnitsInTick() != generalHrdParams2->getNumUnitsInTick())
+    || (generalHrdParams1->getTimeScale() != generalHrdParams2->getTimeScale())
+    || (generalHrdParams1->getGeneralNalHrdParametersPresentFlag() != generalHrdParams2->getGeneralNalHrdParametersPresentFlag())
+    || (generalHrdParams1->getGeneralVclHrdParametersPresentFlag() != generalHrdParams2->getGeneralVclHrdParametersPresentFlag())
+    || (generalHrdParams1->getGeneralSamPicTimingInAllOlsFlag() != generalHrdParams2->getGeneralSamPicTimingInAllOlsFlag())
+    || (generalHrdParams1->getGeneralDecodingUnitHrdParamsPresentFlag() != generalHrdParams2->getGeneralDecodingUnitHrdParamsPresentFlag())
+    || (generalHrdParams1->getGeneralDecodingUnitHrdParamsPresentFlag()?(generalHrdParams1->getTickDivisorMinus2() != generalHrdParams2->getTickDivisorMinus2()):0)
+    || (generalHrdParams1->getBitRateScale() != generalHrdParams2->getBitRateScale())
+    || (generalHrdParams1->getCpbSizeScale() != generalHrdParams2->getCpbSizeScale())
+    || (generalHrdParams1->getGeneralDecodingUnitHrdParamsPresentFlag() ? (generalHrdParams1->getCpbSizeDuScale() != generalHrdParams2->getCpbSizeDuScale()):0)
+    || (generalHrdParams1->getHrdCpbCntMinus1() != generalHrdParams2->getHrdCpbCntMinus1())
+    )
+  {
+    isIdentical = false;
+  }
+  CHECK(!isIdentical, "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
+}
 
+void DecLib::xCopyGeneralHrdParameters(GeneralHrdParams* generalHrdParamsDst, const GeneralHrdParams* generalHrdParamsSrc)
+{
+  generalHrdParamsDst->setNumUnitsInTick(generalHrdParamsSrc->getNumUnitsInTick());
+  generalHrdParamsDst->setTimeScale(generalHrdParamsSrc->getTimeScale());
+  generalHrdParamsDst->setGeneralNalHrdParametersPresentFlag(generalHrdParamsSrc->getGeneralNalHrdParametersPresentFlag());
+  generalHrdParamsDst->setGeneralVclHrdParametersPresentFlag(generalHrdParamsSrc->getGeneralVclHrdParametersPresentFlag());
+  generalHrdParamsDst->setGeneralSamPicTimingInAllOlsFlag(generalHrdParamsSrc->getGeneralSamPicTimingInAllOlsFlag());
+  generalHrdParamsDst->setGeneralDecodingUnitHrdParamsPresentFlag(generalHrdParamsSrc->getGeneralDecodingUnitHrdParamsPresentFlag());
+  if (generalHrdParamsDst->getGeneralDecodingUnitHrdParamsPresentFlag())
+  {
+    generalHrdParamsDst->setTickDivisorMinus2(generalHrdParamsSrc->getTickDivisorMinus2());
+  }
+  generalHrdParamsDst->setBitRateScale(generalHrdParamsSrc->getBitRateScale());
+  generalHrdParamsDst->setCpbSizeScale(generalHrdParamsSrc->getCpbSizeScale());
+  if (generalHrdParamsDst->getGeneralDecodingUnitHrdParamsPresentFlag())
+  {
+    generalHrdParamsDst->setCpbSizeDuScale(generalHrdParamsSrc->getCpbSizeDuScale());
+  }
+  generalHrdParamsDst->setHrdCpbCntMinus1(generalHrdParamsSrc->getHrdCpbCntMinus1());
+}
 void DecLib::xCheckParameterSetConstraints(const int layerId)
 {
   // Conformance checks
@@ -1457,7 +1499,22 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 #if JVET_Q0814_DPB
   const VPS *vps = slice->getVPS();
 #endif
-
+  if (((vps!=nullptr)&&(vps->getVPSGeneralHrdParamsPresentFlag()))||(sps->getGeneralHrdParametersPresentFlag()))
+  {
+    if (((vps != nullptr) && (vps->getVPSGeneralHrdParamsPresentFlag())) && (sps->getGeneralHrdParametersPresentFlag()))
+    {
+      xCheckGeneralHrdParametersIdentical(vps->getGeneralHrdParameters(),sps->getGeneralHrdParameters());
+    }
+    if (m_isFirstGeneralHrd)
+    {
+      xCopyGeneralHrdParameters(&m_prevGeneralHrdParams, sps->getGeneralHrdParametersPresentFlag() ? sps->getGeneralHrdParameters() : vps->getGeneralHrdParameters());
+    } 
+    else
+    {
+      xCheckGeneralHrdParametersIdentical(&m_prevGeneralHrdParams, sps->getGeneralHrdParametersPresentFlag() ? sps->getGeneralHrdParameters() : vps->getGeneralHrdParameters());
+    }
+  }
+  m_isFirstGeneralHrd = false;
 #if SPS_ID_CHECK
   static std::unordered_map<int, int> m_clvssSPSid;
 

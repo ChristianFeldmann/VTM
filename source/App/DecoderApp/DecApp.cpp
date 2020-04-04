@@ -325,6 +325,13 @@ uint32_t DecApp::decode()
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+    if( bNewPicture )
+    {
+      m_cDecLib.checkSeiInPictureUnit();
+      m_cDecLib.resetPictureSeiNalus();
+    }
+#endif
     if(bNewAccessUnit) 
     {
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH

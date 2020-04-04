@@ -1007,6 +1007,115 @@ void DecLib::checkSEIInAccessUnit()
 }
 #endif
 
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+#define SEI_REPETITION_CONSTRAINT_LIST_SIZE  21
+
+/**
+ - Count the number of identical SEI messages in the current picture
+ */
+void DecLib::checkSeiInPictureUnit()
+{  
+  std::vector<std::tuple<int, uint32_t, uint8_t*>> seiList;
+
+  // payload types subject to constrained SEI repetition
+  int picUnitRepConSeiList[SEI_REPETITION_CONSTRAINT_LIST_SIZE] = { 0, 1, 19, 45, 129, 132, 133, 137, 144, 145, 147, 148, 149, 150, 153, 154, 155, 156, 168, 203, 204};
+  
+  // extract SEI messages from NAL units
+  for (auto &sei : m_pictureSeiNalus)
+  {
+    InputBitstream bs = sei->getBitstream();
+
+    do
+    {  
+      int payloadType = 0;
+      uint32_t val = 0;
+
+      do
+      {
+        bs.readByte(val);
+        payloadType += val;
+      } while (val==0xFF);
+
+      uint32_t payloadSize = 0;
+      do
+      {
+        bs.readByte(val);
+        payloadSize += val;
+      } while (val==0xFF);
+    
+      uint8_t *payload = new uint8_t[payloadSize];
+      for (uint32_t i = 0; i < payloadSize; i++)
+      {
+        bs.readByte(val);
+        payload[i] = (uint8_t)val;
+      }
+      seiList.push_back(std::tuple<int, uint32_t, uint8_t*>(payloadType, payloadSize, payload));
+    }
+    while (bs.getNumBitsLeft() > 8);
+  }
+
+  // count repeated messages in list
+  for (uint32_t i = 0; i < seiList.size(); i++)
+  {
+    int      k, count = 1;      
+    int      payloadType1 = std::get<0>(seiList[i]);
+    uint32_t payloadSize1 = std::get<1>(seiList[i]);
+    uint8_t  *payload1    = std::get<2>(seiList[i]);
+
+    // only consider SEI payload types in the PicUnitRepConSeiList
+    for(k=0; k<SEI_REPETITION_CONSTRAINT_LIST_SIZE; k++)
+    {
+      if(payloadType1 == picUnitRepConSeiList[k])
+      {
+        break;
+      }
+    }
+    if(k >= SEI_REPETITION_CONSTRAINT_LIST_SIZE)
+    {
+      continue;
+    }
+
+    // compare current SEI message with remaining messages in the list
+    for (uint32_t j = i+1; j < seiList.size(); j++)
+    {
+      int      payloadType2 = std::get<0>(seiList[j]);
+      uint32_t payloadSize2 = std::get<1>(seiList[j]);
+      uint8_t  *payload2    = std::get<2>(seiList[j]);
+      
+      // check for identical SEI type, size, and payload
+      if(payloadType1 == payloadType2 && payloadSize1 == payloadSize2)
+      {
+        if(memcmp(payload1, payload2, payloadSize1*sizeof(uint8_t)) == 0)
+        {
+          count++;
+        }
+      }
+    }    
+    CHECK(count > 4, "There shall be less than or equal to 4 identical sei_payload( ) syntax structures within a picture unit.");
+  }
+
+  // free SEI message list memory
+  for (uint32_t i = 0; i < seiList.size(); i++)
+  {
+    uint8_t *payload = std::get<2>(seiList[i]);
+    delete   payload;
+  }
+  seiList.clear();
+}
+
+/**
+ - Reset list of SEI NAL units from the current picture
+ */
+void DecLib::resetPictureSeiNalus()   
+{
+  while (!m_pictureSeiNalus.empty())
+  {
+    delete m_pictureSeiNalus.front();
+    m_pictureSeiNalus.pop_front();
+  }
+}
+
+#endif
 /**
  - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
  */
@@ -2574,11 +2683,17 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_PREFIX_SEI:
       // Buffer up prefix SEI messages until SPS of associated VCL is known.
       m_prefixSEINALUs.push_back(new InputNALUnit(nalu));
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+      m_pictureSeiNalus.push_back(new InputNALUnit(nalu));
+#endif
       return false;
 
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+        m_pictureSeiNalus.push_back(new InputNALUnit(nalu));
+#endif
 #if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
         m_accessUnitSeiTids.push_back(nalu.m_temporalId);
 #endif

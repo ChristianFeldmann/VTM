@@ -168,6 +168,9 @@ private:
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
 #endif
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+  std::list<InputNALUnit*> m_pictureSeiNalus; 
+#endif 
   VPS*                    m_vps;
 #if !JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool                    m_scalingListUpdateFlag;
@@ -248,6 +251,10 @@ public:
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
 #endif
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+  void checkSeiInPictureUnit();
+  void resetPictureSeiNalus();
+#endif 
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }

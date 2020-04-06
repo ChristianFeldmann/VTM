@@ -1505,14 +1505,11 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     {
       xCheckGeneralHrdParametersIdentical(vps->getGeneralHrdParameters(),sps->getGeneralHrdParameters());
     }
-    if (m_isFirstGeneralHrd)
-    {
-      xCopyGeneralHrdParameters(&m_prevGeneralHrdParams, sps->getGeneralHrdParametersPresentFlag() ? sps->getGeneralHrdParameters() : vps->getGeneralHrdParameters());
-    } 
-    else
+    if (!m_isFirstGeneralHrd)
     {
       xCheckGeneralHrdParametersIdentical(&m_prevGeneralHrdParams, sps->getGeneralHrdParametersPresentFlag() ? sps->getGeneralHrdParameters() : vps->getGeneralHrdParameters());
     }
+    xCopyGeneralHrdParameters(&m_prevGeneralHrdParams, sps->getGeneralHrdParametersPresentFlag() ? sps->getGeneralHrdParameters() : vps->getGeneralHrdParameters());
   }
   m_isFirstGeneralHrd = false;
 #if SPS_ID_CHECK

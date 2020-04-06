@@ -1215,10 +1215,11 @@ void DecLib::xActivateParameterSets( const int layerId )
 
     const VPS *vps = sps->getVPSId() ? m_parameterSetManager.getVPS( sps->getVPSId() ) : nullptr;
 
-    if (NULL == pps->pcv)
+    if( nullptr != pps->pcv )
     {
-      m_parameterSetManager.getPPS( m_picHeader.getPPSId() )->pcv = new PreCalcValues( *sps, *pps, false );
+      delete m_parameterSetManager.getPPS( m_picHeader.getPPSId() )->pcv;
     }
+    m_parameterSetManager.getPPS( m_picHeader.getPPSId() )->pcv = new PreCalcValues( *sps, *pps, false );
     m_parameterSetManager.clearSPSChangedFlag(sps->getSPSId());
     m_parameterSetManager.clearPPSChangedFlag(pps->getPPSId());
 

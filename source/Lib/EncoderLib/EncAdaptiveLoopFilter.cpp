@@ -1560,8 +1560,8 @@ double EncAdaptiveLoopFilter::mergeFiltersAndCost( AlfParam& alfParam, AlfFilter
 {
   int numFiltersBest = 0;
   int numFilters = MAX_NUM_ALF_CLASSES;
-  static bool codedVarBins[MAX_NUM_ALF_CLASSES];
-  static double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2];
+  bool   codedVarBins[MAX_NUM_ALF_CLASSES];
+  double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2];
 
   double cost, cost0, dist, distForce0, costMin = MAX_DOUBLE;
   int coeffBits, coeffBitsForce0;
@@ -1758,7 +1758,7 @@ int EncAdaptiveLoopFilter::lengthFilterCoeffs( AlfFilterShape& alfShape, const i
 
 double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], bool* codedVarBins )
 {
-  static int bitsVarBin[MAX_NUM_ALF_CLASSES];
+  int bitsVarBin[MAX_NUM_ALF_CLASSES];
 
   for( int ind = 0; ind < numFilters; ++ind )
   {
@@ -1775,7 +1775,7 @@ double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int
     }
   }
 
-  static int zeroBitsVarBin = 0;
+  int zeroBitsVarBin = 0;
   for (int i = 0; i < alfShape.numCoeff - 1; i++)
   {
 #if JVET_Q0210_UEK_REMOVAL 
@@ -1896,8 +1896,8 @@ double EncAdaptiveLoopFilter::deriveCoeffQuant( int *filterClipp, int *filterCoe
   const int max_value = factor - 1;
   const int min_value = -factor + 1;
 
-const int numCoeff = shape.numCoeff;
-  static double filterCoeff[MAX_NUM_ALF_LUMA_COEFF];
+  const int numCoeff = shape.numCoeff;
+  double    filterCoeff[MAX_NUM_ALF_LUMA_COEFF];
 
   cov.optimizeFilter( shape, filterClipp, filterCoeff, optimizeClip );
   roundFiltCoeff( filterCoeffQuant, filterCoeff, numCoeff, factor );
@@ -1980,13 +1980,13 @@ void EncAdaptiveLoopFilter::roundFiltCoeffCCALF( int *filterCoeffQuant, double *
 
 void EncAdaptiveLoopFilter::mergeClasses( const AlfFilterShape& alfShape, AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES] )
 {
-  static int tmpClip[MAX_NUM_ALF_LUMA_COEFF];
-  static int bestMergeClip[MAX_NUM_ALF_LUMA_COEFF];
-  static double err[MAX_NUM_ALF_CLASSES];
-  static double bestMergeErr;
-  static bool availableClass[MAX_NUM_ALF_CLASSES];
-  static uint8_t indexList[MAX_NUM_ALF_CLASSES];
-  static uint8_t indexListTemp[MAX_NUM_ALF_CLASSES];
+  int     tmpClip[MAX_NUM_ALF_LUMA_COEFF];
+  int     bestMergeClip[MAX_NUM_ALF_LUMA_COEFF];
+  double  err[MAX_NUM_ALF_CLASSES];
+  double  bestMergeErr = std::numeric_limits<double>::max();
+  bool    availableClass[MAX_NUM_ALF_CLASSES];
+  uint8_t indexList[MAX_NUM_ALF_CLASSES];
+  uint8_t indexListTemp[MAX_NUM_ALF_CLASSES];
   int numRemaining = numClasses;
 
   memset( filterIndices, 0, sizeof( short ) * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_CLASSES );
@@ -2345,7 +2345,7 @@ void EncAdaptiveLoopFilter::getBlkStats(AlfCovariance* alfCovariance, const AlfF
 
 
 {
-  static int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues];
+  int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues];
 
   const int numBins = AlfNumClippingValues[channel];
   int transposeIdx = 0;
@@ -3406,8 +3406,10 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilterCoeff( ComponentID compID, const Pe
   using TE = double[MAX_NUM_ALF_LUMA_COEFF][MAX_NUM_ALF_LUMA_COEFF];
   using Ty = double[MAX_NUM_ALF_LUMA_COEFF];
 
-  static double filterCoeffDbl[MAX_NUM_CC_ALF_CHROMA_COEFF];
-  static int    filterCoeffInt[MAX_NUM_CC_ALF_CHROMA_COEFF];
+  double filterCoeffDbl[MAX_NUM_CC_ALF_CHROMA_COEFF];
+  int    filterCoeffInt[MAX_NUM_CC_ALF_CHROMA_COEFF];
+
+  std::fill_n(filterCoeffInt, MAX_NUM_CC_ALF_CHROMA_COEFF, 0);
 
   TE        kE;
   Ty        ky;
@@ -3773,9 +3775,9 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
                                  cs.pcv->maxCUHeightLog2 - scaleY, unfilteredDistortion);
   double bestUnfilteredTotalCost = 1 * m_lambda[compID] + unfilteredDistortion;   // 1 bit is for gating flag
 
-  static bool  ccAlfFilterIdxEnabled[MAX_NUM_CC_ALF_FILTERS];
-  static short ccAlfFilterCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
-  static uint8_t ccAlfFilterCount     = MAX_NUM_CC_ALF_FILTERS;
+  bool             ccAlfFilterIdxEnabled[MAX_NUM_CC_ALF_FILTERS];
+  short            ccAlfFilterCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
+  uint8_t          ccAlfFilterCount             = MAX_NUM_CC_ALF_FILTERS;
   double bestFilteredTotalCost        = MAX_DOUBLE;
   bool   bestreuseTemporalFilterCoeff = false;
   std::vector<int> apsIds             = getAvailableCcAlfApsIds(cs, compID);

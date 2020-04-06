@@ -122,7 +122,7 @@ void DecCu::decompressCtu( CodingStructure& cs, const UnitArea& ctuArea )
         const int vSize = cs.slice->getSPS()->getMaxCUHeight() > 64 ? 64 : cs.slice->getSPS()->getMaxCUHeight();
         if((currCU.Y().x % vSize) == 0 && (currCU.Y().y % vSize) == 0)
         {
-          for(int x = currCU.Y().x; x < currCU.Y().y + currCU.Y().width; x += vSize)
+          for(int x = currCU.Y().x; x < currCU.Y().x + currCU.Y().width; x += vSize)
           {
             for(int y = currCU.Y().y; y < currCU.Y().y + currCU.Y().height; y += vSize)
             {

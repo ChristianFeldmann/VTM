@@ -715,7 +715,14 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     else
     {
-      pcRefPic = xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i), m_pcPic->layerId);
+      int pocBits = getSPS()->getBitsForPOC();
+      int pocMask = (1 << pocBits) - 1;
+      int ltrpPoc = pRPL0->getRefPicIdentifier(i) & pocMask;
+      if(pRPL0->getDeltaPocMSBPresentFlag(i))
+      {
+        ltrpPoc += getPOC() - pRPL0->getDeltaPocMSBCycleLT(i) * (pocMask + 1) - (getPOC() & pocMask);
+      }
+      pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, pRPL0->getDeltaPocMSBPresentFlag(i), m_pcPic->layerId);
       refPicPOC = pcRefPic->getPOC();
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
@@ -764,7 +771,14 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     else
     {
-      pcRefPic = xGetLongTermRefPic(rcListPic, pRPL0->getRefPicIdentifier(i), pRPL0->getDeltaPocMSBPresentFlag(i), m_pcPic->layerId);
+      int pocBits = getSPS()->getBitsForPOC();
+      int pocMask = (1 << pocBits) - 1;
+      int ltrpPoc = pRPL1->getRefPicIdentifier(i) & pocMask;
+      if(pRPL1->getDeltaPocMSBPresentFlag(i))
+      {
+        ltrpPoc += getPOC() - pRPL1->getDeltaPocMSBCycleLT(i) * (pocMask + 1) - (getPOC() & pocMask);
+      }
+      pcRefPic = xGetLongTermRefPic(rcListPic, ltrpPoc, pRPL1->getDeltaPocMSBPresentFlag(i), m_pcPic->layerId);
       refPicPOC = pcRefPic->getPOC();
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();

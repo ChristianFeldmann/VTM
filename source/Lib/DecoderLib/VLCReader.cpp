@@ -4426,8 +4426,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);
 #if JVET_Q0118_CLEANUPS
     VPS *vps = parameterSetManager->getVPS(sps->getVPSId());
-    CHECK(vps==0, "Invalid VPS");
-    if (pcSlice->isIRAP() && vps->getIndependentLayerFlag(vps->getGeneralLayerIdx(pcSlice->getNalUnitLayerId())) == 1)
+    if (pcSlice->isIRAP() && (sps->getVPSId() == 0 || vps->getIndependentLayerFlag(vps->getGeneralLayerIdx(pcSlice->getNalUnitLayerId())) == 1))
     {
       CHECK(uiCode != 2, "When nal_unit_type is in the range of IDR_W_RADL to CRA_NUT, inclusive, and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1, slice_type shall be equal to 2");
     }

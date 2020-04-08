@@ -818,7 +818,7 @@ void SEIWriter::xWriteSEIFilmGrainCharacteristics(const SEIFilmGrainCharacterist
         assert(numIntensityIntervals <= 256);
         assert(numModelValues <= 256);
         WRITE_CODE(numIntensityIntervals - 1, 8, "num_intensity_intervals_minus1[c]");
-        WRITE_CODE(numModelValues - 1, 8, "num_model_values_minus1[c]");
+        WRITE_CODE(numModelValues - 1, 3, "num_model_values_minus1[c]");
         for (uint32_t interval = 0; interval<numIntensityIntervals; interval++)
         {
           const SEIFilmGrainCharacteristics::CompModelIntensityValues &cmiv = cm.intensityValues[interval];

@@ -2406,23 +2406,23 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         if( refLayer >= 0 && m_uiNumBlk[refLayer] != 0 )
         {
-#if JVET_Q0330_BLOCK_PARTITION
-          const int MAX_BT_SIZE_INTER = 128;
-#endif
           picHeader->setSplitConsOverrideFlag(true);
           double dBlkSize = sqrt( ( double ) m_uiBlkSize[refLayer] / m_uiNumBlk[refLayer] );
-          if( dBlkSize < AMAXBT_TH32 || pcPic->cs->sps->getCTUSize()==32 )
+          unsigned int newMaxBtSize = picHeader->getMaxBTSize(pcSlice->getSliceType(), CHANNEL_TYPE_LUMA);
+          if( dBlkSize < AMAXBT_TH32 )
           {
-            picHeader->setMaxBTSize( 1, 32 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 32 );
+            newMaxBtSize = 32;
           }
-          else if( dBlkSize < AMAXBT_TH64 || pcPic->cs->sps->getCTUSize()==64 )
+          else if( dBlkSize < AMAXBT_TH64 )
           {
-            picHeader->setMaxBTSize( 1, 64 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 64 );
+            newMaxBtSize = 64;
           }
           else
           {
-            picHeader->setMaxBTSize( 1, 128 > MAX_BT_SIZE_INTER ? MAX_BT_SIZE_INTER : 128 );
+            newMaxBtSize = 128;
           }
+          newMaxBtSize = Clip3(picHeader->getMinQTSize(pcSlice->getSliceType()), pcPic->cs->sps->getCTUSize(), newMaxBtSize);
+          picHeader->setMaxBTSize(1, newMaxBtSize);
 
           m_uiBlkSize[refLayer] = 0;
           m_uiNumBlk [refLayer] = 0;

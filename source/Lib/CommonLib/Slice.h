@@ -1124,21 +1124,21 @@ public:
 
   bool getWindowEnabledFlag() const   { return m_enabledFlag;                          }
   int  getWindowLeftOffset() const    { return m_enabledFlag ? m_winLeftOffset : 0;    }
-  void setWindowLeftOffset(int val)   { m_winLeftOffset = val; m_enabledFlag = true;   }
+  void setWindowLeftOffset(int val)   { m_winLeftOffset = val; m_enabledFlag |=  (val!=0);   }
   int  getWindowRightOffset() const   { return m_enabledFlag ? m_winRightOffset : 0;   }
-  void setWindowRightOffset(int val)  { m_winRightOffset = val; m_enabledFlag = true;  }
+  void setWindowRightOffset(int val)  { m_winRightOffset = val; m_enabledFlag |= (val!=0);  }
   int  getWindowTopOffset() const     { return m_enabledFlag ? m_winTopOffset : 0;     }
-  void setWindowTopOffset(int val)    { m_winTopOffset = val; m_enabledFlag = true;    }
+  void setWindowTopOffset(int val)    { m_winTopOffset = val; m_enabledFlag |= (val!=0);    }
   int  getWindowBottomOffset() const  { return m_enabledFlag ? m_winBottomOffset: 0;   }
-  void setWindowBottomOffset(int val) { m_winBottomOffset = val; m_enabledFlag = true; }
+  void setWindowBottomOffset(int val) { m_winBottomOffset = val; m_enabledFlag |= (val!=0); }
 
-  void setWindow(int offsetLeft, int offsetLRight, int offsetLTop, int offsetLBottom)
+  void setWindow(int offsetLeft, int offsetRight, int offsetTop, int offsetBottom)
   {
-    m_enabledFlag     = true;
+    m_enabledFlag     = (offsetLeft || offsetRight || offsetTop || offsetBottom);
     m_winLeftOffset   = offsetLeft;
-    m_winRightOffset  = offsetLRight;
-    m_winTopOffset    = offsetLTop;
-    m_winBottomOffset = offsetLBottom;
+    m_winRightOffset  = offsetRight;
+    m_winTopOffset    = offsetTop;
+    m_winBottomOffset = offsetBottom;
   }
 };
 

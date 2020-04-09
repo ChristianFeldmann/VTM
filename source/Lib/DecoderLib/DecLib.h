@@ -69,6 +69,8 @@ class DecLib
 {
 private:
   int                     m_iMaxRefPicNum;
+  bool m_isFirstGeneralHrd;
+  GeneralHrdParams        m_prevGeneralHrdParams;
 
   NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
 #if JVET_P0978_RPL_RESTRICTIONS

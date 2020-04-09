@@ -172,7 +172,45 @@ public:
     ,m_hrdCpbCntMinus1(0)
 #endif
   {}
+#if JVET_P0118_HRD_ASPECTS
+  bool operator==(const GeneralHrdParams& other) const
+  {
+    return (m_numUnitsInTick == other.m_numUnitsInTick
+      && m_timeScale == other.m_timeScale
+      && m_generalNalHrdParamsPresentFlag == other.m_generalNalHrdParamsPresentFlag
+      && m_generalVclHrdParamsPresentFlag == other.m_generalVclHrdParamsPresentFlag
+      && m_generalSamPicTimingInAllOlsFlag == other.m_generalSamPicTimingInAllOlsFlag
+      && m_generalDecodingUnitHrdParamsPresentFlag == other.m_generalDecodingUnitHrdParamsPresentFlag
+      && (m_generalDecodingUnitHrdParamsPresentFlag ? (m_tickDivisorMinus2 == other.m_tickDivisorMinus2): 1)
+      && m_bitRateScale == other.m_bitRateScale
+      && m_cpbSizeScale == other.m_cpbSizeScale
+      && (m_generalDecodingUnitHrdParamsPresentFlag ? (m_cpbSizeDuScale == other.m_cpbSizeDuScale) : 1)
+      && m_hrdCpbCntMinus1 == other.m_hrdCpbCntMinus1
+      );
+  }
 
+  GeneralHrdParams& operator=(const GeneralHrdParams& input)
+  {
+    m_numUnitsInTick = input.m_numUnitsInTick;
+    m_timeScale = input.m_timeScale;
+    m_generalNalHrdParamsPresentFlag = input.m_generalNalHrdParamsPresentFlag;
+    m_generalVclHrdParamsPresentFlag = input.m_generalVclHrdParamsPresentFlag;
+    m_generalSamPicTimingInAllOlsFlag = input.m_generalSamPicTimingInAllOlsFlag;
+    m_generalDecodingUnitHrdParamsPresentFlag = input.m_generalDecodingUnitHrdParamsPresentFlag;
+    if (input.m_generalDecodingUnitHrdParamsPresentFlag)
+    {
+      m_tickDivisorMinus2 = input.m_tickDivisorMinus2;
+    }
+    m_bitRateScale = input.m_bitRateScale;
+    m_cpbSizeScale = input.m_cpbSizeScale;
+    if (input.m_generalDecodingUnitHrdParamsPresentFlag)
+    {
+      m_cpbSizeDuScale = input.m_cpbSizeDuScale;
+    }
+    m_hrdCpbCntMinus1 = input.m_hrdCpbCntMinus1;
+    return *this;
+  }
+#endif
 #if JVET_P0118_HRD_ASPECTS
   virtual ~GeneralHrdParams() {}
 #else

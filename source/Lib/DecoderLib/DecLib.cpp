@@ -428,6 +428,8 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
 DecLib::DecLib()
   : m_iMaxRefPicNum(0)
+  , m_isFirstGeneralHrd(true)
+  , m_prevGeneralHrdParams()
   , m_associatedIRAPType(NAL_UNIT_INVALID)
 #if JVET_P0978_RPL_RESTRICTIONS
   , m_associatedIRAPDecodingOrderNumber(0)
@@ -1448,7 +1450,6 @@ void DecLib::xActivateParameterSets( const int layerId )
   }
   xCheckParameterSetConstraints(layerId);
 }
-
 void DecLib::xCheckParameterSetConstraints(const int layerId)
 {
   // Conformance checks
@@ -1458,7 +1459,21 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 #if JVET_Q0814_DPB
   const VPS *vps = slice->getVPS();
 #endif
-
+#if JVET_P0118_HRD_ASPECTS
+  if (((vps!=nullptr)&&(vps->getVPSGeneralHrdParamsPresentFlag()))||(sps->getGeneralHrdParametersPresentFlag()))
+  {
+    if (((vps != nullptr) && (vps->getVPSGeneralHrdParamsPresentFlag())) && (sps->getGeneralHrdParametersPresentFlag()))
+    {
+      CHECK(!(*vps->getGeneralHrdParameters() == *sps->getGeneralHrdParameters()), "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
+    }
+    if (!m_isFirstGeneralHrd)
+    {
+      CHECK(!(m_prevGeneralHrdParams == (sps->getGeneralHrdParametersPresentFlag() ? *sps->getGeneralHrdParameters() : *vps->getGeneralHrdParameters())), "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
+    }
+    m_prevGeneralHrdParams = (sps->getGeneralHrdParametersPresentFlag() ? *sps->getGeneralHrdParameters() : *vps->getGeneralHrdParameters());
+  }
+  m_isFirstGeneralHrd = false;
+#endif
 #if SPS_ID_CHECK
   static std::unordered_map<int, int> m_clvssSPSid;
 

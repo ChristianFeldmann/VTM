@@ -282,10 +282,6 @@ void FDReader::parseFillerData(InputBitstream* bs, uint32_t &fdSize)
 // ====================================================================================================================
 
 HLSyntaxReader::HLSyntaxReader()
-#if JVET_P0118_HRD_ASPECTS
-  : m_isFirstGeneralHrd(true)
-  , m_prevGeneralHrdParams(NULL)
-#endif
 {
 }
 
@@ -1339,32 +1335,6 @@ void HLSyntaxReader::parseGeneralHrdParameters(GeneralHrdParams *hrd)
   }
   READ_UVLC(symbol, "hrd_cpb_cnt_minus1");                      hrd->setHrdCpbCntMinus1(symbol);
   CHECK(symbol > 31,"The value of hrd_cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive");
-  if (!m_isFirstGeneralHrd)
-  {
-    checkGeneralHrdParametersIdentical(hrd);
-  }
-  m_prevGeneralHrdParams = hrd;
-  m_isFirstGeneralHrd = false;
-}
-void HLSyntaxReader::checkGeneralHrdParametersIdentical(GeneralHrdParams *generalHrd)
-{
-  bool isIdentical = true;
-  if ( (generalHrd->getNumUnitsInTick()!= m_prevGeneralHrdParams->getNumUnitsInTick())
-    || (generalHrd->getTimeScale()!= m_prevGeneralHrdParams->getTimeScale())
-    || (generalHrd->getGeneralNalHrdParametersPresentFlag()!= m_prevGeneralHrdParams->getGeneralNalHrdParametersPresentFlag())
-    || (generalHrd->getGeneralVclHrdParametersPresentFlag()!= m_prevGeneralHrdParams->getGeneralVclHrdParametersPresentFlag())
-    || (generalHrd->getGeneralSamPicTimingInAllOlsFlag()!= m_prevGeneralHrdParams->getGeneralSamPicTimingInAllOlsFlag())
-    || (generalHrd->getGeneralDecodingUnitHrdParamsPresentFlag()!= m_prevGeneralHrdParams->getGeneralDecodingUnitHrdParamsPresentFlag())
-    || (generalHrd->getTickDivisorMinus2()!= m_prevGeneralHrdParams->getTickDivisorMinus2())
-    || (generalHrd->getBitRateScale()!= m_prevGeneralHrdParams->getBitRateScale())
-    || (generalHrd->getCpbSizeScale()!= m_prevGeneralHrdParams->getCpbSizeScale())
-    || (generalHrd->getCpbSizeDuScale()!= m_prevGeneralHrdParams->getCpbSizeDuScale())
-    || (generalHrd->getHrdCpbCntMinus1()!= m_prevGeneralHrdParams->getHrdCpbCntMinus1())
-    )
-  {
-    isIdentical = false;
-  }
-  CHECK(!isIdentical, "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
 }
 #endif
 #if JVET_P0118_HRD_ASPECTS

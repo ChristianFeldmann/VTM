@@ -1439,7 +1439,7 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
       testBDPCM = testBDPCM && CU::bdpcmAllowed(cu, COMPONENT_Cb) && cu.ispMode == 0 && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
       for (int32_t uiMode = uiMinMode - (2 * int(testBDPCM)); uiMode < uiMaxMode; uiMode++)
       {
-        int chromaIntraMode = chromaCandModes[uiMode];
+        int chromaIntraMode;
 
         if (uiMode < 0)
         {
@@ -1452,6 +1452,8 @@ void IntraSearch::estIntraPredChromaQT( CodingUnit &cu, Partitioner &partitioner
         }
         else
         {
+          chromaIntraMode = chromaCandModes[uiMode];
+
           cu.bdpcmModeChroma = 0;
           if( PU::isLMCMode( chromaIntraMode ) && ! PU::isLMCModeEnabled( pu, chromaIntraMode ) )
           {
